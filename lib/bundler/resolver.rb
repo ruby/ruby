@@ -79,7 +79,8 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      result.map {|package, version| version.to_specs(package) }.flatten
+      resolved_specs = result.map {|package, version| version.to_specs(package) }.flatten
+      resolved_specs |= @base.specs_compatible_with(SpecSet.new(resolved_specs))
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -269,15 +270,22 @@ module Bundler
           next groups if platform_specs.all?(&:empty?)
         end
 
-        platform_specs.flatten!
-        platform_specs.uniq!
-
         ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
-        groups << Resolver::Candidate.new(version, specs: ruby_specs, priority: -1) if ruby_specs.any?
+        ruby_group = Resolver::SpecGroup.new(ruby_specs)
 
-        next groups if platform_specs == ruby_specs || package.force_ruby_platform?
+        unless ruby_group.empty?
+          platform_specs.each do |specs|
+            ruby_group.merge(Resolver::SpecGroup.new(specs))
+          end
 
-        groups << Resolver::Candidate.new(version, specs: platform_specs, priority: 1)
+          groups << Resolver::Candidate.new(version, group: ruby_group, priority: -1)
+          next groups if package.force_ruby_platform?
+        end
+
+        platform_group = Resolver::SpecGroup.new(platform_specs.flatten.uniq)
+        next groups if platform_group == ruby_group
+
+        groups << Resolver::Candidate.new(version, group: platform_group, priority: 1)
 
         groups
       end

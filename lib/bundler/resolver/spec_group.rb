@@ -3,6 +3,8 @@
 module Bundler
   class Resolver
     class SpecGroup
+      attr_reader :specs
+
       def initialize(specs)
         @specs = specs
       end
@@ -38,7 +40,19 @@ module Bundler
       def dependencies
         @dependencies ||= @specs.map do |spec|
           __dependencies(spec) + metadata_dependencies(spec)
-        end.flatten.uniq
+        end.flatten.uniq.sort
+      end
+
+      def ==(other)
+        sorted_spec_names == other.sorted_spec_names
+      end
+
+      def merge(other)
+        return false unless equivalent?(other)
+
+        @specs |= other.specs
+
+        true
       end
 
       protected
@@ -48,6 +62,10 @@ module Bundler
       end
 
       private
+
+      def equivalent?(other)
+        name == other.name && version == other.version && source == other.source && dependencies == other.dependencies
+      end
 
       def exemplary_spec
         @specs.first

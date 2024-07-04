@@ -24,8 +24,8 @@ module Bundler
 
       attr_reader :version
 
-      def initialize(version, specs: [], priority: -1)
-        @spec_group = Resolver::SpecGroup.new(specs)
+      def initialize(version, group: nil, priority: -1)
+        @spec_group = group || SpecGroup.new([])
         @version = Gem::Version.new(version)
         @priority = priority
       end
