@@ -79,7 +79,7 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      result.map {|package, version| version.to_specs(package) }.flatten.uniq
+      result.map {|package, version| version.to_specs(package) }.flatten
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -270,6 +270,7 @@ module Bundler
         end
 
         platform_specs.flatten!
+        platform_specs.uniq!
 
         ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
         groups << Resolver::Candidate.new(version, specs: ruby_specs) if ruby_specs.any?
