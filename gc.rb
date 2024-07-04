@@ -254,6 +254,30 @@ module GC
   end
 
   # call-seq:
+  #     GC.config -> hash
+  #     GC.config(hash) -> hash
+  #
+  # Sets or gets information about the current GC config.
+  #
+  # The contents of the hash are implementation specific and may change in
+  # the future without notice.
+  #
+  # If the optional argument, hash, is given, it is overwritten and returned.
+  #
+  # This method is only expected to work on CRuby.
+  #
+  # The hash includes the following keys about the internal information in
+  # the \GC:
+  #
+  # [slot_size]
+  #   The slot size of the heap in bytes.
+  def self.config hash = nil
+    return Primitive.gc_config_get unless hash
+
+    Primitive.gc_config_set hash
+  end
+
+  # call-seq:
   #     GC.latest_gc_info -> hash
   #     GC.latest_gc_info(hash) -> hash
   #     GC.latest_gc_info(:major_by) -> :malloc

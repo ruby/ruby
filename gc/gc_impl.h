@@ -24,6 +24,8 @@ void rb_gc_impl_gc_disable(void *objspace_ptr, bool finish_current_gc);
 bool rb_gc_impl_gc_enabled_p(void *objspace_ptr);
 void rb_gc_impl_stress_set(void *objspace_ptr, VALUE flag);
 VALUE rb_gc_impl_stress_get(void *objspace_ptr);
+VALUE rb_gc_impl_config_get(void *objspace_ptr);
+VALUE rb_gc_impl_config_set(void *objspace_ptr, VALUE hash);
 // Object allocation
 VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size);
 size_t rb_gc_impl_obj_slot_size(VALUE obj);
@@ -76,5 +78,6 @@ bool rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr);
 bool rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE obj);
 void rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event);
 void rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj);
+
 
 #endif

@@ -12,6 +12,9 @@
 # include <sys/user.h>
 #endif
 
+#include "internal/string.h"
+#include "internal/hash.h"
+
 #include "ruby/ruby.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
@@ -512,6 +515,10 @@ typedef struct rb_objspace {
 #endif
     } malloc_params;
 
+    struct rb_gc_config {
+        bool full_mark;
+    } gc_config;
+
     struct {
         unsigned int mode : 2;
         unsigned int immediate_sweep : 1;
@@ -903,6 +910,9 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define dont_gc_set(b)        (((int)b), objspace->flags.dont_gc = (b))
 #define dont_gc_val()         (objspace->flags.dont_gc)
 #endif
+
+#define gc_config_full_mark_set(b) (((int)b), objspace->gc_config.full_mark = (b))
+#define gc_config_full_mark_val    (objspace->gc_config.full_mark)
 
 #define DURING_GC_COULD_MALLOC_REGION_START() \
     assert(rb_during_gc()); \
@@ -1818,6 +1828,22 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
 
+static size_t
+heap_extend_pages(rb_objspace_t *objspace, rb_size_pool_t *size_pool,
+        size_t free_slots, size_t total_slots, size_t used);
+
+    static void
+size_pool_allocatable_pages_expand(rb_objspace_t *objspace,
+        rb_size_pool_t *size_pool, size_t swept_slots, size_t total_slots, size_t total_pages)
+{
+    size_t extend_page_count = heap_extend_pages(objspace, size_pool, swept_slots,
+            total_slots, total_pages);
+
+    if (extend_page_count > size_pool->allocatable_pages) {
+        size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
+    }
+}
+
 static inline void
 heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 {
@@ -2297,6 +2323,13 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
             rb_memerror();
         }
         else {
+            if (size_pool->allocatable_pages == 0 && !gc_config_full_mark_val) {
+                size_pool_allocatable_pages_expand(objspace, size_pool,
+                        size_pool->freed_slots + size_pool->empty_slots,
+                        heap->total_slots + SIZE_POOL_TOMB_HEAP(size_pool)->total_slots,
+                        heap->total_pages + SIZE_POOL_TOMB_HEAP(size_pool)->total_pages);
+                GC_ASSERT(size_pool->allocatable_pages > 0);
+            }
             /* Do steps of incremental marking or lazy sweeping if the GC run permits. */
             gc_continue(objspace, size_pool, heap);
 
@@ -4037,11 +4070,8 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
         }
 
         if (grow_heap) {
-            size_t extend_page_count = heap_extend_pages(objspace, size_pool, swept_slots, total_slots, total_pages);
-
-            if (extend_page_count > size_pool->allocatable_pages) {
-                size_pool_allocatable_pages_set(objspace, size_pool, extend_page_count);
-            }
+            size_pool_allocatable_pages_expand(objspace, size_pool, swept_slots,
+                    total_slots, total_pages);
         }
     }
 }
@@ -4596,6 +4626,16 @@ gc_mark_set(rb_objspace_t *objspace, VALUE obj)
 static void
 gc_aging(rb_objspace_t *objspace, VALUE obj)
 {
+    /* Disable aging if Major GC's are disabled. This will prevent longish lived
+     * objects filling up the heap at the expense of marking many more objects.
+     *
+     * We should always pre-warm our process when disabling majors, by running
+     * GC manually several times so that most objects likely to become oldgen
+     * are already oldgen.
+     */
+    if(!gc_config_full_mark_val)
+        return;
+
     struct heap_page *page = GET_HEAP_PAGE(obj);
 
     GC_ASSERT(RVALUE_MARKING(objspace, obj) == FALSE);
@@ -6597,6 +6637,10 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         do_full_mark = TRUE;
     }
 
+    /* if major gc has been disabled, never do a full mark */
+    if (!gc_config_full_mark_val) {
+        do_full_mark = FALSE;
+    }
     gc_needs_major_flags = GPR_FLAG_NONE;
 
     if (do_full_mark && (reason & GPR_FLAG_MAJOR_MASK) == 0) {
@@ -6991,6 +7035,9 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
                            GPR_FLAG_IMMEDIATE_SWEEP |
                            GPR_FLAG_METHOD);
 
+    int full_marking_p = gc_config_full_mark_val;
+    gc_config_full_mark_set(TRUE);
+
     /* For now, compact implies full mark / sweep, so ignore other flags */
     if (compact) {
         GC_ASSERT(GC_COMPACTION_SUPPORTED);
@@ -7005,6 +7052,8 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
 
     garbage_collect(objspace, reason);
     gc_finalize_deferred(objspace);
+
+    gc_config_full_mark_set(full_marking_p);
 }
 
 static void
@@ -8005,6 +8054,51 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
     }
 
     return 0;
+}
+
+/* I could include internal.h for this, but doing so undefines some Array macros
+ * necessary for initialising objects, and I don't want to include all the array
+ * headers to get them back
+ * TODO: Investigate why RARRAY_AREF gets undefined in internal.h
+ */
+#ifndef RBOOL
+#define RBOOL(v) (v ? Qtrue : Qfalse)
+#endif
+
+VALUE
+rb_gc_impl_config_get(void *objspace_ptr)
+{
+#define sym(name) ID2SYM(rb_intern_const(name))
+    rb_objspace_t *objspace = objspace_ptr;
+    VALUE hash = rb_hash_new();
+
+    rb_hash_aset(hash, sym("full_mark"), RBOOL(gc_config_full_mark_val));
+
+    return hash;
+}
+
+static int
+gc_config_set_key(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    if (!strcmp(rb_str_to_cstr(rb_sym2str(key)), "full_mark")) {
+        gc_rest(objspace);
+        gc_config_full_mark_set(RBOOL(value));
+    }
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    if(!RB_TYPE_P(hash, T_HASH)) {
+        rb_raise(rb_eArgError, "expected keyword arguments");
+    }
+
+    rb_hash_stlike_foreach(hash, gc_config_set_key, (st_data_t)objspace);
+    return rb_gc_impl_config_get(objspace_ptr);
 }
 
 VALUE
@@ -9405,8 +9499,13 @@ gc_compact_stats(VALUE self)
 static VALUE
 gc_compact(VALUE self)
 {
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    int full_marking_p = gc_config_full_mark_val;
+    gc_config_full_mark_set(TRUE);
+
     /* Run GC with compaction enabled */
     rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true);
+    gc_config_full_mark_set(full_marking_p);
 
     return gc_compact_stats(self);
 }
@@ -9638,6 +9737,8 @@ void
 rb_gc_impl_objspace_init(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
+
+    gc_config_full_mark_set(TRUE);
 
     objspace->flags.gc_stressful = RTEST(initial_stress);
     objspace->gc_stress_mode = initial_stress;

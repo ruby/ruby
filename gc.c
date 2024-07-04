@@ -618,6 +618,8 @@ typedef struct gc_function_map {
     void (*gc_enable)(void *objspace_ptr);
     void (*gc_disable)(void *objspace_ptr, bool finish_current_gc);
     bool (*gc_enabled_p)(void *objspace_ptr);
+    VALUE (*config_get)(void *objpace_ptr);
+    VALUE (*config_set)(void *objspace_ptr, VALUE hash);
     void (*stress_set)(void *objspace_ptr, VALUE flag);
     VALUE (*stress_get)(void *objspace_ptr);
     // Object allocation
@@ -747,6 +749,8 @@ ruby_external_gc_init(void)
     load_external_gc_func(gc_enable);
     load_external_gc_func(gc_disable);
     load_external_gc_func(gc_enabled_p);
+    load_external_gc_func(config_set);
+    load_external_gc_func(config_get);
     load_external_gc_func(stress_set);
     load_external_gc_func(stress_get);
     // Object allocation
@@ -824,6 +828,8 @@ ruby_external_gc_init(void)
 # define rb_gc_impl_gc_enable rb_gc_functions.gc_enable
 # define rb_gc_impl_gc_disable rb_gc_functions.gc_disable
 # define rb_gc_impl_gc_enabled_p rb_gc_functions.gc_enabled_p
+# define rb_gc_impl_config_get rb_gc_functions.config_get
+# define rb_gc_impl_config_set rb_gc_functions.config_set
 # define rb_gc_impl_stress_set rb_gc_functions.stress_set
 # define rb_gc_impl_stress_get rb_gc_functions.stress_get
 // Object allocation
@@ -3565,6 +3571,18 @@ gc_stat_heap(rb_execution_context_t *ec, VALUE self, VALUE heap_name, VALUE arg)
     else {
         return arg;
     }
+}
+
+static VALUE
+gc_config_get(rb_execution_context_t *ec, VALUE self)
+{
+    return rb_gc_impl_config_get(rb_gc_get_objspace());
+}
+
+static VALUE
+gc_config_set(rb_execution_context_t *ec, VALUE self, VALUE hash)
+{
+    return rb_gc_impl_config_set(rb_gc_get_objspace(), hash);
 }
 
 static VALUE
