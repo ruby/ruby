@@ -7511,8 +7511,10 @@ gc_impl.$(OBJEXT): $(top_srcdir)/gc/default.c
 gc_impl.$(OBJEXT): $(top_srcdir)/gc/gc_impl.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/bits.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+gc_impl.$(OBJEXT): $(top_srcdir)/internal/hash.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+gc_impl.$(OBJEXT): $(top_srcdir)/internal/string.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 gc_impl.$(OBJEXT): {$(VPATH)}assert.h
 gc_impl.$(OBJEXT): {$(VPATH)}atomic.h
@@ -7530,6 +7532,7 @@ gc_impl.$(OBJEXT): {$(VPATH)}darray.h
 gc_impl.$(OBJEXT): {$(VPATH)}debug.h
 gc_impl.$(OBJEXT): {$(VPATH)}debug_counter.h
 gc_impl.$(OBJEXT): {$(VPATH)}defines.h
+gc_impl.$(OBJEXT): {$(VPATH)}encoding.h
 gc_impl.$(OBJEXT): {$(VPATH)}intern.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/abi.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/anyargs.h
@@ -7603,8 +7606,14 @@ gc_impl.$(OBJEXT): {$(VPATH)}internal/ctype.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/dllexport.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/dosish.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+gc_impl.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/error.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/eval.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/event.h
