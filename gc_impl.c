@@ -3205,8 +3205,10 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
         uintptr_t pend = p + page->total_slots * stride;
         for (; p < pend; p += stride) {
             VALUE vp = (VALUE)p;
-            if (RB_BUILTIN_TYPE(vp) != T_NONE) {
-                rb_gc_obj_free(objspace, vp);
+            asan_unpoisoning_object(vp) {
+                if (RB_BUILTIN_TYPE(vp) != T_NONE) {
+                    rb_gc_obj_free(objspace, vp);
+                }
             }
         }
     }
