@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'open-uri'
+require_relative 'utils'
 require 'webrick'
 require 'webrick/httpproxy'
 begin
@@ -9,42 +10,11 @@ rescue LoadError
 end
 
 class TestOpenURIProxy < Test::Unit::TestCase
+  include TestOpenURIUtils
 
   NullLog = Object.new
   def NullLog.<<(arg)
     #puts arg if / INFO / !~ arg
-  end
-
-  def with_http(log_tester=lambda {|log| assert_equal([], log) })
-    log = []
-    logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
-    Dir.mktmpdir {|dr|
-      srv = WEBrick::HTTPServer.new({
-        :DocumentRoot => dr,
-        :ServerType => Thread,
-        :Logger => logger,
-        :AccessLog => [[NullLog, ""]],
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
-      _, port, _, host = srv.listeners[0].addr
-      server_thread = srv.start
-      server_thread2 = Thread.new {
-        server_thread.join
-        if log_tester
-          log_tester.call(log)
-        end
-      }
-      client_thread = Thread.new {
-        begin
-          yield srv, "http://#{host}:#{port}", server_thread, log
-        ensure
-          srv.shutdown
-        end
-      }
-      assert_join_threads([client_thread, server_thread2])
-    }
-  ensure
-    WEBrick::Utils::TimeoutHandler.terminate
   end
 
   def with_env(h)
