@@ -255,7 +255,7 @@ module Bundler
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
       results.group_by(&:version).reduce([]) do |groups, (version, specs)|
-        platform_specs = package.platforms.map {|platform| select_best_platform_match(specs, platform) }
+        platform_specs = package.platform_specs(specs)
 
         # If package is a top-level dependency,
         #   candidate is only valid if there are matching versions for all resolution platforms.

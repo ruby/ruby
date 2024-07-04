@@ -1521,6 +1521,102 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "does not remove generic platform gems locked for a specific platform from lockfile when unlocking an unrelated gem" do
+    build_repo4 do
+      build_gem "ffi"
+
+      build_gem "ffi" do |s|
+        s.platform = "x86_64-linux"
+      end
+
+      build_gem "nokogiri"
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "ffi"
+      gem "nokogiri"
+    G
+
+    original_lockfile = <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          ffi (1.0)
+          nokogiri (1.0)
+
+      PLATFORMS
+        x86_64-linux
+
+      DEPENDENCIES
+        ffi
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --update nokogiri"
+
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
+  it "does not remove generic platform gems locked for a specific platform from lockfile when unlocking an unrelated gem, and variants for other platform also locked" do
+    build_repo4 do
+      build_gem "ffi"
+
+      build_gem "ffi" do |s|
+        s.platform = "x86_64-linux"
+      end
+
+      build_gem "ffi" do |s|
+        s.platform = "java"
+      end
+
+      build_gem "nokogiri"
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "ffi"
+      gem "nokogiri"
+    G
+
+    original_lockfile = <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          ffi (1.0)
+          ffi (1.0-java)
+          nokogiri (1.0)
+
+      PLATFORMS
+        java
+        x86_64-linux
+
+      DEPENDENCIES
+        ffi
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --update nokogiri"
+
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
   private
 
   def setup_multiplatform_gem

@@ -46,11 +46,16 @@ module Bundler
     end
     module_function :platform_specificity_match
 
-    def select_best_platform_match(specs, platform, force_ruby: false)
+    def select_best_platform_match(specs, platform, force_ruby: false, prefer_locked: false)
       matching = if force_ruby
         specs.select {|spec| spec.match_platform(Gem::Platform::RUBY) && spec.force_ruby_platform! }
       else
         specs.select {|spec| spec.match_platform(platform) }
+      end
+
+      if prefer_locked
+        locked_originally = matching.select {|spec| spec.is_a?(LazySpecification) }
+        return locked_originally if locked_originally.any?
       end
 
       sort_best_platform_match(matching, platform)

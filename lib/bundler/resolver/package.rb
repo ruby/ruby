@@ -25,6 +25,10 @@ module Bundler
         @prerelease = @dependency.prerelease? || @locked_version&.prerelease? || prerelease ? :consider_first : :ignore
       end
 
+      def platform_specs(specs)
+        platforms.map {|platform| GemHelpers.select_best_platform_match(specs, platform, prefer_locked: !unlock?) }
+      end
+
       def to_s
         @name.delete("\0")
       end
