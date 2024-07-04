@@ -149,6 +149,7 @@ should_be_T_ARRAY(VALUE ary)
 #define ARY_SET_CAPA(ary, n) do { \
     RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     RUBY_ASSERT(!ARY_SHARED_P(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
     RARRAY(ary)->as.heap.aux.capa = (n); \
 } while (0)
 
@@ -369,6 +370,7 @@ ary_heap_free(VALUE ary)
 static size_t
 ary_heap_realloc(VALUE ary, size_t new_capa)
 {
+    RUBY_ASSERT(!OBJ_FROZEN(ary));
     SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, ARY_HEAP_CAPA(ary));
     ary_verify(ary);
 
@@ -649,7 +651,8 @@ rb_ary_freeze(VALUE ary)
         ary_shrink_capa(ary);
     }
 
-    return rb_obj_freeze(ary);
+    OBJ_FREEZE(ary);
+    return ary;
 }
 
 /* This can be used to take a snapshot of an array (with

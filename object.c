@@ -1317,6 +1317,11 @@ VALUE
 rb_obj_freeze(VALUE obj)
 {
     if (!OBJ_FROZEN(obj)) {
+        // If the target object is an array, we want to shrink it
+        if (RB_TYPE_P(obj, T_ARRAY)) {
+            return rb_ary_freeze(obj);
+        }
+
         OBJ_FREEZE(obj);
         if (SPECIAL_CONST_P(obj)) {
             rb_bug("special consts should be frozen.");
