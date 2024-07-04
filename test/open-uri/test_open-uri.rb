@@ -1,50 +1,185 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'open-uri'
-require 'webrick'
-require 'webrick/httpproxy'
+require 'socket'
+require 'base64'
 begin
   require 'zlib'
 rescue LoadError
 end
 
-class TestOpenURI < Test::Unit::TestCase
-
-  NullLog = Object.new
-  def NullLog.<<(arg)
-    #puts arg if / INFO / !~ arg
+class SimpleHTTPServer
+  def initialize(bind_addr, port, log)
+    @server = TCPServer.new(bind_addr, port)
+    @log = log
+    @procs = {}
   end
+
+  def mount_proc(path, proc)
+    @procs[path] = proc
+  end
+
+  def start
+    @thread = Thread.new do
+      loop do
+        client = @server.accept
+        handle_request(client)
+        client.close
+      end
+    end
+  end
+
+  def shutdown
+    @thread.kill
+    @server.close
+  end
+
+  private
+
+  def handle_request(client)
+    request_line = client.gets
+    return if request_line.nil?
+
+    method, path, _ = request_line.split
+    headers = {}
+    while (line = client.gets) && line != "\r\n"
+      key, value = line.split(": ", 2)
+      headers[key.downcase] = value.strip
+    end
+
+    if @procs.key?(path) || @procs.key?("#{path}/")
+      proc = @procs[path] || @procs["#{path}/"]
+      req = Request.new(method, path, headers)
+      res = Response.new(client)
+      proc.call(req, res)
+      res.finish
+    else
+      @log << "ERROR `#{path}' not found"
+      client.print "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
+    end
+  rescue ::TestOpenURI::Unauthorized => e
+    @log << "ERROR Unauthorized"
+    client.print "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\n\r\n"
+  end
+
+  class Request
+    attr_reader :method, :path, :headers
+    def initialize(method, path, headers)
+      @method = method
+      @path = path
+      @headers = headers
+      parse_basic_auth
+    end
+
+    def [](key)
+      @headers[key.downcase]
+    end
+
+    def []=(key, value)
+      @headers[key.downcase] = value
+    end
+
+    private
+
+    def parse_basic_auth
+      auth = @headers['Authorization']
+      return unless auth && auth.start_with?('Basic ')
+
+      encoded_credentials = auth.split(' ', 2).last
+      decoded_credentials = Base64.decode64(encoded_credentials)
+      @username, @password = decoded_credentials.split(':', 2)
+    end
+  end
+
+  class Response
+    attr_accessor :body, :headers, :status, :chunked, :cookies
+    def initialize(client)
+      @client = client
+      @body = ""
+      @headers = {}
+      @status = 200
+      @chunked = false
+      @cookies = []
+    end
+
+    def [](key)
+      @headers[key.downcase]
+    end
+
+    def []=(key, value)
+      @headers[key.downcase] = value
+    end
+
+    def write_chunk(chunk)
+      return unless @chunked
+      @client.write("#{chunk.bytesize.to_s(16)}\r\n")
+      @client.write("#{chunk}\r\n")
+    end
+
+    def finish
+      @client.write build_response_headers
+      if @chunked
+        write_chunk(@body)
+        @client.write "0\r\n\r\n"
+      else
+        @client.write @body
+      end
+    end
+
+    private
+
+    def build_response_headers
+      response = "HTTP/1.1 #{@status} #{status_message(@status)}\r\n"
+      if @chunked
+        @headers['Transfer-Encoding'] = 'chunked'
+      else
+        @headers['Content-Length'] = @body.bytesize.to_s
+      end
+      @headers.each do |key, value|
+        response << "#{key}: #{value}\r\n"
+      end
+      @cookies.each do |cookie|
+        response << "Set-Cookie: #{cookie}\r\n"
+      end
+      response << "\r\n"
+      response
+    end
+
+    def status_message(code)
+      case code
+      when 200 then 'OK'
+      when 301 then 'Moved Permanently'
+      else 'Unknown'
+      end
+    end
+  end
+end
+
+class TestOpenURI < Test::Unit::TestCase
+  class Unauthorized < StandardError; end
 
   def with_http(log_tester=lambda {|log| assert_equal([], log) })
     log = []
-    logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
-    Dir.mktmpdir {|dr|
-      srv = WEBrick::HTTPServer.new({
-        :DocumentRoot => dr,
-        :ServerType => Thread,
-        :Logger => logger,
-        :AccessLog => [[NullLog, ""]],
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
-      _, port, _, host = srv.listeners[0].addr
-      server_thread = srv.start
-      server_thread2 = Thread.new {
-        server_thread.join
-        if log_tester
-          log_tester.call(log)
-        end
-      }
-      client_thread = Thread.new {
-        begin
-          yield srv, "http://#{host}:#{port}", server_thread, log
-        ensure
-          srv.shutdown
-        end
-      }
-      assert_join_threads([client_thread, server_thread2])
+    srv = SimpleHTTPServer.new('localhost', 0, log)
+
+    server_thread = srv.start
+    server_thread2 = Thread.new {
+      server_thread.join
+      if log_tester
+        log_tester.call(log)
+      end
     }
-  ensure
-    WEBrick::Utils::TimeoutHandler.terminate
+
+    port = srv.instance_variable_get(:@server).addr[1]
+
+    client_thread = Thread.new {
+      begin
+        yield srv, "http://localhost:#{port}", server_thread, log
+      ensure
+        srv.shutdown
+      end
+    }
+    assert_join_threads([client_thread, server_thread2])
   end
 
   def test_200_uri_open
@@ -226,7 +361,7 @@ class TestOpenURI < Test::Unit::TestCase
     myheader1 = 'barrrr'
     myheader2 = nil
     with_http {|srv, url|
-      srv.mount_proc("/h/") {|req, res| myheader2 = req['myheader']; res.body = "foo" }
+      srv.mount_proc("/h/", lambda {|req, res| myheader2 = req['myheader']; res.body = "foo" } )
       URI.open("#{url}/h/", 'MyHeader'=>myheader1) {|f|
         assert_equal("foo", f.read)
         assert_equal(myheader1, myheader2)
@@ -248,9 +383,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_redirect
     with_http {|srv, url|
-      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
-      srv.mount_proc("/r2/") {|req, res| res.body = "r2" }
-      srv.mount_proc("/to-file/") {|req, res| res.status = 301; res["location"] = "file:///foo" }
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" } )
+      srv.mount_proc("/r2/", lambda {|req, res| res.body = "r2" } )
+      srv.mount_proc("/to-file/", lambda {|req, res| res.status = 301; res["location"] = "file:///foo" } )
       URI.open("#{url}/r1/") {|f|
         assert_equal("#{url}/r2", f.base_uri.to_s)
         assert_equal("r2", f.read)
@@ -262,8 +397,8 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_redirect_loop
     with_http {|srv, url|
-      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
-      srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r1"; res.body = "r2" }
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" } )
+      srv.mount_proc("/r2/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r1"; res.body = "r2" } )
       assert_raise(RuntimeError) { URI.open("#{url}/r1/") {} }
     }
   end
@@ -328,16 +463,16 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def setup_redirect_auth(srv, url)
-    srv.mount_proc("/r1/") {|req, res|
+    srv.mount_proc("/r1/", lambda {|req, res|
       res.status = 301
       res["location"] = "#{url}/r2"
-    }
-    srv.mount_proc("/r2/") {|req, res|
+    })
+    srv.mount_proc("/r2/", lambda {|req, res|
       if req["Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
-        raise WEBrick::HTTPStatus::Unauthorized
+        raise Unauthorized
       end
       res.body = "r2"
-    }
+    })
   end
 
   def test_redirect_auth_success
@@ -352,7 +487,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_redirect_auth_failure_r2
     log_tester = lambda {|server_log|
       assert_equal(1, server_log.length)
-      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
+      assert_match(/ERROR Unauthorized/, server_log[0])
     }
     with_http(log_tester) {|srv, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
@@ -364,7 +499,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_redirect_auth_failure_r1
     log_tester = lambda {|server_log|
       assert_equal(1, server_log.length)
-      assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, server_log[0])
+      assert_match(/ERROR Unauthorized/, server_log[0])
     }
     with_http(log_tester) {|srv, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
@@ -375,18 +510,18 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_max_redirects_success
     with_http {|srv, url|
-      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
-      srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" }
-      srv.mount_proc("/r3/") {|req, res| res.body = "r3" }
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" } )
+      srv.mount_proc("/r2/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" } )
+      srv.mount_proc("/r3/", lambda {|req, res| res.body = "r3" } )
       URI.open("#{url}/r1/", max_redirects: 2) { |f| assert_equal("r3", f.read) }
     }
   end
 
   def test_max_redirects_too_many
     with_http {|srv, url|
-      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
-      srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" }
-      srv.mount_proc("/r3/") {|req, res| res.body = "r3" }
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" } )
+      srv.mount_proc("/r2/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" } )
+      srv.mount_proc("/r3/", lambda {|req, res| res.body = "r3" } )
       exc = assert_raise(OpenURI::TooManyRedirects) { URI.open("#{url}/r1/", max_redirects: 1) {} }
       assert_equal("Too many redirects", exc.message)
     }
@@ -399,7 +534,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_progress
     with_http {|srv, url|
       content = "a" * 100000
-      srv.mount_proc("/data/") {|req, res| res.body = content }
+      srv.mount_proc("/data/", lambda {|req, res| res.body = content })
       length = []
       progress = []
       URI.open("#{url}/data/",
@@ -419,7 +554,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_progress_chunked
     with_http {|srv, url|
       content = "a" * 100000
-      srv.mount_proc("/data/") {|req, res| res.body = content; res.chunked = true }
+      srv.mount_proc("/data/", lambda {|req, res| res.body = content; res.chunked = true } )
       length = []
       progress = []
       URI.open("#{url}/data/",
@@ -449,9 +584,9 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, url|
       content_u8 = "\u3042"
       content_ej = "\xa2\xa4".dup.force_encoding("euc-jp")
-      srv.mount_proc("/u8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset=utf-8' }
-      srv.mount_proc("/ej/") {|req, res| res.body = content_ej; res['content-type'] = 'TEXT/PLAIN; charset=EUC-JP' }
-      srv.mount_proc("/nc/") {|req, res| res.body = "aa"; res['content-type'] = 'Text/Plain' }
+      srv.mount_proc("/u8/", lambda {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset=utf-8' } )
+      srv.mount_proc("/ej/", lambda {|req, res| res.body = content_ej; res['content-type'] = 'TEXT/PLAIN; charset=EUC-JP' } )
+      srv.mount_proc("/nc/", lambda {|req, res| res.body = "aa"; res['content-type'] = 'Text/Plain' } )
       URI.open("#{url}/u8/") {|f|
         assert_equal(content_u8, f.read)
         assert_equal("text/plain", f.content_type)
@@ -492,7 +627,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_quoted_attvalue
     with_http {|srv, url|
       content_u8 = "\u3042"
-      srv.mount_proc("/qu8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset="utf\-8"' }
+      srv.mount_proc("/qu8/", lambda {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset="utf\-8"' } )
       URI.open("#{url}/qu8/") {|f|
         assert_equal(content_u8, f.read)
         assert_equal("text/plain", f.content_type)
@@ -503,7 +638,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_last_modified
     with_http {|srv, url|
-      srv.mount_proc("/data/") {|req, res| res.body = "foo"; res['last-modified'] = 'Fri, 07 Aug 2009 06:05:04 GMT' }
+      srv.mount_proc("/data/", lambda {|req, res| res.body = "foo"; res['last-modified'] = 'Fri, 07 Aug 2009 06:05:04 GMT' } )
       URI.open("#{url}/data/") {|f|
         assert_equal("foo", f.read)
         assert_equal(Time.utc(2009,8,7,6,5,4), f.last_modified)
@@ -515,9 +650,9 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, url|
       content = "abc" * 10000
       Zlib::GzipWriter.wrap(StringIO.new(content_gz="".b)) {|z| z.write content }
-      srv.mount_proc("/data/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip' }
-      srv.mount_proc("/data2/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true }
-      srv.mount_proc("/noce/") {|req, res| res.body = content_gz }
+      srv.mount_proc("/data/", lambda {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip' } )
+      srv.mount_proc("/data2/", lambda {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true } )
+      srv.mount_proc("/noce/", lambda {|req, res| res.body = content_gz } )
       URI.open("#{url}/data/") {|f|
         assert_equal [], f.content_encoding
         assert_equal(content, f.read)
@@ -535,11 +670,11 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_multiple_cookies
     with_http {|srv, url|
-      srv.mount_proc("/mcookie/") {|req, res|
+      srv.mount_proc("/mcookie/", lambda {|req, res|
         res.cookies << "name1=value1; blabla"
         res.cookies << "name2=value2; blabla"
         res.body = "foo"
-      }
+      })
       URI.open("#{url}/mcookie/") {|f|
         assert_equal("foo", f.read)
         assert_equal(["name1=value1; blabla", "name2=value2; blabla"],
