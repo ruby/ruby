@@ -46,19 +46,21 @@ module Bundler
     end
     module_function :platform_specificity_match
 
-    def select_best_platform_match(specs, platform)
-      matching = specs.select {|spec| spec.match_platform(platform) }
+    def select_best_platform_match(specs, platform, force_ruby: false)
+      matching = if force_ruby
+        specs.select {|spec| spec.match_platform(Gem::Platform::RUBY) && spec.force_ruby_platform! }
+      else
+        specs.select {|spec| spec.match_platform(platform) }
+      end
 
       sort_best_platform_match(matching, platform)
     end
     module_function :select_best_platform_match
 
-    def force_ruby_platform(specs)
-      matching = specs.select {|spec| spec.match_platform(Gem::Platform::RUBY) && spec.force_ruby_platform! }
-
-      sort_best_platform_match(matching, Gem::Platform::RUBY)
+    def select_best_local_platform_match(specs, force_ruby: false)
+      select_best_platform_match(specs, local_platform, force_ruby: force_ruby).map(&:materialize_for_installation).compact
     end
-    module_function :force_ruby_platform
+    module_function :select_best_local_platform_match
 
     def sort_best_platform_match(matching, platform)
       exact = matching.select {|spec| spec.platform == platform }

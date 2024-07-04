@@ -277,13 +277,11 @@ module Bundler
       specs_for_name = lookup[dep.name]
       return [] unless specs_for_name
 
-      matching_specs = if dep.force_ruby_platform
-        GemHelpers.force_ruby_platform(specs_for_name)
+      if platform
+        GemHelpers.select_best_platform_match(specs_for_name, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_platform_match(specs_for_name, platform || Bundler.local_platform)
+        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform)
       end
-      matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
-      matching_specs
     end
 
     def tsort_each_child(s)
