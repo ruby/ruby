@@ -282,31 +282,31 @@ class TestInteger < Test::Unit::TestCase
 
   def test_upto
     a = []
-    1.upto(3) {|x| a << x }
+    assert_equal(1, 1.upto(3) {|x| a << x })
     assert_equal([1, 2, 3], a)
 
     a = []
-    1.upto(0) {|x| a << x }
+    assert_equal(1, 1.upto(0) {|x| a << x })
     assert_equal([], a)
 
     y = 2**30 - 1
     a = []
-    y.upto(y+2) {|x| a << x }
+    assert_equal(y, y.upto(y+2) {|x| a << x })
     assert_equal([y, y+1, y+2], a)
   end
 
   def test_downto
     a = []
-    -1.downto(-3) {|x| a << x }
+    assert_equal(-1, -1.downto(-3) {|x| a << x })
     assert_equal([-1, -2, -3], a)
 
     a = []
-    1.downto(2) {|x| a << x }
+    assert_equal(1, 1.downto(2) {|x| a << x })
     assert_equal([], a)
 
     y = -(2**30)
     a = []
-    y.downto(y-2) {|x| a << x }
+    assert_equal(y, y.downto(y-2) {|x| a << x })
     assert_equal([y, y-1, y-2], a)
   end
 

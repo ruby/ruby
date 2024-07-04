@@ -243,7 +243,7 @@ class Integer
 
   # call-seq:
   #   downto(limit) {|i| ... } -> self
-  #   downto(limit)            ->  enumerator
+  #   downto(limit)            -> enumerator
   #
   # Calls the given block with each integer value from +self+ down to +limit+;
   # returns +self+:
@@ -268,6 +268,7 @@ class Integer
       yield from
       from = from.pred
     end
+    self
   end
 
   #  call-seq:
