@@ -60,6 +60,31 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_not_equal nil, pkey.private_key
   end
 
+  def test_s_read_pem_unknown_block
+    # A PEM-encoded certificate and a PEM-encoded private key are combined.
+    # Check that OSSL_STORE doesn't stop after the first PEM block.
+    orig = Fixtures.pkey("rsa-1")
+    subject = OpenSSL::X509::Name.new([["CN", "test"]])
+    cert = issue_cert(subject, orig, 1, [], nil, nil)
+
+    input = cert.to_text + cert.to_pem + orig.to_text + orig.private_to_pem
+    pkey = OpenSSL::PKey.read(input)
+    assert_equal(orig.private_to_der, pkey.private_to_der)
+  end
+
+  def test_s_read_der_then_pem
+    # If the input is valid as both DER and PEM (which allows garbage data
+    # before and after the block), it is read as DER
+    #
+    # TODO: Garbage data after DER should not be allowed, but it is currently
+    # ignored
+    orig1 = Fixtures.pkey("rsa-1")
+    orig2 = Fixtures.pkey("rsa-2")
+    pkey = OpenSSL::PKey.read(orig1.public_to_der + orig2.private_to_pem)
+    assert_equal(orig1.public_to_der, pkey.public_to_der)
+    assert_not_predicate(pkey, :private?)
+  end
+
   def test_hmac_sign_verify
     pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "abcd" })
 
