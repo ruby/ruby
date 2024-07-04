@@ -1442,16 +1442,6 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         set_source_encoding_once(opt, s, 0);
     }
 #endif
-#if defined(USE_SHARED_GC) && USE_SHARED_GC
-    else if (is_option_with_arg("gc-library", Qfalse, Qfalse)) {
-        // no-op
-        // Handled by ruby_load_external_gc_from_argv
-
-        if (!dln_supported_p()) {
-            rb_warn("--gc-library is ignored because this executable file can't load extension libraries");
-        }
-    }
-#endif
     else if (strcmp("version", s) == 0) {
         if (envopt) goto noenvopt_long;
         opt->dump |= DUMP_BIT(version);
