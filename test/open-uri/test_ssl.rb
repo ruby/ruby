@@ -9,9 +9,6 @@ rescue LoadError
 end
 
 class TestOpenURISSL < Test::Unit::TestCase
-end
-
-class TestOpenURISSL
   include TestOpenURIUtils
 
   def setup

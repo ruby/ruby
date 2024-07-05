@@ -50,7 +50,7 @@ class SimpleHTTPServer
       @log << "ERROR `#{path}' not found"
       client.print "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"
     end
-  rescue ::TestOpenURI::Unauthorized => e
+  rescue ::TestOpenURI::Unauthorized
     @log << "ERROR Unauthorized"
     client.print "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\n\r\n"
   end
@@ -286,7 +286,7 @@ class SimpleHTTPSServer
     request_line = socket.gets
     return if request_line.nil? || request_line.strip.empty?
 
-    method, path, version = request_line.split
+    _, path, _ = request_line.split
     headers = {}
     while (line = socket.gets)
       break if line.strip.empty?
