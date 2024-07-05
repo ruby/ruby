@@ -364,6 +364,7 @@ module TestOpenURIUtils
     }
   end
 
+  if defined?(OpenSSL::SSL)
   def with_https(log_tester=lambda {|log| assert_equal([], log) })
     log = []
     Dir.mktmpdir {|dr|
@@ -389,30 +390,28 @@ module TestOpenURIUtils
       }
       assert_join_threads(threads)
     }
-  end if defined?(OpenSSL::SSL)
-end
+  end
 
-if defined?(OpenSSL::SSL)
-# cp /etc/ssl/openssl.cnf . # I copied from OpenSSL 1.1.1b source
+  # cp /etc/ssl/openssl.cnf . # I copied from OpenSSL 1.1.1b source
 
-# mkdir demoCA demoCA/private demoCA/newcerts
-# touch demoCA/index.txt
-# echo 00 > demoCA/serial
-# openssl genrsa -des3 -out demoCA/private/cakey.pem 2048
-# openssl req -new -key demoCA/private/cakey.pem -out demoCA/careq.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=Ruby Test CA"
-# # basicConstraints=CA:TRUE is required; the default openssl.cnf has it in [v3_ca]
-# openssl ca -config openssl.cnf -extensions v3_ca -out demoCA/cacert.pem -startdate 090101000000Z -enddate 491231235959Z -batch -keyfile demoCA/private/cakey.pem -selfsign -infiles demoCA/careq.pem
+  # mkdir demoCA demoCA/private demoCA/newcerts
+  # touch demoCA/index.txt
+  # echo 00 > demoCA/serial
+  # openssl genrsa -des3 -out demoCA/private/cakey.pem 2048
+  # openssl req -new -key demoCA/private/cakey.pem -out demoCA/careq.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=Ruby Test CA"
+  # # basicConstraints=CA:TRUE is required; the default openssl.cnf has it in [v3_ca]
+  # openssl ca -config openssl.cnf -extensions v3_ca -out demoCA/cacert.pem -startdate 090101000000Z -enddate 491231235959Z -batch -keyfile demoCA/private/cakey.pem -selfsign -infiles demoCA/careq.pem
 
-# mkdir server
-# openssl genrsa -des3 -out server/server.key 2048
-# openssl req -new -key server/server.key -out server/csr.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=127.0.0.1"
-# openssl ca -config openssl.cnf -startdate 090101000000Z -enddate 491231235959Z -in server/csr.pem -keyfile demoCA/private/cakey.pem -cert demoCA/cacert.pem -out server/cert.pem
+  # mkdir server
+  # openssl genrsa -des3 -out server/server.key 2048
+  # openssl req -new -key server/server.key -out server/csr.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=127.0.0.1"
+  # openssl ca -config openssl.cnf -startdate 090101000000Z -enddate 491231235959Z -in server/csr.pem -keyfile demoCA/private/cakey.pem -cert demoCA/cacert.pem -out server/cert.pem
 
-# demoCA/cacert.pem => TestOpenURISSL::CA_CERT
-# server/cert.pem => TestOpenURISSL::SERVER_CERT
-# `openssl rsa -in server/server.key -text` => TestOpenURISSL::SERVER_KEY
+  # demoCA/cacert.pem => TestOpenURISSL::CA_CERT
+  # server/cert.pem => TestOpenURISSL::SERVER_CERT
+  # `openssl rsa -in server/server.key -text` => TestOpenURISSL::SERVER_KEY
 
-TestOpenURIUtils::CA_CERT = <<'End'
+  CA_CERT = <<'End'
 Certificate:
     Data:
         Version: 3 (0x2)
@@ -492,7 +491,7 @@ DdhyBKYA5WKkEz+etoYl3NH/Ovz1DuQO97hmkP5PwlQqf2Fu50u/QH51MAJbu5Eb
 -----END CERTIFICATE-----
 End
 
-TestOpenURIUtils::SERVER_CERT = <<'End'
+  SERVER_CERT = <<'End'
 Certificate:
     Data:
         Version: 3 (0x2)
@@ -575,7 +574,7 @@ QIa2ECEOMWmBnvz9wwYlZTfT2UoghKrnDmB8vz+IZ6zljOBh1g==
 -----END CERTIFICATE-----
 End
 
-TestOpenURIUtils::SERVER_KEY = <<'End'
+  SERVER_KEY = <<'End'
 RSA Private-Key: (2048 bit, 2 primes)
 modulus:
     00:cb:b3:71:95:12:70:fc:db:d4:a9:a7:66:d6:d3:
@@ -696,7 +695,7 @@ JQDFoTV6jOqVFpTDfI8r4FPqZq4ZvlUEPe7iS6hpG37YCX/tfO6ViBDcS1u/gaTo
 -----END RSA PRIVATE KEY-----
 End
 
-TestOpenURIUtils::DHPARAMS = <<'End'
+  DHPARAMS = <<'End'
     DH Parameters: (2048 bit)
         prime:
             00:ec:4e:a4:06:b6:22:ca:f9:8a:00:cc:d0:ee:2f:
@@ -727,5 +726,5 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
 7Lo5JquQ3DlBodj3IDyPrxIv96lvRPFtAwIBAg==
 -----END DH PARAMETERS-----
 End
-
+  end
 end
