@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'open-uri'
+require 'stringio'
 require_relative 'utils'
 
 class TestOpenURIProxy < Test::Unit::TestCase
