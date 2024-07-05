@@ -16,8 +16,14 @@ module TestIRB
 
     class CommandCompletionTest < CompletionTest
       def test_command_completion
-        assert_include(IRB::RegexpCompletor.new.completion_candidates('', 'show_s', '', bind: binding), 'show_source')
-        assert_not_include(IRB::RegexpCompletor.new.completion_candidates(';', 'show_s', '', bind: binding), 'show_source')
+        completor = IRB::RegexpCompletor.new
+        binding.eval("some_var = 1")
+        # completion for help command's argument should only include command names
+        assert_include(completor.completion_candidates('help ', 's', '', bind: binding), 'show_source')
+        assert_not_include(completor.completion_candidates('help ', 's', '', bind: binding), 'some_var')
+
+        assert_include(completor.completion_candidates('', 'show_s', '', bind: binding), 'show_source')
+        assert_not_include(completor.completion_candidates(';', 'show_s', '', bind: binding), 'show_source')
       end
     end
 
