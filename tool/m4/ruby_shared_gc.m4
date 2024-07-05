@@ -33,4 +33,6 @@ AS_IF([test x"$shared_gc_dir" != x], [
 
     shared_gc_summary="no"
 ])
+
+AC_SUBST(shared_gc_dir, "${shared_gc_dir}")
 ])dnl

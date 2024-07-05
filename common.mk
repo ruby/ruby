@@ -1906,6 +1906,18 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
+shared-gc: probes.h
+	$(Q) if test -z $(shared_gc_dir); then \
+		echo "You must configure with --with-shared-gc to use shared GC"; \
+		exit 1; \
+	elif test -z $(SHARED_GC); then \
+		echo "You must specify SHARED_GC with the GC to build"; \
+		exit 1; \
+	else \
+		echo generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT); \
+		$(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) -I. $(XDLDFLAGS) $(cflags) -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/$(SHARED_GC).c; \
+	fi
+
 help: PHONY
 	$(MESSAGE_BEGIN) \
 	"                Makefile of Ruby" \
