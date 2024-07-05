@@ -26,10 +26,14 @@ jobs:
       matrix:
         include:
           - test_task: check
+            os: macos-14
           - test_task: test-all
             test_opts: --repeat-count=2
+            os: macos-14
           - test_task: test-bundler-parallel
+            os: macos-14
           - test_task: test-bundled-gems
+            os: macos-14
           - test_task: check
             os: macos-12
           - test_task: check
@@ -39,7 +43,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
-    runs-on: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14') }}
+    runs-on: ${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -94,7 +98,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14') }}
+          os: ${{ matrix.os }}
           test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -129,7 +133,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14') }} / ${{ matrix.test_task }}
+          label: ${{ matrix.os }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
