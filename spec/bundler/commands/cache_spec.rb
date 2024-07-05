@@ -479,8 +479,7 @@ RSpec.describe "bundle install with gem sources" do
         source "https://gem.repo1"
         gem "platform_specific"
       G
-      run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-      expect(out).to eq("1.0.0 RUBY")
+      expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
     end
 
     it "does not update the cache if --no-cache is passed" do

@@ -249,15 +249,12 @@ RSpec.describe "bundle install with gem sources" do
 
     describe "with a gem that installs multiple platforms" do
       it "installs gems for the local platform as first choice" do
-        skip "version is 1.0, not 1.0.0" if Gem.win_platform?
-
         install_gemfile <<-G
           source "https://gem.repo1"
           gem "platform_specific"
         G
 
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 #{Bundler.local_platform}")
+        expect(the_bundle).to include_gems("platform_specific 1.0 #{Bundler.local_platform}")
       end
 
       it "falls back on plain ruby" do
@@ -267,8 +264,7 @@ RSpec.describe "bundle install with gem sources" do
           gem "platform_specific"
         G
 
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 RUBY")
+        expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
       end
 
       it "installs gems for java" do
@@ -278,8 +274,7 @@ RSpec.describe "bundle install with gem sources" do
           gem "platform_specific"
         G
 
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 JAVA")
+        expect(the_bundle).to include_gems("platform_specific 1.0 java")
       end
 
       it "installs gems for windows" do
@@ -290,8 +285,7 @@ RSpec.describe "bundle install with gem sources" do
           gem "platform_specific"
         G
 
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0 x86-mswin32")
+        expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
       end
     end
 

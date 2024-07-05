@@ -55,7 +55,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "understands that a non-platform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
+  it "understands that a non-platform specific gem in a new lockfile locked only to ruby doesn't necessarily mean installing the non-specific variant" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
 
@@ -113,7 +113,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  context "when running on a legacy lockfile locked only to RUBY" do
+  context "when running on a legacy lockfile locked only to ruby" do
     around do |example|
       build_repo4 do
         build_gem "nokogiri", "1.3.10"
@@ -148,12 +148,12 @@ RSpec.describe "bundle install with specific platforms" do
       simulate_platform "arm64-darwin-22", &example
     end
 
-    it "still installs the generic RUBY variant if necessary" do
+    it "still installs the generic ruby variant if necessary" do
       bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
 
-    it "still installs the generic RUBY variant if necessary, even in frozen mode" do
+    it "still installs the generic ruby variant if necessary, even in frozen mode" do
       bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
@@ -459,7 +459,7 @@ RSpec.describe "bundle install with specific platforms" do
     expect(err).to include(error_message).once
   end
 
-  it "does not generate a lockfile if RUBY platform is forced and some gem has no RUBY variant available" do
+  it "does not generate a lockfile if ruby platform is forced and some gem has no ruby variant available" do
     build_repo4 do
       build_gem("sorbet-static", "0.5.9889") {|s| s.platform = Gem::Platform.local }
     end
@@ -480,7 +480,7 @@ RSpec.describe "bundle install with specific platforms" do
     ERROR
   end
 
-  it "automatically fixes the lockfile if RUBY platform is locked and some gem has no RUBY variant available" do
+  it "automatically fixes the lockfile if ruby platform is locked and some gem has no ruby variant available" do
     build_repo4 do
       build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
         s.add_dependency "sorbet", "= 0.5.10160"
@@ -558,7 +558,7 @@ RSpec.describe "bundle install with specific platforms" do
     L
   end
 
-  it "automatically fixes the lockfile if both RUBY platform and a more specific platform are locked, and some gem has no RUBY variant available" do
+  it "automatically fixes the lockfile if both ruby platform and a more specific platform are locked, and some gem has no ruby variant available" do
     build_repo4 do
       build_gem "nokogiri", "1.12.0"
       build_gem "nokogiri", "1.12.0" do |s|
@@ -632,7 +632,7 @@ RSpec.describe "bundle install with specific platforms" do
     L
   end
 
-  it "automatically fixes the lockfile if only RUBY platform is locked and some gem has no RUBY variant available" do
+  it "automatically fixes the lockfile if only ruby platform is locked and some gem has no ruby variant available" do
     build_repo4 do
       build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
         s.add_dependency "sorbet", "= 0.5.10160"
@@ -844,7 +844,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "automatically fixes the lockfile if locked only to RUBY, and some locked specs don't meed locked dependencies" do
+  it "automatically fixes the lockfile if locked only to ruby, and some locked specs don't meed locked dependencies" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("ibandit", "0.7.0") do |s|
@@ -1119,7 +1119,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "automatically fixes the lockfile when only RUBY platform locked, and adding a dependency with subdependencies not valid for RUBY" do
+  it "automatically fixes the lockfile when only ruby platform locked, and adding a dependency with subdependencies not valid for ruby" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("sorbet", "0.5.10160") do |s|

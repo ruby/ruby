@@ -181,7 +181,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     bundle "install"
 
     expect(out).to include("Fetching nokogiri 1.4.2 (java)")
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2 java"
   end
 
   it "will add the resolve for the current platform" do
@@ -222,7 +222,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 ruby"
   end
 
   it "allows specifying only-ruby-platform" do
@@ -236,7 +236,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 ruby"
   end
 
   it "allows specifying only-ruby-platform even if the lockfile is locked to a specific compatible platform" do
@@ -250,7 +250,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 ruby"
   end
 
   it "doesn't pull platform specific gems on truffleruby", :truffleruby_only do
@@ -259,10 +259,10 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
      gem "platform_specific"
     G
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
   end
 
-  it "doesn't pull platform specific gems on truffleruby (except when whitelisted) even if lockfile was generated with an older version that declared RUBY as platform", :truffleruby_only do
+  it "doesn't pull platform specific gems on truffleruby (except when whitelisted) even if lockfile was generated with an older version that declared ruby as platform", :truffleruby_only do
     gemfile <<-G
       source "https://gem.repo1"
       gem "platform_specific"
@@ -286,7 +286,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
 
     simulate_platform "x86_64-linux" do
       build_repo4 do
@@ -348,7 +348,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
   end
 
   it "pulls platform specific gems correctly on musl" do
@@ -380,7 +380,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
       bundle "install"
 
-      expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
       expect(the_bundle).to not_include_gems "nokogiri"
     end
   end

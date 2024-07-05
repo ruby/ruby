@@ -5,23 +5,17 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
     before do
       build_repo4 do
         # Build a gem with platform specific versions
-        build_gem("platform_specific") do |s|
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 RUBY'"
-        end
+        build_gem("platform_specific")
 
         build_gem("platform_specific") do |s|
           s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
         end
 
         # Build the exact same gem with a different name to compare using vs not using the option
-        build_gem("platform_specific_forced") do |s|
-          s.write "lib/platform_specific_forced.rb", "PLATFORM_SPECIFIC_FORCED = '1.0.0 RUBY'"
-        end
+        build_gem("platform_specific_forced")
 
         build_gem("platform_specific_forced") do |s|
           s.platform = Bundler.local_platform
-          s.write "lib/platform_specific_forced.rb", "PLATFORM_SPECIFIC_FORCED = '1.0.0 #{Bundler.local_platform}'"
         end
       end
     end
@@ -34,8 +28,8 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
         gem "platform_specific"
       G
 
-      expect(the_bundle).to include_gems "platform_specific_forced 1.0.0 RUBY"
-      expect(the_bundle).to include_gems "platform_specific 1.0.0 #{Bundler.local_platform}"
+      expect(the_bundle).to include_gems "platform_specific_forced 1.0 ruby"
+      expect(the_bundle).to include_gems "platform_specific 1.0 #{Bundler.local_platform}"
     end
 
     it "still respects a global `force_ruby_platform` config" do
@@ -46,8 +40,8 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
         gem "platform_specific"
       G
 
-      expect(the_bundle).to include_gems "platform_specific_forced 1.0.0 RUBY"
-      expect(the_bundle).to include_gems "platform_specific 1.0.0 RUBY"
+      expect(the_bundle).to include_gems "platform_specific_forced 1.0 ruby"
+      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
     end
   end
 
@@ -56,13 +50,10 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
       build_repo4 do
         build_gem("depends_on_platform_specific") {|s| s.add_dependency "platform_specific" }
 
-        build_gem("platform_specific") do |s|
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 RUBY'"
-        end
+        build_gem("platform_specific")
 
         build_gem("platform_specific") do |s|
           s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
         end
       end
     end
@@ -75,7 +66,7 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
         gem "platform_specific", :force_ruby_platform => true
       G
 
-      expect(the_bundle).to include_gems "platform_specific 1.0.0 RUBY"
+      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
     end
   end
 
@@ -84,22 +75,17 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
       build_repo4 do
         build_gem("depends_on_platform_specific") do |s|
           s.add_dependency "platform_specific"
-          s.write "lib/depends_on_platform_specific.rb", "DEPENDS_ON_PLATFORM_SPECIFIC = '1.0.0 RUBY'"
         end
 
         build_gem("depends_on_platform_specific") do |s|
           s.add_dependency "platform_specific"
           s.platform = Bundler.local_platform
-          s.write "lib/depends_on_platform_specific.rb", "DEPENDS_ON_PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
         end
 
-        build_gem("platform_specific") do |s|
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 RUBY'"
-        end
+        build_gem("platform_specific")
 
         build_gem("platform_specific") do |s|
           s.platform = Bundler.local_platform
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Bundler.local_platform}'"
         end
       end
     end
@@ -111,11 +97,11 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
         gem "depends_on_platform_specific", :force_ruby_platform => true
       G
 
-      expect(the_bundle).to include_gems "depends_on_platform_specific 1.0.0 RUBY"
-      expect(the_bundle).to include_gems "platform_specific 1.0.0 #{Bundler.local_platform}"
+      expect(the_bundle).to include_gems "depends_on_platform_specific 1.0 ruby"
+      expect(the_bundle).to include_gems "platform_specific 1.0 #{Bundler.local_platform}"
     end
 
-    it "reinstalls the ruby variant when a platform specific variant is already installed, the lockile has only RUBY platform, and :force_ruby_platform is used in the Gemfile" do
+    it "reinstalls the ruby variant when a platform specific variant is already installed, the lockile has only ruby platform, and :force_ruby_platform is used in the Gemfile" do
       lockfile <<-L
         GEM
           remote: https://gem.repo4
@@ -140,7 +126,7 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
         gem "platform_specific", :force_ruby_platform => true
       G
 
-      expect(the_bundle).to include_gems "platform_specific 1.0.0 RUBY"
+      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
     end
   end
 end
