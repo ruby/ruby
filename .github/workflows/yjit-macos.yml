@@ -24,7 +24,7 @@ jobs:
   cargo:
     name: cargo test
 
-    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+    runs-on: macos-14
 
     if: >-
       ${{!(false
@@ -68,7 +68,7 @@ jobs:
       RUN_OPTS: ${{ matrix.yjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
 
-    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+    runs-on: macos-14
 
     if: >-
       ${{!(false
@@ -119,7 +119,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+          os: macos-14
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -158,7 +158,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
+    runs-on: macos-14
     needs: [make]
     steps:
       - run: exit 1
