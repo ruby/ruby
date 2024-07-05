@@ -313,7 +313,8 @@ module TestOpenURIUtils
 
   def with_http(log_tester=lambda {|log| assert_equal([], log) })
     log = []
-    srv = SimpleHTTPServer.new('localhost', 0, log)
+    host = "127.0.0.1"
+    srv = SimpleHTTPServer.new(host, 0, log)
 
     server_thread = srv.start
     server_thread2 = Thread.new {
@@ -327,7 +328,7 @@ module TestOpenURIUtils
 
     client_thread = Thread.new {
       begin
-        yield srv, "http://localhost:#{port}", server_thread, log
+        yield srv, "http://#{host}:#{port}", server_thread, log
       ensure
         srv.shutdown
       end
@@ -346,9 +347,10 @@ module TestOpenURIUtils
       Dir.mkdir cacert_directory
       hashed_name = "%08x.0" % OpenSSL::X509::Certificate.new(CA_CERT).subject.hash
       open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
-      proxy = SimpleHTTPProxyServer.new('127.0.0.1', 0, proxy_log, proxy_access_log)
+      proxy_host = '127.0.0.1'
+      proxy = SimpleHTTPProxyServer.new(proxy_host, 0, proxy_log, proxy_access_log)
       proxy.start
-      _, proxy_port, _, proxy_host = proxy.instance_variable_get(:@server).addr
+      proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_thread = proxy.start
       threads << Thread.new {
         proxy_thread.join
@@ -371,8 +373,9 @@ module TestOpenURIUtils
       cert = OpenSSL::X509::Certificate.new(SERVER_CERT)
       key = OpenSSL::PKey::RSA.new(SERVER_KEY)
       dh = OpenSSL::PKey::DH.new(DHPARAMS)
-      srv = SimpleHTTPSServer.new(cert, key, dh, '127.0.0.1', 0, log)
-      _, port, _, host = srv.instance_variable_get(:@server).addr
+      host = '127.0.0.1'
+      srv = SimpleHTTPSServer.new(cert, key, dh, host, 0, log)
+      port = srv.instance_variable_get(:@server).addr[1]
       threads = []
       server_thread = srv.start
       threads << Thread.new {
