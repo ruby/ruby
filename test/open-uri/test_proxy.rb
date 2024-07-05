@@ -30,11 +30,12 @@ class TestOpenURIProxy < Test::Unit::TestCase
   def test_proxy
     with_http {|srv, url|
       proxy_log = StringIO.new(''.dup)
+      proxy_access_log = StringIO.new(''.dup)
       proxy_auth_log = ''.dup
       proxy_host = '127.0.0.1'
       proxy = SimpleHTTPProxyServer.new(proxy_host, 0, lambda {|req, res|
           proxy_auth_log << req.request_line
-      }, proxy_log)
+      }, proxy_log, proxy_access_log)
       proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
@@ -78,6 +79,7 @@ class TestOpenURIProxy < Test::Unit::TestCase
   def test_proxy_http_basic_authentication_failure
     with_http {|srv, url|
       proxy_log = StringIO.new(''.dup)
+      proxy_access_log = StringIO.new(''.dup)
       proxy_auth_log = ''.dup
       proxy_host = '127.0.0.1'
       proxy = SimpleHTTPProxyServer.new(proxy_host, 0, lambda {|req, res|
@@ -85,7 +87,7 @@ class TestOpenURIProxy < Test::Unit::TestCase
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise ProxyAuthenticationRequired
           end
-      }, proxy_log)
+      }, proxy_log, proxy_access_log)
       proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
@@ -105,6 +107,7 @@ class TestOpenURIProxy < Test::Unit::TestCase
   def test_proxy_http_basic_authentication_success
     with_http {|srv, url|
       proxy_log = StringIO.new(''.dup)
+      proxy_access_log = StringIO.new(''.dup)
       proxy_auth_log = ''.dup
       proxy_host = '127.0.0.1'
       proxy = SimpleHTTPProxyServer.new(proxy_host, 0, lambda {|req, res|
@@ -112,7 +115,7 @@ class TestOpenURIProxy < Test::Unit::TestCase
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise ProxyAuthenticationRequired
           end
-      }, proxy_log)
+      }, proxy_log, proxy_access_log)
       proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
@@ -140,6 +143,7 @@ class TestOpenURIProxy < Test::Unit::TestCase
   def test_authenticated_proxy_http_basic_authentication_success
     with_http {|srv, url|
       proxy_log = StringIO.new(''.dup)
+      proxy_access_log = StringIO.new(''.dup)
       proxy_auth_log = ''.dup
       proxy_host = '127.0.0.1'
       proxy = SimpleHTTPProxyServer.new(proxy_host, 0, lambda {|req, res|
@@ -147,7 +151,7 @@ class TestOpenURIProxy < Test::Unit::TestCase
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise ProxyAuthenticationRequired
           end
-      }, proxy_log)
+      }, proxy_log, proxy_access_log)
       proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_url = "http://user:pass@#{proxy_host}:#{proxy_port}/"
       begin

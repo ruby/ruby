@@ -149,10 +149,11 @@ class SimpleHTTPServer
 end
 
 class SimpleHTTPProxyServer
-  def initialize(host, port, auth_proc = nil, log)
+  def initialize(host, port, auth_proc = nil, log, access_log)
     @server = TCPServer.new(host, port)
     @auth_proc = auth_proc
     @log = log
+    @access_log = access_log
   end
 
   def start
@@ -169,6 +170,7 @@ class SimpleHTTPProxyServer
 
         method, path, _ = request_line.split(' ')
         handle_request(client, method, path, request_line, headers)
+      rescue IOError
       end
     end
   end
@@ -191,13 +193,37 @@ class SimpleHTTPProxyServer
       end
     end
 
-    uri = URI(path)
-    proxy_request(uri, client)
+    if method == 'CONNECT'
+      proxy_connect(path, client)
+    else
+      uri = URI(path)
+      proxy_request(uri, client)
+    end
   rescue TestOpenURIProxy::ProxyAuthenticationRequired
     @log << "ERROR ProxyAuthenticationRequired"
     client.print "HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n"
   ensure
     client.close
+  end
+
+  def proxy_connect(path, client)
+    host, port = path.split(':')
+    backend = TCPSocket.new(host, port.to_i)
+    client.puts "HTTP/1.1 200 Connection Established\r\n\r\n"
+    @access_log << "CONNECT #{path} \n"
+    begin
+      while fds = IO.select([client, backend])
+        if fds[0].include?(client)
+          data = client.readpartial(1024)
+          backend.write(data)
+        elsif fds[0].include?(backend)
+          data = backend.readpartial(1024)
+          client.write(data)
+        end
+      end
+    rescue
+      backend.close
+    end
   end
 
   def proxy_request(uri, client)
@@ -244,10 +270,8 @@ class SimpleHTTPSServer
         ssl_socket = @ssl_server.accept
         handle_request(ssl_socket)
         ssl_socket.close
-      rescue OpenSSL::SSL::SSLError => e
-        @log << "ERROR OpenSSL::SSL::SSLError"
-        raise e
       end
+    rescue OpenSSL::SSL::SSLError
     end
   end
 
@@ -307,6 +331,35 @@ module TestOpenURIUtils
       end
     }
     assert_join_threads([client_thread, server_thread2])
+  end
+
+  def with_https_proxy(proxy_log_tester=lambda {|proxy_log, proxy_access_log| assert_equal([], proxy_log) })
+    proxy_log = []
+    proxy_access_log = []
+    with_https {|srv, dr, url, server_thread, server_log, threads|
+      srv.instance_variable_get(:@server).setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+      cacert_filename = "#{dr}/cacert.pem"
+      open(cacert_filename, "w") {|f| f << CA_CERT }
+      cacert_directory = "#{dr}/certs"
+      Dir.mkdir cacert_directory
+      hashed_name = "%08x.0" % OpenSSL::X509::Certificate.new(CA_CERT).subject.hash
+      open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
+      proxy = SimpleHTTPProxyServer.new('127.0.0.1', 0, proxy_log, proxy_access_log)
+      proxy.start
+      _, proxy_port, _, proxy_host = proxy.instance_variable_get(:@server).addr
+      proxy_thread = proxy.start
+      threads << Thread.new {
+        proxy_thread.join
+        if proxy_log_tester
+          proxy_log_tester.call(proxy_log, proxy_access_log)
+        end
+      }
+      begin
+        yield srv, dr, url, cacert_filename, cacert_directory, proxy_host, proxy_port
+      ensure
+        proxy.shutdown
+      end
+    }
   end
 
   def with_https(log_tester=lambda {|log| assert_equal([], log) })
