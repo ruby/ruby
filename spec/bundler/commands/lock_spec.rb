@@ -1663,7 +1663,8 @@ RSpec.describe "bundle lock" do
             nokogiri (1.14.2)
 
         PLATFORMS
-          #{lockfile_platforms}
+          ruby
+          x86_64-linux
 
         DEPENDENCIES
           foo!
