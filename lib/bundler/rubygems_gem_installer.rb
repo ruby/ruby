@@ -81,6 +81,26 @@ module Bundler
       end
     end
 
+    if Bundler.rubygems.provides?("< 3.5.15")
+      def generate_bin_script(filename, bindir)
+        bin_script_path = File.join bindir, formatted_program_filename(filename)
+
+        Gem.open_file_with_flock("#{bin_script_path}.lock") do
+          require "fileutils"
+          FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
+
+          File.open(bin_script_path, "wb", 0o755) do |file|
+            file.write app_script_text(filename)
+            file.chmod(options[:prog_mode] || 0o755)
+          end
+        end
+
+        verbose bin_script_path
+
+        generate_windows_script filename, bindir
+      end
+    end
+
     def build_extensions
       extension_cache_path = options[:bundler_extension_cache_path]
       extension_dir = spec.extension_dir

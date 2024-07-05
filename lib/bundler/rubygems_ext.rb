@@ -30,6 +30,27 @@ module Gem
     end
   end
 
+  # Can be removed once RubyGems 3.5.14 support is dropped
+  unless Gem.respond_to?(:open_file_with_flock)
+    def self.open_file_with_flock(path, &block)
+      flags = File.exist?(path) ? "r+" : "a+"
+
+      File.open(path, flags) do |io|
+        begin
+          io.flock(File::LOCK_EX)
+        rescue Errno::ENOSYS, Errno::ENOTSUP
+        end
+        yield io
+      rescue Errno::ENOLCK # NFS
+        if Thread.main != Thread.current
+          raise
+        else
+          File.open(path, flags, &block)
+        end
+      end
+    end
+  end
+
   require "rubygems/specification"
 
   # Can be removed once RubyGems 3.5.15 support is dropped
