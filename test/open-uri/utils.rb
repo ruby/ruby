@@ -196,8 +196,7 @@ class SimpleHTTPProxyServer
     if method == 'CONNECT'
       proxy_connect(path, client)
     else
-      uri = URI(path)
-      proxy_request(uri, client)
+      proxy_request(path, client)
     end
   rescue TestOpenURIProxy::ProxyAuthenticationRequired
     @log << "ERROR ProxyAuthenticationRequired"
@@ -226,9 +225,12 @@ class SimpleHTTPProxyServer
     end
   end
 
-  def proxy_request(uri, client)
-    Net::HTTP.start(uri.host, uri.port) do |http|
-      response = http.get(uri.path)
+  def proxy_request(path, client)
+    path.gsub!(/\Ahttps?:\/\//, '')
+    host, path = path.split('/')
+    host, port = host.split(':')
+    Net::HTTP.start(host, port) do |http|
+      response = http.get("/#{path}")
       client.print "HTTP/1.1 #{response.code}\r\nContent-Type: #{response.content_type}\r\n\r\n#{response.body}"
     end
   end
