@@ -605,13 +605,11 @@ thread_do_start_proc(rb_thread_t *th)
     }
 }
 
-static void
+static VALUE
 thread_do_start(rb_thread_t *th)
 {
     native_set_thread_name(th);
     VALUE result = Qundef;
-
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
@@ -631,11 +629,7 @@ thread_do_start(rb_thread_t *th)
         rb_bug("unreachable");
     }
 
-    rb_fiber_scheduler_set(Qnil);
-
-    th->value = result;
-
-    EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+    return result;
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -687,12 +681,31 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // Ensure that we are not joinable.
     VM_ASSERT(UNDEF_P(th->value));
 
+    int fiber_scheduler_closed = 0, event_thread_end_hooked = 0;
+    VALUE result = Qundef;
+
     EC_PUSH_TAG(th->ec);
 
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        SAVE_ROOT_JMPBUF(th, thread_do_start(th));
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+
+        SAVE_ROOT_JMPBUF(th, result = thread_do_start(th));
     }
-    else {
+
+    if (!fiber_scheduler_closed) {
+        fiber_scheduler_closed = 1;
+        rb_fiber_scheduler_set(Qnil);
+    }
+
+    if (!event_thread_end_hooked) {
+        event_thread_end_hooked = 1;
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+    }
+
+    if (state == TAG_NONE) {
+        // This must be set AFTER doing all user-level code. At this point, the thread is effectively finished and calls to `Thread#join` will succeed.
+        th->value = result;
+    } else {
         errinfo = th->ec->errinfo;
 
         VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);

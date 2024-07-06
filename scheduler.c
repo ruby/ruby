@@ -161,6 +161,21 @@ verify_interface(VALUE scheduler)
     }
 }
 
+static VALUE
+fiber_scheduler_close(VALUE scheduler)
+{
+    return rb_fiber_scheduler_close(scheduler);
+}
+
+static VALUE
+fiber_scheduler_close_ensure(VALUE _thread)
+{
+    rb_thread_t *thread = (rb_thread_t*)_thread;
+    thread->scheduler = Qnil;
+
+    return Qnil;
+}
+
 VALUE
 rb_fiber_scheduler_set(VALUE scheduler)
 {
@@ -178,7 +193,8 @@ rb_fiber_scheduler_set(VALUE scheduler)
     // That way, we do not need to consider interactions, e.g., of a Fiber from
     // the previous scheduler with the new scheduler.
     if (thread->scheduler != Qnil) {
-        rb_fiber_scheduler_close(thread->scheduler);
+        // rb_fiber_scheduler_close(thread->scheduler);
+        rb_ensure(fiber_scheduler_close, thread->scheduler, fiber_scheduler_close_ensure, (VALUE)thread);
     }
 
     thread->scheduler = scheduler;
