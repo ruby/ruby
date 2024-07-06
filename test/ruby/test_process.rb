@@ -2713,4 +2713,25 @@ EOS
     [t1, t2, t3].each { _1&.join rescue nil }
     [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
   end if defined?(fork)
+
+  def test_handle_interrupt_with_fork
+    Thread.handle_interrupt(RuntimeError => :never) do
+      Thread.current.raise(RuntimeError, "Queued error")
+
+      assert_predicate Thread, :pending_interrupt?
+
+      pid = Process.fork do
+        if Thread.pending_interrupt?
+          exit 1
+        end
+      end
+
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+
+      assert_predicate Thread, :pending_interrupt?
+    end
+  rescue RuntimeError
+    # Ignore.
+  end if defined?(fork)
 end

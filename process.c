@@ -1786,7 +1786,6 @@ before_fork_ruby(void)
 static void
 after_fork_ruby(void)
 {
-    rb_threadptr_pending_interrupt_clear(GET_THREAD());
     after_exec();
 }
 #endif
