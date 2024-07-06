@@ -2,11 +2,12 @@
 require 'test/unit'
 require 'tempfile'
 require 'json'
+require_relative '../../lib/test/unit/launchable'
 
 class TestLaunchable < Test::Unit::TestCase
   def test_json_stream_writer
     Tempfile.create(['launchable-test-', '.json']) do |f|
-      json_stream_writer = Test::Unit::LaunchableOption::JsonStreamWriter.new(f.path)
+      json_stream_writer = Launchable::JsonStreamWriter.new(f.path)
       json_stream_writer.write_array('testCases')
       json_stream_writer.write_object(
         {
