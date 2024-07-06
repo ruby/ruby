@@ -1832,6 +1832,19 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
 # define ABSENT_END_POS        end
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
 
+int onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, const struct OnigEncodingTypeST* enc);
+
+static inline int
+enclen_approx(OnigEncoding enc, const OnigUChar* p, const OnigUChar* e)
+{
+    if (enc->max_enc_len == enc->min_enc_len) {
+        return (p < e ? enc->min_enc_len : 0);
+    }
+    else {
+        return onigenc_mbclen_approximate(p, e, enc);
+    }
+}
+
 
 #ifdef USE_CAPTURE_HISTORY
 static int
@@ -2682,7 +2695,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	int mb_len;
 
 	DATA_ENSURE(1);
-	mb_len = enclen(encode, s, end);
+	mb_len = enclen_approx(encode, s, end);
 	DATA_ENSURE(mb_len);
 	ss = s;
 	s += mb_len;
@@ -2787,7 +2800,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_ANYCHAR)  MOP_IN(OP_ANYCHAR);
       DATA_ENSURE(1);
-      n = enclen(encode, s, end);
+      n = enclen_approx(encode, s, end);
       DATA_ENSURE(n);
       if (ONIGENC_IS_MBC_NEWLINE_EX(encode, s, str, end, option, 0)) goto fail;
       s += n;
@@ -2796,7 +2809,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_ANYCHAR_ML)  MOP_IN(OP_ANYCHAR_ML);
       DATA_ENSURE(1);
-      n = enclen(encode, s, end);
+      n = enclen_approx(encode, s, end);
       DATA_ENSURE(n);
       s += n;
       MOP_OUT;
@@ -2806,7 +2819,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       while (DATA_ENSURE_CHECK1) {
 	DO_CACHE_MATCH_OPT(reg, stk_base, repeat_stk, msa->enable_cache_match_opt, pbegin, msa->num_cache_table, msa->num_cache_opcode, msa->cache_index_table, s - str, msa->match_cache);
 	STACK_PUSH_ALT(p, s, sprev, pkeep);
-	n = enclen(encode, s, end);
+	n = enclen_approx(encode, s, end);
 	DATA_ENSURE(n);
 	if (ONIGENC_IS_MBC_NEWLINE_EX(encode, s, str, end, option, 0))  goto fail;
 	sprev = s;
@@ -2819,7 +2832,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       while (DATA_ENSURE_CHECK1) {
 	DO_CACHE_MATCH_OPT(reg, stk_base, repeat_stk, msa->enable_cache_match_opt, pbegin, msa->num_cache_table, msa->num_cache_opcode, msa->cache_index_table, s - str, msa->match_cache);
 	STACK_PUSH_ALT(p, s, sprev, pkeep);
-	n = enclen(encode, s, end);
+	n = enclen_approx(encode, s, end);
 	if (n > 1) {
 	  DATA_ENSURE(n);
 	  sprev = s;
@@ -2844,8 +2857,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_CACHE_MATCH_OPT
           msa->num_fail++;
 #endif
-        }
-	n = enclen(encode, s, end);
+	}
+	n = enclen_approx(encode, s, end);
 	DATA_ENSURE(n);
 	if (ONIGENC_IS_MBC_NEWLINE_EX(encode, s, str, end, option, 0))  goto fail;
 	sprev = s;
@@ -2866,8 +2879,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_CACHE_MATCH_OPT
           msa->num_fail++;
 #endif
-        }
-	n = enclen(encode, s, end);
+	}
+	n = enclen_approx(encode, s, end);
 	if (n > 1) {
 	  DATA_ENSURE(n);
 	  sprev = s;
@@ -2890,7 +2903,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	if (scv) goto fail;
 
 	STACK_PUSH_ALT_WITH_STATE_CHECK(p, s, sprev, mem, pkeep);
-	n = enclen(encode, s, end);
+	n = enclen_approx(encode, s, end);
 	DATA_ENSURE(n);
 	if (ONIGENC_IS_MBC_NEWLINE_EX(encode, s, str, end, option, 0))  goto fail;
 	sprev = s;
@@ -2908,7 +2921,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	if (scv) goto fail;
 
 	STACK_PUSH_ALT_WITH_STATE_CHECK(p, s, sprev, mem, pkeep);
-	n = enclen(encode, s, end);
+	n = enclen_approx(encode, s, end);
 	if (n > 1) {
 	  DATA_ENSURE(n);
 	  sprev = s;
@@ -3250,7 +3263,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	DATA_ENSURE(n);
 	sprev = s;
 	STRING_CMP(pstart, s, n);
-	while (sprev + (len = enclen(encode, sprev, end)) < s)
+	while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
 	  sprev += len;
 
 	MOP_OUT;
@@ -3281,7 +3294,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	DATA_ENSURE(n);
 	sprev = s;
 	STRING_CMP_IC(case_fold_flag, pstart, &s, (int)n, end);
-	while (sprev + (len = enclen(encode, sprev, end)) < s)
+	while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
 	  sprev += len;
 
 	MOP_OUT;
@@ -3316,7 +3329,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  STRING_CMP_VALUE(pstart, swork, n, is_fail);
 	  if (is_fail) continue;
 	  s = swork;
-	  while (sprev + (len = enclen(encode, sprev, end)) < s)
+	  while (sprev + (len = enclen_approx(encode, sprev, end)) < s)
 	    sprev += len;
 
 	  p += (SIZE_MEMNUM * (tlen - i - 1));
