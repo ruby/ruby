@@ -225,7 +225,6 @@ AR            = @AR@
 ARFLAGS       = @ARFLAGS@$(empty)
 RANLIB        = @RANLIB@
 AS            = @AS@
-ASFLAGS       = @ASFLAGS@ $(ARCH_FLAG) $(INCFLAGS)
 IFCHANGE      = $(SHELL) $(tooldir)/ifchange
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
@@ -449,7 +448,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 
 .$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
-	$(Q) $(CC) $(ASFLAGS) -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -o $@ -c $<
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -c $<
 
 .c.$(ASMEXT):
 	@$(ECHO) translating $<

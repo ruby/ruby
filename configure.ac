@@ -489,7 +489,6 @@ AC_CACHE_CHECK([for $AR flags], [rb_cv_arflags], [
 	[rb_cv_arflags=rcD], [rb_cv_arflags=rcu])
 ])
 AC_SUBST(ARFLAGS, ["$rb_cv_arflags "])
-AC_SUBST(ASFLAGS)
 
 AS_CASE(["$target_os"],
 [cygwin*|msys*|mingw*], [
