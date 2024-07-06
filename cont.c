@@ -2339,7 +2339,7 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 VALUE
 rb_fiber_new_storage(rb_block_call_func_t func, VALUE obj, VALUE storage)
 {
-    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 1, storage);
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 0, storage);
 }
 
 VALUE
