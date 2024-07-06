@@ -478,8 +478,9 @@ probes.stamp: $(DTRACE_REBUILD_OBJS)
 
 probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	@$(ECHO) processing probes in object files
-	$(Q) $(RM) $@
-	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
+	@# n.b. the dtrace script looks at the $CFLAGS environment variable to decide
+	@# how to assemble probes.o; so we need to actually _export_ $(CFLAGS)
+	$(Q) CFLAGS="$(CFLAGS) $(XCFLAGS) $(CPPFLAGS)" $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
 
 # DTrace static library hacks described here:
 # https://marc.info/?l=opensolaris-dtrace-discuss&m=114761203110734&w=4
