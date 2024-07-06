@@ -513,7 +513,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when :on_comment, :on_embdoc then
         @read.pop
         if :on_nl == end_token[:kind] and "\n" == tk[:text][-1] and
-          (!continue or (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0) then
+          (!continue or (tk[:state] & Ripper::EXPR_LABEL) != 0) then
           break if !continue and nest <= 0
         end
       when :on_comma then
@@ -526,7 +526,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           nest += 1
         when 'if', 'unless', 'while', 'until', 'rescue'
           # postfix if/unless/while/until/rescue must be EXPR_LABEL
-          nest += 1 unless (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0
+          nest += 1 unless (tk[:state] & Ripper::EXPR_LABEL) != 0
         when 'end'
           nest -= 1
           break if nest == 0
@@ -1041,7 +1041,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       elsif (:on_kw == tk[:kind] && 'def' == tk[:text]) then
         nest += 1
       elsif (:on_kw == tk[:kind] && %w{do if unless case begin}.include?(tk[:text])) then
-        if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
+        if (tk[:state] & Ripper::EXPR_LABEL) == 0
           nest += 1
         end
       elsif [:on_rparen, :on_rbrace, :on_rbracket].include?(tk[:kind]) ||
@@ -1662,7 +1662,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when :on_comment, :on_embdoc then
         @read.pop
         if :on_nl == end_token[:kind] and "\n" == tk[:text][-1] and
-          (!continue or (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0) then
+          (!continue or (tk[:state] & Ripper::EXPR_LABEL) != 0) then
           if method && method.block_params.nil? then
             unget_tk tk
             read_documentation_modifiers method, modifiers
@@ -1882,7 +1882,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           end
 
         when 'until', 'while' then
-          if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
+          if (tk[:state] & Ripper::EXPR_LABEL) == 0
             nest += 1
             skip_optional_do_after_expression
           end
@@ -1898,7 +1898,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           skip_optional_do_after_expression
 
         when 'case', 'do', 'if', 'unless', 'begin' then
-          if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
+          if (tk[:state] & Ripper::EXPR_LABEL) == 0
             nest += 1
           end
 
