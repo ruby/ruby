@@ -5805,8 +5805,6 @@ int_floor(int argc, VALUE* argv, VALUE num)
  *      | -4      | 10000       | 10000              |
  *      | -5      | 100000      | 100000             |
  *
- *      <br>
- *
  *      Examples with negative `self`:
  *
  *      | ndigits | Granularity | -1234.ceil(ndigits) |
@@ -5816,8 +5814,6 @@ int_floor(int argc, VALUE* argv, VALUE num)
  *      | -3      | 1000        | -1000               |
  *      | -4      | 10000       | 0                   |
  *      | -5      | 100000      | 0                   |
- *
- *      <br>
  *
  *  Related: Integer#floor.
  */
