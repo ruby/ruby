@@ -266,7 +266,7 @@ jobs:
           make probes.h &&
           export RUBY_GC_LIBRARY=librubygc.so &&
           echo "RUBY_GC_LIBRARY=$RUBY_GC_LIBRARY" >> $GITHUB_ENV &&
-          mkdir ${{ matrix.entry.shared_gc_dir }} &&
+          mkdir -p ${{ matrix.entry.shared_gc_dir }} &&
           gcc -I../src -I../src/include -I. -I.ext/include/x86_64-linux
           -Wl,-undefined,dynamic_lookup -fPIC -g -O3 -shared
           -o ${{ matrix.entry.shared_gc_dir }}/$RUBY_GC_LIBRARY ../src/gc_impl.c
