@@ -1450,7 +1450,7 @@ module Test
       def setup_options(opts, options)
         super
         opts.on_tail '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
-          require_relative '../test/unit/launchable'
+          require_relative '../launchable'
           options[:launchable_test_reports] = writer = Launchable::JsonStreamWriter.new(path)
           writer.write_array('testCases')
           main_pid = Process.pid

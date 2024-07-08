@@ -2,7 +2,7 @@
 require 'test/unit'
 require 'tempfile'
 require 'json'
-require_relative '../../lib/test/unit/launchable'
+require_relative '../../lib/launchable'
 
 class TestLaunchable < Test::Unit::TestCase
   def test_json_stream_writer

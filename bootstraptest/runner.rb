@@ -236,7 +236,7 @@ End
         return true
       end
 
-      require_relative '../tool/lib/test/unit/launchable'
+      require_relative '../tool/lib/launchable'
       BT.launchable_test_reports = writer = Launchable::JsonStreamWriter.new($1)
       writer.write_array('testCases')
       at_exit {
