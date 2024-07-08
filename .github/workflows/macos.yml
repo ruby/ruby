@@ -33,7 +33,7 @@ jobs:
       matrix:
         test_task: ['check']
         configure: ['']
-        os: ${{ fromJSON(format('["macos-12","macos-13"{0}]', 'macos-14')) }}
+        os: ['macos-12', 'macos-13', 'macos-14']
         include:
           - test_task: test-all TESTS=--repeat-count=2
             os: macos-14
