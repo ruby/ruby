@@ -5722,7 +5722,7 @@ int_round(int argc, VALUE* argv, VALUE num)
  *  - When `self` is non-zero and `ndigits` is negative,
  *    returns a value based on a computed granularity:
  *
- *      - The granularity is <tt>ndigits.abs * 10</tt>.
+ *      - The granularity is <tt>10 ** ndigits.abs</tt>.
  *      - The returned value is the largest multiple of the granularity
  *        that is less than or equal to `self`.
  *
@@ -5791,7 +5791,7 @@ int_floor(int argc, VALUE* argv, VALUE num)
  *  - When `self` is non-zero and `ndigits` is negative,
  *    returns a value based on a computed granularity:
  *
- *      - The granularity is <tt>ndigits.abs * 10</tt>.
+ *      - The granularity is <tt>10 ** ndigits.abs</tt>.
  *      - The returned value is the smallest multiple of the granularity
  *        that is greater than or equal to `self`.
  *
