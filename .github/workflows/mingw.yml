@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@97e35c5302afcf3f5ac1df3fca9343d32536b286 # v1.184.0
+        uses: ruby/setup-ruby@3a77c29278ae80936b4cb030fefc7d21c96c786f # v1.185.0
         with:
           ruby-version: ${{ matrix.baseruby }}
 
