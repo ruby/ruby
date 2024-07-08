@@ -6889,11 +6889,14 @@ enum IseqReturn {
 
 extern {
     fn rb_simple_iseq_p(iseq: IseqPtr) -> bool;
+    fn rb_iseq_only_kwparam_p(iseq: IseqPtr) -> bool;
 }
 
 /// Return the ISEQ's return value if it consists of one simple instruction and leave.
-fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, ci_flags: u32) -> Option<IseqReturn> {
+fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Option<BlockHandler>, ci_flags: u32) -> Option<IseqReturn> {
     // Expect only two instructions and one possible operand
+    // NOTE: If an ISEQ has an optional keyword parameter with a default value that requires
+    // computation, the ISEQ will always have more than two instructions and won't be inlined.
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     if !(2..=3).contains(&iseq_size) {
         return None;
@@ -6909,15 +6912,38 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, ci_flags: u
     }
     match first_insn {
         YARVINSN_getlocal_WC_0  => {
-            // Only accept simple positional only cases for both the caller and the callee.
+            // Accept only cases where only positional arguments are used by both the callee and the caller.
+            // Keyword arguments may be specified by the callee or the caller but not used.
             // Reject block ISEQs to avoid autosplat and other block parameter complications.
-            if captured_opnd.is_none() && unsafe { rb_simple_iseq_p(iseq) } && ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
-                let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
-                Some(IseqReturn::LocalVariable(local_idx))
-            } else {
-                None
+            if captured_opnd.is_some()
+                // Reject if block ISEQ is present
+                || block.is_some()
+                // Equivalent to `VM_CALL_ARGS_SIMPLE - VM_CALL_KWARG - has_block_iseq`
+                || ci_flags & (
+                      VM_CALL_ARGS_SPLAT
+                    | VM_CALL_KW_SPLAT
+                    | VM_CALL_ARGS_BLOCKARG
+                    | VM_CALL_FORWARDING
+                ) != 0
+                 {
+                return None;
             }
+
+            let ep_offset = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u32();
+            let local_idx = ep_offset_to_local_idx(iseq, ep_offset);
+
+            if unsafe { rb_simple_iseq_p(iseq) } {
+                return Some(IseqReturn::LocalVariable(local_idx));
+            } else if unsafe { rb_iseq_only_kwparam_p(iseq) } {
+                // Inline if only positional parameters are used
+                if let Ok(i) = i32::try_from(local_idx) {
+                    if i < unsafe { rb_get_iseq_body_param_lead_num(iseq) } {
+                        return Some(IseqReturn::LocalVariable(local_idx));
+                    }
+                }
+            }
+
+            return None;
         }
         YARVINSN_putnil => Some(IseqReturn::Value(Qnil)),
         YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, 1) })),
@@ -7216,7 +7242,7 @@ fn gen_send_iseq(
     }
 
     // Inline simple ISEQs whose return value is known at compile time
-    if let (Some(value), None, false) = (iseq_get_return_value(iseq, captured_opnd, flags), block_arg_type, opt_send_call) {
+    if let (Some(value), None, false) = (iseq_get_return_value(iseq, captured_opnd, block, flags), block_arg_type, opt_send_call) {
         asm_comment!(asm, "inlined simple ISEQ");
         gen_counter_incr(asm, Counter::num_send_iseq_inline);
 

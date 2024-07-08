@@ -1833,7 +1833,7 @@ dependencies: []
   end
 
   def test_for_cache
-    @a2.add_runtime_dependency "b", "1"
+    @a2.add_dependency "b", "1"
     @a2.dependencies.first.instance_variable_set :@type, nil
     @a2.required_rubygems_version = Gem::Requirement.new "> 0"
     @a2.test_files = %w[test/test_b.rb]
@@ -2265,7 +2265,7 @@ dependencies: []
   end
 
   def test_to_ruby
-    @a2.add_runtime_dependency "b", "1"
+    @a2.add_dependency "b", "1"
     @a2.dependencies.first.instance_variable_set :@type, nil
     @a2.required_rubygems_version = Gem::Requirement.new "> 0"
     @a2.require_paths << "other"
@@ -2337,7 +2337,7 @@ end
   end
 
   def test_to_ruby_for_cache
-    @a2.add_runtime_dependency "b", "1"
+    @a2.add_dependency "b", "1"
     @a2.dependencies.first.instance_variable_set :@type, nil
     @a2.required_rubygems_version = Gem::Requirement.new "> 0"
     @a2.installed_by_version = Gem.rubygems_version
@@ -2760,7 +2760,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
     Dir.chdir @tempdir do
       @a1.version = "1.0.0.beta.1"
-      @a1.add_runtime_dependency "b", "~> 1.2.0.beta.1"
+      @a1.add_dependency "b", "~> 1.2.0.beta.1"
 
       use_ui @ui do
         @a1.validate
@@ -2774,7 +2774,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.add_runtime_dependency @a1.name, "1"
+      @a1.add_dependency @a1.name, "1"
 
       use_ui @ui do
         @a1.validate
@@ -2807,7 +2807,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
     Dir.chdir @tempdir do
       @a1.extensions = ["Rakefile"]
-      @a1.add_runtime_dependency "rake"
+      @a1.add_dependency "rake"
       File.write File.join(@tempdir, "Rakefile"), ""
 
       use_ui @ui do
@@ -3077,7 +3077,7 @@ Please report a bug if this causes problems.
   def test_duplicate_runtime_dependency
     expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
     out, err = capture_output do
-      @a1.add_runtime_dependency "b", "~> 3.0", "~> 3.0"
+      @a1.add_dependency "b", "~> 3.0", "~> 3.0"
     end
     assert_empty out
     assert_equal(expected, err)

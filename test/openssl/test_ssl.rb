@@ -248,6 +248,19 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_readbyte
+    start_server { |port|
+      server_connect(port) { |ssl|
+        str = +("x" * 100 + "\n")
+        ssl.syswrite(str)
+        newstr = str.bytesize.times.map { |i|
+          ssl.readbyte
+        }.pack("C*")
+        assert_equal(str, newstr)
+      }
+    }
+  end
+
   def test_sync_close
     start_server do |port|
       begin

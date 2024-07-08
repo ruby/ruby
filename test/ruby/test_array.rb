@@ -1215,6 +1215,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_pack_format_mutation
+    ary = [Object.new]
+    fmt = "c" * 0x20000
+    class << ary[0]; self end.send(:define_method, :to_int) {
+      fmt.replace ""
+      1
+    }
+    e = assert_raise(RuntimeError) { ary.pack(fmt) }
+    assert_equal "format string modified", e.message
+  end
+
   def test_pack
     a = @cls[*%w( cat wombat x yy)]
     assert_equal("catwomx  yy ", a.pack("A3A3A3A3"))
@@ -3480,6 +3491,17 @@ class TestArray < Test::Unit::TestCase
 
   def assert_complex_equal(e, v, msg=nil)
     assert_typed_equal(e, v, Complex, msg)
+  end
+
+  def test_shrink_shared_array
+    assert_normal_exit(<<~'RUBY', '[Feature #20589]')
+      array = []
+      # Make sure the array is allocated
+      10.times { |i| array << i }
+      # Simulate a C extension using OBJ_FREEZE
+      Object.instance_method(:freeze).bind_call(array)
+      array.dup
+    RUBY
   end
 
   def test_sum

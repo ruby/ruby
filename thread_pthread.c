@@ -592,7 +592,7 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
         }
 
         if (add_th) {
-            if (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
+            while (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
                 RUBY_DEBUG_LOG("barrier-wait");
 
                 ractor_sched_barrier_join_signal_locked(vm);
@@ -605,6 +605,7 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
             ccan_list_add(&vm->ractor.sched.running_threads, &add_th->sched.node.running_threads);
             vm->ractor.sched.running_cnt++;
             sched->is_running = true;
+            VM_ASSERT(!vm->ractor.sched.barrier_waiting);
         }
 
         if (add_timeslice_th) {

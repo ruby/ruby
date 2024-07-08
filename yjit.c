@@ -1065,7 +1065,7 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
 void
 rb_assert_cme_handle(VALUE handle)
 {
-    RUBY_ASSERT_ALWAYS(rb_objspace_markable_object_p(handle));
+    RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(handle));
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
 

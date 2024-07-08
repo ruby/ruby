@@ -19,7 +19,7 @@ class TestTempfile < Test::Unit::TestCase
     end
   end
 
-  def test_leackchecker
+  def test_leakchecker
     assert_instance_of(Tempfile, Tempfile.allocate)
   end
 

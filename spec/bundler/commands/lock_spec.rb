@@ -1008,14 +1008,14 @@ RSpec.describe "bundle lock" do
     end
 
     gemfile <<-G
-      source "https://localgemserver.test"
+      source "https://gem.repo4"
 
       gem "raygun-apm"
     G
 
     lockfile <<-L
       GEM
-        remote: https://localgemserver.test/
+        remote: https://gem.repo4/
         specs:
           raygun-apm (1.0.78-universal-darwin)
 
@@ -1029,7 +1029,61 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "lock --add-platform x86_64-linux", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "lock --add-platform x86_64-linux"
+  end
+
+  it "adds platform specific gems as necessary, even when adding the current platform" do
+    build_repo4 do
+      build_gem "nokogiri", "1.16.0"
+
+      build_gem "nokogiri", "1.16.0" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "nokogiri"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.16.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-platform x86_64-linux"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.16.0)
+          nokogiri (1.16.0-x86_64-linux)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
   end
 
   it "does not crash on conflicting ruby requirements between platform versions in two different gems" do

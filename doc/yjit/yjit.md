@@ -18,6 +18,7 @@ This project is open source and falls under the same license as CRuby.
 </b></p>
 
 If you wish to learn more about the approach taken, here are some conference talks and publications:
+
 - RubyKaigi 2023 keynote: [Optimizing YJIT’s Performance, from Inception to Production](https://www.youtube.com/watch?v=X0JRhh8w_4I)
 - RubyKaigi 2023 keynote: [Fitting Rust YJIT into CRuby](https://www.youtube.com/watch?v=GI7vvAgP_Qs)
 - RubyKaigi 2022 keynote: [Stories from developing YJIT](https://www.youtube.com/watch?v=EMchdR9C8XM)
@@ -160,7 +161,7 @@ You can dump statistics about compilation and execution by running YJIT with the
 
 The machine code generated for a given method can be printed by adding `puts RubyVM::YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
-### Command-Line Options
+<h3 id="command-line-options">Command-Line Options</h3>
 
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
@@ -294,17 +295,17 @@ irb(main):001:0> RubyVM::YJIT.runtime_stats
 
 Some of the counters include:
 
-* :yjit_insns_count - how many Ruby bytecode instructions have been executed
-* :binding_allocations - number of bindings allocated
-* :binding_set - number of variables set via a binding
-* :code_gc_count - number of garbage collections of compiled code since process start
-* :vm_insns_count - number of instructions executed by the Ruby interpreter
-* :compiled_iseq_count - number of bytecode sequences compiled
-* :inline_code_size - size in bytes of compiled YJIT blocks
-* :outline_code_size - size in bytes of YJIT error-handling compiled code
-* :side_exit_count - number of side exits taken at runtime
-* :total_exit_count - number of exits, including side exits, taken at runtime
-* :avg_len_in_yjit - avg. number of instructions in compiled blocks before exiting to interpreter
+* `:yjit_insns_count` - how many Ruby bytecode instructions have been executed
+* `:binding_allocations` - number of bindings allocated
+* `:binding_set` - number of variables set via a binding
+* `:code_gc_count` - number of garbage collections of compiled code since process start
+* `:vm_insns_count` - number of instructions executed by the Ruby interpreter
+* `:compiled_iseq_count` - number of bytecode sequences compiled
+* `:inline_code_size` - size in bytes of compiled YJIT blocks
+* `:outline_code_size` - size in bytes of YJIT error-handling compiled code
+* `:side_exit_count` - number of side exits taken at runtime
+* `:total_exit_count` - number of exits, including side exits, taken at runtime
+* `:avg_len_in_yjit` - avg. number of instructions in compiled blocks before exiting to interpreter
 
 Counters starting with "exit_" show reasons for YJIT code taking a side exit (return to the interpreter.)
 
@@ -330,6 +331,7 @@ you can contribute patches we will want to merge into YJIT.
 ### Source Code Organization
 
 The YJIT source code is divided between:
+
 - `yjit.c`: code YJIT uses to interface with the rest of CRuby
 - `yjit.h`: C definitions YJIT exposes to the rest of the CRuby
 - `yjit.rb`: `YJIT` Ruby module that is exposed to Ruby
@@ -342,6 +344,7 @@ The YJIT source code is divided between:
 - `yjit/bindgen/src/main.rs`: C bindings exposed to the Rust codebase through bindgen
 
 The core of CRuby's interpreter logic is found in:
+
 - `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
 - `vm_insnshelper.c`: logic used by Ruby's bytecode instructions
 - `vm_exec.c`: Ruby interpreter loop
@@ -363,6 +366,7 @@ add them to `yjit/cruby.rs` instead.
 ### Coding & Debugging Protips
 
 There are multiple test suites:
+
 - `make btest` (see `/bootstraptest`)
 - `make test-all`
 - `make test-spec`

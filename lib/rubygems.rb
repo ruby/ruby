@@ -780,6 +780,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # Safely write a file in binary mode on all platforms.
+
   def self.write_binary(path, data)
     open_file(path, "wb") do |io|
       io.write data
@@ -791,33 +792,30 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags. It requires special logic on Windows, like
-  # protecting access with flock
+  # Open a file with given flags
 
   def self.open_file(path, flags, &block)
-    if !java_platform? && win_platform?
-      open_file_with_flock(path, flags, &block)
-    else
-      open_file_without_flock(path, flags, &block)
-    end
+    File.open(path, flags, &block)
   end
 
   ##
   # Open a file with given flags, and protect access with flock
 
-  def self.open_file_with_flock(path, flags, &block)
+  def self.open_file_with_flock(path, &block)
+    flags = File.exist?(path) ? "r+" : "a+"
+
     File.open(path, flags) do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue Errno::ENOSYS, Errno::ENOTSUP
       end
       yield io
-    end
-  rescue Errno::ENOLCK # NFS
-    if Thread.main != Thread.current
-      raise
-    else
-      open_file_without_flock(path, flags, &block)
+    rescue Errno::ENOLCK # NFS
+      if Thread.main != Thread.current
+        raise
+      else
+        open_file(path, flags, &block)
+      end
     end
   end
 
@@ -1316,10 +1314,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     attr_reader :pre_uninstall_hooks
 
     private
-
-    def open_file_without_flock(path, flags, &block)
-      File.open(path, flags, &block)
-    end
 
     def already_loaded?(file)
       $LOADED_FEATURES.any? do |feature_path|

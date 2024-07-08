@@ -159,7 +159,7 @@ class TestGc < Test::Unit::TestCase
         GC.enable if reenable_gc
       end
 
-      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
+      assert_equal (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
@@ -186,13 +186,12 @@ class TestGc < Test::Unit::TestCase
     omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
-
-    2.times do
-      GC.stat_heap(0, stat_heap)
-      GC.stat_heap(nil, stat_heap_all)
-    end
+    # Initialize to prevent GC in future calls
+    GC.stat_heap(0, stat_heap)
+    GC.stat_heap(nil, stat_heap_all)
 
     GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC.stat_heap(nil, stat_heap_all)
       GC.stat_heap(i, stat_heap)
 
       # Remove keys that can vary between invocations
@@ -681,7 +680,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_gc_internals
     assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
-    assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+    assert_not_nil GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
   end
 
   def test_sweep_in_finalizer

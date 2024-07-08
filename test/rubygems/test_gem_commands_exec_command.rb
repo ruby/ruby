@@ -182,7 +182,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       fetcher.download "a", 2 do |s|
         s.executables = %w[a]
         s.files = %w[bin/a lib/a.rb]
-        s.add_runtime_dependency "with_platform"
+        s.add_dependency "with_platform"
 
         write_file File.join(*%W[gems #{s.original_name} bin a]) do |f|
           f << 'require "with_platform"' << "\n"
@@ -222,7 +222,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       fetcher.download "a", 2 do |s|
         s.executables = %w[a]
         s.files = %w[bin/a lib/a.rb]
-        s.add_runtime_dependency "with_platform"
+        s.add_dependency "with_platform"
         s.platform = Gem::Platform.local.to_s
 
         write_file File.join(*%W[gems #{s.original_name} bin a]) do |f|
@@ -234,7 +234,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       fetcher.download "a", 2 do |s|
         s.executables = %w[a]
         s.files = %w[bin/a lib/a.rb extconf.rb]
-        s.add_runtime_dependency "with_platform"
+        s.add_dependency "with_platform"
 
         write_file File.join(*%W[gems #{s.original_name} bin a]) do |f|
           f << 'require "with_platform"' << "\n"
@@ -261,7 +261,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
 
       fetcher.download "with_platform", 2 do |s|
         s.files = %w[lib/with_platform.rb]
-        s.add_runtime_dependency "sometimes_used"
+        s.add_dependency "sometimes_used"
       end
 
       fetcher.download "sometimes_used", 2 do |s|
@@ -677,7 +677,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       fetcher.gem "a", 1 do |s|
         s.executables = %w[]
         s.files = %w[lib/a.rb]
-        s.add_runtime_dependency "b"
+        s.add_dependency "b"
       end
 
       fetcher.gem "b", 1 do |s|
@@ -711,7 +711,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       fetcher.download "a", 2 do |s|
         s.executables = %w[a]
         s.files = %w[bin/a lib/a.rb]
-        s.add_runtime_dependency "b"
+        s.add_dependency "b"
 
         write_file File.join(*%W[gems #{s.original_name} bin a]) do |f|
           f << "Gem.ui.say #{s.original_name.dump}"

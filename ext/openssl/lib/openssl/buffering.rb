@@ -107,6 +107,12 @@ module OpenSSL::Buffering
     read(1)&.ord
   end
 
+  # Get the next 8bit byte. Raises EOFError on EOF
+  def readbyte
+    raise EOFError if eof?
+    getbyte
+  end
+
   ##
   # Reads _size_ bytes from the stream.  If _buf_ is provided it must
   # reference a string which will receive the data.

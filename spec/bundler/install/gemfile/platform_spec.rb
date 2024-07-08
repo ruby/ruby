@@ -179,16 +179,16 @@ RSpec.describe "bundle install across platforms" do
       build_gem "empyrean", "0.1.0"
       build_gem "coderay", "1.1.2"
       build_gem "method_source", "0.9.0"
-      build_gem("spoon", "0.0.6") {|s| s.add_runtime_dependency "ffi" }
+      build_gem("spoon", "0.0.6") {|s| s.add_dependency "ffi" }
       build_gem "pry", "0.11.3" do |s|
         s.platform = "java"
-        s.add_runtime_dependency "coderay", "~> 1.1.0"
-        s.add_runtime_dependency "method_source", "~> 0.9.0"
-        s.add_runtime_dependency "spoon", "~> 0.0"
+        s.add_dependency "coderay", "~> 1.1.0"
+        s.add_dependency "method_source", "~> 0.9.0"
+        s.add_dependency "spoon", "~> 0.0"
       end
       build_gem "pry", "0.11.3" do |s|
-        s.add_runtime_dependency "coderay", "~> 1.1.0"
-        s.add_runtime_dependency "method_source", "~> 0.9.0"
+        s.add_dependency "coderay", "~> 1.1.0"
+        s.add_dependency "method_source", "~> 0.9.0"
       end
       build_gem("ffi", "1.9.23") {|s| s.platform = "java" }
       build_gem("ffi", "1.9.23")
@@ -332,11 +332,11 @@ RSpec.describe "bundle install across platforms" do
     update_repo2 do
       build_gem "fspath", "3"
       build_gem "image_optim_pack", "1.2.3" do |s|
-        s.add_runtime_dependency "fspath", ">= 2.1", "< 4"
+        s.add_dependency "fspath", ">= 2.1", "< 4"
       end
       build_gem "image_optim_pack", "1.2.3" do |s|
         s.platform = "universal-darwin"
-        s.add_runtime_dependency "fspath", "< 4", ">= 2.1"
+        s.add_dependency "fspath", "< 4", ">= 2.1"
       end
     end
 

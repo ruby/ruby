@@ -166,7 +166,7 @@ RSpec.describe "bundle install with specific platforms" do
         build_gem("libv8", "8.4.255.0") {|s| s.platform = "universal-darwin" }
 
         build_gem("mini_racer", "1.0.0") do |s|
-          s.add_runtime_dependency "libv8"
+          s.add_dependency "libv8"
         end
       end
 
@@ -483,12 +483,12 @@ RSpec.describe "bundle install with specific platforms" do
   it "automatically fixes the lockfile if RUBY platform is locked and some gem has no RUBY variant available" do
     build_repo4 do
       build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet", "= 0.5.10160"
-        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+        s.add_dependency "sorbet", "= 0.5.10160"
+        s.add_dependency "sorbet-runtime", "= 0.5.10160"
       end
 
       build_gem("sorbet", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+        s.add_dependency "sorbet-static", "= 0.5.10160"
       end
 
       build_gem("sorbet-runtime", "0.5.10160")
@@ -635,12 +635,12 @@ RSpec.describe "bundle install with specific platforms" do
   it "automatically fixes the lockfile if only RUBY platform is locked and some gem has no RUBY variant available" do
     build_repo4 do
       build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet", "= 0.5.10160"
-        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+        s.add_dependency "sorbet", "= 0.5.10160"
+        s.add_dependency "sorbet-runtime", "= 0.5.10160"
       end
 
       build_gem("sorbet", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+        s.add_dependency "sorbet-static", "= 0.5.10160"
       end
 
       build_gem("sorbet-runtime", "0.5.10160")
@@ -848,7 +848,7 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("ibandit", "0.7.0") do |s|
-          s.add_runtime_dependency "i18n", "~> 0.7.0"
+          s.add_dependency "i18n", "~> 0.7.0"
         end
 
         build_gem("i18n", "0.7.0.beta1")
@@ -1123,7 +1123,7 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("sorbet", "0.5.10160") do |s|
-          s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+          s.add_dependency "sorbet-static", "= 0.5.10160"
         end
 
         build_gem("sorbet-static", "0.5.10160") do |s|
@@ -1546,7 +1546,7 @@ RSpec.describe "bundle install with specific platforms" do
       build_gem("facter", "2.4.6")
       build_gem("facter", "2.4.6") do |s|
         s.platform = "universal-darwin"
-        s.add_runtime_dependency "CFPropertyList"
+        s.add_dependency "CFPropertyList"
       end
       build_gem("CFPropertyList")
     end

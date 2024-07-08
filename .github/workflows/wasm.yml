@@ -100,7 +100,7 @@ jobs:
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
 
-      - uses: ruby/setup-ruby@1d0e911f615a112e322369596f10ee0b95b010ae # v1.183.0
+      - uses: ruby/setup-ruby@3a77c29278ae80936b4cb030fefc7d21c96c786f # v1.185.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -136,7 +136,7 @@ jobs:
       - run: tar cfz ../install.tar.gz -C ../install .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
           name: ruby-wasm-install
           path: ${{ github.workspace }}/install.tar.gz
@@ -164,7 +164,7 @@ jobs:
       - name: Save Pull Request number
         if: ${{ github.event_name == 'pull_request' }}
         run: echo "${{ github.event.pull_request.number }}" >> ${{ github.workspace }}/github-pr-info.txt
-      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         if: ${{ github.event_name == 'pull_request' }}
         with:
           name: github-pr-info
