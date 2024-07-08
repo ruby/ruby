@@ -105,7 +105,7 @@ jobs:
       - name: make test-all
         run: |
           $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
-        timeout-minutes: 40
+        timeout-minutes: 60
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-q --tty=no'
