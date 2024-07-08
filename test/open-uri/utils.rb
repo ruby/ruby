@@ -1,4 +1,8 @@
 require 'socket'
+begin
+  require 'openssl'
+rescue LoadError
+end
 
 class SimpleHTTPServer
   def initialize(bind_addr, port, log)
