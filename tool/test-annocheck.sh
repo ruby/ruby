@@ -27,7 +27,8 @@ else
   # volume in container in container on GitHub Actions
   # <.github/workflows/compilers.yml>.
   TAG="${TAG}-copy"
-  "${DOCKER}" build --rm -t "${TAG}" --build-arg=FILES="${*}" -f ${TOOL_DIR}/annocheck/Dockerfile-copy .
+  sed -r "s/\\$\{FILES\}/${*}/" ${TOOL_DIR}/annocheck/Dockerfile-copy | \
+    "${DOCKER}" build --rm -t "${TAG}" --build-arg=FILES="${*}" -f - .
 fi
 
 "${DOCKER}" run --rm -t ${DOCKER_RUN_VOLUME_OPTS} "${TAG}" annocheck --verbose ${TEST_ANNOCHECK_OPTS-} "${@}"
