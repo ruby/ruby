@@ -2213,36 +2213,78 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number greater than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns a numeric that is a "ceiling" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is positive, returns a float with +ndigits+
- *  digits after the decimal point (as available):
+ *  When `ndigits` is positive, returns a Float with `ndigits`
+ *  decimal digits after the decimal point
+ *  (as available, but no fewer than 1):
  *
- *    f = 12345.6789
- *    f.ceil(1) # => 12345.7
- *    f.ceil(3) # => 12345.679
- *    f = -12345.6789
- *    f.ceil(1) # => -12345.6
- *    f.ceil(3) # => -12345.678
+ *  ```
+ *  f = 12345.6789
+ *  f.ceil(1) # => 12345.7
+ *  f.ceil(3) # => 12345.679
+ *  f.ceil(30) # => 12345.6789
+ *  f = -12345.6789
+ *  f.ceil(1) # => -12345.6
+ *  f.ceil(3) # => -12345.678
+ *  f.ceil(30) # => -12345.6789
+ *  f = 0.0
+ *  f.ceil(1)   # => 0.0
+ *  f.ceil(100) # => 0.0
+ *  ```
  *
- *  When +ndigits+ is non-positive, returns an integer with at least
- *  <code>ndigits.abs</code> trailing zeros:
+ *  When `ndigits` is non-positive,
+ *  returns an Integer based on a computed granularity:
  *
- *    f = 12345.6789
- *    f.ceil(0)  # => 12346
- *    f.ceil(-3) # => 13000
- *    f = -12345.6789
- *    f.ceil(0)  # => -12345
- *    f.ceil(-3) # => -12000
+ *  - The granularity is ``ndigits.abs * 10`.
+ *  - The returned value is the largest multiple of the granularity
+ *    that is less than or equal to `self`.
+ *
+ *  Examples with positive `self`:
+ *
+ *  | ndigits | Granularity | 12345.6789.ceil(ndigits) |
+ *  |--------:|------------:|-------------------------:|
+ *  | 0       | 1           | 12346                    |
+ *  | -1      | 10          | 12350                    |
+ *  | -2      | 100         | 12400                    |
+ *  | -3      | 1000        | 13000                    |
+ *  | -4      | 10000       | 20000                    |
+ *  | -5      | 100000      | 100000                   |
+ *
+ *  Examples with negative `self`:
+ *
+ *  | ndigits | Granularity | -12345.6789.ceil(ndigits) |
+ *  |--------:|------------:|--------------------------:|
+ *  | 0       | 1           | -12345                    |
+ *  | -1      | 10          | -12340                    |
+ *  | -2      | 100         | -12300                    |
+ *  | -3      | 1000        | -12000                    |
+ *  | -4      | 10000       | -10000                    |
+ *  | -5      | 100000      | 0                         |
+ *
+ *  When `self` is zero and `ndigits` is non-positive,
+ *  returns Integer zero:
+ *
+ *  ```
+ *  0.0.ceil(0)  # => 0
+ *  0.0.ceil(-1) # => 0
+ *  0.0.ceil(-2) # => 0
+ *  ```
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
  *
- *     (2.1 / 0.7).ceil  #=> 4 (!)
+ *  ```
+ *  (2.1 / 0.7).ceil  #=> 4 # Not 3 (because 2.1 / 0.7 # => 3.0000000000000004, not 3.0)
+ *  ```
  *
  *  Related: Float#floor.
  *
