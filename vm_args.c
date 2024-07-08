@@ -434,7 +434,10 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 static inline int
 ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned int * kw_flag, VALUE * converted_keyword_hash)
 {
-    if (!RB_TYPE_P(keyword_hash, T_HASH)) {
+    if (keyword_hash == Qnil) {
+        goto ignore;
+    }
+    else if (!RB_TYPE_P(keyword_hash, T_HASH)) {
         keyword_hash = rb_to_hash_type(keyword_hash);
     }
 
@@ -445,9 +448,17 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned
         keyword_hash = rb_hash_dup(keyword_hash);
     }
     *converted_keyword_hash = keyword_hash;
-    return !(ISEQ_BODY(iseq)->param.flags.has_kw) &&
-           !(ISEQ_BODY(iseq)->param.flags.has_kwrest) &&
-           RHASH_EMPTY_P(keyword_hash);
+
+    if (!(ISEQ_BODY(iseq)->param.flags.has_kw) &&
+        !(ISEQ_BODY(iseq)->param.flags.has_kwrest) &&
+        RHASH_EMPTY_P(keyword_hash)) {
+      ignore:
+        *kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 static VALUE
@@ -577,7 +588,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                     arg_rest_dup(args);
                     rb_ary_pop(args->rest);
                     given_argc--;
-                    kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
                 }
                 else {
                     if (rest_last != converted_keyword_hash) {
@@ -608,7 +618,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (ignore_keyword_hash_p(last_arg, iseq, &kw_flag, &converted_keyword_hash)) {
                 args->argc--;
                 given_argc--;
-                kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
             }
             else {
                 if (!(kw_flag & VM_CALL_KW_SPLAT_MUT)) {
