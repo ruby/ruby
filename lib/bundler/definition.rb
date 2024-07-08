@@ -367,6 +367,10 @@ module Bundler
     end
 
     def ensure_equivalent_gemfile_and_lockfile(explicit_flag = false)
+      return unless Bundler.frozen_bundle?
+
+      raise ProductionError, "Frozen mode is set, but there's no lockfile" unless lockfile_exists?
+
       added =   []
       deleted = []
       changed = []
