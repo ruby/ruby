@@ -1321,7 +1321,7 @@ rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fu
 {
     // ractor lock of cr is acquired
     // r is sleeping statuss
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     struct rb_thread_sched *sched = TH_SCHED(th);
     cr->sync.wait.waiting_thread = th; // TODO: multi-thread
 
@@ -2974,7 +2974,7 @@ timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now)
         (w->flags & thread_sched_waiting_timeout) &&
         timer_thread_check_exceed(w->data.timeout, now)) {
 
-        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(th));
+        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(thread_sched_waiting_thread(w)));
 
         // delete from waiting list
         ccan_list_del_init(&w->node);
