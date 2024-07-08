@@ -250,7 +250,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("dump-disasm", _) => {
             if !cfg!(feature = "disasm") {
-                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+                eprintln!("WARNING: the {} option works best when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
             }
 
             match opt_val {

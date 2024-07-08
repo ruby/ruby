@@ -10322,8 +10322,10 @@ impl CodegenGlobals {
             let mem_block = Rc::new(RefCell::new(mem_block));
 
             let freed_pages = Rc::new(None);
-            let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone());
-            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages));
+
+            let asm_comments = get_option_ref!(dump_disasm).is_some();
+            let cb = CodeBlock::new(mem_block.clone(), false, freed_pages.clone(), asm_comments);
+            let ocb = OutlinedCb::wrap(CodeBlock::new(mem_block, true, freed_pages, asm_comments));
 
             (cb, ocb)
         };
