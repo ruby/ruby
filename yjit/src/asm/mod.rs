@@ -76,7 +76,7 @@ pub struct CodeBlock {
     label_refs: Vec<LabelRef>,
 
     // A switch for keeping comments. They take up memory.
-    allow_comments: bool,
+    keep_comments: bool,
 
     // Comments for assembly instructions, if that feature is enabled
     asm_comments: BTreeMap<usize, Vec<String>>,
@@ -107,7 +107,7 @@ impl CodeBlock {
     const PREFERRED_CODE_PAGE_SIZE: usize = 16 * 1024;
 
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>, allow_comments: bool) -> Self {
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>, keep_comments: bool) -> Self {
         // Pick the code page size
         let system_page_size = mem_block.borrow().system_page_size();
         let page_size = if 0 == Self::PREFERRED_CODE_PAGE_SIZE % system_page_size {
@@ -128,7 +128,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
-            allow_comments,
+            keep_comments,
             asm_comments: BTreeMap::new(),
             outlined,
             dropped_bytes: false,
@@ -367,7 +367,7 @@ impl CodeBlock {
 
     /// Add an assembly comment if the feature is on.
     pub fn add_comment(&mut self, comment: &str) {
-        if !self.allow_comments {
+        if !self.keep_comments {
             return;
         }
 

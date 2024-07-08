@@ -187,6 +187,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     return out;
 }
 
+/// Fallback version without dependency on a disassembler which prints just bytes and comments.
 #[cfg(not(feature = "disasm"))]
 pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     let mut out = String::new();
