@@ -1,4 +1,5 @@
 require 'socket'
+require 'net/http'
 begin
   require 'openssl'
 rescue LoadError
