@@ -53,7 +53,7 @@ module Gem
 
   require "rubygems/specification"
 
-  # Can be removed once RubyGems 3.5.15 support is dropped
+  # Can be removed once RubyGems 3.5.14 support is dropped
   VALIDATES_FOR_RESOLUTION = Specification.new.respond_to?(:validate_for_resolution).freeze
 
   class Specification
