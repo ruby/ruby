@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'socket'
 require 'open-uri'
 
 class TestOpenURIFtp < Test::Unit::TestCase
