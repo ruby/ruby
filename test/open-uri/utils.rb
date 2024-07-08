@@ -1,5 +1,4 @@
 require 'socket'
-require 'base64'
 
 class SimpleHTTPServer
   def initialize(bind_addr, port, log)
@@ -79,7 +78,7 @@ class SimpleHTTPServer
       return unless auth && auth.start_with?('Basic ')
 
       encoded_credentials = auth.split(' ', 2).last
-      decoded_credentials = Base64.decode64(encoded_credentials)
+      decoded_credentials = [encoded_credentials].pack("m")
       @username, @password = decoded_credentials.split(':', 2)
     end
   end
