@@ -1103,7 +1103,7 @@ static inline void gc_mark_and_pin(rb_objspace_t *objspace, VALUE ptr);
 static int gc_mark_stacked_objects_incremental(rb_objspace_t *, size_t count);
 NO_SANITIZE("memory", static inline bool is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr));
 
-static void rb_gc_impl_verify_internal_consistency(void *objspace_ptr);
+static void gc_verify_internal_consistency(void *objspace_ptr);
 
 static double getrusage_time(void);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason);
@@ -3220,7 +3220,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     rb_objspace_t *objspace = objspace_ptr;
 
 #if RGENGC_CHECK_MODE >= 2
-    rb_gc_impl_verify_internal_consistency(objspace);
+    gc_verify_internal_consistency(objspace);
 #endif
     if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) return;
 
@@ -4066,7 +4066,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
     gc_mode_transition(objspace, gc_mode_none);
 
 #if RGENGC_CHECK_MODE >= 2
-    rb_gc_impl_verify_internal_consistency(objspace);
+    gc_verify_internal_consistency(objspace);
 #endif
 }
 
@@ -4843,7 +4843,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         }
     }
 
-    if (RGENGC_CHECK_MODE >= 3) rb_gc_impl_verify_internal_consistency(objspace);
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     if (is_mark_stack_empty(mstack)) {
         shrink_stack_chunk_cache(mstack);
@@ -5428,7 +5428,7 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 }
 
 static void
-rb_gc_impl_verify_internal_consistency(void *objspace_ptr)
+gc_verify_internal_consistency(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
@@ -5592,7 +5592,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     gc_update_weak_references(objspace);
 
 #if RGENGC_CHECK_MODE >= 2
-    rb_gc_impl_verify_internal_consistency(objspace);
+    gc_verify_internal_consistency(objspace);
 #endif
 
 #if RGENGC_CHECK_MODE >= 4
@@ -5851,7 +5851,7 @@ gc_sweep_compact(rb_objspace_t *objspace)
 {
     gc_compact_start(objspace);
 #if RGENGC_CHECK_MODE >= 2
-    rb_gc_impl_verify_internal_consistency(objspace);
+    gc_verify_internal_consistency(objspace);
 #endif
 
     while (!gc_compact_all_compacted_p(objspace)) {
@@ -5881,7 +5881,7 @@ gc_sweep_compact(rb_objspace_t *objspace)
     gc_compact_finish(objspace);
 
 #if RGENGC_CHECK_MODE >= 2
-    rb_gc_impl_verify_internal_consistency(objspace);
+    gc_verify_internal_consistency(objspace);
 #endif
 }
 
@@ -6555,7 +6555,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     gc_enter(objspace, gc_enter_event_start, &lock_lev);
 
 #if RGENGC_CHECK_MODE >= 2
-    rb_gc_impl_verify_internal_consistency(objspace);
+    gc_verify_internal_consistency(objspace);
 #endif
 
     if (ruby_gc_stressful) {
@@ -6666,7 +6666,7 @@ gc_rest(rb_objspace_t *objspace)
         unsigned int lock_lev;
         gc_enter(objspace, gc_enter_event_rest, &lock_lev);
 
-        if (RGENGC_CHECK_MODE >= 2) rb_gc_impl_verify_internal_consistency(objspace);
+        if (RGENGC_CHECK_MODE >= 2) gc_verify_internal_consistency(objspace);
 
         if (is_incremental_marking(objspace)) {
             gc_marking_enter(objspace);
@@ -6834,7 +6834,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 
     gc_enter_count(event);
     if (RB_UNLIKELY(during_gc != 0)) rb_bug("during_gc != 0");
-    if (RGENGC_CHECK_MODE >= 3) rb_gc_impl_verify_internal_consistency(objspace);
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 
     during_gc = TRUE;
     RUBY_DEBUG_LOG("%s (%s)",gc_enter_event_cstr(event), gc_current_status(objspace));
@@ -9275,7 +9275,7 @@ gc_profile_disable(VALUE _)
 static VALUE
 gc_verify_internal_consistency_m(VALUE dummy)
 {
-    rb_gc_impl_verify_internal_consistency(rb_gc_get_objspace());
+    gc_verify_internal_consistency(rb_gc_get_objspace());
     return Qnil;
 }
 
