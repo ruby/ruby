@@ -222,7 +222,7 @@ class Gem::Installer
     ruby_executable = false
     existing = nil
 
-    File.open generated_bin, "rb" do |io|
+    Gem.open_file_with_flock generated_bin, "rb+" do |io|
       line = io.gets
       shebang = /^#!.*ruby/o
 
@@ -541,8 +541,8 @@ class Gem::Installer
     require "fileutils"
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    Gem.open_file_with_flock(bin_script_path) do |file|
-      file.write app_script_text(filename)
+    File.open bin_script_path, "wb", 0o755 do |file|
+      file.print app_script_text(filename)
       file.chmod(options[:prog_mode] || 0o755)
     end
 

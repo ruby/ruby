@@ -792,18 +792,21 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags
+  # Open a file with given flags. It requires special logic on Windows, like
+  # protecting access with flock
 
   def self.open_file(path, flags, &block)
-    File.open(path, flags, &block)
+    if !java_platform? && win_platform?
+      open_file_with_flock(path, flags, &block)
+    else
+      open_file_without_flock(path, flags, &block)
+    end
   end
 
   ##
   # Open a file with given flags, and protect access with flock
 
-  def self.open_file_with_flock(path, &block)
-    flags = File.exist?(path) ? "r+" : "a+"
-
+  def self.open_file_with_flock(path, flags, &block)
     File.open(path, flags) do |io|
       begin
         io.flock(File::LOCK_EX)
@@ -814,7 +817,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       if Thread.main != Thread.current
         raise
       else
-        open_file(path, flags, &block)
+        open_file_without_flock(path, flags, &block)
       end
     end
   end
@@ -1314,6 +1317,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     attr_reader :pre_uninstall_hooks
 
     private
+
+    def open_file_without_flock(path, flags, &block)
+      File.open(path, flags, &block)
+    end
 
     def already_loaded?(file)
       $LOADED_FEATURES.any? do |feature_path|
