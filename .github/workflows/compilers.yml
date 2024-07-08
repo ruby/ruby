@@ -261,7 +261,7 @@ jobs:
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
 
-      - name: Build shared GC
+      - name: Build existing GC as shared
         run: >
           make probes.h &&
           export RUBY_GC_LIBRARY=librubygc.so &&
@@ -270,6 +270,17 @@ jobs:
           gcc -I../src -I../src/include -I. -I.ext/include/x86_64-linux
           -Wl,-undefined,dynamic_lookup -fPIC -g -O3 -shared
           -o ${{ matrix.entry.shared_gc_dir }}/$RUBY_GC_LIBRARY ../src/gc_impl.c
+        if: ${{ matrix.entry.shared_gc }}
+
+      - name: Build Epsilon GC as shared
+        run: >
+          make probes.h &&
+          export RUBY_GC_LIBRARY=libepsilongc.so &&
+          echo "RUBY_GC_LIBRARY=$RUBY_GC_LIBRARY" >> $GITHUB_ENV &&
+          mkdir -p ${{ matrix.entry.shared_gc_dir }} &&
+          gcc -I../src -I../src/include -I. -I.ext/include/x86_64-linux
+          -Wl,-undefined,dynamic_lookup -fPIC -g -O3 -shared
+          -o ${{ matrix.entry.shared_gc_dir }}/$RUBY_GC_LIBRARY ../src/gc/epsilon.c
         if: ${{ matrix.entry.shared_gc }}
 
       - name: Add to ext/Setup
