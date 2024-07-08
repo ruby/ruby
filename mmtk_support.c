@@ -10,6 +10,7 @@
 #include "internal/mmtk.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "iseq.h"
 #include "ruby/ruby.h"
 #include "ractor_core.h"
 #include "vm_core.h"
@@ -615,6 +616,7 @@ rb_mmtk_is_ppp(VALUE obj) {
       case T_IMEMO:
         switch (imemo_type(obj)) {
           case imemo_iseq:
+            return rb_mmtk_iseq_is_ppp(obj);
           case imemo_tmpbuf:
           case imemo_ast:
           case imemo_ifunc:
@@ -627,6 +629,11 @@ rb_mmtk_is_ppp(VALUE obj) {
       default:
         return false;
     }
+}
+
+static bool
+rb_mmtk_is_ppp_wrapper(MMTk_ObjectReference obj) {
+    rb_mmtk_is_ppp((VALUE)obj);
 }
 
 static void
@@ -1629,6 +1636,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_get_original_givtbl,
     rb_mmtk_move_givtbl,
     rb_mmtk_vm_live_bytes,
+    rb_mmtk_is_ppp_wrapper,
     rb_mmtk_update_frozen_strings_table,
     rb_mmtk_update_finalizer_table,
     rb_mmtk_update_obj_id_tables,

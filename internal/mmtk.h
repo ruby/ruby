@@ -80,6 +80,7 @@ typedef struct MMTk_RubyUpcalls {
     void *(*get_original_givtbl)(MMTk_ObjectReference object);
     void (*move_givtbl)(MMTk_ObjectReference old_objref, MMTk_ObjectReference new_objref);
     size_t (*vm_live_bytes)(void);
+    bool (*is_ppp)(MMTk_ObjectReference object);
     void (*update_frozen_strings_table)(void);
     void (*update_finalizer_table)(void);
     void (*update_obj_id_tables)(void);
