@@ -353,7 +353,6 @@ module TestOpenURIUtils
       open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
       proxy_host = '127.0.0.1'
       proxy = SimpleHTTPProxyServer.new(proxy_host, 0, proxy_log, proxy_access_log)
-      proxy.start
       proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_thread = proxy.start
       threads << Thread.new {
