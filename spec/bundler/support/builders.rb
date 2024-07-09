@@ -245,7 +245,7 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      if path == gem_repo1 && caller.first.split(" ").last == "`build_repo`"
+      if path == gem_repo1 && caller.first.split(" ").last != "`build_repo'"
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
       return unless block_given?
