@@ -443,6 +443,8 @@ PREP          = miniruby$(EXEEXT)
 BUILTIN_BINARY = yes
 !endif
 
+BUILTIN_GC = default
+
 !if !defined(EXTSTATIC)
 EXTSTATIC     =
 !endif
@@ -1335,6 +1337,11 @@ $(ruby_pc): $(RBCONFIG)
 .c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
+
+BUILTIN_GC_PATH = $(srcdir)/gc/$(BUILTIN_GC).c
+gc_impl.obj: $(BUILTIN_GC_PATH)
+	$(ECHO) compiling $(BUILTIN_GC_PATH:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(BUILTIN_GC_PATH:\=/)
 
 {$(srcdir)/missing}.c.asm:
 	$(ECHO) translating $(<:\=/)
