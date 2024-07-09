@@ -6,7 +6,7 @@ AC_ARG_WITH(shared-gc,
     [shared_gc_dir=$withval], [unset shared_gc_dir]
 )
 
-AC_MSG_CHECKING([if Ruby is build with shared GC support])
+AC_MSG_CHECKING([if building with shared GC support])
 AS_IF([test x"$shared_gc_dir" != x], [
     AC_MSG_RESULT([yes])
 
