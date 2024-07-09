@@ -588,6 +588,12 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
 }
 
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+static void *
+nogvl_fdopendir(void *fd)
+{
+    return (void *)fdopendir((int)(VALUE)fd);
+}
+
 /*
  * call-seq:
  *   Dir.for_fd(fd) -> dir
@@ -614,7 +620,7 @@ dir_s_for_fd(VALUE klass, VALUE fd)
     struct dir_data *dp;
     VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
 
-    if (!(dp->dir = fdopendir(NUM2INT(fd)))) {
+    if (!(dp->dir = (DIR *)IO_WITHOUT_GVL(nogvl_fdopendir, (void *)(VALUE)NUM2INT(fd)))) {
         rb_sys_fail("fdopendir");
         UNREACHABLE_RETURN(Qnil);
     }
