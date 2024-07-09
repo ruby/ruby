@@ -45,6 +45,7 @@ VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
 VALUE rb_ary_behead(VALUE, long);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
+void rb_ary_shrink_capa(VALUE ary);
 
 struct rb_execution_context_struct;
 VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);

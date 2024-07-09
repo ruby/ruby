@@ -450,6 +450,14 @@ ary_shrink_capa(VALUE ary)
     ary_verify(ary);
 }
 
+void
+rb_ary_shrink_capa(VALUE ary)
+{
+    if (!ARY_EMBED_P(ary) && !ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
+        ary_shrink_capa(ary);
+    }
+}
+
 static void
 ary_double_capa(VALUE ary, long min)
 {
@@ -647,9 +655,7 @@ rb_ary_freeze(VALUE ary)
 
     if (OBJ_FROZEN(ary)) return ary;
 
-    if (!ARY_EMBED_P(ary) && !ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
-        ary_shrink_capa(ary);
-    }
+    rb_ary_shrink_capa(ary);
 
     return rb_obj_freeze(ary);
 }
