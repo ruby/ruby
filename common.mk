@@ -1915,7 +1915,7 @@ shared-gc: probes.h
 		exit 1; \
 	else \
 		echo generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT); \
-		$(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) -I. $(XDLDFLAGS) $(cflags) -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/$(SHARED_GC).c; \
+		$(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) -I. $(XDLDFLAGS) $(cflags) -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c; \
 	fi
 
 help: PHONY
@@ -7506,6 +7506,7 @@ gc_impl.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 gc_impl.$(OBJEXT): $(CCAN_DIR)/list/list.h
 gc_impl.$(OBJEXT): $(CCAN_DIR)/str/str.h
 gc_impl.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+gc_impl.$(OBJEXT): $(top_srcdir)/gc/gc_impl.c
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/bits.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
@@ -7527,7 +7528,7 @@ gc_impl.$(OBJEXT): {$(VPATH)}darray.h
 gc_impl.$(OBJEXT): {$(VPATH)}debug.h
 gc_impl.$(OBJEXT): {$(VPATH)}debug_counter.h
 gc_impl.$(OBJEXT): {$(VPATH)}defines.h
-gc_impl.$(OBJEXT): {$(VPATH)}gc_impl.c
+gc_impl.$(OBJEXT): {$(VPATH)}gc/gc_impl.c
 gc_impl.$(OBJEXT): {$(VPATH)}intern.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/abi.h
 gc_impl.$(OBJEXT): {$(VPATH)}internal/anyargs.h
