@@ -1484,6 +1484,12 @@ check_dirname(VALUE dir)
 }
 
 #if defined(HAVE_CHROOT)
+static void *
+nogvl_chroot(void *dirname)
+{
+    return (void *)(VALUE)chroot((const char *)dirname);
+}
+
 /*
  * call-seq:
  *   Dir.chroot(dirpath) -> 0
@@ -1500,7 +1506,7 @@ static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
 {
     path = check_dirname(path);
-    if (chroot(RSTRING_PTR(path)) == -1)
+    if (IO_WITHOUT_GVL_INT(nogvl_chroot, (void *)RSTRING_PTR(path)) == -1)
         rb_sys_fail_path(path);
 
     return INT2FIX(0);
