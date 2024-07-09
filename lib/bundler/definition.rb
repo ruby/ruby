@@ -81,7 +81,7 @@ module Bundler
       @resolved_bundler_version = nil
 
       @locked_ruby_version = nil
-      @new_platform = nil
+      @new_platforms = []
       @removed_platform = nil
 
       if lockfile_exists?
@@ -457,8 +457,10 @@ module Bundler
     end
 
     def add_platform(platform)
-      @new_platform ||= !@platforms.include?(platform)
-      @platforms |= [platform]
+      return if @platforms.include?(platform)
+
+      @new_platforms << platform
+      @platforms << platform
     end
 
     def remove_platform(platform)
@@ -482,7 +484,7 @@ module Bundler
 
       !@source_changes &&
         !@dependency_changes &&
-        !@new_platform &&
+        @new_platforms.empty? &&
         !@path_changes &&
         !@local_changes &&
         !@missing_lockfile_dep &&
@@ -703,7 +705,7 @@ module Bundler
       [
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],
-        [@new_platform, "you added a new platform to your gemfile"],
+        [@new_platforms.any?, "you added a new platform to your gemfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
         [@missing_lockfile_dep, "your lock file is missing \"#{@missing_lockfile_dep}\""],
@@ -1061,7 +1063,7 @@ module Bundler
 
       platforms.reverse_each do |platform|
         next if local_platform == platform ||
-                (@new_platform && platforms.last == platform) ||
+                @new_platforms.include?(platform) ||
                 @path_changes ||
                 @dependency_changes ||
                 @locked_spec_with_invalid_deps ||
