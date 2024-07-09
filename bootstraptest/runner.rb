@@ -704,23 +704,19 @@ def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
       timeout_signaled = false
       logfile = "assert_normal_exit.#{as.path}.#{as.lineno}.log"
 
-      begin
-        err = open(logfile, "w")
-        io = IO.popen("#{BT.ruby} -W0 #{filename}", err: err)
-        pid = io.pid
-        th = Thread.new {
-          io.read
-          io.close
-          $?
-        }
-        if !th.join(timeout)
-          Process.kill :KILL, pid
-          timeout_signaled = true
-        end
-        status = th.value
-      ensure
-        err.close
+      io = IO.popen("#{BT.ruby} -W0 #{filename}", err: logfile)
+      pid = io.pid
+      th = Thread.new {
+        io.read
+        io.close
+        $?
+      }
+      if !th.join(timeout)
+        Process.kill :KILL, pid
+        timeout_signaled = true
       end
+      status = th.value
+
       if status && status.signaled?
         signo = status.termsig
         signame = Signal.list.invert[signo]
