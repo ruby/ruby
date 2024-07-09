@@ -411,42 +411,100 @@ impl From<Opnd> for YARVOpnd {
     }
 }
 
+/// Number of registers that can be used for stack temps
+pub const MAX_TEMP_REGS: usize = 5;
+
 /// Maximum index of stack temps that could be in a register
 pub const MAX_REG_TEMPS: u8 = 8;
 
-/// Bitmap of which stack temps are in a register
-#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
-pub struct RegTemps(u8);
+/// A stack slot or a local variable. u8 represents the index of it (<= 8).
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
+pub enum RegTemp {
+    Stack(u8),
+    Local(u8),
+}
+
+/// RegTemps manages a set of registers used for temporary values on the stack.
+/// Each element of the array represents each of the registers.
+/// If an element is Some, the temporary value uses a register.
+#[derive(Copy, Clone, Default, Eq, Hash, PartialEq)]
+pub struct RegTemps([Option<RegTemp>; MAX_TEMP_REGS]);
 
 impl RegTemps {
-    pub fn get(&self, index: u8) -> bool {
-        assert!(index < MAX_REG_TEMPS);
-        (self.0 >> index) & 1 == 1
+    /// Return the index of the register for a given stack value if allocated.
+    pub fn get_reg(&self, temp: RegTemp) -> Option<usize> {
+        self.0.iter().enumerate()
+            .find(|(_, &reg_temp)| reg_temp == Some(temp))
+            .map(|(reg_idx, _)| reg_idx)
     }
 
-    pub fn set(&mut self, index: u8, value: bool) {
-        assert!(index < MAX_REG_TEMPS);
-        if value {
-            self.0 = self.0 | (1 << index);
-        } else {
-            self.0 = self.0 & !(1 << index);
+    /// Allocate a register for a given stack value if available.
+    /// Return true if self is updated.
+    pub fn alloc_reg(&mut self, temp: RegTemp) -> bool {
+        // If a given temp already has a register, skip allocation.
+        if self.get_reg(temp).is_some() {
+            return false;
         }
-    }
 
-    pub fn as_u8(&self) -> u8 {
-        self.0
-    }
+        // If the index is too large to encode with with 3 bits, give up.
+        let temp_idx = match temp {
+            RegTemp::Stack(stack_idx) => stack_idx,
+            RegTemp::Local(local_idx) => local_idx,
+        };
+        if temp_idx >= MAX_REG_TEMPS {
+            return false;
+        }
 
-    /// Return true if there's a register that conflicts with a given stack_idx.
-    pub fn conflicts_with(&self, stack_idx: u8) -> bool {
-        let mut other_idx = stack_idx as usize % get_option!(num_temp_regs);
-        while other_idx < MAX_REG_TEMPS as usize {
-            if stack_idx as usize != other_idx && self.get(other_idx as u8) {
-                return true;
-            }
-            other_idx += get_option!(num_temp_regs);
+        // Allocate a register if available.
+        if let Some(reg_idx) = self.find_unused_reg(temp) {
+            self.0[reg_idx] = Some(temp);
+            return true;
         }
         false
+    }
+
+    /// Deallocate a register for a given stack value if in use.
+    /// Return true if self is updated.
+    pub fn dealloc_reg(&mut self, temp: RegTemp) -> bool {
+        for reg_temp in self.0.iter_mut() {
+            if *reg_temp == Some(temp) {
+                *reg_temp = None;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Find an available register and return the index of it.
+    fn find_unused_reg(&self, temp: RegTemp) -> Option<usize> {
+        if get_option!(num_temp_regs) == 0 {
+            return None;
+        }
+
+        // If the default index for the stack value is available, use that to minimize
+        // discrepancies among Contexts.
+        let default_idx = match temp {
+            RegTemp::Stack(stack_idx) => stack_idx.as_usize() % MAX_TEMP_REGS,
+            RegTemp::Local(local_idx) => MAX_TEMP_REGS - (local_idx.as_usize() % MAX_TEMP_REGS) - 1,
+        };
+        if self.0[default_idx].is_none() {
+            return Some(default_idx);
+        }
+
+        // If not, pick any other available register. Like default indexes, prefer
+        // lower indexes for Stack, and higher indexes for Local.
+        let mut index_temps = self.0.iter().enumerate();
+        match temp {
+            RegTemp::Stack(_) => index_temps.find(|(_, temp)| temp.is_none()),
+            RegTemp::Local(_) => index_temps.rev().find(|(_, temp)| temp.is_none()),
+        }.map(|(index, _)| index)
+    }
+}
+
+impl fmt::Debug for RegTemps {
+    /// Print `[None, ...]` instead of the default `RegTemps([None, ...])`
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?}", self.0)
     }
 }
 
@@ -786,7 +844,7 @@ mod bitvector_tests {
         let idx0 = ctx0.encode_into(&mut bits);
 
         let mut ctx1 = Context::default();
-        ctx1.reg_temps = RegTemps(1);
+        ctx1.reg_temps = RegTemps([Some(RegTemp::Stack(0)), None, None, None, None]);
         let idx1 = ctx1.encode_into(&mut bits);
 
         // Make sure that we can encode two contexts successively
@@ -800,7 +858,7 @@ mod bitvector_tests {
     fn regress_reg_temps() {
         let mut bits = BitVector::new();
         let mut ctx = Context::default();
-        ctx.reg_temps = RegTemps(1);
+        ctx.reg_temps = RegTemps([Some(RegTemp::Stack(0)), None, None, None, None]);
         ctx.encode_into(&mut bits);
 
         let b0 = bits.read_u1(&mut 0);
@@ -961,9 +1019,24 @@ impl Context {
             bits.push_u8(self.sp_offset as u8);
         }
 
-        // Bitmap of which stack temps are in a register
-        let RegTemps(reg_temps) = self.reg_temps;
-        bits.push_u8(reg_temps);
+        // Which stack temps are in a register
+        for &temp in self.reg_temps.0.iter() {
+            if let Some(temp) = temp {
+                bits.push_u1(1); // Some
+                match temp {
+                    RegTemp::Stack(stack_idx) => {
+                        bits.push_u1(0); // Stack
+                        bits.push_u3(stack_idx);
+                    }
+                    RegTemp::Local(local_idx) => {
+                        bits.push_u1(1); // Local
+                        bits.push_u3(local_idx);
+                    }
+                }
+            } else {
+                bits.push_u1(0); // None
+            }
+        }
 
         // chain_depth_and_flags: u8,
         bits.push_u8(self.chain_depth_and_flags);
@@ -1043,8 +1116,17 @@ impl Context {
             ctx.sp_offset = bits.read_u8(&mut idx) as i8;
         }
 
-        // Bitmap of which stack temps are in a register
-        ctx.reg_temps = RegTemps(bits.read_u8(&mut idx));
+        // Which stack temps are in a register
+        for index in 0..MAX_TEMP_REGS {
+            if bits.read_u1(&mut idx) == 1 { // Some
+                let temp = if bits.read_u1(&mut idx) == 0 { // RegTemp::Stack
+                    RegTemp::Stack(bits.read_u3(&mut idx))
+                } else {
+                    RegTemp::Local(bits.read_u3(&mut idx))
+                };
+                ctx.reg_temps.0[index] = Some(temp);
+            }
+        }
 
         // chain_depth_and_flags: u8
         ctx.chain_depth_and_flags = bits.read_u8(&mut idx);
@@ -1396,7 +1478,7 @@ impl PendingBranch {
         target_idx: u32,
         target: BlockId,
         ctx: &Context,
-        ocb: &mut OutlinedCb,
+        jit: &mut JITState,
     ) -> Option<CodePtr> {
         // If the block already exists
         if let Some(blockref) = find_block_version(target, ctx) {
@@ -1414,7 +1496,7 @@ impl PendingBranch {
         // The branch struct is uninitialized right now but as a stable address.
         // We make sure the stub runs after the branch is initialized.
         let branch_struct_addr = self.uninit_branch.as_ptr() as usize;
-        let stub_addr = gen_branch_stub(ctx, ocb, branch_struct_addr, target_idx);
+        let stub_addr = gen_branch_stub(ctx, jit.iseq, jit.get_ocb(), branch_struct_addr, target_idx);
 
         if let Some(stub_addr) = stub_addr {
             // Fill the branch target with a stub
@@ -2434,10 +2516,9 @@ impl Context {
     /// Stop using a register for a given stack temp.
     /// This allows us to reuse the register for a value that we know is dead
     /// and will no longer be used (e.g. popped stack temp).
-    pub fn dealloc_temp_reg(&mut self, stack_idx: u8) {
-        if stack_idx < MAX_REG_TEMPS {
-            let mut reg_temps = self.get_reg_temps();
-            reg_temps.set(stack_idx, false);
+    pub fn dealloc_temp_reg(&mut self, temp: RegTemp) {
+        let mut reg_temps = self.get_reg_temps();
+        if reg_temps.dealloc_reg(temp) {
             self.set_reg_temps(reg_temps);
         }
     }
@@ -2838,15 +2919,14 @@ impl Assembler {
             }
         }
 
-        // Allocate a register to the stack operand
-        if self.ctx.stack_size < MAX_REG_TEMPS {
-            self.alloc_temp_reg(self.ctx.stack_size);
-        }
-
         self.ctx.stack_size += 1;
         self.ctx.sp_offset += 1;
 
-        return self.stack_opnd(0);
+        // Allocate a register to the new stack operand
+        let stack_opnd = self.stack_opnd(0);
+        self.alloc_temp_reg(stack_opnd.reg_temp());
+
+        stack_opnd
     }
 
     /// Push one new value on the temp stack
@@ -2916,6 +2996,20 @@ impl Assembler {
             idx,
             num_bits: 64,
             stack_size: self.ctx.stack_size,
+            local_size: None, // not needed for stack temps
+            sp_offset: self.ctx.sp_offset,
+            reg_temps: None, // push_insn will set this
+        }
+    }
+
+    /// Get an operand pointing to a local variable
+    pub fn local_opnd(&self, ep_offset: u32) -> Opnd {
+        let idx = self.ctx.stack_size as i32 + ep_offset as i32;
+        Opnd::Stack {
+            idx,
+            num_bits: 64,
+            stack_size: self.ctx.stack_size,
+            local_size: Some(self.local_size.unwrap()), // this must exist for locals
             sp_offset: self.ctx.sp_offset,
             reg_temps: None, // push_insn will set this
         }
@@ -3581,6 +3675,7 @@ fn delete_empty_defer_block(branch: &Branch, new_block: &Block, target_ctx: Cont
 /// A piece of code that redeems for more code; a thunk for code.
 fn gen_branch_stub(
     ctx: u32,
+    iseq: IseqPtr,
     ocb: &mut OutlinedCb,
     branch_struct_address: usize,
     target_idx: u32,
@@ -3589,6 +3684,7 @@ fn gen_branch_stub(
 
     let mut asm = Assembler::new();
     asm.ctx = Context::decode(ctx);
+    asm.local_size = Some(unsafe { get_iseq_body_local_table_size(iseq) });
     asm.set_reg_temps(asm.ctx.reg_temps);
     asm_comment!(asm, "branch stub hit");
 
@@ -3736,12 +3832,11 @@ pub fn gen_branch(
     gen_fn: BranchGenFn,
 ) {
     let branch = new_pending_branch(jit, gen_fn);
-    let ocb = jit.get_ocb();
 
     // Get the branch targets or stubs
-    let target0_addr = branch.set_target(0, target0, ctx0, ocb);
+    let target0_addr = branch.set_target(0, target0, ctx0, jit);
     let target1_addr = if let Some(ctx) = ctx1 {
-        let addr = branch.set_target(1, target1.unwrap(), ctx, ocb);
+        let addr = branch.set_target(1, target1.unwrap(), ctx, jit);
         if addr.is_none() {
             // target1 requested but we're out of memory.
             // Avoid unwrap() in gen_fn()
@@ -3816,7 +3911,7 @@ pub fn defer_compilation(
     };
 
     // Likely a stub since the context is marked as deferred().
-    let target0_address = branch.set_target(0, blockid, &next_ctx, jit.get_ocb());
+    let target0_address = branch.set_target(0, blockid, &next_ctx, jit);
 
     // Pad the block if it has the potential to be invalidated. This must be
     // done before gen_fn() in case the jump is overwritten by a fallthrough.
@@ -4037,7 +4132,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Create a stub for this branch target
-        let stub_addr = gen_branch_stub(block.ctx, ocb, branchref.as_ptr() as usize, target_idx as u32);
+        let stub_addr = gen_branch_stub(block.ctx, block.iseq.get(), ocb, branchref.as_ptr() as usize, target_idx as u32);
 
         // In case we were unable to generate a stub (e.g. OOM). Use the block's
         // exit instead of a stub for the block. It's important that we
@@ -4236,40 +4331,29 @@ mod tests {
 
     #[test]
     fn reg_temps() {
-        let mut reg_temps = RegTemps(0);
+        let mut reg_temps = RegTemps([None, None, None, None, None]);
 
         // 0 means every slot is not spilled
         for stack_idx in 0..MAX_REG_TEMPS {
-            assert_eq!(reg_temps.get(stack_idx), false);
+            assert_eq!(reg_temps.get_reg(RegTemp::Stack(stack_idx)), None);
         }
 
-        // Set 0, 2, 7 (RegTemps: 10100001)
-        reg_temps.set(0, true);
-        reg_temps.set(2, true);
-        reg_temps.set(3, true);
-        reg_temps.set(3, false);
-        reg_temps.set(7, true);
+        // Set 0, 2, 6 (RegTemps: [Some(0), Some(6), Some(2), None, None])
+        reg_temps.alloc_reg(RegTemp::Stack(0));
+        reg_temps.alloc_reg(RegTemp::Stack(2));
+        reg_temps.alloc_reg(RegTemp::Stack(3));
+        reg_temps.dealloc_reg(RegTemp::Stack(3));
+        reg_temps.alloc_reg(RegTemp::Stack(6));
 
         // Get 0..8
-        assert_eq!(reg_temps.get(0), true);
-        assert_eq!(reg_temps.get(1), false);
-        assert_eq!(reg_temps.get(2), true);
-        assert_eq!(reg_temps.get(3), false);
-        assert_eq!(reg_temps.get(4), false);
-        assert_eq!(reg_temps.get(5), false);
-        assert_eq!(reg_temps.get(6), false);
-        assert_eq!(reg_temps.get(7), true);
-
-        // Test conflicts
-        assert_eq!(5, get_option!(num_temp_regs));
-        assert_eq!(reg_temps.conflicts_with(0), false); // already set, but no conflict
-        assert_eq!(reg_temps.conflicts_with(1), false);
-        assert_eq!(reg_temps.conflicts_with(2), true); // already set, and conflicts with 7
-        assert_eq!(reg_temps.conflicts_with(3), false);
-        assert_eq!(reg_temps.conflicts_with(4), false);
-        assert_eq!(reg_temps.conflicts_with(5), true); // not set, and will conflict with 0
-        assert_eq!(reg_temps.conflicts_with(6), false);
-        assert_eq!(reg_temps.conflicts_with(7), true); // already set, and conflicts with 2
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(0)), Some(0));
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(1)), None);
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(2)), Some(2));
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(3)), None);
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(4)), None);
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(5)), None);
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(6)), Some(1));
+        assert_eq!(reg_temps.get_reg(RegTemp::Stack(7)), None);
     }
 
     #[test]

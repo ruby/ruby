@@ -402,6 +402,11 @@ impl<'a> JITState<'a> {
             _ => false,
         }
     }
+
+    /// Return the number of locals in the current ISEQ
+    pub fn local_size(&self) -> u32 {
+        unsafe { get_iseq_body_local_table_size(self.iseq) }
+    }
 }
 
 /// Macro to call jit.perf_symbol_push() without evaluating arguments when
@@ -804,10 +809,11 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
 /// moment, so there is one unique side exit for each context. Note that
 /// it's incorrect to jump to the side exit after any ctx stack push operations
 /// since they change the logic required for reconstructing interpreter state.
-pub fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
+pub fn gen_outlined_exit(exit_pc: *mut VALUE, local_size: u32, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut cb = ocb.unwrap();
     let mut asm = Assembler::new();
     asm.ctx = *ctx;
+    asm.local_size = Some(local_size);
     asm.set_reg_temps(ctx.get_reg_temps());
 
     gen_exit(exit_pc, &mut asm);
@@ -876,7 +882,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler) -> O
         jit.block_entry_exit = Some(entry_exit?);
     } else {
         let block_entry_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, jit.starting_insn_idx.into()) };
-        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, block_starting_context, jit.get_ocb())?);
+        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, jit.local_size(), block_starting_context, jit.get_ocb())?);
     }
 
     Some(())
@@ -1134,7 +1140,7 @@ fn end_block_with_jump(
     if jit.record_boundary_patch_point {
         jit.record_boundary_patch_point = false;
         let exit_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, continuation_insn_idx.into())};
-        let exit_pos = gen_outlined_exit(exit_pc, &reset_depth, jit.get_ocb());
+        let exit_pos = gen_outlined_exit(exit_pc, jit.local_size(), &reset_depth, jit.get_ocb());
         record_global_inval_patch(asm, exit_pos?);
     }
 
@@ -1182,13 +1188,14 @@ pub fn gen_single_block(
     // Create a backend assembler instance
     let mut asm = Assembler::new();
     asm.ctx = ctx;
+    asm.local_size = Some(jit.local_size());
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
-        asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
+        asm_comment!(asm, "reg_temps: {:?}", asm.ctx.get_reg_temps());
     }
 
     // Mark the start of an ISEQ for --yjit-perf
@@ -1234,13 +1241,13 @@ pub fn gen_single_block(
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
         for stack_idx in asm.ctx.get_stack_size()..MAX_REG_TEMPS {
-            asm.ctx.dealloc_temp_reg(stack_idx);
+            asm.ctx.dealloc_temp_reg(RegTemp::Stack(stack_idx));
         }
 
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
             // Generate an exit to this instruction and record it
-            let exit_pos = gen_outlined_exit(jit.pc, &asm.ctx, jit.get_ocb()).ok_or(())?;
+            let exit_pos = gen_outlined_exit(jit.pc, jit.local_size(), &asm.ctx, jit.get_ocb()).ok_or(())?;
             record_global_inval_patch(&mut asm, exit_pos);
             jit.record_boundary_patch_point = false;
         }
@@ -1803,7 +1810,7 @@ fn gen_splatkw(
         asm.mov(stack_ret, hash);
         asm.stack_push(block_type);
         // Leave block_opnd spilled by ccall as is
-        asm.ctx.dealloc_temp_reg(asm.ctx.get_stack_size() - 1);
+        asm.ctx.dealloc_temp_reg(RegTemp::Stack(asm.ctx.get_stack_size() - 1));
     }
 
     Some(KeepCompiling)
@@ -2278,7 +2285,7 @@ fn gen_getlocal_generic(
 ) -> Option<CodegenStatus> {
     let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm) {
         // Load the local using SP register
-        asm.ctx.ep_opnd(-(ep_offset as i32))
+        asm.local_opnd(ep_offset)
     } else {
         // Load environment pointer EP (level 0) from CFP
         let ep_opnd = gen_get_ep(asm, level);
@@ -2359,8 +2366,11 @@ fn gen_setlocal_generic(
 
     let (flags_opnd, local_opnd) = if level == 0 && jit.assume_no_ep_escape(asm) {
         // Load flags and the local using SP register
-        let local_opnd = asm.ctx.ep_opnd(-(ep_offset as i32));
         let flags_opnd = asm.ctx.ep_opnd(VM_ENV_DATA_INDEX_FLAGS as i32);
+        let local_opnd = asm.local_opnd(ep_offset);
+
+        // Allocate a register to the new local operand
+        asm.alloc_temp_reg(local_opnd.reg_temp());
         (flags_opnd, local_opnd)
     } else {
         // Load flags and the local for the level
@@ -7502,7 +7512,7 @@ fn gen_send_iseq(
         };
         // Store rest param to memory to avoid register shuffle as
         // we won't be reading it for the remainder of the block.
-        asm.ctx.dealloc_temp_reg(rest_param.stack_idx());
+        asm.ctx.dealloc_temp_reg(rest_param.reg_temp());
         asm.store(rest_param, rest_param_array);
     }
 
@@ -7601,7 +7611,7 @@ fn gen_send_iseq(
         // Write the CI in to the stack and ensure that it actually gets
         // flushed to memory
         let ci_opnd = asm.stack_opnd(-1);
-        asm.ctx.dealloc_temp_reg(ci_opnd.stack_idx());
+        asm.ctx.dealloc_temp_reg(ci_opnd.reg_temp());
         asm.mov(ci_opnd, VALUE(ci as usize).into());
     }
 
@@ -7967,7 +7977,7 @@ fn gen_iseq_kw_call(
             kwargs_order[kwrest_idx] = 0;
         }
         // Put kwrest straight into memory, since we might pop it later
-        asm.ctx.dealloc_temp_reg(stack_kwrest.stack_idx());
+        asm.ctx.dealloc_temp_reg(stack_kwrest.reg_temp());
         asm.mov(stack_kwrest, kwrest);
         if stack_kwrest_idx >= 0 {
             asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(kwrest_type));
@@ -8065,7 +8075,7 @@ fn gen_iseq_kw_call(
     if let Some(kwrest_type) = kwrest_type {
         let kwrest = asm.stack_push(kwrest_type);
         // We put the kwrest parameter in memory earlier
-        asm.ctx.dealloc_temp_reg(kwrest.stack_idx());
+        asm.ctx.dealloc_temp_reg(kwrest.reg_temp());
         argc += 1;
     }
 
@@ -10501,6 +10511,7 @@ mod tests {
     fn test_get_side_exit() {
         let (ctx, mut asm, _, mut ocb) = setup_codegen();
         let side_exit_context = SideExitContext::new(0 as _, ctx);
+        asm.local_size = Some(0);
         asm.get_side_exit(&side_exit_context, None, &mut ocb);
         assert!(ocb.unwrap().get_write_pos() > 0);
     }

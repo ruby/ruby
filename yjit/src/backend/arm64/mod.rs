@@ -381,7 +381,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.local_size);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
