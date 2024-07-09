@@ -167,7 +167,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
           client.close
         end
       rescue OpenSSL::SSL::SSLError => e
-        warn "SSL error: #{e.message}"
+        # Ignore SSL errors because we're testing them implicitly
       end
     end
     @ssl_server = ssl_server
