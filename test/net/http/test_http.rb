@@ -984,7 +984,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
   end
 
   def mount_proc(&block)
-    @server.mount('/continue', WEBrick::HTTPServlet::ProcHandler.new(block.to_proc))
+    @server.mount('/continue', block.to_proc)
   end
 
   def test_expect_continue
@@ -1039,7 +1039,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
   def test_expect_continue_error_before_body
     @log_tester = nil
     mount_proc {|req, res|
-      raise WEBrick::HTTPStatus::Forbidden
+      raise TestNetHTTPUtils::Forbidden
     }
     start {|http|
       uheader = {'content-type' => 'application/x-www-form-urlencoded', 'content-length' => '5', 'expect' => '100-continue'}
@@ -1084,7 +1084,7 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
   end
 
   def mount_proc(&block)
-    @server.mount('/continue', WEBrick::HTTPServlet::ProcHandler.new(block.to_proc))
+    @server.mount('/continue', block.to_proc)
   end
 
   def test_info
@@ -1159,11 +1159,11 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
   end
 
   def test_keep_alive_reset_on_new_connection
-    # Using WEBrick's debug log output on accepting connection:
+    # Using debug log output on accepting connection:
     #
     #   "[2021-04-29 20:36:46] DEBUG accept: 127.0.0.1:50674\n"
     @log_tester = nil
-    @server.logger.level = WEBrick::BasicLog::DEBUG
+    @logger_level = :debug
 
     start {|http|
       res = http.get('/')
