@@ -1264,7 +1264,7 @@ nogvl_fchdir(void *ptr)
 static void
 dir_fchdir(int fd)
 {
-    if (fchdir(fd) < 0)
+    if (IO_WITHOUT_GVL_INT(nogvl_fchdir, (void *)&fd) < 0)
         rb_sys_fail("fchdir");
 }
 
