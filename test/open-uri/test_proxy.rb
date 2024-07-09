@@ -11,10 +11,10 @@ class TestOpenURIProxy < Test::Unit::TestCase
     begin
       old = {}
       h.each_key {|k| old[k] = ENV[k] }
-      h.each {|k, v| ENV[k] = v }
+      ENV.update(h)
       yield
     ensure
-      h.each_key {|k| ENV[k] = old[k] }
+      ENV.update(old)
     end
   end
 
