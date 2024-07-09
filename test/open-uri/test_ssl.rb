@@ -76,8 +76,6 @@ class TestOpenURISSL < Test::Unit::TestCase
   end
 
   def test_proxy_cacert_file
-    pend if RUBY_PLATFORM =~ /mswin|mingw/
-
     url = nil
     proxy_log_tester = lambda {|proxy_log, proxy_access_log|
       assert_equal(1, proxy_access_log.length)
@@ -94,8 +92,6 @@ class TestOpenURISSL < Test::Unit::TestCase
   end
 
   def test_proxy_cacert_dir
-    pend if RUBY_PLATFORM =~ /mswin|mingw/
-
     url = nil
     proxy_log_tester = lambda {|proxy_log, proxy_access_log|
       assert_equal(1, proxy_access_log.length)
