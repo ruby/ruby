@@ -151,6 +151,39 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     )
   end
 
+  def test_crl_uris_multiple_general_names
+    # Single DistributionPoint contains multiple general names of type URI
+    ef = OpenSSL::X509::ExtensionFactory.new
+    ef.config = OpenSSL::Config.parse(<<~_cnf_)
+      [crlDistPts_section]
+      fullname = URI:http://www.example.com/crl, URI:ldap://ldap.example.com/cn=ca?certificateRevocationList;binary
+    _cnf_
+    cdp_cert = generate_cert(@ee1, @rsa2048, 3, nil)
+    ef.subject_certificate = cdp_cert
+    cdp_cert.add_extension(ef.create_extension("crlDistributionPoints", "crlDistPts_section"))
+    cdp_cert.sign(@rsa2048, "sha256")
+    assert_equal(
+      ["http://www.example.com/crl", "ldap://ldap.example.com/cn=ca?certificateRevocationList;binary"],
+      cdp_cert.crl_uris
+    )
+  end
+
+  def test_crl_uris_no_uris
+    # The only DistributionPointName is a directoryName
+    ef = OpenSSL::X509::ExtensionFactory.new
+    ef.config = OpenSSL::Config.parse(<<~_cnf_)
+      [crlDistPts_section]
+      fullname = dirName:dirname_section
+      [dirname_section]
+      CN = dirname
+    _cnf_
+    cdp_cert = generate_cert(@ee1, @rsa2048, 3, nil)
+    ef.subject_certificate = cdp_cert
+    cdp_cert.add_extension(ef.create_extension("crlDistributionPoints", "crlDistPts_section"))
+    cdp_cert.sign(@rsa2048, "sha256")
+    assert_nil(cdp_cert.crl_uris)
+  end
+
   def test_aia_missing
     cert = issue_cert(@ee1, @rsa2048, 1, [], nil, nil)
     assert_nil(cert.ca_issuer_uris)

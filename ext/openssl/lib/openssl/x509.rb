@@ -122,8 +122,8 @@ module OpenSSL
         include Helpers
 
         # Get the distributionPoint fullName URI from the certificate's CRL
-        # distribution points extension, as described in RFC5280 Section
-        # 4.2.1.13
+        # distribution points extension, as described in RFC 5280 Section
+        # 4.2.1.13.
         #
         # Returns an array of strings or nil or raises ASN1::ASN1Error.
         def crl_uris
@@ -135,19 +135,19 @@ module OpenSSL
             raise ASN1::ASN1Error, "invalid extension"
           end
 
-          crl_uris = cdp_asn1.map do |crl_distribution_point|
+          crl_uris = cdp_asn1.flat_map do |crl_distribution_point|
             distribution_point = crl_distribution_point.value.find do |v|
               v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
             end
             full_name = distribution_point&.value&.find do |v|
               v.tag_class == :CONTEXT_SPECIFIC && v.tag == 0
             end
-            full_name&.value&.find do |v|
+            full_name&.value&.select do |v|
               v.tag_class == :CONTEXT_SPECIFIC && v.tag == 6 # uniformResourceIdentifier
             end
           end
 
-          crl_uris&.map(&:value)
+          crl_uris.empty? ? nil : crl_uris.map(&:value)
         end
       end
 
