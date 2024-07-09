@@ -2244,7 +2244,7 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *  When `ndigits` is non-positive,
  *  returns an Integer based on a computed granularity:
  *
- *  - The granularity is ``ndigits.abs * 10`.
+ *  - The granularity is `ndigits.abs * 10`.
  *  - The returned value is the largest multiple of the granularity
  *    that is less than or equal to `self`.
  *
