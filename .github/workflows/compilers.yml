@@ -263,9 +263,9 @@ jobs:
 
       - name: Build shared GC
         run: >
-          echo "RUBY_GC_LIBRARY=librubygc.gc_impl.so" >> $GITHUB_ENV &&
+          echo "RUBY_GC_LIBRARY=librubygc.default.so" >> $GITHUB_ENV &&
           mkdir ${{ matrix.entry.shared_gc_dir }} &&
-          make shared-gc SHARED_GC=gc_impl
+          make shared-gc SHARED_GC=default
         if: ${{ matrix.entry.shared_gc }}
 
       - name: Add to ext/Setup
