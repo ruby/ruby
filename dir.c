@@ -1062,7 +1062,7 @@ nogvl_chdir(void *ptr)
 static void
 dir_chdir0(VALUE path)
 {
-    if (chdir(RSTRING_PTR(path)) < 0)
+    if (IO_WITHOUT_GVL_INT(nogvl_chdir, (void*)RSTRING_PTR(path)) < 0)
         rb_sys_fail_path(path);
 }
 
