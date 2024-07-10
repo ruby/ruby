@@ -1673,8 +1673,8 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(args)	nogvl_stat((void *)&(args))
-#define LSTAT(args)	nogvl_lstat((void *)&(args))
+#define STAT(args)	(int)(VALUE)nogvl_stat((void *)&(args))
+#define LSTAT(args)	(int)(VALUE)nogvl_lstat((void *)&(args))
 #else
 #define STAT(args)	IO_WITHOUT_GVL_INT(nogvl_stat, (void *)&(args))
 #define LSTAT(args)	IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&(args))
