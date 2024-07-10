@@ -1708,7 +1708,21 @@ at_subpath(int fd, size_t baselen, const char *path)
     return *path ? path : ".";
 }
 
-#if !USE_OPENDIR_AT
+#if USE_OPENDIR_AT
+struct fstatat_args {
+    int fd;
+    int flag;
+    const char *path;
+    struct stat *pst;
+};
+
+static void *
+nogvl_fstatat(void *args)
+{
+    struct fstatat_args *arg = (struct fstatat_args *)args;
+    return (void *)(VALUE)fstatat(arg->fd, arg->path, arg->pst, arg->flag);
+}
+#else
 struct stat_args {
     const char *path;
     struct stat *pst;
@@ -1727,7 +1741,12 @@ static int
 do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, 0);
+    struct fstatat_args args;
+    args.fd = fd;
+    args.path = path;
+    args.pst = pst;
+    args.flag = 0;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
 #else
     struct stat_args args;
     args.path = path;
@@ -1754,7 +1773,12 @@ static int
 do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, AT_SYMLINK_NOFOLLOW);
+    struct fstatat_args args;
+    args.fd = fd;
+    args.path = path;
+    args.pst = pst;
+    args.flag = AT_SYMLINK_NOFOLLOW;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
 #else
     struct stat_args args;
     args.path = path;
