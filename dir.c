@@ -1724,13 +1724,30 @@ do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, r
 }
 
 #if defined HAVE_LSTAT || defined lstat || USE_OPENDIR_AT
+#if !USE_OPENDIR_AT
+struct lstat_args {
+    const char *path;
+    struct stat *pst;
+};
+
+static void *
+nogvl_lstat(void *args)
+{
+    struct lstat_args *arg = (struct lstat_args *)args;
+    return (void *)(VALUE)lstat(arg->path, arg->pst);
+}
+#endif
+
 static int
 do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
     int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, AT_SYMLINK_NOFOLLOW);
 #else
-    int ret = lstat(path, pst);
+    struct lstat_args args;
+    args.path = path;
+    args.pst = pst;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
