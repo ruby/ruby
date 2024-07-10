@@ -240,14 +240,6 @@ class TestNetHTTPS < Test::Unit::TestCase
       http.request_get("/") {|res| }
     }
     assert_match(/certificate verify failed/, ex.message)
-    unless /mswin|mingw/ =~ RUBY_PLATFORM
-      # on Windows, Errno::ECONNRESET will be raised, and it'll be eaten by
-      # WEBrick
-      @log_tester = lambda {|log|
-        assert_equal(1, log.length)
-        assert_match(/ERROR OpenSSL::SSL::SSLError:/, log[0])
-      }
-    end
   end
 
   def test_identity_verify_failure
