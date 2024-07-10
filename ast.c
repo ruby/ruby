@@ -14,6 +14,7 @@
 
 static VALUE rb_mAST;
 static VALUE rb_cNode;
+static VALUE rb_cLocation;
 
 struct ASTNodeData {
     VALUE ast_value;
@@ -42,6 +43,32 @@ static const rb_data_type_t rb_node_type = {
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
+
+struct ASTLocationData {
+    int first_lineno;
+    int first_column;
+    int last_lineno;
+    int last_column;
+};
+
+static void
+location_gc_mark(void *ptr)
+{
+}
+
+static size_t
+location_memsize(const void *ptr)
+{
+    return sizeof(struct ASTLocationData);
+}
+
+static const rb_data_type_t rb_location_type = {
+    "AST/location",
+    {location_gc_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 
 static VALUE rb_ast_node_alloc(VALUE klass);
 
@@ -721,6 +748,45 @@ ast_node_children(rb_execution_context_t *ec, VALUE self)
 }
 
 static VALUE
+location_new(rb_code_location_t *loc)
+{
+    VALUE obj;
+    struct ASTLocationData *data;
+
+    obj = TypedData_Make_Struct(rb_cLocation, struct ASTLocationData, &rb_location_type, data);
+    data->first_lineno = loc->beg_pos.lineno;
+    data->first_column = loc->beg_pos.column;
+    data->last_lineno = loc->end_pos.lineno;
+    data->last_column = loc->end_pos.column;
+
+    return obj;
+}
+
+static VALUE
+node_locations(VALUE ast_value, const NODE *node)
+{
+    enum node_type type = nd_type(node);
+    switch (type) {
+      case NODE_ARGS_AUX:
+      case NODE_LAST:
+        break;
+      default:
+        return rb_ary_new_from_args(1, location_new(nd_code_loc(node)));
+    }
+
+    rb_bug("node_locations: unknown node: %s", ruby_node_name(type));
+}
+
+static VALUE
+ast_node_locations(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    return node_locations(data->ast_value, data->node);
+}
+
+static VALUE
 ast_node_first_lineno(rb_execution_context_t *ec, VALUE self)
 {
     struct ASTNodeData *data;
@@ -823,6 +889,61 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
     return rb_parser_build_script_lines_from(ret);
 }
 
+static VALUE
+ast_location_first_lineno(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->first_lineno);
+}
+
+static VALUE
+ast_location_first_column(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->first_column);
+}
+
+static VALUE
+ast_location_last_lineno(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->last_lineno);
+}
+
+static VALUE
+ast_location_last_column(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->last_column);
+}
+
+static VALUE
+ast_location_inspect(rb_execution_context_t *ec, VALUE self)
+{
+    VALUE str;
+    VALUE cname;
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    cname = rb_class_path(rb_obj_class(self));
+    str = rb_str_new2("#<");
+
+    rb_str_append(str, cname);
+    rb_str_catf(str, ":@%d:%d-%d:%d>",
+                data->first_lineno, data->first_column,
+                data->last_lineno, data->last_column);
+
+    return str;
+}
+
 #include "ast.rbinc"
 
 void
@@ -830,5 +951,7 @@ Init_ast(void)
 {
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
+    rb_cLocation = rb_define_class_under(rb_mAST, "Location", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
+    rb_undef_alloc_func(rb_cLocation);
 }
