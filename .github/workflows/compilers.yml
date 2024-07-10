@@ -211,9 +211,9 @@ jobs:
           - { name: UNIVERSAL_PARSER,               env: { cppflags: '-DUNIVERSAL_PARSER' } }
           - name: SHARED_GC
             shared_gc: true
-            shared_gc_dir: '../gc'
+            shared_gc_dir: '/ruby_gc'
             env:
-              append_configure: '--with-shared-gc=../gc'
+              append_configure: '--with-shared-gc=/ruby_gc'
 
     name: ${{ matrix.entry.name }}
 
