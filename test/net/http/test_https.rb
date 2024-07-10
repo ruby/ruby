@@ -242,19 +242,6 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(/certificate verify failed/, ex.message)
   end
 
-  def test_identity_verify_failure
-    # the certificate's subject has CN=localhost
-    http = Net::HTTP.new(HOST_IP, config("port"))
-    http.use_ssl = true
-    http.cert_store = TEST_STORE
-    @log_tester = lambda {|_| }
-    ex = assert_raise(OpenSSL::SSL::SSLError){
-      http.request_get("/") {|res| }
-    }
-    re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
-    assert_match(re_msg, ex.message)
-  end
-
   def test_timeout_during_SSL_handshake
     bug4246 = "expected the SSL connection to have timed out but have not. [ruby-core:34203]"
 
@@ -301,4 +288,43 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(re_msg, ex.message)
   end
 
+end if defined?(OpenSSL::SSL)
+
+class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
+  include TestNetHTTPUtils
+
+  def self.read_fixture(key)
+    File.read(File.expand_path("../fixtures/#{key}", __dir__))
+  end
+
+  HOST = 'localhost'
+  HOST_IP = '127.0.0.1'
+  CA_CERT = OpenSSL::X509::Certificate.new(read_fixture("cacert.pem"))
+  SERVER_KEY = OpenSSL::PKey.read(read_fixture("server.key"))
+  SERVER_CERT = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
+  DHPARAMS = OpenSSL::PKey::DH.new(read_fixture("dhparams.pem"))
+  TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
+
+  CONFIG = {
+    'host' => HOST_IP,
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+    'ssl_enable' => true,
+    'ssl_certificate' => SERVER_CERT,
+    'ssl_private_key' => SERVER_KEY,
+    'ssl_tmp_dh_callback' => proc { DHPARAMS },
+  }
+
+  def test_identity_verify_failure
+    # the certificate's subject has CN=localhost
+    http = Net::HTTP.new(HOST_IP, config("port"))
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    @log_tester = lambda {|_| }
+    ex = assert_raise(OpenSSL::SSL::SSLError){
+      http.request_get("/") {|res| }
+    }
+    re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
+    assert_match(re_msg, ex.message)
+  end
 end if defined?(OpenSSL::SSL)
