@@ -762,21 +762,17 @@ fundamental_encoding_p(rb_encoding *enc)
     }
 }
 # define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
+# define READDIR_NOGVL READDIR
 #else
-# define READDIR(dir, enc) readdir((dir))
-#endif
-
-struct readdir_args {
-    DIR *dir;
-    rb_encoding *enc;
-};
-
 static void *
-nogvl_readdir(void *args)
+nogvl_readdir(void *dir)
 {
-    struct readdir_args *arg = (struct readdir_args *)args;
-    return (void *)READDIR(arg->dir, arg->enc);
+    return (void *)readdir((DIR *)dir);
 }
+
+# define READDIR(dir, enc) (struct dirent *)IO_WITHOUT_GVL(nogvl_readdir, (void *)dir)
+# define READDIR_NOGVL(dir, enc) (struct dirent *)nogvl_readdir((void *)dir)
+#endif
 
 /* safe to use without GVL */
 static int
@@ -820,13 +816,10 @@ dir_read(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
-    struct readdir_args args;
 
     GetDIR(dir, dirp);
-    args.dir = dirp->dir;
-    args.enc = dirp->enc;
     rb_errno_set(0);
-    if ((dp = (struct dirent *)IO_WITHOUT_GVL(nogvl_readdir, (void *)&args)) != NULL) {
+    if ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
         return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else {
@@ -875,15 +868,12 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
 {
     struct dir_data *dirp;
     struct dirent *dp;
-    struct readdir_args args;
     IF_NORMALIZE_UTF8PATH(int norm_p);
 
     GetDIR(dir, dirp);
-    args.dir = dirp->dir;
-    args.enc = dirp->enc;
     rewinddir(dirp->dir);
     IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp->dir, RSTRING_PTR(dirp->path)));
-    while ((dp = (struct dirent *)IO_WITHOUT_GVL(nogvl_readdir, (void *)&args)) != NULL) {
+    while ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
         const char *name = dp->d_name;
         size_t namlen = NAMLEN(dp);
         VALUE path;
@@ -1683,11 +1673,11 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(p, s)	rb_w32_ustati128((p), (s))
-#undef lstat
-#define lstat(p, s)	rb_w32_ulstati128((p), (s))
+#define STAT(args)	nogvl_stat((void *)&(args))
+#define LSTAT(args)	nogvl_lstat((void *)&(args))
 #else
-#define STAT(p, s)	stat((p), (s))
+#define STAT(args)	IO_WITHOUT_GVL_INT(nogvl_stat, (void *)&(args))
+#define LSTAT(args)	IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&(args))
 #endif
 
 typedef int ruby_glob_errfunc(const char*, VALUE, const void*, int);
@@ -1732,7 +1722,7 @@ static void *
 nogvl_stat(void *args)
 {
     struct stat_args *arg = (struct stat_args *)args;
-    return (void *)(VALUE)STAT(arg->path, arg->pst);
+    return (void *)(VALUE)stat(arg->path, arg->pst);
 }
 #endif
 
@@ -1751,7 +1741,7 @@ do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, r
     struct stat_args args;
     args.path = path;
     args.pst = pst;
-    int ret = IO_WITHOUT_GVL_INT(nogvl_stat, (void *)&args);
+    int ret = STAT(args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
@@ -1783,7 +1773,7 @@ do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, 
     struct stat_args args;
     args.path = path;
     args.pst = pst;
-    int ret = IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&args);
+    int ret = LSTAT(args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
@@ -2571,9 +2561,6 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
     else {
         void *newp;
         struct dirent *dp;
-        struct readdir_args args;
-        args.dir = dirp;
-        args.enc = enc;
         size_t count = 0, capacity = 0;
         ent->sort.count = 0;
         ent->sort.idx = 0;
@@ -2587,7 +2574,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
             ent->sort.entries = newp;
         }
 #endif
-        while ((dp = (struct dirent *)IO_WITHOUT_GVL(nogvl_readdir, (void *)&args)) != NULL) {
+        while ((dp = READDIR(dirp, enc)) != NULL) {
             rb_dirent_t *rdp = dirent_copy(dp, NULL);
             if (!rdp) {
                 goto nomem;
@@ -2624,10 +2611,7 @@ static rb_dirent_t *
 glob_getent(ruby_glob_entries_t *ent, int flags, rb_encoding *enc)
 {
     if (flags & FNM_GLOB_NOSORT) {
-        struct readdir_args args;
-        args.dir = ent->nosort.dirp;
-        args.enc = enc;
-        return dirent_copy((struct dirent *)IO_WITHOUT_GVL(nogvl_readdir, (void *)&args), &ent->nosort.ent);
+        return dirent_copy(READDIR(ent->nosort.dirp, enc), &ent->nosort.ent);
     }
     else if (ent->sort.idx < ent->sort.count) {
         return ent->sort.entries[ent->sort.idx++];
@@ -3674,7 +3658,7 @@ nogvl_dir_empty_p(void *ptr)
             return (void *)INT2FIX(e);
         }
     }
-    while ((dp = READDIR(dir, NULL)) != NULL) {
+    while ((dp = READDIR_NOGVL(dir, NULL)) != NULL) {
         if (!to_be_skipped(dp)) {
             result = Qfalse;
             break;
