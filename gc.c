@@ -667,8 +667,10 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 }
 #endif
 
-#if USE_SHARED_GC
-# include "dln.h"
+#if USE_SHARED_GC && !defined(HAVE_DLOPEN)
+# error "Shared GC requires dlopen"
+#elif USE_SHARED_GC
+#include <dlfcn.h>
 
 typedef struct gc_function_map {
     // Bootup
@@ -760,7 +762,7 @@ ruby_external_gc_init(void)
 
     char *gc_so_path = NULL;
     void *handle = NULL;
-    if (gc_so_file && dln_supported_p()) {
+    if (gc_so_file) {
         /* Check to make sure that gc_so_file matches /[\w-_.]+/ so that it does
          * not load a shared object outside of the directory. */
         for (size_t i = 0; i < strlen(gc_so_file); i++) {
@@ -781,17 +783,16 @@ ruby_external_gc_init(void)
         strcpy(gc_so_path + strlen(SHARED_GC_DIR), gc_so_file);
         gc_so_path[strlen(SHARED_GC_DIR) + strlen(gc_so_file)] = '\0';
 
-        char error[1024];
-        handle = dln_open(gc_so_path, error, sizeof(error));
+        handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
-            fprintf(stderr, "%s", error);
+            fprintf(stderr, "%s", dlerror());
             rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
         }
     }
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        rb_gc_functions.name = dln_symbol(handle, "rb_gc_impl_" #name); \
+        rb_gc_functions.name = dlsym(handle, "rb_gc_impl_" #name); \
         if (!rb_gc_functions.name) { \
             rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
         } \
@@ -4649,12 +4650,6 @@ rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
 void
 Init_GC(void)
 {
-#if USE_SHARED_GC
-    if (getenv(RUBY_GC_LIBRARY) != NULL && !dln_supported_p()) {
-        rb_warn(RUBY_GC_LIBRARY " is ignored because this executable file can't load extension libraries");
-    }
-#endif
-
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 
