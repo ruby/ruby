@@ -30,7 +30,6 @@ module TestNetHTTPUtils
           socket = @ssl_server ? @ssl_server.accept : @server.accept
           run(socket)
         rescue => e
-          puts "Error: #{e.class} - #{e.message}"
         ensure
           socket.close if socket
         end
