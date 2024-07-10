@@ -842,7 +842,7 @@ enum CtxOp {
 }
 
 // Number of entries in the context cache
-const CTX_CACHE_SIZE: usize = 1024;
+const CTX_CACHE_SIZE: usize = 512;
 
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
@@ -943,7 +943,6 @@ impl Context {
             let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
             if cache_entry.0 == *ctx {
                 debug_assert!(cache_entry.1 != 0);
-                //debug_assert!(Self::decode(cache_entry.1) == *ctx);
                 return Some(cache_entry.1);
             }
 
