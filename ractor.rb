@@ -844,10 +844,37 @@ class Ractor
     Primitive.ractor_local_value_set(sym, val)
   end
 
+  class Channel
+    def self.new
+      Ractor.new do
+        while true
+          obj = Ractor.receive
+          Ractor.yield obj
+        end
+      rescue Ractor::ClosedError
+        nil
+      end
+    end
+  end
+
   # returns main ractor
   def self.main
     __builtin_cexpr! %q{
       rb_ractor_self(GET_VM()->ractor.main_ractor);
     }
+  end
+
+  def self.main?
+    __builtin_cexpr! %q{
+      GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec)
+    }
+  end
+
+  def self.require feature
+    if main?
+      super feature
+    else
+      Primitive.ractor_require feature
+    end
   end
 end
