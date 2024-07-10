@@ -442,7 +442,11 @@ module TestNetHTTP_version_1_1_methods
   def test_post
     start {|http|
       _test_post__base http
+    }
+    start {|http|
       _test_post__file http
+    }
+    start {|http|
       _test_post__no_data http
     }
   end
@@ -629,9 +633,11 @@ module TestNetHTTP_version_1_2_methods
       # _test_request__range http   # WEBrick does not support Range: header.
       _test_request__HEAD http
       _test_request__POST http
-      _test_request__stream_body http
       _test_request__uri http
       _test_request__uri_host http
+    }
+    start {|http|
+      _test_request__stream_body http
     }
   end
 
@@ -843,8 +849,13 @@ Content-Type: application/octet-stream
 __EOM__
       start {|http|
         _test_set_form_urlencoded(http, data.reject{|k,v|!v.is_a?(String)})
+      }
+      start {|http|
         @server.mount('/', lambda {|req, res| res.body = req.body })
         _test_set_form_multipart(http, false, data, expected)
+      }
+      start {|http|
+        @server.mount('/', lambda {|req, res| res.body = req.body })
         _test_set_form_multipart(http, true, data, expected)
       }
     }
