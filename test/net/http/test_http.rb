@@ -442,7 +442,11 @@ module TestNetHTTP_version_1_1_methods
   def test_post
     start {|http|
       _test_post__base http
+    }
+    start {|http|
       _test_post__file http
+    }
+    start {|http|
       _test_post__no_data http
     }
   end
@@ -629,9 +633,11 @@ module TestNetHTTP_version_1_2_methods
       # _test_request__range http   # WEBrick does not support Range: header.
       _test_request__HEAD http
       _test_request__POST http
-      _test_request__stream_body http
       _test_request__uri http
       _test_request__uri_host http
+    }
+    start {|http|
+      _test_request__stream_body http
     }
   end
 
@@ -843,7 +849,13 @@ Content-Type: application/octet-stream
 __EOM__
       start {|http|
         _test_set_form_urlencoded(http, data.reject{|k,v|!v.is_a?(String)})
+      }
+      start {|http|
+        @server.mount('/', lambda {|req, res| res.body = req.body })
         _test_set_form_multipart(http, false, data, expected)
+      }
+      start {|http|
+        @server.mount('/', lambda {|req, res| res.body = req.body })
         _test_set_form_multipart(http, true, data, expected)
       }
     }
@@ -887,6 +899,7 @@ __EOM__
       expected.sub!(/<filename>/, filename)
       expected.sub!(/<data>/, $test_net_http_data)
       start {|http|
+        @server.mount('/', lambda {|req, res| res.body = req.body })
         data.each{|k,v|v.rewind rescue nil}
         req = Net::HTTP::Post.new('/')
         req.set_form(data, 'multipart/form-data')
@@ -902,10 +915,11 @@ __EOM__
           header)
         assert_equal(expected, body)
 
-        data.each{|k,v|v.rewind rescue nil}
-        req['Transfer-Encoding'] = 'chunked'
-        res = http.request req
-        #assert_equal(expected, res.body)
+        # TODO: test with chunked
+        # data.each{|k,v|v.rewind rescue nil}
+        # req['Transfer-Encoding'] = 'chunked'
+        # res = http.request req
+        # assert_equal(expected, res.body)
       }
     }
   end
@@ -984,7 +998,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
   end
 
   def mount_proc(&block)
-    @server.mount('/continue', WEBrick::HTTPServlet::ProcHandler.new(block.to_proc))
+    @server.mount('/continue', block.to_proc)
   end
 
   def test_expect_continue
@@ -1039,7 +1053,7 @@ class TestNetHTTPContinue < Test::Unit::TestCase
   def test_expect_continue_error_before_body
     @log_tester = nil
     mount_proc {|req, res|
-      raise WEBrick::HTTPStatus::Forbidden
+      raise TestNetHTTPUtils::Forbidden
     }
     start {|http|
       uheader = {'content-type' => 'application/x-www-form-urlencoded', 'content-length' => '5', 'expect' => '100-continue'}
@@ -1084,7 +1098,7 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
   end
 
   def mount_proc(&block)
-    @server.mount('/continue', WEBrick::HTTPServlet::ProcHandler.new(block.to_proc))
+    @server.mount('/continue', block.to_proc)
   end
 
   def test_info
@@ -1159,11 +1173,11 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
   end
 
   def test_keep_alive_reset_on_new_connection
-    # Using WEBrick's debug log output on accepting connection:
+    # Using debug log output on accepting connection:
     #
     #   "[2021-04-29 20:36:46] DEBUG accept: 127.0.0.1:50674\n"
     @log_tester = nil
-    @server.logger.level = WEBrick::BasicLog::DEBUG
+    @logger_level = :debug
 
     start {|http|
       res = http.get('/')
