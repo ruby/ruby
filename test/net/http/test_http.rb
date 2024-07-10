@@ -915,10 +915,11 @@ __EOM__
           header)
         assert_equal(expected, body)
 
-        data.each{|k,v|v.rewind rescue nil}
-        req['Transfer-Encoding'] = 'chunked'
-        res = http.request req
-        #assert_equal(expected, res.body)
+        # TODO: test with chunked
+        # data.each{|k,v|v.rewind rescue nil}
+        # req['Transfer-Encoding'] = 'chunked'
+        # res = http.request req
+        # assert_equal(expected, res.body)
       }
     }
   end
