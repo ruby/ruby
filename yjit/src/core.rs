@@ -854,6 +854,8 @@ static mut CTX_CACHE: Option<Box<CtxCacheTbl>> = None;
 pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCacheTbl>();
 
 impl Context {
+    // Encode a context into the global context data, or return
+    // a cached previously encoded offset if one is found
     pub fn encode(&self) -> u32 {
         incr_counter!(num_contexts_encoded);
 
@@ -879,6 +881,7 @@ impl Context {
         let idx = self.encode_into(context_data);
         let idx: u32 = idx.try_into().unwrap();
 
+        // Save this offset into the cache
         Self::cache_set(self, idx);
 
         // In debug mode, check that the round-trip decoding always matches
@@ -904,15 +907,18 @@ impl Context {
     fn cache_set(ctx: &Context, idx: u32)
     {
         unsafe {
+            // Lazily initialize the context cache
             if CTX_CACHE == None {
                 let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
                 CTX_CACHE = Some(Box::new(empty_tbl));
             }
 
+            // Compute the hash for this context
             let mut hasher = DefaultHasher::new();
             ctx.hash(&mut hasher);
             let ctx_hash = hasher.finish() as usize;
 
+            // Write a cache entry for this context
             let cache = CTX_CACHE.as_mut().unwrap();
             cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
         }
@@ -928,12 +934,15 @@ impl Context {
 
             let cache = CTX_CACHE.as_mut().unwrap();
 
+            // Compute the hash for this context
             let mut hasher = DefaultHasher::new();
             ctx.hash(&mut hasher);
             let ctx_hash = hasher.finish() as usize;
-            let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
 
+            // Check that the context for this cache entry mmatches
+            let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
             if cache_entry.0 == *ctx {
+                debug_assert!(cache_entry.1 != 0);
                 return Some(cache_entry.1);
             }
 
@@ -948,6 +957,7 @@ impl Context {
         // Most of the time, the stack size is small and sp offset has the same value
         if (self.stack_size as i64) == (self.sp_offset as i64) && self.stack_size < 4 {
             // One single bit to signify a compact stack_size/sp_offset encoding
+            debug_assert!(self.sp_offset >= 0);
             bits.push_u1(1);
             bits.push_u2(self.stack_size);
         } else {
@@ -1040,7 +1050,11 @@ impl Context {
             ctx.sp_offset = ctx.stack_size as i8;
         } else {
             ctx.stack_size = bits.read_u8(&mut idx);
-            ctx.sp_offset = bits.read_u8(&mut idx) as i8;
+            let sp_offset_bits = bits.read_u8(&mut idx);
+            ctx.sp_offset = sp_offset_bits as i8;
+
+            // If the top bit is set, then the sp offset must be negative
+            debug_assert!(!( (sp_offset_bits & 0x80) != 0 && ctx.sp_offset > 0 ));
         }
 
         // Bitmap of which stack temps are in a register
