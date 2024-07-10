@@ -40,6 +40,26 @@ rb_vm_locked_p(void)
     return vm_locked(GET_VM());
 }
 
+static bool
+vm_need_barrier_waiting(const rb_vm_t *vm)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    return vm->ractor.sched.barrier_waiting;
+#else
+    return vm->ractor.sync.barrier_waiting;
+#endif
+}
+
+static bool
+vm_need_barrier(bool no_barrier, const rb_ractor_t *cr, const rb_vm_t *vm)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    return !no_barrier && cr->threads.sched.running != NULL && vm_need_barrier_waiting(vm); // ractor has running threads.
+#else
+    return !no_barrier && vm_need_barrier_waiting(vm);
+#endif
+}
+
 static void
 vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsigned int *lev APPEND_LOCATION_ARGS)
 {
@@ -58,23 +78,17 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
         VM_ASSERT(vm->ractor.sync.lock_owner == NULL);
         VM_ASSERT(vm->ractor.sync.lock_rec == 0);
 
-#ifdef RUBY_THREAD_PTHREAD_H
-        if (!no_barrier &&
-            cr->threads.sched.running != NULL // ractor has running threads.
-            ) {
+        // barrier
+        if (vm_need_barrier(no_barrier, cr, vm)) {
+            rb_execution_context_t *ec = GET_EC();
+            RB_VM_SAVE_MACHINE_CONTEXT(rb_ec_thread_ptr(ec));
 
-            while (vm->ractor.sched.barrier_waiting) {
+            do {
+                VM_ASSERT(vm_need_barrier_waiting(vm));
                 RUBY_DEBUG_LOG("barrier serial:%u", vm->ractor.sched.barrier_serial);
                 rb_ractor_sched_barrier_join(vm, cr);
-            }
+            } while (vm_need_barrier_waiting(vm));
         }
-#else
-        if (!no_barrier) {
-            while (vm->ractor.sync.barrier_waiting) {
-                rb_ractor_sched_barrier_join(vm, cr);
-            }
-        }
-#endif
 
         VM_ASSERT(vm->ractor.sync.lock_rec == 0);
         VM_ASSERT(vm->ractor.sync.lock_owner == NULL);

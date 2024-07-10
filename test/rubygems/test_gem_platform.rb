@@ -368,18 +368,27 @@ class TestGemPlatform < Gem::TestCase
     arm   = Gem::Platform.new "arm-linux"
     armv5 = Gem::Platform.new "armv5-linux"
     armv7 = Gem::Platform.new "armv7-linux"
+    arm64 = Gem::Platform.new "arm64-linux"
 
     util_set_arch "armv5-linux"
     assert((arm   === Gem::Platform.local), "arm   === armv5")
     assert((armv5 === Gem::Platform.local), "armv5 === armv5")
     refute((armv7 === Gem::Platform.local), "armv7 === armv5")
+    refute((arm64 === Gem::Platform.local), "arm64 === armv5")
     refute((Gem::Platform.local === arm), "armv5 === arm")
 
     util_set_arch "armv7-linux"
     assert((arm   === Gem::Platform.local), "arm   === armv7")
     refute((armv5 === Gem::Platform.local), "armv5 === armv7")
     assert((armv7 === Gem::Platform.local), "armv7 === armv7")
+    refute((arm64 === Gem::Platform.local), "arm64 === armv7")
     refute((Gem::Platform.local === arm), "armv7 === arm")
+
+    util_set_arch "arm64-linux"
+    refute((arm   === Gem::Platform.local), "arm   === arm64")
+    refute((armv5 === Gem::Platform.local), "armv5 === arm64")
+    refute((armv7 === Gem::Platform.local), "armv7 === arm64")
+    assert((arm64 === Gem::Platform.local), "arm64 === arm64")
   end
 
   def test_equals3_universal_mingw

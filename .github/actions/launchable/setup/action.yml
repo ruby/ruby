@@ -38,6 +38,19 @@ inputs:
       Directory to (re-)checkout source codes. Launchable retrives the commit information
       from the directory.
 
+  launchable-workspace:
+    required: true
+    default: ${{ github.event.repository.name }}
+    description: >-
+      A workspace name in Launchable
+
+  test-task:
+    required: true
+    default: ${{ matrix.test_task }}
+    description: >-
+      A test task that determine which tests are executed.
+      This value is used in the Launchable flavor.
+
 runs:
   using: composite
 
@@ -77,7 +90,7 @@ runs:
         : # The following envs are necessary in Launchable tokenless authentication.
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L20
         echo "LAUNCHABLE_ORGANIZATION=${{ github.repository_owner }}" >> $GITHUB_ENV
-        echo "LAUNCHABLE_WORKSPACE=${{ github.event.repository.name }}" >> $GITHUB_ENV
+        echo "LAUNCHABLE_WORKSPACE=${{ inputs.launchable-workspace }}" >> $GITHUB_ENV
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
         echo "GITHUB_PR_HEAD_SHA=${{ github.event.pull_request.head.sha || github.sha }}" >> $GITHUB_ENV
         echo "LAUNCHABLE_TOKEN=${{ inputs.launchable-token }}" >> $GITHUB_ENV
@@ -135,7 +148,7 @@ runs:
         working-directory: ${{ inputs.srcdir }}
         post: |
           : # record
-          launchable record tests --flavor os=${{ inputs.os }} --flavor test_task=${{ matrix.test_task }} --flavor test_opts=${test_opts} raw ${report_path}
+          launchable record tests --flavor os=${{ inputs.os }} --flavor test_task=${{ inputs.test-task }} --flavor test_opts=${test_opts} raw ${report_path}
           rm -f ${report_path}
       if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
       env:

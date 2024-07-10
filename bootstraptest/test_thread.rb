@@ -259,8 +259,7 @@ assert_equal 'true', %{
 }
 
 assert_equal 'ok', %{
-  open("zzz_t1.rb", "w") do |f|
-    f.puts <<-END
+  File.write("zzz_t1.rb", <<-END)
       begin
         Thread.new { fork { GC.start } }.join
         pid, status = Process.wait2
@@ -269,7 +268,6 @@ assert_equal 'ok', %{
         $result = :ok
       end
     END
-  end
   require "./zzz_t1.rb"
   $result
 }
@@ -424,8 +422,7 @@ assert_equal 'ok', %q{
 }
 
 assert_equal 'ok', %{
-  open("zzz_t2.rb", "w") do |f|
-    f.puts <<-'end;' # do
+  File.write("zzz_t2.rb", <<-'end;') # do
       begin
         m = Thread::Mutex.new
         parent = Thread.current
@@ -447,7 +444,6 @@ assert_equal 'ok', %{
         $result = :ok
       end
     end;
-  end
   require "./zzz_t2.rb"
   $result
 }

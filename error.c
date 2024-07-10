@@ -1192,14 +1192,16 @@ rb_assert_failure_detail(const char *file, int line, const char *name, const cha
     FILE *out = stderr;
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
-    fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
+    fputs(expr, out);
 
     if (fmt && *fmt) {
         va_list args;
         va_start(args, fmt);
+        fputs(": ", out);
         vfprintf(out, fmt, args);
         va_end(args);
     }
+    fprintf(out, "\n%s\n\n", rb_dynamic_description);
 
     preface_dump(out);
     rb_vm_bugreport(NULL, out);
@@ -1483,12 +1485,23 @@ exc_init(VALUE exc, VALUE mesg)
 }
 
 /*
- * call-seq:
- *    Exception.new(msg = nil)        ->  exception
- *    Exception.exception(msg = nil)  ->  exception
+ *  call-seq:
+ *    Exception.new(message = nil) -> exception
  *
- *  Construct a new Exception object, optionally passing in
- *  a message.
+ *  Returns a new exception object.
+ *
+ *  The given +message+ should be
+ *  a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects];
+ *  see method #message;
+ *  if not given, the message is the class name of the new instance
+ *  (which may be the name of a subclass):
+ *
+ *  Examples:
+ *
+ *    Exception.new         # => #<Exception: Exception>
+ *    LoadError.new         # => #<LoadError: LoadError> # Subclass of Exception.
+ *    Exception.new('Boom') # => #<Exception: Boom>
+ *
  */
 
 static VALUE
@@ -1504,12 +1517,24 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  Document-method: exception
  *
  *  call-seq:
- *     exc.exception([string])  ->  an_exception or exc
+ *    exception(message = nil) -> self or new_exception
  *
- *  With no argument, or if the argument is the same as the receiver,
- *  return the receiver. Otherwise, create a new
- *  exception object of the same class as the receiver, but with a
- *  message equal to <code>string.to_str</code>.
+ *  Returns an exception object of the same class as +self+;
+ *  useful for creating a similar exception, but with a different message.
+ *
+ *  With +message+ +nil+, returns +self+:
+ *
+ *    x0 = StandardError.new('Boom') # => #<StandardError: Boom>
+ *    x1 = x0.exception              # => #<StandardError: Boom>
+ *    x0.__id__ == x1.__id__         # => true
+ *
+ *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
+ *  +message+ (even the same as the original message),
+ *  returns a new exception object whose class is the same as +self+,
+ *  and whose message is the given +message+:
+ *
+ *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
+ *    x0..equal?(x1)            # => false
  *
  */
 
@@ -1528,10 +1553,15 @@ exc_exception(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   exception.to_s   ->  string
+ *   to_s -> string
  *
- * Returns exception's message (or the name of the exception if
- * no message is set).
+ * Returns a string representation of +self+:
+ *
+ *   x = RuntimeError.new('Boom')
+ *   x.to_s # => "Boom"
+ *   x = RuntimeError.new
+ *   x.to_s # => "RuntimeError"
+ *
  */
 
 static VALUE
@@ -1571,10 +1601,10 @@ rb_get_detailed_message(VALUE exc, VALUE opt)
 }
 
 /*
- * call-seq:
- *    Exception.to_tty?   ->  true or false
+ *  call-seq:
+ *    Exception.to_tty? -> true or false
  *
- * Returns +true+ if exception messages will be sent to a tty.
+ *  Returns +true+ if exception messages will be sent to a terminal device.
  */
 static VALUE
 exc_s_to_tty_p(VALUE self)
@@ -1634,20 +1664,51 @@ check_order_keyword(VALUE opt)
 
 /*
  * call-seq:
- *   exception.full_message(highlight: bool, order: [:top or :bottom]) ->  string
+ *   full_message(highlight: true, order: :top) -> string
  *
- * Returns formatted string of _exception_.
- * The returned string is formatted using the same format that Ruby uses
- * when printing an uncaught exceptions to stderr.
+ * Returns an enhanced message string:
  *
- * If _highlight_ is +true+ the default error handler will send the
- * messages to a tty.
+ * - Includes the exception class name.
+ * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
+ *   includes bolding ANSI codes (see below) to enhance the appearance of the message.
+ * - Includes the {backtrace}[rdoc-ref:exceptions.md@Backtraces]:
  *
- * _order_ must be either of +:top+ or +:bottom+, and places the error
- * message and the innermost backtrace come at the top or the bottom.
+ *   - If the value of keyword +order+ is +:top+ (the default),
+ *     lists the error message and the innermost backtrace entry first.
+ *   - If the value of keyword +order+ is +:bottom+,
+ *     lists the error message the the innermost entry last.
  *
- * The default values of these options depend on <code>$stderr</code>
- * and its +tty?+ at the timing of a call.
+ * Example:
+ *
+ *   def baz
+ *     begin
+ *       1 / 0
+ *     rescue => x
+ *       pp x.message
+ *       pp x.full_message(highlight: false).split("\n")
+ *       pp x.full_message.split("\n")
+ *     end
+ *   end
+ *   def bar; baz; end
+ *   def foo; bar; end
+ *   foo
+ *
+ * Output:
+ *
+ *   "divided by 0"
+ *   ["t.rb:3:in `/': divided by 0 (ZeroDivisionError)",
+ *    "\tfrom t.rb:3:in `baz'",
+ *    "\tfrom t.rb:10:in `bar'",
+ *    "\tfrom t.rb:11:in `foo'",
+ *    "\tfrom t.rb:12:in `<main>'"]
+ *   ["t.rb:3:in `/': \e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m",
+ *    "\tfrom t.rb:3:in `baz'",
+ *    "\tfrom t.rb:10:in `bar'",
+ *    "\tfrom t.rb:11:in `foo'",
+ *    "\tfrom t.rb:12:in `<main>'"]
+ *
+ * An overrriding method should be careful with ANSI code enhancements;
+ * see {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1676,10 +1737,11 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   exception.message   ->  string
+ *   message -> string
  *
- * Returns the result of invoking <code>exception.to_s</code>.
- * Normally this returns the exception's message or name.
+ * Returns #to_s.
+ *
+ * See {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1690,42 +1752,47 @@ exc_message(VALUE exc)
 
 /*
  * call-seq:
- *   exception.detailed_message(highlight: bool, **opt)   ->  string
+ *   detailed_message(highlight: false, **kwargs) -> string
  *
- * Processes a string returned by #message.
+ * Returns the message string with enhancements:
  *
- * It may add the class name of the exception to the end of the first line.
- * Also, when +highlight+ keyword is true, it adds ANSI escape sequences to
- * make the message bold.
+ * - Includes the exception class name in the first line.
+ * - If the value of keyword +highlight+ is +true+,
+ *   includes bolding and underlining ANSI codes (see below)
+ *   to enhance the appearance of the message.
  *
- * If you override this method, it must be tolerant for unknown keyword
- * arguments. All keyword arguments passed to #full_message are delegated
- * to this method.
+ * Examples:
  *
- * This method is overridden by did_you_mean and error_highlight to add
- * their information.
+ *   begin
+ *     1 / 0
+ *   rescue => x
+ *     p x.message
+ *     p x.detailed_message                  # Class name added.
+ *     p x.detailed_message(highlight: true) # Class name, bolding, and underlining added.
+ *   end
  *
- * A user-defined exception class can also define their own
- * +detailed_message+ method to add supplemental information.
- * When +highlight+ is true, it can return a string containing escape
- * sequences, but use widely-supported ones. It is recommended to limit
- * the following codes:
+ * Output:
  *
- * - Reset (+\e[0m+)
- * - Bold (+\e[1m+)
- * - Underline (+\e[4m+)
- * - Foreground color except white and black
- *   - Red (+\e[31m+)
- *   - Green (+\e[32m+)
- *   - Yellow (+\e[33m+)
- *   - Blue (+\e[34m+)
- *   - Magenta (+\e[35m+)
- *   - Cyan (+\e[36m+)
+ *   "divided by 0"
+ *   "divided by 0 (ZeroDivisionError)"
+ *   "\e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m"
  *
- * Use escape sequences carefully even if +highlight+ is true.
- * Do not use escape sequences to express essential information;
- * the message should be readable even if all escape sequences are
- * ignored.
+ * This method is overridden by some gems in the Ruby standard library to add information:
+ *
+ * - DidYouMean::Correctable#detailed_message.
+ * - ErrorHighlight::CoreExt#detailed_message.
+ * - SyntaxSuggest#detailed_message.
+ *
+ * An overriding method must be tolerant of passed keyword arguments,
+ * which may include (but may not be limited to):
+ *
+ * - +:highlight+.
+ * - +:did_you_mean+.
+ * - +:error_highlight+.
+ * - +:syntax_suggest+.
+ *
+ * An overrriding method should also be careful with ANSI code enhancements;
+ * see {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
 static VALUE
@@ -1744,9 +1811,15 @@ exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   exception.inspect   -> string
+ *   inspect -> string
  *
- * Return this exception's class name and message.
+ * Returns a string representation of +self+:
+ *
+ *   x = RuntimeError.new('Boom')
+ *   x.inspect # => "#<RuntimeError: Boom>"
+ *   x = RuntimeError.new
+ *   x.inspect # => "#<RuntimeError: RuntimeError>"
+ *
  */
 
 static VALUE
@@ -1779,38 +1852,31 @@ exc_inspect(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace    -> array or nil
+ *    backtrace -> array or nil
  *
- *  Returns any backtrace associated with the exception. The backtrace
- *  is an array of strings, each containing either ``filename:lineNo: in
- *  `method''' or ``filename:lineNo.''
+ *  Returns a backtrace value for +self+;
+ *  the returned value depends on the form of the stored backtrace value:
  *
- *     def a
- *       raise "boom"
- *     end
+ *  - \Array of Thread::Backtrace::Location objects:
+ *    returns the array of strings given by
+ *    <tt>Exception#backtrace_locations.map {|loc| loc.to_s }</tt>.
+ *    This is the normal case, where the backtrace value was stored by Kernel#raise.
+ *  - \Array of strings: returns that array.
+ *    This is the unusual case, where the backtrace value was explicitly
+ *    stored as an array of strings.
+ *  - +nil+: returns +nil+.
  *
- *     def b
- *       a()
- *     end
+ *  Example:
  *
- *     begin
- *       b()
- *     rescue => detail
- *       print detail.backtrace.join("\n")
- *     end
+ *    begin
+ *      1 / 0
+ *    rescue => x
+ *      x.backtrace.take(2)
+ *    end
+ *    # => ["(irb):132:in `/'", "(irb):132:in `<top (required)>'"]
  *
- *  <em>produces:</em>
- *
- *     prog.rb:2:in `a'
- *     prog.rb:6:in `b'
- *     prog.rb:10
- *
- *  In the case no backtrace has been set, +nil+ is returned
- *
- *    ex = StandardError.new
- *    ex.backtrace
- *    #=> nil
-*/
+ *  see {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
+ */
 
 static VALUE
 exc_backtrace(VALUE exc)
@@ -1852,13 +1918,24 @@ rb_get_backtrace(VALUE exc)
 
 /*
  *  call-seq:
- *     exception.backtrace_locations    -> array or nil
+ *    backtrace_locations -> array or nil
  *
- *  Returns any backtrace associated with the exception. This method is
- *  similar to Exception#backtrace, but the backtrace is an array of
- *  Thread::Backtrace::Location.
+ *  Returns a backtrace value for +self+;
+ *  the returned value depends on the form of the stored backtrace value:
  *
- *  This method is not affected by Exception#set_backtrace().
+ *  - \Array of Thread::Backtrace::Location objects: returns that array.
+ *  - \Array of strings or +nil+: returns +nil+.
+ *
+ *  Example:
+ *
+ *    begin
+ *      1 / 0
+ *    rescue => x
+ *      x.backtrace_locations.take(2)
+ *    end
+ *    # => ["(irb):150:in `/'", "(irb):150:in `<top (required)>'"]
+ *
+ *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
 static VALUE
 exc_backtrace_locations(VALUE exc)
@@ -1896,12 +1973,19 @@ rb_check_backtrace(VALUE bt)
 
 /*
  *  call-seq:
- *     exc.set_backtrace(backtrace)   ->  array
+ *    set_backtrace(value) -> value
  *
- *  Sets the backtrace information associated with +exc+. The +backtrace+ must
- *  be an array of Thread::Backtrace::Location objects or an array of String objects
- *  or a single String in the format described in Exception#backtrace.
+ *  Sets the backtrace value for +self+; returns the given +value:
  *
+ *    x = RuntimeError.new('Boom')
+ *    x.set_backtrace(%w[foo bar baz]) # => ["foo", "bar", "baz"]
+ *    x.backtrace                      # => ["foo", "bar", "baz"]
+ *
+ *  The given +value+ must be an array of strings, a single string, or +nil+.
+ *
+ *  Does not affect the value returned by #backtrace_locations.
+ *
+ *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
 
 static VALUE
@@ -1925,12 +2009,35 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
 }
 
 /*
- * call-seq:
- *   exception.cause   -> an_exception or nil
+ *  call-seq:
+ *    cause -> exception or nil
  *
- * Returns the previous exception ($!) at the time this exception was raised.
- * This is useful for wrapping exceptions and retaining the original exception
- * information.
+ *  Returns the previous value of global variable <tt>$!</tt>,
+ *  which may be +nil+
+ *  (see {Global Variables}[rdoc-ref:exceptions.md@Global+Variables]):
+ *
+ *    begin
+ *      raise('Boom 0')
+ *    rescue => x0
+ *      puts "Exception: #{x0};  $!: #{$!};  cause: #{x0.cause.inspect}."
+ *      begin
+ *        raise('Boom 1')
+ *      rescue => x1
+ *        puts "Exception: #{x1};  $!: #{$!};  cause: #{x1.cause}."
+ *        begin
+ *          raise('Boom 2')
+ *        rescue => x2
+ *          puts "Exception: #{x2};  $!: #{$!};  cause: #{x2.cause}."
+ *        end
+ *      end
+ *    end
+ *
+ *  Output:
+ *
+ *    Exception: Boom 0;  $!: Boom 0;  cause: nil.
+ *    Exception: Boom 1;  $!: Boom 1;  cause: Boom 0.
+ *    Exception: Boom 2;  $!: Boom 2;  cause: Boom 1.
+ *
  */
 
 static VALUE
@@ -1947,11 +2054,11 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *     exc == obj   -> true or false
+ *    self == object -> true or false
  *
- *  Equality---If <i>obj</i> is not an Exception, returns
- *  <code>false</code>. Otherwise, returns <code>true</code> if <i>exc</i> and
- *  <i>obj</i> share same class, messages, and backtrace.
+ *  Returns whether +object+ is the same class as +self+
+ *  and its #message and #backtrace are equal to those of +self+.
+ *
  */
 
 static VALUE
@@ -3262,66 +3369,30 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: Exception
  *
- *  \Class Exception and its subclasses are used to communicate between
- *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
+ *  \Class +Exception+ and its subclasses are used to indicate that an error
+ *  or other problem has occurred,
+ *  and may need to be handled.
+ *  See {Exceptions}[rdoc-ref:exceptions.md].
  *
- *  An Exception object carries information about an exception:
- *  - Its type (the exception's class).
- *  - An optional descriptive message.
- *  - Optional backtrace information.
+ *  An +Exception+ object carries certain information:
  *
- *  Some built-in subclasses of Exception have additional methods: e.g., NameError#name.
+ *  - The type (the exception's class),
+ *    commonly StandardError, RuntimeError, or a subclass of one or the other;
+ *    see {Built-In Exception Class Hierarchy}[rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy].
+ *  - An optional descriptive message;
+ *    see methods ::new, #message.
+ *  - Optional backtrace information;
+ *    see methods #backtrace, #backtrace_locations, #set_backtrace.
+ *  - An optional cause;
+ *    see method #cause.
  *
- *  == Defaults
+ *  == Built-In \Exception \Class Hierarchy
  *
- *  Two Ruby statements have default exception classes:
- *  - +raise+: defaults to RuntimeError.
- *  - +rescue+: defaults to StandardError.
- *
- *  == Global Variables
- *
- *  When an exception has been raised but not yet handled (in +rescue+,
- *  +ensure+, +at_exit+ and +END+ blocks), two global variables are set:
- *  - <code>$!</code> contains the current exception.
- *  - <code>$@</code> contains its backtrace.
- *
- *  == Custom Exceptions
- *
- *  To provide additional or alternate information,
- *  a program may create custom exception classes
- *  that derive from the built-in exception classes.
- *
- *  A good practice is for a library to create a single "generic" exception class
- *  (typically a subclass of StandardError or RuntimeError)
- *  and have its other exception classes derive from that class.
- *  This allows the user to rescue the generic exception, thus catching all exceptions
- *  the library may raise even if future versions of the library add new
- *  exception subclasses.
- *
- *  For example:
- *
- *    class MyLibrary
- *      class Error < ::StandardError
- *      end
- *
- *      class WidgetError < Error
- *      end
- *
- *      class FrobError < Error
- *      end
- *
- *    end
- *
- *  To handle both MyLibrary::WidgetError and MyLibrary::FrobError the library
- *  user can rescue MyLibrary::Error.
- *
- *  == Built-In Exception Classes
- *
- *  The built-in subclasses of Exception are:
+ *  The hierarchy of built-in subclasses of class +Exception+:
  *
  *  * NoMemoryError
  *  * ScriptError
- *    * LoadError
+ *    * {LoadError}[https://docs.ruby-lang.org/en/master/LoadError.html]
  *    * NotImplementedError
  *    * SyntaxError
  *  * SecurityError
@@ -3347,13 +3418,14 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * RuntimeError
  *      * FrozenError
  *    * SystemCallError
- *      * Errno::*
+ *      * Errno (and its subclasses, representing system errors)
  *    * ThreadError
  *    * TypeError
  *    * ZeroDivisionError
  *  * SystemExit
  *  * SystemStackError
- *  * fatal
+ *  * {fatal}[https://docs.ruby-lang.org/en/master/fatal.html]
+ *
  */
 
 static VALUE

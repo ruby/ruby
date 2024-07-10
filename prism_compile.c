@@ -299,7 +299,7 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
         int line_number = pm_node_line_number(scope_node->parser, node);
         VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line_number));
         value = rb_str_dup(value);
-        rb_ivar_set(value, id_debug_created_info, rb_obj_freeze(debug_info));
+        rb_ivar_set(value, id_debug_created_info, rb_ary_freeze(debug_info));
         rb_str_freeze(value);
     }
 
@@ -693,7 +693,7 @@ pm_static_literal_string(rb_iseq_t *iseq, VALUE string, int line_number)
 {
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
         VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line_number));
-        rb_ivar_set(string, id_debug_created_info, rb_obj_freeze(debug_info));
+        rb_ivar_set(string, id_debug_created_info, rb_ary_freeze(debug_info));
         return rb_str_freeze(string);
     }
     else {
@@ -8253,7 +8253,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE)) {
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
             ADD_TRACE(ret, RUBY_EVENT_CLASS);
         }
 

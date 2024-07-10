@@ -56,19 +56,19 @@ pub struct Mov {
 
 impl Mov {
     /// MOVK
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MOVK--Move-wide-with-keep-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MOVK--Move-wide-with-keep-?lang=en>
     pub fn movk(rd: u8, imm16: u16, hw: u8, num_bits: u8) -> Self {
         Self { rd, imm16, hw: hw.into(), op: Op::MOVK, sf: num_bits.into() }
     }
 
     /// MOVZ
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MOVZ--Move-wide-with-zero-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MOVZ--Move-wide-with-zero-?lang=en>
     pub fn movz(rd: u8, imm16: u16, hw: u8, num_bits: u8) -> Self {
         Self { rd, imm16, hw: hw.into(), op: Op::MOVZ, sf: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en>
 const FAMILY: u32 = 0b1000;
 
 impl From<Mov> for u32 {

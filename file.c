@@ -5326,16 +5326,12 @@ rb_thread_flock(void *data)
  *  Returns `false` if `File::LOCK_NB` is specified and the operation would have blocked;
  *  otherwise returns `0`.
  *
- *  <br>
- *
  *  | Constant        | Lock         | Effect
- *  |-----------------|--------------|-------------------------------------------------------------------
- *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.
- *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>.
- *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.
- *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.
- *
- *  <br>
+ *  |-----------------|--------------|-----------------------------------------------------------------------------------------------------------------|
+ *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.                                               |
+ *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>. |
+ *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.                                     |
+ *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.                                                                   |
  *
  *  Example:
  *

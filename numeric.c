@@ -2213,36 +2213,78 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number greater than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns a numeric that is a "ceiling" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is positive, returns a float with +ndigits+
- *  digits after the decimal point (as available):
+ *  When `ndigits` is positive, returns a Float with `ndigits`
+ *  decimal digits after the decimal point
+ *  (as available, but no fewer than 1):
  *
- *    f = 12345.6789
- *    f.ceil(1) # => 12345.7
- *    f.ceil(3) # => 12345.679
- *    f = -12345.6789
- *    f.ceil(1) # => -12345.6
- *    f.ceil(3) # => -12345.678
+ *  ```
+ *  f = 12345.6789
+ *  f.ceil(1) # => 12345.7
+ *  f.ceil(3) # => 12345.679
+ *  f.ceil(30) # => 12345.6789
+ *  f = -12345.6789
+ *  f.ceil(1) # => -12345.6
+ *  f.ceil(3) # => -12345.678
+ *  f.ceil(30) # => -12345.6789
+ *  f = 0.0
+ *  f.ceil(1)   # => 0.0
+ *  f.ceil(100) # => 0.0
+ *  ```
  *
- *  When +ndigits+ is non-positive, returns an integer with at least
- *  <code>ndigits.abs</code> trailing zeros:
+ *  When `ndigits` is non-positive,
+ *  returns an Integer based on a computed granularity:
  *
- *    f = 12345.6789
- *    f.ceil(0)  # => 12346
- *    f.ceil(-3) # => 13000
- *    f = -12345.6789
- *    f.ceil(0)  # => -12345
- *    f.ceil(-3) # => -12000
+ *  - The granularity is `10 ** ndigits.abs`.
+ *  - The returned value is the largest multiple of the granularity
+ *    that is less than or equal to `self`.
+ *
+ *  Examples with positive `self`:
+ *
+ *  | ndigits | Granularity | 12345.6789.ceil(ndigits) |
+ *  |--------:|------------:|-------------------------:|
+ *  | 0       | 1           | 12346                    |
+ *  | -1      | 10          | 12350                    |
+ *  | -2      | 100         | 12400                    |
+ *  | -3      | 1000        | 13000                    |
+ *  | -4      | 10000       | 20000                    |
+ *  | -5      | 100000      | 100000                   |
+ *
+ *  Examples with negative `self`:
+ *
+ *  | ndigits | Granularity | -12345.6789.ceil(ndigits) |
+ *  |--------:|------------:|--------------------------:|
+ *  | 0       | 1           | -12345                    |
+ *  | -1      | 10          | -12340                    |
+ *  | -2      | 100         | -12300                    |
+ *  | -3      | 1000        | -12000                    |
+ *  | -4      | 10000       | -10000                    |
+ *  | -5      | 100000      | 0                         |
+ *
+ *  When `self` is zero and `ndigits` is non-positive,
+ *  returns Integer zero:
+ *
+ *  ```
+ *  0.0.ceil(0)  # => 0
+ *  0.0.ceil(-1) # => 0
+ *  0.0.ceil(-2) # => 0
+ *  ```
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
  *
- *     (2.1 / 0.7).ceil  #=> 4 (!)
+ *  ```
+ *  (2.1 / 0.7).ceil  #=> 4 # Not 3 (because 2.1 / 0.7 # => 3.0000000000000004, not 3.0)
+ *  ```
  *
  *  Related: Float#floor.
  *
@@ -5623,50 +5665,6 @@ int_downto_size(VALUE from, VALUE args, VALUE eobj)
     return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(-1), FALSE);
 }
 
-/*
- *  call-seq:
- *    downto(limit) {|i| ... } -> self
- *    downto(limit)            ->  enumerator
- *
- *  Calls the given block with each integer value from +self+ down to +limit+;
- *  returns +self+:
- *
- *    a = []
- *    10.downto(5) {|i| a << i }              # => 10
- *    a                                       # => [10, 9, 8, 7, 6, 5]
- *    a = []
- *    0.downto(-5) {|i| a << i }              # => 0
- *    a                                       # => [0, -1, -2, -3, -4, -5]
- *    4.downto(5) {|i| fail 'Cannot happen' } # => 4
- *
- *  With no block given, returns an Enumerator.
- *
- */
-
-static VALUE
-int_downto(VALUE from, VALUE to)
-{
-    RETURN_SIZED_ENUMERATOR(from, 1, &to, int_downto_size);
-    if (FIXNUM_P(from) && FIXNUM_P(to)) {
-        long i, end;
-
-        end = FIX2LONG(to);
-        for (i=FIX2LONG(from); i >= end; i--) {
-            rb_yield(LONG2FIX(i));
-        }
-    }
-    else {
-        VALUE i = from, c;
-
-        while (!(c = rb_funcall(i, '<', 1, to))) {
-            rb_yield(i);
-            i = rb_funcall(i, '-', 1, INT2FIX(1));
-        }
-        if (NIL_P(c)) rb_cmperr(i, to);
-    }
-    return from;
-}
-
 static VALUE
 int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
 {
@@ -5739,24 +5737,56 @@ int_round(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    floor(ndigits = 0) -> integer
  *
- *  Returns the largest number less than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns an integer that is a "floor" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is negative, the returned value
- *  has at least <tt>ndigits.abs</tt> trailing zeros:
+ *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *
- *    555.floor(-1)  # => 550
- *    555.floor(-2)  # => 500
- *    -555.floor(-2) # => -600
- *    555.floor(-3)  # => 0
+ *      ```
+ *      0.floor(2)  # => 0
+ *      0.floor(-2) # => 0
+ *      ```
  *
- *  Returns +self+ when +ndigits+ is zero or positive.
+ *  - When `self` is non-zero and `ndigits` is non-negative, returns `self`:
  *
- *    555.floor     # => 555
- *    555.floor(50) # => 555
+ *      ```
+ *      555.floor     # => 555
+ *      555.floor(50) # => 555
+ *      ```
+ *
+ *  - When `self` is non-zero and `ndigits` is negative,
+ *    returns a value based on a computed granularity:
+ *
+ *      - The granularity is `10 ** ndigits.abs`.
+ *      - The returned value is the largest multiple of the granularity
+ *        that is less than or equal to `self`.
+ *
+ *      Examples with positive `self`:
+ *
+ *      | ndigits | Granularity | 1234.floor(ndigits) |
+ *      |--------:|------------:|--------------------:|
+ *      | -1      | 10          | 1230                |
+ *      | -2      | 100         | 1200                |
+ *      | -3      | 1000        | 1000                |
+ *      | -4      | 10000       | 0                   |
+ *      | -5      | 100000      | 0                   |
+ *
+ *      Examples with negative `self`:
+ *
+ *      | ndigits | Granularity | -1234.floor(ndigits) |
+ *      |--------:|------------:|---------------------:|
+ *      | -1      | 10          | -1240                |
+ *      | -2      | 100         | -1300                |
+ *      | -3      | 1000        | -2000                |
+ *      | -4      | 10000       | -10000               |
+ *      | -5      | 100000      | -100000              |
  *
  *  Related: Integer#ceil.
  *
@@ -5776,27 +5806,58 @@ int_floor(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    ceil(ndigits = 0) -> integer
  *
- *  Returns the smallest number greater than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns an integer that is a "ceiling" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros:
+ *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *
- *    555.ceil(-1)  # => 560
- *    555.ceil(-2)  # => 600
- *    -555.ceil(-2) # => -500
- *    555.ceil(-3)  # => 1000
+ *      ```
+ *      0.ceil(2)  # => 0
+ *      0.ceil(-2) # => 0
+ *      ```
  *
- *  Returns +self+ when +ndigits+ is zero or positive.
+ *  - When `self` is non-zero and `ndigits` is non-negative, returns `self`:
  *
- *     555.ceil     # => 555
- *     555.ceil(50) # => 555
+ *      ```
+ *      555.ceil     # => 555
+ *      555.ceil(50) # => 555
+ *      ```
+ *
+ *  - When `self` is non-zero and `ndigits` is negative,
+ *    returns a value based on a computed granularity:
+ *
+ *      - The granularity is `10 ** ndigits.abs`.
+ *      - The returned value is the smallest multiple of the granularity
+ *        that is greater than or equal to `self`.
+ *
+ *      Examples with positive `self`:
+ *
+ *      | ndigits | Granularity | 1234.ceil(ndigits) |
+ *      |--------:|------------:|-------------------:|
+ *      | -1      | 10          | 1240               |
+ *      | -2      | 100         | 1300               |
+ *      | -3      | 1000        | 2000               |
+ *      | -4      | 10000       | 10000              |
+ *      | -5      | 100000      | 100000             |
+ *
+ *      Examples with negative `self`:
+ *
+ *      | ndigits | Granularity | -1234.ceil(ndigits) |
+ *      |--------:|------------:|--------------------:|
+ *      | -1      | 10          | -1230               |
+ *      | -2      | 100         | -1200               |
+ *      | -3      | 1000        | -1000               |
+ *      | -4      | 10000       | 0                   |
+ *      | -5      | 100000      | 0                   |
  *
  *  Related: Integer#floor.
- *
  */
 
 static VALUE
@@ -6211,7 +6272,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
-    rb_define_method(rb_cInteger, "downto", int_downto, 1);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);

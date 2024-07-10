@@ -487,6 +487,7 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
 #if USE_MMTK
     if (!rb_mmtk_enabled_p()) {
 #endif
+    RUBY_ASSERT(!OBJ_FROZEN(ary));
     SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, new_capa, ARY_HEAP_CAPA(ary));
 #if USE_MMTK
     } else {
@@ -575,7 +576,10 @@ ary_shrink_capa(VALUE ary)
     long old_capa = ARY_HEAP_CAPA(ary);
     RUBY_ASSERT(!ARY_SHARED_P(ary));
     RUBY_ASSERT(old_capa >= capacity);
-    if (old_capa > capacity) ary_heap_realloc(ary, capacity);
+    if (old_capa > capacity) {
+        size_t new_capa = ary_heap_realloc(ary, capacity);
+        ARY_SET_CAPA(ary, new_capa);
+    }
 
     ary_verify(ary);
 }
@@ -794,6 +798,14 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 VALUE
 rb_ary_freeze(VALUE ary)
 {
+    RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
+
+    if (OBJ_FROZEN(ary)) return ary;
+
+    if (!ARY_EMBED_P(ary) && !ARY_SHARED_P(ary) && !ARY_SHARED_ROOT_P(ary)) {
+        ary_shrink_capa(ary);
+    }
+
     return rb_obj_freeze(ary);
 }
 
@@ -1113,7 +1125,7 @@ rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool fre
     ARY_SET_PTR(ary, list);
     ARY_SET_HEAP_LEN(ary, len);
     ARY_SET_CAPA(ary, len);
-    if (freeze) OBJ_FREEZE(ary);
+    if (freeze) rb_ary_freeze(ary);
     return ary;
 }
 
@@ -1140,9 +1152,6 @@ ary_make_shared(VALUE ary)
         return ary;
     }
     else if (OBJ_FROZEN(ary)) {
-        if (!ARY_EMBED_P(ary)) {
-            ary_shrink_capa(ary);
-        }
         return ary;
     }
     else {
@@ -3931,41 +3940,6 @@ rb_ary_sort_by_bang(VALUE ary)
     return ary;
 }
 
-
-/*
- *  call-seq:
- *    array.map {|element| ... } -> new_array
- *    array.map -> new_enumerator
- *
- *  Calls the block, if given, with each element of +self+;
- *  returns a new +Array+ whose elements are the return values from the block:
- *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.map {|element| element.class }
- *    a1 # => [Symbol, String, Integer]
- *
- *  Returns a new Enumerator if no block given:
- *    a = [:foo, 'bar', 2]
- *    a1 = a.map
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
- *
- */
-
-static VALUE
-rb_ary_collect(VALUE ary)
-{
-    long i;
-    VALUE collect;
-
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-    collect = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-        rb_ary_push(collect, rb_yield(RARRAY_AREF(ary, i)));
-    }
-    return collect;
-}
-
-
 /*
  *  call-seq:
  *    array.map! {|element| ... } -> self
@@ -4107,42 +4081,6 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-
-/*
- *  call-seq:
- *    array.select {|element| ... } -> new_array
- *    array.select -> new_enumerator
- *
- *  Calls the block, if given, with each element of +self+;
- *  returns a new +Array+ containing those elements of +self+
- *  for which the block returns a truthy value:
- *
- *    a = [:foo, 'bar', 2, :bam]
- *    a1 = a.select {|element| element.to_s.start_with?('b') }
- *    a1 # => ["bar", :bam]
- *
- *  Returns a new Enumerator if no block given:
- *
- *    a = [:foo, 'bar', 2, :bam]
- *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
- *
- */
-
-static VALUE
-rb_ary_select(VALUE ary)
-{
-    VALUE result;
-    long i;
-
-    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
-    result = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-        if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
-            rb_ary_push(result, rb_ary_elt(ary, i));
-        }
-    }
-    return result;
-}
 
 struct select_bang_arg {
     VALUE ary;
@@ -6785,7 +6723,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (result == ary) {
         return Qnil;
     }
-    if (!(mod = ARY_EMBED_P(result))) rb_obj_freeze(result);
+    if (!(mod = ARY_EMBED_P(result))) rb_ary_freeze(result);
     rb_ary_replace(ary, result);
     if (mod) ARY_SET_EMBED_LEN(result, 0);
 
@@ -7011,6 +6949,12 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     ARY_SET_LEN(result, n);
 
     return result;
+}
+
+static VALUE
+ary_sized_alloc(rb_execution_context_t *ec, VALUE self)
+{
+    return rb_ary_new2(RARRAY_LEN(self));
 }
 
 static VALUE
@@ -9015,13 +8959,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sort", rb_ary_sort, 0);
     rb_define_method(rb_cArray, "sort!", rb_ary_sort_bang, 0);
     rb_define_method(rb_cArray, "sort_by!", rb_ary_sort_by_bang, 0);
-    rb_define_method(rb_cArray, "collect", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
-    rb_define_method(rb_cArray, "filter", rb_ary_select, 0);
     rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
@@ -9081,6 +9021,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "one?", rb_ary_one_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
+    rb_define_method(rb_cArray, "freeze", rb_ary_freeze, 0);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 }

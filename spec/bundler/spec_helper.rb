@@ -87,11 +87,10 @@ RSpec.configure do |config|
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    extend(Spec::Helpers)
-    system_gems :bundler, path: pristine_system_gem_path
-  end
+    Spec::Helpers.install_dev_bundler unless ENV["CI"]
 
-  config.before :all do
+    extend(Spec::Builders)
+
     check_test_gems!
 
     build_repo1

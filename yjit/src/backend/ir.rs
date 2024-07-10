@@ -1565,13 +1565,10 @@ impl Assembler
     #[must_use]
     pub fn compile(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>) -> Option<(CodePtr, Vec<u32>)>
     {
-        #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
-
         let alloc_regs = Self::get_alloc_regs();
         let ret = self.compile_with_regs(cb, ocb, alloc_regs);
 
-        #[cfg(feature = "disasm")]
         if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
             use crate::disasm::dump_disasm_addr_range;
             let end_addr = cb.get_write_ptr();
@@ -2057,10 +2054,10 @@ impl Assembler {
 }
 
 /// Macro to use format! for Insn::Comment, which skips a format! call
-/// when disasm is not supported.
+/// when not dumping disassembly.
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
-        if cfg!(feature = "disasm") {
+        if $crate::options::get_option_ref!(dump_disasm).is_some() {
             $asm.push_insn(Insn::Comment(format!($($fmt)*)));
         }
     };

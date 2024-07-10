@@ -5,8 +5,6 @@
 ##  Copyright, 2018, by Samuel Williams.
 ##
 
-#include "ruby/config.h"
-
 #define TOKEN_PASTE(x,y) x##y
 #define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
@@ -20,6 +18,10 @@
 .align 2
 #endif
 
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT & 0x02) != 0
+# error "-mbranch-protection flag specified b-key but Context.S does not support this"
+#endif
+
 ## NOTE(PAC): Use we HINT mnemonics instead of PAC mnemonics to
 ## keep compatibility with those assemblers that don't support PAC.
 ##
@@ -29,10 +31,10 @@
 .global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
 PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
-#if defined(RUBY_AARCH64_PAC_ENABLED)
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
 	# paciasp (it also acts as BTI landing pad, so no need to insert BTI also)
 	hint #25
-#elif defined(RUBY_AARCH64_BTI_ENABLED)
+#elif defined(__ARM_FEATURE_BTI_DEFAULT) && (__ARM_FEATURE_BTI_DEFAULT != 0)
 	# For the case PAC is not enabled but BTI is.
 	# bti c
 	hint #34
@@ -75,7 +77,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	# Pop stack frame
 	add sp, sp, 0xa0
 
-#if defined(RUBY_AARCH64_PAC_ENABLED)
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
 	# autiasp: Authenticate x30 (LR) with SP and key A
 	hint #29
 #endif
@@ -87,18 +89,18 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 .section .note.GNU-stack,"",%progbits
 #endif
 
-#if defined(RUBY_AARCH64_BTI_ENABLED) || defined(RUBY_AARCH64_PAC_ENABLED)
+#if (defined(__ARM_FEATURE_BTI_DEFAULT) && __ARM_FEATURE_BTI_DEFAULT != 0) || (defined(____ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0)
 /*  See "ELF for the Arm 64-bit Architecture (AArch64)"
     https://github.com/ARM-software/abi-aa/blob/2023Q3/aaelf64/aaelf64.rst#program-property */
 #  define GNU_PROPERTY_AARCH64_FEATURE_1_BTI (1<<0)
 #  define GNU_PROPERTY_AARCH64_FEATURE_1_PAC (1<<1)
 
-#  if defined(RUBY_AARCH64_BTI_ENABLED)
+#  if defined(__ARM_FEATURE_BTI_DEFAULT) && __ARM_FEATURE_BTI_DEFAULT != 0
 #    define BTI_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_BTI
 #  else
 #    define BTI_FLAG 0
 #  endif
-#  if defined(RUBY_AARCH64_PAC_ENABLED)
+#  if defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0
 #    define PAC_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_PAC
 #  else
 #    define PAC_FLAG 0

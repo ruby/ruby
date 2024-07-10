@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with specific platforms" do
   let(:google_protobuf) { <<-G }
-    source "#{file_uri_for(gem_repo2)}"
+    source "https://gem.repo2"
     gem "google-protobuf"
   G
 
@@ -33,7 +33,7 @@ RSpec.describe "bundle install with specific platforms" do
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
         GEM
-          remote: #{file_uri_for(gem_repo2)}/
+          remote: https://gem.repo2/
           specs:
             google-protobuf (3.0.0.alpha.5.0.5.1)
 
@@ -55,7 +55,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "understands that a non-platform specific gem in a new lockfile locked only to RUBY doesn't necessarily mean installing the non-specific variant" do
+  it "understands that a non-platform specific gem in a new lockfile locked only to ruby doesn't necessarily mean installing the non-specific variant" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
 
@@ -73,7 +73,7 @@ RSpec.describe "bundle install with specific platforms" do
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
         GEM
-          remote: #{file_uri_for(gem_repo2)}/
+          remote: https://gem.repo2/
           specs:
             google-protobuf (3.0.0.alpha.4.0)
 
@@ -97,7 +97,7 @@ RSpec.describe "bundle install with specific platforms" do
       # make sure we're still only locked to ruby
       expect(lockfile).to eq <<~L
         GEM
-          remote: #{file_uri_for(gem_repo2)}/
+          remote: https://gem.repo2/
           specs:
             google-protobuf (3.0.0.alpha.5.0.5.1)
 
@@ -113,7 +113,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  context "when running on a legacy lockfile locked only to RUBY" do
+  context "when running on a legacy lockfile locked only to ruby" do
     around do |example|
       build_repo4 do
         build_gem "nokogiri", "1.3.10"
@@ -124,14 +124,14 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "nokogiri"
       G
 
       lockfile <<-L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.3.10)
 
@@ -148,12 +148,12 @@ RSpec.describe "bundle install with specific platforms" do
       simulate_platform "arm64-darwin-22", &example
     end
 
-    it "still installs the generic RUBY variant if necessary" do
+    it "still installs the generic ruby variant if necessary" do
       bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
 
-    it "still installs the generic RUBY variant if necessary, even in frozen mode" do
+    it "still installs the generic ruby variant if necessary, even in frozen mode" do
       bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
@@ -166,7 +166,7 @@ RSpec.describe "bundle install with specific platforms" do
         build_gem("libv8", "8.4.255.0") {|s| s.platform = "universal-darwin" }
 
         build_gem("mini_racer", "1.0.0") do |s|
-          s.add_runtime_dependency "libv8"
+          s.add_dependency "libv8"
         end
       end
 
@@ -268,7 +268,7 @@ RSpec.describe "bundle install with specific platforms" do
     git = build_git "pg_array_parser", "1.0"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "pg_array_parser", :git => "#{lib_path("pg_array_parser-1.0")}"
     G
 
@@ -304,7 +304,7 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem_with_different_dependencies_per_platform
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "facter"
       G
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -358,14 +358,14 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
 
       gem "sorbet-static", "0.5.6403"
     G
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo2)}/
+        remote: https://gem.repo2/
         specs:
           sorbet-static (0.5.6403-#{Bundler.local_platform})
 
@@ -389,13 +389,13 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "sorbet-static", "0.5.6433"
     G
 
     error_message = <<~ERROR.strip
-      Could not find gem 'sorbet-static (= 0.5.6433)' with platform 'arm64-darwin-21' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+      Could not find gem 'sorbet-static (= 0.5.6433)' with platform 'arm64-darwin-21' in rubygems repository https://gem.repo4/ or installed locally.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.6433)':
         * sorbet-static-0.5.6433-universal-darwin-20
@@ -425,7 +425,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "sorbet", "0.5.6433"
     G
@@ -434,7 +434,7 @@ RSpec.describe "bundle install with specific platforms" do
       Could not find compatible versions
 
       Because every version of sorbet depends on sorbet-static = 0.5.6433
-        and sorbet-static = 0.5.6433 could not be found in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally for any resolution platforms (arm64-darwin-21),
+        and sorbet-static = 0.5.6433 could not be found in rubygems repository https://gem.repo4/ or installed locally for any resolution platforms (arm64-darwin-21),
         sorbet cannot be used.
       So, because Gemfile depends on sorbet = 0.5.6433,
         version solving has failed.
@@ -459,13 +459,13 @@ RSpec.describe "bundle install with specific platforms" do
     expect(err).to include(error_message).once
   end
 
-  it "does not generate a lockfile if RUBY platform is forced and some gem has no RUBY variant available" do
+  it "does not generate a lockfile if ruby platform is forced and some gem has no ruby variant available" do
     build_repo4 do
       build_gem("sorbet-static", "0.5.9889") {|s| s.platform = Gem::Platform.local }
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "sorbet-static", "0.5.9889"
     G
@@ -473,22 +473,22 @@ RSpec.describe "bundle install with specific platforms" do
     bundle "lock", raise_on_error: false, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
 
     expect(err).to include <<~ERROR.rstrip
-      Could not find gem 'sorbet-static (= 0.5.9889)' with platform 'ruby' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+      Could not find gem 'sorbet-static (= 0.5.9889)' with platform 'ruby' in rubygems repository https://gem.repo4/ or installed locally.
 
       The source contains the following gems matching 'sorbet-static (= 0.5.9889)':
         * sorbet-static-0.5.9889-#{Gem::Platform.local}
     ERROR
   end
 
-  it "automatically fixes the lockfile if RUBY platform is locked and some gem has no RUBY variant available" do
+  it "automatically fixes the lockfile if ruby platform is locked and some gem has no ruby variant available" do
     build_repo4 do
       build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet", "= 0.5.10160"
-        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+        s.add_dependency "sorbet", "= 0.5.10160"
+        s.add_dependency "sorbet-runtime", "= 0.5.10160"
       end
 
       build_gem("sorbet", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+        s.add_dependency "sorbet-static", "= 0.5.10160"
       end
 
       build_gem("sorbet-runtime", "0.5.10160")
@@ -499,14 +499,14 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "sorbet-static-and-runtime"
     G
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           sorbet (0.5.10160)
             sorbet-static (= 0.5.10160)
@@ -537,7 +537,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     expect(lockfile).to eq <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           sorbet (0.5.10160)
             sorbet-static (= 0.5.10160)
@@ -558,7 +558,7 @@ RSpec.describe "bundle install with specific platforms" do
     L
   end
 
-  it "automatically fixes the lockfile if both RUBY platform and a more specific platform are locked, and some gem has no RUBY variant available" do
+  it "automatically fixes the lockfile if both ruby platform and a more specific platform are locked, and some gem has no ruby variant available" do
     build_repo4 do
       build_gem "nokogiri", "1.12.0"
       build_gem "nokogiri", "1.12.0" do |s|
@@ -577,7 +577,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     simulate_platform "x86_64-darwin-22" do
       install_gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "nokogiri"
         gem "sorbet-static"
@@ -591,7 +591,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           nokogiri (1.12.0)
           nokogiri (1.12.0-x86_64-darwin)
@@ -615,7 +615,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     expect(lockfile).to eq <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           nokogiri (1.13.0-x86_64-darwin)
           sorbet-static (0.5.10601-x86_64-darwin)
@@ -632,15 +632,15 @@ RSpec.describe "bundle install with specific platforms" do
     L
   end
 
-  it "automatically fixes the lockfile if only RUBY platform is locked and some gem has no RUBY variant available" do
+  it "automatically fixes the lockfile if only ruby platform is locked and some gem has no ruby variant available" do
     build_repo4 do
       build_gem("sorbet-static-and-runtime", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet", "= 0.5.10160"
-        s.add_runtime_dependency "sorbet-runtime", "= 0.5.10160"
+        s.add_dependency "sorbet", "= 0.5.10160"
+        s.add_dependency "sorbet-runtime", "= 0.5.10160"
       end
 
       build_gem("sorbet", "0.5.10160") do |s|
-        s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+        s.add_dependency "sorbet-static", "= 0.5.10160"
       end
 
       build_gem("sorbet-runtime", "0.5.10160")
@@ -651,14 +651,14 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "sorbet-static-and-runtime"
     G
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           sorbet (0.5.10160)
             sorbet-static (= 0.5.10160)
@@ -689,7 +689,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     expect(lockfile).to eq <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           sorbet (0.5.10160)
             sorbet-static (= 0.5.10160)
@@ -726,7 +726,7 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "nokogiri"
         gem "sorbet-static"
@@ -734,7 +734,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0-arm-linux)
             nokogiri (1.14.0-x86_64-linux)
@@ -762,7 +762,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0-x86_64-linux)
             sorbet-static (0.5.10696-x86_64-linux)
@@ -794,7 +794,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       # Make sure sorbet-static-0.5.10549-universal-darwin-21 is installed
       install_gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "sorbet-static", "= 0.5.10549"
       G
@@ -807,7 +807,7 @@ RSpec.describe "bundle install with specific platforms" do
       # Make sure the lockfile is missing sorbet-static-0.5.10549-universal-darwin-21
       lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             sorbet-static (0.5.10549-universal-darwin-20)
 
@@ -827,7 +827,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             sorbet-static (0.5.10549-universal-darwin-20)
             sorbet-static (0.5.10549-universal-darwin-21)
@@ -844,11 +844,11 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "automatically fixes the lockfile if locked only to RUBY, and some locked specs don't meed locked dependencies" do
+  it "automatically fixes the lockfile if locked only to ruby, and some locked specs don't meed locked dependencies" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("ibandit", "0.7.0") do |s|
-          s.add_runtime_dependency "i18n", "~> 0.7.0"
+          s.add_dependency "i18n", "~> 0.7.0"
         end
 
         build_gem("i18n", "0.7.0.beta1")
@@ -856,14 +856,14 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "ibandit", "~> 0.7.0"
       G
 
       lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             i18n (0.7.0.beta1)
             ibandit (0.7.0)
@@ -883,7 +883,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             i18n (0.7.0)
             ibandit (0.7.0)
@@ -910,16 +910,21 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "nokogiri"
 
       gem "tzinfo", "~> 1.2", platform: :#{not_local_tag}
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo4, "nokogiri", "1.13.8"
+      c.checksum gem_repo4, "nokogiri", "1.13.8", Gem::Platform.local
+    end
+
     original_lockfile = <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           nokogiri (1.13.8)
           nokogiri (1.13.8-#{Gem::Platform.local})
@@ -930,9 +935,7 @@ RSpec.describe "bundle install with specific platforms" do
       DEPENDENCIES
         nokogiri
         tzinfo (~> 1.2)
-
-      CHECKSUMS
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -941,14 +944,9 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "lock --update"
 
-    checksums = checksums_section_when_existing do |c|
-      c.no_checksum "nokogiri", "1.13.8"
-      c.no_checksum "nokogiri", "1.13.8", Gem::Platform.local
-    end
-
     updated_lockfile = <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           nokogiri (1.13.8)
           nokogiri (1.13.8-#{Gem::Platform.local})
@@ -970,24 +968,24 @@ RSpec.describe "bundle install with specific platforms" do
   it "does not remove ruby when adding a new gem to the Gemfile" do
     build_repo4 do
       build_gem "concurrent-ruby", "1.2.2"
-      build_gem "rack", "3.0.7"
+      build_gem "myrack", "3.0.7"
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "concurrent-ruby"
-      gem "rack"
+      gem "myrack"
     G
 
     checksums = checksums_section_when_existing do |c|
       c.no_checksum "concurrent-ruby", "1.2.2"
-      c.no_checksum "rack", "3.0.7"
+      c.no_checksum "myrack", "3.0.7"
     end
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           concurrent-ruby (1.2.2)
 
@@ -1005,17 +1003,17 @@ RSpec.describe "bundle install with specific platforms" do
 
     expect(lockfile).to eq <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           concurrent-ruby (1.2.2)
-          rack (3.0.7)
+          myrack (3.0.7)
 
       PLATFORMS
         #{lockfile_platforms("ruby", generic_local_platform, defaults: [])}
 
       DEPENDENCIES
         concurrent-ruby
-        rack
+        myrack
       #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
@@ -1025,10 +1023,8 @@ RSpec.describe "bundle install with specific platforms" do
   it "can fallback to a source gem when platform gems are incompatible with current ruby version" do
     setup_multiplatform_gem_with_source_gem
 
-    source = file_uri_for(gem_repo2)
-
     gemfile <<~G
-      source "#{source}"
+      source "https://gem.repo2"
 
       gem "my-precompiled-gem"
     G
@@ -1038,7 +1034,7 @@ RSpec.describe "bundle install with specific platforms" do
     # - A source gem with compatible ruby version
     lockfile <<-L
       GEM
-        remote: #{source}/
+        remote: https://gem.repo2/
         specs:
           my-precompiled-gem (3.0.0)
           my-precompiled-gem (3.0.0-#{Bundler.local_platform})
@@ -1074,7 +1070,7 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "nokogiri", "1.14.0"
       G
@@ -1085,7 +1081,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0-x86_64-linux)
 
@@ -1107,7 +1103,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0)
 
@@ -1123,11 +1119,11 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "automatically fixes the lockfile when only RUBY platform locked, and adding a dependency with subdependencies not valid for RUBY" do
+  it "automatically fixes the lockfile when only ruby platform locked, and adding a dependency with subdependencies not valid for ruby" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("sorbet", "0.5.10160") do |s|
-          s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+          s.add_dependency "sorbet-static", "= 0.5.10160"
         end
 
         build_gem("sorbet-static", "0.5.10160") do |s|
@@ -1136,14 +1132,14 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "sorbet"
       G
 
       lockfile <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
 
         PLATFORMS
@@ -1159,7 +1155,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             sorbet (0.5.10160)
               sorbet-static (= 0.5.10160)
@@ -1203,7 +1199,7 @@ RSpec.describe "bundle install with specific platforms" do
       end
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "nokogiri"
       G
@@ -1219,7 +1215,7 @@ RSpec.describe "bundle install with specific platforms" do
       # locks all compatible platforms, excluding Java and Windows
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0)
             nokogiri (1.14.0-arm-linux)
@@ -1238,7 +1234,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       gemfile <<~G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
 
         gem "nokogiri"
         gem "sorbet-static"
@@ -1255,7 +1251,7 @@ RSpec.describe "bundle install with specific platforms" do
       # locks only platforms compatible with all gems in the bundle
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0)
             nokogiri (1.14.0-x86_64-linux)
@@ -1293,7 +1289,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "nokogiri"
       gem "sass-embedded"
@@ -1311,7 +1307,7 @@ RSpec.describe "bundle install with specific platforms" do
       # locks all compatible platforms, excluding Java and Windows
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.15.5)
             sass-embedded (1.69.5)
@@ -1343,7 +1339,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "nokogiri"
     G
@@ -1357,7 +1353,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             nokogiri (1.15.5-x86_64-linux)
 
@@ -1387,7 +1383,7 @@ RSpec.describe "bundle install with specific platforms" do
         end
 
         gemfile <<~G
-          source "#{file_uri_for(gem_repo4)}"
+          source "https://gem.repo4"
 
           gem "rcee_precompiled", "0.5.0"
         G
@@ -1397,7 +1393,7 @@ RSpec.describe "bundle install with specific platforms" do
 
           expect(lockfile).to eq(<<~L)
             GEM
-              remote: #{file_uri_for(gem_repo4)}/
+              remote: https://gem.repo4/
               specs:
                 rcee_precompiled (0.5.0-x86_64-linux)
                 rcee_precompiled (0.5.0-x86_64-linux-musl)
@@ -1429,7 +1425,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "rcee_precompiled", "0.5.0"
     G
@@ -1439,7 +1435,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             rcee_precompiled (0.5.0-x86_64-linux-gnu)
             rcee_precompiled (0.5.0-x86_64-linux-musl)
@@ -1465,7 +1461,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "rcee_precompiled", "0.5.0"
     G
@@ -1475,7 +1471,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq(<<~L)
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             rcee_precompiled (0.5.0-universal-darwin)
 
@@ -1497,14 +1493,14 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     gemfile <<~G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
 
       gem "nokogiri"
     G
 
     lockfile <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           nokogiri (1.0)
 
@@ -1522,6 +1518,102 @@ RSpec.describe "bundle install with specific platforms" do
       bundle "install --verbose"
 
       expect(out).to include("Found no changes, using resolution from the lockfile")
+    end
+  end
+
+  it "does not remove generic platform gems locked for a specific platform from lockfile when unlocking an unrelated gem" do
+    build_repo4 do
+      build_gem "ffi"
+
+      build_gem "ffi" do |s|
+        s.platform = "x86_64-linux"
+      end
+
+      build_gem "nokogiri"
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "ffi"
+      gem "nokogiri"
+    G
+
+    original_lockfile = <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          ffi (1.0)
+          nokogiri (1.0)
+
+      PLATFORMS
+        x86_64-linux
+
+      DEPENDENCIES
+        ffi
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --update nokogiri"
+
+      expect(lockfile).to eq(original_lockfile)
+    end
+  end
+
+  it "does not remove generic platform gems locked for a specific platform from lockfile when unlocking an unrelated gem, and variants for other platform also locked" do
+    build_repo4 do
+      build_gem "ffi"
+
+      build_gem "ffi" do |s|
+        s.platform = "x86_64-linux"
+      end
+
+      build_gem "ffi" do |s|
+        s.platform = "java"
+      end
+
+      build_gem "nokogiri"
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "ffi"
+      gem "nokogiri"
+    G
+
+    original_lockfile = <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          ffi (1.0)
+          ffi (1.0-java)
+          nokogiri (1.0)
+
+      PLATFORMS
+        java
+        x86_64-linux
+
+      DEPENDENCIES
+        ffi
+        nokogiri
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --update nokogiri"
+
+      expect(lockfile).to eq(original_lockfile)
     end
   end
 
@@ -1550,7 +1642,7 @@ RSpec.describe "bundle install with specific platforms" do
       build_gem("facter", "2.4.6")
       build_gem("facter", "2.4.6") do |s|
         s.platform = "universal-darwin"
-        s.add_runtime_dependency "CFPropertyList"
+        s.add_dependency "CFPropertyList"
       end
       build_gem("CFPropertyList")
     end

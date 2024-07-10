@@ -224,7 +224,7 @@ typedef struct rb_parser_ast_token {
 typedef void* rb_parser_ary_data;
 
 enum rb_parser_ary_data_type {
-    PARSER_ARY_DATA_AST_TOKEN,
+    PARSER_ARY_DATA_AST_TOKEN = 1,
     PARSER_ARY_DATA_SCRIPT_LINE
 };
 

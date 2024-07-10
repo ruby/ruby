@@ -546,15 +546,18 @@ static void
 verify_waiting_list(void)
 {
 #if VM_CHECK_MODE > 0
-    rb_thread_t *wth, *prev_wth = NULL;
-    ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
+    struct rb_thread_sched_waiting *w, *prev_w = NULL;
+
+    // waiting list's timeout order should be [1, 2, 3, ..., 0, 0, 0]
+
+    ccan_list_for_each(&timer_th.waiting, w, node) {
         // fprintf(stderr, "verify_waiting_list th:%u abs:%lu\n", rb_th_serial(wth), (unsigned long)wth->sched.waiting_reason.data.timeout);
-        if (prev_wth) {
-            rb_hrtime_t timeout = wth->sched.waiting_reason.data.timeout;
-            rb_hrtime_t prev_timeout = prev_wth->sched.waiting_reason.data.timeout;
+        if (prev_w) {
+            rb_hrtime_t timeout = w->data.timeout;
+            rb_hrtime_t prev_timeout = w->data.timeout;
             VM_ASSERT(timeout == 0 || prev_timeout <= timeout);
         }
-        prev_wth = wth;
+        prev_w = w;
     }
 #endif
 }
@@ -632,16 +635,17 @@ kqueue_unregister_waiting(int fd, enum thread_sched_waiting_flag flags)
 static bool
 kqueue_already_registered(int fd)
 {
-    rb_thread_t *wth, *found_wth = NULL;
-    ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
+    struct rb_thread_sched_waiting *w, *found_w = NULL;
+
+    ccan_list_for_each(&timer_th.waiting, w, node) {
         // Similar to EEXIST in epoll_ctl, but more strict because it checks fd rather than flags
         //   for simplicity
-        if (wth->sched.waiting_reason.flags && wth->sched.waiting_reason.data.fd == fd) {
-            found_wth = wth;
+        if (w->flags && w->data.fd == fd) {
+            found_w = w;
             break;
         }
     }
-    return found_wth != NULL;
+    return found_w != NULL;
 }
 
 #endif // HAVE_SYS_EVENT_H
@@ -786,20 +790,20 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 VM_ASSERT(flags & thread_sched_waiting_timeout);
 
                 // insert th to sorted list (TODO: O(n))
-                rb_thread_t *wth, *prev_wth = NULL;
+                struct rb_thread_sched_waiting *w, *prev_w = NULL;
 
-                ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
-                    if ((wth->sched.waiting_reason.flags & thread_sched_waiting_timeout) &&
-                        wth->sched.waiting_reason.data.timeout < abs) {
-                        prev_wth = wth;
+                ccan_list_for_each(&timer_th.waiting, w, node) {
+                    if ((w->flags & thread_sched_waiting_timeout) &&
+                        w->data.timeout < abs) {
+                        prev_w = w;
                     }
                     else {
                         break;
                     }
                 }
 
-                if (prev_wth) {
-                    ccan_list_add_after(&timer_th.waiting, &prev_wth->sched.waiting_reason.node, &th->sched.waiting_reason.node);
+                if (prev_w) {
+                    ccan_list_add_after(&timer_th.waiting, &prev_w->node, &th->sched.waiting_reason.node);
                 }
                 else {
                     ccan_list_add(&timer_th.waiting, &th->sched.waiting_reason.node);

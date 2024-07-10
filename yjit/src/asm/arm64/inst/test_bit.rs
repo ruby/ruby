@@ -60,19 +60,19 @@ pub struct TestBit {
 
 impl TestBit {
     /// TBNZ
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TBNZ--Test-bit-and-Branch-if-Nonzero-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TBNZ--Test-bit-and-Branch-if-Nonzero-?lang=en>
     pub fn tbnz(rt: u8, bit_num: u8, offset: i16) -> Self {
         Self { rt, imm14: offset, b40: bit_num & 0b11111, op: Op::TBNZ, b5: bit_num.into() }
     }
 
     /// TBZ
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TBZ--Test-bit-and-Branch-if-Zero-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TBZ--Test-bit-and-Branch-if-Zero-?lang=en>
     pub fn tbz(rt: u8, bit_num: u8, offset: i16) -> Self {
         Self { rt, imm14: offset, b40: bit_num & 0b11111, op: Op::TBZ, b5: bit_num.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en>
 const FAMILY: u32 = 0b11011;
 
 impl From<TestBit> for u32 {

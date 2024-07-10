@@ -130,6 +130,26 @@ describe "StringIO#initialize when passed [Object, mode]" do
     -> { @io.send(:initialize, str, "w") }.should raise_error(Errno::EACCES)
     -> { @io.send(:initialize, str, "a") }.should raise_error(Errno::EACCES)
   end
+
+  it "truncates all the content if passed w mode" do
+    io = StringIO.allocate
+    source = +"example".encode(Encoding::ISO_8859_1);
+
+    io.send(:initialize, source, "w")
+
+    io.string.should.empty?
+    io.string.encoding.should == Encoding::ISO_8859_1
+  end
+
+  it "truncates all the content if passed IO::TRUNC mode" do
+    io = StringIO.allocate
+    source = +"example".encode(Encoding::ISO_8859_1);
+
+    io.send(:initialize, source, IO::TRUNC)
+
+    io.string.should.empty?
+    io.string.encoding.should == Encoding::ISO_8859_1
+  end
 end
 
 describe "StringIO#initialize when passed [Object]" do
@@ -172,7 +192,7 @@ end
 # NOTE: Synchronise with core/io/new_spec.rb (core/io/shared/new.rb)
 describe "StringIO#initialize when passed keyword arguments" do
   it "sets the mode based on the passed :mode option" do
-    io = StringIO.new("example", "r")
+    io = StringIO.new("example", mode: "r")
     io.closed_read?.should be_false
     io.closed_write?.should be_true
   end

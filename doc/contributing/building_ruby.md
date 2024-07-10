@@ -24,7 +24,7 @@
 2. Install optional, recommended dependencies:
 
     * [libffi] (to build fiddle)
-    * [gmp] (if you with to accelerate Bignum operations)
+    * [gmp] (if you wish to accelerate Bignum operations)
     * [rustc] - 1.58.0 or later, if you wish to build
       [YJIT](rdoc-ref:RubyVM::YJIT).
 

@@ -924,9 +924,7 @@ impl Assembler
 
             match insn {
                 Insn::Comment(text) => {
-                    if cfg!(feature = "disasm") {
-                        cb.add_comment(text);
-                    }
+                    cb.add_comment(text);
                 },
                 Insn::Label(target) => {
                     cb.write_label(target.unwrap_label_idx());

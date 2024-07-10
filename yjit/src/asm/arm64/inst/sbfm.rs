@@ -32,7 +32,7 @@ pub struct SBFM {
 
 impl SBFM {
     /// ASR
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ASR--immediate---Arithmetic-Shift-Right--immediate---an-alias-of-SBFM-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ASR--immediate---Arithmetic-Shift-Right--immediate---an-alias-of-SBFM-?lang=en>
     pub fn asr(rd: u8, rn: u8, shift: u8, num_bits: u8) -> Self {
         let (imms, n) = if num_bits == 64 {
             (0b111111, true)
@@ -44,13 +44,13 @@ impl SBFM {
     }
 
     /// SXTW
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SXTW--Sign-Extend-Word--an-alias-of-SBFM-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SXTW--Sign-Extend-Word--an-alias-of-SBFM-?lang=en>
     pub fn sxtw(rd: u8, rn: u8) -> Self {
         Self { rd, rn, immr: 0, imms: 31, n: true, sf: Sf::Sf64 }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en#bitfield
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en#bitfield>
 const FAMILY: u32 = 0b1001;
 
 impl From<SBFM> for u32 {

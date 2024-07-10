@@ -29,19 +29,19 @@ pub struct Call {
 
 impl Call {
     /// B
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/B--Branch-
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/B--Branch->
     pub fn b(offset: InstructionOffset) -> Self {
         Self { offset, op: Op::Branch }
     }
 
     /// BL
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/BL--Branch-with-Link-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/BL--Branch-with-Link-?lang=en>
     pub fn bl(offset: InstructionOffset) -> Self {
         Self { offset, op: Op::BranchWithLink }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en>
 const FAMILY: u32 = 0b101;
 
 impl From<Call> for u32 {

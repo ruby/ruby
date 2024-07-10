@@ -3,29 +3,29 @@
 RSpec.describe "bundle install" do
   before :each do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
   end
 
   shared_examples_for "an option to force redownloading gems" do
     it "re-installs installed gems" do
-      rack_lib = default_bundle_path("gems/rack-1.0.0/lib/rack.rb")
+      myrack_lib = default_bundle_path("gems/myrack-1.0.0/lib/myrack.rb")
 
       bundle :install
-      rack_lib.open("w") {|f| f.write("blah blah blah") }
+      myrack_lib.open("w") {|f| f.write("blah blah blah") }
       bundle :install, flag => true
 
-      expect(out).to include "Installing rack 1.0.0"
-      expect(rack_lib.open(&:read)).to eq("RACK = '1.0.0'\n")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(out).to include "Installing myrack 1.0.0"
+      expect(myrack_lib.open(&:read)).to eq("MYRACK = '1.0.0'\n")
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     it "works on first bundle install" do
       bundle :install, flag => true
 
-      expect(out).to include "Installing rack 1.0.0"
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(out).to include "Installing myrack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     context "with a git gem" do
@@ -33,7 +33,7 @@ RSpec.describe "bundle install" do
 
       before do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "foo", :git => "#{lib_path("foo-1.0")}"
         G
       end

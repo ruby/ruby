@@ -558,7 +558,7 @@ class TestObjSpace < Test::Unit::TestCase
         next if obj["type"] == "SHAPE"
 
         assert_not_nil obj["slot_size"]
-        assert_equal 0, obj["slot_size"] % GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+        assert_equal 0, obj["slot_size"] % (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
       }
     end
   end

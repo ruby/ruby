@@ -2,16 +2,14 @@ use std::cell::RefCell;
 use std::fmt;
 use std::mem;
 use std::rc::Rc;
+use std::collections::BTreeMap;
+
 use crate::core::IseqPayload;
 use crate::core::for_each_off_stack_iseq_payload;
 use crate::core::for_each_on_stack_iseq_payload;
 use crate::invariants::rb_yjit_tracing_invalidate_all;
 use crate::stats::incr_counter;
 use crate::virtualmem::WriteError;
-
-#[cfg(feature = "disasm")]
-use std::collections::BTreeMap;
-
 use crate::codegen::CodegenGlobals;
 use crate::virtualmem::{VirtualMem, CodePtr};
 
@@ -77,8 +75,10 @@ pub struct CodeBlock {
     // References to labels
     label_refs: Vec<LabelRef>,
 
+    // A switch for keeping comments. They take up memory.
+    keep_comments: bool,
+
     // Comments for assembly instructions, if that feature is enabled
-    #[cfg(feature = "disasm")]
     asm_comments: BTreeMap<usize, Vec<String>>,
 
     // True for OutlinedCb
@@ -107,7 +107,7 @@ impl CodeBlock {
     const PREFERRED_CODE_PAGE_SIZE: usize = 16 * 1024;
 
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>) -> Self {
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, outlined: bool, freed_pages: Rc<Option<Vec<usize>>>, keep_comments: bool) -> Self {
         // Pick the code page size
         let system_page_size = mem_block.borrow().system_page_size();
         let page_size = if 0 == Self::PREFERRED_CODE_PAGE_SIZE % system_page_size {
@@ -128,7 +128,7 @@ impl CodeBlock {
             label_addrs: Vec::new(),
             label_names: Vec::new(),
             label_refs: Vec::new(),
-            #[cfg(feature = "disasm")]
+            keep_comments,
             asm_comments: BTreeMap::new(),
             outlined,
             dropped_bytes: false,
@@ -366,9 +366,11 @@ impl CodeBlock {
     }
 
     /// Add an assembly comment if the feature is on.
-    /// If not, this becomes an inline no-op.
-    #[cfg(feature = "disasm")]
     pub fn add_comment(&mut self, comment: &str) {
+        if !self.keep_comments {
+            return;
+        }
+
         let cur_ptr = self.get_write_ptr().raw_addr(self);
 
         // If there's no current list of comments for this line number, add one.
@@ -379,28 +381,21 @@ impl CodeBlock {
             this_line_comments.push(comment.to_string());
         }
     }
-    #[cfg(not(feature = "disasm"))]
-    #[inline]
-    pub fn add_comment(&mut self, _: &str) {}
 
-    #[cfg(feature = "disasm")]
     pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
         self.asm_comments.get(&pos)
     }
 
-    #[allow(unused_variables)]
-    #[cfg(feature = "disasm")]
     pub fn remove_comments(&mut self, start_addr: CodePtr, end_addr: CodePtr) {
+        if self.asm_comments.is_empty() {
+            return;
+        }
         for addr in start_addr.raw_addr(self)..end_addr.raw_addr(self) {
             self.asm_comments.remove(&addr);
         }
     }
-    #[cfg(not(feature = "disasm"))]
-    #[inline]
-    pub fn remove_comments(&mut self, _: CodePtr, _: CodePtr) {}
 
     pub fn clear_comments(&mut self) {
-        #[cfg(feature = "disasm")]
         self.asm_comments.clear();
     }
 
@@ -693,7 +688,7 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(None))
+        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(None), true)
     }
 
     /// Stubbed CodeBlock for testing conditions that can arise due to code GC. Can't execute generated code.
@@ -711,7 +706,7 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(Some(freed_pages)))
+        Self::new(Rc::new(RefCell::new(virt_mem)), false, Rc::new(Some(freed_pages)), true)
     }
 }
 

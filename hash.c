@@ -48,6 +48,7 @@
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
 #include "vm_sync.h"
+#include "builtin.h"
 
 // Conditional compilation macros for MMTk.
 #include "internal/mmtk_macros.h"
@@ -1769,58 +1770,31 @@ set_proc_default(VALUE hash, VALUE proc)
     RHASH_SET_IFNONE(hash, proc);
 }
 
-/*
- *  call-seq:
- *     Hash.new(default_value = nil) -> new_hash
- *     Hash.new {|hash, key| ... } -> new_hash
- *
- *  Returns a new empty +Hash+ object.
- *
- *  The initial default value and initial default proc for the new hash
- *  depend on which form above was used. See {Default Values}[rdoc-ref:Hash@Default+Values].
- *
- *  If neither an argument nor a block given,
- *  initializes both the default value and the default proc to <tt>nil</tt>:
- *    h = Hash.new
- *    h.default # => nil
- *    h.default_proc # => nil
- *
- *  If argument <tt>default_value</tt> given but no block given,
- *  initializes the default value to the given <tt>default_value</tt>
- *  and the default proc to <tt>nil</tt>:
- *    h = Hash.new(false)
- *    h.default # => false
- *    h.default_proc # => nil
- *
- *  If a block given but no argument, stores the block as the default proc
- *  and sets the default value to <tt>nil</tt>:
- *    h = Hash.new {|hash, key| "Default value for #{key}" }
- *    h.default # => nil
- *    h.default_proc.class # => Proc
- *    h[:nosuch] # => "Default value for nosuch"
- */
-
 static VALUE
-rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
+rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifnone_unset, VALUE ifnone, VALUE block)
 {
     rb_hash_modify(hash);
 
-    if (rb_block_given_p()) {
-        rb_check_arity(argc, 0, 0);
-        SET_PROC_DEFAULT(hash, rb_block_proc());
+    if (capa_value != INT2FIX(0)) {
+        long capa = NUM2LONG(capa_value);
+        if (capa > 0 && RHASH_SIZE(hash) == 0 && RHASH_AR_TABLE_P(hash)) {
+            hash_st_table_init(hash, &objhash, capa);
+        }
+    }
+
+    if (!NIL_P(block)) {
+        if (ifnone_unset != Qtrue) {
+            rb_check_arity(1, 0, 0);
+        }
+        else {
+            SET_PROC_DEFAULT(hash, block);
+        }
     }
     else {
-        rb_check_arity(argc, 0, 1);
-
-        VALUE options, ifnone;
-        rb_scan_args(argc, argv, "01:", &ifnone, &options);
-        if (NIL_P(ifnone) && !NIL_P(options)) {
-            ifnone = options;
-            rb_warn_deprecated_to_remove("3.4", "Calling Hash.new with keyword arguments", "Hash.new({ key: value })");
-        }
-        RHASH_SET_IFNONE(hash, ifnone);
+        RHASH_SET_IFNONE(hash, ifnone_unset == Qtrue ? Qnil : ifnone);
     }
 
+    hash_verify(hash);
     return hash;
 }
 
@@ -7189,7 +7163,6 @@ Init_Hash(void)
     rb_define_alloc_func(rb_cHash, empty_hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
-    rb_define_method(rb_cHash, "initialize", rb_hash_initialize, -1);
     rb_define_method(rb_cHash, "initialize_copy", rb_hash_replace, 1);
     rb_define_method(rb_cHash, "rehash", rb_hash_rehash, 0);
 
@@ -7516,3 +7489,5 @@ Init_Hash(void)
 
     HASH_ASSERT(sizeof(ar_hint_t) * RHASH_AR_TABLE_MAX_SIZE == sizeof(VALUE));
 }
+
+#include "hash.rbinc"

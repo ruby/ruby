@@ -57,7 +57,7 @@ pub struct DataReg {
 
 impl DataReg {
     /// ADD (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--shifted-register---Add--shifted-register--?lang=en>
     pub fn add(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
             rd,
@@ -72,7 +72,7 @@ impl DataReg {
     }
 
     /// ADDS (shifted register, set flags)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--shifted-register---Add--shifted-register---setting-flags-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--shifted-register---Add--shifted-register---setting-flags-?lang=en>
     pub fn adds(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
             rd,
@@ -87,13 +87,13 @@ impl DataReg {
     }
 
     /// CMP (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--shifted-register---Compare--shifted-register---an-alias-of-SUBS--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--shifted-register---Compare--shifted-register---an-alias-of-SUBS--shifted-register--?lang=en>
     pub fn cmp(rn: u8, rm: u8, num_bits: u8) -> Self {
         Self::subs(31, rn, rm, num_bits)
     }
 
     /// SUB (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--shifted-register---Subtract--shifted-register--?lang=en>
     pub fn sub(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
             rd,
@@ -108,7 +108,7 @@ impl DataReg {
     }
 
     /// SUBS (shifted register, set flags)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--shifted-register---Subtract--shifted-register---setting-flags-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--shifted-register---Subtract--shifted-register---setting-flags-?lang=en>
     pub fn subs(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self {
             rd,
@@ -123,7 +123,7 @@ impl DataReg {
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en>
 const FAMILY: u32 = 0b0101;
 
 impl From<DataReg> for u32 {

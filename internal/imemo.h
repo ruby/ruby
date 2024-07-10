@@ -89,6 +89,7 @@ struct vm_ifunc {
     const void *data;
     struct vm_ifunc_argc argc;
 };
+#define IFUNC_YIELD_OPTIMIZABLE IMEMO_FL_USER0
 
 struct rb_imemo_tmpbuf_struct {
     VALUE flags;

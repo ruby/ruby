@@ -51,7 +51,7 @@ impl IntoUsize for u8 {
     }
 }
 
-/// The [Into<u64>] Rust does not provide.
+/// The `Into<u64>` Rust does not provide.
 /// Convert to u64 with assurance that the value is preserved.
 /// Currently, `usize::BITS == 64` holds for all platforms we support.
 pub(crate) trait IntoU64 {
