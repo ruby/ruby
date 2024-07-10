@@ -12,6 +12,12 @@
 # include <sys/user.h>
 #endif
 
+#if USE_MMTK
+#include "internal/cmdlineopt.h"
+#include "internal/mmtk.h"
+#include "internal/mmtk_support.h"
+#endif
+
 #include "ruby/ruby.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
@@ -841,6 +847,11 @@ asan_unlock_freelist(struct heap_page *page)
 static int
 RVALUE_AGE_GET(VALUE obj)
 {
+#if RUBY_DEBUG && USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Attempted to get age bits while using MMTk.");
+    }
+#endif
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
     return (int)(age_bits[RVALUE_AGE_BITMAP_INDEX(obj)] >> RVALUE_AGE_BITMAP_OFFSET(obj)) & RVALUE_AGE_BIT_MASK;
 }
@@ -848,6 +859,11 @@ RVALUE_AGE_GET(VALUE obj)
 static void
 RVALUE_AGE_SET(VALUE obj, int age)
 {
+#if RUBY_DEBUG && USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Attempted to set age bits while using MMTk.");
+    }
+#endif
     RUBY_ASSERT(age <= RVALUE_OLD_AGE);
     bits_t *age_bits = GET_HEAP_PAGE(obj)->age_bits;
     // clear the bits
@@ -1065,6 +1081,29 @@ struct RZombie {
 };
 
 #define RZOMBIE(o) ((struct RZombie *)(o))
+
+#if USE_MMTK
+// When using MMTk, this is the alternative to RZombie.
+// MMTk_FinalJob instances are allocated with xmalloc,
+// and do not reuse the space of dead heap objects.
+struct MMTk_FinalJob {
+    struct MMTk_FinalJob *next;
+    enum {
+        MMTK_FJOB_DFREE,
+        MMTK_FJOB_FINALIZE,
+    } kind;
+    union {
+        struct {
+            void (*dfree)(void *);
+            void *data;
+        } dfree;
+        struct {
+            VALUE observed_id;
+            VALUE finalizer_array;
+        } finalize;
+    } as;
+};
+#endif
 
 int ruby_disable_gc = 0;
 int ruby_enable_autocompact = 0;
@@ -1307,6 +1346,12 @@ static void rgengc_rememberset_mark(rb_objspace_t *objspace, rb_heap_t *heap);
 static int
 check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int terminate)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
+    }
+#endif
+
     int err = 0;
 
     int lev = rb_gc_vm_lock_no_barrier();
@@ -1428,6 +1473,12 @@ check_rvalue_consistency(rb_objspace_t *objspace, const VALUE obj)
 static inline bool
 gc_object_moved_p(rb_objspace_t *objspace, VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        return rb_mmtk_object_moved_p(obj);
+    }
+#endif
+
     if (RB_SPECIAL_CONST_P(obj)) {
         return FALSE;
     }
@@ -2284,8 +2335,25 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
 {
     GC_ASSERT(heap->free_pages == NULL);
 
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+        // Do not count the following `gc_continue` into "GC time".
+        // In MMTk, we count the allocation slow path, including acquiring additional pages,
+        // as part of the "mutator time".  The following `gc_continue` serves the same purpose,
+        // i.e. making more available to the allocator.
+        // To make a fare comparison, we exclude this portion from the "GC time".
+        rb_mmtk_gc_probe_slowpath(true);
+    }
+#endif
+
     /* Continue incremental marking or lazy sweeping, if in any of those steps. */
     gc_continue(objspace, size_pool, heap);
+
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+        rb_mmtk_gc_probe_slowpath(false);
+    }
+#endif
 
     /* If we still don't have a free page and not allowed to create a new page,
      * we should start a new GC cycle. */
@@ -2365,10 +2433,22 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     RBASIC(obj)->flags = flags;
     *((VALUE *)&RBASIC(obj)->klass) = klass;
 
+#if USE_MMTK
+    // MMTk uses its own way to distinguish young objects from old objects.
+    if (!rb_mmtk_enabled_p()) {
     int t = flags & RUBY_T_MASK;
     if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
         RVALUE_AGE_SET_CANDIDATE(objspace, obj);
     }
+    }
+#endif
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_maybe_register_obj_free_candidate(obj);
+        rb_mmtk_maybe_register_ppp(obj);
+    }
+#endif
 
 #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
@@ -2393,7 +2473,15 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #endif
 
     if (RB_UNLIKELY(wb_protected == FALSE)) {
+#if USE_MMTK
+        if (rb_mmtk_enabled_p()) {
+            mmtk_register_wb_unprotected_object((MMTk_ObjectReference)obj);
+        } else {
+#endif
         MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+#if USE_MMTK
+        }
+#endif
     }
 
 #if RGENGC_PROFILE
@@ -2425,6 +2513,13 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // Load from our hidden field before the object.
+        return *(size_t*)(obj - MMTK_OBJREF_OFFSET);
+    }
+#endif
+
     return GET_HEAP_PAGE(obj)->slot_size - RVALUE_OVERHEAD;
 }
 
@@ -2690,6 +2785,31 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 
     size_t size_pool_idx = size_pool_idx_for_size(alloc_size);
 
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // FIXME: Currently, types that uses VWA asks the GC for the object size (rb_gc_obj_slot_size).
+        // It is only convenient to implement for size-segregated free-list allocators which
+        // Ruby currently implements. However, for high-performance bump-pointer allcators,
+        // we have to allocate one extra word before every object to record the object size.
+        // For this reason, MMTk expects the VM to tell the object size, because the size of
+        // most objects can be known only from its classes, except for variable-sized objects
+        // like String, Array, Hash, etc.
+        //
+        // We make a compromise here:
+        // 1.  The VM will only ask MMTk to allocate objects of size 40, 80, 160 or 320, the
+        //     current size classes of the size pool.
+        // 2.  We add a hidden size_t field before every object to hold the object size.
+        //
+        // Please keep in mind that this is only a temporary solution.
+
+        // We first calculate the object size if the object were allocated using Ruby's own GC.
+        size_t size_pool_size = size_pool_slot_size(size_pool_idx);
+        RUBY_ASSERT(size_pool_size % MMTK_MIN_OBJ_ALIGN == 0);
+
+        obj = rb_mmtk_newobj_of_inner(klass, flags, wb_protected, size_pool_size);
+    } else {
+#endif
+
     rb_ractor_newobj_cache_t *cache = (rb_ractor_newobj_cache_t *)cache_ptr;
 
     if (!RB_UNLIKELY(during_gc || ruby_gc_stressful) &&
@@ -2704,6 +2824,10 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
           newobj_slowpath_wb_protected(klass, flags, objspace, cache, size_pool_idx) :
           newobj_slowpath_wb_unprotected(klass, flags, objspace, cache, size_pool_idx);
     }
+
+#if USE_MMTK
+    }
+#endif
 
     return newobj_fill(obj, v1, v2, v3);
 }
@@ -2749,6 +2873,34 @@ PUREFUNC(static inline bool is_pointer_to_heap(rb_objspace_t *objspace, const vo
 static inline bool
 is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (ptr == NULL) {
+            RUBY_DEBUG_LOG("      %18p: It is NULL. Nope.", ptr);
+            return false;
+        }
+
+        // The granularity of MMTk's alloc_bit bitmap is one bit per word.
+        // We must check for alignment before asking MMTk.
+        if ((uintptr_t)ptr % sizeof(void*) != 0) {
+            RUBY_DEBUG_LOG("      %18p: Not properly aligned. Nope.", ptr);
+            return false;
+        }
+
+        // Now let MMTk decide.
+        bool result = mmtk_is_mmtk_object((MMTk_Address)ptr);
+
+        if (USE_RUBY_DEBUG_LOG) {
+            if (result) {
+                RUBY_DEBUG_LOG("***** %18p: YEAH! It looks like an object reference! *****", ptr);
+            } else {
+                RUBY_DEBUG_LOG("      %18p: MMTk says nope.", ptr);
+            }
+        }
+
+        return result;
+    }
+#endif
     register uintptr_t p = (uintptr_t)ptr;
     register struct heap_page *page;
 
@@ -2785,9 +2937,69 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 
 #define ZOMBIE_OBJ_KEPT_FLAGS (FL_SEEN_OBJ_ID | FL_FINALIZE)
 
+#if USE_MMTK
+static inline void
+rb_mmtk_push_final_job(struct MMTk_FinalJob *job)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    VALUE prev, next = heap_pages_deferred_final;
+    do {
+        prev = next;
+        job->next = (struct MMTk_FinalJob*)next;
+        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final, prev, (VALUE)job);
+    } while (next != prev);
+}
+
+static inline void
+rb_mmtk_make_dfree_job(void (*dfree)(void *), void *data)
+{
+    struct MMTk_FinalJob *job = (struct MMTk_FinalJob*)xmalloc(sizeof(struct MMTk_FinalJob));
+    job->kind = MMTK_FJOB_DFREE;
+    job->as.dfree.dfree = dfree;
+    job->as.dfree.data = data;
+    rb_mmtk_push_final_job(job);
+}
+
+static inline void
+rb_mmtk_make_finalize_job(VALUE obj, VALUE finalizer_array)
+{
+    if (rb_gc_obj_free_on_exit_started()) {
+        rb_bug("Finalize job created when obj_free on exit has started.");
+    }
+
+    struct MMTk_FinalJob *job = (struct MMTk_FinalJob*)xmalloc(sizeof(struct MMTk_FinalJob));
+    job->kind = MMTK_FJOB_FINALIZE;
+
+    VALUE observed_id = Qnil;
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
+        // obj is technically dead already,
+        // but finalizer_table is processed before obj_to_id_table,
+        // so the cached ID is still in the table.
+        observed_id = rb_obj_id(obj);
+    }
+
+    job->as.finalize.observed_id = observed_id;
+    job->as.finalize.finalizer_array = finalizer_array;
+
+    rb_mmtk_push_final_job(job);
+}
+#endif
+
 void
 rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
 {
+#if USE_MMTK
+    // When using MMTk, we assume `make_zombie` is called for creating dfree jobs, only.
+    // We removed the code path in `obj_free` that calls `make_zombie` for finalizable objects,
+    // in which case `dfree` is null.
+    if (rb_mmtk_enabled_p()) {
+        RUBY_ASSERT(dfree != NULL);
+        rb_mmtk_make_dfree_job(dfree, data);
+        return;
+    }
+#endif
+
     rb_objspace_t *objspace = objspace_ptr;
 
     struct RZombie *zombie = RZOMBIE(obj);
@@ -3121,9 +3333,72 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
     }
 }
 
+#if USE_MMTK
+static void
+rb_mmtk_run_final_job(struct MMTk_FinalJob *job)
+{
+    switch (job->kind) {
+        case MMTK_FJOB_DFREE: {
+            job->as.dfree.dfree(job->as.dfree.data);
+            break;
+        }
+        case MMTK_FJOB_FINALIZE: {
+            if (rb_gc_obj_free_on_exit_started()) {
+                rb_bug("Finalize job still exists after obj_free on exit has started.");
+            }
+            run_finalizer(&rb_objspace,
+                            job->as.finalize.observed_id,
+                            job->as.finalize.finalizer_array);
+            break;
+        }
+    }
+
+    xfree(job);
+}
+
+static struct MMTk_FinalJob*
+rb_mmtk_poll_one_final_job(rb_objspace_t *objspace)
+{
+    while (true) {
+        struct MMTk_FinalJob *job = (struct MMTk_FinalJob*)heap_pages_deferred_final;
+        if (job == NULL) {
+            break;
+        }
+
+        struct MMTk_FinalJob *next_job = job->next;
+
+        VALUE old = ATOMIC_VALUE_CAS(heap_pages_deferred_final, (VALUE)job, (VALUE)next_job);
+        if (old == (VALUE)job) {
+            return job;
+        }
+    }
+
+    return NULL;
+}
+
+static void
+rb_mmtk_run_final_jobs(rb_objspace_t *objspace)
+{
+    struct MMTk_FinalJob *job;
+    // Note: We could poll all jobs at once, but that'll require us to keep the linked list of
+    // polled jobs as thread-local roots.  Currently we choose the easy way, i.e. making the global
+    // linked list (starting with heap_pages_deferred_final) global roots.
+    while ((job = rb_mmtk_poll_one_final_job(objspace)) != NULL) {
+        rb_mmtk_run_final_job(job);
+    }
+}
+#endif
+
 static void
 finalize_deferred_heap_pages(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_run_final_jobs(objspace);
+        return;
+    }
+#endif
+
     VALUE zombie;
     while ((zombie = RUBY_ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
         finalize_list(objspace, zombie);
@@ -3199,6 +3474,19 @@ struct force_finalize_list {
     struct force_finalize_list *next;
 };
 
+#if USE_MMTK
+int
+rb_mmtk_evacuate_finalizer_table_on_exit_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    VALUE obj = (VALUE)key;
+    VALUE finalizer_array = (VALUE)value;
+
+    rb_mmtk_make_finalize_job(obj, finalizer_array);
+
+    return ST_DELETE;
+}
+#endif
+
 static int
 force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 {
@@ -3238,8 +3526,16 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
+#if USE_MMTK
+    // The following lines are related to Ruby's own GC.
+    // They should not be executed when using MMTk.
+    if (!rb_mmtk_enabled_p()) {
+#endif
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
+#endif
+#if USE_MMTK
+    }
 #endif
     if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) return;
 
@@ -3247,9 +3543,46 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     finalize_deferred(objspace);
     GC_ASSERT(heap_pages_deferred_final == 0);
 
+#if USE_MMTK
+    // The following lines are related to Ruby's own GC.
+    // They should not be executedn when using MMTk.
+    if (!rb_mmtk_enabled_p()) {
+#endif
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
+#if USE_MMTK
+    }
+#endif
 
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // Force to run finalizers, the MMTk style.
+        while (finalizer_table->num_entries) {
+            // We move all elements from the finalizer_table to heap_pages_deferred_final.
+            st_foreach(finalizer_table, rb_mmtk_evacuate_finalizer_table_on_exit_i, 0);
+
+            // Then call all pushed finalizers in heap_pages_deferred_final.
+            finalize_deferred_heap_pages(objspace);
+
+            // We need to repeat because a finalizer may register new finalizers.
+        }
+
+        // Tell the world that obj_free on exit has started.
+        rb_gc_set_obj_free_on_exit_started();
+
+        // TODO: Should we disable GC, too?
+
+        // Running data/file finalizers on exit, the MMTk style.
+        // When using MMTk, we maintain a list of obj_free candidates in the Rust code,
+        // similar to the FinalizerProcessor for JVM which maintains a list of finalizable objects.
+        // But since we are on exit, we call obj_free immediately on those objects instead of in GC.
+        rb_mmtk_call_obj_free_on_exit();
+
+        // Some `T_DATA` and `T_FILE` objects still make final jobs (or zombies if not using MMTk).
+        // We execute the final jobs here.
+        finalize_deferred_heap_pages(objspace);
+    } else {
+#endif
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
         struct force_finalize_list *list = 0;
@@ -3304,10 +3637,34 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     finalize_deferred_heap_pages(objspace);
 
+#if USE_MMTK
+    }
+#endif
+
     st_free_table(finalizer_table);
     finalizer_table = 0;
     RUBY_ATOMIC_SET(finalizing, 0);
 }
+
+#if USE_MMTK
+/* Mark all final jobs. */
+static void
+rb_mmtk_mark_final_jobs(void)
+{
+    rb_vm_t *vm = GET_VM();
+
+    struct MMTk_FinalJob *cur_job = (struct MMTk_FinalJob*)vm->objspace->heap_pages.deferred_final;
+    while (cur_job != NULL) {
+        if (cur_job->kind == MMTK_FJOB_FINALIZE) {
+            // The finalizer array is a proper MMTk heap object, and needs to be kept alive.
+            // We treat it as a root.  Currently we pin all roots.
+            rb_gc_mark(cur_job->as.finalize.finalizer_array);
+        }
+
+        cur_job = cur_job->next;
+    }
+}
+#endif
 
 void
 rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data)
@@ -3344,6 +3701,12 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
 static size_t
 objspace_available_slots(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        return mmtk_total_bytes();
+    }
+#endif
+
     size_t total_slots = 0;
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -3362,6 +3725,11 @@ objspace_live_slots(rb_objspace_t *objspace)
 static size_t
 objspace_free_slots(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        return mmtk_free_bytes();
+    }
+#endif
     return objspace_available_slots(objspace) - objspace_live_slots(objspace) - heap_pages_final_slots;
 }
 
@@ -4205,6 +4573,12 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_h
 VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        return rb_mmtk_maybe_forward(value);
+    }
+#endif
+
     VALUE destination;
 
     if (!SPECIAL_CONST_P(value)) {
@@ -4633,6 +5007,17 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
+// NOTE: In upstream mmtk this is in gc_mark, but the rest of this function is in gc_mark_ptr.
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (!LIKELY(during_gc)) {
+            reachable_objects_from_callback(obj);
+            return;
+        }
+        rb_mmtk_mark_movable(obj);
+        return;
+    }
+#endif
     if (RB_LIKELY(during_gc)) {
         rgengc_check_relation(objspace, obj);
         if (!gc_mark_set(objspace, obj)) return; /* already marked */
@@ -4679,6 +5064,16 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        if (!LIKELY(during_gc)) {
+            reachable_objects_from_callback(obj);
+            return;
+        }
+        rb_mmtk_mark_pin(obj);
+        return;
+    }
+#endif
     if (SPECIAL_CONST_P(obj)) return;
     gc_pin(objspace, obj);
     gc_mark(objspace, obj);
@@ -4687,6 +5082,12 @@ gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 void
 rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_mark_and_move(ptr);
+        return;
+    }
+#endif
     rb_objspace_t *objspace = objspace_ptr;
 
     if (SPECIAL_CONST_P(*ptr)) return;
@@ -5365,9 +5766,65 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
     return remembered_old_objects;
 }
 
+#if USE_MMTK
+void
+rb_mmtk_scan_vm_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    rb_vm_mark(vm);
+    if (vm->self) gc_mark(objspace, vm->self);
+}
+
+void
+rb_mmtk_scan_finalizer_tbl_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    mark_finalizer_tbl(objspace, finalizer_table);
+}
+
+void
+rb_mmtk_scan_end_proc_roots(void)
+{
+    rb_mark_end_proc();
+}
+
+void
+rb_mmtk_scan_global_tbl_roots(void)
+{
+    rb_gc_mark_global_tbl();
+}
+
+void
+rb_mmtk_scan_obj_to_id_tbl_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    mark_tbl_no_pin(objspace, objspace->obj_to_id_tbl); /* Only mark ids */
+}
+
+void
+rb_mmtk_scan_misc_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    if (stress_to_class) rb_gc_mark(stress_to_class);
+}
+#endif
+
 static void
 gc_verify_internal_consistency_(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
+    }
+#endif
     struct verify_internal_consistency_struct data = {0};
 
     data.objspace = objspace;
@@ -5449,6 +5906,14 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 static void
 gc_verify_internal_consistency(void *objspace_ptr)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // The gc_verify_internal_consistency function does the verification with intimate
+        // knowledge about the GC implementation in vanilla CRuby, and doesn't work with MMTk.
+        // When using MMTk, the same kind of consistency check should be done with sanity GC.
+        return;
+    }
+#endif
     rb_objspace_t *objspace = objspace_ptr;
 
     unsigned int lev = rb_gc_vm_lock();
@@ -6284,6 +6749,13 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 void
 rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p() && rb_mmtk_use_barrier) {
+        mmtk_object_reference_write_post(GET_THREAD()->mutator, (MMTk_ObjectReference)a);
+        return;
+    }
+#endif
+
     rb_objspace_t *objspace = objspace_ptr;
 
     if (RGENGC_CHECK_MODE) {
@@ -6322,6 +6794,12 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 void
 rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_register_wb_unprotected_object((MMTk_ObjectReference)obj);
+        return;
+    }
+#endif
     rb_objspace_t *objspace = objspace_ptr;
 
     if (RVALUE_WB_UNPROTECTED(objspace, obj)) {
@@ -6371,6 +6849,13 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p() && rb_mmtk_use_barrier) {
+        mmtk_object_reference_write_post(GET_THREAD()->mutator, (MMTk_ObjectReference)obj);
+        return;
+    }
+#endif
+
     rb_objspace_t *objspace = objspace_ptr;
 
     gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
@@ -6407,12 +6892,22 @@ rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max)
 #undef I
     }
 
+#if USE_MMTK
+    // This function is only called from `objspace_dump.c`.
+    // In MMTk, these bitmaps are not prepared.  Accessing them will result in crash.
+    // MMTk has its own metadata, such as marking bits and pinning bits,
+    // but those metadata are specific to GC algorithms not exposed to mutators.
+    if (!rb_mmtk_enabled_p() && flags != NULL) {
+#endif
     if (RVALUE_WB_UNPROTECTED(objspace, obj) == 0 && n < max)                   flags[n++] = ID_wb_protected;
     if (RVALUE_OLD_P(objspace, obj) && n < max)                                 flags[n++] = ID_old;
     if (RVALUE_UNCOLLECTIBLE(objspace, obj) && n < max)                         flags[n++] = ID_uncollectible;
     if (RVALUE_MARKING(objspace, obj) && n < max) flags[n++] = ID_marking;
     if (RVALUE_MARKED(objspace, obj) && n < max)    flags[n++] = ID_marked;
     if (RVALUE_PINNED(objspace, obj) && n < max)  flags[n++] = ID_pinned;
+#if USE_MMTK
+    }
+#endif
     return n;
 }
 
@@ -6534,6 +7029,12 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
 static int
 garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function garbage_collect should be unreachable when using MMTk.");
+    }
+#endif
+
     int ret;
 
     int lev = rb_gc_vm_lock();
@@ -6558,6 +7059,12 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function gc_start should be unreachable when using MMTk.");
+    }
+#endif
+
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
@@ -6861,12 +7368,20 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
     gc_record(objspace, 0, gc_enter_event_cstr(event));
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_ENTER);
+
+#if USE_MMTK
+    rb_mmtk_gc_probe(true);
+#endif
 }
 
 static inline void
 gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
     GC_ASSERT(during_gc != 0);
+
+#if USE_MMTK
+    rb_mmtk_gc_probe(false);
+#endif
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 
@@ -6985,6 +7500,12 @@ void
 rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
 {
     rb_objspace_t *objspace = objspace_ptr;
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        mmtk_handle_user_collection_request(GET_THREAD());
+    }
+    else {
+#endif
     unsigned int reason = (GPR_FLAG_FULL_MARK |
                            GPR_FLAG_IMMEDIATE_MARK |
                            GPR_FLAG_IMMEDIATE_SWEEP |
@@ -7003,6 +7524,10 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
     }
 
     garbage_collect(objspace, reason);
+#if USE_MMTK
+    }
+#endif
+
     gc_finalize_deferred(objspace);
 }
 
@@ -7064,6 +7589,12 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
 static int
 gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("Function %s should not be called when MMTk is enabled.", RUBY_FUNCTION_NAME_STRING);
+    }
+#endif
+
     GC_ASSERT(!SPECIAL_CONST_P(obj));
 
     switch (BUILTIN_TYPE(obj)) {
@@ -7124,6 +7655,12 @@ void rb_mv_generic_ivar(VALUE src, VALUE dst);
 static VALUE
 gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, size_t slot_size)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_bug("gc_move should not be reached when using MMTk");
+    }
+#endif
+
     int marked;
     int wb_unprotected;
     int uncollectible;
@@ -7230,6 +7767,53 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
 
     return src;
 }
+
+#if USE_MMTK
+static void
+rb_mmtk_gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
+{
+     if (STR_EMBED_P(str)) {
+        // Embedded strings don't point into any buffer.
+        return;
+    }
+
+    if (rb_mmtk_str_no_free(str)) {
+        // It is a "heap" string, but `as.heap.ptr` points to static C string.
+        // Skip it.
+        return;
+    }
+
+    if (STR_SHARED_P(str)) {
+        VALUE old_root = RSTRING(str)->as.heap.aux.shared;
+        UPDATE_IF_MOVED(objspace, RSTRING(str)->as.heap.aux.shared);
+        VALUE new_root = RSTRING(str)->as.heap.aux.shared;
+
+        // Note: For evacuating collectors such as Immix, `new_root` points into the to-space,
+        // and the object is guaranteed to be readable.  But `old_root` may point to the from-space
+        // which is no longer readable now.
+        if (STR_EMBED_P(new_root)) {
+            // If the shared root is embedded, `RSTRING(str)->as.heap.ptr` points into the embedded
+            // `ary` of the root.  Adjust the pointer, preserving the offset.
+            size_t offset = (size_t)RSTRING(str)->as.heap.ptr - (size_t)old_root;
+            RSTRING(str)->as.heap.ptr = (char*)(new_root + offset);
+            return;
+        }
+
+        // If the shared root is not embedded, then `RSTRING(str)->as.heap.ptr` points into the
+        // imemo:mmtk_strbuf which `RSTRING_EXT(new_root)->strbuf` points to.
+        // Just fall through and adjust `ptr` according to `RSTRING_EXT(str)->strbuf`.
+    }
+
+    // Otherwise the RSTRING_EXT(obj)->strbuf field always points to the underlying imemo:mmtk_strbuf.
+    VALUE old_strbuf = RSTRING_EXT(str)->strbuf;
+    UPDATE_IF_MOVED(objspace, RSTRING_EXT(str)->strbuf);
+    VALUE new_strbuf = RSTRING_EXT(str)->strbuf;
+    size_t offset = (size_t)RSTRING(str)->as.heap.ptr - (size_t)old_strbuf;
+    RSTRING(str)->as.heap.ptr = (char*)(new_strbuf + offset);
+
+    // Currently the size of the string cannot change during GC.
+}
+#endif
 
 #if GC_CAN_COMPILE_COMPACTION
 static int
@@ -7741,6 +8325,13 @@ enum gc_stat_sym {
     gc_stat_sym_total_remembered_normal_object_count,
     gc_stat_sym_total_remembered_shady_object_count,
 #endif
+#if USE_MMTK
+    gc_stat_sym_mmtk_free_bytes,
+    gc_stat_sym_mmtk_total_bytes,
+    gc_stat_sym_mmtk_used_bytes,
+    gc_stat_sym_mmtk_starting_heap_address,
+    gc_stat_sym_mmtk_last_heap_address,
+#endif
     gc_stat_sym_last
 };
 
@@ -7793,6 +8384,13 @@ setup_gc_stat_symbols(void)
         S(total_remembered_normal_object_count);
         S(total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
+#if USE_MMTK
+        S(mmtk_free_bytes);
+        S(mmtk_total_bytes);
+        S(mmtk_used_bytes);
+        S(mmtk_starting_heap_address);
+        S(mmtk_last_heap_address);
+#endif
 #undef S
     }
 }
@@ -7827,12 +8425,24 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     else if (hash != Qnil) \
         rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
     SET(count, objspace->profile.count);
     SET(time, (size_t)ns_to_ms(objspace->profile.marking_time_ns + objspace->profile.sweeping_time_ns)); // TODO: UINT64T2NUM
     SET(marking_time, (size_t)ns_to_ms(objspace->profile.marking_time_ns));
     SET(sweeping_time, (size_t)ns_to_ms(objspace->profile.sweeping_time_ns));
-
+#if USE_MMTK
+    }
+#endif
     /* implementation dependent counters */
+    SET(total_allocated_objects, total_allocated_objects(objspace));
+    SET(malloc_increase_bytes, malloc_increase);
+    SET(malloc_increase_bytes_limit, malloc_limit);
+
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
     SET(heap_allocated_pages, heap_allocated_pages);
     SET(heap_sorted_length, heap_pages_sorted_length);
     SET(heap_allocatable_pages, heap_allocatable_pages(objspace));
@@ -7843,12 +8453,9 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(heap_marked_slots, objspace->marked_slots);
     SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
-    SET(total_allocated_pages, total_allocated_pages(objspace));
     SET(total_freed_pages, total_freed_pages(objspace));
     SET(total_allocated_objects, total_allocated_objects(objspace));
     SET(total_freed_objects, total_freed_objects(objspace));
-    SET(malloc_increase_bytes, malloc_increase);
-    SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
     SET(compact_count, objspace->profile.compact_count);
@@ -7858,11 +8465,6 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(remembered_wb_unprotected_objects_limit, objspace->rgengc.uncollectible_wb_unprotected_objects_limit);
     SET(old_objects, objspace->rgengc.old_objects);
     SET(old_objects_limit, objspace->rgengc.old_objects_limit);
-#if RGENGC_ESTIMATE_OLDMALLOC
-    SET(oldmalloc_increase_bytes, objspace->rgengc.oldmalloc_increase);
-    SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
-#endif
-
 #if RGENGC_PROFILE
     SET(total_generated_normal_object_count, objspace->profile.total_generated_normal_object_count);
     SET(total_generated_shady_object_count, objspace->profile.total_generated_shady_object_count);
@@ -7871,6 +8473,24 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(total_remembered_normal_object_count, objspace->profile.total_remembered_normal_object_count);
     SET(total_remembered_shady_object_count, objspace->profile.total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
+#if USE_MMTK
+    }
+#endif
+
+#if RGENGC_ESTIMATE_OLDMALLOC
+    SET(oldmalloc_increase_bytes, objspace->rgengc.oldmalloc_increase);
+    SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
+#endif
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        SET(mmtk_free_bytes, mmtk_free_bytes());
+        SET(mmtk_total_bytes, mmtk_total_bytes());
+        SET(mmtk_used_bytes, mmtk_used_bytes());
+        SET(mmtk_starting_heap_address, (size_t) mmtk_starting_heap_address());
+        SET(mmtk_last_heap_address, (size_t) mmtk_last_heap_address());
+    }
+#endif
 #undef SET
 
     if (!NIL_P(key)) { /* matched key should return above */
@@ -8264,6 +8884,13 @@ atomic_sub_nounderflow(size_t *var, size_t sub)
 static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        // Currently, we ignore Ruby's "stressful" flag when using MMTk.
+        // MMTk does have its own way to stress GC, i.e. `Options::stress_factor`.
+        return;
+    }
+#endif
     if (ruby_gc_stressful && ruby_native_thread_p()) {
         unsigned int reason = (GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP |
                                GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
@@ -8290,6 +8917,17 @@ objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_s
 static bool
 objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_xmalloc_increase_body(new_size, old_size);
+        // Note: It is not safe to trigger GC during xmalloc.  xmalloc may happen when the header
+        // object is allocated but other disjoint parts allocated by xmalloc have not been assigned
+        // to the fields of the object.  If GC is triggered at this time, the GC may try to scan
+        // incomplete objects and crash.
+        return true;
+    }
+#endif
+
     if (new_size > old_size) {
         RUBY_ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
 #if RGENGC_ESTIMATE_OLDMALLOC
@@ -8306,11 +8944,25 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
     if (type == MEMOP_TYPE_MALLOC) {
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
+// TODO: I copied this exactly, but we early return at the top of the function? Verify this code is unreachable.
+#if USE_MMTK
+            if (rb_mmtk_enabled_p()) {
+                // This will trigger user-requested GC.
+                // `obj_free` is called during GC for dead objects.
+                // It will free underlying xmalloc-ed buffers for them.
+                mmtk_handle_user_collection_request((MMTk_VMMutatorThread)GET_THREAD());
+
+                gc_reset_malloc_info(objspace, true);
+            } else {
+#endif
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
                 gc_rest(objspace); /* gc_rest can reduce malloc_increase */
                 goto retry;
             }
             garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
+#if USE_MMTK
+            }
+#endif
         }
     }
 
@@ -9738,10 +10390,15 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->next_object_id = OBJ_ID_INITIAL;
     objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
     objspace->obj_to_id_tbl = st_init_numtable();
+
+#if USE_MMTK
+    if (!rb_mmtk_enabled_p()) {
+#endif
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif
     /* Set size pools allocatable pages. */
+    // TODO: This for loop is new with the gc impl. It's unclear to me if we want to skip this for MMTk
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
         /* Set the default value of size_pool_init_slots. */
@@ -9752,6 +10409,15 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     heap_pages_expand_sorted(objspace);
 
     init_mark_stack(&objspace->mark_stack);
+#if USE_MMTK
+    }
+#endif
+
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_main_thread_init();
+    }
+#endif
 
     objspace->profile.invoke_time = getrusage_time();
     finalizer_table = st_init_numtable();
@@ -9810,6 +10476,10 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mProfiler, "report", gc_profile_report, -1);
     rb_define_singleton_method(rb_mProfiler, "total_time", gc_profile_total_time, 0);
 
+#if USE_MMTK
+    rb_mmtk_define_gc_mmtk_module();
+#endif
+
     {
         VALUE opts;
         /* \GC build options */
@@ -9832,3 +10502,232 @@ rb_gc_impl_init(void)
         OBJ_FREEZE(opts);
     }
 }
+
+#if USE_MMTK
+
+/////////////// BEGIN: Global table updating ////////////////
+
+static void
+rb_mmtk_on_finalizer_table_delete(st_data_t key, st_data_t value, void *arg)
+{
+    VALUE obj = (VALUE)key;
+    VALUE finalizer_array = (VALUE)value;
+
+    RUBY_DEBUG_LOG("Making finalizer job for %p", (void*)obj);
+    rb_mmtk_make_finalize_job(obj, finalizer_array);
+}
+
+static void
+rb_mmtk_on_obj_to_id_tbl_delete(st_data_t key, st_data_t value, void *arg)
+{
+#if USE_RUBY_DEBUG_LOG
+    if (RB_FIXNUM_P((VALUE)value)) {
+        RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=%lu)", (void*)key, rb_fix2ulong((VALUE)value));
+    } else {
+        RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=BigNum@%p)", (void*)key, (void*)value);
+    }
+#endif
+    int result = rb_st_delete(rb_objspace.id_to_obj_tbl, &value, NULL);
+    RUBY_ASSERT_ALWAYS(result != 0);
+}
+
+static void
+rb_mmtk_on_overloaded_cme_delete(st_data_t key, st_data_t value, void *arg)
+{
+#if USE_RUBY_DEBUG_LOG
+    RUBY_DEBUG_LOG("Deleting from overloaded_cme_table: %p -> %p", (void*)key, (void*)value);
+#endif
+}
+
+void
+rb_mmtk_update_frozen_strings_table(void)
+{
+    // The frozen strings table is a deduplicating table for frozen strings.
+    // Used as a HashSet (key always equals value).
+    // Hashed by string content.
+
+#if USE_RUBY_DEBUG_LOG
+    size_t size1 = GET_VM()->frozen_strings->num_entries;
+#endif
+
+    rb_mmtk_st_update_dedup_table(GET_VM()->frozen_strings);
+
+#if USE_RUBY_DEBUG_LOG
+    size_t size2 = GET_VM()->frozen_strings->num_entries;
+#endif
+
+    RUBY_DEBUG_LOG("fstring table size: %zu -> %zu.  Removed: %zu\n",
+        size1, size2, size1-size2);
+}
+
+void
+rb_mmtk_update_finalizer_table(void)
+{
+    // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
+    rb_objspace_t *objspace = &rb_objspace;
+
+    // This table maps object addresses to its finalizer functions (held in an array).
+    // Not all keys point to live objects.
+    // If a key points to a dead object, we make a FinalJob (replacing "zombie") for it so that
+    // their finalizers are scheduled to be executed later.  The value array should be kept alive
+    // in this case.
+    rb_mmtk_update_weak_table(finalizer_table,
+                              true,
+                              RB_MMTK_VALUES_STRONG_REF,
+                              rb_mmtk_on_finalizer_table_delete,
+                              NULL);
+}
+
+void
+rb_mmtk_update_obj_id_tables(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    // Update the obj_to_id_tbl first, and remove dead objects from both
+    // obj_to_id_tbl and id_to_obj_tbl.
+    rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
+                              true,
+                              RB_MMTK_VALUES_NON_REF,
+                              rb_mmtk_on_obj_to_id_tbl_delete,
+                              NULL);
+
+    // Now that dead objects are removed, we forward keys and values now.
+    // This table hashes Fixnum and Bignum by value (object_id_hash_type),
+    // so the hash will not change if the key is Bignum and it is moved.
+    // We can update keys and values in place.
+    gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
+}
+
+void
+rb_mmtk_update_global_symbols_table(void)
+{
+    // String-to-symbol table.
+    // Keys are the strings, hasshed by content (rb_str_hash).
+    // Values are symbol objects.  A symbol holds a reference to its
+    // corresponding string, so if the value is live, the key must be live.
+    // We need to remove entries for dead symbols.
+    rb_mmtk_update_weak_table(global_symbols.str_sym,
+                              false,
+                              RB_MMTK_VALUES_WEAK_REF,
+                              NULL,
+                              NULL);
+}
+
+void
+rb_mmtk_update_overloaded_cme_table(void)
+{
+    // The overloaded CME table.  It has both weak keys and weak values.
+    rb_mmtk_update_weak_table(GET_VM()->overloaded_cme_table,
+                              true,
+                              true, // Currently values are pinned.
+                              rb_mmtk_on_overloaded_cme_delete,
+                              NULL);
+}
+
+void
+rb_mmtk_update_ci_table(void)
+{
+    // The CI table is a deduplicating table for callinfo.
+    // Used as a HashSet (key always equals value).
+    // Compared and hashed by callinfo fields.  Two CIs are equal if all fields are equal.
+
+#if USE_RUBY_DEBUG_LOG
+    size_t size1 = GET_VM()->ci_table->num_entries;
+#endif
+
+    rb_mmtk_st_update_dedup_table(GET_VM()->ci_table);
+
+#if USE_RUBY_DEBUG_LOG
+    size_t size2 = GET_VM()->ci_table->num_entries;
+#endif
+
+    RUBY_DEBUG_LOG("CI table size: %zu -> %zu.  Removed: %zu\n",
+        size1, size2, size1-size2);
+}
+
+st_table*
+rb_mmtk_get_frozen_strings_table(void)
+{
+    return GET_VM()->frozen_strings;
+}
+
+st_table*
+rb_mmtk_get_finalizer_table(void)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return finalizer_table;
+}
+
+st_table*
+rb_mmtk_get_obj_id_tables(void)
+{
+    return rb_objspace.obj_to_id_tbl;
+}
+
+st_table*
+rb_mmtk_get_global_symbols_table(void)
+{
+    return global_symbols.str_sym;
+}
+
+st_table*
+rb_mmtk_get_overloaded_cme_table(void)
+{
+    return GET_VM()->overloaded_cme_table;
+}
+
+st_table*
+rb_mmtk_get_ci_table(void)
+{
+    return GET_VM()->ci_table;
+}
+/////////////// END: Global table updating ////////////////
+
+// Workaround private functions
+void
+rb_mmtk_scan_final_jobs_roots(void)
+{
+    rb_mmtk_mark_final_jobs();
+}
+
+void
+rb_mmtk_mark_children(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_mark_children(objspace, obj);
+}
+
+void
+rb_mmtk_update_object_references(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_update_object_references(objspace, obj);
+}
+
+void
+rb_mmtk_obj_free(VALUE obj)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    obj_free(objspace, obj);
+}
+
+void
+rb_mmtk_set_during_gc(bool is_during_gc)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    during_gc = is_during_gc ? 1 : 0;
+}
+
+void
+rb_mmtk_get_vanilla_times(uint64_t *mark, uint64_t *sweep)
+{
+    *mark = rb_objspace.profile.marking_time_ns;
+    *sweep = rb_objspace.profile.sweeping_time_ns;
+}
+
+VALUE
+rb_mmtk_newobj_raw(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
+{
+    return rb_mmtk_newobj_of_inner(klass, flags, wb_protected, payload_size);
+}
+#endif
