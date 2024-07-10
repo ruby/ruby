@@ -96,8 +96,12 @@ module TestNetHTTPUtils
         @path, @query = parse_path_and_query(path)
         @headers = headers
         @socket = socket
-        if method == 'POST' && @path == '/continue'
-          @body = read_body
+        if method == 'POST' && (@path == '/continue' || @headers['Content-Type'].include?('multipart/form-data'))
+          if @headers['Transfer-Encoding'] == 'chunked'
+            @body = read_chunked_body
+          else
+            @body = read_body
+          end
           @query = @body.split('&').each_with_object({}) do |pair, hash|
             key, value = pair.split('=')
             hash[key] = value
@@ -147,6 +151,15 @@ module TestNetHTTPUtils
         content_length = @headers['Content-Length']&.to_i
         return unless content_length && content_length > 0
         @socket.read(content_length)
+      end
+
+      def read_chunked_body
+        body = ""
+        while (chunk_size = @socket.gets.strip.to_i(16)) > 0
+          body << @socket.read(chunk_size)
+          @socket.read(2) # read \r\n after each chunk
+        end
+        body
       end
     end
 

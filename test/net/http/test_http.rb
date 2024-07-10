@@ -843,6 +843,7 @@ Content-Type: application/octet-stream
 __EOM__
       start {|http|
         _test_set_form_urlencoded(http, data.reject{|k,v|!v.is_a?(String)})
+        @server.mount('/', lambda {|req, res| res.body = req.body })
         _test_set_form_multipart(http, false, data, expected)
         _test_set_form_multipart(http, true, data, expected)
       }
@@ -887,6 +888,7 @@ __EOM__
       expected.sub!(/<filename>/, filename)
       expected.sub!(/<data>/, $test_net_http_data)
       start {|http|
+        @server.mount('/', lambda {|req, res| res.body = req.body })
         data.each{|k,v|v.rewind rescue nil}
         req = Net::HTTP::Post.new('/')
         req.set_form(data, 'multipart/form-data')
