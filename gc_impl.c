@@ -679,7 +679,8 @@ struct rvalue_overhead {
         VALUE value; \
     }; \
 }))
-# define GET_RVALUE_OVERHEAD(obj) ((struct rvalue_overhead *)((uintptr_t)obj + rb_gc_obj_slot_size(obj)))
+size_t rb_gc_impl_obj_slot_size(VALUE obj);
+# define GET_RVALUE_OVERHEAD(obj) ((struct rvalue_overhead *)((uintptr_t)obj + rb_gc_impl_obj_slot_size(obj)))
 #else
 # define RVALUE_OVERHEAD 0
 #endif
