@@ -265,6 +265,7 @@ module TestNetHTTPUtils
     @log_tester = lambda {|log| assert_equal([], log) }
     @config = self.class::CONFIG
     @server = HTTPServer.new(@config) do |method, path, headers, socket|
+      @log << "DEBUG accept: #{@config['host']}:#{socket.addr[1]}" if @logger_level == :debug
       case method
       when 'HEAD'
         handle_head(path, headers, socket)
@@ -277,7 +278,6 @@ module TestNetHTTPUtils
       else
         socket.print "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\n\r\n"
       end
-      @log << "DEBUG accept: #{@config['host']}:#{socket.addr[1]}" if @logger_level == :debug
     end
     @server.start
     @config['port'] = @server.port
