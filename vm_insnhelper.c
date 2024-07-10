@@ -1252,7 +1252,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 // and modules. So we can skip locking.
                 // Second, other ractors need to check the shareability of the
                 // values returned from the class ivars.
-                goto general_path;
+
+                if (default_value == Qundef) { // defined?
+                    return rb_ivar_defined(obj, id) ? Qtrue : Qundef;
+                }
+                else {
+                    goto general_path;
+                }
             }
 
             ivar_list = RCLASS_IVPTR(obj);
