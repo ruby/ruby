@@ -18,6 +18,7 @@
 #include "darray.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 
 static VALUE ruby_dln_libmap;
 
@@ -1383,17 +1384,25 @@ static VALUE
 rb_require_string_internal(VALUE fname, bool resurrect)
 {
     rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
-    if (result > TAG_RETURN) {
-        EC_JUMP_TAG(ec, result);
-    }
-    if (result < 0) {
+    // main ractor check
+    if (!rb_ractor_main_p()) {
         if (resurrect) fname = rb_str_resurrect(fname);
-        load_failed(fname);
+        return rb_ractor_require(fname);
     }
+    else {
+        int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
-    return RBOOL(result);
+        if (result > TAG_RETURN) {
+            EC_JUMP_TAG(ec, result);
+        }
+        if (result < 0) {
+            if (resurrect) fname = rb_str_resurrect(fname);
+            load_failed(fname);
+        }
+
+        return RBOOL(result);
+    }
 }
 
 VALUE
