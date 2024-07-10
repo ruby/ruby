@@ -203,44 +203,20 @@ rb_eql(VALUE obj1, VALUE obj2)
 
 /**
  *  call-seq:
- *     obj == other        -> true or false
- *     obj.equal?(other)   -> true or false
- *     obj.eql?(other)     -> true or false
+ *    self == object -> true or false
+ *    self.equal?(object) -> true or false
  *
- *  Equality --- At the Object level, #== returns <code>true</code>
- *  only if +obj+ and +other+ are the same object.  Typically, this
- *  method is overridden in descendant classes to provide
- *  class-specific meaning.
+ *  Returns whether +self+ and +object+ are the same object:
  *
- *  Unlike #==, the #equal? method should never be overridden by
- *  subclasses as it is used to determine object identity (that is,
- *  <code>a.equal?(b)</code> if and only if <code>a</code> is the same
- *  object as <code>b</code>):
+ *  Unlike method #==, method #equal? should not be overridden by subclasses
+ *  because it is used to determine object identity;
+ *  that is, <tt>b.equal?(object)</tt> if and only if <tt>b</tt> is the same
+ *  object as <tt>object</tt>):
  *
- *    obj = "a"
- *    other = obj.dup
+ *    b = BasicObject.new
+ *    b.equal?(b)               # => true
+ *    b.equal?(BasicObject.new) # => false
  *
- *    obj == other      #=> true
- *    obj.equal? other  #=> false
- *    obj.equal? obj    #=> true
- *
- *  The #eql? method returns <code>true</code> if +obj+ and +other+
- *  refer to the same hash key.  This is used by Hash to test members
- *  for equality.  For any pair of objects where #eql? returns +true+,
- *  the #hash value of both objects must be equal. So any subclass
- *  that overrides #eql? should also override #hash appropriately.
- *
- *  For objects of class Object, #eql?  is synonymous
- *  with #==.  Subclasses normally continue this tradition by aliasing
- *  #eql? to their overridden #== method, but there are exceptions.
- *  Numeric types, for example, perform type conversion across #==,
- *  but not across #eql?, so:
- *
- *     1 == 1.0     #=> true
- *     1.eql? 1.0   #=> false
- *--
- * \private
- *++
  */
 VALUE
 rb_obj_equal(VALUE obj1, VALUE obj2)
@@ -252,12 +228,14 @@ VALUE rb_obj_hash(VALUE obj);
 
 /**
  *  call-seq:
- *     !obj    -> true or false
+ *    !self -> true or false
  *
- *  Boolean negate.
- *--
- * \private
- *++
+ *  Returns the negation of +self+:
+ *
+ *    b = BasicObject.new
+ *    !b  # => false
+ *    !!b # => true
+ *
  */
 
 VALUE
@@ -268,12 +246,14 @@ rb_obj_not(VALUE obj)
 
 /**
  *  call-seq:
- *     obj != other        -> true or false
+ *    self != object -> true or false
  *
- *  Returns true if two objects are not-equal, otherwise false.
- *--
- * \private
- *++
+ *  Returns whether +self+ and +object+ <i>are not</i> the same object:
+ *
+ *    b = BasicObject.new
+ *    b != b               # => false
+ *    b != BasicObject.new # => true
+ *
  */
 
 VALUE
@@ -1095,25 +1075,24 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: singleton_method_added
  *
  *  call-seq:
- *     singleton_method_added(symbol)
+ *    singleton_method_added(symbol)
  *
- *  Invoked as a callback whenever a singleton method is added to the
- *  receiver.
+ *  Invoked as a callback when a singleton method is added to +self+:
  *
- *     module Chatty
- *       def Chatty.singleton_method_added(id)
- *         puts "Adding #{id.id2name}"
- *       end
- *       def self.one()     end
- *       def two()          end
- *       def Chatty.three() end
- *     end
+ *    class Chatty
+ *      def Chatty.singleton_method_added(id)
+ *        puts "Adding #{id.id2name}"
+ *      end
+ *      def self.one; end
+ *      def two; end
+ *      def Chatty.three; end
+ *    end
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     Adding singleton_method_added
- *     Adding one
- *     Adding three
+ *    Adding singleton_method_added
+ *    Adding one
+ *    Adding three
  *
  */
 #define rb_obj_singleton_method_added rb_obj_dummy1
@@ -1122,28 +1101,28 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: singleton_method_removed
  *
  *  call-seq:
- *     singleton_method_removed(symbol)
+ *    singleton_method_removed(symbol)
  *
- *  Invoked as a callback whenever a singleton method is removed from
- *  the receiver.
+ *  Invoked as a callback when a singleton method is removed from +self+:
  *
- *     module Chatty
- *       def Chatty.singleton_method_removed(id)
- *         puts "Removing #{id.id2name}"
- *       end
- *       def self.one()     end
- *       def two()          end
- *       def Chatty.three() end
- *       class << self
- *         remove_method :three
- *         remove_method :one
- *       end
+ *    class Chatty
+ *     def Chatty.singleton_method_removed(id)
+ *       puts "Removing #{id.id2name}"
  *     end
+ *     def self.one; end
+ *     def two; end
+ *     def Chatty.three; end
+ *     class << self
+ *       remove_method :three
+ *       remove_method :one
+ *     end
+ *   end
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     Removing three
- *     Removing one
+ *    Removing three
+ *    Removing one
+ *
  */
 #define rb_obj_singleton_method_removed rb_obj_dummy1
 
@@ -1151,24 +1130,24 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: singleton_method_undefined
  *
  *  call-seq:
- *     singleton_method_undefined(symbol)
+ *    singleton_method_undefined(symbol)
  *
- *  Invoked as a callback whenever a singleton method is undefined in
- *  the receiver.
+ *  Invoked as a callback when a singleton method is undefined in +self+:
  *
- *     module Chatty
- *       def Chatty.singleton_method_undefined(id)
- *         puts "Undefining #{id.id2name}"
- *       end
- *       def Chatty.one()   end
- *       class << self
- *          undef_method(:one)
- *       end
- *     end
+ *    class Chatty
+ *      def Chatty.singleton_method_undefined(id)
+ *        puts "Undefining #{id.id2name}"
+ *      end
+ *      def Chatty.one; end
+ *      class << self
+ *        undef_method(:one)
+ *      end
+ *    end
  *
- *  <em>produces:</em>
+ *  Output:
  *
- *     Undefining one
+ *    Undefining one
+ *
  */
 #define rb_obj_singleton_method_undefined rb_obj_dummy1
 
@@ -1261,9 +1240,9 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: initialize
  *
  * call-seq:
- *    BasicObject.new
+ *   BasicObject.new
  *
- * Returns a new BasicObject.
+ * Returns a new BasicObject instance.
  */
 #define rb_obj_initialize rb_obj_dummy0
 
@@ -4065,72 +4044,77 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  */
 
 
-/*  Document-class: BasicObject
+/*
+ *  Document-class: BasicObject
  *
- *  BasicObject is the parent class of all classes in Ruby.  It's an explicit
- *  blank class.
+ *  :markup: markdown
  *
- *  BasicObject can be used for creating object hierarchies independent of
- *  Ruby's object hierarchy, proxy objects like the Delegator class, or other
- *  uses where namespace pollution from Ruby's methods and classes must be
- *  avoided.
+ *  `BasicObject` is the parent class of all classes in Ruby.
+ *  In particular, `BasicObject` is the parent class of class Object,
+ *  which is itself the default parent class of every Ruby class:
  *
- *  To avoid polluting BasicObject for other users an appropriately named
- *  subclass of BasicObject should be created instead of directly modifying
- *  BasicObject:
+ *  ```
+ *  class Foo; end
+ *  Foo.superclass    # => Object
+ *  Object.superclass # => BasicObject
+ *  ```
  *
- *    class MyObjectSystem < BasicObject
- *    end
+ *  `BasicObject` is the only class that has no parent:
  *
- *  BasicObject does not include Kernel (for methods like +puts+) and
- *  BasicObject is outside of the namespace of the standard library so common
- *  classes will not be found without using a full class path.
+ *  ```
+ *  BasicObject.superclass # => nil
+ *  ```
  *
- *  A variety of strategies can be used to provide useful portions of the
- *  standard library to subclasses of BasicObject.  A subclass could
- *  <code>include Kernel</code> to obtain +puts+, +exit+, etc.  A custom
- *  Kernel-like module could be created and included or delegation can be used
- *  via #method_missing:
+ *  \Class `BasicObject` can be used to create an object hierarchy
+ *  (e.g., class Delegator) that is independent of Ruby's object hierarchy.
+ *  Such objects:
  *
- *    class MyObjectSystem < BasicObject
- *      DELEGATE = [:puts, :p]
+ *  - Do not have namespace "pollution" from the many methods
+ *    provided in class Object and its included module Kernel.
+ *  - Do not have definitions of common classes,
+ *    and so references to such common classes must be fully qualified
+ *    (`::String`, not `String`).
  *
- *      def method_missing(name, *args, &block)
- *        return super unless DELEGATE.include? name
- *        ::Kernel.send(name, *args, &block)
+ *  A variety of strategies can be used to provide useful portions
+ *  of the Standard Library in subclasses of `BasicObject`:
+ *
+ *  - The immediate subclass could `include Kernel`,
+ *    which would define methods such as `puts`, `exit`, etc.
+ *  - A custom Kernel-like module could be created and included.
+ *  - Delegation can be used via #method_missing:
+ *
+ *      ```
+ *      class MyObjectSystem < BasicObject
+ *        DELEGATE = [:puts, :p]
+ *        def method_missing(name, *args, &block)
+ *          return super unless DELEGATE.include? name
+ *          ::Kernel.send(name, *args, &block)
+ *        end
+ *        def respond_to_missing?(name, include_private = false)
+ *          DELEGATE.include?(name)
+ *        end
  *      end
+ *      ```
  *
- *      def respond_to_missing?(name, include_private = false)
- *        DELEGATE.include?(name)
- *      end
- *    end
- *
- *  Access to classes and modules from the Ruby standard library can be
- *  obtained in a BasicObject subclass by referencing the desired constant
- *  from the root like <code>::File</code> or <code>::Enumerator</code>.
- *  Like #method_missing, #const_missing can be used to delegate constant
- *  lookup to +Object+:
- *
- *    class MyObjectSystem < BasicObject
- *      def self.const_missing(name)
- *        ::Object.const_get(name)
- *      end
- *    end
- *
- *  === What's Here
+ *  ## What's Here
  *
  *  These are the methods defined for \BasicObject:
  *
- *  - ::new: Returns a new \BasicObject instance.
- *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
- *  - #!=: Returns whether +self+ and the given object are _not_ equal.
- *  - #==: Returns whether +self+ and the given object are equivalent.
- *  - #__id__: Returns the integer object identifier for +self+.
- *  - #__send__: Calls the method identified by the given symbol.
- *  - #equal?: Returns whether +self+ and the given object are the same object.
- *  - #instance_eval: Evaluates the given string or block in the context of +self+.
- *  - #instance_exec: Executes the given block in the context of +self+,
- *    passing the given arguments.
+ *  | \\Method                      | Effect                                                                          |
+ *  |-----------------------------|---------------------------------------------------------------------------------|
+ *  | ::new                       | Returns a new \\BasicObject instance.                                           |
+ *  | #!                          | Returns the boolean negation of +self+: +true+ or +false+.                      |
+ *  | #!=                         | Returns whether +self+ and the given object are _not_ equal.                    |
+ *  | #==                         | Returns whether +self+ and the given object are equivalent.                     |
+ *  | #__id__                     | Returns the integer object identifier for +self+.                               |
+ *  | #__send__                   | Calls the method identified by the given symbol.                                |
+ *  | #equal?                     | Returns whether +self+ and the given object are the same object.                |
+ *  | #instance_eval              | Evaluates the given string or block in the context of +self+.                   |
+ *  | #instance_exec              | Executes the given block in the context of +self+, passing the given arguments. |
+ *  | #method_missing             | Called when +self+ is called with a method it does not define.                  |
+ *  | #singleton_method_added     | Called when a singleton method is added to +self+.                              |
+ *  | #singleton_method_removed   | Called when a singleton method is removed from +self+.                          |
+ *  | #singleton_method_undefined | Called when a singleton method is undefined in +self+.                          |
  *
  */
 

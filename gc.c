@@ -667,10 +667,8 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 }
 #endif
 
-#if USE_SHARED_GC && !defined(HAVE_DLOPEN)
-# error "Shared GC requires dlopen"
-#elif USE_SHARED_GC
-#include <dlfcn.h>
+#if USE_SHARED_GC
+# include "dln.h"
 
 typedef struct gc_function_map {
     // Bootup
@@ -762,7 +760,7 @@ ruby_external_gc_init(void)
 
     char *gc_so_path = NULL;
     void *handle = NULL;
-    if (gc_so_file) {
+    if (gc_so_file && dln_supported_p()) {
         /* Check to make sure that gc_so_file matches /[\w-_.]+/ so that it does
          * not load a shared object outside of the directory. */
         for (size_t i = 0; i < strlen(gc_so_file); i++) {
@@ -783,16 +781,17 @@ ruby_external_gc_init(void)
         strcpy(gc_so_path + strlen(SHARED_GC_DIR), gc_so_file);
         gc_so_path[strlen(SHARED_GC_DIR) + strlen(gc_so_file)] = '\0';
 
-        handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
+        char error[1024];
+        handle = dln_open(gc_so_path, error, sizeof(error));
         if (!handle) {
-            fprintf(stderr, "%s", dlerror());
+            fprintf(stderr, "%s", error);
             rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
         }
     }
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        rb_gc_functions.name = dlsym(handle, "rb_gc_impl_" #name); \
+        rb_gc_functions.name = dln_symbol(handle, "rb_gc_impl_" #name); \
         if (!rb_gc_functions.name) { \
             rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
         } \
@@ -1781,26 +1780,37 @@ rb_memory_id(VALUE obj)
  *  Document-method: object_id
  *
  *  call-seq:
- *     obj.__id__       -> integer
- *     obj.object_id    -> integer
+ *    __id__ -> integer
+ *    object_id -> integer
  *
- *  Returns an integer identifier for +obj+.
+ *  Returns the integer identifier for +self+.
+ *  The same identifier is returned for all calls for a specific object;
+ *  no two active objects have the same identifier.
  *
- *  The same number will be returned on all calls to +object_id+ for a given
- *  object, and no two active objects will share an id.
+ *  Though their behaviors are identical:
  *
- *  Note: that some objects of builtin classes are reused for optimization.
- *  This is the case for immediate values and frozen string literals.
+ *  - BasicObject implements +__id__+;
+ *  - Kernel (which is included in Object) implements +object_id+.
  *
- *  BasicObject implements +__id__+, Kernel implements +object_id+.
+ *  Note: some instances of builtin classes are reused for optimization;
+ *  this is the case for immediate values and for frozen string literals;
+ *  immediate values include:
  *
- *  Immediate values are not passed by reference but are passed by value:
- *  +nil+, +true+, +false+, Fixnums, Symbols, and some Floats.
+ *  - +nil+, +true+, +false+.
+ *  - Any Symbol object.
+ *  - Any Integer object.
+ *  - Any frozen String object.
+ *  - Some Float objects.
  *
- *      Object.new.object_id  == Object.new.object_id  # => false
- *      (21 * 2).object_id    == (21 * 2).object_id    # => true
- *      "hello".object_id     == "hello".object_id     # => false
- *      "hi".freeze.object_id == "hi".freeze.object_id # => true
+ *  Examples:
+ *
+ *    nil.__id__ == nil.__id__                   # => true
+ *    :foo.__id__ == :foo.__id__                 # => true
+ *    1.__id__ == 1.__id__                       # => true
+ *    'foo'.__id__ == 'foo'.__id__               # => false # Not frozen.
+ *    'foo'.freeze.__id__ == 'foo'.freeze.__id__ # => true
+ *    3.14.__id__ == 3.14.__id__                 # => true
+ *
  */
 
 VALUE
@@ -4650,6 +4660,12 @@ rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
 void
 Init_GC(void)
 {
+#if USE_SHARED_GC
+    if (getenv(RUBY_GC_LIBRARY) != NULL && !dln_supported_p()) {
+        rb_warn(RUBY_GC_LIBRARY " is ignored because this executable file can't load extension libraries");
+    }
+#endif
+
 #undef rb_intern
     malloc_offset = gc_compute_malloc_offset();
 

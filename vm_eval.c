@@ -885,41 +885,47 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
 
 /*
  *  call-seq:
- *     obj.method_missing(symbol [, *args] )   -> result
+ *    method_missing(method, *args) -> object
  *
- *  Invoked by Ruby when <i>obj</i> is sent a message it cannot handle.
- *  <i>symbol</i> is the symbol for the method called, and <i>args</i>
- *  are any arguments that were passed to it. By default, the interpreter
- *  raises an error when this method is called. However, it is possible
- *  to override the method to provide more dynamic behavior.
- *  If it is decided that a particular method should not be handled, then
- *  <i>super</i> should be called, so that ancestors can pick up the
- *  missing method.
- *  The example below creates
- *  a class <code>Roman</code>, which responds to methods with names
- *  consisting of roman numerals, returning the corresponding integer
- *  values.
+ *  Invoked when +self+ called with a method it does not define;
+ *  raises NoMethodError:
  *
- *     class Roman
- *       def roman_to_int(str)
- *         # ...
- *       end
+ *    'foo'.nosuch
+ *    # Raises NoMethodError: undefined method `nosuch' for an instance of String
  *
- *       def method_missing(symbol, *args)
- *         str = symbol.id2name
- *         begin
- *           roman_to_int(str)
- *         rescue
- *           super(symbol, *args)
- *         end
- *       end
- *     end
+ *  The method may be overridden to provide dynamic handling for the call;
+ *  the overriding method should call +super+ if it can't handle the call.
  *
- *     r = Roman.new
- *     r.iv      #=> 4
- *     r.xxiii   #=> 23
- *     r.mm      #=> 2000
- *     r.foo     #=> NoMethodError
+ *  This class overrides +method_missing+:
+ *
+ *    require 'roman-numerals' # Use Ruby gem roman-numerals.
+ *    class Roman
+ *      def roman_to_int(str)
+ *        RomanNumerals.to_decimal(str)
+ *      end
+ *      def method_missing(symbol, *args)
+ *        str = symbol.id2name
+ *        i = roman_to_int(str)
+ *        super(symbol, *args) if i == 0 # Could not convert.
+ *        puts "Roman #{symbol} converts to decimal #{i}."
+ *      end
+ *    end
+ *    roman = Roman.new
+ *    roman.IV
+ *    roman.XXIII
+ *    roman.MMXXIV
+ *
+ *  Output:
+ *
+ *    Roman IV converts to decimal 4.
+ *    Roman XXIII converts to decimal 23.
+ *    Roman MMXXIV converts to decimal 2024.
+ *
+ *  This call is not handled:
+ *
+ *    roman.NOSUCH
+ *    # Raises NoMethodError: undefined method `NOSUCH' for an instance of Roman
+ *
  */
 
 static VALUE
@@ -1287,28 +1293,32 @@ send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
 
 /*
  * call-seq:
- *    foo.send(symbol [, args...])       -> obj
- *    foo.__send__(symbol [, args...])   -> obj
- *    foo.send(string [, args...])       -> obj
- *    foo.__send__(string [, args...])   -> obj
+ *   __send__(method, *args) -> object
+ *   send(method, *args) -> object
  *
- *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified.
- *  When the method is identified by a string, the string is converted
- *  to a symbol.
+ *  Invokes the method identified by +method+,
+ *  passing it the arguments +args+.
+ *  When +method+ is a String, it is converted to a symbol.
  *
- *  BasicObject implements +__send__+, Kernel implements +send+.
- *  <code>__send__</code> is safer than +send+
- *  when _obj_ has the same method name like <code>Socket</code>.
- *  See also <code>public_send</code>.
+ *  The invoked method may be private.
  *
- *     class Klass
- *       def hello(*args)
- *         "Hello " + args.join(' ')
- *       end
- *     end
- *     k = Klass.new
- *     k.send :hello, "gentle", "readers"   #=> "Hello gentle readers"
+ *  Though their behaviors are identical:
+ *
+ *  - BasicObject implements +__send__+.
+ *  - Kernel (which in included in Object) implements +send+.
+ *
+ *  Using method +__send__+ may be safer than using method +send+,
+ *  because some classes override method +send+.
+ *
+ *    class Foo
+ *      def hello(*args)
+ *        'Hello ' + args.join(' ')
+ *      end
+ *    end
+ *    foo = Foo.new
+ *    foo.send(:hello, %w[gentle readers])  # => "Hello gentle readers"
+ *
+ *  Related: Object#public_send.
  */
 
 VALUE
@@ -1556,37 +1566,6 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.argv = argv;
     arg.kw_splat = kw_splat;
     return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2);
-}
-
-/*
- * A flexible variant of rb_block_call and rb_block_call_kw.
- * This function accepts flags:
- *
- *   RB_NO_KEYWORDS, RB_PASS_KEYWORDS, RB_PASS_CALLED_KEYWORDS:
- *   Works as the same as rb_block_call_kw.
- *
- *   RB_BLOCK_NO_USE_PACKED_ARGS:
- *   The given block ("bl_proc") does not use "yielded_arg" of rb_block_call_func_t.
- *   Instead, the block accesses the yielded arguments via "argc" and "argv".
- *   This flag allows the called method to yield arguments without allocating an Array.
- */
-VALUE
-rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv,
-               rb_block_call_func_t bl_proc, VALUE data2, long flags)
-{
-    struct iter_method_arg arg;
-
-    arg.obj = obj;
-    arg.mid = mid;
-    arg.argc = argc;
-    arg.argv = argv;
-    arg.kw_splat = flags & 1;
-
-    struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(bl_proc, (void *)data2);
-    if (flags & RB_BLOCK_NO_USE_PACKED_ARGS)
-        ifunc->flags |= IFUNC_YIELD_OPTIMIZABLE;
-
-    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, GET_EC());
 }
 
 VALUE
@@ -2169,35 +2148,55 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
 
 /*
  *  call-seq:
- *     obj.instance_eval(string [, filename [, lineno]] )   -> obj
- *     obj.instance_eval {|obj| block }                     -> obj
+ *    instance_eval {|self| ... } -> object
+ *    instance_eval(string, filename = nil, lineno = nil) -> string
  *
- *  Evaluates a string containing Ruby source code, or the given block,
- *  within the context of the receiver (_obj_). In order to set the
- *  context, the variable +self+ is set to _obj_ while
- *  the code is executing, giving the code access to _obj_'s
- *  instance variables and private methods.
+ *  With a block given, passes +self+ to the block
+ *  and returns the block's return value;
+ *  this gives the block access to instance variables and private methods in +self+:
  *
- *  When <code>instance_eval</code> is given a block, _obj_ is also
- *  passed in as the block's only argument.
+ *    class SecretWord
+ *      def initialize(word)
+ *        @word = word
+ *      end
+ *      private
+ *      def tell_word
+ *        "The secret word is '#{@word}'."
+ *      end
+ *    end
+ *    secret_word = SecretWord.new('xyzzy')
+ *    # Accesses instance variable.
+ *    p secret_word.instance_eval { @word }
+ *    # Accesses private method.
+ *    p secret_word.instance_eval { tell_word }
  *
- *  When <code>instance_eval</code> is given a +String+, the optional
+ *  Output:
+ *
+ *    "xyzzy"
+ *    "The secret word is 'xyzzy'."
+ *
+ *  With argument +string+ given,
+ *  evaluates the string as Ruby source code
+ *  and returns the standard output from that code;
+ *  this gives the block access to instance variables and private methods in +self+:
+ *
+ *    # Accesses instance variable.
+ *    p secret_word.instance_eval('@word')
+ *    # Accesses private method.
+ *    p secret_word.instance_eval('tell_word')
+ *
+ *  Output:
+ *
+ *    "xyzzy"
+ *    "The secret word is 'xyzzy'."
+ *
+ *  The optional
  *  second and third parameters supply a filename and starting line number
  *  that are used when reporting compilation errors.
  *
- *     class KlassWithSecret
- *       def initialize
- *         @secret = 99
- *       end
- *       private
- *       def the_secret
- *         "Ssssh! The secret is #{@secret}."
- *       end
- *     end
- *     k = KlassWithSecret.new
- *     k.instance_eval { @secret }          #=> 99
- *     k.instance_eval { the_secret }       #=> "Ssssh! The secret is 99."
- *     k.instance_eval {|obj| obj == self } #=> true
+ *    1.instance_eval('end', 'space_odyssey.c ', 2001)
+ *    # Raises SyntaxError: space_odyssey.c :2001: syntax error, unexpected `end'
+ *
  */
 
 static VALUE
@@ -2214,20 +2213,29 @@ rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     obj.instance_exec(arg...) {|var...| block }                       -> obj
+ *    instance_exec(*args) {|args| ... } -> object
  *
- *  Executes the given block within the context of the receiver
- *  (_obj_). In order to set the context, the variable +self+ is set
- *  to _obj_ while the code is executing, giving the code access to
- *  _obj_'s instance variables.  Arguments are passed as block parameters.
+ *  Executes the given block,
+ *  giving access to the instance variables and private methods in +self+:
  *
- *     class KlassWithSecret
- *       def initialize
- *         @secret = 99
- *       end
- *     end
- *     k = KlassWithSecret.new
- *     k.instance_exec(5) {|x| @secret+x }   #=> 104
+ *    class SecretWord
+ *      def initialize(word)
+ *        @word = word
+ *      end
+ *      private
+ *      def tell_word(name)
+ *        "#{name}, the secret word is '#{@word}'."
+ *      end
+ *    end
+ *    secret_word = SecretWord.new('xyzzy')
+ *    secret_word.instance_exec('Matz') {|name| p "#{name}, '#{@word}'" }
+ *    secret_word.instance_exec('Matz') {|name| p tell_word(name) }
+ *
+ *  Output:
+ *
+ *    "Matz, 'xyzzy'"
+ *    "Matz, the secret word is 'xyzzy'."
+ *
  */
 
 static VALUE
