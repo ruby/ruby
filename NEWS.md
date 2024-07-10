@@ -44,6 +44,12 @@ Note: We're only listing outstanding class updates.
 
   * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
 
+* RubyVM::AbstractSyntaxTree
+
+  * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
+    associated with the AST node. [[Feature #20624]]
+  * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
+
 ## Stdlib updates
 
 * Tempfile
@@ -160,3 +166,4 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
+[Feature #20624]: https://bugs.ruby-lang.org/issues/20624
