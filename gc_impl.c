@@ -2337,7 +2337,7 @@ newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
     return obj;
 }
 
-#ifdef GC_DEBUG
+#if GC_DEBUG
 static inline const char*
 rb_gc_impl_source_location_cstr(int *ptr)
 {
