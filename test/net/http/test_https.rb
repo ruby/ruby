@@ -295,7 +295,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_max_version
-    http = Net::HTTP.new(HOST_IP, config("port"))
+    http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.max_version = :SSL2
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
