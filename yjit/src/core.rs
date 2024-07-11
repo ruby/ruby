@@ -914,8 +914,7 @@ impl Context {
         unsafe {
             // Lazily initialize the context cache
             if CTX_CACHE == None {
-                let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
-                CTX_CACHE = Some(Box::new(empty_tbl));
+                CTX_CACHE = Some(Box::new( [(Context::default(), 0); CTX_CACHE_SIZE] ));
             }
 
             // Write a cache entry for this context
