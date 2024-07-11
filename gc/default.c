@@ -319,7 +319,7 @@ int ruby_rgengc_debug;
 # define GC_ENABLE_LAZY_SWEEP   1
 #endif
 #ifndef CALC_EXACT_MALLOC_SIZE
-# define CALC_EXACT_MALLOC_SIZE USE_GC_MALLOC_OBJ_INFO_DETAILS
+# define CALC_EXACT_MALLOC_SIZE 0
 #endif
 #if defined(HAVE_MALLOC_USABLE_SIZE) || CALC_EXACT_MALLOC_SIZE > 0
 # ifndef MALLOC_ALLOCATED_SIZE
@@ -8360,17 +8360,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
 
 struct malloc_obj_info { /* 4 words */
     size_t size;
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    size_t gen;
-    const char *file;
-    size_t line;
-#endif
 };
-
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-const char *ruby_malloc_info_file;
-int ruby_malloc_info_line;
-#endif
 
 static inline size_t
 objspace_malloc_prepare(rb_objspace_t *objspace, size_t size)
@@ -8404,11 +8394,6 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
     {
         struct malloc_obj_info *info = mem;
         info->size = size;
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-        info->gen = objspace->profile.count;
-        info->file = ruby_malloc_info_file;
-        info->line = info->file ? ruby_malloc_info_line : 0;
-#endif
         mem = info + 1;
     }
 #endif
@@ -8478,58 +8463,6 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
     ptr = info;
     old_size = info->size;
-
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    {
-        int gen = (int)(objspace->profile.count - info->gen);
-        int gen_index = gen >= MALLOC_INFO_GEN_SIZE ? MALLOC_INFO_GEN_SIZE-1 : gen;
-        int i;
-
-        malloc_info_gen_cnt[gen_index]++;
-        malloc_info_gen_size[gen_index] += info->size;
-
-        for (i=0; i<MALLOC_INFO_SIZE_SIZE; i++) {
-            size_t s = 16 << i;
-            if (info->size <= s) {
-                malloc_info_size[i]++;
-                goto found;
-            }
-        }
-        malloc_info_size[i]++;
-      found:;
-
-        {
-            st_data_t key = (st_data_t)info->file, d;
-            size_t *data;
-
-            if (malloc_info_file_table == NULL) {
-                malloc_info_file_table = st_init_numtable_with_size(1024);
-            }
-            if (st_lookup(malloc_info_file_table, key, &d)) {
-                /* hit */
-                data = (size_t *)d;
-            }
-            else {
-                data = malloc(xmalloc2_size(2, sizeof(size_t)));
-                if (data == NULL) rb_bug("objspace_xfree: can not allocate memory");
-                data[0] = data[1] = 0;
-                st_insert(malloc_info_file_table, key, (st_data_t)data);
-            }
-            data[0] ++;
-            data[1] += info->size;
-        };
-        if (0 && gen >= 2) {         /* verbose output */
-            if (info->file) {
-                fprintf(stderr, "free - size:%"PRIdSIZE", gen:%d, pos: %s:%"PRIdSIZE"\n",
-                        info->size, gen, info->file, info->line);
-            }
-            else {
-                fprintf(stderr, "free - size:%"PRIdSIZE", gen:%d\n",
-                        info->size, gen);
-            }
-        }
-    }
-#endif
 #endif
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
