@@ -131,8 +131,8 @@ module Prism
         comments = load_comments
         magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
         data_loc = load_optional_location_object
-        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES[load_varuint], load_embedded_string, load_location_object, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES[load_varuint], load_embedded_string, load_location_object, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES.fetch(load_varuint), load_embedded_string, load_location_object, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES.fetch(load_varuint), load_embedded_string, load_location_object, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
