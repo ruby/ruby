@@ -3375,10 +3375,11 @@ rb_mmtk_run_final_job(struct MMTk_FinalJob *job)
             if (rb_gc_obj_free_on_exit_started()) {
                 rb_bug("Finalize job still exists after obj_free on exit has started.");
             }
-            rb_objspace_t *objspace = rb_gc_get_objspace();
-            run_finalizer(objspace,
-                            job->as.finalize.observed_id,
-                            job->as.finalize.finalizer_array);
+
+            VALUE objid = job->as.finalize.observed_id;
+            VALUE table = job->as.finalize.finalizer_array;
+            rb_gc_run_obj_finalizer(objid, RARRAY_LEN(table), get_final, (void *)table);
+
             break;
         }
     }
