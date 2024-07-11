@@ -9185,31 +9185,32 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // A value that is being written to a constant that is being marked as
         // shared depending on the current lexical context.
         const pm_shareable_constant_node_t *cast = (const pm_shareable_constant_node_t *) node;
+        pm_node_flags_t shareability = (cast->base.flags & (PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL | PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING | PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY));
 
         switch (PM_NODE_TYPE(cast->write)) {
           case PM_CONSTANT_WRITE_NODE:
-            pm_compile_constant_write_node(iseq, (const pm_constant_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_write_node(iseq, (const pm_constant_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_AND_WRITE_NODE:
-            pm_compile_constant_and_write_node(iseq, (const pm_constant_and_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_and_write_node(iseq, (const pm_constant_and_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_OR_WRITE_NODE:
-            pm_compile_constant_or_write_node(iseq, (const pm_constant_or_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_or_write_node(iseq, (const pm_constant_or_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_OPERATOR_WRITE_NODE:
-            pm_compile_constant_operator_write_node(iseq, (const pm_constant_operator_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_operator_write_node(iseq, (const pm_constant_operator_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_PATH_WRITE_NODE:
-            pm_compile_constant_path_write_node(iseq, (const pm_constant_path_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_path_write_node(iseq, (const pm_constant_path_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_PATH_AND_WRITE_NODE:
-            pm_compile_constant_path_and_write_node(iseq, (const pm_constant_path_and_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_path_and_write_node(iseq, (const pm_constant_path_and_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_PATH_OR_WRITE_NODE:
-            pm_compile_constant_path_or_write_node(iseq, (const pm_constant_path_or_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_path_or_write_node(iseq, (const pm_constant_path_or_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE:
-            pm_compile_constant_path_operator_write_node(iseq, (const pm_constant_path_operator_write_node_t *) cast->write, cast->base.flags, &location, ret, popped, scope_node);
+            pm_compile_constant_path_operator_write_node(iseq, (const pm_constant_path_operator_write_node_t *) cast->write, shareability, &location, ret, popped, scope_node);
             break;
           default:
             rb_bug("Unexpected node type for shareable constant write: %s", pm_node_type_to_str(PM_NODE_TYPE(cast->write)));

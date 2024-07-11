@@ -508,9 +508,9 @@ typedef struct {
 /** The type of shareable constant value that can be set. */
 typedef uint8_t pm_shareable_constant_value_t;
 static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_NONE = 0x0;
-static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_LITERAL = 0x1;
-static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING = 0x2;
-static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = 0x4;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_LITERAL = PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING = PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY;
 
 /**
  * This tracks an individual local variable in a certain lexical context, as
