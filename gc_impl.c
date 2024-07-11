@@ -5834,7 +5834,7 @@ rb_mmtk_scan_obj_to_id_tbl_roots(void)
     rb_vm_t *vm = GET_VM();
     rb_objspace_t *objspace = vm->objspace;
 
-    mark_tbl_no_pin(objspace, objspace->obj_to_id_tbl); /* Only mark ids */
+    rb_mark_tbl_no_pin(objspace->obj_to_id_tbl); /* Only mark ids */
 }
 
 void
