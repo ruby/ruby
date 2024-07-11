@@ -10696,21 +10696,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_CONST:{
         debugi("nd_vid", RNODE_CONST(node)->nd_vid);
-
-        if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-            body->ic_size++;
-            VALUE segments = rb_ary_new_from_args(1, ID2SYM(RNODE_CONST(node)->nd_vid));
-            ADD_INSN1(ret, node, opt_getconstant_path, segments);
-            RB_OBJ_WRITTEN(iseq, Qundef, segments);
-        }
-        else {
-            ADD_INSN(ret, node, putnil);
-            ADD_INSN1(ret, node, putobject, Qtrue);
-            ADD_INSN1(ret, node, getconstant, ID2SYM(RNODE_CONST(node)->nd_vid));
-        }
-
-        if (popped) {
-            ADD_INSN(ret, node, pop);
+        if(!popped) {
+            if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+                body->ic_size++;
+                VALUE segments = rb_ary_new_from_args(1, ID2SYM(RNODE_CONST(node)->nd_vid));
+                ADD_INSN1(ret, node, opt_getconstant_path, segments);
+                RB_OBJ_WRITTEN(iseq, Qundef, segments);
+            }
+            else {
+                ADD_INSN(ret, node, putnil);
+                ADD_INSN1(ret, node, putobject, Qtrue);
+                ADD_INSN1(ret, node, getconstant, ID2SYM(RNODE_CONST(node)->nd_vid));
+            }
         }
         break;
       }
