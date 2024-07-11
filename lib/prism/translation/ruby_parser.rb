@@ -893,6 +893,13 @@ module Prism
                 visited << result
               end
             elsif result[0] == :dstr
+              if !visited.empty? && part.parts[0].is_a?(StringNode)
+                # If we are in the middle of an implicitly concatenated string,
+                # we should not have a bare string as the first part. In this
+                # case we need to visit just that first part and then we can
+                # push the rest of the parts onto the visited array.
+                result[1] = visit(part.parts[0])
+              end
               visited.concat(result[1..-1])
             else
               visited << result
