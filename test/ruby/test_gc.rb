@@ -57,7 +57,7 @@ class TestGc < Test::Unit::TestCase
 
     config = GC.config
     assert_not_empty(config)
-    assert_true(config[:full_mark])
+    assert_true(config[:rgengc_allow_full_mark])
   end
 
   def test_gc_config_invalid_args
@@ -69,13 +69,13 @@ class TestGc < Test::Unit::TestCase
   def test_gc_config_setting_returns_updated_config_hash
     omit "unsupoported platform/GC" unless defined?(GC.config)
 
-    old_value = GC.config[:full_mark]
+    old_value = GC.config[:rgengc_allow_full_mark]
     assert_true(old_value)
 
-    new_value = GC.config(full_mark: false)[:full_mark]
+    new_value = GC.config(rgengc_allow_full_mark: false)[:rgengc_allow_full_mark]
     assert_false(new_value)
   ensure
-    GC.config(full_mark: true)
+    GC.config(rgengc_allow_full_mark: true)
     GC.start
   end
 
@@ -95,7 +95,7 @@ class TestGc < Test::Unit::TestCase
     GC.enable
     GC.start
 
-    GC.config(full_mark: false)
+    GC.config(rgengc_allow_full_mark: false)
     major_count = GC.stat[:major_gc_count]
     minor_count = GC.stat[:minor_gc_count]
 
@@ -109,7 +109,7 @@ class TestGc < Test::Unit::TestCase
     assert_operator(minor_count, :<=, GC.stat[:minor_gc_count])
     assert_nil(GC.start)
   ensure
-    GC.config(full_mark: true)
+    GC.config(rgengc_allow_full_mark: true)
     GC.start
   end
 

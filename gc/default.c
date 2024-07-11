@@ -8072,7 +8072,7 @@ rb_gc_impl_config_get(void *objspace_ptr)
     rb_objspace_t *objspace = objspace_ptr;
     VALUE hash = rb_hash_new();
 
-    rb_hash_aset(hash, sym("full_mark"), RBOOL(gc_config_full_mark_val));
+    rb_hash_aset(hash, sym("rgengc_allow_full_mark"), RBOOL(gc_config_full_mark_val));
 
     return hash;
 }
@@ -8081,7 +8081,7 @@ static int
 gc_config_set_key(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
-    if (!strcmp(rb_str_to_cstr(rb_sym2str(key)), "full_mark")) {
+    if (!strcmp(rb_str_to_cstr(rb_sym2str(key)), "rgengc_allow_full_mark")) {
         gc_rest(objspace);
         gc_config_full_mark_set(RBOOL(value));
     }
