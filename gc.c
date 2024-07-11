@@ -3495,6 +3495,27 @@ rb_gc_update_vm_references(void *objspace)
 }
 
 #if USE_MMTK
+void
+rb_mmtk_update_global_symbols_table(void)
+{
+    // String-to-symbol table.
+    // Keys are the strings, hasshed by content (rb_str_hash).
+    // Values are symbol objects.  A symbol holds a reference to its
+    // corresponding string, so if the value is live, the key must be live.
+    // We need to remove entries for dead symbols.
+    rb_mmtk_update_weak_table(global_symbols.str_sym,
+                              false,
+                              RB_MMTK_VALUES_WEAK_REF,
+                              NULL,
+                              NULL);
+}
+
+st_table*
+rb_mmtk_get_global_symbols_table(void)
+{
+    return global_symbols.str_sym;
+}
+
 static void
 rb_mmtk_gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
 {

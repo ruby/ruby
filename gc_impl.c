@@ -10579,21 +10579,6 @@ rb_mmtk_update_obj_id_tables(void)
 }
 
 void
-rb_mmtk_update_global_symbols_table(void)
-{
-    // String-to-symbol table.
-    // Keys are the strings, hasshed by content (rb_str_hash).
-    // Values are symbol objects.  A symbol holds a reference to its
-    // corresponding string, so if the value is live, the key must be live.
-    // We need to remove entries for dead symbols.
-    rb_mmtk_update_weak_table(global_symbols.str_sym,
-                              false,
-                              RB_MMTK_VALUES_WEAK_REF,
-                              NULL,
-                              NULL);
-}
-
-void
 rb_mmtk_update_overloaded_cme_table(void)
 {
     // The overloaded CME table.  It has both weak keys and weak values.
@@ -10643,12 +10628,6 @@ rb_mmtk_get_obj_id_tables(void)
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
     return objspace->obj_to_id_tbl;
-}
-
-st_table*
-rb_mmtk_get_global_symbols_table(void)
-{
-    return global_symbols.str_sym;
 }
 
 st_table*
