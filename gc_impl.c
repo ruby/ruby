@@ -922,13 +922,17 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define dont_gc_val()         (objspace->flags.dont_gc)
 #endif
 
+#ifndef DURING_GC_COULD_MALLOC_REGION_START
 #define DURING_GC_COULD_MALLOC_REGION_START() \
     assert(rb_during_gc()); \
     bool _prev_enabled = rb_gc_impl_gc_enabled_p(objspace); \
     rb_gc_impl_gc_disable(objspace, false)
+#endif
 
+#ifndef DURING_GC_COULD_MALLOC_REGION_END
 #define DURING_GC_COULD_MALLOC_REGION_END() \
     if (_prev_enabled) rb_gc_impl_gc_enable(objspace)
+#endif
 
 static inline enum gc_mode
 gc_mode_verify(enum gc_mode mode)
