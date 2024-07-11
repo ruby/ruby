@@ -5808,15 +5808,6 @@ rb_mmtk_scan_vm_roots(void)
 }
 
 void
-rb_mmtk_scan_finalizer_tbl_roots(void)
-{
-    rb_vm_t *vm = GET_VM();
-    rb_objspace_t *objspace = vm->objspace;
-
-    mark_finalizer_tbl(objspace, finalizer_table);
-}
-
-void
 rb_mmtk_scan_end_proc_roots(void)
 {
     rb_mark_end_proc();
@@ -10326,6 +10317,14 @@ rb_gc_impl_objspace_mark(void *objspace_ptr)
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
 }
+
+#if USE_MMTK
+void
+rb_mmtk_scan_finalizer_tbl_roots(void)
+{
+    rb_gc_impl_objspace_mark(rb_gc_get_objspace());
+}
+#endif
 
 void *
 rb_gc_impl_objspace_alloc(void)
