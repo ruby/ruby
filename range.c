@@ -2438,8 +2438,8 @@ range_overlap(VALUE range, VALUE other)
  * A beginless range may be used to slice an array:
  *
  *  a = [1, 2, 3, 4]
- *  r = (..2) # => nil...2
- *  a[r]      # => [1, 2]
+ *  r = (...2) # => nil...2
+ *  a[r]       # => [1, 2]
  *
  * \Method +each+ for a beginless range raises an exception.
  *
