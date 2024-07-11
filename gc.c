@@ -990,27 +990,6 @@ rb_gc_obj_slot_size(VALUE obj)
     return rb_gc_impl_obj_slot_size(obj);
 }
 
-#if USE_MMTK
-// Allocate an object, bypassing size pool check.
-static inline VALUE
-rb_mmtk_newobj_of_inner(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-
-    size_t prefix_size = rb_mmtk_prefix_size();
-    size_t suffix_size = rb_mmtk_suffix_size();
-
-    // We prepend a size field before the object.
-    size_t mmtk_alloc_size = payload_size + prefix_size + suffix_size;
-
-    // Allocate the object.
-    VALUE obj = rb_mmtk_alloc_obj(mmtk_alloc_size, payload_size, prefix_size);
-
-    // Finally, do the rest of Ruby-level initialization.
-    return newobj_init(klass, flags, wb_protected, objspace, obj);
-}
-#endif
-
 static inline VALUE
 newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t size)
 {

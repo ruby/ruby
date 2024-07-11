@@ -2767,6 +2767,28 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
     return newobj_slowpath(klass, flags, objspace, cache, FALSE, size_pool_idx);
 }
 
+#if USE_MMTK
+// Allocate an object, bypassing size pool check.
+static inline VALUE
+rb_mmtk_newobj_of_inner(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    size_t prefix_size = rb_mmtk_prefix_size();
+    size_t suffix_size = rb_mmtk_suffix_size();
+
+    // We prepend a size field before the object.
+    size_t mmtk_alloc_size = payload_size + prefix_size + suffix_size;
+
+    // Allocate the object.
+    VALUE obj = rb_mmtk_alloc_obj(mmtk_alloc_size, payload_size, prefix_size);
+
+    // Finally, do the rest of Ruby-level initialization.
+    return newobj_init(klass, flags, wb_protected, objspace, obj);
+}
+#endif
+
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
