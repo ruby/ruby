@@ -3517,7 +3517,7 @@ rb_mmtk_get_global_symbols_table(void)
 }
 
 static void
-rb_mmtk_gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
+rb_mmtk_gc_ref_update_string(void * objspace, VALUE str)
 {
      if (STR_EMBED_P(str)) {
         // Embedded strings don't point into any buffer.
