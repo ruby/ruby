@@ -10668,7 +10668,7 @@ void
 rb_mmtk_obj_free(VALUE obj)
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    obj_free(objspace, obj);
+    rb_gc_obj_free(objspace, obj);
 }
 
 void
