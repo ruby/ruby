@@ -847,10 +847,11 @@ const CTX_CACHE_SIZE: usize = 1024;
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
 // We can experiment with varying the size of this cache
-static mut CTX_CACHE: Option<Box<[(Context, u32)]>> = None;
+pub type CtxCacheTbl = [(Context, u32); CTX_CACHE_SIZE];
+static mut CTX_CACHE: Option<Box<CtxCacheTbl>> = None;
 
 // Size of the context cache in bytes
-pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<(Context, u32)>() * CTX_CACHE_SIZE;
+pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCacheTbl>();
 
 impl Context {
     // Encode a context into the global context data, or return
@@ -913,8 +914,10 @@ impl Context {
         unsafe {
             // Lazily initialize the context cache
             if CTX_CACHE == None {
-                let cache = vec![(Context::default(), 0); CTX_CACHE_SIZE];
-                CTX_CACHE = Some(cache.into_boxed_slice());
+                // Here we use the vec syntax to avoid allocating the large table on the stack,
+                // as this can cause a stack overflow
+                let tbl = vec![(Context::default(), 0); CTX_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
+                CTX_CACHE = Some(tbl);
             }
 
             // Write a cache entry for this context
