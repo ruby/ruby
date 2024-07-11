@@ -21,6 +21,7 @@
 #include "ruby/internal/encoding/string.h"
 #include "ccan/list/list.h"
 #include "darray.h"
+#include "gc/gc_impl.h"
 #include "probes.h"
 
 #include "debug_counter.h"
