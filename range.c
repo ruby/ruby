@@ -2438,8 +2438,10 @@ range_overlap(VALUE range, VALUE other)
  * A beginless range may be used to slice an array:
  *
  *  a = [1, 2, 3, 4]
+ *  # Include the third array element in the slice
  *  r = (..2)  # => nil..2
  *  a[r]       # => [1, 2, 3]
+ *  # Exclude the third array element from the slice
  *  r = (...2) # => nil...2
  *  a[r]       # => [1, 2]
  *
