@@ -10661,7 +10661,7 @@ void
 rb_mmtk_update_object_references(VALUE obj)
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    gc_update_object_references(objspace, obj);
+    rb_gc_update_object_references(objspace, obj);
 }
 
 void
