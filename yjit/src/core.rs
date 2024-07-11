@@ -842,7 +842,7 @@ enum CtxOp {
 }
 
 // Number of entries in the context cache
-const CTX_CACHE_SIZE: usize = 512;
+const CTX_CACHE_SIZE: usize = 1024;
 
 // Cache of the last contexts encoded
 // Empirically this saves a few percent of memory
@@ -906,17 +906,19 @@ impl Context {
     // Store an entry in a cache of recently encoded/decoded contexts
     fn cache_set(ctx: &Context, idx: u32)
     {
+        // Compute the hash for this context
+        let mut hasher = DefaultHasher::new();
+        ctx.hash(&mut hasher);
+        let ctx_hash = hasher.finish() as usize;
+
         unsafe {
             // Lazily initialize the context cache
             if CTX_CACHE == None {
-                let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
-                CTX_CACHE = Some(Box::new(empty_tbl));
+                // Here we use the vec syntax to avoid allocating the large table on the stack,
+                // as this can cause a stack overflow
+                let tbl = vec![(Context::default(), 0); CTX_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
+                CTX_CACHE = Some(tbl);
             }
-
-            // Compute the hash for this context
-            let mut hasher = DefaultHasher::new();
-            ctx.hash(&mut hasher);
-            let ctx_hash = hasher.finish() as usize;
 
             // Write a cache entry for this context
             let cache = CTX_CACHE.as_mut().unwrap();
@@ -927,17 +929,17 @@ impl Context {
     // Lookup the context in a cache of recently encoded/decoded contexts
     fn cache_get(ctx: &Context) -> Option<u32>
     {
+        // Compute the hash for this context
+        let mut hasher = DefaultHasher::new();
+        ctx.hash(&mut hasher);
+        let ctx_hash = hasher.finish() as usize;
+
         unsafe {
             if CTX_CACHE == None {
                 return None;
             }
 
             let cache = CTX_CACHE.as_mut().unwrap();
-
-            // Compute the hash for this context
-            let mut hasher = DefaultHasher::new();
-            ctx.hash(&mut hasher);
-            let ctx_hash = hasher.finish() as usize;
 
             // Check that the context for this cache entry mmatches
             let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
