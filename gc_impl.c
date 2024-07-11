@@ -5035,7 +5035,7 @@ gc_mark(rb_objspace_t *objspace, VALUE obj)
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         if (!LIKELY(during_gc)) {
-            reachable_objects_from_callback(obj);
+            rb_gc_reachable_objects_from_callback(obj);
             return;
         }
         rb_mmtk_mark_movable(obj);
@@ -5091,7 +5091,7 @@ gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         if (!LIKELY(during_gc)) {
-            reachable_objects_from_callback(obj);
+            rb_gc_reachable_objects_from_callback(obj);
             return;
         }
         rb_mmtk_mark_pin(obj);
