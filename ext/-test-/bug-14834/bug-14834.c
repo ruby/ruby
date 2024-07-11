@@ -7,7 +7,7 @@
 
 static NOINLINE(VALUE f(VALUE));
 static NOINLINE(void g(VALUE, void*));
-extern NOINLINE(void Init_bug_14384(void));
+extern NOINLINE(void Init_bug_14834(void));
 
 void
 Init_bug_14834(void)
