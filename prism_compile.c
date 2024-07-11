@@ -4644,7 +4644,14 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
 {
     const pm_parser_t *parser = scope_node->parser;
     const pm_statements_node_t *statements = cast->ensure_clause->statements;
-    const pm_node_location_t location = statements != NULL ? PM_NODE_START_LOCATION(parser, statements) : *node_location;
+
+    pm_node_location_t location;
+    if (statements != NULL) {
+        location = PM_NODE_START_LOCATION(parser, statements);
+    }
+    else {
+        location = *node_location;
+    }
 
     LABEL *estart = NEW_LABEL(location.line);
     LABEL *eend = NEW_LABEL(location.line);
