@@ -263,6 +263,11 @@ module Prism
               when RegularExpressionNode, InterpolatedRegularExpressionNode
                 return s(node, :match2, visit(node.receiver), visit(node.arguments.arguments.first))
               end
+
+              case node.arguments.arguments.first
+              when RegularExpressionNode, InterpolatedRegularExpressionNode
+                return s(node, :match3, visit(node.arguments.arguments.first), visit(node.receiver))
+              end
             end
           end
 
