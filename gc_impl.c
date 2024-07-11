@@ -2772,7 +2772,7 @@ newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace
 static inline VALUE
 rb_mmtk_newobj_of_inner(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
 
     size_t prefix_size = rb_mmtk_prefix_size();
     size_t suffix_size = rb_mmtk_suffix_size();
@@ -2963,7 +2963,7 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 static inline void
 rb_mmtk_push_final_job(struct MMTk_FinalJob *job)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
 
     VALUE prev, next = heap_pages_deferred_final;
     do {
@@ -3368,7 +3368,8 @@ rb_mmtk_run_final_job(struct MMTk_FinalJob *job)
             if (rb_gc_obj_free_on_exit_started()) {
                 rb_bug("Finalize job still exists after obj_free on exit has started.");
             }
-            run_finalizer(&rb_objspace,
+            rb_objspace_t *objspace = rb_gc_get_objspace();
+            run_finalizer(objspace,
                             job->as.finalize.observed_id,
                             job->as.finalize.finalizer_array);
             break;
@@ -10549,7 +10550,8 @@ rb_mmtk_on_obj_to_id_tbl_delete(st_data_t key, st_data_t value, void *arg)
         RUBY_DEBUG_LOG("Deleting from id_to_obj_tbl: obj=%p, id=BigNum@%p)", (void*)key, (void*)value);
     }
 #endif
-    int result = rb_st_delete(rb_objspace.id_to_obj_tbl, &value, NULL);
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    int result = rb_st_delete(objspace->id_to_obj_tbl, &value, NULL);
     RUBY_ASSERT_ALWAYS(result != 0);
 }
 
@@ -10586,7 +10588,7 @@ void
 rb_mmtk_update_finalizer_table(void)
 {
     // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
 
     // This table maps object addresses to its finalizer functions (held in an array).
     // Not all keys point to live objects.
@@ -10603,11 +10605,11 @@ rb_mmtk_update_finalizer_table(void)
 void
 rb_mmtk_update_obj_id_tables(void)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
 
     // Update the obj_to_id_tbl first, and remove dead objects from both
     // obj_to_id_tbl and id_to_obj_tbl.
-    rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
+    rb_mmtk_update_weak_table(objspace->obj_to_id_tbl,
                               true,
                               RB_MMTK_VALUES_NON_REF,
                               rb_mmtk_on_obj_to_id_tbl_delete,
@@ -10676,14 +10678,15 @@ rb_mmtk_get_frozen_strings_table(void)
 st_table*
 rb_mmtk_get_finalizer_table(void)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     return finalizer_table;
 }
 
 st_table*
 rb_mmtk_get_obj_id_tables(void)
 {
-    return rb_objspace.obj_to_id_tbl;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    return objspace->obj_to_id_tbl;
 }
 
 st_table*
@@ -10715,36 +10718,37 @@ rb_mmtk_scan_final_jobs_roots(void)
 void
 rb_mmtk_mark_children(VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     gc_mark_children(objspace, obj);
 }
 
 void
 rb_mmtk_update_object_references(VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     gc_update_object_references(objspace, obj);
 }
 
 void
 rb_mmtk_obj_free(VALUE obj)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     obj_free(objspace, obj);
 }
 
 void
 rb_mmtk_set_during_gc(bool is_during_gc)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     during_gc = is_during_gc ? 1 : 0;
 }
 
 void
 rb_mmtk_get_vanilla_times(uint64_t *mark, uint64_t *sweep)
 {
-    *mark = rb_objspace.profile.marking_time_ns;
-    *sweep = rb_objspace.profile.sweeping_time_ns;
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    *mark = objspace->profile.marking_time_ns;
+    *sweep = objspace->profile.sweeping_time_ns;
 }
 
 VALUE
