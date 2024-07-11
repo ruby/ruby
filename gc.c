@@ -3647,9 +3647,9 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         if (rb_mmtk_enabled_p()) {
             // If GC is triggered when the mutator is resizing the following buffers, we retain
             // them because their contents need to be copied to the new buffers after GC.
-            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->char_offset, true);
-            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.beg, true);
-            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(any)->regs.end, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(obj)->char_offset, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(obj)->regs.beg, true);
+            rb_mmtk_scan_offsetted_strbuf_field((char**)&RMATCH_EXT(obj)->regs.end, true);
         }
 #endif
 
