@@ -29,6 +29,7 @@
 #include "darray.h"
 #include "probes.h"
 #include "vm_sync.h"
+#include "internal/eval.h"
 
 #include "debug_counter.h"
 #include "internal/sanitizers.h"
