@@ -7794,53 +7794,6 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     return src;
 }
 
-#if USE_MMTK
-static void
-rb_mmtk_gc_ref_update_string(rb_objspace_t * objspace, VALUE str)
-{
-     if (STR_EMBED_P(str)) {
-        // Embedded strings don't point into any buffer.
-        return;
-    }
-
-    if (rb_mmtk_str_no_free(str)) {
-        // It is a "heap" string, but `as.heap.ptr` points to static C string.
-        // Skip it.
-        return;
-    }
-
-    if (STR_SHARED_P(str)) {
-        VALUE old_root = RSTRING(str)->as.heap.aux.shared;
-        UPDATE_IF_MOVED(objspace, RSTRING(str)->as.heap.aux.shared);
-        VALUE new_root = RSTRING(str)->as.heap.aux.shared;
-
-        // Note: For evacuating collectors such as Immix, `new_root` points into the to-space,
-        // and the object is guaranteed to be readable.  But `old_root` may point to the from-space
-        // which is no longer readable now.
-        if (STR_EMBED_P(new_root)) {
-            // If the shared root is embedded, `RSTRING(str)->as.heap.ptr` points into the embedded
-            // `ary` of the root.  Adjust the pointer, preserving the offset.
-            size_t offset = (size_t)RSTRING(str)->as.heap.ptr - (size_t)old_root;
-            RSTRING(str)->as.heap.ptr = (char*)(new_root + offset);
-            return;
-        }
-
-        // If the shared root is not embedded, then `RSTRING(str)->as.heap.ptr` points into the
-        // imemo:mmtk_strbuf which `RSTRING_EXT(new_root)->strbuf` points to.
-        // Just fall through and adjust `ptr` according to `RSTRING_EXT(str)->strbuf`.
-    }
-
-    // Otherwise the RSTRING_EXT(obj)->strbuf field always points to the underlying imemo:mmtk_strbuf.
-    VALUE old_strbuf = RSTRING_EXT(str)->strbuf;
-    UPDATE_IF_MOVED(objspace, RSTRING_EXT(str)->strbuf);
-    VALUE new_strbuf = RSTRING_EXT(str)->strbuf;
-    size_t offset = (size_t)RSTRING(str)->as.heap.ptr - (size_t)old_strbuf;
-    RSTRING(str)->as.heap.ptr = (char*)(new_strbuf + offset);
-
-    // Currently the size of the string cannot change during GC.
-}
-#endif
-
 #if GC_CAN_COMPILE_COMPACTION
 static int
 compare_pinned_slots(const void *left, const void *right, void *dummy)
