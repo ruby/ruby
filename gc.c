@@ -467,7 +467,7 @@ int ruby_gc_debug_indent = 0;
 #endif
 
 #ifndef CALC_EXACT_MALLOC_SIZE
-# define CALC_EXACT_MALLOC_SIZE USE_GC_MALLOC_OBJ_INFO_DETAILS
+# define CALC_EXACT_MALLOC_SIZE 0
 #endif
 
 VALUE rb_mGC;
@@ -4313,63 +4313,13 @@ rb_memerror(void)
     EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
-#if CALC_EXACT_MALLOC_SIZE && USE_GC_MALLOC_OBJ_INFO_DETAILS
-
-#define MALLOC_INFO_GEN_SIZE 100
-#define MALLOC_INFO_SIZE_SIZE 10
-static size_t malloc_info_gen_cnt[MALLOC_INFO_GEN_SIZE];
-static size_t malloc_info_gen_size[MALLOC_INFO_GEN_SIZE];
-static size_t malloc_info_size[MALLOC_INFO_SIZE_SIZE+1];
-static st_table *malloc_info_file_table;
-
-static int
-mmalloc_info_file_i(st_data_t key, st_data_t val, st_data_t dmy)
-{
-    const char *file = (void *)key;
-    const size_t *data = (void *)val;
-
-    fprintf(stderr, "%s\t%"PRIdSIZE"\t%"PRIdSIZE"\n", file, data[0], data[1]);
-
-    return ST_CONTINUE;
-}
-
-__attribute__((destructor))
-void
-rb_malloc_info_show_results(void)
-{
-    int i;
-
-    fprintf(stderr, "* malloc_info gen statistics\n");
-    for (i=0; i<MALLOC_INFO_GEN_SIZE; i++) {
-        if (i == MALLOC_INFO_GEN_SIZE-1) {
-            fprintf(stderr, "more\t%"PRIdSIZE"\t%"PRIdSIZE"\n", malloc_info_gen_cnt[i], malloc_info_gen_size[i]);
-        }
-        else {
-            fprintf(stderr, "%d\t%"PRIdSIZE"\t%"PRIdSIZE"\n", i, malloc_info_gen_cnt[i], malloc_info_gen_size[i]);
-        }
-    }
-
-    fprintf(stderr, "* malloc_info size statistics\n");
-    for (i=0; i<MALLOC_INFO_SIZE_SIZE; i++) {
-        int s = 16 << i;
-        fprintf(stderr, "%d\t%"PRIdSIZE"\n", s, malloc_info_size[i]);
-    }
-    fprintf(stderr, "more\t%"PRIdSIZE"\n", malloc_info_size[i]);
-
-    if (malloc_info_file_table) {
-        fprintf(stderr, "* malloc_info file statistics\n");
-        st_foreach(malloc_info_file_table, mmalloc_info_file_i, 0);
-    }
-}
-#else
 void
 rb_malloc_info_show_results(void)
 {
 }
-#endif
 
 void *
-ruby_xmalloc_body(size_t size)
+ruby_xmalloc(size_t size)
 {
     if ((ssize_t)size < 0) {
         negative_size_allocation_error("too large allocation size");
@@ -4393,13 +4343,13 @@ xmalloc2_size(const size_t count, const size_t elsize)
 }
 
 void *
-ruby_xmalloc2_body(size_t n, size_t size)
+ruby_xmalloc2(size_t n, size_t size)
 {
     return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
 }
 
 void *
-ruby_xcalloc_body(size_t n, size_t size)
+ruby_xcalloc(size_t n, size_t size)
 {
     return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
 }
@@ -4418,7 +4368,7 @@ ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
 }
 
 void *
-ruby_xrealloc_body(void *ptr, size_t new_size)
+ruby_xrealloc(void *ptr, size_t new_size)
 {
     return ruby_sized_xrealloc(ptr, new_size, 0);
 }
@@ -4434,7 +4384,7 @@ ruby_sized_xrealloc2(void *ptr, size_t n, size_t size, size_t old_n)
 }
 
 void *
-ruby_xrealloc2_body(void *ptr, size_t n, size_t size)
+ruby_xrealloc2(void *ptr, size_t n, size_t size)
 {
     return ruby_sized_xrealloc2(ptr, n, size, 0);
 }
@@ -4519,11 +4469,6 @@ ruby_mimmalloc(size_t size)
     {
         struct malloc_obj_info *info = mem;
         info->size = 0;
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-        info->gen = 0;
-        info->file = NULL;
-        info->line = 0;
-#endif
         mem = info + 1;
     }
 #endif
@@ -4549,11 +4494,6 @@ ruby_mimcalloc(size_t num, size_t size)
     {
         struct malloc_obj_info *info = mem;
         info->size = 0;
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-        info->gen = 0;
-        info->file = NULL;
-        info->line = 0;
-#endif
         mem = info + 1;
     }
 #else
@@ -4672,70 +4612,4 @@ Init_GC(void)
     rb_define_module_function(rb_mObjSpace, "count_objects", count_objects, -1);
 
     rb_gc_impl_init();
-}
-
-#ifdef ruby_xmalloc
-#undef ruby_xmalloc
-#endif
-#ifdef ruby_xmalloc2
-#undef ruby_xmalloc2
-#endif
-#ifdef ruby_xcalloc
-#undef ruby_xcalloc
-#endif
-#ifdef ruby_xrealloc
-#undef ruby_xrealloc
-#endif
-#ifdef ruby_xrealloc2
-#undef ruby_xrealloc2
-#endif
-
-void *
-ruby_xmalloc(size_t size)
-{
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    ruby_malloc_info_file = __FILE__;
-    ruby_malloc_info_line = __LINE__;
-#endif
-    return ruby_xmalloc_body(size);
-}
-
-void *
-ruby_xmalloc2(size_t n, size_t size)
-{
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    ruby_malloc_info_file = __FILE__;
-    ruby_malloc_info_line = __LINE__;
-#endif
-    return ruby_xmalloc2_body(n, size);
-}
-
-void *
-ruby_xcalloc(size_t n, size_t size)
-{
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    ruby_malloc_info_file = __FILE__;
-    ruby_malloc_info_line = __LINE__;
-#endif
-    return ruby_xcalloc_body(n, size);
-}
-
-void *
-ruby_xrealloc(void *ptr, size_t new_size)
-{
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    ruby_malloc_info_file = __FILE__;
-    ruby_malloc_info_line = __LINE__;
-#endif
-    return ruby_xrealloc_body(ptr, new_size);
-}
-
-void *
-ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
-{
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
-    ruby_malloc_info_file = __FILE__;
-    ruby_malloc_info_line = __LINE__;
-#endif
-    return ruby_xrealloc2_body(ptr, n, new_size);
 }
