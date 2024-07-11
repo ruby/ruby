@@ -55,7 +55,19 @@ module Prism
         # a and b
         # ^^^^^^^
         def visit_and_node(node)
-          s(node, :and, visit(node.left), visit(node.right))
+          left = visit(node.left)
+
+          if left[0] == :and
+            # ruby_parser has the and keyword as right-associative as opposed to
+            # prism which has it as left-associative. We reverse that
+            # associativity here.
+            nest = left
+            nest = nest[2] while nest[2][0] == :and
+            nest[2] = s(node, :and, nest[2], visit(node.right))
+            left
+          else
+            s(node, :and, left, visit(node.right))
+          end
         end
 
         # []
@@ -1136,7 +1148,19 @@ module Prism
         # a or b
         # ^^^^^^
         def visit_or_node(node)
-          s(node, :or, visit(node.left), visit(node.right))
+          left = visit(node.left)
+
+          if left[0] == :or
+            # ruby_parser has the or keyword as right-associative as opposed to
+            # prism which has it as left-associative. We reverse that
+            # associativity here.
+            nest = left
+            nest = nest[2] while nest[2][0] == :or
+            nest[2] = s(node, :or, nest[2], visit(node.right))
+            left
+          else
+            s(node, :or, left, visit(node.right))
+          end
         end
 
         # def foo(bar, *baz); end
