@@ -8428,6 +8428,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(heap_marked_slots, objspace->marked_slots);
     SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(heap_tomb_pages, heap_tomb_total_pages(objspace));
+    SET(total_allocated_pages, total_allocated_pages(objspace));
     SET(total_freed_pages, total_freed_pages(objspace));
     SET(total_allocated_objects, total_allocated_objects(objspace));
     SET(total_freed_objects, total_freed_objects(objspace));
