@@ -3614,6 +3614,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     INSN_OF(prev) = BIN(adjuststack);
                 }
             }
+            else if (previ == BIN(opt_getconstant_path)) {
+                ISEQ_BODY(iseq)->ic_size--;
+                ELEM_REMOVE(prev);
+                ELEM_REMOVE(&iobj->link);
+            }
         }
     }
 
