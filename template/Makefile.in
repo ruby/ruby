@@ -446,8 +446,8 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	fi
 
 gc_impl.$(OBJEXT): gc/$(BUILTIN_GC).c probes.h
-	@$(ECHO) compiling $<
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
+	@$(ECHO) compiling $(srcdir)/gc/$(BUILTIN_GC).c
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(srcdir)/gc/$(BUILTIN_GC).c
 
 .c.$(OBJEXT):
 	@$(ECHO) compiling $<
