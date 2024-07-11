@@ -906,17 +906,17 @@ impl Context {
     // Store an entry in a cache of recently encoded/decoded contexts
     fn cache_set(ctx: &Context, idx: u32)
     {
+        // Compute the hash for this context
+        let mut hasher = DefaultHasher::new();
+        ctx.hash(&mut hasher);
+        let ctx_hash = hasher.finish() as usize;
+
         unsafe {
             // Lazily initialize the context cache
             if CTX_CACHE == None {
                 let empty_tbl = [(Context::default(), 0); CTX_CACHE_SIZE];
                 CTX_CACHE = Some(Box::new(empty_tbl));
             }
-
-            // Compute the hash for this context
-            let mut hasher = DefaultHasher::new();
-            ctx.hash(&mut hasher);
-            let ctx_hash = hasher.finish() as usize;
 
             // Write a cache entry for this context
             let cache = CTX_CACHE.as_mut().unwrap();
@@ -927,17 +927,17 @@ impl Context {
     // Lookup the context in a cache of recently encoded/decoded contexts
     fn cache_get(ctx: &Context) -> Option<u32>
     {
+        // Compute the hash for this context
+        let mut hasher = DefaultHasher::new();
+        ctx.hash(&mut hasher);
+        let ctx_hash = hasher.finish() as usize;
+
         unsafe {
             if CTX_CACHE == None {
                 return None;
             }
 
             let cache = CTX_CACHE.as_mut().unwrap();
-
-            // Compute the hash for this context
-            let mut hasher = DefaultHasher::new();
-            ctx.hash(&mut hasher);
-            let ctx_hash = hasher.finish() as usize;
 
             // Check that the context for this cache entry mmatches
             let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
