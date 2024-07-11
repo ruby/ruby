@@ -28,6 +28,7 @@
 #include "ccan/list/list.h"
 #include "darray.h"
 #include "probes.h"
+#include "vm_sync.h"
 
 #include "debug_counter.h"
 #include "internal/sanitizers.h"
