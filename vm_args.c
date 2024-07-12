@@ -734,6 +734,32 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                     }
                     given_argc--;
                 }
+                else if (!ISEQ_BODY(iseq)->param.flags.has_rest) {
+                    // Avoid duping rest when not necessary
+                    // Copy rest elements and converted keyword hash directly to VM stack
+                    const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+                    int j, i=args->argc, rest_len = RARRAY_LENINT(args->rest)-1;
+                    args->argc += rest_len;
+                    if (rest_len) {
+                        CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
+                        for (i, j=0; rest_len > 0; rest_len--, i++, j++) {
+                            locals[i] = argv[j];
+                        }
+                    }
+                    args->rest = Qfalse;
+                    ci_flag &= ~VM_CALL_ARGS_SPLAT;
+
+                    if (ISEQ_BODY(iseq)->param.flags.has_kw || ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                        given_argc--;
+                        keyword_hash = converted_keyword_hash;
+                    }
+                    else {
+                        args->argc += 1;
+                        locals[i] = converted_keyword_hash;
+                        keyword_hash = Qnil;
+                        kw_flag = 0;
+                    }
+                }
                 else {
                     if (rest_last != converted_keyword_hash) {
                         rest_last = converted_keyword_hash;
