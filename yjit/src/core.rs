@@ -531,7 +531,7 @@ pub struct Context {
     // This represents how far the JIT's SP is from the "real" SP
     sp_offset: i8,
 
-    /// Bitmap of which stack temps are in a register
+    /// Which stack temps or locals are in a register
     reg_temps: RegTemps,
 
     /// Fields packed into u8
@@ -1019,7 +1019,7 @@ impl Context {
             bits.push_u8(self.sp_offset as u8);
         }
 
-        // Which stack temps are in a register
+        // Which stack temps or locals are in a register
         for &temp in self.reg_temps.0.iter() {
             if let Some(temp) = temp {
                 bits.push_u1(1); // Some
@@ -1116,7 +1116,7 @@ impl Context {
             ctx.sp_offset = bits.read_u8(&mut idx) as i8;
         }
 
-        // Which stack temps are in a register
+        // Which stack temps or locals are in a register
         for index in 0..MAX_TEMP_REGS {
             if bits.read_u1(&mut idx) == 1 { // Some
                 let temp = if bits.read_u1(&mut idx) == 0 { // RegTemp::Stack
