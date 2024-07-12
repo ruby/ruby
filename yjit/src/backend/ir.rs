@@ -6,7 +6,7 @@ use crate::codegen::{gen_counted_exit, gen_outlined_exit};
 use crate::cruby::{vm_stack_canary, SIZEOF_VALUE_I32, VALUE, VM_ENV_DATA_SIZE};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, OutlinedCb};
-use crate::core::{Context, RegTemp, RegTemps, MAX_REG_TEMPS};
+use crate::core::{Context, RegMapping, RegMappings, MAX_REG_MAPPINGS};
 use crate::options::*;
 use crate::stats::*;
 
@@ -81,8 +81,8 @@ pub enum Opnd
         local_size: Option<u32>,
         /// ctx.sp_offset when this operand is made. Used with idx for Opnd::Mem.
         sp_offset: i8,
-        /// ctx.reg_temps when this operand is read. Used for register allocation.
-        reg_temps: Option<RegTemps>
+        /// ctx.reg_mappings when this operand is read. Used for register allocation.
+        reg_mappings: Option<RegMappings>
     },
 
     // Low-level operands, for lowering
@@ -174,7 +174,7 @@ impl Opnd
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
             Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
-            Opnd::Stack { idx, stack_size, local_size, sp_offset, reg_temps, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_temps }),
+            Opnd::Stack { idx, stack_size, local_size, sp_offset, reg_mappings, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mappings }),
             _ => None,
         }
     }
@@ -229,23 +229,23 @@ impl Opnd
         Self::match_num_bits_iter(opnds.iter())
     }
 
-    /// Convert Opnd::Stack into RegTemp
-    pub fn reg_temp(&self) -> RegTemp {
-        self.get_reg_temp().unwrap()
+    /// Convert Opnd::Stack into RegMapping
+    pub fn reg_mapping(&self) -> RegMapping {
+        self.get_reg_mapping().unwrap()
     }
 
-    /// Convert an operand into RegTemp if it's Opnd::Stack
-    pub fn get_reg_temp(&self) -> Option<RegTemp> {
+    /// Convert an operand into RegMapping if it's Opnd::Stack
+    pub fn get_reg_mapping(&self) -> Option<RegMapping> {
         match *self {
             Opnd::Stack { idx, stack_size, local_size, .. } => Some(
                 if let Some(local_size) = local_size {
                     let last_idx = stack_size as i32 + VM_ENV_DATA_SIZE as i32 - 1;
                     assert!(last_idx <= idx, "Local index {} must be >= last local index {}", idx, last_idx);
                     assert!(idx <= last_idx + local_size as i32, "Local index {} must be < last local index {} + local size {}", idx, last_idx, local_size);
-                    RegTemp::Local((last_idx + local_size as i32 - idx) as u8)
+                    RegMapping::Local((last_idx + local_size as i32 - idx) as u8)
                 } else {
                     assert!(idx < stack_size as i32);
-                    RegTemp::Stack((stack_size as i32 - idx - 1) as u8)
+                    RegMapping::Stack((stack_size as i32 - idx - 1) as u8)
                 }
             ),
             _ => None,
@@ -974,7 +974,7 @@ pub struct SideExitContext {
     /// Context fields used by get_generic_ctx()
     pub stack_size: u8,
     pub sp_offset: i8,
-    pub reg_temps: RegTemps,
+    pub reg_mappings: RegMappings,
     pub is_return_landing: bool,
     pub is_deferred: bool,
 }
@@ -986,7 +986,7 @@ impl SideExitContext {
             pc,
             stack_size: ctx.get_stack_size(),
             sp_offset: ctx.get_sp_offset(),
-            reg_temps: ctx.get_reg_temps(),
+            reg_mappings: ctx.get_reg_mappings(),
             is_return_landing: ctx.is_return_landing(),
             is_deferred: ctx.is_deferred(),
         };
@@ -1002,7 +1002,7 @@ impl SideExitContext {
         let mut ctx = Context::default();
         ctx.set_stack_size(self.stack_size);
         ctx.set_sp_offset(self.sp_offset);
-        ctx.set_reg_temps(self.reg_temps);
+        ctx.set_reg_mappings(self.reg_mappings);
         if self.is_return_landing {
             ctx.set_as_return_landing();
         }
@@ -1110,8 +1110,8 @@ impl Assembler
                     assert!(idx < self.insns.len());
                     self.live_ranges[idx] = insn_idx;
                 }
-                // Set current ctx.reg_temps to Opnd::Stack.
-                Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_temps: None } => {
+                // Set current ctx.reg_mappings to Opnd::Stack.
+                Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mappings: None } => {
                     assert_eq!(
                         self.ctx.get_stack_size() as i16 - self.ctx.get_sp_offset() as i16,
                         stack_size as i16 - sp_offset as i16,
@@ -1124,7 +1124,7 @@ impl Assembler
                         stack_size,
                         local_size,
                         sp_offset,
-                        reg_temps: Some(self.ctx.get_reg_temps()),
+                        reg_mappings: Some(self.ctx.get_reg_mappings()),
                     };
                 }
                 _ => {}
@@ -1196,8 +1196,8 @@ impl Assembler
         }
 
         match opnd {
-            Opnd::Stack { reg_temps, .. } => {
-                if let Some(reg_idx) = reg_temps.unwrap().get_reg(opnd.reg_temp()) {
+            Opnd::Stack { reg_mappings, .. } => {
+                if let Some(reg_idx) = reg_mappings.unwrap().get_reg(opnd.reg_mapping()) {
                     reg_opnd(opnd, reg_idx)
                 } else {
                     mem_opnd(opnd)
@@ -1208,11 +1208,11 @@ impl Assembler
     }
 
     /// Allocate a register to a stack temp if available.
-    pub fn alloc_temp_reg(&mut self, reg_temp: RegTemp) {
+    pub fn alloc_reg(&mut self, mapping: RegMapping) {
         // Allocate a register if there's no conflict.
-        let mut reg_temps = self.ctx.get_reg_temps();
-        if reg_temps.alloc_reg(reg_temp) {
-            self.set_reg_temps(reg_temps);
+        let mut reg_mappings = self.ctx.get_reg_mappings();
+        if reg_mappings.alloc_reg(mapping) {
+            self.set_reg_mappings(reg_mappings);
         }
     }
 
@@ -1226,55 +1226,55 @@ impl Assembler
     /// Spill all live stack temps from registers to the stack
     pub fn spill_temps(&mut self) {
         // Forget registers above the stack top
-        let mut reg_temps = self.ctx.get_reg_temps();
-        for stack_idx in self.ctx.get_stack_size()..MAX_REG_TEMPS {
-            reg_temps.dealloc_reg(RegTemp::Stack(stack_idx));
+        let mut reg_mappings = self.ctx.get_reg_mappings();
+        for stack_idx in self.ctx.get_stack_size()..MAX_REG_MAPPINGS {
+            reg_mappings.dealloc_reg(RegMapping::Stack(stack_idx));
         }
-        self.set_reg_temps(reg_temps);
+        self.set_reg_mappings(reg_mappings);
 
         // Spill live stack temps
-        if self.ctx.get_reg_temps() != RegTemps::default() {
-            asm_comment!(self, "spill_temps: {:?} -> {:?}", self.ctx.get_reg_temps(), RegTemps::default());
+        if self.ctx.get_reg_mappings() != RegMappings::default() {
+            asm_comment!(self, "spill_temps: {:?} -> {:?}", self.ctx.get_reg_mappings(), RegMappings::default());
 
             // Spill stack temps
-            for stack_idx in 0..u8::min(MAX_REG_TEMPS, self.ctx.get_stack_size()) {
-                if reg_temps.dealloc_reg(RegTemp::Stack(stack_idx)) {
+            for stack_idx in 0..u8::min(MAX_REG_MAPPINGS, self.ctx.get_stack_size()) {
+                if reg_mappings.dealloc_reg(RegMapping::Stack(stack_idx)) {
                     let idx = self.ctx.get_stack_size() - 1 - stack_idx;
                     self.spill_temp(self.stack_opnd(idx.into()));
                 }
             }
 
             // Spill locals
-            for local_idx in 0..MAX_REG_TEMPS {
-                if reg_temps.dealloc_reg(RegTemp::Local(local_idx)) {
+            for local_idx in 0..MAX_REG_MAPPINGS {
+                if reg_mappings.dealloc_reg(RegMapping::Local(local_idx)) {
                     let first_local_ep_offset = self.local_size.unwrap() + VM_ENV_DATA_SIZE - 1;
                     let ep_offset = first_local_ep_offset - local_idx as u32;
                     self.spill_temp(self.local_opnd(ep_offset));
                 }
             }
 
-            self.ctx.set_reg_temps(reg_temps);
+            self.ctx.set_reg_mappings(reg_mappings);
         }
 
         // Every stack temp should have been spilled
-        assert_eq!(self.ctx.get_reg_temps(), RegTemps::default());
+        assert_eq!(self.ctx.get_reg_mappings(), RegMappings::default());
     }
 
     /// Spill a stack temp from a register to the stack
     fn spill_temp(&mut self, opnd: Opnd) {
-        assert_ne!(self.ctx.get_reg_temps().get_reg(opnd.reg_temp()), None);
+        assert_ne!(self.ctx.get_reg_mappings().get_reg(opnd.reg_mapping()), None);
 
-        // Use different RegTemps for dest and src operands
-        let reg_temps = self.ctx.get_reg_temps();
-        let mut mem_temps = reg_temps;
-        mem_temps.dealloc_reg(opnd.reg_temp());
+        // Use different RegMappings for dest and src operands
+        let reg_mappings = self.ctx.get_reg_mappings();
+        let mut mem_mappings = reg_mappings;
+        mem_mappings.dealloc_reg(opnd.reg_mapping());
 
         // Move the stack operand from a register to memory
         match opnd {
             Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, .. } => {
                 self.mov(
-                    Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_temps: Some(mem_temps) },
-                    Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_temps: Some(reg_temps) },
+                    Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mappings: Some(mem_mappings) },
+                    Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mappings: Some(reg_mappings) },
                 );
             }
             _ => unreachable!(),
@@ -1283,10 +1283,10 @@ impl Assembler
     }
 
     /// Update which stack temps are in a register
-    pub fn set_reg_temps(&mut self, reg_temps: RegTemps) {
-        if self.ctx.get_reg_temps() != reg_temps {
-            asm_comment!(self, "reg_temps: {:?} -> {:?}", self.ctx.get_reg_temps(), reg_temps);
-            self.ctx.set_reg_temps(reg_temps);
+    pub fn set_reg_mappings(&mut self, reg_mappings: RegMappings) {
+        if self.ctx.get_reg_mappings() != reg_mappings {
+            asm_comment!(self, "reg_mappings: {:?} -> {:?}", self.ctx.get_reg_mappings(), reg_mappings);
+            self.ctx.set_reg_mappings(reg_mappings);
         }
     }
 
@@ -1707,24 +1707,24 @@ impl Assembler {
         // Let vm_check_canary() assert this ccall's leafness if leaf_ccall is set
         let canary_opnd = self.set_stack_canary(&opnds);
 
-        let old_temps = self.ctx.get_reg_temps(); // with registers
+        let old_temps = self.ctx.get_reg_mappings(); // with registers
         // Spill stack temp registers since they are caller-saved registers.
         // Note that this doesn't spill stack temps that are already popped
         // but may still be used in the C arguments.
         self.spill_temps();
-        let new_temps = self.ctx.get_reg_temps(); // all spilled
+        let new_temps = self.ctx.get_reg_mappings(); // all spilled
 
-        // Temporarily manipulate RegTemps so that we can use registers
+        // Temporarily manipulate RegMappings so that we can use registers
         // to pass stack operands that are already spilled above.
-        self.ctx.set_reg_temps(old_temps);
+        self.ctx.set_reg_mappings(old_temps);
 
         // Call a C function
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, out });
 
         // Registers in old_temps may be clobbered by the above C call,
-        // so rollback the manipulated RegTemps to a spilled version.
-        self.ctx.set_reg_temps(new_temps);
+        // so rollback the manipulated RegMappings to a spilled version.
+        self.ctx.set_reg_mappings(new_temps);
 
         // Clear the canary after use
         if let Some(canary_opnd) = canary_opnd {
@@ -1742,7 +1742,7 @@ impl Assembler {
         // If the slot is already used, which is a valid optimization to avoid spills,
         // give up the verification.
         let canary_opnd = if cfg!(debug_assertions) && self.leaf_ccall && opnds.iter().all(|opnd|
-            opnd.get_reg_temp() != canary_opnd.get_reg_temp()
+            opnd.get_reg_mapping() != canary_opnd.get_reg_mapping()
         ) {
             asm_comment!(self, "set stack canary");
             self.mov(canary_opnd, vm_stack_canary().into());
@@ -1771,9 +1771,9 @@ impl Assembler {
     pub fn cpop_all(&mut self) {
         self.push_insn(Insn::CPopAll);
 
-        // Re-enable ccall's RegTemps assertion disabled by cpush_all.
+        // Re-enable ccall's RegMappings assertion disabled by cpush_all.
         // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
-        self.set_reg_temps(self.ctx.get_reg_temps());
+        self.set_reg_mappings(self.ctx.get_reg_mappings());
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
@@ -1791,7 +1791,7 @@ impl Assembler {
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
         // that don't require spill_temps for GC.
-        self.set_reg_temps(RegTemps::default());
+        self.set_reg_mappings(RegMappings::default());
     }
 
     pub fn cret(&mut self, opnd: Opnd) {

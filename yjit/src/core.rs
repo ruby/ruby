@@ -411,53 +411,53 @@ impl From<Opnd> for YARVOpnd {
     }
 }
 
-/// Number of registers that can be used for stack temps
-pub const MAX_TEMP_REGS: usize = 5;
+/// Number of registers that can be used for stack temps or locals
+pub const MAX_MAPPED_REGS: usize = 5;
 
-/// Maximum index of stack temps that could be in a register
-pub const MAX_REG_TEMPS: u8 = 8;
+/// Maximum index of stack temps or locals that could be in a register
+pub const MAX_REG_MAPPINGS: u8 = 8;
 
 /// A stack slot or a local variable. u8 represents the index of it (<= 8).
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
-pub enum RegTemp {
+pub enum RegMapping {
     Stack(u8),
     Local(u8),
 }
 
-/// RegTemps manages a set of registers used for temporary values on the stack.
+/// RegMappings manages a set of registers used for temporary values on the stack.
 /// Each element of the array represents each of the registers.
 /// If an element is Some, the temporary value uses a register.
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq)]
-pub struct RegTemps([Option<RegTemp>; MAX_TEMP_REGS]);
+pub struct RegMappings([Option<RegMapping>; MAX_MAPPED_REGS]);
 
-impl RegTemps {
+impl RegMappings {
     /// Return the index of the register for a given stack value if allocated.
-    pub fn get_reg(&self, temp: RegTemp) -> Option<usize> {
+    pub fn get_reg(&self, mapping: RegMapping) -> Option<usize> {
         self.0.iter().enumerate()
-            .find(|(_, &reg_temp)| reg_temp == Some(temp))
+            .find(|(_, &reg_mapping)| reg_mapping == Some(mapping))
             .map(|(reg_idx, _)| reg_idx)
     }
 
     /// Allocate a register for a given stack value if available.
     /// Return true if self is updated.
-    pub fn alloc_reg(&mut self, temp: RegTemp) -> bool {
-        // If a given temp already has a register, skip allocation.
-        if self.get_reg(temp).is_some() {
+    pub fn alloc_reg(&mut self, mapping: RegMapping) -> bool {
+        // If a given mapping already has a register, skip allocation.
+        if self.get_reg(mapping).is_some() {
             return false;
         }
 
         // If the index is too large to encode with with 3 bits, give up.
-        let temp_idx = match temp {
-            RegTemp::Stack(stack_idx) => stack_idx,
-            RegTemp::Local(local_idx) => local_idx,
+        let temp_idx = match mapping {
+            RegMapping::Stack(stack_idx) => stack_idx,
+            RegMapping::Local(local_idx) => local_idx,
         };
-        if temp_idx >= MAX_REG_TEMPS {
+        if temp_idx >= MAX_REG_MAPPINGS {
             return false;
         }
 
         // Allocate a register if available.
-        if let Some(reg_idx) = self.find_unused_reg(temp) {
-            self.0[reg_idx] = Some(temp);
+        if let Some(reg_idx) = self.find_unused_reg(mapping) {
+            self.0[reg_idx] = Some(mapping);
             return true;
         }
         false
@@ -465,10 +465,10 @@ impl RegTemps {
 
     /// Deallocate a register for a given stack value if in use.
     /// Return true if self is updated.
-    pub fn dealloc_reg(&mut self, temp: RegTemp) -> bool {
-        for reg_temp in self.0.iter_mut() {
-            if *reg_temp == Some(temp) {
-                *reg_temp = None;
+    pub fn dealloc_reg(&mut self, mapping: RegMapping) -> bool {
+        for reg_mapping in self.0.iter_mut() {
+            if *reg_mapping == Some(mapping) {
+                *reg_mapping = None;
                 return true;
             }
         }
@@ -476,16 +476,16 @@ impl RegTemps {
     }
 
     /// Find an available register and return the index of it.
-    fn find_unused_reg(&self, temp: RegTemp) -> Option<usize> {
+    fn find_unused_reg(&self, mapping: RegMapping) -> Option<usize> {
         if get_option!(num_temp_regs) == 0 {
             return None;
         }
 
         // If the default index for the stack value is available, use that to minimize
         // discrepancies among Contexts.
-        let default_idx = match temp {
-            RegTemp::Stack(stack_idx) => stack_idx.as_usize() % MAX_TEMP_REGS,
-            RegTemp::Local(local_idx) => MAX_TEMP_REGS - (local_idx.as_usize() % MAX_TEMP_REGS) - 1,
+        let default_idx = match mapping {
+            RegMapping::Stack(stack_idx) => stack_idx.as_usize() % MAX_MAPPED_REGS,
+            RegMapping::Local(local_idx) => MAX_MAPPED_REGS - (local_idx.as_usize() % MAX_MAPPED_REGS) - 1,
         };
         if self.0[default_idx].is_none() {
             return Some(default_idx);
@@ -494,15 +494,15 @@ impl RegTemps {
         // If not, pick any other available register. Like default indexes, prefer
         // lower indexes for Stack, and higher indexes for Local.
         let mut index_temps = self.0.iter().enumerate();
-        match temp {
-            RegTemp::Stack(_) => index_temps.find(|(_, temp)| temp.is_none()),
-            RegTemp::Local(_) => index_temps.rev().find(|(_, temp)| temp.is_none()),
+        match mapping {
+            RegMapping::Stack(_) => index_temps.find(|(_, mapping)| mapping.is_none()),
+            RegMapping::Local(_) => index_temps.rev().find(|(_, mapping)| mapping.is_none()),
         }.map(|(index, _)| index)
     }
 }
 
-impl fmt::Debug for RegTemps {
-    /// Print `[None, ...]` instead of the default `RegTemps([None, ...])`
+impl fmt::Debug for RegMappings {
+    /// Print `[None, ...]` instead of the default `RegMappings([None, ...])`
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{:?}", self.0)
     }
@@ -532,7 +532,7 @@ pub struct Context {
     sp_offset: i8,
 
     /// Which stack temps or locals are in a register
-    reg_temps: RegTemps,
+    reg_mappings: RegMappings,
 
     /// Fields packed into u8
     /// - 1st bit from the left: Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
@@ -844,7 +844,7 @@ mod bitvector_tests {
         let idx0 = ctx0.encode_into(&mut bits);
 
         let mut ctx1 = Context::default();
-        ctx1.reg_temps = RegTemps([Some(RegTemp::Stack(0)), None, None, None, None]);
+        ctx1.reg_mappings = RegMappings([Some(RegMapping::Stack(0)), None, None, None, None]);
         let idx1 = ctx1.encode_into(&mut bits);
 
         // Make sure that we can encode two contexts successively
@@ -855,10 +855,10 @@ mod bitvector_tests {
     }
 
     #[test]
-    fn regress_reg_temps() {
+    fn regress_reg_mappings() {
         let mut bits = BitVector::new();
         let mut ctx = Context::default();
-        ctx.reg_temps = RegTemps([Some(RegTemp::Stack(0)), None, None, None, None]);
+        ctx.reg_mappings = RegMappings([Some(RegMapping::Stack(0)), None, None, None, None]);
         ctx.encode_into(&mut bits);
 
         let b0 = bits.read_u1(&mut 0);
@@ -1020,15 +1020,15 @@ impl Context {
         }
 
         // Which stack temps or locals are in a register
-        for &temp in self.reg_temps.0.iter() {
+        for &temp in self.reg_mappings.0.iter() {
             if let Some(temp) = temp {
                 bits.push_u1(1); // Some
                 match temp {
-                    RegTemp::Stack(stack_idx) => {
+                    RegMapping::Stack(stack_idx) => {
                         bits.push_u1(0); // Stack
                         bits.push_u3(stack_idx);
                     }
-                    RegTemp::Local(local_idx) => {
+                    RegMapping::Local(local_idx) => {
                         bits.push_u1(1); // Local
                         bits.push_u3(local_idx);
                     }
@@ -1117,14 +1117,14 @@ impl Context {
         }
 
         // Which stack temps or locals are in a register
-        for index in 0..MAX_TEMP_REGS {
+        for index in 0..MAX_MAPPED_REGS {
             if bits.read_u1(&mut idx) == 1 { // Some
-                let temp = if bits.read_u1(&mut idx) == 0 { // RegTemp::Stack
-                    RegTemp::Stack(bits.read_u3(&mut idx))
+                let temp = if bits.read_u1(&mut idx) == 0 { // RegMapping::Stack
+                    RegMapping::Stack(bits.read_u3(&mut idx))
                 } else {
-                    RegTemp::Local(bits.read_u3(&mut idx))
+                    RegMapping::Local(bits.read_u3(&mut idx))
                 };
-                ctx.reg_temps.0[index] = Some(temp);
+                ctx.reg_mappings.0[index] = Some(temp);
             }
         }
 
@@ -2428,7 +2428,7 @@ impl Context {
         let mut generic_ctx = Context::default();
         generic_ctx.stack_size = self.stack_size;
         generic_ctx.sp_offset = self.sp_offset;
-        generic_ctx.reg_temps = self.reg_temps;
+        generic_ctx.reg_mappings = self.reg_mappings;
         if self.is_return_landing() {
             generic_ctx.set_as_return_landing();
         }
@@ -2456,12 +2456,12 @@ impl Context {
         self.sp_offset = offset;
     }
 
-    pub fn get_reg_temps(&self) -> RegTemps {
-        self.reg_temps
+    pub fn get_reg_mappings(&self) -> RegMappings {
+        self.reg_mappings
     }
 
-    pub fn set_reg_temps(&mut self, reg_temps: RegTemps) {
-        self.reg_temps = reg_temps;
+    pub fn set_reg_mappings(&mut self, reg_mappings: RegMappings) {
+        self.reg_mappings = reg_mappings;
     }
 
     pub fn get_chain_depth(&self) -> u8 {
@@ -2516,10 +2516,10 @@ impl Context {
     /// Stop using a register for a given stack temp.
     /// This allows us to reuse the register for a value that we know is dead
     /// and will no longer be used (e.g. popped stack temp).
-    pub fn dealloc_temp_reg(&mut self, temp: RegTemp) {
-        let mut reg_temps = self.get_reg_temps();
-        if reg_temps.dealloc_reg(temp) {
-            self.set_reg_temps(reg_temps);
+    pub fn dealloc_reg(&mut self, temp: RegMapping) {
+        let mut reg_mappings = self.get_reg_mappings();
+        if reg_mappings.dealloc_reg(temp) {
+            self.set_reg_mappings(reg_mappings);
         }
     }
 
@@ -2823,7 +2823,7 @@ impl Context {
             return TypeDiff::Incompatible;
         }
 
-        if dst.reg_temps != src.reg_temps {
+        if dst.reg_mappings != src.reg_mappings {
             return TypeDiff::Incompatible;
         }
 
@@ -2924,7 +2924,7 @@ impl Assembler {
 
         // Allocate a register to the new stack operand
         let stack_opnd = self.stack_opnd(0);
-        self.alloc_temp_reg(stack_opnd.reg_temp());
+        self.alloc_reg(stack_opnd.reg_mapping());
 
         stack_opnd
     }
@@ -2998,7 +2998,7 @@ impl Assembler {
             stack_size: self.ctx.stack_size,
             local_size: None, // not needed for stack temps
             sp_offset: self.ctx.sp_offset,
-            reg_temps: None, // push_insn will set this
+            reg_mappings: None, // push_insn will set this
         }
     }
 
@@ -3011,7 +3011,7 @@ impl Assembler {
             stack_size: self.ctx.stack_size,
             local_size: Some(self.local_size.unwrap()), // this must exist for locals
             sp_offset: self.ctx.sp_offset,
-            reg_temps: None, // push_insn will set this
+            reg_mappings: None, // push_insn will set this
         }
     }
 }
@@ -3685,7 +3685,7 @@ fn gen_branch_stub(
     let mut asm = Assembler::new();
     asm.ctx = Context::decode(ctx);
     asm.local_size = Some(unsafe { get_iseq_body_local_table_size(iseq) });
-    asm.set_reg_temps(asm.ctx.reg_temps);
+    asm.set_reg_mappings(asm.ctx.reg_mappings);
     asm_comment!(asm, "branch stub hit");
 
     if asm.ctx.is_return_landing() {
@@ -4330,30 +4330,30 @@ mod tests {
     }
 
     #[test]
-    fn reg_temps() {
-        let mut reg_temps = RegTemps([None, None, None, None, None]);
+    fn reg_mappings() {
+        let mut reg_mappings = RegMappings([None, None, None, None, None]);
 
         // 0 means every slot is not spilled
-        for stack_idx in 0..MAX_REG_TEMPS {
-            assert_eq!(reg_temps.get_reg(RegTemp::Stack(stack_idx)), None);
+        for stack_idx in 0..MAX_REG_MAPPINGS {
+            assert_eq!(reg_mappings.get_reg(RegMapping::Stack(stack_idx)), None);
         }
 
-        // Set 0, 2, 6 (RegTemps: [Some(0), Some(6), Some(2), None, None])
-        reg_temps.alloc_reg(RegTemp::Stack(0));
-        reg_temps.alloc_reg(RegTemp::Stack(2));
-        reg_temps.alloc_reg(RegTemp::Stack(3));
-        reg_temps.dealloc_reg(RegTemp::Stack(3));
-        reg_temps.alloc_reg(RegTemp::Stack(6));
+        // Set 0, 2, 6 (RegMappings: [Some(0), Some(6), Some(2), None, None])
+        reg_mappings.alloc_reg(RegMapping::Stack(0));
+        reg_mappings.alloc_reg(RegMapping::Stack(2));
+        reg_mappings.alloc_reg(RegMapping::Stack(3));
+        reg_mappings.dealloc_reg(RegMapping::Stack(3));
+        reg_mappings.alloc_reg(RegMapping::Stack(6));
 
         // Get 0..8
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(0)), Some(0));
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(1)), None);
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(2)), Some(2));
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(3)), None);
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(4)), None);
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(5)), None);
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(6)), Some(1));
-        assert_eq!(reg_temps.get_reg(RegTemp::Stack(7)), None);
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(0)), Some(0));
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(1)), None);
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(2)), Some(2));
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(3)), None);
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(4)), None);
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(5)), None);
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(6)), Some(1));
+        assert_eq!(reg_mappings.get_reg(RegMapping::Stack(7)), None);
     }
 
     #[test]

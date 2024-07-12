@@ -814,7 +814,7 @@ pub fn gen_outlined_exit(exit_pc: *mut VALUE, local_size: u32, ctx: &Context, oc
     let mut asm = Assembler::new();
     asm.ctx = *ctx;
     asm.local_size = Some(local_size);
-    asm.set_reg_temps(ctx.get_reg_temps());
+    asm.set_reg_mappings(ctx.get_reg_mappings());
 
     gen_exit(exit_pc, &mut asm);
 
@@ -1195,7 +1195,7 @@ pub fn gen_single_block(
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
-        asm_comment!(asm, "reg_temps: {:?}", asm.ctx.get_reg_temps());
+        asm_comment!(asm, "reg_mappings: {:?}", asm.ctx.get_reg_mappings());
     }
 
     // Mark the start of an ISEQ for --yjit-perf
@@ -1240,8 +1240,8 @@ pub fn gen_single_block(
 
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
-        for stack_idx in asm.ctx.get_stack_size()..MAX_REG_TEMPS {
-            asm.ctx.dealloc_temp_reg(RegTemp::Stack(stack_idx));
+        for stack_idx in asm.ctx.get_stack_size()..MAX_REG_MAPPINGS {
+            asm.ctx.dealloc_reg(RegMapping::Stack(stack_idx));
         }
 
         // If previous instruction requested to record the boundary
@@ -1810,7 +1810,7 @@ fn gen_splatkw(
         asm.mov(stack_ret, hash);
         asm.stack_push(block_type);
         // Leave block_opnd spilled by ccall as is
-        asm.ctx.dealloc_temp_reg(RegTemp::Stack(asm.ctx.get_stack_size() - 1));
+        asm.ctx.dealloc_reg(RegMapping::Stack(asm.ctx.get_stack_size() - 1));
     }
 
     Some(KeepCompiling)
@@ -2370,7 +2370,7 @@ fn gen_setlocal_generic(
         let local_opnd = asm.local_opnd(ep_offset);
 
         // Allocate a register to the new local operand
-        asm.alloc_temp_reg(local_opnd.reg_temp());
+        asm.alloc_reg(local_opnd.reg_mapping());
         (flags_opnd, local_opnd)
     } else {
         // Load flags and the local for the level
@@ -3081,7 +3081,7 @@ fn gen_set_ivar(
         // If we know the stack value is an immediate, there's no need to
         // generate WB code.
         if !stack_type.is_imm() {
-            asm.spill_temps(); // for ccall (unconditionally spill them for RegTemps consistency)
+            asm.spill_temps(); // for ccall (unconditionally spill them for RegMappings consistency)
             let skip_wb = asm.new_label("skip_wb");
             // If the value we're writing is an immediate, we don't need to WB
             asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
@@ -5492,7 +5492,7 @@ fn jit_rb_str_uplus(
 
     // We allocate when we dup the string
     jit_prepare_call_with_gc(jit, asm);
-    asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
+    asm.spill_temps(); // For ccall. Unconditionally spill them for RegMappings consistency.
 
     asm_comment!(asm, "Unary plus on string");
     let recv_opnd = asm.stack_pop(1);
@@ -5792,7 +5792,7 @@ fn jit_rb_str_concat(
     // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
     jit_prepare_non_leaf_call(jit, asm);
-    asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
+    asm.spill_temps(); // For ccall. Unconditionally spill them for RegMappings consistency.
 
     let concat_arg = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
@@ -7512,7 +7512,7 @@ fn gen_send_iseq(
         };
         // Store rest param to memory to avoid register shuffle as
         // we won't be reading it for the remainder of the block.
-        asm.ctx.dealloc_temp_reg(rest_param.reg_temp());
+        asm.ctx.dealloc_reg(rest_param.reg_mapping());
         asm.store(rest_param, rest_param_array);
     }
 
@@ -7611,7 +7611,7 @@ fn gen_send_iseq(
         // Write the CI in to the stack and ensure that it actually gets
         // flushed to memory
         let ci_opnd = asm.stack_opnd(-1);
-        asm.ctx.dealloc_temp_reg(ci_opnd.reg_temp());
+        asm.ctx.dealloc_reg(ci_opnd.reg_mapping());
         asm.mov(ci_opnd, VALUE(ci as usize).into());
     }
 
@@ -7977,7 +7977,7 @@ fn gen_iseq_kw_call(
             kwargs_order[kwrest_idx] = 0;
         }
         // Put kwrest straight into memory, since we might pop it later
-        asm.ctx.dealloc_temp_reg(stack_kwrest.reg_temp());
+        asm.ctx.dealloc_reg(stack_kwrest.reg_mapping());
         asm.mov(stack_kwrest, kwrest);
         if stack_kwrest_idx >= 0 {
             asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(kwrest_type));
@@ -8075,7 +8075,7 @@ fn gen_iseq_kw_call(
     if let Some(kwrest_type) = kwrest_type {
         let kwrest = asm.stack_push(kwrest_type);
         // We put the kwrest parameter in memory earlier
-        asm.ctx.dealloc_temp_reg(kwrest.reg_temp());
+        asm.ctx.dealloc_reg(kwrest.reg_mapping());
         argc += 1;
     }
 
@@ -9868,7 +9868,7 @@ fn gen_getblockparam(
 
     // Save the PC and SP because we might allocate
     jit_prepare_call_with_gc(jit, asm);
-    asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
+    asm.spill_temps(); // For ccall. Unconditionally spill them for RegMappings consistency.
 
     // A mirror of the interpreter code. Checking for the case
     // where it's pushing rb_block_param_proxy.
@@ -10545,7 +10545,7 @@ mod tests {
 
         assert_eq!(status, Some(KeepCompiling));
         let mut default = Context::default();
-        default.set_reg_temps(context.get_reg_temps());
+        default.set_reg_mappings(context.get_reg_mappings());
         assert_eq!(context.diff(&default), TypeDiff::Compatible(0));
     }
 
