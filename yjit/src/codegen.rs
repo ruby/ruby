@@ -651,7 +651,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     }
 
     // Verify stack operand types
-    let top_idx = cmp::min(ctx.get_stack_size(), MAX_TEMP_TYPES as u8);
+    let top_idx = cmp::min(ctx.get_stack_size(), MAX_CTX_TEMPS as u8);
     for i in 0..top_idx {
         let learned_mapping = ctx.get_opnd_mapping(StackOpnd(i));
         let learned_type = ctx.get_opnd_type(StackOpnd(i));
@@ -698,7 +698,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 
     // Verify local variable types
     let local_table_size = unsafe { get_iseq_body_local_table_size(jit.iseq) };
-    let top_idx: usize = cmp::min(local_table_size as usize, MAX_TEMP_TYPES);
+    let top_idx: usize = cmp::min(local_table_size as usize, MAX_CTX_TEMPS);
     for i in 0..top_idx {
         let learned_type = ctx.get_local_type(i);
         let learned_type = relax_type_with_singleton_class_assumption(learned_type);
@@ -1238,7 +1238,7 @@ pub fn gen_single_block(
 
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
-        for stack_idx in asm.ctx.get_stack_size()..MAX_REG_OPNDS {
+        for stack_idx in asm.ctx.get_stack_size()..MAX_CTX_TEMPS as u8 {
             asm.ctx.dealloc_reg(RegOpnd::Stack(stack_idx));
         }
 

@@ -30,11 +30,11 @@ use YARVOpnd::*;
 use TempMappingKind::*;
 use crate::invariants::*;
 
-// Maximum number of temp value types we keep track of
-pub const MAX_TEMP_TYPES: usize = 8;
+// Maximum number of temp value types or registers we keep track of
+pub const MAX_CTX_TEMPS: usize = 8;
 
-// Maximum number of local variable types we keep track of
-const MAX_LOCAL_TYPES: usize = 8;
+// Maximum number of local variable types or registers we keep track of
+const MAX_CTX_LOCALS: usize = 8;
 
 /// An index into `ISEQ_BODY(iseq)->iseq_encoded`. Points
 /// to a YARV instruction or an instruction operand.
@@ -414,9 +414,6 @@ impl From<Opnd> for YARVOpnd {
 /// Number of registers that can be used for stack temps or locals
 pub const MAX_MAPPED_REGS: usize = 5;
 
-/// Maximum index of stack temps or locals that could be in a register
-pub const MAX_REG_OPNDS: u8 = 8;
-
 /// A stack slot or a local variable. u8 represents the index of it (<= 8).
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub enum RegOpnd {
@@ -449,13 +446,14 @@ impl RegMapping {
         }
 
         // If the index is too large to encode with with 3 bits, give up.
-        let temp_idx = match opnd {
-            RegOpnd::Stack(stack_idx) => stack_idx,
-            RegOpnd::Local(local_idx) => local_idx,
+        match opnd {
+            RegOpnd::Stack(stack_idx) => if stack_idx >= MAX_CTX_TEMPS as u8 {
+                return false;
+            }
+            RegOpnd::Local(local_idx) => if local_idx >= MAX_CTX_LOCALS as u8 {
+                return false;
+            }
         };
-        if temp_idx >= MAX_REG_OPNDS {
-            return false;
-        }
 
         // Allocate a register if available.
         if let Some(reg_idx) = self.find_unused_reg(opnd) {
@@ -1052,7 +1050,7 @@ impl Context {
         }
 
         // Encode the local types if known
-        for local_idx in 0..MAX_LOCAL_TYPES {
+        for local_idx in 0..MAX_CTX_LOCALS {
             let t = self.get_local_type(local_idx);
             if t != Type::Unknown {
                 bits.push_op(CtxOp::SetLocalType);
@@ -1062,7 +1060,7 @@ impl Context {
         }
 
         // Encode stack temps
-        for stack_idx in 0..MAX_TEMP_TYPES {
+        for stack_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(stack_idx);
 
             match mapping.get_kind() {
@@ -2536,7 +2534,7 @@ impl Context {
                 let stack_idx: usize = (self.stack_size - 1 - idx).into();
 
                 // If outside of tracked range, do nothing
-                if stack_idx >= MAX_TEMP_TYPES {
+                if stack_idx >= MAX_CTX_TEMPS {
                     return Type::Unknown;
                 }
 
@@ -2547,7 +2545,7 @@ impl Context {
                     MapToStack => mapping.get_type(),
                     MapToLocal => {
                         let idx = mapping.get_local_idx();
-                        assert!((idx as usize) < MAX_LOCAL_TYPES);
+                        assert!((idx as usize) < MAX_CTX_LOCALS);
                         return self.get_local_type(idx.into());
                     }
                 }
@@ -2557,7 +2555,7 @@ impl Context {
 
     /// Get the currently tracked type for a local variable
     pub fn get_local_type(&self, local_idx: usize) -> Type {
-        if local_idx >= MAX_LOCAL_TYPES {
+        if local_idx >= MAX_CTX_LOCALS {
             return Type::Unknown
         } else {
             // Each type is stored in 4 bits
@@ -2568,7 +2566,7 @@ impl Context {
 
     /// Get the current temp mapping for a given stack slot
     fn get_temp_mapping(&self, temp_idx: usize) -> TempMapping {
-        assert!(temp_idx < MAX_TEMP_TYPES);
+        assert!(temp_idx < MAX_CTX_TEMPS);
 
         // Extract the temp mapping kind
         let kind_bits = (self.temp_mapping_kind >> (2 * temp_idx)) & 0b11;
@@ -2596,7 +2594,7 @@ impl Context {
 
     /// Get the current temp mapping for a given stack slot
     fn set_temp_mapping(&mut self, temp_idx: usize, mapping: TempMapping) {
-        assert!(temp_idx < MAX_TEMP_TYPES);
+        assert!(temp_idx < MAX_CTX_TEMPS);
 
         // Extract the kind bits
         let mapping_kind = mapping.get_kind();
@@ -2652,7 +2650,7 @@ impl Context {
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
                 // If outside of tracked range, do nothing
-                if stack_idx >= MAX_TEMP_TYPES {
+                if stack_idx >= MAX_CTX_TEMPS {
                     return;
                 }
 
@@ -2667,7 +2665,7 @@ impl Context {
                     }
                     MapToLocal => {
                         let idx = mapping.get_local_idx() as usize;
-                        assert!(idx < MAX_LOCAL_TYPES);
+                        assert!(idx < MAX_CTX_LOCALS);
                         let mut new_type = self.get_local_type(idx);
                         new_type.upgrade(opnd_type);
                         self.set_local_type(idx, new_type);
@@ -2694,7 +2692,7 @@ impl Context {
                 assert!(idx < self.stack_size);
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
-                if stack_idx < MAX_TEMP_TYPES {
+                if stack_idx < MAX_CTX_TEMPS {
                     self.get_temp_mapping(stack_idx)
                 } else {
                     // We can't know the source of this stack operand, so we assume it is
@@ -2720,7 +2718,7 @@ impl Context {
                 }
 
                 // If outside of tracked range, do nothing
-                if stack_idx >= MAX_TEMP_TYPES {
+                if stack_idx >= MAX_CTX_TEMPS {
                     return;
                 }
 
@@ -2736,12 +2734,12 @@ impl Context {
             return;
         }
 
-        if local_idx >= MAX_LOCAL_TYPES {
+        if local_idx >= MAX_CTX_LOCALS {
             return
         }
 
         // If any values on the stack map to this local we must detach them
-        for mapping_idx in 0..MAX_TEMP_TYPES {
+        for mapping_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(mapping_idx);
             let tm = match mapping.get_kind() {
                 MapToStack => mapping,
@@ -2773,7 +2771,7 @@ impl Context {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
 
-        for mapping_idx in 0..MAX_TEMP_TYPES {
+        for mapping_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(mapping_idx);
             if mapping.get_kind() == MapToLocal {
                 let local_idx = mapping.get_local_idx() as usize;
@@ -2848,7 +2846,7 @@ impl Context {
         }
 
         // For each local type we track
-        for i in 0.. MAX_LOCAL_TYPES {
+        for i in 0.. MAX_CTX_LOCALS {
             let t_src = src.get_local_type(i);
             let t_dst = dst.get_local_type(i);
             diff += match t_src.diff(t_dst) {
@@ -2914,12 +2912,12 @@ impl Assembler {
         let stack_size: usize = self.ctx.stack_size.into();
 
         // Keep track of the type and mapping of the value
-        if stack_size < MAX_TEMP_TYPES {
+        if stack_size < MAX_CTX_TEMPS {
             self.ctx.set_temp_mapping(stack_size, mapping);
 
             if mapping.get_kind() == MapToLocal {
                 let idx = mapping.get_local_idx();
-                assert!((idx as usize) < MAX_LOCAL_TYPES);
+                assert!((idx as usize) < MAX_CTX_LOCALS);
             }
         }
 
@@ -2946,7 +2944,7 @@ impl Assembler {
 
     /// Push a local variable on the stack
     pub fn stack_push_local(&mut self, local_idx: usize) -> Opnd {
-        if local_idx >= MAX_LOCAL_TYPES {
+        if local_idx >= MAX_CTX_LOCALS {
             return self.stack_push(Type::Unknown);
         }
 
@@ -2964,7 +2962,7 @@ impl Assembler {
         for i in 0..n {
             let idx: usize = (self.ctx.stack_size as usize) - i - 1;
 
-            if idx < MAX_TEMP_TYPES {
+            if idx < MAX_CTX_TEMPS {
                 self.ctx.set_temp_mapping(idx, TempMapping::map_to_stack(Type::Unknown));
             }
         }
@@ -2982,8 +2980,8 @@ impl Assembler {
         let method_name_index = (self.ctx.stack_size as usize) - argc - 1;
 
         for i in method_name_index..(self.ctx.stack_size - 1) as usize {
-            if i < MAX_TEMP_TYPES {
-                let next_arg_mapping = if i + 1 < MAX_TEMP_TYPES {
+            if i < MAX_CTX_TEMPS {
+                let next_arg_mapping = if i + 1 < MAX_CTX_TEMPS {
                     self.ctx.get_temp_mapping(i + 1)
                 } else {
                     TempMapping::map_to_stack(Type::Unknown)
@@ -4269,7 +4267,7 @@ mod tests {
         // and all local types in 32 bits
         assert_eq!(mem::size_of::<Type>(), 1);
         assert!(Type::BlockParamProxy as usize <= 0b1111);
-        assert!(MAX_LOCAL_TYPES * 4 <= 32);
+        assert!(MAX_CTX_LOCALS * 4 <= 32);
     }
 
     #[test]
@@ -4281,7 +4279,7 @@ mod tests {
     fn local_types() {
         let mut ctx = Context::default();
 
-        for i in 0..MAX_LOCAL_TYPES {
+        for i in 0..MAX_CTX_LOCALS {
             ctx.set_local_type(i, Type::Fixnum);
             assert_eq!(ctx.get_local_type(i), Type::Fixnum);
             ctx.set_local_type(i, Type::BlockParamProxy);
@@ -4337,7 +4335,7 @@ mod tests {
         let mut reg_mapping = RegMapping([None, None, None, None, None]);
 
         // 0 means every slot is not spilled
-        for stack_idx in 0..MAX_REG_OPNDS {
+        for stack_idx in 0..MAX_CTX_TEMPS as u8 {
             assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(stack_idx)), None);
         }
 

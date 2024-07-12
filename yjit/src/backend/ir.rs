@@ -6,7 +6,7 @@ use crate::codegen::{gen_counted_exit, gen_outlined_exit};
 use crate::cruby::{vm_stack_canary, SIZEOF_VALUE_I32, VALUE, VM_ENV_DATA_SIZE};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, OutlinedCb};
-use crate::core::{Context, RegOpnd, RegMapping, MAX_REG_OPNDS};
+use crate::core::{Context, RegMapping, RegOpnd, MAX_CTX_TEMPS};
 use crate::options::*;
 use crate::stats::*;
 
@@ -1245,7 +1245,7 @@ impl Assembler
     pub fn spill_regs(&mut self) {
         // Forget registers above the stack top
         let mut reg_mapping = self.ctx.get_reg_mapping();
-        for stack_idx in self.ctx.get_stack_size()..MAX_REG_OPNDS {
+        for stack_idx in self.ctx.get_stack_size()..MAX_CTX_TEMPS as u8 {
             reg_mapping.dealloc_reg(RegOpnd::Stack(stack_idx));
         }
         self.set_reg_mapping(reg_mapping);
@@ -1255,7 +1255,7 @@ impl Assembler
             asm_comment!(self, "spill_temps: {:?} -> {:?}", self.ctx.get_reg_mapping(), RegMapping::default());
 
             // Spill stack temps
-            for stack_idx in 0..u8::min(MAX_REG_OPNDS, self.ctx.get_stack_size()) {
+            for stack_idx in 0..u8::min(MAX_CTX_TEMPS as u8, self.ctx.get_stack_size()) {
                 if reg_mapping.dealloc_reg(RegOpnd::Stack(stack_idx)) {
                     let idx = self.ctx.get_stack_size() - 1 - stack_idx;
                     self.spill_temp(self.stack_opnd(idx.into()));
@@ -1263,7 +1263,7 @@ impl Assembler
             }
 
             // Spill locals
-            for local_idx in 0..MAX_REG_OPNDS {
+            for local_idx in 0..MAX_CTX_TEMPS as u8 {
                 if reg_mapping.dealloc_reg(RegOpnd::Local(local_idx)) {
                     let first_local_ep_offset = self.num_locals.unwrap() + VM_ENV_DATA_SIZE - 1;
                     let ep_offset = first_local_ep_offset - local_idx as u32;
