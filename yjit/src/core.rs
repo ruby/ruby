@@ -424,9 +424,11 @@ pub enum RegOpnd {
     Local(u8),
 }
 
-/// RegMappings manages a set of registers used for temporary values on the stack.
+/// RegMappings manages a set of registers used for stack temps and locals.
 /// Each element of the array represents each of the registers.
-/// If an element is Some, the temporary value uses a register.
+/// If an element is Some, the stack temp or the local uses a register.
+///
+/// Note that Opnd::InsnOut uses a separate set of registers at the moment.
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq)]
 pub struct RegMapping([Option<RegOpnd>; MAX_MAPPED_REGS]);
 
