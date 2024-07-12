@@ -5561,29 +5561,27 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // We treat all sequences of non-splat elements as their
             // own arrays, followed by a newarray, and then continually
             // concat the arrays with the SplatNode nodes.
-            int new_array_size = 0;
+            const int max_new_array_size = 0x100;
 
-            bool need_to_concat_array = false;
-            bool has_kw_splat = false;
+            int new_array_size = 0;
+            bool first_chunk = true;
+
+            /* Either create a new array, or push to the existing array */
+#define FLUSH_CHUNK \
+            if (new_array_size) {                                                              \
+                if (first_chunk) PUSH_INSN1(ret, location, newarray, INT2FIX(new_array_size)); \
+                else PUSH_INSN1(ret, location, pushtoarray, INT2FIX(new_array_size));          \
+                first_chunk = false;                                                           \
+                new_array_size = 0;                                                            \
+            }
 
             for (size_t index = 0; index < elements->size; index++) {
                 const pm_node_t *element = elements->nodes[index];
 
                 if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
+                    FLUSH_CHUNK;
+
                     const pm_splat_node_t *splat_element = (const pm_splat_node_t *) element;
-
-                    // If we already have non-splat elements, we need to emit a
-                    // newarray instruction.
-                    if (new_array_size > 0) {
-                        PUSH_INSN1(ret, location, newarray, INT2FIX(new_array_size));
-                        new_array_size = 0;
-
-                        // We don't want to emit a concat array in the case
-                        // where we're seeing our first splat, and already have
-                        // elements.
-                        if (need_to_concat_array) PUSH_INSN(ret, location, concatarray);
-                    }
-
                     if (splat_element->expression) {
                         PM_COMPILE_NOT_POPPED(splat_element->expression);
                     }
@@ -5593,42 +5591,54 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
 
                     if (index > 0) {
-                        PUSH_INSN(ret, location, concatarray);
+                        PUSH_INSN(ret, location, concattoarray);
                     }
                     else {
                         // If this is the first element of the array then we
                         // need to splatarray the elements into the list.
                         PUSH_INSN1(ret, location, splatarray, Qtrue);
+                        first_chunk = false;
                     }
-
-                    // Since we have now seen a splat and are concat-ing arrays,
-                    // all subsequent splats will need to concat as well.
-                    need_to_concat_array = true;
                 }
                 else if (PM_NODE_TYPE_P(element, PM_KEYWORD_HASH_NODE)) {
-                    new_array_size++;
-                    has_kw_splat = true;
-                    pm_compile_hash_elements(iseq, element, &((const pm_keyword_hash_node_t *) element)->elements, ret, scope_node);
+                    FLUSH_CHUNK;
+
+                    // If we get here, then this is the last element of the
+                    // array/arguments, because it cannot be followed by
+                    // anything else without a syntax error. This looks like:
+                    //
+                    //     [foo, bar, baz: qux]
+                    //                ^^^^^^^^
+                    //
+                    //     [foo, bar, **baz]
+                    //                ^^^^^
+                    //
+                    const pm_keyword_hash_node_t *keyword_hash = (const pm_keyword_hash_node_t *) element;
+                    pm_compile_hash_elements(iseq, element, &keyword_hash->elements, ret, scope_node);
+
+                    // This boolean controls the manner in which we push the
+                    // hash onto the array. If it's a single element that has a
+                    // splat, then we can use the very specialized
+                    // pushtoarraykwsplat instruction to check if it's empty
+                    // before we push it.
+                    if (keyword_hash->elements.size == 1 && PM_NODE_TYPE_P(keyword_hash->elements.nodes[0], PM_ASSOC_SPLAT_NODE)) {
+                        PUSH_INSN(ret, location, pushtoarraykwsplat);
+                    }
+                    else {
+                        new_array_size++;
+                    }
                 }
                 else {
-                    new_array_size++;
                     PM_COMPILE_NOT_POPPED(element);
+                    if (++new_array_size >= max_new_array_size) FLUSH_CHUNK;
                 }
             }
 
-            if (new_array_size) {
-                if (has_kw_splat) {
-                    PUSH_INSN1(ret, location, newarraykwsplat, INT2FIX(new_array_size));
-                }
-                else {
-                    PUSH_INSN1(ret, location, newarray, INT2FIX(new_array_size));
-                }
-
-                if (need_to_concat_array) PUSH_INSN(ret, location, concatarray);
-            }
-
+            FLUSH_CHUNK;
             if (popped) PUSH_INSN(ret, location, pop);
         }
+
+#undef FLUSH_CHUNK
         return;
       }
       case PM_ASSOC_NODE: {
