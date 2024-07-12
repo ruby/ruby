@@ -12,7 +12,6 @@
 # include <sys/user.h>
 #endif
 
-#include "internal/string.h"
 #include "internal/hash.h"
 
 #include "ruby/ruby.h"
@@ -8081,7 +8080,7 @@ static int
 gc_config_set_key(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_objspace_t *objspace = (rb_objspace_t *)data;
-    if (!strcmp(rb_str_to_cstr(rb_sym2str(key)), "rgengc_allow_full_mark")) {
+    if (rb_sym2id(key) == rb_intern("rgengc_allow_full_mark")) {
         gc_rest(objspace);
         gc_config_full_mark_set(RBOOL(value));
     }
