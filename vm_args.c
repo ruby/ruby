@@ -718,7 +718,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (RB_TYPE_P(rest_last, T_HASH) && FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS)) {
                 // def f(**kw); a = [..., kw]; g(*a)
                 splat_flagged_keyword_hash = rest_last;
-                if (!RHASH_EMPTY_P(rest_last) || (ISEQ_BODY(iseq)->param.flags.has_kwrest)) {
+                if (!(RHASH_EMPTY_P(rest_last) || ISEQ_BODY(iseq)->param.flags.has_kw) || (ISEQ_BODY(iseq)->param.flags.has_kwrest)) {
                     rest_last = rb_hash_dup(rest_last);
                 }
                 kw_flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
