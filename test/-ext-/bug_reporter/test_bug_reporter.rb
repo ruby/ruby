@@ -9,6 +9,8 @@ class TestBugReporter < Test::Unit::TestCase
   end
 
   def test_bug_reporter_add
+    pend "macOS 15 is not working with this test" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
     omit if ENV['RUBY_ON_BUG']
 
     description = RUBY_DESCRIPTION
