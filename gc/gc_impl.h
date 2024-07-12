@@ -1,5 +1,5 @@
-#ifndef GC_IMPL_H
-#define GC_IMPL_H
+#ifndef GC_GC_IMPL_H
+#define GC_GC_IMPL_H
 
 #include "ruby/ruby.h"
 
