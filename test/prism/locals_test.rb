@@ -9,6 +9,11 @@
 # to test on the most recent versions.
 return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
+# In Ruby 3.4.0, the local table for method forwarding changed. But 3.4.0 can
+# refer to the dev version, so while 3.4.0 still isn't released, we need to
+# check if we have a high enough revision.
+return if RubyVM::InstructionSequence.compile("def foo(...); end").to_a[13][2][2][10].length != 1
+
 # Omit tests if running on a 32-bit machine because there is a bug with how
 # Ruby is handling large ISeqs on 32-bit machines
 return if RUBY_PLATFORM =~ /i686/
