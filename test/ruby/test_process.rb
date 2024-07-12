@@ -1869,6 +1869,8 @@ class TestProcess < Test::Unit::TestCase
     end
 
     def test_daemon_noclose
+      pend "macOS 15 beta is not working with this test" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
       data = IO.popen("-", "r+") do |f|
         break f.read if f
         Process.daemon(false, true)
