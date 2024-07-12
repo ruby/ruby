@@ -180,8 +180,6 @@ typedef struct {
     size_t oldmalloc_limit_min;
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
-
-    VALUE gc_stress;
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
@@ -203,8 +201,6 @@ static ruby_gc_params_t gc_params = {
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
-
-    FALSE,
 };
 
 /* GC_DEBUG:
@@ -834,10 +830,6 @@ RVALUE_AGE_SET(VALUE obj, int age)
         RB_FL_UNSET_RAW(obj, RUBY_FL_PROMOTED);
     }
 }
-
-#define ruby_initial_gc_stress	gc_params.gc_stress
-
-VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 
 #define malloc_limit		objspace->malloc_params.limit
 #define malloc_increase 	objspace->malloc_params.increase
