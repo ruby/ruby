@@ -189,7 +189,7 @@ class PP < PrettyPrint
     def pp(obj)
       # If obj is a Delegator then use the object being delegated to for cycle
       # detection
-      obj = obj.__getobj__ if defined?(::Delegator) and obj.is_a?(::Delegator)
+      obj = obj.__getobj__ if defined?(::Delegator) and ::Delegator === obj
 
       if check_inspect_key(obj)
         group {obj.pretty_print_cycle self}
@@ -198,7 +198,11 @@ class PP < PrettyPrint
 
       begin
         push_inspect_key(obj)
-        group {obj.pretty_print self}
+        group do
+          obj.pretty_print self
+        rescue NoMethodError
+          text Kernel.instance_method(:inspect).bind_call(obj)
+        end
       ensure
         pop_inspect_key(obj) unless PP.sharing_detection
       end

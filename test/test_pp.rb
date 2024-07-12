@@ -125,6 +125,11 @@ class PPInspectTest < Test::Unit::TestCase
     result = PP.pp(a, ''.dup)
     assert_equal("#{a.inspect}\n", result)
   end
+
+  def test_basic_object
+    a = BasicObject.new
+    assert_match(/\A#<BasicObject:0x[\da-f]+>\n\z/, PP.pp(a, ''.dup))
+  end
 end
 
 class PPCycleTest < Test::Unit::TestCase
