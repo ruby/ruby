@@ -1,0 +1,90 @@
+#! /bin/bash
+
+# Copyright (c) 2024 Ruby developers.  All rights reserved.
+#
+# This file is  a part of the programming language  Ruby.  Permission is hereby
+# granted, to  either redistribute and/or  modify this file, provided  that the
+# conditions  mentioned in  the file  COPYING are  met.  Consult  the file  for
+# details.
+
+grouped()
+{
+    echo "::group::${@}"
+    "${@}"
+    echo "::endgroup::"
+}
+
+set -e
+set -u
+set -o pipefail
+
+srcdir="/github/workspace/src"
+builddir="$(mktemp -dt)"
+
+export GITHUB_WORKFLOW='Compilations'
+export CONFIGURE_TTY='never'
+export RUBY_DEBUG='ci rgengc'
+export RUBY_TESTOPTS='-q --color=always --tty=no'
+export RUBY_DEBUG_COUNTER_DISABLE='1'
+export GNUMAKEFLAGS="-j$((1 + $(nproc --all)))"
+
+case "x${INPUT_ENABLE_SHARED}" in
+x | xno | xfalse )
+    enable_shared='--disable-shared'
+    ;;
+*)
+    enable_shared='--enable-shared'
+    ;;
+esac
+
+pushd ${builddir}
+
+grouped ${srcdir}/configure        \
+    -C                             \
+    --with-gcc="${INPUT_WITH_GCC}" \
+    --enable-debug-env             \
+    --disable-install-doc          \
+    --with-ext=-test-/cxxanyargs,+ \
+    ${enable_shared}               \
+    ${INPUT_APPEND_CONFIGURE}      \
+    CFLAGS="${INPUT_CFLAGS}"       \
+    CXXFLAGS="${INPUT_CXXFLAGS}"   \
+    optflags="${INPUT_OPTFLAGS}"   \
+    cppflags="${INPUT_CPPFLAGS}"   \
+    debugflags='-ggdb3' # -g0 disables backtraces when SEGV.  Do not set that.
+
+popd
+
+if [[ -n "${INPUT_STATIC_EXTS}" ]]; then
+    echo "::group::ext/Setup"
+    set -x
+    mkdir ${builddir}/ext
+    (
+        for ext in ${INPUT_STATIC_EXTS}; do
+            echo "${ext}"
+        done
+    ) >> ${builddir}/ext/Setup
+    set +x
+    echo "::endgroup::"
+fi
+
+pushd ${builddir}
+
+case "${INPUT_APPEND_CONFIGURE}" in
+*--with-shared-gc*)
+    export RUBY_GC_LIBRARY='librubygc.default.so'
+    mkdir -p /home/runner/shared-gc
+    grouped make shared-gc SHARED_GC=default
+    ;;
+esac
+
+grouped make showflags
+grouped make all
+grouped make test
+
+[[ -z "${INPUT_CHECK}" ]] && exit 0
+
+grouped make install
+grouped make test-tool
+grouped make test-all TESTS='-- ruby -ext-'
+grouped env CHECK_LEAKS=true make test-spec
