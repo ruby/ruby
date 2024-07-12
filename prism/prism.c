@@ -18378,12 +18378,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             switch (keyword.type) {
                 case PM_TOKEN_KEYWORD_BREAK: {
                     pm_node_t *node = (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
-                    if (!parser->parsing_eval) parse_block_exit(parser, node);
+                    parse_block_exit(parser, node);
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_NEXT: {
                     pm_node_t *node = (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
-                    if (!parser->parsing_eval) parse_block_exit(parser, node);
+                    parse_block_exit(parser, node);
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_RETURN: {
@@ -19081,7 +19081,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_node_t *node = (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
-            if (!parser->parsing_eval) parse_block_exit(parser, node);
+            parse_block_exit(parser, node);
 
             return node;
         }
