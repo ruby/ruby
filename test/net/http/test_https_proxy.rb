@@ -44,6 +44,11 @@ class HTTPSProxyTest < Test::Unit::TestCase
     }
   end
 
+
+  def read_fixture(key)
+    File.read(File.expand_path("../fixtures/#{key}", __dir__))
+  end
+
   def test_https_proxy_ssl_connection
     begin
       OpenSSL
@@ -53,14 +58,8 @@ class HTTPSProxyTest < Test::Unit::TestCase
 
     tcpserver = TCPServer.new("127.0.0.1", 0)
     ctx = OpenSSL::SSL::SSLContext.new
-    ctx.key = OpenSSL::PKey::RSA.new 2048
-    ctx.cert = OpenSSL::X509::Certificate.new
-    ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost']]
-    ctx.cert.issuer = ctx.cert.subject
-    ctx.cert.public_key = ctx.key
-    ctx.cert.not_before = Time.now
-    ctx.cert.not_after = Time.now + 60 * 60 * 24
-    ctx.cert.sign ctx.key, OpenSSL::Digest::SHA1.new
+    ctx.key = OpenSSL::PKey.read(read_fixture("server.key"))
+    ctx.cert = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
     serv = OpenSSL::SSL::SSLServer.new(tcpserver, ctx)
 
     _, port, _, _ = serv.addr
@@ -92,4 +91,3 @@ class HTTPSProxyTest < Test::Unit::TestCase
     assert_join_threads([client_thread, server_thread])
   end
 end if defined?(OpenSSL)
-
