@@ -2926,7 +2926,7 @@ impl Assembler {
 
         // Allocate a register to the new stack operand
         let stack_opnd = self.stack_opnd(0);
-        self.alloc_reg(stack_opnd.reg_mapping());
+        self.alloc_reg(stack_opnd.reg_opnd());
 
         stack_opnd
     }

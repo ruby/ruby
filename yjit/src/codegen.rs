@@ -2368,7 +2368,7 @@ fn gen_setlocal_generic(
         let local_opnd = asm.local_opnd(ep_offset);
 
         // Allocate a register to the new local operand
-        asm.alloc_reg(local_opnd.reg_mapping());
+        asm.alloc_reg(local_opnd.reg_opnd());
         (flags_opnd, local_opnd)
     } else {
         // Load flags and the local for the level
@@ -7510,7 +7510,7 @@ fn gen_send_iseq(
         };
         // Store rest param to memory to avoid register shuffle as
         // we won't be reading it for the remainder of the block.
-        asm.ctx.dealloc_reg(rest_param.reg_mapping());
+        asm.ctx.dealloc_reg(rest_param.reg_opnd());
         asm.store(rest_param, rest_param_array);
     }
 
@@ -7609,7 +7609,7 @@ fn gen_send_iseq(
         // Write the CI in to the stack and ensure that it actually gets
         // flushed to memory
         let ci_opnd = asm.stack_opnd(-1);
-        asm.ctx.dealloc_reg(ci_opnd.reg_mapping());
+        asm.ctx.dealloc_reg(ci_opnd.reg_opnd());
         asm.mov(ci_opnd, VALUE(ci as usize).into());
     }
 
@@ -7975,7 +7975,7 @@ fn gen_iseq_kw_call(
             kwargs_order[kwrest_idx] = 0;
         }
         // Put kwrest straight into memory, since we might pop it later
-        asm.ctx.dealloc_reg(stack_kwrest.reg_mapping());
+        asm.ctx.dealloc_reg(stack_kwrest.reg_opnd());
         asm.mov(stack_kwrest, kwrest);
         if stack_kwrest_idx >= 0 {
             asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(kwrest_type));
@@ -8073,7 +8073,7 @@ fn gen_iseq_kw_call(
     if let Some(kwrest_type) = kwrest_type {
         let kwrest = asm.stack_push(kwrest_type);
         // We put the kwrest parameter in memory earlier
-        asm.ctx.dealloc_reg(kwrest.reg_mapping());
+        asm.ctx.dealloc_reg(kwrest.reg_opnd());
         argc += 1;
     }
 

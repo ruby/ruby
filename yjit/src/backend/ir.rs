@@ -230,12 +230,12 @@ impl Opnd
     }
 
     /// Convert Opnd::Stack into RegMapping
-    pub fn reg_mapping(&self) -> RegOpnd {
-        self.get_reg_mapping().unwrap()
+    pub fn reg_opnd(&self) -> RegOpnd {
+        self.get_reg_opnd().unwrap()
     }
 
     /// Convert an operand into RegMapping if it's Opnd::Stack
-    pub fn get_reg_mapping(&self) -> Option<RegOpnd> {
+    pub fn get_reg_opnd(&self) -> Option<RegOpnd> {
         match *self {
             Opnd::Stack { idx, stack_size, num_locals, .. } => Some(
                 if let Some(num_locals) = num_locals {
@@ -1215,7 +1215,7 @@ impl Assembler
 
         match opnd {
             Opnd::Stack { reg_mapping, .. } => {
-                if let Some(reg_idx) = reg_mapping.unwrap().get_reg(opnd.reg_mapping()) {
+                if let Some(reg_idx) = reg_mapping.unwrap().get_reg(opnd.reg_opnd()) {
                     reg_opnd(opnd, reg_idx)
                 } else {
                     mem_opnd(opnd)
@@ -1280,12 +1280,12 @@ impl Assembler
 
     /// Spill a stack temp from a register to the stack
     fn spill_temp(&mut self, opnd: Opnd) {
-        assert_ne!(self.ctx.get_reg_mapping().get_reg(opnd.reg_mapping()), None);
+        assert_ne!(self.ctx.get_reg_mapping().get_reg(opnd.reg_opnd()), None);
 
         // Use different RegMappings for dest and src operands
         let reg_mapping = self.ctx.get_reg_mapping();
         let mut mem_mappings = reg_mapping;
-        mem_mappings.dealloc_reg(opnd.reg_mapping());
+        mem_mappings.dealloc_reg(opnd.reg_opnd());
 
         // Move the stack operand from a register to memory
         match opnd {
@@ -1760,7 +1760,7 @@ impl Assembler {
         // If the slot is already used, which is a valid optimization to avoid spills,
         // give up the verification.
         let canary_opnd = if cfg!(debug_assertions) && self.leaf_ccall && opnds.iter().all(|opnd|
-            opnd.get_reg_mapping() != canary_opnd.get_reg_mapping()
+            opnd.get_reg_opnd() != canary_opnd.get_reg_opnd()
         ) {
             asm_comment!(self, "set stack canary");
             self.mov(canary_opnd, vm_stack_canary().into());
