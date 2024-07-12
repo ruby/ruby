@@ -1086,7 +1086,7 @@ impl Assembler
     }
 
     /// Get the list of registers that can be used for stack temps.
-    pub fn get_temp_regs() -> &'static [Reg] {
+    pub fn get_temp_regs2() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
         &TEMP_REGS[0..num_regs]
     }
@@ -1204,7 +1204,7 @@ impl Assembler
 
         // Convert Opnd::Stack to Opnd::Reg
         fn reg_opnd(opnd: &Opnd, reg_idx: usize) -> Opnd {
-            let regs = Assembler::get_temp_regs();
+            let regs = Assembler::get_temp_regs2();
             if let Opnd::Stack { num_bits, .. } = *opnd {
                 incr_counter!(temp_reg_opnd);
                 Opnd::Reg(regs[reg_idx]).with_num_bits(num_bits).unwrap()

@@ -479,15 +479,17 @@ impl RegMapping {
 
     /// Find an available register and return the index of it.
     fn find_unused_reg(&self, opnd: RegOpnd) -> Option<usize> {
-        if get_option!(num_temp_regs) == 0 {
+        let num_regs = get_option!(num_temp_regs);
+        if num_regs == 0 {
             return None;
         }
+        assert!(num_regs <= MAX_MAPPED_REGS);
 
         // If the default index for the operand is available, use that to minimize
         // discrepancies among Contexts.
         let default_idx = match opnd {
-            RegOpnd::Stack(stack_idx) => stack_idx.as_usize() % MAX_MAPPED_REGS,
-            RegOpnd::Local(local_idx) => MAX_MAPPED_REGS - (local_idx.as_usize() % MAX_MAPPED_REGS) - 1,
+            RegOpnd::Stack(stack_idx) => stack_idx.as_usize() % num_regs,
+            RegOpnd::Local(local_idx) => num_regs - (local_idx.as_usize() % num_regs) - 1,
         };
         if self.0[default_idx].is_none() {
             return Some(default_idx);
@@ -3759,7 +3761,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 
 /// Return registers to be pushed and popped on branch_stub_hit.
 pub fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
-    let temp_regs = Assembler::get_temp_regs().iter();
+    let temp_regs = Assembler::get_temp_regs2().iter();
     let len = temp_regs.len();
     // The return value gen_leave() leaves in C_RET_REG
     // needs to survive the branch_stub_hit() call.

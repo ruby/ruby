@@ -79,7 +79,7 @@ impl From<&Opnd> for X86Opnd {
     }
 }
 
-/// List of registers that can be used for stack temps.
+/// List of registers that can be used for stack temps and locals.
 pub static TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
 
 impl Assembler
