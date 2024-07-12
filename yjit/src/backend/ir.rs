@@ -1033,7 +1033,10 @@ pub struct Assembler {
 
     /// The current ISEQ's local table size. asm.local_opnd() uses this, and it's
     /// sometimes hard to pass this value, e.g. asm.spill_temps() in asm.ccall().
-    pub num_locals: Option<u32>,
+    ///
+    /// `None` means we're not assembling for an ISEQ, or that the local size is
+    /// not relevant.
+    pub(super) num_locals: Option<u32>,
 
     /// Side exit caches for each SideExitContext
     pub(super) side_exits: HashMap<SideExitContext, CodePtr>,
@@ -1050,10 +1053,20 @@ pub struct Assembler {
 
 impl Assembler
 {
-    pub fn new() -> Self {
+    /// Create an Assembler for ISEQ-specific code.
+    /// It includes all inline code and some outlined code like side exits and stubs.
+    pub fn new(num_locals: u32) -> Self {
+        Self::new_with_label_names(Vec::default(), HashMap::default(), Some(num_locals))
+    }
+
+    /// Create an Assembler for outlined code that are not specific to any ISEQ,
+    /// e.g. trampolines that are shared globally.
+    pub fn new_without_iseq() -> Self {
         Self::new_with_label_names(Vec::default(), HashMap::default(), None)
     }
 
+    /// Create an Assembler with parameters that are populated by another Assembler instance.
+    /// This API is used for copying an Assembler for the next compiler pass.
     pub fn new_with_label_names(
         label_names: Vec<String>,
         side_exits: HashMap<SideExitContext, CodePtr>,
@@ -1076,6 +1089,11 @@ impl Assembler
     pub fn get_temp_regs() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
         &TEMP_REGS[0..num_regs]
+    }
+
+    /// Get the number of locals for the ISEQ being compiled
+    pub fn get_num_locals(&self) -> Option<u32> {
+        self.num_locals
     }
 
     /// Set a context for generating side exits

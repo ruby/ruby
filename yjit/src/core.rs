@@ -3009,7 +3009,7 @@ impl Assembler {
             idx,
             num_bits: 64,
             stack_size: self.ctx.stack_size,
-            num_locals: Some(self.num_locals.unwrap()), // this must exist for locals
+            num_locals: Some(self.get_num_locals().unwrap()), // this must exist for locals
             sp_offset: self.ctx.sp_offset,
             reg_mapping: None, // push_insn will set this
         }
@@ -3210,7 +3210,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
 
 // Change the entry's jump target from an entry stub to a next entry
 pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: CodePtr) {
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     asm_comment!(asm, "regenerate_entry");
 
     // gen_entry_guard generates cmp + jne. We're rewriting only jne.
@@ -3286,7 +3286,7 @@ fn entry_stub_hit_body(
 
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
     asm.compile(cb, Some(ocb))?;
 
@@ -3297,7 +3297,7 @@ fn entry_stub_hit_body(
     let blockref = match find_block_version(blockid, &ctx) {
         // If an existing block is found, generate a jump to the block.
         Some(blockref) => {
-            let mut asm = Assembler::new();
+            let mut asm = Assembler::new_without_iseq();
             asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
             asm.compile(cb, Some(ocb))?;
             Some(blockref)
@@ -3325,7 +3325,7 @@ fn entry_stub_hit_body(
 pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
 
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     asm_comment!(asm, "entry stub hit");
 
     asm.mov(C_ARG_OPNDS[0], entry_address.into());
@@ -3341,7 +3341,7 @@ pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<Code
 /// it's useful for Code GC to call entry_stub_hit from a globally shared code.
 pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // See gen_entry_guard for how it's used.
     asm_comment!(asm, "entry_stub_hit() trampoline");
@@ -3364,7 +3364,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     let branch_terminates_block = branch.end_addr.get() == block.get_end_addr();
 
     // Generate the branch
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     asm_comment!(asm, "regenerate_branch");
     branch.gen_fn.call(
         &mut asm,
@@ -3682,9 +3682,8 @@ fn gen_branch_stub(
 ) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
 
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
     asm.ctx = Context::decode(ctx);
-    asm.num_locals = Some(unsafe { get_iseq_body_local_table_size(iseq) });
     asm.set_reg_mapping(asm.ctx.reg_mapping);
     asm_comment!(asm, "branch stub hit");
 
@@ -3721,7 +3720,7 @@ fn gen_branch_stub(
 
 pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
     // `branch_ptr` and `target_idx` is different for each stub,
@@ -4095,7 +4094,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             let cur_dropped_bytes = cb.has_dropped_bytes();
             cb.set_write_ptr(block_start);
 
-            let mut asm = Assembler::new();
+            let mut asm = Assembler::new_without_iseq();
             asm.jmp(block_entry_exit.as_side_exit());
             cb.set_dropped_bytes(false);
             asm.compile(&mut cb, Some(ocb)).expect("can rewrite existing code");
@@ -4362,7 +4361,7 @@ mod tests {
         assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         asm.stack_push(Type::Fixnum);
         let top_type = asm.ctx.get_opnd_type(StackOpnd(0));
         assert!(top_type == Type::Fixnum);
@@ -4372,7 +4371,7 @@ mod tests {
 
     #[test]
     fn context_upgrade_local() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         asm.stack_push_local(0);
         asm.ctx.upgrade_opnd_type(StackOpnd(0), Type::Nil);
         assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(0)));
@@ -4406,7 +4405,7 @@ mod tests {
 
     #[test]
     fn shift_stack_for_send() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
 
         // Push values to simulate send(:name, arg) with 6 items already on-stack
         for _ in 0..6 {

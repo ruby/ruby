@@ -722,7 +722,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
 // interpreter state.
 fn gen_stub_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     gen_counter_incr(&mut asm, Counter::exit_from_branch_stub);
 
@@ -811,9 +811,8 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
 /// since they change the logic required for reconstructing interpreter state.
 pub fn gen_outlined_exit(exit_pc: *mut VALUE, num_locals: u32, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut cb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(num_locals);
     asm.ctx = *ctx;
-    asm.num_locals = Some(num_locals);
     asm.set_reg_mapping(ctx.get_reg_mapping());
 
     gen_exit(exit_pc, &mut asm);
@@ -832,7 +831,7 @@ pub fn gen_counted_exit(exit_pc: *mut VALUE, side_exit: CodePtr, ocb: &mut Outli
         None => return Some(side_exit),
     };
 
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // Increment a counter
     gen_counter_incr(&mut asm, counter);
@@ -891,7 +890,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler) -> O
 // Landing code for when c_return tracing is enabled. See full_cfunc_return().
 fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // This chunk of code expects REG_EC to be filled properly and
     // RAX to contain the return value of the C method.
@@ -921,7 +920,7 @@ fn gen_full_cfunc_return(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 /// This is used by gen_leave() and gen_entry_prologue()
 fn gen_leave_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // gen_leave() fully reconstructs interpreter state and leaves the
     // return value in C_RET_OPND before coming here.
@@ -948,7 +947,7 @@ fn gen_leave_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 // the caller's stack, which is different from gen_stub_exit().
 fn gen_leave_exception(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // gen_leave() leaves the return value in C_RET_OPND before coming here.
     let ruby_ret_val = asm.live_reg_opnd(C_RET_OPND);
@@ -1017,7 +1016,7 @@ pub fn gen_entry_prologue(
 ) -> Option<CodePtr> {
     let code_ptr = cb.get_write_ptr();
 
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
     if get_option_ref!(dump_disasm).is_some() {
         asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
     } else {
@@ -1186,9 +1185,8 @@ pub fn gen_single_block(
     jit.iseq = blockid.iseq;
 
     // Create a backend assembler instance
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(jit.num_locals());
     asm.ctx = ctx;
-    asm.num_locals = Some(jit.num_locals());
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
@@ -7724,7 +7722,7 @@ fn gen_send_iseq(
 
     // Pop arguments and receiver in return context and
     // mark it as a continuation of gen_leave()
-    let mut return_asm = Assembler::new();
+    let mut return_asm = Assembler::new(jit.num_locals());
     return_asm.ctx = asm.ctx;
     return_asm.stack_pop(sp_offset.try_into().unwrap());
     return_asm.ctx.set_sp_offset(0); // We set SP on the caller's frame above
@@ -10476,7 +10474,7 @@ mod tests {
 
         return (
             Context::default(),
-            Assembler::new(),
+            Assembler::new(0),
             cb,
             OutlinedCb::wrap(CodeBlock::new_dummy(256 * 1024)),
         );
@@ -10511,7 +10509,6 @@ mod tests {
     fn test_get_side_exit() {
         let (ctx, mut asm, _, mut ocb) = setup_codegen();
         let side_exit_context = SideExitContext::new(0 as _, ctx);
-        asm.num_locals = Some(0);
         asm.get_side_exit(&side_exit_context, None, &mut ocb);
         assert!(ocb.unwrap().get_write_pos() > 0);
     }

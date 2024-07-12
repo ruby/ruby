@@ -1383,7 +1383,7 @@ mod tests {
     use crate::disasm::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(), CodeBlock::new_dummy(1024))
+        (Assembler::new(0), CodeBlock::new_dummy(1024))
     }
 
     #[test]
@@ -1682,7 +1682,7 @@ mod tests {
     #[test]
     fn test_bcond_straddling_code_pages() {
         const LANDING_PAGE: usize = 65;
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         let mut cb = CodeBlock::new_dummy_with_freed_pages(vec![0, LANDING_PAGE]);
 
         // Skip to near the end of the page. Room for two instructions.

@@ -895,14 +895,14 @@ impl Assembler
 
 #[cfg(test)]
 mod tests {
-    use crate::disasm::{assert_disasm};
+    use crate::disasm::assert_disasm;
     #[cfg(feature = "disasm")]
     use crate::disasm::{unindent, disasm_addr_range};
 
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(), CodeBlock::new_dummy(1024))
+        (Assembler::new(0), CodeBlock::new_dummy(1024))
     }
 
     #[test]
