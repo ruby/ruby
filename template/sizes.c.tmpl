@@ -25,6 +25,20 @@ conditions = {
 #endif
 
 % end
+
+/*
+ * Document-const: SIZEOF
+ *
+ * A Hash with the byte size of \C types available to the compiler
+ * used to build Ruby. To access this constant, first run
+ * <code>require 'rbconfig/sizeof'</code>.
+ *
+ *    require 'rbconfig/sizeof'
+ *    RUBY_PLATFORM                                  # => "x64-mingw-ucrt"
+ *    RbConfig::SIZEOF.fetch_values('long', 'void*') # => [4, 8]
+ *
+ */
+
 extern void Init_limits(void);
 void
 Init_sizeof(void)
