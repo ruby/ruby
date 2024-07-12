@@ -7238,6 +7238,7 @@ gc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 gc.$(OBJEXT): $(hdrdir)/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/version.h
+gc.$(OBJEXT): $(top_srcdir)/gc/gc.h
 gc.$(OBJEXT): $(top_srcdir)/gc/gc_impl.h
 gc.$(OBJEXT): $(top_srcdir)/internal/array.h
 gc.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
@@ -7508,6 +7509,7 @@ gc_impl.$(OBJEXT): $(CCAN_DIR)/list/list.h
 gc_impl.$(OBJEXT): $(CCAN_DIR)/str/str.h
 gc_impl.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 gc_impl.$(OBJEXT): $(top_srcdir)/gc/default.c
+gc_impl.$(OBJEXT): $(top_srcdir)/gc/gc.h
 gc_impl.$(OBJEXT): $(top_srcdir)/gc/gc_impl.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/bits.h
 gc_impl.$(OBJEXT): $(top_srcdir)/internal/compilers.h

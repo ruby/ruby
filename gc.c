@@ -82,6 +82,7 @@
 #include "darray.h"
 #include "debug_counter.h"
 #include "eval_intern.h"
+#include "gc/gc.h"
 #include "gc/gc_impl.h"
 #include "id_table.h"
 #include "internal.h"
@@ -125,34 +126,6 @@
 
 #include "builtin.h"
 #include "shape.h"
-
-RUBY_SYMBOL_EXPORT_BEGIN
-size_t rb_size_mul_or_raise(size_t, size_t, VALUE);
-bool rb_gc_obj_free(void *objspace, VALUE obj);
-size_t rb_gc_obj_optimal_size(VALUE obj);
-void rb_gc_mark_children(void *objspace, VALUE obj);
-void rb_gc_update_object_references(void *objspace, VALUE obj);
-void rb_gc_update_vm_references(void *objspace);
-void rb_gc_reachable_objects_from_callback(VALUE obj);
-void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
-void *rb_gc_get_objspace(void);
-size_t rb_size_mul_or_raise(size_t x, size_t y, VALUE exc);
-void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
-void rb_gc_set_pending_interrupt(void);
-void rb_gc_unset_pending_interrupt(void);
-bool rb_gc_obj_free(void *objspace, VALUE obj);
-void rb_gc_mark_roots(void *objspace, const char **categoryp);
-void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
-bool rb_gc_multi_ractor_p(void);
-void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data);
-void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
-void rb_obj_info_dump(VALUE obj);
-const char *rb_obj_info(VALUE obj);
-bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
-uint32_t rb_gc_get_shape(VALUE obj);
-void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
-uint32_t rb_gc_rebuild_shape(VALUE obj, size_t size_pool_id);
-size_t rb_obj_memsize_of(VALUE obj);
 
 unsigned int
 rb_gc_vm_lock(void)
@@ -352,7 +325,6 @@ rb_gc_rebuild_shape(VALUE obj, size_t size_pool_id)
 
     return (uint32_t)rb_shape_id(new_shape);
 }
-RUBY_SYMBOL_EXPORT_END
 
 void rb_vm_update_references(void *ptr);
 
