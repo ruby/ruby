@@ -431,14 +431,14 @@ pub enum RegOpnd {
 pub struct RegMapping([Option<RegOpnd>; MAX_MAPPED_REGS]);
 
 impl RegMapping {
-    /// Return the index of the register for a given stack value if allocated.
+    /// Return the index of the register for a given operand if allocated.
     pub fn get_reg(&self, opnd: RegOpnd) -> Option<usize> {
         self.0.iter().enumerate()
             .find(|(_, &reg_opnd)| reg_opnd == Some(opnd))
             .map(|(reg_idx, _)| reg_idx)
     }
 
-    /// Allocate a register for a given stack value if available.
+    /// Allocate a register for a given operand if available.
     /// Return true if self is updated.
     pub fn alloc_reg(&mut self, opnd: RegOpnd) -> bool {
         // If a given opnd already has a register, skip allocation.
@@ -463,7 +463,7 @@ impl RegMapping {
         false
     }
 
-    /// Deallocate a register for a given stack value if in use.
+    /// Deallocate a register for a given operand if in use.
     /// Return true if self is updated.
     pub fn dealloc_reg(&mut self, opnd: RegOpnd) -> bool {
         for reg_opnd in self.0.iter_mut() {
@@ -481,7 +481,7 @@ impl RegMapping {
             return None;
         }
 
-        // If the default index for the stack value is available, use that to minimize
+        // If the default index for the operand is available, use that to minimize
         // discrepancies among Contexts.
         let default_idx = match opnd {
             RegOpnd::Stack(stack_idx) => stack_idx.as_usize() % MAX_MAPPED_REGS,
