@@ -5562,11 +5562,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // own arrays, followed by a newarray, and then continually
             // concat the arrays with the SplatNode nodes.
             const int max_new_array_size = 0x100;
+            const int min_tmp_array_size = 0x40;
 
             int new_array_size = 0;
             bool first_chunk = true;
 
-            /* Either create a new array, or push to the existing array */
+            // This is an optimization wherein we keep track of whether or not
+            // the previous element was a static literal. If it was, then we do
+            // not attempt to check if we have a subarray that can be optimized.
+            // If it was not, then we do check.
+            bool static_literal = false;
+
+            // Either create a new array, or push to the existing array.
 #define FLUSH_CHUNK \
             if (new_array_size) {                                                              \
                 if (first_chunk) PUSH_INSN1(ret, location, newarray, INT2FIX(new_array_size)); \
@@ -5590,15 +5597,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         PUSH_GETLOCAL(ret, location, index.index, index.level);
                     }
 
-                    if (index > 0) {
-                        PUSH_INSN(ret, location, concattoarray);
-                    }
-                    else {
+                    if (first_chunk) {
                         // If this is the first element of the array then we
                         // need to splatarray the elements into the list.
                         PUSH_INSN1(ret, location, splatarray, Qtrue);
                         first_chunk = false;
                     }
+                    else {
+                        PUSH_INSN(ret, location, concattoarray);
+                    }
+
+                    static_literal = false;
                 }
                 else if (PM_NODE_TYPE_P(element, PM_KEYWORD_HASH_NODE)) {
                     FLUSH_CHUNK;
@@ -5628,9 +5637,40 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         new_array_size++;
                     }
                 }
-                else {
+                else if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && !static_literal && ((index + min_tmp_array_size) < elements->size)) {
+                    // If we have a static literal, then there's the potential
+                    // to group a bunch of them together with a literal array
+                    // and then concat them together.
+                    size_t right_index = index + 1;
+                    while (right_index < elements->size && PM_NODE_FLAG_P(elements->nodes[right_index], PM_NODE_FLAG_STATIC_LITERAL)) right_index++;
+
+                    size_t tmp_array_size = right_index - index;
+                    if (tmp_array_size >= min_tmp_array_size) {
+                        VALUE tmp_array = rb_ary_hidden_new(tmp_array_size);
+
+                        // Create the temporary array.
+                        for (; tmp_array_size; tmp_array_size--)
+                            rb_ary_push(tmp_array, pm_static_literal_value(iseq, elements->nodes[index++], scope_node));
+                        OBJ_FREEZE(tmp_array);
+
+                        // Emit the optimized code.
+                        FLUSH_CHUNK;
+                        if (first_chunk) {
+                            PUSH_INSN1(ret, location, duparray, tmp_array);
+                            first_chunk = false;
+                        }
+                        else {
+                            PUSH_INSN1(ret, location, putobject, tmp_array);
+                            PUSH_INSN(ret, location, concattoarray);
+                        }
+                    }
+                    else {
+                        static_literal = true;
+                    }
+                } else {
                     PM_COMPILE_NOT_POPPED(element);
                     if (++new_array_size >= max_new_array_size) FLUSH_CHUNK;
+                    static_literal = false;
                 }
             }
 
