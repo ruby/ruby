@@ -672,9 +672,32 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
         else if (!ISEQ_BODY(iseq)->param.flags.has_kwrest && !ISEQ_BODY(iseq)->param.flags.has_kw) {
             converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
-            arg_rest_dup(args);
-            rb_ary_push(args->rest, converted_keyword_hash);
-            keyword_hash = Qnil;
+            if (ISEQ_BODY(iseq)->param.flags.has_rest) {
+                arg_rest_dup(args);
+                rb_ary_push(args->rest, converted_keyword_hash);
+                keyword_hash = Qnil;
+            }
+            else {
+                // Avoid duping rest when not necessary
+                // Copy rest elements and converted keyword hash directly to VM stack
+                const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+                int j, i=args->argc, rest_len = RARRAY_LENINT(args->rest);
+                if (rest_len) {
+                    CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
+                    given_argc += rest_len;
+                    args->argc += rest_len;
+                    for (j=0; rest_len > 0; rest_len--, i++, j++) {
+                        locals[i] = argv[j];
+                    }
+                }
+                locals[i] = converted_keyword_hash;
+                given_argc--;
+                args->argc++;
+                args->rest = Qfalse;
+                ci_flag &= ~(VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT);
+                keyword_hash = Qnil;
+                goto arg_splat_and_kw_splat_flattened;
+            }
         }
         else {
             keyword_hash = converted_keyword_hash;
@@ -768,6 +791,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         FL_SET_RAW(flag_keyword_hash, RHASH_PASS_AS_KEYWORDS);
     }
 
+  arg_splat_and_kw_splat_flattened:
     if (kw_flag && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
         rb_raise(rb_eArgError, "no keywords accepted");
     }
