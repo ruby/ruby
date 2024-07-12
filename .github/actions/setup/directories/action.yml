@@ -101,7 +101,7 @@ runs:
     - if: steps.which.outputs.autoreconf
       shell: bash
       working-directory: ${{ inputs.srcdir }}
-      run: ./autogen.sh
+      run: ./autogen.sh --install
 
     # This is for MinGW.
     - if: runner.os == 'Windows'

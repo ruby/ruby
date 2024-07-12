@@ -1,0 +1,94 @@
+name: Compiles ruby in a container
+description: >-
+  Makes ruby using a dedicated container
+
+inputs:
+  tag:
+    required: false
+    default: clang-18
+    description: >-
+      container image tag to use in this run.
+
+  with_gcc:
+    required: false
+    description: >-
+      override compiler path & flags.
+
+  CFLAGS:
+    required: false
+    description: >-
+      C compiler flags to override.
+
+  CXXFLAGS:
+    required: false
+    description: >-
+      C++ compiler flags to override.
+
+  optflags:
+    required: false
+    # -O1 is faster than -O3 in our tests... Majority of time are consumed trying
+    # to optimize binaries.  Also GitHub Actions run on relatively modern CPUs
+    # compared to, say, GCC 4 or Clang 3.  We don't specify `-march=native`
+    # because compilers tend not understand what the CPU is.
+    default: '-O1'
+    description: >-
+      Compiler flags for optimisations.
+
+  cppflags:
+    required: false
+    description: >-
+      Additional preprocessor flags.
+
+  append_configure:
+    required: false
+    default: >-
+      --without-valgrind
+      --without-jemalloc
+      --without-gmp
+    description: >-
+      flags to append to configure.
+
+  enable_shared:
+    required: false
+    default: true
+    description: >-
+      Whether to build libruby.so.
+
+  check:
+    required: false
+    default: ''
+    description: >-
+      Whether to run `make check`
+
+  static_exts:
+    required: false
+    description: >-
+      whitespace separated list of extensions that need be linked statically.
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: docker pull --quiet 'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
+
+    - name: compile
+      shell: bash
+      run: >-
+        docker run
+        --rm
+        --user=root
+        --volume '${{ github.workspace }}:/github/workspace:ro'
+        --workdir=/github/workspace
+        --entrypoint=/github/workspace/.github/actions/compilers/entrypoint.sh
+        --env CI
+        --env GITHUB_ACTION
+        --env INPUT_WITH_GCC='${{ inputs.with_gcc || inputs.tag }}'
+        --env INPUT_CFLAGS='${{ inputs.CFLAGS }}'
+        --env INPUT_CXXFLAGS='${{ inputs.CXXFLAGS }}'
+        --env INPUT_OPTFLAGS='${{ inputs.OPTFLAGS }}'
+        --env INPUT_CPPFLAGS='${{ inputs.cppflags }}'
+        --env INPUT_APPEND_CONFIGURE='${{ inputs.append_configure }}'
+        --env INPUT_CHECK='${{ inputs.check }}'
+        --env INPUT_ENABLE_SHARED='${{ inputs.enable_shared }}'
+        --env INPUT_STATIC_EXTS='${{ inputs.static_exts }}'
+        'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
