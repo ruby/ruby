@@ -2996,7 +2996,7 @@ impl Assembler {
             idx,
             num_bits: 64,
             stack_size: self.ctx.stack_size,
-            local_size: None, // not needed for stack temps
+            num_locals: None, // not needed for stack temps
             sp_offset: self.ctx.sp_offset,
             reg_mapping: None, // push_insn will set this
         }
@@ -3009,7 +3009,7 @@ impl Assembler {
             idx,
             num_bits: 64,
             stack_size: self.ctx.stack_size,
-            local_size: Some(self.local_size.unwrap()), // this must exist for locals
+            num_locals: Some(self.num_locals.unwrap()), // this must exist for locals
             sp_offset: self.ctx.sp_offset,
             reg_mapping: None, // push_insn will set this
         }
@@ -3684,7 +3684,7 @@ fn gen_branch_stub(
 
     let mut asm = Assembler::new();
     asm.ctx = Context::decode(ctx);
-    asm.local_size = Some(unsafe { get_iseq_body_local_table_size(iseq) });
+    asm.num_locals = Some(unsafe { get_iseq_body_local_table_size(iseq) });
     asm.set_reg_mapping(asm.ctx.reg_mapping);
     asm_comment!(asm, "branch stub hit");
 

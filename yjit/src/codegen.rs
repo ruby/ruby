@@ -404,7 +404,7 @@ impl<'a> JITState<'a> {
     }
 
     /// Return the number of locals in the current ISEQ
-    pub fn local_size(&self) -> u32 {
+    pub fn num_locals(&self) -> u32 {
         unsafe { get_iseq_body_local_table_size(self.iseq) }
     }
 }
@@ -809,11 +809,11 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
 /// moment, so there is one unique side exit for each context. Note that
 /// it's incorrect to jump to the side exit after any ctx stack push operations
 /// since they change the logic required for reconstructing interpreter state.
-pub fn gen_outlined_exit(exit_pc: *mut VALUE, local_size: u32, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
+pub fn gen_outlined_exit(exit_pc: *mut VALUE, num_locals: u32, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut cb = ocb.unwrap();
     let mut asm = Assembler::new();
     asm.ctx = *ctx;
-    asm.local_size = Some(local_size);
+    asm.num_locals = Some(num_locals);
     asm.set_reg_mapping(ctx.get_reg_mapping());
 
     gen_exit(exit_pc, &mut asm);
@@ -882,7 +882,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler) -> O
         jit.block_entry_exit = Some(entry_exit?);
     } else {
         let block_entry_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, jit.starting_insn_idx.into()) };
-        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, jit.local_size(), block_starting_context, jit.get_ocb())?);
+        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, jit.num_locals(), block_starting_context, jit.get_ocb())?);
     }
 
     Some(())
@@ -1140,7 +1140,7 @@ fn end_block_with_jump(
     if jit.record_boundary_patch_point {
         jit.record_boundary_patch_point = false;
         let exit_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, continuation_insn_idx.into())};
-        let exit_pos = gen_outlined_exit(exit_pc, jit.local_size(), &reset_depth, jit.get_ocb());
+        let exit_pos = gen_outlined_exit(exit_pc, jit.num_locals(), &reset_depth, jit.get_ocb());
         record_global_inval_patch(asm, exit_pos?);
     }
 
@@ -1188,7 +1188,7 @@ pub fn gen_single_block(
     // Create a backend assembler instance
     let mut asm = Assembler::new();
     asm.ctx = ctx;
-    asm.local_size = Some(jit.local_size());
+    asm.num_locals = Some(jit.num_locals());
 
     #[cfg(feature = "disasm")]
     if get_option_ref!(dump_disasm).is_some() {
@@ -1247,7 +1247,7 @@ pub fn gen_single_block(
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
             // Generate an exit to this instruction and record it
-            let exit_pos = gen_outlined_exit(jit.pc, jit.local_size(), &asm.ctx, jit.get_ocb()).ok_or(())?;
+            let exit_pos = gen_outlined_exit(jit.pc, jit.num_locals(), &asm.ctx, jit.get_ocb()).ok_or(())?;
             record_global_inval_patch(&mut asm, exit_pos);
             jit.record_boundary_patch_point = false;
         }
@@ -10511,7 +10511,7 @@ mod tests {
     fn test_get_side_exit() {
         let (ctx, mut asm, _, mut ocb) = setup_codegen();
         let side_exit_context = SideExitContext::new(0 as _, ctx);
-        asm.local_size = Some(0);
+        asm.num_locals = Some(0);
         asm.get_side_exit(&side_exit_context, None, &mut ocb);
         assert!(ocb.unwrap().get_write_pos() > 0);
     }

@@ -78,7 +78,7 @@ pub enum Opnd
         /// ctx.stack_size when this operand is made. Used with idx for Opnd::Reg.
         stack_size: u8,
         /// The number of local variables in the current ISEQ. Used only for locals.
-        local_size: Option<u32>,
+        num_locals: Option<u32>,
         /// ctx.sp_offset when this operand is made. Used with idx for Opnd::Mem.
         sp_offset: i8,
         /// ctx.reg_mapping when this operand is read. Used for register allocation.
@@ -174,7 +174,7 @@ impl Opnd
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
             Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
-            Opnd::Stack { idx, stack_size, local_size, sp_offset, reg_mapping, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mapping }),
+            Opnd::Stack { idx, stack_size, num_locals, sp_offset, reg_mapping, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping }),
             _ => None,
         }
     }
@@ -237,12 +237,12 @@ impl Opnd
     /// Convert an operand into RegMapping if it's Opnd::Stack
     pub fn get_reg_mapping(&self) -> Option<RegOpnd> {
         match *self {
-            Opnd::Stack { idx, stack_size, local_size, .. } => Some(
-                if let Some(local_size) = local_size {
+            Opnd::Stack { idx, stack_size, num_locals, .. } => Some(
+                if let Some(num_locals) = num_locals {
                     let last_idx = stack_size as i32 + VM_ENV_DATA_SIZE as i32 - 1;
                     assert!(last_idx <= idx, "Local index {} must be >= last local index {}", idx, last_idx);
-                    assert!(idx <= last_idx + local_size as i32, "Local index {} must be < last local index {} + local size {}", idx, last_idx, local_size);
-                    RegOpnd::Local((last_idx + local_size as i32 - idx) as u8)
+                    assert!(idx <= last_idx + num_locals as i32, "Local index {} must be < last local index {} + local size {}", idx, last_idx, num_locals);
+                    RegOpnd::Local((last_idx + num_locals as i32 - idx) as u8)
                 } else {
                     assert!(idx < stack_size as i32);
                     RegOpnd::Stack((stack_size as i32 - idx - 1) as u8)
@@ -1033,7 +1033,7 @@ pub struct Assembler {
 
     /// The current ISEQ's local table size. asm.local_opnd() uses this, and it's
     /// sometimes hard to pass this value, e.g. asm.spill_temps() in asm.ccall().
-    pub local_size: Option<u32>,
+    pub num_locals: Option<u32>,
 
     /// Side exit caches for each SideExitContext
     pub(super) side_exits: HashMap<SideExitContext, CodePtr>,
@@ -1057,14 +1057,14 @@ impl Assembler
     pub fn new_with_label_names(
         label_names: Vec<String>,
         side_exits: HashMap<SideExitContext, CodePtr>,
-        local_size: Option<u32>
+        num_locals: Option<u32>
     ) -> Self {
         Self {
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names,
             ctx: Context::default(),
-            local_size,
+            num_locals,
             side_exits,
             side_exit_pc: None,
             side_exit_stack_size: None,
@@ -1111,7 +1111,7 @@ impl Assembler
                     self.live_ranges[idx] = insn_idx;
                 }
                 // Set current ctx.reg_mapping to Opnd::Stack.
-                Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mapping: None } => {
+                Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping: None } => {
                     assert_eq!(
                         self.ctx.get_stack_size() as i16 - self.ctx.get_sp_offset() as i16,
                         stack_size as i16 - sp_offset as i16,
@@ -1122,7 +1122,7 @@ impl Assembler
                         idx,
                         num_bits,
                         stack_size,
-                        local_size,
+                        num_locals,
                         sp_offset,
                         reg_mapping: Some(self.ctx.get_reg_mapping()),
                     };
@@ -1151,7 +1151,7 @@ impl Assembler
         // Get a cached side exit
         let side_exit = match self.side_exits.get(&side_exit_context) {
             None => {
-                let exit_code = gen_outlined_exit(side_exit_context.pc, self.local_size.unwrap(), &side_exit_context.get_ctx(), ocb)?;
+                let exit_code = gen_outlined_exit(side_exit_context.pc, self.num_locals.unwrap(), &side_exit_context.get_ctx(), ocb)?;
                 self.side_exits.insert(*side_exit_context, exit_code);
                 exit_code
             }
@@ -1247,7 +1247,7 @@ impl Assembler
             // Spill locals
             for local_idx in 0..MAX_REG_OPNDS {
                 if reg_mapping.dealloc_reg(RegOpnd::Local(local_idx)) {
-                    let first_local_ep_offset = self.local_size.unwrap() + VM_ENV_DATA_SIZE - 1;
+                    let first_local_ep_offset = self.num_locals.unwrap() + VM_ENV_DATA_SIZE - 1;
                     let ep_offset = first_local_ep_offset - local_idx as u32;
                     self.spill_temp(self.local_opnd(ep_offset));
                 }
@@ -1271,10 +1271,10 @@ impl Assembler
 
         // Move the stack operand from a register to memory
         match opnd {
-            Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, .. } => {
+            Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, .. } => {
                 self.mov(
-                    Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mapping: Some(mem_mappings) },
-                    Opnd::Stack { idx, num_bits, stack_size, local_size, sp_offset, reg_mapping: Some(reg_mapping) },
+                    Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping: Some(mem_mappings) },
+                    Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping: Some(reg_mapping) },
                 );
             }
             _ => unreachable!(),
@@ -1415,7 +1415,7 @@ impl Assembler
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         // shifted_live_ranges is indexed by mapped indexes in insn operands.
         let mut shifted_live_ranges: Vec<usize> = live_ranges.clone();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.local_size);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_mapped() {
