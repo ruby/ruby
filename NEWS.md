@@ -26,7 +26,7 @@ Note that each entry is kept to a minimum, see links for details.
   (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
 * `GC.config` added to allow setting configuration variables on the Garbage
-  Collector [[Feature #20443]]
+  Collector. [[Feature #20443]]
 
 * GC configuration parameter `rgengc_allow_full_mark` introduced. When `false`
   GC will only mark young objects. Default is `true`. [[Feature #20443]]
