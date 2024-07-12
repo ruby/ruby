@@ -1915,7 +1915,7 @@ shared-gc: probes.h
 		exit 1; \
 	else \
 		echo generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT); \
-		$(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) -I. $(XDLDFLAGS) $(cflags) -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c; \
+		$(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) $(XDLDFLAGS) $(cflags) -DBUILDING_SHARED_GC -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c; \
 	fi
 
 help: PHONY
