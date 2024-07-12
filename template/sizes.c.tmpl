@@ -30,7 +30,8 @@ void
 Init_sizeof(void)
 {
     VALUE s = rb_hash_new();
-    rb_define_const(rb_define_module("RbConfig"), "SIZEOF", s);
+    VALUE mRbConfig = rb_define_module("RbConfig");
+    rb_define_const(mRbConfig, "SIZEOF", s);
 
 #define DEFINE(type, size) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(SIZEOF_##size))
 #define DEFINE_SIZE(type) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(sizeof(type)))
