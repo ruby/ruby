@@ -814,7 +814,7 @@ pub fn gen_outlined_exit(exit_pc: *mut VALUE, local_size: u32, ctx: &Context, oc
     let mut asm = Assembler::new();
     asm.ctx = *ctx;
     asm.local_size = Some(local_size);
-    asm.set_reg_mappings(ctx.get_reg_mappings());
+    asm.set_reg_mapping(ctx.get_reg_mapping());
 
     gen_exit(exit_pc, &mut asm);
 
@@ -1195,7 +1195,7 @@ pub fn gen_single_block(
         let blockid_idx = blockid.idx;
         let chain_depth = if asm.ctx.get_chain_depth() > 0 { format!("(chain_depth: {})", asm.ctx.get_chain_depth()) } else { "".to_string() };
         asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
-        asm_comment!(asm, "reg_mappings: {:?}", asm.ctx.get_reg_mappings());
+        asm_comment!(asm, "reg_mapping: {:?}", asm.ctx.get_reg_mapping());
     }
 
     // Mark the start of an ISEQ for --yjit-perf
@@ -1240,8 +1240,8 @@ pub fn gen_single_block(
 
         // stack_pop doesn't immediately deallocate a register for stack temps,
         // but it's safe to do so at this instruction boundary.
-        for stack_idx in asm.ctx.get_stack_size()..MAX_REG_MAPPINGS {
-            asm.ctx.dealloc_reg(RegMapping::Stack(stack_idx));
+        for stack_idx in asm.ctx.get_stack_size()..MAX_REG_OPNDS {
+            asm.ctx.dealloc_reg(RegOpnd::Stack(stack_idx));
         }
 
         // If previous instruction requested to record the boundary
@@ -1810,7 +1810,7 @@ fn gen_splatkw(
         asm.mov(stack_ret, hash);
         asm.stack_push(block_type);
         // Leave block_opnd spilled by ccall as is
-        asm.ctx.dealloc_reg(RegMapping::Stack(asm.ctx.get_stack_size() - 1));
+        asm.ctx.dealloc_reg(RegOpnd::Stack(asm.ctx.get_stack_size() - 1));
     }
 
     Some(KeepCompiling)
@@ -10545,7 +10545,7 @@ mod tests {
 
         assert_eq!(status, Some(KeepCompiling));
         let mut default = Context::default();
-        default.set_reg_mappings(context.get_reg_mappings());
+        default.set_reg_mapping(context.get_reg_mapping());
         assert_eq!(context.diff(&default), TypeDiff::Compatible(0));
     }
 
