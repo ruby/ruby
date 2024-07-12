@@ -1223,8 +1223,8 @@ impl Assembler
         self.ctx.clear_local_types();
     }
 
-    /// Spill all live stack temps from registers to the stack
-    pub fn spill_temps(&mut self) {
+    /// Spill all live registers to the stack
+    pub fn spill_regs(&mut self) {
         // Forget registers above the stack top
         let mut reg_mapping = self.ctx.get_reg_mapping();
         for stack_idx in self.ctx.get_stack_size()..MAX_REG_OPNDS {
@@ -1711,7 +1711,7 @@ impl Assembler {
         // Spill stack temp registers since they are caller-saved registers.
         // Note that this doesn't spill stack temps that are already popped
         // but may still be used in the C arguments.
-        self.spill_temps();
+        self.spill_regs();
         let new_temps = self.ctx.get_reg_mapping(); // all spilled
 
         // Temporarily manipulate RegMappings so that we can use registers

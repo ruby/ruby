@@ -3701,7 +3701,7 @@ fn gen_branch_stub(
     }
 
     // Spill temps to the VM stack as well for jit.peek_at_stack()
-    asm.spill_temps();
+    asm.spill_regs();
 
     // Set up the arguments unique to this stub for:
     //

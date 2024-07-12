@@ -753,7 +753,7 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
     }
 
     // Spill stack temps before returning to the interpreter
-    asm.spill_temps();
+    asm.spill_regs();
 
     // Generate the code to exit to the interpreters
     // Write the adjusted SP back into the CFP
@@ -3081,7 +3081,7 @@ fn gen_set_ivar(
         // If we know the stack value is an immediate, there's no need to
         // generate WB code.
         if !stack_type.is_imm() {
-            asm.spill_temps(); // for ccall (unconditionally spill them for RegMappings consistency)
+            asm.spill_regs(); // for ccall (unconditionally spill them for RegMappings consistency)
             let skip_wb = asm.new_label("skip_wb");
             // If the value we're writing is an immediate, we don't need to WB
             asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
@@ -3526,7 +3526,7 @@ fn gen_equality_specialized(
         let ret = asm.new_label("ret");
 
         // Spill for ccall. For safety, unconditionally spill temps before branching.
-        asm.spill_temps();
+        asm.spill_regs();
 
         // If they are equal by identity, return true
         asm.cmp(a_opnd, b_opnd);
@@ -5492,7 +5492,7 @@ fn jit_rb_str_uplus(
 
     // We allocate when we dup the string
     jit_prepare_call_with_gc(jit, asm);
-    asm.spill_temps(); // For ccall. Unconditionally spill them for RegMappings consistency.
+    asm.spill_regs(); // For ccall. Unconditionally spill them for RegMappings consistency.
 
     asm_comment!(asm, "Unary plus on string");
     let recv_opnd = asm.stack_pop(1);
@@ -5510,7 +5510,7 @@ fn jit_rb_str_uplus(
     asm.jz(ret_label);
 
     // Str is frozen - duplicate it
-    asm.spill_temps(); // for ccall
+    asm.spill_regs(); // for ccall
     let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
     asm.mov(stack_ret, ret_opnd);
 
@@ -5792,7 +5792,7 @@ fn jit_rb_str_concat(
     // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
     jit_prepare_non_leaf_call(jit, asm);
-    asm.spill_temps(); // For ccall. Unconditionally spill them for RegMappings consistency.
+    asm.spill_regs(); // For ccall. Unconditionally spill them for RegMappings consistency.
 
     let concat_arg = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
@@ -5825,7 +5825,7 @@ fn jit_rb_str_concat(
 
     // If encodings are different, use a slower encoding-aware concatenate
     asm.write_label(enc_mismatch);
-    asm.spill_temps(); // Ignore the register for the other local branch
+    asm.spill_regs(); // Ignore the register for the other local branch
     let ret_opnd = asm.ccall(rb_str_buf_append as *const u8, vec![recv, concat_arg]);
     let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);
@@ -6331,7 +6331,7 @@ fn gen_push_frame(
 
     if frame.iseq.is_some() {
         // Spill stack temps to let the callee use them (must be done before changing the SP register)
-        asm.spill_temps();
+        asm.spill_regs();
 
         // Saving SP before calculating ep avoids a dependency on a register
         // However this must be done after referencing frame.recv, which may be SP-relative
@@ -9868,7 +9868,7 @@ fn gen_getblockparam(
 
     // Save the PC and SP because we might allocate
     jit_prepare_call_with_gc(jit, asm);
-    asm.spill_temps(); // For ccall. Unconditionally spill them for RegMappings consistency.
+    asm.spill_regs(); // For ccall. Unconditionally spill them for RegMappings consistency.
 
     // A mirror of the interpreter code. Checking for the case
     // where it's pushing rb_block_param_proxy.
