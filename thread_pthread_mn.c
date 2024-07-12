@@ -338,6 +338,30 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
 }
 
 static void
+nt_madvise_free_or_dontneed(void *addr, size_t len)
+{
+    /* There is no real way to perform error handling here. Both MADV_FREE
+     * and MADV_DONTNEED are both documented to pretty much only return EINVAL
+     * for a huge variety of errors. It's indistinguishable if madvise fails
+     * because the parameters were bad, or because the kernel we're running on
+     * does not support the given advice. This kind of free-but-don't-unmap
+     * is best-effort anyway, so don't sweat it.
+     *
+     * n.b. A very common case of "the kernel doesn't support MADV_FREE and
+     * returns EINVAL" is running under the `rr` debugger; it makes all
+     * MADV_FREE calls return EINVAL. */
+
+#if defined(MADV_FREE)
+    int r = madvise(addr, len, MADV_FREE);
+    // Return on success, or else try MADV_DONTNEED
+    if (r == 0) return;
+#endif
+#if defined(MADV_DONTNEED)
+    madvise(addr, len, MADV_DONTNEED);
+#endif
+}
+
+static void
 nt_free_stack(void *mstack)
 {
     if (!mstack) return;
@@ -358,18 +382,11 @@ nt_free_stack(void *mstack)
         ch->free_stack[ch->free_stack_pos++] = idx;
 
         // clear the stack pages
-#if defined(MADV_FREE)
-        int r = madvise(stack, nt_thread_stack_size(), MADV_FREE);
-#elif defined(MADV_DONTNEED)
-        int r = madvise(stack, nt_thread_stack_size(), MADV_DONTNEED);
-#else
-        int r = 0;
-#endif
-
-        if (r != 0) rb_bug("madvise errno:%d", errno);
+        nt_madvise_free_or_dontneed(stack, nt_thread_stack_size());
     }
     rb_native_mutex_unlock(&nt_machine_stack_lock);
 }
+
 
 static int
 native_thread_check_and_create_shared(rb_vm_t *vm)
