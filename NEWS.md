@@ -158,4 +158,5 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
+[Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
