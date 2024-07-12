@@ -123,8 +123,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 0, "required(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "required(*r2k_array#{block})")
 
-        # Currently allocates 1 array unnecessarily
-        check_allocations(1, 1, "required(*empty_array, **hash1, **empty_hash#{block})")
+        check_allocations(0, 1, "required(*empty_array, **hash1, **empty_hash#{block})")
       RUBY
     end
 
@@ -148,8 +147,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 0, "optional(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "optional(*r2k_array#{block})")
 
-        # Currently allocates 1 array unnecessarily
-        check_allocations(1, 1, "optional(*empty_array, **hash1, **empty_hash#{block})")
+        check_allocations(0, 1, "optional(*empty_array, **hash1, **empty_hash#{block})")
       RUBY
     end
 
