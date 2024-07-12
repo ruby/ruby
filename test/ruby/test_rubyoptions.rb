@@ -787,6 +787,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil)
+    pend "macOS 15 is not working with this assertion" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
     omit if ENV['RUBY_ON_BUG']
 
     # We want YJIT to be enabled in the subprocess if it's enabled for us

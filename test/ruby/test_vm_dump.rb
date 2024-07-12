@@ -3,6 +3,8 @@ require 'test/unit'
 
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args)
+    pend "macOS 15 is not working with this assertion" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
     omit if RUBY_PLATFORM !~ /darwin/
     assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
   end
