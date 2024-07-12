@@ -24,7 +24,10 @@
 #include "ccan/list/list.h"
 #include "darray.h"
 #include "gc/gc_impl.h"
-#include "probes.h"
+
+#ifndef BUILDING_SHARED_GC
+# include "probes.h"
+#endif
 
 #include "debug_counter.h"
 #include "internal/sanitizers.h"
@@ -8849,8 +8852,13 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
     }
 }
 
-#define RUBY_DTRACE_GC_HOOK(name) \
+#ifdef BUILDING_SHARED_GC
+# define RUBY_DTRACE_GC_HOOK(name)
+#else
+# define RUBY_DTRACE_GC_HOOK(name) \
     do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
+#endif
+
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
 {
