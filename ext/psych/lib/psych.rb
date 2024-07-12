@@ -479,6 +479,7 @@ module Psych
   #
   #                           Default: <tt>2</tt>.
   # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #                           For unlimited line width use <tt>-1</tt>.
   #
   #                           Default: <tt>0</tt> (meaning "wrap at 81").
   # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
@@ -559,6 +560,7 @@ module Psych
   #
   #                           Default: <tt>2</tt>.
   # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #                           For unlimited line width use <tt>-1</tt>.
   #
   #                           Default: <tt>0</tt> (meaning "wrap at 81").
   # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
