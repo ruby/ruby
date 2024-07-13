@@ -56,7 +56,7 @@
             │       │   ├── binary_operator: :*
             │       │   └── depth: 0
             │       └── @ ReturnNode (location: (4,2)-(4,10))
-            │           ├── flags: newline, redundant
+            │           ├── flags: newline
             │           ├── keyword_loc: (4,2)-(4,8) = "return"
             │           └── arguments:
             │               @ ArgumentsNode (location: (4,9)-(4,10))
