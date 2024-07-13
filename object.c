@@ -101,7 +101,8 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
-    RBASIC(obj)->flags = type;
+    VALUE ignored_flags = RUBY_FL_PROMOTED | RUBY_FL_SEEN_OBJ_ID;
+    RBASIC(obj)->flags = (type & ~ignored_flags) | (RBASIC(obj)->flags & ignored_flags);
     RBASIC_SET_CLASS(obj, klass);
     return obj;
 }
