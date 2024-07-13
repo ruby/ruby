@@ -4238,7 +4238,7 @@ rb_hash_assoc(VALUE hash, VALUE key)
     table = RHASH_ST_TABLE(hash);
     orighash = table->type;
 
-    if (!RHASH_IDENTHASH_P(orighash)) {
+    if (!RHASH_IDENTHASH_P(hash)) {
         VALUE value;
         struct reset_hash_type_arg ensure_arg;
         struct st_hash_type assochash;
