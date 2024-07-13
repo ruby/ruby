@@ -10,7 +10,7 @@ describe "Range#step" do
     r.step { }.should equal(r)
   end
 
-  ruby_version_is ""..."3.3" do
+  ruby_version_is ""..."3.4" do
     it "calls #to_int to coerce step to an Integer" do
       obj = mock("Range#step")
       obj.should_receive(:to_int).and_return(1)
@@ -40,7 +40,7 @@ describe "Range#step" do
     end
   end
 
-  ruby_version_is "3.3" do
+  ruby_version_is "3.4" do
     it "calls #coerce to coerce step to an Integer" do
       obj = mock("Range#step")
       obj.should_receive(:coerce).at_least(:once).and_return([1, 2])
@@ -64,14 +64,14 @@ describe "Range#step" do
     -> { (-1..1).step(0.0) { |x| x } }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "3.3" do
+  ruby_version_is "3.4" do
     it "does not raise an ArgumentError if step is 0 for non-numeric ranges" do
       t = Time.utc(2023, 2, 24)
       -> { (t..t+1).step(0) { break } }.should_not raise_error(ArgumentError)
     end
   end
 
-  ruby_version_is ""..."3.3" do
+  ruby_version_is ""..."3.4" do
     it "raises an ArgumentError if step is negative" do
       -> { (-1..1).step(-2) { |x| x } }.should raise_error(ArgumentError)
     end
@@ -94,7 +94,7 @@ describe "Range#step" do
         ScratchPad.recorded.should eql([-2.0, -0.5, 1.0])
       end
 
-      ruby_version_is "3.3" do
+      ruby_version_is "3.4" do
         it "does not iterate if step is negative for forward range" do
           (-1..1).step(-1) { |x| ScratchPad << x }
           ScratchPad.recorded.should eql([])
@@ -175,7 +175,7 @@ describe "Range#step" do
     end
 
     describe "and String values" do
-      ruby_version_is ""..."3.3" do
+      ruby_version_is ""..."3.4" do
         it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
           ("A".."E").step { |x| ScratchPad << x }
           ScratchPad.recorded.should == ["A", "B", "C", "D", "E"]
@@ -200,7 +200,7 @@ describe "Range#step" do
         end
       end
 
-      ruby_version_is "3.3" do
+      ruby_version_is "3.4" do
         it "raises an ArgumentError when not passed a step" do
           -> { ("A".."E").step {  } }.should raise_error(ArgumentError)
         end
@@ -380,7 +380,7 @@ describe "Range#step" do
     end
 
     describe "and String values" do
-      ruby_version_is ""..."3.3" do
+      ruby_version_is ""..."3.4" do
         it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
           ("A"..."E").step { |x| ScratchPad << x }
           ScratchPad.recorded.should == ["A", "B", "C", "D"]
@@ -396,7 +396,7 @@ describe "Range#step" do
         end
       end
 
-      ruby_version_is "3.3" do
+      ruby_version_is "3.4" do
         it "raises an ArgumentError when not passed a step" do
           -> { ("A".."E").step {  } }.should raise_error(ArgumentError)
         end
@@ -482,7 +482,7 @@ describe "Range#step" do
     end
 
     describe "and String values" do
-      ruby_version_is ""..."3.3" do
+      ruby_version_is ""..."3.4" do
         it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
           eval("('A'..)").step { |x| break if x > "D"; ScratchPad << x }
           ScratchPad.recorded.should == ["A", "B", "C", "D"]
@@ -507,7 +507,7 @@ describe "Range#step" do
         end
       end
 
-      ruby_version_is "3.3" do
+      ruby_version_is "3.4" do
         it "raises an ArgumentError when not passed a step" do
           -> { ("A"..).step {  } }.should raise_error(ArgumentError)
         end
@@ -536,7 +536,7 @@ describe "Range#step" do
 
     describe "returned Enumerator" do
       describe "size" do
-        ruby_version_is ""..."3.3" do
+        ruby_version_is ""..."3.4" do
           it "raises a TypeError if step does not respond to #to_int" do
             obj = mock("Range#step non-integer")
             -> { (1..2).step(obj) }.should raise_error(TypeError)
@@ -549,7 +549,7 @@ describe "Range#step" do
           end
         end
 
-        ruby_version_is "3.3" do
+        ruby_version_is "3.4" do
           it "does not raise if step is incompatible" do
             obj = mock("Range#step non-integer")
             -> { (1..2).step(obj) }.should_not raise_error
@@ -593,7 +593,7 @@ describe "Range#step" do
           (1.0...6.4).step(1.8).size.should == 3
         end
 
-        ruby_version_is ""..."3.3" do
+        ruby_version_is ""..."3.4" do
           it "returns nil with begin and end are String" do
             ("A".."E").step(2).size.should == nil
             ("A"..."E").step(2).size.should == nil
@@ -610,7 +610,7 @@ describe "Range#step" do
           end
         end
 
-        ruby_version_is "3.3" do
+        ruby_version_is "3.4" do
           it "returns nil with begin and end are String" do
             ("A".."E").step("A").size.should == nil
             ("A"..."E").step("A").size.should == nil
@@ -649,14 +649,14 @@ describe "Range#step" do
             (1..).step(2).take(3).should == [1, 3, 5]
           end
 
-          ruby_version_is ""..."3.3" do
+          ruby_version_is ""..."3.4" do
             it "returns an instance of Enumerator when begin is not numeric" do
               ("a"..).step.class.should == Enumerator
               ("a"..).step(2).take(3).should == %w[a c e]
             end
           end
 
-          ruby_version_is "3.3" do
+          ruby_version_is "3.4" do
             it "returns an instance of Enumerator when begin is not numeric" do
               ("a"..).step("a").class.should == Enumerator
               ("a"..).step("a").take(3).should == %w[a aa aaa]
@@ -665,13 +665,13 @@ describe "Range#step" do
         end
 
         context "when range is beginless and endless" do
-          ruby_version_is ""..."3.3" do
+          ruby_version_is ""..."3.4" do
             it "returns an instance of Enumerator" do
               Range.new(nil, nil).step.class.should == Enumerator
             end
           end
 
-          ruby_version_is "3.3" do
+          ruby_version_is "3.4" do
             it "raises an ArgumentError" do
               -> { Range.new(nil, nil).step(1) }.should raise_error(ArgumentError)
             end
