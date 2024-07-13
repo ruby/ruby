@@ -1397,6 +1397,15 @@ class TestHash < Test::Unit::TestCase
     assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
+  def test_update_on_identhash
+    key = +'a'
+    i = @cls[].compare_by_identity
+    i[key] = 0
+    h = @cls[].update(i)
+    key.upcase!
+    assert_equal(0, h.fetch('a'))
+  end
+
   def test_merge
     h1 = @cls[1=>2, 3=>4]
     h2 = {1=>3, 5=>7}
@@ -1419,10 +1428,10 @@ class TestHash < Test::Unit::TestCase
     expected[7] = 8
     h2 = h.merge(7=>8)
     assert_equal(expected, h2)
-    assert_equal(true, h2.compare_by_identity?)
+    assert_predicate(h2, :compare_by_identity?)
     h2 = h.merge({})
     assert_equal(h, h2)
-    assert_equal(true, h2.compare_by_identity?)
+    assert_predicate(h2, :compare_by_identity?)
 
     h = @cls[]
     h.compare_by_identity
@@ -1430,10 +1439,10 @@ class TestHash < Test::Unit::TestCase
     h1.compare_by_identity
     h2 = h.merge(7=>8)
     assert_equal(h1, h2)
-    assert_equal(true, h2.compare_by_identity?)
+    assert_predicate(h2, :compare_by_identity?)
     h2 = h.merge({})
     assert_equal(h, h2)
-    assert_equal(true, h2.compare_by_identity?)
+    assert_predicate(h2, :compare_by_identity?)
   end
 
   def test_merge!
