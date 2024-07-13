@@ -679,14 +679,14 @@ describe "Range#step" do
         end
 
         context "when begin and end are not numerics" do
-          ruby_version_is ""..."3.3" do
+          ruby_version_is ""..."3.4" do
             it "returns an instance of Enumerator" do
               ("a".."z").step.class.should == Enumerator
               ("a".."z").step(3).take(4).should == %w[a d g j]
             end
           end
 
-          ruby_version_is "3.3" do
+          ruby_version_is "3.4" do
             it "returns an instance of Enumerator" do
               ("a".."z").step("a").class.should == Enumerator
               ("a".."z").step("a").take(4).should == %w[a aa aaa aaaa]
