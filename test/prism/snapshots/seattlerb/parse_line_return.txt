@@ -27,7 +27,7 @@
             │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ ReturnNode (location: (3,10)-(3,19))
-            │           │           ├── flags: newline, redundant
+            │           │           ├── flags: newline
             │           │           ├── keyword_loc: (3,10)-(3,16) = "return"
             │           │           └── arguments:
             │           │               @ ArgumentsNode (location: (3,17)-(3,19))

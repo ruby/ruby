@@ -5428,32 +5428,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     const pm_node_location_t location = PM_NODE_START_LOCATION(parser, node);
     int lineno = (int) location.line;
 
-    if (PM_NODE_TYPE_P(node, PM_RETURN_NODE) && PM_NODE_FLAG_P(node, PM_RETURN_NODE_FLAGS_REDUNDANT) && ((const pm_return_node_t *) node)->arguments == NULL) {
-        // If the node that we're compiling is a return node that is redundant,
-        // then it cannot be considered a line node because the other parser
-        // eliminates it from the parse tree. In this case we must replicate
-        // this behavior.
-    } else {
-        if (PM_NODE_TYPE_P(node, PM_BEGIN_NODE) && (((const pm_begin_node_t *) node)->statements == NULL) && (((const pm_begin_node_t *) node)->rescue_clause != NULL)) {
-            // If this node is a begin node and it has empty statements and also
-            // has a rescue clause, then the other parser considers it as
-            // starting on the same line as the rescue, as opposed to the
-            // location of the begin keyword. We replicate that behavior here.
-            lineno = (int) PM_NODE_START_LINE_COLUMN(parser, ((const pm_begin_node_t *) node)->rescue_clause).line;
-        }
+    if (PM_NODE_TYPE_P(node, PM_BEGIN_NODE) && (((const pm_begin_node_t *) node)->statements == NULL) && (((const pm_begin_node_t *) node)->rescue_clause != NULL)) {
+        // If this node is a begin node and it has empty statements and also
+        // has a rescue clause, then the other parser considers it as
+        // starting on the same line as the rescue, as opposed to the
+        // location of the begin keyword. We replicate that behavior here.
+        lineno = (int) PM_NODE_START_LINE_COLUMN(parser, ((const pm_begin_node_t *) node)->rescue_clause).line;
+    }
 
-        if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
-            // If this node has the newline flag set and it is on a new line
-            // from the previous nodes that have been compiled for this ISEQ,
-            // then we need to emit a newline event.
-            int event = RUBY_EVENT_LINE;
+    if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+        // If this node has the newline flag set and it is on a new line
+        // from the previous nodes that have been compiled for this ISEQ,
+        // then we need to emit a newline event.
+        int event = RUBY_EVENT_LINE;
 
-            ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
-            if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
-                event |= RUBY_EVENT_COVERAGE_LINE;
-            }
-            PUSH_TRACE(ret, event);
+        ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
+        if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+            event |= RUBY_EVENT_COVERAGE_LINE;
         }
+        PUSH_TRACE(ret, event);
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -8193,63 +8186,53 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_return_node_t *cast = (const pm_return_node_t *) node;
         const pm_arguments_node_t *arguments = cast->arguments;
 
-        if (PM_NODE_FLAG_P(cast, PM_RETURN_NODE_FLAGS_REDUNDANT)) {
+        enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
+        LABEL *splabel = 0;
+
+        const rb_iseq_t *parent_iseq = iseq;
+        enum rb_iseq_type parent_type = ISEQ_BODY(parent_iseq)->type;
+        while (parent_type == ISEQ_TYPE_RESCUE || parent_type == ISEQ_TYPE_ENSURE) {
+            if (!(parent_iseq = ISEQ_BODY(parent_iseq)->parent_iseq)) break;
+            parent_type = ISEQ_BODY(parent_iseq)->type;
+        }
+
+        switch (parent_type) {
+          case ISEQ_TYPE_TOP:
+          case ISEQ_TYPE_MAIN:
             if (arguments) {
-                PM_COMPILE_NOT_POPPED((const pm_node_t *) arguments);
+                rb_warn("argument of top-level return is ignored");
             }
-            else {
-                PUSH_INSN(ret, location, putnil);
+            if (parent_iseq == iseq) {
+                type = ISEQ_TYPE_METHOD;
             }
+            break;
+          default:
+            break;
+        }
+
+        if (type == ISEQ_TYPE_METHOD) {
+            splabel = NEW_LABEL(0);
+            PUSH_LABEL(ret, splabel);
+            PUSH_ADJUST(ret, location, 0);
+        }
+
+        if (arguments) {
+            PM_COMPILE_NOT_POPPED((const pm_node_t *) arguments);
         }
         else {
-            enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
-            LABEL *splabel = 0;
+            PUSH_INSN(ret, location, putnil);
+        }
 
-            const rb_iseq_t *parent_iseq = iseq;
-            enum rb_iseq_type parent_type = ISEQ_BODY(parent_iseq)->type;
-            while (parent_type == ISEQ_TYPE_RESCUE || parent_type == ISEQ_TYPE_ENSURE) {
-                if (!(parent_iseq = ISEQ_BODY(parent_iseq)->parent_iseq)) break;
-                parent_type = ISEQ_BODY(parent_iseq)->type;
-            }
-
-            switch (parent_type) {
-            case ISEQ_TYPE_TOP:
-            case ISEQ_TYPE_MAIN:
-                if (arguments) {
-                    rb_warn("argument of top-level return is ignored");
-                }
-                if (parent_iseq == iseq) {
-                    type = ISEQ_TYPE_METHOD;
-                }
-                break;
-            default:
-                break;
-            }
-
-            if (type == ISEQ_TYPE_METHOD) {
-                splabel = NEW_LABEL(0);
-                PUSH_LABEL(ret, splabel);
-                PUSH_ADJUST(ret, location, 0);
-            }
-
-            if (arguments) {
-                PM_COMPILE_NOT_POPPED((const pm_node_t *) arguments);
-            }
-            else {
-                PUSH_INSN(ret, location, putnil);
-            }
-
-            if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
-                pm_add_ensure_iseq(ret, iseq, 1, scope_node);
-                PUSH_TRACE(ret, RUBY_EVENT_RETURN);
-                PUSH_INSN(ret, location, leave);
-                PUSH_ADJUST_RESTORE(ret, splabel);
-                if (!popped) PUSH_INSN(ret, location, putnil);
-            }
-            else {
-                PUSH_INSN1(ret, location, throw, INT2FIX(TAG_RETURN));
-                if (popped) PUSH_INSN(ret, location, pop);
-            }
+        if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
+            pm_add_ensure_iseq(ret, iseq, 1, scope_node);
+            PUSH_TRACE(ret, RUBY_EVENT_RETURN);
+            PUSH_INSN(ret, location, leave);
+            PUSH_ADJUST_RESTORE(ret, splabel);
+            if (!popped) PUSH_INSN(ret, location, putnil);
+        }
+        else {
+            PUSH_INSN1(ret, location, throw, INT2FIX(TAG_RETURN));
+            if (popped) PUSH_INSN(ret, location, pop);
         }
 
         return;
