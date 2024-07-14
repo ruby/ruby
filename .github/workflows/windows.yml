@@ -149,15 +149,6 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
-      # We use OpenSSL instealled by vcpkg instead
-      - name: disable system OpenSSL
-        run: |
-          for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
-            ren c:\Windows\System32\%%I.dll %%I.dll_
-          )
-        # windows-2019 image doesn't have OpenSSL as of 2023/9/14
-        if: ${{ matrix.vs != 2019 }}
-
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure
         run: >-
