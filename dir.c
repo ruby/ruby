@@ -509,7 +509,7 @@ nogvl_opendir(void *ptr)
 {
     const char *path = ptr;
 
-    return (void *)opendir(path);
+    return opendir(path);
 }
 
 static DIR *
@@ -591,7 +591,7 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
 static void *
 nogvl_fdopendir(void *fd)
 {
-    return (void *)fdopendir((int)(VALUE)fd);
+    return fdopendir((int)(VALUE)fd);
 }
 
 /*
@@ -620,7 +620,7 @@ dir_s_for_fd(VALUE klass, VALUE fd)
     struct dir_data *dp;
     VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
 
-    if (!(dp->dir = (DIR *)IO_WITHOUT_GVL(nogvl_fdopendir, (void *)(VALUE)NUM2INT(fd)))) {
+    if (!(dp->dir = IO_WITHOUT_GVL(nogvl_fdopendir, (void *)(VALUE)NUM2INT(fd)))) {
         rb_sys_fail("fdopendir");
         UNREACHABLE_RETURN(Qnil);
     }
@@ -767,11 +767,11 @@ fundamental_encoding_p(rb_encoding *enc)
 static void *
 nogvl_readdir(void *dir)
 {
-    return (void *)readdir((DIR *)dir);
+    return readdir(dir);
 }
 
-# define READDIR(dir, enc) (struct dirent *)IO_WITHOUT_GVL(nogvl_readdir, (void *)dir)
-# define READDIR_NOGVL(dir, enc) (struct dirent *)nogvl_readdir((void *)dir)
+# define READDIR(dir, enc) IO_WITHOUT_GVL(nogvl_readdir, (void *)(dir))
+# define READDIR_NOGVL(dir, enc) nogvl_readdir((dir))
 #endif
 
 /* safe to use without GVL */
@@ -1673,8 +1673,8 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(args)	(int)(VALUE)nogvl_stat((void *)&(args))
-#define LSTAT(args)	(int)(VALUE)nogvl_lstat((void *)&(args))
+#define STAT(args)	(int)(VALUE)nogvl_stat(&(args))
+#define LSTAT(args)	(int)(VALUE)nogvl_lstat(&(args))
 #else
 #define STAT(args)	IO_WITHOUT_GVL_INT(nogvl_stat, (void *)&(args))
 #define LSTAT(args)	IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&(args))
