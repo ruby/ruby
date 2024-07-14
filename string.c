@@ -1399,6 +1399,42 @@ rb_str_tmp_frozen_acquire(VALUE orig)
     return str_new_frozen_buffer(0, orig, FALSE);
 }
 
+VALUE
+rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
+{
+    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
+    if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
+
+    VALUE str = str_alloc_heap(0);
+    OBJ_FREEZE(str);
+    /* Always set the STR_SHARED_ROOT to ensure it does not get re-embedded. */
+    FL_SET(str, STR_SHARED_ROOT);
+
+    size_t capa = str_capacity(orig, TERM_LEN(orig));
+
+    /* If the string is embedded then we want to create a copy that is heap
+     * allocated. If the string is shared then the shared root must be
+     * embedded, so we want to create a copy. If the string is a shared root
+     * then it must be embedded, so we want to create a copy. */
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+        RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
+        memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
+    }
+    else {
+        /* orig must be heap allocated and not shared, so we can safely transfer
+         * the pointer to str. */
+        RSTRING(str)->as.heap.ptr = RSTRING(orig)->as.heap.ptr;
+        RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
+        RBASIC(orig)->flags &= ~STR_NOFREE;
+        STR_SET_SHARED(orig, str);
+    }
+
+    RSTRING(str)->as.heap.len = RSTRING(orig)->as.heap.len;
+    RSTRING(str)->as.heap.aux.capa = capa;
+
+    return str;
+}
+
 void
 rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 {
