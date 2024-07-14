@@ -54,6 +54,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
 
     steps:
       - run: md build
@@ -143,7 +144,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install --triplet x64-windows
+          vcpkg install
         working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
@@ -161,7 +162,7 @@ jobs:
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/x64-windows
+          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
       - run: nmake prepare-vcpkg
 
