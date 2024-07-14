@@ -509,7 +509,7 @@ nogvl_opendir(void *ptr)
 {
     const char *path = ptr;
 
-    return (void *)opendir(path);
+    return opendir(path);
 }
 
 static DIR *
@@ -588,6 +588,12 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
 }
 
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+static void *
+nogvl_fdopendir(void *fd)
+{
+    return fdopendir((int)(VALUE)fd);
+}
+
 /*
  * call-seq:
  *   Dir.for_fd(fd) -> dir
@@ -614,7 +620,7 @@ dir_s_for_fd(VALUE klass, VALUE fd)
     struct dir_data *dp;
     VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
 
-    if (!(dp->dir = fdopendir(NUM2INT(fd)))) {
+    if (!(dp->dir = IO_WITHOUT_GVL(nogvl_fdopendir, (void *)(VALUE)NUM2INT(fd)))) {
         rb_sys_fail("fdopendir");
         UNREACHABLE_RETURN(Qnil);
     }
@@ -756,8 +762,16 @@ fundamental_encoding_p(rb_encoding *enc)
     }
 }
 # define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
+# define READDIR_NOGVL READDIR
 #else
-# define READDIR(dir, enc) readdir((dir))
+static void *
+nogvl_readdir(void *dir)
+{
+    return readdir(dir);
+}
+
+# define READDIR(dir, enc) IO_WITHOUT_GVL(nogvl_readdir, (void *)(dir))
+# define READDIR_NOGVL(dir, enc) nogvl_readdir((dir))
 #endif
 
 /* safe to use without GVL */
@@ -1038,7 +1052,7 @@ nogvl_chdir(void *ptr)
 static void
 dir_chdir0(VALUE path)
 {
-    if (chdir(RSTRING_PTR(path)) < 0)
+    if (IO_WITHOUT_GVL_INT(nogvl_chdir, (void*)RSTRING_PTR(path)) < 0)
         rb_sys_fail_path(path);
 }
 
@@ -1240,7 +1254,7 @@ nogvl_fchdir(void *ptr)
 static void
 dir_fchdir(int fd)
 {
-    if (fchdir(fd) < 0)
+    if (IO_WITHOUT_GVL_INT(nogvl_fchdir, (void *)&fd) < 0)
         rb_sys_fail("fchdir");
 }
 
@@ -1460,6 +1474,12 @@ check_dirname(VALUE dir)
 }
 
 #if defined(HAVE_CHROOT)
+static void *
+nogvl_chroot(void *dirname)
+{
+    return (void *)(VALUE)chroot((const char *)dirname);
+}
+
 /*
  * call-seq:
  *   Dir.chroot(dirpath) -> 0
@@ -1476,7 +1496,7 @@ static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
 {
     path = check_dirname(path);
-    if (chroot(RSTRING_PTR(path)) == -1)
+    if (IO_WITHOUT_GVL_INT(nogvl_chroot, (void *)RSTRING_PTR(path)) == -1)
         rb_sys_fail_path(path);
 
     return INT2FIX(0);
@@ -1653,11 +1673,11 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(p, s)	rb_w32_ustati128((p), (s))
-#undef lstat
-#define lstat(p, s)	rb_w32_ulstati128((p), (s))
+#define STAT(args)	(int)(VALUE)nogvl_stat(&(args))
+#define LSTAT(args)	(int)(VALUE)nogvl_lstat(&(args))
 #else
-#define STAT(p, s)	stat((p), (s))
+#define STAT(args)	IO_WITHOUT_GVL_INT(nogvl_stat, (void *)&(args))
+#define LSTAT(args)	IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&(args))
 #endif
 
 typedef int ruby_glob_errfunc(const char*, VALUE, const void*, int);
@@ -1678,14 +1698,50 @@ at_subpath(int fd, size_t baselen, const char *path)
     return *path ? path : ".";
 }
 
+#if USE_OPENDIR_AT
+struct fstatat_args {
+    int fd;
+    int flag;
+    const char *path;
+    struct stat *pst;
+};
+
+static void *
+nogvl_fstatat(void *args)
+{
+    struct fstatat_args *arg = (struct fstatat_args *)args;
+    return (void *)(VALUE)fstatat(arg->fd, arg->path, arg->pst, arg->flag);
+}
+#else
+struct stat_args {
+    const char *path;
+    struct stat *pst;
+};
+
+static void *
+nogvl_stat(void *args)
+{
+    struct stat_args *arg = (struct stat_args *)args;
+    return (void *)(VALUE)stat(arg->path, arg->pst);
+}
+#endif
+
 /* System call with warning */
 static int
 do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, 0);
+    struct fstatat_args args;
+    args.fd = fd;
+    args.path = path;
+    args.pst = pst;
+    args.flag = 0;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
 #else
-    int ret = STAT(path, pst);
+    struct stat_args args;
+    args.path = path;
+    args.pst = pst;
+    int ret = STAT(args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
@@ -1694,13 +1750,30 @@ do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, r
 }
 
 #if defined HAVE_LSTAT || defined lstat || USE_OPENDIR_AT
+#if !USE_OPENDIR_AT
+static void *
+nogvl_lstat(void *args)
+{
+    struct stat_args *arg = (struct stat_args *)args;
+    return (void *)(VALUE)lstat(arg->path, arg->pst);
+}
+#endif
+
 static int
 do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, AT_SYMLINK_NOFOLLOW);
+    struct fstatat_args args;
+    args.fd = fd;
+    args.path = path;
+    args.pst = pst;
+    args.flag = AT_SYMLINK_NOFOLLOW;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
 #else
-    int ret = lstat(path, pst);
+    struct stat_args args;
+    args.path = path;
+    args.pst = pst;
+    int ret = LSTAT(args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
@@ -3585,7 +3658,7 @@ nogvl_dir_empty_p(void *ptr)
             return (void *)INT2FIX(e);
         }
     }
-    while ((dp = READDIR(dir, NULL)) != NULL) {
+    while ((dp = READDIR_NOGVL(dir, NULL)) != NULL) {
         if (!to_be_skipped(dp)) {
             result = Qfalse;
             break;
