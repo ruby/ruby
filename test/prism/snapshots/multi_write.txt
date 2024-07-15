@@ -53,7 +53,7 @@
         │   ├── flags: newline
         │   ├── expression:
         │   │   @ LocalVariableWriteNode (location: (3,0)-(3,10))
-        │   │   ├── flags: newline
+        │   │   ├── flags: ∅
         │   │   ├── name: :foo
         │   │   ├── depth: 0
         │   │   ├── name_loc: (3,0)-(3,3) = "foo"

@@ -361,7 +361,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (35,0)-(35,7))
-        │   ├── flags: newline, ignore_visibility
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (35,0)-(35,3))
         │   │   ├── flags: static_literal
@@ -385,7 +385,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (37,0)-(37,7))
-        │   ├── flags: newline, ignore_visibility
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (37,0)-(37,3))
         │   │   ├── flags: static_literal
@@ -409,7 +409,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,8))
-        │   ├── flags: newline, ignore_visibility
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (39,0)-(39,3))
         │   │   ├── flags: static_literal
@@ -433,7 +433,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (41,0)-(41,8))
-        │   ├── flags: newline, ignore_visibility
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ RangeNode (location: (41,0)-(41,3))
         │   │   ├── flags: static_literal

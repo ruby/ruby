@@ -2575,10 +2575,10 @@ pm_break_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
 // There are certain flags that we want to use internally but don't want to
 // expose because they are not relevant beyond parsing. Therefore we'll define
 // them here and not define them in config.yml/a header file.
-static const pm_node_flags_t PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY = 0x1;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = 0x10;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = 0x20;
-static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = 0x40;
+static const pm_node_flags_t PM_WRITE_NODE_FLAGS_IMPLICIT_ARRAY = 0x4;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY = 0x40;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_COMPARISON = 0x80;
+static const pm_node_flags_t PM_CALL_NODE_FLAGS_INDEX = 0x100;
 
 /**
  * Allocate and initialize a new CallNode node. This sets everything to NULL or
