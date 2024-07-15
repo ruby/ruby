@@ -2382,17 +2382,7 @@ rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 static VALUE
 top_define_method(int argc, VALUE *argv, VALUE obj)
 {
-    rb_thread_t *th = GET_THREAD();
-    VALUE klass;
-
-    klass = th->top_wrapper;
-    if (klass) {
-        rb_warning("main.define_method in the wrapped load is effective only in wrapper module");
-    }
-    else {
-        klass = rb_cObject;
-    }
-    return rb_mod_define_method(argc, argv, klass);
+    return rb_mod_define_method(argc, argv, rb_top_main_class("define_method"));
 }
 
 /*

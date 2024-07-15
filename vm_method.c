@@ -2552,7 +2552,7 @@ rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
 static VALUE
 top_public(int argc, VALUE *argv, VALUE _)
 {
-    return rb_mod_public(argc, argv, rb_cObject);
+    return rb_mod_public(argc, argv, rb_top_main_class("public"));
 }
 
 /*
@@ -2572,7 +2572,7 @@ top_public(int argc, VALUE *argv, VALUE _)
 static VALUE
 top_private(int argc, VALUE *argv, VALUE _)
 {
-    return rb_mod_private(argc, argv, rb_cObject);
+    return rb_mod_private(argc, argv, rb_top_main_class("private"));
 }
 
 /*
@@ -2585,7 +2585,7 @@ top_private(int argc, VALUE *argv, VALUE _)
 static VALUE
 top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
 {
-    return rb_mod_ruby2_keywords(argc, argv, rb_cObject);
+    return rb_mod_ruby2_keywords(argc, argv, rb_top_main_class("ruby2_keywords"));
 }
 
 /*
