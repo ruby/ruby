@@ -1339,6 +1339,12 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     int stack_length = 0;
     bool first_chunk = true;
 
+    // This is an optimization wherein we keep track of whether or not the
+    // previous element was a static literal. If it was, then we do not attempt
+    // to check if we have a subhash that can be optimized. If it was not, then
+    // we do check.
+    bool static_literal = false;
+
     DECL_ANCHOR(anchor);
     INIT_ANCHOR(anchor);
 
@@ -1365,6 +1371,57 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
         switch (PM_NODE_TYPE(element)) {
           case PM_ASSOC_NODE: {
+            // Pre-allocation check (this branch can be omitted).
+            if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && !static_literal && ((index + min_tmp_hash_length) < elements->size)) {
+                // Count the elements that are statically-known.
+                size_t count = 1;
+                while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
+
+                if (count >= min_tmp_hash_length) {
+                    // The subsequence of elements in this hash is long enough
+                    // to merit its own hash.
+                    VALUE ary = rb_ary_hidden_new(count);
+
+                    // Create a hidden hash.
+                    for (size_t tmp_end = index + count; index < tmp_end; index++) {
+                        const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[index];
+
+                        VALUE elem[2] = {
+                            pm_static_literal_value(iseq, assoc->key, scope_node),
+                            pm_static_literal_value(iseq, assoc->value, scope_node)
+                        };
+
+                        rb_ary_cat(ary, elem, 2);
+                    }
+
+                    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                    rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
+                    hash = rb_obj_hide(hash);
+                    OBJ_FREEZE(hash);
+
+                    // Emit optimized code.
+                    FLUSH_CHUNK;
+                    if (first_chunk) {
+                        PUSH_INSN1(ret, location, duphash, hash);
+                        first_chunk = false;
+                    }
+                    else {
+                        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        PUSH_INSN(ret, location, swap);
+                        PUSH_INSN1(ret, location, putobject, hash);
+                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                    }
+
+                    break;
+                }
+                else {
+                    static_literal = true;
+                }
+            }
+            else {
+                static_literal = false;
+            }
+
             // If this is a plain assoc node, then we can compile it directly
             // and then add the total number of values on the stack.
             pm_compile_node(iseq, element, anchor, false, scope_node);
@@ -1429,10 +1486,10 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     PM_COMPILE_NOT_POPPED(element);
                     PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
                 }
-
-                first_chunk = false;
             }
 
+            first_chunk = false;
+            static_literal = false;
             break;
           }
           default:
@@ -5641,7 +5698,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     static_literal = false;
                 }
                 else if (PM_NODE_TYPE_P(element, PM_KEYWORD_HASH_NODE)) {
-                    FLUSH_CHUNK;
+                    if (new_array_size == 0 && first_chunk) {
+                        PUSH_INSN1(ret, location, newarray, INT2FIX(0));
+                        first_chunk = false;
+                    }
+                    else {
+                        FLUSH_CHUNK;
+                    }
 
                     // If we get here, then this is the last element of the
                     // array/arguments, because it cannot be followed by
@@ -5654,14 +5717,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     //                ^^^^^
                     //
                     const pm_keyword_hash_node_t *keyword_hash = (const pm_keyword_hash_node_t *) element;
-                    pm_compile_hash_elements(iseq, element, &keyword_hash->elements, PM_NODE_TYPE_P(node, PM_ARGUMENTS_NODE), ret, scope_node);
+                    pm_compile_hash_elements(iseq, element, &keyword_hash->elements, false, ret, scope_node);
 
                     // This boolean controls the manner in which we push the
-                    // hash onto the array. If it's a single element that has a
-                    // splat, then we can use the very specialized
-                    // pushtoarraykwsplat instruction to check if it's empty
-                    // before we push it.
-                    if (keyword_hash->elements.size == 1 && PM_NODE_TYPE_P(keyword_hash->elements.nodes[0], PM_ASSOC_SPLAT_NODE)) {
+                    // hash onto the array. If it's all keyword splats, then we
+                    // can use the very specialized pushtoarraykwsplat
+                    // instruction to check if it's empty before we push it.
+                    size_t splats = 0;
+                    while (splats < keyword_hash->elements.size && PM_NODE_TYPE_P(keyword_hash->elements.nodes[splats], PM_ASSOC_SPLAT_NODE)) splats++;
+
+                    if (keyword_hash->elements.size == splats) {
                         PUSH_INSN(ret, location, pushtoarraykwsplat);
                     }
                     else {
