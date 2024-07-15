@@ -11969,7 +11969,7 @@ rb_interned_str_cstr(const char *ptr)
 VALUE
 rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
 {
-    if (UNLIKELY(rb_enc_autoload_p(enc))) {
+    if (enc != NULL && UNLIKELY(rb_enc_autoload_p(enc))) {
         rb_enc_autoload(enc);
     }
 

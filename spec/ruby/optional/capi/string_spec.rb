@@ -1227,4 +1227,67 @@ end
       -> { @s.rb_str_unlocktmp("test") }.should raise_error(RuntimeError, 'temporal unlocking already unlocked string')
     end
   end
+
+  describe "rb_enc_interned_str_cstr" do
+    it "returns a frozen string" do
+      str = "hello"
+      val = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+
+      val.should.is_a?(String)
+      val.encoding.should == Encoding::US_ASCII
+      val.should.frozen?
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+      result1.should.equal?(result2)
+    end
+
+    it "returns different frozen strings for different encodings" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str_cstr(str, Encoding::UTF_8)
+      result1.should_not.equal?(result2)
+    end
+
+    it "returns the same string as String#-@" do
+      @s.rb_enc_interned_str_cstr("hello", Encoding::UTF_8).should.equal?(-"hello")
+    end
+
+    ruby_bug "#20322", ""..."3.4" do
+      it "uses the default encoding if encoding is null" do
+        str = "hello"
+        val = @s.rb_enc_interned_str_cstr(str, nil)
+        val.encoding.should == Encoding::ASCII_8BIT
+      end
+    end
+  end
+
+  describe "rb_str_to_interned_str" do
+    it "returns a frozen string" do
+      str = "hello"
+      result = @s.rb_str_to_interned_str(str)
+      result.should.is_a?(String)
+      result.should.frozen?
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_str_to_interned_str(str)
+      result2 = @s.rb_str_to_interned_str(str)
+      result1.should.equal?(result2)
+    end
+
+    it "returns different frozen strings for different encodings" do
+      result1 = @s.rb_str_to_interned_str("hello".force_encoding(Encoding::US_ASCII))
+      result2 = @s.rb_str_to_interned_str("hello".force_encoding(Encoding::UTF_8))
+      result1.should_not.equal?(result2)
+    end
+
+    it "returns the same string as String#-@" do
+      @s.rb_str_to_interned_str("hello").should.equal?(-"hello")
+    end
+  end
 end
