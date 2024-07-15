@@ -221,7 +221,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   module Git
     ##
-    # Parses auxiliary info.  Currentry `base-url` to expand
+    # Parses auxiliary info.  Currently `base-url` to expand
     # references is effective.
 
     def parse_info(info)

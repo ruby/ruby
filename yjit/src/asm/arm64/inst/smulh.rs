@@ -22,7 +22,7 @@ pub struct SMulH {
 
 impl SMulH {
     /// SMULH
-    /// https://developer.arm.com/documentation/ddi0602/2023-06/Base-Instructions/SMULH--Signed-Multiply-High-
+    /// <https://developer.arm.com/documentation/ddi0602/2023-06/Base-Instructions/SMULH--Signed-Multiply-High->
     pub fn smulh(rd: u8, rn: u8, rm: u8) -> Self {
         Self { rd, rn, ra: 0b11111, rm }
     }

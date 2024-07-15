@@ -275,6 +275,7 @@ module Bundler
     end
 
     def ask_and_set_test_framework
+      return if skip?(:test)
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
@@ -300,6 +301,10 @@ module Bundler
       test_framework
     end
 
+    def skip?(option)
+      options.key?(option) && options[option].nil?
+    end
+
     def hint_text(setting)
       if Bundler.settings["gem.#{setting}"] == false
         "Your choice will only be applied to this gem."
@@ -310,6 +315,7 @@ module Bundler
     end
 
     def ask_and_set_ci
+      return if skip?(:ci)
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
@@ -341,6 +347,7 @@ module Bundler
     end
 
     def ask_and_set_linter
+      return if skip?(:linter)
       linter_template = options[:linter] || Bundler.settings["gem.linter"]
       linter_template = deprecated_rubocop_option if linter_template.nil?
 

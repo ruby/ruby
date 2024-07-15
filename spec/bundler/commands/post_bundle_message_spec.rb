@@ -3,13 +3,13 @@
 RSpec.describe "post bundle message" do
   before :each do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
       gem "activesupport", "2.3.5", :group => [:emo, :test]
       group :test do
         gem "rspec"
       end
-      gem "rack-obama", :group => :obama
+      gem "myrack-obama", :group => :obama
     G
   end
 
@@ -115,25 +115,25 @@ RSpec.describe "post bundle message" do
 
       it "should report a helpful error message" do
         install_gemfile <<-G, raise_on_error: false
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
+          source "https://gem.repo1"
+          gem "myrack"
           gem "not-a-gem", :group => :development
         G
         expect(err).to include <<-EOS.strip
-Could not find gem 'not-a-gem' in rubygems repository #{file_uri_for(gem_repo1)}/ or installed locally.
+Could not find gem 'not-a-gem' in rubygems repository https://gem.repo1/ or installed locally.
         EOS
       end
 
       it "should report a helpful error message with reference to cache if available" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
+          source "https://gem.repo1"
+          gem "myrack"
         G
         bundle :cache
-        expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
+        expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
         install_gemfile <<-G, raise_on_error: false
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
+          source "https://gem.repo1"
+          gem "myrack"
           gem "not-a-gem", :group => :development
         G
         expect(err).to include("Could not find gem 'not-a-gem' in").

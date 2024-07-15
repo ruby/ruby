@@ -2512,6 +2512,7 @@ parser_ary_new_capa(rb_parser_t *p, long len)
         rb_bug("negative array size (or size too big): %ld", len);
     }
     rb_parser_ary_t *ary = xcalloc(1, sizeof(rb_parser_ary_t));
+    ary->data_type = 0;
     ary->len = 0;
     ary->capa = len;
     if (0 < len) {

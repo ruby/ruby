@@ -32,19 +32,19 @@ pub struct SysReg {
 
 impl SysReg {
     /// MRS (register)
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MRS--Move-System-Register-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/MRS--Move-System-Register-?lang=en>
     pub fn mrs(rt: u8, systemreg: SystemRegister) -> Self {
         SysReg { rt, systemreg, l: L::MRS }
     }
 
     /// MSR (register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/MSR--register---Move-general-purpose-register-to-System-Register-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/MSR--register---Move-general-purpose-register-to-System-Register-?lang=en>
     pub fn msr(systemreg: SystemRegister, rt: u8) -> Self {
         SysReg { rt, systemreg, l: L::MSR }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en#systemmove
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en#systemmove>
 const FAMILY: u32 = 0b110101010001;
 
 impl From<SysReg> for u32 {

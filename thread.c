@@ -1794,7 +1794,7 @@ VALUE
 rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events)
 {
     rb_execution_context_t *volatile ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_thread_t *volatile th = rb_ec_thread_ptr(ec);
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 

@@ -749,6 +749,8 @@ end
 
 def pretty(src, desc, result)
   src = src.sub(/\A\s*\n/, '')
+  lines = src.lines
+  src = lines[0..20].join + "(...snip)\n" if lines.size > 20
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 

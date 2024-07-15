@@ -17,7 +17,7 @@ enum vm_call_flag_bits {
     VM_CALL_ARGS_BLOCKARG_bit,  // m(&block)
     VM_CALL_FCALL_bit,          // m(args)   # receiver is self
     VM_CALL_VCALL_bit,          // m         # method call that looks like a local variable
-    VM_CALL_ARGS_SIMPLE_bit,    // (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL
+    VM_CALL_ARGS_SIMPLE_bit,    // !(ci->flag & (SPLAT|BLOCKARG|KWARG|KW_SPLAT|FORWARDING)) && !has_block_iseq
     VM_CALL_KWARG_bit,          // has kwarg
     VM_CALL_KW_SPLAT_bit,       // m(**opts)
     VM_CALL_TAILCALL_bit,       // located at tail position

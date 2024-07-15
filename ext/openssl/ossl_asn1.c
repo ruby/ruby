@@ -11,7 +11,6 @@
 
 static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
 			       int depth, int yield, long *num_read);
-static VALUE ossl_asn1_initialize(int argc, VALUE *argv, VALUE self);
 
 /*
  * DATE conversion
@@ -158,10 +157,6 @@ asn1integer_to_num_i(VALUE arg)
 #define ossl_asn1_get_tag_class(o)       rb_attr_get((o),sivTAG_CLASS)
 #define ossl_asn1_get_indefinite_length(o) rb_attr_get((o),sivINDEFINITE_LENGTH)
 
-#define ossl_asn1_set_value(o,v)           rb_ivar_set((o),sivVALUE,(v))
-#define ossl_asn1_set_tag(o,v)             rb_ivar_set((o),sivTAG,(v))
-#define ossl_asn1_set_tagging(o,v)         rb_ivar_set((o),sivTAGGING,(v))
-#define ossl_asn1_set_tag_class(o,v)       rb_ivar_set((o),sivTAG_CLASS,(v))
 #define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
 
 VALUE mASN1;
@@ -189,7 +184,6 @@ VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 static VALUE sym_IMPLICIT, sym_EXPLICIT;
 static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
 static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINDEFINITE_LENGTH, sivUNUSED_BITS;
-static ID id_each;
 
 /*
  * Ruby to ASN1 converters
@@ -638,35 +632,6 @@ ossl_asn1_class2sym(int tc)
 	return sym_UNIVERSAL;
 }
 
-/*
- * call-seq:
- *    OpenSSL::ASN1::ASN1Data.new(value, tag, tag_class) => ASN1Data
- *
- * _value_: Please have a look at Constructive and Primitive to see how Ruby
- * types are mapped to ASN.1 types and vice versa.
- *
- * _tag_: An Integer indicating the tag number.
- *
- * _tag_class_: A Symbol indicating the tag class. Please cf. ASN1 for
- * possible values.
- *
- * == Example
- *   asn1_int = OpenSSL::ASN1Data.new(42, 2, :UNIVERSAL) # => Same as OpenSSL::ASN1::Integer.new(42)
- *   tagged_int = OpenSSL::ASN1Data.new(42, 0, :CONTEXT_SPECIFIC) # implicitly 0-tagged INTEGER
- */
-static VALUE
-ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
-{
-    if(!SYMBOL_P(tag_class))
-	ossl_raise(eASN1Error, "invalid tag class");
-    ossl_asn1_set_tag(self, tag);
-    ossl_asn1_set_value(self, value);
-    ossl_asn1_set_tag_class(self, tag_class);
-    ossl_asn1_set_indefinite_length(self, Qfalse);
-
-    return self;
-}
-
 static VALUE
 to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
 {
@@ -795,20 +760,19 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
     if (tc == sym_UNIVERSAL &&
 	tag < ossl_asn1_info_size && ossl_asn1_info[tag].klass) {
 	VALUE klass = *ossl_asn1_info[tag].klass;
-	VALUE args[4];
-	args[0] = value;
-	args[1] = INT2NUM(tag);
-	args[2] = Qnil;
-	args[3] = tc;
-	asn1data = rb_obj_alloc(klass);
-	ossl_asn1_initialize(4, args, asn1data);
+	if (tag == V_ASN1_EOC)
+	    asn1data = rb_funcall(cASN1EndOfContent, rb_intern("new"), 0);
+	else {
+	    VALUE args[4] = { value, INT2NUM(tag), Qnil, tc };
+	    asn1data = rb_funcallv_public(klass, rb_intern("new"), 4, args);
+	}
 	if(tag == V_ASN1_BIT_STRING){
 	    rb_ivar_set(asn1data, sivUNUSED_BITS, LONG2NUM(flag));
 	}
     }
     else {
-	asn1data = rb_obj_alloc(cASN1Data);
-	ossl_asn1data_initialize(asn1data, value, INT2NUM(tag), tc);
+        VALUE args[3] = { value, INT2NUM(tag), tc };
+        asn1data = rb_funcallv_public(cASN1Data, rb_intern("new"), 3, args);
     }
 
     return asn1data;
@@ -842,20 +806,20 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
     }
 
     if (tc == sym_UNIVERSAL) {
-	VALUE args[4];
-	if (tag == V_ASN1_SEQUENCE || tag == V_ASN1_SET)
-	    asn1data = rb_obj_alloc(*ossl_asn1_info[tag].klass);
-	else
-	    asn1data = rb_obj_alloc(cASN1Constructive);
-	args[0] = ary;
-	args[1] = INT2NUM(tag);
-	args[2] = Qnil;
-	args[3] = tc;
-	ossl_asn1_initialize(4, args, asn1data);
+        if (tag == V_ASN1_SEQUENCE) {
+            VALUE args[4] = { ary, INT2NUM(tag), Qnil, tc };
+            asn1data = rb_funcallv_public(cASN1Sequence, rb_intern("new"), 4, args);
+        } else if (tag == V_ASN1_SET) {
+            VALUE args[4] = { ary, INT2NUM(tag), Qnil, tc };
+            asn1data = rb_funcallv_public(cASN1Set, rb_intern("new"), 4, args);
+        } else {
+            VALUE args[4] = { ary, INT2NUM(tag), Qnil, tc };
+            asn1data = rb_funcallv_public(cASN1Constructive, rb_intern("new"), 4, args);
+        }
     }
     else {
-	asn1data = rb_obj_alloc(cASN1Data);
-	ossl_asn1data_initialize(asn1data, ary, INT2NUM(tag), tc);
+        VALUE args[3] = {ary, INT2NUM(tag), tc};
+        asn1data = rb_funcallv_public(cASN1Data, rb_intern("new"), 3, args);
     }
 
     if (indefinite)
@@ -1048,83 +1012,6 @@ ossl_asn1_decode_all(VALUE self, VALUE obj)
     return ary;
 }
 
-/*
- * call-seq:
- *    OpenSSL::ASN1::Primitive.new(value [, tag, tagging, tag_class ]) => Primitive
- *
- * _value_: is mandatory.
- *
- * _tag_: optional, may be specified for tagged values. If no _tag_ is
- * specified, the UNIVERSAL tag corresponding to the Primitive sub-class
- * is used by default.
- *
- * _tagging_: may be used as an encoding hint to encode a value either
- * explicitly or implicitly, see ASN1 for possible values.
- *
- * _tag_class_: if _tag_ and _tagging_ are +nil+ then this is set to
- * +:UNIVERSAL+ by default. If either _tag_ or _tagging_ are set then
- * +:CONTEXT_SPECIFIC+ is used as the default. For possible values please
- * cf. ASN1.
- *
- * == Example
- *   int = OpenSSL::ASN1::Integer.new(42)
- *   zero_tagged_int = OpenSSL::ASN1::Integer.new(42, 0, :IMPLICIT)
- *   private_explicit_zero_tagged_int = OpenSSL::ASN1::Integer.new(42, 0, :EXPLICIT, :PRIVATE)
- */
-static VALUE
-ossl_asn1_initialize(int argc, VALUE *argv, VALUE self)
-{
-    VALUE value, tag, tagging, tag_class;
-    int default_tag;
-
-    rb_scan_args(argc, argv, "13", &value, &tag, &tagging, &tag_class);
-    default_tag = ossl_asn1_default_tag(self);
-
-    if (default_tag == -1 || argc > 1) {
-	if(NIL_P(tag))
-	    ossl_raise(eASN1Error, "must specify tag number");
-	if(!NIL_P(tagging) && !SYMBOL_P(tagging))
-	    ossl_raise(eASN1Error, "invalid tagging method");
-	if(NIL_P(tag_class)) {
-	    if (NIL_P(tagging))
-		tag_class = sym_UNIVERSAL;
-	    else
-		tag_class = sym_CONTEXT_SPECIFIC;
-	}
-	if(!SYMBOL_P(tag_class))
-	    ossl_raise(eASN1Error, "invalid tag class");
-    }
-    else{
-	tag = INT2NUM(default_tag);
-	tagging = Qnil;
-	tag_class = sym_UNIVERSAL;
-    }
-    ossl_asn1_set_tag(self, tag);
-    ossl_asn1_set_value(self, value);
-    ossl_asn1_set_tagging(self, tagging);
-    ossl_asn1_set_tag_class(self, tag_class);
-    ossl_asn1_set_indefinite_length(self, Qfalse);
-    if (default_tag == V_ASN1_BIT_STRING)
-	rb_ivar_set(self, sivUNUSED_BITS, INT2FIX(0));
-
-    return self;
-}
-
-static VALUE
-ossl_asn1eoc_initialize(VALUE self) {
-    VALUE tag, tagging, tag_class, value;
-    tag = INT2FIX(0);
-    tagging = Qnil;
-    tag_class = sym_UNIVERSAL;
-    value = rb_str_new("", 0);
-    ossl_asn1_set_tag(self, tag);
-    ossl_asn1_set_value(self, value);
-    ossl_asn1_set_tagging(self, tagging);
-    ossl_asn1_set_tag_class(self, tag_class);
-    ossl_asn1_set_indefinite_length(self, Qfalse);
-    return self;
-}
-
 static VALUE
 ossl_asn1eoc_to_der(VALUE self)
 {
@@ -1214,27 +1101,6 @@ ossl_asn1cons_to_der(VALUE self)
     }
 
     return to_der_internal(self, 1, indef_len, str);
-}
-
-/*
- * call-seq:
- *    asn1_ary.each { |asn1| block } => asn1_ary
- *
- * Calls the given block once for each element in self, passing that element
- * as parameter _asn1_. If no block is given, an enumerator is returned
- * instead.
- *
- * == Example
- *   asn1_ary.each do |asn1|
- *     puts asn1
- *   end
- */
-static VALUE
-ossl_asn1cons_each(VALUE self)
-{
-    rb_block_call(ossl_asn1_get_value(self), id_each, 0, 0, 0, 0);
-
-    return self;
 }
 
 /*
@@ -1371,7 +1237,7 @@ ossl_asn1obj_get_oid(VALUE self)
 
 #define OSSL_ASN1_IMPL_FACTORY_METHOD(klass) \
 static VALUE ossl_asn1_##klass(int argc, VALUE *argv, VALUE self)\
-{ return rb_funcall3(cASN1##klass, rb_intern("new"), argc, argv); }
+{ return rb_funcallv_public(cASN1##klass, rb_intern("new"), argc, argv); }
 
 OSSL_ASN1_IMPL_FACTORY_METHOD(Boolean)
 OSSL_ASN1_IMPL_FACTORY_METHOD(Integer)
@@ -1657,42 +1523,6 @@ Init_ossl_asn1(void)
      *   puts int2.value # => 1
      */
     cASN1Data = rb_define_class_under(mASN1, "ASN1Data", rb_cObject);
-    /*
-     * Carries the value of a ASN.1 type.
-     * Please confer Constructive and Primitive for the mappings between
-     * ASN.1 data types and Ruby classes.
-     */
-    rb_attr(cASN1Data, rb_intern("value"), 1, 1, 0);
-    /*
-     * An Integer representing the tag number of this ASN1Data. Never +nil+.
-     */
-    rb_attr(cASN1Data, rb_intern("tag"), 1, 1, 0);
-    /*
-     * A Symbol representing the tag class of this ASN1Data. Never +nil+.
-     * See ASN1Data for possible values.
-     */
-    rb_attr(cASN1Data, rb_intern("tag_class"), 1, 1, 0);
-    /*
-     * Never +nil+. A boolean value indicating whether the encoding uses
-     * indefinite length (in the case of parsing) or whether an indefinite
-     * length form shall be used (in the encoding case).
-     * In DER, every value uses definite length form. But in scenarios where
-     * large amounts of data need to be transferred it might be desirable to
-     * have some kind of streaming support available.
-     * For example, huge OCTET STRINGs are preferably sent in smaller-sized
-     * chunks, each at a time.
-     * This is possible in BER by setting the length bytes of an encoding
-     * to zero and by this indicating that the following value will be
-     * sent in chunks. Indefinite length encodings are always constructed.
-     * The end of such a stream of chunks is indicated by sending a EOC
-     * (End of Content) tag. SETs and SEQUENCEs may use an indefinite length
-     * encoding, but also primitive types such as e.g. OCTET STRINGS or
-     * BIT STRINGS may leverage this functionality (cf. ITU-T X.690).
-     */
-    rb_attr(cASN1Data, rb_intern("indefinite_length"), 1, 1, 0);
-    rb_define_alias(cASN1Data, "infinite_length", "indefinite_length");
-    rb_define_alias(cASN1Data, "infinite_length=", "indefinite_length=");
-    rb_define_method(cASN1Data, "initialize", ossl_asn1data_initialize, 3);
     rb_define_method(cASN1Data, "to_der", ossl_asn1data_to_der, 0);
 
     /* Document-class: OpenSSL::ASN1::Primitive
@@ -1760,16 +1590,6 @@ Init_ossl_asn1(void)
      *   prim_zero_tagged_explicit = <class>.new(value, 0, :EXPLICIT)
      */
     cASN1Primitive = rb_define_class_under(mASN1, "Primitive", cASN1Data);
-    /*
-     * May be used as a hint for encoding a value either implicitly or
-     * explicitly by setting it either to +:IMPLICIT+ or to +:EXPLICIT+.
-     * _tagging_ is not set when a ASN.1 structure is parsed using
-     * OpenSSL::ASN1.decode.
-     */
-    rb_attr(cASN1Primitive, rb_intern("tagging"), 1, 1, Qtrue);
-    rb_undef_method(cASN1Primitive, "indefinite_length=");
-    rb_undef_method(cASN1Primitive, "infinite_length=");
-    rb_define_method(cASN1Primitive, "initialize", ossl_asn1_initialize, -1);
     rb_define_method(cASN1Primitive, "to_der", ossl_asn1prim_to_der, 0);
 
     /* Document-class: OpenSSL::ASN1::Constructive
@@ -1800,17 +1620,7 @@ Init_ossl_asn1(void)
      *   set = OpenSSL::ASN1::Set.new( [ int, str ] )
      */
     cASN1Constructive = rb_define_class_under(mASN1,"Constructive", cASN1Data);
-    rb_include_module(cASN1Constructive, rb_mEnumerable);
-    /*
-     * May be used as a hint for encoding a value either implicitly or
-     * explicitly by setting it either to +:IMPLICIT+ or to +:EXPLICIT+.
-     * _tagging_ is not set when a ASN.1 structure is parsed using
-     * OpenSSL::ASN1.decode.
-     */
-    rb_attr(cASN1Constructive, rb_intern("tagging"), 1, 1, Qtrue);
-    rb_define_method(cASN1Constructive, "initialize", ossl_asn1_initialize, -1);
     rb_define_method(cASN1Constructive, "to_der", ossl_asn1cons_to_der, 0);
-    rb_define_method(cASN1Constructive, "each", ossl_asn1cons_each, 0);
 
 #define OSSL_ASN1_DEFINE_CLASS(name, super) \
 do{\
@@ -1859,13 +1669,10 @@ do{\
     rb_define_alias(cASN1ObjectId, "short_name", "sn");
     rb_define_alias(cASN1ObjectId, "long_name", "ln");
     rb_define_method(cASN1ObjectId, "==", ossl_asn1obj_eq, 1);
-    rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, 0);
 
-    rb_define_method(cASN1EndOfContent, "initialize", ossl_asn1eoc_initialize, 0);
     rb_define_method(cASN1EndOfContent, "to_der", ossl_asn1eoc_to_der, 0);
 
     class_tag_map = rb_hash_new();
-    rb_gc_register_mark_object(class_tag_map);
     rb_hash_aset(class_tag_map, cASN1EndOfContent, INT2NUM(V_ASN1_EOC));
     rb_hash_aset(class_tag_map, cASN1Boolean, INT2NUM(V_ASN1_BOOLEAN));
     rb_hash_aset(class_tag_map, cASN1Integer, INT2NUM(V_ASN1_INTEGER));
@@ -1889,6 +1696,5 @@ do{\
     rb_hash_aset(class_tag_map, cASN1GeneralString, INT2NUM(V_ASN1_GENERALSTRING));
     rb_hash_aset(class_tag_map, cASN1UniversalString, INT2NUM(V_ASN1_UNIVERSALSTRING));
     rb_hash_aset(class_tag_map, cASN1BMPString, INT2NUM(V_ASN1_BMPSTRING));
-
-    id_each = rb_intern_const("each");
+    rb_define_const(mASN1, "CLASS_TAG_MAP", class_tag_map);
 }

@@ -3181,7 +3181,7 @@ enum_chain_initialize(VALUE obj, VALUE enums)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr->enums = rb_obj_freeze(enums);
+    ptr->enums = rb_ary_freeze(enums);
     ptr->pos = -1;
 
     return obj;
@@ -3509,7 +3509,7 @@ enum_product_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated product");
 
-    ptr->enums = rb_obj_freeze(enums);
+    ptr->enums = rb_ary_freeze(enums);
 
     return obj;
 }

@@ -31,21 +31,21 @@ RSpec.describe "bundle install" do
 
     context "when gems include a fund URI" do
       it "displays the plural fund message after installing" do
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo2"
           gem 'has_funding_and_other_metadata'
           gem 'has_funding'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         expect(out).to include("2 installed gems you directly depend on are looking for funding.")
       end
 
       it "displays the singular fund message after installing" do
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo2"
           gem 'has_funding'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         expect(out).to include("1 installed gem you directly depend on is looking for funding.")
@@ -58,21 +58,21 @@ RSpec.describe "bundle install" do
       end
 
       it "does not display the plural fund message after installing" do
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo2"
           gem 'has_funding_and_other_metadata'
           gem 'has_funding'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         expect(out).not_to include("2 installed gems you directly depend on are looking for funding.")
       end
 
       it "does not display the singular fund message after installing" do
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo2"
           gem 'has_funding'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         expect(out).not_to include("1 installed gem you directly depend on is looking for funding.")
@@ -81,7 +81,7 @@ RSpec.describe "bundle install" do
 
     context "when gems do not include fund messages" do
       it "does not display any fund messages" do
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo2"
           gem "activesupport"
         G
@@ -92,7 +92,7 @@ RSpec.describe "bundle install" do
 
     context "when a dependency includes a fund message" do
       it "does not display the fund message" do
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo2"
           gem 'gem_with_dependent_funding'
         G
@@ -110,7 +110,7 @@ RSpec.describe "bundle install" do
             "funding_uri" => "https://example.com/also_has_funding/funding",
           }
         end
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.0")}'
         G
@@ -124,7 +124,7 @@ RSpec.describe "bundle install" do
             "funding_uri" => "https://example.com/also_has_funding/funding",
           }
         end
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.0")}'
         G
@@ -134,7 +134,7 @@ RSpec.describe "bundle install" do
             "funding_uri" => "https://example.com/also_has_funding/funding",
           }
         end
-        install_gemfile <<-G, artifice: "compact_index"
+        install_gemfile <<-G
           source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.1")}'
         G
@@ -153,10 +153,10 @@ RSpec.describe "bundle install" do
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.0")}'
         G
 
-        bundle :install, artifice: "compact_index"
+        bundle :install
         expect(out).to include("1 installed gem you directly depend on is looking for funding.")
 
-        bundle :install, artifice: "compact_index"
+        bundle :install
         expect(out).to include("1 installed gem you directly depend on is looking for funding.")
       end
     end

@@ -222,7 +222,7 @@ class Gem::Installer
     ruby_executable = false
     existing = nil
 
-    File.open generated_bin, "rb" do |io|
+    Gem.open_file_with_flock generated_bin, "rb+" do |io|
       line = io.gets
       shebang = /^#!.*ruby/o
 

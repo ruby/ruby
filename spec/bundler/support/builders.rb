@@ -5,6 +5,11 @@ require "shellwords"
 
 module Spec
   module Builders
+    def self.extended(mod)
+      mod.extend Path
+      mod.extend Helpers
+    end
+
     def self.constantize(name)
       name.delete("-").upcase
     end
@@ -22,7 +27,7 @@ module Spec
     end
 
     def build_repo1
-      rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
+      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
 
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
@@ -32,23 +37,23 @@ module Spec
         build_gem "puma"
         build_gem "minitest"
 
-        build_gem "rack", %w[0.9.1 1.0.0] do |s|
-          s.executables = "rackup"
-          s.post_install_message = "Rack's post install message"
+        build_gem "myrack", %w[0.9.1 1.0.0] do |s|
+          s.executables = "myrackup"
+          s.post_install_message = "Myrack's post install message"
         end
 
         build_gem "thin" do |s|
-          s.add_dependency "rack"
+          s.add_dependency "myrack"
           s.post_install_message = "Thin's post install message"
         end
 
-        build_gem "rack-obama" do |s|
-          s.add_dependency "rack"
-          s.post_install_message = "Rack-obama's post install message"
+        build_gem "myrack-obama" do |s|
+          s.add_dependency "myrack"
+          s.post_install_message = "Myrack-obama's post install message"
         end
 
-        build_gem "rack_middleware", "1.0" do |s|
-          s.add_dependency "rack", "0.9.1"
+        build_gem "myrack_middleware", "1.0" do |s|
+          s.add_dependency "myrack", "0.9.1"
         end
 
         build_gem "rails", "2.3.2" do |s|
@@ -81,8 +86,8 @@ module Spec
           s.write "lib/spec.rb", "SPEC = '1.2.7'"
         end
 
-        build_gem "rack-test", no_default: true do |s|
-          s.write "lib/rack/test.rb", "RACK_TEST = '1.0'"
+        build_gem "myrack-test", no_default: true do |s|
+          s.write "lib/myrack/test.rb", "MYRACK_TEST = '1.0'"
         end
 
         build_gem "platform_specific" do |s|
@@ -218,7 +223,7 @@ module Spec
 
     def build_security_repo
       build_repo security_repo do
-        build_gem "rack"
+        build_gem "myrack"
 
         build_gem "signed_gem" do |s|
           cert = "signing-cert.pem"
@@ -240,12 +245,12 @@ module Spec
     end
 
     def check_test_gems!
-      rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
+      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
 
       if rake_path.nil?
-        FileUtils.rm_rf(Path.base_system_gems)
+        FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
-        rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
+        rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
       end
 
       if rake_path.nil?
@@ -261,9 +266,9 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as Path.base_system_gem_path do
-        Dir[Spec::Path.base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
-          raise("Could not find rubygems-generate_index lib directory in #{Spec::Path.base_system_gem_path}")
+      with_gem_path_as base_system_gem_path do
+        Dir[base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
+          raise("Could not find rubygems-generate_index lib directory in #{base_system_gem_path}")
 
         command = "generate_index"
         command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")

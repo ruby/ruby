@@ -66,67 +66,67 @@ pub struct LoadStore {
 
 impl LoadStore {
     /// LDR (immediate, post-index)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LDR--immediate---Load-Register--immediate--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LDR--immediate---Load-Register--immediate-->
     pub fn ldr_post(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
         Self { rt, rn, idx: Index::PostIndex, imm9, opc: Opc::LDR, size: num_bits.into() }
     }
 
     /// LDR (immediate, pre-index)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LDR--immediate---Load-Register--immediate--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LDR--immediate---Load-Register--immediate-->
     pub fn ldr_pre(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
         Self { rt, rn, idx: Index::PreIndex, imm9, opc: Opc::LDR, size: num_bits.into() }
     }
 
     /// LDUR (load register, unscaled)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDUR--Load-Register--unscaled--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDUR--Load-Register--unscaled--?lang=en>
     pub fn ldur(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDR, size: num_bits.into() }
     }
 
     /// LDURH Load Register Halfword (unscaled)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURH--Load-Register-Halfword--unscaled--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURH--Load-Register-Halfword--unscaled--?lang=en>
     pub fn ldurh(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDR, size: Size::Size16 }
     }
 
     /// LDURB (load register, byte, unscaled)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURB--Load-Register-Byte--unscaled--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURB--Load-Register-Byte--unscaled--?lang=en>
     pub fn ldurb(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDR, size: Size::Size8 }
     }
 
     /// LDURSW (load register, unscaled, signed)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSW--Load-Register-Signed-Word--unscaled--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDURSW--Load-Register-Signed-Word--unscaled--?lang=en>
     pub fn ldursw(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::LDURSW, size: Size::Size32 }
     }
 
     /// STR (immediate, post-index)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/STR--immediate---Store-Register--immediate--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/STR--immediate---Store-Register--immediate-->
     pub fn str_post(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
         Self { rt, rn, idx: Index::PostIndex, imm9, opc: Opc::STR, size: num_bits.into() }
     }
 
     /// STR (immediate, pre-index)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/STR--immediate---Store-Register--immediate--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/STR--immediate---Store-Register--immediate-->
     pub fn str_pre(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
         Self { rt, rn, idx: Index::PreIndex, imm9, opc: Opc::STR, size: num_bits.into() }
     }
 
     /// STUR (store register, unscaled)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STUR--Store-Register--unscaled--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STUR--Store-Register--unscaled--?lang=en>
     pub fn stur(rt: u8, rn: u8, imm9: i16, num_bits: u8) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::STR, size: num_bits.into() }
     }
 
     /// STURH (store register, halfword, unscaled)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STURH--Store-Register-Halfword--unscaled--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STURH--Store-Register-Halfword--unscaled--?lang=en>
     pub fn sturh(rt: u8, rn: u8, imm9: i16) -> Self {
         Self { rt, rn, idx: Index::None, imm9, opc: Opc::STR, size: Size::Size16 }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b0100;
 
 impl From<LoadStore> for u32 {

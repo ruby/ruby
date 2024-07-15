@@ -2227,7 +2227,7 @@ fn remove_block_version(blockref: &BlockRef) {
     version_list.retain(|other| blockref != other);
 }
 
-impl JITState {
+impl<'a> JITState<'a> {
     // Finish compiling and turn a jit state into a block
     // note that the block is still not in shape.
     pub fn into_block(self, end_insn_idx: IseqIdx, start_addr: CodePtr, end_addr: CodePtr, gc_obj_offsets: Vec<u32>) -> BlockRef {
@@ -3055,7 +3055,7 @@ fn gen_block_series_body(
 /// Generate a block version that is an entry point inserted into an iseq
 /// NOTE: this function assumes that the VM lock has been taken
 /// If jit_exception is true, compile JIT code for handling exceptions.
-/// See [jit_compile_exception] for details.
+/// See jit_compile_exception() for details.
 pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<*const u8> {
     // Compute the current instruction index based on the current PC
     let cfp = unsafe { get_ec_cfp(ec) };
@@ -3149,7 +3149,7 @@ pub fn new_pending_entry() -> PendingEntryRef {
 
 c_callable! {
     /// Generated code calls this function with the SysV calling convention.
-    /// See [gen_call_entry_stub_hit].
+    /// See [gen_entry_stub].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_compile_time(|| {
             with_vm_lock(src_loc!(), || {
@@ -3729,7 +3729,6 @@ impl Assembler
 pub fn gen_branch(
     jit: &mut JITState,
     asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
     target0: BlockId,
     ctx0: &Context,
     target1: Option<BlockId>,
@@ -3737,6 +3736,7 @@ pub fn gen_branch(
     gen_fn: BranchGenFn,
 ) {
     let branch = new_pending_branch(jit, gen_fn);
+    let ocb = jit.get_ocb();
 
     // Get the branch targets or stubs
     let target0_addr = branch.set_target(0, target0, ctx0, ocb);
@@ -3799,7 +3799,6 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
 pub fn defer_compilation(
     jit: &mut JITState,
     asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
 ) {
     if asm.ctx.is_deferred() {
         panic!("Double defer!");
@@ -3817,7 +3816,7 @@ pub fn defer_compilation(
     };
 
     // Likely a stub since the context is marked as deferred().
-    let target0_address = branch.set_target(0, blockid, &next_ctx, ocb);
+    let target0_address = branch.set_target(0, blockid, &next_ctx, jit.get_ocb());
 
     // Pad the block if it has the potential to be invalidated. This must be
     // done before gen_fn() in case the jump is overwritten by a fallthrough.
@@ -4348,8 +4347,9 @@ mod tests {
             idx: 0,
         };
         let cb = CodeBlock::new_dummy(1024);
+        let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(1024));
         let dumm_addr = cb.get_write_ptr();
-        let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null())
+        let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null(), &mut ocb)
             .into_block(0, dumm_addr, dumm_addr, vec![]);
         let _dropper = BlockDropper(block);
 

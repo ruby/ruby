@@ -45,6 +45,12 @@ describe "Array#to_h" do
       [:a, :b].to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
     end
 
+    it "passes to a block each element as a single argument" do
+      ScratchPad.record []
+      [[:a, 1], [:b, 2]].to_h { |*args| ScratchPad << args; [args[0], args[1]] }
+      ScratchPad.recorded.sort.should == [[[:a, 1]], [[:b, 2]]]
+    end
+
     it "raises ArgumentError if block returns longer or shorter array" do
       -> do
         [:a, :b].to_h { |k| [k, k.to_s, 1] }

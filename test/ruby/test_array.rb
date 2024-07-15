@@ -1215,6 +1215,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_pack_format_mutation
+    ary = [Object.new]
+    fmt = "c" * 0x20000
+    class << ary[0]; self end.send(:define_method, :to_int) {
+      fmt.replace ""
+      1
+    }
+    e = assert_raise(RuntimeError) { ary.pack(fmt) }
+    assert_equal "format string modified", e.message
+  end
+
   def test_pack
     a = @cls[*%w( cat wombat x yy)]
     assert_equal("catwomx  yy ", a.pack("A3A3A3A3"))

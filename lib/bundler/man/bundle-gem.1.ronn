@@ -76,6 +76,10 @@ configuration file using the following names:
   the answer will be saved in Bundler's global config for future `bundle gem`
   use.
 
+* `--no-test`:
+  Do not use a test framework (overrides `--test` specified in the global
+  config).
+
 * `--ci`, `--ci=github`, `--ci=gitlab`, `--ci=circle`:
   Specify the continuous integration service that Bundler should use when
   generating the project. Acceptable values are `github`, `gitlab`
@@ -92,6 +96,10 @@ configuration file using the following names:
   the answer will be saved in Bundler's global config for future `bundle gem`
   use.
 
+* `--no-ci`:
+  Do not use a continuous integration service (overrides `--ci` specified in
+  the global config).
+
 * `--linter`, `--linter=rubocop`, `--linter=standard`:
   Specify the linter and code formatter that Bundler should add to the
   project's development dependencies. Acceptable values are `rubocop` and
@@ -107,6 +115,9 @@ configuration file using the following names:
   When Bundler is unconfigured, an interactive prompt will be displayed and
   the answer will be saved in Bundler's global config for future `bundle gem`
   use.
+
+* `--no-linter`:
+  Do not add a linter (overrides `--linter` specified in the global config).
 
 * `-e`, `--edit[=EDITOR]`:
   Open the resulting GEM_NAME.gemspec in EDITOR, or the default editor if not

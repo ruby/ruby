@@ -1,7 +1,6 @@
 //! Code to track assumptions made during code generation and invalidate
 //! generated code if and when these assumptions are invalidated.
 
-use crate::asm::OutlinedCb;
 use crate::backend::ir::Assembler;
 use crate::codegen::*;
 use crate::core::*;
@@ -98,12 +97,11 @@ impl Invariants {
 pub fn assume_bop_not_redefined(
     jit: &mut JITState,
     asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
     klass: RedefinitionFlag,
     bop: ruby_basic_operators,
 ) -> bool {
     if unsafe { BASIC_OP_UNREDEFINED_P(bop, klass) } {
-        if jit_ensure_block_entry_exit(jit, asm, ocb).is_none() {
+        if jit_ensure_block_entry_exit(jit, asm).is_none() {
             return false;
         }
         jit.bop_assumptions.push((klass, bop));
@@ -192,13 +190,12 @@ pub fn iseq_free_invariants(iseq: IseqPtr) {
 pub fn assume_method_basic_definition(
     jit: &mut JITState,
     asm: &mut Assembler,
-    ocb: &mut OutlinedCb,
     klass: VALUE,
     mid: ID
 ) -> bool {
     if unsafe { rb_method_basic_definition_p(klass, mid) } != 0 {
         let cme = unsafe { rb_callable_method_entry(klass, mid) };
-        jit.assume_method_lookup_stable(asm, ocb, cme);
+        jit.assume_method_lookup_stable(asm, cme);
         true
     } else {
         false
@@ -207,11 +204,11 @@ pub fn assume_method_basic_definition(
 
 /// Tracks that a block is assuming it is operating in single-ractor mode.
 #[must_use]
-pub fn assume_single_ractor_mode(jit: &mut JITState, asm: &mut Assembler, ocb: &mut OutlinedCb) -> bool {
+pub fn assume_single_ractor_mode(jit: &mut JITState, asm: &mut Assembler) -> bool {
     if unsafe { rb_yjit_multi_ractor_p() } {
         false
     } else {
-        if jit_ensure_block_entry_exit(jit, asm, ocb).is_none() {
+        if jit_ensure_block_entry_exit(jit, asm).is_none() {
             return false;
         }
         jit.block_assumes_single_ractor = true;
