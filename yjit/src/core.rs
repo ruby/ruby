@@ -510,22 +510,13 @@ impl fmt::Debug for RegMapping {
     }
 }
 
-/// Bits for chain_depth_return_landing_defer
-const RETURN_LANDING_BIT: u8 = 0b10000000;
-const DEFER_BIT: u8          = 0b01000000;
-const CHAIN_DEPTH_MASK: u8   = 0b00111111; // 63
+/// Maximum value of the chain depth (should fit in 5 bits)
+const CHAIN_DEPTH_MAX: u8 = 0b11111; // 31
 
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
-/// There are a lot of context objects so we try to keep the size small.
 #[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
 pub struct Context {
-    // FIXME: decoded_from breaks == on contexts
-    /*
-    // Offset at which this context was previously encoded (zero if not)
-    decoded_from: u32,
-    */
-
     // Number of values currently on the temporary stack
     stack_size: u8,
 
@@ -536,11 +527,15 @@ pub struct Context {
     /// Which stack temps or locals are in a register
     reg_mapping: RegMapping,
 
-    /// Fields packed into u8
-    /// - 1st bit from the left: Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
-    /// - 2nd bit from the left: Whether the compilation of this code has been deferred ([Self::is_deferred])
-    /// - Last 6 bits (max: 63): Depth of this block in the sidechain (eg: inline-cache chain)
-    chain_depth_and_flags: u8,
+    // Depth of this block in the sidechain (eg: inline-cache chain)
+    // 6 bits, max 63
+    chain_depth: u8,
+
+    // Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
+    is_return_landing: bool,
+
+    // Whether the compilation of this code has been deferred ([Self::is_deferred])
+    is_deferred: bool,
 
     // Type we track for self
     self_type: Type,
@@ -645,24 +640,33 @@ impl BitVector {
         self.push_uint(val as u64, 8);
     }
 
+    fn push_u5(&mut self, val: u8) {
+        assert!(val <= 0b11111);
+        self.push_uint(val as u64, 5);
+    }
+
     fn push_u4(&mut self, val: u8) {
-        assert!(val < 16);
+        assert!(val <= 0b1111);
         self.push_uint(val as u64, 4);
     }
 
     fn push_u3(&mut self, val: u8) {
-        assert!(val < 8);
+        assert!(val <= 0b111);
         self.push_uint(val as u64, 3);
     }
 
     fn push_u2(&mut self, val: u8) {
-        assert!(val < 4);
+        assert!(val <= 0b11);
         self.push_uint(val as u64, 2);
     }
 
     fn push_u1(&mut self, val: u8) {
-        assert!(val < 2);
+        assert!(val <= 0b1);
         self.push_uint(val as u64, 1);
+    }
+
+    fn push_bool(&mut self, val: bool) {
+        self.push_u1(if val { 1 } else { 0 });
     }
 
     // Push a context encoding opcode
@@ -710,6 +714,10 @@ impl BitVector {
         self.read_uint(bit_idx, 8) as u8
     }
 
+    fn read_u5(&self, bit_idx: &mut usize) -> u8 {
+        self.read_uint(bit_idx, 5) as u8
+    }
+
     fn read_u4(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 4) as u8
     }
@@ -724,6 +732,10 @@ impl BitVector {
 
     fn read_u1(&self, bit_idx: &mut usize) -> u8 {
         self.read_uint(bit_idx, 1) as u8
+    }
+
+    fn read_bool(&self, bit_idx: &mut usize) -> bool {
+        self.read_u1(bit_idx) != 0
     }
 
     fn read_op(&self, bit_idx: &mut usize) -> CtxOp {
@@ -1052,8 +1064,18 @@ impl Context {
             }
         }
 
-        // chain_depth_and_flags: u8,
-        bits.push_u8(self.chain_depth_and_flags);
+        bits.push_bool(self.is_deferred);
+        bits.push_bool(self.is_return_landing);
+
+        // The chain depth is most often 0 or 1
+        if self.chain_depth < 2 {
+            bits.push_u1(0);
+            bits.push_u1(self.chain_depth);
+
+        } else {
+            bits.push_u1(1);
+            bits.push_u5(self.chain_depth);
+        }
 
         // Encode the self type if known
         if self.self_type != Type::Unknown {
@@ -1146,8 +1168,14 @@ impl Context {
             }
         }
 
-        // chain_depth_and_flags: u8
-        ctx.chain_depth_and_flags = bits.read_u8(&mut idx);
+        ctx.is_deferred = bits.read_bool(&mut idx);
+        ctx.is_return_landing = bits.read_bool(&mut idx);
+
+        if bits.read_u1(&mut idx) == 0 {
+            ctx.chain_depth = bits.read_u1(&mut idx)
+        } else {
+            ctx.chain_depth = bits.read_u5(&mut idx)
+        }
 
         loop {
             //println!("reading op");
@@ -2483,39 +2511,39 @@ impl Context {
     }
 
     pub fn get_chain_depth(&self) -> u8 {
-        self.chain_depth_and_flags & CHAIN_DEPTH_MASK
+        self.chain_depth
     }
 
     pub fn reset_chain_depth_and_defer(&mut self) {
-        self.chain_depth_and_flags &= !CHAIN_DEPTH_MASK;
-        self.chain_depth_and_flags &= !DEFER_BIT;
+        self.chain_depth = 0;
+        self.is_deferred = false;
     }
 
     pub fn increment_chain_depth(&mut self) {
-        if self.get_chain_depth() == CHAIN_DEPTH_MASK {
+        if self.get_chain_depth() == CHAIN_DEPTH_MAX {
             panic!("max block version chain depth reached!");
         }
-        self.chain_depth_and_flags += 1;
+        self.chain_depth += 1;
     }
 
     pub fn set_as_return_landing(&mut self) {
-        self.chain_depth_and_flags |= RETURN_LANDING_BIT;
+        self.is_return_landing = true;
     }
 
     pub fn clear_return_landing(&mut self) {
-        self.chain_depth_and_flags &= !RETURN_LANDING_BIT;
+        self.is_return_landing = false;
     }
 
     pub fn is_return_landing(&self) -> bool {
-        self.chain_depth_and_flags & RETURN_LANDING_BIT != 0
+        self.is_return_landing
     }
 
     pub fn mark_as_deferred(&mut self) {
-        self.chain_depth_and_flags |= DEFER_BIT;
+        self.is_deferred = true;
     }
 
     pub fn is_deferred(&self) -> bool {
-        self.chain_depth_and_flags & DEFER_BIT != 0
+        self.is_deferred
     }
 
     /// Get an operand for the adjusted stack pointer address
