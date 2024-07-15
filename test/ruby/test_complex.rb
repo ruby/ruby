@@ -915,31 +915,27 @@ class Complex_Test < Test::Unit::TestCase
     }
   end
 
-  def test_Complex_without_exception
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex('5x', exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(nil, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(Object.new, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(1, nil, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(1, Object.new, exception: false))
-    }
+  def assert_complex_with_exception(error, *args, message: "")
+    assert_raise(error, message) do
+      Complex(*args, exception: true)
+    end
+    assert_nothing_raised(error, message) do
+      assert_nil(Complex(*args, exception: false))
+      assert_nil($!)
+    end
+  end
+
+  def test_Complex_with_exception
+    assert_complex_with_exception(ArgumentError, '5x')
+    assert_complex_with_exception(TypeError, nil)
+    assert_complex_with_exception(TypeError, Object.new)
+    assert_complex_with_exception(TypeError, 1, nil)
+    assert_complex_with_exception(TypeError, 1, Object.new)
 
     o = Object.new
     def o.to_c; raise; end
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(o, exception: false))
-    }
-    assert_nothing_raised(ArgumentError){
-      assert_equal(nil, Complex(1, o, exception: false))
-    }
+    assert_complex_with_exception(RuntimeError, o)
+    assert_complex_with_exception(TypeError, 1, o)
   end
 
   def test_respond
