@@ -79,7 +79,7 @@ impl From<&Opnd> for X86Opnd {
     }
 }
 
-/// List of registers that can be used for stack temps.
+/// List of registers that can be used for stack temps and locals.
 pub static TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
 
 impl Assembler
@@ -112,7 +112,7 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -895,14 +895,14 @@ impl Assembler
 
 #[cfg(test)]
 mod tests {
-    use crate::disasm::{assert_disasm};
+    use crate::disasm::assert_disasm;
     #[cfg(feature = "disasm")]
     use crate::disasm::{unindent, disasm_addr_range};
 
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(), CodeBlock::new_dummy(1024))
+        (Assembler::new(0), CodeBlock::new_dummy(1024))
     }
 
     #[test]

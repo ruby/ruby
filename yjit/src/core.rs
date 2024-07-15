@@ -30,11 +30,11 @@ use YARVOpnd::*;
 use TempMappingKind::*;
 use crate::invariants::*;
 
-// Maximum number of temp value types we keep track of
-pub const MAX_TEMP_TYPES: usize = 8;
+// Maximum number of temp value types or registers we keep track of
+pub const MAX_CTX_TEMPS: usize = 8;
 
-// Maximum number of local variable types we keep track of
-const MAX_LOCAL_TYPES: usize = 8;
+// Maximum number of local variable types or registers we keep track of
+const MAX_CTX_LOCALS: usize = 8;
 
 /// An index into `ISEQ_BODY(iseq)->iseq_encoded`. Points
 /// to a YARV instruction or an instruction operand.
@@ -411,42 +411,102 @@ impl From<Opnd> for YARVOpnd {
     }
 }
 
-/// Maximum index of stack temps that could be in a register
-pub const MAX_REG_TEMPS: u8 = 8;
+/// Number of registers that can be used for stack temps or locals
+pub const MAX_MAPPED_REGS: usize = 5;
 
-/// Bitmap of which stack temps are in a register
-#[derive(Copy, Clone, Default, Eq, Hash, PartialEq, Debug)]
-pub struct RegTemps(u8);
+/// A stack slot or a local variable. u8 represents the index of it (<= 8).
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
+pub enum RegOpnd {
+    Stack(u8),
+    Local(u8),
+}
 
-impl RegTemps {
-    pub fn get(&self, index: u8) -> bool {
-        assert!(index < MAX_REG_TEMPS);
-        (self.0 >> index) & 1 == 1
+/// RegMappings manages a set of registers used for stack temps and locals.
+/// Each element of the array represents each of the registers.
+/// If an element is Some, the stack temp or the local uses a register.
+///
+/// Note that Opnd::InsnOut uses a separate set of registers at the moment.
+#[derive(Copy, Clone, Default, Eq, Hash, PartialEq)]
+pub struct RegMapping([Option<RegOpnd>; MAX_MAPPED_REGS]);
+
+impl RegMapping {
+    /// Return the index of the register for a given operand if allocated.
+    pub fn get_reg(&self, opnd: RegOpnd) -> Option<usize> {
+        self.0.iter().enumerate()
+            .find(|(_, &reg_opnd)| reg_opnd == Some(opnd))
+            .map(|(reg_idx, _)| reg_idx)
     }
 
-    pub fn set(&mut self, index: u8, value: bool) {
-        assert!(index < MAX_REG_TEMPS);
-        if value {
-            self.0 = self.0 | (1 << index);
-        } else {
-            self.0 = self.0 & !(1 << index);
+    /// Allocate a register for a given operand if available.
+    /// Return true if self is updated.
+    pub fn alloc_reg(&mut self, opnd: RegOpnd) -> bool {
+        // If a given opnd already has a register, skip allocation.
+        if self.get_reg(opnd).is_some() {
+            return false;
         }
-    }
 
-    pub fn as_u8(&self) -> u8 {
-        self.0
-    }
-
-    /// Return true if there's a register that conflicts with a given stack_idx.
-    pub fn conflicts_with(&self, stack_idx: u8) -> bool {
-        let mut other_idx = stack_idx as usize % get_option!(num_temp_regs);
-        while other_idx < MAX_REG_TEMPS as usize {
-            if stack_idx as usize != other_idx && self.get(other_idx as u8) {
-                return true;
+        // If the index is too large to encode with with 3 bits, give up.
+        match opnd {
+            RegOpnd::Stack(stack_idx) => if stack_idx >= MAX_CTX_TEMPS as u8 {
+                return false;
             }
-            other_idx += get_option!(num_temp_regs);
+            RegOpnd::Local(local_idx) => if local_idx >= MAX_CTX_LOCALS as u8 {
+                return false;
+            }
+        };
+
+        // Allocate a register if available.
+        if let Some(reg_idx) = self.find_unused_reg(opnd) {
+            self.0[reg_idx] = Some(opnd);
+            return true;
         }
         false
+    }
+
+    /// Deallocate a register for a given operand if in use.
+    /// Return true if self is updated.
+    pub fn dealloc_reg(&mut self, opnd: RegOpnd) -> bool {
+        for reg_opnd in self.0.iter_mut() {
+            if *reg_opnd == Some(opnd) {
+                *reg_opnd = None;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Find an available register and return the index of it.
+    fn find_unused_reg(&self, opnd: RegOpnd) -> Option<usize> {
+        let num_regs = get_option!(num_temp_regs);
+        if num_regs == 0 {
+            return None;
+        }
+        assert!(num_regs <= MAX_MAPPED_REGS);
+
+        // If the default index for the operand is available, use that to minimize
+        // discrepancies among Contexts.
+        let default_idx = match opnd {
+            RegOpnd::Stack(stack_idx) => stack_idx.as_usize() % num_regs,
+            RegOpnd::Local(local_idx) => num_regs - (local_idx.as_usize() % num_regs) - 1,
+        };
+        if self.0[default_idx].is_none() {
+            return Some(default_idx);
+        }
+
+        // If not, pick any other available register. Like default indexes, prefer
+        // lower indexes for Stack, and higher indexes for Local.
+        let mut index_temps = self.0.iter().enumerate();
+        match opnd {
+            RegOpnd::Stack(_) => index_temps.find(|(_, reg_opnd)| reg_opnd.is_none()),
+            RegOpnd::Local(_) => index_temps.rev().find(|(_, reg_opnd)| reg_opnd.is_none()),
+        }.map(|(index, _)| index)
+    }
+}
+
+impl fmt::Debug for RegMapping {
+    /// Print `[None, ...]` instead of the default `RegMappings([None, ...])`
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?}", self.0)
     }
 }
 
@@ -473,8 +533,8 @@ pub struct Context {
     // This represents how far the JIT's SP is from the "real" SP
     sp_offset: i8,
 
-    /// Bitmap of which stack temps are in a register
-    reg_temps: RegTemps,
+    /// Which stack temps or locals are in a register
+    reg_mapping: RegMapping,
 
     /// Fields packed into u8
     /// - 1st bit from the left: Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
@@ -786,7 +846,7 @@ mod bitvector_tests {
         let idx0 = ctx0.encode_into(&mut bits);
 
         let mut ctx1 = Context::default();
-        ctx1.reg_temps = RegTemps(1);
+        ctx1.reg_mapping = RegMapping([Some(RegOpnd::Stack(0)), None, None, None, None]);
         let idx1 = ctx1.encode_into(&mut bits);
 
         // Make sure that we can encode two contexts successively
@@ -797,10 +857,10 @@ mod bitvector_tests {
     }
 
     #[test]
-    fn regress_reg_temps() {
+    fn regress_reg_mapping() {
         let mut bits = BitVector::new();
         let mut ctx = Context::default();
-        ctx.reg_temps = RegTemps(1);
+        ctx.reg_mapping = RegMapping([Some(RegOpnd::Stack(0)), None, None, None, None]);
         ctx.encode_into(&mut bits);
 
         let b0 = bits.read_u1(&mut 0);
@@ -973,9 +1033,24 @@ impl Context {
             bits.push_u8(self.sp_offset as u8);
         }
 
-        // Bitmap of which stack temps are in a register
-        let RegTemps(reg_temps) = self.reg_temps;
-        bits.push_u8(reg_temps);
+        // Which stack temps or locals are in a register
+        for &temp in self.reg_mapping.0.iter() {
+            if let Some(temp) = temp {
+                bits.push_u1(1); // Some
+                match temp {
+                    RegOpnd::Stack(stack_idx) => {
+                        bits.push_u1(0); // Stack
+                        bits.push_u3(stack_idx);
+                    }
+                    RegOpnd::Local(local_idx) => {
+                        bits.push_u1(1); // Local
+                        bits.push_u3(local_idx);
+                    }
+                }
+            } else {
+                bits.push_u1(0); // None
+            }
+        }
 
         // chain_depth_and_flags: u8,
         bits.push_u8(self.chain_depth_and_flags);
@@ -987,7 +1062,7 @@ impl Context {
         }
 
         // Encode the local types if known
-        for local_idx in 0..MAX_LOCAL_TYPES {
+        for local_idx in 0..MAX_CTX_LOCALS {
             let t = self.get_local_type(local_idx);
             if t != Type::Unknown {
                 bits.push_op(CtxOp::SetLocalType);
@@ -997,7 +1072,7 @@ impl Context {
         }
 
         // Encode stack temps
-        for stack_idx in 0..MAX_TEMP_TYPES {
+        for stack_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(stack_idx);
 
             match mapping.get_kind() {
@@ -1059,8 +1134,17 @@ impl Context {
             debug_assert!(!( (sp_offset_bits & 0x80) != 0 && ctx.sp_offset > 0 ));
         }
 
-        // Bitmap of which stack temps are in a register
-        ctx.reg_temps = RegTemps(bits.read_u8(&mut idx));
+        // Which stack temps or locals are in a register
+        for index in 0..MAX_MAPPED_REGS {
+            if bits.read_u1(&mut idx) == 1 { // Some
+                let temp = if bits.read_u1(&mut idx) == 0 { // RegMapping::Stack
+                    RegOpnd::Stack(bits.read_u3(&mut idx))
+                } else {
+                    RegOpnd::Local(bits.read_u3(&mut idx))
+                };
+                ctx.reg_mapping.0[index] = Some(temp);
+            }
+        }
 
         // chain_depth_and_flags: u8
         ctx.chain_depth_and_flags = bits.read_u8(&mut idx);
@@ -1412,7 +1496,7 @@ impl PendingBranch {
         target_idx: u32,
         target: BlockId,
         ctx: &Context,
-        ocb: &mut OutlinedCb,
+        jit: &mut JITState,
     ) -> Option<CodePtr> {
         // If the block already exists
         if let Some(blockref) = find_block_version(target, ctx) {
@@ -1430,7 +1514,7 @@ impl PendingBranch {
         // The branch struct is uninitialized right now but as a stable address.
         // We make sure the stub runs after the branch is initialized.
         let branch_struct_addr = self.uninit_branch.as_ptr() as usize;
-        let stub_addr = gen_branch_stub(ctx, ocb, branch_struct_addr, target_idx);
+        let stub_addr = gen_branch_stub(ctx, jit.iseq, jit.get_ocb(), branch_struct_addr, target_idx);
 
         if let Some(stub_addr) = stub_addr {
             // Fill the branch target with a stub
@@ -2362,7 +2446,7 @@ impl Context {
         let mut generic_ctx = Context::default();
         generic_ctx.stack_size = self.stack_size;
         generic_ctx.sp_offset = self.sp_offset;
-        generic_ctx.reg_temps = self.reg_temps;
+        generic_ctx.reg_mapping = self.reg_mapping;
         if self.is_return_landing() {
             generic_ctx.set_as_return_landing();
         }
@@ -2390,12 +2474,12 @@ impl Context {
         self.sp_offset = offset;
     }
 
-    pub fn get_reg_temps(&self) -> RegTemps {
-        self.reg_temps
+    pub fn get_reg_mapping(&self) -> RegMapping {
+        self.reg_mapping
     }
 
-    pub fn set_reg_temps(&mut self, reg_temps: RegTemps) {
-        self.reg_temps = reg_temps;
+    pub fn set_reg_mapping(&mut self, reg_mapping: RegMapping) {
+        self.reg_mapping = reg_mapping;
     }
 
     pub fn get_chain_depth(&self) -> u8 {
@@ -2447,14 +2531,13 @@ impl Context {
         self.sp_opnd(-ep_offset + offset)
     }
 
-    /// Stop using a register for a given stack temp.
+    /// Stop using a register for a given stack temp or a local.
     /// This allows us to reuse the register for a value that we know is dead
     /// and will no longer be used (e.g. popped stack temp).
-    pub fn dealloc_temp_reg(&mut self, stack_idx: u8) {
-        if stack_idx < MAX_REG_TEMPS {
-            let mut reg_temps = self.get_reg_temps();
-            reg_temps.set(stack_idx, false);
-            self.set_reg_temps(reg_temps);
+    pub fn dealloc_reg(&mut self, opnd: RegOpnd) {
+        let mut reg_mapping = self.get_reg_mapping();
+        if reg_mapping.dealloc_reg(opnd) {
+            self.set_reg_mapping(reg_mapping);
         }
     }
 
@@ -2467,7 +2550,7 @@ impl Context {
                 let stack_idx: usize = (self.stack_size - 1 - idx).into();
 
                 // If outside of tracked range, do nothing
-                if stack_idx >= MAX_TEMP_TYPES {
+                if stack_idx >= MAX_CTX_TEMPS {
                     return Type::Unknown;
                 }
 
@@ -2478,7 +2561,7 @@ impl Context {
                     MapToStack => mapping.get_type(),
                     MapToLocal => {
                         let idx = mapping.get_local_idx();
-                        assert!((idx as usize) < MAX_LOCAL_TYPES);
+                        assert!((idx as usize) < MAX_CTX_LOCALS);
                         return self.get_local_type(idx.into());
                     }
                 }
@@ -2488,7 +2571,7 @@ impl Context {
 
     /// Get the currently tracked type for a local variable
     pub fn get_local_type(&self, local_idx: usize) -> Type {
-        if local_idx >= MAX_LOCAL_TYPES {
+        if local_idx >= MAX_CTX_LOCALS {
             return Type::Unknown
         } else {
             // Each type is stored in 4 bits
@@ -2499,7 +2582,7 @@ impl Context {
 
     /// Get the current temp mapping for a given stack slot
     fn get_temp_mapping(&self, temp_idx: usize) -> TempMapping {
-        assert!(temp_idx < MAX_TEMP_TYPES);
+        assert!(temp_idx < MAX_CTX_TEMPS);
 
         // Extract the temp mapping kind
         let kind_bits = (self.temp_mapping_kind >> (2 * temp_idx)) & 0b11;
@@ -2527,7 +2610,7 @@ impl Context {
 
     /// Get the current temp mapping for a given stack slot
     fn set_temp_mapping(&mut self, temp_idx: usize, mapping: TempMapping) {
-        assert!(temp_idx < MAX_TEMP_TYPES);
+        assert!(temp_idx < MAX_CTX_TEMPS);
 
         // Extract the kind bits
         let mapping_kind = mapping.get_kind();
@@ -2583,7 +2666,7 @@ impl Context {
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
                 // If outside of tracked range, do nothing
-                if stack_idx >= MAX_TEMP_TYPES {
+                if stack_idx >= MAX_CTX_TEMPS {
                     return;
                 }
 
@@ -2598,7 +2681,7 @@ impl Context {
                     }
                     MapToLocal => {
                         let idx = mapping.get_local_idx() as usize;
-                        assert!(idx < MAX_LOCAL_TYPES);
+                        assert!(idx < MAX_CTX_LOCALS);
                         let mut new_type = self.get_local_type(idx);
                         new_type.upgrade(opnd_type);
                         self.set_local_type(idx, new_type);
@@ -2625,7 +2708,7 @@ impl Context {
                 assert!(idx < self.stack_size);
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
-                if stack_idx < MAX_TEMP_TYPES {
+                if stack_idx < MAX_CTX_TEMPS {
                     self.get_temp_mapping(stack_idx)
                 } else {
                     // We can't know the source of this stack operand, so we assume it is
@@ -2651,7 +2734,7 @@ impl Context {
                 }
 
                 // If outside of tracked range, do nothing
-                if stack_idx >= MAX_TEMP_TYPES {
+                if stack_idx >= MAX_CTX_TEMPS {
                     return;
                 }
 
@@ -2667,12 +2750,12 @@ impl Context {
             return;
         }
 
-        if local_idx >= MAX_LOCAL_TYPES {
+        if local_idx >= MAX_CTX_LOCALS {
             return
         }
 
         // If any values on the stack map to this local we must detach them
-        for mapping_idx in 0..MAX_TEMP_TYPES {
+        for mapping_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(mapping_idx);
             let tm = match mapping.get_kind() {
                 MapToStack => mapping,
@@ -2704,7 +2787,7 @@ impl Context {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
 
-        for mapping_idx in 0..MAX_TEMP_TYPES {
+        for mapping_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(mapping_idx);
             if mapping.get_kind() == MapToLocal {
                 let local_idx = mapping.get_local_idx() as usize;
@@ -2758,7 +2841,7 @@ impl Context {
             return TypeDiff::Incompatible;
         }
 
-        if dst.reg_temps != src.reg_temps {
+        if dst.reg_mapping != src.reg_mapping {
             return TypeDiff::Incompatible;
         }
 
@@ -2779,7 +2862,7 @@ impl Context {
         }
 
         // For each local type we track
-        for i in 0.. MAX_LOCAL_TYPES {
+        for i in 0.. MAX_CTX_LOCALS {
             let t_src = src.get_local_type(i);
             let t_dst = dst.get_local_type(i);
             diff += match t_src.diff(t_dst) {
@@ -2845,24 +2928,23 @@ impl Assembler {
         let stack_size: usize = self.ctx.stack_size.into();
 
         // Keep track of the type and mapping of the value
-        if stack_size < MAX_TEMP_TYPES {
+        if stack_size < MAX_CTX_TEMPS {
             self.ctx.set_temp_mapping(stack_size, mapping);
 
             if mapping.get_kind() == MapToLocal {
                 let idx = mapping.get_local_idx();
-                assert!((idx as usize) < MAX_LOCAL_TYPES);
+                assert!((idx as usize) < MAX_CTX_LOCALS);
             }
-        }
-
-        // Allocate a register to the stack operand
-        if self.ctx.stack_size < MAX_REG_TEMPS {
-            self.alloc_temp_reg(self.ctx.stack_size);
         }
 
         self.ctx.stack_size += 1;
         self.ctx.sp_offset += 1;
 
-        return self.stack_opnd(0);
+        // Allocate a register to the new stack operand
+        let stack_opnd = self.stack_opnd(0);
+        self.alloc_reg(stack_opnd.reg_opnd());
+
+        stack_opnd
     }
 
     /// Push one new value on the temp stack
@@ -2878,7 +2960,7 @@ impl Assembler {
 
     /// Push a local variable on the stack
     pub fn stack_push_local(&mut self, local_idx: usize) -> Opnd {
-        if local_idx >= MAX_LOCAL_TYPES {
+        if local_idx >= MAX_CTX_LOCALS {
             return self.stack_push(Type::Unknown);
         }
 
@@ -2896,7 +2978,7 @@ impl Assembler {
         for i in 0..n {
             let idx: usize = (self.ctx.stack_size as usize) - i - 1;
 
-            if idx < MAX_TEMP_TYPES {
+            if idx < MAX_CTX_TEMPS {
                 self.ctx.set_temp_mapping(idx, TempMapping::map_to_stack(Type::Unknown));
             }
         }
@@ -2914,8 +2996,8 @@ impl Assembler {
         let method_name_index = (self.ctx.stack_size as usize) - argc - 1;
 
         for i in method_name_index..(self.ctx.stack_size - 1) as usize {
-            if i < MAX_TEMP_TYPES {
-                let next_arg_mapping = if i + 1 < MAX_TEMP_TYPES {
+            if i < MAX_CTX_TEMPS {
+                let next_arg_mapping = if i + 1 < MAX_CTX_TEMPS {
                     self.ctx.get_temp_mapping(i + 1)
                 } else {
                     TempMapping::map_to_stack(Type::Unknown)
@@ -2932,8 +3014,22 @@ impl Assembler {
             idx,
             num_bits: 64,
             stack_size: self.ctx.stack_size,
+            num_locals: None, // not needed for stack temps
             sp_offset: self.ctx.sp_offset,
-            reg_temps: None, // push_insn will set this
+            reg_mapping: None, // push_insn will set this
+        }
+    }
+
+    /// Get an operand pointing to a local variable
+    pub fn local_opnd(&self, ep_offset: u32) -> Opnd {
+        let idx = self.ctx.stack_size as i32 + ep_offset as i32;
+        Opnd::Stack {
+            idx,
+            num_bits: 64,
+            stack_size: self.ctx.stack_size,
+            num_locals: Some(self.get_num_locals().unwrap()), // this must exist for locals
+            sp_offset: self.ctx.sp_offset,
+            reg_mapping: None, // push_insn will set this
         }
     }
 }
@@ -3132,7 +3228,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
 
 // Change the entry's jump target from an entry stub to a next entry
 pub fn regenerate_entry(cb: &mut CodeBlock, entryref: &EntryRef, next_entry: CodePtr) {
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     asm_comment!(asm, "regenerate_entry");
 
     // gen_entry_guard generates cmp + jne. We're rewriting only jne.
@@ -3208,7 +3304,7 @@ fn entry_stub_hit_body(
 
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
     asm.compile(cb, Some(ocb))?;
 
@@ -3219,7 +3315,7 @@ fn entry_stub_hit_body(
     let blockref = match find_block_version(blockid, &ctx) {
         // If an existing block is found, generate a jump to the block.
         Some(blockref) => {
-            let mut asm = Assembler::new();
+            let mut asm = Assembler::new_without_iseq();
             asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
             asm.compile(cb, Some(ocb))?;
             Some(blockref)
@@ -3247,7 +3343,7 @@ fn entry_stub_hit_body(
 pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
 
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     asm_comment!(asm, "entry stub hit");
 
     asm.mov(C_ARG_OPNDS[0], entry_address.into());
@@ -3263,7 +3359,7 @@ pub fn gen_entry_stub(entry_address: usize, ocb: &mut OutlinedCb) -> Option<Code
 /// it's useful for Code GC to call entry_stub_hit from a globally shared code.
 pub fn gen_entry_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // See gen_entry_guard for how it's used.
     asm_comment!(asm, "entry_stub_hit() trampoline");
@@ -3286,7 +3382,7 @@ fn regenerate_branch(cb: &mut CodeBlock, branch: &Branch) {
     let branch_terminates_block = branch.end_addr.get() == block.get_end_addr();
 
     // Generate the branch
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
     asm_comment!(asm, "regenerate_branch");
     branch.gen_fn.call(
         &mut asm,
@@ -3597,15 +3693,16 @@ fn delete_empty_defer_block(branch: &Branch, new_block: &Block, target_ctx: Cont
 /// A piece of code that redeems for more code; a thunk for code.
 fn gen_branch_stub(
     ctx: u32,
+    iseq: IseqPtr,
     ocb: &mut OutlinedCb,
     branch_struct_address: usize,
     target_idx: u32,
 ) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
 
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
     asm.ctx = Context::decode(ctx);
-    asm.set_reg_temps(asm.ctx.reg_temps);
+    asm.set_reg_mapping(asm.ctx.reg_mapping);
     asm_comment!(asm, "branch stub hit");
 
     if asm.ctx.is_return_landing() {
@@ -3621,7 +3718,7 @@ fn gen_branch_stub(
     }
 
     // Spill temps to the VM stack as well for jit.peek_at_stack()
-    asm.spill_temps();
+    asm.spill_regs();
 
     // Set up the arguments unique to this stub for:
     //
@@ -3641,7 +3738,7 @@ fn gen_branch_stub(
 
 pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new_without_iseq();
 
     // For `branch_stub_hit(branch_ptr, target_idx, ec)`,
     // `branch_ptr` and `target_idx` is different for each stub,
@@ -3678,7 +3775,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 
 /// Return registers to be pushed and popped on branch_stub_hit.
 pub fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
-    let temp_regs = Assembler::get_temp_regs().iter();
+    let temp_regs = Assembler::get_temp_regs2().iter();
     let len = temp_regs.len();
     // The return value gen_leave() leaves in C_RET_REG
     // needs to survive the branch_stub_hit() call.
@@ -3752,12 +3849,11 @@ pub fn gen_branch(
     gen_fn: BranchGenFn,
 ) {
     let branch = new_pending_branch(jit, gen_fn);
-    let ocb = jit.get_ocb();
 
     // Get the branch targets or stubs
-    let target0_addr = branch.set_target(0, target0, ctx0, ocb);
+    let target0_addr = branch.set_target(0, target0, ctx0, jit);
     let target1_addr = if let Some(ctx) = ctx1 {
-        let addr = branch.set_target(1, target1.unwrap(), ctx, ocb);
+        let addr = branch.set_target(1, target1.unwrap(), ctx, jit);
         if addr.is_none() {
             // target1 requested but we're out of memory.
             // Avoid unwrap() in gen_fn()
@@ -3832,7 +3928,7 @@ pub fn defer_compilation(
     };
 
     // Likely a stub since the context is marked as deferred().
-    let target0_address = branch.set_target(0, blockid, &next_ctx, jit.get_ocb());
+    let target0_address = branch.set_target(0, blockid, &next_ctx, jit);
 
     // Pad the block if it has the potential to be invalidated. This must be
     // done before gen_fn() in case the jump is overwritten by a fallthrough.
@@ -4016,7 +4112,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             let cur_dropped_bytes = cb.has_dropped_bytes();
             cb.set_write_ptr(block_start);
 
-            let mut asm = Assembler::new();
+            let mut asm = Assembler::new_without_iseq();
             asm.jmp(block_entry_exit.as_side_exit());
             cb.set_dropped_bytes(false);
             asm.compile(&mut cb, Some(ocb)).expect("can rewrite existing code");
@@ -4053,7 +4149,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         }
 
         // Create a stub for this branch target
-        let stub_addr = gen_branch_stub(block.ctx, ocb, branchref.as_ptr() as usize, target_idx as u32);
+        let stub_addr = gen_branch_stub(block.ctx, block.iseq.get(), ocb, branchref.as_ptr() as usize, target_idx as u32);
 
         // In case we were unable to generate a stub (e.g. OOM). Use the block's
         // exit instead of a stub for the block. It's important that we
@@ -4187,7 +4283,7 @@ mod tests {
         // and all local types in 32 bits
         assert_eq!(mem::size_of::<Type>(), 1);
         assert!(Type::BlockParamProxy as usize <= 0b1111);
-        assert!(MAX_LOCAL_TYPES * 4 <= 32);
+        assert!(MAX_CTX_LOCALS * 4 <= 32);
     }
 
     #[test]
@@ -4199,7 +4295,7 @@ mod tests {
     fn local_types() {
         let mut ctx = Context::default();
 
-        for i in 0..MAX_LOCAL_TYPES {
+        for i in 0..MAX_CTX_LOCALS {
             ctx.set_local_type(i, Type::Fixnum);
             assert_eq!(ctx.get_local_type(i), Type::Fixnum);
             ctx.set_local_type(i, Type::BlockParamProxy);
@@ -4251,41 +4347,30 @@ mod tests {
     }
 
     #[test]
-    fn reg_temps() {
-        let mut reg_temps = RegTemps(0);
+    fn reg_mapping() {
+        let mut reg_mapping = RegMapping([None, None, None, None, None]);
 
         // 0 means every slot is not spilled
-        for stack_idx in 0..MAX_REG_TEMPS {
-            assert_eq!(reg_temps.get(stack_idx), false);
+        for stack_idx in 0..MAX_CTX_TEMPS as u8 {
+            assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(stack_idx)), None);
         }
 
-        // Set 0, 2, 7 (RegTemps: 10100001)
-        reg_temps.set(0, true);
-        reg_temps.set(2, true);
-        reg_temps.set(3, true);
-        reg_temps.set(3, false);
-        reg_temps.set(7, true);
+        // Set 0, 2, 6 (RegMapping: [Some(0), Some(6), Some(2), None, None])
+        reg_mapping.alloc_reg(RegOpnd::Stack(0));
+        reg_mapping.alloc_reg(RegOpnd::Stack(2));
+        reg_mapping.alloc_reg(RegOpnd::Stack(3));
+        reg_mapping.dealloc_reg(RegOpnd::Stack(3));
+        reg_mapping.alloc_reg(RegOpnd::Stack(6));
 
         // Get 0..8
-        assert_eq!(reg_temps.get(0), true);
-        assert_eq!(reg_temps.get(1), false);
-        assert_eq!(reg_temps.get(2), true);
-        assert_eq!(reg_temps.get(3), false);
-        assert_eq!(reg_temps.get(4), false);
-        assert_eq!(reg_temps.get(5), false);
-        assert_eq!(reg_temps.get(6), false);
-        assert_eq!(reg_temps.get(7), true);
-
-        // Test conflicts
-        assert_eq!(5, get_option!(num_temp_regs));
-        assert_eq!(reg_temps.conflicts_with(0), false); // already set, but no conflict
-        assert_eq!(reg_temps.conflicts_with(1), false);
-        assert_eq!(reg_temps.conflicts_with(2), true); // already set, and conflicts with 7
-        assert_eq!(reg_temps.conflicts_with(3), false);
-        assert_eq!(reg_temps.conflicts_with(4), false);
-        assert_eq!(reg_temps.conflicts_with(5), true); // not set, and will conflict with 0
-        assert_eq!(reg_temps.conflicts_with(6), false);
-        assert_eq!(reg_temps.conflicts_with(7), true); // already set, and conflicts with 2
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(0)), Some(0));
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(1)), None);
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(2)), Some(2));
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(3)), None);
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(4)), None);
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(5)), None);
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(6)), Some(1));
+        assert_eq!(reg_mapping.get_reg(RegOpnd::Stack(7)), None);
     }
 
     #[test]
@@ -4294,7 +4379,7 @@ mod tests {
         assert_eq!(Context::default().diff(&Context::default()), TypeDiff::Compatible(0));
 
         // Try pushing an operand and getting its type
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         asm.stack_push(Type::Fixnum);
         let top_type = asm.ctx.get_opnd_type(StackOpnd(0));
         assert!(top_type == Type::Fixnum);
@@ -4304,7 +4389,7 @@ mod tests {
 
     #[test]
     fn context_upgrade_local() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         asm.stack_push_local(0);
         asm.ctx.upgrade_opnd_type(StackOpnd(0), Type::Nil);
         assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(0)));
@@ -4338,7 +4423,7 @@ mod tests {
 
     #[test]
     fn shift_stack_for_send() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
 
         // Push values to simulate send(:name, arg) with 6 items already on-stack
         for _ in 0..6 {
