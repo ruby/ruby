@@ -597,6 +597,9 @@ static VALUE string_spec_rb_str_unlocktmp(VALUE self, VALUE str) {
   return rb_str_unlocktmp(str);
 }
 
+VALUE rb_str_to_interned_str(VALUE str);
+VALUE rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc);
+
 static VALUE string_spec_rb_enc_interned_str_cstr(VALUE self, VALUE str, VALUE enc) {
   rb_encoding *e = NIL_P(enc) ? 0 : rb_to_encoding(enc);
   return rb_enc_interned_str_cstr(RSTRING_PTR(str), e);
