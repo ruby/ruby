@@ -8319,9 +8319,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         lstart->rescued = LABEL_RESCUE_BEG;
         lend->rescued = LABEL_RESCUE_END;
+
         PUSH_LABEL(ret, lstart);
         PM_COMPILE_NOT_POPPED(cast->expression);
         PUSH_LABEL(ret, lend);
+
         PUSH_INSN(ret, location, nop);
         PUSH_LABEL(ret, lcont);
         if (popped) PUSH_INSN(ret, location, pop);
@@ -9291,6 +9293,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSNL(ret, location, branchif, lab);
                 PUSH_INSNL(ret, location, jump, rescue_end);
                 PUSH_LABEL(ret, lab);
+                PUSH_TRACE(ret, RUBY_EVENT_RESCUE);
                 PM_COMPILE((const pm_node_t *) scope_node->body);
                 PUSH_INSN(ret, location, leave);
                 PUSH_LABEL(ret, rescue_end);
