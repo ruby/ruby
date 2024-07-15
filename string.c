@@ -1938,11 +1938,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                 /* make noembed always */
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
-#if USE_RVARGC
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
-#else
-                const size_t osize = RSTRING_EMBED_LEN_MAX + 1;
-#endif
                 char *new_ptr = ALLOC_N(char, size);
                 if (STR_EMBED_P(str)) RUBY_ASSERT((long)osize <= str_embed_capa(str));
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
