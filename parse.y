@@ -7428,7 +7428,11 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
 	    }
 	    return read_escape(p, flags|ESCAPE_META, encp) | 0x80;
 	}
-	else if (c == -1 || !ISASCII(c)) goto eof;
+        else if (c == -1) goto eof;
+        else if (!ISASCII(c)) {
+            tokskip_mbchar(p);
+            goto eof;
+        }
 	else {
 	    int c2 = escaped_control_code(c);
 	    if (c2) {
