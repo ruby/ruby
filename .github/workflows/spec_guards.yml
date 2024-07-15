@@ -6,13 +6,10 @@ on:
       - 'spec/**'
       - '!spec/*.md'
   pull_request:
-    paths-ignore:
+    paths:
       - 'spec/**'
       - '!spec/*.md'
   merge_group:
-    paths-ignore:
-      - 'spec/**'
-      - '!spec/*.md'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -24,23 +21,39 @@ permissions:
 jobs:
   rubyspec:
     name: Rubyspec
+
     runs-on: ubuntu-20.04
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Document')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     strategy:
       matrix:
         # Specs from ruby/spec should still run on all supported Ruby versions.
         # This also ensures the needed ruby_version_is guards are there, see spec/README.md.
         ruby:
-          - ruby-2.7
+          - ruby-3.0
           - ruby-3.1
+          - ruby-3.2
+          - ruby-3.3
 
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
-      - uses: ruby/setup-ruby@4b2d1d631efa087f8896c15a0c6023dc2f483198 # v1.128.0
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - uses: ruby/setup-ruby@97e35c5302afcf3f5ac1df3fca9343d32536b286 # v1.184.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none
+
       - run: gem install webrick
+
       - run: ruby ../mspec/bin/mspec
         working-directory: spec/ruby
         env:
@@ -57,4 +70,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
