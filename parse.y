@@ -7262,6 +7262,16 @@ tokadd_codepoint(struct parser_params *p, rb_encoding **encp,
 
 static int tokadd_mbchar(struct parser_params *p, int c);
 
+static int
+tokskip_mbchar(struct parser_params *p)
+{
+    int len = parser_precise_mbclen(p, p->lex.pcur-1);
+    if (len > 0) {
+        p->lex.pcur += len - 1;
+    }
+    return len;
+}
+
 /* return value is for ?\u3042 */
 static void
 tokadd_utf8(struct parser_params *p, rb_encoding **encp,
@@ -7449,7 +7459,11 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
 	}
 	else if (c == '?')
 	    return 0177;
-	else if (c == -1 || !ISASCII(c)) goto eof;
+        else if (c == -1) goto eof;
+        else if (!ISASCII(c)) {
+            tokskip_mbchar(p);
+            goto eof;
+        }
 	else {
 	    int c2 = escaped_control_code(c);
 	    if (c2) {
@@ -7477,7 +7491,7 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
       eof:
       case -1:
         yyerror0("Invalid escape character syntax");
-	token_flush(p);
+        dispatch_scan_event(p, tSTRING_CONTENT);
 	return '\0';
 
       default:

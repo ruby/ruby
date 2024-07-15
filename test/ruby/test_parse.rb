@@ -577,6 +577,10 @@ class TestParse < Test::Unit::TestCase
     assert_equal(' ^~~~~'"\n", e.message.lines.last)
     e = assert_syntax_error('"\M-\U0000"', 'Invalid escape character syntax')
     assert_equal(' ^~~~~'"\n", e.message.lines.last)
+
+    e = assert_syntax_error(%["\\C-\u3042"], 'Invalid escape character syntax')
+    assert_match(/^\s \^(?# \\ ) ~(?# C ) ~(?# - ) ~+(?# U+3042 )$/x, e.message.lines.last)
+    assert_not_include(e.message, "invalid multibyte char")
   end
 
   def test_question
