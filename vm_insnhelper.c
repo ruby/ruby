@@ -396,7 +396,7 @@ vm_push_frame(rb_execution_context_t *ec,
     This is a no-op in all cases we've looked at (https://godbolt.org/z/3oxd1446K), but should guarantee it for all
     future/untested compilers/platforms. */
 
-    #ifdef HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    #if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
     atomic_signal_fence(memory_order_seq_cst);
     #endif
 
