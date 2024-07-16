@@ -3,7 +3,7 @@ minitest 5.15.0 https://github.com/seattlerb/minitest
 power_assert 2.0.1 https://github.com/ruby/power_assert
 rake 13.0.6 https://github.com/ruby/rake
 test-unit 3.5.3 https://github.com/test-unit/test-unit
-rexml 3.2.9 https://github.com/ruby/rexml
+rexml 3.3.2 https://github.com/ruby/rexml
 rss 0.2.9 https://github.com/ruby/rss
 net-ftp 0.1.4 https://github.com/ruby/net-ftp
 net-imap 0.2.4 https://github.com/ruby/net-imap
