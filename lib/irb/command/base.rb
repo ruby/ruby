@@ -10,8 +10,10 @@ module IRB
   module Command
     class CommandArgumentError < StandardError; end
 
-    def self.extract_ruby_args(*args, **kwargs)
-      throw :EXTRACT_RUBY_ARGS, [args, kwargs]
+    class << self
+      def extract_ruby_args(*args, **kwargs)
+        throw :EXTRACT_RUBY_ARGS, [args, kwargs]
+      end
     end
 
     class Base
@@ -31,17 +33,17 @@ module IRB
           @help_message
         end
 
+        def execute(irb_context, arg)
+          new(irb_context).execute(arg)
+        rescue CommandArgumentError => e
+          puts e.message
+        end
+
         private
 
         def highlight(text)
           Color.colorize(text, [:BOLD, :BLUE])
         end
-      end
-
-      def self.execute(irb_context, arg)
-        new(irb_context).execute(arg)
-      rescue CommandArgumentError => e
-        puts e.message
       end
 
       def initialize(irb_context)

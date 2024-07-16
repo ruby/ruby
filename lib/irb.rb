@@ -880,40 +880,42 @@ module IRB
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end
 
-  # The current IRB::Context of the session, see IRB.conf
-  #
-  #     irb
-  #     irb(main):001:0> IRB.CurrentContext.irb_name = "foo"
-  #     foo(main):002:0> IRB.conf[:MAIN_CONTEXT].irb_name #=> "foo"
-  def IRB.CurrentContext # :nodoc:
-    IRB.conf[:MAIN_CONTEXT]
-  end
-
-  # Initializes IRB and creates a new Irb.irb object at the `TOPLEVEL_BINDING`
-  def IRB.start(ap_path = nil)
-    STDOUT.sync = true
-    $0 = File::basename(ap_path, ".rb") if ap_path
-
-    IRB.setup(ap_path)
-
-    if @CONF[:SCRIPT]
-      irb = Irb.new(nil, @CONF[:SCRIPT])
-    else
-      irb = Irb.new
+  class << self
+    # The current IRB::Context of the session, see IRB.conf
+    #
+    #     irb
+    #     irb(main):001:0> IRB.CurrentContext.irb_name = "foo"
+    #     foo(main):002:0> IRB.conf[:MAIN_CONTEXT].irb_name #=> "foo"
+    def CurrentContext # :nodoc:
+      conf[:MAIN_CONTEXT]
     end
-    irb.run(@CONF)
-  end
 
-  # Quits irb
-  def IRB.irb_exit(*) # :nodoc:
-    throw :IRB_EXIT, false
-  end
+    # Initializes IRB and creates a new Irb.irb object at the `TOPLEVEL_BINDING`
+    def start(ap_path = nil)
+      STDOUT.sync = true
+      $0 = File::basename(ap_path, ".rb") if ap_path
 
-  # Aborts then interrupts irb.
-  #
-  # Will raise an Abort exception, or the given `exception`.
-  def IRB.irb_abort(irb, exception = Abort) # :nodoc:
-    irb.context.thread.raise exception, "abort then interrupt!"
+      setup(ap_path)
+
+      if @CONF[:SCRIPT]
+        irb = Irb.new(nil, @CONF[:SCRIPT])
+      else
+        irb = Irb.new
+      end
+      irb.run(@CONF)
+    end
+
+    # Quits irb
+    def irb_exit(*) # :nodoc:
+      throw :IRB_EXIT, false
+    end
+
+    # Aborts then interrupts irb.
+    #
+    # Will raise an Abort exception, or the given `exception`.
+    def irb_abort(irb, exception = Abort) # :nodoc:
+      irb.context.thread.raise exception, "abort then interrupt!"
+    end
   end
 
   class Irb
