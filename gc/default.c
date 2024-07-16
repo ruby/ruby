@@ -6113,8 +6113,8 @@ rgengc_remember(rb_objspace_t *objspace, VALUE obj)
     }
 
 #if RGENGC_PROFILE > 0
-    if (!RVALUE_REMEMBERED(obj)) {
-        if (RVALUE_WB_UNPROTECTED(obj) == 0) {
+    if (!RVALUE_REMEMBERED(objspace, obj)) {
+        if (RVALUE_WB_UNPROTECTED(objspace, obj) == 0) {
             objspace->profile.total_remembered_normal_object_count++;
 #if RGENGC_PROFILE >= 2
             objspace->profile.remembered_normal_object_count_types[BUILTIN_TYPE(obj)]++;
