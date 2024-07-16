@@ -792,6 +792,8 @@ dummy
   end
 
   def test_keep_script_lines_for_of_with_existing_SCRIPT_LINES__that_has__FILE__as_a_key
+    omit if compiling_with_prism?
+
     # This test confirms that the bug that previously occurred because of
     # `AbstractSyntaxTree.of`s unnecessary dependence on SCRIPT_LINES__ does not reproduce.
     # The bug occurred only if SCRIPT_LINES__ included __FILE__ as a key.
@@ -859,6 +861,8 @@ dummy
   end
 
   def test_e_option
+    omit if compiling_with_prism?
+
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
   end
