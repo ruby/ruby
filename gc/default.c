@@ -1629,7 +1629,7 @@ object_id_hash(st_data_t n)
     return FIX2LONG(rb_hash((VALUE)n));
 }
 
-#define OBJ_ID_INCREMENT (BASE_SLOT_SIZE)
+#define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
 
 static const struct st_hash_type object_id_hash_type = {
