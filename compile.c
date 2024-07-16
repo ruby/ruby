@@ -861,6 +861,8 @@ rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback
     return iseq_setup(iseq, ret);
 }
 
+static bool drop_unreachable_return(LINK_ANCHOR *ret);
+
 VALUE
 rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 {
@@ -960,7 +962,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
         ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
         ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0) /* continue throw */ );
     }
-    else {
+    else if (!drop_unreachable_return(ret)) {
         ADD_SYNTHETIC_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, -1, leave);
     }
 
@@ -8580,6 +8582,27 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         }
     }
     return COMPILE_OK;
+}
+
+static bool
+drop_unreachable_return(LINK_ANCHOR *ret)
+{
+    LINK_ELEMENT *i = ret->last, *last;
+    if (!i) return false;
+    if (IS_TRACE(i)) i = i->prev;
+    if (!IS_INSN(i) || !IS_INSN_ID(i, putnil)) return false;
+    last = i = i->prev;
+    if (IS_ADJUST(i)) i = i->prev;
+    if (!IS_INSN(i)) return false;
+    switch (INSN_OF(i)) {
+      case BIN(leave):
+      case BIN(jump):
+        break;
+      default:
+        return false;
+    }
+    (ret->last = last->prev)->next = NULL;
+    return true;
 }
 
 static int
