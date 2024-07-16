@@ -893,6 +893,7 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define gc_config_full_mark_set(b) (((int)b), objspace->gc_config.full_mark = (b))
 #define gc_config_full_mark_val    (objspace->gc_config.full_mark)
 
+#ifndef DURING_GC_COULD_MALLOC_REGION_START
 #define DURING_GC_COULD_MALLOC_REGION_START() \
     assert(rb_during_gc()); \
     bool _prev_enabled = rb_gc_impl_gc_enabled_p(objspace); \
@@ -7529,6 +7530,8 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         mmtk_handle_user_collection_request(GET_THREAD());
+
+        gc_finalize_deferred(objspace);
     }
     else {
 #endif
@@ -7553,13 +7556,13 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
     }
 
     garbage_collect(objspace, reason);
-#if USE_MMTK
-    }
-#endif
 
     gc_finalize_deferred(objspace);
 
     gc_config_full_mark_set(full_marking_p);
+#if USE_MMTK
+    }
+#endif
 }
 
 static void
