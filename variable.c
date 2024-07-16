@@ -1806,12 +1806,6 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
     return true;
 }
 
-/**
- * Prevents further modifications to the given object.  ::rb_eFrozenError shall
- * be raised if modification is attempted.
- *
- * @param[out]  x  Object in question.
- */
 void rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {
