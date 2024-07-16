@@ -30,19 +30,18 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def setup
     super
-    @ssl_server = nil
     @ssl_server_thread = nil
+    @ssl_server = nil
   end
 
   def teardown
-    if @ssl_server
-      # TODO: lookup ssl_server status and close it properly
-      # @ssl_server.shutdown
-      @ssl_server = nil
-    end
     if @ssl_server_thread
       @ssl_server_thread.kill.join
       @ssl_server_thread = nil
+    end
+    if @ssl_server
+      @ssl_server.close
+      @ssl_server = nil
     end
     super
   end
@@ -157,10 +156,10 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ctx.ca_file = File.join(__dir__, "ca_cert.pem")
     ctx.tmp_dh_callback = proc { TEST_KEY_DH2048 }
     ctx.verify_mode = config[:verify_mode] if config[:verify_mode]
-    ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
+    @ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
     @ssl_server_thread = Thread.new do
       loop do
-        ssl_client = ssl_server.accept
+        ssl_client = @ssl_server.accept
         Thread.new(ssl_client) do |client|
           handle_request(client)
         ensure
@@ -170,8 +169,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         # Ignore SSL errors because we're testing them implicitly
       end
     end
-    @ssl_server = ssl_server
-    server
+    @ssl_server
   end
 
   def handle_request(client)
