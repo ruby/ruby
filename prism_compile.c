@@ -989,7 +989,26 @@ again:
         break;
       }
       default: {
-        pm_compile_node(iseq, cond, ret, false, scope_node);
+        DECL_ANCHOR(cond_seq);
+        INIT_ANCHOR(cond_seq);
+        pm_compile_node(iseq, cond, cond_seq, false, scope_node);
+
+        if (LIST_INSN_SIZE_ONE(cond_seq)) {
+            INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
+            if (insn->insn_id == BIN(putobject)) {
+                if (RTEST(insn->operands[0])) {
+                    ADD_INSNL(ret, cond, jump, then_label);
+                    // maybe unreachable
+                    return;
+                }
+                else {
+                    ADD_INSNL(ret, cond, jump, else_label);
+                    return;
+                }
+            }
+        }
+
+        PUSH_SEQ(ret, cond_seq);
         break;
       }
     }
