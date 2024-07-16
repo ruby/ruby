@@ -1798,18 +1798,18 @@ rb_memory_id(VALUE obj)
  *  immediate values include:
  *
  *  - +nil+, +true+, +false+.
- *  - Any Symbol object.
- *  - Any Integer object.
  *  - Any frozen String object.
+ *  - Any Symbol object.
+ *  - Some Integer objects.
  *  - Some Float objects.
  *
  *  Examples:
  *
  *    nil.__id__ == nil.__id__                   # => true
+ *    'foo'.__id__ == 'foo'.__id__               # => false # Not frozen.
+ *    'foo'.freeze.__id__ == 'foo'.freeze.__id__ # => true  # Frozen.
  *    :foo.__id__ == :foo.__id__                 # => true
  *    1.__id__ == 1.__id__                       # => true
- *    'foo'.__id__ == 'foo'.__id__               # => false # Not frozen.
- *    'foo'.freeze.__id__ == 'foo'.freeze.__id__ # => true
  *    3.14.__id__ == 3.14.__id__                 # => true
  *
  */

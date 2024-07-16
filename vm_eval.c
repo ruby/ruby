@@ -898,22 +898,19 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
  *
  *  This class overrides +method_missing+:
  *
- *    require 'roman-numerals' # Use Ruby gem roman-numerals.
- *    class Roman
- *      def roman_to_int(str)
- *        RomanNumerals.to_decimal(str)
- *      end
- *      def method_missing(symbol, *args)
- *        str = symbol.id2name
- *        i = roman_to_int(str)
- *        super(symbol, *args) if i == 0 # Could not convert.
- *        puts "Roman #{symbol} converts to decimal #{i}."
+ *    class Greeter
+ *      def method_missing(method_name, *args, &block)
+ *        if method_name.to_s =~ /^greet_(.*)$/
+ *          puts "Hello #{$1.capitalize}"
+ *        else
+ *          super
+ *        end
  *      end
  *    end
- *    roman = Roman.new
- *    roman.IV
- *    roman.XXIII
- *    roman.MMXXIV
+ *    greeter = Greeter.new
+ *    greeter.greet_world # => Hello world
+ *    greeter.greet_ruby # => Hello ruby
+ *    greeter.foo # Raises NoMethodError: undefined method 'foo' for an instance of Greeter
  *
  *  Output:
  *
@@ -2184,7 +2181,7 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
  *
  *  With a block given, passes +self+ to the block
  *  and returns the block's return value;
- *  this gives the block access to instance variables and private methods in +self+:
+ *  this gives the block full access to +self+:
  *
  *    class SecretWord
  *      def initialize(word)
@@ -2246,8 +2243,8 @@ rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
  *  call-seq:
  *    instance_exec(*args) {|args| ... } -> object
  *
- *  Executes the given block,
- *  giving access to the instance variables and private methods in +self+:
+ *  Executes the given block within the context of +self+,
+ *  giving full access to +self+:
  *
  *    class SecretWord
  *      def initialize(word)

@@ -206,16 +206,16 @@ rb_eql(VALUE obj1, VALUE obj2)
  *    self == object -> true or false
  *    self.equal?(object) -> true or false
  *
- *  Returns whether +self+ and +object+ are the same object:
+ *  Returns whether +self+ and +object+ are the same object.
  *
  *  Unlike method #==, method #equal? should not be overridden by subclasses
  *  because it is used to determine object identity;
- *  that is, <tt>b.equal?(object)</tt> if and only if <tt>b</tt> is the same
- *  object as <tt>object</tt>):
+ *  that is, +b.equal?(object)+ if and only if +b+ is the same
+ *  object as +object+):
  *
- *    b = BasicObject.new
- *    b.equal?(b)               # => true
- *    b.equal?(BasicObject.new) # => false
+ *    b = Object.new
+ *    b.equal?(b)          # => true
+ *    b.equal?(Object.new) # => false
  *
  */
 VALUE
@@ -232,7 +232,7 @@ VALUE rb_obj_hash(VALUE obj);
  *
  *  Returns the negation of +self+:
  *
- *    b = BasicObject.new
+ *    b = Object.new
  *    !b  # => false
  *    !!b # => true
  *
@@ -250,9 +250,9 @@ rb_obj_not(VALUE obj)
  *
  *  Returns whether +self+ and +object+ <i>are not</i> the same object:
  *
- *    b = BasicObject.new
- *    b != b               # => false
- *    b != BasicObject.new # => true
+ *    b = Object.new
+ *    b != b          # => false
+ *    b != Object.new # => true
  *
  */
 
