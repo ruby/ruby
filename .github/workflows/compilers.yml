@@ -66,9 +66,9 @@ jobs:
           - { key: default_cc, name: gcc-9,     value: gcc-9,     container: gcc-9 }
           - { key: default_cc, name: gcc-8,     value: gcc-8,     container: gcc-8 }
           - { key: default_cc, name: gcc-7,     value: gcc-7,     container: gcc-7 }
-          - { key: default_cc, name: gcc-6,     value: gcc-6,     container: gcc-6 }
-          - { key: default_cc, name: gcc-5,     value: gcc-5,     container: gcc-5 }
-          - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
+#         - { key: default_cc, name: gcc-6,     value: gcc-6,     container: gcc-6 }
+#         - { key: default_cc, name: gcc-5,     value: gcc-5,     container: gcc-5 }
+#         - { key: default_cc, name: gcc-4.8,   value: gcc-4.8,   container: gcc-4.8 }
           - key: default_cc
             name: 'gcc-11 LTO'
             value: 'gcc-11 -O2 -flto=auto -ffat-lto-objects'
@@ -84,9 +84,9 @@ jobs:
           - { key: default_cc, name: clang-8,   value: clang-8,   container: clang-8 }
           - { key: default_cc, name: clang-7,   value: clang-7,   container: clang-7 }
           - { key: default_cc, name: clang-6.0, value: clang-6.0, container: clang-6.0 }
-          - { key: default_cc, name: clang-5.0, value: clang-5.0, container: clang-5.0 }
-          - { key: default_cc, name: clang-4.0, value: clang-4.0, container: clang-4.0 }
-          - { key: default_cc, name: clang-3.9, value: clang-3.9, container: clang-3.9 }
+#         - { key: default_cc, name: clang-5.0, value: clang-5.0, container: clang-5.0 }
+#         - { key: default_cc, name: clang-4.0, value: clang-4.0, container: clang-4.0 }
+#         - { key: default_cc, name: clang-3.9, value: clang-3.9, container: clang-3.9 }
           - key: default_cc
             name: 'clang-14 LTO'
             value: 'clang-14 -O2 -flto=auto'
