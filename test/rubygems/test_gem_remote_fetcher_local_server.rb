@@ -90,10 +90,12 @@ gems:
 
     if @normal_server
       @normal_server.kill.join
+      @normal_server[:server].close
       @normal_server = nil
     end
     if @proxy_server
       @proxy_server.kill.join
+      @proxy_server[:server].close
       @proxy_server = nil
     end
 
