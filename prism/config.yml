@@ -263,6 +263,7 @@ errors:
   - TERNARY_COLON
   - TERNARY_EXPRESSION_FALSE
   - TERNARY_EXPRESSION_TRUE
+  - UNARY_DISALLOWED
   - UNARY_RECEIVER
   - UNDEF_ARGUMENT
   - UNEXPECTED_BLOCK_ARGUMENT
@@ -858,10 +859,8 @@ nodes:
           left and right
           ^^^^^^^^^^^^^^
   - name: ArgumentsNode
+    flags: ArgumentsNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ArgumentsNodeFlags
       - name: arguments
         type: node[]
     comment: |
@@ -870,10 +869,8 @@ nodes:
           return foo, bar, baz
                  ^^^^^^^^^^^^^
   - name: ArrayNode
+    flags: ArrayNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ArrayNodeFlags
       - name: elements
         type: node[]
         comment: Represent the list of zero or more [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression) within the array.
@@ -1042,10 +1039,8 @@ nodes:
           bar(&args)
           ^^^^^^^^^^
   - name: BlockLocalVariableNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -1071,10 +1066,8 @@ nodes:
           [1, 2, 3].each { |i| puts x }
                          ^^^^^^^^^^^^^^
   - name: BlockParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -1131,10 +1124,8 @@ nodes:
           break foo
           ^^^^^^^^^
   - name: CallAndWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1155,10 +1146,8 @@ nodes:
           foo.bar &&= value
           ^^^^^^^^^^^^^^^^^
   - name: CallNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
         comment: |
@@ -1208,10 +1197,8 @@ nodes:
           foo&.bar
           ^^^^^^^^
   - name: CallOperatorWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1234,10 +1221,8 @@ nodes:
           foo.bar += baz
           ^^^^^^^^^^^^^^
   - name: CallOrWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1258,10 +1243,8 @@ nodes:
           foo.bar ||= value
           ^^^^^^^^^^^^^^^^^
   - name: CallTargetNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node
       - name: call_operator_loc
@@ -1856,10 +1839,8 @@ nodes:
           foo in Foo(*bar, baz, *qux)
                  ^^^^^^^^^^^^^^^^^^^^
   - name: FlipFlopNode
+    flags: RangeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RangeFlags
       - name: left
         type: node?
       - name: right
@@ -2278,10 +2259,8 @@ nodes:
           case a; in b then c end
                   ^^^^^^^^^^^
   - name: IndexAndWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -2305,10 +2284,8 @@ nodes:
           foo.bar[baz] &&= value
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOperatorWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -2334,10 +2311,8 @@ nodes:
           foo.bar[baz] += value
           ^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOrWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -2361,10 +2336,8 @@ nodes:
           foo.bar[baz] ||= value
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: IndexTargetNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node
       - name: opening_loc
@@ -2500,10 +2473,8 @@ nodes:
           @foo = 1
           ^^^^^^^^
   - name: IntegerNode
+    flags: IntegerBaseFlags
     fields:
-      - name: flags
-        type: flags
-        kind: IntegerBaseFlags
       - name: value
         type: integer
         comment: The value of the integer literal as a number.
@@ -2513,10 +2484,8 @@ nodes:
           1
           ^
   - name: InterpolatedMatchLastLineNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
@@ -2534,10 +2503,8 @@ nodes:
           if /foo #{bar} baz/ then end
              ^^^^^^^^^^^^^^^^
   - name: InterpolatedRegularExpressionNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
@@ -2555,10 +2522,8 @@ nodes:
           /foo #{bar} baz/
           ^^^^^^^^^^^^^^^^
   - name: InterpolatedStringNode
+    flags: InterpolatedStringNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: InterpolatedStringNodeFlags
       - name: opening_loc
         type: location?
       - name: parts
@@ -2625,10 +2590,8 @@ nodes:
           -> { it + it }
           ^^^^^^^^^^^^^^
   - name: KeywordHashNode
+    flags: KeywordHashNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
         kind:
@@ -2640,10 +2603,8 @@ nodes:
           foo(a: b)
               ^^^^
   - name: KeywordRestParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -2823,10 +2784,8 @@ nodes:
           foo = 1
           ^^^^^^^
   - name: MatchLastLineNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -3142,10 +3101,8 @@ nodes:
           $1
           ^^
   - name: OptionalKeywordParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -3159,10 +3116,8 @@ nodes:
                 ^^^^
           end
   - name: OptionalParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -3337,10 +3292,8 @@ nodes:
         kind: StatementsNode
     comment: The top level node of any parse tree.
   - name: RangeNode
+    flags: RangeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RangeFlags
       - name: left
         type: node?
         comment: |
@@ -3375,10 +3328,8 @@ nodes:
           c if a =~ /left/ ... b =~ /right/
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   - name: RationalNode
+    flags: IntegerBaseFlags
     fields:
-      - name: flags
-        type: flags
-        kind: IntegerBaseFlags
       - name: numerator
         type: integer
         comment: |
@@ -3403,10 +3354,8 @@ nodes:
           redo
           ^^^^
   - name: RegularExpressionNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -3421,10 +3370,8 @@ nodes:
           /foo/i
           ^^^^^^
   - name: RequiredKeywordParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -3436,10 +3383,8 @@ nodes:
                 ^^
           end
   - name: RequiredParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -3489,10 +3434,8 @@ nodes:
 
       `Foo, *splat, Bar` are in the `exceptions` field. `ex` is in the `exception` field.
   - name: RestParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -3512,10 +3455,8 @@ nodes:
           retry
           ^^^^^
   - name: ReturnNode
+    flags: ReturnNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ReturnNodeFlags
       - name: keyword_loc
         type: location
       - name: arguments
@@ -3533,10 +3474,8 @@ nodes:
           self
           ^^^^
   - name: ShareableConstantNode
+    flags: ShareableConstantNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ShareableConstantNodeFlags
       - name: write
         type: node
         kind:
@@ -3581,10 +3520,8 @@ nodes:
           __ENCODING__
           ^^^^^^^^^^^^
   - name: SourceFileNode
+    flags: StringFlags
     fields:
-      - name: flags
-        type: flags
-        kind: StringFlags
       - name: filepath
         type: string
         comment: Represents the file path being parsed. This corresponds directly to the `filepath` option given to the various `Prism::parse*` APIs.
@@ -3620,10 +3557,8 @@ nodes:
           foo; bar; baz
           ^^^^^^^^^^^^^
   - name: StringNode
+    flags: StringFlags
     fields:
-      - name: flags
-        type: flags
-        kind: StringFlags
       - name: opening_loc
         type: location?
       - name: content_loc
@@ -3665,10 +3600,8 @@ nodes:
           super foo, bar
           ^^^^^^^^^^^^^^
   - name: SymbolNode
+    flags: SymbolFlags
     fields:
-      - name: flags
-        type: flags
-        kind: SymbolFlags
       - name: opening_loc
         type: location?
       - name: value_loc
@@ -3768,10 +3701,8 @@ nodes:
           unless foo then bar end
           ^^^^^^^^^^^^^^^^^^^^^^^
   - name: UntilNode
+    flags: LoopFlags
     fields:
-      - name: flags
-        type: flags
-        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -3809,10 +3740,8 @@ nodes:
           ^^^^^^^^^
           end
   - name: WhileNode
+    flags: LoopFlags
     fields:
-      - name: flags
-        type: flags
-        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -3832,10 +3761,8 @@ nodes:
           while foo do bar end
           ^^^^^^^^^^^^^^^^^^^^
   - name: XStringNode
+    flags: EncodingFlags
     fields:
-      - name: flags
-        type: flags
-        kind: EncodingFlags
       - name: opening_loc
         type: location
       - name: content_loc

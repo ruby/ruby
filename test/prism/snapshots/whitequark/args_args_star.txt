@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,19))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,19))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,14))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :fun
@@ -25,6 +27,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ SplatNode (location: (1,9)-(1,13))
+        │   │           ├── flags: ∅
         │   │           ├── operator_loc: (1,9)-(1,10) = "*"
         │   │           └── expression:
         │   │               @ CallNode (location: (1,10)-(1,13))
@@ -40,7 +43,7 @@
         │   ├── closing_loc: (1,13)-(1,14) = ")"
         │   └── block: ∅
         └── @ CallNode (location: (3,0)-(3,19))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :fun
@@ -61,6 +64,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ SplatNode (location: (3,9)-(3,13))
+            │           ├── flags: ∅
             │           ├── operator_loc: (3,9)-(3,10) = "*"
             │           └── expression:
             │               @ CallNode (location: (3,10)-(3,13))
@@ -76,6 +80,7 @@
             ├── closing_loc: (3,19)-(3,20) = ")"
             └── block:
                 @ BlockArgumentNode (location: (3,15)-(3,19))
+                ├── flags: ∅
                 ├── expression:
                 │   @ CallNode (location: (3,16)-(3,19))
                 │   ├── flags: variable_call, ignore_visibility

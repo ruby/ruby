@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,12))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,12))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableWriteNode (location: (1,0)-(1,12))
+            ├── flags: newline
             ├── name: :a
             ├── depth: 0
             ├── name_loc: (1,0)-(1,1) = "a"
@@ -22,6 +25,7 @@
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── block: ∅
             │   │   ├── @ SplatNode (location: (1,7)-(1,9))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── operator_loc: (1,7)-(1,8) = "*"
             │   │   │   └── expression:
             │   │   │       @ CallNode (location: (1,8)-(1,9))

@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,20))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ UnlessNode (location: (1,0)-(1,24))
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,0)-(1,6) = "unless"
         │   ├── predicate:
         │   │   @ CallNode (location: (1,7)-(1,10))
@@ -19,9 +22,10 @@
         │   ├── then_keyword_loc: (1,11)-(1,15) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,16)-(1,19))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,19))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -33,6 +37,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (1,21)-(1,24) = "end"
         └── @ UnlessNode (location: (3,0)-(3,20))
+            ├── flags: newline
             ├── keyword_loc: (3,0)-(3,6) = "unless"
             ├── predicate:
             │   @ CallNode (location: (3,7)-(3,10))
@@ -48,9 +53,10 @@
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (3,12)-(3,15))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (3,12)-(3,15))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar

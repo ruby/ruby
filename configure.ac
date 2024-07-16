@@ -1073,7 +1073,6 @@ AS_CASE(["$target_os"],
 		AS_IF([test $gcc_major -eq 4 -a $gcc_minor -lt 3], [
 		    ac_cv_func___builtin_setjmp=no
 		])
-		with_setjmp_type=sigsetjmp # to hijack SIGCHLD handler
 		AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
 		    [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
@@ -1665,7 +1664,7 @@ AS_IF([test "$rb_cv_func_weak" != x], [
    AC_DEFINE(HAVE_FUNC_WEAK)
 ])
 
-AC_CACHE_CHECK([for __attribute__((__depreacted__(msg))) in C++],
+AC_CACHE_CHECK([for __attribute__((__deprecated__(msg))) in C++],
   rb_cv_CentOS6_CXX_workaround,
   RUBY_WERROR_FLAG([
     AC_LANG_PUSH([C++])

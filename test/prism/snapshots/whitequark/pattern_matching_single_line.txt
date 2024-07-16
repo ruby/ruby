@@ -1,18 +1,23 @@
 @ ProgramNode (location: (1,0)-(3,11))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,11))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ MatchRequiredNode (location: (1,0)-(1,8))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ IntegerNode (location: (1,0)-(1,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (1,5)-(1,8))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (1,6)-(1,7))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :a
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
@@ -21,18 +26,22 @@
         │   │   └── closing_loc: (1,7)-(1,8) = "]"
         │   └── operator_loc: (1,2)-(1,4) = "=>"
         ├── @ LocalVariableReadNode (location: (1,10)-(1,11))
+        │   ├── flags: newline
         │   ├── name: :a
         │   └── depth: 0
         ├── @ MatchPredicateNode (location: (3,0)-(3,8))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ IntegerNode (location: (3,0)-(3,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (3,5)-(3,8))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (3,6)-(3,7))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :a
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
@@ -41,5 +50,6 @@
         │   │   └── closing_loc: (3,7)-(3,8) = "]"
         │   └── operator_loc: (3,2)-(3,4) = "in"
         └── @ LocalVariableReadNode (location: (3,10)-(3,11))
+            ├── flags: newline
             ├── name: :a
             └── depth: 0

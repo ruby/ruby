@@ -1,32 +1,36 @@
 @ ProgramNode (location: (1,0)-(1,12))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,12))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,12))
-            ├── flags: mutable
+            ├── flags: newline, static_literal, mutable
             ├── opening_loc: (1,0)-(1,1) = "\""
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (1,1)-(1,3))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,1)-(1,3) = "a "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "a "
             │   ├── @ EmbeddedStatementsNode (location: (1,3)-(1,9))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (1,3)-(1,5) = "\#{"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (1,5)-(1,8))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ StringNode (location: (1,5)-(1,8))
-            │   │   │           ├── flags: frozen
+            │   │   │           ├── flags: static_literal, frozen
             │   │   │           ├── opening_loc: (1,5)-(1,6) = "'"
             │   │   │           ├── content_loc: (1,6)-(1,7) = "b"
             │   │   │           ├── closing_loc: (1,7)-(1,8) = "'"
             │   │   │           └── unescaped: "b"
             │   │   └── closing_loc: (1,8)-(1,9) = "}"
             │   └── @ StringNode (location: (1,9)-(1,11))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (1,9)-(1,11) = " c"
             │       ├── closing_loc: ∅

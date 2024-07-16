@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,24))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,24))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ WhileNode (location: (1,0)-(1,24))
-            ├── flags: begin_modifier
+            ├── flags: newline, begin_modifier
             ├── keyword_loc: (1,15)-(1,20) = "while"
             ├── closing_loc: ∅
             ├── predicate:
@@ -20,14 +22,17 @@
             │   └── block: ∅
             └── statements:
                 @ StatementsNode (location: (1,0)-(1,14))
+                ├── flags: ∅
                 └── body: (length: 1)
                     └── @ BeginNode (location: (1,0)-(1,14))
+                        ├── flags: newline
                         ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
                         ├── statements:
                         │   @ StatementsNode (location: (1,6)-(1,10))
+                        │   ├── flags: ∅
                         │   └── body: (length: 1)
                         │       └── @ CallNode (location: (1,6)-(1,10))
-                        │           ├── flags: variable_call, ignore_visibility
+                        │           ├── flags: newline, variable_call, ignore_visibility
                         │           ├── receiver: ∅
                         │           ├── call_operator_loc: ∅
                         │           ├── name: :meth

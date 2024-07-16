@@ -1,16 +1,18 @@
 @ ProgramNode (location: (1,0)-(3,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,4))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ SymbolNode (location: (1,0)-(1,6))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (1,0)-(1,2) = ":'"
         │   ├── value_loc: (1,2)-(1,5) = "foo"
         │   ├── closing_loc: (1,5)-(1,6) = "'"
         │   └── unescaped: "foo"
         └── @ SymbolNode (location: (3,0)-(3,4))
-            ├── flags: forced_us_ascii_encoding
+            ├── flags: newline, static_literal, forced_us_ascii_encoding
             ├── opening_loc: (3,0)-(3,1) = ":"
             ├── value_loc: (3,1)-(3,4) = "foo"
             ├── closing_loc: ∅

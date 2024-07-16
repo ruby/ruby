@@ -1,0 +1,4 @@
+def foo(**rest, b:)
+                ^~ unexpected parameter order
+end
+

@@ -1,0 +1,3 @@
+0x1_1_
+     ^ trailing '_' in number
+

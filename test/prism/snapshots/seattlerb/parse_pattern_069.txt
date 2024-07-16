@@ -1,35 +1,42 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,3))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,15))
+            │       │   ├── flags: ∅
             │       │   ├── constant:
             │       │   │   @ ConstantReadNode (location: (2,3)-(2,9))
+            │       │   │   ├── flags: ∅
             │       │   │   └── name: :Object
             │       │   ├── elements: (length: 1)
             │       │   │   └── @ AssocNode (location: (2,10)-(2,14))
+            │       │   │       ├── flags: static_literal
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,10)-(2,12))
-            │       │   │       │   ├── flags: forced_us_ascii_encoding
+            │       │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,10)-(2,11) = "b"
             │       │   │       │   ├── closing_loc: (2,11)-(2,12) = ":"
             │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
             │       │   │       │   @ IntegerNode (location: (2,13)-(2,14))
-            │       │   │       │   ├── flags: decimal
+            │       │   │       │   ├── flags: static_literal, decimal
             │       │   │       │   └── value: 1
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest: ∅
@@ -37,9 +44,10 @@
             │       │   └── closing_loc: (2,14)-(2,15) = "]"
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,3))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ IntegerNode (location: (3,2)-(3,3))
-            │       │           ├── flags: decimal
+            │       │           ├── flags: newline, static_literal, decimal
             │       │           └── value: 1
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅

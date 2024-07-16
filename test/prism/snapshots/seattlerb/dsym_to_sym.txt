@@ -1,35 +1,39 @@
 @ ProgramNode (location: (1,0)-(3,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,13))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ AliasMethodNode (location: (1,0)-(1,17))
+        │   ├── flags: newline
         │   ├── new_name:
         │   │   @ SymbolNode (location: (1,6)-(1,11))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (1,6)-(1,8) = ":\""
         │   │   ├── value_loc: (1,8)-(1,10) = "<<"
         │   │   ├── closing_loc: (1,10)-(1,11) = "\""
         │   │   └── unescaped: "<<"
         │   ├── old_name:
         │   │   @ SymbolNode (location: (1,12)-(1,17))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (1,12)-(1,14) = ":\""
         │   │   ├── value_loc: (1,14)-(1,16) = ">>"
         │   │   ├── closing_loc: (1,16)-(1,17) = "\""
         │   │   └── unescaped: ">>"
         │   └── keyword_loc: (1,0)-(1,5) = "alias"
         └── @ AliasMethodNode (location: (3,0)-(3,13))
+            ├── flags: newline
             ├── new_name:
             │   @ SymbolNode (location: (3,6)-(3,9))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (3,6)-(3,7) = ":"
             │   ├── value_loc: (3,7)-(3,9) = "<<"
             │   ├── closing_loc: ∅
             │   └── unescaped: "<<"
             ├── old_name:
             │   @ SymbolNode (location: (3,10)-(3,13))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (3,10)-(3,11) = ":"
             │   ├── value_loc: (3,11)-(3,13) = ">>"
             │   ├── closing_loc: ∅

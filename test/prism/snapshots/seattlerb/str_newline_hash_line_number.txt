@@ -1,14 +1,16 @@
 @ ProgramNode (location: (1,0)-(2,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(2,1))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ StringNode (location: (1,0)-(1,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,1) = "\""
         │   ├── content_loc: (1,1)-(1,10) = "\\n\\n\\n\\n#"
         │   ├── closing_loc: (1,10)-(1,11) = "\""
         │   └── unescaped: "\n\n\n\n#"
         └── @ IntegerNode (location: (2,0)-(2,1))
-            ├── flags: decimal
+            ├── flags: newline, static_literal, decimal
             └── value: 1

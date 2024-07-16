@@ -100,11 +100,8 @@ typedef uint16_t pm_node_flags_t;
  * We store the flags enum in every node in the tree. Some flags are common to
  * all nodes (the ones listed below). Others are specific to certain node types.
  */
-#define PM_NODE_FLAG_BITS (sizeof(pm_node_flags_t) * 8)
-
-static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = (1 << (PM_NODE_FLAG_BITS - 1));
-static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = (1 << (PM_NODE_FLAG_BITS - 2));
-static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS - 1)) | (1 << (PM_NODE_FLAG_BITS - 2));
+static const pm_node_flags_t PM_NODE_FLAG_NEWLINE = 0x1;
+static const pm_node_flags_t PM_NODE_FLAG_STATIC_LITERAL = 0x2;
 
 /**
  * Cast the type to an enum to allow the compiler to provide exhaustiveness
@@ -140,6 +137,12 @@ typedef struct pm_node {
     pm_node_flags_t flags;
 
     /**
+     * The unique identifier for this node, which is deterministic based on the
+     * source. It is used to identify unique nodes across parses.
+     */
+    uint32_t node_id;
+
+    /**
      * This is the location of the node in the source. It's a range of bytes
      * containing a start and an end.
      */
@@ -151,11 +154,10 @@ typedef struct pm_node {
  * <%= node.name %>
  *
  * Type: <%= node.type %>
-<%- if (node_flags = node.fields.find { |field| field.is_a? Prism::Template::FlagsField }) -%>
+<%- if (node_flags = node.flags) -%>
  * Flags:
-<%- found = flags.find { |flag| flag.name == node_flags.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
-<%- found.values.each do |value| -%>
- *    PM_<%= found.human.upcase %>_<%= value.name %>
+<%- node_flags.values.each do |value| -%>
+ *    PM_<%= node_flags.human.upcase %>_<%= value.name %>
 <%- end -%>
 <%- end -%>
  *
@@ -164,7 +166,7 @@ typedef struct pm_node {
 typedef struct pm_<%= node.human %> {
     /** The embedded base node. */
     pm_node_t base;
-<%- node.fields.grep_v(Prism::Template::FlagsField).each do |field| -%>
+<%- node.fields.each do |field| -%>
 
     /**
      * <%= node.name %>#<%= field.name %>
@@ -201,7 +203,7 @@ typedef enum pm_<%= flag.human %> {
     <%- flag.values.each_with_index do |value, index| -%>
 <%= "\n" if index > 0 -%>
     /** <%= value.comment %> */
-    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << index %>,
+    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + 2) %>,
     <%- end -%>
 } pm_<%= flag.human %>_t;
 <%- end -%>

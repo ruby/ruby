@@ -55,7 +55,19 @@ module Prism
         # a and b
         # ^^^^^^^
         def visit_and_node(node)
-          s(node, :and, visit(node.left), visit(node.right))
+          left = visit(node.left)
+
+          if left[0] == :and
+            # ruby_parser has the and keyword as right-associative as opposed to
+            # prism which has it as left-associative. We reverse that
+            # associativity here.
+            nest = left
+            nest = nest[2] while nest[2][0] == :and
+            nest[2] = s(node, :and, nest[2], visit(node.right))
+            left
+          else
+            s(node, :and, left, visit(node.right))
+          end
         end
 
         # []
@@ -250,6 +262,11 @@ module Prism
                 return s(node, :match3, visit(node.arguments.arguments.first), visit(node.receiver))
               when RegularExpressionNode, InterpolatedRegularExpressionNode
                 return s(node, :match2, visit(node.receiver), visit(node.arguments.arguments.first))
+              end
+
+              case node.arguments.arguments.first
+              when RegularExpressionNode, InterpolatedRegularExpressionNode
+                return s(node, :match3, visit(node.arguments.arguments.first), visit(node.receiver))
               end
             end
           end
@@ -876,6 +893,13 @@ module Prism
                 visited << result
               end
             elsif result[0] == :dstr
+              if !visited.empty? && part.parts[0].is_a?(StringNode)
+                # If we are in the middle of an implicitly concatenated string,
+                # we should not have a bare string as the first part. In this
+                # case we need to visit just that first part and then we can
+                # push the rest of the parts onto the visited array.
+                result[1] = visit(part.parts[0])
+              end
               visited.concat(result[1..-1])
             else
               visited << result
@@ -1136,7 +1160,19 @@ module Prism
         # a or b
         # ^^^^^^
         def visit_or_node(node)
-          s(node, :or, visit(node.left), visit(node.right))
+          left = visit(node.left)
+
+          if left[0] == :or
+            # ruby_parser has the or keyword as right-associative as opposed to
+            # prism which has it as left-associative. We reverse that
+            # associativity here.
+            nest = left
+            nest = nest[2] while nest[2][0] == :or
+            nest[2] = s(node, :or, nest[2], visit(node.right))
+            left
+          else
+            s(node, :or, left, visit(node.right))
+          end
         end
 
         # def foo(bar, *baz); end

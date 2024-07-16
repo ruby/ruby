@@ -1342,6 +1342,54 @@ match_byteoffset(VALUE match, VALUE n)
 
 /*
  *  call-seq:
+ *    bytebegin(n) -> integer
+ *    bytebegin(name) -> integer
+ *
+ *  :include: doc/matchdata/bytebegin.rdoc
+ *
+ */
+
+static VALUE
+match_bytebegin(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+        return Qnil;
+    return LONG2NUM(BEG(i));
+}
+
+
+/*
+ *  call-seq:
+ *    byteend(n) -> integer
+ *    byteend(name) -> integer
+ *
+ *  :include: doc/matchdata/byteend.rdoc
+ *
+ */
+
+static VALUE
+match_byteend(VALUE match, VALUE n)
+{
+    int i = match_backref_number(match, n);
+    struct re_registers *regs = RMATCH_REGS(match);
+
+    match_check(match);
+    backref_number_check(regs, i);
+
+    if (BEG(i) < 0)
+        return Qnil;
+    return LONG2NUM(END(i));
+}
+
+
+/*
+ *  call-seq:
  *    begin(n) -> integer
  *    begin(name) -> integer
  *
@@ -4920,6 +4968,8 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);
     rb_define_method(rb_cMatch, "byteoffset", match_byteoffset, 1);
+    rb_define_method(rb_cMatch, "bytebegin", match_bytebegin, 1);
+    rb_define_method(rb_cMatch, "byteend", match_byteend, 1);
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "match", match_nth, 1);

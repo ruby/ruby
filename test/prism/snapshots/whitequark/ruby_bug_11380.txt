@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,28))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,28))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -15,6 +17,7 @@
             │   ├── flags: contains_keywords
             │   └── arguments: (length: 2)
             │       ├── @ LambdaNode (location: (1,2)-(1,15))
+            │       │   ├── flags: ∅
             │       │   ├── locals: []
             │       │   ├── operator_loc: (1,2)-(1,4) = "->"
             │       │   ├── opening_loc: (1,5)-(1,6) = "{"
@@ -22,9 +25,10 @@
             │       │   ├── parameters: ∅
             │       │   └── body:
             │       │       @ StatementsNode (location: (1,7)-(1,13))
+            │       │       ├── flags: ∅
             │       │       └── body: (length: 1)
             │       │           └── @ SymbolNode (location: (1,7)-(1,13))
-            │       │               ├── flags: forced_us_ascii_encoding
+            │       │               ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │               ├── opening_loc: (1,7)-(1,8) = ":"
             │       │               ├── value_loc: (1,8)-(1,13) = "hello"
             │       │               ├── closing_loc: ∅
@@ -33,21 +37,23 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,17)-(1,21))
+            │                   ├── flags: static_literal
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,17)-(1,19))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,17)-(1,18) = "a"
             │                   │   ├── closing_loc: (1,18)-(1,19) = ":"
             │                   │   └── unescaped: "a"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,20)-(1,21))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 1
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,22)-(1,28))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅

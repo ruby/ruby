@@ -1,8 +1,10 @@
 @ ProgramNode (location: (1,0)-(1,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ SourceFileNode (location: (1,0)-(1,8))
-            ├── flags: ∅
+            ├── flags: newline
             └── filepath: "whitequark/string___FILE__.txt"

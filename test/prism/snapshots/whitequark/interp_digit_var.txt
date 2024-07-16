@@ -1,25 +1,27 @@
 @ ProgramNode (location: (1,1)-(85,9))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,1)-(85,9))
+    ├── flags: ∅
     └── body: (length: 38)
         ├── @ StringNode (location: (1,1)-(1,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,1)-(1,2) = "\""
         │   ├── content_loc: (1,2)-(1,5) = "\#@1"
         │   ├── closing_loc: (1,5)-(1,6) = "\""
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (3,1)-(3,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (3,1)-(3,2) = "\""
         │   ├── content_loc: (3,2)-(3,6) = "\#@@1"
         │   ├── closing_loc: (3,6)-(3,7) = "\""
         │   └── unescaped: "\#@@1"
         ├── @ ArrayNode (location: (5,1)-(5,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (5,4)-(5,7))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (5,4)-(5,7) = "\#@1"
         │   │       ├── closing_loc: ∅
@@ -27,10 +29,10 @@
         │   ├── opening_loc: (5,1)-(5,4) = "%I["
         │   └── closing_loc: (5,7)-(5,8) = "]"
         ├── @ ArrayNode (location: (7,1)-(7,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (7,4)-(7,8))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (7,4)-(7,8) = "\#@@1"
         │   │       ├── closing_loc: ∅
@@ -38,19 +40,19 @@
         │   ├── opening_loc: (7,1)-(7,4) = "%I["
         │   └── closing_loc: (7,8)-(7,9) = "]"
         ├── @ StringNode (location: (9,1)-(9,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (9,1)-(9,4) = "%Q{"
         │   ├── content_loc: (9,4)-(9,7) = "\#@1"
         │   ├── closing_loc: (9,7)-(9,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (11,1)-(11,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (11,1)-(11,4) = "%Q{"
         │   ├── content_loc: (11,4)-(11,8) = "\#@@1"
         │   ├── closing_loc: (11,8)-(11,9) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ ArrayNode (location: (13,1)-(13,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (13,4)-(13,7))
         │   │       ├── flags: ∅
@@ -61,7 +63,7 @@
         │   ├── opening_loc: (13,1)-(13,4) = "%W["
         │   └── closing_loc: (13,7)-(13,8) = "]"
         ├── @ ArrayNode (location: (15,1)-(15,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (15,4)-(15,8))
         │   │       ├── flags: ∅
@@ -72,10 +74,10 @@
         │   ├── opening_loc: (15,1)-(15,4) = "%W["
         │   └── closing_loc: (15,8)-(15,9) = "]"
         ├── @ ArrayNode (location: (17,1)-(17,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (17,5)-(17,8))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (17,5)-(17,8) = "\#@1"
         │   │       ├── closing_loc: ∅
@@ -83,10 +85,10 @@
         │   ├── opening_loc: (17,1)-(17,4) = "%i["
         │   └── closing_loc: (17,9)-(17,10) = "]"
         ├── @ ArrayNode (location: (19,1)-(19,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (19,5)-(19,9))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (19,5)-(19,9) = "\#@@1"
         │   │       ├── closing_loc: ∅
@@ -94,43 +96,43 @@
         │   ├── opening_loc: (19,1)-(19,4) = "%i["
         │   └── closing_loc: (19,10)-(19,11) = "]"
         ├── @ StringNode (location: (21,1)-(21,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (21,1)-(21,4) = "%q{"
         │   ├── content_loc: (21,4)-(21,7) = "\#@1"
         │   ├── closing_loc: (21,7)-(21,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (23,1)-(23,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (23,1)-(23,4) = "%q{"
         │   ├── content_loc: (23,4)-(23,8) = "\#@@1"
         │   ├── closing_loc: (23,8)-(23,9) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ RegularExpressionNode (location: (25,1)-(25,8))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (25,1)-(25,4) = "%r{"
         │   ├── content_loc: (25,4)-(25,7) = "\#@1"
         │   ├── closing_loc: (25,7)-(25,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ RegularExpressionNode (location: (27,1)-(27,9))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (27,1)-(27,4) = "%r{"
         │   ├── content_loc: (27,4)-(27,8) = "\#@@1"
         │   ├── closing_loc: (27,8)-(27,9) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ SymbolNode (location: (29,1)-(29,8))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (29,1)-(29,4) = "%s{"
         │   ├── value_loc: (29,4)-(29,7) = "\#@1"
         │   ├── closing_loc: (29,7)-(29,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ SymbolNode (location: (31,1)-(31,9))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (31,1)-(31,4) = "%s{"
         │   ├── value_loc: (31,4)-(31,8) = "\#@@1"
         │   ├── closing_loc: (31,8)-(31,9) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ ArrayNode (location: (33,1)-(33,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (33,5)-(33,8))
         │   │       ├── flags: ∅
@@ -141,7 +143,7 @@
         │   ├── opening_loc: (33,1)-(33,4) = "%w["
         │   └── closing_loc: (33,9)-(33,10) = "]"
         ├── @ ArrayNode (location: (35,1)-(35,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (35,5)-(35,9))
         │   │       ├── flags: ∅
@@ -152,121 +154,121 @@
         │   ├── opening_loc: (35,1)-(35,4) = "%w["
         │   └── closing_loc: (35,10)-(35,11) = "]"
         ├── @ XStringNode (location: (37,1)-(37,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (37,1)-(37,4) = "%x{"
         │   ├── content_loc: (37,4)-(37,7) = "\#@1"
         │   ├── closing_loc: (37,7)-(37,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ XStringNode (location: (39,1)-(39,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (39,1)-(39,4) = "%x{"
         │   ├── content_loc: (39,4)-(39,8) = "\#@@1"
         │   ├── closing_loc: (39,8)-(39,9) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ StringNode (location: (41,1)-(41,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (41,1)-(41,3) = "%{"
         │   ├── content_loc: (41,3)-(41,6) = "\#@1"
         │   ├── closing_loc: (41,6)-(41,7) = "}"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (43,1)-(43,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (43,1)-(43,3) = "%{"
         │   ├── content_loc: (43,3)-(43,7) = "\#@@1"
         │   ├── closing_loc: (43,7)-(43,8) = "}"
         │   └── unescaped: "\#@@1"
         ├── @ StringNode (location: (45,1)-(45,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (45,1)-(45,2) = "'"
         │   ├── content_loc: (45,2)-(45,5) = "\#@1"
         │   ├── closing_loc: (45,5)-(45,6) = "'"
         │   └── unescaped: "\#@1"
         ├── @ StringNode (location: (47,1)-(47,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (47,1)-(47,2) = "'"
         │   ├── content_loc: (47,2)-(47,6) = "\#@@1"
         │   ├── closing_loc: (47,6)-(47,7) = "'"
         │   └── unescaped: "\#@@1"
         ├── @ RegularExpressionNode (location: (49,1)-(49,6))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (49,1)-(49,2) = "/"
         │   ├── content_loc: (49,2)-(49,5) = "\#@1"
         │   ├── closing_loc: (49,5)-(49,6) = "/"
         │   └── unescaped: "\#@1"
         ├── @ RegularExpressionNode (location: (51,1)-(51,7))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (51,1)-(51,2) = "/"
         │   ├── content_loc: (51,2)-(51,6) = "\#@@1"
         │   ├── closing_loc: (51,6)-(51,7) = "/"
         │   └── unescaped: "\#@@1"
         ├── @ SymbolNode (location: (53,1)-(53,7))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (53,1)-(53,3) = ":\""
         │   ├── value_loc: (53,3)-(53,6) = "\#@1"
         │   ├── closing_loc: (53,6)-(53,7) = "\""
         │   └── unescaped: "\#@1"
         ├── @ SymbolNode (location: (55,1)-(55,8))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (55,1)-(55,3) = ":\""
         │   ├── value_loc: (55,3)-(55,7) = "\#@@1"
         │   ├── closing_loc: (55,7)-(55,8) = "\""
         │   └── unescaped: "\#@@1"
         ├── @ SymbolNode (location: (57,1)-(57,7))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (57,1)-(57,3) = ":'"
         │   ├── value_loc: (57,3)-(57,6) = "\#@1"
         │   ├── closing_loc: (57,6)-(57,7) = "'"
         │   └── unescaped: "\#@1"
         ├── @ SymbolNode (location: (59,1)-(59,8))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (59,1)-(59,3) = ":'"
         │   ├── value_loc: (59,3)-(59,7) = "\#@@1"
         │   ├── closing_loc: (59,7)-(59,8) = "'"
         │   └── unescaped: "\#@@1"
         ├── @ XStringNode (location: (61,1)-(61,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (61,1)-(61,2) = "`"
         │   ├── content_loc: (61,2)-(61,5) = "\#@1"
         │   ├── closing_loc: (61,5)-(61,6) = "`"
         │   └── unescaped: "\#@1"
         ├── @ XStringNode (location: (63,1)-(63,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (63,1)-(63,2) = "`"
         │   ├── content_loc: (63,2)-(63,6) = "\#@@1"
         │   ├── closing_loc: (63,6)-(63,7) = "`"
         │   └── unescaped: "\#@@1"
         ├── @ StringNode (location: (65,0)-(65,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (65,0)-(65,9) = "<<-\"HERE\""
         │   ├── content_loc: (66,0)-(67,0) = "\#@1\n"
         │   ├── closing_loc: (67,0)-(68,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         ├── @ StringNode (location: (69,0)-(69,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (69,0)-(69,9) = "<<-\"HERE\""
         │   ├── content_loc: (70,0)-(71,0) = "\#@@1\n"
         │   ├── closing_loc: (71,0)-(72,0) = "HERE\n"
         │   └── unescaped: "\#@@1\n"
         ├── @ StringNode (location: (73,0)-(73,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (73,0)-(73,9) = "<<-'HERE'"
         │   ├── content_loc: (74,0)-(75,0) = "\#@1\n"
         │   ├── closing_loc: (75,0)-(76,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         ├── @ StringNode (location: (77,0)-(77,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (77,0)-(77,9) = "<<-'HERE'"
         │   ├── content_loc: (78,0)-(79,0) = "\#@@1\n"
         │   ├── closing_loc: (79,0)-(80,0) = "HERE\n"
         │   └── unescaped: "\#@@1\n"
         ├── @ XStringNode (location: (81,0)-(81,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (81,0)-(81,9) = "<<-`HERE`"
         │   ├── content_loc: (82,0)-(83,0) = "\#@1\n"
         │   ├── closing_loc: (83,0)-(84,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         └── @ XStringNode (location: (85,0)-(85,9))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (85,0)-(85,9) = "<<-`HERE`"
             ├── content_loc: (86,0)-(87,0) = "\#@@1\n"
             ├── closing_loc: (87,0)-(88,0) = "HERE\n"

@@ -273,16 +273,11 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword(**hash1, **empty_hash#{block})")
         check_allocations(1, 0, "keyword(*empty_array, *empty_array, **empty_hash#{block})")
 
-        check_allocations(0, 0, "keyword(*empty_array#{block})")
-        check_allocations(0, 1, "keyword(**hash1, **empty_hash#{block})")
-        check_allocations(1, 0, "keyword(*empty_array, *empty_array, **empty_hash#{block})")
-
-        check_allocations(1, 0, "keyword(*r2k_empty_array#{block})")
+        check_allocations(0, 0, "keyword(*r2k_empty_array#{block})")
         check_allocations(1, 1, "keyword(*r2k_array#{block})")
 
-        # Currently allocates 1 array unnecessarily due to splatarray true
-        check_allocations(1, 1, "keyword(*empty_array, a: 2, **empty_hash#{block})")
-        check_allocations(1, 1, "keyword(*empty_array, **hash1, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword(*empty_array, a: 2, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword(*empty_array, **hash1, **empty_hash#{block})")
       RUBY
     end
 
@@ -314,8 +309,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "keyword_splat(*r2k_array#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
-        check_allocations(1, 1, "keyword_splat(*empty_array, a: 2, **empty_hash#{block})")
-        check_allocations(1, 1, "keyword_splat(*empty_array, **hash1, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword_splat(*empty_array, a: 2, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword_splat(*empty_array, **hash1, **empty_hash#{block})")
       RUBY
     end
 
@@ -346,9 +341,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "keyword_and_keyword_splat(*r2k_empty_array#{block})")
         check_allocations(1, 1, "keyword_and_keyword_splat(*r2k_array#{block})")
 
-        # Currently allocates 1 array unnecessarily due to splatarray true
-        check_allocations(1, 1, "keyword_and_keyword_splat(*empty_array, a: 2, **empty_hash#{block})")
-        check_allocations(1, 1, "keyword_and_keyword_splat(*empty_array, **hash1, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword_and_keyword_splat(*empty_array, a: 2, **empty_hash#{block})")
+        check_allocations(0, 1, "keyword_and_keyword_splat(*empty_array, **hash1, **empty_hash#{block})")
       RUBY
     end
 
@@ -385,15 +379,16 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "required_and_keyword(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "required_and_keyword(*array1, *empty_array, **hash1, **empty_hash#{block})")
 
-        check_allocations(1, 0, "required_and_keyword(*r2k_empty_array1#{block})")
+        check_allocations(0, 0, "required_and_keyword(*r2k_empty_array1#{block})")
         check_allocations(1, 1, "required_and_keyword(*r2k_array1#{block})")
 
         # Currently allocates 1 array unnecessarily due to splatarray true
         check_allocations(1, 1, "required_and_keyword(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "required_and_keyword(1, *empty_array, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "required_and_keyword(*array1, **empty_hash, a: 2#{block})")
-        check_allocations(1, 1, "required_and_keyword(*array1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 0, "required_and_keyword(*array1, **nil#{block})")
+
+        check_allocations(0, 1, "required_and_keyword(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(0, 1, "required_and_keyword(*array1, **hash1, **empty_hash#{block})")
+        check_allocations(0, 0, "required_and_keyword(*array1, **nil#{block})")
       RUBY
     end
 
@@ -482,9 +477,9 @@ class TestAllocation < Test::Unit::TestCase
         # Currently allocates 1 array unnecessarily due to splatarray true
         check_allocations(1, 1, "required_and_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "required_and_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "required_and_keyword_splat(*array1, **empty_hash, a: 2#{block})")
-        check_allocations(1, 1, "required_and_keyword_splat(*array1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "required_and_keyword_splat(*array1, **nil#{block})")
+        check_allocations(0, 1, "required_and_keyword_splat(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(0, 1, "required_and_keyword_splat(*array1, **hash1, **empty_hash#{block})")
+        check_allocations(0, 1, "required_and_keyword_splat(*array1, **nil#{block})")
       RUBY
     end
 
@@ -569,9 +564,9 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash, a: 2#{block})")
-        check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 0, "anon_splat_and_anon_keyword_splat(*array1, **nil#{block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(*array1, **hash1, **empty_hash#{block})")
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **nil#{block})")
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*r2k_empty_array#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*r2k_array#{block})")
@@ -615,9 +610,9 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash, a: 2#{block})")
-        check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 0, "anon_splat_and_anon_keyword_splat(*array1, **nil#{block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(*array1, **hash1, **empty_hash#{block})")
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **nil#{block})")
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*r2k_empty_array#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*r2k_array#{block})")
@@ -661,9 +656,9 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "argument_forwarding(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "argument_forwarding(1, *empty_array, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "argument_forwarding(*array1, **empty_hash, a: 2#{block})")
-        check_allocations(1, 1, "argument_forwarding(*array1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 0, "argument_forwarding(*array1, **nil#{block})")
+        check_allocations(0, 1, "argument_forwarding(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(0, 1, "argument_forwarding(*array1, **hash1, **empty_hash#{block})")
+        check_allocations(0, 0, "argument_forwarding(*array1, **nil#{block})")
 
         check_allocations(0, 0, "argument_forwarding(*r2k_empty_array#{block})")
         check_allocations(0, 0, "argument_forwarding(*r2k_array#{block})")
@@ -707,9 +702,9 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "argument_forwarding(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "argument_forwarding(1, *empty_array, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "argument_forwarding(*array1, **empty_hash, a: 2#{block})")
-        check_allocations(1, 1, "argument_forwarding(*array1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 0, "argument_forwarding(*array1, **nil#{block})")
+        check_allocations(0, 1, "argument_forwarding(*array1, **empty_hash, a: 2#{block})")
+        check_allocations(0, 1, "argument_forwarding(*array1, **hash1, **empty_hash#{block})")
+        check_allocations(0, 0, "argument_forwarding(*array1, **nil#{block})")
 
         check_allocations(0, 0, "argument_forwarding(*r2k_empty_array#{block})")
         check_allocations(0, 0, "argument_forwarding(*r2k_array#{block})")
@@ -729,7 +724,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "r2k(1, **empty_hash, a: 2#{block})")
 
         check_allocations(1, 0, "r2k(1, **nil#{block})")
-        check_allocations(1, 1, "r2k(1, **empty_hash#{block})")
+        check_allocations(1, 0, "r2k(1, **empty_hash#{block})")
         check_allocations(1, 1, "r2k(1, **hash1#{block})")
         check_allocations(1, 1, "r2k(1, *empty_array, **hash1#{block})")
         check_allocations(1, 1, "r2k(1, **hash1, **empty_hash#{block})")
@@ -737,17 +732,17 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 0, "r2k(1, *empty_array#{block})")
         check_allocations(1, 1, "r2k(1, **hash1, **empty_hash#{block})")
-        check_allocations(1, 1, "r2k(1, *empty_array, *empty_array, **empty_hash#{block})")
+        check_allocations(1, 0, "r2k(1, *empty_array, *empty_array, **empty_hash#{block})")
 
         check_allocations(1, 1, "r2k(*array1, a: 2#{block})")
 
         check_allocations(1, 0, "r2k(*array1, **nill#{block})")
-        check_allocations(1, 1, "r2k(*array1, **empty_hash#{block})")
+        check_allocations(1, 0, "r2k(*array1, **empty_hash#{block})")
         check_allocations(1, 1, "r2k(*array1, **hash1#{block})")
         check_allocations(1, 1, "r2k(*array1, *empty_array, **hash1#{block})")
 
         check_allocations(1, 0, "r2k(*array1, *empty_array#{block})")
-        check_allocations(1, 1, "r2k(*array1, *empty_array, **empty_hash#{block})")
+        check_allocations(1, 0, "r2k(*array1, *empty_array, **empty_hash#{block})")
 
         check_allocations(1, 1, "r2k(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "r2k(*array1, *empty_array, **hash1, **empty_hash#{block})")

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(156,19))
+├── flags: ∅
 ├── locals: [:foo]
 └── statements:
     @ StatementsNode (location: (1,0)-(156,19))
+    ├── flags: ∅
     └── body: (length: 67)
         ├── @ CallNode (location: (1,0)-(1,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -33,7 +35,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -76,7 +78,7 @@
         │   ├── closing_loc: (3,8)-(3,9) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (5,0)-(5,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -96,7 +98,7 @@
         │   ├── closing_loc: (5,4)-(5,5) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (7,0)-(9,7))
-        │   ├── flags: safe_navigation
+        │   ├── flags: newline, safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (7,0)-(8,6))
         │   │   ├── flags: ∅
@@ -126,7 +128,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (11,0)-(11,2))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a!
@@ -136,7 +138,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (13,0)-(13,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (13,0)-(13,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -156,7 +158,7 @@
         │   ├── closing_loc: (13,3)-(13,4) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (15,0)-(15,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (15,0)-(15,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -177,18 +179,18 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 3)
         │   │       ├── @ IntegerNode (location: (15,3)-(15,4))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       ├── @ IntegerNode (location: (15,6)-(15,7))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 2
         │   │       └── @ IntegerNode (location: (15,9)-(15,10))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 3
         │   ├── closing_loc: (15,10)-(15,11) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (17,0)-(17,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (17,0)-(17,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -208,7 +210,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (19,0)-(19,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (19,0)-(19,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -241,7 +243,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (21,0)-(21,11))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (21,0)-(21,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -262,12 +264,12 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (21,10)-(21,11))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (23,0)-(23,2))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a?
@@ -277,7 +279,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (25,0)-(25,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -287,6 +289,7 @@
         │   ├── closing_loc: (25,8)-(25,9) = ")"
         │   └── block:
         │       @ BlockArgumentNode (location: (25,2)-(25,8))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ CallNode (location: (25,3)-(25,8))
         │       │   ├── flags: variable_call, ignore_visibility
@@ -300,7 +303,7 @@
         │       │   └── block: ∅
         │       └── operator_loc: (25,2)-(25,3) = "&"
         ├── @ CallNode (location: (27,0)-(27,11))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -314,6 +317,7 @@
         │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (27,2)-(27,10))
+        │   │                   ├── flags: ∅
         │   │                   ├── value:
         │   │                   │   @ CallNode (location: (27,4)-(27,10))
         │   │                   │   ├── flags: variable_call, ignore_visibility
@@ -329,7 +333,7 @@
         │   ├── closing_loc: (27,10)-(27,11) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (29,0)-(29,5))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (29,0)-(29,3))
         │   │   ├── flags: ∅
@@ -359,7 +363,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (31,0)-(31,7))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -392,7 +396,7 @@
         │   ├── closing_loc: (31,6)-(31,7) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (33,0)-(33,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -402,7 +406,7 @@
         │   ├── closing_loc: (33,2)-(33,3) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (35,0)-(35,8))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -413,6 +417,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (35,2)-(35,7))
+        │   │           ├── flags: ∅
         │   │           ├── operator_loc: (35,2)-(35,3) = "*"
         │   │           └── expression:
         │   │               @ CallNode (location: (35,3)-(35,7))
@@ -428,7 +433,7 @@
         │   ├── closing_loc: (35,7)-(35,8) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (37,0)-(37,6))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -461,7 +466,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (39,0)-(39,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -504,6 +509,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ MultiWriteNode (location: (41,0)-(41,23))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallTargetNode (location: (41,0)-(41,7))
         │   │   │   ├── flags: ∅
@@ -544,18 +550,18 @@
         │   ├── operator_loc: (41,17)-(41,18) = "="
         │   └── value:
         │       @ ArrayNode (location: (41,19)-(41,23))
-        │       ├── flags: ∅
+        │       ├── flags: static_literal
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (41,19)-(41,20))
-        │       │   │   ├── flags: decimal
+        │       │   │   ├── flags: static_literal, decimal
         │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (41,22)-(41,23))
-        │       │       ├── flags: decimal
+        │       │       ├── flags: static_literal, decimal
         │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (43,0)-(43,4))
-        │   ├── flags: safe_navigation
+        │   ├── flags: newline, safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (43,0)-(43,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -575,7 +581,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (45,0)-(45,5))
-        │   ├── flags: safe_navigation
+        │   ├── flags: newline, safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (45,0)-(45,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -595,7 +601,7 @@
         │   ├── closing_loc: (45,4)-(45,5) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (47,0)-(47,7))
-        │   ├── flags: safe_navigation
+        │   ├── flags: newline, safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (47,0)-(47,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -628,7 +634,7 @@
         │   ├── closing_loc: (47,6)-(47,7) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (49,0)-(49,6))
-        │   ├── flags: safe_navigation
+        │   ├── flags: newline, safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (49,0)-(49,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -648,11 +654,14 @@
         │   ├── closing_loc: (49,5)-(49,6) = ")"
         │   └── block: ∅
         ├── @ IfNode (location: (51,0)-(51,33))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (51,11)-(51,13) = "if"
         │   ├── predicate:
         │   │   @ AndNode (location: (51,14)-(51,33))
+        │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ OrNode (location: (51,14)-(51,25))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── left:
         │   │   │   │   @ CallNode (location: (51,14)-(51,18))
         │   │   │   │   ├── flags: ignore_visibility
@@ -691,9 +700,10 @@
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (51,0)-(51,10))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (51,0)-(51,10))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :foo
@@ -704,13 +714,13 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ SymbolNode (location: (51,4)-(51,6))
-        │   │           │       │   ├── flags: forced_us_ascii_encoding
+        │   │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │       │   ├── opening_loc: (51,4)-(51,5) = ":"
         │   │           │       │   ├── value_loc: (51,5)-(51,6) = "a"
         │   │           │       │   ├── closing_loc: ∅
         │   │           │       │   └── unescaped: "a"
         │   │           │       └── @ SymbolNode (location: (51,8)-(51,10))
-        │   │           │           ├── flags: forced_us_ascii_encoding
+        │   │           │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │           ├── opening_loc: (51,8)-(51,9) = ":"
         │   │           │           ├── value_loc: (51,9)-(51,10) = "b"
         │   │           │           ├── closing_loc: ∅
@@ -720,7 +730,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ CallNode (location: (53,0)-(56,1))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -731,13 +741,13 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (53,4)-(53,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (53,4)-(53,5) = ":"
         │   │       │   ├── value_loc: (53,5)-(53,6) = "a"
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
         │   │       └── @ SymbolNode (location: (55,2)-(55,4))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (55,2)-(55,3) = ":"
         │   │           ├── value_loc: (55,3)-(55,4) = "b"
         │   │           ├── closing_loc: ∅
@@ -745,7 +755,7 @@
         │   ├── closing_loc: (56,0)-(56,1) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (58,0)-(58,10))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -756,6 +766,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (58,4)-(58,9))
+        │   │           ├── flags: ∅
         │   │           ├── operator_loc: (58,4)-(58,5) = "*"
         │   │           └── expression:
         │   │               @ CallNode (location: (58,5)-(58,9))
@@ -771,7 +782,7 @@
         │   ├── closing_loc: (58,9)-(58,10) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (60,0)-(60,39))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -782,7 +793,7 @@
         │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (60,4)-(60,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (60,4)-(60,5) = ":"
         │   │       │   ├── value_loc: (60,5)-(60,6) = "a"
         │   │       │   ├── closing_loc: ∅
@@ -791,25 +802,26 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 2)
         │   │               ├── @ AssocNode (location: (60,8)-(60,22))
+        │   │               │   ├── flags: ∅
         │   │               │   ├── key:
         │   │               │   │   @ SymbolNode (location: (60,8)-(60,10))
-        │   │               │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   ├── opening_loc: (60,8)-(60,9) = ":"
         │   │               │   │   ├── value_loc: (60,9)-(60,10) = "h"
         │   │               │   │   ├── closing_loc: ∅
         │   │               │   │   └── unescaped: "h"
         │   │               │   ├── value:
         │   │               │   │   @ ArrayNode (location: (60,14)-(60,22))
-        │   │               │   │   ├── flags: ∅
+        │   │               │   │   ├── flags: static_literal
         │   │               │   │   ├── elements: (length: 2)
         │   │               │   │   │   ├── @ SymbolNode (location: (60,15)-(60,17))
-        │   │               │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   │   │   ├── opening_loc: (60,15)-(60,16) = ":"
         │   │               │   │   │   │   ├── value_loc: (60,16)-(60,17) = "x"
         │   │               │   │   │   │   ├── closing_loc: ∅
         │   │               │   │   │   │   └── unescaped: "x"
         │   │               │   │   │   └── @ SymbolNode (location: (60,19)-(60,21))
-        │   │               │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │               │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   │       ├── opening_loc: (60,19)-(60,20) = ":"
         │   │               │   │   │       ├── value_loc: (60,20)-(60,21) = "y"
         │   │               │   │   │       ├── closing_loc: ∅
@@ -818,16 +830,17 @@
         │   │               │   │   └── closing_loc: (60,21)-(60,22) = "]"
         │   │               │   └── operator_loc: (60,11)-(60,13) = "=>"
         │   │               └── @ AssocNode (location: (60,24)-(60,32))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (60,24)-(60,26))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (60,24)-(60,25) = ":"
         │   │                   │   ├── value_loc: (60,25)-(60,26) = "a"
         │   │                   │   ├── closing_loc: ∅
         │   │                   │   └── unescaped: "a"
         │   │                   ├── value:
         │   │                   │   @ SymbolNode (location: (60,30)-(60,32))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (60,30)-(60,31) = ":"
         │   │                   │   ├── value_loc: (60,31)-(60,32) = "b"
         │   │                   │   ├── closing_loc: ∅
@@ -836,16 +849,17 @@
         │   ├── closing_loc: (60,39)-(60,40) = ")"
         │   └── block:
         │       @ BlockArgumentNode (location: (60,34)-(60,39))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ SymbolNode (location: (60,35)-(60,39))
-        │       │   ├── flags: forced_us_ascii_encoding
+        │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │   ├── opening_loc: (60,35)-(60,36) = ":"
         │       │   ├── value_loc: (60,36)-(60,39) = "bar"
         │       │   ├── closing_loc: ∅
         │       │   └── unescaped: "bar"
         │       └── operator_loc: (60,34)-(60,35) = "&"
         ├── @ CallNode (location: (62,0)-(62,49))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :hi
@@ -856,45 +870,50 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (62,3)-(62,6))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 123
         │   │       └── @ HashNode (location: (62,8)-(62,49))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (62,8)-(62,9) = "{"
         │   │           ├── elements: (length: 3)
         │   │           │   ├── @ AssocNode (location: (62,10)-(62,27))
+        │   │           │   │   ├── flags: static_literal
         │   │           │   │   ├── key:
         │   │           │   │   │   @ SymbolNode (location: (62,10)-(62,16))
-        │   │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │   │   │   ├── opening_loc: (62,10)-(62,11) = ":"
         │   │           │   │   │   ├── value_loc: (62,11)-(62,16) = "there"
         │   │           │   │   │   ├── closing_loc: ∅
         │   │           │   │   │   └── unescaped: "there"
         │   │           │   │   ├── value:
         │   │           │   │   │   @ SymbolNode (location: (62,20)-(62,27))
-        │   │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │   │   │   ├── opening_loc: (62,20)-(62,21) = ":"
         │   │           │   │   │   ├── value_loc: (62,21)-(62,27) = "friend"
         │   │           │   │   │   ├── closing_loc: ∅
         │   │           │   │   │   └── unescaped: "friend"
         │   │           │   │   └── operator_loc: (62,17)-(62,19) = "=>"
         │   │           │   ├── @ AssocSplatNode (location: (62,29)-(62,33))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── value:
         │   │           │   │   │   @ HashNode (location: (62,31)-(62,33))
+        │   │           │   │   │   ├── flags: static_literal
         │   │           │   │   │   ├── opening_loc: (62,31)-(62,32) = "{"
         │   │           │   │   │   ├── elements: (length: 0)
         │   │           │   │   │   └── closing_loc: (62,32)-(62,33) = "}"
         │   │           │   │   └── operator_loc: (62,29)-(62,31) = "**"
         │   │           │   └── @ AssocNode (location: (62,35)-(62,47))
+        │   │           │       ├── flags: static_literal
         │   │           │       ├── key:
         │   │           │       │   @ SymbolNode (location: (62,35)-(62,42))
-        │   │           │       │   ├── flags: forced_us_ascii_encoding
+        │   │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │       │   ├── opening_loc: ∅
         │   │           │       │   ├── value_loc: (62,35)-(62,41) = "whatup"
         │   │           │       │   ├── closing_loc: (62,41)-(62,42) = ":"
         │   │           │       │   └── unescaped: "whatup"
         │   │           │       ├── value:
         │   │           │       │   @ SymbolNode (location: (62,43)-(62,47))
-        │   │           │       │   ├── flags: forced_us_ascii_encoding
+        │   │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │       │   ├── opening_loc: (62,43)-(62,44) = ":"
         │   │           │       │   ├── value_loc: (62,44)-(62,47) = "dog"
         │   │           │       │   ├── closing_loc: ∅
@@ -904,7 +923,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (64,0)-(64,36))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -915,7 +934,7 @@
         │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (64,4)-(64,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (64,4)-(64,5) = ":"
         │   │       │   ├── value_loc: (64,5)-(64,6) = "a"
         │   │       │   ├── closing_loc: ∅
@@ -924,24 +943,29 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (64,8)-(64,15))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (64,8)-(64,10))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (64,8)-(64,9) = "b"
         │   │                   │   ├── closing_loc: (64,9)-(64,10) = ":"
         │   │                   │   └── unescaped: "b"
         │   │                   ├── value:
         │   │                   │   @ TrueNode (location: (64,11)-(64,15))
+        │   │                   │   └── flags: static_literal
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (64,16)-(64,36))
+        │       ├── flags: ∅
         │       ├── locals: [:a, :b]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (64,19)-(64,25))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (64,20)-(64,24))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (64,20)-(64,21))
         │       │   │   │   │   ├── flags: ∅
@@ -960,9 +984,10 @@
         │       │   └── closing_loc: (64,24)-(64,25) = "|"
         │       ├── body:
         │       │   @ StatementsNode (location: (64,26)-(64,32))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ CallNode (location: (64,26)-(64,32))
-        │       │           ├── flags: ignore_visibility
+        │       │           ├── flags: newline, ignore_visibility
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
         │       │           ├── name: :puts
@@ -973,6 +998,7 @@
         │       │           │   ├── flags: ∅
         │       │           │   └── arguments: (length: 1)
         │       │           │       └── @ LocalVariableReadNode (location: (64,31)-(64,32))
+        │       │           │           ├── flags: ∅
         │       │           │           ├── name: :a
         │       │           │           └── depth: 0
         │       │           ├── closing_loc: ∅
@@ -980,7 +1006,7 @@
         │       ├── opening_loc: (64,16)-(64,18) = "do"
         │       └── closing_loc: (64,33)-(64,36) = "end"
         ├── @ CallNode (location: (66,0)-(66,17))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :hi
@@ -994,16 +1020,17 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (66,3)-(66,17))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (66,3)-(66,9))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (66,3)-(66,8) = "there"
         │   │                   │   ├── closing_loc: (66,8)-(66,9) = ":"
         │   │                   │   └── unescaped: "there"
         │   │                   ├── value:
         │   │                   │   @ SymbolNode (location: (66,10)-(66,17))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (66,10)-(66,11) = ":"
         │   │                   │   ├── value_loc: (66,11)-(66,17) = "friend"
         │   │                   │   ├── closing_loc: ∅
@@ -1012,7 +1039,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (68,0)-(68,40))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :hi
@@ -1026,39 +1053,43 @@
         │   │           ├── flags: ∅
         │   │           └── elements: (length: 3)
         │   │               ├── @ AssocNode (location: (68,3)-(68,20))
+        │   │               │   ├── flags: static_literal
         │   │               │   ├── key:
         │   │               │   │   @ SymbolNode (location: (68,3)-(68,9))
-        │   │               │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   ├── opening_loc: (68,3)-(68,4) = ":"
         │   │               │   │   ├── value_loc: (68,4)-(68,9) = "there"
         │   │               │   │   ├── closing_loc: ∅
         │   │               │   │   └── unescaped: "there"
         │   │               │   ├── value:
         │   │               │   │   @ SymbolNode (location: (68,13)-(68,20))
-        │   │               │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   ├── opening_loc: (68,13)-(68,14) = ":"
         │   │               │   │   ├── value_loc: (68,14)-(68,20) = "friend"
         │   │               │   │   ├── closing_loc: ∅
         │   │               │   │   └── unescaped: "friend"
         │   │               │   └── operator_loc: (68,10)-(68,12) = "=>"
         │   │               ├── @ AssocSplatNode (location: (68,22)-(68,26))
+        │   │               │   ├── flags: ∅
         │   │               │   ├── value:
         │   │               │   │   @ HashNode (location: (68,24)-(68,26))
+        │   │               │   │   ├── flags: static_literal
         │   │               │   │   ├── opening_loc: (68,24)-(68,25) = "{"
         │   │               │   │   ├── elements: (length: 0)
         │   │               │   │   └── closing_loc: (68,25)-(68,26) = "}"
         │   │               │   └── operator_loc: (68,22)-(68,24) = "**"
         │   │               └── @ AssocNode (location: (68,28)-(68,40))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (68,28)-(68,35))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (68,28)-(68,34) = "whatup"
         │   │                   │   ├── closing_loc: (68,34)-(68,35) = ":"
         │   │                   │   └── unescaped: "whatup"
         │   │                   ├── value:
         │   │                   │   @ SymbolNode (location: (68,36)-(68,40))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (68,36)-(68,37) = ":"
         │   │                   │   ├── value_loc: (68,37)-(68,40) = "dog"
         │   │                   │   ├── closing_loc: ∅
@@ -1067,7 +1098,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (70,0)-(70,41))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :hi
@@ -1081,39 +1112,43 @@
         │   │           ├── flags: ∅
         │   │           └── elements: (length: 3)
         │   │               ├── @ AssocNode (location: (70,3)-(70,20))
+        │   │               │   ├── flags: static_literal
         │   │               │   ├── key:
         │   │               │   │   @ SymbolNode (location: (70,3)-(70,9))
-        │   │               │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   ├── opening_loc: (70,3)-(70,4) = ":"
         │   │               │   │   ├── value_loc: (70,4)-(70,9) = "there"
         │   │               │   │   ├── closing_loc: ∅
         │   │               │   │   └── unescaped: "there"
         │   │               │   ├── value:
         │   │               │   │   @ SymbolNode (location: (70,13)-(70,20))
-        │   │               │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   ├── opening_loc: (70,13)-(70,14) = ":"
         │   │               │   │   ├── value_loc: (70,14)-(70,20) = "friend"
         │   │               │   │   ├── closing_loc: ∅
         │   │               │   │   └── unescaped: "friend"
         │   │               │   └── operator_loc: (70,10)-(70,12) = "=>"
         │   │               ├── @ AssocSplatNode (location: (70,22)-(70,26))
+        │   │               │   ├── flags: ∅
         │   │               │   ├── value:
         │   │               │   │   @ HashNode (location: (70,24)-(70,26))
+        │   │               │   │   ├── flags: static_literal
         │   │               │   │   ├── opening_loc: (70,24)-(70,25) = "{"
         │   │               │   │   ├── elements: (length: 0)
         │   │               │   │   └── closing_loc: (70,25)-(70,26) = "}"
         │   │               │   └── operator_loc: (70,22)-(70,24) = "**"
         │   │               └── @ AssocNode (location: (70,28)-(70,40))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (70,28)-(70,35))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (70,28)-(70,34) = "whatup"
         │   │                   │   ├── closing_loc: (70,34)-(70,35) = ":"
         │   │                   │   └── unescaped: "whatup"
         │   │                   ├── value:
         │   │                   │   @ SymbolNode (location: (70,36)-(70,40))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (70,36)-(70,37) = ":"
         │   │                   │   ├── value_loc: (70,37)-(70,40) = "dog"
         │   │                   │   ├── closing_loc: ∅
@@ -1122,7 +1157,7 @@
         │   ├── closing_loc: (70,40)-(70,41) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (72,0)-(72,35))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1133,44 +1168,50 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ HashNode (location: (72,4)-(72,26))
+        │   │           ├── flags: static_literal
         │   │           ├── opening_loc: (72,4)-(72,5) = "{"
         │   │           ├── elements: (length: 2)
         │   │           │   ├── @ AssocNode (location: (72,6)-(72,13))
+        │   │           │   │   ├── flags: static_literal
         │   │           │   │   ├── key:
         │   │           │   │   │   @ SymbolNode (location: (72,6)-(72,8))
-        │   │           │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │           │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │   │   │   ├── opening_loc: ∅
         │   │           │   │   │   ├── value_loc: (72,6)-(72,7) = "a"
         │   │           │   │   │   ├── closing_loc: (72,7)-(72,8) = ":"
         │   │           │   │   │   └── unescaped: "a"
         │   │           │   │   ├── value:
         │   │           │   │   │   @ TrueNode (location: (72,9)-(72,13))
+        │   │           │   │   │   └── flags: static_literal
         │   │           │   │   └── operator_loc: ∅
         │   │           │   └── @ AssocNode (location: (72,15)-(72,23))
+        │   │           │       ├── flags: static_literal
         │   │           │       ├── key:
         │   │           │       │   @ SymbolNode (location: (72,15)-(72,17))
-        │   │           │       │   ├── flags: forced_us_ascii_encoding
+        │   │           │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │           │       │   ├── opening_loc: ∅
         │   │           │       │   ├── value_loc: (72,15)-(72,16) = "b"
         │   │           │       │   ├── closing_loc: (72,16)-(72,17) = ":"
         │   │           │       │   └── unescaped: "b"
         │   │           │       ├── value:
         │   │           │       │   @ FalseNode (location: (72,18)-(72,23))
+        │   │           │       │   └── flags: static_literal
         │   │           │       └── operator_loc: ∅
         │   │           └── closing_loc: (72,25)-(72,26) = "}"
         │   ├── closing_loc: (72,35)-(72,36) = ")"
         │   └── block:
         │       @ BlockArgumentNode (location: (72,28)-(72,35))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ SymbolNode (location: (72,29)-(72,35))
-        │       │   ├── flags: forced_us_ascii_encoding
+        │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │   ├── opening_loc: (72,29)-(72,30) = ":"
         │       │   ├── value_loc: (72,30)-(72,35) = "block"
         │       │   ├── closing_loc: ∅
         │       │   └── unescaped: "block"
         │       └── operator_loc: (72,28)-(72,29) = "&"
         ├── @ CallNode (location: (74,0)-(74,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :hi
@@ -1184,16 +1225,17 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (74,3)-(74,20))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (74,3)-(74,9))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (74,3)-(74,4) = ":"
         │   │                   │   ├── value_loc: (74,4)-(74,9) = "there"
         │   │                   │   ├── closing_loc: ∅
         │   │                   │   └── unescaped: "there"
         │   │                   ├── value:
         │   │                   │   @ SymbolNode (location: (74,13)-(74,20))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (74,13)-(74,14) = ":"
         │   │                   │   ├── value_loc: (74,14)-(74,20) = "friend"
         │   │                   │   ├── closing_loc: ∅
@@ -1202,7 +1244,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (76,0)-(78,1))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1213,13 +1255,13 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (76,4)-(76,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (76,4)-(76,5) = ":"
         │   │       │   ├── value_loc: (76,5)-(76,6) = "a"
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
         │   │       └── @ SymbolNode (location: (77,0)-(77,2))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (77,0)-(77,1) = ":"
         │   │           ├── value_loc: (77,1)-(77,2) = "b"
         │   │           ├── closing_loc: ∅
@@ -1227,7 +1269,7 @@
         │   ├── closing_loc: (78,0)-(78,1) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (80,0)-(83,1))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1238,7 +1280,7 @@
         │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (81,0)-(81,2))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (81,0)-(81,1) = ":"
         │   │       │   ├── value_loc: (81,1)-(81,2) = "a"
         │   │       │   ├── closing_loc: ∅
@@ -1247,16 +1289,17 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (82,0)-(82,5))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (82,0)-(82,2))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (82,0)-(82,1) = "b"
         │   │                   │   ├── closing_loc: (82,1)-(82,2) = ":"
         │   │                   │   └── unescaped: "b"
         │   │                   ├── value:
         │   │                   │   @ SymbolNode (location: (82,3)-(82,5))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (82,3)-(82,4) = ":"
         │   │                   │   ├── value_loc: (82,4)-(82,5) = "c"
         │   │                   │   ├── closing_loc: ∅
@@ -1265,7 +1308,7 @@
         │   ├── closing_loc: (83,0)-(83,1) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (85,0)-(85,11))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1275,16 +1318,17 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockArgumentNode (location: (85,4)-(85,11))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ SymbolNode (location: (85,5)-(85,11))
-        │       │   ├── flags: forced_us_ascii_encoding
+        │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │   ├── opening_loc: (85,5)-(85,6) = ":"
         │       │   ├── value_loc: (85,6)-(85,11) = "block"
         │       │   ├── closing_loc: ∅
         │       │   └── unescaped: "block"
         │       └── operator_loc: (85,4)-(85,5) = "&"
         ├── @ CallNode (location: (87,0)-(87,30))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1298,40 +1342,45 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 2)
         │   │               ├── @ AssocNode (location: (87,4)-(87,11))
+        │   │               │   ├── flags: static_literal
         │   │               │   ├── key:
         │   │               │   │   @ SymbolNode (location: (87,4)-(87,6))
-        │   │               │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   ├── opening_loc: ∅
         │   │               │   │   ├── value_loc: (87,4)-(87,5) = "a"
         │   │               │   │   ├── closing_loc: (87,5)-(87,6) = ":"
         │   │               │   │   └── unescaped: "a"
         │   │               │   ├── value:
         │   │               │   │   @ TrueNode (location: (87,7)-(87,11))
+        │   │               │   │   └── flags: static_literal
         │   │               │   └── operator_loc: ∅
         │   │               └── @ AssocNode (location: (87,13)-(87,21))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (87,13)-(87,15))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (87,13)-(87,14) = "b"
         │   │                   │   ├── closing_loc: (87,14)-(87,15) = ":"
         │   │                   │   └── unescaped: "b"
         │   │                   ├── value:
         │   │                   │   @ FalseNode (location: (87,16)-(87,21))
+        │   │                   │   └── flags: static_literal
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockArgumentNode (location: (87,23)-(87,30))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ SymbolNode (location: (87,24)-(87,30))
-        │       │   ├── flags: forced_us_ascii_encoding
+        │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │       │   ├── opening_loc: (87,24)-(87,25) = ":"
         │       │   ├── value_loc: (87,25)-(87,30) = "block"
         │       │   ├── closing_loc: ∅
         │       │   └── unescaped: "block"
         │       └── operator_loc: (87,23)-(87,24) = "&"
         ├── @ CallNode (location: (89,0)-(89,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :some_func
@@ -1342,30 +1391,32 @@
         │   │   ├── flags: contains_keywords
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (89,10)-(89,11))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       └── @ KeywordHashNode (location: (89,13)-(89,21))
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (89,13)-(89,21))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (89,13)-(89,19))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (89,13)-(89,18) = "kwarg"
         │   │                   │   ├── closing_loc: (89,18)-(89,19) = ":"
         │   │                   │   └── unescaped: "kwarg"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (89,20)-(89,21))
-        │   │                   │   ├── flags: decimal
+        │   │                   │   ├── flags: static_literal, decimal
         │   │                   │   └── value: 2
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (91,0)-(91,18))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (91,0)-(91,6))
+        │   │   ├── flags: ∅
         │   │   └── name: :Kernel
         │   ├── call_operator_loc: (91,6)-(91,7) = "."
         │   ├── name: :Integer
@@ -1376,12 +1427,12 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IntegerNode (location: (91,15)-(91,17))
-        │   │           ├── flags: decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 10
         │   ├── closing_loc: (91,17)-(91,18) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (93,0)-(93,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (93,0)-(93,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1401,13 +1452,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (93,7)-(93,10))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (93,7)-(93,8) = "{"
         │       └── closing_loc: (93,9)-(93,10) = "}"
         ├── @ CallNode (location: (95,0)-(95,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (95,0)-(95,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1427,21 +1479,26 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (95,8)-(95,14))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (95,10)-(95,12))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ BackReferenceReadNode (location: (95,10)-(95,12))
+        │       │           ├── flags: newline
         │       │           └── name: :$&
         │       ├── opening_loc: (95,8)-(95,9) = "{"
         │       └── closing_loc: (95,13)-(95,14) = "}"
         ├── @ CallNode (location: (97,0)-(97,12))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantPathNode (location: (97,0)-(97,4))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (97,0)-(97,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (97,1)-(97,3) = "::"
@@ -1455,7 +1512,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (97,8)-(97,12))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (97,8)-(97,9) = ":"
         │   │           ├── value_loc: (97,9)-(97,12) = "foo"
         │   │           ├── closing_loc: ∅
@@ -1463,11 +1520,13 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (99,0)-(99,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantPathNode (location: (99,0)-(99,4))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (99,0)-(99,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (99,1)-(99,3) = "::"
@@ -1481,7 +1540,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (99,8)-(99,12))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (99,8)-(99,9) = ":"
         │   │           ├── value_loc: (99,9)-(99,12) = "foo"
         │   │           ├── closing_loc: ∅
@@ -1489,11 +1548,13 @@
         │   ├── closing_loc: (99,12)-(99,13) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (101,0)-(101,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ConstantPathNode (location: (101,0)-(101,4))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (101,0)-(101,1))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (101,1)-(101,3) = "::"
@@ -1507,7 +1568,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (101,8)-(101,12))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (101,8)-(101,9) = ":"
         │   │           ├── value_loc: (101,9)-(101,12) = "foo"
         │   │           ├── closing_loc: ∅
@@ -1515,13 +1576,14 @@
         │   ├── closing_loc: (101,12)-(101,13) = ")"
         │   └── block:
         │       @ BlockNode (location: (101,14)-(101,17))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (101,14)-(101,15) = "{"
         │       └── closing_loc: (101,16)-(101,17) = "}"
         ├── @ CallNode (location: (103,0)-(103,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1535,22 +1597,23 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (103,4)-(103,11))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (103,4)-(103,8))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (103,4)-(103,5) = "\""
         │   │                   │   ├── value_loc: (103,5)-(103,6) = "a"
         │   │                   │   ├── closing_loc: (103,6)-(103,8) = "\":"
         │   │                   │   └── unescaped: "a"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (103,9)-(103,11))
-        │   │                   │   ├── flags: decimal
+        │   │                   │   ├── flags: static_literal, decimal
         │   │                   │   └── value: -1
         │   │                   └── operator_loc: ∅
         │   ├── closing_loc: (103,11)-(103,12) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (105,0)-(105,28))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1564,21 +1627,24 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (105,4)-(105,28))
+        │   │                   ├── flags: ∅
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (105,4)-(105,8))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (105,4)-(105,7) = "bar"
         │   │                   │   ├── closing_loc: (105,7)-(105,8) = ":"
         │   │                   │   └── unescaped: "bar"
         │   │                   ├── value:
         │   │                   │   @ HashNode (location: (105,9)-(105,28))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (105,9)-(105,10) = "{"
         │   │                   │   ├── elements: (length: 1)
         │   │                   │   │   └── @ AssocNode (location: (105,11)-(105,26))
+        │   │                   │   │       ├── flags: ∅
         │   │                   │   │       ├── key:
         │   │                   │   │       │   @ SymbolNode (location: (105,11)-(105,15))
-        │   │                   │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   │       │   ├── opening_loc: ∅
         │   │                   │   │       │   ├── value_loc: (105,11)-(105,14) = "baz"
         │   │                   │   │       │   ├── closing_loc: (105,14)-(105,15) = ":"
@@ -1595,6 +1661,7 @@
         │   │                   │   │       │   ├── closing_loc: ∅
         │   │                   │   │       │   └── block:
         │   │                   │   │       │       @ BlockNode (location: (105,20)-(105,26))
+        │   │                   │   │       │       ├── flags: ∅
         │   │                   │   │       │       ├── locals: []
         │   │                   │   │       │       ├── parameters: ∅
         │   │                   │   │       │       ├── body: ∅
@@ -1606,7 +1673,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (107,0)-(107,24))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1620,18 +1687,21 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (107,4)-(107,24))
+        │   │                   ├── flags: ∅
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (107,4)-(107,8))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (107,4)-(107,7) = "bar"
         │   │                   │   ├── closing_loc: (107,7)-(107,8) = ":"
         │   │                   │   └── unescaped: "bar"
         │   │                   ├── value:
         │   │                   │   @ HashNode (location: (107,9)-(107,24))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (107,9)-(107,10) = "{"
         │   │                   │   ├── elements: (length: 1)
         │   │                   │   │   └── @ AssocSplatNode (location: (107,11)-(107,22))
+        │   │                   │   │       ├── flags: ∅
         │   │                   │   │       ├── value:
         │   │                   │   │       │   @ CallNode (location: (107,13)-(107,22))
         │   │                   │   │       │   ├── flags: ignore_visibility
@@ -1644,6 +1714,7 @@
         │   │                   │   │       │   ├── closing_loc: ∅
         │   │                   │   │       │   └── block:
         │   │                   │   │       │       @ BlockNode (location: (107,16)-(107,22))
+        │   │                   │   │       │       ├── flags: ∅
         │   │                   │   │       │       ├── locals: []
         │   │                   │   │       │       ├── parameters: ∅
         │   │                   │   │       │       ├── body: ∅
@@ -1655,7 +1726,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (109,0)-(109,36))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1670,9 +1741,11 @@
         │   │           ├── opening_loc: (109,4)-(109,5) = "\""
         │   │           ├── parts: (length: 1)
         │   │           │   └── @ EmbeddedStatementsNode (location: (109,5)-(109,28))
+        │   │           │       ├── flags: ∅
         │   │           │       ├── opening_loc: (109,5)-(109,7) = "\#{"
         │   │           │       ├── statements:
         │   │           │       │   @ StatementsNode (location: (109,7)-(109,27))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   └── body: (length: 1)
         │   │           │       │       └── @ CallNode (location: (109,7)-(109,27))
         │   │           │       │           ├── flags: ∅
@@ -1695,13 +1768,15 @@
         │   │           │       │           ├── closing_loc: ∅
         │   │           │       │           └── block:
         │   │           │       │               @ BlockNode (location: (109,15)-(109,27))
+        │   │           │       │               ├── flags: ∅
         │   │           │       │               ├── locals: []
         │   │           │       │               ├── parameters: ∅
         │   │           │       │               ├── body:
         │   │           │       │               │   @ StatementsNode (location: (109,18)-(109,23))
+        │   │           │       │               │   ├── flags: ∅
         │   │           │       │               │   └── body: (length: 1)
         │   │           │       │               │       └── @ StringNode (location: (109,18)-(109,23))
-        │   │           │       │               │           ├── flags: ∅
+        │   │           │       │               │           ├── flags: newline
         │   │           │       │               │           ├── opening_loc: (109,18)-(109,19) = "\""
         │   │           │       │               │           ├── content_loc: (109,19)-(109,22) = "baz"
         │   │           │       │               │           ├── closing_loc: (109,22)-(109,23) = "\""
@@ -1713,13 +1788,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (109,30)-(109,36))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (109,30)-(109,32) = "do"
         │       └── closing_loc: (109,33)-(109,36) = "end"
         ├── @ CallNode (location: (111,0)-(111,28))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1730,18 +1806,21 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ ClassNode (location: (111,4)-(111,28))
+        │   │           ├── flags: ∅
         │   │           ├── locals: []
         │   │           ├── class_keyword_loc: (111,4)-(111,9) = "class"
         │   │           ├── constant_path:
         │   │           │   @ ConstantReadNode (location: (111,10)-(111,13))
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: :Bar
         │   │           ├── inheritance_operator_loc: ∅
         │   │           ├── superclass: ∅
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (111,14)-(111,24))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (111,14)-(111,24))
-        │   │           │           ├── flags: ignore_visibility
+        │   │           │           ├── flags: newline, ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :baz
@@ -1751,6 +1830,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block:
         │   │           │               @ BlockNode (location: (111,18)-(111,24))
+        │   │           │               ├── flags: ∅
         │   │           │               ├── locals: []
         │   │           │               ├── parameters: ∅
         │   │           │               ├── body: ∅
@@ -1761,7 +1841,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (113,0)-(113,29))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1772,16 +1852,19 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ ModuleNode (location: (113,4)-(113,29))
+        │   │           ├── flags: ∅
         │   │           ├── locals: []
         │   │           ├── module_keyword_loc: (113,4)-(113,10) = "module"
         │   │           ├── constant_path:
         │   │           │   @ ConstantReadNode (location: (113,11)-(113,14))
+        │   │           │   ├── flags: ∅
         │   │           │   └── name: :Bar
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (113,15)-(113,25))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (113,15)-(113,25))
-        │   │           │           ├── flags: ignore_visibility
+        │   │           │           ├── flags: newline, ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :baz
@@ -1791,6 +1874,7 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block:
         │   │           │               @ BlockNode (location: (113,19)-(113,25))
+        │   │           │               ├── flags: ∅
         │   │           │               ├── locals: []
         │   │           │               ├── parameters: ∅
         │   │           │               ├── body: ∅
@@ -1801,7 +1885,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (115,0)-(115,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1825,6 +1909,7 @@
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── block:
         │   │           │           @ BlockNode (location: (115,9)-(115,15))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── locals: []
         │   │           │           ├── parameters: ∅
         │   │           │           ├── body: ∅
@@ -1835,7 +1920,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (117,0)-(117,28))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :p
@@ -1846,15 +1931,17 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ BeginNode (location: (117,2)-(117,28))
+        │   │           ├── flags: ∅
         │   │           ├── begin_keyword_loc: (117,2)-(117,7) = "begin"
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (117,8)-(117,24))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (117,8)-(117,24))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: newline
         │   │           │           ├── receiver:
         │   │           │           │   @ IntegerNode (location: (117,8)-(117,9))
-        │   │           │           │   ├── flags: decimal
+        │   │           │           │   ├── flags: static_literal, decimal
         │   │           │           │   └── value: 1
         │   │           │           ├── call_operator_loc: (117,9)-(117,10) = "."
         │   │           │           ├── name: :times
@@ -1864,13 +1951,15 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block:
         │   │           │               @ BlockNode (location: (117,16)-(117,24))
+        │   │           │               ├── flags: ∅
         │   │           │               ├── locals: []
         │   │           │               ├── parameters: ∅
         │   │           │               ├── body:
         │   │           │               │   @ StatementsNode (location: (117,19)-(117,20))
+        │   │           │               │   ├── flags: ∅
         │   │           │               │   └── body: (length: 1)
         │   │           │               │       └── @ IntegerNode (location: (117,19)-(117,20))
-        │   │           │               │           ├── flags: decimal
+        │   │           │               │           ├── flags: newline, static_literal, decimal
         │   │           │               │           └── value: 1
         │   │           │               ├── opening_loc: (117,16)-(117,18) = "do"
         │   │           │               └── closing_loc: (117,21)-(117,24) = "end"
@@ -1881,7 +1970,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (119,0)-(124,5))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1892,12 +1981,13 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SymbolNode (location: (119,4)-(119,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (119,4)-(119,5) = ":"
         │   │       │   ├── value_loc: (119,5)-(119,6) = "a"
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
         │   │       └── @ IfNode (location: (120,2)-(124,5))
+        │   │           ├── flags: newline
         │   │           ├── if_keyword_loc: (120,2)-(120,4) = "if"
         │   │           ├── predicate:
         │   │           │   @ CallNode (location: (120,5)-(120,6))
@@ -1913,9 +2003,10 @@
         │   │           ├── then_keyword_loc: ∅
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (121,4)-(123,7))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (121,4)-(123,7))
-        │   │           │           ├── flags: ignore_visibility
+        │   │           │           ├── flags: newline, ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :bar
@@ -1925,11 +2016,14 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block:
         │   │           │               @ BlockNode (location: (121,8)-(123,7))
+        │   │           │               ├── flags: ∅
         │   │           │               ├── locals: [:a]
         │   │           │               ├── parameters:
         │   │           │               │   @ BlockParametersNode (location: (121,11)-(121,14))
+        │   │           │               │   ├── flags: ∅
         │   │           │               │   ├── parameters:
         │   │           │               │   │   @ ParametersNode (location: (121,12)-(121,13))
+        │   │           │               │   │   ├── flags: ∅
         │   │           │               │   │   ├── requireds: (length: 1)
         │   │           │               │   │   │   └── @ RequiredParameterNode (location: (121,12)-(121,13))
         │   │           │               │   │   │       ├── flags: ∅
@@ -1945,8 +2039,10 @@
         │   │           │               │   └── closing_loc: (121,13)-(121,14) = "|"
         │   │           │               ├── body:
         │   │           │               │   @ StatementsNode (location: (122,6)-(122,7))
+        │   │           │               │   ├── flags: ∅
         │   │           │               │   └── body: (length: 1)
         │   │           │               │       └── @ LocalVariableReadNode (location: (122,6)-(122,7))
+        │   │           │               │           ├── flags: newline
         │   │           │               │           ├── name: :a
         │   │           │               │           └── depth: 0
         │   │           │               ├── opening_loc: (121,8)-(121,10) = "do"
@@ -1956,7 +2052,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (126,0)-(135,5))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -1967,7 +2063,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 3)
         │   │       ├── @ SymbolNode (location: (126,4)-(126,6))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (126,4)-(126,5) = ":"
         │   │       │   ├── value_loc: (126,5)-(126,6) = "a"
         │   │       │   ├── closing_loc: ∅
@@ -1989,9 +2085,10 @@
         │   │       │   │   └── block: ∅
         │   │       │   └── statements:
         │   │       │       @ StatementsNode (location: (128,4)-(130,7))
+        │   │       │       ├── flags: ∅
         │   │       │       └── body: (length: 1)
         │   │       │           └── @ CallNode (location: (128,4)-(130,7))
-        │   │       │               ├── flags: ignore_visibility
+        │   │       │               ├── flags: newline, ignore_visibility
         │   │       │               ├── receiver: ∅
         │   │       │               ├── call_operator_loc: ∅
         │   │       │               ├── name: :bar
@@ -2001,11 +2098,14 @@
         │   │       │               ├── closing_loc: ∅
         │   │       │               └── block:
         │   │       │                   @ BlockNode (location: (128,8)-(130,7))
+        │   │       │                   ├── flags: ∅
         │   │       │                   ├── locals: [:a]
         │   │       │                   ├── parameters:
         │   │       │                   │   @ BlockParametersNode (location: (128,11)-(128,14))
+        │   │       │                   │   ├── flags: ∅
         │   │       │                   │   ├── parameters:
         │   │       │                   │   │   @ ParametersNode (location: (128,12)-(128,13))
+        │   │       │                   │   │   ├── flags: ∅
         │   │       │                   │   │   ├── requireds: (length: 1)
         │   │       │                   │   │   │   └── @ RequiredParameterNode (location: (128,12)-(128,13))
         │   │       │                   │   │   │       ├── flags: ∅
@@ -2021,8 +2121,10 @@
         │   │       │                   │   └── closing_loc: (128,13)-(128,14) = "|"
         │   │       │                   ├── body:
         │   │       │                   │   @ StatementsNode (location: (129,6)-(129,7))
+        │   │       │                   │   ├── flags: ∅
         │   │       │                   │   └── body: (length: 1)
         │   │       │                   │       └── @ LocalVariableReadNode (location: (129,6)-(129,7))
+        │   │       │                   │           ├── flags: newline
         │   │       │                   │           ├── name: :a
         │   │       │                   │           └── depth: 0
         │   │       │                   ├── opening_loc: (128,8)-(128,10) = "do"
@@ -2044,9 +2146,10 @@
         │   │           │   └── block: ∅
         │   │           └── statements:
         │   │               @ StatementsNode (location: (133,4)-(134,7))
+        │   │               ├── flags: ∅
         │   │               └── body: (length: 1)
         │   │                   └── @ CallNode (location: (133,4)-(134,7))
-        │   │                       ├── flags: ignore_visibility
+        │   │                       ├── flags: newline, ignore_visibility
         │   │                       ├── receiver: ∅
         │   │                       ├── call_operator_loc: ∅
         │   │                       ├── name: :baz
@@ -2056,6 +2159,7 @@
         │   │                       ├── closing_loc: ∅
         │   │                       └── block:
         │   │                           @ BlockNode (location: (133,8)-(134,7))
+        │   │                           ├── flags: ∅
         │   │                           ├── locals: []
         │   │                           ├── parameters: ∅
         │   │                           ├── body: ∅
@@ -2064,9 +2168,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (137,0)-(137,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ HashNode (location: (137,0)-(137,2))
+        │   │   ├── flags: static_literal
         │   │   ├── opening_loc: (137,0)-(137,1) = "{"
         │   │   ├── elements: (length: 0)
         │   │   └── closing_loc: (137,1)-(137,2) = "}"
@@ -2089,6 +2194,7 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (137,7)-(137,9))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
@@ -2097,9 +2203,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (139,0)-(139,16))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ HashNode (location: (139,0)-(139,2))
+        │   │   ├── flags: static_literal
         │   │   ├── opening_loc: (139,0)-(139,1) = "{"
         │   │   ├── elements: (length: 0)
         │   │   └── closing_loc: (139,1)-(139,2) = "}"
@@ -2122,11 +2229,14 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (139,7)-(139,16))
+        │   │               ├── flags: ∅
         │   │               ├── locals: [:a]
         │   │               ├── parameters:
         │   │               │   @ BlockParametersNode (location: (139,9)-(139,12))
+        │   │               │   ├── flags: ∅
         │   │               │   ├── parameters:
         │   │               │   │   @ ParametersNode (location: (139,10)-(139,11))
+        │   │               │   │   ├── flags: ∅
         │   │               │   │   ├── requireds: (length: 1)
         │   │               │   │   │   └── @ RequiredParameterNode (location: (139,10)-(139,11))
         │   │               │   │   │       ├── flags: ∅
@@ -2142,8 +2252,10 @@
         │   │               │   └── closing_loc: (139,11)-(139,12) = "|"
         │   │               ├── body:
         │   │               │   @ StatementsNode (location: (139,13)-(139,14))
+        │   │               │   ├── flags: ∅
         │   │               │   └── body: (length: 1)
         │   │               │       └── @ LocalVariableReadNode (location: (139,13)-(139,14))
+        │   │               │           ├── flags: newline
         │   │               │           ├── name: :a
         │   │               │           └── depth: 0
         │   │               ├── opening_loc: (139,7)-(139,8) = "{"
@@ -2151,7 +2263,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (141,0)-(141,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (141,0)-(141,4))
         │   │   ├── flags: ignore_visibility
@@ -2164,6 +2276,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── block:
         │   │       @ BlockNode (location: (141,2)-(141,4))
+        │   │       ├── flags: ∅
         │   │       ├── locals: []
         │   │       ├── parameters: ∅
         │   │       ├── body: ∅
@@ -2188,6 +2301,7 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (141,9)-(141,11))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
@@ -2196,7 +2310,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (143,0)-(143,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (143,0)-(143,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2227,6 +2341,7 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (143,9)-(143,11))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body: ∅
@@ -2235,13 +2350,15 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ InterpolatedStringNode (location: (145,0)-(145,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (145,0)-(145,1) = "\""
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (145,1)-(145,16))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (145,1)-(145,3) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (145,4)-(145,14))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ CallNode (location: (145,4)-(145,14))
         │   │       │           ├── flags: ignore_visibility
@@ -2255,11 +2372,13 @@
         │   │       │           │   ├── flags: ∅
         │   │       │           │   └── arguments: (length: 1)
         │   │       │           │       └── @ ParenthesesNode (location: (145,9)-(145,14))
+        │   │       │           │           ├── flags: ∅
         │   │       │           │           ├── body:
         │   │       │           │           │   @ StatementsNode (location: (145,10)-(145,13))
+        │   │       │           │           │   ├── flags: ∅
         │   │       │           │           │   └── body: (length: 1)
         │   │       │           │           │       └── @ StringNode (location: (145,10)-(145,13))
-        │   │       │           │           │           ├── flags: ∅
+        │   │       │           │           │           ├── flags: newline
         │   │       │           │           │           ├── opening_loc: (145,10)-(145,11) = "\""
         │   │       │           │           │           ├── content_loc: (145,11)-(145,12) = " "
         │   │       │           │           │           ├── closing_loc: (145,12)-(145,13) = "\""
@@ -2271,20 +2390,24 @@
         │   │       └── closing_loc: (145,15)-(145,16) = "}"
         │   └── closing_loc: (145,16)-(145,17) = "\""
         ├── @ InterpolatedStringNode (location: (147,0)-(147,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (147,0)-(147,1) = "\""
         │   ├── parts: (length: 1)
         │   │   └── @ EmbeddedStatementsNode (location: (147,1)-(147,7))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (147,1)-(147,3) = "\#{"
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (147,3)-(147,6))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ ParenthesesNode (location: (147,3)-(147,6))
+        │   │       │           ├── flags: ∅
         │   │       │           ├── body:
         │   │       │           │   @ StatementsNode (location: (147,4)-(147,5))
+        │   │       │           │   ├── flags: ∅
         │   │       │           │   └── body: (length: 1)
         │   │       │           │       └── @ CallNode (location: (147,4)-(147,5))
-        │   │       │           │           ├── flags: variable_call, ignore_visibility
+        │   │       │           │           ├── flags: newline, variable_call, ignore_visibility
         │   │       │           │           ├── receiver: ∅
         │   │       │           │           ├── call_operator_loc: ∅
         │   │       │           │           ├── name: :v
@@ -2298,11 +2421,13 @@
         │   │       └── closing_loc: (147,6)-(147,7) = "}"
         │   └── closing_loc: (147,7)-(147,8) = "\""
         ├── @ DefNode (location: (149,0)-(149,18))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (149,4)-(149,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (149,6)-(149,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -2317,9 +2442,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (149,10)-(149,13))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (149,10)-(149,13))
-        │   │           ├── flags: ignore_visibility
+        │   │           ├── flags: newline, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :p
@@ -2330,6 +2456,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (149,12)-(149,13))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── operator_loc: (149,12)-(149,13) = "*"
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: ∅
@@ -2342,7 +2469,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (149,15)-(149,18) = "end"
         ├── @ CallNode (location: (151,0)-(151,16))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -2353,7 +2480,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ IntegerNode (location: (151,4)-(151,5))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       └── @ CallNode (location: (151,7)-(151,16))
         │   │           ├── flags: ignore_visibility
@@ -2366,29 +2493,32 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block:
         │   │               @ BlockNode (location: (151,11)-(151,16))
+        │   │               ├── flags: ∅
         │   │               ├── locals: []
         │   │               ├── parameters: ∅
         │   │               ├── body:
         │   │               │   @ StatementsNode (location: (151,13)-(151,14))
+        │   │               │   ├── flags: ∅
         │   │               │   └── body: (length: 1)
         │   │               │       └── @ IntegerNode (location: (151,13)-(151,14))
-        │   │               │           ├── flags: decimal
+        │   │               │           ├── flags: newline, static_literal, decimal
         │   │               │           └── value: 1
         │   │               ├── opening_loc: (151,11)-(151,12) = "{"
         │   │               └── closing_loc: (151,15)-(151,16) = "}"
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ LocalVariableWriteNode (location: (153,0)-(153,7))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── depth: 0
         │   ├── name_loc: (153,0)-(153,3) = "foo"
         │   ├── value:
         │   │   @ IntegerNode (location: (153,6)-(153,7))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (153,4)-(153,5) = "="
         ├── @ CallNode (location: (154,0)-(154,6))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -2398,15 +2528,17 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (154,4)-(154,6))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (154,4)-(154,5) = "{"
         │       └── closing_loc: (154,5)-(154,6) = "}"
         └── @ CallNode (location: (156,0)-(156,19))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ InstanceVariableReadNode (location: (156,0)-(156,2))
+            │   ├── flags: ∅
             │   └── name: :@a
             ├── call_operator_loc: (156,2)-(156,3) = "."
             ├── name: :b
@@ -2420,20 +2552,24 @@
             │           ├── flags: ∅
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (156,5)-(156,19))
+            │                   ├── flags: ∅
             │                   ├── key:
             │                   │   @ InterpolatedSymbolNode (location: (156,5)-(156,16))
+            │                   │   ├── flags: ∅
             │                   │   ├── opening_loc: (156,5)-(156,6) = "\""
             │                   │   ├── parts: (length: 2)
             │                   │   │   ├── @ StringNode (location: (156,6)-(156,7))
-            │                   │   │   │   ├── flags: frozen
+            │                   │   │   │   ├── flags: static_literal, frozen
             │                   │   │   │   ├── opening_loc: ∅
             │                   │   │   │   ├── content_loc: (156,6)-(156,7) = "c"
             │                   │   │   │   ├── closing_loc: ∅
             │                   │   │   │   └── unescaped: "c"
             │                   │   │   └── @ EmbeddedStatementsNode (location: (156,7)-(156,14))
+            │                   │   │       ├── flags: ∅
             │                   │   │       ├── opening_loc: (156,7)-(156,9) = "\#{"
             │                   │   │       ├── statements:
             │                   │   │       │   @ StatementsNode (location: (156,9)-(156,13))
+            │                   │   │       │   ├── flags: ∅
             │                   │   │       │   └── body: (length: 1)
             │                   │   │       │       └── @ CallNode (location: (156,9)-(156,13))
             │                   │   │       │           ├── flags: variable_call, ignore_visibility
@@ -2449,7 +2585,7 @@
             │                   │   └── closing_loc: (156,14)-(156,16) = "\":"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (156,17)-(156,19))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 42
             │                   └── operator_loc: ∅
             ├── closing_loc: ∅

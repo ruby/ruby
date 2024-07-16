@@ -1,12 +1,15 @@
 @ ProgramNode (location: (1,0)-(122,32))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(122,32))
+    ├── flags: ∅
     └── body: (length: 50)
         ├── @ ArrayNode (location: (1,0)-(1,4))
-        │   ├── flags: contains_splat
+        │   ├── flags: newline, contains_splat
         │   ├── elements: (length: 1)
         │   │   └── @ SplatNode (location: (1,1)-(1,3))
+        │   │       ├── flags: ∅
         │   │       ├── operator_loc: (1,1)-(1,2) = "*"
         │   │       └── expression:
         │   │           @ CallNode (location: (1,2)-(1,3))
@@ -22,7 +25,7 @@
         │   ├── opening_loc: (1,0)-(1,1) = "["
         │   └── closing_loc: (1,3)-(1,4) = "]"
         ├── @ CallNode (location: (3,0)-(3,23))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -63,47 +66,48 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ ArrayNode (location: (3,16)-(3,23))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: static_literal
         │   │           ├── elements: (length: 3)
         │   │           │   ├── @ IntegerNode (location: (3,16)-(3,17))
-        │   │           │   │   ├── flags: decimal
+        │   │           │   │   ├── flags: static_literal, decimal
         │   │           │   │   └── value: 1
         │   │           │   ├── @ IntegerNode (location: (3,19)-(3,20))
-        │   │           │   │   ├── flags: decimal
+        │   │           │   │   ├── flags: static_literal, decimal
         │   │           │   │   └── value: 2
         │   │           │   └── @ IntegerNode (location: (3,22)-(3,23))
-        │   │           │       ├── flags: decimal
+        │   │           │       ├── flags: static_literal, decimal
         │   │           │       └── value: 3
         │   │           ├── opening_loc: ∅
         │   │           └── closing_loc: ∅
         │   ├── closing_loc: (3,12)-(3,13) = "]"
         │   └── block: ∅
         ├── @ ArrayNode (location: (5,0)-(5,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (5,1)-(5,12))
         │   │       ├── flags: symbol_keys
         │   │       └── elements: (length: 1)
         │   │           └── @ AssocNode (location: (5,1)-(5,12))
+        │   │               ├── flags: ∅
         │   │               ├── key:
         │   │               │   @ SymbolNode (location: (5,1)-(5,3))
-        │   │               │   ├── flags: forced_us_ascii_encoding
+        │   │               │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   ├── opening_loc: ∅
         │   │               │   ├── value_loc: (5,1)-(5,2) = "a"
         │   │               │   ├── closing_loc: (5,2)-(5,3) = ":"
         │   │               │   └── unescaped: "a"
         │   │               ├── value:
         │   │               │   @ ArrayNode (location: (5,4)-(5,12))
-        │   │               │   ├── flags: ∅
+        │   │               │   ├── flags: static_literal
         │   │               │   ├── elements: (length: 2)
         │   │               │   │   ├── @ SymbolNode (location: (5,5)-(5,7))
-        │   │               │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │               │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │   │   ├── opening_loc: (5,5)-(5,6) = ":"
         │   │               │   │   │   ├── value_loc: (5,6)-(5,7) = "b"
         │   │               │   │   │   ├── closing_loc: ∅
         │   │               │   │   │   └── unescaped: "b"
         │   │               │   │   └── @ SymbolNode (location: (5,9)-(5,11))
-        │   │               │   │       ├── flags: forced_us_ascii_encoding
+        │   │               │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │               │   │       ├── opening_loc: (5,9)-(5,10) = ":"
         │   │               │   │       ├── value_loc: (5,10)-(5,11) = "c"
         │   │               │   │       ├── closing_loc: ∅
@@ -114,31 +118,31 @@
         │   ├── opening_loc: (5,0)-(5,1) = "["
         │   └── closing_loc: (5,12)-(5,13) = "]"
         ├── @ ArrayNode (location: (9,0)-(15,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 5)
         │   │   ├── @ SymbolNode (location: (9,1)-(9,3))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (9,1)-(9,2) = ":"
         │   │   │   ├── value_loc: (9,2)-(9,3) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   ├── @ SymbolNode (location: (9,5)-(9,7))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (9,5)-(9,6) = ":"
         │   │   │   ├── value_loc: (9,6)-(9,7) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
         │   │   ├── @ SymbolNode (location: (10,0)-(10,2))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (10,0)-(10,1) = ":"
         │   │   │   ├── value_loc: (10,1)-(10,2) = "c"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "c"
         │   │   ├── @ IntegerNode (location: (10,3)-(10,4))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── @ SymbolNode (location: (14,0)-(14,2))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: (14,0)-(14,1) = ":"
         │   │       ├── value_loc: (14,1)-(14,2) = "d"
         │   │       ├── closing_loc: ∅
@@ -146,31 +150,31 @@
         │   ├── opening_loc: (9,0)-(9,1) = "["
         │   └── closing_loc: (15,0)-(15,1) = "]"
         ├── @ ArrayNode (location: (18,0)-(26,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 5)
         │   │   ├── @ SymbolNode (location: (18,1)-(18,3))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (18,1)-(18,2) = ":"
         │   │   │   ├── value_loc: (18,2)-(18,3) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   ├── @ SymbolNode (location: (18,5)-(18,7))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (18,5)-(18,6) = ":"
         │   │   │   ├── value_loc: (18,6)-(18,7) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
         │   │   ├── @ SymbolNode (location: (19,0)-(19,2))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (19,0)-(19,1) = ":"
         │   │   │   ├── value_loc: (19,1)-(19,2) = "c"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "c"
         │   │   ├── @ IntegerNode (location: (19,3)-(19,4))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── @ SymbolNode (location: (23,0)-(23,2))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: (23,0)-(23,1) = ":"
         │   │       ├── value_loc: (23,1)-(23,2) = "d"
         │   │       ├── closing_loc: ∅
@@ -178,12 +182,13 @@
         │   ├── opening_loc: (18,0)-(18,1) = "["
         │   └── closing_loc: (26,0)-(26,1) = "]"
         ├── @ ArrayNode (location: (28,0)-(28,12))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (28,1)-(28,11))
         │   │       ├── flags: ∅
         │   │       └── elements: (length: 1)
         │   │           └── @ AssocNode (location: (28,1)-(28,11))
+        │   │               ├── flags: ∅
         │   │               ├── key:
         │   │               │   @ CallNode (location: (28,1)-(28,4))
         │   │               │   ├── flags: variable_call, ignore_visibility
@@ -210,7 +215,7 @@
         │   ├── opening_loc: (28,0)-(28,1) = "["
         │   └── closing_loc: (28,11)-(28,12) = "]"
         ├── @ CallNode (location: (30,0)-(30,19))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (30,0)-(30,8))
         │   │   ├── flags: ∅
@@ -276,7 +281,7 @@
         │   ├── closing_loc: (30,12)-(30,13) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (32,0)-(32,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (32,0)-(32,8))
         │   │   ├── flags: ∅
@@ -332,12 +337,12 @@
         │   ├── closing_loc: (32,12)-(32,13) = "]"
         │   └── block: ∅
         ├── @ ArrayNode (location: (34,0)-(35,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (34,0)-(34,1) = "["
         │   └── closing_loc: (35,0)-(35,1) = "]"
         ├── @ CallNode (location: (37,0)-(37,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (37,0)-(37,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -380,7 +385,7 @@
         │   ├── closing_loc: (37,12)-(37,13) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (39,0)-(39,19))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (39,0)-(39,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -433,6 +438,7 @@
         │   ├── closing_loc: (39,12)-(39,13) = "]"
         │   └── block: ∅
         ├── @ MultiWriteNode (location: (41,0)-(41,21))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ IndexTargetNode (location: (41,0)-(41,6))
         │   │   │   ├── flags: attribute_write
@@ -453,7 +459,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ IntegerNode (location: (41,4)-(41,5))
-        │   │   │   │           ├── flags: decimal
+        │   │   │   │           ├── flags: static_literal, decimal
         │   │   │   │           └── value: 0
         │   │   │   ├── closing_loc: (41,5)-(41,6) = "]"
         │   │   │   └── block: ∅
@@ -476,7 +482,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   └── arguments: (length: 1)
         │   │       │       └── @ IntegerNode (location: (41,12)-(41,13))
-        │   │       │           ├── flags: decimal
+        │   │       │           ├── flags: static_literal, decimal
         │   │       │           └── value: 0
         │   │       ├── closing_loc: (41,13)-(41,14) = "]"
         │   │       └── block: ∅
@@ -487,18 +493,18 @@
         │   ├── operator_loc: (41,15)-(41,16) = "="
         │   └── value:
         │       @ ArrayNode (location: (41,17)-(41,21))
-        │       ├── flags: ∅
+        │       ├── flags: static_literal
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (41,17)-(41,18))
-        │       │   │   ├── flags: decimal
+        │       │   │   ├── flags: static_literal, decimal
         │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (41,20)-(41,21))
-        │       │       ├── flags: decimal
+        │       │       ├── flags: static_literal, decimal
         │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (43,0)-(43,19))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (43,0)-(43,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -564,7 +570,7 @@
         │   ├── closing_loc: (43,18)-(43,19) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (45,0)-(45,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (45,0)-(45,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -597,7 +603,7 @@
         │   ├── closing_loc: (45,7)-(45,8) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (47,0)-(47,14))
-        │   ├── flags: attribute_write
+        │   ├── flags: newline, attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (47,0)-(47,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -640,14 +646,16 @@
         │   ├── closing_loc: (47,7)-(47,8) = "]"
         │   └── block: ∅
         ├── @ ArrayNode (location: (49,0)-(49,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (49,1)-(49,5))
         │   │       ├── flags: ∅
         │   │       └── elements: (length: 1)
         │   │           └── @ AssocSplatNode (location: (49,1)-(49,5))
+        │   │               ├── flags: ∅
         │   │               ├── value:
         │   │               │   @ HashNode (location: (49,3)-(49,5))
+        │   │               │   ├── flags: static_literal
         │   │               │   ├── opening_loc: (49,3)-(49,4) = "{"
         │   │               │   ├── elements: (length: 0)
         │   │               │   └── closing_loc: (49,4)-(49,5) = "}"
@@ -655,12 +663,13 @@
         │   ├── opening_loc: (49,0)-(49,1) = "["
         │   └── closing_loc: (49,5)-(49,6) = "]"
         ├── @ ArrayNode (location: (51,0)-(51,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (51,1)-(51,5))
         │   │       ├── flags: ∅
         │   │       └── elements: (length: 1)
         │   │           └── @ AssocSplatNode (location: (51,1)-(51,5))
+        │   │               ├── flags: ∅
         │   │               ├── value:
         │   │               │   @ CallNode (location: (51,3)-(51,5))
         │   │               │   ├── flags: variable_call, ignore_visibility
@@ -676,15 +685,16 @@
         │   ├── opening_loc: (51,0)-(51,1) = "["
         │   └── closing_loc: (51,5)-(51,6) = "]"
         ├── @ ArrayNode (location: (53,0)-(53,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 2)
         │   │   ├── @ IntegerNode (location: (53,1)-(53,2))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── @ KeywordHashNode (location: (53,4)-(53,8))
         │   │       ├── flags: ∅
         │   │       └── elements: (length: 1)
         │   │           └── @ AssocSplatNode (location: (53,4)-(53,8))
+        │   │               ├── flags: ∅
         │   │               ├── value:
         │   │               │   @ CallNode (location: (53,6)-(53,8))
         │   │               │   ├── flags: variable_call, ignore_visibility
@@ -700,15 +710,16 @@
         │   ├── opening_loc: (53,0)-(53,1) = "["
         │   └── closing_loc: (53,8)-(53,9) = "]"
         ├── @ ArrayNode (location: (55,0)-(55,21))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 2)
         │   │   ├── @ IntegerNode (location: (55,1)-(55,2))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── @ KeywordHashNode (location: (55,4)-(55,20))
         │   │       ├── flags: ∅
         │   │       └── elements: (length: 3)
         │   │           ├── @ AssocSplatNode (location: (55,4)-(55,8))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── value:
         │   │           │   │   @ CallNode (location: (55,6)-(55,8))
         │   │           │   │   ├── flags: variable_call, ignore_visibility
@@ -722,13 +733,16 @@
         │   │           │   │   └── block: ∅
         │   │           │   └── operator_loc: (55,4)-(55,6) = "**"
         │   │           ├── @ AssocSplatNode (location: (55,10)-(55,14))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── value:
         │   │           │   │   @ HashNode (location: (55,12)-(55,14))
+        │   │           │   │   ├── flags: static_literal
         │   │           │   │   ├── opening_loc: (55,12)-(55,13) = "{"
         │   │           │   │   ├── elements: (length: 0)
         │   │           │   │   └── closing_loc: (55,13)-(55,14) = "}"
         │   │           │   └── operator_loc: (55,10)-(55,12) = "**"
         │   │           └── @ AssocSplatNode (location: (55,16)-(55,20))
+        │   │               ├── flags: ∅
         │   │               ├── value:
         │   │               │   @ CallNode (location: (55,18)-(55,20))
         │   │               │   ├── flags: variable_call, ignore_visibility
@@ -744,12 +758,13 @@
         │   ├── opening_loc: (55,0)-(55,1) = "["
         │   └── closing_loc: (55,20)-(55,21) = "]"
         ├── @ ArrayNode (location: (57,0)-(59,1))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (58,2)-(58,12))
         │   │       ├── flags: ∅
         │   │       └── elements: (length: 1)
         │   │           └── @ AssocNode (location: (58,2)-(58,12))
+        │   │               ├── flags: ∅
         │   │               ├── key:
         │   │               │   @ CallNode (location: (58,2)-(58,5))
         │   │               │   ├── flags: variable_call, ignore_visibility
@@ -776,22 +791,22 @@
         │   ├── opening_loc: (57,0)-(57,1) = "["
         │   └── closing_loc: (59,0)-(59,1) = "]"
         ├── @ ArrayNode (location: (62,0)-(62,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 3)
         │   │   ├── @ SymbolNode (location: (62,3)-(62,6))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (62,3)-(62,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
         │   │   ├── @ SymbolNode (location: (62,7)-(62,10))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (62,7)-(62,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
         │   │   └── @ SymbolNode (location: (62,11)-(62,16))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (62,11)-(62,16) = "three"
         │   │       ├── closing_loc: ∅
@@ -799,7 +814,7 @@
         │   ├── opening_loc: (62,0)-(62,3) = "%i#"
         │   └── closing_loc: (62,16)-(62,17) = "#"
         ├── @ ArrayNode (location: (64,0)-(64,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (64,3)-(64,6))
         │   │   │   ├── flags: ∅
@@ -822,28 +837,28 @@
         │   ├── opening_loc: (64,0)-(64,3) = "%w#"
         │   └── closing_loc: (64,16)-(64,17) = "#"
         ├── @ XStringNode (location: (66,0)-(66,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (66,0)-(66,3) = "%x#"
         │   ├── content_loc: (66,3)-(66,16) = "one two three"
         │   ├── closing_loc: (66,16)-(66,17) = "#"
         │   └── unescaped: "one two three"
         ├── @ ArrayNode (location: (69,0)-(69,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 3)
         │   │   ├── @ SymbolNode (location: (69,3)-(69,6))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (69,3)-(69,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
         │   │   ├── @ SymbolNode (location: (69,7)-(69,10))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (69,7)-(69,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
         │   │   └── @ SymbolNode (location: (69,11)-(69,16))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (69,11)-(69,16) = "three"
         │   │       ├── closing_loc: ∅
@@ -851,7 +866,7 @@
         │   ├── opening_loc: (69,0)-(69,3) = "%i@"
         │   └── closing_loc: (69,16)-(69,17) = "@"
         ├── @ ArrayNode (location: (71,0)-(71,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (71,3)-(71,6))
         │   │   │   ├── flags: ∅
@@ -874,28 +889,28 @@
         │   ├── opening_loc: (71,0)-(71,3) = "%w@"
         │   └── closing_loc: (71,16)-(71,17) = "@"
         ├── @ XStringNode (location: (73,0)-(73,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (73,0)-(73,3) = "%x@"
         │   ├── content_loc: (73,3)-(73,16) = "one two three"
         │   ├── closing_loc: (73,16)-(73,17) = "@"
         │   └── unescaped: "one two three"
         ├── @ ArrayNode (location: (76,0)-(76,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 3)
         │   │   ├── @ SymbolNode (location: (76,3)-(76,6))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (76,3)-(76,6) = "one"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "one"
         │   │   ├── @ SymbolNode (location: (76,7)-(76,10))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (76,7)-(76,10) = "two"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "two"
         │   │   └── @ SymbolNode (location: (76,11)-(76,16))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (76,11)-(76,16) = "three"
         │   │       ├── closing_loc: ∅
@@ -903,7 +918,7 @@
         │   ├── opening_loc: (76,0)-(76,3) = "%i{"
         │   └── closing_loc: (76,16)-(76,17) = "}"
         ├── @ ArrayNode (location: (78,0)-(78,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (78,3)-(78,6))
         │   │   │   ├── flags: ∅
@@ -926,13 +941,13 @@
         │   ├── opening_loc: (78,0)-(78,3) = "%w{"
         │   └── closing_loc: (78,16)-(78,17) = "}"
         ├── @ XStringNode (location: (80,0)-(80,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (80,0)-(80,3) = "%x{"
         │   ├── content_loc: (80,3)-(80,16) = "one two three"
         │   ├── closing_loc: (80,16)-(80,17) = "}"
         │   └── unescaped: "one two three"
         ├── @ ArrayNode (location: (82,0)-(82,7))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (82,3)-(82,6))
         │   │       ├── flags: ∅
@@ -943,7 +958,7 @@
         │   ├── opening_loc: (82,0)-(82,3) = "%w["
         │   └── closing_loc: (82,6)-(82,7) = "]"
         ├── @ IndexOperatorWriteNode (location: (84,0)-(84,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (84,0)-(84,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -964,10 +979,10 @@
         │   ├── binary_operator_loc: (84,6)-(84,8) = "+="
         │   └── value:
         │       @ IntegerNode (location: (84,9)-(84,10))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOrWriteNode (location: (86,0)-(86,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (86,0)-(86,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -987,10 +1002,10 @@
         │   ├── operator_loc: (86,6)-(86,9) = "||="
         │   └── value:
         │       @ IntegerNode (location: (86,10)-(86,11))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexAndWriteNode (location: (88,0)-(88,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (88,0)-(88,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1010,10 +1025,10 @@
         │   ├── operator_loc: (88,6)-(88,9) = "&&="
         │   └── value:
         │       @ IntegerNode (location: (88,10)-(88,11))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOperatorWriteNode (location: (90,0)-(90,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (90,0)-(90,7))
         │   │   ├── flags: ∅
@@ -1044,10 +1059,10 @@
         │   ├── binary_operator_loc: (90,10)-(90,12) = "+="
         │   └── value:
         │       @ IntegerNode (location: (90,13)-(90,14))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOrWriteNode (location: (92,0)-(92,15))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (92,0)-(92,7))
         │   │   ├── flags: ∅
@@ -1077,10 +1092,10 @@
         │   ├── operator_loc: (92,10)-(92,13) = "||="
         │   └── value:
         │       @ IntegerNode (location: (92,14)-(92,15))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexAndWriteNode (location: (94,0)-(94,15))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (94,0)-(94,7))
         │   │   ├── flags: ∅
@@ -1110,10 +1125,10 @@
         │   ├── operator_loc: (94,10)-(94,13) = "&&="
         │   └── value:
         │       @ IntegerNode (location: (94,14)-(94,15))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOperatorWriteNode (location: (96,0)-(96,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (96,0)-(96,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1147,10 +1162,10 @@
         │   ├── binary_operator_loc: (96,9)-(96,11) = "+="
         │   └── value:
         │       @ IntegerNode (location: (96,12)-(96,13))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOrWriteNode (location: (98,0)-(98,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (98,0)-(98,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1183,10 +1198,10 @@
         │   ├── operator_loc: (98,9)-(98,12) = "||="
         │   └── value:
         │       @ IntegerNode (location: (98,13)-(98,14))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexAndWriteNode (location: (100,0)-(100,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (100,0)-(100,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1219,10 +1234,10 @@
         │   ├── operator_loc: (100,9)-(100,12) = "&&="
         │   └── value:
         │       @ IntegerNode (location: (100,13)-(100,14))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOperatorWriteNode (location: (102,0)-(102,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (102,0)-(102,7))
         │   │   ├── flags: ∅
@@ -1266,10 +1281,10 @@
         │   ├── binary_operator_loc: (102,13)-(102,15) = "+="
         │   └── value:
         │       @ IntegerNode (location: (102,16)-(102,17))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexOrWriteNode (location: (104,0)-(104,18))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (104,0)-(104,7))
         │   │   ├── flags: ∅
@@ -1312,10 +1327,10 @@
         │   ├── operator_loc: (104,13)-(104,16) = "||="
         │   └── value:
         │       @ IntegerNode (location: (104,17)-(104,18))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ IndexAndWriteNode (location: (106,0)-(106,18))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ CallNode (location: (106,0)-(106,7))
         │   │   ├── flags: ∅
@@ -1358,14 +1373,16 @@
         │   ├── operator_loc: (106,13)-(106,16) = "&&="
         │   └── value:
         │       @ IntegerNode (location: (106,17)-(106,18))
-        │       ├── flags: decimal
+        │       ├── flags: static_literal, decimal
         │       └── value: 1
         ├── @ DefNode (location: (108,0)-(108,19))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (108,4)-(108,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (108,6)-(108,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1380,9 +1397,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (108,10)-(108,14))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (108,10)-(108,14))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (108,10)-(108,11))
         │   │           │   ├── flags: variable_call, ignore_visibility
@@ -1403,6 +1421,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (108,12)-(108,13))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── operator_loc: (108,12)-(108,13) = "*"
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (108,13)-(108,14) = "]"
@@ -1415,11 +1434,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (108,16)-(108,19) = "end"
         ├── @ DefNode (location: (110,0)-(110,22))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (110,4)-(110,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (110,6)-(110,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1434,9 +1455,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (110,10)-(110,17))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (110,10)-(110,17))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (110,10)-(110,11))
         │   │           │   ├── flags: variable_call, ignore_visibility
@@ -1457,9 +1479,10 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ IntegerNode (location: (110,12)-(110,13))
-        │   │           │       │   ├── flags: decimal
+        │   │           │       │   ├── flags: static_literal, decimal
         │   │           │       │   └── value: 1
         │   │           │       └── @ SplatNode (location: (110,15)-(110,16))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── operator_loc: (110,15)-(110,16) = "*"
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (110,16)-(110,17) = "]"
@@ -1472,11 +1495,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (110,19)-(110,22) = "end"
         ├── @ DefNode (location: (112,0)-(112,23))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (112,4)-(112,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (112,6)-(112,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1491,9 +1516,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (112,10)-(112,18))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (112,10)-(112,18))
-        │   │           ├── flags: attribute_write
+        │   │           ├── flags: newline, attribute_write
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (112,10)-(112,11))
         │   │           │   ├── flags: variable_call, ignore_visibility
@@ -1514,10 +1540,11 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ SplatNode (location: (112,12)-(112,13))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   ├── operator_loc: (112,12)-(112,13) = "*"
         │   │           │       │   └── expression: ∅
         │   │           │       └── @ IntegerNode (location: (112,17)-(112,18))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 1
         │   │           ├── closing_loc: (112,13)-(112,14) = "]"
         │   │           └── block: ∅
@@ -1529,11 +1556,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (112,20)-(112,23) = "end"
         ├── @ DefNode (location: (114,0)-(114,26))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (114,4)-(114,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (114,6)-(114,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1548,9 +1577,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (114,10)-(114,21))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (114,10)-(114,21))
-        │   │           ├── flags: attribute_write
+        │   │           ├── flags: newline, attribute_write
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (114,10)-(114,11))
         │   │           │   ├── flags: variable_call, ignore_visibility
@@ -1571,13 +1601,14 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 3)
         │   │           │       ├── @ IntegerNode (location: (114,12)-(114,13))
-        │   │           │       │   ├── flags: decimal
+        │   │           │       │   ├── flags: static_literal, decimal
         │   │           │       │   └── value: 1
         │   │           │       ├── @ SplatNode (location: (114,15)-(114,16))
+        │   │           │       │   ├── flags: ∅
         │   │           │       │   ├── operator_loc: (114,15)-(114,16) = "*"
         │   │           │       │   └── expression: ∅
         │   │           │       └── @ IntegerNode (location: (114,20)-(114,21))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 1
         │   │           ├── closing_loc: (114,16)-(114,17) = "]"
         │   │           └── block: ∅
@@ -1589,11 +1620,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (114,23)-(114,26) = "end"
         ├── @ DefNode (location: (116,0)-(116,24))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (116,4)-(116,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (116,6)-(116,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1608,9 +1641,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (116,10)-(116,19))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IndexOperatorWriteNode (location: (116,10)-(116,19))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (116,10)-(116,11))
         │   │           │   ├── flags: variable_call, ignore_visibility
@@ -1629,6 +1663,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (116,12)-(116,13))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── operator_loc: (116,12)-(116,13) = "*"
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (116,13)-(116,14) = "]"
@@ -1637,7 +1672,7 @@
         │   │           ├── binary_operator_loc: (116,15)-(116,17) = "+="
         │   │           └── value:
         │   │               @ IntegerNode (location: (116,18)-(116,19))
-        │   │               ├── flags: decimal
+        │   │               ├── flags: static_literal, decimal
         │   │               └── value: 1
         │   ├── locals: []
         │   ├── def_keyword_loc: (116,0)-(116,3) = "def"
@@ -1647,11 +1682,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (116,21)-(116,24) = "end"
         ├── @ DefNode (location: (118,0)-(118,28))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (118,4)-(118,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (118,6)-(118,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1666,9 +1703,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (118,10)-(118,23))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IndexAndWriteNode (location: (118,10)-(118,23))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (118,10)-(118,11))
         │   │           │   ├── flags: variable_call, ignore_visibility
@@ -1687,9 +1725,10 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ IntegerNode (location: (118,12)-(118,13))
-        │   │           │       │   ├── flags: decimal
+        │   │           │       │   ├── flags: static_literal, decimal
         │   │           │       │   └── value: 1
         │   │           │       └── @ SplatNode (location: (118,15)-(118,16))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── operator_loc: (118,15)-(118,16) = "*"
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (118,16)-(118,17) = "]"
@@ -1697,7 +1736,7 @@
         │   │           ├── operator_loc: (118,18)-(118,21) = "&&="
         │   │           └── value:
         │   │               @ IntegerNode (location: (118,22)-(118,23))
-        │   │               ├── flags: decimal
+        │   │               ├── flags: static_literal, decimal
         │   │               └── value: 1
         │   ├── locals: []
         │   ├── def_keyword_loc: (118,0)-(118,3) = "def"
@@ -1707,11 +1746,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (118,25)-(118,28) = "end"
         ├── @ DefNode (location: (120,0)-(120,29))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (120,4)-(120,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (120,6)-(120,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
@@ -1726,10 +1767,12 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ BeginNode (location: (120,0)-(120,29))
+        │   │   ├── flags: ∅
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (120,10)-(120,24))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (120,10)-(120,16) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: (120,17)-(120,19) = "=>"
@@ -1753,6 +1796,7 @@
         │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── arguments: (length: 1)
         │   │   │   │   │       └── @ SplatNode (location: (120,22)-(120,23))
+        │   │   │   │   │           ├── flags: ∅
         │   │   │   │   │           ├── operator_loc: (120,22)-(120,23) = "*"
         │   │   │   │   │           └── expression: ∅
         │   │   │   │   ├── closing_loc: (120,23)-(120,24) = "]"
@@ -1770,11 +1814,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (120,26)-(120,29) = "end"
         └── @ DefNode (location: (122,0)-(122,32))
+            ├── flags: newline
             ├── name: :f
             ├── name_loc: (122,4)-(122,5) = "f"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (122,6)-(122,7))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest:
@@ -1789,10 +1835,12 @@
             │   └── block: ∅
             ├── body:
             │   @ BeginNode (location: (122,0)-(122,32))
+            │   ├── flags: ∅
             │   ├── begin_keyword_loc: ∅
             │   ├── statements: ∅
             │   ├── rescue_clause:
             │   │   @ RescueNode (location: (122,10)-(122,27))
+            │   │   ├── flags: ∅
             │   │   ├── keyword_loc: (122,10)-(122,16) = "rescue"
             │   │   ├── exceptions: (length: 0)
             │   │   ├── operator_loc: (122,17)-(122,19) = "=>"
@@ -1816,9 +1864,10 @@
             │   │   │   │   ├── flags: ∅
             │   │   │   │   └── arguments: (length: 2)
             │   │   │   │       ├── @ IntegerNode (location: (122,22)-(122,23))
-            │   │   │   │       │   ├── flags: decimal
+            │   │   │   │       │   ├── flags: static_literal, decimal
             │   │   │   │       │   └── value: 1
             │   │   │   │       └── @ SplatNode (location: (122,25)-(122,26))
+            │   │   │   │           ├── flags: ∅
             │   │   │   │           ├── operator_loc: (122,25)-(122,26) = "*"
             │   │   │   │           └── expression: ∅
             │   │   │   ├── closing_loc: (122,26)-(122,27) = "]"

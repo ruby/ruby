@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(7,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,1))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ PreExecutionNode (location: (1,0)-(3,1))
+        │   ├── flags: newline
         │   ├── statements:
         │   │   @ StatementsNode (location: (2,2)-(2,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,2)-(2,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :foo
@@ -21,7 +25,7 @@
         │   ├── opening_loc: (1,6)-(1,7) = "{"
         │   └── closing_loc: (3,0)-(3,1) = "}"
         ├── @ CallNode (location: (4,0)-(4,3))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :bar
@@ -31,11 +35,13 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ PostExecutionNode (location: (5,0)-(7,1))
+            ├── flags: newline
             ├── statements:
             │   @ StatementsNode (location: (6,2)-(6,5))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (6,2)-(6,5))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :baz

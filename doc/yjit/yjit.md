@@ -385,10 +385,16 @@ Or single-threaded like this, to more easily identify which specific test is fai
 make test-all TESTOPTS=--verbose RUN_OPTS="--yjit-call-threshold=1"
 ```
 
-To debug a single test in `test-all`:
+To run a single test file with `test-all`:
 
 ```sh
 make test-all TESTS='test/-ext-/marshal/test_usrmarshal.rb' RUNRUBYOPT=--debugger=lldb RUN_OPTS="--yjit-call-threshold=1"
+```
+
+It's also possible to filter tests by name to run a single test:
+
+```sh
+make test-all TESTS='-n /test_float_plus/' RUN_OPTS="--yjit-call-threshold=1"
 ```
 
 You can also run one specific test in `btest`:

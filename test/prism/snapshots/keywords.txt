@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(11,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(11,8))
+    ├── flags: ∅
     └── body: (length: 6)
         ├── @ CallNode (location: (1,0)-(1,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -14,34 +16,44 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,4)-(1,12))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (1,6)-(1,10))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ RedoNode (location: (1,6)-(1,10))
+        │       │           └── flags: newline
         │       ├── opening_loc: (1,4)-(1,5) = "{"
         │       └── closing_loc: (1,11)-(1,12) = "}"
         ├── @ BeginNode (location: (3,0)-(3,25))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (3,0)-(3,5) = "begin"
         │   ├── statements: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (3,7)-(3,20))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (3,7)-(3,13) = "rescue"
         │   │   ├── exceptions: (length: 0)
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (3,15)-(3,20))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ RetryNode (location: (3,15)-(3,20))
+        │   │   │           └── flags: newline
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (3,22)-(3,25) = "end"
         ├── @ SelfNode (location: (5,0)-(5,4))
+        │   └── flags: newline
         ├── @ SourceEncodingNode (location: (7,0)-(7,12))
+        │   └── flags: newline, static_literal
         ├── @ SourceFileNode (location: (9,0)-(9,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   └── filepath: "keywords.txt"
         └── @ SourceLineNode (location: (11,0)-(11,8))
+            └── flags: newline, static_literal

@@ -1823,6 +1823,24 @@ begin
       EOC
     end
 
+    def test_print_before_readline
+      code = <<~RUBY
+        puts 'Multiline REPL.'
+        2.times do
+          print 'a' * 10
+          Reline.readline '>'
+        end
+      RUBY
+      start_terminal(6, 30, ['ruby', "-I#{@pwd}/lib", '-rreline', '-e', code], startup_message: 'Multiline REPL.')
+      write "x\n"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        >x
+        >
+      EOC
+    end
+
     def test_thread_safe
       start_terminal(6, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write("[Thread.new{Reline.readline'>'},Thread.new{Reline.readmultiline('>'){true}}].map(&:join).size\n")

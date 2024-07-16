@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,25))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,25))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseNode (location: (1,0)-(1,25))
+            ├── flags: newline
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,6))
             │   ├── flags: variable_call, ignore_visibility
@@ -17,9 +20,11 @@
             │   └── block: ∅
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,8)-(1,20))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (1,8)-(1,12) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ SplatNode (location: (1,13)-(1,15))
+            │       │       ├── flags: ∅
             │       │       ├── operator_loc: (1,13)-(1,14) = "*"
             │       │       └── expression:
             │       │           @ CallNode (location: (1,14)-(1,15))

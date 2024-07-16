@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Set up Ruby
-        uses: ruby/setup-ruby@2a9a743e19810b9f3c38060637daf594dbd7b37f # v1.186.0
+        uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
         with:
           ruby-version: '3.1'
 

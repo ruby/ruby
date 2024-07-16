@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,13))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -21,5 +23,6 @@
             │       │   ├── closing_loc: (1,5)-(1,6) = "\""
             │       │   └── unescaped: "\n"
             │       └── @ TrueNode (location: (1,8)-(1,12))
+            │           └── flags: static_literal
             ├── closing_loc: (1,12)-(1,13) = ")"
             └── block: ∅

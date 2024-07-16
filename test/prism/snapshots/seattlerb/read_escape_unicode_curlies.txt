@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,9))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,9))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ StringNode (location: (1,0)-(1,9))
-            ├── flags: forced_utf8_encoding
+            ├── flags: newline, forced_utf8_encoding
             ├── opening_loc: (1,0)-(1,1) = "?"
             ├── content_loc: (1,1)-(1,9) = "\\u{00a0}"
             ├── closing_loc: ∅

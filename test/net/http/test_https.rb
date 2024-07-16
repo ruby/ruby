@@ -167,18 +167,16 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_session_reuse_but_expire
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
     omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
-    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 3.2.')
-    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 3.3.')
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.cert_store = TEST_STORE
 
-    http.ssl_timeout = -1
+    http.ssl_timeout = 1
     http.start
     http.get("/")
     http.finish
-
+    sleep 1.25
     http.start
     http.get("/")
 
@@ -240,27 +238,6 @@ class TestNetHTTPS < Test::Unit::TestCase
       http.request_get("/") {|res| }
     }
     assert_match(/certificate verify failed/, ex.message)
-    unless /mswin|mingw/ =~ RUBY_PLATFORM
-      # on Windows, Errno::ECONNRESET will be raised, and it'll be eaten by
-      # WEBrick
-      @log_tester = lambda {|log|
-        assert_equal(1, log.length)
-        assert_match(/ERROR OpenSSL::SSL::SSLError:/, log[0])
-      }
-    end
-  end
-
-  def test_identity_verify_failure
-    # the certificate's subject has CN=localhost
-    http = Net::HTTP.new(HOST_IP, config("port"))
-    http.use_ssl = true
-    http.cert_store = TEST_STORE
-    @log_tester = lambda {|_| }
-    ex = assert_raise(OpenSSL::SSL::SSLError){
-      http.request_get("/") {|res| }
-    }
-    re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
-    assert_match(re_msg, ex.message)
   end
 
   def test_timeout_during_SSL_handshake
@@ -295,7 +272,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   end
 
   def test_max_version
-    http = Net::HTTP.new(HOST_IP, config("port"))
+    http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
     http.max_version = :SSL2
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
@@ -309,4 +286,43 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(re_msg, ex.message)
   end
 
+end if defined?(OpenSSL::SSL)
+
+class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
+  include TestNetHTTPUtils
+
+  def self.read_fixture(key)
+    File.read(File.expand_path("../fixtures/#{key}", __dir__))
+  end
+
+  HOST = 'localhost'
+  HOST_IP = '127.0.0.1'
+  CA_CERT = OpenSSL::X509::Certificate.new(read_fixture("cacert.pem"))
+  SERVER_KEY = OpenSSL::PKey.read(read_fixture("server.key"))
+  SERVER_CERT = OpenSSL::X509::Certificate.new(read_fixture("server.crt"))
+  DHPARAMS = OpenSSL::PKey::DH.new(read_fixture("dhparams.pem"))
+  TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
+
+  CONFIG = {
+    'host' => HOST_IP,
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+    'ssl_enable' => true,
+    'ssl_certificate' => SERVER_CERT,
+    'ssl_private_key' => SERVER_KEY,
+    'ssl_tmp_dh_callback' => proc { DHPARAMS },
+  }
+
+  def test_identity_verify_failure
+    # the certificate's subject has CN=localhost
+    http = Net::HTTP.new(HOST_IP, config("port"))
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+    @log_tester = lambda {|_| }
+    ex = assert_raise(OpenSSL::SSL::SSLError){
+      http.request_get("/") {|res| }
+    }
+    re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
+    assert_match(re_msg, ex.message)
+  end
 end if defined?(OpenSSL::SSL)

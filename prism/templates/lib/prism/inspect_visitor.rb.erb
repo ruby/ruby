@@ -69,10 +69,13 @@ module Prism
     # Inspect a <%= node.name %> node.
     def visit_<%= node.human %>(node)
       commands << [inspect_node(<%= node.name.inspect %>, node), indent]
-      <%- node.fields.each_with_index do |field, index| -%>
-      <%- pointer = index == node.fields.length - 1 ? "└── " : "├── " -%>
-      <%- preadd = index == node.fields.length - 1 ? "    " : "│   " -%>
+      <%- (fields = [node.flags || Prism::Template::Flags.empty, *node.fields]).each_with_index do |field, index| -%>
+      <%- pointer = index == fields.length - 1 ? "└── " : "├── " -%>
+      <%- preadd = index == fields.length - 1 ? "    " : "│   " -%>
       <%- case field -%>
+      <%- when Prism::Template::Flags -%>
+      flags = [("newline" if node.newline?), ("static_literal" if node.static_literal?), <%= field.values.map { |value| "(\"#{value.name.downcase}\" if node.#{value.name.downcase}?)" }.join(", ") %>].compact
+      commands << ["<%= pointer %>flags: #{flags.empty? ? "∅" : flags.join(", ")}\n", indent]
       <%- when Prism::Template::NodeListField -%>
       commands << ["<%= pointer %><%= field.name %>: (length: #{(<%= field.name %> = node.<%= field.name %>).length})\n", indent]
       if <%= field.name %>.any?
@@ -101,10 +104,6 @@ module Prism
       else
         commands << ["<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n", indent]
       end
-      <%- when Prism::Template::FlagsField -%>
-      <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise unless flag } -%>
-      flags = [<%= flag.values.map { |value| "(\"#{value.name.downcase}\" if node.#{value.name.downcase}?)" }.join(", ") %>].compact
-      commands << ["<%= pointer %><%= field.name %>: #{flags.empty? ? "∅" : flags.join(", ")}\n", indent]
       <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField -%>
       commands << ["<%= pointer %><%= field.name %>: #{inspect_location(node.<%= field.name %>)}\n", indent]
       <%- end -%>

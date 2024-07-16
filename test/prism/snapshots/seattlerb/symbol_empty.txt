@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ SymbolNode (location: (1,0)-(1,3))
-            ├── flags: forced_us_ascii_encoding
+            ├── flags: newline, static_literal, forced_us_ascii_encoding
             ├── opening_loc: (1,0)-(1,2) = ":'"
             ├── value_loc: (1,2)-(1,2) = ""
             ├── closing_loc: (1,2)-(1,3) = "'"

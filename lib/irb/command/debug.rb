@@ -58,13 +58,15 @@ module IRB
     end
 
     class DebugCommand < Debug
-      def self.category
-        "Debugging"
-      end
+      class << self
+        def category
+          "Debugging"
+        end
 
-      def self.description
-        command_name = self.name.split("::").last.downcase
-        "Start the debugger of debug.gem and run its `#{command_name}` command."
+        def description
+          command_name = self.name.split("::").last.downcase
+          "Start the debugger of debug.gem and run its `#{command_name}` command."
+        end
       end
     end
   end

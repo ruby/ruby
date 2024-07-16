@@ -1,0 +1,25 @@
+alias x y + 1
+          ^ unexpected '+', expecting end-of-input
+          ^ unexpected '+', ignoring it
+alias x y.z
+         ^ unexpected '.', expecting end-of-input
+         ^ unexpected '.', ignoring it
+BEGIN { bar } + 1
+              ^ unexpected '+', expecting end-of-input
+              ^ unexpected '+', ignoring it
+BEGIN { bar }.z
+             ^ unexpected '.', expecting end-of-input
+             ^ unexpected '.', ignoring it
+END { bar } + 1
+            ^ unexpected '+', expecting end-of-input
+            ^ unexpected '+', ignoring it
+END { bar }.z
+           ^ unexpected '.', expecting end-of-input
+           ^ unexpected '.', ignoring it
+undef x + 1
+        ^ unexpected '+', expecting end-of-input
+        ^ unexpected '+', ignoring it
+undef x.z
+       ^ unexpected '.', expecting end-of-input
+       ^ unexpected '.', ignoring it
+

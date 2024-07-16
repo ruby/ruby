@@ -1,0 +1,3 @@
+"\xx"
+ ^~ invalid hex escape sequence
+

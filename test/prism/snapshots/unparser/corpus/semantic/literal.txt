@@ -1,71 +1,81 @@
 @ ProgramNode (location: (1,0)-(14,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(14,10))
+    ├── flags: ∅
     └── body: (length: 14)
         ├── @ RationalNode (location: (1,0)-(1,4))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   ├── numerator: 1
         │   └── denominator: 1
         ├── @ RationalNode (location: (2,0)-(2,3))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   ├── numerator: 0
         │   └── denominator: 1
         ├── @ IntegerNode (location: (3,0)-(3,3))
-        │   ├── flags: hexadecimal
+        │   ├── flags: newline, static_literal, hexadecimal
         │   └── value: 1
         ├── @ IntegerNode (location: (4,0)-(4,5))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   └── value: 1000
         ├── @ FloatNode (location: (5,0)-(5,4))
+        │   ├── flags: newline, static_literal
         │   └── value: 10000000000.0
         ├── @ FloatNode (location: (6,0)-(6,14))
+        │   ├── flags: newline, static_literal
         │   └── value: Infinity
         ├── @ FloatNode (location: (7,0)-(7,15))
+        │   ├── flags: newline, static_literal
         │   └── value: -Infinity
         ├── @ StringNode (location: (8,0)-(8,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (8,0)-(8,1) = "?"
         │   ├── content_loc: (8,1)-(8,2) = "c"
         │   ├── closing_loc: ∅
         │   └── unescaped: "c"
         ├── @ RegularExpressionNode (location: (9,0)-(9,5))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (9,0)-(9,3) = "%r("
         │   ├── content_loc: (9,3)-(9,4) = "/"
         │   ├── closing_loc: (9,4)-(9,5) = ")"
         │   └── unescaped: "/"
         ├── @ RegularExpressionNode (location: (10,0)-(10,6))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (10,0)-(10,3) = "%r("
         │   ├── content_loc: (10,3)-(10,5) = "\\)"
         │   ├── closing_loc: (10,5)-(10,6) = ")"
         │   └── unescaped: "\\)"
         ├── @ InterpolatedRegularExpressionNode (location: (11,0)-(11,14))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (11,0)-(11,3) = "%r("
         │   ├── parts: (length: 2)
         │   │   ├── @ EmbeddedStatementsNode (location: (11,3)-(11,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (11,3)-(11,5) = "\#{"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (11,5)-(11,9))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ InstanceVariableReadNode (location: (11,5)-(11,9))
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           └── name: :@bar
         │   │   │   └── closing_loc: (11,9)-(11,10) = "}"
         │   │   └── @ StringNode (location: (11,10)-(11,13))
-        │   │       ├── flags: frozen
+        │   │       ├── flags: static_literal, frozen
         │   │       ├── opening_loc: ∅
         │   │       ├── content_loc: (11,10)-(11,13) = "baz"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "baz"
         │   └── closing_loc: (11,13)-(11,14) = ")"
         ├── @ FloatNode (location: (12,0)-(12,16))
+        │   ├── flags: newline, static_literal
         │   └── value: Infinity
         ├── @ FloatNode (location: (13,0)-(13,17))
+        │   ├── flags: newline, static_literal
         │   └── value: -Infinity
         └── @ CallNode (location: (14,0)-(14,10))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :w

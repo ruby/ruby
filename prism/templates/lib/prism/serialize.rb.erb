@@ -131,8 +131,8 @@ module Prism
         comments = load_comments
         magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
         data_loc = load_optional_location_object
-        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES[load_varuint], load_embedded_string, load_location_object, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES[load_varuint], load_embedded_string, load_location_object, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES.fetch(load_varuint), load_embedded_string, load_location_object, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES.fetch(load_varuint), load_embedded_string, load_location_object, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -319,9 +319,10 @@ module Prism
         end
       end
 
-      if RUBY_ENGINE == 'ruby'
+      if RUBY_ENGINE == "ruby"
         def load_node
           type = io.getbyte
+          node_id = load_varuint
           location = load_location
 
           case type
@@ -330,8 +331,7 @@ module Prism
             <%- if node.needs_serialized_length? -%>
             load_uint32
             <%- end -%>
-            <%= node.name %>.new(
-              source, <%= (node.fields.map { |field|
+            <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
               case field
               when Prism::Template::NodeField then "load_node"
               when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -343,12 +343,12 @@ module Prism
               when Prism::Template::LocationField then "load_location"
               when Prism::Template::OptionalLocationField then "load_optional_location"
               when Prism::Template::UInt8Field then "io.getbyte"
-              when Prism::Template::UInt32Field, Prism::Template::FlagsField then "load_varuint"
+              when Prism::Template::UInt32Field then "load_varuint"
               when Prism::Template::IntegerField then "load_integer"
               when Prism::Template::DoubleField then "load_double"
               else raise
               end
-            } + ["location"]).join(", ") -%>)
+            }].join(", ") -%>)
             <%- end -%>
           end
         end
@@ -363,12 +363,12 @@ module Prism
             nil,
             <%- nodes.each do |node| -%>
             -> {
+              node_id = load_varuint
               location = load_location
               <%- if node.needs_serialized_length? -%>
               load_uint32
               <%- end -%>
-              <%= node.name %>.new(
-                source, <%= (node.fields.map { |field|
+              <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
                 case field
                 when Prism::Template::NodeField then "load_node"
                 when Prism::Template::OptionalNodeField then "load_optional_node"
@@ -380,12 +380,12 @@ module Prism
                 when Prism::Template::LocationField then "load_location"
                 when Prism::Template::OptionalLocationField then "load_optional_location"
                 when Prism::Template::UInt8Field then "io.getbyte"
-                when Prism::Template::UInt32Field, Prism::Template::FlagsField then "load_varuint"
+                when Prism::Template::UInt32Field then "load_varuint"
                 when Prism::Template::IntegerField then "load_integer"
                 when Prism::Template::DoubleField then "load_double"
                 else raise
                 end
-              } + ["location"]).join(", ") -%>)
+              }].join(", ") -%>)
             },
             <%- end -%>
           ]

@@ -11,9 +11,10 @@ class Logger
     attr_reader :filename
     include MonitorMixin
 
-    def initialize(log = nil, shift_age: nil, shift_size: nil, shift_period_suffix: nil, binmode: false)
+    def initialize(log = nil, shift_age: nil, shift_size: nil, shift_period_suffix: nil, binmode: false, reraise_write_errors: [])
       @dev = @filename = @shift_age = @shift_size = @shift_period_suffix = nil
       @binmode = binmode
+      @reraise_write_errors = reraise_write_errors
       mon_initialize
       set_dev(log)
       if @filename
@@ -34,16 +35,22 @@ class Logger
           if @shift_age and @dev.respond_to?(:stat)
             begin
               check_shift_log
+            rescue *@reraise_write_errors
+              raise
             rescue
               warn("log shifting failed. #{$!}")
             end
           end
           begin
             @dev.write(message)
+          rescue *@reraise_write_errors
+            raise
           rescue
             warn("log writing failed. #{$!}")
           end
         end
+      rescue *@reraise_write_errors
+        raise
       rescue Exception => ignored
         warn("log writing failed. #{ignored}")
       end

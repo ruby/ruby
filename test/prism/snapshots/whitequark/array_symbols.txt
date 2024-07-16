@@ -1,19 +1,21 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(1,11))
-            ├── flags: ∅
+            ├── flags: newline, static_literal
             ├── elements: (length: 2)
             │   ├── @ SymbolNode (location: (1,3)-(1,6))
-            │   │   ├── flags: forced_us_ascii_encoding
+            │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,3)-(1,6) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   └── @ SymbolNode (location: (1,7)-(1,10))
-            │       ├── flags: forced_us_ascii_encoding
+            │       ├── flags: static_literal, forced_us_ascii_encoding
             │       ├── opening_loc: ∅
             │       ├── value_loc: (1,7)-(1,10) = "bar"
             │       ├── closing_loc: ∅

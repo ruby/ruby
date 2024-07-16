@@ -1,0 +1,6 @@
+if 0 0; elsif 0 0; end
+     ^ expected `then` or `;` or '\n'
+                ^ expected `then` or `;` or '\n'
+unless 0 0; end
+         ^ expected `then` or `;` or '\n'
+

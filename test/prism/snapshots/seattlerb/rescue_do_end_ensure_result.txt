@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(5,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(5,8))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (1,0)-(5,3))
             │   ├── flags: ignore_visibility
@@ -17,16 +19,19 @@
             │   ├── closing_loc: ∅
             │   └── block:
             │       @ BlockNode (location: (1,5)-(5,3))
+            │       ├── flags: ∅
             │       ├── locals: []
             │       ├── parameters: ∅
             │       ├── body:
             │       │   @ BeginNode (location: (1,5)-(5,3))
+            │       │   ├── flags: ∅
             │       │   ├── begin_keyword_loc: ∅
             │       │   ├── statements:
             │       │   │   @ StatementsNode (location: (2,2)-(2,8))
+            │       │   │   ├── flags: ∅
             │       │   │   └── body: (length: 1)
             │       │   │       └── @ SymbolNode (location: (2,2)-(2,8))
-            │       │   │           ├── flags: forced_us_ascii_encoding
+            │       │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │   │           ├── opening_loc: (2,2)-(2,3) = ":"
             │       │   │           ├── value_loc: (2,3)-(2,8) = "begin"
             │       │   │           ├── closing_loc: ∅
@@ -35,12 +40,14 @@
             │       │   ├── else_clause: ∅
             │       │   ├── ensure_clause:
             │       │   │   @ EnsureNode (location: (3,0)-(5,3))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── ensure_keyword_loc: (3,0)-(3,6) = "ensure"
             │       │   │   ├── statements:
             │       │   │   │   @ StatementsNode (location: (4,2)-(4,9))
+            │       │   │   │   ├── flags: ∅
             │       │   │   │   └── body: (length: 1)
             │       │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
-            │       │   │   │           ├── flags: forced_us_ascii_encoding
+            │       │   │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
             │       │   │   │           ├── value_loc: (4,3)-(4,9) = "ensure"
             │       │   │   │           ├── closing_loc: ∅

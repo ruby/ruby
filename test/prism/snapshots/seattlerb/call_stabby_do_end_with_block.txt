@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,22))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,22))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,22))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -15,6 +17,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (1,2)-(1,13))
+            │           ├── flags: ∅
             │           ├── locals: []
             │           ├── operator_loc: (1,2)-(1,4) = "->"
             │           ├── opening_loc: (1,5)-(1,7) = "do"
@@ -22,20 +25,23 @@
             │           ├── parameters: ∅
             │           └── body:
             │               @ StatementsNode (location: (1,8)-(1,9))
+            │               ├── flags: ∅
             │               └── body: (length: 1)
             │                   └── @ IntegerNode (location: (1,8)-(1,9))
-            │                       ├── flags: decimal
+            │                       ├── flags: newline, static_literal, decimal
             │                       └── value: 1
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,14)-(1,22))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,17)-(1,18))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ IntegerNode (location: (1,17)-(1,18))
-                │           ├── flags: decimal
+                │           ├── flags: newline, static_literal, decimal
                 │           └── value: 2
                 ├── opening_loc: (1,14)-(1,16) = "do"
                 └── closing_loc: (1,19)-(1,22) = "end"

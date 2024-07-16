@@ -490,13 +490,9 @@ class Reline::LineEditor
     @output.puts lines.map { |l| "#{l}\r\n" }.join
   end
 
-  def print_nomultiline_prompt(prompt)
-    return unless prompt && !@is_multiline
-
+  def print_nomultiline_prompt
     # Readline's test `TestRelineAsReadline#test_readline` requires first output to be prompt, not cursor reset escape sequence.
-    @rendered_screen.lines = [[[0, Reline::Unicode.calculate_width(prompt, true), prompt]]]
-    @rendered_screen.cursor_y = 0
-    @output.write prompt
+    @output.write @prompt if @prompt && !@is_multiline
   end
 
   def render_differential

@@ -1,0 +1,3 @@
+%s[abc
+^~~ unterminated quoted string; expected a closing delimiter for the dynamic symbol
+

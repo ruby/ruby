@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(35,18))
+├── flags: ∅
 ├── locals: [:a, :z]
 └── statements:
     @ StatementsNode (location: (1,0)-(35,18))
+    ├── flags: ∅
     └── body: (length: 14)
         ├── @ RescueModifierNode (location: (1,0)-(1,14))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -18,7 +21,9 @@
         │   ├── keyword_loc: (1,4)-(1,10) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (1,11)-(1,14))
+        │       └── flags: static_literal
         ├── @ RescueModifierNode (location: (3,0)-(4,3))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -33,8 +38,9 @@
         │   ├── keyword_loc: (3,4)-(3,10) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (4,0)-(4,3))
+        │       └── flags: static_literal
         ├── @ CallNode (location: (6,0)-(6,24))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -44,23 +50,28 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (6,4)-(6,24))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (6,6)-(6,22))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ RescueModifierNode (location: (6,6)-(6,22))
+        │       │           ├── flags: newline
         │       │           ├── expression:
         │       │           │   @ BreakNode (location: (6,6)-(6,11))
+        │       │           │   ├── flags: ∅
         │       │           │   ├── arguments: ∅
         │       │           │   └── keyword_loc: (6,6)-(6,11) = "break"
         │       │           ├── keyword_loc: (6,12)-(6,18) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (6,19)-(6,22))
+        │       │               └── flags: static_literal
         │       ├── opening_loc: (6,4)-(6,5) = "{"
         │       └── closing_loc: (6,23)-(6,24) = "}"
         ├── @ CallNode (location: (8,0)-(8,23))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -70,22 +81,28 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (8,4)-(8,23))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (8,6)-(8,21))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ RescueModifierNode (location: (8,6)-(8,21))
+        │       │           ├── flags: newline
         │       │           ├── expression:
         │       │           │   @ NextNode (location: (8,6)-(8,10))
+        │       │           │   ├── flags: ∅
         │       │           │   ├── arguments: ∅
         │       │           │   └── keyword_loc: (8,6)-(8,10) = "next"
         │       │           ├── keyword_loc: (8,11)-(8,17) = "rescue"
         │       │           └── rescue_expression:
         │       │               @ NilNode (location: (8,18)-(8,21))
+        │       │               └── flags: static_literal
         │       ├── opening_loc: (8,4)-(8,5) = "{"
         │       └── closing_loc: (8,22)-(8,23) = "}"
         ├── @ RescueModifierNode (location: (10,0)-(10,17))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ ReturnNode (location: (10,0)-(10,6))
         │   │   ├── flags: ∅
@@ -94,7 +111,9 @@
         │   ├── keyword_loc: (10,7)-(10,13) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (10,14)-(10,17))
+        │       └── flags: static_literal
         ├── @ RescueModifierNode (location: (12,0)-(12,19))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ CallNode (location: (12,0)-(12,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -109,14 +128,17 @@
         │   ├── keyword_loc: (12,4)-(12,10) = "rescue"
         │   └── rescue_expression:
         │       @ OrNode (location: (12,11)-(12,19))
+        │       ├── flags: ∅
         │       ├── left:
         │       │   @ NilNode (location: (12,11)-(12,14))
+        │       │   └── flags: static_literal
         │       ├── right:
         │       │   @ IntegerNode (location: (12,18)-(12,19))
-        │       │   ├── flags: decimal
+        │       │   ├── flags: static_literal, decimal
         │       │   └── value: 1
         │       └── operator_loc: (12,15)-(12,17) = "||"
         ├── @ RescueModifierNode (location: (14,0)-(14,22))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ CallNode (location: (14,0)-(14,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -131,34 +153,41 @@
         │   ├── keyword_loc: (14,4)-(14,10) = "rescue"
         │   └── rescue_expression:
         │       @ IfNode (location: (14,11)-(14,22))
+        │       ├── flags: newline
         │       ├── if_keyword_loc: ∅
         │       ├── predicate:
         │       │   @ NilNode (location: (14,11)-(14,14))
+        │       │   └── flags: static_literal
         │       ├── then_keyword_loc: (14,15)-(14,16) = "?"
         │       ├── statements:
         │       │   @ StatementsNode (location: (14,17)-(14,18))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ IntegerNode (location: (14,17)-(14,18))
-        │       │           ├── flags: decimal
+        │       │           ├── flags: newline, static_literal, decimal
         │       │           └── value: 1
         │       ├── consequent:
         │       │   @ ElseNode (location: (14,19)-(14,22))
+        │       │   ├── flags: ∅
         │       │   ├── else_keyword_loc: (14,19)-(14,20) = ":"
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (14,21)-(14,22))
+        │       │   │   ├── flags: ∅
         │       │   │   └── body: (length: 1)
         │       │   │       └── @ IntegerNode (location: (14,21)-(14,22))
-        │       │   │           ├── flags: decimal
+        │       │   │           ├── flags: newline, static_literal, decimal
         │       │   │           └── value: 2
         │       │   └── end_keyword_loc: ∅
         │       └── end_keyword_loc: ∅
         ├── @ BeginNode (location: (16,0)-(16,24))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (16,0)-(16,5) = "begin"
         │   ├── statements:
         │   │   @ StatementsNode (location: (16,7)-(16,8))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (16,7)-(16,8))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :a
@@ -169,9 +198,11 @@
         │   │           └── block: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (16,10)-(16,19))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (16,10)-(16,16) = "rescue"
         │   │   ├── exceptions: (length: 1)
         │   │   │   └── @ SplatNode (location: (16,17)-(16,19))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── operator_loc: (16,17)-(16,18) = "*"
         │   │   │       └── expression:
         │   │   │           @ CallNode (location: (16,18)-(16,19))
@@ -192,7 +223,7 @@
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (16,21)-(16,24) = "end"
         ├── @ CallNode (location: (18,0)-(20,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -202,11 +233,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (18,4)-(20,3))
+        │       ├── flags: ∅
         │       ├── locals: [:x]
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (18,7)-(18,10))
+        │       │   ├── flags: ∅
         │       │   ├── parameters:
         │       │   │   @ ParametersNode (location: (18,8)-(18,9))
+        │       │   │   ├── flags: ∅
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (18,8)-(18,9))
         │       │   │   │       ├── flags: ∅
@@ -222,8 +256,10 @@
         │       │   └── closing_loc: (18,9)-(18,10) = "|"
         │       ├── body:
         │       │   @ StatementsNode (location: (19,2)-(19,40))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ RescueModifierNode (location: (19,2)-(19,40))
+        │       │           ├── flags: newline
         │       │           ├── expression:
         │       │           │   @ CallNode (location: (19,2)-(19,8))
         │       │           │   ├── flags: ignore_visibility
@@ -285,14 +321,17 @@
         │       ├── opening_loc: (18,4)-(18,6) = "do"
         │       └── closing_loc: (20,0)-(20,3) = "end"
         ├── @ IfNode (location: (22,0)-(24,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (22,0)-(22,2) = "if"
         │   ├── predicate:
         │   │   @ LocalVariableWriteNode (location: (22,3)-(22,21))
+        │   │   ├── flags: ∅
         │   │   ├── name: :a
         │   │   ├── depth: 0
         │   │   ├── name_loc: (22,3)-(22,4) = "a"
         │   │   ├── value:
         │   │   │   @ RescueModifierNode (location: (22,7)-(22,21))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── expression:
         │   │   │   │   @ CallNode (location: (22,7)-(22,10))
         │   │   │   │   ├── flags: variable_call, ignore_visibility
@@ -307,13 +346,15 @@
         │   │   │   ├── keyword_loc: (22,11)-(22,17) = "rescue"
         │   │   │   └── rescue_expression:
         │   │   │       @ NilNode (location: (22,18)-(22,21))
+        │   │   │       └── flags: static_literal
         │   │   └── operator_loc: (22,5)-(22,6) = "="
         │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (23,2)-(23,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (23,2)-(23,5))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -325,14 +366,17 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (24,0)-(24,3) = "end"
         ├── @ DefNode (location: (26,0)-(26,44))
+        │   ├── flags: newline
         │   ├── name: :some_method
         │   ├── name_loc: (26,4)-(26,15) = "some_method"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (26,18)-(26,44))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RescueModifierNode (location: (26,18)-(26,44))
+        │   │           ├── flags: newline
         │   │           ├── expression:
         │   │           │   @ CallNode (location: (26,18)-(26,33))
         │   │           │   ├── flags: ignore_visibility
@@ -346,13 +390,14 @@
         │   │           │   │   ├── flags: ∅
         │   │           │   │   └── arguments: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (26,31)-(26,33))
-        │   │           │   │           ├── flags: decimal
+        │   │           │   │           ├── flags: static_literal, decimal
         │   │           │   │           └── value: 42
         │   │           │   ├── closing_loc: ∅
         │   │           │   └── block: ∅
         │   │           ├── keyword_loc: (26,34)-(26,40) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (26,41)-(26,44))
+        │   │               └── flags: static_literal
         │   ├── locals: []
         │   ├── def_keyword_loc: (26,0)-(26,3) = "def"
         │   ├── operator_loc: ∅
@@ -361,18 +406,21 @@
         │   ├── equal_loc: (26,16)-(26,17) = "="
         │   └── end_keyword_loc: ∅
         ├── @ DefNode (location: (28,0)-(31,3))
+        │   ├── flags: newline
         │   ├── name: :a
         │   ├── name_loc: (28,4)-(28,5) = "a"
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ BeginNode (location: (28,0)-(31,3))
+        │   │   ├── flags: ∅
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (29,2)-(29,6))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (29,2)-(29,6))
-        │   │   │           ├── flags: ignore_visibility
+        │   │   │           ├── flags: newline, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :a
@@ -386,15 +434,17 @@
         │   │   │           │           ├── flags: symbol_keys
         │   │   │           │           └── elements: (length: 1)
         │   │   │           │               └── @ AssocNode (location: (29,4)-(29,6))
+        │   │   │           │                   ├── flags: ∅
         │   │   │           │                   ├── key:
         │   │   │           │                   │   @ SymbolNode (location: (29,4)-(29,6))
-        │   │   │           │                   │   ├── flags: forced_us_ascii_encoding
+        │   │   │           │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │           │                   │   ├── opening_loc: ∅
         │   │   │           │                   │   ├── value_loc: (29,4)-(29,5) = "b"
         │   │   │           │                   │   ├── closing_loc: (29,5)-(29,6) = ":"
         │   │   │           │                   │   └── unescaped: "b"
         │   │   │           │                   ├── value:
         │   │   │           │                   │   @ ImplicitNode (location: (29,4)-(29,6))
+        │   │   │           │                   │   ├── flags: ∅
         │   │   │           │                   │   └── value:
         │   │   │           │                   │       @ CallNode (location: (29,4)-(29,6))
         │   │   │           │                   │       ├── flags: ignore_visibility
@@ -411,6 +461,7 @@
         │   │   │           └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (30,0)-(30,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (30,0)-(30,6) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: ∅
@@ -428,8 +479,10 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (31,0)-(31,3) = "end"
         ├── @ RescueModifierNode (location: (33,0)-(33,21))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ IfNode (location: (33,0)-(33,10))
+        │   │   ├── flags: newline
         │   │   ├── if_keyword_loc: (33,4)-(33,6) = "if"
         │   │   ├── predicate:
         │   │   │   @ CallNode (location: (33,7)-(33,10))
@@ -445,9 +498,10 @@
         │   │   ├── then_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (33,0)-(33,3))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (33,0)-(33,3))
-        │   │   │           ├── flags: variable_call, ignore_visibility
+        │   │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :foo
@@ -471,11 +525,13 @@
         │       ├── closing_loc: ∅
         │       └── block: ∅
         └── @ LocalVariableWriteNode (location: (35,0)-(35,18))
+            ├── flags: newline
             ├── name: :z
             ├── depth: 0
             ├── name_loc: (35,0)-(35,1) = "z"
             ├── value:
             │   @ RescueModifierNode (location: (35,4)-(35,18))
+            │   ├── flags: ∅
             │   ├── expression:
             │   │   @ CallNode (location: (35,4)-(35,7))
             │   │   ├── flags: ignore_visibility

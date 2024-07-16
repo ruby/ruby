@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(1,17))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,17))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,17))
+            ├── flags: newline
             ├── name: :!
             ├── name_loc: (1,4)-(1,6) = "!@"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:
             │   @ StatementsNode (location: (1,8)-(1,12))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ TrueNode (location: (1,8)-(1,12))
+            │           └── flags: newline, static_literal
             ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

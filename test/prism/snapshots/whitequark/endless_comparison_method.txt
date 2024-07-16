@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(11,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(11,28))
+    ├── flags: ∅
     └── body: (length: 6)
         ├── @ DefNode (location: (1,0)-(1,28))
+        │   ├── flags: newline
         │   ├── name: :!=
         │   ├── name_loc: (1,4)-(1,6) = "!="
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (1,7)-(1,12))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,7)-(1,12))
         │   │   │       ├── flags: ∅
@@ -21,9 +25,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (1,16)-(1,28))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,28))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -40,11 +45,13 @@
         │   ├── equal_loc: (1,14)-(1,15) = "="
         │   └── end_keyword_loc: ∅
         ├── @ DefNode (location: (3,0)-(3,28))
+        │   ├── flags: newline
         │   ├── name: :!=
         │   ├── name_loc: (3,4)-(3,6) = "!="
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (3,7)-(3,12))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (3,7)-(3,12))
         │   │   │       ├── flags: ∅
@@ -57,9 +64,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (3,16)-(3,28))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,16)-(3,28))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -76,11 +84,13 @@
         │   ├── equal_loc: (3,14)-(3,15) = "="
         │   └── end_keyword_loc: ∅
         ├── @ DefNode (location: (5,0)-(5,28))
+        │   ├── flags: newline
         │   ├── name: :<=
         │   ├── name_loc: (5,4)-(5,6) = "<="
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (5,7)-(5,12))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (5,7)-(5,12))
         │   │   │       ├── flags: ∅
@@ -93,9 +103,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (5,16)-(5,28))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,16)-(5,28))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -112,11 +123,13 @@
         │   ├── equal_loc: (5,14)-(5,15) = "="
         │   └── end_keyword_loc: ∅
         ├── @ DefNode (location: (7,0)-(7,28))
+        │   ├── flags: newline
         │   ├── name: :==
         │   ├── name_loc: (7,4)-(7,6) = "=="
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (7,7)-(7,12))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (7,7)-(7,12))
         │   │   │       ├── flags: ∅
@@ -129,9 +142,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (7,16)-(7,28))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,16)-(7,28))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -148,11 +162,13 @@
         │   ├── equal_loc: (7,14)-(7,15) = "="
         │   └── end_keyword_loc: ∅
         ├── @ DefNode (location: (9,0)-(9,29))
+        │   ├── flags: newline
         │   ├── name: :===
         │   ├── name_loc: (9,4)-(9,7) = "==="
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (9,8)-(9,13))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (9,8)-(9,13))
         │   │   │       ├── flags: ∅
@@ -165,9 +181,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (9,17)-(9,29))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (9,17)-(9,29))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -184,11 +201,13 @@
         │   ├── equal_loc: (9,15)-(9,16) = "="
         │   └── end_keyword_loc: ∅
         └── @ DefNode (location: (11,0)-(11,28))
+            ├── flags: newline
             ├── name: :>=
             ├── name_loc: (11,4)-(11,6) = ">="
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (11,7)-(11,12))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (11,7)-(11,12))
             │   │       ├── flags: ∅
@@ -201,9 +220,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (11,16)-(11,28))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (11,16)-(11,28))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :do_something

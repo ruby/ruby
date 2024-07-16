@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,0)-(4,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,7))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ SourceEncodingNode (location: (1,0)-(1,12))
+        │   └── flags: newline, static_literal
         ├── @ SourceFileNode (location: (2,0)-(2,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   └── filepath: "unparser/corpus/literal/pragma.txt"
         ├── @ SourceLineNode (location: (3,0)-(3,8))
+        │   └── flags: newline, static_literal
         └── @ CallNode (location: (4,0)-(4,7))
-            ├── flags: variable_call, ignore_visibility
+            ├── flags: newline, variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :__dir__

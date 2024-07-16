@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,23))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,23))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,23))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (1,4)-(1,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,8)-(1,9))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -23,9 +27,10 @@
             │       └── operator_loc: (1,8)-(1,9) = "&"
             ├── body:
             │   @ StatementsNode (location: (1,12)-(1,17))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,12)-(1,17))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -35,6 +40,7 @@
             │           ├── closing_loc: (1,17)-(1,18) = ")"
             │           └── block:
             │               @ BlockArgumentNode (location: (1,16)-(1,17))
+            │               ├── flags: ∅
             │               ├── expression: ∅
             │               └── operator_loc: (1,16)-(1,17) = "&"
             ├── locals: []

@@ -1,18 +1,23 @@
 @ ProgramNode (location: (1,0)-(5,18))
+├── flags: ∅
 ├── locals: [:foo]
 └── statements:
     @ StatementsNode (location: (1,0)-(5,18))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ MultiWriteNode (location: (1,0)-(1,17))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallTargetNode (location: (1,0)-(1,6))
         │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── call_operator_loc: (1,4)-(1,5) = "."
         │   │   │   ├── name: :A=
         │   │   │   └── message_loc: (1,5)-(1,6) = "A"
         │   │   └── @ LocalVariableTargetNode (location: (1,8)-(1,11))
+        │   │       ├── flags: ∅
         │   │       ├── name: :foo
         │   │       └── depth: 0
         │   ├── rest: ∅
@@ -22,14 +27,17 @@
         │   ├── operator_loc: (1,12)-(1,13) = "="
         │   └── value:
         │       @ LocalVariableReadNode (location: (1,14)-(1,17))
+        │       ├── flags: ∅
         │       ├── name: :foo
         │       └── depth: 0
         ├── @ MultiWriteNode (location: (3,0)-(3,24))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallTargetNode (location: (3,0)-(3,6))
         │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
+        │   │   │   │   └── flags: ∅
         │   │   │   ├── call_operator_loc: (3,4)-(3,5) = "."
         │   │   │   ├── name: :a=
         │   │   │   └── message_loc: (3,5)-(3,6) = "a"
@@ -37,16 +45,17 @@
         │   │       ├── flags: attribute_write, ignore_visibility
         │   │       ├── receiver:
         │   │       │   @ SelfNode (location: (3,8)-(3,12))
+        │   │       │   └── flags: ∅
         │   │       ├── opening_loc: (3,12)-(3,13) = "["
         │   │       ├── arguments:
         │   │       │   @ ArgumentsNode (location: (3,13)-(3,17))
         │   │       │   ├── flags: ∅
         │   │       │   └── arguments: (length: 2)
         │   │       │       ├── @ IntegerNode (location: (3,13)-(3,14))
-        │   │       │       │   ├── flags: decimal
+        │   │       │       │   ├── flags: static_literal, decimal
         │   │       │       │   └── value: 1
         │   │       │       └── @ IntegerNode (location: (3,16)-(3,17))
-        │   │       │           ├── flags: decimal
+        │   │       │           ├── flags: static_literal, decimal
         │   │       │           └── value: 2
         │   │       ├── closing_loc: (3,17)-(3,18) = "]"
         │   │       └── block: ∅
@@ -57,18 +66,22 @@
         │   ├── operator_loc: (3,19)-(3,20) = "="
         │   └── value:
         │       @ LocalVariableReadNode (location: (3,21)-(3,24))
+        │       ├── flags: ∅
         │       ├── name: :foo
         │       └── depth: 0
         └── @ MultiWriteNode (location: (5,0)-(5,18))
+            ├── flags: newline
             ├── lefts: (length: 2)
             │   ├── @ CallTargetNode (location: (5,0)-(5,7))
             │   │   ├── flags: ignore_visibility
             │   │   ├── receiver:
             │   │   │   @ SelfNode (location: (5,0)-(5,4))
+            │   │   │   └── flags: ∅
             │   │   ├── call_operator_loc: (5,4)-(5,6) = "::"
             │   │   ├── name: :a=
             │   │   └── message_loc: (5,6)-(5,7) = "a"
             │   └── @ LocalVariableTargetNode (location: (5,9)-(5,12))
+            │       ├── flags: ∅
             │       ├── name: :foo
             │       └── depth: 0
             ├── rest: ∅
@@ -78,5 +91,6 @@
             ├── operator_loc: (5,13)-(5,14) = "="
             └── value:
                 @ LocalVariableReadNode (location: (5,15)-(5,18))
+                ├── flags: ∅
                 ├── name: :foo
                 └── depth: 0

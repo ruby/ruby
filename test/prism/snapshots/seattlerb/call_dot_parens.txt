@@ -1,13 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,4))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,4))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ IntegerNode (location: (1,0)-(1,1))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── call_operator_loc: (1,1)-(1,2) = "."
             ├── name: :call

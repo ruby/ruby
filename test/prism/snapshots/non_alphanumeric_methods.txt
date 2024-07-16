@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(105,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(105,3))
+    ├── flags: ∅
     └── body: (length: 36)
         ├── @ DefNode (location: (1,0)-(2,3))
+        │   ├── flags: newline
         │   ├── name: :!
         │   ├── name_loc: (1,4)-(1,5) = "!"
         │   ├── receiver: ∅
@@ -17,6 +20,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (2,0)-(2,3) = "end"
         ├── @ DefNode (location: (4,0)-(5,3))
+        │   ├── flags: newline
         │   ├── name: :!=
         │   ├── name_loc: (4,4)-(4,6) = "!="
         │   ├── receiver: ∅
@@ -30,6 +34,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ DefNode (location: (7,0)-(8,3))
+        │   ├── flags: newline
         │   ├── name: :!~
         │   ├── name_loc: (7,4)-(7,6) = "!~"
         │   ├── receiver: ∅
@@ -43,6 +48,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (8,0)-(8,3) = "end"
         ├── @ DefNode (location: (10,0)-(11,3))
+        │   ├── flags: newline
         │   ├── name: :%
         │   ├── name_loc: (10,4)-(10,5) = "%"
         │   ├── receiver: ∅
@@ -56,10 +62,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ DefNode (location: (13,0)-(14,3))
+        │   ├── flags: newline
         │   ├── name: :+
         │   ├── name_loc: (13,9)-(13,10) = "+"
         │   ├── receiver:
         │   │   @ SelfNode (location: (13,4)-(13,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -70,6 +78,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (14,0)-(14,3) = "end"
         ├── @ DefNode (location: (16,0)-(17,3))
+        │   ├── flags: newline
         │   ├── name: :&
         │   ├── name_loc: (16,4)-(16,5) = "&"
         │   ├── receiver: ∅
@@ -83,6 +92,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (17,0)-(17,3) = "end"
         ├── @ DefNode (location: (19,0)-(20,3))
+        │   ├── flags: newline
         │   ├── name: :*
         │   ├── name_loc: (19,4)-(19,5) = "*"
         │   ├── receiver: ∅
@@ -96,6 +106,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (20,0)-(20,3) = "end"
         ├── @ DefNode (location: (22,0)-(23,3))
+        │   ├── flags: newline
         │   ├── name: :**
         │   ├── name_loc: (22,4)-(22,6) = "**"
         │   ├── receiver: ∅
@@ -109,17 +120,19 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (23,0)-(23,3) = "end"
         ├── @ StringNode (location: (25,0)-(25,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (25,0)-(25,2) = "%|"
         │   ├── content_loc: (25,2)-(25,5) = "abc"
         │   ├── closing_loc: (25,5)-(25,6) = "|"
         │   └── unescaped: "abc"
         ├── @ DefNode (location: (27,0)-(28,3))
+        │   ├── flags: newline
         │   ├── name: :+
         │   ├── name_loc: (27,4)-(27,5) = "+"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (27,6)-(27,9))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -141,6 +154,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (28,0)-(28,3) = "end"
         ├── @ DefNode (location: (30,0)-(31,3))
+        │   ├── flags: newline
         │   ├── name: :+
         │   ├── name_loc: (30,4)-(30,5) = "+"
         │   ├── receiver: ∅
@@ -154,11 +168,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (31,0)-(31,3) = "end"
         ├── @ DefNode (location: (33,0)-(34,3))
+        │   ├── flags: newline
         │   ├── name: :+
         │   ├── name_loc: (33,4)-(33,5) = "+"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (33,6)-(33,7))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (33,6)-(33,7))
         │   │   │       ├── flags: ∅
@@ -178,10 +194,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (34,0)-(34,3) = "end"
         ├── @ DefNode (location: (36,0)-(37,3))
+        │   ├── flags: newline
         │   ├── name: :+
         │   ├── name_loc: (36,9)-(36,10) = "+"
         │   ├── receiver:
         │   │   @ SelfNode (location: (36,4)-(36,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -192,6 +210,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         ├── @ DefNode (location: (39,0)-(40,3))
+        │   ├── flags: newline
         │   ├── name: :+
         │   ├── name_loc: (39,4)-(39,5) = "+"
         │   ├── receiver: ∅
@@ -205,6 +224,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (40,0)-(40,3) = "end"
         ├── @ DefNode (location: (42,0)-(43,3))
+        │   ├── flags: newline
         │   ├── name: :+@
         │   ├── name_loc: (42,4)-(42,6) = "+@"
         │   ├── receiver: ∅
@@ -218,6 +238,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         ├── @ DefNode (location: (45,0)-(46,3))
+        │   ├── flags: newline
         │   ├── name: :-
         │   ├── name_loc: (45,4)-(45,5) = "-"
         │   ├── receiver: ∅
@@ -231,6 +252,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (46,0)-(46,3) = "end"
         ├── @ DefNode (location: (48,0)-(48,11))
+        │   ├── flags: newline
         │   ├── name: :-
         │   ├── name_loc: (48,6)-(48,7) = "-"
         │   ├── receiver:
@@ -254,6 +276,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (48,8)-(48,11) = "end"
         ├── @ DefNode (location: (50,0)-(51,3))
+        │   ├── flags: newline
         │   ├── name: :-@
         │   ├── name_loc: (50,4)-(50,6) = "-@"
         │   ├── receiver: ∅
@@ -267,6 +290,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (51,0)-(51,3) = "end"
         ├── @ DefNode (location: (53,0)-(54,3))
+        │   ├── flags: newline
         │   ├── name: :/
         │   ├── name_loc: (53,4)-(53,5) = "/"
         │   ├── receiver: ∅
@@ -280,6 +304,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (54,0)-(54,3) = "end"
         ├── @ DefNode (location: (56,0)-(57,3))
+        │   ├── flags: newline
         │   ├── name: :<
         │   ├── name_loc: (56,4)-(56,5) = "<"
         │   ├── receiver: ∅
@@ -293,6 +318,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (57,0)-(57,3) = "end"
         ├── @ DefNode (location: (59,0)-(60,3))
+        │   ├── flags: newline
         │   ├── name: :<<
         │   ├── name_loc: (59,4)-(59,6) = "<<"
         │   ├── receiver: ∅
@@ -306,6 +332,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (60,0)-(60,3) = "end"
         ├── @ DefNode (location: (62,0)-(63,3))
+        │   ├── flags: newline
         │   ├── name: :<=
         │   ├── name_loc: (62,4)-(62,6) = "<="
         │   ├── receiver: ∅
@@ -319,6 +346,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (63,0)-(63,3) = "end"
         ├── @ DefNode (location: (65,0)-(66,3))
+        │   ├── flags: newline
         │   ├── name: :<=>
         │   ├── name_loc: (65,4)-(65,7) = "<=>"
         │   ├── receiver: ∅
@@ -332,6 +360,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (66,0)-(66,3) = "end"
         ├── @ DefNode (location: (68,0)-(69,3))
+        │   ├── flags: newline
         │   ├── name: :==
         │   ├── name_loc: (68,4)-(68,6) = "=="
         │   ├── receiver: ∅
@@ -345,6 +374,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (69,0)-(69,3) = "end"
         ├── @ DefNode (location: (71,0)-(72,3))
+        │   ├── flags: newline
         │   ├── name: :===
         │   ├── name_loc: (71,4)-(71,7) = "==="
         │   ├── receiver: ∅
@@ -358,6 +388,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (72,0)-(72,3) = "end"
         ├── @ DefNode (location: (74,0)-(75,3))
+        │   ├── flags: newline
         │   ├── name: :=~
         │   ├── name_loc: (74,4)-(74,6) = "=~"
         │   ├── receiver: ∅
@@ -371,6 +402,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (75,0)-(75,3) = "end"
         ├── @ DefNode (location: (77,0)-(78,3))
+        │   ├── flags: newline
         │   ├── name: :>
         │   ├── name_loc: (77,4)-(77,5) = ">"
         │   ├── receiver: ∅
@@ -384,6 +416,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (78,0)-(78,3) = "end"
         ├── @ DefNode (location: (80,0)-(81,3))
+        │   ├── flags: newline
         │   ├── name: :>=
         │   ├── name_loc: (80,4)-(80,6) = ">="
         │   ├── receiver: ∅
@@ -397,6 +430,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (81,0)-(81,3) = "end"
         ├── @ DefNode (location: (83,0)-(84,3))
+        │   ├── flags: newline
         │   ├── name: :>>
         │   ├── name_loc: (83,4)-(83,6) = ">>"
         │   ├── receiver: ∅
@@ -410,6 +444,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (84,0)-(84,3) = "end"
         ├── @ DefNode (location: (86,0)-(87,3))
+        │   ├── flags: newline
         │   ├── name: :[]
         │   ├── name_loc: (86,4)-(86,6) = "[]"
         │   ├── receiver: ∅
@@ -423,6 +458,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (87,0)-(87,3) = "end"
         ├── @ DefNode (location: (89,0)-(90,3))
+        │   ├── flags: newline
         │   ├── name: :[]=
         │   ├── name_loc: (89,4)-(89,7) = "[]="
         │   ├── receiver: ∅
@@ -436,6 +472,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (90,0)-(90,3) = "end"
         ├── @ DefNode (location: (92,0)-(93,3))
+        │   ├── flags: newline
         │   ├── name: :^
         │   ├── name_loc: (92,4)-(92,5) = "^"
         │   ├── receiver: ∅
@@ -449,6 +486,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (93,0)-(93,3) = "end"
         ├── @ DefNode (location: (95,0)-(96,3))
+        │   ├── flags: newline
         │   ├── name: :`
         │   ├── name_loc: (95,4)-(95,5) = "`"
         │   ├── receiver: ∅
@@ -462,10 +500,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (96,0)-(96,3) = "end"
         ├── @ DefNode (location: (98,0)-(99,3))
+        │   ├── flags: newline
         │   ├── name: :`
         │   ├── name_loc: (98,9)-(98,10) = "`"
         │   ├── receiver:
         │   │   @ SelfNode (location: (98,4)-(98,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -476,6 +516,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (99,0)-(99,3) = "end"
         ├── @ DefNode (location: (101,0)-(102,3))
+        │   ├── flags: newline
         │   ├── name: :|
         │   ├── name_loc: (101,4)-(101,5) = "|"
         │   ├── receiver: ∅
@@ -489,6 +530,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (102,0)-(102,3) = "end"
         └── @ DefNode (location: (104,0)-(105,3))
+            ├── flags: newline
             ├── name: :~
             ├── name_loc: (104,4)-(104,5) = "~"
             ├── receiver: ∅

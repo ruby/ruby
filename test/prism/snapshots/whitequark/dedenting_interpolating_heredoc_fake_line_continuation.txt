@@ -1,20 +1,22 @@
 @ ProgramNode (location: (1,0)-(1,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,8))
-            ├── flags: ∅
+            ├── flags: newline, static_literal
             ├── opening_loc: (1,0)-(1,8) = "<<~'FOO'"
             ├── parts: (length: 2)
             │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (2,0)-(3,0) = "  baz\\\\\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "baz\\\\\n"
             │   └── @ StringNode (location: (3,0)-(4,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (3,0)-(4,0) = "  qux\n"
             │       ├── closing_loc: ∅

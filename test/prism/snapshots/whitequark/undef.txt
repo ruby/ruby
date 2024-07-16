@@ -1,38 +1,44 @@
 @ ProgramNode (location: (1,0)-(1,27))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,27))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ UndefNode (location: (1,0)-(1,27))
+            ├── flags: newline
             ├── names: (length: 3)
             │   ├── @ SymbolNode (location: (1,6)-(1,9))
-            │   │   ├── flags: forced_us_ascii_encoding
+            │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,6)-(1,9) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   ├── @ SymbolNode (location: (1,11)-(1,15))
-            │   │   ├── flags: forced_us_ascii_encoding
+            │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   ├── opening_loc: (1,11)-(1,12) = ":"
             │   │   ├── value_loc: (1,12)-(1,15) = "bar"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "bar"
             │   └── @ InterpolatedSymbolNode (location: (1,17)-(1,27))
+            │       ├── flags: ∅
             │       ├── opening_loc: (1,17)-(1,19) = ":\""
             │       ├── parts: (length: 2)
             │       │   ├── @ StringNode (location: (1,19)-(1,22))
-            │       │   │   ├── flags: frozen
+            │       │   │   ├── flags: static_literal, frozen
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── content_loc: (1,19)-(1,22) = "foo"
             │       │   │   ├── closing_loc: ∅
             │       │   │   └── unescaped: "foo"
             │       │   └── @ EmbeddedStatementsNode (location: (1,22)-(1,26))
+            │       │       ├── flags: ∅
             │       │       ├── opening_loc: (1,22)-(1,24) = "\#{"
             │       │       ├── statements:
             │       │       │   @ StatementsNode (location: (1,24)-(1,25))
+            │       │       │   ├── flags: ∅
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ IntegerNode (location: (1,24)-(1,25))
-            │       │       │           ├── flags: decimal
+            │       │       │           ├── flags: static_literal, decimal
             │       │       │           └── value: 1
             │       │       └── closing_loc: (1,25)-(1,26) = "}"
             │       └── closing_loc: (1,26)-(1,27) = "\""

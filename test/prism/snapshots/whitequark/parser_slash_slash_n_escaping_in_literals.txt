@@ -1,19 +1,21 @@
 @ ProgramNode (location: (1,0)-(62,2))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(62,2))
+    ├── flags: ∅
     └── body: (length: 19)
         ├── @ StringNode (location: (1,0)-(2,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,1) = "\""
         │   ├── content_loc: (1,1)-(2,1) = "a\\\nb"
         │   ├── closing_loc: (2,1)-(2,2) = "\""
         │   └── unescaped: "ab"
         ├── @ ArrayNode (location: (4,0)-(5,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (4,3)-(5,1))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (4,3)-(5,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
@@ -21,13 +23,13 @@
         │   ├── opening_loc: (4,0)-(4,3) = "%I{"
         │   └── closing_loc: (5,1)-(5,2) = "}"
         ├── @ StringNode (location: (7,0)-(8,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (7,0)-(7,3) = "%Q{"
         │   ├── content_loc: (7,3)-(8,1) = "a\\\nb"
         │   ├── closing_loc: (8,1)-(8,2) = "}"
         │   └── unescaped: "ab"
         ├── @ ArrayNode (location: (10,0)-(11,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (10,3)-(11,1))
         │   │       ├── flags: ∅
@@ -38,10 +40,10 @@
         │   ├── opening_loc: (10,0)-(10,3) = "%W{"
         │   └── closing_loc: (11,1)-(11,2) = "}"
         ├── @ ArrayNode (location: (13,0)-(14,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline, static_literal
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (13,3)-(14,1))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (13,3)-(14,1) = "a\\\nb"
         │   │       ├── closing_loc: ∅
@@ -49,25 +51,25 @@
         │   ├── opening_loc: (13,0)-(13,3) = "%i{"
         │   └── closing_loc: (14,1)-(14,2) = "}"
         ├── @ StringNode (location: (16,0)-(17,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (16,0)-(16,3) = "%q{"
         │   ├── content_loc: (16,3)-(17,1) = "a\\\nb"
         │   ├── closing_loc: (17,1)-(17,2) = "}"
         │   └── unescaped: "a\\\nb"
         ├── @ RegularExpressionNode (location: (19,0)-(20,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (19,0)-(19,3) = "%r{"
         │   ├── content_loc: (19,3)-(20,1) = "a\\\nb"
         │   ├── closing_loc: (20,1)-(20,2) = "}"
         │   └── unescaped: "ab"
         ├── @ SymbolNode (location: (22,0)-(23,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (22,0)-(22,3) = "%s{"
         │   ├── value_loc: (22,3)-(23,1) = "a\\\nb"
         │   ├── closing_loc: (23,1)-(23,2) = "}"
         │   └── unescaped: "a\\\nb"
         ├── @ ArrayNode (location: (25,0)-(26,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (25,3)-(26,1))
         │   │       ├── flags: ∅
@@ -78,61 +80,61 @@
         │   ├── opening_loc: (25,0)-(25,3) = "%w{"
         │   └── closing_loc: (26,1)-(26,2) = "}"
         ├── @ XStringNode (location: (28,0)-(29,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (28,0)-(28,3) = "%x{"
         │   ├── content_loc: (28,3)-(29,1) = "a\\\nb"
         │   ├── closing_loc: (29,1)-(29,2) = "}"
         │   └── unescaped: "ab"
         ├── @ StringNode (location: (31,0)-(32,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (31,0)-(31,2) = "%{"
         │   ├── content_loc: (31,2)-(32,1) = "a\\\nb"
         │   ├── closing_loc: (32,1)-(32,2) = "}"
         │   └── unescaped: "ab"
         ├── @ StringNode (location: (34,0)-(35,2))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (34,0)-(34,1) = "'"
         │   ├── content_loc: (34,1)-(35,1) = "a\\\nb"
         │   ├── closing_loc: (35,1)-(35,2) = "'"
         │   └── unescaped: "a\\\nb"
         ├── @ RegularExpressionNode (location: (37,0)-(38,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (37,0)-(37,1) = "/"
         │   ├── content_loc: (37,1)-(38,1) = "a\\\nb"
         │   ├── closing_loc: (38,1)-(38,2) = "/"
         │   └── unescaped: "ab"
         ├── @ SymbolNode (location: (40,0)-(41,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (40,0)-(40,2) = ":\""
         │   ├── value_loc: (40,2)-(41,1) = "a\\\nb"
         │   ├── closing_loc: (41,1)-(41,2) = "\""
         │   └── unescaped: "ab"
         ├── @ SymbolNode (location: (43,0)-(44,2))
-        │   ├── flags: forced_us_ascii_encoding
+        │   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   ├── opening_loc: (43,0)-(43,2) = ":'"
         │   ├── value_loc: (43,2)-(44,1) = "a\\\nb"
         │   ├── closing_loc: (44,1)-(44,2) = "'"
         │   └── unescaped: "a\\\nb"
         ├── @ StringNode (location: (46,0)-(46,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (46,0)-(46,9) = "<<-\"HERE\""
         │   ├── content_loc: (47,0)-(49,0) = "a\\\nb\n"
         │   ├── closing_loc: (49,0)-(50,0) = "HERE\n"
         │   └── unescaped: "ab\n"
         ├── @ StringNode (location: (51,0)-(51,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (51,0)-(51,9) = "<<-'HERE'"
         │   ├── content_loc: (52,0)-(54,0) = "a\\\nb\n"
         │   ├── closing_loc: (54,0)-(55,0) = "HERE\n"
         │   └── unescaped: "a\\\nb\n"
         ├── @ XStringNode (location: (56,0)-(56,9))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (56,0)-(56,9) = "<<-`HERE`"
         │   ├── content_loc: (57,0)-(59,0) = "a\\\nb\n"
         │   ├── closing_loc: (59,0)-(60,0) = "HERE\n"
         │   └── unescaped: "ab\n"
         └── @ XStringNode (location: (61,0)-(62,2))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (61,0)-(61,1) = "`"
             ├── content_loc: (61,1)-(62,1) = "a\\\nb"
             ├── closing_loc: (62,1)-(62,2) = "`"

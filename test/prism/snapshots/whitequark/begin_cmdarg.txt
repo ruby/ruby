@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,28))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,28))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -15,15 +17,17 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ BeginNode (location: (1,2)-(1,28))
+            │           ├── flags: ∅
             │           ├── begin_keyword_loc: (1,2)-(1,7) = "begin"
             │           ├── statements:
             │           │   @ StatementsNode (location: (1,8)-(1,24))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ CallNode (location: (1,8)-(1,24))
-            │           │           ├── flags: ∅
+            │           │           ├── flags: newline
             │           │           ├── receiver:
             │           │           │   @ IntegerNode (location: (1,8)-(1,9))
-            │           │           │   ├── flags: decimal
+            │           │           │   ├── flags: static_literal, decimal
             │           │           │   └── value: 1
             │           │           ├── call_operator_loc: (1,9)-(1,10) = "."
             │           │           ├── name: :times
@@ -33,13 +37,15 @@
             │           │           ├── closing_loc: ∅
             │           │           └── block:
             │           │               @ BlockNode (location: (1,16)-(1,24))
+            │           │               ├── flags: ∅
             │           │               ├── locals: []
             │           │               ├── parameters: ∅
             │           │               ├── body:
             │           │               │   @ StatementsNode (location: (1,19)-(1,20))
+            │           │               │   ├── flags: ∅
             │           │               │   └── body: (length: 1)
             │           │               │       └── @ IntegerNode (location: (1,19)-(1,20))
-            │           │               │           ├── flags: decimal
+            │           │               │           ├── flags: newline, static_literal, decimal
             │           │               │           └── value: 1
             │           │               ├── opening_loc: (1,16)-(1,18) = "do"
             │           │               └── closing_loc: (1,21)-(1,24) = "end"

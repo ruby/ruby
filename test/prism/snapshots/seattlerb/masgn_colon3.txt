@@ -1,16 +1,21 @@
 @ ProgramNode (location: (1,0)-(1,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,15))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ MultiWriteNode (location: (1,0)-(1,15))
+            ├── flags: newline
             ├── lefts: (length: 2)
             │   ├── @ ConstantPathTargetNode (location: (1,0)-(1,3))
+            │   │   ├── flags: ∅
             │   │   ├── parent: ∅
             │   │   ├── name: :A
             │   │   ├── delimiter_loc: (1,0)-(1,2) = "::"
             │   │   └── name_loc: (1,2)-(1,3) = "A"
             │   └── @ ConstantPathTargetNode (location: (1,5)-(1,8))
+            │       ├── flags: ∅
             │       ├── parent: ∅
             │       ├── name: :B
             │       ├── delimiter_loc: (1,5)-(1,7) = "::"
@@ -22,13 +27,13 @@
             ├── operator_loc: (1,9)-(1,10) = "="
             └── value:
                 @ ArrayNode (location: (1,11)-(1,15))
-                ├── flags: ∅
+                ├── flags: static_literal
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (1,11)-(1,12))
-                │   │   ├── flags: decimal
+                │   │   ├── flags: static_literal, decimal
                 │   │   └── value: 1
                 │   └── @ IntegerNode (location: (1,14)-(1,15))
-                │       ├── flags: decimal
+                │       ├── flags: static_literal, decimal
                 │       └── value: 2
                 ├── opening_loc: ∅
                 └── closing_loc: ∅

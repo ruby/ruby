@@ -1,10 +1,12 @@
 @ ProgramNode (location: (4,0)-(7,1))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (4,0)-(7,1))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ CallNode (location: (4,0)-(4,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -14,7 +16,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :b
@@ -24,7 +26,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (7,0)-(7,1))
-            ├── flags: variable_call, ignore_visibility
+            ├── flags: newline, variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :c

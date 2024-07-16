@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,6)-(4,7))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,6)-(4,7))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ HashNode (location: (1,6)-(4,7))
+            ├── flags: newline
             ├── opening_loc: (1,6)-(1,7) = "{"
             ├── elements: (length: 2)
             │   ├── @ AssocNode (location: (2,8)-(2,33))
+            │   │   ├── flags: ∅
             │   │   ├── key:
             │   │   │   @ SymbolNode (location: (2,8)-(2,10))
-            │   │   │   ├── flags: forced_us_ascii_encoding
+            │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── value_loc: (2,8)-(2,9) = "a"
             │   │   │   ├── closing_loc: (2,9)-(2,10) = ":"
@@ -26,12 +30,15 @@
             │   │   │   ├── closing_loc: ∅
             │   │   │   └── block:
             │   │   │       @ BlockNode (location: (2,18)-(2,33))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── locals: []
             │   │   │       ├── parameters: ∅
             │   │   │       ├── body:
             │   │   │       │   @ StatementsNode (location: (2,20)-(2,31))
+            │   │   │       │   ├── flags: ∅
             │   │   │       │   └── body: (length: 1)
             │   │   │       │       └── @ IfNode (location: (2,20)-(2,31))
+            │   │   │       │           ├── flags: newline
             │   │   │       │           ├── if_keyword_loc: ∅
             │   │   │       │           ├── predicate:
             │   │   │       │           │   @ CallNode (location: (2,20)-(2,21))
@@ -47,9 +54,10 @@
             │   │   │       │           ├── then_keyword_loc: (2,22)-(2,23) = "?"
             │   │   │       │           ├── statements:
             │   │   │       │           │   @ StatementsNode (location: (2,24)-(2,27))
+            │   │   │       │           │   ├── flags: ∅
             │   │   │       │           │   └── body: (length: 1)
             │   │   │       │           │       └── @ CallNode (location: (2,24)-(2,27))
-            │   │   │       │           │           ├── flags: ignore_visibility
+            │   │   │       │           │           ├── flags: newline, ignore_visibility
             │   │   │       │           │           ├── receiver: ∅
             │   │   │       │           │           ├── call_operator_loc: ∅
             │   │   │       │           │           ├── name: :c
@@ -60,12 +68,14 @@
             │   │   │       │           │           └── block: ∅
             │   │   │       │           ├── consequent:
             │   │   │       │           │   @ ElseNode (location: (2,28)-(2,31))
+            │   │   │       │           │   ├── flags: ∅
             │   │   │       │           │   ├── else_keyword_loc: (2,28)-(2,29) = ":"
             │   │   │       │           │   ├── statements:
             │   │   │       │           │   │   @ StatementsNode (location: (2,30)-(2,31))
+            │   │   │       │           │   │   ├── flags: ∅
             │   │   │       │           │   │   └── body: (length: 1)
             │   │   │       │           │   │       └── @ CallNode (location: (2,30)-(2,31))
-            │   │   │       │           │   │           ├── flags: variable_call, ignore_visibility
+            │   │   │       │           │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │   │       │           │   │           ├── receiver: ∅
             │   │   │       │           │   │           ├── call_operator_loc: ∅
             │   │   │       │           │   │           ├── name: :d
@@ -80,14 +90,16 @@
             │   │   │       └── closing_loc: (2,32)-(2,33) = "}"
             │   │   └── operator_loc: ∅
             │   └── @ AssocNode (location: (3,8)-(3,14))
+            │       ├── flags: static_literal
             │       ├── key:
             │       │   @ SymbolNode (location: (3,8)-(3,10))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: ∅
             │       │   ├── value_loc: (3,8)-(3,9) = "e"
             │       │   ├── closing_loc: (3,9)-(3,10) = ":"
             │       │   └── unescaped: "e"
             │       ├── value:
             │       │   @ NilNode (location: (3,11)-(3,14))
+            │       │   └── flags: static_literal
             │       └── operator_loc: ∅
             └── closing_loc: (4,6)-(4,7) = "}"

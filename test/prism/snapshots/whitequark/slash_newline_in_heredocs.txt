@@ -1,32 +1,34 @@
 @ ProgramNode (location: (1,0)-(8,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(8,4))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ StringNode (location: (1,0)-(1,4))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,4) = "<<-E"
         │   ├── content_loc: (2,0)-(5,0) = "    1 \\\n    2\n    3\n"
         │   ├── closing_loc: (5,0)-(6,0) = "E\n"
         │   └── unescaped: "    1     2\n    3\n"
         └── @ InterpolatedStringNode (location: (8,0)-(8,4))
-            ├── flags: ∅
+            ├── flags: newline, static_literal
             ├── opening_loc: (8,0)-(8,4) = "<<~E"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (9,0)-(10,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (9,0)-(10,0) = "    1 \\\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "1 "
             │   ├── @ StringNode (location: (10,0)-(11,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (10,0)-(11,0) = "    2\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "2\n"
             │   └── @ StringNode (location: (11,0)-(12,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (11,0)-(12,0) = "    3\n"
             │       ├── closing_loc: ∅

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(8,12))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(8,12))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ CallNode (location: (1,0)-(3,2))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -18,15 +20,17 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,2)-(3,1))
+        │   │                   ├── flags: ∅
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (1,2)-(1,8))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (1,2)-(1,7) = "state"
         │   │                   │   ├── closing_loc: (1,7)-(1,8) = ":"
         │   │                   │   └── unescaped: "state"
         │   │                   ├── value:
         │   │                   │   @ HashNode (location: (2,1)-(3,1))
+        │   │                   │   ├── flags: static_literal
         │   │                   │   ├── opening_loc: (2,1)-(2,2) = "{"
         │   │                   │   ├── elements: (length: 0)
         │   │                   │   └── closing_loc: (3,0)-(3,1) = "}"
@@ -34,7 +38,7 @@
         │   ├── closing_loc: (3,1)-(3,2) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(6,2))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -48,15 +52,17 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (5,2)-(6,1))
+        │   │                   ├── flags: ∅
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (5,2)-(5,8))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (5,2)-(5,7) = "state"
         │   │                   │   ├── closing_loc: (5,7)-(5,8) = ":"
         │   │                   │   └── unescaped: "state"
         │   │                   ├── value:
         │   │                   │   @ HashNode (location: (5,9)-(6,1))
+        │   │                   │   ├── flags: static_literal
         │   │                   │   ├── opening_loc: (5,9)-(5,10) = "{"
         │   │                   │   ├── elements: (length: 0)
         │   │                   │   └── closing_loc: (6,0)-(6,1) = "}"
@@ -64,7 +70,7 @@
         │   ├── closing_loc: (6,1)-(6,2) = ")"
         │   └── block: ∅
         └── @ CallNode (location: (8,0)-(8,12))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -78,15 +84,17 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (8,2)-(8,11))
+            │                   ├── flags: ∅
             │                   ├── key:
             │                   │   @ SymbolNode (location: (8,2)-(8,8))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (8,2)-(8,7) = "state"
             │                   │   ├── closing_loc: (8,7)-(8,8) = ":"
             │                   │   └── unescaped: "state"
             │                   ├── value:
             │                   │   @ HashNode (location: (8,9)-(8,11))
+            │                   │   ├── flags: static_literal
             │                   │   ├── opening_loc: (8,9)-(8,10) = "{"
             │                   │   ├── elements: (length: 0)
             │                   │   └── closing_loc: (8,10)-(8,11) = "}"

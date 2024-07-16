@@ -1,0 +1,4 @@
+def (a); end
+       ^ expected a `.` or `::` after the receiver in a method definition
+       ^ unexpected ';'; expected a method name
+

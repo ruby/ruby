@@ -171,11 +171,13 @@ module IRB
   end
 
   class ReadlineInputMethod < StdioInputMethod
-    def self.initialize_readline
-      require "readline"
-    rescue LoadError
-    else
-      include ::Readline
+    class << self
+      def initialize_readline
+        require "readline"
+      rescue LoadError
+      else
+        include ::Readline
+      end
     end
 
     include HistorySavingAbility

@@ -1,34 +1,40 @@
 @ ProgramNode (location: (1,0)-(13,20))
+├── flags: ∅
 ├── locals: [:baz]
 └── statements:
     @ StatementsNode (location: (1,0)-(13,20))
+    ├── flags: ∅
     └── body: (length: 7)
         ├── @ UntilNode (location: (1,0)-(1,18))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,0)-(1,5) = "until"
         │   ├── closing_loc: (1,15)-(1,18) = "end"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,6)-(1,10))
+        │   │   └── flags: static_literal
         │   └── statements:
         │       @ StatementsNode (location: (1,12)-(1,13))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (1,12)-(1,13))
-        │               ├── flags: decimal
+        │               ├── flags: newline, static_literal, decimal
         │               └── value: 1
         ├── @ UntilNode (location: (3,0)-(3,12))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,2)-(3,7) = "until"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ TrueNode (location: (3,8)-(3,12))
+        │   │   └── flags: static_literal
         │   └── statements:
         │       @ StatementsNode (location: (3,0)-(3,1))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ IntegerNode (location: (3,0)-(3,1))
-        │               ├── flags: decimal
+        │               ├── flags: newline, static_literal, decimal
         │               └── value: 1
         ├── @ CallNode (location: (5,0)-(5,24))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -38,27 +44,32 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,4)-(5,24))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (5,6)-(5,22))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ UntilNode (location: (5,6)-(5,22))
-        │       │           ├── flags: ∅
+        │       │           ├── flags: newline
         │       │           ├── keyword_loc: (5,12)-(5,17) = "until"
         │       │           ├── closing_loc: ∅
         │       │           ├── predicate:
         │       │           │   @ TrueNode (location: (5,18)-(5,22))
+        │       │           │   └── flags: static_literal
         │       │           └── statements:
         │       │               @ StatementsNode (location: (5,6)-(5,11))
+        │       │               ├── flags: ∅
         │       │               └── body: (length: 1)
         │       │                   └── @ BreakNode (location: (5,6)-(5,11))
+        │       │                       ├── flags: newline
         │       │                       ├── arguments: ∅
         │       │                       └── keyword_loc: (5,6)-(5,11) = "break"
         │       ├── opening_loc: (5,4)-(5,5) = "{"
         │       └── closing_loc: (5,23)-(5,24) = "}"
         ├── @ CallNode (location: (7,0)-(7,23))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :tap
@@ -68,40 +79,47 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,4)-(7,23))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (7,6)-(7,21))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ UntilNode (location: (7,6)-(7,21))
-        │       │           ├── flags: ∅
+        │       │           ├── flags: newline
         │       │           ├── keyword_loc: (7,11)-(7,16) = "until"
         │       │           ├── closing_loc: ∅
         │       │           ├── predicate:
         │       │           │   @ TrueNode (location: (7,17)-(7,21))
+        │       │           │   └── flags: static_literal
         │       │           └── statements:
         │       │               @ StatementsNode (location: (7,6)-(7,10))
+        │       │               ├── flags: ∅
         │       │               └── body: (length: 1)
         │       │                   └── @ NextNode (location: (7,6)-(7,10))
+        │       │                       ├── flags: newline
         │       │                       ├── arguments: ∅
         │       │                       └── keyword_loc: (7,6)-(7,10) = "next"
         │       ├── opening_loc: (7,4)-(7,5) = "{"
         │       └── closing_loc: (7,22)-(7,23) = "}"
         ├── @ UntilNode (location: (9,0)-(9,17))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (9,7)-(9,12) = "until"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ TrueNode (location: (9,13)-(9,17))
+        │   │   └── flags: static_literal
         │   └── statements:
         │       @ StatementsNode (location: (9,0)-(9,6))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ ReturnNode (location: (9,0)-(9,6))
-        │               ├── flags: ∅
+        │               ├── flags: newline
         │               ├── keyword_loc: (9,0)-(9,6) = "return"
         │               └── arguments: ∅
         ├── @ UntilNode (location: (11,0)-(11,21))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (11,11)-(11,16) = "until"
         │   ├── closing_loc: ∅
         │   ├── predicate:
@@ -117,9 +135,10 @@
         │   │   └── block: ∅
         │   └── statements:
         │       @ StatementsNode (location: (11,0)-(11,10))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (11,0)-(11,10))
-        │               ├── flags: ignore_visibility
+        │               ├── flags: newline, ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :foo
@@ -130,13 +149,13 @@
         │               │   ├── flags: ∅
         │               │   └── arguments: (length: 2)
         │               │       ├── @ SymbolNode (location: (11,4)-(11,6))
-        │               │       │   ├── flags: forced_us_ascii_encoding
+        │               │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │               │       │   ├── opening_loc: (11,4)-(11,5) = ":"
         │               │       │   ├── value_loc: (11,5)-(11,6) = "a"
         │               │       │   ├── closing_loc: ∅
         │               │       │   └── unescaped: "a"
         │               │       └── @ SymbolNode (location: (11,8)-(11,10))
-        │               │           ├── flags: forced_us_ascii_encoding
+        │               │           ├── flags: static_literal, forced_us_ascii_encoding
         │               │           ├── opening_loc: (11,8)-(11,9) = ":"
         │               │           ├── value_loc: (11,9)-(11,10) = "b"
         │               │           ├── closing_loc: ∅
@@ -144,11 +163,12 @@
         │               ├── closing_loc: ∅
         │               └── block: ∅
         └── @ WhileNode (location: (13,0)-(13,20))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (13,4)-(13,9) = "while"
             ├── closing_loc: ∅
             ├── predicate:
             │   @ MatchPredicateNode (location: (13,10)-(13,20))
+            │   ├── flags: ∅
             │   ├── value:
             │   │   @ CallNode (location: (13,10)-(13,13))
             │   │   ├── flags: variable_call, ignore_visibility
@@ -162,14 +182,16 @@
             │   │   └── block: ∅
             │   ├── pattern:
             │   │   @ LocalVariableTargetNode (location: (13,17)-(13,20))
+            │   │   ├── flags: ∅
             │   │   ├── name: :baz
             │   │   └── depth: 0
             │   └── operator_loc: (13,14)-(13,16) = "in"
             └── statements:
                 @ StatementsNode (location: (13,0)-(13,3))
+                ├── flags: ∅
                 └── body: (length: 1)
                     └── @ CallNode (location: (13,0)-(13,3))
-                        ├── flags: variable_call, ignore_visibility
+                        ├── flags: newline, variable_call, ignore_visibility
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
                         ├── name: :foo

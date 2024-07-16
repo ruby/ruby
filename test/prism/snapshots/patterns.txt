@@ -1,9 +1,12 @@
-@ ProgramNode (location: (1,0)-(217,5))
-├── locals: [:bar, :baz, :qux, :b, :a, :foo, :x]
+@ ProgramNode (location: (1,0)-(220,31))
+├── flags: ∅
+├── locals: [:bar, :baz, :qux, :b, :a, :foo, :x, :_a]
 └── statements:
-    @ StatementsNode (location: (1,0)-(217,5))
-    └── body: (length: 180)
+    @ StatementsNode (location: (1,0)-(220,31))
+    ├── flags: ∅
+    └── body: (length: 182)
         ├── @ MatchRequiredNode (location: (1,0)-(1,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -17,10 +20,12 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ LocalVariableTargetNode (location: (1,7)-(1,10))
+        │   │   ├── flags: ∅
         │   │   ├── name: :bar
         │   │   └── depth: 0
         │   └── operator_loc: (1,4)-(1,6) = "=>"
         ├── @ MatchRequiredNode (location: (2,0)-(2,8))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (2,0)-(2,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -34,10 +39,11 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ IntegerNode (location: (2,7)-(2,8))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (2,4)-(2,6) = "=>"
         ├── @ MatchRequiredNode (location: (3,0)-(3,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -51,9 +57,11 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FloatNode (location: (3,7)-(3,10))
+        │   │   ├── flags: static_literal
         │   │   └── value: 1.0
         │   └── operator_loc: (3,4)-(3,6) = "=>"
         ├── @ MatchRequiredNode (location: (4,0)-(4,9))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (4,0)-(4,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -67,12 +75,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ImaginaryNode (location: (4,7)-(4,9))
+        │   │   ├── flags: static_literal
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (4,7)-(4,8))
-        │   │       ├── flags: decimal
+        │   │       ├── flags: static_literal, decimal
         │   │       └── value: 1
         │   └── operator_loc: (4,4)-(4,6) = "=>"
         ├── @ MatchRequiredNode (location: (5,0)-(5,9))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (5,0)-(5,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -86,11 +96,12 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RationalNode (location: (5,7)-(5,9))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   ├── numerator: 1
         │   │   └── denominator: 1
         │   └── operator_loc: (5,4)-(5,6) = "=>"
         ├── @ MatchRequiredNode (location: (6,0)-(6,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (6,0)-(6,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -104,13 +115,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (6,7)-(6,11))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (6,7)-(6,8) = ":"
         │   │   ├── value_loc: (6,8)-(6,11) = "foo"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (6,4)-(6,6) = "=>"
         ├── @ MatchRequiredNode (location: (7,0)-(7,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (7,0)-(7,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -124,13 +136,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (7,7)-(7,14))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (7,7)-(7,10) = "%s["
         │   │   ├── value_loc: (7,10)-(7,13) = "foo"
         │   │   ├── closing_loc: (7,13)-(7,14) = "]"
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (7,4)-(7,6) = "=>"
         ├── @ MatchRequiredNode (location: (8,0)-(8,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (8,0)-(8,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -144,13 +157,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (8,7)-(8,13))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (8,7)-(8,9) = ":\""
         │   │   ├── value_loc: (8,9)-(8,12) = "foo"
         │   │   ├── closing_loc: (8,12)-(8,13) = "\""
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (8,4)-(8,6) = "=>"
         ├── @ MatchRequiredNode (location: (9,0)-(9,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (9,0)-(9,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -164,13 +178,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RegularExpressionNode (location: (9,7)-(9,12))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (9,7)-(9,8) = "/"
         │   │   ├── content_loc: (9,8)-(9,11) = "foo"
         │   │   ├── closing_loc: (9,11)-(9,12) = "/"
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (9,4)-(9,6) = "=>"
         ├── @ MatchRequiredNode (location: (10,0)-(10,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (10,0)-(10,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -191,6 +206,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (10,4)-(10,6) = "=>"
         ├── @ MatchRequiredNode (location: (11,0)-(11,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (11,0)-(11,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -211,6 +227,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (11,4)-(11,6) = "=>"
         ├── @ MatchRequiredNode (location: (12,0)-(12,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (12,0)-(12,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -224,10 +241,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayNode (location: (12,7)-(12,14))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (12,10)-(12,13))
-        │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (12,10)-(12,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -236,6 +253,7 @@
         │   │   └── closing_loc: (12,13)-(12,14) = "]"
         │   └── operator_loc: (12,4)-(12,6) = "=>"
         ├── @ MatchRequiredNode (location: (13,0)-(13,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (13,0)-(13,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -249,10 +267,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayNode (location: (13,7)-(13,14))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (13,10)-(13,13))
-        │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (13,10)-(13,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -261,6 +279,7 @@
         │   │   └── closing_loc: (13,13)-(13,14) = "]"
         │   └── operator_loc: (13,4)-(13,6) = "=>"
         ├── @ MatchRequiredNode (location: (14,0)-(14,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (14,0)-(14,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -286,6 +305,7 @@
         │   │   └── closing_loc: (14,13)-(14,14) = "]"
         │   └── operator_loc: (14,4)-(14,6) = "=>"
         ├── @ MatchRequiredNode (location: (15,0)-(15,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (15,0)-(15,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -311,6 +331,7 @@
         │   │   └── closing_loc: (15,13)-(15,14) = "]"
         │   └── operator_loc: (15,4)-(15,6) = "=>"
         ├── @ MatchRequiredNode (location: (16,0)-(16,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (16,0)-(16,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -331,6 +352,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (16,4)-(16,6) = "=>"
         ├── @ MatchRequiredNode (location: (17,0)-(17,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (17,0)-(17,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -351,6 +373,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (17,4)-(17,6) = "=>"
         ├── @ MatchRequiredNode (location: (18,0)-(18,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (18,0)-(18,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -371,6 +394,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (18,4)-(18,6) = "=>"
         ├── @ MatchRequiredNode (location: (19,0)-(19,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (19,0)-(19,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -384,8 +408,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ NilNode (location: (19,7)-(19,10))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (19,4)-(19,6) = "=>"
         ├── @ MatchRequiredNode (location: (20,0)-(20,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (20,0)-(20,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -399,8 +425,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SelfNode (location: (20,7)-(20,11))
+        │   │   └── flags: ∅
         │   └── operator_loc: (20,4)-(20,6) = "=>"
         ├── @ MatchRequiredNode (location: (21,0)-(21,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (21,0)-(21,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -414,8 +442,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ TrueNode (location: (21,7)-(21,11))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (21,4)-(21,6) = "=>"
         ├── @ MatchRequiredNode (location: (22,0)-(22,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (22,0)-(22,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -429,8 +459,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FalseNode (location: (22,7)-(22,12))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (22,4)-(22,6) = "=>"
         ├── @ MatchRequiredNode (location: (23,0)-(23,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (23,0)-(23,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -448,6 +480,7 @@
         │   │   └── filepath: "patterns.txt"
         │   └── operator_loc: (23,4)-(23,6) = "=>"
         ├── @ MatchRequiredNode (location: (24,0)-(24,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (24,0)-(24,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -461,8 +494,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SourceLineNode (location: (24,7)-(24,15))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (24,4)-(24,6) = "=>"
         ├── @ MatchRequiredNode (location: (25,0)-(25,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (25,0)-(25,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -476,8 +511,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SourceEncodingNode (location: (25,7)-(25,19))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (25,4)-(25,6) = "=>"
         ├── @ MatchRequiredNode (location: (26,0)-(26,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (26,0)-(26,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -491,6 +528,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ LambdaNode (location: (26,7)-(26,17))
+        │   │   ├── flags: ∅
         │   │   ├── locals: []
         │   │   ├── operator_loc: (26,7)-(26,9) = "->"
         │   │   ├── opening_loc: (26,10)-(26,11) = "{"
@@ -498,12 +536,15 @@
         │   │   ├── parameters: ∅
         │   │   └── body:
         │   │       @ StatementsNode (location: (26,12)-(26,15))
+        │   │       ├── flags: ∅
         │   │       └── body: (length: 1)
         │   │           └── @ LocalVariableReadNode (location: (26,12)-(26,15))
+        │   │               ├── flags: newline
         │   │               ├── name: :bar
         │   │               └── depth: 1
         │   └── operator_loc: (26,4)-(26,6) = "=>"
         ├── @ MatchRequiredNode (location: (28,0)-(28,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (28,0)-(28,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -517,18 +558,19 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RangeNode (location: (28,7)-(28,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ IntegerNode (location: (28,7)-(28,8))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── right:
         │   │   │   @ IntegerNode (location: (28,12)-(28,13))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   └── operator_loc: (28,9)-(28,11) = ".."
         │   └── operator_loc: (28,4)-(28,6) = "=>"
         ├── @ MatchRequiredNode (location: (29,0)-(29,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (29,0)-(29,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -545,13 +587,16 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ FloatNode (location: (29,7)-(29,10))
+        │   │   │   ├── flags: static_literal
         │   │   │   └── value: 1.0
         │   │   ├── right:
         │   │   │   @ FloatNode (location: (29,14)-(29,17))
+        │   │   │   ├── flags: static_literal
         │   │   │   └── value: 1.0
         │   │   └── operator_loc: (29,11)-(29,13) = ".."
         │   └── operator_loc: (29,4)-(29,6) = "=>"
         ├── @ MatchRequiredNode (location: (30,0)-(30,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (30,0)-(30,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -568,19 +613,22 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ ImaginaryNode (location: (30,7)-(30,9))
+        │   │   │   ├── flags: static_literal
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (30,7)-(30,8))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 1
         │   │   ├── right:
         │   │   │   @ ImaginaryNode (location: (30,13)-(30,15))
+        │   │   │   ├── flags: static_literal
         │   │   │   └── numeric:
         │   │   │       @ IntegerNode (location: (30,13)-(30,14))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 1
         │   │   └── operator_loc: (30,10)-(30,12) = ".."
         │   └── operator_loc: (30,4)-(30,6) = "=>"
         ├── @ MatchRequiredNode (location: (31,0)-(31,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (31,0)-(31,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -597,17 +645,18 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ RationalNode (location: (31,7)-(31,9))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   ├── numerator: 1
         │   │   │   └── denominator: 1
         │   │   ├── right:
         │   │   │   @ RationalNode (location: (31,13)-(31,15))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   ├── numerator: 1
         │   │   │   └── denominator: 1
         │   │   └── operator_loc: (31,10)-(31,12) = ".."
         │   └── operator_loc: (31,4)-(31,6) = "=>"
         ├── @ MatchRequiredNode (location: (32,0)-(32,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (32,0)-(32,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -624,14 +673,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SymbolNode (location: (32,7)-(32,11))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (32,7)-(32,8) = ":"
         │   │   │   ├── value_loc: (32,8)-(32,11) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ SymbolNode (location: (32,15)-(32,19))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (32,15)-(32,16) = ":"
         │   │   │   ├── value_loc: (32,16)-(32,19) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -639,6 +688,7 @@
         │   │   └── operator_loc: (32,12)-(32,14) = ".."
         │   └── operator_loc: (32,4)-(32,6) = "=>"
         ├── @ MatchRequiredNode (location: (33,0)-(33,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (33,0)-(33,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -655,14 +705,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SymbolNode (location: (33,7)-(33,14))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (33,7)-(33,10) = "%s["
         │   │   │   ├── value_loc: (33,10)-(33,13) = "foo"
         │   │   │   ├── closing_loc: (33,13)-(33,14) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ SymbolNode (location: (33,18)-(33,25))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (33,18)-(33,21) = "%s["
         │   │   │   ├── value_loc: (33,21)-(33,24) = "foo"
         │   │   │   ├── closing_loc: (33,24)-(33,25) = "]"
@@ -670,6 +720,7 @@
         │   │   └── operator_loc: (33,15)-(33,17) = ".."
         │   └── operator_loc: (33,4)-(33,6) = "=>"
         ├── @ MatchRequiredNode (location: (34,0)-(34,23))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (34,0)-(34,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -686,14 +737,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SymbolNode (location: (34,7)-(34,13))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (34,7)-(34,9) = ":\""
         │   │   │   ├── value_loc: (34,9)-(34,12) = "foo"
         │   │   │   ├── closing_loc: (34,12)-(34,13) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ SymbolNode (location: (34,17)-(34,23))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (34,17)-(34,19) = ":\""
         │   │   │   ├── value_loc: (34,19)-(34,22) = "foo"
         │   │   │   ├── closing_loc: (34,22)-(34,23) = "\""
@@ -701,6 +752,7 @@
         │   │   └── operator_loc: (34,14)-(34,16) = ".."
         │   └── operator_loc: (34,4)-(34,6) = "=>"
         ├── @ MatchRequiredNode (location: (35,0)-(35,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (35,0)-(35,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -717,14 +769,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ RegularExpressionNode (location: (35,7)-(35,12))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (35,7)-(35,8) = "/"
         │   │   │   ├── content_loc: (35,8)-(35,11) = "foo"
         │   │   │   ├── closing_loc: (35,11)-(35,12) = "/"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ RegularExpressionNode (location: (35,16)-(35,21))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (35,16)-(35,17) = "/"
         │   │   │   ├── content_loc: (35,17)-(35,20) = "foo"
         │   │   │   ├── closing_loc: (35,20)-(35,21) = "/"
@@ -732,6 +784,7 @@
         │   │   └── operator_loc: (35,13)-(35,15) = ".."
         │   └── operator_loc: (35,4)-(35,6) = "=>"
         ├── @ MatchRequiredNode (location: (36,0)-(36,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (36,0)-(36,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -763,6 +816,7 @@
         │   │   └── operator_loc: (36,13)-(36,15) = ".."
         │   └── operator_loc: (36,4)-(36,6) = "=>"
         ├── @ MatchRequiredNode (location: (37,0)-(37,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (37,0)-(37,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -794,6 +848,7 @@
         │   │   └── operator_loc: (37,15)-(37,17) = ".."
         │   └── operator_loc: (37,4)-(37,6) = "=>"
         ├── @ MatchRequiredNode (location: (38,0)-(38,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (38,0)-(38,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -810,10 +865,10 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ ArrayNode (location: (38,7)-(38,14))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (38,10)-(38,13))
-        │   │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (38,10)-(38,13) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -822,10 +877,10 @@
         │   │   │   └── closing_loc: (38,13)-(38,14) = "]"
         │   │   ├── right:
         │   │   │   @ ArrayNode (location: (38,18)-(38,25))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (38,21)-(38,24))
-        │   │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (38,21)-(38,24) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -835,6 +890,7 @@
         │   │   └── operator_loc: (38,15)-(38,17) = ".."
         │   └── operator_loc: (38,4)-(38,6) = "=>"
         ├── @ MatchRequiredNode (location: (39,0)-(39,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (39,0)-(39,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -851,10 +907,10 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ ArrayNode (location: (39,7)-(39,14))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (39,10)-(39,13))
-        │   │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (39,10)-(39,13) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -863,10 +919,10 @@
         │   │   │   └── closing_loc: (39,13)-(39,14) = "]"
         │   │   ├── right:
         │   │   │   @ ArrayNode (location: (39,18)-(39,25))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (39,21)-(39,24))
-        │   │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (39,21)-(39,24) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -876,6 +932,7 @@
         │   │   └── operator_loc: (39,15)-(39,17) = ".."
         │   └── operator_loc: (39,4)-(39,6) = "=>"
         ├── @ MatchRequiredNode (location: (40,0)-(40,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (40,0)-(40,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -917,6 +974,7 @@
         │   │   └── operator_loc: (40,15)-(40,17) = ".."
         │   └── operator_loc: (40,4)-(40,6) = "=>"
         ├── @ MatchRequiredNode (location: (41,0)-(41,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (41,0)-(41,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -958,6 +1016,7 @@
         │   │   └── operator_loc: (41,15)-(41,17) = ".."
         │   └── operator_loc: (41,4)-(41,6) = "=>"
         ├── @ MatchRequiredNode (location: (42,0)-(42,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (42,0)-(42,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -989,6 +1048,7 @@
         │   │   └── operator_loc: (42,15)-(42,17) = ".."
         │   └── operator_loc: (42,4)-(42,6) = "=>"
         ├── @ MatchRequiredNode (location: (43,0)-(43,25))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (43,0)-(43,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1020,6 +1080,7 @@
         │   │   └── operator_loc: (43,15)-(43,17) = ".."
         │   └── operator_loc: (43,4)-(43,6) = "=>"
         ├── @ MatchRequiredNode (location: (44,0)-(44,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (44,0)-(44,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1051,6 +1112,7 @@
         │   │   └── operator_loc: (44,13)-(44,15) = ".."
         │   └── operator_loc: (44,4)-(44,6) = "=>"
         ├── @ MatchRequiredNode (location: (45,0)-(45,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (45,0)-(45,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1064,14 +1126,17 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RangeNode (location: (45,7)-(45,17))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── left:
         │   │   │   @ NilNode (location: (45,7)-(45,10))
+        │   │   │   └── flags: static_literal
         │   │   ├── right:
         │   │   │   @ NilNode (location: (45,14)-(45,17))
+        │   │   │   └── flags: static_literal
         │   │   └── operator_loc: (45,11)-(45,13) = ".."
         │   └── operator_loc: (45,4)-(45,6) = "=>"
         ├── @ MatchRequiredNode (location: (46,0)-(46,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (46,0)-(46,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1088,11 +1153,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SelfNode (location: (46,7)-(46,11))
+        │   │   │   └── flags: ∅
         │   │   ├── right:
         │   │   │   @ SelfNode (location: (46,15)-(46,19))
+        │   │   │   └── flags: ∅
         │   │   └── operator_loc: (46,12)-(46,14) = ".."
         │   └── operator_loc: (46,4)-(46,6) = "=>"
         ├── @ MatchRequiredNode (location: (47,0)-(47,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (47,0)-(47,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1109,11 +1177,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ TrueNode (location: (47,7)-(47,11))
+        │   │   │   └── flags: static_literal
         │   │   ├── right:
         │   │   │   @ TrueNode (location: (47,15)-(47,19))
+        │   │   │   └── flags: static_literal
         │   │   └── operator_loc: (47,12)-(47,14) = ".."
         │   └── operator_loc: (47,4)-(47,6) = "=>"
         ├── @ MatchRequiredNode (location: (48,0)-(48,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (48,0)-(48,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1130,11 +1201,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ FalseNode (location: (48,7)-(48,12))
+        │   │   │   └── flags: static_literal
         │   │   ├── right:
         │   │   │   @ FalseNode (location: (48,16)-(48,21))
+        │   │   │   └── flags: static_literal
         │   │   └── operator_loc: (48,13)-(48,15) = ".."
         │   └── operator_loc: (48,4)-(48,6) = "=>"
         ├── @ MatchRequiredNode (location: (49,0)-(49,27))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (49,0)-(49,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1160,6 +1234,7 @@
         │   │   └── operator_loc: (49,16)-(49,18) = ".."
         │   └── operator_loc: (49,4)-(49,6) = "=>"
         ├── @ MatchRequiredNode (location: (50,0)-(50,27))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (50,0)-(50,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1176,11 +1251,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SourceLineNode (location: (50,7)-(50,15))
+        │   │   │   └── flags: static_literal
         │   │   ├── right:
         │   │   │   @ SourceLineNode (location: (50,19)-(50,27))
+        │   │   │   └── flags: static_literal
         │   │   └── operator_loc: (50,16)-(50,18) = ".."
         │   └── operator_loc: (50,4)-(50,6) = "=>"
         ├── @ MatchRequiredNode (location: (51,0)-(51,35))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (51,0)-(51,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1197,11 +1275,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SourceEncodingNode (location: (51,7)-(51,19))
+        │   │   │   └── flags: static_literal
         │   │   ├── right:
         │   │   │   @ SourceEncodingNode (location: (51,23)-(51,35))
+        │   │   │   └── flags: static_literal
         │   │   └── operator_loc: (51,20)-(51,22) = ".."
         │   └── operator_loc: (51,4)-(51,6) = "=>"
         ├── @ MatchRequiredNode (location: (52,0)-(52,31))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (52,0)-(52,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1218,6 +1299,7 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ LambdaNode (location: (52,7)-(52,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── locals: []
         │   │   │   ├── operator_loc: (52,7)-(52,9) = "->"
         │   │   │   ├── opening_loc: (52,10)-(52,11) = "{"
@@ -1225,12 +1307,15 @@
         │   │   │   ├── parameters: ∅
         │   │   │   └── body:
         │   │   │       @ StatementsNode (location: (52,12)-(52,15))
+        │   │   │       ├── flags: ∅
         │   │   │       └── body: (length: 1)
         │   │   │           └── @ LocalVariableReadNode (location: (52,12)-(52,15))
+        │   │   │               ├── flags: newline
         │   │   │               ├── name: :bar
         │   │   │               └── depth: 1
         │   │   ├── right:
         │   │   │   @ LambdaNode (location: (52,21)-(52,31))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── locals: []
         │   │   │   ├── operator_loc: (52,21)-(52,23) = "->"
         │   │   │   ├── opening_loc: (52,24)-(52,25) = "{"
@@ -1238,22 +1323,26 @@
         │   │   │   ├── parameters: ∅
         │   │   │   └── body:
         │   │   │       @ StatementsNode (location: (52,26)-(52,29))
+        │   │   │       ├── flags: ∅
         │   │   │       └── body: (length: 1)
         │   │   │           └── @ LocalVariableReadNode (location: (52,26)-(52,29))
+        │   │   │               ├── flags: newline
         │   │   │               ├── name: :bar
         │   │   │               └── depth: 1
         │   │   └── operator_loc: (52,18)-(52,20) = ".."
         │   └── operator_loc: (52,4)-(52,6) = "=>"
         ├── @ LocalVariableWriteNode (location: (54,0)-(54,7))
+        │   ├── flags: newline
         │   ├── name: :bar
         │   ├── depth: 0
         │   ├── name_loc: (54,0)-(54,3) = "bar"
         │   ├── value:
         │   │   @ IntegerNode (location: (54,6)-(54,7))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (54,4)-(54,5) = "="
         ├── @ MatchRequiredNode (location: (54,9)-(54,20))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (54,9)-(54,12))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1267,13 +1356,16 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (54,16)-(54,20))
+        │   │   ├── flags: ∅
         │   │   ├── variable:
         │   │   │   @ LocalVariableReadNode (location: (54,17)-(54,20))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bar
         │   │   │   └── depth: 0
         │   │   └── operator_loc: (54,16)-(54,17) = "^"
         │   └── operator_loc: (54,13)-(54,15) = "=>"
         ├── @ MatchRequiredNode (location: (55,0)-(55,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (55,0)-(55,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1287,12 +1379,15 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (55,7)-(55,12))
+        │   │   ├── flags: ∅
         │   │   ├── variable:
         │   │   │   @ InstanceVariableReadNode (location: (55,8)-(55,12))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :@bar
         │   │   └── operator_loc: (55,7)-(55,8) = "^"
         │   └── operator_loc: (55,4)-(55,6) = "=>"
         ├── @ MatchRequiredNode (location: (56,0)-(56,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (56,0)-(56,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1306,12 +1401,15 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (56,7)-(56,13))
+        │   │   ├── flags: ∅
         │   │   ├── variable:
         │   │   │   @ ClassVariableReadNode (location: (56,8)-(56,13))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :@@bar
         │   │   └── operator_loc: (56,7)-(56,8) = "^"
         │   └── operator_loc: (56,4)-(56,6) = "=>"
         ├── @ MatchRequiredNode (location: (57,0)-(57,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (57,0)-(57,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1325,12 +1423,15 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedVariableNode (location: (57,7)-(57,12))
+        │   │   ├── flags: ∅
         │   │   ├── variable:
         │   │   │   @ GlobalVariableReadNode (location: (57,8)-(57,12))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :$bar
         │   │   └── operator_loc: (57,7)-(57,8) = "^"
         │   └── operator_loc: (57,4)-(57,6) = "=>"
         ├── @ MatchRequiredNode (location: (59,0)-(59,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (59,0)-(59,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1344,15 +1445,17 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedExpressionNode (location: (59,7)-(59,11))
+        │   │   ├── flags: ∅
         │   │   ├── expression:
         │   │   │   @ IntegerNode (location: (59,9)-(59,10))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── operator_loc: (59,7)-(59,8) = "^"
         │   │   ├── lparen_loc: (59,8)-(59,9) = "("
         │   │   └── rparen_loc: (59,10)-(59,11) = ")"
         │   └── operator_loc: (59,4)-(59,6) = "=>"
         ├── @ MatchRequiredNode (location: (60,0)-(60,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (60,0)-(60,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1366,13 +1469,16 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedExpressionNode (location: (60,7)-(60,13))
+        │   │   ├── flags: ∅
         │   │   ├── expression:
         │   │   │   @ NilNode (location: (60,9)-(60,12))
+        │   │   │   └── flags: static_literal
         │   │   ├── operator_loc: (60,7)-(60,8) = "^"
         │   │   ├── lparen_loc: (60,8)-(60,9) = "("
         │   │   └── rparen_loc: (60,12)-(60,13) = ")"
         │   └── operator_loc: (60,4)-(60,6) = "=>"
         ├── @ MatchRequiredNode (location: (61,0)-(61,23))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (61,0)-(61,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1386,6 +1492,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ PinnedExpressionNode (location: (61,7)-(61,23))
+        │   │   ├── flags: ∅
         │   │   ├── expression:
         │   │   │   @ CallNode (location: (61,9)-(61,22))
         │   │   │   ├── flags: ∅
@@ -1417,6 +1524,7 @@
         │   │   └── rparen_loc: (61,22)-(61,23) = ")"
         │   └── operator_loc: (61,4)-(61,6) = "=>"
         ├── @ MatchRequiredNode (location: (63,0)-(63,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (63,0)-(63,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1430,9 +1538,11 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ConstantReadNode (location: (63,7)-(63,10))
+        │   │   ├── flags: ∅
         │   │   └── name: :Foo
         │   └── operator_loc: (63,4)-(63,6) = "=>"
         ├── @ MatchRequiredNode (location: (64,0)-(64,20))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (64,0)-(64,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1446,10 +1556,13 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (64,7)-(64,20))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantPathNode (location: (64,7)-(64,15))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (64,7)-(64,10))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :Foo
         │   │   │   ├── name: :Bar
         │   │   │   ├── delimiter_loc: (64,10)-(64,12) = "::"
@@ -1459,6 +1572,7 @@
         │   │   └── name_loc: (64,17)-(64,20) = "Baz"
         │   └── operator_loc: (64,4)-(64,6) = "=>"
         ├── @ MatchRequiredNode (location: (65,0)-(65,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (65,0)-(65,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1472,12 +1586,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (65,7)-(65,12))
+        │   │   ├── flags: ∅
         │   │   ├── parent: ∅
         │   │   ├── name: :Foo
         │   │   ├── delimiter_loc: (65,7)-(65,9) = "::"
         │   │   └── name_loc: (65,9)-(65,12) = "Foo"
         │   └── operator_loc: (65,4)-(65,6) = "=>"
         ├── @ MatchRequiredNode (location: (66,0)-(66,22))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (66,0)-(66,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1491,10 +1607,13 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ConstantPathNode (location: (66,7)-(66,22))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantPathNode (location: (66,7)-(66,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantPathNode (location: (66,7)-(66,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── parent: ∅
         │   │   │   │   ├── name: :Foo
         │   │   │   │   ├── delimiter_loc: (66,7)-(66,9) = "::"
@@ -1507,6 +1626,7 @@
         │   │   └── name_loc: (66,19)-(66,22) = "Baz"
         │   └── operator_loc: (66,4)-(66,6) = "=>"
         ├── @ MatchRequiredNode (location: (68,0)-(68,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (68,0)-(68,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1520,8 +1640,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (68,7)-(68,12))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (68,7)-(68,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest: ∅
@@ -1530,6 +1652,7 @@
         │   │   └── closing_loc: (68,11)-(68,12) = ")"
         │   └── operator_loc: (68,4)-(68,6) = "=>"
         ├── @ MatchRequiredNode (location: (69,0)-(69,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (69,0)-(69,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1543,12 +1666,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (69,7)-(69,13))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (69,7)-(69,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (69,11)-(69,12))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
@@ -1556,6 +1681,7 @@
         │   │   └── closing_loc: (69,12)-(69,13) = ")"
         │   └── operator_loc: (69,4)-(69,6) = "=>"
         ├── @ MatchRequiredNode (location: (70,0)-(70,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (70,0)-(70,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1569,18 +1695,20 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (70,7)-(70,19))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (70,7)-(70,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 3)
         │   │   │   ├── @ IntegerNode (location: (70,11)-(70,12))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 1
         │   │   │   ├── @ IntegerNode (location: (70,14)-(70,15))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 2
         │   │   │   └── @ IntegerNode (location: (70,17)-(70,18))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 3
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
@@ -1588,6 +1716,7 @@
         │   │   └── closing_loc: (70,18)-(70,19) = ")"
         │   └── operator_loc: (70,4)-(70,6) = "=>"
         ├── @ MatchRequiredNode (location: (71,0)-(71,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (71,0)-(71,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1601,11 +1730,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (71,7)-(71,15))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (71,7)-(71,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (71,11)-(71,14))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
@@ -1614,6 +1746,7 @@
         │   │   └── closing_loc: (71,14)-(71,15) = ")"
         │   └── operator_loc: (71,4)-(71,6) = "=>"
         ├── @ MatchRequiredNode (location: (72,0)-(72,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (72,0)-(72,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1627,25 +1760,31 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (72,7)-(72,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (72,7)-(72,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (72,11)-(72,15))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (72,11)-(72,12) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (72,12)-(72,15))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (72,17)-(72,20))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (72,10)-(72,11) = "("
         │   │   └── closing_loc: (72,20)-(72,21) = ")"
         │   └── operator_loc: (72,4)-(72,6) = "=>"
         ├── @ MatchRequiredNode (location: (73,0)-(73,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (73,0)-(73,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1659,18 +1798,23 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (73,7)-(73,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (73,7)-(73,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (73,11)-(73,14))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (73,16)-(73,20))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (73,16)-(73,17) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (73,17)-(73,20))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 0)
@@ -1678,6 +1822,7 @@
         │   │   └── closing_loc: (73,20)-(73,21) = ")"
         │   └── operator_loc: (73,4)-(73,6) = "=>"
         ├── @ MatchRequiredNode (location: (74,0)-(74,27))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (74,0)-(74,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1691,31 +1836,39 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (74,7)-(74,27))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (74,7)-(74,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── left:
         │   │   │   @ SplatNode (location: (74,11)-(74,15))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (74,11)-(74,12) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (74,12)-(74,15))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (74,17)-(74,20))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── right:
         │   │   │   @ SplatNode (location: (74,22)-(74,26))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (74,22)-(74,23) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (74,23)-(74,26))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (74,10)-(74,11) = "("
         │   │   └── closing_loc: (74,26)-(74,27) = ")"
         │   └── operator_loc: (74,4)-(74,6) = "=>"
         ├── @ MatchRequiredNode (location: (76,0)-(76,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (76,0)-(76,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1729,8 +1882,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (76,7)-(76,12))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (76,7)-(76,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest: ∅
@@ -1739,6 +1894,7 @@
         │   │   └── closing_loc: (76,11)-(76,12) = "]"
         │   └── operator_loc: (76,4)-(76,6) = "=>"
         ├── @ MatchRequiredNode (location: (77,0)-(77,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (77,0)-(77,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1752,12 +1908,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (77,7)-(77,13))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (77,7)-(77,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ IntegerNode (location: (77,11)-(77,12))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
@@ -1765,6 +1923,7 @@
         │   │   └── closing_loc: (77,12)-(77,13) = "]"
         │   └── operator_loc: (77,4)-(77,6) = "=>"
         ├── @ MatchRequiredNode (location: (78,0)-(78,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (78,0)-(78,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1778,18 +1937,20 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (78,7)-(78,19))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (78,7)-(78,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 3)
         │   │   │   ├── @ IntegerNode (location: (78,11)-(78,12))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 1
         │   │   │   ├── @ IntegerNode (location: (78,14)-(78,15))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 2
         │   │   │   └── @ IntegerNode (location: (78,17)-(78,18))
-        │   │   │       ├── flags: decimal
+        │   │   │       ├── flags: static_literal, decimal
         │   │   │       └── value: 3
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
@@ -1797,6 +1958,7 @@
         │   │   └── closing_loc: (78,18)-(78,19) = "]"
         │   └── operator_loc: (78,4)-(78,6) = "=>"
         ├── @ MatchRequiredNode (location: (79,0)-(79,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (79,0)-(79,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1810,13 +1972,17 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (79,7)-(79,17))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (79,7)-(79,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ ArrayPatternNode (location: (79,11)-(79,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── constant:
         │   │   │       │   @ ConstantReadNode (location: (79,11)-(79,14))
+        │   │   │       │   ├── flags: ∅
         │   │   │       │   └── name: :Foo
         │   │   │       ├── requireds: (length: 0)
         │   │   │       ├── rest: ∅
@@ -1829,6 +1995,7 @@
         │   │   └── closing_loc: (79,16)-(79,17) = "]"
         │   └── operator_loc: (79,4)-(79,6) = "=>"
         ├── @ MatchRequiredNode (location: (80,0)-(80,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (80,0)-(80,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1842,11 +2009,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (80,7)-(80,15))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (80,7)-(80,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (80,11)-(80,14))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
@@ -1855,6 +2025,7 @@
         │   │   └── closing_loc: (80,14)-(80,15) = "]"
         │   └── operator_loc: (80,4)-(80,6) = "=>"
         ├── @ MatchRequiredNode (location: (81,0)-(81,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (81,0)-(81,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1868,25 +2039,31 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (81,7)-(81,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (81,7)-(81,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (81,11)-(81,15))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (81,11)-(81,12) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (81,12)-(81,15))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (81,17)-(81,20))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (81,10)-(81,11) = "["
         │   │   └── closing_loc: (81,20)-(81,21) = "]"
         │   └── operator_loc: (81,4)-(81,6) = "=>"
         ├── @ MatchRequiredNode (location: (82,0)-(82,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (82,0)-(82,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1900,18 +2077,23 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (82,7)-(82,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (82,7)-(82,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (82,11)-(82,14))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (82,16)-(82,20))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (82,16)-(82,17) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (82,17)-(82,20))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 0)
@@ -1919,6 +2101,7 @@
         │   │   └── closing_loc: (82,20)-(82,21) = "]"
         │   └── operator_loc: (82,4)-(82,6) = "=>"
         ├── @ MatchRequiredNode (location: (83,0)-(83,27))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (83,0)-(83,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1932,31 +2115,39 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (83,7)-(83,27))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (83,7)-(83,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Foo
         │   │   ├── left:
         │   │   │   @ SplatNode (location: (83,11)-(83,15))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (83,11)-(83,12) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (83,12)-(83,15))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (83,17)-(83,20))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── right:
         │   │   │   @ SplatNode (location: (83,22)-(83,26))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (83,22)-(83,23) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (83,23)-(83,26))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (83,10)-(83,11) = "["
         │   │   └── closing_loc: (83,26)-(83,27) = "]"
         │   └── operator_loc: (83,4)-(83,6) = "=>"
         ├── @ MatchRequiredNode (location: (85,0)-(85,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (85,0)-(85,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1970,13 +2161,16 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (85,7)-(85,11))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (85,7)-(85,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (85,7)-(85,8) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (85,8)-(85,11))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 0)
@@ -1984,6 +2178,7 @@
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (85,4)-(85,6) = "=>"
         ├── @ MatchRequiredNode (location: (86,0)-(86,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (86,0)-(86,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -1997,26 +2192,32 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (86,7)-(86,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (86,7)-(86,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (86,7)-(86,8) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (86,8)-(86,11))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (86,13)-(86,16))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :baz
         │   │   │   │   └── depth: 0
         │   │   │   └── @ LocalVariableTargetNode (location: (86,18)-(86,21))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (86,4)-(86,6) = "=>"
         ├── @ MatchRequiredNode (location: (87,0)-(87,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (87,0)-(87,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2030,26 +2231,32 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (87,7)-(87,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (87,7)-(87,10))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (87,12)-(87,16))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (87,12)-(87,13) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (87,13)-(87,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (87,18)-(87,21))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (87,4)-(87,6) = "=>"
         ├── @ MatchRequiredNode (location: (88,0)-(88,21))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (88,0)-(88,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2063,19 +2270,24 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (88,7)-(88,21))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (88,7)-(88,10))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :bar
         │   │   │   │   └── depth: 0
         │   │   │   └── @ LocalVariableTargetNode (location: (88,12)-(88,15))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (88,17)-(88,21))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (88,17)-(88,18) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (88,18)-(88,21))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 0)
@@ -2083,6 +2295,7 @@
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (88,4)-(88,6) = "=>"
         ├── @ MatchRequiredNode (location: (89,0)-(89,22))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (89,0)-(89,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2096,29 +2309,36 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (89,7)-(89,22))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── left:
         │   │   │   @ SplatNode (location: (89,7)-(89,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (89,7)-(89,8) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (89,8)-(89,11))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (89,13)-(89,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── right:
         │   │   │   @ SplatNode (location: (89,18)-(89,22))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (89,18)-(89,19) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (89,19)-(89,22))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (89,4)-(89,6) = "=>"
         ├── @ MatchRequiredNode (location: (91,0)-(91,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (91,0)-(91,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2132,18 +2352,22 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (91,7)-(91,11))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (91,7)-(91,10))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ ImplicitRestNode (location: (91,10)-(91,11))
+        │   │   │   └── flags: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (91,4)-(91,6) = "=>"
         ├── @ MatchRequiredNode (location: (95,0)-(95,9))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (95,0)-(95,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2157,6 +2381,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (95,7)-(95,9))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest: ∅
@@ -2165,6 +2390,7 @@
         │   │   └── closing_loc: (95,8)-(95,9) = "]"
         │   └── operator_loc: (95,4)-(95,6) = "=>"
         ├── @ MatchRequiredNode (location: (96,0)-(96,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (96,0)-(96,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2178,18 +2404,23 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (96,7)-(96,17))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ ArrayPatternNode (location: (96,8)-(96,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── constant: ∅
         │   │   │       ├── requireds: (length: 1)
         │   │   │       │   └── @ ArrayPatternNode (location: (96,9)-(96,15))
+        │   │   │       │       ├── flags: ∅
         │   │   │       │       ├── constant: ∅
         │   │   │       │       ├── requireds: (length: 1)
         │   │   │       │       │   └── @ ArrayPatternNode (location: (96,10)-(96,14))
+        │   │   │       │       │       ├── flags: ∅
         │   │   │       │       │       ├── constant: ∅
         │   │   │       │       │       ├── requireds: (length: 1)
         │   │   │       │       │       │   └── @ ArrayPatternNode (location: (96,11)-(96,13))
+        │   │   │       │       │       │       ├── flags: ∅
         │   │   │       │       │       │       ├── constant: ∅
         │   │   │       │       │       │       ├── requireds: (length: 0)
         │   │   │       │       │       │       ├── rest: ∅
@@ -2214,6 +2445,7 @@
         │   │   └── closing_loc: (96,16)-(96,17) = "]"
         │   └── operator_loc: (96,4)-(96,6) = "=>"
         ├── @ MatchRequiredNode (location: (98,0)-(98,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (98,0)-(98,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2227,13 +2459,16 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (98,7)-(98,13))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (98,8)-(98,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (98,8)-(98,9) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (98,9)-(98,12))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 0)
@@ -2241,6 +2476,7 @@
         │   │   └── closing_loc: (98,12)-(98,13) = "]"
         │   └── operator_loc: (98,4)-(98,6) = "=>"
         ├── @ MatchRequiredNode (location: (99,0)-(99,23))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (99,0)-(99,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2254,26 +2490,32 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (99,7)-(99,23))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (99,8)-(99,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (99,8)-(99,9) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (99,9)-(99,12))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (99,14)-(99,17))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :baz
         │   │   │   │   └── depth: 0
         │   │   │   └── @ LocalVariableTargetNode (location: (99,19)-(99,22))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (99,7)-(99,8) = "["
         │   │   └── closing_loc: (99,22)-(99,23) = "]"
         │   └── operator_loc: (99,4)-(99,6) = "=>"
         ├── @ MatchRequiredNode (location: (100,0)-(100,23))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (100,0)-(100,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2287,26 +2529,32 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (100,7)-(100,23))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (100,8)-(100,11))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (100,13)-(100,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (100,13)-(100,14) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (100,14)-(100,17))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (100,19)-(100,22))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (100,7)-(100,8) = "["
         │   │   └── closing_loc: (100,22)-(100,23) = "]"
         │   └── operator_loc: (100,4)-(100,6) = "=>"
         ├── @ MatchRequiredNode (location: (101,0)-(101,23))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (101,0)-(101,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2320,19 +2568,24 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (101,7)-(101,23))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 2)
         │   │   │   ├── @ LocalVariableTargetNode (location: (101,8)-(101,11))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :bar
         │   │   │   │   └── depth: 0
         │   │   │   └── @ LocalVariableTargetNode (location: (101,13)-(101,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (101,18)-(101,22))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (101,18)-(101,19) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (101,19)-(101,22))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── posts: (length: 0)
@@ -2340,6 +2593,7 @@
         │   │   └── closing_loc: (101,22)-(101,23) = "]"
         │   └── operator_loc: (101,4)-(101,6) = "=>"
         ├── @ MatchRequiredNode (location: (102,0)-(102,24))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (102,0)-(102,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2353,29 +2607,36 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FindPatternNode (location: (102,7)-(102,24))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── left:
         │   │   │   @ SplatNode (location: (102,8)-(102,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (102,8)-(102,9) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (102,9)-(102,12))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (102,14)-(102,17))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── depth: 0
         │   │   ├── right:
         │   │   │   @ SplatNode (location: (102,19)-(102,23))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (102,19)-(102,20) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (102,20)-(102,23))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :qux
         │   │   │       └── depth: 0
         │   │   ├── opening_loc: (102,7)-(102,8) = "["
         │   │   └── closing_loc: (102,23)-(102,24) = "]"
         │   └── operator_loc: (102,4)-(102,6) = "=>"
         ├── @ MatchPredicateNode (location: (104,0)-(104,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (104,0)-(104,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2389,10 +2650,12 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ LocalVariableTargetNode (location: (104,7)-(104,10))
+        │   │   ├── flags: ∅
         │   │   ├── name: :bar
         │   │   └── depth: 0
         │   └── operator_loc: (104,4)-(104,6) = "in"
         ├── @ MatchPredicateNode (location: (105,0)-(105,8))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (105,0)-(105,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2406,10 +2669,11 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ IntegerNode (location: (105,7)-(105,8))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   └── operator_loc: (105,4)-(105,6) = "in"
         ├── @ MatchPredicateNode (location: (106,0)-(106,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (106,0)-(106,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2423,9 +2687,11 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FloatNode (location: (106,7)-(106,10))
+        │   │   ├── flags: static_literal
         │   │   └── value: 1.0
         │   └── operator_loc: (106,4)-(106,6) = "in"
         ├── @ MatchPredicateNode (location: (107,0)-(107,9))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (107,0)-(107,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2439,12 +2705,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ImaginaryNode (location: (107,7)-(107,9))
+        │   │   ├── flags: static_literal
         │   │   └── numeric:
         │   │       @ IntegerNode (location: (107,7)-(107,8))
-        │   │       ├── flags: decimal
+        │   │       ├── flags: static_literal, decimal
         │   │       └── value: 1
         │   └── operator_loc: (107,4)-(107,6) = "in"
         ├── @ MatchPredicateNode (location: (108,0)-(108,9))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (108,0)-(108,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2458,11 +2726,12 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RationalNode (location: (108,7)-(108,9))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   ├── numerator: 1
         │   │   └── denominator: 1
         │   └── operator_loc: (108,4)-(108,6) = "in"
         ├── @ MatchPredicateNode (location: (109,0)-(109,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (109,0)-(109,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2476,13 +2745,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (109,7)-(109,11))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (109,7)-(109,8) = ":"
         │   │   ├── value_loc: (109,8)-(109,11) = "foo"
         │   │   ├── closing_loc: ∅
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (109,4)-(109,6) = "in"
         ├── @ MatchPredicateNode (location: (110,0)-(110,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (110,0)-(110,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2496,13 +2766,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (110,7)-(110,14))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (110,7)-(110,10) = "%s["
         │   │   ├── value_loc: (110,10)-(110,13) = "foo"
         │   │   ├── closing_loc: (110,13)-(110,14) = "]"
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (110,4)-(110,6) = "in"
         ├── @ MatchPredicateNode (location: (111,0)-(111,13))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (111,0)-(111,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2516,13 +2787,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (111,7)-(111,13))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (111,7)-(111,9) = ":\""
         │   │   ├── value_loc: (111,9)-(111,12) = "foo"
         │   │   ├── closing_loc: (111,12)-(111,13) = "\""
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (111,4)-(111,6) = "in"
         ├── @ MatchPredicateNode (location: (112,0)-(112,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (112,0)-(112,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2536,13 +2808,14 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ RegularExpressionNode (location: (112,7)-(112,12))
-        │   │   ├── flags: forced_us_ascii_encoding
+        │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   ├── opening_loc: (112,7)-(112,8) = "/"
         │   │   ├── content_loc: (112,8)-(112,11) = "foo"
         │   │   ├── closing_loc: (112,11)-(112,12) = "/"
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (112,4)-(112,6) = "in"
         ├── @ MatchPredicateNode (location: (113,0)-(113,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (113,0)-(113,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2563,6 +2836,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (113,4)-(113,6) = "in"
         ├── @ MatchPredicateNode (location: (114,0)-(114,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (114,0)-(114,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2583,6 +2857,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (114,4)-(114,6) = "in"
         ├── @ MatchPredicateNode (location: (115,0)-(115,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (115,0)-(115,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2596,10 +2871,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayNode (location: (115,7)-(115,14))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (115,10)-(115,13))
-        │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (115,10)-(115,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -2608,6 +2883,7 @@
         │   │   └── closing_loc: (115,13)-(115,14) = "]"
         │   └── operator_loc: (115,4)-(115,6) = "in"
         ├── @ MatchPredicateNode (location: (116,0)-(116,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (116,0)-(116,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2621,10 +2897,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayNode (location: (116,7)-(116,14))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: static_literal
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (116,10)-(116,13))
-        │   │   │       ├── flags: forced_us_ascii_encoding
+        │   │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (116,10)-(116,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -2633,6 +2909,7 @@
         │   │   └── closing_loc: (116,13)-(116,14) = "]"
         │   └── operator_loc: (116,4)-(116,6) = "in"
         ├── @ MatchPredicateNode (location: (117,0)-(117,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (117,0)-(117,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2658,6 +2935,7 @@
         │   │   └── closing_loc: (117,13)-(117,14) = "]"
         │   └── operator_loc: (117,4)-(117,6) = "in"
         ├── @ MatchPredicateNode (location: (118,0)-(118,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (118,0)-(118,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2683,6 +2961,7 @@
         │   │   └── closing_loc: (118,13)-(118,14) = "]"
         │   └── operator_loc: (118,4)-(118,6) = "in"
         ├── @ MatchPredicateNode (location: (119,0)-(119,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (119,0)-(119,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2703,6 +2982,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (119,4)-(119,6) = "in"
         ├── @ MatchPredicateNode (location: (120,0)-(120,14))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (120,0)-(120,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2723,6 +3003,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (120,4)-(120,6) = "in"
         ├── @ MatchPredicateNode (location: (121,0)-(121,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (121,0)-(121,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2743,6 +3024,7 @@
         │   │   └── unescaped: "foo"
         │   └── operator_loc: (121,4)-(121,6) = "in"
         ├── @ MatchPredicateNode (location: (122,0)-(122,10))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (122,0)-(122,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2756,8 +3038,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ NilNode (location: (122,7)-(122,10))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (122,4)-(122,6) = "in"
         ├── @ MatchPredicateNode (location: (123,0)-(123,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (123,0)-(123,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2771,8 +3055,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SelfNode (location: (123,7)-(123,11))
+        │   │   └── flags: ∅
         │   └── operator_loc: (123,4)-(123,6) = "in"
         ├── @ MatchPredicateNode (location: (124,0)-(124,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (124,0)-(124,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2786,8 +3072,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ TrueNode (location: (124,7)-(124,11))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (124,4)-(124,6) = "in"
         ├── @ MatchPredicateNode (location: (125,0)-(125,12))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (125,0)-(125,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2801,8 +3089,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ FalseNode (location: (125,7)-(125,12))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (125,4)-(125,6) = "in"
         ├── @ MatchPredicateNode (location: (126,0)-(126,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (126,0)-(126,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2820,6 +3110,7 @@
         │   │   └── filepath: "patterns.txt"
         │   └── operator_loc: (126,4)-(126,6) = "in"
         ├── @ MatchPredicateNode (location: (127,0)-(127,15))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (127,0)-(127,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2833,8 +3124,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SourceLineNode (location: (127,7)-(127,15))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (127,4)-(127,6) = "in"
         ├── @ MatchPredicateNode (location: (128,0)-(128,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (128,0)-(128,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2848,8 +3141,10 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SourceEncodingNode (location: (128,7)-(128,19))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (128,4)-(128,6) = "in"
         ├── @ MatchPredicateNode (location: (129,0)-(129,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (129,0)-(129,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2863,6 +3158,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ LambdaNode (location: (129,7)-(129,17))
+        │   │   ├── flags: ∅
         │   │   ├── locals: []
         │   │   ├── operator_loc: (129,7)-(129,9) = "->"
         │   │   ├── opening_loc: (129,10)-(129,11) = "{"
@@ -2870,12 +3166,15 @@
         │   │   ├── parameters: ∅
         │   │   └── body:
         │   │       @ StatementsNode (location: (129,12)-(129,15))
+        │   │       ├── flags: ∅
         │   │       └── body: (length: 1)
         │   │           └── @ LocalVariableReadNode (location: (129,12)-(129,15))
+        │   │               ├── flags: newline
         │   │               ├── name: :bar
         │   │               └── depth: 1
         │   └── operator_loc: (129,4)-(129,6) = "in"
         ├── @ MatchPredicateNode (location: (131,0)-(131,11))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (131,0)-(131,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2889,18 +3188,22 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (131,7)-(131,11))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (131,7)-(131,10))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ ImplicitRestNode (location: (131,10)-(131,11))
+        │   │   │   └── flags: ∅
         │   │   ├── posts: (length: 0)
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
         │   └── operator_loc: (131,4)-(131,6) = "in"
         ├── @ CaseMatchNode (location: (135,0)-(135,25))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (135,5)-(135,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2914,8 +3217,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (135,10)-(135,21))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ LocalVariableTargetNode (location: (135,13)-(135,16))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── name: :bar
         │   │       │   └── depth: 0
         │   │       ├── statements: ∅
@@ -2925,6 +3230,7 @@
         │   ├── case_keyword_loc: (135,0)-(135,4) = "case"
         │   └── end_keyword_loc: (135,22)-(135,25) = "end"
         ├── @ CaseMatchNode (location: (136,0)-(136,23))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (136,5)-(136,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2938,9 +3244,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (136,10)-(136,19))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (136,13)-(136,14))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 1
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (136,10)-(136,12) = "in"
@@ -2949,6 +3256,7 @@
         │   ├── case_keyword_loc: (136,0)-(136,4) = "case"
         │   └── end_keyword_loc: (136,20)-(136,23) = "end"
         ├── @ CaseMatchNode (location: (137,0)-(137,25))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (137,5)-(137,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2962,8 +3270,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (137,10)-(137,21))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ FloatNode (location: (137,13)-(137,16))
+        │   │       │   ├── flags: static_literal
         │   │       │   └── value: 1.0
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (137,10)-(137,12) = "in"
@@ -2972,6 +3282,7 @@
         │   ├── case_keyword_loc: (137,0)-(137,4) = "case"
         │   └── end_keyword_loc: (137,22)-(137,25) = "end"
         ├── @ CaseMatchNode (location: (138,0)-(138,24))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (138,5)-(138,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -2985,11 +3296,13 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (138,10)-(138,20))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ImaginaryNode (location: (138,13)-(138,15))
+        │   │       │   ├── flags: static_literal
         │   │       │   └── numeric:
         │   │       │       @ IntegerNode (location: (138,13)-(138,14))
-        │   │       │       ├── flags: decimal
+        │   │       │       ├── flags: static_literal, decimal
         │   │       │       └── value: 1
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (138,10)-(138,12) = "in"
@@ -2998,6 +3311,7 @@
         │   ├── case_keyword_loc: (138,0)-(138,4) = "case"
         │   └── end_keyword_loc: (138,21)-(138,24) = "end"
         ├── @ CaseMatchNode (location: (139,0)-(139,24))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (139,5)-(139,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3011,9 +3325,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (139,10)-(139,20))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ RationalNode (location: (139,13)-(139,15))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   ├── numerator: 1
         │   │       │   └── denominator: 1
         │   │       ├── statements: ∅
@@ -3023,6 +3338,7 @@
         │   ├── case_keyword_loc: (139,0)-(139,4) = "case"
         │   └── end_keyword_loc: (139,21)-(139,24) = "end"
         ├── @ CaseMatchNode (location: (140,0)-(140,26))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (140,5)-(140,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3036,9 +3352,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (140,10)-(140,22))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SymbolNode (location: (140,13)-(140,17))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (140,13)-(140,14) = ":"
         │   │       │   ├── value_loc: (140,14)-(140,17) = "foo"
         │   │       │   ├── closing_loc: ∅
@@ -3050,6 +3367,7 @@
         │   ├── case_keyword_loc: (140,0)-(140,4) = "case"
         │   └── end_keyword_loc: (140,23)-(140,26) = "end"
         ├── @ CaseMatchNode (location: (141,0)-(141,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (141,5)-(141,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3063,9 +3381,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (141,10)-(141,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SymbolNode (location: (141,13)-(141,20))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (141,13)-(141,16) = "%s["
         │   │       │   ├── value_loc: (141,16)-(141,19) = "foo"
         │   │       │   ├── closing_loc: (141,19)-(141,20) = "]"
@@ -3077,6 +3396,7 @@
         │   ├── case_keyword_loc: (141,0)-(141,4) = "case"
         │   └── end_keyword_loc: (141,26)-(141,29) = "end"
         ├── @ CaseMatchNode (location: (142,0)-(142,28))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (142,5)-(142,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3090,9 +3410,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (142,10)-(142,24))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SymbolNode (location: (142,13)-(142,19))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (142,13)-(142,15) = ":\""
         │   │       │   ├── value_loc: (142,15)-(142,18) = "foo"
         │   │       │   ├── closing_loc: (142,18)-(142,19) = "\""
@@ -3104,6 +3425,7 @@
         │   ├── case_keyword_loc: (142,0)-(142,4) = "case"
         │   └── end_keyword_loc: (142,25)-(142,28) = "end"
         ├── @ CaseMatchNode (location: (143,0)-(143,27))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (143,5)-(143,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3117,9 +3439,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (143,10)-(143,23))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ RegularExpressionNode (location: (143,13)-(143,18))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (143,13)-(143,14) = "/"
         │   │       │   ├── content_loc: (143,14)-(143,17) = "foo"
         │   │       │   ├── closing_loc: (143,17)-(143,18) = "/"
@@ -3131,6 +3454,7 @@
         │   ├── case_keyword_loc: (143,0)-(143,4) = "case"
         │   └── end_keyword_loc: (143,24)-(143,27) = "end"
         ├── @ CaseMatchNode (location: (144,0)-(144,27))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (144,5)-(144,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3144,6 +3468,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (144,10)-(144,23))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ XStringNode (location: (144,13)-(144,18))
         │   │       │   ├── flags: ∅
@@ -3158,6 +3483,7 @@
         │   ├── case_keyword_loc: (144,0)-(144,4) = "case"
         │   └── end_keyword_loc: (144,24)-(144,27) = "end"
         ├── @ CaseMatchNode (location: (145,0)-(145,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (145,5)-(145,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3171,6 +3497,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (145,10)-(145,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ XStringNode (location: (145,13)-(145,20))
         │   │       │   ├── flags: ∅
@@ -3185,6 +3512,7 @@
         │   ├── case_keyword_loc: (145,0)-(145,4) = "case"
         │   └── end_keyword_loc: (145,26)-(145,29) = "end"
         ├── @ CaseMatchNode (location: (146,0)-(146,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (146,5)-(146,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3198,12 +3526,13 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (146,10)-(146,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (146,13)-(146,20))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: static_literal
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (146,16)-(146,19))
-        │   │       │   │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (146,16)-(146,19) = "foo"
         │   │       │   │       ├── closing_loc: ∅
@@ -3217,6 +3546,7 @@
         │   ├── case_keyword_loc: (146,0)-(146,4) = "case"
         │   └── end_keyword_loc: (146,26)-(146,29) = "end"
         ├── @ CaseMatchNode (location: (147,0)-(147,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (147,5)-(147,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3230,12 +3560,13 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (147,10)-(147,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (147,13)-(147,20))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: static_literal
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (147,16)-(147,19))
-        │   │       │   │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (147,16)-(147,19) = "foo"
         │   │       │   │       ├── closing_loc: ∅
@@ -3249,6 +3580,7 @@
         │   ├── case_keyword_loc: (147,0)-(147,4) = "case"
         │   └── end_keyword_loc: (147,26)-(147,29) = "end"
         ├── @ CaseMatchNode (location: (148,0)-(148,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (148,5)-(148,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3262,6 +3594,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (148,10)-(148,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (148,13)-(148,20))
         │   │       │   ├── flags: ∅
@@ -3281,6 +3614,7 @@
         │   ├── case_keyword_loc: (148,0)-(148,4) = "case"
         │   └── end_keyword_loc: (148,26)-(148,29) = "end"
         ├── @ CaseMatchNode (location: (149,0)-(149,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (149,5)-(149,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3294,6 +3628,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (149,10)-(149,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayNode (location: (149,13)-(149,20))
         │   │       │   ├── flags: ∅
@@ -3313,6 +3648,7 @@
         │   ├── case_keyword_loc: (149,0)-(149,4) = "case"
         │   └── end_keyword_loc: (149,26)-(149,29) = "end"
         ├── @ CaseMatchNode (location: (150,0)-(150,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (150,5)-(150,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3326,6 +3662,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (150,10)-(150,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ StringNode (location: (150,13)-(150,20))
         │   │       │   ├── flags: ∅
@@ -3340,6 +3677,7 @@
         │   ├── case_keyword_loc: (150,0)-(150,4) = "case"
         │   └── end_keyword_loc: (150,26)-(150,29) = "end"
         ├── @ CaseMatchNode (location: (151,0)-(151,29))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (151,5)-(151,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3353,6 +3691,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (151,10)-(151,25))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ StringNode (location: (151,13)-(151,20))
         │   │       │   ├── flags: ∅
@@ -3367,6 +3706,7 @@
         │   ├── case_keyword_loc: (151,0)-(151,4) = "case"
         │   └── end_keyword_loc: (151,26)-(151,29) = "end"
         ├── @ CaseMatchNode (location: (152,0)-(152,27))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (152,5)-(152,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3380,6 +3720,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (152,10)-(152,23))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ StringNode (location: (152,13)-(152,18))
         │   │       │   ├── flags: ∅
@@ -3394,6 +3735,7 @@
         │   ├── case_keyword_loc: (152,0)-(152,4) = "case"
         │   └── end_keyword_loc: (152,24)-(152,27) = "end"
         ├── @ CaseMatchNode (location: (153,0)-(153,25))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (153,5)-(153,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3407,8 +3749,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (153,10)-(153,21))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ NilNode (location: (153,13)-(153,16))
+        │   │       │   └── flags: static_literal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (153,10)-(153,12) = "in"
         │   │       └── then_loc: (153,17)-(153,21) = "then"
@@ -3416,6 +3760,7 @@
         │   ├── case_keyword_loc: (153,0)-(153,4) = "case"
         │   └── end_keyword_loc: (153,22)-(153,25) = "end"
         ├── @ CaseMatchNode (location: (154,0)-(154,26))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (154,5)-(154,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3429,8 +3774,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (154,10)-(154,22))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SelfNode (location: (154,13)-(154,17))
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (154,10)-(154,12) = "in"
         │   │       └── then_loc: (154,18)-(154,22) = "then"
@@ -3438,6 +3785,7 @@
         │   ├── case_keyword_loc: (154,0)-(154,4) = "case"
         │   └── end_keyword_loc: (154,23)-(154,26) = "end"
         ├── @ CaseMatchNode (location: (155,0)-(155,26))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (155,5)-(155,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3451,8 +3799,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (155,10)-(155,22))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ TrueNode (location: (155,13)-(155,17))
+        │   │       │   └── flags: static_literal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (155,10)-(155,12) = "in"
         │   │       └── then_loc: (155,18)-(155,22) = "then"
@@ -3460,6 +3810,7 @@
         │   ├── case_keyword_loc: (155,0)-(155,4) = "case"
         │   └── end_keyword_loc: (155,23)-(155,26) = "end"
         ├── @ CaseMatchNode (location: (156,0)-(156,27))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (156,5)-(156,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3473,8 +3824,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (156,10)-(156,23))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ FalseNode (location: (156,13)-(156,18))
+        │   │       │   └── flags: static_literal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (156,10)-(156,12) = "in"
         │   │       └── then_loc: (156,19)-(156,23) = "then"
@@ -3482,6 +3835,7 @@
         │   ├── case_keyword_loc: (156,0)-(156,4) = "case"
         │   └── end_keyword_loc: (156,24)-(156,27) = "end"
         ├── @ CaseMatchNode (location: (157,0)-(157,30))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (157,5)-(157,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3495,6 +3849,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (157,10)-(157,26))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SourceFileNode (location: (157,13)-(157,21))
         │   │       │   ├── flags: ∅
@@ -3506,6 +3861,7 @@
         │   ├── case_keyword_loc: (157,0)-(157,4) = "case"
         │   └── end_keyword_loc: (157,27)-(157,30) = "end"
         ├── @ CaseMatchNode (location: (158,0)-(158,30))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (158,5)-(158,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3519,8 +3875,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (158,10)-(158,26))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SourceLineNode (location: (158,13)-(158,21))
+        │   │       │   └── flags: static_literal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (158,10)-(158,12) = "in"
         │   │       └── then_loc: (158,22)-(158,26) = "then"
@@ -3528,6 +3886,7 @@
         │   ├── case_keyword_loc: (158,0)-(158,4) = "case"
         │   └── end_keyword_loc: (158,27)-(158,30) = "end"
         ├── @ CaseMatchNode (location: (159,0)-(159,34))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (159,5)-(159,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3541,8 +3900,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (159,10)-(159,30))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ SourceEncodingNode (location: (159,13)-(159,25))
+        │   │       │   └── flags: static_literal
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (159,10)-(159,12) = "in"
         │   │       └── then_loc: (159,26)-(159,30) = "then"
@@ -3550,6 +3911,7 @@
         │   ├── case_keyword_loc: (159,0)-(159,4) = "case"
         │   └── end_keyword_loc: (159,31)-(159,34) = "end"
         ├── @ CaseMatchNode (location: (160,0)-(160,32))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (160,5)-(160,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3563,8 +3925,10 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (160,10)-(160,28))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ LambdaNode (location: (160,13)-(160,23))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── locals: []
         │   │       │   ├── operator_loc: (160,13)-(160,15) = "->"
         │   │       │   ├── opening_loc: (160,16)-(160,17) = "{"
@@ -3572,8 +3936,10 @@
         │   │       │   ├── parameters: ∅
         │   │       │   └── body:
         │   │       │       @ StatementsNode (location: (160,18)-(160,21))
+        │   │       │       ├── flags: ∅
         │   │       │       └── body: (length: 1)
         │   │       │           └── @ LocalVariableReadNode (location: (160,18)-(160,21))
+        │   │       │               ├── flags: newline
         │   │       │               ├── name: :bar
         │   │       │               └── depth: 1
         │   │       ├── statements: ∅
@@ -3583,6 +3949,7 @@
         │   ├── case_keyword_loc: (160,0)-(160,4) = "case"
         │   └── end_keyword_loc: (160,29)-(160,32) = "end"
         ├── @ CaseMatchNode (location: (162,0)-(162,32))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (162,5)-(162,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3596,18 +3963,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (162,10)-(162,28))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (162,13)-(162,23))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (162,17)-(162,19) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (162,20)-(162,23))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (162,13)-(162,16))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ LocalVariableTargetNode (location: (162,13)-(162,16))
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── name: :bar
         │   │       │   │           └── depth: 0
         │   │       │   ├── consequent: ∅
@@ -3619,6 +3991,7 @@
         │   ├── case_keyword_loc: (162,0)-(162,4) = "case"
         │   └── end_keyword_loc: (162,29)-(162,32) = "end"
         ├── @ CaseMatchNode (location: (163,0)-(163,30))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (163,5)-(163,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3632,19 +4005,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (163,10)-(163,26))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (163,13)-(163,21))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (163,15)-(163,17) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (163,18)-(163,21))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (163,13)-(163,14))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ IntegerNode (location: (163,13)-(163,14))
-        │   │       │   │           ├── flags: decimal
+        │   │       │   │           ├── flags: newline, static_literal, decimal
         │   │       │   │           └── value: 1
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
@@ -3655,6 +4032,7 @@
         │   ├── case_keyword_loc: (163,0)-(163,4) = "case"
         │   └── end_keyword_loc: (163,27)-(163,30) = "end"
         ├── @ CaseMatchNode (location: (164,0)-(164,32))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (164,5)-(164,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3668,18 +4046,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (164,10)-(164,28))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (164,13)-(164,23))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (164,17)-(164,19) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (164,20)-(164,23))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (164,13)-(164,16))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ FloatNode (location: (164,13)-(164,16))
+        │   │       │   │           ├── flags: newline, static_literal
         │   │       │   │           └── value: 1.0
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
@@ -3690,6 +4073,7 @@
         │   ├── case_keyword_loc: (164,0)-(164,4) = "case"
         │   └── end_keyword_loc: (164,29)-(164,32) = "end"
         ├── @ CaseMatchNode (location: (165,0)-(165,31))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (165,5)-(165,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3703,21 +4087,26 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (165,10)-(165,27))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (165,13)-(165,22))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (165,16)-(165,18) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (165,19)-(165,22))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (165,13)-(165,15))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ImaginaryNode (location: (165,13)-(165,15))
+        │   │       │   │           ├── flags: newline, static_literal
         │   │       │   │           └── numeric:
         │   │       │   │               @ IntegerNode (location: (165,13)-(165,14))
-        │   │       │   │               ├── flags: decimal
+        │   │       │   │               ├── flags: static_literal, decimal
         │   │       │   │               └── value: 1
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
@@ -3728,6 +4117,7 @@
         │   ├── case_keyword_loc: (165,0)-(165,4) = "case"
         │   └── end_keyword_loc: (165,28)-(165,31) = "end"
         ├── @ CaseMatchNode (location: (166,0)-(166,31))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (166,5)-(166,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3741,19 +4131,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (166,10)-(166,27))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (166,13)-(166,22))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (166,16)-(166,18) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (166,19)-(166,22))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (166,13)-(166,15))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ RationalNode (location: (166,13)-(166,15))
-        │   │       │   │           ├── flags: decimal
+        │   │       │   │           ├── flags: newline, static_literal, decimal
         │   │       │   │           ├── numerator: 1
         │   │       │   │           └── denominator: 1
         │   │       │   ├── consequent: ∅
@@ -3765,6 +4159,7 @@
         │   ├── case_keyword_loc: (166,0)-(166,4) = "case"
         │   └── end_keyword_loc: (166,28)-(166,31) = "end"
         ├── @ CaseMatchNode (location: (167,0)-(167,33))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (167,5)-(167,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3778,19 +4173,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (167,10)-(167,29))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (167,13)-(167,24))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (167,18)-(167,20) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (167,21)-(167,24))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (167,13)-(167,17))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SymbolNode (location: (167,13)-(167,17))
-        │   │       │   │           ├── flags: forced_us_ascii_encoding
+        │   │       │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │       │   │           ├── opening_loc: (167,13)-(167,14) = ":"
         │   │       │   │           ├── value_loc: (167,14)-(167,17) = "foo"
         │   │       │   │           ├── closing_loc: ∅
@@ -3804,6 +4203,7 @@
         │   ├── case_keyword_loc: (167,0)-(167,4) = "case"
         │   └── end_keyword_loc: (167,30)-(167,33) = "end"
         ├── @ CaseMatchNode (location: (168,0)-(168,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (168,5)-(168,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3817,19 +4217,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (168,10)-(168,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (168,13)-(168,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (168,21)-(168,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (168,24)-(168,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (168,13)-(168,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SymbolNode (location: (168,13)-(168,20))
-        │   │       │   │           ├── flags: forced_us_ascii_encoding
+        │   │       │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │       │   │           ├── opening_loc: (168,13)-(168,16) = "%s["
         │   │       │   │           ├── value_loc: (168,16)-(168,19) = "foo"
         │   │       │   │           ├── closing_loc: (168,19)-(168,20) = "]"
@@ -3843,6 +4247,7 @@
         │   ├── case_keyword_loc: (168,0)-(168,4) = "case"
         │   └── end_keyword_loc: (168,33)-(168,36) = "end"
         ├── @ CaseMatchNode (location: (169,0)-(169,35))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (169,5)-(169,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3856,19 +4261,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (169,10)-(169,31))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (169,13)-(169,26))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (169,20)-(169,22) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (169,23)-(169,26))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (169,13)-(169,19))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SymbolNode (location: (169,13)-(169,19))
-        │   │       │   │           ├── flags: forced_us_ascii_encoding
+        │   │       │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │       │   │           ├── opening_loc: (169,13)-(169,15) = ":\""
         │   │       │   │           ├── value_loc: (169,15)-(169,18) = "foo"
         │   │       │   │           ├── closing_loc: (169,18)-(169,19) = "\""
@@ -3882,6 +4291,7 @@
         │   ├── case_keyword_loc: (169,0)-(169,4) = "case"
         │   └── end_keyword_loc: (169,32)-(169,35) = "end"
         ├── @ CaseMatchNode (location: (170,0)-(170,34))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (170,5)-(170,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3895,19 +4305,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (170,10)-(170,30))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (170,13)-(170,25))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (170,19)-(170,21) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (170,22)-(170,25))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (170,13)-(170,18))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ RegularExpressionNode (location: (170,13)-(170,18))
-        │   │       │   │           ├── flags: forced_us_ascii_encoding
+        │   │       │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │       │   │           ├── opening_loc: (170,13)-(170,14) = "/"
         │   │       │   │           ├── content_loc: (170,14)-(170,17) = "foo"
         │   │       │   │           ├── closing_loc: (170,17)-(170,18) = "/"
@@ -3921,6 +4335,7 @@
         │   ├── case_keyword_loc: (170,0)-(170,4) = "case"
         │   └── end_keyword_loc: (170,31)-(170,34) = "end"
         ├── @ CaseMatchNode (location: (171,0)-(171,34))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (171,5)-(171,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3934,19 +4349,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (171,10)-(171,30))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (171,13)-(171,25))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (171,19)-(171,21) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (171,22)-(171,25))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (171,13)-(171,18))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ XStringNode (location: (171,13)-(171,18))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── opening_loc: (171,13)-(171,14) = "`"
         │   │       │   │           ├── content_loc: (171,14)-(171,17) = "foo"
         │   │       │   │           ├── closing_loc: (171,17)-(171,18) = "`"
@@ -3960,6 +4379,7 @@
         │   ├── case_keyword_loc: (171,0)-(171,4) = "case"
         │   └── end_keyword_loc: (171,31)-(171,34) = "end"
         ├── @ CaseMatchNode (location: (172,0)-(172,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (172,5)-(172,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -3973,19 +4393,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (172,10)-(172,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (172,13)-(172,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (172,21)-(172,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (172,24)-(172,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (172,13)-(172,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ XStringNode (location: (172,13)-(172,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── opening_loc: (172,13)-(172,16) = "%x["
         │   │       │   │           ├── content_loc: (172,16)-(172,19) = "foo"
         │   │       │   │           ├── closing_loc: (172,19)-(172,20) = "]"
@@ -3999,6 +4423,7 @@
         │   ├── case_keyword_loc: (172,0)-(172,4) = "case"
         │   └── end_keyword_loc: (172,33)-(172,36) = "end"
         ├── @ CaseMatchNode (location: (173,0)-(173,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (173,5)-(173,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4012,22 +4437,26 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (173,10)-(173,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (173,13)-(173,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (173,21)-(173,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (173,24)-(173,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (173,13)-(173,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ArrayNode (location: (173,13)-(173,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline, static_literal
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ SymbolNode (location: (173,16)-(173,19))
-        │   │       │   │           │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │           │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │           │       ├── opening_loc: ∅
         │   │       │   │           │       ├── value_loc: (173,16)-(173,19) = "foo"
         │   │       │   │           │       ├── closing_loc: ∅
@@ -4043,6 +4472,7 @@
         │   ├── case_keyword_loc: (173,0)-(173,4) = "case"
         │   └── end_keyword_loc: (173,33)-(173,36) = "end"
         ├── @ CaseMatchNode (location: (174,0)-(174,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (174,5)-(174,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4056,22 +4486,26 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (174,10)-(174,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (174,13)-(174,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (174,21)-(174,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (174,24)-(174,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (174,13)-(174,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ArrayNode (location: (174,13)-(174,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline, static_literal
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ SymbolNode (location: (174,16)-(174,19))
-        │   │       │   │           │       ├── flags: forced_us_ascii_encoding
+        │   │       │   │           │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   │           │       ├── opening_loc: ∅
         │   │       │   │           │       ├── value_loc: (174,16)-(174,19) = "foo"
         │   │       │   │           │       ├── closing_loc: ∅
@@ -4087,6 +4521,7 @@
         │   ├── case_keyword_loc: (174,0)-(174,4) = "case"
         │   └── end_keyword_loc: (174,33)-(174,36) = "end"
         ├── @ CaseMatchNode (location: (175,0)-(175,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (175,5)-(175,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4100,19 +4535,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (175,10)-(175,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (175,13)-(175,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (175,21)-(175,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (175,24)-(175,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (175,13)-(175,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ArrayNode (location: (175,13)-(175,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ StringNode (location: (175,16)-(175,19))
         │   │       │   │           │       ├── flags: ∅
@@ -4131,6 +4570,7 @@
         │   ├── case_keyword_loc: (175,0)-(175,4) = "case"
         │   └── end_keyword_loc: (175,33)-(175,36) = "end"
         ├── @ CaseMatchNode (location: (176,0)-(176,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (176,5)-(176,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4144,19 +4584,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (176,10)-(176,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (176,13)-(176,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (176,21)-(176,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (176,24)-(176,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (176,13)-(176,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ ArrayNode (location: (176,13)-(176,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ StringNode (location: (176,16)-(176,19))
         │   │       │   │           │       ├── flags: ∅
@@ -4175,6 +4619,7 @@
         │   ├── case_keyword_loc: (176,0)-(176,4) = "case"
         │   └── end_keyword_loc: (176,33)-(176,36) = "end"
         ├── @ CaseMatchNode (location: (177,0)-(177,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (177,5)-(177,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4188,19 +4633,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (177,10)-(177,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (177,13)-(177,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (177,21)-(177,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (177,24)-(177,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (177,13)-(177,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ StringNode (location: (177,13)-(177,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── opening_loc: (177,13)-(177,16) = "%q["
         │   │       │   │           ├── content_loc: (177,16)-(177,19) = "foo"
         │   │       │   │           ├── closing_loc: (177,19)-(177,20) = "]"
@@ -4214,6 +4663,7 @@
         │   ├── case_keyword_loc: (177,0)-(177,4) = "case"
         │   └── end_keyword_loc: (177,33)-(177,36) = "end"
         ├── @ CaseMatchNode (location: (178,0)-(178,36))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (178,5)-(178,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4227,19 +4677,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (178,10)-(178,32))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (178,13)-(178,27))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (178,21)-(178,23) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (178,24)-(178,27))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (178,13)-(178,20))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ StringNode (location: (178,13)-(178,20))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── opening_loc: (178,13)-(178,16) = "%Q["
         │   │       │   │           ├── content_loc: (178,16)-(178,19) = "foo"
         │   │       │   │           ├── closing_loc: (178,19)-(178,20) = "]"
@@ -4253,6 +4707,7 @@
         │   ├── case_keyword_loc: (178,0)-(178,4) = "case"
         │   └── end_keyword_loc: (178,33)-(178,36) = "end"
         ├── @ CaseMatchNode (location: (179,0)-(179,34))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (179,5)-(179,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4266,19 +4721,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (179,10)-(179,30))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (179,13)-(179,25))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (179,19)-(179,21) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (179,22)-(179,25))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (179,13)-(179,18))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ StringNode (location: (179,13)-(179,18))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── opening_loc: (179,13)-(179,14) = "\""
         │   │       │   │           ├── content_loc: (179,14)-(179,17) = "foo"
         │   │       │   │           ├── closing_loc: (179,17)-(179,18) = "\""
@@ -4292,6 +4751,7 @@
         │   ├── case_keyword_loc: (179,0)-(179,4) = "case"
         │   └── end_keyword_loc: (179,31)-(179,34) = "end"
         ├── @ CaseMatchNode (location: (180,0)-(180,32))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (180,5)-(180,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4305,18 +4765,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (180,10)-(180,28))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (180,13)-(180,23))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (180,17)-(180,19) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (180,20)-(180,23))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (180,13)-(180,16))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ NilNode (location: (180,13)-(180,16))
+        │   │       │   │           └── flags: newline, static_literal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4326,6 +4791,7 @@
         │   ├── case_keyword_loc: (180,0)-(180,4) = "case"
         │   └── end_keyword_loc: (180,29)-(180,32) = "end"
         ├── @ CaseMatchNode (location: (181,0)-(181,33))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (181,5)-(181,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4339,18 +4805,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (181,10)-(181,29))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (181,13)-(181,24))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (181,18)-(181,20) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (181,21)-(181,24))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (181,13)-(181,17))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SelfNode (location: (181,13)-(181,17))
+        │   │       │   │           └── flags: newline
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4360,6 +4831,7 @@
         │   ├── case_keyword_loc: (181,0)-(181,4) = "case"
         │   └── end_keyword_loc: (181,30)-(181,33) = "end"
         ├── @ CaseMatchNode (location: (182,0)-(182,33))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (182,5)-(182,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4373,18 +4845,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (182,10)-(182,29))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (182,13)-(182,24))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (182,18)-(182,20) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (182,21)-(182,24))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (182,13)-(182,17))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ TrueNode (location: (182,13)-(182,17))
+        │   │       │   │           └── flags: newline, static_literal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4394,6 +4871,7 @@
         │   ├── case_keyword_loc: (182,0)-(182,4) = "case"
         │   └── end_keyword_loc: (182,30)-(182,33) = "end"
         ├── @ CaseMatchNode (location: (183,0)-(183,34))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (183,5)-(183,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4407,18 +4885,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (183,10)-(183,30))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (183,13)-(183,25))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (183,19)-(183,21) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (183,22)-(183,25))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (183,13)-(183,18))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ FalseNode (location: (183,13)-(183,18))
+        │   │       │   │           └── flags: newline, static_literal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4428,6 +4911,7 @@
         │   ├── case_keyword_loc: (183,0)-(183,4) = "case"
         │   └── end_keyword_loc: (183,31)-(183,34) = "end"
         ├── @ CaseMatchNode (location: (184,0)-(184,37))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (184,5)-(184,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4441,19 +4925,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (184,10)-(184,33))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (184,13)-(184,28))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (184,22)-(184,24) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (184,25)-(184,28))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (184,13)-(184,21))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SourceFileNode (location: (184,13)-(184,21))
-        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── flags: newline
         │   │       │   │           └── filepath: "patterns.txt"
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
@@ -4464,6 +4952,7 @@
         │   ├── case_keyword_loc: (184,0)-(184,4) = "case"
         │   └── end_keyword_loc: (184,34)-(184,37) = "end"
         ├── @ CaseMatchNode (location: (185,0)-(185,37))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (185,5)-(185,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4477,18 +4966,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (185,10)-(185,33))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (185,13)-(185,28))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (185,22)-(185,24) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (185,25)-(185,28))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (185,13)-(185,21))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SourceLineNode (location: (185,13)-(185,21))
+        │   │       │   │           └── flags: newline, static_literal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4498,6 +4992,7 @@
         │   ├── case_keyword_loc: (185,0)-(185,4) = "case"
         │   └── end_keyword_loc: (185,34)-(185,37) = "end"
         ├── @ CaseMatchNode (location: (186,0)-(186,41))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (186,5)-(186,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4511,18 +5006,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (186,10)-(186,37))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (186,13)-(186,32))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (186,26)-(186,28) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (186,29)-(186,32))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (186,13)-(186,25))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SourceEncodingNode (location: (186,13)-(186,25))
+        │   │       │   │           └── flags: newline, static_literal
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4532,6 +5032,7 @@
         │   ├── case_keyword_loc: (186,0)-(186,4) = "case"
         │   └── end_keyword_loc: (186,38)-(186,41) = "end"
         ├── @ CaseMatchNode (location: (187,0)-(187,39))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (187,5)-(187,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4545,18 +5046,23 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (187,10)-(187,35))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IfNode (location: (187,13)-(187,30))
+        │   │       │   ├── flags: newline
         │   │       │   ├── if_keyword_loc: (187,24)-(187,26) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ LocalVariableReadNode (location: (187,27)-(187,30))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
         │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (187,13)-(187,23))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ LambdaNode (location: (187,13)-(187,23))
+        │   │       │   │           ├── flags: newline
         │   │       │   │           ├── locals: []
         │   │       │   │           ├── operator_loc: (187,13)-(187,15) = "->"
         │   │       │   │           ├── opening_loc: (187,16)-(187,17) = "{"
@@ -4564,8 +5070,10 @@
         │   │       │   │           ├── parameters: ∅
         │   │       │   │           └── body:
         │   │       │   │               @ StatementsNode (location: (187,18)-(187,21))
+        │   │       │   │               ├── flags: ∅
         │   │       │   │               └── body: (length: 1)
         │   │       │   │                   └── @ LocalVariableReadNode (location: (187,18)-(187,21))
+        │   │       │   │                       ├── flags: newline
         │   │       │   │                       ├── name: :bar
         │   │       │   │                       └── depth: 1
         │   │       │   ├── consequent: ∅
@@ -4577,9 +5085,11 @@
         │   ├── case_keyword_loc: (187,0)-(187,4) = "case"
         │   └── end_keyword_loc: (187,36)-(187,39) = "end"
         ├── @ IfNode (location: (189,0)-(190,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (189,0)-(189,2) = "if"
         │   ├── predicate:
         │   │   @ MatchPredicateNode (location: (189,3)-(189,10))
+        │   │   ├── flags: ∅
         │   │   ├── value:
         │   │   │   @ CallNode (location: (189,3)-(189,4))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -4593,6 +5103,7 @@
         │   │   │   └── block: ∅
         │   │   ├── pattern:
         │   │   │   @ ArrayPatternNode (location: (189,8)-(189,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── constant: ∅
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── rest: ∅
@@ -4605,6 +5116,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (190,0)-(190,3) = "end"
         ├── @ MatchRequiredNode (location: (192,0)-(194,1))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (192,0)-(192,1))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4618,9 +5130,11 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (192,5)-(194,1))
+        │   │   ├── flags: ∅
         │   │   ├── constant: ∅
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (193,2)-(193,3))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       └── depth: 0
         │   │   ├── rest: ∅
@@ -4629,6 +5143,7 @@
         │   │   └── closing_loc: (194,0)-(194,1) = "]"
         │   └── operator_loc: (192,2)-(192,4) = "=>"
         ├── @ MatchPredicateNode (location: (196,0)-(200,1))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (196,0)-(196,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4642,34 +5157,41 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ HashPatternNode (location: (196,7)-(200,1))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (196,7)-(196,8))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ AssocNode (location: (197,2)-(199,3))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (197,2)-(197,6))
-        │   │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (197,2)-(197,5) = "bar"
         │   │   │       │   ├── closing_loc: (197,5)-(197,6) = ":"
         │   │   │       │   └── unescaped: "bar"
         │   │   │       ├── value:
         │   │   │       │   @ HashPatternNode (location: (197,7)-(199,3))
+        │   │   │       │   ├── flags: ∅
         │   │   │       │   ├── constant:
         │   │   │       │   │   @ ConstantReadNode (location: (197,7)-(197,8))
+        │   │   │       │   │   ├── flags: ∅
         │   │   │       │   │   └── name: :B
         │   │   │       │   ├── elements: (length: 1)
         │   │   │       │   │   └── @ AssocNode (location: (198,4)-(198,12))
+        │   │   │       │   │       ├── flags: ∅
         │   │   │       │   │       ├── key:
         │   │   │       │   │       │   @ SymbolNode (location: (198,4)-(198,10))
-        │   │   │       │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │   │       │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       │   │       │   ├── opening_loc: ∅
         │   │   │       │   │       │   ├── value_loc: (198,4)-(198,9) = "value"
         │   │   │       │   │       │   ├── closing_loc: (198,9)-(198,10) = ":"
         │   │   │       │   │       │   └── unescaped: "value"
         │   │   │       │   │       ├── value:
         │   │   │       │   │       │   @ LocalVariableTargetNode (location: (198,11)-(198,12))
+        │   │   │       │   │       │   ├── flags: ∅
         │   │   │       │   │       │   ├── name: :a
         │   │   │       │   │       │   └── depth: 0
         │   │   │       │   │       └── operator_loc: ∅
@@ -4682,6 +5204,7 @@
         │   │   └── closing_loc: (200,0)-(200,1) = "]"
         │   └── operator_loc: (196,4)-(196,6) = "in"
         ├── @ MatchPredicateNode (location: (202,0)-(202,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (202,0)-(202,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4695,17 +5218,21 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ CapturePatternNode (location: (202,7)-(202,17))
+        │   │   ├── flags: ∅
         │   │   ├── value:
         │   │   │   @ LocalVariableTargetNode (location: (202,7)-(202,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bar
         │   │   │   └── depth: 0
         │   │   ├── target:
         │   │   │   @ LocalVariableTargetNode (location: (202,14)-(202,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :baz
         │   │   │   └── depth: 0
         │   │   └── operator_loc: (202,11)-(202,13) = "=>"
         │   └── operator_loc: (202,4)-(202,6) = "in"
         ├── @ MatchRequiredNode (location: (203,0)-(203,17))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ CallNode (location: (203,0)-(203,3))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -4719,25 +5246,32 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ CapturePatternNode (location: (203,7)-(203,17))
+        │   │   ├── flags: ∅
         │   │   ├── value:
         │   │   │   @ LocalVariableTargetNode (location: (203,7)-(203,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bar
         │   │   │   └── depth: 0
         │   │   ├── target:
         │   │   │   @ LocalVariableTargetNode (location: (203,14)-(203,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :baz
         │   │   │   └── depth: 0
         │   │   └── operator_loc: (203,11)-(203,13) = "=>"
         │   └── operator_loc: (203,4)-(203,6) = "=>"
         ├── @ MultiWriteNode (location: (205,0)-(205,20))
+        │   ├── flags: newline
         │   ├── lefts: (length: 3)
         │   │   ├── @ LocalVariableTargetNode (location: (205,0)-(205,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
         │   │   ├── @ LocalVariableTargetNode (location: (205,5)-(205,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bar
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (205,10)-(205,13))
+        │   │       ├── flags: ∅
         │   │       ├── name: :baz
         │   │       └── depth: 0
         │   ├── rest: ∅
@@ -4747,18 +5281,18 @@
         │   ├── operator_loc: (205,14)-(205,15) = "="
         │   └── value:
         │       @ ArrayNode (location: (205,16)-(205,20))
-        │       ├── flags: ∅
+        │       ├── flags: static_literal
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (205,16)-(205,17))
-        │       │   │   ├── flags: decimal
+        │       │   │   ├── flags: static_literal, decimal
         │       │   │   └── value: 1
         │       │   └── @ IntegerNode (location: (205,19)-(205,20))
-        │       │       ├── flags: decimal
+        │       │       ├── flags: static_literal, decimal
         │       │       └── value: 2
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (206,0)-(208,3))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -4768,34 +5302,41 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (206,4)-(208,3))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (207,2)-(207,29))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ MatchRequiredNode (location: (207,2)-(207,29))
+        │       │           ├── flags: newline
         │       │           ├── value:
         │       │           │   @ ArrayNode (location: (207,2)-(207,8))
-        │       │           │   ├── flags: ∅
+        │       │           │   ├── flags: static_literal
         │       │           │   ├── elements: (length: 2)
         │       │           │   │   ├── @ IntegerNode (location: (207,3)-(207,4))
-        │       │           │   │   │   ├── flags: decimal
+        │       │           │   │   │   ├── flags: static_literal, decimal
         │       │           │   │   │   └── value: 1
         │       │           │   │   └── @ IntegerNode (location: (207,6)-(207,7))
-        │       │           │   │       ├── flags: decimal
+        │       │           │   │       ├── flags: static_literal, decimal
         │       │           │   │       └── value: 2
         │       │           │   ├── opening_loc: (207,2)-(207,3) = "["
         │       │           │   └── closing_loc: (207,7)-(207,8) = "]"
         │       │           ├── pattern:
         │       │           │   @ CapturePatternNode (location: (207,12)-(207,29))
+        │       │           │   ├── flags: ∅
         │       │           │   ├── value:
         │       │           │   │   @ ArrayPatternNode (location: (207,12)-(207,22))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── constant: ∅
         │       │           │   │   ├── requireds: (length: 2)
         │       │           │   │   │   ├── @ LocalVariableTargetNode (location: (207,13)-(207,16))
+        │       │           │   │   │   │   ├── flags: ∅
         │       │           │   │   │   │   ├── name: :foo
         │       │           │   │   │   │   └── depth: 1
         │       │           │   │   │   └── @ LocalVariableTargetNode (location: (207,18)-(207,21))
+        │       │           │   │   │       ├── flags: ∅
         │       │           │   │   │       ├── name: :bar
         │       │           │   │   │       └── depth: 1
         │       │           │   │   ├── rest: ∅
@@ -4804,6 +5345,7 @@
         │       │           │   │   └── closing_loc: (207,21)-(207,22) = "]"
         │       │           │   ├── target:
         │       │           │   │   @ LocalVariableTargetNode (location: (207,26)-(207,29))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── name: :baz
         │       │           │   │   └── depth: 1
         │       │           │   └── operator_loc: (207,23)-(207,25) = "=>"
@@ -4811,31 +5353,39 @@
         │       ├── opening_loc: (206,4)-(206,6) = "do"
         │       └── closing_loc: (208,0)-(208,3) = "end"
         ├── @ MatchRequiredNode (location: (210,0)-(210,19))
+        │   ├── flags: newline
         │   ├── value:
         │   │   @ LocalVariableReadNode (location: (210,0)-(210,3))
+        │   │   ├── flags: ∅
         │   │   ├── name: :foo
         │   │   └── depth: 0
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (210,7)-(210,19))
+        │   │   ├── flags: ∅
         │   │   ├── constant:
         │   │   │   @ ConstantReadNode (location: (210,7)-(210,13))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :Object
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ HashPatternNode (location: (210,14)-(210,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── constant: ∅
         │   │   │       ├── elements: (length: 1)
         │   │   │       │   └── @ AssocNode (location: (210,15)-(210,17))
+        │   │   │       │       ├── flags: ∅
         │   │   │       │       ├── key:
         │   │   │       │       │   @ SymbolNode (location: (210,15)-(210,17))
-        │   │   │       │       │   ├── flags: forced_us_ascii_encoding
+        │   │   │       │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │       │       │   ├── opening_loc: ∅
         │   │   │       │       │   ├── value_loc: (210,15)-(210,16) = "x"
         │   │   │       │       │   ├── closing_loc: (210,16)-(210,17) = ":"
         │   │   │       │       │   └── unescaped: "x"
         │   │   │       │       ├── value:
         │   │   │       │       │   @ ImplicitNode (location: (210,15)-(210,16))
+        │   │   │       │       │   ├── flags: ∅
         │   │   │       │       │   └── value:
         │   │   │       │       │       @ LocalVariableTargetNode (location: (210,15)-(210,16))
+        │   │   │       │       │       ├── flags: ∅
         │   │   │       │       │       ├── name: :x
         │   │   │       │       │       └── depth: 0
         │   │   │       │       └── operator_loc: ∅
@@ -4848,10 +5398,10 @@
         │   │   └── closing_loc: (210,18)-(210,19) = "]"
         │   └── operator_loc: (210,4)-(210,6) = "=>"
         ├── @ CallNode (location: (212,0)-(212,19))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ IntegerNode (location: (212,0)-(212,1))
-        │   │   ├── flags: decimal
+        │   │   ├── flags: static_literal, decimal
         │   │   └── value: 1
         │   ├── call_operator_loc: (212,1)-(212,2) = "."
         │   ├── name: :then
@@ -4861,49 +5411,160 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (212,7)-(212,19))
+        │       ├── flags: ∅
         │       ├── locals: [:_1]
         │       ├── parameters:
         │       │   @ NumberedParametersNode (location: (212,7)-(212,19))
+        │       │   ├── flags: ∅
         │       │   └── maximum: 1
         │       ├── body:
         │       │   @ StatementsNode (location: (212,9)-(212,17))
+        │       │   ├── flags: ∅
         │       │   └── body: (length: 1)
         │       │       └── @ MatchPredicateNode (location: (212,9)-(212,17))
+        │       │           ├── flags: newline
         │       │           ├── value:
         │       │           │   @ IntegerNode (location: (212,9)-(212,10))
-        │       │           │   ├── flags: decimal
+        │       │           │   ├── flags: static_literal, decimal
         │       │           │   └── value: 1
         │       │           ├── pattern:
         │       │           │   @ PinnedVariableNode (location: (212,14)-(212,17))
+        │       │           │   ├── flags: ∅
         │       │           │   ├── variable:
         │       │           │   │   @ LocalVariableReadNode (location: (212,15)-(212,17))
+        │       │           │   │   ├── flags: ∅
         │       │           │   │   ├── name: :_1
         │       │           │   │   └── depth: 0
         │       │           │   └── operator_loc: (212,14)-(212,15) = "^"
         │       │           └── operator_loc: (212,11)-(212,13) = "in"
         │       ├── opening_loc: (212,7)-(212,8) = "{"
         │       └── closing_loc: (212,18)-(212,19) = "}"
-        └── @ MultiWriteNode (location: (214,0)-(217,5))
-            ├── lefts: (length: 2)
-            │   ├── @ LocalVariableTargetNode (location: (215,2)-(215,3))
-            │   │   ├── name: :a
-            │   │   └── depth: 0
-            │   └── @ LocalVariableTargetNode (location: (216,2)-(216,3))
-            │       ├── name: :b
-            │       └── depth: 0
-            ├── rest: ∅
-            ├── rights: (length: 0)
-            ├── lparen_loc: (214,0)-(214,1) = "("
-            ├── rparen_loc: (217,0)-(217,1) = ")"
-            ├── operator_loc: (217,2)-(217,3) = "="
-            └── value:
-                @ CallNode (location: (217,4)-(217,5))
-                ├── flags: variable_call, ignore_visibility
-                ├── receiver: ∅
-                ├── call_operator_loc: ∅
-                ├── name: :c
-                ├── message_loc: (217,4)-(217,5) = "c"
-                ├── opening_loc: ∅
-                ├── arguments: ∅
-                ├── closing_loc: ∅
-                └── block: ∅
+        ├── @ MultiWriteNode (location: (214,0)-(217,5))
+        │   ├── flags: newline
+        │   ├── lefts: (length: 2)
+        │   │   ├── @ LocalVariableTargetNode (location: (215,2)-(215,3))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── name: :a
+        │   │   │   └── depth: 0
+        │   │   └── @ LocalVariableTargetNode (location: (216,2)-(216,3))
+        │   │       ├── flags: ∅
+        │   │       ├── name: :b
+        │   │       └── depth: 0
+        │   ├── rest: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: (214,0)-(214,1) = "("
+        │   ├── rparen_loc: (217,0)-(217,1) = ")"
+        │   ├── operator_loc: (217,2)-(217,3) = "="
+        │   └── value:
+        │       @ CallNode (location: (217,4)-(217,5))
+        │       ├── flags: variable_call, ignore_visibility
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── name: :c
+        │       ├── message_loc: (217,4)-(217,5) = "c"
+        │       ├── opening_loc: ∅
+        │       ├── arguments: ∅
+        │       ├── closing_loc: ∅
+        │       └── block: ∅
+        ├── @ CaseMatchNode (location: (219,0)-(219,25))
+        │   ├── flags: newline
+        │   ├── predicate:
+        │   │   @ ParenthesesNode (location: (219,5)-(219,7))
+        │   │   ├── flags: ∅
+        │   │   ├── body: ∅
+        │   │   ├── opening_loc: (219,5)-(219,6) = "("
+        │   │   └── closing_loc: (219,6)-(219,7) = ")"
+        │   ├── conditions: (length: 1)
+        │   │   └── @ InNode (location: (219,9)-(219,20))
+        │   │       ├── flags: ∅
+        │   │       ├── pattern:
+        │   │       │   @ ArrayPatternNode (location: (219,12)-(219,20))
+        │   │       │   ├── flags: ∅
+        │   │       │   ├── constant: ∅
+        │   │       │   ├── requireds: (length: 2)
+        │   │       │   │   ├── @ LocalVariableTargetNode (location: (219,13)-(219,15))
+        │   │       │   │   │   ├── flags: ∅
+        │   │       │   │   │   ├── name: :_a
+        │   │       │   │   │   └── depth: 0
+        │   │       │   │   └── @ LocalVariableTargetNode (location: (219,17)-(219,19))
+        │   │       │   │       ├── flags: ∅
+        │   │       │   │       ├── name: :_a
+        │   │       │   │       └── depth: 0
+        │   │       │   ├── rest: ∅
+        │   │       │   ├── posts: (length: 0)
+        │   │       │   ├── opening_loc: (219,12)-(219,13) = "["
+        │   │       │   └── closing_loc: (219,19)-(219,20) = "]"
+        │   │       ├── statements: ∅
+        │   │       ├── in_loc: (219,9)-(219,11) = "in"
+        │   │       └── then_loc: ∅
+        │   ├── consequent: ∅
+        │   ├── case_keyword_loc: (219,0)-(219,4) = "case"
+        │   └── end_keyword_loc: (219,22)-(219,25) = "end"
+        └── @ CaseMatchNode (location: (220,0)-(220,31))
+            ├── flags: newline
+            ├── predicate:
+            │   @ ParenthesesNode (location: (220,5)-(220,7))
+            │   ├── flags: ∅
+            │   ├── body: ∅
+            │   ├── opening_loc: (220,5)-(220,6) = "("
+            │   └── closing_loc: (220,6)-(220,7) = ")"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (220,9)-(220,26))
+            │       ├── flags: ∅
+            │       ├── pattern:
+            │       │   @ ArrayPatternNode (location: (220,12)-(220,26))
+            │       │   ├── flags: ∅
+            │       │   ├── constant: ∅
+            │       │   ├── requireds: (length: 2)
+            │       │   │   ├── @ HashPatternNode (location: (220,13)-(220,18))
+            │       │   │   │   ├── flags: ∅
+            │       │   │   │   ├── constant: ∅
+            │       │   │   │   ├── elements: (length: 1)
+            │       │   │   │   │   └── @ AssocNode (location: (220,14)-(220,17))
+            │       │   │   │   │       ├── flags: static_literal
+            │       │   │   │   │       ├── key:
+            │       │   │   │   │       │   @ SymbolNode (location: (220,14)-(220,16))
+            │       │   │   │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
+            │       │   │   │   │       │   ├── opening_loc: ∅
+            │       │   │   │   │       │   ├── value_loc: (220,14)-(220,15) = "a"
+            │       │   │   │   │       │   ├── closing_loc: (220,15)-(220,16) = ":"
+            │       │   │   │   │       │   └── unescaped: "a"
+            │       │   │   │   │       ├── value:
+            │       │   │   │   │       │   @ IntegerNode (location: (220,16)-(220,17))
+            │       │   │   │   │       │   ├── flags: static_literal, decimal
+            │       │   │   │   │       │   └── value: 1
+            │       │   │   │   │       └── operator_loc: ∅
+            │       │   │   │   ├── rest: ∅
+            │       │   │   │   ├── opening_loc: (220,13)-(220,14) = "{"
+            │       │   │   │   └── closing_loc: (220,17)-(220,18) = "}"
+            │       │   │   └── @ HashPatternNode (location: (220,20)-(220,25))
+            │       │   │       ├── flags: ∅
+            │       │   │       ├── constant: ∅
+            │       │   │       ├── elements: (length: 1)
+            │       │   │       │   └── @ AssocNode (location: (220,21)-(220,24))
+            │       │   │       │       ├── flags: static_literal
+            │       │   │       │       ├── key:
+            │       │   │       │       │   @ SymbolNode (location: (220,21)-(220,23))
+            │       │   │       │       │   ├── flags: static_literal, forced_us_ascii_encoding
+            │       │   │       │       │   ├── opening_loc: ∅
+            │       │   │       │       │   ├── value_loc: (220,21)-(220,22) = "a"
+            │       │   │       │       │   ├── closing_loc: (220,22)-(220,23) = ":"
+            │       │   │       │       │   └── unescaped: "a"
+            │       │   │       │       ├── value:
+            │       │   │       │       │   @ IntegerNode (location: (220,23)-(220,24))
+            │       │   │       │       │   ├── flags: static_literal, decimal
+            │       │   │       │       │   └── value: 2
+            │       │   │       │       └── operator_loc: ∅
+            │       │   │       ├── rest: ∅
+            │       │   │       ├── opening_loc: (220,20)-(220,21) = "{"
+            │       │   │       └── closing_loc: (220,24)-(220,25) = "}"
+            │       │   ├── rest: ∅
+            │       │   ├── posts: (length: 0)
+            │       │   ├── opening_loc: (220,12)-(220,13) = "["
+            │       │   └── closing_loc: (220,25)-(220,26) = "]"
+            │       ├── statements: ∅
+            │       ├── in_loc: (220,9)-(220,11) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (220,0)-(220,4) = "case"
+            └── end_keyword_loc: (220,28)-(220,31) = "end"

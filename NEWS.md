@@ -25,6 +25,12 @@ Note that each entry is kept to a minimum, see links for details.
 * Keyword arguments are no longer allowed in index assignment
   (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
+* `GC.config` added to allow setting configuration variables on the Garbage
+  Collector. [[Feature #20443]]
+
+* GC configuration parameter `rgengc_allow_full_mark` introduced. When `false`
+  GC will only mark young objects. Default is `true`. [[Feature #20443]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -70,11 +76,11 @@ The following bundled gems are updated.
 * minitest 5.24.1
 * rake 13.2.1
 * test-unit 3.6.2
-* rexml 3.3.1
+* rexml 3.3.2
 * net-ftp 0.3.7
 * net-imap 0.4.14
 * net-smtp 0.5.0
-* rbs 3.5.1
+* rbs 3.5.2
 * typeprof 0.21.11
 * debug 1.9.2
 * racc 1.8.0
@@ -152,4 +158,5 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
+[Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497

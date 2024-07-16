@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(9,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(9,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(9,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :tap
@@ -14,16 +16,19 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,4)-(9,3))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ BeginNode (location: (1,4)-(9,3))
+                │   ├── flags: ∅
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements:
                 │   │   @ StatementsNode (location: (2,2)-(2,7))
+                │   │   ├── flags: ∅
                 │   │   └── body: (length: 1)
                 │   │       └── @ CallNode (location: (2,2)-(2,7))
-                │   │           ├── flags: variable_call, ignore_visibility
+                │   │           ├── flags: newline, variable_call, ignore_visibility
                 │   │           ├── receiver: ∅
                 │   │           ├── call_operator_loc: ∅
                 │   │           ├── name: :raise
@@ -34,15 +39,17 @@
                 │   │           └── block: ∅
                 │   ├── rescue_clause:
                 │   │   @ RescueNode (location: (3,0)-(4,9))
+                │   │   ├── flags: ∅
                 │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
                 │   │   ├── exceptions: (length: 0)
                 │   │   ├── operator_loc: ∅
                 │   │   ├── reference: ∅
                 │   │   ├── statements:
                 │   │   │   @ StatementsNode (location: (4,2)-(4,9))
+                │   │   │   ├── flags: ∅
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
-                │   │   │           ├── flags: forced_us_ascii_encoding
+                │   │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
                 │   │   │           ├── value_loc: (4,3)-(4,9) = "rescue"
                 │   │   │           ├── closing_loc: ∅
@@ -50,12 +57,14 @@
                 │   │   └── consequent: ∅
                 │   ├── else_clause:
                 │   │   @ ElseNode (location: (5,0)-(7,6))
+                │   │   ├── flags: ∅
                 │   │   ├── else_keyword_loc: (5,0)-(5,4) = "else"
                 │   │   ├── statements:
                 │   │   │   @ StatementsNode (location: (6,2)-(6,7))
+                │   │   │   ├── flags: ∅
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (6,2)-(6,7))
-                │   │   │           ├── flags: forced_us_ascii_encoding
+                │   │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (6,2)-(6,3) = ":"
                 │   │   │           ├── value_loc: (6,3)-(6,7) = "else"
                 │   │   │           ├── closing_loc: ∅
@@ -63,12 +72,14 @@
                 │   │   └── end_keyword_loc: (7,0)-(7,6) = "ensure"
                 │   ├── ensure_clause:
                 │   │   @ EnsureNode (location: (7,0)-(9,3))
+                │   │   ├── flags: ∅
                 │   │   ├── ensure_keyword_loc: (7,0)-(7,6) = "ensure"
                 │   │   ├── statements:
                 │   │   │   @ StatementsNode (location: (8,2)-(8,9))
+                │   │   │   ├── flags: ∅
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (8,2)-(8,9))
-                │   │   │           ├── flags: forced_us_ascii_encoding
+                │   │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (8,2)-(8,3) = ":"
                 │   │   │           ├── value_loc: (8,3)-(8,9) = "ensure"
                 │   │   │           ├── closing_loc: ∅

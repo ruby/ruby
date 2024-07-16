@@ -1,20 +1,27 @@
 @ ProgramNode (location: (1,0)-(4,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,11))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ AndNode (location: (1,0)-(2,4))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ TrueNode (location: (1,0)-(1,4))
+        │   │   └── flags: static_literal
         │   ├── right:
         │   │   @ TrueNode (location: (2,0)-(2,4))
+        │   │   └── flags: static_literal
         │   └── operator_loc: (1,5)-(1,8) = "and"
         └── @ AndNode (location: (4,0)-(4,11))
+            ├── flags: newline
             ├── left:
             │   @ TrueNode (location: (4,0)-(4,4))
+            │   └── flags: static_literal
             ├── right:
             │   @ ArrayNode (location: (4,9)-(4,11))
-            │   ├── flags: ∅
+            │   ├── flags: static_literal
             │   ├── elements: (length: 0)
             │   ├── opening_loc: (4,9)-(4,10) = "["
             │   └── closing_loc: (4,10)-(4,11) = "]"

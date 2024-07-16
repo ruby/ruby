@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(4,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,28))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(4,28))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :mount
@@ -18,13 +20,16 @@
             │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ ParenthesesNode (location: (1,6)-(4,5))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── body:
             │       │   │   │   @ StatementsNode (location: (1,7)-(4,4))
+            │       │   │   │   ├── flags: ∅
             │       │   │   │   └── body: (length: 1)
             │       │   │   │       └── @ CallNode (location: (1,7)-(4,4))
-            │       │   │   │           ├── flags: ∅
+            │       │   │   │           ├── flags: newline
             │       │   │   │           ├── receiver:
             │       │   │   │           │   @ ConstantReadNode (location: (1,7)-(1,12))
+            │       │   │   │           │   ├── flags: ∅
             │       │   │   │           │   └── name: :Class
             │       │   │   │           ├── call_operator_loc: (1,12)-(1,13) = "."
             │       │   │   │           ├── name: :new
@@ -34,12 +39,15 @@
             │       │   │   │           ├── closing_loc: ∅
             │       │   │   │           └── block:
             │       │   │   │               @ BlockNode (location: (1,17)-(4,4))
+            │       │   │   │               ├── flags: ∅
             │       │   │   │               ├── locals: []
             │       │   │   │               ├── parameters: ∅
             │       │   │   │               ├── body:
             │       │   │   │               │   @ StatementsNode (location: (2,0)-(3,3))
+            │       │   │   │               │   ├── flags: ∅
             │       │   │   │               │   └── body: (length: 1)
             │       │   │   │               │       └── @ DefNode (location: (2,0)-(3,3))
+            │       │   │   │               │           ├── flags: newline
             │       │   │   │               │           ├── name: :initialize
             │       │   │   │               │           ├── name_loc: (2,4)-(2,14) = "initialize"
             │       │   │   │               │           ├── receiver: ∅
@@ -67,9 +75,10 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (4,11)-(4,28))
+            │                   ├── flags: ∅
             │                   ├── key:
             │                   │   @ SymbolNode (location: (4,11)-(4,14))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: (4,11)-(4,12) = ":"
             │                   │   ├── value_loc: (4,12)-(4,14) = "at"
             │                   │   ├── closing_loc: ∅

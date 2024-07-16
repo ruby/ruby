@@ -21,7 +21,10 @@ module Prism
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
     def options
-      o = flags & (RegularExpressionFlags::IGNORE_CASE | RegularExpressionFlags::EXTENDED | RegularExpressionFlags::MULTI_LINE)
+      o = 0
+      o |= Regexp::IGNORECASE if flags.anybits?(RegularExpressionFlags::IGNORE_CASE)
+      o |= Regexp::EXTENDED if flags.anybits?(RegularExpressionFlags::EXTENDED)
+      o |= Regexp::MULTILINE if flags.anybits?(RegularExpressionFlags::MULTI_LINE)
       o |= Regexp::FIXEDENCODING if flags.anybits?(RegularExpressionFlags::EUC_JP | RegularExpressionFlags::WINDOWS_31J | RegularExpressionFlags::UTF_8)
       o |= Regexp::NOENCODING if flags.anybits?(RegularExpressionFlags::ASCII_8BIT)
       o
@@ -69,11 +72,12 @@ module Prism
     def to_interpolated
       InterpolatedStringNode.new(
         source,
+        -1,
+        location,
         frozen? ? InterpolatedStringNodeFlags::FROZEN : 0,
         opening_loc,
-        [copy(opening_loc: nil, closing_loc: nil, location: content_loc)],
-        closing_loc,
-        location
+        [copy(location: content_loc, opening_loc: nil, closing_loc: nil)],
+        closing_loc
       )
     end
   end
@@ -86,10 +90,12 @@ module Prism
     def to_interpolated
       InterpolatedXStringNode.new(
         source,
+        -1,
+        location,
+        flags,
         opening_loc,
-        [StringNode.new(source, 0, nil, content_loc, nil, unescaped, content_loc)],
-        closing_loc,
-        location
+        [StringNode.new(source, node_id, content_loc, 0, nil, content_loc, nil, unescaped)],
+        closing_loc
       )
     end
   end
@@ -115,9 +121,9 @@ module Prism
       deprecated("value", "numerator", "denominator")
 
       if denominator == 1
-        IntegerNode.new(source, flags, numerator, location.chop)
+        IntegerNode.new(source, -1, location.chop, flags, numerator)
       else
-        FloatNode.new(source, numerator.to_f / denominator, location.chop)
+        FloatNode.new(source, -1, location.chop, 0, numerator.to_f / denominator)
       end
     end
   end
@@ -195,7 +201,12 @@ module Prism
     # continue to supply that API.
     def child
       deprecated("name", "name_loc")
-      name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
+
+      if name
+        ConstantReadNode.new(source, -1, name_loc, 0, name)
+      else
+        MissingNode.new(source, -1, location, 0)
+      end
     end
   end
 
@@ -231,7 +242,12 @@ module Prism
     # continue to supply that API.
     def child
       deprecated("name", "name_loc")
-      name ? ConstantReadNode.new(source, name, name_loc) : MissingNode.new(source, location)
+
+      if name
+        ConstantReadNode.new(source, -1, name_loc, 0, name)
+      else
+        MissingNode.new(source, -1, location, 0)
+      end
     end
   end
 

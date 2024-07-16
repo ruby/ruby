@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,31))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,31))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,31))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,16))
             │   ├── flags: ∅
@@ -40,13 +42,15 @@
             │   ├── closing_loc: ∅
             │   └── block:
             │       @ BlockNode (location: (1,8)-(1,16))
+            │       ├── flags: ∅
             │       ├── locals: []
             │       ├── parameters: ∅
             │       ├── body:
             │       │   @ StatementsNode (location: (1,11)-(1,12))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ CallNode (location: (1,11)-(1,12))
-            │       │           ├── flags: variable_call, ignore_visibility
+            │       │           ├── flags: newline, variable_call, ignore_visibility
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :d
@@ -65,11 +69,14 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,19)-(1,31))
+                ├── flags: ∅
                 ├── locals: [:f]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,22)-(1,25))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,23)-(1,24))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,23)-(1,24))
                 │   │   │       ├── flags: ∅
@@ -85,9 +92,10 @@
                 │   └── closing_loc: (1,24)-(1,25) = "|"
                 ├── body:
                 │   @ StatementsNode (location: (1,26)-(1,27))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,26)-(1,27))
-                │           ├── flags: variable_call, ignore_visibility
+                │           ├── flags: newline, variable_call, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :g

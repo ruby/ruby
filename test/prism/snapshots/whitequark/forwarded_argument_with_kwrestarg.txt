@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,45))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,45))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,45))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (1,4)-(1,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,8)-(1,20))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,8)-(1,16))
             │   │       ├── flags: ∅
@@ -26,9 +30,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,23)-(1,40))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,23)-(1,40))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -39,12 +44,14 @@
             │           │   ├── flags: contains_keywords, contains_keyword_splat
             │           │   └── arguments: (length: 2)
             │           │       ├── @ LocalVariableReadNode (location: (1,27)-(1,35))
+            │           │       │   ├── flags: ∅
             │           │       │   ├── name: :argument
             │           │       │   └── depth: 0
             │           │       └── @ KeywordHashNode (location: (1,37)-(1,39))
             │           │           ├── flags: ∅
             │           │           └── elements: (length: 1)
             │           │               └── @ AssocSplatNode (location: (1,37)-(1,39))
+            │           │                   ├── flags: ∅
             │           │                   ├── value: ∅
             │           │                   └── operator_loc: (1,37)-(1,39) = "**"
             │           ├── closing_loc: (1,39)-(1,40) = ")"

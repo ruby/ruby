@@ -1,15 +1,19 @@
 @ ProgramNode (location: (1,0)-(3,35))
+├── flags: ∅
 ├── locals: [:ex]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,35))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ BeginNode (location: (1,0)-(1,36))
+        │   ├── flags: newline
         │   ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,7)-(1,11))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,7)-(1,11))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :meth
@@ -20,17 +24,20 @@
         │   │           └── block: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (1,13)-(1,31))
+        │   │   ├── flags: ∅
         │   │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
         │   │   ├── exceptions: (length: 0)
         │   │   ├── operator_loc: (1,20)-(1,22) = "=>"
         │   │   ├── reference:
         │   │   │   @ InstanceVariableTargetNode (location: (1,23)-(1,26))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :@ex
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (1,28)-(1,31))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (1,28)-(1,31))
-        │   │   │           ├── flags: variable_call, ignore_visibility
+        │   │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -44,12 +51,14 @@
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (1,33)-(1,36) = "end"
         └── @ BeginNode (location: (3,0)-(3,35))
+            ├── flags: newline
             ├── begin_keyword_loc: (3,0)-(3,5) = "begin"
             ├── statements:
             │   @ StatementsNode (location: (3,7)-(3,11))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (3,7)-(3,11))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -60,18 +69,21 @@
             │           └── block: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (3,13)-(3,30))
+            │   ├── flags: ∅
             │   ├── keyword_loc: (3,13)-(3,19) = "rescue"
             │   ├── exceptions: (length: 0)
             │   ├── operator_loc: (3,20)-(3,22) = "=>"
             │   ├── reference:
             │   │   @ LocalVariableTargetNode (location: (3,23)-(3,25))
+            │   │   ├── flags: ∅
             │   │   ├── name: :ex
             │   │   └── depth: 0
             │   ├── statements:
             │   │   @ StatementsNode (location: (3,27)-(3,30))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (3,27)-(3,30))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar

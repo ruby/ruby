@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(3,24))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,24))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ DefNode (location: (1,0)-(1,18))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (1,4)-(1,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (1,6)-(1,13))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (1,6)-(1,13))
@@ -18,7 +22,7 @@
         │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
         │   │   │       └── value:
         │   │   │           @ IntegerNode (location: (1,12)-(1,13))
-        │   │   │           ├── flags: decimal
+        │   │   │           ├── flags: static_literal, decimal
         │   │   │           └── value: 1
         │   │   ├── rest: ∅
         │   │   ├── posts: (length: 0)
@@ -34,11 +38,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (1,15)-(1,18) = "end"
         └── @ DefNode (location: (3,0)-(3,24))
+            ├── flags: newline
             ├── name: :f
             ├── name_loc: (3,4)-(3,5) = "f"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (3,6)-(3,18))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 2)
             │   │   ├── @ OptionalParameterNode (location: (3,6)-(3,11))
@@ -48,7 +54,7 @@
             │   │   │   ├── operator_loc: (3,9)-(3,10) = "="
             │   │   │   └── value:
             │   │   │       @ IntegerNode (location: (3,10)-(3,11))
-            │   │   │       ├── flags: decimal
+            │   │   │       ├── flags: static_literal, decimal
             │   │   │       └── value: 1
             │   │   └── @ OptionalParameterNode (location: (3,13)-(3,18))
             │   │       ├── flags: ∅
@@ -57,7 +63,7 @@
             │   │       ├── operator_loc: (3,16)-(3,17) = "="
             │   │       └── value:
             │   │           @ IntegerNode (location: (3,17)-(3,18))
-            │   │           ├── flags: decimal
+            │   │           ├── flags: static_literal, decimal
             │   │           └── value: 2
             │   ├── rest: ∅
             │   ├── posts: (length: 0)

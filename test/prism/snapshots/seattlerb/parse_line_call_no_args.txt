@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(3,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -14,11 +16,14 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,2)-(3,3))
+                ├── flags: ∅
                 ├── locals: [:x, :y]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,5)-(1,11))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,6)-(1,10))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
                 │   │   │   │   ├── flags: ∅
@@ -37,11 +42,13 @@
                 │   └── closing_loc: (1,10)-(1,11) = "|"
                 ├── body:
                 │   @ StatementsNode (location: (2,2)-(2,7))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (2,2)-(2,7))
-                │           ├── flags: ∅
+                │           ├── flags: newline
                 │           ├── receiver:
                 │           │   @ LocalVariableReadNode (location: (2,2)-(2,3))
+                │           │   ├── flags: ∅
                 │           │   ├── name: :x
                 │           │   └── depth: 0
                 │           ├── call_operator_loc: ∅
@@ -53,6 +60,7 @@
                 │           │   ├── flags: ∅
                 │           │   └── arguments: (length: 1)
                 │           │       └── @ LocalVariableReadNode (location: (2,6)-(2,7))
+                │           │           ├── flags: ∅
                 │           │           ├── name: :y
                 │           │           └── depth: 0
                 │           ├── closing_loc: ∅

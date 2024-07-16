@@ -1,10 +1,12 @@
 @ ProgramNode (location: (2,0)-(2,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (2,0)-(2,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (2,0)-(2,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -15,7 +17,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ IntegerNode (location: (2,2)-(2,3))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 0
             ├── closing_loc: ∅
             └── block: ∅

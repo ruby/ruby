@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,12))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,12))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ PreExecutionNode (location: (1,0)-(1,12))
+            ├── flags: newline
             ├── statements:
             │   @ StatementsNode (location: (1,8)-(1,10))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (1,8)-(1,10))
-            │           ├── flags: decimal
+            │           ├── flags: newline, static_literal, decimal
             │           └── value: 42
             ├── keyword_loc: (1,0)-(1,5) = "BEGIN"
             ├── opening_loc: (1,6)-(1,7) = "{"

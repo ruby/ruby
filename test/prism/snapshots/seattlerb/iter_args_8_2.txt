@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,25))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,25))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,25))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -14,11 +16,14 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,2)-(1,25))
+                ├── flags: ∅
                 ├── locals: [:a, :b, :c, :d]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,23))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,22))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 0)
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,5)-(1,11))
@@ -28,7 +33,7 @@
                 │   │   │       ├── operator_loc: (1,7)-(1,8) = "="
                 │   │   │       └── value:
                 │   │   │           @ IntegerNode (location: (1,9)-(1,11))
-                │   │   │           ├── flags: decimal
+                │   │   │           ├── flags: static_literal, decimal
                 │   │   │           └── value: 42
                 │   │   ├── rest:
                 │   │   │   @ RestParameterNode (location: (1,13)-(1,15))

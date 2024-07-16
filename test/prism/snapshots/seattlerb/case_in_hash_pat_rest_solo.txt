@@ -1,26 +1,33 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: [:rest]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(2,17))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,9))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── elements: (length: 0)
             │       │   ├── rest:
             │       │   │   @ AssocSplatNode (location: (2,3)-(2,9))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── value:
             │       │   │   │   @ LocalVariableTargetNode (location: (2,5)-(2,9))
+            │       │   │   │   ├── flags: ∅
             │       │   │   │   ├── name: :rest
             │       │   │   │   └── depth: 0
             │       │   │   └── operator_loc: (2,3)-(2,5) = "**"
@@ -28,9 +35,10 @@
             │       │   └── closing_loc: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (2,15)-(2,17))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (2,15)-(2,17))
-            │       │           ├── flags: forced_us_ascii_encoding
+            │       │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │           ├── opening_loc: (2,15)-(2,16) = ":"
             │       │           ├── value_loc: (2,16)-(2,17) = "d"
             │       │           ├── closing_loc: ∅

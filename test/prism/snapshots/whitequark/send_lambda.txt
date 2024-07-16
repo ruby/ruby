@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(5,5))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,5))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ LambdaNode (location: (1,0)-(1,8))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,5)-(1,6) = "{"
         │   ├── closing_loc: (1,7)-(1,8) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (1,3)-(1,4))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (1,3)-(1,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
         │   │   │   ├── rest:
@@ -29,6 +34,7 @@
         │   │   └── closing_loc: ∅
         │   └── body: ∅
         ├── @ LambdaNode (location: (3,0)-(3,9))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,5) = "do"
@@ -36,6 +42,7 @@
         │   ├── parameters: ∅
         │   └── body: ∅
         └── @ LambdaNode (location: (5,0)-(5,5))
+            ├── flags: newline
             ├── locals: []
             ├── operator_loc: (5,0)-(5,2) = "->"
             ├── opening_loc: (5,2)-(5,3) = "{"

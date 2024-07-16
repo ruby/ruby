@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(10,17))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(10,17))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ CallNode (location: (1,0)-(1,1))
-        │   ├── flags: variable_call, ignore_visibility
+        │   ├── flags: newline, variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -14,32 +16,43 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ InstanceVariableReadNode (location: (2,0)-(2,2))
+        │   ├── flags: newline
         │   └── name: :@a
         ├── @ ClassVariableReadNode (location: (3,0)-(3,3))
+        │   ├── flags: newline
         │   └── name: :@@a
         ├── @ GlobalVariableReadNode (location: (4,0)-(4,2))
+        │   ├── flags: newline
         │   └── name: :$a
         ├── @ NumberedReferenceReadNode (location: (5,0)-(5,2))
+        │   ├── flags: newline
         │   └── number: 1
         ├── @ BackReferenceReadNode (location: (6,0)-(6,2))
+        │   ├── flags: newline
         │   └── name: :$`
         ├── @ ConstantReadNode (location: (7,0)-(7,5))
+        │   ├── flags: newline
         │   └── name: :CONST
         ├── @ ConstantPathNode (location: (8,0)-(8,13))
+        │   ├── flags: newline
         │   ├── parent:
         │   │   @ ConstantReadNode (location: (8,0)-(8,6))
+        │   │   ├── flags: ∅
         │   │   └── name: :SCOPED
         │   ├── name: :CONST
         │   ├── delimiter_loc: (8,6)-(8,8) = "::"
         │   └── name_loc: (8,8)-(8,13) = "CONST"
         ├── @ ConstantPathNode (location: (9,0)-(9,10))
+        │   ├── flags: newline
         │   ├── parent: ∅
         │   ├── name: :TOPLEVEL
         │   ├── delimiter_loc: (9,0)-(9,2) = "::"
         │   └── name_loc: (9,2)-(9,10) = "TOPLEVEL"
         └── @ ConstantPathNode (location: (10,0)-(10,17))
+            ├── flags: newline
             ├── parent:
             │   @ ConstantPathNode (location: (10,0)-(10,10))
+            │   ├── flags: ∅
             │   ├── parent: ∅
             │   ├── name: :TOPLEVEL
             │   ├── delimiter_loc: (10,0)-(10,2) = "::"

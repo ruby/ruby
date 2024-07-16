@@ -1,17 +1,21 @@
 @ ProgramNode (location: (1,0)-(3,16))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,16))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,11))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (1,1)-(1,11))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ StatementsNode (location: (1,2)-(1,10))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ FlipFlopNode (location: (1,2)-(1,10))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: newline
         │   │   │           ├── left:
         │   │   │           │   @ CallNode (location: (1,2)-(1,5))
         │   │   │           │   ├── flags: variable_call, ignore_visibility
@@ -45,6 +49,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ IfNode (location: (3,0)-(3,16))
+            ├── flags: newline
             ├── if_keyword_loc: (3,0)-(3,2) = "if"
             ├── predicate:
             │   @ FlipFlopNode (location: (3,3)-(3,11))

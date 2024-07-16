@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,16))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,16))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,16))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :blah
@@ -14,11 +16,14 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,5)-(1,16))
+                ├── flags: ∅
                 ├── locals: [:k]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,8)-(1,12))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,9)-(1,11))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 0)
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

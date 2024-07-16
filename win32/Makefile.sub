@@ -443,6 +443,8 @@ PREP          = miniruby$(EXEEXT)
 BUILTIN_BINARY = yes
 !endif
 
+BUILTIN_GC = default
+
 !if !defined(EXTSTATIC)
 EXTSTATIC     =
 !endif
@@ -592,14 +594,19 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
+!ifndef VCPKG_DEFAULT_TRIPLET
+VCPKG_DEFAULT_TRIPLET = $(MACHINE)-windows
+!endif
+TRIPLET_OPTION = --triplet $(VCPKG_DEFAULT_TRIPLET)
+
 update-vcpkg::
-	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
 
 install-vcpkg::
-	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
 
 prepare-vcpkg::
-	for %%I in ($(srcdir:/=\)\vcpkg_installed\x64-windows\bin\*.dll) do ( \
+	for %%I in ($(srcdir:/=\)\vcpkg_installed\$(VCPKG_DEFAULT_TRIPLET)\bin\*.dll) do @( \
 		if not %%~nI == readline mklink %%~nxI %%I \
 	)
 
@@ -1335,6 +1342,11 @@ $(ruby_pc): $(RBCONFIG)
 .c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
+
+BUILTIN_GC_PATH = $(srcdir)/gc/$(BUILTIN_GC).c
+gc_impl.obj: $(BUILTIN_GC_PATH)
+	$(ECHO) compiling $(BUILTIN_GC_PATH:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(BUILTIN_GC_PATH:\=/)
 
 {$(srcdir)/missing}.c.asm:
 	$(ECHO) translating $(<:\=/)

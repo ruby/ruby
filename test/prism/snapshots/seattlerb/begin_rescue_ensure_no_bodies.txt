@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ BeginNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── begin_keyword_loc: (1,0)-(1,5) = "begin"
             ├── statements: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (2,0)-(2,6))
+            │   ├── flags: ∅
             │   ├── keyword_loc: (2,0)-(2,6) = "rescue"
             │   ├── exceptions: (length: 0)
             │   ├── operator_loc: ∅
@@ -17,6 +21,7 @@
             ├── else_clause: ∅
             ├── ensure_clause:
             │   @ EnsureNode (location: (3,0)-(4,3))
+            │   ├── flags: ∅
             │   ├── ensure_keyword_loc: (3,0)-(3,6) = "ensure"
             │   ├── statements: ∅
             │   └── end_keyword_loc: (4,0)-(4,3) = "end"

@@ -1,24 +1,28 @@
 @ ProgramNode (location: (1,0)-(1,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,13))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(1,13))
-            ├── flags: ∅
+            ├── flags: newline, static_literal
             ├── elements: (length: 3)
             │   ├── @ ImaginaryNode (location: (1,1)-(1,3))
+            │   │   ├── flags: static_literal
             │   │   └── numeric:
             │   │       @ IntegerNode (location: (1,1)-(1,2))
-            │   │       ├── flags: decimal
+            │   │       ├── flags: static_literal, decimal
             │   │       └── value: 1
             │   ├── @ RationalNode (location: (1,5)-(1,7))
-            │   │   ├── flags: decimal
+            │   │   ├── flags: static_literal, decimal
             │   │   ├── numerator: 2
             │   │   └── denominator: 1
             │   └── @ ImaginaryNode (location: (1,9)-(1,12))
+            │       ├── flags: static_literal
             │       └── numeric:
             │           @ RationalNode (location: (1,9)-(1,11))
-            │           ├── flags: decimal
+            │           ├── flags: static_literal, decimal
             │           ├── numerator: 3
             │           └── denominator: 1
             ├── opening_loc: (1,0)-(1,1) = "["

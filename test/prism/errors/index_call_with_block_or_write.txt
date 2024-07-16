@@ -1,0 +1,5 @@
+foo[1] {} ||= 1
+^~~~~~~~~ unexpected write target
+          ^~~ unexpected operator after a call with arguments
+          ^~~ unexpected operator after a call with a block
+

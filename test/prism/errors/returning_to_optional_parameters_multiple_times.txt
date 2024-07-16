@@ -1,0 +1,4 @@
+def foo(a, b = 1, c, d = 2, e)
+                       ^ unexpected parameter order
+end
+

@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(3,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,20))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ DefNode (location: (1,0)-(1,18))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (1,4)-(1,7) = "foo"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (1,8)-(1,12))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 2)
         │   │   │   ├── @ RequiredParameterNode (location: (1,8)-(1,9))
         │   │   │   │   ├── flags: ∅
@@ -31,11 +35,13 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (1,15)-(1,18) = "end"
         └── @ DefNode (location: (3,0)-(3,20))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (3,4)-(3,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (3,8)-(3,14))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 2)
             │   │   ├── @ RequiredParameterNode (location: (3,8)-(3,10))
             │   │   │   ├── flags: ∅

@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,43))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,43))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseNode (location: (1,0)-(1,43))
+            ├── flags: newline
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,8))
             │   ├── flags: variable_call, ignore_visibility
@@ -17,12 +20,14 @@
             │   └── block: ∅
             ├── conditions: (length: 2)
             │   ├── @ WhenNode (location: (1,10)-(1,27))
+            │   │   ├── flags: ∅
             │   │   ├── keyword_loc: (1,10)-(1,14) = "when"
             │   │   ├── conditions: (length: 2)
             │   │   │   ├── @ IntegerNode (location: (1,15)-(1,16))
-            │   │   │   │   ├── flags: decimal
+            │   │   │   │   ├── flags: static_literal, decimal
             │   │   │   │   └── value: 1
             │   │   │   └── @ SplatNode (location: (1,18)-(1,22))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── operator_loc: (1,18)-(1,19) = "*"
             │   │   │       └── expression:
             │   │   │           @ CallNode (location: (1,19)-(1,22))
@@ -38,9 +43,10 @@
             │   │   ├── then_keyword_loc: ∅
             │   │   └── statements:
             │   │       @ StatementsNode (location: (1,24)-(1,27))
+            │   │       ├── flags: ∅
             │   │       └── body: (length: 1)
             │   │           └── @ CallNode (location: (1,24)-(1,27))
-            │   │               ├── flags: variable_call, ignore_visibility
+            │   │               ├── flags: newline, variable_call, ignore_visibility
             │   │               ├── receiver: ∅
             │   │               ├── call_operator_loc: ∅
             │   │               ├── name: :bar
@@ -50,9 +56,11 @@
             │   │               ├── closing_loc: ∅
             │   │               └── block: ∅
             │   └── @ WhenNode (location: (1,29)-(1,38))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (1,29)-(1,33) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ SplatNode (location: (1,34)-(1,38))
+            │       │       ├── flags: ∅
             │       │       ├── operator_loc: (1,34)-(1,35) = "*"
             │       │       └── expression:
             │       │           @ CallNode (location: (1,35)-(1,38))

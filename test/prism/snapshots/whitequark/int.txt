@@ -1,14 +1,16 @@
 @ ProgramNode (location: (1,0)-(5,2))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,2))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ IntegerNode (location: (1,0)-(1,3))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   └── value: 42
         ├── @ IntegerNode (location: (3,0)-(3,3))
-        │   ├── flags: decimal
+        │   ├── flags: newline, static_literal, decimal
         │   └── value: -42
         └── @ IntegerNode (location: (5,0)-(5,2))
-            ├── flags: decimal
+            ├── flags: newline, static_literal, decimal
             └── value: 42

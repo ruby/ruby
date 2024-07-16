@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,23))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,23))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,23))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :let
@@ -15,19 +17,22 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ ParenthesesNode (location: (1,4)-(1,6))
+            │           ├── flags: ∅
             │           ├── body: ∅
             │           ├── opening_loc: (1,4)-(1,5) = "("
             │           └── closing_loc: (1,5)-(1,6) = ")"
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,7)-(1,23))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,9)-(1,21))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,9)-(1,21))
-                │           ├── flags: ignore_visibility
+                │           ├── flags: newline, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :m
@@ -50,6 +55,7 @@
                 │           ├── closing_loc: (1,12)-(1,13) = ")"
                 │           └── block:
                 │               @ BlockNode (location: (1,14)-(1,21))
+                │               ├── flags: ∅
                 │               ├── locals: []
                 │               ├── parameters: ∅
                 │               ├── body: ∅

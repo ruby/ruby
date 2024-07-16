@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(4,3))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :blah
@@ -14,23 +16,27 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,5)-(4,3))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
                 │   @ BeginNode (location: (1,5)-(4,3))
+                │   ├── flags: ∅
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements: ∅
                 │   ├── rescue_clause:
                 │   │   @ RescueNode (location: (2,0)-(3,7))
+                │   │   ├── flags: ∅
                 │   │   ├── keyword_loc: (2,0)-(2,6) = "rescue"
                 │   │   ├── exceptions: (length: 0)
                 │   │   ├── operator_loc: ∅
                 │   │   ├── reference: ∅
                 │   │   ├── statements:
                 │   │   │   @ StatementsNode (location: (3,2)-(3,7))
+                │   │   │   ├── flags: ∅
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ CallNode (location: (3,2)-(3,7))
-                │   │   │           ├── flags: variable_call, ignore_visibility
+                │   │   │           ├── flags: newline, variable_call, ignore_visibility
                 │   │   │           ├── receiver: ∅
                 │   │   │           ├── call_operator_loc: ∅
                 │   │   │           ├── name: :stuff

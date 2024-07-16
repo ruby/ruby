@@ -3690,6 +3690,14 @@ copy_home_path(VALUE result, const char *dir)
     return result;
 }
 
+#ifdef HAVE_PWD_H
+static void *
+nogvl_getpwnam(void *login)
+{
+    return (void *)getpwnam((const char *)login);
+}
+#endif
+
 VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
@@ -3712,7 +3720,7 @@ rb_home_dir_of(VALUE user, VALUE result)
     }
 
 #ifdef HAVE_PWD_H
-    pwPtr = getpwnam(username);
+    pwPtr = (struct passwd *)IO_WITHOUT_GVL(nogvl_getpwnam, (void *)username);
 #else
     if (strcasecmp(username, getlogin()) == 0)
         dir = pwPtr = getenv("HOME");

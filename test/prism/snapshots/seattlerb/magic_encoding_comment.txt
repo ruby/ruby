@@ -1,35 +1,44 @@
 @ ProgramNode (location: (2,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (2,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ClassNode (location: (2,0)-(3,3))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (2,0)-(2,5) = "class"
             ├── constant_path:
             │   @ ConstantReadNode (location: (2,6)-(2,34))
+            │   ├── flags: ∅
             │   └── name: :ExampleUTF8ClassNameVarietà
             ├── inheritance_operator_loc: ∅
             ├── superclass: ∅
             ├── body:
             │   @ StatementsNode (location: (2,36)-(2,68))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ DefNode (location: (2,36)-(2,68))
+            │           ├── flags: newline
             │           ├── name: :è
             │           ├── name_loc: (2,45)-(2,47) = "è"
             │           ├── receiver:
             │           │   @ SelfNode (location: (2,40)-(2,44))
+            │           │   └── flags: ∅
             │           ├── parameters: ∅
             │           ├── body:
             │           │   @ StatementsNode (location: (2,49)-(2,63))
+            │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ LocalVariableWriteNode (location: (2,49)-(2,63))
+            │           │           ├── flags: newline
             │           │           ├── name: :così
             │           │           ├── depth: 0
             │           │           ├── name_loc: (2,49)-(2,54) = "così"
             │           │           ├── value:
             │           │           │   @ SymbolNode (location: (2,57)-(2,63))
-            │           │           │   ├── flags: ∅
+            │           │           │   ├── flags: static_literal
             │           │           │   ├── opening_loc: (2,57)-(2,58) = ":"
             │           │           │   ├── value_loc: (2,58)-(2,63) = "però"
             │           │           │   ├── closing_loc: ∅

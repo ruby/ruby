@@ -683,7 +683,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
             cb.without_page_end_reserve(|cb| {
-                let mut asm = crate::backend::ir::Assembler::new();
+                let mut asm = crate::backend::ir::Assembler::new_without_iseq();
                 asm.jmp(patch.outlined_target_pos.as_side_exit());
                 if asm.compile(cb, None).is_none() {
                     panic!("Failed to apply patch at {:?}", patch.inline_patch_pos);

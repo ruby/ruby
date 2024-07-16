@@ -1,21 +1,29 @@
 @ ProgramNode (location: (1,0)-(3,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,11))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ AliasGlobalVariableNode (location: (1,0)-(1,11))
+        │   ├── flags: newline
         │   ├── new_name:
         │   │   @ GlobalVariableReadNode (location: (1,6)-(1,8))
+        │   │   ├── flags: ∅
         │   │   └── name: :$a
         │   ├── old_name:
         │   │   @ BackReferenceReadNode (location: (1,9)-(1,11))
+        │   │   ├── flags: ∅
         │   │   └── name: :$+
         │   └── keyword_loc: (1,0)-(1,5) = "alias"
         └── @ AliasGlobalVariableNode (location: (3,0)-(3,11))
+            ├── flags: newline
             ├── new_name:
             │   @ GlobalVariableReadNode (location: (3,6)-(3,8))
+            │   ├── flags: ∅
             │   └── name: :$a
             ├── old_name:
             │   @ GlobalVariableReadNode (location: (3,9)-(3,11))
+            │   ├── flags: ∅
             │   └── name: :$b
             └── keyword_loc: (3,0)-(3,5) = "alias"

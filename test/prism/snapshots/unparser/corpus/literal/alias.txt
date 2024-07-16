@@ -1,27 +1,33 @@
 @ ProgramNode (location: (1,0)-(2,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(2,15))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ AliasGlobalVariableNode (location: (1,0)-(1,15))
+        │   ├── flags: newline
         │   ├── new_name:
         │   │   @ GlobalVariableReadNode (location: (1,6)-(1,10))
+        │   │   ├── flags: ∅
         │   │   └── name: :$foo
         │   ├── old_name:
         │   │   @ GlobalVariableReadNode (location: (1,11)-(1,15))
+        │   │   ├── flags: ∅
         │   │   └── name: :$bar
         │   └── keyword_loc: (1,0)-(1,5) = "alias"
         └── @ AliasMethodNode (location: (2,0)-(2,15))
+            ├── flags: newline
             ├── new_name:
             │   @ SymbolNode (location: (2,6)-(2,10))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (2,6)-(2,7) = ":"
             │   ├── value_loc: (2,7)-(2,10) = "foo"
             │   ├── closing_loc: ∅
             │   └── unescaped: "foo"
             ├── old_name:
             │   @ SymbolNode (location: (2,11)-(2,15))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (2,11)-(2,12) = ":"
             │   ├── value_loc: (2,12)-(2,15) = "bar"
             │   ├── closing_loc: ∅

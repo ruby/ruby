@@ -1,0 +1,4 @@
+module Parent module end
+              ^~~~~~ unexpected constant path after `module`; class/module name must be CONSTANT
+                     ^~~ unexpected 'end', assuming it is closing the parent module definition
+

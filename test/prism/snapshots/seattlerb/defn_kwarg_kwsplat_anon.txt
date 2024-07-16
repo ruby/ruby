@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,19))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,19))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,19))
+            ├── flags: newline
             ├── name: :a
             ├── name_loc: (1,4)-(1,5) = "a"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,6)-(1,14))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -20,7 +24,7 @@
             │   │       ├── name_loc: (1,6)-(1,8) = "b:"
             │   │       └── value:
             │   │           @ IntegerNode (location: (1,9)-(1,10))
-            │   │           ├── flags: decimal
+            │   │           ├── flags: static_literal, decimal
             │   │           └── value: 1
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,12)-(1,14))
