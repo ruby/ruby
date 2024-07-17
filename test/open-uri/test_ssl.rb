@@ -53,6 +53,7 @@ class TestOpenURISSL < Test::Unit::TestCase
     with_https(nil) {|srv, dr, url, server_thread, server_log|
       setup_validation(srv, dr)
       assert_raise(OpenSSL::SSL::SSLError) { URI.open("#{url}/data") {} }
+      sleep 0.5 unless RUBY_PLATFORM =~ /mswin|mingw/
     }
   end
 

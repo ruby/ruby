@@ -252,6 +252,7 @@ module TestNetHTTPUtils
   end
 
   def teardown
+    sleep 0.5 if @config['ssl_enable']
     if @server
       @server.shutdown
     end
