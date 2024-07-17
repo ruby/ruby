@@ -60,6 +60,12 @@ module Gem
   FLATTENS_REQUIRED_PATHS = Specification.new.respond_to?(:flatten_require_paths).freeze
 
   class Specification
+    # Can be removed once RubyGems 3.5.15 support is dropped
+    correct_array_attributes = @@default_value.select {|_k,v| v.is_a?(Array) }.keys
+    unless @@array_attributes == correct_array_attributes
+      @@array_attributes = correct_array_attributes # rubocop:disable Style/ClassVars
+    end
+
     require_relative "match_metadata"
     require_relative "match_platform"
 

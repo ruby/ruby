@@ -2989,6 +2989,18 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
                  e.message
   end
 
+  def test_validate_require_paths_with_invalid_types
+    util_setup_validate
+
+    @a1.require_paths = [1, 2]
+    e = assert_raise Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+
+    assert_equal "require_paths must be an Array of String",
+                 e.message
+  end
+
   def test_validate_files
     pend "test_validate_files skipped on MS Windows (symlink)" if Gem.win_platform?
     util_setup_validate
