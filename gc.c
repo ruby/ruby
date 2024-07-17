@@ -3965,7 +3965,7 @@ type_name(int type, VALUE obj)
     return "unknown";
 }
 
-static const char *
+const char *
 obj_type_name(VALUE obj)
 {
     return type_name(TYPE(obj), obj);
