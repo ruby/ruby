@@ -143,7 +143,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
     fetcher = Gem::RemoteFetcher.new
     yield fetcher
-    sleep 0.5 unless RUBY_PLATFORM =~ /mswin|mingw/
+    sleep 0.5 unless RUBY_PLATFORM.match?(/mswin|mingw/)
   ensure
     fetcher.close_all
     Gem.configuration = nil
