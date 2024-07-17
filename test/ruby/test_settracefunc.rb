@@ -1373,9 +1373,11 @@ CODE
 
   def test_a_call
     events = []
+    log = []
     TracePoint.new(:a_call){|tp|
       next if !target_thread?
       events << tp.event
+      log << "| event:#{ tp.event } method_id:#{ tp.method_id } #{ tp.path }:#{ tp.lineno }"
     }.enable{
       [1].map{
         3
@@ -1391,14 +1393,16 @@ CODE
       :c_call,
       :call,
       :b_call,
-    ], events)
+    ], events, "TracePoint log:\n#{ log.join("\n") }\n")
   end
 
   def test_a_return
     events = []
+    log = []
     TracePoint.new(:a_return){|tp|
       next if !target_thread?
       events << tp.event
+      log << "| event:#{ tp.event } method_id:#{ tp.method_id } #{ tp.path }:#{ tp.lineno }"
     }.enable{
       [1].map{
         3
@@ -1414,7 +1418,7 @@ CODE
       :b_return,
       :return,
       :b_return
-    ], events)
+    ], events, "TracePoint log:\n#{ log.join("\n") }\n")
   end
 
   def test_const_missing
