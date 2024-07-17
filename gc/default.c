@@ -42,6 +42,9 @@
 #include "debug_counter.h"
 #include "internal/sanitizers.h"
 
+// conditional compilation macros for MMTk
+#include "internal/mmtk_macros.h"
+
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
@@ -1287,6 +1290,10 @@ RVALUE_PINNED(rb_objspace_t *objspace, VALUE obj)
 static inline int
 RVALUE_WB_UNPROTECTED(rb_objspace_t *objspace, VALUE obj)
 {
+    WHEN_USING_MMTK({
+        return mmtk_is_object_wb_unprotected((MMTk_ObjectReference)obj);
+    })
+
     check_rvalue_consistency(objspace, obj);
     return RVALUE_WB_UNPROTECTED_BITMAP(obj) != 0;
 }
