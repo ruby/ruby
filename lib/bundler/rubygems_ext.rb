@@ -56,6 +56,9 @@ module Gem
   # Can be removed once RubyGems 3.5.14 support is dropped
   VALIDATES_FOR_RESOLUTION = Specification.new.respond_to?(:validate_for_resolution).freeze
 
+  # Can be removed once RubyGems 3.3.15 support is dropped
+  FLATTENS_REQUIRED_PATHS = Specification.new.respond_to?(:flatten_require_paths).freeze
+
   class Specification
     require_relative "match_metadata"
     require_relative "match_platform"
@@ -158,6 +161,27 @@ module Gem
     unless VALIDATES_FOR_RESOLUTION
       def validate_for_resolution
         SpecificationPolicy.new(self).validate_for_resolution
+      end
+    end
+
+    unless FLATTENS_REQUIRED_PATHS
+      def flatten_require_paths
+        return unless raw_require_paths.first.is_a?(Array)
+
+        warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
+        raw_require_paths.flatten!
+      end
+
+      class << self
+        module RequirePathFlattener
+          def from_yaml(input)
+            spec = super(input)
+            spec.flatten_require_paths
+            spec
+          end
+        end
+
+        prepend RequirePathFlattener
       end
     end
 
