@@ -21696,18 +21696,21 @@ pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t 
 #define LINE_SIZE 4096
     char line[LINE_SIZE];
 
-    while (fgets(line, LINE_SIZE, stream) != NULL) {
-        size_t length = strlen(line);
+    while (memset(line, '\n', LINE_SIZE), fgets(line, LINE_SIZE, stream) != NULL) {
+        size_t length = LINE_SIZE;
+        while (length > 0 && line[length - 1] == '\n') length--;
 
-        if (length == LINE_SIZE && line[length - 1] != '\n') {
+        if (length == LINE_SIZE) {
             // If we read a line that is the maximum size and it doesn't end
             // with a newline, then we'll just append it to the buffer and
             // continue reading.
+            length--;
             pm_buffer_append_string(buffer, line, length);
             continue;
         }
 
         // Append the line to the buffer.
+        length--;
         pm_buffer_append_string(buffer, line, length);
 
         // Check if the line matches the __END__ marker. If it does, then stop
