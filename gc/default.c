@@ -5746,7 +5746,6 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
             new_shape = rb_gc_rebuild_shape(src, dest_pool - size_pools);
 
             if (new_shape == 0) {
-                dest_pool = size_pool;
                 dheap = heap;
             }
         }
