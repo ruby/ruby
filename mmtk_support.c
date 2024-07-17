@@ -633,7 +633,7 @@ rb_mmtk_is_ppp(VALUE obj) {
 
 static bool
 rb_mmtk_is_ppp_wrapper(MMTk_ObjectReference obj) {
-    return rb_mmtk_is_ppp((VALUE)obj);
+    rb_mmtk_is_ppp((VALUE)obj);
 }
 
 static void
