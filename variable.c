@@ -1812,13 +1812,19 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
  *
  * @param[out]  x  Object in question.
  */
-void rb_obj_freeze_inline(VALUE x)
+void
+rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {
-        RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
-        if (TYPE(x) == T_STRING) {
+        switch (BUILTIN_TYPE(x)) {
+          case T_STRING:
             RB_FL_UNSET_RAW(x, FL_USER3); // STR_CHILLED
+            break;
+          case T_ARRAY:
+            rb_ary_shrink_capa(x);
+            break;
         }
+        RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
 
         rb_shape_t * next_shape = rb_shape_transition_shape_frozen(x);
 
