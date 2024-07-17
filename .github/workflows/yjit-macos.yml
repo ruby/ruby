@@ -57,10 +57,12 @@ jobs:
           - test_task: 'check'
             configure: '--enable-yjit'
             yjit_opts: '--yjit'
+            test_opts: --no-retry
           - test_task: 'check'
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
             specopts: '-T --yjit-call-threshold=1 -T --yjit-verify-ctx -T --yjit-code-gc'
+            test_opts: --no-retry
       fail-fast: false
 
     env:
@@ -125,6 +127,11 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+
+      - name: Set extra test options
+        run: |
+          echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+        if: matrix.test_opts
 
       - name: make ${{ matrix.test_task }}
         run: >-

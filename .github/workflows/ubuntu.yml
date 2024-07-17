@@ -27,20 +27,26 @@ jobs:
         include:
           - test_task: check
             configure: 'cppflags=-DVM_CHECK_MODE'
+            test_opts: --no-retry
           - test_task: check
             arch: i686
+            test_opts: --no-retry
           - test_task: check
             configure: '--disable-yjit'
+            test_opts: --no-retry
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
+            test_opts: --no-retry
           - test_task: check
             shared_gc: true
             shared_gc_dir: '/home/runner/ruby_gc'
             configure: '--with-shared-gc=/home/runner/ruby_gc'
+            test_opts: --no-retry
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
           - test_task: check
             os: ubuntu-20.04
+            test_opts: --no-retry
       fail-fast: false
 
     env:
@@ -120,6 +126,11 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+
+      - name: Set extra test options
+        run: |
+          echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+        if: matrix.test_opts
 
       - name: make ${{ matrix.test_task }}
         run: >-
