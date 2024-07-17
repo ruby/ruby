@@ -10484,7 +10484,7 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
         return NULL;
     }
 
-    const char *cstr = StringValuePtr(line);
+    const char *cstr = RSTRING_PTR(line);
     long length = RSTRING_LEN(line);
 
     memcpy(string, cstr, length);
