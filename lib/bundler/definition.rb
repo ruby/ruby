@@ -567,7 +567,7 @@ module Bundler
     def resolution_packages
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
-        remove_invalid_platforms!(current_dependencies)
+        remove_invalid_platforms!
         packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @gems_to_unlock, prerelease: gem_version_promoter.pre?)
         packages = additional_base_requirements_to_prevent_downgrades(packages, last_resolve)
         packages = additional_base_requirements_to_force_updates(packages)
@@ -635,7 +635,7 @@ module Bundler
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
       if @most_specific_non_local_locked_ruby_platform
-        if result.incomplete_for_platform?(current_dependencies, @most_specific_non_local_locked_ruby_platform)
+        if spec_set_incomplete_for_platform?(result, @most_specific_non_local_locked_ruby_platform)
           @platforms.delete(@most_specific_non_local_locked_ruby_platform)
         elsif local_platform_needed_for_resolvability
           @platforms.delete(local_platform)
@@ -1058,7 +1058,7 @@ module Bundler
       unlocked_definition
     end
 
-    def remove_invalid_platforms!(dependencies)
+    def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
       platforms.reverse_each do |platform|
@@ -1067,10 +1067,14 @@ module Bundler
                 @path_changes ||
                 @dependency_changes ||
                 @locked_spec_with_invalid_deps ||
-                !@originally_locked_specs.incomplete_for_platform?(dependencies, platform)
+                !spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
 
         remove_platform(platform)
       end
+    end
+
+    def spec_set_incomplete_for_platform?(spec_set, platform)
+      spec_set.incomplete_for_platform?(current_dependencies, platform)
     end
 
     def source_map
