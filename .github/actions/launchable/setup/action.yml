@@ -102,7 +102,7 @@ runs:
       # Since updated PATH variable will be available in only subsequent actions, we need to add the path beforehand.
       # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path
       run: echo "$(python -msite --user-base)/bin" >> $GITHUB_PATH
-      if: startsWith(inputs.os, 'macos')
+      if: steps.enable-launchable.outputs.enable-launchable && startsWith(inputs.os, 'macos')
 
     - name: Set up Launchable
       shell: bash
