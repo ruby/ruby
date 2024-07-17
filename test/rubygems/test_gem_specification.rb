@@ -2978,19 +2978,15 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_empty_require_paths
-    if Gem.win_platform?
-      pend "test_validate_empty_require_paths skipped on MS Windows (symlink)"
-    else
-      util_setup_validate
+    util_setup_validate
 
-      @a1.require_paths = []
-      e = assert_raise Gem::InvalidSpecificationException do
-        @a1.validate
-      end
-
-      assert_equal "specification must have at least one require_path",
-                   e.message
+    @a1.require_paths = []
+    e = assert_raise Gem::InvalidSpecificationException do
+      @a1.validate
     end
+
+    assert_equal "specification must have at least one require_path",
+                 e.message
   end
 
   def test_validate_files
