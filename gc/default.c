@@ -1691,11 +1691,8 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
         id = ULL2NUM(objspace->next_object_id);
         objspace->next_object_id += OBJ_ID_INCREMENT;
 
-        bool prev_enabled = rb_gc_impl_gc_enabled_p(objspace);
-        rb_gc_impl_gc_disable(objspace, false);
         st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
         st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
-        if (prev_enabled) rb_gc_impl_gc_enable(objspace);
         FL_SET(obj, FL_SEEN_OBJ_ID);
     }
     rb_gc_vm_unlock(lev);
