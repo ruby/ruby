@@ -947,6 +947,53 @@ RSpec.describe "bundle install with specific platforms" do
     expect(lockfile).to eq(original_lockfile)
   end
 
+  it "does not remove ruby if gems for other platforms, and not present in the lockfile, exist in the Gemfile, and the lockfile only has ruby" do
+    build_repo4 do
+      build_gem "nokogiri", "1.13.8"
+      build_gem "nokogiri", "1.13.8" do |s|
+        s.platform = "arm64-darwin"
+      end
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "nokogiri"
+
+      gem "tzinfo", "~> 1.2", platforms: %i[mingw mswin x64_mingw jruby]
+    G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo4, "nokogiri", "1.13.8"
+      c.checksum gem_repo4, "nokogiri", "1.13.8", "arm64-darwin"
+    end
+
+    original_lockfile = <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.13.8)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        nokogiri
+        tzinfo (~> 1.2)
+      #{checksums}
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    simulate_platform "arm64-darwin-23" do
+      bundle "lock --update"
+    end
+
+    expect(lockfile).to eq(original_lockfile)
+  end
+
   it "does not remove ruby when adding a new gem to the Gemfile" do
     build_repo4 do
       build_gem "concurrent-ruby", "1.2.2"

@@ -635,7 +635,7 @@ module Bundler
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
       if @most_specific_non_local_locked_ruby_platform
-        if result.incomplete_for_platform?(dependencies, @most_specific_non_local_locked_ruby_platform)
+        if result.incomplete_for_platform?(current_dependencies, @most_specific_non_local_locked_ruby_platform)
           @platforms.delete(@most_specific_non_local_locked_ruby_platform)
         elsif local_platform_needed_for_resolvability
           @platforms.delete(local_platform)
