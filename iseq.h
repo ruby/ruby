@@ -15,11 +15,6 @@
 #include "vm_core.h"
 #include "prism_compile.h"
 
-#if USE_MMTK
-#include "internal/mmtk_macros.h"
-#include "internal/mmtk_support.h"
-#endif
-
 RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
 #define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
@@ -156,16 +151,7 @@ static inline void
 ISEQ_COMPILE_DATA_ALLOC(rb_iseq_t *iseq)
 {
     iseq->aux.compile_data = ZALLOC(struct iseq_compile_data);
-    WHEN_USING_MMTK({
-        RUBY_ASSERT((iseq->flags & ISEQ_USE_COMPILE_DATA) == 0);
-    })
     iseq->flags |= ISEQ_USE_COMPILE_DATA;
-    WHEN_USING_MMTK({
-        // Defined in iseq.c
-        void rb_mmtk_iseq_register_ppp(rb_iseq_t *iseq);
-
-        rb_mmtk_iseq_register_ppp(iseq);
-    })
 }
 
 static inline void
@@ -197,10 +183,6 @@ unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_
 #endif
 
 int rb_vm_insn_addr2opcode(const void *addr);
-
-#if USE_MMTK
-bool rb_mmtk_iseq_is_ppp(VALUE iseq);
-#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
