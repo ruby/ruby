@@ -7164,9 +7164,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // is popped, then we know we don't need to do anything since it's
             // statically known.
             if (!popped) {
-                VALUE value = pm_static_literal_value(iseq, node, scope_node);
-                PUSH_INSN1(ret, location, duphash, value);
-                RB_OBJ_WRITTEN(iseq, Qundef, value);
+                const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+
+                if (cast->elements.size == 0) {
+                    PUSH_INSN1(ret, location, newhash, INT2FIX(0));
+                }
+                else {
+                    VALUE value = pm_static_literal_value(iseq, node, scope_node);
+                    PUSH_INSN1(ret, location, duphash, value);
+                    RB_OBJ_WRITTEN(iseq, Qundef, value);
+                }
             }
         }
         else {
