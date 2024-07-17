@@ -153,6 +153,9 @@ struct getattrlist_args {
     unsigned int options;
 };
 
+# define GETATTRLIST_ARGS(list_, buf_, options_) (struct getattrlist_args) \
+    {.list = list_, .buf = buf_, .size = sizeof(buf_), .options = options_}
+
 static void *
 nogvl_getattrlist(void *args)
 {
@@ -196,11 +199,7 @@ need_normalization(DIR *dirp, const char *path)
 # if defined HAVE_FGETATTRLIST || defined HAVE_GETATTRLIST
     u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
-    struct getattrlist_args args;
-    args.list = &al;
-    args.buf = attrbuf;
-    args.size = sizeof(attrbuf);
-    args.options = 0;
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, 0);
 #   if defined HAVE_FGETATTRLIST
     int ret = gvl_fgetattrlist(&args, dirfd(dirp));
 #   else
@@ -601,11 +600,7 @@ dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
         else if (e == EIO) {
             u_int32_t attrbuf[1];
             struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
-            struct getattrlist_args args;
-            args.list = &al;
-            args.buf = attrbuf;
-            args.size = sizeof(attrbuf);
-            args.options = FSOPT_NOFOLLOW;
+            struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
             if (gvl_getattrlist(&args, path) == 0) {
                 dp->dir = opendir_without_gvl(path);
             }
@@ -2185,11 +2180,7 @@ is_case_sensitive(DIR *dirp, const char *path)
     const vol_capabilities_attr_t *const cap = attrbuf[0].cap;
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
-    struct getattrlist_args args;
-    args.list = &al;
-    args.buf = attrbuf;
-    args.size = sizeof(attrbuf);
-    args.options = FSOPT_NOFOLLOW;
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
 #   if defined HAVE_FGETATTRLIST
     int ret = gvl_fgetattrlist(&args, dirfd(dirp));
 #   else
@@ -2220,11 +2211,7 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
     *type = path_noent;
-    struct getattrlist_args args;
-    args.list = &al;
-    args.buf = attrbuf;
-    args.size = sizeof(attrbuf);
-    args.options = FSOPT_NOFOLLOW;
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
     if (gvl_getattrlist(&args, path)) {
         if (!to_be_ignored(errno))
             sys_warning(path, enc);
@@ -3761,11 +3748,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     {
         u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
         struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
-        struct getattrlist_args args;
-        args.list = &al;
-        args.buf = attrbuf;
-        args.size = sizeof(attrbuf);
-        args.options = 0;
+        struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, 0);
         if (gvl_getattrlist(&args, path) != 0)
             rb_sys_fail_path(orig);
         if (*(const fsobj_tag_t *)(attrbuf+1) == VT_HFS) {
