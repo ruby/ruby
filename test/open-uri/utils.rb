@@ -363,6 +363,7 @@ module TestOpenURIUtils
       }
       begin
         yield srv, dr, url, cacert_filename, cacert_directory, proxy_host, proxy_port
+        sleep 1
       ensure
         proxy.shutdown
       end
