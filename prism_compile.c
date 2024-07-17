@@ -7445,25 +7445,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // :"foo #{bar}"
         // ^^^^^^^^^^^^^
         const pm_interpolated_symbol_node_t *cast = (const pm_interpolated_symbol_node_t *) node;
+        int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL);
 
-        if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
-            if (!popped) {
-                VALUE symbol = pm_static_literal_value(iseq, node, scope_node);
-                PUSH_INSN1(ret, location, putobject, symbol);
-            }
+        if (length > 1) {
+            PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
+        }
+
+        if (!popped) {
+            PUSH_INSN(ret, location, intern);
         }
         else {
-            int length = pm_interpolated_node_compile(iseq, &cast->parts, &location, ret, popped, scope_node, NULL, NULL);
-            if (length > 1) {
-                PUSH_INSN1(ret, location, concatstrings, INT2FIX(length));
-            }
-
-            if (!popped) {
-                PUSH_INSN(ret, location, intern);
-            }
-            else {
-                PUSH_INSN(ret, location, pop);
-            }
+            PUSH_INSN(ret, location, pop);
         }
 
         return;
