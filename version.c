@@ -150,7 +150,8 @@ define_ruby_description(const char *const jit_opt)
         sizeof(ruby_description)
         + rb_strlen_lit(YJIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
-        ];
+        + rb_strlen_lit(" +PRISM")
+    ];
 
     const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
     const char *const parser_opt = (*rb_ruby_prism_ptr()) ? " +PRISM" : "";

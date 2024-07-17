@@ -8,7 +8,8 @@ class TestBugReporter < Test::Unit::TestCase
     pend "macOS 15 beta is not working with this test" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
 
     omit "flaky with RJIT" if JITSupport.rjit_enabled?
-    description = RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+    description = RUBY_DESCRIPTION
+    description = description.sub(/\+PRISM /, '') unless EnvUtil.invoke_ruby(["-v"], "", true, false)[0].include?("+PRISM")
     description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,
