@@ -683,7 +683,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       EOF
 
-      parsers = Hash.new { |h,parser| h[parser] = [] }
+      parsers = Hash.new { |h, parser| h[parser] = [] }
 
       RDoc::Parser.parsers.each do |regexp, parser|
         parsers[parser.name.sub('RDoc::Parser::', '')] << regexp.source

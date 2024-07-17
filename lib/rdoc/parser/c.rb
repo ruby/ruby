@@ -440,7 +440,7 @@ class RDoc::Parser::C < RDoc::Parser
   # Scans #content for rb_include_module
 
   def do_includes
-    @content.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
+    @content.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c, m|
       next unless cls = @classes[c]
       m = @known_classes[m] || m
 
