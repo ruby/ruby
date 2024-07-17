@@ -944,25 +944,7 @@ RSpec.describe "bundle install with specific platforms" do
 
     bundle "lock --update"
 
-    updated_lockfile = <<~L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          nokogiri (1.13.8)
-          nokogiri (1.13.8-#{Gem::Platform.local})
-
-      PLATFORMS
-        #{lockfile_platforms("ruby")}
-
-      DEPENDENCIES
-        nokogiri
-        tzinfo (~> 1.2)
-      #{checksums}
-      BUNDLED WITH
-         #{Bundler::VERSION}
-    L
-
-    expect(lockfile).to eq(updated_lockfile)
+    expect(lockfile).to eq(original_lockfile)
   end
 
   it "does not remove ruby when adding a new gem to the Gemfile" do
