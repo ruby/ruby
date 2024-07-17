@@ -14,7 +14,8 @@ module Prism
   #       end
   #     end
   #
-  #     dispatcher = Dispatcher.new
+  #     listener = OctalListener.new
+  #     dispatcher = Prism::Dispatcher.new
   #     dispatcher.register(listener, :on_integer_node_enter)
   #
   # Then, you can walk any number of trees and dispatch events to the listeners:
