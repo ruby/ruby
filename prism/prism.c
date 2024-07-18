@@ -1036,8 +1036,8 @@ pm_parser_optional_constant_id_token(pm_parser_t *parser, const pm_token_t *toke
  * If the node is value node, it returns NULL.
  * If not, it returns the pointer to the node to be inspected as "void expression".
  */
-static pm_node_t*
-pm_check_value_expression(pm_node_t *node) {
+static pm_node_t *
+pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
     pm_node_t* void_node = NULL;
 
     while (node != NULL) {
@@ -1096,7 +1096,7 @@ pm_check_value_expression(pm_node_t *node) {
                 if (cast->statements == NULL || cast->consequent == NULL) {
                     return NULL;
                 }
-                pm_node_t *vn = pm_check_value_expression((pm_node_t *) cast->statements);
+                pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
                 if (vn == NULL) {
                     return NULL;
                 }
@@ -1111,7 +1111,7 @@ pm_check_value_expression(pm_node_t *node) {
                 if (cast->statements == NULL || cast->consequent == NULL) {
                     return NULL;
                 }
-                pm_node_t *vn = pm_check_value_expression((pm_node_t *) cast->statements);
+                pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
                 if (vn == NULL) {
                     return NULL;
                 }
@@ -1136,6 +1136,15 @@ pm_check_value_expression(pm_node_t *node) {
                 node = cast->left;
                 break;
             }
+            case PM_LOCAL_VARIABLE_WRITE_NODE: {
+                pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *) node;
+
+                pm_scope_t *scope = parser->current_scope;
+                for (uint32_t depth = 0; depth < cast->depth; depth++) scope = scope->previous;
+
+                pm_locals_read(&scope->locals, cast->name);
+                return NULL;
+            }
             default:
                 return NULL;
         }
@@ -1146,7 +1155,7 @@ pm_check_value_expression(pm_node_t *node) {
 
 static inline void
 pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
-    pm_node_t *void_node = pm_check_value_expression(node);
+    pm_node_t *void_node = pm_check_value_expression(parser, node);
     if (void_node != NULL) {
         pm_parser_err_node(parser, void_node, PM_ERR_VOID_EXPRESSION);
     }
@@ -1338,13 +1347,25 @@ static bool
 pm_conditional_predicate_warn_write_literal_p(const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_ARRAY_NODE: {
-            const pm_array_node_t *cast = (const pm_array_node_t *) node;
-            const pm_node_t *element;
+            if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) return true;
 
-            PM_NODE_LIST_FOREACH(&cast->elements, index, element) {
-                if (!pm_conditional_predicate_warn_write_literal_p(element)) {
-                    return false;
-                }
+            const pm_array_node_t *cast = (const pm_array_node_t *) node;
+            for (size_t index = 0; index < cast->elements.size; index++) {
+                if (!pm_conditional_predicate_warn_write_literal_p(cast->elements.nodes[index])) return false;
+            }
+
+            return true;
+        }
+        case PM_HASH_NODE: {
+            if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) return true;
+
+            const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+            for (size_t index = 0; index < cast->elements.size; index++) {
+                const pm_node_t *element = cast->elements.nodes[index];
+                if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) return false;
+
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+                if (!pm_conditional_predicate_warn_write_literal_p(assoc->key) || !pm_conditional_predicate_warn_write_literal_p(assoc->value)) return false;
             }
 
             return true;
