@@ -2214,29 +2214,20 @@ rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    instance_exec(*args) {|args| ... } -> object
+ *     obj.instance_exec(arg...) {|var...| block }                       -> obj
  *
- *  Executes the given block within the context of +self+,
- *  giving full access to +self+:
+ *  Executes the given block within the context of the receiver
+ *  (_obj_). In order to set the context, the variable +self+ is set
+ *  to _obj_ while the code is executing, giving the code access to
+ *  _obj_'s instance variables.  Arguments are passed as block parameters.
  *
- *    class SecretWord
- *      def initialize(word)
- *        @word = word
- *      end
- *      private
- *      def tell_word(name)
- *        "#{name}, the secret word is '#{@word}'."
- *      end
- *    end
- *    secret_word = SecretWord.new('xyzzy')
- *    secret_word.instance_exec('Matz') {|name| p "#{name}, '#{@word}'" }
- *    secret_word.instance_exec('Matz') {|name| p tell_word(name) }
- *
- *  Output:
- *
- *    "Matz, 'xyzzy'"
- *    "Matz, the secret word is 'xyzzy'."
- *
+ *     class KlassWithSecret
+ *       def initialize
+ *         @secret = 99
+ *       end
+ *     end
+ *     k = KlassWithSecret.new
+ *     k.instance_exec(5) {|x| @secret+x }   #=> 104
  */
 
 static VALUE
