@@ -3690,25 +3690,20 @@ copy_home_path(VALUE result, const char *dir)
     return result;
 }
 
-#ifdef HAVE_PWD_H
-static void *
-nogvl_getpwnam(void *login)
-{
-    return (void *)getpwnam((const char *)login);
-}
-#endif
-
 VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
 #ifdef HAVE_PWD_H
-    struct passwd *pwPtr;
+    VALUE dirname = rb_getpwdirnam_for_login(user);
+    if (dirname == Qnil) {
+        rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
+    }
+    const char *dir = RSTRING_PTR(dirname);
 #else
     extern char *getlogin(void);
     const char *pwPtr = 0;
     const char *login;
     # define endpwent() ((void)0)
-#endif
     const char *dir, *username = RSTRING_PTR(user);
     rb_encoding *enc = rb_enc_get(user);
 #if defined _WIN32
@@ -3720,21 +3715,13 @@ rb_home_dir_of(VALUE user, VALUE result)
         dir = username = RSTRING_PTR(rb_str_conv_enc(user, enc, fsenc));
     }
 
-#ifdef HAVE_PWD_H
-    pwPtr = (struct passwd *)IO_WITHOUT_GVL(nogvl_getpwnam, (void *)username);
-#else
     if ((login = getlogin()) && strcasecmp(username, login) == 0)
         dir = pwPtr = getenv("HOME");
-#endif
     if (!pwPtr) {
-        endpwent();
         rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
     }
-#ifdef HAVE_PWD_H
-    dir = pwPtr->pw_dir;
 #endif
     copy_home_path(result, dir);
-    endpwent();
     return result;
 }
 
