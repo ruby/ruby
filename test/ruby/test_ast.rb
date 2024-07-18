@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'tempfile'
 require 'pp'
+require_relative '../lib/parser_support'
 
 class RubyVM
   module AbstractSyntaxTree
@@ -337,7 +338,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_node_id_for_location
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     exception = begin
                   raise
@@ -358,7 +359,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
@@ -389,7 +390,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     backtrace_location, lineno = sample_backtrace_location
     node = RubyVM::AbstractSyntaxTree.of(backtrace_location)
@@ -402,7 +403,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
@@ -433,7 +434,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval_with_keep_script_lines
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     keep_script_lines_back = RubyVM.keep_script_lines
@@ -465,7 +466,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
@@ -485,7 +486,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval_with_keep_script_lines
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     keep_script_lines_back = RubyVM.keep_script_lines
@@ -779,7 +780,7 @@ dummy
   end
 
   def test_keep_script_lines_for_of
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
@@ -792,7 +793,7 @@ dummy
   end
 
   def test_keep_script_lines_for_of_with_existing_SCRIPT_LINES__that_has__FILE__as_a_key
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     # This test confirms that the bug that previously occurred because of
     # `AbstractSyntaxTree.of`s unnecessary dependence on SCRIPT_LINES__ does not reproduce.
@@ -861,7 +862,7 @@ dummy
   end
 
   def test_e_option
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
 
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
@@ -1297,13 +1298,6 @@ dummy
   end
 
   private
-
-  # We can't revisit instruction sequences to find node ids if the prism
-  # compiler was used instead of the parse.y compiler. In that case, we'll omit
-  # some tests.
-  def compiling_with_prism?
-    RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
-  end
 
   def assert_error_tolerant(src, expected, keep_tokens: false)
     assert_ast_eqaul(src, expected, error_tolerant: true, keep_tokens: keep_tokens)
