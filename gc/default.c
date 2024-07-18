@@ -2970,6 +2970,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
     VALUE table;
     st_data_t data;
 
+    GC_ASSERT(!OBJ_FROZEN(obj));
+
     RBASIC(obj)->flags |= FL_FINALIZE;
 
     if (st_lookup(finalizer_table, obj, &data)) {
