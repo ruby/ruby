@@ -228,14 +228,12 @@ VALUE rb_obj_hash(VALUE obj);
 
 /**
  *  call-seq:
- *    !self -> true or false
+ *     !obj    -> true or false
  *
- *  Returns the negation of +self+:
- *
- *    b = Object.new
- *    !b  # => false
- *    !!b # => true
- *
+ *  Boolean negate.
+ *--
+ * \private
+ *++
  */
 
 VALUE
