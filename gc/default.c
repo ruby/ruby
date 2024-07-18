@@ -2983,8 +2983,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
                 if (rb_equal(recv, block)) {
-                    block = recv;
-                    goto end;
+                    return recv;
                 }
             }
         }
@@ -2996,9 +2995,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_obj_hide(table);
         st_add_direct(finalizer_table, obj, table);
     }
-  end:
-    block = rb_ary_new3(2, INT2FIX(0), block);
-    OBJ_FREEZE(block);
+
     return block;
 }
 
