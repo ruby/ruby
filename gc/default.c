@@ -3005,8 +3005,10 @@ void
 rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
+
+    GC_ASSERT(!OBJ_FROZEN(obj));
+
     st_data_t data = obj;
-    rb_check_frozen(obj);
     st_delete(finalizer_table, &data, 0);
     FL_UNSET(obj, FL_FINALIZE);
 }
