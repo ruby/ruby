@@ -334,6 +334,24 @@ dump_array(VALUE ast_value, const struct RNode_LIST *node)
 }
 
 static VALUE
+dump_parser_array(VALUE ast_value, rb_parser_ary_t *p_ary)
+{
+    VALUE ary;
+
+    if (p_ary->data_type != PARSER_ARY_DATA_NODE) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", p_ary->data_type);
+    }
+
+    ary = rb_ary_new();
+
+    for (long i = 0; i < p_ary->len; i++) {
+        rb_ary_push(ary, NEW_CHILD(ast_value, p_ary->data[i]));
+    }
+
+    return ary;
+}
+
+static VALUE
 var_name(ID id)
 {
     if (!id) return Qnil;
@@ -577,7 +595,7 @@ node_children(VALUE ast_value, const NODE *node)
       case NODE_VALIAS:
         return rb_ary_new_from_args(2, ID2SYM(RNODE_VALIAS(node)->nd_alias), ID2SYM(RNODE_VALIAS(node)->nd_orig));
       case NODE_UNDEF:
-        return rb_ary_new_from_node_args(ast_value, 1, RNODE_UNDEF(node)->nd_undef);
+        return rb_ary_new_from_args(1, dump_parser_array(ast_value, RNODE_UNDEF(node)->nd_undefs));
       case NODE_CLASS:
         return rb_ary_new_from_node_args(ast_value, 3, RNODE_CLASS(node)->nd_cpath, RNODE_CLASS(node)->nd_super, RNODE_CLASS(node)->nd_body);
       case NODE_MODULE:

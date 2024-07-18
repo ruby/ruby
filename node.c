@@ -163,6 +163,14 @@ parser_tokens_free(rb_ast_t *ast, rb_parser_ary_t *tokens)
 }
 
 static void
+parser_nodes_free(rb_ast_t *ast, rb_parser_ary_t *nodes)
+{
+    /* Do nothing for nodes because nodes are freed when rb_ast_t is freed */
+    xfree(nodes->data);
+    xfree(nodes);
+}
+
+static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
@@ -205,6 +213,9 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
         break;
       case NODE_IMAGINARY:
         xfree(RNODE_IMAGINARY(node)->val);
+        break;
+      case NODE_UNDEF:
+        parser_nodes_free(ast, RNODE_UNDEF(node)->nd_undefs);
         break;
       default:
         break;

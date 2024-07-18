@@ -225,7 +225,8 @@ typedef void* rb_parser_ary_data;
 
 enum rb_parser_ary_data_type {
     PARSER_ARY_DATA_AST_TOKEN = 1,
-    PARSER_ARY_DATA_SCRIPT_LINE
+    PARSER_ARY_DATA_SCRIPT_LINE,
+    PARSER_ARY_DATA_NODE
 };
 
 typedef struct rb_parser_ary {
@@ -885,7 +886,7 @@ typedef struct RNode_VALIAS {
 typedef struct RNode_UNDEF {
     NODE node;
 
-    struct RNode *nd_undef;
+    rb_parser_ary_t *nd_undefs;
 } rb_node_undef_t;
 
 typedef struct RNode_CLASS {

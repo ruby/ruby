@@ -2487,7 +2487,6 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
             memcmp(ptr1, ptr2, len1) != 0);
 }
 
-#ifndef RIPPER
 static void
 rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
 {
@@ -2503,7 +2502,7 @@ rb_parser_ary_extend(rb_parser_t *p, rb_parser_ary_t *ary, long len)
 
 /*
  * Do not call this directly.
- * Use rb_parser_ary_new_capa_for_script_line() or rb_parser_ary_new_capa_for_ast_token() instead.
+ * Use rb_parser_ary_new_capa_for_XXX() instead.
  */
 static rb_parser_ary_t *
 parser_ary_new_capa(rb_parser_t *p, long len)
@@ -2524,6 +2523,7 @@ parser_ary_new_capa(rb_parser_t *p, long len)
     return ary;
 }
 
+#ifndef RIPPER
 static rb_parser_ary_t *
 rb_parser_ary_new_capa_for_script_line(rb_parser_t *p, long len)
 {
@@ -2539,10 +2539,19 @@ rb_parser_ary_new_capa_for_ast_token(rb_parser_t *p, long len)
     ary->data_type = PARSER_ARY_DATA_AST_TOKEN;
     return ary;
 }
+#endif
+
+static rb_parser_ary_t *
+rb_parser_ary_new_capa_for_node(rb_parser_t *p, long len)
+{
+    rb_parser_ary_t *ary = parser_ary_new_capa(p, len);
+    ary->data_type = PARSER_ARY_DATA_NODE;
+    return ary;
+}
 
 /*
  * Do not call this directly.
- * Use rb_parser_ary_push_script_line() or rb_parser_ary_push_ast_token() instead.
+ * Use rb_parser_ary_push_XXX() instead.
  */
 static rb_parser_ary_t *
 parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ary_data val)
@@ -2554,6 +2563,7 @@ parser_ary_push(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ary_data val)
     return ary;
 }
 
+#ifndef RIPPER
 static rb_parser_ary_t *
 rb_parser_ary_push_ast_token(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_ast_token_t *val)
 {
@@ -2571,7 +2581,18 @@ rb_parser_ary_push_script_line(rb_parser_t *p, rb_parser_ary_t *ary, rb_parser_s
     }
     return parser_ary_push(p, ary, val);
 }
+#endif
 
+static rb_parser_ary_t *
+rb_parser_ary_push_node(rb_parser_t *p, rb_parser_ary_t *ary, NODE *val)
+{
+    if (ary->data_type != PARSER_ARY_DATA_NODE) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
+    }
+    return parser_ary_push(p, ary, val);
+}
+
+#ifndef RIPPER
 static void
 rb_parser_ast_token_free(rb_parser_t *p, rb_parser_ast_token_t *token)
 {
@@ -2592,6 +2613,9 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
         break;
       case PARSER_ARY_DATA_SCRIPT_LINE:
         foreach_ary(data) {rb_parser_string_free(p, *data);}
+        break;
+      case PARSER_ARY_DATA_NODE:
+        /* Do nothing because nodes are freed when rb_ast_t is freed */
         break;
       default:
         rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
@@ -3774,8 +3798,8 @@ undef_list	: fitem
                     }
                 | undef_list ',' {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
-                        NODE *undef = NEW_UNDEF($4, &@4);
-                        $$ = block_append(p, $1, undef);
+                        nd_set_last_loc($1, @4.end_pos);
+                        rb_parser_ary_push_node(p, RNODE_UNDEF($1)->nd_undefs, $4);
                     /*% ripper: rb_ary_push($:1, $:4) %*/
                     }
                 ;
@@ -12286,7 +12310,8 @@ static rb_node_undef_t *
 rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc)
 {
     rb_node_undef_t *n = NODE_NEWNODE(NODE_UNDEF, rb_node_undef_t, loc);
-    n->nd_undef = nd_undef;
+    n->nd_undefs = rb_parser_ary_new_capa_for_node(p, 1);
+    rb_parser_ary_push_node(p, n->nd_undefs, nd_undef);
 
     return n;
 }
