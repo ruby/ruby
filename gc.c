@@ -1544,19 +1544,15 @@ define_final(int argc, VALUE *argv, VALUE os)
     VALUE obj, block;
 
     rb_scan_args(argc, argv, "11", &obj, &block);
-    should_be_finalizable(obj);
     if (argc == 1) {
         block = rb_block_proc();
-    }
-    else {
-        should_be_callable(block);
     }
 
     if (rb_callable_receiver(block) == obj) {
         rb_warn("finalizer references object to be finalized");
     }
 
-    return rb_gc_impl_define_finalizer(rb_gc_get_objspace(), obj, block);
+    return rb_define_finalizer(obj, block);
 }
 
 VALUE
