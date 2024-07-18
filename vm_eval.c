@@ -885,44 +885,41 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
 
 /*
  *  call-seq:
- *    method_missing(method, *args) -> object
+ *     obj.method_missing(symbol [, *args] )   -> result
  *
- *  Invoked when +self+ called with a method it does not define;
- *  raises NoMethodError:
+ *  Invoked by Ruby when <i>obj</i> is sent a message it cannot handle.
+ *  <i>symbol</i> is the symbol for the method called, and <i>args</i>
+ *  are any arguments that were passed to it. By default, the interpreter
+ *  raises an error when this method is called. However, it is possible
+ *  to override the method to provide more dynamic behavior.
+ *  If it is decided that a particular method should not be handled, then
+ *  <i>super</i> should be called, so that ancestors can pick up the
+ *  missing method.
+ *  The example below creates
+ *  a class <code>Roman</code>, which responds to methods with names
+ *  consisting of roman numerals, returning the corresponding integer
+ *  values.
  *
- *    'foo'.nosuch
- *    # Raises NoMethodError: undefined method `nosuch' for an instance of String
+ *     class Roman
+ *       def roman_to_int(str)
+ *         # ...
+ *       end
  *
- *  The method may be overridden to provide dynamic handling for the call;
- *  the overriding method should call +super+ if it can't handle the call.
+ *       def method_missing(symbol, *args)
+ *         str = symbol.id2name
+ *         begin
+ *           roman_to_int(str)
+ *         rescue
+ *           super(symbol, *args)
+ *         end
+ *       end
+ *     end
  *
- *  This class overrides +method_missing+:
- *
- *    class Greeter
- *      def method_missing(method_name, *args, &block)
- *        if method_name.to_s =~ /^greet_(.*)$/
- *          puts "Hello #{$1.capitalize}"
- *        else
- *          super
- *        end
- *      end
- *    end
- *    greeter = Greeter.new
- *    greeter.greet_world # => Hello world
- *    greeter.greet_ruby # => Hello ruby
- *    greeter.foo # Raises NoMethodError: undefined method 'foo' for an instance of Greeter
- *
- *  Output:
- *
- *    Roman IV converts to decimal 4.
- *    Roman XXIII converts to decimal 23.
- *    Roman MMXXIV converts to decimal 2024.
- *
- *  This call is not handled:
- *
- *    roman.NOSUCH
- *    # Raises NoMethodError: undefined method `NOSUCH' for an instance of Roman
- *
+ *     r = Roman.new
+ *     r.iv      #=> 4
+ *     r.xxiii   #=> 23
+ *     r.mm      #=> 2000
+ *     r.foo     #=> NoMethodError
  */
 
 static VALUE
@@ -1290,32 +1287,28 @@ send_internal_kw(int argc, const VALUE *argv, VALUE recv, call_type scope)
 
 /*
  * call-seq:
- *   __send__(method, *args) -> object
- *   send(method, *args) -> object
+ *    foo.send(symbol [, args...])       -> obj
+ *    foo.__send__(symbol [, args...])   -> obj
+ *    foo.send(string [, args...])       -> obj
+ *    foo.__send__(string [, args...])   -> obj
  *
- *  Invokes the method identified by +method+,
- *  passing it the arguments +args+.
- *  When +method+ is a String, it is converted to a symbol.
+ *  Invokes the method identified by _symbol_, passing it any
+ *  arguments specified.
+ *  When the method is identified by a string, the string is converted
+ *  to a symbol.
  *
- *  The invoked method may be private.
+ *  BasicObject implements +__send__+, Kernel implements +send+.
+ *  <code>__send__</code> is safer than +send+
+ *  when _obj_ has the same method name like <code>Socket</code>.
+ *  See also <code>public_send</code>.
  *
- *  Though their behaviors are identical:
- *
- *  - BasicObject implements +__send__+.
- *  - Kernel (which in included in Object) implements +send+.
- *
- *  Using method +__send__+ may be safer than using method +send+,
- *  because some classes override method +send+.
- *
- *    class Foo
- *      def hello(*args)
- *        'Hello ' + args.join(' ')
- *      end
- *    end
- *    foo = Foo.new
- *    foo.send(:hello, %w[gentle readers])  # => "Hello gentle readers"
- *
- *  Related: Object#public_send.
+ *     class Klass
+ *       def hello(*args)
+ *         "Hello " + args.join(' ')
+ *       end
+ *     end
+ *     k = Klass.new
+ *     k.send :hello, "gentle", "readers"   #=> "Hello gentle readers"
  */
 
 VALUE
