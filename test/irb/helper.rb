@@ -49,6 +49,19 @@ module TestIRB
       !Pathname(__dir__).join("../../", "irb.gemspec").exist?
     end
 
+    def setup_envs(home:)
+      @backup_home = ENV["HOME"]
+      ENV["HOME"] = home
+      @backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
+      @backup_irbrc = ENV.delete("IRBRC")
+    end
+
+    def teardown_envs
+      ENV["HOME"] = @backup_home
+      ENV["XDG_CONFIG_HOME"] = @backup_xdg_config_home
+      ENV["IRBRC"] = @backup_irbrc
+    end
+
     def save_encodings
       @default_encoding = [Encoding.default_external, Encoding.default_internal]
       @stdio_encodings = [STDIN, STDOUT, STDERR].map {|io| [io.external_encoding, io.internal_encoding] }
