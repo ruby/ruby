@@ -5902,6 +5902,32 @@ rb_getpwdirnam_for_login(VALUE login_name)
 # endif
 }
 
+# if defined(USE_GETPWUID_R)
+struct getpwuid_r_args {
+    uid_t uid;
+    char *buf;
+    size_t bufsize;
+    struct passwd *result;
+    struct passwd pwstore;
+};
+
+# define GETPWUID_R_ARGS(uid_, buf_, bufsize_) (struct getpwuid_r_args) \
+    {.uid = uid_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getpwuid_r(void *args)
+{
+    struct getpwuid_r_args *arg = args;
+    return (void *)(VALUE)getpwuid_r(arg->uid, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
+}
+# elif defined(USE_GETPWUID)
+static void *
+nogvl_getpwuid(void *uid)
+{
+    return getpwuid((uid_t)(VALUE)uid);
+}
+# endif
+
 /**
  * Look up the user's dflt home dir in the password db, by uid.
  */
@@ -5914,11 +5940,8 @@ rb_getpwdiruid(void)
 # else
     uid_t ruid = getuid();
 
-    struct passwd *pwptr;
-
 # ifdef USE_GETPWUID_R
 
-    struct passwd pwdid;
     char *bufid;
     long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5930,10 +5953,11 @@ rb_getpwdiruid(void)
     bufid = RSTRING_PTR(getpwid_tmp);
     bufsizeid = rb_str_capacity(getpwid_tmp);
     rb_str_set_len(getpwid_tmp, bufsizeid);
+    struct getpwuid_r_args args = GETPWUID_R_ARGS(ruid, bufid, bufsizeid);
 
     int eid;
     errno = 0;
-    while ((eid = getpwuid_r(ruid, &pwdid, bufid, bufsizeid, &pwptr)) != 0) {
+    while ((eid = IO_WITHOUT_GVL_INT(nogvl_getpwuid_r, &args)) != 0) {
 
         if (eid == ENOENT || eid== ESRCH || eid == EBADF || eid == EPERM) {
             /* not found; non-errors */
@@ -5941,31 +5965,31 @@ rb_getpwdiruid(void)
             return Qnil;
         }
 
-        if (eid != ERANGE || bufsizeid >= GETPW_R_SIZE_LIMIT) {
+        if (eid != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
             rb_str_resize(getpwid_tmp, 0);
             rb_syserr_fail(eid, "getpwuid_r");
         }
 
-        rb_str_modify_expand(getpwid_tmp, bufsizeid);
-        bufid = RSTRING_PTR(getpwid_tmp);
-        bufsizeid = rb_str_capacity(getpwid_tmp);
+        rb_str_modify_expand(getpwid_tmp, args.bufsize);
+        args.buf = RSTRING_PTR(getpwid_tmp);
+        args.bufsize = (size_t)rb_str_capacity(getpwid_tmp);
     }
 
-    if (pwptr == NULL) {
+    if (args.result == NULL) {
         /* no record in the password database for the uid */
         rb_str_resize(getpwid_tmp, 0);
         return Qnil;
     }
 
     /* found it */
-    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    VALUE result = rb_str_new_cstr(args.result->pw_dir);
     rb_str_resize(getpwid_tmp, 0);
     return result;
 
 # elif defined(USE_GETPWUID)
 
     errno = 0;
-    pwptr = getpwuid(ruid);
+    struct passwd *pwptr = IO_WITHOUT_GVL(nogvl_getpwuid, (void *)ruid);
     if (pwptr) {
         /* found it */
         return rb_str_new_cstr(pwptr->pw_dir);
