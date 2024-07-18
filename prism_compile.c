@@ -1562,6 +1562,14 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
                     has_keyword_splat = true;
+
+                    if (elements->size > 1) {
+                        // A new hash will be created for the keyword arguments
+                        // in this case, so mark the method as passing mutable
+                        // keyword splat.
+                        *flags |= VM_CALL_KW_SPLAT_MUT;
+                    }
+
                     pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
                 }
                 else {
