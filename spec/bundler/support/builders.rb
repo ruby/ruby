@@ -481,7 +481,6 @@ module Spec
       end
 
       def add_c_extension
-        require_paths << "ext"
         extensions << "ext/extconf.rb"
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"
