@@ -27,8 +27,10 @@ module URI
     const_set("Parser", parser.class)
 
     remove_const(:REGEXP) if defined?(REGEXP)
+    remove_const(:PATTERN) if defined?(PATTERN)
     if Parser == RFC2396_Parser
       const_set("REGEXP", URI::RFC2396_REGEXP)
+      const_set("PATTERN", URI::RFC2396_REGEXP::PATTERN)
       Parser.new.pattern.each_pair do |sym, str|
         unless REGEXP::PATTERN.const_defined?(sym)
           REGEXP::PATTERN.const_set(sym, str)

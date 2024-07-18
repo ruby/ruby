@@ -12,17 +12,21 @@ class URI::TestCommon < Test::Unit::TestCase
 
   def test_parser_switch
     assert_equal(URI::Parser, URI::RFC3986_Parser)
-    refute defined?(::URI::REGEXP)
+    refute defined?(URI::REGEXP)
+    refute defined?(URI::PATTERN)
 
     URI.parser = URI::RFC2396_PARSER
 
     assert_equal(URI::Parser, URI::RFC2396_Parser)
     assert defined?(URI::REGEXP)
+    assert defined?(URI::PATTERN)
+    assert defined?(URI::PATTERN::ESCAPED)
 
     URI.parser = URI::RFC3986_PARSER
 
     assert_equal(URI::Parser, URI::RFC3986_Parser)
     refute defined?(URI::REGEXP)
+    refute defined?(URI::PATTERN)
   ensure
     URI.parser = URI::RFC3986_PARSER
   end
