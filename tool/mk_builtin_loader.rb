@@ -303,13 +303,7 @@ def mk_builtin_header file
   collect_iseq RubyVM::InstructionSequence.compile(code).to_a
   collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
-  begin
-    f = File.open(ofile, 'w')
-  rescue SystemCallError # EACCES, EPERM, EROFS, etc.
-    # Fall back to the current directory
-    f = File.open(File.basename(ofile), 'w')
-  end
-  begin
+  StringIO.open do |f|
     if File::ALT_SEPARATOR
       file = file.tr(File::ALT_SEPARATOR, File::SEPARATOR)
       ofile = ofile.tr(File::ALT_SEPARATOR, File::SEPARATOR)
@@ -390,8 +384,13 @@ def mk_builtin_header file
     f.puts "  rb_load_with_builtin_functions(#{base.dump}, #{table});"
 
     f.puts "}"
-  ensure
-    f.close
+
+    begin
+      File.write(ofile, f.string)
+    rescue SystemCallError # EACCES, EPERM, EROFS, etc.
+      # Fall back to the current directory
+      File.write(File.basename(ofile), f.string)
+    end
   end
 end
 
