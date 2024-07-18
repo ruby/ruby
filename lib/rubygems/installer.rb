@@ -998,18 +998,13 @@ TEXT
 
   def bash_prolog_script
     if load_relative_enabled?
-      script = +<<~EOS
-        bindir="${0%/*}"
-      EOS
-
-      script << %(exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n)
-
       <<~EOS
         #!/bin/sh
         # -*- ruby -*-
         _=_\\
         =begin
-        #{script.chomp}
+        bindir="${0%/*}"
+        exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"
         =end
       EOS
     else
