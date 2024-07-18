@@ -135,10 +135,29 @@ module URI
       URI.for(*self.split(uri), self)
     end
 
-
     def join(*uris) # :nodoc:
       uris[0] = convert_to_uri(uris[0])
       uris.inject :merge
+    end
+
+    # Compatibility for RFC2396 parser
+    def extract(str, schemes = nil) # :nodoc:
+      RFC2396_PARSER.extract(str, schemes)
+    end
+
+    # Compatibility for RFC2396 parser
+    def make_regexp(schemes = nil) # :nodoc:
+      RFC2396_PARSER.make_regexp(schemes)
+    end
+
+    # Compatibility for RFC2396 parser
+    def escape(str, unsafe = nil) # :nodoc:
+      unsafe ? RFC2396_PARSER.escape(str, unsafe) : RFC2396_PARSER.escape(str)
+    end
+
+    # Compatibility for RFC2396 parser
+    def unescape(str, escaped = nil) # :nodoc:
+      escaped ? RFC2396_PARSER.unescape(str, escaped) : RFC2396_PARSER.unescape(str)
     end
 
     @@to_s = Kernel.instance_method(:to_s)
