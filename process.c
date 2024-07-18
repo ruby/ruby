@@ -5795,12 +5795,38 @@ rb_getlogin(void)
 #endif
 }
 
+# if defined(USE_GETPWNAM_R)
+struct getpwnam_r_args {
+    char *login;
+    char *buf;
+    size_t bufsize;
+    struct passwd *result;
+    struct passwd pwstore;
+};
+
+# define GETPWNAM_R_ARGS(login_, buf_, bufsize_) (struct getpwnam_r_args) \
+    {.login = login_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getpwnam_r(void *args)
+{
+    struct getpwnam_r_args *arg = args;
+    return (void *)(VALUE)getpwnam_r(arg->login, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
+}
+# elif defined(USE_GETPWNAM)
+static void *
+nogvl_getpwnam(void *login)
+{
+    return getpwnam((const char *)login);
+}
+# endif
+
 VALUE
 rb_getpwdirnam_for_login(VALUE login_name)
 {
-#if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
+# if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
     return Qnil;
-#else
+# else
 
     if (NIL_P(login_name)) {
         /* nothing to do; no name with which to query the password database */
@@ -5809,11 +5835,9 @@ rb_getpwdirnam_for_login(VALUE login_name)
 
     char *login = RSTRING_PTR(login_name);
 
-    struct passwd *pwptr;
 
-# ifdef USE_GETPWNAM_R
+#  ifdef USE_GETPWNAM_R
 
-    struct passwd pwdnm;
     char *bufnm;
     long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5825,10 +5849,11 @@ rb_getpwdirnam_for_login(VALUE login_name)
     bufnm = RSTRING_PTR(getpwnm_tmp);
     bufsizenm = rb_str_capacity(getpwnm_tmp);
     rb_str_set_len(getpwnm_tmp, bufsizenm);
+    struct getpwnam_r_args args = GETPWNAM_R_ARGS(login, bufnm, bufsizenm);
 
     int enm;
     errno = 0;
-    while ((enm = getpwnam_r(login, &pwdnm, bufnm, bufsizenm, &pwptr)) != 0) {
+    while ((enm = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
 
         if (enm == ENOENT || enm== ESRCH || enm == EBADF || enm == EPERM) {
             /* not found; non-errors */
@@ -5842,25 +5867,25 @@ rb_getpwdirnam_for_login(VALUE login_name)
         }
 
         rb_str_modify_expand(getpwnm_tmp, bufsizenm);
-        bufnm = RSTRING_PTR(getpwnm_tmp);
-        bufsizenm = rb_str_capacity(getpwnm_tmp);
+        args.buf = RSTRING_PTR(getpwnm_tmp);
+        args.bufsize = (size_t)rb_str_capacity(getpwnm_tmp);
     }
 
-    if (pwptr == NULL) {
+    if (args.result == NULL) {
         /* no record in the password database for the login name */
         rb_str_resize(getpwnm_tmp, 0);
         return Qnil;
     }
 
     /* found it */
-    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    VALUE result = rb_str_new_cstr(args.result->pw_dir);
     rb_str_resize(getpwnm_tmp, 0);
     return result;
 
-# elif USE_GETPWNAM
+#  elif USE_GETPWNAM
 
     errno = 0;
-    pwptr = getpwnam(login);
+    struct passwd *pwptr = IO_WITHOUT_GVL(nogvl_getpwnam, (void *)login);
     if (pwptr) {
         /* found it */
         return rb_str_new_cstr(pwptr->pw_dir);
@@ -5872,9 +5897,9 @@ rb_getpwdirnam_for_login(VALUE login_name)
     }
 
     return Qnil;  /* not found */
-# endif
+#  endif
 
-#endif
+# endif
 }
 
 /**
@@ -5987,7 +6012,6 @@ obj2uid(VALUE id
         const char *usrname = StringValueCStr(id);
         struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
-        struct passwd pwbuf;
         char *getpw_buf;
         long getpw_buf_len;
         int e;
@@ -6000,17 +6024,20 @@ obj2uid(VALUE id
         getpw_buf_len = rb_str_capacity(*getpw_tmp);
         rb_str_set_len(*getpw_tmp, getpw_buf_len);
         errno = 0;
-        while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
-            if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+        struct getpwnam_r_args args = GETPWNAM_R_ARGS((char *)usrname, getpw_buf, getpw_buf_len);
+
+        while ((e = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
+            if (e != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
                 rb_str_resize(*getpw_tmp, 0);
                 rb_syserr_fail(e, "getpwnam_r");
             }
-            rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
-            getpw_buf = RSTRING_PTR(*getpw_tmp);
-            getpw_buf_len = rb_str_capacity(*getpw_tmp);
+            rb_str_modify_expand(*getpw_tmp, args.bufsize);
+            args.buf = RSTRING_PTR(*getpw_tmp);
+            args.bufsize = (size_t)rb_str_capacity(*getpw_tmp);
         }
+        pwptr = args.result;
 #else
-        pwptr = getpwnam(usrname);
+        pwptr = IO_WITHOUT_GVL(nogvl_getpwnam, (void *)usrname);
 #endif
         if (!pwptr) {
 #ifndef USE_GETPWNAM_R
