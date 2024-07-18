@@ -1075,24 +1075,25 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: singleton_method_added
  *
  *  call-seq:
- *    singleton_method_added(symbol)
+ *     singleton_method_added(symbol)
  *
- *  Invoked as a callback when a singleton method is added to +self+:
+ *  Invoked as a callback whenever a singleton method is added to the
+ *  receiver.
  *
- *    class Chatty
- *      def Chatty.singleton_method_added(id)
- *        puts "Adding #{id.id2name}"
- *      end
- *      def self.one; end
- *      def two; end
- *      def Chatty.three; end
- *    end
+ *     module Chatty
+ *       def Chatty.singleton_method_added(id)
+ *         puts "Adding #{id.id2name}"
+ *       end
+ *       def self.one()     end
+ *       def two()          end
+ *       def Chatty.three() end
+ *     end
  *
- *  Output:
+ *  <em>produces:</em>
  *
- *    Adding singleton_method_added
- *    Adding one
- *    Adding three
+ *     Adding singleton_method_added
+ *     Adding one
+ *     Adding three
  *
  */
 #define rb_obj_singleton_method_added rb_obj_dummy1
