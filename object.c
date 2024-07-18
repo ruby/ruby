@@ -1130,24 +1130,24 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: singleton_method_undefined
  *
  *  call-seq:
- *    singleton_method_undefined(symbol)
+ *     singleton_method_undefined(symbol)
  *
- *  Invoked as a callback when a singleton method is undefined in +self+:
+ *  Invoked as a callback whenever a singleton method is undefined in
+ *  the receiver.
  *
- *    class Chatty
- *      def Chatty.singleton_method_undefined(id)
- *        puts "Undefining #{id.id2name}"
- *      end
- *      def Chatty.one; end
- *      class << self
- *        undef_method(:one)
- *      end
- *    end
+ *     module Chatty
+ *       def Chatty.singleton_method_undefined(id)
+ *         puts "Undefining #{id.id2name}"
+ *       end
+ *       def Chatty.one()   end
+ *       class << self
+ *          undef_method(:one)
+ *       end
+ *     end
  *
- *  Output:
+ *  <em>produces:</em>
  *
- *    Undefining one
- *
+ *     Undefining one
  */
 #define rb_obj_singleton_method_undefined rb_obj_dummy1
 
