@@ -171,7 +171,7 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "foo"
       G
 
-      bundle "lock", dir: cwd, artifice: "compact_index"
+      bundle "lock", dir: cwd
     end
 
     it "works and points to the vendored copies, not to the default copies" do
