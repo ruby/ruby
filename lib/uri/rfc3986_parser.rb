@@ -141,8 +141,8 @@ module URI
     end
 
     # Compatibility for RFC2396 parser
-    def extract(str, schemes = nil) # :nodoc:
-      RFC2396_PARSER.extract(str, schemes)
+    def extract(str, schemes = nil, &block) # :nodoc:
+      RFC2396_PARSER.extract(str, schemes, &block)
     end
 
     # Compatibility for RFC2396 parser
