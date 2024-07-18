@@ -8385,12 +8385,6 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     // Save PC and SP to prepare for dynamic dispatch
     jit_prepare_non_leaf_call(jit, asm);
 
-    // Squash stack canary that might be left over from elsewhere
-    assert_eq!(false, asm.get_leaf_ccall());
-    if cfg!(debug_assertions) {
-        asm.store(asm.ctx.sp_opnd(0), 0.into());
-    }
-
     // Dispatch a method
     let ret = vm_sendish(asm);
 
