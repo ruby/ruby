@@ -1097,30 +1097,32 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  */
 #define rb_obj_singleton_method_added rb_obj_dummy1
 
-/* Document-method: method_removed
+/*
+ * Document-method: singleton_method_removed
  *
- * call-seq:
- *   method_removed(method_name)
+ *  call-seq:
+ *     singleton_method_removed(symbol)
  *
- * Invoked as a callback whenever an instance method is removed from the
- * receiver.
+ *  Invoked as a callback whenever a singleton method is removed from
+ *  the receiver.
  *
- *   module Chatty
- *     def self.method_removed(method_name)
- *       puts "Removing #{method_name.inspect}"
+ *     module Chatty
+ *       def Chatty.singleton_method_removed(id)
+ *         puts "Removing #{id.id2name}"
+ *       end
+ *       def self.one()     end
+ *       def two()          end
+ *       def Chatty.three() end
+ *       class << self
+ *         remove_method :three
+ *         remove_method :one
+ *       end
  *     end
- *     def self.some_class_method() end
- *     def some_instance_method() end
- *     class << self
- *       remove_method :some_class_method
- *     end
- *     remove_method :some_instance_method
- *   end
  *
- * <em>produces:</em>
+ *  <em>produces:</em>
  *
- *   Removing :some_instance_method
- *
+ *     Removing three
+ *     Removing one
  */
 #define rb_obj_singleton_method_removed rb_obj_dummy1
 
