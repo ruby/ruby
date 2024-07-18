@@ -2598,6 +2598,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
         break;
     }
 # undef foreach_ary
+    xfree(ary->data);
     xfree(ary);
 }
 
