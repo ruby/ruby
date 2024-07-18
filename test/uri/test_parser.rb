@@ -8,8 +8,8 @@ class URI::TestParser < Test::Unit::TestCase
   end
 
   def test_inspect
-    assert_match(/URI::RFC2396_Parser/, URI::Parser.new.inspect)
-    assert_match(/URI::RFC3986_Parser/, URI::RFC3986_Parser.new.inspect)
+    assert_match(/URI::RFC2396_Parser/, URI::RFC2396_Parser.new.inspect)
+    assert_match(/URI::RFC3986_Parser/, URI::Parser.new.inspect)
   end
 
   def test_compare
