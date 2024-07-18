@@ -626,7 +626,7 @@ typedef struct gc_function_map {
     // Finalizers
     void (*make_zombie)(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
     VALUE (*define_finalizer)(void *objspace_ptr, VALUE obj, VALUE block);
-    VALUE (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
+    void (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
     void (*copy_finalizer)(void *objspace_ptr, VALUE dest, VALUE obj);
     void (*shutdown_call_finalizer)(void *objspace_ptr);
     // Object ID
@@ -1448,7 +1448,9 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
-    return rb_gc_impl_undefine_finalizer(rb_gc_get_objspace(), obj);
+    rb_gc_impl_undefine_finalizer(rb_gc_get_objspace(), obj);
+
+    return obj;
 }
 
 static void

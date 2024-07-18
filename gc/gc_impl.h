@@ -58,7 +58,7 @@ void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *da
 // Finalizers
 void rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
 VALUE rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block);
-VALUE rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj);
+void rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj);
 void rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj);
 void rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr);
 // Object ID
