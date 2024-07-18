@@ -1687,8 +1687,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     //
                     // foo(a, *b, *c)
                     //            ^^
-                    PUSH_INSN1(ret, location, splatarray, Qfalse);
-                    PUSH_INSN(ret, location, concatarray);
+                    PUSH_INSN(ret, location, concattoarray);
                 }
 
                 has_splat = true;
