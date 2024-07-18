@@ -6587,7 +6587,7 @@ fn gen_send_cfunc(
         cme,
         recv,
         sp,
-        pc: if cfg!(feature = "runtime_assertions") {
+        pc: if cfg!(feature = "runtime_checks") {
             Some(!0) // Poison value. Helps to fail fast.
         } else {
             None     // Leave PC uninitialized as cfuncs shouldn't read it

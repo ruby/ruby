@@ -22,10 +22,11 @@ capstone = { version = "0.12.0", optional = true }
 [features]
 # Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
 disasm = ["capstone"]
-# Modify generated code for assertions. This is managed separately
+# Modify generated code for assertions, e.g. and poison value in PC
+# for C method calls and stack canary. This is managed separately
 # from cfg!(debug_assertions) so that we can see disasm of the code
 # that would run in the release mode.
-runtime_assertions = []
+runtime_checks = []
 
 [profile.dev]
 opt-level = 0

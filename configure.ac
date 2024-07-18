@@ -3916,7 +3916,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features disasm,runtime_assertions'
+	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
