@@ -399,7 +399,7 @@ rdoc_noinst = %w[created.rid]
 prolog_script = <<EOS
 bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
-if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+if !load_relative and libpathenv = CONFIG["LIBPATHENV"]
   pathsep = File::PATH_SEPARATOR
   prolog_script << <<EOS
 libdir="#{load_relative ? '$\{bindir%/bin\}/lib' : libdir.gsub(/\"/, '\\\\"')}"
