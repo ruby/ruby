@@ -6098,6 +6098,32 @@ p_uid_from_name(VALUE self, VALUE id)
 #endif
 
 #if defined(HAVE_GRP_H)
+# if defined(USE_GETGRNAM_R)
+struct getgrnam_r_args {
+    const char *name;
+    char *buf;
+    size_t bufsize;
+    struct group *result;
+    struct group grp;
+};
+
+# define GETGRNAM_R_ARGS(name_, buf_, bufsize_) (struct getgrnam_r_args) \
+    {.name  = name_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getgrnam_r(void *args)
+{
+    struct getgrnam_r_args *arg = args;
+    return (void *)(VALUE)getgrnam_r(arg->name, &arg->grp, arg->buf, arg->bufsize, &arg->result);
+}
+# elif defined(USE_GETGRNAM)
+static void *
+nogvl_getgrnam(void *name)
+{
+    return getgrnam((const char *)name);
+}
+# endif
+
 static rb_gid_t
 obj2gid(VALUE id
 # ifdef USE_GETGRNAM_R
@@ -6115,7 +6141,6 @@ obj2gid(VALUE id
         const char *grpname = StringValueCStr(id);
         struct group *grptr;
 #ifdef USE_GETGRNAM_R
-        struct group grbuf;
         char *getgr_buf;
         long getgr_buf_len;
         int e;
@@ -6128,17 +6153,20 @@ obj2gid(VALUE id
         getgr_buf_len = rb_str_capacity(*getgr_tmp);
         rb_str_set_len(*getgr_tmp, getgr_buf_len);
         errno = 0;
-        while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
-            if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+        struct getgrnam_r_args args = GETGRNAM_R_ARGS(grpname, getgr_buf, getgr_buf_len);
+
+        while ((e = IO_WITHOUT_GVL_INT(nogvl_getgrnam_r, &args)) != 0) {
+            if (e != ERANGE || args.bufsize >= GETGR_R_SIZE_LIMIT) {
                 rb_str_resize(*getgr_tmp, 0);
                 rb_syserr_fail(e, "getgrnam_r");
             }
-            rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
-            getgr_buf = RSTRING_PTR(*getgr_tmp);
-            getgr_buf_len = rb_str_capacity(*getgr_tmp);
+            rb_str_modify_expand(*getgr_tmp, args.bufsize);
+            args.buf = RSTRING_PTR(*getgr_tmp);
+            args.bufsize = (size_t)rb_str_capacity(*getgr_tmp);
         }
+        grptr = args.result;
 #elif defined(HAVE_GETGRNAM)
-        grptr = getgrnam(grpname);
+        grptr = IO_WITHOUT_GVL(nogvl_getgrnam, (void *)grpname);
 #else
         grptr = NULL;
 #endif
