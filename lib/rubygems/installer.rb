@@ -1004,7 +1004,11 @@ TEXT
         _=_\\
         =begin
         bindir="${0%/*}"
-        exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"
+        ruby="$bindir/#{ruby_install_name}"
+        if [ ! -f "$ruby" ]; then
+          ruby="#{ruby_install_name}"
+        fi
+        exec "$ruby" "-x" "$0" "$@"
         =end
       EOS
     else
