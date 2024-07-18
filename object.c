@@ -246,14 +246,12 @@ rb_obj_not(VALUE obj)
 
 /**
  *  call-seq:
- *    self != object -> true or false
+ *     obj != other        -> true or false
  *
- *  Returns whether +self+ and +object+ <i>are not</i> the same object:
- *
- *    b = Object.new
- *    b != b          # => false
- *    b != Object.new # => true
- *
+ *  Returns true if two objects are not-equal, otherwise false.
+ *--
+ * \private
+ *++
  */
 
 VALUE
