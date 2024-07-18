@@ -2169,55 +2169,35 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
 
 /*
  *  call-seq:
- *    instance_eval {|self| ... } -> object
- *    instance_eval(string, filename = nil, lineno = nil) -> string
+ *     obj.instance_eval(string [, filename [, lineno]] )   -> obj
+ *     obj.instance_eval {|obj| block }                     -> obj
  *
- *  With a block given, passes +self+ to the block
- *  and returns the block's return value;
- *  this gives the block full access to +self+:
+ *  Evaluates a string containing Ruby source code, or the given block,
+ *  within the context of the receiver (_obj_). In order to set the
+ *  context, the variable +self+ is set to _obj_ while
+ *  the code is executing, giving the code access to _obj_'s
+ *  instance variables and private methods.
  *
- *    class SecretWord
- *      def initialize(word)
- *        @word = word
- *      end
- *      private
- *      def tell_word
- *        "The secret word is '#{@word}'."
- *      end
- *    end
- *    secret_word = SecretWord.new('xyzzy')
- *    # Accesses instance variable.
- *    p secret_word.instance_eval { @word }
- *    # Accesses private method.
- *    p secret_word.instance_eval { tell_word }
+ *  When <code>instance_eval</code> is given a block, _obj_ is also
+ *  passed in as the block's only argument.
  *
- *  Output:
- *
- *    "xyzzy"
- *    "The secret word is 'xyzzy'."
- *
- *  With argument +string+ given,
- *  evaluates the string as Ruby source code
- *  and returns the standard output from that code;
- *  this gives the block access to instance variables and private methods in +self+:
- *
- *    # Accesses instance variable.
- *    p secret_word.instance_eval('@word')
- *    # Accesses private method.
- *    p secret_word.instance_eval('tell_word')
- *
- *  Output:
- *
- *    "xyzzy"
- *    "The secret word is 'xyzzy'."
- *
- *  The optional
+ *  When <code>instance_eval</code> is given a +String+, the optional
  *  second and third parameters supply a filename and starting line number
  *  that are used when reporting compilation errors.
  *
- *    1.instance_eval('end', 'space_odyssey.c ', 2001)
- *    # Raises SyntaxError: space_odyssey.c :2001: syntax error, unexpected `end'
- *
+ *     class KlassWithSecret
+ *       def initialize
+ *         @secret = 99
+ *       end
+ *       private
+ *       def the_secret
+ *         "Ssssh! The secret is #{@secret}."
+ *       end
+ *     end
+ *     k = KlassWithSecret.new
+ *     k.instance_eval { @secret }          #=> 99
+ *     k.instance_eval { the_secret }       #=> "Ssssh! The secret is 99."
+ *     k.instance_eval {|obj| obj == self } #=> true
  */
 
 static VALUE
