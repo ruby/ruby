@@ -402,7 +402,7 @@ EOS
 if !load_relative and libpathenv = CONFIG["LIBPATHENV"]
   pathsep = File::PATH_SEPARATOR
   prolog_script << <<EOS
-libdir="#{load_relative ? '$\{bindir%/bin\}/lib' : libdir.gsub(/\"/, '\\\\"')}"
+libdir="#{libdir.gsub(/\"/, '\\\\"')}"
 export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
 end
