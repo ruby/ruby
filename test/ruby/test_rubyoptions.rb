@@ -5,6 +5,7 @@ require 'timeout'
 require 'tmpdir'
 require 'tempfile'
 require_relative '../lib/jit_support'
+require_relative '../lib/parser_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
@@ -14,7 +15,7 @@ class TestRubyOptions < Test::Unit::TestCase
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
   # worry about it. The flag itself is tested in its own test.
   RUBY_DESCRIPTION =
-    if EnvUtil.invoke_ruby(["-v"], "", true, false)[0].include?("+PRISM")
+    if ParserSupport.prism_enabled_in_subprocess?
       ::RUBY_DESCRIPTION
     else
       ::RUBY_DESCRIPTION.sub(/\+PRISM /, '')
@@ -367,6 +368,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_yydebug
+    omit if ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(["-ye", ""]) do |r, e|
       assert_not_equal([], r)
       assert_equal([], e)
@@ -1178,6 +1181,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_dump_parsetree_error_tolerant
+    omit if ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(['--dump=parse', '-e', 'begin'],
                       "", [], /unexpected end-of-input/, success: false)
     assert_in_out_err(['--dump=parse', '--dump=+error_tolerant', '-e', 'begin'],
