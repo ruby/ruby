@@ -1240,9 +1240,9 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  * Document-method: initialize
  *
  * call-seq:
- *   BasicObject.new
+ *    BasicObject.new
  *
- * Returns a new BasicObject instance.
+ * Returns a new BasicObject.
  */
 #define rb_obj_initialize rb_obj_dummy0
 
