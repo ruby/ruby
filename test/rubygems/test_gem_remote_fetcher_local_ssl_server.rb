@@ -166,7 +166,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         ensure
           client.close
         end
-      rescue OpenSSL::SSL::SSLError => e
+      rescue OpenSSL::SSL::SSLError
         # Ignore SSL errors because we're testing them implicitly
       end
     end

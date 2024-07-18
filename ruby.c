@@ -2125,10 +2125,10 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
     if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
     if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
-    if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
 
     VALUE error;
     if (strcmp(opt->script, "-") == 0) {
+        if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
         pm_options_command_line_set(options, command_line);
         pm_options_filepath_set(options, "-");
 
@@ -2144,6 +2144,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"));
     }
     else {
+        if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
         pm_options_command_line_set(options, command_line);
         error = pm_load_file(result, opt->script_name, true);
 

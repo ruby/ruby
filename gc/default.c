@@ -2993,7 +2993,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
     }
     else {
         table = rb_ary_new3(1, block);
-        *(VALUE *)&RBASIC(table)->klass = 0;
+        rb_obj_hide(table);
         st_add_direct(finalizer_table, obj, table);
     }
   end:
