@@ -92,6 +92,9 @@
 #define F_NODE2(name, n, ann) \
     COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, n);}
 
+#define F_ARRAY(name, type, ann) \
+    COMPOUND_FIELD1(#name, ann) {dump_parser_array(buf, indent, comment, type(node)->name);}
+
 #define ANN(ann) \
     if (comment) { \
         A_INDENT; A("| # " ann "\n"); \
@@ -162,6 +165,28 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
     }
     LAST_NODE;
     F_NODE(nd_next, RNODE_LIST, "next element");
+}
+
+static void
+dump_parser_array(VALUE buf, VALUE indent, int comment, const rb_parser_ary_t *ary)
+{
+    int field_flag;
+    const char *next_indent = default_indent;
+
+    if (ary->data_type != PARSER_ARY_DATA_NODE) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
+    }
+
+    F_CUSTOM1(length, "length") { A_LONG(ary->len); }
+    for (long i = 0; i < ary->len; i++) {
+        if (i == ary->len - 1) LAST_NODE;
+        A_INDENT;
+        rb_str_catf(buf, "+- element (%s%ld):\n",
+                    comment ? "statement #" : "", i);
+        D_INDENT;
+        dump_node(buf, indent, comment, ary->data[i]);
+        D_DEDENT;
+    }
 }
 
 static void
@@ -896,10 +921,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_UNDEF:
         ANN("method undef statement");
-        ANN("format: undef [nd_undef]");
+        ANN("format: undef [nd_undefs]");
         ANN("example: undef foo");
         LAST_NODE;
-        F_NODE(nd_undef, RNODE_UNDEF, "old name");
+        F_ARRAY(nd_undefs, RNODE_UNDEF, "nd_undefs");
         return;
 
       case NODE_CLASS:

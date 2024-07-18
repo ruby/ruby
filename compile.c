@@ -11016,10 +11016,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case NODE_UNDEF:{
-        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
-        CHECK(COMPILE(ret, "undef arg", RNODE_UNDEF(node)->nd_undef));
-        ADD_SEND(ret, node, id_core_undef_method, INT2FIX(2));
+        const rb_parser_ary_t *ary = RNODE_UNDEF(node)->nd_undefs;
+
+        for (long i = 0; i < ary->len; i++) {
+            ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+            CHECK(COMPILE(ret, "undef arg", ary->data[i]));
+            ADD_SEND(ret, node, id_core_undef_method, INT2FIX(2));
+
+            if (i < ary->len - 1) {
+                ADD_INSN(ret, node, pop);
+            }
+        }
 
         if (popped) {
             ADD_INSN(ret, node, pop);
