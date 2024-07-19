@@ -23,11 +23,11 @@ module URI
   Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
   def self.parser=(parser = RFC3986_PARSER)
-    remove_const(:Parser) if defined?(Parser)
+    remove_const(:Parser) if defined?(::URI::Parser)
     const_set("Parser", parser.class)
 
-    remove_const(:REGEXP) if defined?(REGEXP)
-    remove_const(:PATTERN) if defined?(PATTERN)
+    remove_const(:REGEXP) if defined?(::URI::REGEXP)
+    remove_const(:PATTERN) if defined?(::URI::PATTERN)
     if Parser == RFC2396_Parser
       const_set("REGEXP", URI::RFC2396_REGEXP)
       const_set("PATTERN", URI::RFC2396_REGEXP::PATTERN)
