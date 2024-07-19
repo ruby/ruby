@@ -359,36 +359,50 @@ def concurrent_exec_test
   end
 end
 
+##
+# Module for writing a test file for uploading test results into Launchable.
+# In bootstraptest, we aggregate the test results based on file level.
 module Launchable
+  @@last_test_name = nil
+  @@stderr = ''
+  @@duration = 0
+
   def show_progress(message = '')
     faildesc, t = super
 
     if writer = BT.launchable_test_reports
-      if !faildesc
-        status = 'TEST_PASSED'
-      else
-        status = 'TEST_FAILED'
+      if faildesc
+        @@stderr += faildesc
       end
       repo_path = File.expand_path("#{__dir__}/../")
-      relative_path = self.path.delete_prefix("#{repo_path}/")
-      # The test path is a URL-encoded representation.
-      # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
-      test_path = {file: relative_path, testcase: self.id}.map{|key, val|
-        "#{encode_test_path_component(key)}=#{encode_test_path_component(val)}"
-      }.join('#')
-      writer.write_object(
-        {
-          testPath: test_path,
-          status: status,
-          duration: t,
-          createdAt: Time.now.to_s,
-          stderr: faildesc,
-          stdout: nil,
-          data: {
-            lineNumber: self.lineno
+      relative_path = File.join(__dir__, self.path).delete_prefix("#{repo_path}/")
+      if @@last_test_name != nil && @@last_test_name != relative_path
+        # The test path is a URL-encoded representation.
+        # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
+        test_path = "#{encode_test_path_component("file")}=#{encode_test_path_component(@@last_test_name)}"
+        if @@stderr.size > 0
+          status = 'TEST_FAILED'
+        else
+          status = 'TEST_PASSED'
+        end
+        writer.write_object(
+          {
+            testPath: test_path,
+            status: status,
+            duration: t,
+            createdAt: Time.now.to_s,
+            stderr: @@stderr,
+            stdout: nil,
+            data: {
+              lineNumber: self.lineno
+            }
           }
-        }
-      )
+        )
+        @@duration = 0
+        @@stderr.clear
+      end
+      @@last_test_name = relative_path
+      @@duration += t
     end
   end
 
