@@ -8266,16 +8266,24 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
     }
 }
 
+typedef enum {
+    PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE,
+    PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE,
+    PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID
+} pm_magic_comment_boolean_value_t;
+
 /**
  * Check if this is a magic comment that includes the frozen_string_literal
  * pragma. If it does, set that field on the parser.
  */
-static void
-parser_lex_magic_comment_frozen_string_literal_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    if ((start + 4 <= end) && pm_strncasecmp(start, (const uint8_t *) "true", 4) == 0) {
-        parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED;
-    } else if ((start + 5 <= end) && pm_strncasecmp(start, (const uint8_t *) "false", 5) == 0) {
-        parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
+static pm_magic_comment_boolean_value_t
+parser_lex_magic_comment_boolean_value(const uint8_t *value_start, uint32_t value_length) {
+    if (value_length == 4 && pm_strncasecmp(value_start, (const uint8_t *) "true", 4) == 0) {
+        return PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE;
+    } else if (value_length == 5 && pm_strncasecmp(value_start, (const uint8_t *) "false", 5) == 0) {
+        return PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE;
+    } else {
+        return PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID;
     }
 }
 
@@ -8364,6 +8372,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                 if (*cursor == '\\' && (cursor + 1 < end)) cursor++;
             }
             value_end = cursor;
+            if (*cursor == '"') cursor++;
         } else {
             value_start = cursor;
             while (cursor < end && *cursor != '"' && *cursor != ';' && !pm_char_is_whitespace(*cursor)) cursor++;
@@ -8381,28 +8390,28 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         // underscores. We only need to do this if there _is_ a dash in the key.
         pm_string_t key;
         const size_t key_length = (size_t) (key_end - key_start);
-        const uint8_t *dash = pm_memchr(key_start, '-', (size_t) key_length, parser->encoding_changed, parser->encoding);
+        const uint8_t *dash = pm_memchr(key_start, '-', key_length, parser->encoding_changed, parser->encoding);
 
         if (dash == NULL) {
             pm_string_shared_init(&key, key_start, key_end);
         } else {
-            size_t width = (size_t) (key_end - key_start);
-            uint8_t *buffer = xmalloc(width);
+            uint8_t *buffer = xmalloc(key_length);
             if (buffer == NULL) break;
 
-            memcpy(buffer, key_start, width);
+            memcpy(buffer, key_start, key_length);
             buffer[dash - key_start] = '_';
 
             while ((dash = pm_memchr(dash + 1, '-', (size_t) (key_end - dash - 1), parser->encoding_changed, parser->encoding)) != NULL) {
                 buffer[dash - key_start] = '_';
             }
 
-            pm_string_owned_init(&key, buffer, width);
+            pm_string_owned_init(&key, buffer, key_length);
         }
 
         // Finally, we can start checking the key against the list of known
         // magic comment keys, and potentially change state based on that.
         const uint8_t *key_source = pm_string_source(&key);
+        uint32_t value_length = (uint32_t) (value_end - value_start);
 
         // We only want to attempt to compare against encoding comments if it's
         // the first line in the file (or the second in the case of a shebang).
@@ -8415,40 +8424,82 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             }
         }
 
-        // We only want to handle frozen string literal comments if it's before
-        // any semantic tokens have been seen.
-        if (key_length == 21 && pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
-            if (semantic_token_seen) {
-                pm_parser_warn_token(parser, &parser->current, PM_WARN_IGNORED_FROZEN_STRING_LITERAL);
-            } else {
-                parser_lex_magic_comment_frozen_string_literal_value(parser, value_start, value_end);
+        if (key_length == 11) {
+            if (pm_strncasecmp(key_source, (const uint8_t *) "warn_indent", 11) == 0) {
+                switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
+                    case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
+                        PM_PARSER_WARN_TOKEN_FORMAT(
+                            parser,
+                            parser->current,
+                            PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
+                            (int) key_length,
+                            (const char *) key_source,
+                            (int) value_length,
+                            (const char *) value_start
+                        );
+                        break;
+                    case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
+                        parser->warn_mismatched_indentation = false;
+                        break;
+                    case PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE:
+                        parser->warn_mismatched_indentation = true;
+                        break;
+                }
             }
-        }
+        } else if (key_length == 21) {
+            if (pm_strncasecmp(key_source, (const uint8_t *) "frozen_string_literal", 21) == 0) {
+                // We only want to handle frozen string literal comments if it's
+                // before any semantic tokens have been seen.
+                if (semantic_token_seen) {
+                    pm_parser_warn_token(parser, &parser->current, PM_WARN_IGNORED_FROZEN_STRING_LITERAL);
+                } else {
+                    switch (parser_lex_magic_comment_boolean_value(value_start, value_length)) {
+                        case PM_MAGIC_COMMENT_BOOLEAN_VALUE_INVALID:
+                            PM_PARSER_WARN_TOKEN_FORMAT(
+                                parser,
+                                parser->current,
+                                PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
+                                (int) key_length,
+                                (const char *) key_source,
+                                (int) value_length,
+                                (const char *) value_start
+                            );
+                            break;
+                        case PM_MAGIC_COMMENT_BOOLEAN_VALUE_FALSE:
+                            parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_DISABLED;
+                            break;
+                        case PM_MAGIC_COMMENT_BOOLEAN_VALUE_TRUE:
+                            parser->frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_ENABLED;
+                            break;
+                    }
+                }
+            }
+        } else if (key_length == 24) {
+            if (pm_strncasecmp(key_source, (const uint8_t *) "shareable_constant_value", 24) == 0) {
+                const uint8_t *cursor = parser->current.start;
+                while ((cursor > parser->start) && ((cursor[-1] == ' ') || (cursor[-1] == '\t'))) cursor--;
 
-        // If we have hit a ractor pragma, attempt to lex that.
-        uint32_t value_length = (uint32_t) (value_end - value_start);
-        if (key_length == 24 && pm_strncasecmp(key_source, (const uint8_t *) "shareable_constant_value", 24) == 0) {
-            const uint8_t *cursor = parser->current.start;
-            while ((cursor > parser->start) && ((cursor[-1] == ' ') || (cursor[-1] == '\t'))) cursor--;
-
-            if (!((cursor == parser->start) || (cursor[-1] == '\n'))) {
-                pm_parser_warn_token(parser, &parser->current, PM_WARN_SHAREABLE_CONSTANT_VALUE_LINE);
-            } else if (value_length == 4 && pm_strncasecmp(value_start, (const uint8_t *) "none", 4) == 0) {
-                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_NONE);
-            } else if (value_length == 7 && pm_strncasecmp(value_start, (const uint8_t *) "literal", 7) == 0) {
-                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_LITERAL);
-            } else if (value_length == 23 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_everything", 23) == 0) {
-                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING);
-            } else if (value_length == 17 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_copy", 17) == 0) {
-                pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY);
-            } else {
-                PM_PARSER_WARN_TOKEN_FORMAT(
-                    parser,
-                    parser->current,
-                    PM_WARN_INVALID_SHAREABLE_CONSTANT_VALUE,
-                    (int) value_length,
-                    (const char *) value_start
-                );
+                if (!((cursor == parser->start) || (cursor[-1] == '\n'))) {
+                    pm_parser_warn_token(parser, &parser->current, PM_WARN_SHAREABLE_CONSTANT_VALUE_LINE);
+                } else if (value_length == 4 && pm_strncasecmp(value_start, (const uint8_t *) "none", 4) == 0) {
+                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_NONE);
+                } else if (value_length == 7 && pm_strncasecmp(value_start, (const uint8_t *) "literal", 7) == 0) {
+                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_LITERAL);
+                } else if (value_length == 23 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_everything", 23) == 0) {
+                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING);
+                } else if (value_length == 17 && pm_strncasecmp(value_start, (const uint8_t *) "experimental_copy", 17) == 0) {
+                    pm_parser_scope_shareable_constant_set(parser, PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY);
+                } else {
+                    PM_PARSER_WARN_TOKEN_FORMAT(
+                        parser,
+                        parser->current,
+                        PM_WARN_INVALID_MAGIC_COMMENT_VALUE,
+                        (int) key_length,
+                        (const char *) key_source,
+                        (int) value_length,
+                        (const char *) value_start
+                    );
+                }
             }
         }
 
@@ -8462,7 +8513,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
             magic_comment->key_start = key_start;
             magic_comment->value_start = value_start;
             magic_comment->key_length = (uint32_t) key_length;
-            magic_comment->value_length = (uint32_t) (value_end - value_start);
+            magic_comment->value_length = value_length;
             pm_list_append(&parser->magic_comment_list, (pm_list_node_t *) magic_comment);
         }
     }
@@ -14653,6 +14704,103 @@ parse_parameters(
     return params;
 }
 
+/**
+ * Accepts a parser returns the index of the last newline in the file that was
+ * ecorded before the current token within the newline list.
+ */
+static size_t
+token_newline_index(const pm_parser_t *parser) {
+    if (parser->heredoc_end == NULL) {
+        // This is the common case. In this case we can look at the previously
+        // recorded newline in the newline list and subtract from the current
+        // offset.
+        return parser->newline_list.size - 1;
+    } else {
+        // This is unlikely. This is the case that we have already parsed the
+        // start of a heredoc, so we cannot rely on looking at the previous
+        // offset of the newline list, and instead must go through the whole
+        // process of a binary search for the line number.
+        return (size_t) pm_newline_list_line(&parser->newline_list, parser->current.start, 0);
+    }
+}
+
+/**
+ * Accepts a parser, a newline index, and a token and returns the column. The
+ * important piece of this is that it expands tabs out to the next tab stop.
+ */
+static int64_t
+token_column(const pm_parser_t *parser, size_t newline_index, const pm_token_t *token, bool break_on_non_space) {
+    const uint8_t *cursor = parser->start + parser->newline_list.offsets[newline_index];
+    const uint8_t *end = token->start;
+
+    // Skip over the BOM if it is present.
+    if (
+        newline_index == 0 &&
+        parser->start[0] == 0xef &&
+        parser->start[1] == 0xbb &&
+        parser->start[2] == 0xbf
+    ) cursor += 3;
+
+    int64_t column = 0;
+    for (; cursor < end; cursor++) {
+        switch (*cursor) {
+            case '\t':
+                column = ((column / PM_TAB_WHITESPACE_SIZE) + 1) * PM_TAB_WHITESPACE_SIZE;
+                break;
+            case ' ':
+                column++;
+                break;
+            default:
+                column++;
+                if (break_on_non_space) return -1;
+                break;
+        }
+    }
+
+    return column;
+}
+
+/**
+ * Accepts a parser, two newline indices, and pointers to two tokens. This
+ * function warns if the indentation of the two tokens does not match.
+ */
+static void
+parser_warn_indentation_mismatch(pm_parser_t *parser, size_t opening_newline_index, const pm_token_t *opening_token, bool if_after_else) {
+    // If these warnings are disabled (unlikely), then we can just return.
+    if (!parser->warn_mismatched_indentation) return;
+
+    // If the tokens are on the same line, we do not warn.
+    size_t closing_newline_index = token_newline_index(parser);
+    if (opening_newline_index == closing_newline_index) return;
+
+    // If the opening token has anything other than spaces or tabs before it,
+    // then we do not warn. This is unless we are matching up an `if`/`end` pair
+    // and the `if` immediately follows an `else` keyword.
+    int64_t opening_column = token_column(parser, opening_newline_index, opening_token, !if_after_else);
+    if (!if_after_else && (opening_column == -1)) return;
+
+    // Get a reference to the closing token off the current parser. This assumes
+    // that the caller has placed this in the correct position.
+    pm_token_t *closing_token = &parser->current;
+
+    // If the tokens are at the same indentation, we do not warn.
+    int64_t closing_column = token_column(parser, closing_newline_index, closing_token, true);
+    if ((closing_column == -1) || (opening_column == closing_column)) return;
+
+    // Otherwise, add a warning.
+    PM_PARSER_WARN_FORMAT(
+        parser,
+        closing_token->start,
+        closing_token->end,
+        PM_WARN_INDENTATION_MISMATCH,
+        (int) (closing_token->end - closing_token->start),
+        (const char *) closing_token->start,
+        (int) (opening_token->end - opening_token->start),
+        (const char *) opening_token->start,
+        ((int32_t) opening_newline_index) + parser->start_line
+    );
+}
+
 typedef enum {
     PM_RESCUES_BEGIN = 1,
     PM_RESCUES_BLOCK,
@@ -14668,10 +14816,13 @@ typedef enum {
  * nodes pointing to each other from the top.
  */
 static inline void
-parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type_t type) {
+parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_t *opening, pm_begin_node_t *parent_node, pm_rescues_type_t type) {
     pm_rescue_node_t *current = NULL;
 
-    while (accept1(parser, PM_TOKEN_KEYWORD_RESCUE)) {
+    while (match1(parser, PM_TOKEN_KEYWORD_RESCUE)) {
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        parser_lex(parser);
+
         pm_rescue_node_t *rescue = pm_rescue_node_create(parser, &parser->previous);
 
         switch (parser->current.type) {
@@ -14763,17 +14914,25 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
     // The end node locations on rescue nodes will not be set correctly
     // since we won't know the end until we've found all consequent
     // clauses. This sets the end location on all rescues once we know it.
-    if (current) {
+    if (current != NULL) {
         const uint8_t *end_to_set = current->base.location.end;
-        current = parent_node->rescue_clause;
-        while (current) {
-            current->base.location.end = end_to_set;
-            current = current->consequent;
+        pm_rescue_node_t *clause = parent_node->rescue_clause;
+
+        while (clause != NULL) {
+            clause->base.location.end = end_to_set;
+            clause = clause->consequent;
         }
     }
 
-    if (accept1(parser, PM_TOKEN_KEYWORD_ELSE)) {
-        pm_token_t else_keyword = parser->previous;
+    pm_token_t else_keyword;
+    if (match1(parser, PM_TOKEN_KEYWORD_ELSE)) {
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        opening_newline_index = token_newline_index(parser);
+
+        else_keyword = parser->current;
+        opening = &else_keyword;
+
+        parser_lex(parser);
         accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
         pm_statements_node_t *else_statements = NULL;
@@ -14800,10 +14959,17 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
 
         pm_else_node_t *else_clause = pm_else_node_create(parser, &else_keyword, else_statements, &parser->current);
         pm_begin_node_else_clause_set(parent_node, else_clause);
+
+        // If we don't have a `current` rescue node, then this is a dangling
+        // else, and it's an error.
+        if (current == NULL) pm_parser_err_node(parser, (pm_node_t *) else_clause, PM_ERR_BEGIN_LONELY_ELSE);
     }
 
-    if (accept1(parser, PM_TOKEN_KEYWORD_ENSURE)) {
-        pm_token_t ensure_keyword = parser->previous;
+    if (match1(parser, PM_TOKEN_KEYWORD_ENSURE)) {
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        pm_token_t ensure_keyword = parser->current;
+
+        parser_lex(parser);
         accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
         pm_statements_node_t *ensure_statements = NULL;
@@ -14832,7 +14998,8 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
         pm_begin_node_ensure_clause_set(parent_node, ensure_clause);
     }
 
-    if (parser->current.type == PM_TOKEN_KEYWORD_END) {
+    if (match1(parser, PM_TOKEN_KEYWORD_END)) {
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
         pm_begin_node_end_keyword_set(parent_node, &parser->current);
     } else {
         pm_token_t end_keyword = (pm_token_t) { .type = PM_TOKEN_MISSING, .start = parser->previous.end, .end = parser->previous.end };
@@ -14845,11 +15012,11 @@ parse_rescues(pm_parser_t *parser, pm_begin_node_t *parent_node, pm_rescues_type
  * class, module, def, etc.).
  */
 static pm_begin_node_t *
-parse_rescues_implicit_begin(pm_parser_t *parser, const uint8_t *start, pm_statements_node_t *statements, pm_rescues_type_t type) {
+parse_rescues_implicit_begin(pm_parser_t *parser, size_t opening_newline_index, const pm_token_t *opening, const uint8_t *start, pm_statements_node_t *statements, pm_rescues_type_t type) {
     pm_token_t begin_keyword = not_provided(parser);
     pm_begin_node_t *node = pm_begin_node_create(parser, &begin_keyword, statements);
 
-    parse_rescues(parser, node, type);
+    parse_rescues(parser, opening_newline_index, opening, node, type);
     node->base.location.start = start;
 
     return node;
@@ -15070,7 +15237,7 @@ parse_block(pm_parser_t *parser) {
 
             if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
                 assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
-                statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening.start, (pm_statements_node_t *) statements, PM_RESCUES_BLOCK);
+                statements = (pm_node_t *) parse_rescues_implicit_begin(parser, 0, NULL, opening.start, (pm_statements_node_t *) statements, PM_RESCUES_BLOCK);
             }
         }
 
@@ -15340,7 +15507,7 @@ parse_predicate(pm_parser_t *parser, pm_binding_power_t binding_power, pm_contex
 }
 
 static inline pm_node_t *
-parse_conditional(pm_parser_t *parser, pm_context_t context) {
+parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newline_index, bool if_after_else) {
     pm_node_list_t current_block_exits = { 0 };
     pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
@@ -15382,6 +15549,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
                 PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_WARN_KEYWORD_EOL);
             }
 
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
             pm_token_t elsif_keyword = parser->current;
             parser_lex(parser);
 
@@ -15399,6 +15567,9 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
     }
 
     if (match1(parser, PM_TOKEN_KEYWORD_ELSE)) {
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+        opening_newline_index = token_newline_index(parser);
+
         parser_lex(parser);
         pm_token_t else_keyword = parser->previous;
 
@@ -15407,6 +15578,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
         pm_accepts_block_stack_pop(parser);
 
         accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &else_keyword, false);
         expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM_ELSE);
 
         pm_else_node_t *else_node = pm_else_node_create(parser, &else_keyword, else_statements, &parser->previous);
@@ -15423,8 +15595,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
                 break;
         }
     } else {
-        // We should specialize this error message to refer to 'if' or 'unless'
-        // explicitly.
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, if_after_else);
         expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM);
     }
 
@@ -18190,7 +18361,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
         }
         case PM_TOKEN_KEYWORD_CASE: {
+            size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
+
             pm_token_t case_keyword = parser->previous;
             pm_node_t *predicate = NULL;
 
@@ -18209,7 +18382,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON));
             }
 
-            if (accept1(parser, PM_TOKEN_KEYWORD_END)) {
+            if (match1(parser, PM_TOKEN_KEYWORD_END)) {
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+                parser_lex(parser);
+
                 pop_block_exits(parser, previous_block_exits);
                 pm_node_list_free(&current_block_exits);
 
@@ -18229,7 +18405,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // At this point we've seen a when keyword, so we know this is a
                 // case-when node. We will continue to parse the when nodes
                 // until we hit the end of the list.
-                while (accept1(parser, PM_TOKEN_KEYWORD_WHEN)) {
+                while (match1(parser, PM_TOKEN_KEYWORD_WHEN)) {
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+                    parser_lex(parser);
+
                     pm_token_t when_keyword = parser->previous;
                     pm_when_node_t *when_node = pm_when_node_create(parser, &when_keyword);
 
@@ -18302,6 +18481,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // will continue to parse the in nodes until we hit the end of
                 // the list.
                 while (match1(parser, PM_TOKEN_KEYWORD_IN)) {
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+
                     bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
                     parser->pattern_matching_newlines = true;
 
@@ -18387,7 +18568,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
             }
 
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CASE_TERM);
+
             if (PM_NODE_TYPE_P(node, PM_CASE_NODE)) {
                 pm_case_node_end_keyword_loc_set((pm_case_node_t *) node, &parser->previous);
             } else {
@@ -18400,6 +18583,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return node;
         }
         case PM_TOKEN_KEYWORD_BEGIN: {
+            size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
 
             pm_token_t begin_keyword = parser->previous;
@@ -18409,7 +18593,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
             pm_statements_node_t *begin_statements = NULL;
 
-            if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
+            if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 begin_statements = parse_statements(parser, PM_CONTEXT_BEGIN);
                 pm_accepts_block_stack_pop(parser);
@@ -18417,15 +18601,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_begin_node_t *begin_node = pm_begin_node_create(parser, &begin_keyword, begin_statements);
-            parse_rescues(parser, begin_node, PM_RESCUES_BEGIN);
-
+            parse_rescues(parser, opening_newline_index, &begin_keyword, begin_node, PM_RESCUES_BEGIN);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BEGIN_TERM);
+
             begin_node->base.location.end = parser->previous.end;
             pm_begin_node_end_keyword_set(begin_node, &parser->previous);
-
-            if ((begin_node->else_clause != NULL) && (begin_node->rescue_clause == NULL)) {
-                pm_parser_err_node(parser, (pm_node_t *) begin_node->else_clause, PM_ERR_BEGIN_LONELY_ELSE);
-            }
 
             pop_block_exits(parser, previous_block_exits);
             pm_node_list_free(&current_block_exits);
@@ -18542,7 +18722,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return node;
         }
         case PM_TOKEN_KEYWORD_CLASS: {
+            size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
+
             pm_token_t class_keyword = parser->previous;
             pm_do_loop_stack_push(parser, false);
 
@@ -18557,7 +18739,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
                 pm_node_t *statements = NULL;
-                if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
+                if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
                     pm_accepts_block_stack_push(parser, true);
                     statements = (pm_node_t *) parse_statements(parser, PM_CONTEXT_SCLASS);
                     pm_accepts_block_stack_pop(parser);
@@ -18565,7 +18747,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
                     assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
-                    statements = (pm_node_t *) parse_rescues_implicit_begin(parser, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_SCLASS);
+                    statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &class_keyword, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_SCLASS);
+                } else {
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false);
                 }
 
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
@@ -18613,7 +18797,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
             pm_node_t *statements = NULL;
 
-            if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
+            if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = (pm_node_t *) parse_statements(parser, PM_CONTEXT_CLASS);
                 pm_accepts_block_stack_pop(parser);
@@ -18621,7 +18805,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
                 assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
-                statements = (pm_node_t *) parse_rescues_implicit_begin(parser, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_CLASS);
+                statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &class_keyword, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_CLASS);
+            } else {
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false);
             }
 
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
@@ -18650,6 +18836,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
             pm_token_t def_keyword = parser->current;
+            size_t opening_newline_index = token_newline_index(parser);
 
             pm_node_t *receiver = NULL;
             pm_token_t operator = not_provided(parser);
@@ -18881,19 +19068,22 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_accepts_block_stack_push(parser, true);
                 pm_do_loop_stack_push(parser, false);
 
-                if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
+                if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
                     pm_accepts_block_stack_push(parser, true);
                     statements = (pm_node_t *) parse_statements(parser, PM_CONTEXT_DEF);
                     pm_accepts_block_stack_pop(parser);
                 }
 
-                if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
+                if (match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE)) {
                     assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
-                    statements = (pm_node_t *) parse_rescues_implicit_begin(parser, def_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_DEF);
+                    statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &def_keyword, def_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_DEF);
+                } else {
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &def_keyword, false);
                 }
 
                 pm_accepts_block_stack_pop(parser);
                 pm_do_loop_stack_pop(parser);
+
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_DEF_TERM);
                 end_keyword = parser->previous;
             }
@@ -18984,9 +19174,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
         }
         case PM_TOKEN_KEYWORD_FALSE:
             parser_lex(parser);
-            return (pm_node_t *)pm_false_node_create(parser, &parser->previous);
+            return (pm_node_t *) pm_false_node_create(parser, &parser->previous);
         case PM_TOKEN_KEYWORD_FOR: {
+            size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
+
             pm_token_t for_keyword = parser->previous;
             pm_node_t *index;
 
@@ -19033,12 +19225,14 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE);
-            pm_statements_node_t *statements = NULL;
 
-            if (!accept1(parser, PM_TOKEN_KEYWORD_END)) {
+            pm_statements_node_t *statements = NULL;
+            if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
                 statements = parse_statements(parser, PM_CONTEXT_FOR);
-                expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM);
             }
+
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &for_keyword, false);
+            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM);
 
             return (pm_node_t *) pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, &do_keyword, &parser->previous);
         }
@@ -19047,8 +19241,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_WARN_KEYWORD_EOL);
             }
 
+            size_t opening_newline_index = token_newline_index(parser);
+            bool if_after_else = parser->previous.type == PM_TOKEN_KEYWORD_ELSE;
             parser_lex(parser);
-            return parse_conditional(parser, PM_CONTEXT_IF);
+
+            return parse_conditional(parser, PM_CONTEXT_IF, opening_newline_index, if_after_else);
         case PM_TOKEN_KEYWORD_UNDEF: {
             if (binding_power != PM_BINDING_POWER_STATEMENT) {
                 pm_parser_err_current(parser, PM_ERR_STATEMENT_UNDEF);
@@ -19108,13 +19305,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             return (pm_node_t *) pm_call_node_not_create(parser, receiver, &message, &arguments);
         }
-        case PM_TOKEN_KEYWORD_UNLESS:
+        case PM_TOKEN_KEYWORD_UNLESS: {
+            size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
-            return parse_conditional(parser, PM_CONTEXT_UNLESS);
+
+            return parse_conditional(parser, PM_CONTEXT_UNLESS, opening_newline_index, false);
+        }
         case PM_TOKEN_KEYWORD_MODULE: {
             pm_node_list_t current_block_exits = { 0 };
             pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
+            size_t opening_newline_index = token_newline_index(parser);
             parser_lex(parser);
             pm_token_t module_keyword = parser->previous;
 
@@ -19150,15 +19351,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE);
             pm_node_t *statements = NULL;
 
-            if (!match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
+            if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = (pm_node_t *) parse_statements(parser, PM_CONTEXT_MODULE);
                 pm_accepts_block_stack_pop(parser);
             }
 
-            if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
+            if (match3(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE)) {
                 assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
-                statements = (pm_node_t *) parse_rescues_implicit_begin(parser, module_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_MODULE);
+                statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &module_keyword, module_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_MODULE);
+            } else {
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &module_keyword, false);
             }
 
             pm_constant_id_list_t locals;
@@ -19202,6 +19405,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
             return (pm_node_t *) pm_true_node_create(parser, &parser->previous);
         case PM_TOKEN_KEYWORD_UNTIL: {
+            size_t opening_newline_index = token_newline_index(parser);
+
             context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
             pm_do_loop_stack_push(parser, true);
 
@@ -19215,17 +19420,21 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             expect3(parser, PM_TOKEN_KEYWORD_DO_LOOP, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
             pm_statements_node_t *statements = NULL;
 
-            if (!accept1(parser, PM_TOKEN_KEYWORD_END)) {
+            if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, PM_CONTEXT_UNTIL);
                 pm_accepts_block_stack_pop(parser);
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-                expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM);
             }
+
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM);
 
             return (pm_node_t *) pm_until_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
         }
         case PM_TOKEN_KEYWORD_WHILE: {
+            size_t opening_newline_index = token_newline_index(parser);
+
             context_push(parser, PM_CONTEXT_LOOP_PREDICATE);
             pm_do_loop_stack_push(parser, true);
 
@@ -19239,13 +19448,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             expect3(parser, PM_TOKEN_KEYWORD_DO_LOOP, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
             pm_statements_node_t *statements = NULL;
 
-            if (!accept1(parser, PM_TOKEN_KEYWORD_END)) {
+            if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, PM_CONTEXT_WHILE);
                 pm_accepts_block_stack_pop(parser);
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-                expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM);
             }
+
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+            expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM);
 
             return (pm_node_t *) pm_while_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
         }
@@ -19887,6 +20098,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             int previous_lambda_enclosure_nesting = parser->lambda_enclosure_nesting;
             parser->lambda_enclosure_nesting = parser->enclosure_nesting;
 
+            size_t opening_newline_index = token_newline_index(parser);
             pm_accepts_block_stack_push(parser, true);
             parser_lex(parser);
 
@@ -19932,10 +20144,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (accept1(parser, PM_TOKEN_LAMBDA_BEGIN)) {
                 opening = parser->previous;
 
-                if (!accept1(parser, PM_TOKEN_BRACE_RIGHT)) {
+                if (!match1(parser, PM_TOKEN_BRACE_RIGHT)) {
                     body = (pm_node_t *) parse_statements(parser, PM_CONTEXT_LAMBDA_BRACES);
-                    expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE);
                 }
+
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false);
+                expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE);
             } else {
                 expect1(parser, PM_TOKEN_KEYWORD_DO, PM_ERR_LAMBDA_OPEN);
                 opening = parser->previous;
@@ -19948,7 +20162,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 if (match2(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE)) {
                     assert(body == NULL || PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE));
-                    body = (pm_node_t *) parse_rescues_implicit_begin(parser, opening.start, (pm_statements_node_t *) body, PM_RESCUES_LAMBDA);
+                    body = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &operator, opening.start, (pm_statements_node_t *) body, PM_RESCUES_LAMBDA);
+                } else {
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false);
                 }
 
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END);
@@ -21473,7 +21689,8 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .current_block_exits = NULL,
         .semantic_token_seen = false,
         .frozen_string_literal = PM_OPTIONS_FROZEN_STRING_LITERAL_UNSET,
-        .current_regular_expression_ascii_only = false
+        .current_regular_expression_ascii_only = false,
+        .warn_mismatched_indentation = true
     };
 
     // Initialize the constant pool. We're going to completely guess as to the
