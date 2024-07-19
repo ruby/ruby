@@ -41,7 +41,7 @@ module Bundler
     HASH_REGEX = /
       ^
       ([ ]*) # indentations
-      (.+) # key
+      ([^#]+) # key excludes comment char '#'
       (?::(?=(?:\s|$))) # :  (without the lookahead the #key includes this when : is present in value)
       [ ]?
       (['"]?) # optional opening quote

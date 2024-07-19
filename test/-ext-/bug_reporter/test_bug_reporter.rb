@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'tmpdir'
 require_relative '../../lib/jit_support'
+require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
@@ -9,7 +10,7 @@ class TestBugReporter < Test::Unit::TestCase
 
     omit "flaky with RJIT" if JITSupport.rjit_enabled?
     description = RUBY_DESCRIPTION
-    description = description.sub(/\+PRISM /, '') unless EnvUtil.invoke_ruby(["-v"], "", true, false)[0].include?("+PRISM")
+    description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
     description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,
