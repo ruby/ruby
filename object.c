@@ -4107,10 +4107,12 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *      ```
  *      class MyObjectSystem < BasicObject
  *        DELEGATE = [:puts, :p]
+ *
  *        def method_missing(name, *args, &block)
  *          return super unless DELEGATE.include? name
  *          ::Kernel.send(name, *args, &block)
  *        end
+ *
  *        def respond_to_missing?(name, include_private = false)
  *          DELEGATE.include?(name)
  *        end
@@ -4124,18 +4126,18 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *  | \\Method                    | Effect                                                                          |
  *  |-----------------------------|---------------------------------------------------------------------------------|
  *  | ::new                       | Returns a new \\BasicObject instance.                                           |
- *  | #!                          | Returns the boolean negation of +self+: +true+ or +false+.                      |
- *  | #!=                         | Returns whether +self+ and the given object are _not_ equal.                    |
- *  | #==                         | Returns whether +self+ and the given object are equivalent.                     |
- *  | #__id__                     | Returns the integer object identifier for +self+.                               |
+ *  | #!                          | Returns the boolean negation of `self`: `true` or `false`.                      |
+ *  | #!=                         | Returns whether `self` and the given object are _not_ equal.                    |
+ *  | #==                         | Returns whether `self` and the given object are equivalent.                     |
+ *  | #__id__                     | Returns the integer object identifier for `self`.                               |
  *  | #__send__                   | Calls the method identified by the given symbol.                                |
- *  | #equal?                     | Returns whether +self+ and the given object are the same object.                |
- *  | #instance_eval              | Evaluates the given string or block in the context of +self+.                   |
- *  | #instance_exec              | Executes the given block in the context of +self+, passing the given arguments. |
- *  | #method_missing             | Called when +self+ is called with a method it does not define.                  |
- *  | #singleton_method_added     | Called when a singleton method is added to +self+.                              |
- *  | #singleton_method_removed   | Called when a singleton method is removed from +self+.                          |
- *  | #singleton_method_undefined | Called when a singleton method is undefined in +self+.                          |
+ *  | #equal?                     | Returns whether `self` and the given object are the same object.                |
+ *  | #instance_eval              | Evaluates the given string or block in the context of `self`.                   |
+ *  | #instance_exec              | Executes the given block in the context of `self`, passing the given arguments. |
+ *  | #method_missing             | Called when `self` is called with a method it does not define.                  |
+ *  | #singleton_method_added     | Called when a singleton method is added to `self`.                              |
+ *  | #singleton_method_removed   | Called when a singleton method is removed from `self`.                          |
+ *  | #singleton_method_undefined | Called when a singleton method is undefined in `self`.                          |
  *
  */
 
