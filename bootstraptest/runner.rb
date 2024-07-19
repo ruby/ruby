@@ -364,7 +364,7 @@ end
 # In bootstraptest, we aggregate the test results based on file level.
 module Launchable
   @@last_test_name = nil
-  @@stderr = ''
+  @@failure_log = ''
   @@duration = 0
 
   def show_progress(message = '')
@@ -372,7 +372,7 @@ module Launchable
 
     if writer = BT.launchable_test_reports
       if faildesc
-        @@stderr += faildesc
+        @@failure_log += faildesc
       end
       repo_path = File.expand_path("#{__dir__}/../")
       relative_path = File.join(__dir__, self.path).delete_prefix("#{repo_path}/")
@@ -380,7 +380,7 @@ module Launchable
         # The test path is a URL-encoded representation.
         # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
         test_path = "#{encode_test_path_component("file")}=#{encode_test_path_component(@@last_test_name)}"
-        if @@stderr.size > 0
+        if @@failure_log.size > 0
           status = 'TEST_FAILED'
         else
           status = 'TEST_PASSED'
@@ -391,7 +391,7 @@ module Launchable
             status: status,
             duration: t,
             createdAt: Time.now.to_s,
-            stderr: @@stderr,
+            stderr: @@failure_log,
             stdout: nil,
             data: {
               lineNumber: self.lineno
@@ -399,7 +399,7 @@ module Launchable
           }
         )
         @@duration = 0
-        @@stderr.clear
+        @@failure_log.clear
       end
       @@last_test_name = relative_path
       @@duration += t
