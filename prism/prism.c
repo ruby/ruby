@@ -17034,7 +17034,8 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
 
                 break;
             }
-            case PM_TOKEN_PARENTHESIS_LEFT: {
+            case PM_TOKEN_PARENTHESIS_LEFT:
+            case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
                 pm_token_t opening = parser->current;
                 parser_lex(parser);
 
