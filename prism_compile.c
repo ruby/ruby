@@ -1360,7 +1360,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     // by newhash or hash merge). Double splat nodes should be merged using the
     // merge_kwd method call.
     const int max_stack_length = 0x100;
-    const int min_tmp_hash_length = 0x800;
+    const unsigned int min_tmp_hash_length = 0x800;
 
     int stack_length = 0;
     bool first_chunk = true;
