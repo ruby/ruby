@@ -2134,6 +2134,13 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 
         ruby_opt_init(opt);
         error = pm_parse_stdin(result);
+
+        // If we found an __END__ marker, then we're going to define a global
+        // DATA constant that is a file object that can be read to read the
+        // contents after the marker.
+        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+            rb_define_global_const("DATA", rb_stdin);
+        }
     }
     else if (opt->e_script) {
         command_line |= PM_OPTIONS_COMMAND_LINE_E;
