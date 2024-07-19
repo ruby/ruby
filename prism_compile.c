@@ -5676,7 +5676,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // own arrays, followed by a newarray, and then continually
             // concat the arrays with the SplatNode nodes.
             const int max_new_array_size = 0x100;
-            const int min_tmp_array_size = 0x40;
+            const unsigned int min_tmp_array_size = 0x40;
 
             int new_array_size = 0;
             bool first_chunk = true;
