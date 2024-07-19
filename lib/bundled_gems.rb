@@ -34,6 +34,8 @@ module Gem::BUNDLED_GEMS
     "logger" => "3.5.0",
   }.freeze
 
+  SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
+
   EXACT = {
     "kconv" => "nkf",
   }.freeze
@@ -92,6 +94,13 @@ module Gem::BUNDLED_GEMS
   def self.warning?(name, specs: nil)
     # name can be a feature name or a file path with String or Pathname
     feature = File.path(name)
+
+    if feature.include?("/")
+      return unless SINCE_FAST_PATH[File.basename(feature, ".*")]
+    else
+      return unless SINCE_FAST_PATH[feature]
+    end
+
     # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
     # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
     name = feature.delete_prefix(ARCHDIR)
