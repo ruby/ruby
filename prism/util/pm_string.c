@@ -143,10 +143,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
     return true;
 #else
-    (void) string;
-    (void) filepath;
-    perror("pm_string_mapped_init is not implemented for this platform");
-    return false;
+    return pm_string_file_init(string, filepath);
 #endif
 }
 
@@ -205,7 +202,7 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     CloseHandle(file);
     *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = (size_t) file_size };
     return true;
-#elif defined(_POSIX_MAPPED_FILES)
+#else
     FILE *file = fopen(filepath, "rb");
     if (file == NULL) {
         return false;
@@ -244,11 +241,6 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
 
     *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
     return true;
-#else
-    (void) string;
-    (void) filepath;
-    perror("pm_string_file_init is not implemented for this platform");
-    return false;
 #endif
 }
 
