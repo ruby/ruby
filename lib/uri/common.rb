@@ -13,24 +13,37 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module URI
-  include RFC2396_REGEXP
+  RFC2396_PARSER = RFC2396_Parser.new
+  Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
-  REGEXP = RFC2396_REGEXP
-  Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
-  # URI::Parser.new
-  DEFAULT_PARSER = Parser.new
-  DEFAULT_PARSER.pattern.each_pair do |sym, str|
-    unless REGEXP::PATTERN.const_defined?(sym)
-      REGEXP::PATTERN.const_set(sym, str)
+  DEFAULT_PARSER = RFC3986_PARSER
+  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
+
+  def self.parser=(parser = RFC3986_PARSER)
+    remove_const(:Parser) if defined?(Parser)
+    const_set("Parser", parser.class)
+
+    remove_const(:REGEXP) if defined?(REGEXP)
+    remove_const(:PATTERN) if defined?(PATTERN)
+    if Parser == RFC2396_Parser
+      const_set("REGEXP", URI::RFC2396_REGEXP)
+      const_set("PATTERN", URI::RFC2396_REGEXP::PATTERN)
+      Parser.new.pattern.each_pair do |sym, str|
+        unless REGEXP::PATTERN.const_defined?(sym)
+          REGEXP::PATTERN.const_set(sym, str)
+        end
+      end
+    end
+
+    Parser.new.regexp.each_pair do |sym, str|
+      remove_const(sym) if const_defined?(sym)
+      const_set(sym, str)
     end
   end
-  DEFAULT_PARSER.regexp.each_pair do |sym, str|
-    const_set(sym, str)
-  end
-  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
+  self.parser = RFC3986_PARSER
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)

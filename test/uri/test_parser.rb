@@ -8,8 +8,8 @@ class URI::TestParser < Test::Unit::TestCase
   end
 
   def test_inspect
-    assert_match(/URI::RFC2396_Parser/, URI::Parser.new.inspect)
-    assert_match(/URI::RFC3986_Parser/, URI::RFC3986_Parser.new.inspect)
+    assert_match(/URI::RFC2396_Parser/, URI::RFC2396_Parser.new.inspect)
+    assert_match(/URI::RFC3986_Parser/, URI::Parser.new.inspect)
   end
 
   def test_compare
@@ -33,7 +33,9 @@ class URI::TestParser < Test::Unit::TestCase
     assert(!u2.equal?(u3))
   end
 
-  def test_parse
+  def test_parse_rfc2396_parser
+    URI.parser = URI::RFC2396_PARSER
+
     escaped = URI::REGEXP::PATTERN::ESCAPED
     hex = URI::REGEXP::PATTERN::HEX
     p1 = URI::Parser.new(:ESCAPED => "(?:#{escaped}|%u[#{hex}]{4})")
@@ -43,6 +45,8 @@ class URI::TestParser < Test::Unit::TestCase
     u1.path = '/%uDCBA'
     assert_equal(['http', nil, 'a', URI::HTTP.default_port, '/%uDCBA', nil, nil],
 		 uri_to_ary(u1))
+  ensure
+    URI.parser = URI::DEFAULT_PARSER
   end
 
   def test_parse_query_pct_encoded
