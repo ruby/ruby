@@ -287,8 +287,9 @@ numeric_getaddrinfo(const char *node, const char *service,
 void
 rb_freeaddrinfo(struct rb_addrinfo *ai)
 {
-    if (!ai->allocated_by_malloc)
-        freeaddrinfo(ai->ai);
+    if (!ai->allocated_by_malloc) {
+        if (ai->ai) freeaddrinfo(ai->ai);
+    }
     else {
         struct addrinfo *ai1, *ai2;
         ai1 = ai->ai;
