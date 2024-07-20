@@ -983,7 +983,7 @@ opt_str_uminus
 
 DEFINE_INSN
 opt_newarray_send
-(rb_num_t num, ID method)
+(rb_num_t num, rb_num_t method)
 (...)
 (VALUE val)
 /* This instruction typically has no funcalls.  But it compares array
@@ -995,17 +995,20 @@ opt_newarray_send
 // attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)num;
 {
     switch(method) {
-      case idHash:
+      case VM_OPT_NEWARRAY_SEND_HASH:
         val = vm_opt_newarray_hash(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idMin:
+      case VM_OPT_NEWARRAY_SEND_MIN:
         val = vm_opt_newarray_min(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idMax:
+      case VM_OPT_NEWARRAY_SEND_MAX:
         val = vm_opt_newarray_max(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
-      case idPack:
-        val = rb_vm_opt_newarray_pack(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0));
+      case VM_OPT_NEWARRAY_SEND_PACK:
+        val = vm_opt_newarray_pack_buffer(ec, (long)num-1, STACK_ADDR_FROM_TOP(num), TOPN(0), Qundef);
+        break;
+      case VM_OPT_NEWARRAY_SEND_PACK_BUFFER:
+        val = vm_opt_newarray_pack_buffer(ec, (long)num-2, STACK_ADDR_FROM_TOP(num), TOPN(1), TOPN(0));
         break;
       default:
         rb_bug("unreachable");

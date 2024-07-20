@@ -1284,6 +1284,14 @@ enum vm_check_match_type {
 #define VM_CHECKMATCH_TYPE_MASK   0x03
 #define VM_CHECKMATCH_ARRAY       0x04
 
+enum vm_opt_newarray_send_type {
+    VM_OPT_NEWARRAY_SEND_MAX = 1,
+    VM_OPT_NEWARRAY_SEND_MIN = 2,
+    VM_OPT_NEWARRAY_SEND_HASH = 3,
+    VM_OPT_NEWARRAY_SEND_PACK = 4,
+    VM_OPT_NEWARRAY_SEND_PACK_BUFFER = 5,
+};
+
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
     VM_SPECIAL_OBJECT_CBASE,
