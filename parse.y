@@ -3155,6 +3155,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     }
                 | keyword_undef undef_list
                     {
+                        nd_set_first_loc($2, @1.beg_pos);
                         $$ = $2;
                     /*% ripper: undef!($:2) %*/
                     }
