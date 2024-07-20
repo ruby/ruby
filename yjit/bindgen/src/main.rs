@@ -300,6 +300,7 @@ fn main() {
         .allowlist_type("ruby_tag_type")
         .allowlist_type("ruby_vm_throw_flags")
         .allowlist_type("vm_check_match_type")
+        .allowlist_type("vm_opt_newarray_send_type")
         .allowlist_type("rb_iseq_type")
 
         // From yjit.c

@@ -913,4 +913,27 @@ EXPECTED
       assert_equal "oh no", v
     end;
   end
+
+  def test_monkey_pack_buffer
+    assert_separately([], <<-'end;')
+      $-w = false
+      class Array
+        alias :old_pack :pack
+        def pack _, buffer:; buffer << " no"; end
+      end
+
+      def test
+        b = +"oh"
+        [2 ** 15].pack('n', buffer: b)
+      end
+
+      v = test
+
+      class Array
+        alias :pack :old_pack
+      end
+
+      assert_equal "oh no", v
+    end;
+  end
 end
