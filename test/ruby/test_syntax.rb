@@ -1829,6 +1829,10 @@ eom
     assert_valid_syntax('a.b (;),(),()', bug19281)
   end
 
+  def test_command_do_block_call_with_empty_args_brace_block
+    assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }')
+  end
+
   def test_numbered_parameter
     assert_valid_syntax('proc {_1}')
     assert_equal(3, eval('[1,2].then {_1+_2}'))
