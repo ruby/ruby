@@ -437,6 +437,20 @@ class TestRubyOptimization < Test::Unit::TestCase
                  message(bug12565) {disasm(:add_one_and_two)})
   end
 
+  def test_c_func_with_sp_offset_under_tailcall
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      def calc_one_plus_two
+        1 + 2.abs
+      end
+
+      def one_plus_two
+        calc_one_plus_two
+      end
+    end;
+    assert_equal(3, one_plus_two)
+  end
+
   def test_tailcall_interrupted_by_sigint
     bug12576 = 'ruby-core:76327'
     script = "#{<<-"begin;"}\n#{<<~'end;'}"
