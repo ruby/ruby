@@ -4111,7 +4111,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *        end
  *      end
  *
- *  == What's Here
+ *  === What's Here
  *
  *  These are the methods defined for \BasicObject:
  *
