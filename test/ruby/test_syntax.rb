@@ -1706,6 +1706,7 @@ eom
       ]
     }
 
+    assert_valid_syntax("proc {def foo(_);end;_1}")
     assert_valid_syntax("p { [_1 **2] }")
   end
 
