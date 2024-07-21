@@ -4068,25 +4068,19 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
 /*
  *  Document-class: BasicObject
  *
- *  :markup: markdown
- *
- *  `BasicObject` is the parent class of all classes in Ruby.
- *  In particular, `BasicObject` is the parent class of class Object,
+ *  +BasicObject+ is the parent class of all classes in Ruby.
+ *  In particular, +BasicObject+ is the parent class of class Object,
  *  which is itself the default parent class of every Ruby class:
  *
- *  ```
- *  class Foo; end
- *  Foo.superclass    # => Object
- *  Object.superclass # => BasicObject
- *  ```
+ *    class Foo; end
+ *    Foo.superclass    # => Object
+ *    Object.superclass # => BasicObject
  *
- *  `BasicObject` is the only class that has no parent:
+ *  +BasicObject+ is the only class that has no parent:
  *
- *  ```
- *  BasicObject.superclass # => nil
- *  ```
+ *    BasicObject.superclass # => nil
  *
- *  \Class `BasicObject` can be used to create an object hierarchy
+ *  \Class +BasicObject+ can be used to create an object hierarchy
  *  (e.g., class Delegator) that is independent of Ruby's object hierarchy.
  *  Such objects:
  *
@@ -4094,17 +4088,16 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *    provided in class Object and its included module Kernel.
  *  - Do not have definitions of common classes,
  *    and so references to such common classes must be fully qualified
- *    (`::String`, not `String`).
+ *    (+::String+, not +String+).
  *
  *  A variety of strategies can be used to provide useful portions
- *  of the Standard Library in subclasses of `BasicObject`:
+ *  of the Standard Library in subclasses of +BasicObject+:
  *
- *  - The immediate subclass could `include Kernel`,
- *    which would define methods such as `puts`, `exit`, etc.
+ *  - The immediate subclass could <tt>include Kernel</tt>,
+ *    which would define methods such as +puts+, +exit+, etc.
  *  - A custom Kernel-like module could be created and included.
  *  - Delegation can be used via #method_missing:
  *
- *      ```
  *      class MyObjectSystem < BasicObject
  *        DELEGATE = [:puts, :p]
  *
@@ -4117,27 +4110,24 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *          DELEGATE.include?(name)
  *        end
  *      end
- *      ```
  *
- *  ## What's Here
+ *  == What's Here
  *
  *  These are the methods defined for \BasicObject:
  *
- *  | \\Method                    | Effect                                                                          |
- *  |-----------------------------|---------------------------------------------------------------------------------|
- *  | ::new                       | Returns a new \\BasicObject instance.                                           |
- *  | #!                          | Returns the boolean negation of `self`: `true` or `false`.                      |
- *  | #!=                         | Returns whether `self` and the given object are _not_ equal.                    |
- *  | #==                         | Returns whether `self` and the given object are equivalent.                     |
- *  | #__id__                     | Returns the integer object identifier for `self`.                               |
- *  | #__send__                   | Calls the method identified by the given symbol.                                |
- *  | #equal?                     | Returns whether `self` and the given object are the same object.                |
- *  | #instance_eval              | Evaluates the given string or block in the context of `self`.                   |
- *  | #instance_exec              | Executes the given block in the context of `self`, passing the given arguments. |
- *  | #method_missing             | Called when `self` is called with a method it does not define.                  |
- *  | #singleton_method_added     | Called when a singleton method is added to `self`.                              |
- *  | #singleton_method_removed   | Called when a singleton method is removed from `self`.                          |
- *  | #singleton_method_undefined | Called when a singleton method is undefined in `self`.                          |
+ *  - ::new: Returns a new \BasicObject instance.
+ *  - #!: Returns the boolean negation of +self+: +true+ or +false+.
+ *  - #!=: Returns whether +self+ and the given object are _not_ equal.
+ *  - #==: Returns whether +self+ and the given object are equivalent.
+ *  - #__id__: Returns the integer object identifier for +self+.
+ *  - #__send__: Calls the method identified by the given symbol.
+ *  - #equal?: Returns whether +self+ and the given object are the same object.
+ *  - #instance_eval: Evaluates the given string or block in the context of +self+.
+ *  - #instance_exec: Executes the given block in the context of +self+, passing the given arguments.
+ *  - #method_missing: Called when +self+ is called with a method it does not define.
+ *  - #singleton_method_added: Called when a singleton method is added to +self+.
+ *  - #singleton_method_removed: Called when a singleton method is removed from +self+.
+ *  - #singleton_method_undefined: Called when a singleton method is undefined in +self+.
  *
  */
 
