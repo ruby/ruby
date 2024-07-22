@@ -95,7 +95,16 @@ module Gem::BUNDLED_GEMS
     # name can be a feature name or a file path with String or Pathname
     feature = File.path(name)
 
+    # The actual checks needed to properly identify the gem being required
+    # are costly (see [Bug #20641]), so we first do a much cheaper check
+    # to exclude the vast majority of candidates.
     if feature.include?("/")
+      # If requiring $LIBDIR/mutex_m.rb, we check SINCE_FAST_PATH["mutex_m"]
+      # We'll fail to warn requires for files that are not the entry point
+      # of the gem, e.g. require "logger/formatter.rb" won't warn.
+      # But that's acceptable because this warning is best effort,
+      # and in the overwhelming majority of cases logger.rb will end
+      # up required.
       return unless SINCE_FAST_PATH[File.basename(feature, ".*")]
     else
       return unless SINCE_FAST_PATH[feature]
