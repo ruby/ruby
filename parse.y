@@ -9417,6 +9417,10 @@ parser_set_encode(struct parser_params *p, const char *name)
         rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string, p->ruby_sourceline));
         VALUE exc = rb_make_exception(3, excargs);
         ruby_show_error_line(p, exc, &(YYLTYPE)RUBY_INIT_YYLLOC(), p->ruby_sourceline, p->lex.lastline);
+
+        rb_ast_free(p->ast);
+        p->ast = NULL;
+
         rb_exc_raise(exc);
     }
     enc = rb_enc_from_index(idx);
