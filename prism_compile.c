@@ -10289,7 +10289,7 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
     scope_node->parser = parser;
-    scope_node->constants = calloc(parser->constant_pool.size, sizeof(ID));
+    scope_node->constants = xcalloc(parser->constant_pool.size, sizeof(ID));
 
     for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
         pm_constant_t *constant = &parser->constant_pool.constants[index];
