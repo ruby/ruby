@@ -9744,6 +9744,8 @@ pm_parse_result_free(pm_parse_result_t *result)
 {
     if (result->parsed) {
         pm_node_destroy(&result->parser, result->node.ast_node);
+
+        xfree(result->node.constants);
         pm_scope_node_destroy(&result->node);
     }
 
