@@ -685,7 +685,7 @@ ruby_external_gc_init(void)
 
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
-            fprintf(stderr, "%s", dlerror());
+            fprintf(stderr, "%s\n", dlerror());
             rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
         }
     }
