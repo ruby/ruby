@@ -27,6 +27,10 @@
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_dump_literal(lit))
+#define A_LOC(loc) \
+    rb_str_catf(buf, "(%d,%d)-(%d,%d)", \
+                loc.beg_pos.lineno, loc.beg_pos.column, \
+                loc.end_pos.lineno, loc.end_pos.column)
 #define A_NODE_HEADER(node, term) \
     rb_str_catf(buf, "@ %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))%s"term, \
                 ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
@@ -84,6 +88,7 @@
 #define F_LIT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(type(node)->name)
 #define F_VALUE(name, val, ann)     SIMPLE_FIELD1(#name, ann) A_LIT(val)
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
+#define F_LOC(name, type)           SIMPLE_FIELD1(#name, "")  A_LOC(type(node)->name)
 #define F_SHAREABILITY(name, type, ann) SIMPLE_FIELD1(#name, ann) A_SHAREABILITY(type(node)->name)
 
 #define F_NODE(name, type, ann) \
@@ -244,8 +249,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: unless x == 1 then foo else bar end");
         F_NODE(nd_cond, RNODE_UNLESS, "condition expr");
         F_NODE(nd_body, RNODE_UNLESS, "then clause");
-        LAST_NODE;
         F_NODE(nd_else, RNODE_UNLESS, "else clause");
+        F_LOC(keyword_loc, RNODE_UNLESS);
+        F_LOC(then_keyword_loc, RNODE_UNLESS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_UNLESS);
         return;
 
       case NODE_CASE:

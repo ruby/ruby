@@ -747,11 +747,19 @@ ast_node_children(rb_execution_context_t *ec, VALUE self)
     return node_children(data->ast_value, data->node);
 }
 
+static int
+null_loc_p(rb_code_location_t *loc)
+{
+    return (loc->beg_pos.lineno == 0 && loc->beg_pos.column == -1 && loc->end_pos.lineno == 0 && loc->end_pos.column == -1);
+}
+
 static VALUE
 location_new(rb_code_location_t *loc)
 {
     VALUE obj;
     struct ASTLocationData *data;
+
+    if (null_loc_p(loc)) return Qnil;
 
     obj = TypedData_Make_Struct(rb_cLocation, struct ASTLocationData, &rb_location_type, data);
     data->first_lineno = loc->beg_pos.lineno;
@@ -767,6 +775,12 @@ node_locations(VALUE ast_value, const NODE *node)
 {
     enum node_type type = nd_type(node);
     switch (type) {
+      case NODE_UNLESS:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_UNLESS(node)->keyword_loc),
+                                    location_new(&RNODE_UNLESS(node)->then_keyword_loc),
+                                    location_new(&RNODE_UNLESS(node)->end_keyword_loc));
       case NODE_ARGS_AUX:
       case NODE_LAST:
         break;

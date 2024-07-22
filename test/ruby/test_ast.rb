@@ -1327,12 +1327,22 @@ dummy
   class TestLocation < Test::Unit::TestCase
     def test_lineno_and_column
       node = RubyVM::AbstractSyntaxTree.parse("1 + 2")
-      location = node.locations[0]
+      assert_locations(node.locations, [[1, 0, 1, 5]])
+    end
 
-      assert_equal(1, location.first_lineno)
-      assert_equal(0, location.first_column)
-      assert_equal(1, location.last_lineno)
-      assert_equal(5, location.last_column)
+    def test_unless_locations
+      node = RubyVM::AbstractSyntaxTree.parse("unless cond then 1 else 2 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 unless 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 2, 1, 8], nil, nil])
+    end
+
+    private
+    def assert_locations(locations, expected)
+      ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
+
+      assert_equal(ary, expected)
     end
   end
 end
