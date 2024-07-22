@@ -2450,7 +2450,7 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
     rb_ractor_newobj_size_pool_cache_t *size_pool_cache = &cache->size_pool_caches[size_pool_idx];
     struct free_slot *p = size_pool_cache->freelist;
 
-    if (is_incremental_marking(objspace)) {
+    if (RB_UNLIKELY(is_incremental_marking(objspace))) {
         // Not allowed to allocate without running an incremental marking step
         if (cache->incremental_mark_step_allocated_slots >= INCREMENTAL_MARK_STEP_ALLOCATIONS) {
             return Qfalse;
@@ -2461,7 +2461,7 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
         }
     }
 
-    if (p) {
+    if (RB_LIKELY(p)) {
         VALUE obj = (VALUE)p;
         MAYBE_UNUSED(const size_t) stride = size_pool_slot_size(size_pool_idx);
         size_pool_cache->freelist = p->next;
