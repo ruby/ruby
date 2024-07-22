@@ -888,17 +888,17 @@ rb_gc_obj_slot_size(VALUE obj)
 static inline VALUE
 newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t size)
 {
-    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), GET_RACTOR()->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
+    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
 
     if (UNLIKELY(ruby_vm_event_flags & RUBY_INTERNAL_EVENT_NEWOBJ)) {
         unsigned int lev;
-        RB_VM_LOCK_ENTER_CR_LEV(GET_RACTOR(), &lev);
+        RB_VM_LOCK_ENTER_CR_LEV(cr, &lev);
         {
             memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
 
             rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
         }
-        RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
+        RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
     }
 
     return obj;
