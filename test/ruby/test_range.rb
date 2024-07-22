@@ -246,67 +246,138 @@ class TestRange < Test::Unit::TestCase
     assert_kind_of(String, (0..1).hash.to_s)
   end
 
-  def test_step
-    a = []
-    (0..10).step {|x| a << x }
-    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
+  def test_step_numeric_range
+    # Fixnums, floats and all other numbers (like rationals) should behave exactly the same,
+    # but the behavior is implemented independently in 3 different branches of code,
+    # so we need to test each of them.
+    %i[to_i to_r to_f].each do |type|
+      conv = type.to_proc
 
-    a = []
-    (0..).step {|x| a << x; break if a.size == 10 }
-    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], a)
+      from = conv.(0)
+      to = conv.(10)
+      step = conv.(2)
 
-    a = []
-    (0..10).step(2) {|x| a << x }
-    assert_equal([0, 2, 4, 6, 8, 10], a)
+      # finite
+      a = []
+      (from..to).step(step) {|x| a << x }
+      assert_equal([0, 2, 4, 6, 8, 10].map(&conv), a)
 
-    a = []
-    (0..).step(2) {|x| a << x; break if a.size == 10 }
-    assert_equal([0, 2, 4, 6, 8, 10, 12, 14, 16, 18], a)
+      a = []
+      (from...to).step(step) {|x| a << x }
+      assert_equal([0, 2, 4, 6, 8].map(&conv), a)
 
-    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step)
-    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(2))
-    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(0.5))
-    assert_kind_of(Enumerator::ArithmeticSequence, (10..0).step(-1))
-    assert_kind_of(Enumerator::ArithmeticSequence, (..10).step(2))
-    assert_kind_of(Enumerator::ArithmeticSequence, (1..).step(2))
+      # Note: ArithmeticSequence behavior tested in its own test, but we also put it here
+      # to demonstrate the result is the same
+      assert_kind_of(Enumerator::ArithmeticSequence, (from..to).step(step))
+      assert_equal([0, 2, 4, 6, 8, 10].map(&conv), (from..to).step(step).to_a)
+      assert_kind_of(Enumerator::ArithmeticSequence, (from...to).step(step))
+      assert_equal([0, 2, 4, 6, 8].map(&conv), (from...to).step(step).to_a)
 
-    assert_raise(ArgumentError) { (0..10).step(-1) { } }
-    assert_raise(ArgumentError) { (0..10).step(0) }
-    assert_raise(ArgumentError) { (0..10).step(0) { } }
-    assert_raise(ArgumentError) { (0..).step(-1) { } }
-    assert_raise(ArgumentError) { (0..).step(0) }
-    assert_raise(ArgumentError) { (0..).step(0) { } }
+      # endless
+      a = []
+      (from..).step(step) {|x| a << x; break if a.size == 5 }
+      assert_equal([0, 2, 4, 6, 8].map(&conv), a)
 
-    a = []
-    ("a" .. "z").step(2) {|x| a << x }
-    assert_equal(%w(a c e g i k m o q s u w y), a)
+      assert_kind_of(Enumerator::ArithmeticSequence, (from..).step(step))
+      assert_equal([0, 2, 4, 6, 8].map(&conv), (from..).step(step).take(5))
 
-    a = []
-    ("a" .. ).step(2) {|x| a << x; break if a.size == 13 }
-    assert_equal(%w(a c e g i k m o q s u w y), a)
+      # beginless
+      assert_raise(ArgumentError) { (..to).step(step) {} }
+      assert_kind_of(Enumerator::ArithmeticSequence, (..to).step(step))
+      # This is inconsistent, but so it is implemented by ArithmeticSequence
+      assert_raise(TypeError) { (..to).step(step).to_a }
 
-    a = []
-    ("a" .. "z").step(2**32) {|x| a << x }
-    assert_equal(["a"], a)
+      # negative step
 
-    a = []
-    (:a .. :z).step(2) {|x| a << x }
-    assert_equal(%i(a c e g i k m o q s u w y), a)
+      a = []
+      (from..to).step(-step) {|x| a << x }
+      assert_equal([], a)
 
-    a = []
-    (:a .. ).step(2) {|x| a << x; break if a.size == 13 }
-    assert_equal(%i(a c e g i k m o q s u w y), a)
+      a = []
+      (from..-to).step(-step) {|x| a << x }
+      assert_equal([0, -2, -4, -6, -8, -10].map(&conv), a)
 
-    a = []
-    (:a .. :z).step(2**32) {|x| a << x }
-    assert_equal([:a], a)
+      a = []
+      (from...-to).step(-step) {|x| a << x }
+      assert_equal([0, -2, -4, -6, -8].map(&conv), a)
 
+      a = []
+      (from...).step(-step) {|x| a << x; break if a.size == 5 }
+      assert_equal([0, -2, -4, -6, -8].map(&conv), a)
+
+      assert_kind_of(Enumerator::ArithmeticSequence, (from..to).step(-step))
+      assert_equal([], (from..to).step(-step).to_a)
+
+      assert_kind_of(Enumerator::ArithmeticSequence, (from..-to).step(-step))
+      assert_equal([0, -2, -4, -6, -8, -10].map(&conv), (from..-to).step(-step).to_a)
+
+      assert_kind_of(Enumerator::ArithmeticSequence, (from...-to).step(-step))
+      assert_equal([0, -2, -4, -6, -8].map(&conv), (from...-to).step(-step).to_a)
+
+      assert_kind_of(Enumerator::ArithmeticSequence, (from...).step(-step))
+      assert_equal([0, -2, -4, -6, -8].map(&conv), (from...).step(-step).take(5))
+
+      # zero step
+
+      assert_raise(ArgumentError) { (from..to).step(0) {} }
+      assert_raise(ArgumentError) { (from..to).step(0) }
+
+      # default step
+
+      a = []
+      (from..to).step {|x| a << x }
+      assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(&conv), a)
+
+      assert_kind_of(Enumerator::ArithmeticSequence, (from..to).step)
+      assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(&conv), (from..to).step.to_a)
+
+      # default + endless range
+      a = []
+      (from..).step {|x| a << x; break if a.size == 5 }
+      assert_equal([0, 1, 2, 3, 4].map(&conv), a)
+
+      assert_kind_of(Enumerator::ArithmeticSequence, (from..).step)
+      assert_equal([0, 1, 2, 3, 4].map(&conv), (from..).step.take(5))
+
+      # default + beginless range
+      assert_kind_of(Enumerator::ArithmeticSequence, (..to).step)
+
+      # step is not numeric
+
+      to = conv.(5)
+
+      val = Struct.new(:val)
+
+      a = []
+      assert_raise(TypeError) { (from..to).step(val.new(step)) {|x| a << x } }
+      assert_kind_of(Enumerator, (from..to).step(val.new(step)))
+      assert_raise(TypeError) { (from..to).step(val.new(step)).to_a }
+
+      # step is not numeric, but coercible
+      val = Struct.new(:val) do
+        def coerce(num) = [self.class.new(num), self]
+        def +(other) = self.class.new(val + other.val)
+        def <=>(other) = other.is_a?(self.class) ? val <=> other.val : val <=> other
+      end
+
+      a = []
+      (from..to).step(val.new(step)) {|x| a << x }
+      assert_equal([from, val.new(conv.(2)), val.new(conv.(4))], a)
+
+      assert_kind_of(Enumerator, (from..to).step(val.new(step)))
+      assert_equal([from, val.new(conv.(2)), val.new(conv.(4))], (from..to).step(val.new(step)).to_a)
+    end
+  end
+
+  def test_step_numeric_fixnum_boundary
     a = []
     (2**32-1 .. 2**32+1).step(2) {|x| a << x }
     assert_equal([4294967295, 4294967297], a)
+
     zero = (2**32).coerce(0).first
     assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) }
     assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) { } }
+
     a = []
     (2**32-1 .. ).step(2) {|x| a << x; break if a.size == 2 }
     assert_equal([4294967295, 4294967297], a)
@@ -315,58 +386,85 @@ class TestRange < Test::Unit::TestCase
     a = []
     (max..).step {|x| a << x; break if a.size == 2 }
     assert_equal([max, max+1], a)
+
     a = []
     (max..).step(max) {|x| a << x; break if a.size == 4 }
     assert_equal([max, 2*max, 3*max, 4*max], a)
+  end
 
-    o1 = Object.new
-    o2 = Object.new
-    def o1.<=>(x); -1; end
-    def o2.<=>(x); 0; end
-    assert_raise(TypeError) { (o1..o2).step(1) { } }
-    assert_raise(TypeError) { (o1..).step(1) { } }
-
-    class << o1; self; end.class_eval do
-      define_method(:succ) { o2 }
-    end
-    a = []
-    (o1..o2).step(1) {|x| a << x }
-    assert_equal([o1, o2], a)
-
-    a = []
-    (o1...o2).step(1) {|x| a << x }
-    assert_equal([o1], a)
-
-    assert_nothing_raised("[ruby-dev:34557]") { (0..2).step(0.5) {|x| } }
-
-    a = []
-    (0..2).step(0.5) {|x| a << x }
-    assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
-
-    a = []
-    (0..).step(0.5) {|x| a << x; break if a.size == 5 }
-    assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
-
+  def test_step_big_float
     a = []
     (0x40000000..0x40000002).step(0.5) {|x| a << x }
     assert_equal([1073741824, 1073741824.5, 1073741825.0, 1073741825.5, 1073741826], a)
+  end
 
-    o = Object.new
-    def o.to_int() 1 end
-    assert_nothing_raised("[ruby-dev:34558]") { (0..2).step(o) {|x| } }
+  def test_step_non_numeric_range
+    # finite
+    a = []
+    ('a'..'aaaa').step('a') { a << _1 }
+    assert_equal(%w[a aa aaa aaaa], a)
 
-    o = Object.new
-    class << o
-      def to_str() "a" end
-      def <=>(other) to_str <=> other end
-    end
+    assert_kind_of(Enumerator, ('a'..'aaaa').step('a'))
+    assert_equal(%w[a aa aaa aaaa], ('a'..'aaaa').step('a').to_a)
 
     a = []
-    (o.."c").step(1) {|x| a << x}
-    assert_equal(["a", "b", "c"], a)
+    ('a'...'aaaa').step('a') { a << _1 }
+    assert_equal(%w[a aa aaa], a)
+
+    assert_kind_of(Enumerator, ('a'...'aaaa').step('a'))
+    assert_equal(%w[a aa aaa], ('a'...'aaaa').step('a').to_a)
+
+    # endless
     a = []
-    (o..).step(1) {|x| a << x; break if a.size >= 3}
-    assert_equal(["a", "b", "c"], a)
+    ('a'...).step('a') { a << _1; break if a.size == 3 }
+    assert_equal(%w[a aa aaa], a)
+
+    assert_kind_of(Enumerator, ('a'...).step('a'))
+    assert_equal(%w[a aa aaa], ('a'...).step('a').take(3))
+
+    # beginless
+    assert_raise(ArgumentError) { (...'aaa').step('a') {} }
+    assert_raise(ArgumentError) { (...'aaa').step('a') }
+
+    # step is not provided
+    assert_raise(ArgumentError) { ('a'...'aaaa').step }
+
+    # step is incompatible
+    assert_raise(TypeError) { ('a'...'aaaa').step(1) {} }
+    assert_raise(TypeError) { ('a'...'aaaa').step(1).to_a }
+
+    # step is compatible, but shouldn't convert into numeric domain:
+    a = []
+    (Time.utc(2022, 2, 24)...).step(1) { a << _1; break if a.size == 2 }
+    assert_equal([Time.utc(2022, 2, 24), Time.utc(2022, 2, 24, 0, 0, 1)], a)
+
+    a = []
+    (Time.utc(2022, 2, 24)...).step(1.0) { a << _1; break if a.size == 2 }
+    assert_equal([Time.utc(2022, 2, 24), Time.utc(2022, 2, 24, 0, 0, 1)], a)
+
+    a = []
+    (Time.utc(2022, 2, 24)...).step(1r) { a << _1; break if a.size == 2 }
+    assert_equal([Time.utc(2022, 2, 24), Time.utc(2022, 2, 24, 0, 0, 1)], a)
+
+    # step decreases the value
+    a = []
+    (Time.utc(2022, 2, 24)...).step(-1) { a << _1; break if a.size == 2 }
+    assert_equal([Time.utc(2022, 2, 24), Time.utc(2022, 2, 23, 23, 59, 59)], a)
+
+    a = []
+    (Time.utc(2022, 2, 24)...Time.utc(2022, 2, 23, 23, 59, 57)).step(-1) { a << _1 }
+    assert_equal([Time.utc(2022, 2, 24), Time.utc(2022, 2, 23, 23, 59, 59),
+                  Time.utc(2022, 2, 23, 23, 59, 58)], a)
+
+    a = []
+    (Time.utc(2022, 2, 24)..Time.utc(2022, 2, 23, 23, 59, 57)).step(-1) { a << _1 }
+    assert_equal([Time.utc(2022, 2, 24), Time.utc(2022, 2, 23, 23, 59, 59),
+                  Time.utc(2022, 2, 23, 23, 59, 58), Time.utc(2022, 2, 23, 23, 59, 57)], a)
+
+    # step decreases, but the range is forward-directed:
+    a = []
+    (Time.utc(2022, 2, 24)...Time.utc(2022, 2, 24, 01, 01, 03)).step(-1) { a << _1 }
+    assert_equal([], a)
   end
 
   def test_step_bug15537
@@ -390,26 +488,6 @@ class TestRange < Test::Unit::TestCase
     assert_equal(3, (1.0...5.4).step(1.5).to_a.size)
     assert_equal(3, (1.0...5.5).step(1.5).to_a.size)
     assert_equal(4, (1.0...5.6).step(1.5).to_a.size)
-  end
-
-  def test_step_with_succ
-    c = Struct.new(:i) do
-      def succ; self.class.new(i+1); end
-      def <=>(other) i <=> other.i;end
-    end.new(0)
-
-    result = []
-    (c..c.succ).step(2) do |d|
-      result << d.i
-    end
-    assert_equal([0], result)
-
-    result = []
-    (c..).step(2) do |d|
-      result << d.i
-      break if d.i >= 4
-    end
-    assert_equal([0, 2, 4], result)
   end
 
   def test_each
