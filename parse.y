@@ -1060,7 +1060,7 @@ static rb_node_scope_t *rb_node_scope_new(struct parser_params *p, rb_node_args_
 static rb_node_scope_t *rb_node_scope_new2(struct parser_params *p, rb_ast_id_table_t *nd_tbl, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_block_t *rb_node_block_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_if_t *rb_node_if_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc);
-static rb_node_unless_t *rb_node_unless_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc);
+static rb_node_unless_t *rb_node_unless_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_case_t *rb_node_case_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_case2_t *rb_node_case2_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_case3_t *rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc);
@@ -1168,7 +1168,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_SCOPE2(t,a,b,loc) (NODE *)rb_node_scope_new2(p,t,a,b,loc)
 #define NEW_BLOCK(a,loc) (NODE *)rb_node_block_new(p,a,loc)
 #define NEW_IF(c,t,e,loc) (NODE *)rb_node_if_new(p,c,t,e,loc)
-#define NEW_UNLESS(c,t,e,loc) (NODE *)rb_node_unless_new(p,c,t,e,loc)
+#define NEW_UNLESS(c,t,e,loc,k_loc,t_loc,e_loc) (NODE *)rb_node_unless_new(p,c,t,e,loc,k_loc,t_loc,e_loc)
 #define NEW_CASE(h,b,loc) (NODE *)rb_node_case_new(p,h,b,loc)
 #define NEW_CASE2(b,loc) (NODE *)rb_node_case2_new(p,b,loc)
 #define NEW_CASE3(h,b,loc) (NODE *)rb_node_case3_new(p,h,b,loc)
@@ -1389,7 +1389,7 @@ static NODE* method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc
 #define new_nil(loc) NEW_NIL(loc)
 static NODE *new_nil_at(struct parser_params *p, const rb_code_position_t *pos);
 static NODE *new_if(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*);
-static NODE *new_unless(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*);
+static NODE *new_unless(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *logop(struct parser_params*,ID,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
 
 static NODE *newline_node(NODE*);
@@ -3167,7 +3167,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     }
                 | stmt modifier_unless expr_value
                     {
-                        $$ = new_unless(p, $3, remove_begin($1), 0, &@$);
+                        $$ = new_unless(p, $3, remove_begin($1), 0, &@$, &@2, &NULL_LOC, &NULL_LOC);
                         fixpos($$, $3);
                     /*% ripper: unless_mod!($:3, $:1) %*/
                     }
@@ -4516,7 +4516,7 @@ primary		: literal
                   opt_else
                   k_end
                     {
-                        $$ = new_unless(p, $2, $4, $5, &@$);
+                        $$ = new_unless(p, $2, $4, $5, &@$, &@1, &@3, &@6);
                         fixpos($$, $2);
                     /*% ripper: unless!($:2, $:4, $:5) %*/
                     }
@@ -5488,7 +5488,7 @@ p_top_expr	: p_top_expr_body
                     }
                 | p_top_expr_body modifier_unless expr_value
                     {
-                        $$ = new_unless(p, $3, $1, 0, &@$);
+                        $$ = new_unless(p, $3, $1, 0, &@$, &@2, &NULL_LOC, &NULL_LOC);
                         fixpos($$, $3);
                     /*% ripper: unless_mod!($:3, $:1) %*/
                     }
@@ -11530,12 +11530,15 @@ rb_node_if_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_e
 }
 
 static rb_node_unless_t *
-rb_node_unless_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc)
+rb_node_unless_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
     rb_node_unless_t *n = NODE_NEWNODE(NODE_UNLESS, rb_node_unless_t, loc);
     n->nd_cond = nd_cond;
     n->nd_body = nd_body;
     n->nd_else = nd_else;
+    n->keyword_loc = *keyword_loc;
+    n->then_keyword_loc = *then_keyword_loc;
+    n->end_keyword_loc = *end_keyword_loc;
 
     return n;
 }
@@ -14319,11 +14322,11 @@ new_if(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE
 }
 
 static NODE*
-new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
+new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
     if (!cc) return right;
     cc = cond0(p, cc, COND_IN_COND, loc, true);
-    return newline_node(NEW_UNLESS(cc, left, right, loc));
+    return newline_node(NEW_UNLESS(cc, left, right, loc, keyword_loc, then_keyword_loc, end_keyword_loc));
 }
 
 #define NEW_AND_OR(type, f, s, loc) (type == NODE_AND ? NEW_AND(f,s,loc) : NEW_OR(f,s,loc))
