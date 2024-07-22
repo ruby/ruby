@@ -21797,7 +21797,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
             pm_parser_warn_shebang_carriage_return(parser, parser->start, length);
             if (newline != NULL) parser->encoding_comment_start = newline + 1;
             search_shebang = false;
-        } else {
+        } else if (!parser->parsing_eval) {
             search_shebang = true;
         }
     }
