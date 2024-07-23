@@ -102,7 +102,18 @@ module Spec
     end
 
     def tmp(*path)
-      source_root.join("tmp", scope, *path)
+      tmp_root(scope).join(*path)
+    end
+
+    def tmp_root(scope)
+      source_root.join("tmp", "#{test_env_version}.#{scope}")
+    end
+
+    # Bump this version whenever you make a breaking change to the spec setup
+    # that requires regenerating tmp/.
+
+    def test_env_version
+      1
     end
 
     def scope
