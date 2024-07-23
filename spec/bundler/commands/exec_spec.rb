@@ -695,6 +695,25 @@ RSpec.describe "bundle exec" do
     end
   end
 
+  describe "bundle exec gem uninstall" do
+    before do
+      build_repo4 do
+        build_gem "foo"
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+    end
+
+    it "works" do
+      bundle "exec gem uninstall foo"
+      expect(out).to eq("Successfully uninstalled foo-1.0")
+    end
+  end
+
   context "`load`ing a ruby file instead of `exec`ing" do
     let(:path) { bundled_app("ruby_executable") }
     let(:shebang) { "#!/usr/bin/env ruby" }
