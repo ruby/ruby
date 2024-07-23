@@ -4741,7 +4741,8 @@ pm_compile_rescue(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
         PM_COMPILE_NOT_POPPED((const pm_node_t *) cast->statements);
     }
     else {
-        PUSH_SYNTHETIC_PUTNIL(ret, iseq);
+        const pm_node_location_t location = PM_NODE_START_LOCATION(parser, cast->rescue_clause);
+        PUSH_INSN(ret, location, putnil);
     }
 
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
@@ -4774,34 +4775,44 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
         location = *node_location;
     }
 
-    LABEL *estart = NEW_LABEL(location.line);
-    LABEL *eend = NEW_LABEL(location.line);
-    LABEL *econt = NEW_LABEL(location.line);
+    LABEL *lstart = NEW_LABEL(location.line);
+    LABEL *lend = NEW_LABEL(location.line);
+    LABEL *lcont = NEW_LABEL(location.line);
 
     struct ensure_range er;
     struct iseq_compile_data_ensure_node_stack enl;
     struct ensure_range *erange;
 
-    er.begin = estart;
-    er.end = eend;
+    DECL_ANCHOR(ensr);
+    INIT_ANCHOR(ensr);
+    if (statements != NULL) {
+        pm_compile_node(iseq, (const pm_node_t *) statements, ensr, true, scope_node);
+    }
+
+    LINK_ELEMENT *last = ensr->last;
+    bool last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
+
+    er.begin = lstart;
+    er.end = lend;
     er.next = 0;
     push_ensure_entry(iseq, &enl, &er, (void *) cast->ensure_clause);
 
-    PUSH_LABEL(ret, estart);
-    if (cast->rescue_clause) {
-        pm_compile_rescue(iseq, cast, &location, ret, popped, scope_node);
+    PUSH_LABEL(ret, lstart);
+    if (cast->rescue_clause != NULL) {
+        pm_compile_rescue(iseq, cast, node_location, ret, popped | last_leave, scope_node);
     }
-    else {
-        if (cast->statements) {
-            PM_COMPILE((const pm_node_t *) cast->statements);
-        }
-        else if (!popped) {
-            PUSH_INSN(ret, *node_location, putnil);
-        }
+    else if (cast->statements != NULL) {
+        pm_compile_node(iseq, (const pm_node_t *) cast->statements, ret, popped | last_leave, scope_node);
+    }
+    else if (!(popped | last_leave)) {
+        PUSH_SYNTHETIC_PUTNIL(ret, iseq);
     }
 
-    PUSH_LABEL(ret, eend);
-    PUSH_LABEL(ret, econt);
+    PUSH_LABEL(ret, lend);
+    PUSH_SEQ(ret, ensr);
+    if (!popped && last_leave) PUSH_INSN(ret, *node_location, putnil);
+    PUSH_LABEL(ret, lcont);
+    if (last_leave) PUSH_INSN(ret, *node_location, pop);
 
     pm_scope_node_t next_scope_node;
     pm_scope_node_init((const pm_node_t *) cast->ensure_clause, &next_scope_node, scope_node);
@@ -4816,19 +4827,13 @@ pm_compile_ensure(rb_iseq_t *iseq, const pm_begin_node_t *cast, const pm_node_lo
     pm_scope_node_destroy(&next_scope_node);
 
     erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
-    if (estart->link.next != &eend->link) {
+    if (lstart->link.next != &lend->link) {
         while (erange) {
-            PUSH_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end, child_iseq, econt);
+            PUSH_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end, child_iseq, lcont);
             erange = erange->next;
         }
     }
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
-
-    // Compile the ensure entry
-    if (statements != NULL) {
-        PM_COMPILE((const pm_node_t *) statements);
-        if (!popped) PUSH_INSN(ret, *node_location, pop);
-    }
 }
 
 /**
