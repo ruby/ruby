@@ -116,6 +116,13 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
         return false;
     }
 
+    // Ensure it is a file and not a directory
+    if (S_ISDIR(sb.st_mode)) {
+        errno = EISDIR;
+        close(fd);
+        return false;
+    }
+
     // mmap the file descriptor to virtually get the contents
     size_t size = (size_t) sb.st_size;
     uint8_t *source = NULL;

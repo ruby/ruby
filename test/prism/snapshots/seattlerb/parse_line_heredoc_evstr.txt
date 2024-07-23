@@ -1,22 +1,26 @@
 @ ProgramNode (location: (1,0)-(1,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,4))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,4))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,4) = "<<-A"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (2,0)-(3,0) = "a\n"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "a\n"
             │   ├── @ EmbeddedStatementsNode (location: (3,0)-(3,4))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (3,0)-(3,2) = "\#{"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (3,2)-(3,3))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ CallNode (location: (3,2)-(3,3))
             │   │   │           ├── flags: variable_call, ignore_visibility
@@ -30,7 +34,7 @@
             │   │   │           └── block: ∅
             │   │   └── closing_loc: (3,3)-(3,4) = "}"
             │   └── @ StringNode (location: (3,4)-(4,0))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (3,4)-(4,0) = "\n"
             │       ├── closing_loc: ∅

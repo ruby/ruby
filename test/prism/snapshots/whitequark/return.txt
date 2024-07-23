@@ -1,14 +1,16 @@
 @ ProgramNode (location: (1,0)-(7,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,11))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ ReturnNode (location: (1,0)-(1,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,0)-(1,6) = "return"
         │   └── arguments: ∅
         ├── @ ReturnNode (location: (3,0)-(3,10))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,0)-(3,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (3,7)-(3,10))
@@ -25,29 +27,32 @@
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ ReturnNode (location: (5,0)-(5,8))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (5,6)-(5,8))
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ ParenthesesNode (location: (5,6)-(5,8))
+        │               ├── flags: ∅
         │               ├── body: ∅
         │               ├── opening_loc: (5,6)-(5,7) = "("
         │               └── closing_loc: (5,7)-(5,8) = ")"
         └── @ ReturnNode (location: (7,0)-(7,11))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (7,0)-(7,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (7,6)-(7,11))
                 ├── flags: ∅
                 └── arguments: (length: 1)
                     └── @ ParenthesesNode (location: (7,6)-(7,11))
+                        ├── flags: ∅
                         ├── body:
                         │   @ StatementsNode (location: (7,7)-(7,10))
+                        │   ├── flags: ∅
                         │   └── body: (length: 1)
                         │       └── @ CallNode (location: (7,7)-(7,10))
-                        │           ├── flags: variable_call, ignore_visibility
+                        │           ├── flags: newline, variable_call, ignore_visibility
                         │           ├── receiver: ∅
                         │           ├── call_operator_loc: ∅
                         │           ├── name: :foo

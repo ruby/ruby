@@ -71,8 +71,102 @@ module Prism
       assert_warning("_ = 1.0e100000", "out of range")
     end
 
+    def test_indentation_mismatch
+      assert_warning("if true\n  end", "mismatched indentations at 'end' with 'if'")
+      assert_warning("if true\n  elsif true\nend", "mismatched indentations at 'elsif' with 'if'")
+      assert_warning("if true\n  else\nend", "mismatched indentations at 'else' with 'if'", "mismatched indentations at 'end' with 'else'")
+
+      assert_warning("unless true\n  end", "mismatched indentations at 'end' with 'unless'")
+      assert_warning("unless true\n  else\nend", "mismatched indentations at 'else' with 'unless'", "mismatched indentations at 'end' with 'else'")
+
+      assert_warning("while true\n  end", "mismatched indentations at 'end' with 'while'")
+      assert_warning("until true\n  end", "mismatched indentations at 'end' with 'until'")
+
+      assert_warning("begin\n  end", "mismatched indentations at 'end' with 'begin'")
+      assert_warning("begin\n  rescue\nend", "mismatched indentations at 'rescue' with 'begin'")
+      assert_warning("begin\n  ensure\nend", "mismatched indentations at 'ensure' with 'begin'")
+      assert_warning("begin\nrescue\n  else\nend", "mismatched indentations at 'else' with 'begin'", "mismatched indentations at 'end' with 'else'")
+      assert_warning("begin\n  rescue\n    ensure\n      end", "mismatched indentations at 'rescue' with 'begin'", "mismatched indentations at 'ensure' with 'begin'", "mismatched indentations at 'end' with 'begin'");
+
+      assert_warning("def foo\n  end", "mismatched indentations at 'end' with 'def'")
+      assert_warning("def foo\n  rescue\nend", "mismatched indentations at 'rescue' with 'def'")
+      assert_warning("def foo\n  ensure\nend", "mismatched indentations at 'ensure' with 'def'")
+      assert_warning("def foo\nrescue\n  else\nend", "mismatched indentations at 'else' with 'def'", "mismatched indentations at 'end' with 'else'")
+      assert_warning("def foo\n  rescue\n    ensure\n      end", "mismatched indentations at 'rescue' with 'def'", "mismatched indentations at 'ensure' with 'def'", "mismatched indentations at 'end' with 'def'");
+
+      assert_warning("class Foo\n  end", "mismatched indentations at 'end' with 'class'")
+      assert_warning("class Foo\n  rescue\nend", "mismatched indentations at 'rescue' with 'class'")
+      assert_warning("class Foo\n  ensure\nend", "mismatched indentations at 'ensure' with 'class'")
+      assert_warning("class Foo\nrescue\n  else\nend", "mismatched indentations at 'else' with 'class'", "mismatched indentations at 'end' with 'else'")
+      assert_warning("class Foo\n  rescue\n    ensure\n      end", "mismatched indentations at 'rescue' with 'class'", "mismatched indentations at 'ensure' with 'class'", "mismatched indentations at 'end' with 'class'");
+
+      assert_warning("module Foo\n  end", "mismatched indentations at 'end' with 'module'")
+      assert_warning("module Foo\n  rescue\nend", "mismatched indentations at 'rescue' with 'module'")
+      assert_warning("module Foo\n  ensure\nend", "mismatched indentations at 'ensure' with 'module'")
+      assert_warning("module Foo\nrescue\n  else\nend", "mismatched indentations at 'else' with 'module'", "mismatched indentations at 'end' with 'else'")
+      assert_warning("module Foo\n  rescue\n    ensure\n      end", "mismatched indentations at 'rescue' with 'module'", "mismatched indentations at 'ensure' with 'module'", "mismatched indentations at 'end' with 'module'");
+
+      assert_warning("class << foo\n  end", "mismatched indentations at 'end' with 'class'")
+      assert_warning("class << foo\n  rescue\nend", "mismatched indentations at 'rescue' with 'class'")
+      assert_warning("class << foo\n  ensure\nend", "mismatched indentations at 'ensure' with 'class'")
+      assert_warning("class << foo\nrescue\n  else\nend", "mismatched indentations at 'else' with 'class'", "mismatched indentations at 'end' with 'else'")
+      assert_warning("class << foo\n  rescue\n    ensure\n      end", "mismatched indentations at 'rescue' with 'class'", "mismatched indentations at 'ensure' with 'class'", "mismatched indentations at 'end' with 'class'");
+
+      assert_warning("case 1; when 2\n  end", "mismatched indentations at 'end' with 'case'")
+      assert_warning("case 1; in 2\n  end", "mismatched indentations at 'end' with 'case'")
+
+      assert_warning("-> {\n  }", "mismatched indentations at '}' with '->'")
+      assert_warning("-> do\n  end", "mismatched indentations at 'end' with '->'")
+      assert_warning("-> do\n  rescue\nend", "mismatched indentations at 'rescue' with '->'")
+      assert_warning("-> do\n  ensure\nend", "mismatched indentations at 'ensure' with '->'")
+      assert_warning("-> do\nrescue\n  else\nend", "mismatched indentations at 'else' with '->'", "mismatched indentations at 'end' with 'else'")
+      assert_warning("-> do\n  rescue\n    ensure\n      end", "mismatched indentations at 'rescue' with '->'", "mismatched indentations at 'ensure' with '->'", "mismatched indentations at 'end' with '->'");
+      assert_warning("foo do\nrescue\n  else\nend", "mismatched indentations at 'end' with 'else'")
+
+      refute_warning("class Foo; end") # same line
+      refute_warning("; class Foo\nend") # non whitespace on opening line
+      refute_warning("\tclass Foo\n        end") # tab stop matches space
+      refute_warning("    \tclass Foo\n        end") # tab stop matches space
+    end
+
     def test_integer_in_flip_flop
       assert_warning("1 if 2..foo", "integer")
+    end
+
+    def test_literal_in_conditionals
+      sources = [
+        "if (a = 2); a; end",
+        "if ($a = 2); end",
+        "if (@a = 2); end",
+        "if a; elsif b = 2; b end",
+        "unless (a = 2); a; end",
+        "unless ($a = 2); end",
+        "unless (@a = 2); end",
+        "while (a = 2); a; end",
+        "while ($a = 2); end",
+        "while (@a = 2); end",
+        "until (a = 2); a; end",
+        "until ($a = 2); end",
+        "until (@a = 2); end",
+        "foo if (a, b = 2); [a, b]",
+        "foo if a = 2 and a",
+        "(@foo = 1) ? a : b",
+        "!(a = 2) and a",
+        "not a = 2 and a"
+      ]
+
+      if RUBY_VERSION >= "3.3"
+        sources.push(
+          "if (@@a = 2); end",
+          "unless (@@a = 2); end",
+          "while (@@a = 2); end",
+          "until (@@a = 2); end"
+        )
+      end
+
+      sources.each do |source|
+        assert_warning(source, "= literal' in conditional, should be ==")
+      end
     end
 
     def test_keyword_eol
@@ -227,16 +321,29 @@ module Prism
       assert_warning("tap { redo; foo }", "statement not reached")
     end
 
+    def test_warnings_verbosity
+      warning = Prism.parse("def foo; END { }; end").warnings.first
+      assert_equal "END in method; use at_exit", warning.message
+      assert_equal :default, warning.level
+
+      warning = Prism.parse("foo /regexp/").warnings.first
+      assert_equal "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", warning.message
+      assert_equal :verbose, warning.level
+    end
+
     private
 
-    def assert_warning(source, message)
+    def assert_warning(source, *messages)
       warnings = Prism.parse(source).warnings
+      assert_equal messages.length, warnings.length, "Expected #{messages.length} warning(s) in #{source.inspect}, got #{warnings.map(&:message).inspect}"
 
-      assert_equal 1, warnings.length
-      assert_include warnings.first.message, message
+      warnings.zip(messages).each do |warning, message|
+        assert_include warning.message, message
+      end
 
       if defined?(RubyVM::AbstractSyntaxTree)
-        assert_include capture_warning { RubyVM::AbstractSyntaxTree.parse(source) }, message
+        stderr = capture_stderr { RubyVM::AbstractSyntaxTree.parse(source) }
+        messages.each { |message| assert_include stderr, message }
       end
     end
 
@@ -244,11 +351,11 @@ module Prism
       assert_empty Prism.parse(source, **options).warnings
 
       if compare && defined?(RubyVM::AbstractSyntaxTree)
-        assert_empty capture_warning { RubyVM::AbstractSyntaxTree.parse(source) }
+        assert_empty capture_stderr { RubyVM::AbstractSyntaxTree.parse(source) }
       end
     end
 
-    def capture_warning
+    def capture_stderr
       stderr, $stderr, verbose, $VERBOSE = $stderr, StringIO.new, $VERBOSE, true
 
       begin

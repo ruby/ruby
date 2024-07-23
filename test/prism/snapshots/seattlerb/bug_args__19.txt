@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,16))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,16))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,16))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -14,13 +16,17 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,2)-(1,16))
+                ├── flags: ∅
                 ├── locals: [:a, :b]
                 ├── parameters:
                 │   @ BlockParametersNode (location: (1,4)-(1,12))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (1,5)-(1,11))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ MultiTargetNode (location: (1,5)-(1,11))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── lefts: (length: 2)
                 │   │   │       │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
                 │   │   │       │   │   ├── flags: ∅
@@ -43,9 +49,10 @@
                 │   └── closing_loc: (1,11)-(1,12) = "|"
                 ├── body:
                 │   @ StatementsNode (location: (1,13)-(1,14))
+                │   ├── flags: ∅
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,13)-(1,14))
-                │           ├── flags: variable_call, ignore_visibility
+                │           ├── flags: newline, variable_call, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :d

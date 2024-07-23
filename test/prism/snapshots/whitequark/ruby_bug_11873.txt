@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(23,22))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(23,22))
+    ├── flags: ∅
     └── body: (length: 12)
         ├── @ CallNode (location: (1,0)-(1,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -59,13 +61,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (1,14)-(1,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,14)-(1,16) = "do"
         │       └── closing_loc: (1,17)-(1,20) = "end"
         ├── @ CallNode (location: (3,0)-(3,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -112,7 +115,7 @@
         │   │       │   ├── closing_loc: (3,7)-(3,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (3,10)-(3,13))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (3,10)-(3,11) = "/"
         │   │           ├── content_loc: (3,11)-(3,12) = "x"
         │   │           ├── closing_loc: (3,12)-(3,13) = "/"
@@ -120,13 +123,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (3,14)-(3,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (3,14)-(3,16) = "do"
         │       └── closing_loc: (3,17)-(3,20) = "end"
         ├── @ CallNode (location: (5,0)-(5,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -173,7 +177,7 @@
         │   │       │   ├── closing_loc: (5,7)-(5,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (5,10)-(5,14))
-        │   │           ├── flags: multi_line, forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, multi_line, forced_us_ascii_encoding
         │   │           ├── opening_loc: (5,10)-(5,11) = "/"
         │   │           ├── content_loc: (5,11)-(5,12) = "x"
         │   │           ├── closing_loc: (5,12)-(5,14) = "/m"
@@ -181,13 +185,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (5,15)-(5,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (5,15)-(5,17) = "do"
         │       └── closing_loc: (5,18)-(5,21) = "end"
         ├── @ CallNode (location: (7,0)-(7,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -242,13 +247,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (7,15)-(7,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (7,15)-(7,17) = "do"
         │       └── closing_loc: (7,18)-(7,21) = "end"
         ├── @ CallNode (location: (9,0)-(9,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -295,7 +301,7 @@
         │   │       │   ├── closing_loc: (9,8)-(9,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (9,11)-(9,14))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (9,11)-(9,12) = "/"
         │   │           ├── content_loc: (9,12)-(9,13) = "x"
         │   │           ├── closing_loc: (9,13)-(9,14) = "/"
@@ -303,13 +309,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (9,15)-(9,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (9,15)-(9,17) = "do"
         │       └── closing_loc: (9,18)-(9,21) = "end"
         ├── @ CallNode (location: (11,0)-(11,22))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -356,7 +363,7 @@
         │   │       │   ├── closing_loc: (11,8)-(11,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ RegularExpressionNode (location: (11,11)-(11,15))
-        │   │           ├── flags: multi_line, forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, multi_line, forced_us_ascii_encoding
         │   │           ├── opening_loc: (11,11)-(11,12) = "/"
         │   │           ├── content_loc: (11,12)-(11,13) = "x"
         │   │           ├── closing_loc: (11,13)-(11,15) = "/m"
@@ -364,13 +371,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (11,16)-(11,22))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (11,16)-(11,18) = "do"
         │       └── closing_loc: (11,19)-(11,22) = "end"
         ├── @ CallNode (location: (13,0)-(13,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -391,13 +399,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (13,3)-(13,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (13,4)-(13,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (13,4)-(13,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -430,13 +440,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (13,14)-(13,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (13,14)-(13,16) = "do"
         │       └── closing_loc: (13,17)-(13,20) = "end"
         ├── @ CallNode (location: (15,0)-(15,20))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -457,13 +468,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (15,3)-(15,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (15,4)-(15,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (15,4)-(15,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -488,7 +501,7 @@
         │   │       │       ├── opening_loc: (15,3)-(15,4) = "{"
         │   │       │       └── closing_loc: (15,7)-(15,8) = "}"
         │   │       └── @ RegularExpressionNode (location: (15,10)-(15,13))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (15,10)-(15,11) = "/"
         │   │           ├── content_loc: (15,11)-(15,12) = "x"
         │   │           ├── closing_loc: (15,12)-(15,13) = "/"
@@ -496,13 +509,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (15,14)-(15,20))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (15,14)-(15,16) = "do"
         │       └── closing_loc: (15,17)-(15,20) = "end"
         ├── @ CallNode (location: (17,0)-(17,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -523,13 +537,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (17,3)-(17,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (17,4)-(17,7))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (17,4)-(17,7))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -554,7 +570,7 @@
         │   │       │       ├── opening_loc: (17,3)-(17,4) = "{"
         │   │       │       └── closing_loc: (17,7)-(17,8) = "}"
         │   │       └── @ RegularExpressionNode (location: (17,10)-(17,14))
-        │   │           ├── flags: multi_line, forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, multi_line, forced_us_ascii_encoding
         │   │           ├── opening_loc: (17,10)-(17,11) = "/"
         │   │           ├── content_loc: (17,11)-(17,12) = "x"
         │   │           ├── closing_loc: (17,12)-(17,14) = "/m"
@@ -562,13 +578,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (17,15)-(17,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (17,15)-(17,17) = "do"
         │       └── closing_loc: (17,18)-(17,21) = "end"
         ├── @ CallNode (location: (19,0)-(19,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -589,13 +606,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (19,3)-(19,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (19,4)-(19,8))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (19,4)-(19,8))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -628,13 +647,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (19,15)-(19,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (19,15)-(19,17) = "do"
         │       └── closing_loc: (19,18)-(19,21) = "end"
         ├── @ CallNode (location: (21,0)-(21,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -655,13 +675,15 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block:
         │   │       │       @ BlockNode (location: (21,3)-(21,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── locals: []
         │   │       │       ├── parameters: ∅
         │   │       │       ├── body:
         │   │       │       │   @ StatementsNode (location: (21,4)-(21,8))
+        │   │       │       │   ├── flags: ∅
         │   │       │       │   └── body: (length: 1)
         │   │       │       │       └── @ CallNode (location: (21,4)-(21,8))
-        │   │       │       │           ├── flags: ignore_visibility
+        │   │       │       │           ├── flags: newline, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :c
@@ -686,7 +708,7 @@
         │   │       │       ├── opening_loc: (21,3)-(21,4) = "{"
         │   │       │       └── closing_loc: (21,8)-(21,9) = "}"
         │   │       └── @ RegularExpressionNode (location: (21,11)-(21,14))
-        │   │           ├── flags: forced_us_ascii_encoding
+        │   │           ├── flags: static_literal, forced_us_ascii_encoding
         │   │           ├── opening_loc: (21,11)-(21,12) = "/"
         │   │           ├── content_loc: (21,12)-(21,13) = "x"
         │   │           ├── closing_loc: (21,13)-(21,14) = "/"
@@ -694,13 +716,14 @@
         │   ├── closing_loc: ∅
         │   └── block:
         │       @ BlockNode (location: (21,15)-(21,21))
+        │       ├── flags: ∅
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (21,15)-(21,17) = "do"
         │       └── closing_loc: (21,18)-(21,21) = "end"
         └── @ CallNode (location: (23,0)-(23,22))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -721,13 +744,15 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block:
             │       │       @ BlockNode (location: (23,3)-(23,9))
+            │       │       ├── flags: ∅
             │       │       ├── locals: []
             │       │       ├── parameters: ∅
             │       │       ├── body:
             │       │       │   @ StatementsNode (location: (23,4)-(23,8))
+            │       │       │   ├── flags: ∅
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ CallNode (location: (23,4)-(23,8))
-            │       │       │           ├── flags: ignore_visibility
+            │       │       │           ├── flags: newline, ignore_visibility
             │       │       │           ├── receiver: ∅
             │       │       │           ├── call_operator_loc: ∅
             │       │       │           ├── name: :c
@@ -752,7 +777,7 @@
             │       │       ├── opening_loc: (23,3)-(23,4) = "{"
             │       │       └── closing_loc: (23,8)-(23,9) = "}"
             │       └── @ RegularExpressionNode (location: (23,11)-(23,15))
-            │           ├── flags: multi_line, forced_us_ascii_encoding
+            │           ├── flags: static_literal, multi_line, forced_us_ascii_encoding
             │           ├── opening_loc: (23,11)-(23,12) = "/"
             │           ├── content_loc: (23,12)-(23,13) = "x"
             │           ├── closing_loc: (23,13)-(23,15) = "/m"
@@ -760,6 +785,7 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (23,16)-(23,22))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅

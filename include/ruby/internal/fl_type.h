@@ -906,6 +906,14 @@ RB_OBJ_FROZEN(VALUE obj)
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN
+/**
+ * Prevents further modifications to the given object.  ::rb_eFrozenError shall
+ * be raised if modification is attempted.
+ *
+ * @param[out]  x               Object in question.
+ * @exception   rb_eNoMemError  Failed   to   allocate memory  for  the  frozen
+ *                              representation of the object.
+ */
 void rb_obj_freeze_inline(VALUE obj);
 RUBY_SYMBOL_EXPORT_END
 

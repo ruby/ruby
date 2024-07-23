@@ -1,0 +1,39 @@
+def (1).g; end
+     ^ cannot define singleton method for literals
+def ((a; 1)).foo; end
+         ^ cannot define singleton method for literals
+def ((return; 1)).bar; end
+              ^ cannot define singleton method for literals
+def (((1))).foo; end
+       ^ cannot define singleton method for literals
+def (__FILE__).foo; end
+     ^~~~~~~~ cannot define singleton method for literals
+def (__ENCODING__).foo; end
+     ^~~~~~~~~~~~ cannot define singleton method for literals
+def (__LINE__).foo; end
+     ^~~~~~~~ cannot define singleton method for literals
+def ("foo").foo; end
+     ^~~~~ cannot define singleton method for literals
+def (3.14).foo; end
+     ^~~~ cannot define singleton method for literals
+def (3.14i).foo; end
+     ^~~~~ cannot define singleton method for literals
+def (:foo).foo; end
+     ^~~~ cannot define singleton method for literals
+def (:'foo').foo; end
+     ^~~~~~ cannot define singleton method for literals
+def (:'f{o}').foo; end
+     ^~~~~~~ cannot define singleton method for literals
+def ('foo').foo; end
+     ^~~~~ cannot define singleton method for literals
+def ("foo").foo; end
+     ^~~~~ cannot define singleton method for literals
+def ("#{fo}o").foo; end
+     ^~~~~~~~ cannot define singleton method for literals
+def (/foo/).foo; end
+     ^~~~~ cannot define singleton method for literals
+def (/f#{oo}/).foo; end
+     ^~~~~~~~ cannot define singleton method for literals
+def ([1]).foo; end
+     ^~~ cannot define singleton method for literals
+

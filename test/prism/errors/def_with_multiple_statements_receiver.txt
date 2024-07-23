@@ -1,0 +1,10 @@
+def (
+a
+b
+^ expected a matching `)`
+^ expected a `.` or `::` after the receiver in a method definition
+ ^ expected a delimiter to close the parameters
+).c; end
+^ unexpected ')', ignoring it
+ ^ unexpected '.', ignoring it
+

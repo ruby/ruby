@@ -1,16 +1,21 @@
 @ ProgramNode (location: (1,0)-(5,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,13))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ DefinedNode (location: (1,0)-(1,13))
+        │   ├── flags: newline
         │   ├── lparen_loc: ∅
         │   ├── value:
         │   │   @ InstanceVariableReadNode (location: (1,9)-(1,13))
+        │   │   ├── flags: ∅
         │   │   └── name: :@foo
         │   ├── rparen_loc: ∅
         │   └── keyword_loc: (1,0)-(1,8) = "defined?"
         ├── @ DefinedNode (location: (3,0)-(3,12))
+        │   ├── flags: newline
         │   ├── lparen_loc: ∅
         │   ├── value:
         │   │   @ CallNode (location: (3,9)-(3,12))
@@ -26,6 +31,7 @@
         │   ├── rparen_loc: ∅
         │   └── keyword_loc: (3,0)-(3,8) = "defined?"
         └── @ DefinedNode (location: (5,0)-(5,13))
+            ├── flags: newline
             ├── lparen_loc: (5,8)-(5,9) = "("
             ├── value:
             │   @ CallNode (location: (5,9)-(5,12))

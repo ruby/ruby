@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_print_int() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new_without_iseq();
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_int(&mut asm, Opnd::Imm(42));
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_print_str() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new_without_iseq();
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_str(&mut asm, "Hello, world!");

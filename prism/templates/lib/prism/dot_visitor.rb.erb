@@ -109,6 +109,11 @@ module Prism
     def visit_<%= node.human %>(node)
       table = Table.new("<%= node.name %>")
       id = node_id(node)
+      <%- if (node_flags = node.flags) -%>
+
+      # flags
+      table.field("flags", <%= node_flags.human %>_inspect(node))
+      <%- end -%>
       <%- node.fields.each do |field| -%>
 
       # <%= field.name %>
@@ -141,9 +146,6 @@ module Prism
       unless (<%= field.name %> = node.<%= field.name %>).nil?
         table.field("<%= field.name %>", location_inspect(<%= field.name %>))
       end
-      <%- when Prism::Template::FlagsField -%>
-      <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag } -%>
-      table.field("<%= field.name %>", <%= flag.human %>_inspect(node))
       <%- else -%>
       <%- raise -%>
       <%- end -%>

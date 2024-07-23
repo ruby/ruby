@@ -43,7 +43,6 @@ class Array
   # Related: #each_index, #reverse_each.
   def each
     Primitive.attr! :inline_block
-    Primitive.attr! :use_block
 
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -73,7 +72,6 @@ class Array
   #   a1 # => #<Enumerator: [:foo, "bar", 2]:map>
   def map
     Primitive.attr! :inline_block
-    Primitive.attr! :use_block
 
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -108,7 +106,6 @@ class Array
   #   a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
   def select
     Primitive.attr! :inline_block
-    Primitive.attr! :use_block
 
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'

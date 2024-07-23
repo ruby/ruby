@@ -1,15 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,31))
+├── flags: ∅
 ├── locals: [:match]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,31))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ MatchWriteNode (location: (1,0)-(1,24))
+        │   ├── flags: newline
         │   ├── call:
         │   │   @ CallNode (location: (1,0)-(1,24))
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ RegularExpressionNode (location: (1,0)-(1,15))
-        │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   ├── opening_loc: (1,0)-(1,1) = "/"
         │   │   │   ├── content_loc: (1,1)-(1,14) = "(?<match>bar)"
         │   │   │   ├── closing_loc: (1,14)-(1,15) = "/"
@@ -32,8 +35,10 @@
         │   │   └── block: ∅
         │   └── targets: (length: 1)
         │       └── @ LocalVariableTargetNode (location: (1,4)-(1,9))
+        │           ├── flags: ∅
         │           ├── name: :match
         │           └── depth: 0
         └── @ LocalVariableReadNode (location: (1,26)-(1,31))
+            ├── flags: newline
             ├── name: :match
             └── depth: 0

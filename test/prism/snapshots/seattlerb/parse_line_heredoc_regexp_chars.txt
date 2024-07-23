@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,6)-(4,17))
+├── flags: ∅
 ├── locals: [:string]
 └── statements:
     @ StatementsNode (location: (1,6)-(4,17))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ LocalVariableWriteNode (location: (1,6)-(1,22))
+        │   ├── flags: newline
         │   ├── name: :string
         │   ├── depth: 0
         │   ├── name_loc: (1,6)-(1,12) = "string"
@@ -16,7 +19,7 @@
         │   │   └── unescaped: "        very long string\n"
         │   └── operator_loc: (1,13)-(1,14) = "="
         └── @ CallNode (location: (4,6)-(4,17))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :puts
@@ -27,6 +30,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ LocalVariableReadNode (location: (4,11)-(4,17))
+            │           ├── flags: ∅
             │           ├── name: :string
             │           └── depth: 0
             ├── closing_loc: ∅

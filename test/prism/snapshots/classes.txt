@@ -1,46 +1,56 @@
 @ ProgramNode (location: (1,0)-(35,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(35,3))
+    ├── flags: ∅
     └── body: (length: 14)
         ├── @ ClassNode (location: (1,0)-(1,17))
+        │   ├── flags: newline
         │   ├── locals: [:a]
         │   ├── class_keyword_loc: (1,0)-(1,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (1,6)-(1,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (1,8)-(1,13))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ LocalVariableWriteNode (location: (1,8)-(1,13))
+        │   │           ├── flags: newline
         │   │           ├── name: :a
         │   │           ├── depth: 0
         │   │           ├── name_loc: (1,8)-(1,9) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (1,12)-(1,13))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           └── operator_loc: (1,10)-(1,11) = "="
         │   ├── end_keyword_loc: (1,14)-(1,17) = "end"
         │   └── name: :A
         ├── @ ClassNode (location: (3,0)-(3,20))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (3,0)-(3,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (3,6)-(3,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ BeginNode (location: (3,0)-(3,20))
+        │   │   ├── flags: ∅
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause:
         │   │   │   @ EnsureNode (location: (3,9)-(3,20))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── ensure_keyword_loc: (3,9)-(3,15) = "ensure"
         │   │   │   ├── statements: ∅
         │   │   │   └── end_keyword_loc: (3,17)-(3,20) = "end"
@@ -48,19 +58,23 @@
         │   ├── end_keyword_loc: (3,17)-(3,20) = "end"
         │   └── name: :A
         ├── @ ClassNode (location: (5,0)-(5,34))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (5,0)-(5,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (5,6)-(5,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ BeginNode (location: (5,0)-(5,34))
+        │   │   ├── flags: ∅
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (5,9)-(5,15))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (5,9)-(5,15) = "rescue"
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: ∅
@@ -69,11 +83,13 @@
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (5,17)-(5,29))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── else_keyword_loc: (5,17)-(5,21) = "else"
         │   │   │   ├── statements: ∅
         │   │   │   └── end_keyword_loc: (5,23)-(5,29) = "ensure"
         │   │   ├── ensure_clause:
         │   │   │   @ EnsureNode (location: (5,23)-(5,34))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── ensure_keyword_loc: (5,23)-(5,29) = "ensure"
         │   │   │   ├── statements: ∅
         │   │   │   └── end_keyword_loc: (5,31)-(5,34) = "end"
@@ -81,30 +97,36 @@
         │   ├── end_keyword_loc: (5,31)-(5,34) = "end"
         │   └── name: :A
         ├── @ ClassNode (location: (7,0)-(9,3))
+        │   ├── flags: newline
         │   ├── locals: [:a]
         │   ├── class_keyword_loc: (7,0)-(7,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (7,6)-(7,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: (7,8)-(7,9) = "<"
         │   ├── superclass:
         │   │   @ ConstantReadNode (location: (7,10)-(7,11))
+        │   │   ├── flags: ∅
         │   │   └── name: :B
         │   ├── body:
         │   │   @ StatementsNode (location: (8,0)-(8,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ LocalVariableWriteNode (location: (8,0)-(8,5))
+        │   │           ├── flags: newline
         │   │           ├── name: :a
         │   │           ├── depth: 0
         │   │           ├── name_loc: (8,0)-(8,1) = "a"
         │   │           ├── value:
         │   │           │   @ IntegerNode (location: (8,4)-(8,5))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           └── operator_loc: (8,2)-(8,3) = "="
         │   ├── end_keyword_loc: (9,0)-(9,3) = "end"
         │   └── name: :A
         ├── @ SingletonClassNode (location: (11,0)-(12,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (11,0)-(11,5) = "class"
         │   ├── operator_loc: (11,6)-(11,8) = "<<"
@@ -132,30 +154,37 @@
         │   ├── body: ∅
         │   └── end_keyword_loc: (12,0)-(12,3) = "end"
         ├── @ ClassNode (location: (14,0)-(14,40))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (14,0)-(14,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (14,6)-(14,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (14,9)-(14,35))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ SingletonClassNode (location: (14,9)-(14,35))
+        │   │           ├── flags: newline
         │   │           ├── locals: []
         │   │           ├── class_keyword_loc: (14,9)-(14,14) = "class"
         │   │           ├── operator_loc: (14,15)-(14,17) = "<<"
         │   │           ├── expression:
         │   │           │   @ SelfNode (location: (14,18)-(14,22))
+        │   │           │   └── flags: ∅
         │   │           ├── body:
         │   │           │   @ BeginNode (location: (14,9)-(14,35))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause: ∅
         │   │           │   ├── else_clause: ∅
         │   │           │   ├── ensure_clause:
         │   │           │   │   @ EnsureNode (location: (14,24)-(14,35))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── ensure_keyword_loc: (14,24)-(14,30) = "ensure"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── end_keyword_loc: (14,32)-(14,35) = "end"
@@ -164,28 +193,35 @@
         │   ├── end_keyword_loc: (14,37)-(14,40) = "end"
         │   └── name: :A
         ├── @ ClassNode (location: (16,0)-(16,54))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (16,0)-(16,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (16,6)-(16,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (16,9)-(16,49))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ SingletonClassNode (location: (16,9)-(16,49))
+        │   │           ├── flags: newline
         │   │           ├── locals: []
         │   │           ├── class_keyword_loc: (16,9)-(16,14) = "class"
         │   │           ├── operator_loc: (16,15)-(16,17) = "<<"
         │   │           ├── expression:
         │   │           │   @ SelfNode (location: (16,18)-(16,22))
+        │   │           │   └── flags: ∅
         │   │           ├── body:
         │   │           │   @ BeginNode (location: (16,9)-(16,49))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause:
         │   │           │   │   @ RescueNode (location: (16,24)-(16,30))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── keyword_loc: (16,24)-(16,30) = "rescue"
         │   │           │   │   ├── exceptions: (length: 0)
         │   │           │   │   ├── operator_loc: ∅
@@ -194,11 +230,13 @@
         │   │           │   │   └── consequent: ∅
         │   │           │   ├── else_clause:
         │   │           │   │   @ ElseNode (location: (16,32)-(16,44))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── else_keyword_loc: (16,32)-(16,36) = "else"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── end_keyword_loc: (16,38)-(16,44) = "ensure"
         │   │           │   ├── ensure_clause:
         │   │           │   │   @ EnsureNode (location: (16,38)-(16,49))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   ├── ensure_keyword_loc: (16,38)-(16,44) = "ensure"
         │   │           │   │   ├── statements: ∅
         │   │           │   │   └── end_keyword_loc: (16,46)-(16,49) = "end"
@@ -207,6 +245,7 @@
         │   ├── end_keyword_loc: (16,51)-(16,54) = "end"
         │   └── name: :A
         ├── @ SingletonClassNode (location: (18,0)-(19,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (18,0)-(18,5) = "class"
         │   ├── operator_loc: (18,6)-(18,8) = "<<"
@@ -234,6 +273,7 @@
         │   ├── body: ∅
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         ├── @ SingletonClassNode (location: (21,0)-(21,20))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (21,0)-(21,5) = "class"
         │   ├── operator_loc: (21,6)-(21,8) = "<<"
@@ -261,35 +301,42 @@
         │   ├── body: ∅
         │   └── end_keyword_loc: (21,17)-(21,20) = "end"
         ├── @ SingletonClassNode (location: (23,0)-(24,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (23,0)-(23,5) = "class"
         │   ├── operator_loc: (23,6)-(23,8) = "<<"
         │   ├── expression:
         │   │   @ SelfNode (location: (23,9)-(23,13))
+        │   │   └── flags: ∅
         │   ├── body: ∅
         │   └── end_keyword_loc: (24,0)-(24,3) = "end"
         ├── @ SingletonClassNode (location: (26,0)-(26,17))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (26,0)-(26,5) = "class"
         │   ├── operator_loc: (26,6)-(26,8) = "<<"
         │   ├── expression:
         │   │   @ SelfNode (location: (26,9)-(26,13))
+        │   │   └── flags: ∅
         │   ├── body: ∅
         │   └── end_keyword_loc: (26,14)-(26,17) = "end"
         ├── @ SingletonClassNode (location: (28,0)-(30,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (28,0)-(28,5) = "class"
         │   ├── operator_loc: (28,6)-(28,8) = "<<"
         │   ├── expression:
         │   │   @ SelfNode (location: (28,9)-(28,13))
+        │   │   └── flags: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (29,0)-(29,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (29,0)-(29,5))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (29,0)-(29,1))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :+
@@ -300,25 +347,28 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (29,4)-(29,5))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         ├── @ SingletonClassNode (location: (32,0)-(32,23))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (32,0)-(32,5) = "class"
         │   ├── operator_loc: (32,6)-(32,8) = "<<"
         │   ├── expression:
         │   │   @ SelfNode (location: (32,9)-(32,13))
+        │   │   └── flags: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (32,14)-(32,19))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (32,14)-(32,19))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: newline
         │   │           ├── receiver:
         │   │           │   @ IntegerNode (location: (32,14)-(32,15))
-        │   │           │   ├── flags: decimal
+        │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :+
@@ -329,16 +379,18 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ IntegerNode (location: (32,18)-(32,19))
-        │   │           │           ├── flags: decimal
+        │   │           │           ├── flags: static_literal, decimal
         │   │           │           └── value: 2
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   └── end_keyword_loc: (32,20)-(32,23) = "end"
         └── @ ClassNode (location: (34,0)-(35,3))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (34,0)-(34,5) = "class"
             ├── constant_path:
             │   @ ConstantReadNode (location: (34,6)-(34,7))
+            │   ├── flags: ∅
             │   └── name: :A
             ├── inheritance_operator_loc: (34,8)-(34,9) = "<"
             ├── superclass:
@@ -346,6 +398,7 @@
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ ConstantReadNode (location: (34,10)-(34,11))
+            │   │   ├── flags: ∅
             │   │   └── name: :B
             │   ├── call_operator_loc: ∅
             │   ├── name: :[]
@@ -356,7 +409,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (34,12)-(34,13))
-            │   │           ├── flags: decimal
+            │   │           ├── flags: static_literal, decimal
             │   │           └── value: 1
             │   ├── closing_loc: (34,13)-(34,14) = "]"
             │   └── block: ∅

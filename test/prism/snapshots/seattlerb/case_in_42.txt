@@ -1,33 +1,40 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: [:_]
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(2,18))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ ArrayPatternNode (location: (2,3)-(2,9))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── requireds: (length: 1)
             │       │   │   └── @ SymbolNode (location: (2,3)-(2,5))
-            │       │   │       ├── flags: forced_us_ascii_encoding
+            │       │   │       ├── flags: static_literal, forced_us_ascii_encoding
             │       │   │       ├── opening_loc: (2,3)-(2,4) = ":"
             │       │   │       ├── value_loc: (2,4)-(2,5) = "b"
             │       │   │       ├── closing_loc: ∅
             │       │   │       └── unescaped: "b"
             │       │   ├── rest:
             │       │   │   @ SplatNode (location: (2,7)-(2,9))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── operator_loc: (2,7)-(2,8) = "*"
             │       │   │   └── expression:
             │       │   │       @ LocalVariableTargetNode (location: (2,8)-(2,9))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── name: :_
             │       │   │       └── depth: 0
             │       │   ├── posts: (length: 0)
@@ -35,8 +42,10 @@
             │       │   └── closing_loc: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (2,15)-(2,18))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ NilNode (location: (2,15)-(2,18))
+            │       │           └── flags: newline, static_literal
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: (2,10)-(2,14) = "then"
             ├── consequent: ∅

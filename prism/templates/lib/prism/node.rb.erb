@@ -6,6 +6,12 @@ module Prism
     attr_reader :source
     private :source
 
+    # A unique identifier for this node. This is used in a very specific
+    # use case where you want to keep around a reference to a node without
+    # having to keep around the syntax tree in memory. This unique identifier
+    # will be consistent across multiple parses of the same source code.
+    attr_reader :node_id
+
     # A Location instance that represents the location of this node in the
     # source.
     def location
@@ -47,6 +53,21 @@ module Prism
     # that the location ends on.
     def slice_lines
       location.slice_lines
+    end
+
+    # An bitset of flags for this node. There are certain flags that are common
+    # for all nodes, and then some nodes have specific flags.
+    attr_reader :flags
+    protected :flags
+
+    # Returns true if the node has the newline flag set.
+    def newline?
+      flags.anybits?(NodeFlags::NEWLINE)
+    end
+
+    # Returns true if the node has the static literal flag set.
+    def static_literal?
+      flags.anybits?(NodeFlags::STATIC_LITERAL)
     end
 
     # Similar to inspect, but respects the current level of indentation given by
@@ -101,6 +122,23 @@ module Prism
       result
     end
 
+    # Returns the first node that matches the given block when visited in a
+    # depth-first search. This is useful for finding a node that matches a
+    # particular condition.
+    #
+    #     node.breadth_first_search { |node| node.node_id == node_id }
+    #
+    def breadth_first_search(&block)
+      queue = [self] #: Array[Prism::node]
+
+      while (node = queue.shift)
+        return node if yield node
+        queue.concat(node.compact_child_nodes)
+      end
+
+      nil
+    end
+
     # Returns a list of the fields that exist for this node class. Fields
     # describe the structure of the node. This kind of reflection is useful for
     # things like recursively visiting each node _and_ field in the tree.
@@ -144,18 +182,31 @@ module Prism
       raise NoMethodError, "undefined method `comment_targets' for #{inspect}"
     end
 
-    # Returns a symbol symbolizing the type of node that this represents. This
-    # is particularly useful for case statements and array comparisons.
-    def type
-      raise NoMethodError, "undefined method `type' for #{inspect}"
-    end
-
     # Returns a string representation of the node.
     def inspect
       raise NoMethodError, "undefined method `inspect' for #{inspect}"
     end
 
-    # Returns the type of the node as a symbol.
+    # Sometimes you want to check an instance of a node against a list of
+    # classes to see what kind of behavior to perform. Usually this is done by
+    # calling `[cls1, cls2].include?(node.class)` or putting the node into a
+    # case statement and doing `case node; when cls1; when cls2; end`. Both of
+    # these approaches are relatively slow because of the constant lookups,
+    # method calls, and/or array allocations.
+    #
+    # Instead, you can call #type, which will return to you a symbol that you
+    # can use for comparison. This is faster than the other approaches because
+    # it uses a single integer comparison, but also because if you're on CRuby
+    # you can take advantage of the fact that case statements with all symbol
+    # keys will use a jump table.
+    def type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
+    end
+
+    # Similar to #type, this method returns a symbol that you can use for
+    # splitting on the type of the node without having to do a long === chain.
+    # Note that like #type, it will still be slower than using == for a single
+    # class, but should be faster in a case statement or an array comparison.
     def self.type
       raise NoMethodError, "undefined method `type' for #{inspect}"
     end
@@ -166,10 +217,12 @@ module Prism
   #<%= line %>
   <%- end -%>
   class <%= node.name -%> < Node
-    # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
-    def initialize(source, <%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+    # Initialize a new <%= node.name %> node.
+    def initialize(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
       @source = source
+      @node_id = node_id
       @location = location
+      @flags = flags
       <%- node.fields.each do |field| -%>
       <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
       raise <%= field.name %>.inspect unless <%= field.check_field_kind %>
@@ -228,22 +281,31 @@ module Prism
       }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (<%= (node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" } + ["?location: Location"]).join(", ") %>) -> <%= node.name %>
-    def copy(<%= (node.fields.map(&:name) + ["location"]).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
-      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
+    # def copy: (<%= (["?node_id: Integer", "?location: Location", "?flags: Integer"] + node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" }).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (["node_id", "location", "flags"] + node.fields.map(&:name)).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]
     alias deconstruct child_nodes
 
-    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (node.fields.map { |field| "#{field.name}: #{field.rbs_class}" } + ["location: Location"]).join(", ") %> }
+    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (["node_id: Integer", "location: Location"] + node.fields.map { |field| "#{field.name}: #{field.rbs_class}" }).join(", ") %> }
     def deconstruct_keys(keys)
-      { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
+      { <%= (["node_id: node_id", "location: location"] + node.fields.map { |field| "#{field.name}: #{field.name}" }).join(", ") %> }
     end
+    <%- if (node_flags = node.flags) -%>
+    <%- node_flags.values.each do |value| -%>
+
+    # def <%= value.name.downcase %>?: () -> bool
+    def <%= value.name.downcase %>?
+      flags.anybits?(<%= node_flags.name %>::<%= value.name %>)
+    end
+    <%- end -%>
+    <%- end -%>
     <%- node.fields.each do |field| -%>
 
     <%- if field.comment.nil? -%>
-    # <%= "protected " if field.is_a?(Prism::Template::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
+    # attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%- else -%>
     <%- field.each_comment_line do |line| -%>
     #<%= line %>
@@ -269,7 +331,7 @@ module Prism
       end
     end
     <%- else -%>
-    attr_reader :<%= field.name -%><%= "\n    protected :#{field.name}" if field.is_a?(Prism::Template::FlagsField) %>
+    attr_reader :<%= field.name -%>
     <%- end -%>
     <%- end -%>
     <%- node.fields.each do |field| -%>
@@ -290,14 +352,6 @@ module Prism
     def <%= field.name.delete_suffix("_loc") %>
       <%= field.name %>&.slice
     end
-    <%- when Prism::Template::FlagsField -%>
-    <%- flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag }.values.each do |value| -%>
-
-    # def <%= value.name.downcase %>?: () -> bool
-    def <%= value.name.downcase %>?
-      <%= field.name %>.anybits?(<%= field.kind %>::<%= value.name %>)
-    end
-    <%- end -%>
     <%- end -%>
     <%- end -%>
 
@@ -306,30 +360,12 @@ module Prism
       InspectVisitor.compose(self)
     end
 
-    # Sometimes you want to check an instance of a node against a list of
-    # classes to see what kind of behavior to perform. Usually this is done by
-    # calling `[cls1, cls2].include?(node.class)` or putting the node into a
-    # case statement and doing `case node; when cls1; when cls2; end`. Both of
-    # these approaches are relatively slow because of the constant lookups,
-    # method calls, and/or array allocations.
-    #
-    # Instead, you can call #type, which will return to you a symbol that you
-    # can use for comparison. This is faster than the other approaches because
-    # it uses a single integer comparison, but also because if you're on CRuby
-    # you can take advantage of the fact that case statements with all symbol
-    # keys will use a jump table.
-    #
-    # def type: () -> Symbol
+    # Return a symbol representation of this node type. See `Node#type`.
     def type
       :<%= node.human %>
     end
 
-    # Similar to #type, this method returns a symbol that you can use for
-    # splitting on the type of the node without having to do a long === chain.
-    # Note that like #type, it will still be slower than using == for a single
-    # class, but should be faster in a case statement or an array comparison.
-    #
-    # def self.type: () -> Symbol
+    # Return a symbol representation of this node type. See `Node::type`.
     def self.type
       :<%= node.human %>
     end
@@ -337,15 +373,17 @@ module Prism
     # Implements case-equality for the node. This is effectively == but without
     # comparing the value of locations. Locations are checked only for presence.
     def ===(other)
-      other.is_a?(<%= node.name %>)<%= " &&" if node.fields.any? %>
-        <%- node.fields.each_with_index do |field, index| -%>
+      other.is_a?(<%= node.name %>)<%= " &&" if (fields = [*node.flags, *node.fields]).any? %>
+        <%- fields.each_with_index do |field, index| -%>
         <%- if field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) -%>
-        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != node.fields.length - 1 %>
+        (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != fields.length - 1 %>
         <%- elsif field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::ConstantListField) -%>
         (<%= field.name %>.length == other.<%= field.name %>.length) &&
-        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != node.fields.length - 1 %>
+        <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != fields.length - 1 %>
+        <%- elsif field.is_a?(Prism::Template::Flags) -%>
+        (flags === other.flags)<%= " &&" if index != fields.length - 1 %>
         <%- else -%>
-        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != node.fields.length - 1 %>
+        (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != fields.length - 1 %>
         <%- end -%>
         <%- end -%>
     end
@@ -357,9 +395,20 @@ module Prism
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
-    <%= value.name %> = 1 << <%= index %>
+    <%= value.name %> = 1 << <%= (index + 2) %>
 <%= "\n" if value != flag.values.last -%>
     <%- end -%>
   end
   <%- end -%>
+
+  # The flags that are common to all nodes.
+  module NodeFlags
+    # A flag to indicate that the node is a candidate to emit a :line event
+    # through tracepoint when compiled.
+    NEWLINE = 1
+
+    # A flag to indicate that the value that the node represents is a value that
+    # can be determined at parse-time.
+    STATIC_LITERAL = 2
+  end
 end

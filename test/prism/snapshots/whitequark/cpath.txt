@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(3,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,20))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ ModuleNode (location: (1,0)-(1,17))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── module_keyword_loc: (1,0)-(1,6) = "module"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (1,7)-(1,12))
+        │   │   ├── flags: ∅
         │   │   ├── parent: ∅
         │   │   ├── name: :Foo
         │   │   ├── delimiter_loc: (1,7)-(1,9) = "::"
@@ -16,12 +20,15 @@
         │   ├── end_keyword_loc: (1,14)-(1,17) = "end"
         │   └── name: :Foo
         └── @ ModuleNode (location: (3,0)-(3,20))
+            ├── flags: newline
             ├── locals: []
             ├── module_keyword_loc: (3,0)-(3,6) = "module"
             ├── constant_path:
             │   @ ConstantPathNode (location: (3,7)-(3,15))
+            │   ├── flags: ∅
             │   ├── parent:
             │   │   @ ConstantReadNode (location: (3,7)-(3,10))
+            │   │   ├── flags: ∅
             │   │   └── name: :Bar
             │   ├── name: :Foo
             │   ├── delimiter_loc: (3,10)-(3,12) = "::"

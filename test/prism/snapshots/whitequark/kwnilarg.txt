@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(5,13))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,13))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ LambdaNode (location: (1,0)-(1,12))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,10)-(1,11) = "{"
         │   ├── closing_loc: (1,11)-(1,12) = "}"
         │   ├── parameters:
         │   │   @ BlockParametersNode (location: (1,2)-(1,9))
+        │   │   ├── flags: ∅
         │   │   ├── parameters:
         │   │   │   @ ParametersNode (location: (1,3)-(1,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── requireds: (length: 0)
         │   │   │   ├── optionals: (length: 0)
         │   │   │   ├── rest: ∅
@@ -19,6 +24,7 @@
         │   │   │   ├── keywords: (length: 0)
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ NoKeywordsParameterNode (location: (1,3)-(1,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── operator_loc: (1,3)-(1,5) = "**"
         │   │   │   │   └── keyword_loc: (1,5)-(1,8) = "nil"
         │   │   │   └── block: ∅
@@ -27,11 +33,13 @@
         │   │   └── closing_loc: (1,8)-(1,9) = ")"
         │   └── body: ∅
         ├── @ DefNode (location: (3,0)-(3,17))
+        │   ├── flags: newline
         │   ├── name: :f
         │   ├── name_loc: (3,4)-(3,5) = "f"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (3,6)-(3,11))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -39,6 +47,7 @@
         │   │   ├── keywords: (length: 0)
         │   │   ├── keyword_rest:
         │   │   │   @ NoKeywordsParameterNode (location: (3,6)-(3,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── operator_loc: (3,6)-(3,8) = "**"
         │   │   │   └── keyword_loc: (3,8)-(3,11) = "nil"
         │   │   └── block: ∅
@@ -51,7 +60,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,14)-(3,17) = "end"
         └── @ CallNode (location: (5,0)-(5,13))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :m
@@ -61,11 +70,14 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (5,2)-(5,13))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters:
                 │   @ BlockParametersNode (location: (5,4)-(5,11))
+                │   ├── flags: ∅
                 │   ├── parameters:
                 │   │   @ ParametersNode (location: (5,5)-(5,10))
+                │   │   ├── flags: ∅
                 │   │   ├── requireds: (length: 0)
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅
@@ -73,6 +85,7 @@
                 │   │   ├── keywords: (length: 0)
                 │   │   ├── keyword_rest:
                 │   │   │   @ NoKeywordsParameterNode (location: (5,5)-(5,10))
+                │   │   │   ├── flags: ∅
                 │   │   │   ├── operator_loc: (5,5)-(5,7) = "**"
                 │   │   │   └── keyword_loc: (5,7)-(5,10) = "nil"
                 │   │   └── block: ∅

@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,2))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,2))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ ParenthesesNode (location: (1,0)-(1,2))
+            ├── flags: newline
             ├── body: ∅
             ├── opening_loc: (1,0)-(1,1) = "("
             └── closing_loc: (1,1)-(1,2) = ")"

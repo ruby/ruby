@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,29))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,29))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,29))
+            ├── flags: newline
             ├── name: :a
             ├── name_loc: (1,4)-(1,5) = "a"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,6)-(1,12))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
             │   │       ├── flags: ∅
@@ -19,12 +23,14 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ ForwardingParameterNode (location: (1,9)-(1,12))
+            │   │   └── flags: ∅
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,15)-(1,24))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,15)-(1,24))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :b
@@ -35,9 +41,11 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 2)
             │           │       ├── @ LocalVariableReadNode (location: (1,17)-(1,18))
+            │           │       │   ├── flags: ∅
             │           │       │   ├── name: :x
             │           │       │   └── depth: 0
             │           │       └── @ ForwardingArgumentsNode (location: (1,20)-(1,23))
+            │           │           └── flags: ∅
             │           ├── closing_loc: (1,23)-(1,24) = ")"
             │           └── block: ∅
             ├── locals: [:x]

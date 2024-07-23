@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(9,18))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(9,18))
+    ├── flags: ∅
     └── body: (length: 5)
         ├── @ DefNode (location: (1,0)-(1,18))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (1,10)-(1,13) = "foo"
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (1,4)-(1,9))
+        │   │   ├── flags: ∅
         │   │   ├── body:
         │   │   │   @ CallNode (location: (1,5)-(1,8))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -31,10 +35,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (1,15)-(1,18) = "end"
         ├── @ DefNode (location: (3,0)-(3,19))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (3,11)-(3,14) = "foo"
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (3,4)-(3,10))
+        │   │   ├── flags: ∅
         │   │   └── name: :String
         │   ├── parameters: ∅
         │   ├── body: ∅
@@ -46,10 +52,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,16)-(3,19) = "end"
         ├── @ DefNode (location: (5,0)-(5,20))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (5,12)-(5,15) = "foo"
         │   ├── receiver:
         │   │   @ ConstantReadNode (location: (5,4)-(5,10))
+        │   │   ├── flags: ∅
         │   │   └── name: :String
         │   ├── parameters: ∅
         │   ├── body: ∅
@@ -61,10 +69,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,17)-(5,20) = "end"
         ├── @ DefNode (location: (7,0)-(7,17))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── name_loc: (7,9)-(7,12) = "foo"
         │   ├── receiver:
         │   │   @ SelfNode (location: (7,4)-(7,8))
+        │   │   └── flags: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -75,10 +85,12 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (7,14)-(7,17) = "end"
         └── @ DefNode (location: (9,0)-(9,18))
+            ├── flags: newline
             ├── name: :foo
             ├── name_loc: (9,10)-(9,13) = "foo"
             ├── receiver:
             │   @ SelfNode (location: (9,4)-(9,8))
+            │   └── flags: ∅
             ├── parameters: ∅
             ├── body: ∅
             ├── locals: []

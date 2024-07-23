@@ -1,106 +1,108 @@
 @ ProgramNode (location: (3,0)-(41,0))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (3,0)-(41,0))
+    ├── flags: ∅
     └── body: (length: 17)
         ├── @ StringNode (location: (3,0)-(3,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (3,0)-(3,2) = "% "
         │   ├── content_loc: (3,2)-(3,5) = "abc"
         │   ├── closing_loc: (3,5)-(3,6) = " "
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (4,0)-(4,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (4,0)-(4,2) = "%\t"
         │   ├── content_loc: (4,2)-(4,5) = "abc"
         │   ├── closing_loc: (4,5)-(4,6) = "\t"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (5,0)-(5,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (5,0)-(5,2) = "%\v"
         │   ├── content_loc: (5,2)-(5,5) = "abc"
         │   ├── closing_loc: (5,5)-(5,6) = "\v"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (6,0)-(6,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (6,0)-(6,2) = "%\r"
         │   ├── content_loc: (6,2)-(6,5) = "abc"
         │   ├── closing_loc: (6,5)-(6,6) = "\r"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (7,0)-(9,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (7,0)-(8,0) = "%\n"
         │   ├── content_loc: (8,0)-(8,3) = "abc"
         │   ├── closing_loc: (8,3)-(9,0) = "\n"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (10,0)-(10,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (10,0)-(10,2) = "%\u0000"
         │   ├── content_loc: (10,2)-(10,5) = "abc"
         │   ├── closing_loc: (10,5)-(10,6) = "\u0000"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (11,0)-(13,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (11,0)-(12,0) = "%\n"
         │   ├── content_loc: (12,0)-(12,3) = "abc"
         │   ├── closing_loc: (12,3)-(13,0) = "\n"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (14,0)-(16,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (14,0)-(15,0) = "%\n"
         │   ├── content_loc: (15,0)-(15,4) = "\rabc"
         │   ├── closing_loc: (15,4)-(16,0) = "\n"
         │   └── unescaped: "\rabc"
         ├── @ StringNode (location: (17,0)-(19,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (17,0)-(18,0) = "%\n"
         │   ├── content_loc: (18,0)-(18,4) = "\rabc"
         │   ├── closing_loc: (18,4)-(19,0) = "\n"
         │   └── unescaped: "\rabc"
         ├── @ StringNode (location: (20,0)-(22,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (20,0)-(21,0) = "%\n"
         │   ├── content_loc: (21,0)-(21,3) = "abc"
         │   ├── closing_loc: (21,3)-(22,0) = "\n"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (23,0)-(23,6))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (23,0)-(23,2) = "%\r"
         │   ├── content_loc: (23,2)-(23,5) = "abc"
         │   ├── closing_loc: (23,5)-(23,6) = "\r"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (24,0)-(26,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (24,0)-(25,0) = "%\n"
         │   ├── content_loc: (25,0)-(25,3) = "abc"
         │   ├── closing_loc: (25,3)-(26,0) = "\n"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (27,0)-(29,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (27,0)-(28,0) = "%\n"
         │   ├── content_loc: (28,0)-(28,3) = "abc"
         │   ├── closing_loc: (28,3)-(29,0) = "\n"
         │   └── unescaped: "abc"
         ├── @ StringNode (location: (30,0)-(32,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (30,0)-(31,0) = "%\n"
         │   ├── content_loc: (31,0)-(31,3) = "foo"
         │   ├── closing_loc: (31,3)-(32,0) = "\n"
         │   └── unescaped: "foo"
         ├── @ StringNode (location: (33,0)-(35,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (33,0)-(34,0) = "%q\n"
         │   ├── content_loc: (34,0)-(34,3) = "foo"
         │   ├── closing_loc: (34,3)-(35,0) = "\n"
         │   └── unescaped: "foo"
         ├── @ StringNode (location: (36,0)-(38,0))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── opening_loc: (36,0)-(37,0) = "%Q\n"
         │   ├── content_loc: (37,0)-(37,3) = "foo"
         │   ├── closing_loc: (37,3)-(38,0) = "\n"
         │   └── unescaped: "foo"
         └── @ RegularExpressionNode (location: (39,0)-(41,0))
-            ├── flags: forced_us_ascii_encoding
+            ├── flags: newline, static_literal, forced_us_ascii_encoding
             ├── opening_loc: (39,0)-(40,0) = "%r\n"
             ├── content_loc: (40,0)-(40,3) = "foo"
             ├── closing_loc: (40,3)-(41,0) = "\n"

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,1)-(1,8))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,1)-(1,8))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ StringNode (location: (1,1)-(1,8))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,1)-(1,8) = "<<-HERE"
             ├── content_loc: (2,0)-(3,0) = "\t\tcontent\n"
             ├── closing_loc: (3,0)-(4,0) = "\tHERE\n"

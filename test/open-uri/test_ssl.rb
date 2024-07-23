@@ -50,9 +50,10 @@ class TestOpenURISSL < Test::Unit::TestCase
   end
 
   def test_validation_failure
-    with_https(nil) {|srv, dr, url, server_thread, server_log|
+    with_https(nil) {|srv, dr, url|
       setup_validation(srv, dr)
       assert_raise(OpenSSL::SSL::SSLError) { URI.open("#{url}/data") {} }
+      sleep 0.5 unless RUBY_PLATFORM =~ /mswin|mingw/
     }
   end
 

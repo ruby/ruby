@@ -245,7 +245,8 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      if path == gem_repo1 && caller.first.split(" ").last == "`build_repo`"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
       return unless block_given?
@@ -480,7 +481,6 @@ module Spec
       end
 
       def add_c_extension
-        require_paths << "ext"
         extensions << "ext/extconf.rb"
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"

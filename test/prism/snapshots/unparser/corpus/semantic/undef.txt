@@ -1,27 +1,31 @@
 @ ProgramNode (location: (1,0)-(2,14))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(2,14))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ UndefNode (location: (1,0)-(1,9))
+        │   ├── flags: newline
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (1,6)-(1,9))
-        │   │       ├── flags: forced_us_ascii_encoding
+        │   │       ├── flags: static_literal, forced_us_ascii_encoding
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (1,6)-(1,9) = "foo"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "foo"
         │   └── keyword_loc: (1,0)-(1,5) = "undef"
         └── @ UndefNode (location: (2,0)-(2,14))
+            ├── flags: newline
             ├── names: (length: 2)
             │   ├── @ SymbolNode (location: (2,6)-(2,9))
-            │   │   ├── flags: forced_us_ascii_encoding
+            │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (2,6)-(2,9) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   └── @ SymbolNode (location: (2,11)-(2,14))
-            │       ├── flags: forced_us_ascii_encoding
+            │       ├── flags: static_literal, forced_us_ascii_encoding
             │       ├── opening_loc: ∅
             │       ├── value_loc: (2,11)-(2,14) = "bar"
             │       ├── closing_loc: ∅

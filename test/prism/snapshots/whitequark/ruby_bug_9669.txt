@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(8,1))
+├── flags: ∅
 ├── locals: [:o]
 └── statements:
     @ StatementsNode (location: (1,0)-(8,1))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ DefNode (location: (1,0)-(3,3))
+        │   ├── flags: newline
         │   ├── name: :a
         │   ├── name_loc: (1,4)-(1,5) = "a"
         │   ├── receiver: ∅
         │   ├── parameters:
         │   │   @ ParametersNode (location: (1,6)-(1,8))
+        │   │   ├── flags: ∅
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -22,9 +26,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (2,0)-(2,6))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (2,0)-(2,6))
-        │   │           ├── flags: redundant
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (2,0)-(2,6) = "return"
         │   │           └── arguments: ∅
         │   ├── locals: [:b]
@@ -35,24 +40,27 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         └── @ LocalVariableWriteNode (location: (5,0)-(8,1))
+            ├── flags: newline
             ├── name: :o
             ├── depth: 0
             ├── name_loc: (5,0)-(5,1) = "o"
             ├── value:
             │   @ HashNode (location: (5,4)-(8,1))
+            │   ├── flags: static_literal
             │   ├── opening_loc: (5,4)-(5,5) = "{"
             │   ├── elements: (length: 1)
             │   │   └── @ AssocNode (location: (6,0)-(7,1))
+            │   │       ├── flags: static_literal
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (6,0)-(6,2))
-            │   │       │   ├── flags: forced_us_ascii_encoding
+            │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (6,0)-(6,1) = "a"
             │   │       │   ├── closing_loc: (6,1)-(6,2) = ":"
             │   │       │   └── unescaped: "a"
             │   │       ├── value:
             │   │       │   @ IntegerNode (location: (7,0)-(7,1))
-            │   │       │   ├── flags: decimal
+            │   │       │   ├── flags: static_literal, decimal
             │   │       │   └── value: 1
             │   │       └── operator_loc: ∅
             │   └── closing_loc: (8,0)-(8,1) = "}"

@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,26))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,26))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ IfNode (location: (1,0)-(1,30))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
         │   ├── predicate:
         │   │   @ CallNode (location: (1,3)-(1,6))
@@ -19,9 +22,10 @@
         │   ├── then_keyword_loc: (1,7)-(1,11) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,12)-(1,15))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,12)-(1,15))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -32,12 +36,14 @@
         │   │           └── block: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,17)-(1,30))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (1,17)-(1,21) = "else"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (1,22)-(1,25))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (1,22)-(1,25))
-        │   │   │           ├── flags: variable_call, ignore_visibility
+        │   │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :baz
@@ -49,6 +55,7 @@
         │   │   └── end_keyword_loc: (1,27)-(1,30) = "end"
         │   └── end_keyword_loc: (1,27)-(1,30) = "end"
         └── @ IfNode (location: (3,0)-(3,26))
+            ├── flags: newline
             ├── if_keyword_loc: (3,0)-(3,2) = "if"
             ├── predicate:
             │   @ CallNode (location: (3,3)-(3,6))
@@ -64,9 +71,10 @@
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (3,8)-(3,11))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (3,8)-(3,11))
-            │           ├── flags: variable_call, ignore_visibility
+            │           ├── flags: newline, variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -77,12 +85,14 @@
             │           └── block: ∅
             ├── consequent:
             │   @ ElseNode (location: (3,13)-(3,26))
+            │   ├── flags: ∅
             │   ├── else_keyword_loc: (3,13)-(3,17) = "else"
             │   ├── statements:
             │   │   @ StatementsNode (location: (3,18)-(3,21))
+            │   │   ├── flags: ∅
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (3,18)-(3,21))
-            │   │           ├── flags: variable_call, ignore_visibility
+            │   │           ├── flags: newline, variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :baz

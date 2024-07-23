@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(8,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(8,3))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ OrNode (location: (1,0)-(1,14))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ RangeNode (location: (1,0)-(1,5))
         │   │   ├── flags: exclude_end
@@ -58,6 +61,7 @@
         │   │   └── operator_loc: (1,10)-(1,13) = "..."
         │   └── operator_loc: (1,6)-(1,8) = "or"
         ├── @ AndNode (location: (2,0)-(2,15))
+        │   ├── flags: newline
         │   ├── left:
         │   │   @ RangeNode (location: (2,0)-(2,5))
         │   │   ├── flags: exclude_end
@@ -112,9 +116,11 @@
         │   │   └── operator_loc: (2,11)-(2,14) = "..."
         │   └── operator_loc: (2,6)-(2,9) = "and"
         ├── @ IfNode (location: (4,0)-(5,3))
+        │   ├── flags: newline
         │   ├── if_keyword_loc: (4,0)-(4,2) = "if"
         │   ├── predicate:
         │   │   @ OrNode (location: (4,3)-(4,17))
+        │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ FlipFlopNode (location: (4,3)-(4,8))
         │   │   │   ├── flags: exclude_end
@@ -173,9 +179,11 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         └── @ IfNode (location: (7,0)-(8,3))
+            ├── flags: newline
             ├── if_keyword_loc: (7,0)-(7,2) = "if"
             ├── predicate:
             │   @ AndNode (location: (7,3)-(7,18))
+            │   ├── flags: ∅
             │   ├── left:
             │   │   @ FlipFlopNode (location: (7,3)-(7,8))
             │   │   ├── flags: exclude_end

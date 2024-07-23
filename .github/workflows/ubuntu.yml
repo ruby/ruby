@@ -34,7 +34,9 @@ jobs:
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
           - test_task: check
-            configure: '--with-shared-gc'
+            shared_gc: true
+            shared_gc_dir: '/home/runner/ruby_gc'
+            configure: '--with-shared-gc=/home/runner/ruby_gc'
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
           - test_task: check
@@ -67,7 +69,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@2a9a743e19810b9f3c38060637daf594dbd7b37f # v1.186.0
+      - uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -92,6 +94,13 @@ jobs:
 
       - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
+
+      - name: Build shared GC
+        run: >
+          echo "RUBY_GC_LIBRARY=librubygc.default.so" >> $GITHUB_ENV &&
+          mkdir ${{ matrix.shared_gc_dir }} &&
+          make shared-gc SHARED_GC=default
+        if: ${{ matrix.shared_gc }}
 
       - run: $SETARCH make
 

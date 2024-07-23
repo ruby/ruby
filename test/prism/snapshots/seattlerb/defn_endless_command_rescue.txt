@@ -1,17 +1,22 @@
 @ ProgramNode (location: (1,0)-(1,43))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,43))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,43))
+            ├── flags: newline
             ├── name: :some_method
             ├── name_loc: (1,4)-(1,15) = "some_method"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:
             │   @ StatementsNode (location: (1,18)-(1,43))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (1,18)-(1,43))
+            │           ├── flags: newline
             │           ├── expression:
             │           │   @ CallNode (location: (1,18)-(1,33))
             │           │   ├── flags: ignore_visibility
@@ -25,14 +30,14 @@
             │           │   │   ├── flags: ∅
             │           │   │   └── arguments: (length: 1)
             │           │   │       └── @ IntegerNode (location: (1,31)-(1,33))
-            │           │   │           ├── flags: decimal
+            │           │   │           ├── flags: static_literal, decimal
             │           │   │           └── value: 42
             │           │   ├── closing_loc: ∅
             │           │   └── block: ∅
             │           ├── keyword_loc: (1,34)-(1,40) = "rescue"
             │           └── rescue_expression:
             │               @ IntegerNode (location: (1,41)-(1,43))
-            │               ├── flags: decimal
+            │               ├── flags: static_literal, decimal
             │               └── value: 24
             ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"

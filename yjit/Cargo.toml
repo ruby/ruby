@@ -17,11 +17,16 @@ crate-type = ["staticlib"]
 # written rationale. Optional For development and testing purposes
 capstone = { version = "0.12.0", optional = true }
 
-[features]
 # NOTE: Development builds select a set of these via configure.ac
 # For debugging, `make V=1` shows exact cargo invocation.
+[features]
+# Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
 disasm = ["capstone"]
-stats = []
+# Modify generated code for runtime checks, e.g. poison value in PC
+# for C method calls, and stack canary. This is managed separately
+# from cfg!(debug_assertions) so that we can see disasm of the code
+# that would run in the release mode.
+runtime_checks = []
 
 [profile.dev]
 opt-level = 0

@@ -535,6 +535,10 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned
         }
     }
 
+    if (RHASH_EMPTY_P(keyword_hash) && !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+        goto ignore;
+    }
+
     if (!(*kw_flag & VM_CALL_KW_SPLAT_MUT) &&
         (ISEQ_BODY(iseq)->param.flags.has_kwrest ||
          ISEQ_BODY(iseq)->param.flags.ruby2_keywords)) {
@@ -668,9 +672,32 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
         else if (!ISEQ_BODY(iseq)->param.flags.has_kwrest && !ISEQ_BODY(iseq)->param.flags.has_kw) {
             converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
-            arg_rest_dup(args);
-            rb_ary_push(args->rest, converted_keyword_hash);
-            keyword_hash = Qnil;
+            if (ISEQ_BODY(iseq)->param.flags.has_rest) {
+                arg_rest_dup(args);
+                rb_ary_push(args->rest, converted_keyword_hash);
+                keyword_hash = Qnil;
+            }
+            else {
+                // Avoid duping rest when not necessary
+                // Copy rest elements and converted keyword hash directly to VM stack
+                const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+                int j, i=args->argc, rest_len = RARRAY_LENINT(args->rest);
+                if (rest_len) {
+                    CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
+                    given_argc += rest_len;
+                    args->argc += rest_len;
+                    for (j=0; rest_len > 0; rest_len--, i++, j++) {
+                        locals[i] = argv[j];
+                    }
+                }
+                locals[i] = converted_keyword_hash;
+                given_argc--;
+                args->argc++;
+                args->rest = Qfalse;
+                ci_flag &= ~(VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT);
+                keyword_hash = Qnil;
+                goto arg_splat_and_kw_splat_flattened;
+            }
         }
         else {
             keyword_hash = converted_keyword_hash;
@@ -691,7 +718,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (RB_TYPE_P(rest_last, T_HASH) && FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS)) {
                 // def f(**kw); a = [..., kw]; g(*a)
                 splat_flagged_keyword_hash = rest_last;
-                if (!RHASH_EMPTY_P(rest_last) || (ISEQ_BODY(iseq)->param.flags.has_kwrest)) {
+                if (!(RHASH_EMPTY_P(rest_last) || ISEQ_BODY(iseq)->param.flags.has_kw) || (ISEQ_BODY(iseq)->param.flags.has_kwrest)) {
                     rest_last = rb_hash_dup(rest_last);
                 }
                 kw_flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
@@ -706,6 +733,32 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                         rb_ary_pop(args->rest);
                     }
                     given_argc--;
+                }
+                else if (!ISEQ_BODY(iseq)->param.flags.has_rest) {
+                    // Avoid duping rest when not necessary
+                    // Copy rest elements and converted keyword hash directly to VM stack
+                    const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+                    int j, i=args->argc, rest_len = RARRAY_LENINT(args->rest)-1;
+                    args->argc += rest_len;
+                    if (rest_len) {
+                        CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
+                        for (i, j=0; rest_len > 0; rest_len--, i++, j++) {
+                            locals[i] = argv[j];
+                        }
+                    }
+                    args->rest = Qfalse;
+                    ci_flag &= ~VM_CALL_ARGS_SPLAT;
+
+                    if (ISEQ_BODY(iseq)->param.flags.has_kw || ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                        given_argc--;
+                        keyword_hash = converted_keyword_hash;
+                    }
+                    else {
+                        args->argc += 1;
+                        locals[i] = converted_keyword_hash;
+                        keyword_hash = Qnil;
+                        kw_flag = 0;
+                    }
                 }
                 else {
                     if (rest_last != converted_keyword_hash) {
@@ -764,6 +817,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         FL_SET_RAW(flag_keyword_hash, RHASH_PASS_AS_KEYWORDS);
     }
 
+  arg_splat_and_kw_splat_flattened:
     if (kw_flag && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
         rb_raise(rb_eArgError, "no keywords accepted");
     }
@@ -856,7 +910,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             args_setup_kw_parameters_from_kwsplat(ec, iseq, keyword_hash, klocals, remove_hash_value);
         }
         else {
-            VM_ASSERT(args_argc(args) == 0);
+#if VM_CHECK_MODE > 0
+            if (args_argc(args) != 0) {
+                VM_ASSERT(ci_flag & VM_CALL_ARGS_SPLAT);
+                VM_ASSERT(!(ci_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT)));
+                VM_ASSERT(!kw_flag);
+                VM_ASSERT(!ISEQ_BODY(iseq)->param.flags.has_rest);
+                VM_ASSERT(RARRAY_LENINT(args->rest) > 0);
+                VM_ASSERT(RB_TYPE_P(rest_last, T_HASH));
+                VM_ASSERT(FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS));
+                VM_ASSERT(args_argc(args) == 1);
+            }
+#endif
             args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
         }
     }

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,37))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,37))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,21))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :td
@@ -18,11 +20,13 @@
         │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ ParenthesesNode (location: (1,3)-(1,10))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── body:
         │   │           │   │   @ StatementsNode (location: (1,4)-(1,9))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (1,4)-(1,9))
-        │   │           │   │           ├── flags: decimal
+        │   │           │   │           ├── flags: newline, static_literal, decimal
         │   │           │   │           └── value: 1500
         │   │           │   ├── opening_loc: (1,3)-(1,4) = "("
         │   │           │   └── closing_loc: (1,9)-(1,10) = ")"
@@ -36,7 +40,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (1,23)-(1,37))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (1,23)-(1,25))
             │   ├── flags: variable_call, ignore_visibility
@@ -56,6 +60,7 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,30)-(1,37))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅

@@ -67,6 +67,7 @@ RUBY_VERSION_NAME = @RUBY_VERSION_NAME@
 UNIVERSAL_ARCHNAMES = @UNIVERSAL_ARCHNAMES@
 BUILTIN_BINARY = @X_BUILTIN_BINARY@
 
+BUILTIN_GC = default
 shared_gc_dir = @shared_gc_dir@
 
 TESTUI = console
@@ -443,6 +444,10 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
+
+gc_impl.$(OBJEXT): gc/$(BUILTIN_GC).c probes.h
+	@$(ECHO) compiling $(srcdir)/gc/$(BUILTIN_GC).c
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(srcdir)/gc/$(BUILTIN_GC).c
 
 .c.$(OBJEXT):
 	@$(ECHO) compiling $<

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(5,22))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,22))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ CallNode (location: (1,0)-(1,12))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -15,6 +17,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ IfNode (location: (1,2)-(1,11))
+        │   │           ├── flags: newline
         │   │           ├── if_keyword_loc: ∅
         │   │           ├── predicate:
         │   │           │   @ CallNode (location: (1,2)-(1,3))
@@ -30,69 +33,78 @@
         │   │           ├── then_keyword_loc: (1,4)-(1,5) = "?"
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (1,6)-(1,9))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ StringNode (location: (1,6)-(1,9))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: newline
         │   │           │           ├── opening_loc: (1,6)-(1,7) = "\""
         │   │           │           ├── content_loc: (1,7)-(1,8) = "a"
         │   │           │           ├── closing_loc: (1,8)-(1,9) = "\""
         │   │           │           └── unescaped: "a"
         │   │           ├── consequent:
         │   │           │   @ ElseNode (location: (1,9)-(1,11))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── else_keyword_loc: (1,9)-(1,10) = ":"
         │   │           │   ├── statements:
         │   │           │   │   @ StatementsNode (location: (1,10)-(1,11))
+        │   │           │   │   ├── flags: ∅
         │   │           │   │   └── body: (length: 1)
         │   │           │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-        │   │           │   │           ├── flags: decimal
+        │   │           │   │           ├── flags: newline, static_literal, decimal
         │   │           │   │           └── value: 1
         │   │           │   └── end_keyword_loc: ∅
         │   │           └── end_keyword_loc: ∅
         │   ├── closing_loc: (1,11)-(1,12) = ")"
         │   └── block: ∅
         ├── @ HashNode (location: (3,0)-(3,12))
+        │   ├── flags: newline, static_literal
         │   ├── opening_loc: (3,0)-(3,1) = "{"
         │   ├── elements: (length: 1)
         │   │   └── @ AssocNode (location: (3,2)-(3,10))
+        │   │       ├── flags: static_literal
         │   │       ├── key:
         │   │       │   @ SymbolNode (location: (3,2)-(3,8))
-        │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (3,2)-(3,3) = "'"
         │   │       │   ├── value_loc: (3,3)-(3,6) = "foo"
         │   │       │   ├── closing_loc: (3,6)-(3,8) = "':"
         │   │       │   └── unescaped: "foo"
         │   │       ├── value:
         │   │       │   @ IntegerNode (location: (3,9)-(3,10))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 2
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (3,11)-(3,12) = "}"
         └── @ HashNode (location: (5,0)-(5,22))
+            ├── flags: newline
             ├── opening_loc: (5,0)-(5,1) = "{"
             ├── elements: (length: 2)
             │   ├── @ AssocNode (location: (5,2)-(5,10))
+            │   │   ├── flags: static_literal
             │   │   ├── key:
             │   │   │   @ SymbolNode (location: (5,2)-(5,8))
-            │   │   │   ├── flags: forced_us_ascii_encoding
+            │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
             │   │   │   ├── opening_loc: (5,2)-(5,3) = "'"
             │   │   │   ├── value_loc: (5,3)-(5,6) = "foo"
             │   │   │   ├── closing_loc: (5,6)-(5,8) = "':"
             │   │   │   └── unescaped: "foo"
             │   │   ├── value:
             │   │   │   @ IntegerNode (location: (5,9)-(5,10))
-            │   │   │   ├── flags: decimal
+            │   │   │   ├── flags: static_literal, decimal
             │   │   │   └── value: 2
             │   │   └── operator_loc: ∅
             │   └── @ AssocNode (location: (5,12)-(5,21))
+            │       ├── flags: ∅
             │       ├── key:
             │       │   @ SymbolNode (location: (5,12)-(5,18))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: (5,12)-(5,13) = "'"
             │       │   ├── value_loc: (5,13)-(5,16) = "bar"
             │       │   ├── closing_loc: (5,16)-(5,18) = "':"
             │       │   └── unescaped: "bar"
             │       ├── value:
             │       │   @ HashNode (location: (5,19)-(5,21))
+            │       │   ├── flags: static_literal
             │       │   ├── opening_loc: (5,19)-(5,20) = "{"
             │       │   ├── elements: (length: 0)
             │       │   └── closing_loc: (5,20)-(5,21) = "}"

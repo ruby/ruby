@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(5,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,10))
+    ├── flags: ∅
     └── body: (length: 3)
         ├── @ SuperNode (location: (1,0)-(1,9))
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,0)-(1,5) = "super"
         │   ├── lparen_loc: ∅
         │   ├── arguments:
@@ -23,12 +26,14 @@
         │   ├── rparen_loc: ∅
         │   └── block: ∅
         ├── @ SuperNode (location: (3,0)-(3,7))
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,0)-(3,5) = "super"
         │   ├── lparen_loc: (3,5)-(3,6) = "("
         │   ├── arguments: ∅
         │   ├── rparen_loc: (3,6)-(3,7) = ")"
         │   └── block: ∅
         └── @ SuperNode (location: (5,0)-(5,10))
+            ├── flags: newline
             ├── keyword_loc: (5,0)-(5,5) = "super"
             ├── lparen_loc: (5,5)-(5,6) = "("
             ├── arguments:

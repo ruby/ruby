@@ -2930,7 +2930,7 @@ utime_failed(struct apply_arg *aa)
 # elif defined(__APPLE__) && \
     (!defined(MAC_OS_X_VERSION_13_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_13_0))
 
-#   if defined(__has_attribute) && __has_attribute(availability)
+#   if __has_attribute(availability) && __has_warning("-Wunguarded-availability-new")
 typedef int utimensat_func(int, const char *, const struct timespec [2], int);
 
 RBIMPL_WARNING_PUSH()
@@ -2945,7 +2945,7 @@ RBIMPL_WARNING_POP()
 #   define utimensat rb_utimensat()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
 __attribute__((weak)) int utimensat(int, const char *, const struct timespec [2], int);
-#   endif /* defined(__has_attribute) && __has_attribute(availability) */
+#   endif /* utimesat availability */
 # endif /* __APPLE__ && < MAC_OS_X_VERSION_13_0 */
 
 static int
@@ -3690,6 +3690,14 @@ copy_home_path(VALUE result, const char *dir)
     return result;
 }
 
+#ifdef HAVE_PWD_H
+static void *
+nogvl_getpwnam(void *login)
+{
+    return (void *)getpwnam((const char *)login);
+}
+#endif
+
 VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
@@ -3712,7 +3720,7 @@ rb_home_dir_of(VALUE user, VALUE result)
     }
 
 #ifdef HAVE_PWD_H
-    pwPtr = getpwnam(username);
+    pwPtr = (struct passwd *)IO_WITHOUT_GVL(nogvl_getpwnam, (void *)username);
 #else
     if (strcasecmp(username, getlogin()) == 0)
         dir = pwPtr = getenv("HOME");

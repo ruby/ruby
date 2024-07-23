@@ -1,12 +1,15 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallOrWriteNode (location: (1,0)-(1,11))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ ConstantReadNode (location: (1,0)-(1,1))
+            │   ├── flags: ∅
             │   └── name: :A
             ├── call_operator_loc: (1,1)-(1,2) = "."
             ├── message_loc: (1,2)-(1,3) = "B"
@@ -26,7 +29,7 @@
                 │   ├── flags: ∅
                 │   └── arguments: (length: 1)
                 │       └── @ IntegerNode (location: (1,10)-(1,11))
-                │           ├── flags: decimal
+                │           ├── flags: static_literal, decimal
                 │           └── value: 1
                 ├── closing_loc: ∅
                 └── block: ∅

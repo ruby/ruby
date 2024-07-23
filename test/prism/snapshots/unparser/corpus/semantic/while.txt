@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(25,3))
+├── flags: ∅
 ├── locals: [:foo, :a]
 └── statements:
     @ StatementsNode (location: (1,0)-(25,3))
+    ├── flags: ∅
     └── body: (length: 7)
         ├── @ UntilNode (location: (1,0)-(1,13))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (1,2)-(1,7) = "until"
         │   ├── closing_loc: ∅
         │   ├── predicate:
@@ -19,6 +21,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── block:
         │   │       @ BlockNode (location: (1,11)-(1,13))
+        │   │       ├── flags: ∅
         │   │       ├── locals: []
         │   │       ├── parameters: ∅
         │   │       ├── body: ∅
@@ -26,9 +29,10 @@
         │   │       └── closing_loc: (1,12)-(1,13) = "}"
         │   └── statements:
         │       @ StatementsNode (location: (1,0)-(1,1))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (1,0)-(1,1))
-        │               ├── flags: variable_call, ignore_visibility
+        │               ├── flags: newline, variable_call, ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :a
@@ -38,7 +42,7 @@
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ UntilNode (location: (3,0)-(5,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (3,0)-(3,5) = "until"
         │   ├── closing_loc: (5,0)-(5,3) = "end"
         │   ├── predicate:
@@ -53,6 +57,7 @@
         │   │   ├── closing_loc: ∅
         │   │   └── block:
         │   │       @ BlockNode (location: (3,9)-(3,11))
+        │   │       ├── flags: ∅
         │   │       ├── locals: []
         │   │       ├── parameters: ∅
         │   │       ├── body: ∅
@@ -60,9 +65,10 @@
         │   │       └── closing_loc: (3,10)-(3,11) = "}"
         │   └── statements:
         │       @ StatementsNode (location: (4,2)-(4,3))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (4,2)-(4,3))
-        │               ├── flags: variable_call, ignore_visibility
+        │               ├── flags: newline, variable_call, ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :a
@@ -72,17 +78,20 @@
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ WhileNode (location: (7,0)-(7,19))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (7,10)-(7,15) = "while"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ LocalVariableReadNode (location: (7,16)-(7,19))
+        │   │   ├── flags: ∅
         │   │   ├── name: :foo
         │   │   └── depth: 0
         │   └── statements:
         │       @ StatementsNode (location: (7,0)-(7,9))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ LocalVariableWriteNode (location: (7,0)-(7,9))
+        │               ├── flags: newline
         │               ├── name: :foo
         │               ├── depth: 0
         │               ├── name_loc: (7,0)-(7,3) = "foo"
@@ -99,11 +108,12 @@
         │               │   └── block: ∅
         │               └── operator_loc: (7,4)-(7,5) = "="
         ├── @ UntilNode (location: (9,0)-(9,18))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (9,2)-(9,7) = "until"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ AndNode (location: (9,8)-(9,18))
+        │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ CallNode (location: (9,8)-(9,9))
         │   │   │   ├── flags: variable_call, ignore_visibility
@@ -127,6 +137,7 @@
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── block:
         │   │   │       @ BlockNode (location: (9,15)-(9,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── locals: []
         │   │   │       ├── parameters: ∅
         │   │   │       ├── body: ∅
@@ -135,9 +146,10 @@
         │   │   └── operator_loc: (9,10)-(9,12) = "&&"
         │   └── statements:
         │       @ StatementsNode (location: (9,0)-(9,1))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (9,0)-(9,1))
-        │               ├── flags: variable_call, ignore_visibility
+        │               ├── flags: newline, variable_call, ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :a
@@ -147,11 +159,12 @@
         │               ├── closing_loc: ∅
         │               └── block: ∅
         ├── @ WhileNode (location: (11,0)-(13,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (11,0)-(11,5) = "while"
         │   ├── closing_loc: (13,0)-(13,3) = "end"
         │   ├── predicate:
         │   │   @ LocalVariableWriteNode (location: (11,6)-(11,11))
+        │   │   ├── flags: ∅
         │   │   ├── name: :a
         │   │   ├── depth: 0
         │   │   ├── name_loc: (11,6)-(11,7) = "a"
@@ -169,12 +182,14 @@
         │   │   └── operator_loc: (11,8)-(11,9) = "="
         │   └── statements:
         │       @ StatementsNode (location: (12,2)-(12,3))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ LocalVariableReadNode (location: (12,2)-(12,3))
+        │               ├── flags: newline
         │               ├── name: :a
         │               └── depth: 0
         ├── @ UntilNode (location: (15,0)-(18,3))
-        │   ├── flags: ∅
+        │   ├── flags: newline
         │   ├── keyword_loc: (15,2)-(15,7) = "until"
         │   ├── closing_loc: ∅
         │   ├── predicate:
@@ -198,13 +213,15 @@
         │   │   ├── closing_loc: (15,16)-(15,17) = ")"
         │   │   └── block:
         │   │       @ BlockNode (location: (15,18)-(18,3))
+        │   │       ├── flags: ∅
         │   │       ├── locals: []
         │   │       ├── parameters: ∅
         │   │       ├── body:
         │   │       │   @ StatementsNode (location: (17,2)-(17,3))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ CallNode (location: (17,2)-(17,3))
-        │   │       │           ├── flags: variable_call, ignore_visibility
+        │   │       │           ├── flags: newline, variable_call, ignore_visibility
         │   │       │           ├── receiver: ∅
         │   │       │           ├── call_operator_loc: ∅
         │   │       │           ├── name: :c
@@ -217,20 +234,26 @@
         │   │       └── closing_loc: (18,0)-(18,3) = "end"
         │   └── statements:
         │       @ StatementsNode (location: (15,0)-(15,1))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ LocalVariableReadNode (location: (15,0)-(15,1))
+        │               ├── flags: newline
         │               ├── name: :a
         │               └── depth: 0
         └── @ ModuleNode (location: (20,0)-(25,3))
+            ├── flags: newline
             ├── locals: [:foo]
             ├── module_keyword_loc: (20,0)-(20,6) = "module"
             ├── constant_path:
             │   @ ConstantReadNode (location: (20,7)-(20,8))
+            │   ├── flags: ∅
             │   └── name: :A
             ├── body:
             │   @ StatementsNode (location: (21,2)-(24,5))
+            │   ├── flags: ∅
             │   └── body: (length: 2)
             │       ├── @ LocalVariableWriteNode (location: (21,2)-(21,11))
+            │       │   ├── flags: newline
             │       │   ├── name: :foo
             │       │   ├── depth: 0
             │       │   ├── name_loc: (21,2)-(21,5) = "foo"
@@ -247,17 +270,20 @@
             │       │   │   └── block: ∅
             │       │   └── operator_loc: (21,6)-(21,7) = "="
             │       └── @ WhileNode (location: (22,2)-(24,5))
-            │           ├── flags: ∅
+            │           ├── flags: newline
             │           ├── keyword_loc: (22,2)-(22,7) = "while"
             │           ├── closing_loc: (24,2)-(24,5) = "end"
             │           ├── predicate:
             │           │   @ LocalVariableReadNode (location: (22,8)-(22,11))
+            │           │   ├── flags: ∅
             │           │   ├── name: :foo
             │           │   └── depth: 0
             │           └── statements:
             │               @ StatementsNode (location: (23,4)-(23,13))
+            │               ├── flags: ∅
             │               └── body: (length: 1)
             │                   └── @ LocalVariableWriteNode (location: (23,4)-(23,13))
+            │                       ├── flags: newline
             │                       ├── name: :foo
             │                       ├── depth: 0
             │                       ├── name_loc: (23,4)-(23,7) = "foo"

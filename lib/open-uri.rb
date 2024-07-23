@@ -212,7 +212,7 @@ module OpenURI
     end
 
     uri_set = {}
-    max_redirects = options[:max_redirects]
+    max_redirects = options[:max_redirects] || Options.fetch(:max_redirects)
     buf = nil
     while true
       redirect = catch(:open_uri_redirect) {
@@ -746,6 +746,12 @@ module OpenURI
     #  Using +true+ also means that redirections between http and ftp are
     #  permitted.
     #
+    # [:max_redirects]
+    #  Synopsis:
+    #    :max_redirects=>int
+    #
+    #  Number of HTTP redirects allowed before OpenURI::TooManyRedirects is raised.
+    #  The default is 64.
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
     end

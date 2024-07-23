@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(5,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(5,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(5,3))
+            ├── flags: newline
             ├── name: :x
             ├── name_loc: (1,4)-(1,5) = "x"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,6)-(1,7))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
             │   │       ├── flags: ∅
@@ -21,9 +25,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (2,2)-(4,10))
+            │   ├── flags: ∅
             │   └── body: (length: 3)
             │       ├── @ CallNode (location: (2,2)-(2,6))
-            │       │   ├── flags: ignore_visibility
+            │       │   ├── flags: newline, ignore_visibility
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :p
@@ -34,28 +39,31 @@
             │       │   │   ├── flags: ∅
             │       │   │   └── arguments: (length: 1)
             │       │   │       └── @ LocalVariableReadNode (location: (2,4)-(2,5))
+            │       │   │           ├── flags: ∅
             │       │   │           ├── name: :y
             │       │   │           └── depth: 0
             │       │   ├── closing_loc: (2,5)-(2,6) = ")"
             │       │   └── block: ∅
             │       ├── @ LocalVariableOperatorWriteNode (location: (3,2)-(3,8))
+            │       │   ├── flags: newline
             │       │   ├── name_loc: (3,2)-(3,3) = "y"
             │       │   ├── binary_operator_loc: (3,4)-(3,6) = "*="
             │       │   ├── value:
             │       │   │   @ IntegerNode (location: (3,7)-(3,8))
-            │       │   │   ├── flags: decimal
+            │       │   │   ├── flags: static_literal, decimal
             │       │   │   └── value: 2
             │       │   ├── name: :y
             │       │   ├── binary_operator: :*
             │       │   └── depth: 0
             │       └── @ ReturnNode (location: (4,2)-(4,10))
-            │           ├── flags: redundant
+            │           ├── flags: newline
             │           ├── keyword_loc: (4,2)-(4,8) = "return"
             │           └── arguments:
             │               @ ArgumentsNode (location: (4,9)-(4,10))
             │               ├── flags: ∅
             │               └── arguments: (length: 1)
             │                   └── @ LocalVariableReadNode (location: (4,9)-(4,10))
+            │                       ├── flags: ∅
             │                       ├── name: :y
             │                       └── depth: 0
             ├── locals: [:y]

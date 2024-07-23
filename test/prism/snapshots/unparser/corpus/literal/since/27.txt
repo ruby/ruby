@@ -1,23 +1,29 @@
 @ ProgramNode (location: (1,0)-(4,5))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,5))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ LambdaNode (location: (1,0)-(3,1))
+        │   ├── flags: newline
         │   ├── locals: [:_1, :_2]
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,3)-(1,4) = "{"
         │   ├── closing_loc: (3,0)-(3,1) = "}"
         │   ├── parameters:
         │   │   @ NumberedParametersNode (location: (1,0)-(3,1))
+        │   │   ├── flags: ∅
         │   │   └── maximum: 2
         │   └── body:
         │       @ StatementsNode (location: (2,2)-(2,9))
+        │       ├── flags: ∅
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (2,2)-(2,9))
-        │               ├── flags: ∅
+        │               ├── flags: newline
         │               ├── receiver:
         │               │   @ LocalVariableReadNode (location: (2,2)-(2,4))
+        │               │   ├── flags: ∅
         │               │   ├── name: :_1
         │               │   └── depth: 0
         │               ├── call_operator_loc: ∅
@@ -29,20 +35,23 @@
         │               │   ├── flags: ∅
         │               │   └── arguments: (length: 1)
         │               │       └── @ LocalVariableReadNode (location: (2,7)-(2,9))
+        │               │           ├── flags: ∅
         │               │           ├── name: :_2
         │               │           └── depth: 0
         │               ├── closing_loc: ∅
         │               └── block: ∅
         └── @ ParenthesesNode (location: (4,0)-(4,5))
+            ├── flags: newline
             ├── body:
             │   @ StatementsNode (location: (4,1)-(4,4))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RangeNode (location: (4,1)-(4,4))
-            │           ├── flags: ∅
+            │           ├── flags: newline, static_literal
             │           ├── left: ∅
             │           ├── right:
             │           │   @ IntegerNode (location: (4,3)-(4,4))
-            │           │   ├── flags: decimal
+            │           │   ├── flags: static_literal, decimal
             │           │   └── value: 1
             │           └── operator_loc: (4,1)-(4,3) = ".."
             ├── opening_loc: (4,0)-(4,1) = "("

@@ -1,22 +1,26 @@
 @ ProgramNode (location: (1,0)-(1,10))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,10))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ HashNode (location: (1,0)-(1,10))
+            ├── flags: newline, static_literal
             ├── opening_loc: (1,0)-(1,1) = "{"
             ├── elements: (length: 1)
             │   └── @ AssocNode (location: (1,2)-(1,8))
+            │       ├── flags: static_literal
             │       ├── key:
             │       │   @ SymbolNode (location: (1,2)-(1,6))
-            │       │   ├── flags: forced_us_ascii_encoding
+            │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   ├── opening_loc: ∅
             │       │   ├── value_loc: (1,2)-(1,5) = "foo"
             │       │   ├── closing_loc: (1,5)-(1,6) = ":"
             │       │   └── unescaped: "foo"
             │       ├── value:
             │       │   @ IntegerNode (location: (1,7)-(1,8))
-            │       │   ├── flags: decimal
+            │       │   ├── flags: static_literal, decimal
             │       │   └── value: 2
             │       └── operator_loc: ∅
             └── closing_loc: (1,9)-(1,10) = "}"

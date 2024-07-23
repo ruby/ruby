@@ -5,6 +5,7 @@ require 'timeout'
 require 'tmpdir'
 require 'tempfile'
 require_relative '../lib/jit_support'
+require_relative '../lib/parser_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
@@ -13,7 +14,12 @@ class TestRubyOptions < Test::Unit::TestCase
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
   # worry about it. The flag itself is tested in its own test.
-  RUBY_DESCRIPTION = ::RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+  RUBY_DESCRIPTION =
+    if ParserSupport.prism_enabled_in_subprocess?
+      ::RUBY_DESCRIPTION
+    else
+      ::RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+    end
 
   NO_JIT_DESCRIPTION =
     if rjit_enabled?
@@ -163,14 +169,14 @@ class TestRubyOptions < Test::Unit::TestCase
       /^jruby #{q[RUBY_ENGINE_VERSION]} \(#{q[RUBY_VERSION]}\).*? \[#{
         q[RbConfig::CONFIG["host_os"]]}-#{q[RbConfig::CONFIG["host_cpu"]]}\]$/
     else
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? (\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
     end
   private_constant :VERSION_PATTERN
 
   VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?\[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -362,6 +368,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_yydebug
+    omit if ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(["-ye", ""]) do |r, e|
       assert_not_equal([], r)
       assert_equal([], e)
@@ -857,6 +865,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
+    pend "macOS 15 beta is not working with this assertion" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
@@ -900,6 +910,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_crash_report(path, cmd = nil, &block)
+    pend "macOS 15 beta is not working with this assertion" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
+
     Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
       if cmd
@@ -1169,6 +1181,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_dump_parsetree_error_tolerant
+    omit if ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(['--dump=parse', '-e', 'begin'],
                       "", [], /unexpected end-of-input/, success: false)
     assert_in_out_err(['--dump=parse', '--dump=+error_tolerant', '-e', 'begin'],

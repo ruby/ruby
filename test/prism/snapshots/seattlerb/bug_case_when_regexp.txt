@@ -1,22 +1,26 @@
 @ ProgramNode (location: (1,0)-(1,26))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,26))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseNode (location: (1,0)-(1,26))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "x"
             │   ├── closing_loc: ∅
             │   └── unescaped: "x"
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,9)-(1,22))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (1,9)-(1,13) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ RegularExpressionNode (location: (1,14)-(1,17))
-            │       │       ├── flags: forced_us_ascii_encoding
+            │       │       ├── flags: static_literal, forced_us_ascii_encoding
             │       │       ├── opening_loc: (1,14)-(1,15) = "/"
             │       │       ├── content_loc: (1,15)-(1,16) = "x"
             │       │       ├── closing_loc: (1,16)-(1,17) = "/"

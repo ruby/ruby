@@ -10,7 +10,11 @@ module Prism
     # specialized and more performant `ASCIISource` if no multibyte characters
     # are present in the source code.
     def self.for(source, start_line = 1, offsets = [])
-      source.ascii_only? ? ASCIISource.new(source, start_line, offsets): new(source, start_line, offsets)
+      if source.ascii_only?
+        ASCIISource.new(source, start_line, offsets)
+      else
+        new(source, start_line, offsets)
+      end
     end
 
     # The source code that this source object represents.
@@ -87,7 +91,12 @@ module Prism
     # encodings, it is not captured here.
     def code_units_offset(byte_offset, encoding)
       byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding)
-      (encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE) ? (byteslice.bytesize / 2) : byteslice.length
+
+      if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
+        byteslice.bytesize / 2
+      else
+        byteslice.length
+      end
     end
 
     # Returns the column number in code units for the given encoding for the
@@ -575,9 +584,11 @@ module Prism
   # This is a result specific to the `parse` and `parse_file` methods.
   class ParseResult < Result
     autoload :Comments, "prism/parse_result/comments"
+    autoload :Errors, "prism/parse_result/errors"
     autoload :Newlines, "prism/parse_result/newlines"
 
     private_constant :Comments
+    private_constant :Errors
     private_constant :Newlines
 
     # The syntax tree that was parsed from the source code.
@@ -603,6 +614,12 @@ module Prism
     # the behavior of CRuby's `:line` tracepoint event.
     def mark_newlines!
       value.accept(Newlines.new(source.offsets.size)) # steep:ignore
+    end
+
+    # Returns a string representation of the syntax tree with the errors
+    # displayed inline.
+    def errors_format
+      Errors.new(self).format
     end
   end
 

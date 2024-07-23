@@ -569,10 +569,81 @@ if you believe they were disclosed to a third party.
     yaml = <<~YAML
       ---
       :foo: bar # buzz
+      #:notkey: bar
     YAML
 
     actual = Gem::ConfigFile.load_with_rubygems_config_hash(yaml)
     assert_equal("bar", actual[:foo])
+    assert_equal(false, actual.key?("#:notkey"))
+    assert_equal(false, actual.key?(:notkey))
+    assert_equal(1, actual.size)
+  end
+
+  def test_s3_source
+    yaml = <<~YAML
+      ---
+      :sources:
+      - s3://bucket1/
+      - s3://bucket2/
+      - s3://bucket3/path_to_gems_dir/
+      - s3://bucket4/
+      - https://rubygems.org/
+      :s3_source:
+        :bucket1:
+          :provider: env
+        :bucket2:
+          :provider: instance_profile
+          :region: us-west-2
+        :bucket3:
+          :id: AOUEAOEU123123AOEUAO
+          :secret: aodnuhtdao/saeuhto+19283oaehu/asoeu+123h
+          :region: us-east-2
+        :bucket4:
+          :id: AOUEAOEU123123AOEUAO
+          :secret: aodnuhtdao/saeuhto+19283oaehu/asoeu+123h
+          :security_token: AQoDYXdzEJr
+          :region: us-west-1
+    YAML
+
+    File.open @temp_conf, "w" do |fp|
+      fp.puts yaml
+    end
+    util_config_file
+
+    assert_equal(["s3://bucket1/", "s3://bucket2/", "s3://bucket3/path_to_gems_dir/", "s3://bucket4/", "https://rubygems.org/"], @cfg.sources)
+    expected_config = {
+      bucket1: { provider: "env" },
+      bucket2: { provider: "instance_profile", region: "us-west-2" },
+      bucket3: { id: "AOUEAOEU123123AOEUAO", secret: "aodnuhtdao/saeuhto+19283oaehu/asoeu+123h", region: "us-east-2" },
+      bucket4: { id: "AOUEAOEU123123AOEUAO", secret: "aodnuhtdao/saeuhto+19283oaehu/asoeu+123h", security_token: "AQoDYXdzEJr", region: "us-west-1" },
+    }
+    assert_equal(expected_config, @cfg[:s3_source])
+    assert_equal(expected_config[:bucket1], @cfg[:s3_source][:bucket1])
+    assert_equal(expected_config[:bucket2], @cfg[:s3_source][:bucket2])
+    assert_equal(expected_config[:bucket3], @cfg[:s3_source][:bucket3])
+    assert_equal(expected_config[:bucket4], @cfg[:s3_source][:bucket4])
+  end
+
+  def test_s3_source_with_config_without_lookahead
+    yaml = <<~YAML
+    :sources:
+    - s3://bucket1/
+    s3_source:
+      bucket1:
+        provider: env
+    YAML
+
+    File.open @temp_conf, "w" do |fp|
+      fp.puts yaml
+    end
+    util_config_file
+
+    assert_equal(["s3://bucket1/"], @cfg.sources)
+    expected_config = {
+      "bucket1" => { "provider" => "env" },
+    }
+    assert_equal(expected_config, @cfg[:s3_source])
+    assert_equal(expected_config[:bucket1], @cfg[:s3_source][:bucket1])
   end
 
   def util_config_file(args = @cfg_args)

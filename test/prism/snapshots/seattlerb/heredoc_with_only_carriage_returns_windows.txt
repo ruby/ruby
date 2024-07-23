@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,5))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,5))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ StringNode (location: (1,0)-(1,5))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,5) = "<<EOS"
             ├── content_loc: (2,0)-(5,0) = "\r\r\n\r\r\r\n\\r\r\n"
             ├── closing_loc: (5,0)-(6,0) = "EOS\r\n"

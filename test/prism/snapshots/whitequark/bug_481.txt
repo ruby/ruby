@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,28))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,14))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :m
@@ -15,6 +17,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ DefNode (location: (1,2)-(1,14))
+        │   │           ├── flags: ∅
         │   │           ├── name: :x
         │   │           ├── name_loc: (1,6)-(1,7) = "x"
         │   │           ├── receiver: ∅
@@ -30,10 +33,10 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (1,16)-(1,28))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ IntegerNode (location: (1,16)-(1,17))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── call_operator_loc: (1,17)-(1,18) = "."
             ├── name: :tap
@@ -43,6 +46,7 @@
             ├── closing_loc: ∅
             └── block:
                 @ BlockNode (location: (1,22)-(1,28))
+                ├── flags: ∅
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body: ∅

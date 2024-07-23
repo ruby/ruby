@@ -1,38 +1,47 @@
 @ ProgramNode (location: (1,0)-(4,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,4))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,19))
+            │       │   ├── flags: ∅
             │       │   ├── constant: ∅
             │       │   ├── elements: (length: 1)
             │       │   │   └── @ AssocNode (location: (2,5)-(2,17))
+            │       │   │       ├── flags: ∅
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,5)-(2,7))
-            │       │   │       │   ├── flags: forced_us_ascii_encoding
+            │       │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,5)-(2,6) = "b"
             │       │   │       │   ├── closing_loc: (2,6)-(2,7) = ":"
             │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
             │       │   │       │   @ ArrayPatternNode (location: (2,8)-(2,17))
+            │       │   │       │   ├── flags: ∅
             │       │   │       │   ├── constant: ∅
             │       │   │       │   ├── requireds: (length: 1)
             │       │   │       │   │   └── @ ConstantReadNode (location: (2,9)-(2,13))
+            │       │   │       │   │       ├── flags: ∅
             │       │   │       │   │       └── name: :Hash
             │       │   │       │   ├── rest:
             │       │   │       │   │   @ SplatNode (location: (2,15)-(2,16))
+            │       │   │       │   │   ├── flags: ∅
             │       │   │       │   │   ├── operator_loc: (2,15)-(2,16) = "*"
             │       │   │       │   │   └── expression: ∅
             │       │   │       │   ├── posts: (length: 0)
@@ -44,9 +53,10 @@
             │       │   └── closing_loc: (2,18)-(2,19) = "}"
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,4))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
-            │       │           ├── flags: forced_us_ascii_encoding
+            │       │           ├── flags: newline, static_literal, forced_us_ascii_encoding
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "c"
             │       │           ├── closing_loc: ∅

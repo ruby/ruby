@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,28))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,28))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,28))
+            ├── flags: newline
             ├── name: :f
             ├── name_loc: (1,4)-(1,5) = "f"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,6)-(1,16))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -20,6 +24,7 @@
             │   │       ├── name_loc: (1,6)-(1,8) = "a:"
             │   │       └── value:
             │   │           @ NilNode (location: (1,9)-(1,12))
+            │   │           └── flags: static_literal
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,14)-(1,16))
             │   │   ├── flags: ∅
@@ -29,9 +34,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,19)-(1,24))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,19)-(1,24))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :b
@@ -45,6 +51,7 @@
             │           │           ├── flags: ∅
             │           │           └── elements: (length: 1)
             │           │               └── @ AssocSplatNode (location: (1,21)-(1,23))
+            │           │                   ├── flags: ∅
             │           │                   ├── value: ∅
             │           │                   └── operator_loc: (1,21)-(1,23) = "**"
             │           ├── closing_loc: (1,23)-(1,24) = ")"

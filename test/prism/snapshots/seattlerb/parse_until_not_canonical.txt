@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ UntilNode (location: (1,0)-(3,3))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (1,0)-(1,5) = "until"
             ├── closing_loc: (3,0)-(3,3) = "end"
             ├── predicate:
@@ -40,9 +42,10 @@
             │   └── block: ∅
             └── statements:
                 @ StatementsNode (location: (2,2)-(2,7))
+                ├── flags: ∅
                 └── body: (length: 1)
                     └── @ StringNode (location: (2,2)-(2,7))
-                        ├── flags: ∅
+                        ├── flags: newline
                         ├── opening_loc: (2,2)-(2,3) = "'"
                         ├── content_loc: (2,3)-(2,6) = "foo"
                         ├── closing_loc: (2,6)-(2,7) = "'"

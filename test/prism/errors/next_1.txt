@@ -1,0 +1,4 @@
+next 1,;
+      ^ expected an argument
+^~~~~~~ Invalid next
+

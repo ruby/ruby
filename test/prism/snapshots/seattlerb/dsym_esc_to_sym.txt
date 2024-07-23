@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,17))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,17))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ SymbolNode (location: (1,0)-(1,17))
-            ├── flags: forced_utf8_encoding
+            ├── flags: newline, static_literal, forced_utf8_encoding
             ├── opening_loc: (1,0)-(1,2) = ":\""
             ├── value_loc: (1,2)-(1,16) = "Variet\\303\\240"
             ├── closing_loc: (1,16)-(1,17) = "\""

@@ -1,0 +1,17 @@
+case (); in [a, a]; end
+                ^ duplicated variable name
+case (); in [a, *a]; end
+                 ^ duplicated variable name
+case (); in {a: a, b: a}; end
+                      ^ duplicated variable name
+case (); in {a: a, **a}; end
+                     ^ duplicated variable name
+case (); in [a, {a:}]; end
+                 ^ duplicated variable name
+case (); in [a, {a: {a: {a: [a]}}}]; end
+                             ^ duplicated variable name
+case (); in a => a; end
+                 ^ duplicated variable name
+case (); in [A => a, {a: b => a}]; end
+                              ^ duplicated variable name
+

@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,11))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,11))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableOrWriteNode (location: (1,0)-(1,11))
+            ├── flags: newline
             ├── name_loc: (1,0)-(1,1) = "a"
             ├── operator_loc: (1,2)-(1,5) = "||="
             ├── value:
@@ -29,7 +32,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-            │   │           ├── flags: decimal
+            │   │           ├── flags: static_literal, decimal
             │   │           └── value: 2
             │   ├── closing_loc: ∅
             │   └── block: ∅

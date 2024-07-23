@@ -1,5 +1,7 @@
 @ ProgramNode (location: (1,0)-(1,0))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,0))
+    ├── flags: ∅
     └── body: (length: 0)

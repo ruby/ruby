@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(35,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(35,3))
+    ├── flags: ∅
     └── body: (length: 10)
         ├── @ ClassNode (location: (1,0)-(2,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (1,0)-(1,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (1,6)-(1,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
@@ -15,6 +19,7 @@
         │   ├── end_keyword_loc: (2,0)-(2,3) = "end"
         │   └── name: :A
         ├── @ SingletonClassNode (location: (4,0)-(5,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (4,0)-(4,5) = "class"
         │   ├── operator_loc: (4,6)-(4,8) = "<<"
@@ -32,6 +37,7 @@
         │   ├── body: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ SingletonClassNode (location: (7,0)-(9,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (7,0)-(7,5) = "class"
         │   ├── operator_loc: (7,6)-(7,8) = "<<"
@@ -48,9 +54,10 @@
         │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (8,2)-(8,3))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (8,2)-(8,3))
-        │   │           ├── flags: variable_call, ignore_visibility
+        │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -61,12 +68,15 @@
         │   │           └── block: ∅
         │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         ├── @ ClassNode (location: (11,0)-(12,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (11,0)-(11,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (11,6)-(11,10))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (11,6)-(11,7))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (11,7)-(11,9) = "::"
@@ -77,14 +87,18 @@
         │   ├── end_keyword_loc: (12,0)-(12,3) = "end"
         │   └── name: :B
         ├── @ ClassNode (location: (14,0)-(15,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (14,0)-(14,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (14,6)-(14,13))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantPathNode (location: (14,6)-(14,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── parent:
         │   │   │   │   @ ConstantReadNode (location: (14,6)-(14,7))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :A
         │   │   │   ├── name: :B
         │   │   │   ├── delimiter_loc: (14,7)-(14,9) = "::"
@@ -98,29 +112,36 @@
         │   ├── end_keyword_loc: (15,0)-(15,3) = "end"
         │   └── name: :C
         ├── @ ClassNode (location: (17,0)-(18,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (17,0)-(17,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (17,6)-(17,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: (17,8)-(17,9) = "<"
         │   ├── superclass:
         │   │   @ ConstantReadNode (location: (17,10)-(17,11))
+        │   │   ├── flags: ∅
         │   │   └── name: :B
         │   ├── body: ∅
         │   ├── end_keyword_loc: (18,0)-(18,3) = "end"
         │   └── name: :A
         ├── @ ClassNode (location: (20,0)-(21,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (20,0)-(20,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (20,6)-(20,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: (20,8)-(20,9) = "<"
         │   ├── superclass:
         │   │   @ ConstantPathNode (location: (20,10)-(20,14))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (20,10)-(20,11))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :B
         │   │   ├── name: :C
         │   │   ├── delimiter_loc: (20,11)-(20,13) = "::"
@@ -129,12 +150,15 @@
         │   ├── end_keyword_loc: (21,0)-(21,3) = "end"
         │   └── name: :A
         ├── @ ClassNode (location: (23,0)-(24,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (23,0)-(23,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantPathNode (location: (23,6)-(23,10))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (23,6)-(23,7))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :A
         │   │   ├── name: :B
         │   │   ├── delimiter_loc: (23,7)-(23,9) = "::"
@@ -142,8 +166,10 @@
         │   ├── inheritance_operator_loc: (23,11)-(23,12) = "<"
         │   ├── superclass:
         │   │   @ ConstantPathNode (location: (23,13)-(23,17))
+        │   │   ├── flags: ∅
         │   │   ├── parent:
         │   │   │   @ ConstantReadNode (location: (23,13)-(23,14))
+        │   │   │   ├── flags: ∅
         │   │   │   └── name: :C
         │   │   ├── name: :D
         │   │   ├── delimiter_loc: (23,14)-(23,16) = "::"
@@ -152,18 +178,21 @@
         │   ├── end_keyword_loc: (24,0)-(24,3) = "end"
         │   └── name: :B
         ├── @ ClassNode (location: (26,0)-(32,3))
+        │   ├── flags: newline
         │   ├── locals: []
         │   ├── class_keyword_loc: (26,0)-(26,5) = "class"
         │   ├── constant_path:
         │   │   @ ConstantReadNode (location: (26,6)-(26,7))
+        │   │   ├── flags: ∅
         │   │   └── name: :A
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (27,2)-(31,5))
+        │   │   ├── flags: ∅
         │   │   └── body: (length: 2)
         │   │       ├── @ CallNode (location: (27,2)-(27,16))
-        │   │       │   ├── flags: ignore_visibility
+        │   │       │   ├── flags: newline, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :include
@@ -177,6 +206,7 @@
         │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── receiver:
         │   │       │   │           │   @ ConstantReadNode (location: (27,10)-(27,11))
+        │   │       │   │           │   ├── flags: ∅
         │   │       │   │           │   └── name: :B
         │   │       │   │           ├── call_operator_loc: (27,11)-(27,12) = "."
         │   │       │   │           ├── name: :new
@@ -188,15 +218,17 @@
         │   │       │   ├── closing_loc: (27,15)-(27,16) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ DefNode (location: (29,2)-(31,5))
+        │   │           ├── flags: newline
         │   │           ├── name: :foo
         │   │           ├── name_loc: (29,6)-(29,9) = "foo"
         │   │           ├── receiver: ∅
         │   │           ├── parameters: ∅
         │   │           ├── body:
         │   │           │   @ StatementsNode (location: (30,4)-(30,8))
+        │   │           │   ├── flags: ∅
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ SymbolNode (location: (30,4)-(30,8))
-        │   │           │           ├── flags: forced_us_ascii_encoding
+        │   │           │           ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │           │           ├── opening_loc: (30,4)-(30,5) = ":"
         │   │           │           ├── value_loc: (30,5)-(30,8) = "bar"
         │   │           │           ├── closing_loc: ∅
@@ -211,10 +243,12 @@
         │   ├── end_keyword_loc: (32,0)-(32,3) = "end"
         │   └── name: :A
         └── @ ClassNode (location: (34,0)-(35,3))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (34,0)-(34,5) = "class"
             ├── constant_path:
             │   @ ConstantPathNode (location: (34,6)-(34,9))
+            │   ├── flags: ∅
             │   ├── parent: ∅
             │   ├── name: :A
             │   ├── delimiter_loc: (34,6)-(34,8) = "::"

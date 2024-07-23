@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,27))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,27))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,27))
+            ├── flags: newline
             ├── name: :exec
             ├── name_loc: (1,4)-(1,8) = "exec"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,9)-(1,12))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,9)-(1,12))
             │   │       ├── flags: ∅
@@ -21,9 +25,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,16)-(1,27))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,16)-(1,27))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :system
@@ -34,6 +39,7 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ LocalVariableReadNode (location: (1,23)-(1,26))
+            │           │           ├── flags: ∅
             │           │           ├── name: :cmd
             │           │           └── depth: 0
             │           ├── closing_loc: (1,26)-(1,27) = ")"

@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,26))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,26))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,26))
+            ├── flags: newline
             ├── name: :fun
             ├── name_loc: (1,4)-(1,7) = "fun"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,8)-(1,16))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -20,7 +24,7 @@
             │   │       ├── name_loc: (1,8)-(1,11) = "kw:"
             │   │       └── value:
             │   │           @ SymbolNode (location: (1,12)-(1,16))
-            │   │           ├── flags: forced_us_ascii_encoding
+            │   │           ├── flags: static_literal, forced_us_ascii_encoding
             │   │           ├── opening_loc: (1,12)-(1,13) = ":"
             │   │           ├── value_loc: (1,13)-(1,16) = "val"
             │   │           ├── closing_loc: ∅
@@ -29,8 +33,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,19)-(1,21))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ LocalVariableReadNode (location: (1,19)-(1,21))
+            │           ├── flags: newline
             │           ├── name: :kw
             │           └── depth: 0
             ├── locals: [:kw]

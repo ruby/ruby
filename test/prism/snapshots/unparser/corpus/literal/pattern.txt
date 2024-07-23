@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(41,8))
+├── flags: ∅
 ├── locals: [:a, :x, :y]
 └── statements:
     @ StatementsNode (location: (1,0)-(41,8))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ CaseMatchNode (location: (1,0)-(33,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (1,5)-(1,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -17,58 +20,69 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 15)
         │   │   ├── @ InNode (location: (2,0)-(3,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ ArrayPatternNode (location: (2,3)-(2,17))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant:
         │   │   │   │   │   @ ConstantReadNode (location: (2,3)-(2,4))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── name: :A
         │   │   │   │   ├── requireds: (length: 2)
         │   │   │   │   │   ├── @ IntegerNode (location: (2,5)-(2,6))
-        │   │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   │   └── value: 1
         │   │   │   │   │   └── @ IntegerNode (location: (2,8)-(2,9))
-        │   │   │   │   │       ├── flags: decimal
+        │   │   │   │   │       ├── flags: static_literal, decimal
         │   │   │   │   │       └── value: 2
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ SplatNode (location: (2,11)-(2,13))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── operator_loc: (2,11)-(2,12) = "*"
         │   │   │   │   │   └── expression:
         │   │   │   │   │       @ LocalVariableTargetNode (location: (2,12)-(2,13))
+        │   │   │   │   │       ├── flags: ∅
         │   │   │   │   │       ├── name: :a
         │   │   │   │   │       └── depth: 0
         │   │   │   │   ├── posts: (length: 1)
         │   │   │   │   │   └── @ IntegerNode (location: (2,15)-(2,16))
-        │   │   │   │   │       ├── flags: decimal
+        │   │   │   │   │       ├── flags: static_literal, decimal
         │   │   │   │   │       └── value: 3
         │   │   │   │   ├── opening_loc: (2,4)-(2,5) = "["
         │   │   │   │   └── closing_loc: (2,16)-(2,17) = "]"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (3,2)-(3,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (3,2)-(3,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (2,0)-(2,2) = "in"
         │   │   │   └── then_loc: (2,18)-(2,22) = "then"
         │   │   ├── @ InNode (location: (4,0)-(5,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ ArrayPatternNode (location: (4,3)-(4,11))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── requireds: (length: 2)
         │   │   │   │   │   ├── @ IntegerNode (location: (4,4)-(4,5))
-        │   │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   │   └── value: 1
         │   │   │   │   │   └── @ IntegerNode (location: (4,7)-(4,8))
-        │   │   │   │   │       ├── flags: decimal
+        │   │   │   │   │       ├── flags: static_literal, decimal
         │   │   │   │   │       └── value: 2
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ ImplicitRestNode (location: (4,8)-(4,9))
+        │   │   │   │   │   └── flags: ∅
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── opening_loc: (4,3)-(4,4) = "["
         │   │   │   │   └── closing_loc: (4,10)-(4,11) = "]"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (5,2)-(5,3))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (5,2)-(5,3))
-        │   │   │   │           ├── flags: variable_call, ignore_visibility
+        │   │   │   │           ├── flags: newline, variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :y
@@ -80,24 +94,30 @@
         │   │   │   ├── in_loc: (4,0)-(4,2) = "in"
         │   │   │   └── then_loc: (4,12)-(4,16) = "then"
         │   │   ├── @ InNode (location: (6,0)-(7,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (6,3)-(6,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant:
         │   │   │   │   │   @ ConstantReadNode (location: (6,3)-(6,4))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── name: :A
         │   │   │   │   ├── elements: (length: 1)
         │   │   │   │   │   └── @ AssocNode (location: (6,5)-(6,7))
+        │   │   │   │   │       ├── flags: ∅
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (6,5)-(6,7))
-        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (6,5)-(6,6) = "x"
         │   │   │   │   │       │   ├── closing_loc: (6,6)-(6,7) = ":"
         │   │   │   │   │       │   └── unescaped: "x"
         │   │   │   │   │       ├── value:
         │   │   │   │   │       │   @ ImplicitNode (location: (6,5)-(6,6))
+        │   │   │   │   │       │   ├── flags: ∅
         │   │   │   │   │       │   └── value:
         │   │   │   │   │       │       @ LocalVariableTargetNode (location: (6,5)-(6,6))
+        │   │   │   │   │       │       ├── flags: ∅
         │   │   │   │   │       │       ├── name: :x
         │   │   │   │   │       │       └── depth: 0
         │   │   │   │   │       └── operator_loc: ∅
@@ -106,19 +126,25 @@
         │   │   │   │   └── closing_loc: (6,7)-(6,8) = ")"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (7,2)-(7,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (7,2)-(7,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (6,0)-(6,2) = "in"
         │   │   │   └── then_loc: (6,9)-(6,13) = "then"
         │   │   ├── @ InNode (location: (8,0)-(9,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (8,3)-(8,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── elements: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ AssocSplatNode (location: (8,4)-(8,7))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── value:
         │   │   │   │   │   │   @ LocalVariableTargetNode (location: (8,6)-(8,7))
+        │   │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   │   ├── name: :a
         │   │   │   │   │   │   └── depth: 0
         │   │   │   │   │   └── operator_loc: (8,4)-(8,6) = "**"
@@ -126,21 +152,28 @@
         │   │   │   │   └── closing_loc: (8,7)-(8,8) = "}"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (9,2)-(9,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (9,2)-(9,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (8,0)-(8,2) = "in"
         │   │   │   └── then_loc: (8,9)-(8,13) = "then"
         │   │   ├── @ InNode (location: (10,0)-(11,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ IfNode (location: (10,3)-(10,13))
+        │   │   │   │   ├── flags: newline
         │   │   │   │   ├── if_keyword_loc: (10,6)-(10,8) = "if"
         │   │   │   │   ├── predicate:
         │   │   │   │   │   @ TrueNode (location: (10,9)-(10,13))
+        │   │   │   │   │   └── flags: static_literal
         │   │   │   │   ├── then_keyword_loc: ∅
         │   │   │   │   ├── statements:
         │   │   │   │   │   @ StatementsNode (location: (10,3)-(10,5))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │       └── @ HashPatternNode (location: (10,3)-(10,5))
+        │   │   │   │   │           ├── flags: newline
         │   │   │   │   │           ├── constant: ∅
         │   │   │   │   │           ├── elements: (length: 0)
         │   │   │   │   │           ├── rest: ∅
@@ -150,23 +183,30 @@
         │   │   │   │   └── end_keyword_loc: ∅
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (11,2)-(11,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (11,2)-(11,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (10,0)-(10,2) = "in"
         │   │   │   └── then_loc: (10,14)-(10,18) = "then"
         │   │   ├── @ InNode (location: (12,0)-(13,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ ArrayPatternNode (location: (12,3)-(12,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── requireds: (length: 2)
         │   │   │   │   │   ├── @ LocalVariableTargetNode (location: (12,4)-(12,5))
+        │   │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   │   ├── name: :x
         │   │   │   │   │   │   └── depth: 0
         │   │   │   │   │   └── @ LocalVariableTargetNode (location: (12,7)-(12,8))
+        │   │   │   │   │       ├── flags: ∅
         │   │   │   │   │       ├── name: :y
         │   │   │   │   │       └── depth: 0
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ SplatNode (location: (12,10)-(12,11))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── operator_loc: (12,10)-(12,11) = "*"
         │   │   │   │   │   └── expression: ∅
         │   │   │   │   ├── posts: (length: 0)
@@ -174,39 +214,45 @@
         │   │   │   │   └── closing_loc: (12,11)-(12,12) = "]"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (13,2)-(13,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (13,2)-(13,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (12,0)-(12,2) = "in"
         │   │   │   └── then_loc: (12,13)-(12,17) = "then"
         │   │   ├── @ InNode (location: (14,0)-(15,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (14,3)-(14,16))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── elements: (length: 2)
         │   │   │   │   │   ├── @ AssocNode (location: (14,4)-(14,8))
+        │   │   │   │   │   │   ├── flags: static_literal
         │   │   │   │   │   │   ├── key:
         │   │   │   │   │   │   │   @ SymbolNode (location: (14,4)-(14,6))
-        │   │   │   │   │   │   │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   │   │   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   │   ├── value_loc: (14,4)-(14,5) = "a"
         │   │   │   │   │   │   │   ├── closing_loc: (14,5)-(14,6) = ":"
         │   │   │   │   │   │   │   └── unescaped: "a"
         │   │   │   │   │   │   ├── value:
         │   │   │   │   │   │   │   @ IntegerNode (location: (14,7)-(14,8))
-        │   │   │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   │   │   └── value: 1
         │   │   │   │   │   │   └── operator_loc: ∅
         │   │   │   │   │   └── @ AssocNode (location: (14,10)-(14,15))
+        │   │   │   │   │       ├── flags: static_literal
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (14,10)-(14,13))
-        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (14,10)-(14,12) = "aa"
         │   │   │   │   │       │   ├── closing_loc: (14,12)-(14,13) = ":"
         │   │   │   │   │       │   └── unescaped: "aa"
         │   │   │   │   │       ├── value:
         │   │   │   │   │       │   @ IntegerNode (location: (14,14)-(14,15))
-        │   │   │   │   │       │   ├── flags: decimal
+        │   │   │   │   │       │   ├── flags: static_literal, decimal
         │   │   │   │   │       │   └── value: 2
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
@@ -214,13 +260,17 @@
         │   │   │   │   └── closing_loc: (14,15)-(14,16) = "}"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (15,2)-(15,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (15,2)-(15,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (14,0)-(14,2) = "in"
         │   │   │   └── then_loc: (14,17)-(14,21) = "then"
         │   │   ├── @ InNode (location: (16,0)-(17,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (16,3)-(16,5))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── elements: (length: 0)
         │   │   │   │   ├── rest: ∅
@@ -228,43 +278,53 @@
         │   │   │   │   └── closing_loc: (16,4)-(16,5) = "}"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (17,2)-(17,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (17,2)-(17,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (16,0)-(16,2) = "in"
         │   │   │   └── then_loc: (16,6)-(16,10) = "then"
         │   │   ├── @ InNode (location: (18,0)-(19,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (18,3)-(18,10))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── elements: (length: 0)
         │   │   │   │   ├── rest:
         │   │   │   │   │   @ NoKeywordsParameterNode (location: (18,4)-(18,9))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── operator_loc: (18,4)-(18,6) = "**"
         │   │   │   │   │   └── keyword_loc: (18,6)-(18,9) = "nil"
         │   │   │   │   ├── opening_loc: (18,3)-(18,4) = "{"
         │   │   │   │   └── closing_loc: (18,9)-(18,10) = "}"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (19,2)-(19,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (19,2)-(19,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (18,0)-(18,2) = "in"
         │   │   │   └── then_loc: (18,11)-(18,15) = "then"
         │   │   ├── @ InNode (location: (20,0)-(21,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ HashPatternNode (location: (20,3)-(20,11))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── constant: ∅
         │   │   │   │   ├── elements: (length: 1)
         │   │   │   │   │   └── @ AssocNode (location: (20,4)-(20,10))
+        │   │   │   │   │       ├── flags: static_literal
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (20,4)-(20,8))
-        │   │   │   │   │       │   ├── flags: forced_us_ascii_encoding
+        │   │   │   │   │       │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │   │   │   │       │   ├── opening_loc: (20,4)-(20,5) = "\""
         │   │   │   │   │       │   ├── value_loc: (20,5)-(20,6) = "a"
         │   │   │   │   │       │   ├── closing_loc: (20,6)-(20,8) = "\":"
         │   │   │   │   │       │   └── unescaped: "a"
         │   │   │   │   │       ├── value:
         │   │   │   │   │       │   @ IntegerNode (location: (20,9)-(20,10))
-        │   │   │   │   │       │   ├── flags: decimal
+        │   │   │   │   │       │   ├── flags: static_literal, decimal
         │   │   │   │   │       │   └── value: 1
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
@@ -272,90 +332,114 @@
         │   │   │   │   └── closing_loc: (20,10)-(20,11) = "}"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (21,2)-(21,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (21,2)-(21,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (20,0)-(20,2) = "in"
         │   │   │   └── then_loc: (20,12)-(20,16) = "then"
         │   │   ├── @ InNode (location: (22,0)-(23,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ AlternationPatternNode (location: (22,3)-(22,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── left:
         │   │   │   │   │   @ IntegerNode (location: (22,3)-(22,4))
-        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   └── value: 1
         │   │   │   │   ├── right:
         │   │   │   │   │   @ IntegerNode (location: (22,7)-(22,8))
-        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   └── value: 2
         │   │   │   │   └── operator_loc: (22,5)-(22,6) = "|"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (23,2)-(23,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (23,2)-(23,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (22,0)-(22,2) = "in"
         │   │   │   └── then_loc: (22,9)-(22,13) = "then"
         │   │   ├── @ InNode (location: (24,0)-(25,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ CapturePatternNode (location: (24,3)-(24,9))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── value:
         │   │   │   │   │   @ IntegerNode (location: (24,3)-(24,4))
-        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   └── value: 1
         │   │   │   │   ├── target:
         │   │   │   │   │   @ LocalVariableTargetNode (location: (24,8)-(24,9))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── name: :a
         │   │   │   │   │   └── depth: 0
         │   │   │   │   └── operator_loc: (24,5)-(24,7) = "=>"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (25,2)-(25,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (25,2)-(25,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (24,0)-(24,2) = "in"
         │   │   │   └── then_loc: (24,10)-(24,14) = "then"
         │   │   ├── @ InNode (location: (26,0)-(27,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ PinnedVariableNode (location: (26,3)-(26,5))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── variable:
         │   │   │   │   │   @ LocalVariableReadNode (location: (26,4)-(26,5))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── name: :x
         │   │   │   │   │   └── depth: 0
         │   │   │   │   └── operator_loc: (26,3)-(26,4) = "^"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (27,2)-(27,6))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ TrueNode (location: (27,2)-(27,6))
+        │   │   │   │           └── flags: newline, static_literal
         │   │   │   ├── in_loc: (26,0)-(26,2) = "in"
         │   │   │   └── then_loc: (26,6)-(26,10) = "then"
         │   │   ├── @ InNode (location: (28,0)-(28,4))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── pattern:
         │   │   │   │   @ IntegerNode (location: (28,3)-(28,4))
-        │   │   │   │   ├── flags: decimal
+        │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   └── value: 1
         │   │   │   ├── statements: ∅
         │   │   │   ├── in_loc: (28,0)-(28,2) = "in"
         │   │   │   └── then_loc: ∅
         │   │   └── @ InNode (location: (29,0)-(30,6))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ IntegerNode (location: (29,3)-(29,4))
-        │   │       │   ├── flags: decimal
+        │   │       │   ├── flags: static_literal, decimal
         │   │       │   └── value: 2
         │   │       ├── statements:
         │   │       │   @ StatementsNode (location: (30,2)-(30,6))
+        │   │       │   ├── flags: ∅
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ TrueNode (location: (30,2)-(30,6))
+        │   │       │           └── flags: newline, static_literal
         │   │       ├── in_loc: (29,0)-(29,2) = "in"
         │   │       └── then_loc: (29,5)-(29,9) = "then"
         │   ├── consequent:
         │   │   @ ElseNode (location: (31,0)-(33,3))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (31,0)-(31,4) = "else"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (32,2)-(32,6))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ TrueNode (location: (32,2)-(32,6))
+        │   │   │           └── flags: newline, static_literal
         │   │   └── end_keyword_loc: (33,0)-(33,3) = "end"
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (33,0)-(33,3) = "end"
         ├── @ CaseMatchNode (location: (34,0)-(36,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (34,5)-(34,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -369,28 +453,33 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (35,0)-(35,17))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ArrayPatternNode (location: (35,3)-(35,17))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── constant:
         │   │       │   │   @ ConstantReadNode (location: (35,3)-(35,4))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   └── name: :A
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ IntegerNode (location: (35,5)-(35,6))
-        │   │       │   │   │   ├── flags: decimal
+        │   │       │   │   │   ├── flags: static_literal, decimal
         │   │       │   │   │   └── value: 1
         │   │       │   │   └── @ IntegerNode (location: (35,8)-(35,9))
-        │   │       │   │       ├── flags: decimal
+        │   │       │   │       ├── flags: static_literal, decimal
         │   │       │   │       └── value: 2
         │   │       │   ├── rest:
         │   │       │   │   @ SplatNode (location: (35,11)-(35,13))
+        │   │       │   │   ├── flags: ∅
         │   │       │   │   ├── operator_loc: (35,11)-(35,12) = "*"
         │   │       │   │   └── expression:
         │   │       │   │       @ LocalVariableTargetNode (location: (35,12)-(35,13))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── name: :a
         │   │       │   │       └── depth: 0
         │   │       │   ├── posts: (length: 1)
         │   │       │   │   └── @ IntegerNode (location: (35,15)-(35,16))
-        │   │       │   │       ├── flags: decimal
+        │   │       │   │       ├── flags: static_literal, decimal
         │   │       │   │       └── value: 3
         │   │       │   ├── opening_loc: (35,4)-(35,5) = "["
         │   │       │   └── closing_loc: (35,16)-(35,17) = "]"
@@ -401,6 +490,7 @@
         │   ├── case_keyword_loc: (34,0)-(34,4) = "case"
         │   └── end_keyword_loc: (36,0)-(36,3) = "end"
         ├── @ CaseMatchNode (location: (37,0)-(40,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (37,5)-(37,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -414,29 +504,35 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (38,0)-(38,4))
+        │   │       ├── flags: ∅
         │   │       ├── pattern:
         │   │       │   @ ConstantReadNode (location: (38,3)-(38,4))
+        │   │       │   ├── flags: ∅
         │   │       │   └── name: :A
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (38,0)-(38,2) = "in"
         │   │       └── then_loc: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (39,0)-(40,3))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (39,0)-(39,4) = "else"
         │   │   ├── statements: ∅
         │   │   └── end_keyword_loc: (40,0)-(40,3) = "end"
         │   ├── case_keyword_loc: (37,0)-(37,4) = "case"
         │   └── end_keyword_loc: (40,0)-(40,3) = "end"
         └── @ MatchPredicateNode (location: (41,0)-(41,8))
+            ├── flags: newline
             ├── value:
             │   @ IntegerNode (location: (41,0)-(41,1))
-            │   ├── flags: decimal
+            │   ├── flags: static_literal, decimal
             │   └── value: 1
             ├── pattern:
             │   @ ArrayPatternNode (location: (41,5)-(41,8))
+            │   ├── flags: ∅
             │   ├── constant: ∅
             │   ├── requireds: (length: 1)
             │   │   └── @ LocalVariableTargetNode (location: (41,6)-(41,7))
+            │   │       ├── flags: ∅
             │   │       ├── name: :a
             │   │       └── depth: 0
             │   ├── rest: ∅

@@ -1,22 +1,28 @@
 @ ProgramNode (location: (1,0)-(1,19))
+├── flags: ∅
 ├── locals: [:m]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,19))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableWriteNode (location: (1,0)-(1,19))
+            ├── flags: newline
             ├── name: :m
             ├── depth: 0
             ├── name_loc: (1,0)-(1,1) = "m"
             ├── value:
             │   @ LambdaNode (location: (1,4)-(1,19))
+            │   ├── flags: ∅
             │   ├── locals: [:args]
             │   ├── operator_loc: (1,4)-(1,6) = "->"
             │   ├── opening_loc: (1,13)-(1,15) = "do"
             │   ├── closing_loc: (1,16)-(1,19) = "end"
             │   ├── parameters:
             │   │   @ BlockParametersNode (location: (1,7)-(1,12))
+            │   │   ├── flags: ∅
             │   │   ├── parameters:
             │   │   │   @ ParametersNode (location: (1,7)-(1,12))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── requireds: (length: 0)
             │   │   │   ├── optionals: (length: 0)
             │   │   │   ├── rest:

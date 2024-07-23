@@ -1,28 +1,36 @@
 @ ProgramNode (location: (1,0)-(4,26))
+├── flags: ∅
 ├── locals: [:foo, :bar]
 └── statements:
     @ StatementsNode (location: (1,0)-(4,26))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ LocalVariableWriteNode (location: (1,0)-(1,18))
+        │   ├── flags: newline
         │   ├── name: :foo
         │   ├── depth: 0
         │   ├── name_loc: (1,0)-(1,3) = "foo"
         │   ├── value:
         │   │   @ RescueModifierNode (location: (1,6)-(1,18))
+        │   │   ├── flags: ∅
         │   │   ├── expression:
         │   │   │   @ IntegerNode (location: (1,6)-(1,7))
-        │   │   │   ├── flags: decimal
+        │   │   │   ├── flags: static_literal, decimal
         │   │   │   └── value: 1
         │   │   ├── keyword_loc: (1,8)-(1,14) = "rescue"
         │   │   └── rescue_expression:
         │   │       @ NilNode (location: (1,15)-(1,18))
+        │   │       └── flags: static_literal
         │   └── operator_loc: (1,4)-(1,5) = "="
         ├── @ MultiWriteNode (location: (2,0)-(2,23))
+        │   ├── flags: newline
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (2,0)-(2,3))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
         │   │   └── @ LocalVariableTargetNode (location: (2,5)-(2,8))
+        │   │       ├── flags: ∅
         │   │       ├── name: :bar
         │   │       └── depth: 0
         │   ├── rest: ∅
@@ -32,28 +40,32 @@
         │   ├── operator_loc: (2,9)-(2,10) = "="
         │   └── value:
         │       @ RescueModifierNode (location: (2,11)-(2,23))
+        │       ├── flags: ∅
         │       ├── expression:
         │       │   @ IntegerNode (location: (2,11)-(2,12))
-        │       │   ├── flags: decimal
+        │       │   ├── flags: static_literal, decimal
         │       │   └── value: 1
         │       ├── keyword_loc: (2,13)-(2,19) = "rescue"
         │       └── rescue_expression:
         │           @ NilNode (location: (2,20)-(2,23))
+        │           └── flags: static_literal
         ├── @ RescueModifierNode (location: (3,0)-(3,21))
+        │   ├── flags: newline
         │   ├── expression:
         │   │   @ LocalVariableWriteNode (location: (3,0)-(3,10))
+        │   │   ├── flags: ∅
         │   │   ├── name: :foo
         │   │   ├── depth: 0
         │   │   ├── name_loc: (3,0)-(3,3) = "foo"
         │   │   ├── value:
         │   │   │   @ ArrayNode (location: (3,6)-(3,10))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: static_literal
         │   │   │   ├── elements: (length: 2)
         │   │   │   │   ├── @ IntegerNode (location: (3,6)-(3,7))
-        │   │   │   │   │   ├── flags: decimal
+        │   │   │   │   │   ├── flags: static_literal, decimal
         │   │   │   │   │   └── value: 1
         │   │   │   │   └── @ IntegerNode (location: (3,9)-(3,10))
-        │   │   │   │       ├── flags: decimal
+        │   │   │   │       ├── flags: static_literal, decimal
         │   │   │   │       └── value: 2
         │   │   │   ├── opening_loc: ∅
         │   │   │   └── closing_loc: ∅
@@ -61,12 +73,16 @@
         │   ├── keyword_loc: (3,11)-(3,17) = "rescue"
         │   └── rescue_expression:
         │       @ NilNode (location: (3,18)-(3,21))
+        │       └── flags: static_literal
         └── @ MultiWriteNode (location: (4,0)-(4,26))
+            ├── flags: newline
             ├── lefts: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (4,0)-(4,3))
+            │   │   ├── flags: ∅
             │   │   ├── name: :foo
             │   │   └── depth: 0
             │   └── @ LocalVariableTargetNode (location: (4,5)-(4,8))
+            │       ├── flags: ∅
             │       ├── name: :bar
             │       └── depth: 0
             ├── rest: ∅
@@ -76,18 +92,20 @@
             ├── operator_loc: (4,9)-(4,10) = "="
             └── value:
                 @ RescueModifierNode (location: (4,11)-(4,26))
+                ├── flags: ∅
                 ├── expression:
                 │   @ ArrayNode (location: (4,11)-(4,15))
-                │   ├── flags: ∅
+                │   ├── flags: static_literal
                 │   ├── elements: (length: 2)
                 │   │   ├── @ IntegerNode (location: (4,11)-(4,12))
-                │   │   │   ├── flags: decimal
+                │   │   │   ├── flags: static_literal, decimal
                 │   │   │   └── value: 1
                 │   │   └── @ IntegerNode (location: (4,14)-(4,15))
-                │   │       ├── flags: decimal
+                │   │       ├── flags: static_literal, decimal
                 │   │       └── value: 2
                 │   ├── opening_loc: ∅
                 │   └── closing_loc: ∅
                 ├── keyword_loc: (4,16)-(4,22) = "rescue"
                 └── rescue_expression:
                     @ NilNode (location: (4,23)-(4,26))
+                    └── flags: static_literal

@@ -1,40 +1,46 @@
 @ ProgramNode (location: (1,0)-(1,20))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,20))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ InterpolatedStringNode (location: (1,0)-(1,20))
-            ├── flags: ∅
+            ├── flags: newline
             ├── opening_loc: (1,0)-(1,2) = "%{"
             ├── parts: (length: 3)
             │   ├── @ StringNode (location: (1,2)-(1,5))
-            │   │   ├── flags: frozen
+            │   │   ├── flags: static_literal, frozen
             │   │   ├── opening_loc: ∅
             │   │   ├── content_loc: (1,2)-(1,5) = " { "
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: " { "
             │   ├── @ EmbeddedStatementsNode (location: (1,5)-(1,16))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (1,5)-(1,7) = "\#{"
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (1,8)-(1,14))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ InterpolatedStringNode (location: (1,8)-(1,14))
             │   │   │           ├── flags: ∅
             │   │   │           ├── opening_loc: (1,8)-(1,9) = "\""
             │   │   │           ├── parts: (length: 1)
             │   │   │           │   └── @ EmbeddedStatementsNode (location: (1,9)-(1,13))
+            │   │   │           │       ├── flags: ∅
             │   │   │           │       ├── opening_loc: (1,9)-(1,11) = "\#{"
             │   │   │           │       ├── statements:
             │   │   │           │       │   @ StatementsNode (location: (1,11)-(1,12))
+            │   │   │           │       │   ├── flags: ∅
             │   │   │           │       │   └── body: (length: 1)
             │   │   │           │       │       └── @ IntegerNode (location: (1,11)-(1,12))
-            │   │   │           │       │           ├── flags: decimal
+            │   │   │           │       │           ├── flags: static_literal, decimal
             │   │   │           │       │           └── value: 1
             │   │   │           │       └── closing_loc: (1,12)-(1,13) = "}"
             │   │   │           └── closing_loc: (1,13)-(1,14) = "\""
             │   │   └── closing_loc: (1,15)-(1,16) = "}"
             │   └── @ StringNode (location: (1,16)-(1,19))
-            │       ├── flags: frozen
+            │       ├── flags: static_literal, frozen
             │       ├── opening_loc: ∅
             │       ├── content_loc: (1,16)-(1,19) = " } "
             │       ├── closing_loc: ∅

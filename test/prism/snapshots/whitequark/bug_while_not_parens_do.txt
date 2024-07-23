@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,23))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,23))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ WhileNode (location: (1,0)-(1,23))
-            ├── flags: ∅
+            ├── flags: newline
             ├── keyword_loc: (1,0)-(1,5) = "while"
             ├── closing_loc: (1,20)-(1,23) = "end"
             ├── predicate:
@@ -12,10 +14,13 @@
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ ParenthesesNode (location: (1,10)-(1,16))
+            │   │   ├── flags: ∅
             │   │   ├── body:
             │   │   │   @ StatementsNode (location: (1,11)-(1,15))
+            │   │   │   ├── flags: ∅
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ TrueNode (location: (1,11)-(1,15))
+            │   │   │           └── flags: newline, static_literal
             │   │   ├── opening_loc: (1,10)-(1,11) = "("
             │   │   └── closing_loc: (1,15)-(1,16) = ")"
             │   ├── call_operator_loc: ∅

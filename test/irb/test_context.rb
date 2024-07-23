@@ -28,7 +28,6 @@ module TestIRB
       restore_encodings
     end
 
-
     def test_eval_input
       verbose, $VERBOSE = $VERBOSE, nil
       input = TestInputMethod.new([

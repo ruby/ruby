@@ -1,12 +1,16 @@
 @ ProgramNode (location: (1,0)-(37,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(37,3))
+    ├── flags: ∅
     └── body: (length: 8)
         ├── @ CaseNode (location: (1,0)-(6,3))
+        │   ├── flags: newline
         │   ├── predicate: ∅
         │   ├── conditions: (length: 2)
         │   │   ├── @ WhenNode (location: (2,0)-(3,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (2,0)-(2,4) = "when"
         │   │   │   ├── conditions: (length: 1)
         │   │   │   │   └── @ CallNode (location: (2,5)-(2,8))
@@ -22,9 +26,10 @@
         │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (3,2)-(3,5))
+        │   │   │       ├── flags: ∅
         │   │   │       └── body: (length: 1)
         │   │   │           └── @ CallNode (location: (3,2)-(3,5))
-        │   │   │               ├── flags: variable_call, ignore_visibility
+        │   │   │               ├── flags: newline, variable_call, ignore_visibility
         │   │   │               ├── receiver: ∅
         │   │   │               ├── call_operator_loc: ∅
         │   │   │               ├── name: :baz
@@ -34,6 +39,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               └── block: ∅
         │   │   └── @ WhenNode (location: (4,0)-(5,5))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (4,0)-(4,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ CallNode (location: (4,5)-(4,8))
@@ -49,9 +55,10 @@
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (5,2)-(5,5))
+        │   │           ├── flags: ∅
         │   │           └── body: (length: 1)
         │   │               └── @ CallNode (location: (5,2)-(5,5))
-        │   │                   ├── flags: variable_call, ignore_visibility
+        │   │                   ├── flags: newline, variable_call, ignore_visibility
         │   │                   ├── receiver: ∅
         │   │                   ├── call_operator_loc: ∅
         │   │                   ├── name: :bar
@@ -64,6 +71,7 @@
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         ├── @ CaseNode (location: (7,0)-(11,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (7,5)-(7,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -77,6 +85,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 2)
         │   │   ├── @ WhenNode (location: (8,0)-(8,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (8,0)-(8,4) = "when"
         │   │   │   ├── conditions: (length: 1)
         │   │   │   │   └── @ CallNode (location: (8,5)-(8,8))
@@ -92,6 +101,7 @@
         │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements: ∅
         │   │   └── @ WhenNode (location: (9,0)-(10,5))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (9,0)-(9,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ CallNode (location: (9,5)-(9,8))
@@ -107,9 +117,10 @@
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (10,2)-(10,5))
+        │   │           ├── flags: ∅
         │   │           └── body: (length: 1)
         │   │               └── @ CallNode (location: (10,2)-(10,5))
-        │   │                   ├── flags: variable_call, ignore_visibility
+        │   │                   ├── flags: newline, variable_call, ignore_visibility
         │   │                   ├── receiver: ∅
         │   │                   ├── call_operator_loc: ∅
         │   │                   ├── name: :bar
@@ -122,6 +133,7 @@
         │   ├── case_keyword_loc: (7,0)-(7,4) = "case"
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ CaseNode (location: (12,0)-(17,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (12,5)-(12,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -135,6 +147,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 2)
         │   │   ├── @ WhenNode (location: (13,0)-(14,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (13,0)-(13,4) = "when"
         │   │   │   ├── conditions: (length: 1)
         │   │   │   │   └── @ CallNode (location: (13,5)-(13,8))
@@ -150,9 +163,10 @@
         │   │   │   ├── then_keyword_loc: ∅
         │   │   │   └── statements:
         │   │   │       @ StatementsNode (location: (14,2)-(14,5))
+        │   │   │       ├── flags: ∅
         │   │   │       └── body: (length: 1)
         │   │   │           └── @ CallNode (location: (14,2)-(14,5))
-        │   │   │               ├── flags: variable_call, ignore_visibility
+        │   │   │               ├── flags: newline, variable_call, ignore_visibility
         │   │   │               ├── receiver: ∅
         │   │   │               ├── call_operator_loc: ∅
         │   │   │               ├── name: :baz
@@ -162,6 +176,7 @@
         │   │   │               ├── closing_loc: ∅
         │   │   │               └── block: ∅
         │   │   └── @ WhenNode (location: (15,0)-(16,5))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (15,0)-(15,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ CallNode (location: (15,5)-(15,8))
@@ -177,9 +192,10 @@
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (16,2)-(16,5))
+        │   │           ├── flags: ∅
         │   │           └── body: (length: 1)
         │   │               └── @ CallNode (location: (16,2)-(16,5))
-        │   │                   ├── flags: variable_call, ignore_visibility
+        │   │                   ├── flags: newline, variable_call, ignore_visibility
         │   │                   ├── receiver: ∅
         │   │                   ├── call_operator_loc: ∅
         │   │                   ├── name: :bar
@@ -192,6 +208,7 @@
         │   ├── case_keyword_loc: (12,0)-(12,4) = "case"
         │   └── end_keyword_loc: (17,0)-(17,3) = "end"
         ├── @ CaseNode (location: (18,0)-(21,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (18,5)-(18,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -205,6 +222,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (19,0)-(20,8))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (19,0)-(19,4) = "when"
         │   │       ├── conditions: (length: 2)
         │   │       │   ├── @ CallNode (location: (19,5)-(19,8))
@@ -230,9 +248,10 @@
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (20,2)-(20,8))
+        │   │           ├── flags: ∅
         │   │           └── body: (length: 1)
         │   │               └── @ SymbolNode (location: (20,2)-(20,8))
-        │   │                   ├── flags: forced_us_ascii_encoding
+        │   │                   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │                   ├── opening_loc: (20,2)-(20,3) = ":"
         │   │                   ├── value_loc: (20,3)-(20,8) = "other"
         │   │                   ├── closing_loc: ∅
@@ -241,6 +260,7 @@
         │   ├── case_keyword_loc: (18,0)-(18,4) = "case"
         │   └── end_keyword_loc: (21,0)-(21,3) = "end"
         ├── @ CaseNode (location: (22,0)-(25,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (22,5)-(22,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -254,9 +274,11 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (23,0)-(24,8))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (23,0)-(23,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ SplatNode (location: (23,5)-(23,9))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── operator_loc: (23,5)-(23,6) = "*"
         │   │       │       └── expression:
         │   │       │           @ CallNode (location: (23,6)-(23,9))
@@ -272,9 +294,10 @@
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (24,2)-(24,8))
+        │   │           ├── flags: ∅
         │   │           └── body: (length: 1)
         │   │               └── @ SymbolNode (location: (24,2)-(24,8))
-        │   │                   ├── flags: forced_us_ascii_encoding
+        │   │                   ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │                   ├── opening_loc: (24,2)-(24,3) = ":"
         │   │                   ├── value_loc: (24,3)-(24,8) = "value"
         │   │                   ├── closing_loc: ∅
@@ -283,6 +306,7 @@
         │   ├── case_keyword_loc: (22,0)-(22,4) = "case"
         │   └── end_keyword_loc: (25,0)-(25,3) = "end"
         ├── @ CaseNode (location: (26,0)-(31,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (26,5)-(26,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -296,6 +320,7 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (27,0)-(28,5))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (27,0)-(27,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ CallNode (location: (27,5)-(27,8))
@@ -311,9 +336,10 @@
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements:
         │   │           @ StatementsNode (location: (28,2)-(28,5))
+        │   │           ├── flags: ∅
         │   │           └── body: (length: 1)
         │   │               └── @ CallNode (location: (28,2)-(28,5))
-        │   │                   ├── flags: variable_call, ignore_visibility
+        │   │                   ├── flags: newline, variable_call, ignore_visibility
         │   │                   ├── receiver: ∅
         │   │                   ├── call_operator_loc: ∅
         │   │                   ├── name: :baz
@@ -324,12 +350,14 @@
         │   │                   └── block: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (29,0)-(31,3))
+        │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (29,0)-(29,4) = "else"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (30,2)-(30,6))
+        │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ SymbolNode (location: (30,2)-(30,6))
-        │   │   │           ├── flags: forced_us_ascii_encoding
+        │   │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding
         │   │   │           ├── opening_loc: (30,2)-(30,3) = ":"
         │   │   │           ├── value_loc: (30,3)-(30,6) = "foo"
         │   │   │           ├── closing_loc: ∅
@@ -338,6 +366,7 @@
         │   ├── case_keyword_loc: (26,0)-(26,4) = "case"
         │   └── end_keyword_loc: (31,0)-(31,3) = "end"
         ├── @ CaseNode (location: (32,0)-(34,3))
+        │   ├── flags: newline
         │   ├── predicate:
         │   │   @ CallNode (location: (32,5)-(32,8))
         │   │   ├── flags: variable_call, ignore_visibility
@@ -351,9 +380,11 @@
         │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ WhenNode (location: (33,0)-(33,15))
+        │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (33,0)-(33,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ SplatNode (location: (33,5)-(33,15))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── operator_loc: (33,5)-(33,6) = "*"
         │   │       │       └── expression:
         │   │       │           @ CallNode (location: (33,6)-(33,15))
@@ -395,6 +426,7 @@
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
         │   └── end_keyword_loc: (34,0)-(34,3) = "end"
         └── @ CaseNode (location: (35,0)-(37,3))
+            ├── flags: newline
             ├── predicate:
             │   @ CallNode (location: (35,5)-(35,8))
             │   ├── flags: variable_call, ignore_visibility
@@ -408,9 +440,11 @@
             │   └── block: ∅
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (36,0)-(36,15))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (36,0)-(36,4) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ SplatNode (location: (36,5)-(36,15))
+            │       │       ├── flags: ∅
             │       │       ├── operator_loc: (36,5)-(36,6) = "*"
             │       │       └── expression:
             │       │           @ CallNode (location: (36,6)-(36,15))
@@ -435,7 +469,7 @@
             │       │           │   ├── flags: ∅
             │       │           │   └── arguments: (length: 1)
             │       │           │       └── @ IntegerNode (location: (36,14)-(36,15))
-            │       │           │           ├── flags: decimal
+            │       │           │           ├── flags: static_literal, decimal
             │       │           │           └── value: 1
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅

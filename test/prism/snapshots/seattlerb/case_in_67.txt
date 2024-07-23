@@ -1,31 +1,37 @@
 @ ProgramNode (location: (1,0)-(3,3))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── flags: newline
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: forced_us_ascii_encoding
+            │   ├── flags: static_literal, forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
             │   └── unescaped: "a"
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(2,15))
+            │       ├── flags: ∅
             │       ├── pattern:
             │       │   @ RangeNode (location: (2,3)-(2,6))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: static_literal
             │       │   ├── left:
             │       │   │   @ IntegerNode (location: (2,3)-(2,4))
-            │       │   │   ├── flags: decimal
+            │       │   │   ├── flags: static_literal, decimal
             │       │   │   └── value: 1
             │       │   ├── right: ∅
             │       │   └── operator_loc: (2,4)-(2,6) = ".."
             │       ├── statements:
             │       │   @ StatementsNode (location: (2,12)-(2,15))
+            │       │   ├── flags: ∅
             │       │   └── body: (length: 1)
             │       │       └── @ NilNode (location: (2,12)-(2,15))
+            │       │           └── flags: newline, static_literal
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: (2,7)-(2,11) = "then"
             ├── consequent: ∅

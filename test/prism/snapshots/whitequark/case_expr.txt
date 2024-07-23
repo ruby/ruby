@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,30))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,30))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CaseNode (location: (1,0)-(1,30))
+            ├── flags: newline
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,8))
             │   ├── flags: variable_call, ignore_visibility
@@ -17,10 +20,11 @@
             │   └── block: ∅
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,10)-(1,25))
+            │       ├── flags: ∅
             │       ├── keyword_loc: (1,10)-(1,14) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ StringNode (location: (1,15)-(1,20))
-            │       │       ├── flags: frozen
+            │       │       ├── flags: static_literal, frozen
             │       │       ├── opening_loc: (1,15)-(1,16) = "'"
             │       │       ├── content_loc: (1,16)-(1,19) = "bar"
             │       │       ├── closing_loc: (1,19)-(1,20) = "'"
@@ -28,9 +32,10 @@
             │       ├── then_keyword_loc: ∅
             │       └── statements:
             │           @ StatementsNode (location: (1,22)-(1,25))
+            │           ├── flags: ∅
             │           └── body: (length: 1)
             │               └── @ CallNode (location: (1,22)-(1,25))
-            │                   ├── flags: variable_call, ignore_visibility
+            │                   ├── flags: newline, variable_call, ignore_visibility
             │                   ├── receiver: ∅
             │                   ├── call_operator_loc: ∅
             │                   ├── name: :bar

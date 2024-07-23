@@ -4,6 +4,8 @@ module Psych
   ###
   # Scan scalars for built in types
   class ScalarScanner
+    autoload :Date, "date"
+
     # Taken from http://yaml.org/type/timestamp.html
     TIME = /^-?\d{4}-\d{1,2}-\d{1,2}(?:[Tt]|\s+)\d{1,2}:\d\d:\d\d(?:\.\d*)?(?:\s*(?:Z|[-+]\d{1,2}:?(?:\d\d)?))?$/
 
@@ -61,7 +63,6 @@ module Psych
           string
         end
       elsif string.match?(/^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/)
-        require 'date'
         begin
           class_loader.date.strptime(string, '%F', Date::GREGORIAN)
         rescue ArgumentError

@@ -1,0 +1,3 @@
+$ 
+^ '$' without identifiers is not allowed as a global variable name
+

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,15))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,15))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,15))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,3))
             │   ├── flags: variable_call, ignore_visibility
@@ -28,16 +30,17 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,4)-(1,13))
+            │                   ├── flags: static_literal
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,4)-(1,8))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: (1,4)-(1,5) = ":"
             │                   │   ├── value_loc: (1,5)-(1,8) = "baz"
             │                   │   ├── closing_loc: ∅
             │                   │   └── unescaped: "baz"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (1,12)-(1,13))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 1
             │                   └── operator_loc: (1,9)-(1,11) = "=>"
             ├── closing_loc: (1,14)-(1,15) = "]"

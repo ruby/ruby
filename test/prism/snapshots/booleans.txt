@@ -1,7 +1,11 @@
 @ ProgramNode (location: (1,0)-(3,4))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,4))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ FalseNode (location: (1,0)-(1,5))
+        │   └── flags: newline, static_literal
         └── @ TrueNode (location: (3,0)-(3,4))
+            └── flags: newline, static_literal

@@ -1103,7 +1103,7 @@ module Net   #:nodoc:
     # For proxy-defining arguments +p_addr+ through +p_no_proxy+,
     # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     #
-    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
+    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil, p_use_ssl = nil)
       http = super address, port
 
       if proxy_class? then # from Net::HTTP::Proxy()
@@ -1112,6 +1112,7 @@ module Net   #:nodoc:
         http.proxy_port     = @proxy_port
         http.proxy_user     = @proxy_user
         http.proxy_pass     = @proxy_pass
+        http.proxy_use_ssl  = @proxy_use_ssl
       elsif p_addr == :ENV then
         http.proxy_from_env = true
       else
@@ -1123,34 +1124,67 @@ module Net   #:nodoc:
         http.proxy_port    = p_port || default_port
         http.proxy_user    = p_user
         http.proxy_pass    = p_pass
+        http.proxy_use_ssl = p_use_ssl
       end
 
       http
+    end
+
+    class << HTTP
+      # Allows to set the default configuration that will be used
+      # when creating a new connection.
+      #
+      # Example:
+      #
+      #   Net::HTTP.default_configuration = {
+      #     read_timeout: 1,
+      #     write_timeout: 1
+      #   }
+      #   http = Net::HTTP.new(hostname)
+      #   http.open_timeout   # => 60
+      #   http.read_timeout   # => 1
+      #   http.write_timeout  # => 1
+      #
+      attr_accessor :default_configuration
     end
 
     # Creates a new \Net::HTTP object for the specified server address,
     # without opening the TCP connection or initializing the \HTTP session.
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil) # :nodoc:
+      defaults = {
+        keep_alive_timeout: 2,
+        close_on_empty_response: false,
+        open_timeout: 60,
+        read_timeout: 60,
+        write_timeout: 60,
+        continue_timeout: nil,
+        max_retries: 1,
+        debug_output: nil,
+        response_body_encoding: false,
+        ignore_eof: true
+      }
+      options = defaults.merge(self.class.default_configuration || {})
+
       @address = address
       @port    = (port || HTTP.default_port)
       @ipaddr = nil
       @local_host = nil
       @local_port = nil
       @curr_http_version = HTTPVersion
-      @keep_alive_timeout = 2
+      @keep_alive_timeout = options[:keep_alive_timeout]
       @last_communicated = nil
-      @close_on_empty_response = false
+      @close_on_empty_response = options[:close_on_empty_response]
       @socket  = nil
       @started = false
-      @open_timeout = 60
-      @read_timeout = 60
-      @write_timeout = 60
-      @continue_timeout = nil
-      @max_retries = 1
-      @debug_output = nil
-      @response_body_encoding = false
-      @ignore_eof = true
+      @open_timeout = options[:open_timeout]
+      @read_timeout = options[:read_timeout]
+      @write_timeout = options[:write_timeout]
+      @continue_timeout = options[:continue_timeout]
+      @max_retries = options[:max_retries]
+      @debug_output = options[:debug_output]
+      @response_body_encoding = options[:response_body_encoding]
+      @ignore_eof = options[:ignore_eof]
 
       @proxy_from_env = false
       @proxy_uri      = nil
@@ -1158,6 +1192,7 @@ module Net   #:nodoc:
       @proxy_port     = nil
       @proxy_user     = nil
       @proxy_pass     = nil
+      @proxy_use_ssl  = nil
 
       @use_ssl = false
       @ssl_context = nil
@@ -1292,6 +1327,7 @@ module Net   #:nodoc:
     # Sets the proxy password;
     # see {Proxy Server}[rdoc-ref:Net::HTTP@Proxy+Server].
     attr_writer :proxy_pass
+    attr_writer :proxy_use_ssl
 
     # Returns the IP address for the connection.
     #
@@ -1481,23 +1517,6 @@ module Net   #:nodoc:
       @use_ssl = flag
     end
 
-    SSL_IVNAMES = [
-      :@ca_file,
-      :@ca_path,
-      :@cert,
-      :@cert_store,
-      :@ciphers,
-      :@extra_chain_cert,
-      :@key,
-      :@ssl_timeout,
-      :@ssl_version,
-      :@min_version,
-      :@max_version,
-      :@verify_callback,
-      :@verify_depth,
-      :@verify_mode,
-      :@verify_hostname,
-    ] # :nodoc:
     SSL_ATTRIBUTES = [
       :ca_file,
       :ca_path,
@@ -1515,6 +1534,8 @@ module Net   #:nodoc:
       :verify_mode,
       :verify_hostname,
     ] # :nodoc:
+
+    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym } # :nodoc:
 
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
@@ -1651,7 +1672,13 @@ module Net   #:nodoc:
       debug "opened"
       if use_ssl?
         if proxy?
-          plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
+          if @proxy_use_ssl
+            proxy_sock = OpenSSL::SSL::SSLSocket.new(s)
+            ssl_socket_connect(proxy_sock, @open_timeout)
+          else
+            proxy_sock = s
+          end
+          proxy_sock = BufferedIO.new(proxy_sock, read_timeout: @read_timeout,
                                       write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
@@ -1662,8 +1689,8 @@ module Net   #:nodoc:
             buf << "Proxy-Authorization: Basic #{credential}\r\n"
           end
           buf << "\r\n"
-          plain_sock.write(buf)
-          HTTPResponse.read_new(plain_sock).value
+          proxy_sock.write(buf)
+          HTTPResponse.read_new(proxy_sock).value
           # assuming nothing left in buffers after successful CONNECT response
         end
 
@@ -1771,13 +1798,14 @@ module Net   #:nodoc:
     @proxy_port = nil
     @proxy_user = nil
     @proxy_pass = nil
+    @proxy_use_ssl = nil
 
     # Creates an \HTTP proxy class which behaves like \Net::HTTP, but
     # performs all access via the specified proxy.
     #
     # This class is obsolete.  You may pass these same parameters directly to
     # \Net::HTTP.new.  See Net::HTTP.new for details of the arguments.
-    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil) #:nodoc:
+    def HTTP.Proxy(p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_use_ssl = nil) #:nodoc:
       return self unless p_addr
 
       Class.new(self) {
@@ -1795,6 +1823,7 @@ module Net   #:nodoc:
 
         @proxy_user = p_user
         @proxy_pass = p_pass
+        @proxy_use_ssl = p_use_ssl
       }
     end
 
@@ -1819,6 +1848,9 @@ module Net   #:nodoc:
       # Returns the password for accessing the proxy, or +nil+ if none;
       # see Net::HTTP@Proxy+Server.
       attr_reader :proxy_pass
+
+      # Use SSL when talking to the proxy. If Net::HTTP does not use a proxy, nil.
+      attr_reader :proxy_use_ssl
     end
 
     # Returns +true+ if a proxy server is defined, +false+ otherwise;

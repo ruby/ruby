@@ -96,12 +96,19 @@ runs:
         echo "LAUNCHABLE_TOKEN=${{ inputs.launchable-token }}" >> $GITHUB_ENV
       if: steps.enable-launchable.outputs.enable-launchable
 
+    - name: Set up path
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      # Since updated PATH variable will be available in only subsequent actions, we need to add the path beforehand.
+      # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#adding-a-system-path
+      run: echo "$(python -msite --user-base)/bin" >> $GITHUB_PATH
+      if: steps.enable-launchable.outputs.enable-launchable && startsWith(inputs.os, 'macos')
+
     - name: Set up Launchable
       shell: bash
       working-directory: ${{ inputs.srcdir }}
       run: |
         set -x
-        echo "$(python -msite --user-base)/bin" >> $GITHUB_PATH
         pip install --user launchable
         launchable verify || true
         : # The build name cannot include a slash, so we replace the string here.

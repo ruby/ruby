@@ -54,6 +54,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
 
     steps:
       - run: md build
@@ -87,7 +88,7 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - uses: ruby/setup-ruby@2a9a743e19810b9f3c38060637daf594dbd7b37f # v1.186.0
+      - uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -143,25 +144,16 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install --triplet x64-windows
+          vcpkg install
         working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-
-      # We use OpenSSL instealled by vcpkg instead
-      - name: disable system OpenSSL
-        run: |
-          for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
-            ren c:\Windows\System32\%%I.dll %%I.dll_
-          )
-        # windows-2019 image doesn't have OpenSSL as of 2023/9/14
-        if: ${{ matrix.vs != 2019 }}
 
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/x64-windows
+          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
       - run: nmake prepare-vcpkg
 

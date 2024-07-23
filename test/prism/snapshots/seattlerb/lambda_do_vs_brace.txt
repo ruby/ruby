@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(7,9))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(7,9))
+    ├── flags: ∅
     └── body: (length: 4)
         ├── @ CallNode (location: (1,0)-(1,11))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -15,6 +17,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (1,2)-(1,11))
+        │   │           ├── flags: ∅
         │   │           ├── locals: []
         │   │           ├── operator_loc: (1,2)-(1,4) = "->"
         │   │           ├── opening_loc: (1,5)-(1,7) = "do"
@@ -24,7 +27,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,7))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -35,6 +38,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (3,2)-(3,7))
+        │   │           ├── flags: ∅
         │   │           ├── locals: []
         │   │           ├── operator_loc: (3,2)-(3,4) = "->"
         │   │           ├── opening_loc: (3,5)-(3,6) = "{"
@@ -44,7 +48,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,13))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :f
@@ -55,12 +59,14 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ LambdaNode (location: (5,2)-(5,13))
+        │   │           ├── flags: ∅
         │   │           ├── locals: []
         │   │           ├── operator_loc: (5,2)-(5,4) = "->"
         │   │           ├── opening_loc: (5,7)-(5,9) = "do"
         │   │           ├── closing_loc: (5,10)-(5,13) = "end"
         │   │           ├── parameters:
         │   │           │   @ BlockParametersNode (location: (5,4)-(5,6))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── parameters: ∅
         │   │           │   ├── locals: (length: 0)
         │   │           │   ├── opening_loc: (5,4)-(5,5) = "("
@@ -69,7 +75,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (7,0)-(7,9))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -80,12 +86,14 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (7,2)-(7,9))
+            │           ├── flags: ∅
             │           ├── locals: []
             │           ├── operator_loc: (7,2)-(7,4) = "->"
             │           ├── opening_loc: (7,7)-(7,8) = "{"
             │           ├── closing_loc: (7,8)-(7,9) = "}"
             │           ├── parameters:
             │           │   @ BlockParametersNode (location: (7,4)-(7,6))
+            │           │   ├── flags: ∅
             │           │   ├── parameters: ∅
             │           │   ├── locals: (length: 0)
             │           │   ├── opening_loc: (7,4)-(7,5) = "("

@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(4,6))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(4,6))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(4,6))
-            ├── flags: ∅
+            ├── flags: newline
             ├── receiver:
             │   @ StringNode (location: (1,0)-(1,5))
             │   ├── flags: ∅

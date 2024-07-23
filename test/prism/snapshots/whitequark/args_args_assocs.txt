@@ -1,10 +1,12 @@
 @ ProgramNode (location: (1,0)-(3,24))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(3,24))
+    ├── flags: ∅
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,19))
-        │   ├── flags: ignore_visibility
+        │   ├── flags: newline, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :fun
@@ -28,22 +30,23 @@
         │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,9)-(1,18))
+        │   │                   ├── flags: static_literal
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (1,9)-(1,13))
-        │   │                   │   ├── flags: forced_us_ascii_encoding
+        │   │                   │   ├── flags: static_literal, forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: (1,9)-(1,10) = ":"
         │   │                   │   ├── value_loc: (1,10)-(1,13) = "foo"
         │   │                   │   ├── closing_loc: ∅
         │   │                   │   └── unescaped: "foo"
         │   │                   ├── value:
         │   │                   │   @ IntegerNode (location: (1,17)-(1,18))
-        │   │                   │   ├── flags: decimal
+        │   │                   │   ├── flags: static_literal, decimal
         │   │                   │   └── value: 1
         │   │                   └── operator_loc: (1,14)-(1,16) = "=>"
         │   ├── closing_loc: (1,18)-(1,19) = ")"
         │   └── block: ∅
         └── @ CallNode (location: (3,0)-(3,24))
-            ├── flags: ignore_visibility
+            ├── flags: newline, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :fun
@@ -67,21 +70,23 @@
             │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (3,9)-(3,18))
+            │                   ├── flags: static_literal
             │                   ├── key:
             │                   │   @ SymbolNode (location: (3,9)-(3,13))
-            │                   │   ├── flags: forced_us_ascii_encoding
+            │                   │   ├── flags: static_literal, forced_us_ascii_encoding
             │                   │   ├── opening_loc: (3,9)-(3,10) = ":"
             │                   │   ├── value_loc: (3,10)-(3,13) = "foo"
             │                   │   ├── closing_loc: ∅
             │                   │   └── unescaped: "foo"
             │                   ├── value:
             │                   │   @ IntegerNode (location: (3,17)-(3,18))
-            │                   │   ├── flags: decimal
+            │                   │   ├── flags: static_literal, decimal
             │                   │   └── value: 1
             │                   └── operator_loc: (3,14)-(3,16) = "=>"
             ├── closing_loc: (3,24)-(3,25) = ")"
             └── block:
                 @ BlockArgumentNode (location: (3,20)-(3,24))
+                ├── flags: ∅
                 ├── expression:
                 │   @ CallNode (location: (3,21)-(3,24))
                 │   ├── flags: variable_call, ignore_visibility

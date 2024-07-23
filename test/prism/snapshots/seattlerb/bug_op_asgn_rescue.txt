@@ -1,13 +1,17 @@
 @ ProgramNode (location: (1,0)-(1,18))
+├── flags: ∅
 ├── locals: [:a]
 └── statements:
     @ StatementsNode (location: (1,0)-(1,18))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ LocalVariableOrWriteNode (location: (1,0)-(1,18))
+            ├── flags: newline
             ├── name_loc: (1,0)-(1,1) = "a"
             ├── operator_loc: (1,2)-(1,5) = "||="
             ├── value:
             │   @ RescueModifierNode (location: (1,6)-(1,18))
+            │   ├── flags: ∅
             │   ├── expression:
             │   │   @ CallNode (location: (1,6)-(1,7))
             │   │   ├── flags: variable_call, ignore_visibility
@@ -22,5 +26,6 @@
             │   ├── keyword_loc: (1,8)-(1,14) = "rescue"
             │   └── rescue_expression:
             │       @ NilNode (location: (1,15)-(1,18))
+            │       └── flags: static_literal
             ├── name: :a
             └── depth: 0

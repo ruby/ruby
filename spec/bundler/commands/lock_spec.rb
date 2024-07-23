@@ -629,6 +629,62 @@ RSpec.describe "bundle lock" do
     expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
   end
 
+  it "supports adding new platforms, when most specific locked platform is not the current platform, and current resolve is not compatible with the target platform" do
+    simulate_platform "arm64-darwin-23" do
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.platform = "arm64-darwin"
+        end
+
+        build_gem "foo" do |s|
+          s.platform = "java"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            foo (1.0-arm64-darwin)
+
+        PLATFORMS
+          arm64-darwin
+
+        DEPENDENCIES
+          foo
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --add-platform java"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            foo (1.0-arm64-darwin)
+            foo (1.0-java)
+
+        PLATFORMS
+          arm64-darwin
+          java
+
+        DEPENDENCIES
+          foo
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   it "supports adding new platforms with force_ruby_platform = true" do
     lockfile <<-L
       GEM

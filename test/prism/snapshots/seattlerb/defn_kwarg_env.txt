@@ -1,14 +1,18 @@
 @ ProgramNode (location: (1,0)-(1,45))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,45))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,45))
+            ├── flags: newline
             ├── name: :test
             ├── name_loc: (1,4)-(1,8) = "test"
             ├── receiver: ∅
             ├── parameters:
             │   @ ParametersNode (location: (1,9)-(1,18))
+            │   ├── flags: ∅
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -23,9 +27,10 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,20)-(1,41))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,20)-(1,41))
-            │           ├── flags: ignore_visibility
+            │           ├── flags: newline, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :test_splat
@@ -39,8 +44,10 @@
             │           │           ├── flags: ∅
             │           │           └── elements: (length: 1)
             │           │               └── @ AssocSplatNode (location: (1,31)-(1,40))
+            │           │                   ├── flags: ∅
             │           │                   ├── value:
             │           │                   │   @ LocalVariableReadNode (location: (1,33)-(1,40))
+            │           │                   │   ├── flags: ∅
             │           │                   │   ├── name: :testing
             │           │                   │   └── depth: 0
             │           │                   └── operator_loc: (1,31)-(1,33) = "**"

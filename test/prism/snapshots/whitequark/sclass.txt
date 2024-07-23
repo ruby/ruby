@@ -1,9 +1,12 @@
 @ ProgramNode (location: (1,0)-(1,22))
+├── flags: ∅
 ├── locals: []
 └── statements:
     @ StatementsNode (location: (1,0)-(1,22))
+    ├── flags: ∅
     └── body: (length: 1)
         └── @ SingletonClassNode (location: (1,0)-(1,22))
+            ├── flags: newline
             ├── locals: []
             ├── class_keyword_loc: (1,0)-(1,5) = "class"
             ├── operator_loc: (1,6)-(1,8) = "<<"
@@ -20,6 +23,8 @@
             │   └── block: ∅
             ├── body:
             │   @ StatementsNode (location: (1,14)-(1,17))
+            │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ NilNode (location: (1,14)-(1,17))
+            │           └── flags: newline, static_literal
             └── end_keyword_loc: (1,19)-(1,22) = "end"

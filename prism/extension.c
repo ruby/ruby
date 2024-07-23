@@ -856,8 +856,8 @@ parse_stream_fgets(char *string, int size, void *stream) {
         return NULL;
     }
 
-    const char *cstr = StringValueCStr(line);
-    size_t length = strlen(cstr);
+    const char *cstr = RSTRING_PTR(line);
+    long length = RSTRING_LEN(line);
 
     memcpy(string, cstr, length);
     string[length] = '\0';
