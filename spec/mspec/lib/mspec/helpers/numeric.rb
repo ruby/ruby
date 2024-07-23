@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'mspec/guards/platform'
 
 def nan_value
@@ -15,11 +16,13 @@ def bignum_value(plus = 0)
 end
 
 def max_long
-  2**(0.size * 8 - 1) - 1
+  long_byte_size = [0].pack('l!').size
+  2**(long_byte_size * 8 - 1) - 1
 end
 
 def min_long
-  -(2**(0.size * 8 - 1))
+  long_byte_size = [0].pack('l!').size
+  -(2**(long_byte_size * 8 - 1))
 end
 
 # This is a bit hairy, but we need to be able to write specs that cover the
