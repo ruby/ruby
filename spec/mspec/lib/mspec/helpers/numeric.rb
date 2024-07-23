@@ -31,7 +31,24 @@ end
 # specs based on the relationship between values rather than specific
 # values.
 if PlatformGuard.standard? or PlatformGuard.implementation? :topaz
-  if PlatformGuard.c_long_size? 32
+  limits_available = begin
+    require 'rbconfig/sizeof'
+    defined?(RbConfig::LIMITS.[]) && ['FIXNUM_MAX', 'FIXNUM_MIN'].all? do |key|
+      Integer === RbConfig::LIMITS[key]
+    end
+  rescue LoadError
+    false
+  end
+
+  if limits_available
+    def fixnum_max
+      RbConfig::LIMITS['FIXNUM_MAX']
+    end
+
+    def fixnum_min
+      RbConfig::LIMITS['FIXNUM_MIN']
+    end
+  elsif PlatformGuard.c_long_size? 32
     def fixnum_max
       (2**30) - 1
     end
