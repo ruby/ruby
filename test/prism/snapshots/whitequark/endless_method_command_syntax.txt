@@ -16,7 +16,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,10)-(1,22))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :puts
@@ -52,7 +52,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,12)-(3,24))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :puts
@@ -100,7 +100,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,13)-(5,19))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :puts
@@ -144,7 +144,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,14)-(7,26))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :puts
@@ -190,7 +190,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (9,16)-(9,28))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :puts
@@ -248,7 +248,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (11,17)-(11,23))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :puts
@@ -294,7 +294,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RescueModifierNode (location: (13,17)-(13,60))
-        │   │           ├── flags: newline
+        │   │           ├── flags: ∅
         │   │           ├── expression:
         │   │           │   @ CallNode (location: (13,17)-(13,37))
         │   │           │   ├── flags: ignore_visibility
@@ -372,7 +372,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (15,22)-(15,62))
-            │           ├── flags: newline
+            │           ├── flags: ∅
             │           ├── expression:
             │           │   @ CallNode (location: (15,22)-(15,42))
             │           │   ├── flags: ignore_visibility

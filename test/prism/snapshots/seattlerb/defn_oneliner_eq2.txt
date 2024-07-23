@@ -42,7 +42,7 @@
             │           │   ├── flags: ∅
             │           │   └── body: (length: 1)
             │           │       └── @ IntegerNode (location: (2,14)-(2,16))
-            │           │           ├── flags: newline, static_literal, decimal
+            │           │           ├── flags: static_literal, decimal
             │           │           └── value: 42
             │           ├── locals: [:o]
             │           ├── def_keyword_loc: (2,2)-(2,5) = "def"

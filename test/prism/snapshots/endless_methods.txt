@@ -16,7 +16,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (1,10)-(1,11))
-        │   │           ├── flags: newline, static_literal, decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
@@ -36,7 +36,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,10)-(3,14))
-        │   │           ├── flags: newline, ignore_visibility
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :A
@@ -72,7 +72,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (5,13)-(5,22))
-            │           ├── flags: newline
+            │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ CallNode (location: (5,13)-(5,18))
             │           │   ├── flags: ∅

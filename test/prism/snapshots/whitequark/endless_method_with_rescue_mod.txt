@@ -16,7 +16,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ RescueModifierNode (location: (1,10)-(1,20))
-        │   │           ├── flags: newline
+        │   │           ├── flags: ∅
         │   │           ├── expression:
         │   │           │   @ IntegerNode (location: (1,10)-(1,11))
         │   │           │   ├── flags: static_literal, decimal
@@ -46,7 +46,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (3,15)-(3,25))
-            │           ├── flags: newline
+            │           ├── flags: ∅
             │           ├── expression:
             │           │   @ IntegerNode (location: (3,15)-(3,16))
             │           │   ├── flags: static_literal, decimal

@@ -16,7 +16,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (1,18)-(1,43))
-            │           ├── flags: newline
+            │           ├── flags: ∅
             │           ├── expression:
             │           │   @ CallNode (location: (1,18)-(1,33))
             │           │   ├── flags: ignore_visibility

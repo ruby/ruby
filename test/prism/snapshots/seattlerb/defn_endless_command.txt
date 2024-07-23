@@ -16,7 +16,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,18)-(1,33))
-            │           ├── flags: newline, ignore_visibility
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :other_method
