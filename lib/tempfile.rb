@@ -524,12 +524,12 @@ end
 #
 # The keyword argument +anonymous+ specifies when the file is removed.
 #
-# - +anonymous=false+ (default) without a block: the file is not removed.
-# - +anonymous=false+ (default) with a block: the file is removed after the block exits.
-# - +anonymous=true+ without a block: the file is removed before returning.
-# - +anonymous=true+ with a block: the file is removed before the block is called.
+# - <tt>anonymous=false</tt> (default) without a block: the file is not removed.
+# - <tt>anonymous=false</tt> (default) with a block: the file is removed after the block exits.
+# - <tt>anonymous=true</tt> without a block: the file is removed before returning.
+# - <tt>anonymous=true</tt> with a block: the file is removed before the block is called.
 #
-# In the first case (+anonymous=false+ without a block),
+# In the first case (<tt>anonymous=false</tt> without a block),
 # the file is not removed automatically.
 # It should be explicitly closed.
 # It can be used to rename to the desired filename.
