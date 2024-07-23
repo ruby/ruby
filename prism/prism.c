@@ -15337,6 +15337,83 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
 }
 
 /**
+ * Check that the return is allowed in the current context. If it isn't, add an
+ * error to the parser.
+ */
+static void
+parse_return(pm_parser_t *parser, pm_node_t *node) {
+    for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
+        switch (context_node->context) {
+            case PM_CONTEXT_BEGIN_ELSE:
+            case PM_CONTEXT_BEGIN_ENSURE:
+            case PM_CONTEXT_BEGIN_RESCUE:
+            case PM_CONTEXT_BEGIN:
+            case PM_CONTEXT_CASE_IN:
+            case PM_CONTEXT_CASE_WHEN:
+            case PM_CONTEXT_DEFAULT_PARAMS:
+            case PM_CONTEXT_DEF_PARAMS:
+            case PM_CONTEXT_DEFINED:
+            case PM_CONTEXT_ELSE:
+            case PM_CONTEXT_ELSIF:
+            case PM_CONTEXT_EMBEXPR:
+            case PM_CONTEXT_FOR_INDEX:
+            case PM_CONTEXT_FOR:
+            case PM_CONTEXT_IF:
+            case PM_CONTEXT_LOOP_PREDICATE:
+            case PM_CONTEXT_MAIN:
+            case PM_CONTEXT_PARENS:
+            case PM_CONTEXT_POSTEXE:
+            case PM_CONTEXT_PREDICATE:
+            case PM_CONTEXT_PREEXE:
+            case PM_CONTEXT_RESCUE_MODIFIER:
+            case PM_CONTEXT_SCLASS_ELSE:
+            case PM_CONTEXT_SCLASS_ENSURE:
+            case PM_CONTEXT_SCLASS_RESCUE:
+            case PM_CONTEXT_SCLASS:
+            case PM_CONTEXT_TERNARY:
+            case PM_CONTEXT_UNLESS:
+            case PM_CONTEXT_UNTIL:
+            case PM_CONTEXT_WHILE:
+                // Keep iterating up the lists of contexts, because returns can
+                // see through these.
+                continue;
+            case PM_CONTEXT_CLASS_ELSE:
+            case PM_CONTEXT_CLASS_ENSURE:
+            case PM_CONTEXT_CLASS_RESCUE:
+            case PM_CONTEXT_CLASS:
+            case PM_CONTEXT_MODULE_ELSE:
+            case PM_CONTEXT_MODULE_ENSURE:
+            case PM_CONTEXT_MODULE_RESCUE:
+            case PM_CONTEXT_MODULE:
+                // These contexts are invalid for a return.
+                pm_parser_err_node(parser, node, PM_ERR_RETURN_INVALID);
+                return;
+            case PM_CONTEXT_BLOCK_BRACES:
+            case PM_CONTEXT_BLOCK_ELSE:
+            case PM_CONTEXT_BLOCK_ENSURE:
+            case PM_CONTEXT_BLOCK_KEYWORDS:
+            case PM_CONTEXT_BLOCK_RESCUE:
+            case PM_CONTEXT_DEF_ELSE:
+            case PM_CONTEXT_DEF_ENSURE:
+            case PM_CONTEXT_DEF_RESCUE:
+            case PM_CONTEXT_DEF:
+            case PM_CONTEXT_LAMBDA_BRACES:
+            case PM_CONTEXT_LAMBDA_DO_END:
+            case PM_CONTEXT_LAMBDA_ELSE:
+            case PM_CONTEXT_LAMBDA_ENSURE:
+            case PM_CONTEXT_LAMBDA_RESCUE:
+                // These contexts are valid for a return, and we should not
+                // continue to loop.
+                return;
+            case PM_CONTEXT_NONE:
+                // This case should never happen.
+                assert(false && "unreachable");
+                break;
+        }
+    }
+}
+
+/**
  * Check that the block exit (next, break, redo) is allowed in the current
  * context. If it isn't, add an error to the parser.
  */
@@ -18669,13 +18746,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_RETURN: {
-                    if (
-                        (parser->current_context->context == PM_CONTEXT_CLASS) ||
-                        (parser->current_context->context == PM_CONTEXT_MODULE)
-                    ) {
-                        pm_parser_err_previous(parser, PM_ERR_RETURN_INVALID);
-                    }
-                    return (pm_node_t *) pm_return_node_create(parser, &keyword, arguments.arguments);
+                    pm_node_t *node = (pm_node_t *) pm_return_node_create(parser, &keyword, arguments.arguments);
+                    parse_return(parser, node);
+                    return node;
                 }
                 default:
                     assert(false && "unreachable");
