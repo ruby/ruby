@@ -1475,7 +1475,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     // This is only done for method calls and not for literal
                     // hashes, because literal hashes should always result in a
                     // new hash.
-                    PUSH_INSN1(ret, location, putobject, rb_hash_new());
+                    PUSH_INSN(ret, location, putnil);
                 }
                 else if (first_element) {
                     // **{} appears as the first keyword argument, so it may be
