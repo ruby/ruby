@@ -1784,11 +1784,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
                            "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
-    if (getenv("RUBY_FREE_AT_EXIT")) {
-        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
-        rb_free_at_exit = true;
-    }
-
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
@@ -3105,6 +3100,12 @@ ruby_process_options(int argc, char **argv)
         void ruby_set_crash_report(const char *template);
         ruby_set_crash_report(opt.crash_report);
     }
+
+    if (getenv("RUBY_FREE_AT_EXIT")) {
+        rb_free_at_exit = true;
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
+    }
+
     return (void*)(struct RData*)iseq;
 }
 
