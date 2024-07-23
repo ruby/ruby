@@ -3234,10 +3234,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 #endif
     if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) return;
 
-    /* run finalizers */
-    finalize_deferred(objspace);
-    GC_ASSERT(heap_pages_deferred_final == 0);
-
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
 
@@ -3258,6 +3254,10 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
             xfree(curr);
         }
     }
+
+    /* run finalizers */
+    finalize_deferred(objspace);
+    GC_ASSERT(heap_pages_deferred_final == 0);
 
     /* Abort incremental marking and lazy sweeping to speed up shutdown. */
     gc_abort(objspace);
