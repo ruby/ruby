@@ -28,7 +28,7 @@ end
 # specs based on the relationship between values rather than specific
 # values.
 if PlatformGuard.standard? or PlatformGuard.implementation? :topaz
-  if PlatformGuard.wordsize? 32
+  if PlatformGuard.c_long_size? 32
     def fixnum_max
       (2**30) - 1
     end
@@ -36,7 +36,7 @@ if PlatformGuard.standard? or PlatformGuard.implementation? :topaz
     def fixnum_min
       -(2**30)
     end
-  elsif PlatformGuard.wordsize? 64
+  elsif PlatformGuard.c_long_size? 64
     def fixnum_max
       (2**62) - 1
     end

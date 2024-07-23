@@ -164,7 +164,7 @@ end
 platform_is_not :linux, :darwin do # Not Linux and not Darwin
 end
 
-platform_is wordsize: 64 do
+platform_is pointer_size: 64 do
   # 64-bit platform
 end
 

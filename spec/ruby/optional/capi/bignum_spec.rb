@@ -123,7 +123,7 @@ describe "CApiBignumSpecs" do
       val.should == @max_ulong
     end
 
-    platform_is wordsize: 64 do
+    platform_is c_long_size: 64 do
       it "packs max_ulong into 2 ulongs to allow sign bit" do
         val = @s.rb_big_pack_length(@max_ulong)
         val.should == 2

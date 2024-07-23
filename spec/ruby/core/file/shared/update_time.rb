@@ -84,7 +84,7 @@ describe :update_time, shared: true do
   end
 
   platform_is :linux do
-    platform_is wordsize: 64 do
+    platform_is pointer_size: 64 do
       it "allows Time instances in the far future to set mtime and atime (but some filesystems limit it up to 2446-05-10 or 2038-01-19 or 2486-07-02)" do
         # https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout#Inode_Timestamps
         # "Therefore, timestamps should not overflow until May 2446."
