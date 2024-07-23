@@ -6049,7 +6049,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN(ret, location, putself);
         }
         else {
-            PM_COMPILE_NOT_POPPED(cast->receiver);
+          if (method_id == idCall && PM_NODE_TYPE_P(cast->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
+              const pm_local_variable_read_node_t *read_node_cast = (const pm_local_variable_read_node_t *) cast->receiver;
+              uint32_t node_id = cast->receiver->node_id;
+              int idx, level;
+
+              if (iseq_block_param_id_p(iseq, pm_constant_id_lookup(scope_node, read_node_cast->name), &idx, &level)) {
+                  ADD_ELEM(ret, (LINK_ELEMENT *) new_insn_body(iseq, location.line, node_id, BIN(getblockparamproxy), 2, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)));
+              }
+              else {
+                  PM_COMPILE_NOT_POPPED(cast->receiver);
+              }
+          }
+          else {
+              PM_COMPILE_NOT_POPPED(cast->receiver);
+          }
         }
 
         pm_compile_call(iseq, cast, ret, popped, scope_node, method_id, start);
