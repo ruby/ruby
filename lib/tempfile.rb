@@ -535,7 +535,7 @@ end
 # It can be used to rename to the desired filename.
 # If the file is not needed, it should be explicitly removed.
 #
-# The +File#path+ method of the created file object returns the temporary directory with a trailing slash
+# The File#path method of the created file object returns the temporary directory with a trailing slash
 # when +anonymous+ is true.
 #
 # When a block is given, it creates the file as described above, passes it to the block,
