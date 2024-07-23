@@ -81,44 +81,44 @@ RSpec.describe Object, "#platform_is_not" do
   end
 end
 
-RSpec.describe Object, "#platform_is :wordsize => SIZE_SPEC" do
+RSpec.describe Object, "#platform_is :c_long_size => SIZE_SPEC" do
   before :each do
-    @guard = PlatformGuard.new :darwin, :wordsize => 32
+    @guard = PlatformGuard.new :darwin, :c_long_size => 32
     allow(PlatformGuard).to receive(:os?).and_return(true)
     allow(PlatformGuard).to receive(:new).and_return(@guard)
     ScratchPad.clear
   end
 
-  it "yields when #wordsize? returns true" do
-    allow(PlatformGuard).to receive(:wordsize?).and_return(true)
-    platform_is(:wordsize => 32) { ScratchPad.record :yield }
+  it "yields when #c_long_size? returns true" do
+    allow(PlatformGuard).to receive(:c_long_size?).and_return(true)
+    platform_is(:c_long_size => 32) { ScratchPad.record :yield }
     expect(ScratchPad.recorded).to eq(:yield)
   end
 
-  it "doesn not yield when #wordsize? returns false" do
-    allow(PlatformGuard).to receive(:wordsize?).and_return(false)
-    platform_is(:wordsize => 32) { ScratchPad.record :yield }
+  it "doesn not yield when #c_long_size? returns false" do
+    allow(PlatformGuard).to receive(:c_long_size?).and_return(false)
+    platform_is(:c_long_size => 32) { ScratchPad.record :yield }
     expect(ScratchPad.recorded).not_to eq(:yield)
   end
 end
 
-RSpec.describe Object, "#platform_is_not :wordsize => SIZE_SPEC" do
+RSpec.describe Object, "#platform_is_not :c_long_size => SIZE_SPEC" do
   before :each do
-    @guard = PlatformGuard.new :darwin, :wordsize => 32
+    @guard = PlatformGuard.new :darwin, :c_long_size => 32
     allow(PlatformGuard).to receive(:os?).and_return(true)
     allow(PlatformGuard).to receive(:new).and_return(@guard)
     ScratchPad.clear
   end
 
-  it "yields when #wordsize? returns false" do
-    allow(PlatformGuard).to receive(:wordsize?).and_return(false)
-    platform_is_not(:wordsize => 32) { ScratchPad.record :yield }
+  it "yields when #c_long_size? returns false" do
+    allow(PlatformGuard).to receive(:c_long_size?).and_return(false)
+    platform_is_not(:c_long_size => 32) { ScratchPad.record :yield }
     expect(ScratchPad.recorded).to eq(:yield)
   end
 
-  it "doesn not yield when #wordsize? returns true" do
-    allow(PlatformGuard).to receive(:wordsize?).and_return(true)
-    platform_is_not(:wordsize => 32) { ScratchPad.record :yield }
+  it "doesn not yield when #c_long_size? returns true" do
+    allow(PlatformGuard).to receive(:c_long_size?).and_return(true)
+    platform_is_not(:c_long_size => 32) { ScratchPad.record :yield }
     expect(ScratchPad.recorded).not_to eq(:yield)
   end
 end
@@ -184,13 +184,13 @@ RSpec.describe PlatformGuard, ".standard?" do
   end
 end
 
-RSpec.describe PlatformGuard, ".wordsize?" do
+RSpec.describe PlatformGuard, ".c_long_size?" do
   it "returns true when arg is 32 and 1.size is 4" do
-    expect(PlatformGuard.wordsize?(32)).to eq(1.size == 4)
+    expect(PlatformGuard.c_long_size?(32)).to eq(1.size == 4)
   end
 
   it "returns true when arg is 64 and 1.size is 8" do
-    expect(PlatformGuard.wordsize?(64)).to eq(1.size == 8)
+    expect(PlatformGuard.c_long_size?(64)).to eq(1.size == 8)
   end
 end
 
