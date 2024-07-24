@@ -15342,6 +15342,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
  */
 static void
 parse_return(pm_parser_t *parser, pm_node_t *node) {
+    bool in_sclass = false;
     for (pm_context_node_t *context_node = parser->current_context; context_node != NULL; context_node = context_node->prev) {
         switch (context_node->context) {
             case PM_CONTEXT_BEGIN_ELSE:
@@ -15366,16 +15367,18 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_PREDICATE:
             case PM_CONTEXT_PREEXE:
             case PM_CONTEXT_RESCUE_MODIFIER:
-            case PM_CONTEXT_SCLASS_ELSE:
-            case PM_CONTEXT_SCLASS_ENSURE:
-            case PM_CONTEXT_SCLASS_RESCUE:
-            case PM_CONTEXT_SCLASS:
             case PM_CONTEXT_TERNARY:
             case PM_CONTEXT_UNLESS:
             case PM_CONTEXT_UNTIL:
             case PM_CONTEXT_WHILE:
                 // Keep iterating up the lists of contexts, because returns can
                 // see through these.
+                continue;
+            case PM_CONTEXT_SCLASS_ELSE:
+            case PM_CONTEXT_SCLASS_ENSURE:
+            case PM_CONTEXT_SCLASS_RESCUE:
+            case PM_CONTEXT_SCLASS:
+                in_sclass = true;
                 continue;
             case PM_CONTEXT_CLASS_ELSE:
             case PM_CONTEXT_CLASS_ENSURE:
@@ -15410,6 +15413,9 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
                 assert(false && "unreachable");
                 break;
         }
+    }
+    if (in_sclass) {
+        pm_parser_err_node(parser, node, PM_ERR_RETURN_INVALID);
     }
 }
 

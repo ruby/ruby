@@ -318,6 +318,7 @@ struct lex_context {
     unsigned int in_class: 1;
     BITFIELD(enum rb_parser_shareability, shareable_constant_value, 2);
     BITFIELD(enum rescue_context, in_rescue, 2);
+    unsigned int cant_return: 1;
 };
 
 typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
@@ -1696,11 +1697,16 @@ endless_method_name(struct parser_params *p, ID mid, const YYLTYPE *loc)
 #define begin_definition(k, loc_beg, loc_end) \
     do { \
         if (!(p->ctxt.in_class = (k)[0] != 0)) { \
+            /* singleton class */ \
+            p->ctxt.cant_return = !p->ctxt.in_def; \
             p->ctxt.in_def = 0; \
         } \
         else if (p->ctxt.in_def) { \
             YYLTYPE loc = code_loc_gen(loc_beg, loc_end); \
             yyerror1(&loc, k " definition in method body"); \
+        } \
+        else { \
+            p->ctxt.cant_return = 1; \
         } \
         local_push(p, 0); \
     } while (0)
@@ -3400,6 +3406,7 @@ def_name	: fname
                         local_push(p, 0);
                         p->ctxt.in_def = 1;
                         p->ctxt.in_rescue = before_rescue;
+                        p->ctxt.cant_return = 0;
                         $$ = $1;
                     }
                 ;
@@ -4628,6 +4635,7 @@ primary		: literal
                     /*% ripper: class!($:cpath, $:superclass, $:bodystmt) %*/
                         local_pop(p);
                         p->ctxt.in_class = $k_class.in_class;
+                        p->ctxt.cant_return = $k_class.cant_return;
                         p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
                     }
                 | k_class tLSHFT expr_value
@@ -4646,6 +4654,7 @@ primary		: literal
                         local_pop(p);
                         p->ctxt.in_def = $k_class.in_def;
                         p->ctxt.in_class = $k_class.in_class;
+                        p->ctxt.cant_return = $k_class.cant_return;
                         p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
                     }
                 | k_module cpath
@@ -4662,6 +4671,7 @@ primary		: literal
                     /*% ripper: module!($:cpath, $:bodystmt) %*/
                         local_pop(p);
                         p->ctxt.in_class = $k_module.in_class;
+                        p->ctxt.cant_return = $k_module.cant_return;
                         p->ctxt.shareable_constant_value = $k_module.shareable_constant_value;
                     }
                 | defn_head[head]
@@ -4890,7 +4900,7 @@ k_end		: keyword_end
 
 k_return	: keyword_return
                     {
-                        if (p->ctxt.in_class && !p->ctxt.in_def && !dyna_in_block(p))
+                        if (p->ctxt.cant_return && !dyna_in_block(p))
                             yyerror1(&@1, "Invalid return in class/module body");
                     }
                 ;
