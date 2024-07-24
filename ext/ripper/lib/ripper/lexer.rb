@@ -242,7 +242,12 @@ class Ripper
     end
 
     def on_error2(mesg, elem)
-      @errors.push Elem.new(elem.pos, __callee__, elem.tok, elem.state, mesg)
+      if elem
+        elem = Elem.new(elem.pos, __callee__, elem.tok, elem.state, mesg)
+      else
+        elem = Elem.new([lineno(), column()], __callee__, token(), state(), mesg)
+      end
+      @errors.push elem
     end
     PARSER_EVENTS.grep(/_error\z/) do |e|
       arity = PARSER_EVENT_TABLE.fetch(e)
