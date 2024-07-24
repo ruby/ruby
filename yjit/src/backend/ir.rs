@@ -1241,6 +1241,13 @@ impl Assembler
         self.ctx.clear_local_types();
     }
 
+    /// Erase self shape if known
+    /// eg: because of a call we can't track
+    pub fn clear_self_shape(&mut self) {
+        asm_comment!(self, "clear self shape");
+        self.ctx.clear_self_shape();
+    }
+
     /// Repurpose stack temp registers to the corresponding locals for arguments
     pub fn map_temp_regs_to_args(&mut self, callee_ctx: &mut Context, argc: i32) -> Vec<RegOpnd> {
         let mut callee_reg_mapping = callee_ctx.get_reg_mapping();

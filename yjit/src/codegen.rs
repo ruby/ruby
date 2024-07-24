@@ -658,6 +658,7 @@ fn jit_prepare_non_leaf_call(
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding, rb_debug_inspector API, and other means.
     asm.clear_local_types();
+    asm.clear_self_shape();
 }
 
 /// jit_save_pc() + gen_save_sp(). Should be used before calling a routine that could:
@@ -2796,6 +2797,35 @@ fn gen_get_ivar(
     recv: Opnd,
     recv_opnd: YARVOpnd,
 ) -> Option<CodegenStatus> {
+
+
+    /*
+    // If the shape is known at compile time
+    if let Some(shape_id) = asm.ctx.get_opnd_shape(recv_opnd) {
+        let ivar_index = unsafe {
+            let shape = rb_shape_get_shape_by_id(shape_id);
+            let mut ivar_index: u32 = 0;
+            if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
+                Some(ivar_index as usize)
+            } else {
+                None
+            }
+        };
+
+        // If the ivar is not defined on this shape
+        if ivar_index == None {
+            let out_opnd = asm.stack_push(Type::Nil);
+            asm.mov(out_opnd, Qnil.into());
+
+            jump_to_next_insn(jit, asm);
+            return Some(EndBlock);
+        }
+    }
+    */
+
+
+
+
     let comptime_val_klass = comptime_receiver.class_of();
 
     // If recv isn't already a register, load it.
@@ -2868,15 +2898,12 @@ fn gen_get_ivar(
     let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
 
     let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
-    let shape_id_offset = unsafe { rb_shape_id_offset() };
-    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
-
-    asm_comment!(asm, "guard shape");
-    asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-    jit_chain_guard(
-        JCC_JNE,
+    jit_guard_known_shape(
         jit,
         asm,
+        expected_shape,
+        recv,
+        recv_opnd,
         max_chain_depth,
         Counter::getivar_megamorphic,
     );
@@ -3098,6 +3125,15 @@ fn gen_set_ivar(
     };
     let new_shape_too_complex = matches!(new_shape, Some((OBJ_TOO_COMPLEX_SHAPE_ID, _, _)));
 
+
+
+    // NOTE: we could be smarter, more selective here.
+    // If the shape being changed doesn't match the known self shape, then we know it can't be the same object,
+    // and so no shape clearing is necessary
+    asm.clear_self_shape();
+
+
+
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
@@ -3145,15 +3181,12 @@ fn gen_set_ivar(
         guard_object_is_heap(asm, recv, recv_opnd, Counter::setivar_not_heap);
 
         let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
-        let shape_id_offset = unsafe { rb_shape_id_offset() };
-        let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
-
-        asm_comment!(asm, "guard shape");
-        asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
-        jit_chain_guard(
-            JCC_JNE,
+        jit_guard_known_shape(
             jit,
             asm,
+            expected_shape,
+            recv,
+            recv_opnd,
             SET_IVAR_MAX_DEPTH,
             Counter::setivar_megamorphic,
         );
@@ -3352,6 +3385,22 @@ fn gen_definedivar(
     // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(asm, recv, SelfOpnd, Counter::definedivar_not_heap);
 
+
+
+
+    jit_guard_known_shape(
+        jit,
+        asm,
+        shape_id,
+        recv,
+        SelfOpnd,
+        GET_IVAR_MAX_DEPTH,
+        Counter::definedivar_megamorphic,
+    );
+
+
+
+    /*
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
 
@@ -3364,6 +3413,10 @@ fn gen_definedivar(
         GET_IVAR_MAX_DEPTH,
         Counter::definedivar_megamorphic,
     );
+    */
+
+
+
 
     let result = if ivar_exists { pushval } else { Qnil };
     jit_putobject(asm, result);
@@ -4926,6 +4979,46 @@ fn jit_guard_known_klass(
             asm.ctx.upgrade_opnd_type(insn_opnd, Type::CHash);
         }
     }
+}
+
+/// Guard that self or a stack operand has the same shape as `expected_shape`
+/// and upgrade the known shape in the context.
+fn jit_guard_known_shape(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    expected_shape: shape_id_t,
+    obj_opnd: Opnd,
+    insn_opnd: YARVOpnd,
+    //sample_instance: VALUE,
+    max_chain_depth: u8,
+    counter: Counter,
+) {
+    // Get the shape known by the context, if any
+    let ctx_shape = asm.ctx.get_opnd_shape(insn_opnd);
+
+    // If we already know this is shape of the operand, stop
+    if ctx_shape == Some(expected_shape) {
+        //println!("shape known!");
+        return;
+    } else {
+        //println!("shape not known");
+    }
+
+    let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, obj_opnd, shape_id_offset);
+
+    asm_comment!(asm, "guard shape");
+    asm.cmp(shape_opnd, Opnd::UImm(expected_shape as u64));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        max_chain_depth,
+        counter,
+    );
+
+    // Set the shape for the operand on the context
+    asm.ctx.set_opnd_shape(insn_opnd, expected_shape);
 }
 
 // Generate ancestry guard for protected callee.
@@ -7074,6 +7167,7 @@ fn gen_send_cfunc(
 
     // cfunc calls may corrupt types
     asm.clear_local_types();
+    asm.clear_self_shape();
 
     // Note: the return block of gen_send_iseq() has ctx->sp_offset == 1
     // which allows for sharing the same successor.
@@ -8137,6 +8231,7 @@ fn gen_send_iseq(
 
     // The callee might change locals through Kernel#binding and other means.
     asm.clear_local_types();
+    asm.clear_self_shape();
 
     // Pop arguments and receiver in return context and
     // mark it as a continuation of gen_leave()
@@ -9522,6 +9617,7 @@ fn gen_invokeblock_specialized(
 
         // cfunc calls may corrupt types
         asm.clear_local_types();
+        asm.clear_self_shape();
 
         // Share the successor with other chains
         jump_to_next_insn(jit, asm)
@@ -9686,6 +9782,7 @@ fn gen_invokesuper_specialized(
 
     // Method calls may corrupt types
     asm.clear_local_types();
+    asm.clear_self_shape();
 
     match cme_def_type {
         VM_METHOD_TYPE_ISEQ => {

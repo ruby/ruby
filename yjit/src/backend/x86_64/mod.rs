@@ -384,6 +384,12 @@ impl Assembler
                         _ => asm.push_insn(insn),
                     }
                 },
+                Insn::Load { .. } => {
+                    // If the output of this load is not used, remove it
+                    if live_ranges[index] != index {
+                        asm.push_insn(insn);
+                    }
+                }
                 _ => {
                     if insn.out_opnd().is_some() {
                         let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());

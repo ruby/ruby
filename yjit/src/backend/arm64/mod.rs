@@ -587,7 +587,16 @@ impl Assembler
                         asm.jmp_opnd(*opnd);
                     }
                 },
-                Insn::Load { opnd, .. } |
+                Insn::Load { opnd, .. } => {
+                    // If the output of this load is not used, remove it
+                    if live_ranges[index] != index {
+                        *opnd = match opnd {
+                            Opnd::Mem(_) => split_memory_address(asm, *opnd),
+                            _ => *opnd
+                        };
+                        asm.push_insn(insn);
+                    }
+                }
                 Insn::LoadInto { opnd, .. } => {
                     *opnd = match opnd {
                         Opnd::Mem(_) => split_memory_address(asm, *opnd),
