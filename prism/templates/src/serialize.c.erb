@@ -74,7 +74,9 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
 
     size_t offset = buffer->length;
 
+    <%- unless Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
     pm_buffer_append_varuint(buffer, node->node_id);
+    <%- end -%>
     pm_serialize_location(parser, &node->location, buffer);
 
     switch (PM_NODE_TYPE(node)) {
