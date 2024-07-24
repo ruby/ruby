@@ -474,6 +474,9 @@ pub struct Context {
     // Type we track for self
     self_type: Type,
 
+    // Shape we track for self (if known)
+    self_shape: Option<u16>,
+
     // Local variable types we keep track of
     local_types: [Type; MAX_CTX_LOCALS],
 
@@ -815,6 +818,9 @@ enum CtxOp {
     // Self type (4 bits)
     SetSelfType = 0,
 
+    // Self shpe (16 bits)
+    SetSelfShape,
+
     // Local idx (3 bits), temp type (4 bits)
     SetLocalType,
 
@@ -1007,6 +1013,12 @@ impl Context {
             bits.push_u4(self.self_type as u8);
         }
 
+        // Encode the shape of self if known
+        if let Some(shape_id) = self.self_shape {
+            bits.push_op(CtxOp::SetSelfShape);
+            bits.push_uint(shape_id as u64, 16);
+        }
+
         // Encode the local types if known
         for local_idx in 0..MAX_CTX_LOCALS {
             let t = self.get_local_type(local_idx);
@@ -1106,6 +1118,10 @@ impl Context {
             match op {
                 CtxOp::SetSelfType => {
                     ctx.self_type = unsafe { transmute(bits.read_u4(&mut idx)) };
+                }
+
+                CtxOp::SetSelfShape => {
+                    ctx.self_shape = Some(bits.read_uint(&mut idx, 16) as u16);
                 }
 
                 CtxOp::SetLocalType => {
@@ -2517,6 +2533,35 @@ impl Context {
         }
     }
 
+    /// Get the shape of an instruction operand if known
+    pub fn get_opnd_shape(&self, opnd: YARVOpnd) -> Option<shape_id_t> {
+        match opnd {
+            SelfOpnd => {
+                if let Some(shape_id) = self.self_shape {
+                    Some(shape_id as shape_id_t)
+                } else {
+                    None
+                }
+            },
+            StackOpnd(idx) => {
+                assert!(idx < self.stack_size);
+                let stack_idx: usize = (self.stack_size - 1 - idx).into();
+
+                // If outside of tracked range, do nothing
+                if stack_idx >= MAX_CTX_TEMPS {
+                    return None;
+                }
+
+                let mapping = self.get_temp_mapping(stack_idx);
+
+                match mapping.get_kind() {
+                    MapToSelf => self.get_opnd_shape(SelfOpnd),
+                    _ => None
+                }
+            }
+        }
+    }
+
     /// Get the currently tracked type for a local variable
     pub fn get_local_type(&self, local_idx: usize) -> Type {
         if local_idx >= MAX_CTX_LOCALS {
@@ -2577,6 +2622,40 @@ impl Context {
                         // all MapToLocal mappings, including the one we're upgrading here.
                         self.set_opnd_mapping(opnd, mapping);
                     }
+                }
+            }
+        }
+    }
+
+    /// Set the type of an instruction operand
+    pub fn set_opnd_shape(&mut self, opnd: YARVOpnd, opnd_shape: shape_id_t) {
+        // If type propagation is disabled, store no types
+        if get_option!(no_type_prop) {
+            return;
+        }
+
+        // Try to fit the shape id into 16 bits
+        if opnd_shape > u16::MAX.into() {
+            return;
+        }
+        let opnd_shape = Some(opnd_shape as u16);
+
+        match opnd {
+            SelfOpnd => self.self_shape = opnd_shape,
+            StackOpnd(idx) => {
+                assert!(idx < self.stack_size);
+                let stack_idx = (self.stack_size - 1 - idx) as usize;
+
+                // If outside of tracked range, do nothing
+                if stack_idx >= MAX_CTX_TEMPS {
+                    return;
+                }
+
+                let mapping = self.get_temp_mapping(stack_idx);
+
+                match mapping.get_kind() {
+                    MapToSelf => self.self_shape = opnd_shape,
+                    _ => {}
                 }
             }
         }
@@ -2669,7 +2748,6 @@ impl Context {
     pub fn clear_local_types(&mut self) {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
-
         for mapping_idx in 0..MAX_CTX_TEMPS {
             let mapping = self.get_temp_mapping(mapping_idx);
             if let MapToLocal(local_idx) = mapping {
@@ -2680,6 +2758,12 @@ impl Context {
 
         // Clear the local types
         self.local_types = [Type::default(); MAX_CTX_LOCALS];
+    }
+
+    /// Clear the shape of self
+    /// eg: because of a call we can't track
+    pub fn clear_self_shape(&mut self) {
+        self.self_shape = None;
     }
 
     /// Return true if the code is inlined by the caller
@@ -2735,6 +2819,15 @@ impl Context {
         diff += match src.self_type.diff(dst.self_type) {
             TypeDiff::Compatible(diff) => diff,
             TypeDiff::Incompatible => return TypeDiff::Incompatible,
+        };
+
+        // We can safely drop self shape information, but
+        // we can't jump between mismatched shapes
+        match (src.self_shape, dst.self_shape) {
+            (None, None) => {},
+            (Some(a), Some(b)) => if a != b { return TypeDiff::Incompatible },
+            (None, Some(_)) => return TypeDiff::Incompatible,
+            (Some(_), None) => diff += 1,
         };
 
         // Check the block to inline
