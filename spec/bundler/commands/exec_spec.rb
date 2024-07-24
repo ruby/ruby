@@ -709,7 +709,7 @@ RSpec.describe "bundle exec" do
     end
 
     it "works" do
-      bundle "exec gem uninstall foo"
+      bundle "exec #{gem_cmd} uninstall foo"
       expect(out).to eq("Successfully uninstalled foo-1.0")
     end
   end
