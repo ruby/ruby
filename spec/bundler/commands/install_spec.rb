@@ -249,12 +249,14 @@ RSpec.describe "bundle install with gem sources" do
 
     describe "with a gem that installs multiple platforms" do
       it "installs gems for the local platform as first choice" do
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "x86-darwin-100" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 #{Bundler.local_platform}")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-darwin-100")
+        end
       end
 
       it "falls back on plain ruby" do

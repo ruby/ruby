@@ -118,15 +118,17 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
             #{Bundler::VERSION}
       L
 
-      system_gems "platform_specific-1.0-#{Gem::Platform.local}", path: default_bundle_path
+      simulate_platform "x86-darwin-100" do
+        system_gems "platform_specific-1.0-x86-darwin-100", path: default_bundle_path
 
-      install_gemfile <<-G, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, artifice: "compact_index"
-        source "https://gem.repo4"
+        install_gemfile <<-G, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, artifice: "compact_index"
+          source "https://gem.repo4"
 
-        gem "platform_specific", :force_ruby_platform => true
-      G
+          gem "platform_specific", :force_ruby_platform => true
+        G
 
-      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
+        expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
+      end
     end
   end
 end

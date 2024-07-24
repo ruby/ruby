@@ -89,10 +89,6 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = Gem::Platform.local
-        end
-
-        build_gem "platform_specific" do |s|
           s.platform = "java"
         end
 
