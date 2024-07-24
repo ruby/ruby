@@ -8765,6 +8765,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 else {
                     // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j), k:, l: 1, **m, &n)
                     //                               ^
+                    body->param.flags.anon_rest = true;
                     pm_insert_local_special(idMULT, local_index, index_lookup_table, local_table_for_iseq);
                 }
 
@@ -8944,6 +8945,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         }
                     }
                     else {
+                        body->param.flags.anon_kwrest = true;
                         pm_insert_local_special(idPow, local_index, index_lookup_table, local_table_for_iseq);
                     }
 
@@ -8954,30 +8956,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   //         ^^^
                   case PM_FORWARDING_PARAMETER_NODE: {
                     if (!ISEQ_BODY(iseq)->param.flags.forwardable) {
+                        // Add the anonymous *
                         body->param.rest_start = local_index;
                         body->param.flags.has_rest = true;
-
-                        // Add the leading *
+                        body->param.flags.anon_rest = true;
                         pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
 
-                        // Add the kwrest **
+                        // Add the anonymous **
                         RUBY_ASSERT(!body->param.flags.has_kw);
-
-                        // There are no keywords declared (in the text of the program)
-                        // but the forwarding node implies we support kwrest (**)
                         body->param.flags.has_kw = false;
                         body->param.flags.has_kwrest = true;
+                        body->param.flags.anon_kwrest = true;
                         body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-
                         keyword->rest_start = local_index;
-
                         pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
 
+                        // Add the anonymous &
                         body->param.block_start = local_index;
                         body->param.flags.has_block = true;
-
                         pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
                     }
+
+                    // Add the ...
                     pm_insert_local_special(idDot3, local_index++, index_lookup_table, local_table_for_iseq);
                     break;
                   }
