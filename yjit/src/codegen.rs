@@ -5798,7 +5798,14 @@ fn jit_rb_str_concat(
     // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
     jit_prepare_non_leaf_call(jit, asm);
-    asm.spill_regs(); // For ccall. Unconditionally spill them for RegMappings consistency.
+
+    // Explicitly spill temps before making any C calls. `ccall` will spill temps, but it does a
+    // check to only spill if it thinks it's necessary. That logic can't see through the runtime
+    // branching occurring in the code generated for this function. Consequently, the branch for
+    // the first `ccall` will spill registers but the second one will not. At run time, we may
+    // jump over that spill code when executing the second branch, leading situations that are
+    // quite hard to debug. If we spill up front we avoid diverging behavior.
+    asm.spill_regs();
 
     let concat_arg = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
