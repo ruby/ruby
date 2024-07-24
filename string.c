@@ -3375,8 +3375,7 @@ rb_str_buf_cat_byte(VALUE str, unsigned char byte)
     }
     else {
         // If there's not enough string_capacity, make a call into the general string concatenation function.
-        char buf[1] = {byte};
-        str_buf_cat(str, buf, 1);
+        str_buf_cat(str, (char *)&byte, 1);
     }
 
     // If the code range is already known, we can derive the resulting code range cheaply by looking at the byte we
