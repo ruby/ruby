@@ -53,6 +53,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  Ripper.tokenize("1  .foo\n")
     assert_equal ["1", "\n", "  ", ".", "foo", "\n"],
                  Ripper.tokenize("1\n  .foo\n")
+    assert_equal ["def", " ", "f", ";", " ", "(", "x", ")", "::", "A", " ", "="],
+                 Ripper.tokenize("def f; (x)::A =")
   end
 
   def test_lex
