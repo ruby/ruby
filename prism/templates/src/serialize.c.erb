@@ -92,7 +92,9 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             size_t length_offset = buffer->length;
             pm_buffer_append_string(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
             <%- end -%>
+            <%- unless Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS && !node.flags -%>
             pm_buffer_append_varuint(buffer, (uint32_t) node->flags);
+            <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
             <%- when Prism::Template::NodeField -%>
