@@ -266,7 +266,7 @@ module Spec
     end
 
     def rake_path
-      Dir["#{base_system_gems}/**/rake*.gem"].first
+      Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
     end
 
     private
