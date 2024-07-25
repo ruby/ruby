@@ -671,19 +671,18 @@ module Bundler
     end
 
     def add_current_platform
-      @most_specific_non_local_locked_ruby_platform = find_most_specific_non_local_locked_ruby_platform
+      return if @platforms.include?(local_platform)
+
+      @most_specific_non_local_locked_ruby_platform = find_most_specific_locked_ruby_platform
       return if @most_specific_non_local_locked_ruby_platform
 
       add_platform(local_platform)
     end
 
-    def find_most_specific_non_local_locked_ruby_platform
+    def find_most_specific_locked_ruby_platform
       return unless generic_local_platform_is_ruby? && current_platform_locked?
 
-      most_specific_locked_ruby_platform = most_specific_locked_platform
-      return unless most_specific_locked_ruby_platform != local_platform
-
-      most_specific_locked_ruby_platform
+      most_specific_locked_platform
     end
 
     def change_reason
