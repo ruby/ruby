@@ -83,7 +83,6 @@
 #include "debug_counter.h"
 #include "eval_intern.h"
 #include "gc/gc.h"
-#include "gc/gc_impl.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -564,6 +563,10 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
     return ptr;
 }
 #endif
+
+static const char *obj_type_name(VALUE obj);
+#define RB_AMALGAMATED_DEFAULT_GC
+#include "gc/default.c"
 
 #if USE_SHARED_GC && !defined(HAVE_DLOPEN)
 # error "Shared GC requires dlopen"
@@ -1899,43 +1902,6 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
-static VALUE
-type_sym(size_t type)
-{
-    switch (type) {
-#define COUNT_TYPE(t) case (t): return ID2SYM(rb_intern(#t)); break;
-        COUNT_TYPE(T_NONE);
-        COUNT_TYPE(T_OBJECT);
-        COUNT_TYPE(T_CLASS);
-        COUNT_TYPE(T_MODULE);
-        COUNT_TYPE(T_FLOAT);
-        COUNT_TYPE(T_STRING);
-        COUNT_TYPE(T_REGEXP);
-        COUNT_TYPE(T_ARRAY);
-        COUNT_TYPE(T_HASH);
-        COUNT_TYPE(T_STRUCT);
-        COUNT_TYPE(T_BIGNUM);
-        COUNT_TYPE(T_FILE);
-        COUNT_TYPE(T_DATA);
-        COUNT_TYPE(T_MATCH);
-        COUNT_TYPE(T_COMPLEX);
-        COUNT_TYPE(T_RATIONAL);
-        COUNT_TYPE(T_NIL);
-        COUNT_TYPE(T_TRUE);
-        COUNT_TYPE(T_FALSE);
-        COUNT_TYPE(T_SYMBOL);
-        COUNT_TYPE(T_FIXNUM);
-        COUNT_TYPE(T_IMEMO);
-        COUNT_TYPE(T_UNDEF);
-        COUNT_TYPE(T_NODE);
-        COUNT_TYPE(T_ICLASS);
-        COUNT_TYPE(T_ZOMBIE);
-        COUNT_TYPE(T_MOVED);
-#undef COUNT_TYPE
-        default:              return SIZET2NUM(type); break;
-    }
-}
-
 struct count_objects_data {
     size_t counts[T_MASK+1];
     size_t freed;
@@ -2390,16 +2356,6 @@ rb_mark_tbl(st_table *tbl)
     if (!tbl || tbl->num_entries == 0) return;
 
     st_foreach(tbl, rb_mark_tbl_i, (st_data_t)rb_gc_get_objspace());
-}
-
-static int
-gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    void *objspace = (void *)data;
-
-    rb_gc_impl_mark(objspace, (VALUE)value);
-
-    return ST_CONTINUE;
 }
 
 static void
@@ -2963,8 +2919,6 @@ gc_ref_update_array(void *objspace, VALUE v)
     }
 }
 
-static void gc_ref_update_table_values_only(void *objspace, st_table *tbl);
-
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
@@ -2990,88 +2944,10 @@ gc_ref_update_object(void *objspace, VALUE v)
     }
 }
 
-static int
-hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*key)) {
-        *key = rb_gc_impl_location(objspace, (VALUE)*key);
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)key)) {
-        return ST_REPLACE;
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
-        return ST_REPLACE;
-    }
-    return ST_CONTINUE;
-}
-
-static int
-hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
-        return ST_REPLACE;
-    }
-    return ST_CONTINUE;
-}
-
-static void
-gc_ref_update_table_values_only(void *objspace, st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, (st_data_t)objspace)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
-}
-
 void
 rb_gc_ref_update_table_values_only(st_table *tbl)
 {
     gc_ref_update_table_values_only(rb_gc_get_objspace(), tbl);
-}
-
-static void
-gc_update_table_refs(void *objspace, st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
 }
 
 /* Update MOVED references in a VALUE=>VALUE st_table */
@@ -4255,12 +4131,6 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
     rb_raise(rb_eArgError,
              "malloc: possible integer overflow (%"PRIuSIZE"*%"PRIuSIZE")",
              count, elsize);
-}
-
-static inline size_t
-xmalloc2_size(const size_t count, const size_t elsize)
-{
-    return size_mul_or_raise(count, elsize, rb_eArgError);
 }
 
 void *
