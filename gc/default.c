@@ -2570,53 +2570,63 @@ rb_gc_impl_size_pool_sizes(void *objspace_ptr)
     return size_pool_sizes;
 }
 
+NOINLINE(static VALUE newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx, bool vm_locked));
+
 static VALUE
-newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx, bool vm_locked)
+newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx, bool vm_locked)
 {
     rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
     rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+    VALUE obj = Qfalse;
 
-    VALUE obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
+    unsigned int lev = 0;
+    bool unlock_vm = false;
 
-    if (RB_UNLIKELY(obj == Qfalse)) {
-        unsigned int lev = 0;
-        bool unlock_vm = false;
+    if (!vm_locked) {
+        lev = rb_gc_cr_lock();
+        vm_locked = true;
+        unlock_vm = true;
+    }
 
-        if (!vm_locked) {
-            lev = rb_gc_cr_lock();
-            vm_locked = true;
-            unlock_vm = true;
+    {
+        if (is_incremental_marking(objspace)) {
+            gc_continue(objspace, size_pool, heap);
+            cache->incremental_mark_step_allocated_slots = 0;
+
+            // Retry allocation after resetting incremental_mark_step_allocated_slots
+            obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
         }
 
-        {
-            if (is_incremental_marking(objspace)) {
-                gc_continue(objspace, size_pool, heap);
-                cache->incremental_mark_step_allocated_slots = 0;
+        if (obj == Qfalse) {
+            // Get next free page (possibly running GC)
+            struct heap_page *page = heap_next_free_page(objspace, size_pool, heap);
+            ractor_cache_set_page(objspace, cache, size_pool_idx, page);
 
-                // Retry allocation after resetting incremental_mark_step_allocated_slots
-                obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
-            }
-
-            if (obj == Qfalse) {
-                // Get next free page (possibly running GC)
-                struct heap_page *page = heap_next_free_page(objspace, size_pool, heap);
-                ractor_cache_set_page(objspace, cache, size_pool_idx, page);
-
-                // Retry allocation after moving to new page
-                obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
-            }
-        }
-
-        if (unlock_vm) {
-            rb_gc_cr_unlock(lev);
-        }
-
-        if (RB_UNLIKELY(obj == Qfalse)) {
-            rb_memerror();
+            // Retry allocation after moving to new page
+            obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
         }
     }
 
-    size_pool->total_allocated_objects++;
+    if (unlock_vm) {
+        rb_gc_cr_unlock(lev);
+    }
+
+    if (RB_UNLIKELY(obj == Qfalse)) {
+        rb_memerror();
+    }
+    return obj;
+}
+
+static VALUE
+newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx, bool vm_locked)
+{
+    VALUE obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
+
+    if (RB_UNLIKELY(obj == Qfalse)) {
+	obj = newobj_cache_miss(objspace, cache, size_pool_idx, vm_locked);
+    }
+
+    size_pools[size_pool_idx].total_allocated_objects++;
 
     return obj;
 }
