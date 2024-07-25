@@ -70,6 +70,17 @@ RSpec.describe "bundle check" do
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
+  it "prints a generic error if gem git source is not checked out" do
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "rails", git: "git@github.com:rails/rails.git"
+    G
+
+    bundle :check, raise_on_error: false
+    expect(exitstatus).to eq 1
+    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
+  end
+
   it "prints a generic message if you changed your lockfile" do
     build_repo2 do
       build_gem "rails_pinned_to_old_activesupport" do |s|
