@@ -886,6 +886,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("arguments with block argument");
         ANN("format: ..([nd_head], &[nd_body])");
         ANN("example: foo(x, &blk)");
+        F_CUSTOM1(forwarding, "arguments forwarding or not") {
+            switch (RNODE_BLOCK_PASS(node)->forwarding) {
+              case 0: A("0 (no forwarding)"); break;
+              case 1: A("1 (forwarding)"); break;
+            }
+        }
         F_NODE(nd_head, RNODE_BLOCK_PASS, "other arguments");
         LAST_NODE;
         F_NODE(nd_body, RNODE_BLOCK_PASS, "block argument");
@@ -1106,6 +1112,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("method parameters");
         ANN("format: def method_name(.., [nd_ainfo.nd_optargs], *[nd_ainfo.rest_arg], [nd_ainfo.first_post_arg], .., [nd_ainfo.kw_args], **[nd_ainfo.kw_rest_arg], &[nd_ainfo.block_arg])");
         ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
+        F_CUSTOM1(nd_ainfo.forwarding, "arguments forwarding or not") {
+            switch (RNODE_ARGS(node)->nd_ainfo.forwarding) {
+              case 0: A("0 (no forwarding)"); break;
+              case 1: A("1 (forwarding)"); break;
+            }
+        }
         F_INT(nd_ainfo.pre_args_num, RNODE_ARGS, "count of mandatory (pre-)arguments");
         F_NODE(nd_ainfo.pre_init, RNODE_ARGS, "initialization of (pre-)arguments");
         F_INT(nd_ainfo.post_args_num, RNODE_ARGS, "count of mandatory post-arguments");
