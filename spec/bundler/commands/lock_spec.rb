@@ -1061,7 +1061,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock --update" }
+    simulate_platform("x86_64-darwin-19") { bundle "lock --update" }
 
     expect(out).to match(/Writing lockfile to.+Gemfile\.lock/)
   end
@@ -1083,7 +1083,7 @@ RSpec.describe "bundle lock" do
       gem "libv8"
     G
 
-    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock" }
+    simulate_platform("x86_64-darwin-19") { bundle "lock" }
 
     checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-19"
@@ -1151,7 +1151,7 @@ RSpec.describe "bundle lock" do
     previous_lockfile = lockfile
 
     %w[x86_64-darwin-19 x86_64-darwin-20].each do |platform|
-      simulate_platform(Gem::Platform.new(platform)) do
+      simulate_platform(platform) do
         bundle "lock"
         expect(lockfile).to eq(previous_lockfile)
 
