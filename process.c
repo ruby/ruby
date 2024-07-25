@@ -5813,12 +5813,6 @@ nogvl_getpwnam_r(void *args)
     struct getpwnam_r_args *arg = args;
     return (void *)(VALUE)getpwnam_r(arg->login, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
 }
-# elif defined(USE_GETPWNAM)
-static void *
-nogvl_getpwnam(void *login)
-{
-    return getpwnam((const char *)login);
-}
 # endif
 
 VALUE
@@ -5885,7 +5879,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
 #  elif USE_GETPWNAM
 
     errno = 0;
-    struct passwd *pwptr = IO_WITHOUT_GVL(nogvl_getpwnam, (void *)login);
+    struct passwd *pwptr = getpwnam(login);
     if (pwptr) {
         /* found it */
         return rb_str_new_cstr(pwptr->pw_dir);
@@ -5919,12 +5913,6 @@ nogvl_getpwuid_r(void *args)
 {
     struct getpwuid_r_args *arg = args;
     return (void *)(VALUE)getpwuid_r(arg->uid, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
-}
-# elif defined(USE_GETPWUID)
-static void *
-nogvl_getpwuid(void *uid)
-{
-    return getpwuid((uid_t)(VALUE)uid);
 }
 # endif
 
@@ -5989,7 +5977,7 @@ rb_getpwdiruid(void)
 # elif defined(USE_GETPWUID)
 
     errno = 0;
-    struct passwd *pwptr = IO_WITHOUT_GVL(nogvl_getpwuid, (void *)ruid);
+    struct passwd *pwptr = getpwuid(ruid);
     if (pwptr) {
         /* found it */
         return rb_str_new_cstr(pwptr->pw_dir);
@@ -6061,7 +6049,7 @@ obj2uid(VALUE id
         }
         pwptr = args.result;
 #else
-        pwptr = IO_WITHOUT_GVL(nogvl_getpwnam, (void *)usrname);
+        pwptr = getpwnam(usrname);
 #endif
         if (!pwptr) {
 #ifndef USE_GETPWNAM_R
@@ -6116,12 +6104,6 @@ nogvl_getgrnam_r(void *args)
     struct getgrnam_r_args *arg = args;
     return (void *)(VALUE)getgrnam_r(arg->name, &arg->grp, arg->buf, arg->bufsize, &arg->result);
 }
-# elif defined(USE_GETGRNAM)
-static void *
-nogvl_getgrnam(void *name)
-{
-    return getgrnam((const char *)name);
-}
 # endif
 
 static rb_gid_t
@@ -6166,7 +6148,7 @@ obj2gid(VALUE id
         }
         grptr = args.result;
 #elif defined(HAVE_GETGRNAM)
-        grptr = IO_WITHOUT_GVL(nogvl_getgrnam, (void *)grpname);
+        grptr = getgrnam(grpname);
 #else
         grptr = NULL;
 #endif
