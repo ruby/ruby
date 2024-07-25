@@ -3014,21 +3014,6 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     FL_UNSET(obj, FL_FINALIZE);
 }
 
-VALUE
-rb_gc_impl_get_finalizers(void *objspace_ptr, VALUE obj)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    if (FL_TEST(obj, FL_FINALIZE)) {
-        st_data_t data;
-        if (st_lookup(finalizer_table, obj, &data)) {
-            return (VALUE)data;
-        }
-    }
-
-    return Qnil;
-}
-
 void
 rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 {
