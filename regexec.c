@@ -5575,8 +5575,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 
 timeout:
   MATCH_ARG_FREE(msa);
-  onig_region_free(region, false);
-  HANDLE_REG_TIMEOUT_IN_MATCH_AT;
+  return ONIGERR_TIMEOUT;
 }
 
 extern OnigPosition
