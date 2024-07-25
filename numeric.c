@@ -2170,36 +2170,82 @@ flo_ndigits(int argc, VALUE *argv)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    floor(ndigits = 0) -> float or integer
  *
- *  Returns the largest number less than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns a float or integer that is a "floor" value for `self`,
+ *  as specified by `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is positive, returns a float with +ndigits+
+ *  When `self` is zero,
+ *  returns a zero value:
+ *  a float if `ndigits` is positive,
+ *  an integer otherwise:
+ *
+ *  ```
+ *  f = 0.0      # => 0.0
+ *  f.floor(20)  # => 0.0
+ *  f.floor(0)   # => 0
+ *  f.floor(-20) # => 0
+ *  ```
+ *
+ *  When `self` is non-zero and `ndigits` is positive, returns a float with `ndigits`
  *  digits after the decimal point (as available):
  *
- *    f = 12345.6789
- *    f.floor(1) # => 12345.6
- *    f.floor(3) # => 12345.678
- *    f = -12345.6789
- *    f.floor(1) # => -12345.7
- *    f.floor(3) # => -12345.679
+ *  ```
+ *  f = 12345.6789
+ *  f.floor(1)  # => 12345.6
+ *  f.floor(3)  # => 12345.678
+ *  f.floor(30) # => 12345.6789
+ *  f = -12345.6789
+ *  f.floor(1)  # => -12345.7
+ *  f.floor(3)  # => -12345.679
+ *  f.floor(30) # => -12345.6789
+ *  ```
  *
- *  When +ndigits+ is non-positive, returns an integer with at least
- *  <code>ndigits.abs</code> trailing zeros:
+ *  When `self` is non-zero and `ndigits` is non-positive,
+ *  returns an integer value based on a computed granularity:
  *
- *    f = 12345.6789
- *    f.floor(0)  # => 12345
- *    f.floor(-3) # => 12000
- *    f = -12345.6789
- *    f.floor(0)  # => -12346
- *    f.floor(-3) # => -13000
+ *  - The granularity is `10 ** ndigits.abs`.
+ *  - The returned value is the largest multiple of the granularity
+ *    that is less than or equal to `self`.
+ *
+ *  Examples with positive `self`:
+ *
+ *  | ndigits | Granularity | 12345.6789.floor(ndigits) |
+ *  |--------:|------------:|--------------------------:|
+ *  |       0 |           1 |                     12345 |
+ *  |      -1 |          10 |                     12340 |
+ *  |      -2 |         100 |                     12300 |
+ *  |      -3 |        1000 |                     12000 |
+ *  |      -4 |       10000 |                     10000 |
+ *  |      -5 |      100000 |                         0 |
+ *
+ *  Examples with negative `self`:
+ *
+ *  | ndigits | Granularity | -12345.6789.floor(ndigits) |
+ *  |--------:|------------:|---------------------------:|
+ *  |       0 |           1 |                     -12346 |
+ *  |      -1 |          10 |                     -12350 |
+ *  |      -2 |         100 |                     -12400 |
+ *  |      -3 |        1000 |                     -13000 |
+ *  |      -4 |       10000 |                     -20000 |
+ *  |      -5 |      100000 |                    -100000 |
+ *  |      -6 |     1000000 |                   -1000000 |
+ *  |      -7 |    10000000 |                  -10000000 |
+ *  |      -8 |   100000000 |                 -100000000 |
+ *  |      -9 |  1000000000 |                -1000000000 |
+ *  |     -10 | 10000000000 |                          0 |
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
  *
- *     (0.3 / 0.1).floor  #=> 2 (!)
+ *  ```
+ *  (0.3 / 0.1).floor  # => 2 # Not 3, (because (0.3 / 0.1) # => 2.9999999999999996, not 3.0)
+ *  ```
  *
  *  Related: Float#ceil.
  *
@@ -2715,13 +2761,16 @@ num_floor(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *    ceil(digits = 0) -> integer or float
+ *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number that is greater than or equal to +self+ with
- *  a precision of +digits+ decimal digits.
+ *  Returns the smallest float or integer that is greater than or equal to +self+,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  \Numeric implements this by converting +self+ to a Float and
- *  invoking Float#ceil.
+ *  Equivalent to <tt>self.to_f.ceil(ndigits)</tt>.
+ *
+ *  Related: #floor, Float#ceil.
  */
 
 static VALUE
