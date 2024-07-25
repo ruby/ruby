@@ -157,7 +157,7 @@ rb_gc_cr_unlock(unsigned int lev)
 unsigned int
 rb_gc_vm_lock_no_barrier(void)
 {
-    unsigned int lev;
+    unsigned int lev = 0;
     RB_VM_LOCK_ENTER_LEV_NB(&lev);
     return lev;
 }
