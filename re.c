@@ -1719,10 +1719,16 @@ rb_reg_onig_match(VALUE re, VALUE str,
     if (result < 0) {
         onig_region_free(regs, 0);
 
-        if (result != ONIG_MISMATCH) {
+        switch (result) {
+          case ONIG_MISMATCH:
+            break;
+          case ONIGERR_TIMEOUT:
+            rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
+          default: {
             onig_errmsg_buffer err = "";
             onig_error_code_to_str((UChar*)err, (int)result);
             rb_reg_raise(err, re);
+          }
         }
     }
 
@@ -1783,23 +1789,6 @@ reg_onig_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_p
         ONIG_OPTION_NONE);
 }
 
-struct rb_reg_onig_match_args {
-    VALUE re;
-    VALUE str;
-    struct reg_onig_search_args args;
-    struct re_registers regs;
-
-    OnigPosition result;
-};
-
-static VALUE
-rb_reg_onig_match_try(VALUE value_args)
-{
-    struct rb_reg_onig_match_args *args = (struct rb_reg_onig_match_args *)value_args;
-    args->result = rb_reg_onig_match(args->re, args->str, reg_onig_search, &args->args, &args->regs);
-    return Qnil;
-}
-
 /* returns byte offset */
 static long
 rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *set_match)
@@ -1810,38 +1799,22 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return -1;
     }
 
-    struct rb_reg_onig_match_args args = {
-        .re = re,
-        .str = str,
-        .args = {
-            .pos = pos,
-            .range = reverse ? 0 : len,
-        },
-        .regs = {0}
+    struct reg_onig_search_args args = {
+        .pos = pos,
+        .range = reverse ? 0 : len,
     };
+    struct re_registers regs = {0};
 
-    /* If there is a timeout set, then rb_reg_onig_match could raise a
-     * Regexp::TimeoutError so we want to protect it from leaking memory. */
-    if (rb_reg_match_time_limit) {
-        int state;
-        rb_protect(rb_reg_onig_match_try, (VALUE)&args, &state);
-        if (state) {
-            onig_region_free(&args.regs, false);
-            rb_jump_tag(state);
-        }
-    }
-    else {
-        rb_reg_onig_match_try((VALUE)&args);
-    }
+    OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, &regs);
 
-    if (args.result == ONIG_MISMATCH) {
+    if (result == ONIG_MISMATCH) {
         rb_backref_set(Qnil);
         return ONIG_MISMATCH;
     }
 
     VALUE match = match_alloc(rb_cMatch);
     rb_matchext_t *rm = RMATCH_EXT(match);
-    rm->regs = args.regs;
+    rm->regs = regs;
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
@@ -1858,7 +1831,7 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     rb_backref_set(match);
     if (set_match) *set_match = match;
 
-    return args.result;
+    return result;
 }
 
 long
@@ -4718,12 +4691,6 @@ rb_reg_timeout_p(regex_t *reg, void *end_time_)
     }
 
     return false;
-}
-
-void
-rb_reg_raise_timeout(void)
-{
-    rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
 }
 
 /*
