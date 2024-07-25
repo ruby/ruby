@@ -358,6 +358,19 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def measure_time
+    log = []
+    30.times do
+      t1 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      yield
+      t2 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      log << (t2 - t1)
+      return (t1 + t2) / 2 if t2 - t1 < 1
+      sleep 1
+    end
+    omit "failed to setup; the machine is stupidly slow #{log.inspect}"
+  end
+
   def test_stat
     tb = Process.clock_gettime(Process::CLOCK_REALTIME)
     Tempfile.create("stat") {|file|
@@ -365,26 +378,27 @@ class TestFile < Test::Unit::TestCase
       file.close
       path = file.path
 
-      retry_count = 0
-      while true
-        t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      t0 = measure_time do
         File.write(path, "foo")
-        sleep 2
-        t1 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      end
+
+      sleep 2
+
+      t1 = measure_time do
         File.write(path, "bar")
-        sleep 2
-        t2 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      end
+
+      sleep 2
+
+      t2 = measure_time do
         File.read(path)
         File.chmod(0644, path)
-        sleep 2
-        t3 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      end
+
+      sleep 2
+
+      t3 = measure_time do
         File.read(path)
-
-        t4 = Process.clock_gettime(Process::CLOCK_REALTIME)
-        break if t4 - t0 < 6.5
-
-        retry_count += 1
-        raise "failed to setup; the machine is too slow? #{t0} #{t1} #{t2} #{t3} #{t4}" if retry_count > 3
       end
 
       delta = 1
