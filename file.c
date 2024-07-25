@@ -3695,6 +3695,9 @@ rb_home_dir_of(VALUE user, VALUE result)
 {
 #ifdef HAVE_PWD_H
     VALUE dirname = rb_getpwdirnam_for_login(user);
+    if (dirname == Qnil) {
+        rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
+    }
     const char *dir = RSTRING_PTR(dirname);
 #else
     extern char *getlogin(void);
