@@ -19,9 +19,11 @@ module Prism
     end
 
     if RUBY_VERSION < "3.4"
-      filepaths -= [
-        "it_with_ordinary_parameter.txt"
-      ]
+      filepaths -= ["it_with_ordinary_parameter.txt"]
+    end
+
+    if RUBY_VERSION < "3.4" || RUBY_RELEASE_DATE < "2024-07-24"
+      filepaths -= ["dont_allow_return_inside_sclass_body.txt"]
     end
 
     filepaths.each do |filepath|
