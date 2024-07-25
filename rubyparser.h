@@ -396,6 +396,7 @@ typedef struct RNode_RESBODY {
     NODE node;
 
     struct RNode *nd_args;
+    struct RNode *nd_exc_var;
     struct RNode *nd_body;
     struct RNode *nd_next;
 } rb_node_resbody_t;

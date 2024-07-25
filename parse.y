@@ -1075,7 +1075,7 @@ static rb_node_for_masgn_t *rb_node_for_masgn_new(struct parser_params *p, NODE 
 static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
-static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
 static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
 static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
@@ -1183,7 +1183,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_RETRY(loc) (NODE *)rb_node_retry_new(p,loc)
 #define NEW_BEGIN(b,loc) (NODE *)rb_node_begin_new(p,b,loc)
 #define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
-#define NEW_RESBODY(a,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,ex,n,loc)
+#define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
 #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
 #define NEW_AND(f,s,loc) (NODE *)rb_node_and_new(p,f,s,loc)
 #define NEW_OR(f,s,loc) (NODE *)rb_node_or_new(p,f,s,loc)
@@ -1645,7 +1645,7 @@ rescued_expr(struct parser_params *p, NODE *arg, NODE *rescue,
              const YYLTYPE *arg_loc, const YYLTYPE *mod_loc, const YYLTYPE *res_loc)
 {
     YYLTYPE loc = code_loc_gen(mod_loc, res_loc);
-    rescue = NEW_RESBODY(0, remove_begin(rescue), 0, &loc);
+    rescue = NEW_RESBODY(0, 0, remove_begin(rescue), 0, &loc);
     loc.beg_pos = arg_loc->beg_pos;
     return NEW_RESCUE(arg, rescue, 0, &loc);
 }
@@ -3204,7 +3204,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         p->ctxt.in_rescue = $3.in_rescue;
                         NODE *resq;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
-                        resq = NEW_RESBODY(0, remove_begin($4), 0, &loc);
+                        resq = NEW_RESBODY(0, 0, remove_begin($4), 0, &loc);
                         $$ = NEW_RESCUE(remove_begin($1), resq, 0, &@$);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
@@ -3238,7 +3238,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@modifier_rescue, &@resbody);
-                        $resbody = NEW_RESBODY(0, remove_begin($resbody), 0, &loc);
+                        $resbody = NEW_RESBODY(0, 0, remove_begin($resbody), 0, &loc);
                         loc.beg_pos = @mrhs_arg.beg_pos;
                         $mrhs_arg = NEW_RESCUE($mrhs_arg, $resbody, 0, &loc);
                         $$ = node_assign(p, (NODE *)$mlhs, $mrhs_arg, $lex_ctxt, &@$);
@@ -3343,7 +3343,7 @@ command_rhs	: command_call   %prec tOP_ASGN
                         p->ctxt.in_rescue = $3.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
                         value_expr($1);
-                        $$ = NEW_RESCUE($1, NEW_RESBODY(0, remove_begin($4), 0, &loc), 0, &@$);
+                        $$ = NEW_RESCUE($1, NEW_RESBODY(0, 0, remove_begin($4), 0, &loc), 0, &@$);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
                 | command_asgn
@@ -5960,13 +5960,12 @@ opt_rescue	: k_rescue exc_list exc_var then
                   compstmt
                   opt_rescue
                     {
-                        NODE *body = $5;
+                        NODE *err = $3;
                         if ($3) {
-                            NODE *err = NEW_ERRINFO(&@3);
+                            err = NEW_ERRINFO(&@3);
                             err = node_assign(p, $3, err, NO_LEX_CTXT, &@3);
-                            body = block_append(p, err, body);
                         }
-                        $$ = NEW_RESBODY($2, body, $6, &@$);
+                        $$ = NEW_RESBODY($2, $3, $5, $6, &@$);
                         if ($2) {
                             fixpos($$, $2);
                         }
@@ -11475,10 +11474,11 @@ rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *
 }
 
 static rb_node_resbody_t *
-rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc)
+rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc)
 {
     rb_node_resbody_t *n = NODE_NEWNODE(NODE_RESBODY, rb_node_resbody_t, loc);
     n->nd_args = nd_args;
+    n->nd_exc_var = nd_exc_var;
     n->nd_body = nd_body;
     n->nd_next = nd_next;
 

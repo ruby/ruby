@@ -397,9 +397,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_RESBODY:
         ANN("rescue clause (cont'd)");
-        ANN("format: rescue [nd_args]; [nd_body]; (rescue) [nd_head]");
+        ANN("format: rescue [nd_args] (=> [nd_exc_var]); [nd_body]; (rescue) [nd_next]");
         ANN("example: begin; foo; rescue; bar; else; baz; end");
         F_NODE(nd_args, RNODE_RESBODY, "rescue exceptions");
+        F_NODE(nd_exc_var, RNODE_RESBODY, "exception variable");
         F_NODE(nd_body, RNODE_RESBODY, "rescue clause");
         LAST_NODE;
         F_NODE(nd_next, RNODE_RESBODY, "next rescue clause");
