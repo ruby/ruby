@@ -403,7 +403,7 @@ create_makefile '#{@spec.name}'
 
   def test_uninstall_not_ok
     quick_gem "z" do |s|
-      s.add_runtime_dependency @spec.name
+      s.add_dependency @spec.name
     end
 
     uninstaller = Gem::Uninstaller.new @spec.name

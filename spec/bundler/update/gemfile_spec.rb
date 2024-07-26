@@ -4,8 +4,8 @@ RSpec.describe "bundle update" do
   context "with --gemfile" do
     it "finds the gemfile" do
       gemfile bundled_app("NotGemfile"), <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem 'rack'
+        source "https://gem.repo1"
+        gem 'myrack'
       G
 
       bundle :install, gemfile: bundled_app("NotGemfile")
@@ -14,15 +14,15 @@ RSpec.describe "bundle update" do
       # Specify BUNDLE_GEMFILE for `the_bundle`
       # to retrieve the proper Gemfile
       ENV["BUNDLE_GEMFILE"] = "NotGemfile"
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
   end
 
   context "with gemfile set via config" do
     before do
       gemfile bundled_app("NotGemfile"), <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem 'rack'
+        source "https://gem.repo1"
+        gem 'myrack'
       G
 
       bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
@@ -33,7 +33,7 @@ RSpec.describe "bundle update" do
       bundle "update", all: true
       bundle "list"
 
-      expect(out).to include("rack (1.0.0)")
+      expect(out).to include("myrack (1.0.0)")
     end
 
     it "uses the gemfile while in a subdirectory" do
@@ -41,7 +41,7 @@ RSpec.describe "bundle update" do
       bundle "update", all: true, dir: bundled_app("subdir")
       bundle "list", dir: bundled_app("subdir")
 
-      expect(out).to include("rack (1.0.0)")
+      expect(out).to include("myrack (1.0.0)")
     end
   end
 end

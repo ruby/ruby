@@ -11,14 +11,14 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
     subject { Bundler.rubygems.validate(spec) }
 
-    it "validates with packaging mode disabled" do
-      expect(spec).to receive(:validate).with(false)
+    it "validates for resolution" do
+      expect(spec).to receive(:validate_for_resolution)
       subject
     end
 
     context "with an invalid spec" do
       before do
-        expect(spec).to receive(:validate).with(false).
+        expect(spec).to receive(:validate_for_resolution).
           and_raise(Gem::InvalidSpecificationException.new("TODO is not an author"))
       end
 
