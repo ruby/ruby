@@ -497,6 +497,10 @@ class TestInteger < Test::Unit::TestCase
 
     assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1111, 1111_1111_1111_1111_1111_1111_1111_1111.ceil(1))
     assert_int_equal(10**400, (10**400).ceil(1))
+
+    assert_int_equal(10000000000, 1.ceil(-10), "[Bug #20654]")
+    assert_int_equal(100000000000000000000, 1.ceil(-20), "[Bug #20654]")
+    assert_int_equal(100000000000000000000000000000000000000000000000000, 1.ceil(-50), "[Bug #20654]")
   end
 
   def test_truncate
