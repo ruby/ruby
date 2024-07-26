@@ -1161,8 +1161,9 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 /*
  * Returns a new +Array+ object, populated with the given objects:
  *
- *   Array.[]( 1, 'a', /^A/) # => [1, "a", /^A/]
- *   Array.[]                # => []
+ *   Array[1, 'a', /^A/]    # => [1, "a", /^A/]
+ *   Array[]                # => []
+ *   Array.[](1, 'a', /^A/) # => [1, "a", /^A/]
  *
  */
 
