@@ -561,6 +561,10 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.ceil(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(0.99, 0.981.ceil(prec))
+
+    assert_equal(10000000000, 1.0.ceil(-10), "[Bug #20654]")
+    assert_equal(100000000000000000000, 1.0.ceil(-20), "[Bug #20654]")
+    assert_equal(100000000000000000000000000000000000000000000000000, 1.0.ceil(-50), "[Bug #20654]")
   end
 
   def test_truncate_with_precision
