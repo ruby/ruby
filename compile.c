@@ -11326,7 +11326,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
             }
           default:
             /* ignore */
-            rb_raise(rb_eSyntaxError, "dump_disasm_list error: %ld\n", FIX2LONG(link->type));
+            rb_raise(rb_eSyntaxError, "dump_disasm_list error: %d\n", (int)link->type);
         }
         link = link->next;
     }
