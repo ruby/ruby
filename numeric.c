@@ -2373,11 +2373,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 static VALUE
 rb_int_floor(VALUE num, int ndigits)
 {
-    VALUE f;
-
-    if (int_round_zero_p(num, ndigits))
-        return INT2FIX(0);
-    f = int_pow(10, -ndigits);
+    VALUE f = int_pow(10, -ndigits);
     if (FIXNUM_P(num) && FIXNUM_P(f)) {
         SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
         int neg = x < 0;
@@ -2386,11 +2382,13 @@ rb_int_floor(VALUE num, int ndigits)
         if (neg) x = -x;
         return LONG2NUM(x);
     }
-    if (RB_FLOAT_TYPE_P(f)) {
-        /* then int_pow overflow */
-        return INT2FIX(0);
+    else {
+        bool neg = int_neg_p(num);
+        if (neg) num = rb_int_minus(rb_int_plus(rb_int_uminus(num), f), INT2FIX(1));
+        num = rb_int_mul(rb_int_div(num, f), f);
+        if (neg) num = rb_int_uminus(num);
+        return num;
     }
-    return rb_int_minus(num, rb_int_modulo(num, f));
 }
 
 static VALUE

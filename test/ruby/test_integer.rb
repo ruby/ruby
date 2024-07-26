@@ -465,6 +465,10 @@ class TestInteger < Test::Unit::TestCase
 
     assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1111, 1111_1111_1111_1111_1111_1111_1111_1111.floor(1))
     assert_int_equal(10**400, (10**400).floor(1))
+
+    assert_int_equal(-10000000000, -1.floor(-10), "[Bug #20654]")
+    assert_int_equal(-100000000000000000000, -1.floor(-20), "[Bug #20654]")
+    assert_int_equal(-100000000000000000000000000000000000000000000000000, -1.floor(-50), "[Bug #20654]")
   end
 
   def test_ceil
