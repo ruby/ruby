@@ -2235,10 +2235,6 @@ flo_ndigits(int argc, VALUE *argv)
  *  |      -4 |       10000 |                     -20000 |
  *  |      -5 |      100000 |                    -100000 |
  *  |      -6 |     1000000 |                   -1000000 |
- *  |      -7 |    10000000 |                  -10000000 |
- *  |      -8 |   100000000 |                 -100000000 |
- *  |      -9 |  1000000000 |                -1000000000 |
- *  |     -10 | 10000000000 |                          0 |
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
@@ -2744,13 +2740,16 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *    floor(digits = 0) -> integer or float
+ *    floor(ndigits = 0) -> float or integer
  *
- *  Returns the largest number that is less than or equal to +self+ with
- *  a precision of +digits+ decimal digits.
+ *  Returns the largest float or integer that is less than or equal to +self+,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  \Numeric implements this by converting +self+ to a Float and
- *  invoking Float#floor.
+ *  Equivalent to <tt>self.to_f.floor(ndigits)</tt>.
+ *
+ *  Related: #ceil, Float#floor.
  */
 
 static VALUE
