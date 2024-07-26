@@ -2623,7 +2623,7 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t si
     VALUE obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
 
     if (RB_UNLIKELY(obj == Qfalse)) {
-	obj = newobj_cache_miss(objspace, cache, size_pool_idx, vm_locked);
+        obj = newobj_cache_miss(objspace, cache, size_pool_idx, vm_locked);
     }
 
     size_pools[size_pool_idx].total_allocated_objects++;
