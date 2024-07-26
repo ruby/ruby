@@ -55,6 +55,42 @@ RSpec.describe "bundle fund" do
     expect(out).to_not include("gem_with_dependent_funding")
   end
 
+  it "does not consider fund information for uninstalled optional dependencies" do
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
+      group :whatever, optional: true do
+        gem 'has_funding_and_other_metadata'
+      end
+      gem 'has_funding'
+      gem 'rack-obama'
+    G
+
+    bundle "fund"
+
+    expect(out).to include("* has_funding (1.2.3)\n  Funding: https://example.com/has_funding/funding")
+    expect(out).to_not include("has_funding_and_other_metadata")
+    expect(out).to_not include("rack-obama")
+  end
+
+  it "considers fund information for installed optional dependencies" do
+    bundle "config set with whatever"
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
+      group :whatever, optional: true do
+        gem 'has_funding_and_other_metadata'
+      end
+      gem 'has_funding'
+      gem 'rack-obama'
+    G
+
+    bundle "fund"
+
+    expect(out).to include("* has_funding_and_other_metadata (1.0)\n  Funding: https://example.com/has_funding_and_other_metadata/funding")
+    expect(out).to include("* has_funding (1.2.3)\n  Funding: https://example.com/has_funding/funding")
+    expect(out).to_not include("rack-obama")
+  end
+
   it "prints message if none of the gems have fund information" do
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo2)}"

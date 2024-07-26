@@ -13,8 +13,8 @@ class Gem::Requirement
   OPS = { # :nodoc:
     "=" => lambda {|v, r| v == r },
     "!=" => lambda {|v, r| v != r },
-    ">" => lambda {|v, r| v >  r },
-    "<" => lambda {|v, r| v <  r },
+    ">" => lambda {|v, r| v > r },
+    "<" => lambda {|v, r| v < r },
     ">=" => lambda {|v, r| v >= r },
     "<=" => lambda {|v, r| v <= r },
     "~>" => lambda {|v, r| v >= r && v.release < r.bump },

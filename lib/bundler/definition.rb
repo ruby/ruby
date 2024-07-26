@@ -1058,6 +1058,7 @@ module Bundler
                 (@new_platform && platforms.last == platform) ||
                 @path_changes ||
                 @dependency_changes ||
+                @locked_spec_with_invalid_deps ||
                 !@originally_locked_specs.incomplete_for_platform?(dependencies, platform)
 
         remove_platform(platform)
