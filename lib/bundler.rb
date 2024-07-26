@@ -42,6 +42,7 @@ module Bundler
   autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
   autoload :CLI,                    File.expand_path("bundler/cli", __dir__)
   autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
+  autoload :CompactIndexClient,     File.expand_path("bundler/compact_index_client", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
@@ -164,6 +165,10 @@ module Bundler
       else
         load.setup(*groups)
       end
+    end
+
+    def auto_switch
+      self_manager.restart_with_locked_bundler_if_needed
     end
 
     # Automatically install dependencies if Bundler.settings[:auto_install] exists.
@@ -356,7 +361,7 @@ module Bundler
     def settings
       @settings ||= Settings.new(app_config_path)
     rescue GemfileNotFound
-      @settings = Settings.new(Pathname.new(".bundle").expand_path)
+      @settings = Settings.new
     end
 
     # @return [Hash] Environment present before Bundler was activated

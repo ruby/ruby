@@ -164,8 +164,8 @@ RSpec.describe "bundle cache with git" do
       s.add_dependency "submodule"
     end
 
-    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", dir: lib_path("has_submodule-1.0")
-    sys_exec "git commit -m \"submodulator\"", dir: lib_path("has_submodule-1.0")
+    git "submodule add #{lib_path("submodule-1.0")} submodule-1.0", lib_path("has_submodule-1.0")
+    git "commit -m \"submodulator\"", lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"

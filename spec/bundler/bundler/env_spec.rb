@@ -150,7 +150,7 @@ RSpec.describe Bundler::Env do
       before do
         gemfile("source \"#{file_uri_for(gem_repo1)}\"; gemspec")
 
-        File.open(bundled_app.join("foo.gemspec"), "wb") do |f|
+        File.open(bundled_app("foo.gemspec"), "wb") do |f|
           f.write(gemspec)
         end
 

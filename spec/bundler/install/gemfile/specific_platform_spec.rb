@@ -1066,6 +1066,60 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "automatically fixes the lockfile when only RUBY platform locked, and adding a dependency with subdependencies not valid for RUBY" do
+    simulate_platform "x86_64-linux" do
+      build_repo4 do
+        build_gem("sorbet", "0.5.10160") do |s|
+          s.add_runtime_dependency "sorbet-static", "= 0.5.10160"
+        end
+
+        build_gem("sorbet-static", "0.5.10160") do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "sorbet"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock"
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            sorbet (0.5.10160)
+              sorbet-static (= 0.5.10160)
+            sorbet-static (0.5.10160-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          sorbet
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   it "locks specific platforms automatically" do
     simulate_platform "x86_64-linux" do
       build_repo4 do

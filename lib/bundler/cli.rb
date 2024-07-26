@@ -65,7 +65,7 @@ module Bundler
         Bundler.reset_settings_and_root!
       end
 
-      Bundler.self_manager.restart_with_locked_bundler_if_needed
+      Bundler.auto_switch
 
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
@@ -767,13 +767,10 @@ module Bundler
 
       return unless SharedHelpers.md5_available?
 
-      latest = Fetcher::CompactIndex.
-               new(nil, Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org")), nil, nil).
-               send(:compact_index_client).
-               instance_variable_get(:@cache).
-               dependencies("bundler").
-               map {|d| Gem::Version.new(d.first) }.
-               max
+      require_relative "vendored_uri"
+      remote = Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org"))
+      cache_path = Bundler.user_cache.join("compact_index", remote.cache_slug)
+      latest = Bundler::CompactIndexClient.new(cache_path).latest_version("bundler")
       return unless latest
 
       current = Gem::Version.new(VERSION)

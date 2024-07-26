@@ -86,11 +86,7 @@ class Gem::Uninstaller
 
     list = []
 
-    dirs =
-      Gem::Specification.dirs +
-      [Gem.default_specifications_dir]
-
-    Gem::Specification.each_spec dirs do |spec|
+    specification_record.stubs.each do |spec|
       next unless dependency.matches_spec? spec
 
       list << spec
@@ -102,7 +98,7 @@ class Gem::Uninstaller
 
     default_specs, list = list.partition(&:default_gem?)
     warn_cannot_uninstall_default_gems(default_specs - list)
-    @default_specs_matching_uninstall_params = default_specs
+    @default_specs_matching_uninstall_params = default_specs.map(&:to_spec)
 
     list, other_repo_specs = list.partition do |spec|
       @gem_home == spec.base_dir ||
@@ -126,7 +122,7 @@ class Gem::Uninstaller
       remove_all list
 
     elsif list.size > 1
-      gem_names = list.map(&:full_name)
+      gem_names = list.map(&:full_name_with_location)
       gem_names << "All versions"
 
       say
@@ -147,7 +143,9 @@ class Gem::Uninstaller
   ##
   # Uninstalls gem +spec+
 
-  def uninstall_gem(spec)
+  def uninstall_gem(stub)
+    spec = stub.to_spec
+
     @spec = spec
 
     unless dependencies_ok? spec
@@ -164,6 +162,8 @@ class Gem::Uninstaller
     remove_executables @spec
     remove_plugins @spec
     remove @spec
+
+    specification_record.remove_spec(stub)
 
     regenerate_plugins
 
@@ -275,8 +275,6 @@ class Gem::Uninstaller
 
     safe_delete { FileUtils.rm_r gemspec }
     announce_deletion_of(spec)
-
-    Gem::Specification.reset
   end
 
   ##
@@ -292,7 +290,6 @@ class Gem::Uninstaller
   # Regenerates plugin wrappers after removal.
 
   def regenerate_plugins
-    specification_record = @install_dir ? Gem::SpecificationRecord.from_path(@install_dir) : Gem::Specification.specification_record
     latest = specification_record.latest_spec_for(@spec.name)
     return if latest.nil?
 
@@ -380,6 +377,10 @@ class Gem::Uninstaller
   end
 
   private
+
+  def specification_record
+    @specification_record ||= @install_dir ? Gem::SpecificationRecord.from_path(@install_dir) : Gem::Specification.specification_record
+  end
 
   def announce_deletion_of(spec)
     name = spec.full_name

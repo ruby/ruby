@@ -79,6 +79,14 @@ RSpec.describe ".bundle/config" do
       expect(home(".bundle/config")).to exist
     end
 
+    it "does not list global settings as local" do
+      bundle "config set --global foo bar"
+      bundle "config list", dir: home
+
+      expect(out).to include("for the current user")
+      expect(out).not_to include("for your local app")
+    end
+
     it "works with an absolute path" do
       ENV["BUNDLE_APP_CONFIG"] = tmp("foo/bar").to_s
       bundle "config set --local path vendor/bundle"
@@ -350,6 +358,12 @@ end
 E
       expect(out).to eq("http://gems.example.org/ => http://gem-mirror.example.org/")
     end
+
+    it "allows configuring fallback timeout for each mirror, and does not duplicate configs", rubygems: ">= 3.5.12" do
+      bundle "config set --global mirror.https://rubygems.org.fallback_timeout 1"
+      bundle "config set --global mirror.https://rubygems.org.fallback_timeout 2"
+      expect(File.read(home(".bundle/config"))).to include("BUNDLE_MIRROR").once
+    end
   end
 
   describe "quoting" do
@@ -439,7 +453,7 @@ E
     it "does not make bundler crash and ignores the configuration" do
       bundle "config list --parseable"
 
-      expect(out).to eq("#mirror.https://rails-assets.org/=http://localhost:9292")
+      expect(out).to be_empty
       expect(err).to be_empty
 
       ruby(<<~RUBY)

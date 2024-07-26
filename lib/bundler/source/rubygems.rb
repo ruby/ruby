@@ -10,7 +10,7 @@ module Bundler
       # Ask for X gems per API request
       API_REQUEST_SIZE = 50
 
-      attr_accessor :remotes
+      attr_reader :remotes
 
       def initialize(options = {})
         @options = options
@@ -20,6 +20,7 @@ module Bundler
         @allow_cached = false
         @allow_local = options["allow_local"] || false
         @checksum_store = Checksum::Store.new
+        @original_remotes = nil
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
       end
@@ -94,10 +95,15 @@ module Bundler
         new(options)
       end
 
+      def remotes=(new_remotes)
+        @original_remotes = @remotes
+        @remotes = new_remotes
+      end
+
       def to_lock
         out = String.new("GEM\n")
-        remotes.reverse_each do |remote|
-          out << "  remote: #{remove_auth remote}\n"
+        lockfile_remotes.reverse_each do |remote|
+          out << "  remote: #{remote}\n"
         end
         out << "  specs:\n"
       end
@@ -136,20 +142,17 @@ module Bundler
           index = @allow_remote ? remote_specs.dup : Index.new
           index.merge!(cached_specs) if @allow_cached
           index.merge!(installed_specs) if @allow_local
+
+          # complete with default specs, only if not already available in the
+          # index through remote, cached, or installed specs
+          index.use(default_specs) if @allow_local
+
           index
         end
       end
 
       def install(spec, options = {})
-        force = options[:force]
-        ensure_builtin_gems_cached = options[:ensure_builtin_gems_cached]
-
-        if ensure_builtin_gems_cached && spec.default_gem? && !cached_path(spec)
-          cached_built_in_gem(spec) unless spec.remote
-          force = true
-        end
-
-        if installed?(spec) && !force
+        if (spec.default_gem? && !cached_built_in_gem(spec)) || (installed?(spec) && !options[:force])
           print_using_message "Using #{version_message(spec, options[:previous_spec])}"
           return nil # no post-install message
         end
@@ -362,12 +365,21 @@ module Bundler
 
       def installed_specs
         @installed_specs ||= Index.build do |idx|
-          Bundler.rubygems.all_specs.reverse_each do |spec|
+          Bundler.rubygems.installed_specs.reverse_each do |spec|
             spec.source = self
             if Bundler.rubygems.spec_missing_extensions?(spec, false)
               Bundler.ui.debug "Source #{self} is ignoring #{spec} because it is missing extensions"
               next
             end
+            idx << spec
+          end
+        end
+      end
+
+      def default_specs
+        @default_specs ||= Index.build do |idx|
+          Bundler.rubygems.default_specs.each do |spec|
+            spec.source = self
             idx << spec
           end
         end
@@ -456,6 +468,10 @@ module Bundler
       end
 
       private
+
+      def lockfile_remotes
+        @original_remotes || credless_remotes
+      end
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.

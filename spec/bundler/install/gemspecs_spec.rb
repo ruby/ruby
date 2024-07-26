@@ -157,5 +157,25 @@ RSpec.describe "bundle install" do
       expect(err).to include("but your Gemfile specified")
       expect(exitstatus).to eq(18)
     end
+
+    it "validates gemspecs just once when everything installed and lockfile up to date" do
+      build_lib "foo"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gemspec path: "#{lib_path("foo-1.0")}"
+
+        module Monkey
+          def validate(spec)
+            puts "Validate called on \#{spec.full_name}"
+          end
+        end
+        Bundler.rubygems.extend(Monkey)
+      G
+
+      bundle "install"
+
+      expect(out).to include("Validate called on foo-1.0").once
+    end
   end
 end

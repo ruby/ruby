@@ -126,7 +126,7 @@ RSpec.describe "bundle list" do
 
       build_git "git_test", "1.0.0", path: lib_path("git_test")
 
-      build_lib("gemspec_test", path: tmp.join("gemspec_test")) do |s|
+      build_lib("gemspec_test", path: tmp("gemspec_test")) do |s|
         s.add_dependency "bar", "=1.0.0"
       end
 
@@ -135,7 +135,7 @@ RSpec.describe "bundle list" do
         gem "rack"
         gem "rails"
         gem "git_test", :git => "#{lib_path("git_test")}"
-        gemspec :path => "#{tmp.join("gemspec_test")}"
+        gemspec :path => "#{tmp("gemspec_test")}"
       G
     end
 

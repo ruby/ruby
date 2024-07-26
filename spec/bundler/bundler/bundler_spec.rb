@@ -233,8 +233,8 @@ RSpec.describe Bundler do
 
       allow(Bundler).to receive(:root).and_return(bundled_app)
 
-      Bundler.mkdir_p(bundled_app.join("foo", "bar"))
-      expect(bundled_app.join("foo", "bar")).to exist
+      Bundler.mkdir_p(bundled_app("foo", "bar"))
+      expect(bundled_app("foo", "bar")).to exist
     end
   end
 

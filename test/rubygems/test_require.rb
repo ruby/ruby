@@ -489,6 +489,22 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-3.0], loaded_spec_names
   end
 
+  def test_default_gem_and_normal_gem_same_version
+    default_gem_spec = new_default_spec("default", "3.0",
+                                        nil, "default/gem.rb")
+    install_default_gems(default_gem_spec)
+    normal_gem_spec = util_spec("default", "3.0", nil,
+                               "lib/default/gem.rb")
+    install_specs(normal_gem_spec)
+
+    # Load default ruby gems fresh as if we've just started a ruby script.
+    Gem::Specification.reset
+
+    assert_require "default/gem"
+    assert_equal %w[default-3.0], loaded_spec_names
+    refute Gem.loaded_specs["default"].default_gem?
+  end
+
   def test_normal_gem_does_not_shadow_default_gem
     default_gem_spec = new_default_spec("foo", "2.0", nil, "foo.rb")
     install_default_gems(default_gem_spec)

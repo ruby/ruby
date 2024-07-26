@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
-require_relative "command_execution"
 require_relative "the_bundle"
 require_relative "path"
+require_relative "options"
+require_relative "subprocess"
 
 module Spec
   module Helpers
     include Spec::Path
+    include Spec::Options
+    include Spec::Subprocess
 
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
@@ -27,22 +30,6 @@ module Spec
       TheBundle.new(*args)
     end
 
-    def command_executions
-      @command_executions ||= []
-    end
-
-    def last_command
-      command_executions.last || raise("There is no last command")
-    end
-
-    def out
-      last_command.stdout
-    end
-
-    def err
-      last_command.stderr
-    end
-
     MAJOR_DEPRECATION = /^\[DEPRECATED\]\s*/
 
     def err_without_deprecations
@@ -51,10 +38,6 @@ module Spec
 
     def deprecations
       err.split("\n").select {|l| l =~ MAJOR_DEPRECATION }.join("\n").split(MAJOR_DEPRECATION)
-    end
-
-    def exitstatus
-      last_command.exitstatus
     end
 
     def run(cmd, *args)
@@ -122,7 +105,7 @@ module Spec
     end
 
     def bundler(cmd, options = {})
-      options[:bundle_bin] = system_gem_path.join("bin/bundler")
+      options[:bundle_bin] = system_gem_path("bin/bundler")
       bundle(cmd, options)
     end
 
@@ -175,54 +158,13 @@ module Spec
       "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
     end
 
-    def git(cmd, path, options = {})
-      sys_exec("git #{cmd}", options.merge(dir: path))
-    end
-
-    def sys_exec(cmd, options = {})
+    def sys_exec(cmd, options = {}, &block)
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/switch_rubygems.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
-      dir = options[:dir] || bundled_app
-      command_execution = CommandExecution.new(cmd.to_s, dir)
+      options[:env] = env
+      options[:dir] ||= bundled_app
 
-      require "open3"
-      require "shellwords"
-      Open3.popen3(env, *cmd.shellsplit, chdir: dir) do |stdin, stdout, stderr, wait_thr|
-        yield stdin, stdout, wait_thr if block_given?
-        stdin.close
-
-        stdout_read_thread = Thread.new { stdout.read }
-        stderr_read_thread = Thread.new { stderr.read }
-        command_execution.original_stdout = stdout_read_thread.value.strip
-        command_execution.original_stderr = stderr_read_thread.value.strip
-
-        status = wait_thr.value
-        command_execution.exitstatus = if status.exited?
-          status.exitstatus
-        elsif status.signaled?
-          exit_status_for_signal(status.termsig)
-        end
-      end
-
-      unless options[:raise_on_error] == false || command_execution.success?
-        raise <<~ERROR
-
-          Invoking `#{cmd}` failed with output:
-          ----------------------------------------------------------------------
-          #{command_execution.stdboth}
-          ----------------------------------------------------------------------
-        ERROR
-      end
-
-      command_executions << command_execution
-
-      command_execution.stdout
-    end
-
-    def all_commands_output
-      return "" if command_executions.empty?
-
-      "\n\nCommands:\n#{command_executions.map(&:to_s_verbose).join("\n\n")}"
+      sh(cmd, options, &block)
     end
 
     def config(config = nil, path = bundled_app(".bundle/config"))
@@ -369,16 +311,6 @@ module Spec
       end
     end
 
-    def opt_add(option, options)
-      [option.strip, options].compact.reject(&:empty?).join(" ")
-    end
-
-    def opt_remove(option, options)
-      return unless options
-
-      options.split(" ").reject {|opt| opt.strip == option.strip }.join(" ")
-    end
-
     def break_git!
       FileUtils.mkdir_p(tmp("broken_path"))
       File.open(tmp("broken_path/git"), "w", 0o755) do |f|
@@ -479,7 +411,7 @@ module Spec
     end
 
     def revision_for(path)
-      sys_exec("git rev-parse HEAD", dir: path).strip
+      git("rev-parse HEAD", path).strip
     end
 
     def with_read_only(pattern)

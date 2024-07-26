@@ -69,7 +69,7 @@ RSpec.describe "hook plugins" do
       bundle "plugin install after-install-all-plugin --source #{file_uri_for(gem_repo2)}"
     end
 
-    it "runs after each rubygem is installed" do
+    it "runs after each all rubygems are installed" do
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rake"

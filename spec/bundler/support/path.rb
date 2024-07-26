@@ -3,8 +3,12 @@
 require "pathname"
 require "rbconfig"
 
+require_relative "env"
+
 module Spec
   module Path
+    include Spec::Env
+
     def source_root
       @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../..").expand_path(__dir__)
     end
@@ -58,7 +62,7 @@ module Spec
     end
 
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "gem"
+      @gem_bin ||= ENV["GEM_COMMAND"] || "gem"
     end
 
     def path
@@ -109,7 +113,7 @@ module Spec
     end
 
     def home(*path)
-      tmp.join("home", *path)
+      tmp("home", *path)
     end
 
     def default_bundle_path(*path)
@@ -129,13 +133,13 @@ module Spec
     end
 
     def bundled_app(*path)
-      root = tmp.join("bundled_app")
+      root = tmp("bundled_app")
       FileUtils.mkdir_p(root)
       root.join(*path)
     end
 
     def bundled_app2(*path)
-      root = tmp.join("bundled_app2")
+      root = tmp("bundled_app2")
       FileUtils.mkdir_p(root)
       root.join(*path)
     end
@@ -161,15 +165,15 @@ module Spec
     end
 
     def base_system_gems
-      tmp.join("gems/base")
+      tmp("gems/base")
     end
 
     def rubocop_gems
-      tmp.join("gems/rubocop")
+      tmp("gems/rubocop")
     end
 
     def standard_gems
-      tmp.join("gems/standard")
+      tmp("gems/standard")
     end
 
     def file_uri_for(path)
@@ -257,17 +261,6 @@ module Spec
       File.open(gemspec_file, "w") {|f| f << contents }
     end
 
-    def ruby_core?
-      # avoid to warnings
-      @ruby_core ||= nil
-
-      if @ruby_core.nil?
-        @ruby_core = true & ENV["GEM_COMMAND"]
-      else
-        @ruby_core
-      end
-    end
-
     def git_root
       ruby_core? ? source_root : source_root.parent
     end
@@ -277,7 +270,7 @@ module Spec
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
 
-      sys_exec("git ls-files -z -- #{glob}", dir: source_root).split("\x0")
+      git("ls-files -z -- #{glob}", source_root).split("\x0")
     end
 
     def tracked_files_glob

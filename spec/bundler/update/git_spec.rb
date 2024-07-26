@@ -142,8 +142,8 @@ RSpec.describe "bundle update" do
           s.add_dependency "submodule"
         end
 
-        sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", dir: lib_path("has_submodule-1.0")
-        sys_exec "git commit -m \"submodulator\"", dir: lib_path("has_submodule-1.0")
+        git "submodule add #{lib_path("submodule-1.0")} submodule-1.0", lib_path("has_submodule-1.0")
+        git "commit -m \"submodulator\"", lib_path("has_submodule-1.0")
       end
 
       it "it unlocks the source when submodules are added to a git source" do

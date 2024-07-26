@@ -771,6 +771,11 @@ class Gem::Specification < Gem::BasicSpecification
   end
   private_class_method :clear_load_cache
 
+  def self.gem_path # :nodoc:
+    Gem.path
+  end
+  private_class_method :gem_path
+
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
       Gem::Util.glob_files_in_dir("*.gemspec", dir).each do |path|
@@ -830,7 +835,11 @@ class Gem::Specification < Gem::BasicSpecification
       next names if names.nonzero?
       versions = b.version <=> a.version
       next versions if versions.nonzero?
-      Gem::Platform.sort_priority(b.platform)
+      platforms = Gem::Platform.sort_priority(b.platform) <=> Gem::Platform.sort_priority(a.platform)
+      next platforms if platforms.nonzero?
+      default_gem = a.default_gem_priority <=> b.default_gem_priority
+      next default_gem if default_gem.nonzero?
+      a.base_dir_priority(gem_path) <=> b.base_dir_priority(gem_path)
     end
   end
 
@@ -906,7 +915,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return the directories that Specification uses to find specs.
 
   def self.dirs
-    @@dirs ||= Gem::SpecificationRecord.dirs_from(Gem.path)
+    @@dirs ||= Gem::SpecificationRecord.dirs_from(gem_path)
   end
 
   ##

@@ -70,7 +70,7 @@ module Spec
 
       ENV["BUNDLE_PATH"] = nil
       ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gem_path.to_s
-      ENV["PATH"] = [Path.system_gem_path.join("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = [Path.system_gem_path("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
       ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
     end
 
@@ -117,7 +117,14 @@ module Spec
     def gem_activate_and_possibly_install(gem_name)
       gem_activate(gem_name)
     rescue Gem::LoadError => e
-      Gem.install(gem_name, e.requirement)
+      # Windows 3.0 puts a Windows stub script as  `rake` while it should be
+      # named `rake.bat`. RubyGems does not like that and avoids overwriting it
+      # unless explicitly instructed to do so with `force`.
+      if RUBY_VERSION.start_with?("3.0") && Gem.win_platform?
+        Gem.install(gem_name, e.requirement, force: true)
+      else
+        Gem.install(gem_name, e.requirement)
+      end
       retry
     end
 
