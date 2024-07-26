@@ -210,7 +210,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     G
 
     bundle "update --bundler", artifice: "compact_index", verbose: true
-    expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 JAVA"
+    expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 java"
   end
 
   it "should evaluate the gemspec in its directory" do
@@ -461,7 +461,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         context "as a runtime dependency" do
           it "keeps all platform dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
+            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 ruby"
 
             checksums = checksums_section_when_existing do |c|
               c.no_checksum "foo", "1.0"
@@ -502,7 +502,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           let(:platform_specific_type) { :development }
 
           it "keeps all platform dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 RUBY"
+            expect(the_bundle).to include_gems "foo 1.0", "platform_specific 1.0 ruby"
 
             checksums = checksums_section_when_existing do |c|
               c.no_checksum "foo", "1.0"
@@ -544,7 +544,7 @@ RSpec.describe "bundle install from an existing gemspec" do
           let(:dependency) { "indirect_platform_specific" }
 
           it "keeps all platform dependencies in the lockfile" do
-            expect(the_bundle).to include_gems "foo 1.0", "indirect_platform_specific 1.0", "platform_specific 1.0 RUBY"
+            expect(the_bundle).to include_gems "foo 1.0", "indirect_platform_specific 1.0", "platform_specific 1.0 ruby"
 
             checksums = checksums_section_when_existing do |c|
               c.no_checksum "foo", "1.0"

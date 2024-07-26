@@ -71,12 +71,6 @@ module Bundler
       platforms
     end
 
-    def complete_platforms!(platforms)
-      platforms.each do |platform|
-        complete_platform(platform)
-      end
-    end
-
     def validate_deps(s)
       s.runtime_dependencies.each do |dep|
         next if dep.name == "bundler"
@@ -158,6 +152,12 @@ module Bundler
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
     end
 
+    def specs_compatible_with(other)
+      select do |spec|
+        other.valid?(spec)
+      end
+    end
+
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
 
@@ -195,6 +195,10 @@ module Bundler
       lookup.keys
     end
 
+    def valid?(s)
+      s.matches_current_metadata? && valid_dependencies?(s)
+    end
+
     private
 
     def reset!
@@ -209,7 +213,7 @@ module Bundler
         spec = specs.first
         matching_specs = spec.source.specs.search([spec.name, spec.version])
         platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).find do |s|
-          s.matches_current_metadata? && valid_dependencies?(s)
+          valid?(s)
         end
 
         if platform_spec
@@ -273,13 +277,11 @@ module Bundler
       specs_for_name = lookup[dep.name]
       return [] unless specs_for_name
 
-      matching_specs = if dep.force_ruby_platform
-        GemHelpers.force_ruby_platform(specs_for_name)
+      if platform
+        GemHelpers.select_best_platform_match(specs_for_name, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_platform_match(specs_for_name, platform || Bundler.local_platform)
+        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform)
       end
-      matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
-      matching_specs
     end
 
     def tsort_each_child(s)

@@ -175,7 +175,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   @@attributes = @@default_value.keys.sort_by(&:to_s)
-  @@array_attributes = @@default_value.reject {|_k,v| v != [] }.keys
+  @@array_attributes = @@default_value.select {|_k,v| v.is_a?(Array) }.keys
   @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition do |k|
     @@default_value[k].nil?
   end
@@ -874,7 +874,7 @@ class Gem::Specification < Gem::BasicSpecification
   # You probably want to use one of the Enumerable methods instead.
 
   def self.all
-    warn "NOTE: Specification.all called from #{caller.first}" unless
+    warn "NOTE: Specification.all called from #{caller(1, 1).first}" unless
       Gem::Deprecate.skip
     _all
   end

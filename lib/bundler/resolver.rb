@@ -79,7 +79,8 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      result.map {|package, version| version.to_specs(package) }.flatten.uniq
+      resolved_specs = result.map {|package, version| version.to_specs(package) }.flatten
+      resolved_specs |= @base.specs_compatible_with(SpecSet.new(resolved_specs))
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -254,7 +255,7 @@ module Bundler
       results = filter_matching_specs(results, locked_requirement) if locked_requirement
 
       results.group_by(&:version).reduce([]) do |groups, (version, specs)|
-        platform_specs = package.platforms.map {|platform| select_best_platform_match(specs, platform) }
+        platform_specs = package.platform_specs(specs)
 
         # If package is a top-level dependency,
         #   candidate is only valid if there are matching versions for all resolution platforms.
@@ -269,14 +270,22 @@ module Bundler
           next groups if platform_specs.all?(&:empty?)
         end
 
-        platform_specs.flatten!
-
         ruby_specs = select_best_platform_match(specs, Gem::Platform::RUBY)
-        groups << Resolver::Candidate.new(version, specs: ruby_specs) if ruby_specs.any?
+        ruby_group = Resolver::SpecGroup.new(ruby_specs)
 
-        next groups if platform_specs == ruby_specs || package.force_ruby_platform?
+        unless ruby_group.empty?
+          platform_specs.each do |specs|
+            ruby_group.merge(Resolver::SpecGroup.new(specs))
+          end
 
-        groups << Resolver::Candidate.new(version, specs: platform_specs)
+          groups << Resolver::Candidate.new(version, group: ruby_group, priority: -1)
+          next groups if package.force_ruby_platform?
+        end
+
+        platform_group = Resolver::SpecGroup.new(platform_specs.flatten.uniq)
+        next groups if platform_group == ruby_group
+
+        groups << Resolver::Candidate.new(version, group: platform_group, priority: 1)
 
         groups
       end
@@ -431,8 +440,8 @@ module Bundler
 
     def requirement_to_range(requirement)
       ranges = requirement.requirements.map do |(op, version)|
-        ver = Resolver::Candidate.new(version).generic!
-        platform_ver = Resolver::Candidate.new(version).platform_specific!
+        ver = Resolver::Candidate.new(version, priority: -1)
+        platform_ver = Resolver::Candidate.new(version, priority: 1)
 
         case op
         when "~>"

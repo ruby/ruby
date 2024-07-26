@@ -1321,7 +1321,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "adds compatible platform specific variants to the lockfile, even if resolution fallback to RUBY due to some other incompatible platform specific variant" do
+  it "adds compatible platform specific variants to the lockfile, even if resolution fallback to ruby due to some other incompatible platform specific variant" do
     simulate_platform "arm64-darwin-23" do
       build_repo4 do
         build_gem "google-protobuf", "3.25.1"

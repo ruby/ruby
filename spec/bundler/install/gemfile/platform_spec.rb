@@ -47,7 +47,7 @@ RSpec.describe "bundle install across platforms" do
       gem "platform_specific"
     G
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 JAVA"
+    expect(the_bundle).to include_gems "platform_specific 1.0 java"
   end
 
   it "pulls the pure ruby version on jruby if the java platform is not present in the lockfile and bundler is run in frozen mode", :jruby_only do
@@ -72,7 +72,7 @@ RSpec.describe "bundle install across platforms" do
       gem "platform_specific"
     G
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
   end
 
   context "on universal Rubies" do
@@ -80,15 +80,12 @@ RSpec.describe "bundle install across platforms" do
       build_repo4 do
         build_gem "darwin_single_arch" do |s|
           s.platform = "ruby"
-          s.write "lib/darwin_single_arch.rb", "DARWIN_SINGLE_ARCH = '1.0 RUBY'"
         end
         build_gem "darwin_single_arch" do |s|
           s.platform = "arm64-darwin"
-          s.write "lib/darwin_single_arch.rb", "DARWIN_SINGLE_ARCH = '1.0 arm64-darwin'"
         end
         build_gem "darwin_single_arch" do |s|
           s.platform = "x86_64-darwin"
-          s.write "lib/darwin_single_arch.rb", "DARWIN_SINGLE_ARCH = '1.0 x86_64-darwin'"
         end
       end
     end
@@ -158,7 +155,7 @@ RSpec.describe "bundle install across platforms" do
       gem "nokogiri"
     G
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
 
     simulate_new_machine
     bundle "config set --local force_ruby_platform true"
@@ -171,7 +168,7 @@ RSpec.describe "bundle install across platforms" do
     simulate_platform "java"
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
   end
 
   it "does not keep unneeded platforms for gems that are used" do
@@ -400,7 +397,7 @@ RSpec.describe "bundle install across platforms" do
 
     checksums.checksum gem_repo1, "platform_specific", "1.0"
 
-    expect(the_bundle).to include_gem "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gem "platform_specific 1.0 ruby"
 
     expect(lockfile).to eq <<~G
       GEM

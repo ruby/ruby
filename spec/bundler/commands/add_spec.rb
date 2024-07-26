@@ -28,6 +28,15 @@ RSpec.describe "bundle add" do
     end
   end
 
+  context "when Gemfile is empty, and frozen mode is set" do
+    it "shows error" do
+      gemfile 'source "https://gem.repo2"'
+      bundle "add bar", raise_on_error: false, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(err).to include("Frozen mode is set, but there's no lockfile")
+    end
+  end
+
   describe "without version specified" do
     it "version requirement becomes ~> major.minor.patch when resolved version is < 1.0" do
       bundle "add 'bar'"
