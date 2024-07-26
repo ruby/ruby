@@ -52,6 +52,25 @@ module Bundler
       specs.uniq
     end
 
+    def normalize_platforms!(deps, platforms)
+      complete_platforms = add_extra_platforms!(platforms)
+
+      complete_platforms.map do |platform|
+        next platform if platform == Gem::Platform::RUBY
+
+        begin
+          Integer(platform.version)
+        rescue ArgumentError, TypeError
+          next platform
+        end
+
+        less_specific_platform = Gem::Platform.new([platform.cpu, platform.os, nil])
+        next platform if incomplete_for_platform?(deps, less_specific_platform)
+
+        less_specific_platform
+      end.uniq
+    end
+
     def add_extra_platforms!(platforms)
       return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
 
@@ -133,11 +152,10 @@ module Bundler
     def incomplete_for_platform?(deps, platform)
       return false if @specs.empty?
 
-      @incomplete_specs = []
+      validation_set = self.class.new(@specs)
+      validation_set.for(deps, true, [platform])
 
-      self.for(deps, true, [platform])
-
-      @incomplete_specs.any?
+      validation_set.incomplete_specs.any?
     end
 
     def missing_specs

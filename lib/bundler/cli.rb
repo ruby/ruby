@@ -625,6 +625,7 @@ module Bundler
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
     method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
     method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
+    method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
     method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"
     method_option "major", type: :boolean, banner: "If updating, prefer updating to next major version (default)"
