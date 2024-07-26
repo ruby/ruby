@@ -1159,11 +1159,11 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 }
 
 /*
- * Returns a new array populated with the given objects.
+ * Returns a new +Array+ object, populated with the given objects:
  *
- *   Array.[]( 1, 'a', /^A/)  # => [1, "a", /^A/]
- *   Array[ 1, 'a', /^A/ ]    # => [1, "a", /^A/]
- *   [ 1, 'a', /^A/ ]         # => [1, "a", /^A/]
+ *   Array.[]( 1, 'a', /^A/) # => [1, "a", /^A/]
+ *   Array.[]                # => []
+ *
  */
 
 static VALUE
