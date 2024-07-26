@@ -461,6 +461,12 @@ module Bundler
         "Add the current platform to the lockfile with\n`bundle lock --add-platform #{local_platform}` and try again."
     end
 
+    def normalize_platforms
+      @platforms = resolve.normalize_platforms!(current_dependencies, platforms)
+
+      @resolve = SpecSet.new(resolve.for(current_dependencies, false, @platforms))
+    end
+
     def add_platform(platform)
       return if @platforms.include?(platform)
 
