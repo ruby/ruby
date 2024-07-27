@@ -360,6 +360,14 @@ For example, in Array, use:
 *    <=> other -> -1, 0, 1, or nil
 ```
 
+For a binary-operator style method (e.g., Array#&),
+cite `self` in the call-seq (not, e.g., `array` or `receiver`):
+
+```
+* call-seq:
+*   self & other_array -> new_array
+```
+
 Arguments:
 
 - If the method does not accept arguments, omit the parentheses.
