@@ -5429,20 +5429,30 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array & other_array -> new_array
+ *    self & other_array -> new_array
  *
- *  Returns a new +Array+ containing each element found in both +array+ and +Array+ +other_array+;
- *  duplicates are omitted; items are compared using <tt>eql?</tt>
- *  (items must also implement +hash+ correctly):
+ *  Returns a new +Array+ object containing the _intersection_ of +self+ and +other_array+;
+ *  that is, containing those elements found in both +self+ and +other_array+:
  *
  *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
- *    [0, 1, 0, 1] & [0, 1] # => [0, 1]
  *
- *  Preserves order from +array+:
+ *  Omits duplicates:
+ *
+ *    [0, 1, 1, 0] & [0, 1] # => [0, 1]
+ *
+ *  Preserves order from +self+:
  *
  *    [0, 1, 2] & [3, 2, 1, 0] # => [0, 1, 2]
  *
- *  Related: Array#intersection.
+ *  Identifies common elements using method <tt>#eql?</tt>
+ *  (as defined in each element of +self+).
+ *
+ *  Related:
+ *
+ *  - Array#intersection: intersection of +self+ and multiple other arrays.
+ *  - Array#|: union of +self+ and one other array.
+ *  - Array#union: union of +self+ and multiple other arrays.
+ *
  */
 
 
