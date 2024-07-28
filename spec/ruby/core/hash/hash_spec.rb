@@ -41,13 +41,4 @@ describe "Hash#hash" do
     h.hash.should == {x: [h]}.hash
     # Like above, because h.eql?(x: [h])
   end
-
-  ruby_version_is "3.1" do
-    it "allows omitting values" do
-      a = 1
-      b = 2
-
-     eval('{a:, b:}.should == { a: 1, b: 2 }')
-    end
-  end
 end

@@ -4,12 +4,12 @@ require_relative 'fixtures/hash_strings_utf8'
 require_relative 'fixtures/hash_strings_usascii'
 
 describe "Hash literal" do
-  it "{} should return an empty hash" do
+  it "{} should return an empty Hash" do
     {}.size.should == 0
     {}.should == {}
   end
 
-  it "{} should return a new hash populated with the given elements" do
+  it "{} should return a new Hash populated with the given elements" do
     h = {a: 'a', 'b' => 3, 44 => 2.3}
     h.size.should == 3
     h.should == {a: "a", "b" => 3, 44 => 2.3}
@@ -110,7 +110,7 @@ describe "Hash literal" do
     -> { eval("{:a?=> 1}") }.should raise_error(SyntaxError)
   end
 
-  it "constructs a new hash with the given elements" do
+  it "constructs a new Hash with the given elements" do
     {foo: 123}.should == {foo: 123}
     h = {rbx: :cool, specs: 'fail_sometimes'}
     {rbx: :cool, specs: 'fail_sometimes'}.should == h
@@ -232,6 +232,51 @@ describe "Hash literal" do
       ScratchPad.recorded.should == []
     end
   end
+
+  describe "with omitted values" do # a.k.a. "Hash punning" or "Shorthand Hash syntax"
+    it "accepts short notation 'key' for 'key: value' syntax" do
+      a, b, c = 1, 2, 3
+      h = eval('{a:}')
+      {a: 1}.should == h
+      h = eval('{a:, b:, c:}')
+      {a: 1, b: 2, c: 3}.should == h
+    end
+
+    it "ignores hanging comma on short notation" do
+      a, b, c = 1, 2, 3
+      h = eval('{a:, b:, c:,}')
+      {a: 1, b: 2, c: 3}.should == h
+    end
+
+    it "accepts mixed syntax" do
+      a, e = 1, 5
+      h = eval('{a:, b: 2, "c" => 3, :d => 4, e:}')
+      eval('{a: 1, :b => 2, "c" => 3, "d": 4, e: 5}').should == h
+    end
+
+    it "works with methods and local vars" do
+      a = Class.new
+      a.class_eval(<<-RUBY)
+        def bar
+          "baz"
+        end
+
+        def foo(val)
+          {bar:, val:}
+        end
+      RUBY
+
+      a.new.foo(1).should == {bar: "baz", val: 1}
+    end
+
+    it "raises a SyntaxError when the Hash key ends with `!`" do
+      -> { eval("{a!:}") }.should raise_error(SyntaxError, /identifier a! is not valid to get/)
+    end
+
+    it "raises a SyntaxError when the Hash key ends with `?`" do
+      -> { eval("{a?:}") }.should raise_error(SyntaxError, /identifier a\? is not valid to get/)
+    end
+  end
 end
 
 describe "The ** operator" do
@@ -256,53 +301,6 @@ describe "The ** operator" do
       m(**h).should == { two: 2 }
       m(**h).should_not.equal?(h)
       h.should == { one: 1, two: 2 }
-    end
-  end
-
-  ruby_version_is "3.1" do
-    describe "hash with omitted value" do
-      it "accepts short notation 'key' for 'key: value' syntax" do
-        a, b, c = 1, 2, 3
-        h = eval('{a:}')
-        {a: 1}.should == h
-        h = eval('{a:, b:, c:}')
-        {a: 1, b: 2, c: 3}.should == h
-      end
-
-      it "ignores hanging comma on short notation" do
-        a, b, c = 1, 2, 3
-        h = eval('{a:, b:, c:,}')
-        {a: 1, b: 2, c: 3}.should == h
-      end
-
-      it "accepts mixed syntax" do
-        a, e = 1, 5
-        h = eval('{a:, b: 2, "c" => 3, :d => 4, e:}')
-        eval('{a: 1, :b => 2, "c" => 3, "d": 4, e: 5}').should == h
-      end
-
-      it "works with methods and local vars" do
-        a = Class.new
-        a.class_eval(<<-RUBY)
-          def bar
-            "baz"
-          end
-
-          def foo(val)
-            {bar:, val:}
-          end
-        RUBY
-
-        a.new.foo(1).should == {bar: "baz", val: 1}
-      end
-
-      it "raises a SyntaxError when the hash key ends with `!`" do
-        -> { eval("{a!:}") }.should raise_error(SyntaxError, /identifier a! is not valid to get/)
-      end
-
-      it "raises a SyntaxError when the hash key ends with `?`" do
-        -> { eval("{a?:}") }.should raise_error(SyntaxError, /identifier a\? is not valid to get/)
-      end
     end
   end
 end
