@@ -254,19 +254,161 @@ describe "Hash literal" do
       eval('{a: 1, :b => 2, "c" => 3, "d": 4, e: 5}').should == h
     end
 
-    it "works with methods and local vars" do
-      a = Class.new
-      a.class_eval(<<-RUBY)
-        def bar
-          "baz"
-        end
+    # Copied from Prism::Translation::Ripper
+    keywords = [
+      "alias",
+      "and",
+      "begin",
+      "BEGIN",
+      "break",
+      "case",
+      "class",
+      "def",
+      "defined?",
+      "do",
+      "else",
+      "elsif",
+      "end",
+      "END",
+      "ensure",
+      "false",
+      "for",
+      "if",
+      "in",
+      "module",
+      "next",
+      "nil",
+      "not",
+      "or",
+      "redo",
+      "rescue",
+      "retry",
+      "return",
+      "self",
+      "super",
+      "then",
+      "true",
+      "undef",
+      "unless",
+      "until",
+      "when",
+      "while",
+      "yield",
+      "__ENCODING__",
+      "__FILE__",
+      "__LINE__"
+    ]
 
-        def foo(val)
-          {bar:, val:}
-        end
+    invalid_kw_param_names = [
+      "BEGIN",
+      "END",
+      "defined?",
+    ]
+
+    invalid_method_names = [
+      "BEGIN",
+      "END",
+      "defined?",
+    ]
+
+    # Evaluates the given Ruby source in a temporary Module, to prevent
+    # the surrounding context from being polluted with the new methods.
+    def sandboxed_eval(ruby_src)
+      Module
+        # Allows instance methods defined by `ruby_src` to be called directly.
+        .new { extend self }
+        .class_eval(ruby_src)
+    end
+
+    it "can reference local variables" do
+      a = 1
+      b = 2
+
+      eval('{ a:, b: }.should == { a: 1, b: 2 }')
+    end
+
+    it "cannot find dynamically defined local variables" do
+      b = binding
+      b.local_variable_set(:abc, "a dynamically defined local var")
+
+      eval <<~RUBY
+        # The local variable definitely exists:
+        b.local_variable_get(:abc).should == "a dynamically defined local var"
+        # but we can't get it via value omission:
+        -> { { abc: } }.should raise_error(NameError)
+      RUBY
+    end
+
+    it "can call methods" do
+      result = sandboxed_eval <<~RUBY
+        def m = "a statically defined method"
+
+        { m: }
       RUBY
 
-      a.new.foo(1).should == {bar: "baz", val: 1}
+      result.should == { m: "a statically defined method" }
+    end
+
+    it "can find dynamically defined methods" do
+      result = sandboxed_eval <<~RUBY
+        define_method(:m) { "a dynamically defined method" }
+
+        { m: }
+      RUBY
+
+      result.should == { m: "a dynamically defined method" }
+    end
+
+    it "prefers local variables over methods" do
+      result = sandboxed_eval <<~RUBY
+        x = "from a local var"
+        def x; "from a method"; end
+        { x: }
+      RUBY
+
+      result.should == { x: "from a local var" }
+    end
+
+    describe "handling keywords" do
+      keywords.each do |kw|
+        describe "keyword '#{kw}'" do
+          # None of these keywords can be used as local variables,
+          # so it's not possible to resolve them via shorthand Hash syntax.
+          # See `reserved_keywords.rb`
+
+          unless invalid_kw_param_names.include?(kw)
+            it "can be used a keyword parameter name" do
+              result = sandboxed_eval <<~RUBY
+                def m(#{kw}:) = { #{kw}: }
+
+                m(#{kw}: "an argument to '#{kw}'")
+              RUBY
+
+              result.should == { kw.to_sym => "an argument to '#{kw}'" }
+            end
+          end
+
+          unless invalid_method_names.include?(kw)
+            it "can refer to a method called '#{kw}'" do
+              result = sandboxed_eval <<~RUBY
+                def #{kw} = "a method named '#{kw}'"
+
+                { #{kw}: }
+              RUBY
+
+              result.should == { kw.to_sym => "a method named '#{kw}'" }
+            end
+          end
+        end
+      end
+
+      describe "keyword 'self:'" do
+        it "does not refer to actual 'self'" do
+          eval <<~RUBY
+            -> { { self: } }.should raise_error(NameError)
+          RUBY
+        end
+      end
     end
 
     it "raises a SyntaxError when the Hash key ends with `!`" do
