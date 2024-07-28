@@ -813,6 +813,10 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_unreachable_pattern_matching
+    assert_in_out_err([], "true or 1 in 1")
+  end
+
+  def test_unreachable_pattern_matching_in_if_condition
     assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[1])
     begin;
       if true or {a: 0} in {a:}
