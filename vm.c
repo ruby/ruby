@@ -3080,7 +3080,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             xfree(GET_SHAPE_TREE());
 
             st_free_table(vm->static_ext_inits);
-            st_free_table(vm->ensure_rollback_table);
 
             rb_vm_postponed_job_free();
 
@@ -3208,7 +3207,6 @@ vm_memsize(const void *ptr)
         rb_vm_memsize_waiting_fds(&vm->waiting_fds) +
         rb_st_memsize(vm->loaded_features_index) +
         rb_st_memsize(vm->loading_table) +
-        rb_st_memsize(vm->ensure_rollback_table) +
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +

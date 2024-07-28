@@ -1057,7 +1057,6 @@ module RubyVM::RJIT # :nodoc: all
       storage: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), storage)")],
       root_lep: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), root_lep)")],
       root_svar: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), root_svar)")],
-      ensure_list: [CType::Pointer.new { self.rb_ensure_list_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), ensure_list)")],
       trace_arg: [CType::Pointer.new { self.rb_trace_arg_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), trace_arg)")],
       errinfo: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), errinfo)")],
       passed_block_handler: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), passed_block_handler)")],
