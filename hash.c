@@ -1396,13 +1396,6 @@ hash_iter_lev_dec(VALUE hash)
 }
 
 static VALUE
-hash_foreach_ensure_rollback(VALUE hash)
-{
-    hash_iter_lev_inc(hash);
-    return 0;
-}
-
-static VALUE
 hash_foreach_ensure(VALUE hash)
 {
     hash_iter_lev_dec(hash);
@@ -7444,9 +7437,6 @@ Init_Hash(void)
      * See ENV (the class) for more details.
      */
     rb_define_global_const("ENV", envtbl);
-
-    /* for callcc */
-    ruby_register_rollback_func_for_ensure(hash_foreach_ensure, hash_foreach_ensure_rollback);
 
     HASH_ASSERT(sizeof(ar_hint_t) * RHASH_AR_TABLE_MAX_SIZE == sizeof(VALUE));
 }
