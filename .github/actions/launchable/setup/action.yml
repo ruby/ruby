@@ -63,7 +63,7 @@ runs:
         ${{
         (github.repository == 'ruby/ruby' ||
         (github.repository != 'ruby/ruby' && env.LAUNCHABLE_TOKEN)) &&
-        (matrix.test_task == 'check' || matrix.test_task == 'test-all')
+        (inputs.test-task == 'check' || inputs.test-task == 'test-all')
         }}
 
     # Launchable CLI requires Python and Java.
