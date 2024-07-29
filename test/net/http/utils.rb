@@ -41,8 +41,9 @@ module TestNetHTTPUtils
     end
 
     def shutdown
-      @thread.kill if @thread
-      @server.close if @server
+      @thread&.kill
+      @server&.close
+      @thread&.join
     end
 
     def mount(path, proc)
