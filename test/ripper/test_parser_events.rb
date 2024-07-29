@@ -22,12 +22,18 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def compile_error(str)
-    parse(str, :compile_error) {|e, msg| return msg}
+    ret = nil
+    parse(str, :compile_error) { |e, msg| ret = msg }
+    ret
   end
 
   def warning(str)
-    tree = parse(str, :warning) {|e, *args| return args}
-    if block_given?
+    ret = nil
+    tree = parse(str, :warning) { |e, *args| ret = args }
+
+    if ret
+      ret
+    elsif block_given?
       yield tree
     else
       assert(false, "warning expected")
@@ -35,8 +41,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def warn(str)
-    tree = parse(str, :warn) {|e, *args| return args}
-    if block_given?
+    ret = nil
+    tree = parse(str, :warn) { |e, *args| ret = args }
+
+    if ret
+      ret
+    elsif block_given?
       yield tree
     else
       assert(false, "warning expected")

@@ -1013,7 +1013,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
 
   def test_error_token
     src = "{a:,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n""hello}"
-    err = scan('parse_error', src) {|*e| break e}
+    err = nil
+    scan('parse_error', src) {|*e| err = e}
     assert_equal "", err[2]
   end
 end if ripper_test
