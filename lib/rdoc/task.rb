@@ -104,9 +104,8 @@ class RDoc::Task < Rake::TaskLib
   attr_accessor :name
 
   ##
-  # Comment markup format.  rdoc, rd and tomdoc are supported.  (default is
-  # 'rdoc')
-
+  # The markup format; one of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
+  # See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
   attr_accessor :markup
 
   ##
