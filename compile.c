@@ -6576,7 +6576,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label);
+    CHECK(compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label));
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
@@ -7984,13 +7984,13 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ADD_LABEL(ret, next_label);	/* next */
 
     if (type == NODE_WHILE) {
-        compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                 redo_label, end_label);
+        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                       redo_label, end_label));
     }
     else {
         /* until */
-        compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                 end_label, redo_label);
+        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                       end_label, redo_label));
     }
 
     ADD_LABEL(ret, end_label);
