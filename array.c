@@ -38,6 +38,7 @@
 #include "ruby_assert.h"
 
 VALUE rb_cArray;
+VALUE rb_cArray_empty_frozen;
 
 /* Flags of RArray
  *
@@ -8833,6 +8834,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "freeze", rb_ary_freeze, 0);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
+
+    rb_cArray_empty_frozen = rb_ary_freeze(rb_ary_new());
+    rb_vm_register_global_object(rb_cArray_empty_frozen);
 }
 
 #include "array.rbinc"
