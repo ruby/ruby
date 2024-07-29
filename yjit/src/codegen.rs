@@ -4827,7 +4827,10 @@ fn jit_guard_known_shape(
 
     // If we already know this is shape of the operand, stop
     if ctx_shape == Some(expected_shape) {
+        //println!("shape known!");
         return;
+    } else {
+        //println!("shape not known");
     }
 
     let shape_id_offset = unsafe { rb_shape_id_offset() };
@@ -4843,12 +4846,8 @@ fn jit_guard_known_shape(
         counter,
     );
 
-
-    // TODO
-    // TODO: upgrade known shape
-    // TODO
-
-
+    // Set the shape for the operand on the context
+    asm.ctx.set_opnd_shape(insn_opnd, expected_shape);
 }
 
 // Generate ancestry guard for protected callee.
