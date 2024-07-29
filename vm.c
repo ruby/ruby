@@ -2232,7 +2232,7 @@ vm_init_redefined_flag(void)
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
     OP(Succ, SUCC), (C(Integer), C(String));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
-    OP(Freeze, FREEZE), (C(String));
+    OP(Freeze, FREEZE), (C(String), C(Array));
     OP(UMinus, UMINUS), (C(String));
     OP(Max, MAX), (C(Array));
     OP(Min, MIN), (C(Array));
