@@ -3,8 +3,6 @@
 require 'test/unit'
 
 class TestEnsureAndCallcc < Test::Unit::TestCase
-  require '-test-/ensure_and_callcc'
-
   def test_bug20655_dir_chdir_using_rb_ensure
     need_continuation
     called = 0
@@ -21,9 +19,11 @@ class TestEnsureAndCallcc < Test::Unit::TestCase
 
   def test_bug20655_extension_using_rb_ensure
     need_continuation
-    $ensure_called = 0
-    require_with_ensure(File.join(__dir__, 'required'))
-    assert_equal(1, $ensure_called, "BUG #20655: ensure called unexpectedly in the required script even without exceptions")
+    require '-test-/ensure_and_callcc'
+    assert_equal(0, EnsureAndCallcc.ensure_called)
+    EnsureAndCallcc.require_with_ensure(File.join(__dir__, 'required'))
+    assert_equal(1, EnsureAndCallcc.ensure_called,
+                 "BUG #20655: ensure called unexpectedly in the required script even without exceptions")
   end
 
   private

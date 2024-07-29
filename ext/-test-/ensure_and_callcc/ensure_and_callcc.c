@@ -1,5 +1,7 @@
 #include "ruby.h"
 
+static VALUE rb_mEnsureAndCallcc;
+
 struct require_data {
     VALUE obj;
     VALUE fname;
@@ -16,9 +18,9 @@ call_require(VALUE arg)
 static VALUE
 call_ensure(VALUE _)
 {
-    VALUE v = rb_gv_get("$ensure_called");
+    VALUE v = rb_iv_get(rb_mEnsureAndCallcc, "@ensure_called");
     int called = FIX2INT(v) + 1;
-    rb_gv_set("$ensure_called", INT2FIX(called));
+    rb_iv_set(rb_mEnsureAndCallcc, "@ensure_called", INT2FIX(called));
     return Qnil;
 }
 
@@ -32,8 +34,17 @@ require_with_ensure(VALUE self, VALUE fname)
     return rb_ensure(call_require, (VALUE)&data, call_ensure, Qnil);
 }
 
+static VALUE
+ensure_called(VALUE self)
+{
+    return rb_iv_get(rb_mEnsureAndCallcc, "@ensure_called");
+}
+
 void
 Init_ensure_and_callcc(void)
 {
-    rb_define_method(rb_mKernel, "require_with_ensure", require_with_ensure, 1);
+    rb_mEnsureAndCallcc = rb_define_module("EnsureAndCallcc");
+    rb_iv_set(rb_mEnsureAndCallcc, "@ensure_called", INT2FIX(0));
+    rb_define_singleton_method(rb_mEnsureAndCallcc, "ensure_called", ensure_called, 0);
+    rb_define_singleton_method(rb_mEnsureAndCallcc, "require_with_ensure", require_with_ensure, 1);
 }
