@@ -1065,37 +1065,41 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
  *
  *  Returns a new +Array+ object.
  *
- *  With no block given:
+ *  - With no block given:
  *
- *  - With no argument given,
- *    returns a new empty +Array+ object:
+ *    - With no argument given,
+ *      returns a new empty array:
  *
- *      Array.new # => []
+ *        Array.new # => []
  *
- *  - With argument +array+ given,
- *    returns a new +Array+ object containing the elements of +array+:
+ *    - With argument +array+ given,
+ *      returns a new array containing the elements of +array+:
  *
- *      Array.new([:foo, 'bar', 2]) # => [:foo, "bar", 2]
+ *        Array.new([:foo, 'bar', 2]) # => [:foo, "bar", 2]
  *
- *  - With argument +size+ given (which may be an
- *    {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]),
- *    returns a new +Array+ object containing +size+ instances of the given +default_value+;
- *    all elements are the _same_ object +default_value+:
+ *    - With numeric argument +size+ given,
+ *      returns a new array containing +size+ instances of the given +default_value+;
+ *      all elements are the _same_ object +default_value+:
  *
- *      Array.new(3)   # => [nil, nil, nil]
- *      o = Object.new # => #<Object:0x0000013a6534a170>
- *      Array.new(3, o)
- *      # => [#<Object:0x0000013a6534a170>, #<Object:0x0000013a6534a170>, #<Object:0x0000013a6534a170>]
+ *        Array.new(3)    # => [nil, nil, nil]
+ *        Array.new(0)    # => []
+ *        o = Object.new  # => #<Object:0x0000013a6534a170>
+ *        Array.new(2, o) # => [#<Object:0x0000013a6534a170>, #<Object:0x0000013a6534a170>]
+ *        Array.new(0, o) # => []
+ *        Array.new(-1)   # Raises ArgumentError (negative array size).
  *
- *  With a block given,
- *  returns an +Array+ of the given +size+;
- *  calls the block with each +index+ in the range <tt>(0..size-1)</tt>;
- *  the element at that +index+ is the return value from the block:
+ *  - With a block given,
+ *    returns an array of the given +size+;
+ *    calls the block with each +index+ in the range <tt>(0..size-1)</tt>;
+ *    the element at that +index+ is the return value from the block:
  *
- *    a = Array.new(3) {|index| "Element #{index}" }
- *    a # => ["Element 0", "Element 1", "Element 2"]
+ *      Array.new(3)  {|index| "Element #{index}" } # => ["Element 0", "Element 1", "Element 2"]
+ *      Array.new(0)  {|index| "Element #{index}" } # => []
+ *      Array.new(-1) {|index| "Element #{index}" } # Raises ArgumentError (negative array size).
  *
- *  Raises ArgumentError if +size+ is negative.
+ *  Raises TypeError if the argument is not either an array
+ *  or an {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]).
+ *
  */
 
 static VALUE
