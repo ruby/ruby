@@ -1023,7 +1023,7 @@ rb_to_array(VALUE ary)
  *    returns <tt>object.to_ary</tt>.
  *  - Otherwise returns +nil+.
  *
- *  Raises an exception unless <tt>object.to_ary</tt> returns an +Array+ object.
+ *  Raises an exception unless <tt>object.to_ary</tt> returns an +Array+ object or +nil+.
  */
 
 static VALUE
