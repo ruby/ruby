@@ -1095,6 +1095,7 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
  *    a = Array.new(3) {|index| "Element #{index}" }
  *    a # => ["Element 0", "Element 1", "Element 2"]
  *
+ *  Raises ArgumentError if +size+ is negative.
  */
 
 static VALUE
