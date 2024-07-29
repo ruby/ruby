@@ -322,7 +322,6 @@ struct lex_context {
 };
 
 typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
-typedef struct RNode_EXITS rb_node_exits_t;
 
 #if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
@@ -1782,13 +1781,6 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const rb_cod
 # define compile_error(p, ...) parser_compile_error(p, NULL, __VA_ARGS__)
 #endif
 
-struct RNode_EXITS {
-    NODE node;
-
-    NODE *nd_chain; /* Assume NODE_BREAK, NODE_NEXT, NODE_REDO have nd_chain here */
-    NODE *nd_end;
-};
-
 #define RNODE_EXITS(node) ((rb_node_exits_t*)(node))
 
 static NODE *
@@ -1807,8 +1799,8 @@ add_block_exit(struct parser_params *p, NODE *node)
     if (!p->ctxt.in_defined) {
         rb_node_exits_t *exits = p->exits;
         if (exits) {
-            RNODE_EXITS(exits->nd_end)->nd_chain = node;
-            exits->nd_end = node;
+            RNODE_EXITS(exits->nd_stts)->nd_chain = node;
+            exits->nd_stts = node;
         }
     }
     return node;
@@ -1820,7 +1812,7 @@ init_block_exit(struct parser_params *p)
     rb_node_exits_t *old = p->exits;
     rb_node_exits_t *exits = NODE_NEW_INTERNAL(NODE_EXITS, rb_node_exits_t);
     exits->nd_chain = 0;
-    exits->nd_end = RNODE(exits);
+    exits->nd_stts = RNODE(exits);
     p->exits = exits;
     return old;
 }
@@ -1863,7 +1855,7 @@ clear_block_exit(struct parser_params *p, bool error)
         }
       end_checks:;
     }
-    exits->nd_end = RNODE(exits);
+    exits->nd_stts = RNODE(exits);
     exits->nd_chain = 0;
 }
 
