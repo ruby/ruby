@@ -233,9 +233,9 @@ class RDoc::Options
   attr_accessor :main_page
 
   ##
-  # The default markup format.  The default is 'rdoc'.  'markdown', 'tomdoc'
-  # and 'rd' are also built-in.
-
+  # The markup format.
+  # One of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
+  # See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
   attr_accessor :markup
 
   ##
@@ -683,7 +683,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       EOF
 
-      parsers = Hash.new { |h,parser| h[parser] = [] }
+      parsers = Hash.new { |h, parser| h[parser] = [] }
 
       RDoc::Parser.parsers.each do |regexp, parser|
         parsers[parser.name.sub('RDoc::Parser::', '')] << regexp.source

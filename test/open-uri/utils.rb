@@ -343,7 +343,7 @@ module TestOpenURIUtils
   def with_https_proxy(proxy_log_tester=lambda {|proxy_log, proxy_access_log| assert_equal([], proxy_log) })
     proxy_log = []
     proxy_access_log = []
-    with_https {|srv, dr, url, server_thread, server_log, threads|
+    with_https {|srv, dr, url|
       srv.instance_variable_get(:@server).setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
       cacert_filename = "#{dr}/cacert.pem"
       open(cacert_filename, "w") {|f| f << CA_CERT }
@@ -355,7 +355,7 @@ module TestOpenURIUtils
       proxy = SimpleHTTPProxyServer.new(proxy_host, 0, proxy_log, proxy_access_log)
       proxy_port = proxy.instance_variable_get(:@server).addr[1]
       proxy_thread = proxy.start
-      threads << Thread.new {
+      thread = Thread.new {
         proxy_thread.join
         if proxy_log_tester
           proxy_log_tester.call(proxy_log, proxy_access_log)
@@ -363,9 +363,11 @@ module TestOpenURIUtils
       }
       begin
         yield srv, dr, url, cacert_filename, cacert_directory, proxy_host, proxy_port
+        sleep 1
       ensure
         proxy.shutdown
       end
+      assert_join_threads([thread])
     }
   end
 
@@ -389,7 +391,7 @@ module TestOpenURIUtils
       }
       threads << Thread.new {
         begin
-          yield srv, dr, "https://#{host}:#{port}", server_thread, log, threads
+          yield srv, dr, "https://#{host}:#{port}"
         ensure
           srv.shutdown
         end

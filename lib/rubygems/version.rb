@@ -297,10 +297,6 @@ class Gem::Version
     @hash = nil
   end
 
-  def to_yaml_properties # :nodoc:
-    ["@version"]
-  end
-
   def encode_with(coder) # :nodoc:
     coder.add "version", @version
   end

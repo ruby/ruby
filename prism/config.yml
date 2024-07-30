@@ -298,10 +298,11 @@ warnings:
   - DUPLICATED_WHEN_CLAUSE
   - FLOAT_OUT_OF_RANGE
   - IGNORED_FROZEN_STRING_LITERAL
+  - INDENTATION_MISMATCH
   - INTEGER_IN_FLIP_FLOP
   - INVALID_CHARACTER
+  - INVALID_MAGIC_COMMENT_VALUE
   - INVALID_NUMBERED_REFERENCE
-  - INVALID_SHAREABLE_CONSTANT_VALUE
   - KEYWORD_EOL
   - LITERAL_IN_CONDITION_DEFAULT
   - LITERAL_IN_CONDITION_VERBOSE
@@ -735,11 +736,6 @@ flags:
       - name: FORCED_US_ASCII_ENCODING
         comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
-  - name: ReturnNodeFlags
-    values:
-      - name: REDUNDANT
-        comment: "a return statement that is redundant because it is the last statement in a method"
-    comment: Flags for return nodes.
   - name: ShareableConstantNodeFlags
     values:
       - name: LITERAL
@@ -3455,7 +3451,6 @@ nodes:
           retry
           ^^^^^
   - name: ReturnNode
-    flags: ReturnNodeFlags
     fields:
       - name: keyword_loc
         type: location

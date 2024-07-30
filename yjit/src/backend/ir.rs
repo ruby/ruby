@@ -1759,7 +1759,7 @@ impl Assembler {
 
         // If the slot is already used, which is a valid optimization to avoid spills,
         // give up the verification.
-        let canary_opnd = if cfg!(debug_assertions) && self.leaf_ccall && opnds.iter().all(|opnd|
+        let canary_opnd = if cfg!(feature = "runtime_checks") && self.leaf_ccall && opnds.iter().all(|opnd|
             opnd.get_reg_opnd() != canary_opnd.get_reg_opnd()
         ) {
             asm_comment!(self, "set stack canary");

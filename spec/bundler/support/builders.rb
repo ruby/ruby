@@ -27,8 +27,6 @@ module Spec
     end
 
     def build_repo1
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
 
@@ -88,10 +86,6 @@ module Spec
 
         build_gem "myrack-test", no_default: true do |s|
           s.write "lib/myrack/test.rb", "MYRACK_TEST = '1.0'"
-        end
-
-        build_gem "platform_specific" do |s|
-          s.platform = Gem::Platform.local
         end
 
         build_gem "platform_specific" do |s|
@@ -231,12 +225,9 @@ module Spec
     end
 
     def check_test_gems!
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       if rake_path.nil?
         FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
-        rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
       end
 
       if rake_path.nil?
@@ -245,7 +236,8 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      if path == gem_repo1 && caller.first.split(" ").last == "`build_repo`"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
       return unless block_given?
@@ -480,7 +472,6 @@ module Spec
       end
 
       def add_c_extension
-        require_paths << "ext"
         extensions << "ext/extconf.rb"
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"

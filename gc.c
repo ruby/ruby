@@ -83,7 +83,6 @@
 #include "debug_counter.h"
 #include "eval_intern.h"
 #include "gc/gc.h"
-#include "gc/gc_impl.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -158,7 +157,7 @@ rb_gc_cr_unlock(unsigned int lev)
 unsigned int
 rb_gc_vm_lock_no_barrier(void)
 {
-    unsigned int lev;
+    unsigned int lev = 0;
     RB_VM_LOCK_ENTER_LEV_NB(&lev);
     return lev;
 }
@@ -575,6 +574,10 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 }
 #endif
 
+static const char *obj_type_name(VALUE obj);
+#define RB_AMALGAMATED_DEFAULT_GC
+#include "gc/default.c"
+
 #if USE_SHARED_GC && !defined(HAVE_DLOPEN)
 # error "Shared GC requires dlopen"
 #elif USE_SHARED_GC
@@ -636,7 +639,7 @@ typedef struct gc_function_map {
     // Finalizers
     void (*make_zombie)(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
     VALUE (*define_finalizer)(void *objspace_ptr, VALUE obj, VALUE block);
-    VALUE (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
+    void (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
     void (*copy_finalizer)(void *objspace_ptr, VALUE dest, VALUE obj);
     void (*shutdown_call_finalizer)(void *objspace_ptr);
     // Object ID
@@ -695,7 +698,7 @@ ruby_external_gc_init(void)
 
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
-            fprintf(stderr, "%s", dlerror());
+            fprintf(stderr, "%s\n", dlerror());
             rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
         }
     }
@@ -898,17 +901,17 @@ rb_gc_obj_slot_size(VALUE obj)
 static inline VALUE
 newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t size)
 {
-    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), GET_RACTOR()->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
+    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
 
     if (UNLIKELY(ruby_vm_event_flags & RUBY_INTERNAL_EVENT_NEWOBJ)) {
         unsigned int lev;
-        RB_VM_LOCK_ENTER_CR_LEV(GET_RACTOR(), &lev);
+        RB_VM_LOCK_ENTER_CR_LEV(cr, &lev);
         {
             memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
 
             rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
         }
-        RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
+        RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
     }
 
     return obj;
@@ -1477,7 +1480,11 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
-    return rb_gc_impl_undefine_finalizer(rb_gc_get_objspace(), obj);
+    rb_check_frozen(obj);
+
+    rb_gc_impl_undefine_finalizer(rb_gc_get_objspace(), obj);
+
+    return obj;
 }
 
 static void
@@ -1573,19 +1580,15 @@ define_final(int argc, VALUE *argv, VALUE os)
     VALUE obj, block;
 
     rb_scan_args(argc, argv, "11", &obj, &block);
-    should_be_finalizable(obj);
     if (argc == 1) {
         block = rb_block_proc();
-    }
-    else {
-        should_be_callable(block);
     }
 
     if (rb_callable_receiver(block) == obj) {
         rb_warn("finalizer references object to be finalized");
     }
 
-    return rb_gc_impl_define_finalizer(rb_gc_get_objspace(), obj, block);
+    return rb_define_finalizer(obj, block);
 }
 
 VALUE
@@ -1593,7 +1596,12 @@ rb_define_finalizer(VALUE obj, VALUE block)
 {
     should_be_finalizable(obj);
     should_be_callable(block);
-    return rb_gc_impl_define_finalizer(rb_gc_get_objspace(), obj, block);
+
+    block = rb_gc_impl_define_finalizer(rb_gc_get_objspace(), obj, block);
+
+    block = rb_ary_new3(2, INT2FIX(0), block);
+    OBJ_FREEZE(block);
+    return block;
 }
 
 void
@@ -1921,43 +1929,6 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
     VALUE hash = (VALUE)arg;
     rb_hash_aset(hash, k, INT2FIX(0));
     return ST_CONTINUE;
-}
-
-static VALUE
-type_sym(size_t type)
-{
-    switch (type) {
-#define COUNT_TYPE(t) case (t): return ID2SYM(rb_intern(#t)); break;
-        COUNT_TYPE(T_NONE);
-        COUNT_TYPE(T_OBJECT);
-        COUNT_TYPE(T_CLASS);
-        COUNT_TYPE(T_MODULE);
-        COUNT_TYPE(T_FLOAT);
-        COUNT_TYPE(T_STRING);
-        COUNT_TYPE(T_REGEXP);
-        COUNT_TYPE(T_ARRAY);
-        COUNT_TYPE(T_HASH);
-        COUNT_TYPE(T_STRUCT);
-        COUNT_TYPE(T_BIGNUM);
-        COUNT_TYPE(T_FILE);
-        COUNT_TYPE(T_DATA);
-        COUNT_TYPE(T_MATCH);
-        COUNT_TYPE(T_COMPLEX);
-        COUNT_TYPE(T_RATIONAL);
-        COUNT_TYPE(T_NIL);
-        COUNT_TYPE(T_TRUE);
-        COUNT_TYPE(T_FALSE);
-        COUNT_TYPE(T_SYMBOL);
-        COUNT_TYPE(T_FIXNUM);
-        COUNT_TYPE(T_IMEMO);
-        COUNT_TYPE(T_UNDEF);
-        COUNT_TYPE(T_NODE);
-        COUNT_TYPE(T_ICLASS);
-        COUNT_TYPE(T_ZOMBIE);
-        COUNT_TYPE(T_MOVED);
-#undef COUNT_TYPE
-        default:              return SIZET2NUM(type); break;
-    }
 }
 
 struct count_objects_data {
@@ -2414,16 +2385,6 @@ rb_mark_tbl(st_table *tbl)
     if (!tbl || tbl->num_entries == 0) return;
 
     st_foreach(tbl, rb_mark_tbl_i, (st_data_t)rb_gc_get_objspace());
-}
-
-static int
-gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    void *objspace = (void *)data;
-
-    rb_gc_impl_mark(objspace, (VALUE)value);
-
-    return ST_CONTINUE;
 }
 
 static void
@@ -3084,8 +3045,6 @@ gc_ref_update_array(void *objspace, VALUE v)
 #endif
 }
 
-static void gc_ref_update_table_values_only(void *objspace, st_table *tbl);
-
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
@@ -3111,88 +3070,10 @@ gc_ref_update_object(void *objspace, VALUE v)
     }
 }
 
-static int
-hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*key)) {
-        *key = rb_gc_impl_location(objspace, (VALUE)*key);
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)key)) {
-        return ST_REPLACE;
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
-        return ST_REPLACE;
-    }
-    return ST_CONTINUE;
-}
-
-static int
-hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
-        return ST_REPLACE;
-    }
-    return ST_CONTINUE;
-}
-
-static void
-gc_ref_update_table_values_only(void *objspace, st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, (st_data_t)objspace)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
-}
-
 void
 rb_gc_ref_update_table_values_only(st_table *tbl)
 {
     gc_ref_update_table_values_only(rb_gc_get_objspace(), tbl);
-}
-
-static void
-gc_update_table_refs(void *objspace, st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
 }
 
 /* Update MOVED references in a VALUE=>VALUE st_table */
@@ -4474,12 +4355,6 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
     rb_raise(rb_eArgError,
              "malloc: possible integer overflow (%"PRIuSIZE"*%"PRIuSIZE")",
              count, elsize);
-}
-
-static inline size_t
-xmalloc2_size(const size_t count, const size_t elsize)
-{
-    return size_mul_or_raise(count, elsize, rb_eArgError);
 }
 
 void *

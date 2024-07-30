@@ -159,7 +159,8 @@ define_ruby_description(const char *const jit_opt)
         // This should be long enough for all plans we have.
         + rb_strlen_lit(" +MMTk(XXXXXXXXXXXXXXXX)")
 #endif
-        ];
+        + rb_strlen_lit(" +PRISM")
+    ];
 
     const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
     const char *const parser_opt = (*rb_ruby_prism_ptr()) ? " +PRISM" : "";

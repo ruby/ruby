@@ -739,6 +739,30 @@ RSpec.describe "bundle gem" do
       end
     end
 
+    context "init_gems_rb setting to true" do
+      before do
+        bundle "config set init_gems_rb true"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates gems.rb instead of Gemfile" do
+        expect(bundled_app("#{gem_name}/gems.rb")).to exist
+        expect(bundled_app("#{gem_name}/Gemfile")).to_not exist
+      end
+    end
+
+    context "init_gems_rb setting to false" do
+      before do
+        bundle "config set init_gems_rb false"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates Gemfile instead of gems.rb" do
+        expect(bundled_app("#{gem_name}/gems.rb")).to_not exist
+        expect(bundled_app("#{gem_name}/Gemfile")).to exist
+      end
+    end
+
     context "gem.test setting set to rspec" do
       before do
         bundle "config set gem.test rspec"

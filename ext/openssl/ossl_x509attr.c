@@ -201,37 +201,36 @@ static VALUE
 ossl_x509attr_set_value(VALUE self, VALUE value)
 {
     X509_ATTRIBUTE *attr;
-    VALUE asn1_value;
-    int i, asn1_tag;
+    GetX509Attr(self, attr);
 
     OSSL_Check_Kind(value, cASN1Data);
-    asn1_tag = NUM2INT(rb_attr_get(value, rb_intern("@tag")));
-    asn1_value = rb_attr_get(value, rb_intern("@value"));
-    if (asn1_tag != V_ASN1_SET)
-	ossl_raise(eASN1Error, "argument must be ASN1::Set");
-    if (!RB_TYPE_P(asn1_value, T_ARRAY))
-	ossl_raise(eASN1Error, "ASN1::Set has non-array value");
+    VALUE der = ossl_to_der(value);
+    const unsigned char *p = (const unsigned char *)RSTRING_PTR(der);
+    STACK_OF(ASN1_TYPE) *sk = d2i_ASN1_SET_ANY(NULL, &p, RSTRING_LEN(der));
+    if (!sk)
+        ossl_raise(eX509AttrError, "attribute value must be ASN1::Set");
 
-    GetX509Attr(self, attr);
     if (X509_ATTRIBUTE_count(attr)) { /* populated, reset first */
-	ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
-	X509_ATTRIBUTE *new_attr = X509_ATTRIBUTE_create_by_OBJ(NULL, obj, 0, NULL, -1);
-	if (!new_attr)
-	    ossl_raise(eX509AttrError, NULL);
-	SetX509Attr(self, new_attr);
-	X509_ATTRIBUTE_free(attr);
-	attr = new_attr;
+        ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
+        X509_ATTRIBUTE *new_attr = X509_ATTRIBUTE_create_by_OBJ(NULL, obj, 0, NULL, -1);
+        if (!new_attr) {
+            sk_ASN1_TYPE_pop_free(sk, ASN1_TYPE_free);
+            ossl_raise(eX509AttrError, "X509_ATTRIBUTE_create_by_OBJ");
+        }
+        SetX509Attr(self, new_attr);
+        X509_ATTRIBUTE_free(attr);
+        attr = new_attr;
     }
 
-    for (i = 0; i < RARRAY_LEN(asn1_value); i++) {
-	ASN1_TYPE *a1type = ossl_asn1_get_asn1type(RARRAY_AREF(asn1_value, i));
-	if (!X509_ATTRIBUTE_set1_data(attr, ASN1_TYPE_get(a1type),
-				      a1type->value.ptr, -1)) {
-	    ASN1_TYPE_free(a1type);
-	    ossl_raise(eX509AttrError, NULL);
-	}
-	ASN1_TYPE_free(a1type);
+    for (int i = 0; i < sk_ASN1_TYPE_num(sk); i++) {
+        ASN1_TYPE *a1type = sk_ASN1_TYPE_value(sk, i);
+        if (!X509_ATTRIBUTE_set1_data(attr, ASN1_TYPE_get(a1type),
+                                      a1type->value.ptr, -1)) {
+            sk_ASN1_TYPE_pop_free(sk, ASN1_TYPE_free);
+            ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_data");
+        }
     }
+    sk_ASN1_TYPE_pop_free(sk, ASN1_TYPE_free);
 
     return value;
 }

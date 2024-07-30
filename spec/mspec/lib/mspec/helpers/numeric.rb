@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'mspec/guards/platform'
 
 def nan_value
@@ -15,11 +16,13 @@ def bignum_value(plus = 0)
 end
 
 def max_long
-  2**(0.size * 8 - 1) - 1
+  long_byte_size = [0].pack('l!').size
+  2**(long_byte_size * 8 - 1) - 1
 end
 
 def min_long
-  -(2**(0.size * 8 - 1))
+  long_byte_size = [0].pack('l!').size
+  -(2**(long_byte_size * 8 - 1))
 end
 
 # This is a bit hairy, but we need to be able to write specs that cover the
@@ -28,7 +31,24 @@ end
 # specs based on the relationship between values rather than specific
 # values.
 if PlatformGuard.standard? or PlatformGuard.implementation? :topaz
-  if PlatformGuard.wordsize? 32
+  limits_available = begin
+    require 'rbconfig/sizeof'
+    defined?(RbConfig::LIMITS.[]) && ['FIXNUM_MAX', 'FIXNUM_MIN'].all? do |key|
+      Integer === RbConfig::LIMITS[key]
+    end
+  rescue LoadError
+    false
+  end
+
+  if limits_available
+    def fixnum_max
+      RbConfig::LIMITS['FIXNUM_MAX']
+    end
+
+    def fixnum_min
+      RbConfig::LIMITS['FIXNUM_MIN']
+    end
+  elsif PlatformGuard.c_long_size? 32
     def fixnum_max
       (2**30) - 1
     end
@@ -36,7 +56,7 @@ if PlatformGuard.standard? or PlatformGuard.implementation? :topaz
     def fixnum_min
       -(2**30)
     end
-  elsif PlatformGuard.wordsize? 64
+  elsif PlatformGuard.c_long_size? 64
     def fixnum_max
       (2**62) - 1
     end

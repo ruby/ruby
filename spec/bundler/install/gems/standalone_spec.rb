@@ -146,9 +146,11 @@ RSpec.shared_examples "bundle install --standalone" do
       necessary_system_gems = ["tsort --version 0.1.0"]
       necessary_system_gems += ["etc --version 1.4.3"] if Gem.ruby_version >= Gem::Version.new("3.3.2") && Gem.win_platform?
       realworld_system_gems(*necessary_system_gems)
+    end
 
+    it "works and points to the vendored copies, not to the default copies" do
       necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3", "stringio --version 3.1.0"]
-      necessary_gems_in_bundle_path += ["shellwords --version 0.1.0", "base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
+      necessary_gems_in_bundle_path += ["shellwords --version 0.2.0", "base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
       necessary_gems_in_bundle_path += ["yaml --version 0.1.1"] if Gem.rubygems_version < Gem::Version.new("3.4.a")
       realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
 
@@ -171,10 +173,8 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "foo"
       G
 
-      bundle "lock", dir: cwd, artifice: "compact_index"
-    end
+      bundle "lock", dir: cwd
 
-    it "works and points to the vendored copies, not to the default copies" do
       bundle "config set --local path #{bundled_app("bundle")}"
       bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
 
@@ -183,6 +183,39 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(load_path_lines).to eq [
         '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/bar-1.0.0/lib")',
         '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/foo-1.0.0/lib")',
+      ]
+    end
+
+    it "works for gems with extensions and points to the vendored copies, not to the default copies" do
+      necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3", "stringio --version 3.1.0", "shellwords --version 0.2.0", "open3 --version 0.2.1"]
+      necessary_gems_in_bundle_path += ["base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
+      necessary_gems_in_bundle_path += ["yaml --version 0.1.1"] if Gem.rubygems_version < Gem::Version.new("3.4.a")
+      realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
+
+      build_gem "baz", "1.0.0", to_system: true, default: true, &:add_c_extension
+
+      build_repo4 do
+        build_gem "baz", "1.0.0", &:add_c_extension
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "baz"
+      G
+
+      bundle "config set --local path #{bundled_app("bundle")}"
+
+      simulate_platform "arm64-darwin-23" do
+        bundle "lock", dir: cwd
+
+        bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+      end
+
+      load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
+
+      expect(load_path_lines).to eq [
+        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/extensions/arm64-darwin-23/#{Gem.extension_api_version}/baz-1.0.0")',
+        '$:.unshift File.expand_path("#{__dir__}/../#{RUBY_ENGINE}/#{Gem.ruby_api_version}/gems/baz-1.0.0/lib")',
       ]
     end
   end
@@ -295,7 +328,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "outputs a helpful error message" do
       expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
-      expect(err).to include("bar 1.0 has an invalid gemspec")
+      expect(err).to include("bar.gemspec is not valid")
     end
   end
 

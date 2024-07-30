@@ -119,6 +119,15 @@
 #endif
 
 /**
+ * If PRISM_HAS_NO_FILESYSTEM is defined, then we want to exclude all filesystem
+ * related code from the library. All filesystem related code should be guarded
+ * by PRISM_HAS_FILESYSTEM.
+ */
+#ifndef PRISM_HAS_NO_FILESYSTEM
+#   define PRISM_HAS_FILESYSTEM
+#endif
+
+/**
  * isinf on Windows is defined as accepting a float, but on POSIX systems it
  * accepts a float, a double, or a long double. We want to mirror this behavior
  * on windows.

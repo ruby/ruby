@@ -1,7 +1,16 @@
 #ifndef GC_GC_H
 #define GC_GC_H
-
+/**
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
+ * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
+ *             Permission  is hereby  granted,  to  either redistribute  and/or
+ *             modify this file, provided that  the conditions mentioned in the
+ *             file COPYING are met.  Consult the file for details.
+ * @brief      Private header for the default GC and other GC implementations
+ *             first introduced for [Feature #20470].
+ */
 #include "ruby/ruby.h"
+#include "gc/gc_impl.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
 unsigned int rb_gc_vm_lock(void);
@@ -38,5 +47,140 @@ size_t rb_obj_memsize_of(VALUE obj);
 RUBY_SYMBOL_EXPORT_END
 
 void rb_ractor_finish_marking(void);
+
+// -------------------Private section begin------------------------
+// Functions in this section are private to the default GC and gc.c
+
+static int
+hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    void *objspace;
+
+    objspace = (void *)argp;
+
+    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+        return ST_REPLACE;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    void *objspace = (void *)argp;
+
+    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
+        *value = rb_gc_impl_location(objspace, (VALUE)*value);
+    }
+
+    return ST_CONTINUE;
+}
+
+static void
+gc_ref_update_table_values_only(void *objspace, st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, (st_data_t)objspace)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+}
+
+static int
+gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    void *objspace = (void *)data;
+
+    rb_gc_impl_mark(objspace, (VALUE)value);
+
+    return ST_CONTINUE;
+}
+
+static int
+hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    void *objspace;
+
+    objspace = (void *)argp;
+
+    if (rb_gc_impl_object_moved_p(objspace, (VALUE)key)) {
+        return ST_REPLACE;
+    }
+
+    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+        return ST_REPLACE;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    void *objspace = (void *)argp;
+
+    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*key)) {
+        *key = rb_gc_impl_location(objspace, (VALUE)*key);
+    }
+
+    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
+        *value = rb_gc_impl_location(objspace, (VALUE)*value);
+    }
+
+    return ST_CONTINUE;
+}
+
+static void
+gc_update_table_refs(void *objspace, st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+}
+
+static inline size_t
+xmalloc2_size(const size_t count, const size_t elsize)
+{
+    return rb_size_mul_or_raise(count, elsize, rb_eArgError);
+}
+
+static VALUE
+type_sym(size_t type)
+{
+    switch (type) {
+#define COUNT_TYPE(t) case (t): return ID2SYM(rb_intern(#t)); break;
+        COUNT_TYPE(T_NONE);
+        COUNT_TYPE(T_OBJECT);
+        COUNT_TYPE(T_CLASS);
+        COUNT_TYPE(T_MODULE);
+        COUNT_TYPE(T_FLOAT);
+        COUNT_TYPE(T_STRING);
+        COUNT_TYPE(T_REGEXP);
+        COUNT_TYPE(T_ARRAY);
+        COUNT_TYPE(T_HASH);
+        COUNT_TYPE(T_STRUCT);
+        COUNT_TYPE(T_BIGNUM);
+        COUNT_TYPE(T_FILE);
+        COUNT_TYPE(T_DATA);
+        COUNT_TYPE(T_MATCH);
+        COUNT_TYPE(T_COMPLEX);
+        COUNT_TYPE(T_RATIONAL);
+        COUNT_TYPE(T_NIL);
+        COUNT_TYPE(T_TRUE);
+        COUNT_TYPE(T_FALSE);
+        COUNT_TYPE(T_SYMBOL);
+        COUNT_TYPE(T_FIXNUM);
+        COUNT_TYPE(T_IMEMO);
+        COUNT_TYPE(T_UNDEF);
+        COUNT_TYPE(T_NODE);
+        COUNT_TYPE(T_ICLASS);
+        COUNT_TYPE(T_ZOMBIE);
+        COUNT_TYPE(T_MOVED);
+#undef COUNT_TYPE
+        default:              return SIZET2NUM(type); break;
+    }
+}
+// -------------------Private section end------------------------
 
 #endif

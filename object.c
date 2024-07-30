@@ -4065,57 +4065,51 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  */
 
 
-/*  Document-class: BasicObject
+/*
+ *  Document-class: BasicObject
  *
- *  BasicObject is the parent class of all classes in Ruby.  It's an explicit
- *  blank class.
+ *  +BasicObject+ is the parent class of all classes in Ruby.
+ *  In particular, +BasicObject+ is the parent class of class Object,
+ *  which is itself the default parent class of every Ruby class:
  *
- *  BasicObject can be used for creating object hierarchies independent of
- *  Ruby's object hierarchy, proxy objects like the Delegator class, or other
- *  uses where namespace pollution from Ruby's methods and classes must be
- *  avoided.
+ *    class Foo; end
+ *    Foo.superclass    # => Object
+ *    Object.superclass # => BasicObject
  *
- *  To avoid polluting BasicObject for other users an appropriately named
- *  subclass of BasicObject should be created instead of directly modifying
- *  BasicObject:
+ *  +BasicObject+ is the only class that has no parent:
  *
- *    class MyObjectSystem < BasicObject
- *    end
+ *    BasicObject.superclass # => nil
  *
- *  BasicObject does not include Kernel (for methods like +puts+) and
- *  BasicObject is outside of the namespace of the standard library so common
- *  classes will not be found without using a full class path.
+ *  \Class +BasicObject+ can be used to create an object hierarchy
+ *  (e.g., class Delegator) that is independent of Ruby's object hierarchy.
+ *  Such objects:
  *
- *  A variety of strategies can be used to provide useful portions of the
- *  standard library to subclasses of BasicObject.  A subclass could
- *  <code>include Kernel</code> to obtain +puts+, +exit+, etc.  A custom
- *  Kernel-like module could be created and included or delegation can be used
- *  via #method_missing:
+ *  - Do not have namespace "pollution" from the many methods
+ *    provided in class Object and its included module Kernel.
+ *  - Do not have definitions of common classes,
+ *    and so references to such common classes must be fully qualified
+ *    (+::String+, not +String+).
  *
- *    class MyObjectSystem < BasicObject
- *      DELEGATE = [:puts, :p]
+ *  A variety of strategies can be used to provide useful portions
+ *  of the Standard Library in subclasses of +BasicObject+:
  *
- *      def method_missing(name, *args, &block)
- *        return super unless DELEGATE.include? name
- *        ::Kernel.send(name, *args, &block)
+ *  - The immediate subclass could <tt>include Kernel</tt>,
+ *    which would define methods such as +puts+, +exit+, etc.
+ *  - A custom Kernel-like module could be created and included.
+ *  - Delegation can be used via #method_missing:
+ *
+ *      class MyObjectSystem < BasicObject
+ *        DELEGATE = [:puts, :p]
+ *
+ *        def method_missing(name, *args, &block)
+ *          return super unless DELEGATE.include? name
+ *          ::Kernel.send(name, *args, &block)
+ *        end
+ *
+ *        def respond_to_missing?(name, include_private = false)
+ *          DELEGATE.include?(name)
+ *        end
  *      end
- *
- *      def respond_to_missing?(name, include_private = false)
- *        DELEGATE.include?(name)
- *      end
- *    end
- *
- *  Access to classes and modules from the Ruby standard library can be
- *  obtained in a BasicObject subclass by referencing the desired constant
- *  from the root like <code>::File</code> or <code>::Enumerator</code>.
- *  Like #method_missing, #const_missing can be used to delegate constant
- *  lookup to +Object+:
- *
- *    class MyObjectSystem < BasicObject
- *      def self.const_missing(name)
- *        ::Object.const_get(name)
- *      end
- *    end
  *
  *  === What's Here
  *
@@ -4129,8 +4123,11 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *  - #__send__: Calls the method identified by the given symbol.
  *  - #equal?: Returns whether +self+ and the given object are the same object.
  *  - #instance_eval: Evaluates the given string or block in the context of +self+.
- *  - #instance_exec: Executes the given block in the context of +self+,
- *    passing the given arguments.
+ *  - #instance_exec: Executes the given block in the context of +self+, passing the given arguments.
+ *  - #method_missing: Called when +self+ is called with a method it does not define.
+ *  - #singleton_method_added: Called when a singleton method is added to +self+.
+ *  - #singleton_method_removed: Called when a singleton method is removed from +self+.
+ *  - #singleton_method_undefined: Called when a singleton method is undefined in +self+.
  *
  */
 

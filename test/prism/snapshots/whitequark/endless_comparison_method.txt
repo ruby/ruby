@@ -28,7 +28,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,28))
-        │   │           ├── flags: newline, variable_call, ignore_visibility
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -67,7 +67,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,16)-(3,28))
-        │   │           ├── flags: newline, variable_call, ignore_visibility
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -106,7 +106,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,16)-(5,28))
-        │   │           ├── flags: newline, variable_call, ignore_visibility
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -145,7 +145,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,16)-(7,28))
-        │   │           ├── flags: newline, variable_call, ignore_visibility
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -184,7 +184,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (9,17)-(9,29))
-        │   │           ├── flags: newline, variable_call, ignore_visibility
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -223,7 +223,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (11,16)-(11,28))
-            │           ├── flags: newline, variable_call, ignore_visibility
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :do_something

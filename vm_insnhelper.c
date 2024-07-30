@@ -6203,17 +6203,43 @@ rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *p
 VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool freeze);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
-VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt)
+static VALUE
+vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary;
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num, true);
-        return rb_ec_pack_ary(ec, ary, fmt, Qnil);
+        return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
     else {
-        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idPack, 1, &fmt, RB_PASS_CALLED_KEYWORDS);
+        // The opt_newarray_send insn drops the keyword args so we need to rebuild them.
+        // Setup an array with room for keyword hash.
+        VALUE args[2];
+        args[0] = fmt;
+        int kw_splat = RB_NO_KEYWORDS;
+        int argc = 1;
+
+        if (!UNDEF_P(buffer)) {
+            args[1] = rb_hash_new_with_size(1);
+            rb_hash_aset(args[1], ID2SYM(idBuffer), buffer);
+            kw_splat = RB_PASS_KEYWORDS;
+            argc++;
+        }
+
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idPack, argc, args, kw_splat);
     }
+}
+
+VALUE
+rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
+{
+    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, buffer);
+}
+
+VALUE
+rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt)
+{
+    return vm_opt_newarray_pack_buffer(ec, num, ptr, fmt, Qundef);
 }
 
 #undef id_cmp

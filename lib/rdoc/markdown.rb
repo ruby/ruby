@@ -1158,7 +1158,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxHeading = AtxStart:s @Sp AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
+  # AtxHeading = AtxStart:s @Spacechar+ AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
   def _AtxHeading
 
     _save = self.pos
@@ -1169,12 +1169,22 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = _Sp()
+      _save1 = self.pos
+      _tmp = _Spacechar()
+      if _tmp
+        while true
+          _tmp = _Spacechar()
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
       unless _tmp
         self.pos = _save
         break
       end
-      _save1 = self.pos
+      _save2 = self.pos
       _ary = []
       _tmp = apply(:_AtxInline)
       if _tmp
@@ -1187,37 +1197,37 @@ class RDoc::Markdown
         _tmp = true
         @result = _ary
       else
-        self.pos = _save1
+        self.pos = _save2
       end
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
-      _save2 = self.pos
-
       _save3 = self.pos
+
+      _save4 = self.pos
       while true # sequence
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = scan(/\G(?-mix:#*)/)
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
         end
         break
       end # end sequence
 
       unless _tmp
         _tmp = true
-        self.pos = _save2
+        self.pos = _save3
       end
       unless _tmp
         self.pos = _save
@@ -16539,7 +16549,7 @@ class RDoc::Markdown
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
   Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp /\#*/ @Sp @Newline) Inline")
   Rules[:_AtxStart] = rule_info("AtxStart", "< /\\\#{1,6}/ > { text.length }")
-  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
+  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Spacechar+ AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
   Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={1,}/ @Newline")
   Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{1,}/ @Newline")

@@ -56,7 +56,16 @@ module Gem
   # Can be removed once RubyGems 3.5.14 support is dropped
   VALIDATES_FOR_RESOLUTION = Specification.new.respond_to?(:validate_for_resolution).freeze
 
+  # Can be removed once RubyGems 3.3.15 support is dropped
+  FLATTENS_REQUIRED_PATHS = Specification.new.respond_to?(:flatten_require_paths).freeze
+
   class Specification
+    # Can be removed once RubyGems 3.5.15 support is dropped
+    correct_array_attributes = @@default_value.select {|_k,v| v.is_a?(Array) }.keys
+    unless @@array_attributes == correct_array_attributes
+      @@array_attributes = correct_array_attributes # rubocop:disable Style/ClassVars
+    end
+
     require_relative "match_metadata"
     require_relative "match_platform"
 
@@ -161,6 +170,27 @@ module Gem
       end
     end
 
+    unless FLATTENS_REQUIRED_PATHS
+      def flatten_require_paths
+        return unless raw_require_paths.first.is_a?(Array)
+
+        warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
+        raw_require_paths.flatten!
+      end
+
+      class << self
+        module RequirePathFlattener
+          def from_yaml(input)
+            spec = super(input)
+            spec.flatten_require_paths
+            spec
+          end
+        end
+
+        prepend RequirePathFlattener
+      end
+    end
+
     private
 
     def dependencies_to_gemfile(dependencies, group = nil)
@@ -217,14 +247,12 @@ module Gem
       @force_ruby_platform = default_force_ruby_platform
     end
 
-    def encode_with(coder)
-      to_yaml_properties.each do |ivar|
-        coder[ivar.to_s.sub(/^@/, "")] = instance_variable_get(ivar)
+    unless method_defined?(:encode_with, false)
+      def encode_with(coder)
+        [:@name, :@requirement, :@type, :@prerelease, :@version_requirements].each do |ivar|
+          coder[ivar.to_s.sub(/^@/, "")] = instance_variable_get(ivar)
+        end
       end
-    end
-
-    def to_yaml_properties
-      instance_variables.reject {|p| ["@source", "@groups"].include?(p.to_s) }
     end
 
     def to_lock

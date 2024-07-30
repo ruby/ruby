@@ -3,13 +3,7 @@
 
 # A parser for TomDoc based on TomDoc 1.0.0-rc1 (02adef9b5a)
 #
-# The TomDoc specification can be found at:
-#
-# http://tomdoc.org
-#
-# The latest version of the TomDoc specification can be found at:
-#
-# https://github.com/mojombo/tomdoc/blob/master/tomdoc.md
+# The TomDoc specification can be found at http://tomdoc.org.
 #
 # To choose TomDoc as your only default format see RDoc::Options@Saved+Options
 # for instructions on setting up a <code>.rdoc_options</code> file to store

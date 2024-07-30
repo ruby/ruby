@@ -4157,47 +4157,56 @@ fn gen_opt_newarray_send(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    let method = jit.get_arg(1).as_u64();
+    let method = jit.get_arg(1).as_u32();
 
-    if method == ID!(min) {
+    if method == VM_OPT_NEWARRAY_SEND_MIN {
         gen_opt_newarray_min(jit, asm)
-    } else if method == ID!(max) {
+    } else if method == VM_OPT_NEWARRAY_SEND_MAX {
         gen_opt_newarray_max(jit, asm)
-    } else if method == ID!(hash) {
+    } else if method == VM_OPT_NEWARRAY_SEND_HASH {
         gen_opt_newarray_hash(jit, asm)
-    } else if method == ID!(pack) {
-        gen_opt_newarray_pack(jit, asm)
+    } else if method == VM_OPT_NEWARRAY_SEND_PACK {
+        gen_opt_newarray_pack_buffer(jit, asm, 1, None)
+    } else if method == VM_OPT_NEWARRAY_SEND_PACK_BUFFER {
+        gen_opt_newarray_pack_buffer(jit, asm, 2, Some(1))
     } else {
         None
     }
 }
 
-fn gen_opt_newarray_pack(
+fn gen_opt_newarray_pack_buffer(
     jit: &mut JITState,
     asm: &mut Assembler,
+    fmt_offset: u32,
+    buffer: Option<u32>,
 ) -> Option<CodegenStatus> {
-    // num == 4 ( for this code )
+    asm_comment!(asm, "opt_newarray_send pack");
+
     let num = jit.get_arg(0).as_u32();
 
     // Save the PC and SP because we may call #pack
     jit_prepare_non_leaf_call(jit, asm);
 
     extern "C" {
-        fn rb_vm_opt_newarray_pack(ec: EcPtr, num: u32, elts: *const VALUE, fmt: VALUE) -> VALUE;
+        fn rb_vm_opt_newarray_pack_buffer(ec: EcPtr, num: u32, elts: *const VALUE, fmt: VALUE, buffer: VALUE) -> VALUE;
     }
 
     let values_opnd = asm.ctx.sp_opnd(-(num as i32));
     let values_ptr = asm.lea(values_opnd);
 
-    let fmt_string = asm.ctx.sp_opnd(-1);
+    let fmt_string = asm.ctx.sp_opnd(-(fmt_offset as i32));
 
     let val_opnd = asm.ccall(
-        rb_vm_opt_newarray_pack as *const u8,
+        rb_vm_opt_newarray_pack_buffer as *const u8,
         vec![
             EC,
-            (num - 1).into(),
+            (num - fmt_offset).into(),
             values_ptr,
-            fmt_string
+            fmt_string,
+            match buffer {
+                None => Qundef.into(),
+                Some(i) => asm.ctx.sp_opnd(-(i as i32)),
+            },
         ],
     );
 
@@ -6587,7 +6596,7 @@ fn gen_send_cfunc(
         cme,
         recv,
         sp,
-        pc: if cfg!(debug_assertions) {
+        pc: if cfg!(feature = "runtime_checks") {
             Some(!0) // Poison value. Helps to fail fast.
         } else {
             None     // Leave PC uninitialized as cfuncs shouldn't read it
@@ -8384,12 +8393,6 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
 
     // Save PC and SP to prepare for dynamic dispatch
     jit_prepare_non_leaf_call(jit, asm);
-
-    // Squash stack canary that might be left over from elsewhere
-    assert_eq!(false, asm.get_leaf_ccall());
-    if cfg!(debug_assertions) {
-        asm.store(asm.ctx.sp_opnd(0), 0.into());
-    }
 
     // Dispatch a method
     let ret = vm_sendish(asm);

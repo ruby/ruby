@@ -164,7 +164,8 @@ module Bundler
             "does not exist. Run `bundle config unset local.#{override_for(original_path)}` to remove the local override"
         end
 
-        set_local!(path)
+        @local = true
+        set_paths!(path)
 
         # Create a new git proxy without the cached revision
         # so the Gemfile.lock always picks up the new revision.
@@ -187,13 +188,11 @@ module Bundler
       end
 
       def specs(*)
-        set_local!(app_cache_path) if has_app_cache? && !local?
+        set_cache_path!(app_cache_path) if has_app_cache? && !local?
 
         if requires_checkout? && !@copied
           fetch
-          git_proxy.copy_to(install_path, submodules)
-          serialize_gemspecs_in(install_path)
-          @copied = true
+          checkout
         end
 
         local_specs
@@ -206,10 +205,7 @@ module Bundler
         print_using_message "Using #{version_message(spec, options[:previous_spec])} from #{self}"
 
         if (requires_checkout? && !@copied) || force
-          Bundler.ui.debug "  * Checking out revision: #{ref}"
-          git_proxy.copy_to(install_path, submodules)
-          serialize_gemspecs_in(install_path)
-          @copied = true
+          checkout
         end
 
         generate_bin_options = { disable_extensions: !Bundler.rubygems.spec_missing_extensions?(spec), build_args: options[:build_args] }
@@ -221,12 +217,13 @@ module Bundler
       def cache(spec, custom_path = nil)
         app_cache_path = app_cache_path(custom_path)
         return unless Bundler.feature_flag.cache_all?
-        return if path == app_cache_path
+        return if install_path == app_cache_path
+        return if cache_path == app_cache_path
         cached!
         FileUtils.rm_rf(app_cache_path)
         git_proxy.checkout if requires_checkout?
-        git_proxy.copy_to(app_cache_path, @submodules)
-        serialize_gemspecs_in(app_cache_path)
+        FileUtils.cp_r("#{cache_path}/.", app_cache_path)
+        FileUtils.touch(app_cache_path.join(".bundlecache"))
       end
 
       def load_spec_files
@@ -270,6 +267,13 @@ module Bundler
 
       private
 
+      def checkout
+        Bundler.ui.debug "  * Checking out revision: #{ref}"
+        git_proxy.copy_to(install_path, submodules)
+        serialize_gemspecs_in(install_path)
+        @copied = true
+      end
+
       def humanized_ref
         if local?
           path
@@ -298,10 +302,19 @@ module Bundler
         end
       end
 
-      def set_local!(path)
-        @local       = true
-        @local_specs = @git_proxy = nil
-        @cache_path  = @install_path = path
+      def set_paths!(path)
+        set_cache_path!(path)
+        set_install_path!(path)
+      end
+
+      def set_cache_path!(path)
+        @git_proxy = nil
+        @cache_path = path
+      end
+
+      def set_install_path!(path)
+        @local_specs = nil
+        @install_path = path
       end
 
       def has_app_cache?

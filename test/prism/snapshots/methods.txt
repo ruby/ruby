@@ -927,7 +927,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (103,10)-(103,11))
-        │   │           ├── flags: newline, static_literal, decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 1
         │   ├── locals: []
         │   ├── def_keyword_loc: (103,0)-(103,3) = "def"
@@ -947,7 +947,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (104,10)-(104,11))
-        │   │           ├── flags: newline, static_literal, decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── locals: []
         │   ├── def_keyword_loc: (104,0)-(104,3) = "def"
@@ -979,7 +979,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (106,15)-(106,18))
-        │   │           ├── flags: newline, static_literal, decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 123
         │   ├── locals: [:bar]
         │   ├── def_keyword_loc: (106,0)-(106,3) = "def"
@@ -999,7 +999,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (108,10)-(108,13))
-        │   │           ├── flags: newline, static_literal, decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 123
         │   ├── locals: []
         │   ├── def_keyword_loc: (108,0)-(108,3) = "def"
@@ -2153,7 +2153,7 @@
         │   │   │           │       │   │   ├── flags: ∅
         │   │   │           │       │   │   └── body: (length: 1)
         │   │   │           │       │   │       └── @ LocalVariableReadNode (location: (181,30)-(181,33))
-        │   │   │           │       │   │           ├── flags: newline
+        │   │   │           │       │   │           ├── flags: ∅
         │   │   │           │       │   │           ├── name: :bar
         │   │   │           │       │   │           └── depth: 0
         │   │   │           │       │   ├── locals: [:bar]
@@ -2178,7 +2178,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ IntegerNode (location: (181,41)-(181,42))
-        │   │           ├── flags: newline, static_literal, decimal
+        │   │           ├── flags: static_literal, decimal
         │   │           └── value: 2
         │   ├── locals: [:bar]
         │   ├── def_keyword_loc: (181,0)-(181,3) = "def"
@@ -2234,7 +2234,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ IntegerNode (location: (183,36)-(183,37))
-            │           ├── flags: newline, static_literal, decimal
+            │           ├── flags: static_literal, decimal
             │           └── value: 2
             ├── locals: [:bar]
             ├── def_keyword_loc: (183,0)-(183,3) = "def"

@@ -28,7 +28,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,16)-(1,27))
-            │           ├── flags: newline, ignore_visibility
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :system

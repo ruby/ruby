@@ -94,7 +94,7 @@ module Bundler
     end
 
     def delete(specs)
-      specs.each {|spec| @specs.delete(spec) }
+      Array(specs).each {|spec| @specs.delete(spec) }
 
       reset!
     end

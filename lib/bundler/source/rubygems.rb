@@ -206,6 +206,7 @@ module Bundler
 
         spec.full_gem_path = installed_spec.full_gem_path
         spec.loaded_from = installed_spec.loaded_from
+        spec.base_dir = installed_spec.base_dir
 
         spec.post_install_message
       end

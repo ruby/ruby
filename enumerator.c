@@ -2400,7 +2400,6 @@ lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_inde
         rb_ary_push(ary, v);
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    LAZY_MEMO_SET_PACKED(result);
     return result;
 }
 

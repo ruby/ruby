@@ -208,7 +208,7 @@ class TestSyntax < Test::Unit::TestCase
     blocks = [['do end', 'do'], ['{}', 'brace']],
     *|
     [%w'. dot', %w':: colon'].product(methods, blocks) do |(c, n1), (m, n2), (b, n3)|
-      m = m.tr_s('()', ' ').strip if n2 == 'do'
+      m = m.tr_s('()', ' ').strip if n3 == 'do'
       name = "test_#{n3}_block_after_blockcall_#{n1}_#{n2}_arg"
       code = "#{blockcall}#{c}#{m} #{b}"
       define_method(name) {assert_valid_syntax(code, bug6115)}
@@ -1827,6 +1827,10 @@ eom
     assert_valid_syntax('p (;),(),()', bug19281)
     assert_valid_syntax('a.b (1;2),(3),(4)', bug19281)
     assert_valid_syntax('a.b (;),(),()', bug19281)
+  end
+
+  def test_command_do_block_call_with_empty_args_brace_block
+    assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }')
   end
 
   def test_numbered_parameter

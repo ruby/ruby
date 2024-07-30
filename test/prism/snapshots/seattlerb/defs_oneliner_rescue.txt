@@ -154,7 +154,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ RescueModifierNode (location: (13,21)-(13,43))
-            │           ├── flags: newline
+            │           ├── flags: ∅
             │           ├── expression:
             │           │   @ CallNode (location: (13,21)-(13,32))
             │           │   ├── flags: ignore_visibility

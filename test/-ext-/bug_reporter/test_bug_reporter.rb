@@ -2,13 +2,15 @@
 require 'test/unit'
 require 'tmpdir'
 require_relative '../../lib/jit_support'
+require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
     pend "macOS 15 beta is not working with this test" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
 
     omit "flaky with RJIT" if JITSupport.rjit_enabled?
-    description = RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+    description = RUBY_DESCRIPTION
+    description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
     description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,

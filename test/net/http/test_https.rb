@@ -321,6 +321,7 @@ class TestNetHTTPSIdentityVerifyFailure < Test::Unit::TestCase
     @log_tester = lambda {|_| }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
+      sleep 0.5
     }
     re_msg = /certificate verify failed|hostname \"#{HOST_IP}\" does not match/
     assert_match(re_msg, ex.message)

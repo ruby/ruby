@@ -414,10 +414,23 @@ two
   end
 
   def test_parse_heading_atx
-    doc = parse "# heading\n"
+    # CommonMark Example 62
+    (1..6).each do |level|
+      doc = parse "#{"#" * level} heading\n"
+
+      expected = @RM::Document.new(
+        @RM::Heading.new(level, "heading"))
+
+      assert_equal expected, doc
+    end
+
+    # CommonMark Example 64
+    doc = parse "#5 bolt\n\n#hashtag\n"
 
     expected = @RM::Document.new(
-      @RM::Heading.new(1, "heading"))
+      para("#5 bolt"),
+      para("#hashtag"),
+    )
 
     assert_equal expected, doc
   end

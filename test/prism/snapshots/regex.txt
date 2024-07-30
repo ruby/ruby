@@ -498,7 +498,7 @@
             │   ├── flags: ∅
             │   └── body: (length: 1)
             │       └── @ MatchWriteNode (location: (46,16)-(46,32))
-            │           ├── flags: newline
+            │           ├── flags: ∅
             │           ├── call:
             │           │   @ CallNode (location: (46,16)-(46,32))
             │           │   ├── flags: ∅

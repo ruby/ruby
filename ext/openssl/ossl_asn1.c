@@ -497,7 +497,7 @@ static VALUE class_tag_map;
 
 static int ossl_asn1_default_tag(VALUE obj);
 
-ASN1_TYPE*
+static ASN1_TYPE *
 ossl_asn1_get_asn1type(VALUE obj)
 {
     ASN1_TYPE *ret;

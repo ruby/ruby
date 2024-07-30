@@ -1820,11 +1820,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
                            "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
-    if (getenv("RUBY_FREE_AT_EXIT")) {
-        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
-        rb_free_at_exit = true;
-    }
-
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
@@ -2161,15 +2156,22 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
     if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
     if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
-    if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
 
     VALUE error;
     if (strcmp(opt->script, "-") == 0) {
+        if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
         pm_options_command_line_set(options, command_line);
         pm_options_filepath_set(options, "-");
 
         ruby_opt_init(opt);
         error = pm_parse_stdin(result);
+
+        // If we found an __END__ marker, then we're going to define a global
+        // DATA constant that is a file object that can be read to read the
+        // contents after the marker.
+        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+            rb_define_global_const("DATA", rb_stdin);
+        }
     }
     else if (opt->e_script) {
         command_line |= PM_OPTIONS_COMMAND_LINE_E;
@@ -2180,6 +2182,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"));
     }
     else {
+        if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
         pm_options_command_line_set(options, command_line);
         error = pm_load_file(result, opt->script_name, true);
 
@@ -3137,6 +3140,12 @@ ruby_process_options(int argc, char **argv)
         void ruby_set_crash_report(const char *template);
         ruby_set_crash_report(opt.crash_report);
     }
+
+    if (getenv("RUBY_FREE_AT_EXIT")) {
+        rb_free_at_exit = true;
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
+    }
+
     return (void*)(struct RData*)iseq;
 }
 

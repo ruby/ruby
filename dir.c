@@ -143,6 +143,50 @@ char *strchr(char*,char);
 # define IS_WIN32 0
 #endif
 
+#ifdef HAVE_GETATTRLIST
+struct getattrlist_args {
+    const char *path;
+    int fd;
+    struct attrlist *list;
+    void *buf;
+    size_t size;
+    unsigned int options;
+};
+
+# define GETATTRLIST_ARGS(list_, buf_, options_) (struct getattrlist_args) \
+    {.list = list_, .buf = buf_, .size = sizeof(buf_), .options = options_}
+
+static void *
+nogvl_getattrlist(void *args)
+{
+    struct getattrlist_args *arg = args;
+    return (void *)(VALUE)getattrlist(arg->path, arg->list, arg->buf, arg->size, arg->options);
+}
+
+static int
+gvl_getattrlist(struct getattrlist_args *args, const char *path)
+{
+    args->path = path;
+    return IO_WITHOUT_GVL_INT(nogvl_getattrlist, args);
+}
+
+# ifdef HAVE_FGETATTRLIST
+static void *
+nogvl_fgetattrlist(void *args)
+{
+    struct getattrlist_args *arg = args;
+    return (void *)(VALUE)fgetattrlist(arg->fd, arg->list, arg->buf, arg->size, arg->options);
+}
+
+static int
+gvl_fgetattrlist(struct getattrlist_args *args, int fd)
+{
+    args->fd = fd;
+    return IO_WITHOUT_GVL_INT(nogvl_fgetattrlist, args);
+}
+# endif
+#endif
+
 #if NORMALIZE_UTF8PATH
 # if defined HAVE_FGETATTRLIST || !defined HAVE_GETATTRLIST
 #   define need_normalization(dirp, path) need_normalization(dirp)
@@ -155,10 +199,11 @@ need_normalization(DIR *dirp, const char *path)
 # if defined HAVE_FGETATTRLIST || defined HAVE_GETATTRLIST
     u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, 0);
 #   if defined HAVE_FGETATTRLIST
-    int ret = fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), 0);
+    int ret = gvl_fgetattrlist(&args, dirfd(dirp));
 #   else
-    int ret = getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0);
+    int ret = gvl_getattrlist(&args, path);
 #   endif
     if (!ret) {
         const fsobj_tag_t *tag = (void *)(attrbuf+1);
@@ -555,7 +600,8 @@ dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
         else if (e == EIO) {
             u_int32_t attrbuf[1];
             struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
-            if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
+            struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
+            if (gvl_getattrlist(&args, path) == 0) {
                 dp->dir = opendir_without_gvl(path);
             }
         }
@@ -2134,14 +2180,15 @@ is_case_sensitive(DIR *dirp, const char *path)
     const vol_capabilities_attr_t *const cap = attrbuf[0].cap;
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
-
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
 #   if defined HAVE_FGETATTRLIST
-    if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
-        return -1;
+    int ret = gvl_fgetattrlist(&args, dirfd(dirp));
 #   else
-    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
-        return -1;
+    int ret = gvl_getattrlist(&args, path);
 #   endif
+    if (ret)
+        return -1;
+
     if (!(cap->valid[idx] & mask))
         return -1;
     return (cap->capabilities[idx] & mask) != 0;
@@ -2164,7 +2211,8 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
     *type = path_noent;
-    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW)) {
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
+    if (gvl_getattrlist(&args, path)) {
         if (!to_be_ignored(errno))
             sys_warning(path, enc);
         return path;
@@ -3700,12 +3748,13 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     {
         u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
         struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
-        if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) != 0)
+        struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, 0);
+        if (gvl_getattrlist(&args, path) != 0)
             rb_sys_fail_path(orig);
         if (*(const fsobj_tag_t *)(attrbuf+1) == VT_HFS) {
             al.commonattr = 0;
             al.dirattr = ATTR_DIR_ENTRYCOUNT;
-            if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) == 0) {
+            if (gvl_getattrlist(&args, path) == 0) {
                 if (attrbuf[0] >= 2 * sizeof(u_int32_t))
                     return RBOOL(attrbuf[1] == 0);
                 if (false_on_notdir) return Qfalse;

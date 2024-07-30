@@ -225,7 +225,8 @@ typedef void* rb_parser_ary_data;
 
 enum rb_parser_ary_data_type {
     PARSER_ARY_DATA_AST_TOKEN = 1,
-    PARSER_ARY_DATA_SCRIPT_LINE
+    PARSER_ARY_DATA_SCRIPT_LINE,
+    PARSER_ARY_DATA_NODE
 };
 
 typedef struct rb_parser_ary {
@@ -272,6 +273,9 @@ typedef struct RNode_UNLESS {
     struct RNode *nd_cond;
     struct RNode *nd_body;
     struct RNode *nd_else;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t then_keyword_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_unless_t;
 
 typedef struct RNode_CASE {
@@ -392,6 +396,7 @@ typedef struct RNode_RESBODY {
     NODE node;
 
     struct RNode *nd_args;
+    struct RNode *nd_exc_var;
     struct RNode *nd_body;
     struct RNode *nd_next;
 } rb_node_resbody_t;
@@ -568,8 +573,6 @@ typedef struct RNode_ZSUPER {
    * alen (length of list) |     * nd_end (point to the last LIST)
    * next -----------------+     * next
 
-
-  RNode_LIST and RNode_VALUES should be same structure
 */
 typedef struct RNode_LIST {
     NODE node;
@@ -585,14 +588,6 @@ typedef struct RNode_LIST {
 typedef struct RNode_ZLIST {
     NODE node;
 } rb_node_zlist_t;
-
-typedef struct RNode_VALUES {
-    NODE node;
-
-    struct RNode *nd_head;
-    long nd_alen;
-    struct RNode *nd_next;
-} rb_node_values_t;
 
 typedef struct RNode_HASH {
     NODE node;
@@ -885,7 +880,7 @@ typedef struct RNode_VALIAS {
 typedef struct RNode_UNDEF {
     NODE node;
 
-    struct RNode *nd_undef;
+    rb_parser_ary_t *nd_undefs;
 } rb_node_undef_t;
 
 typedef struct RNode_CLASS {

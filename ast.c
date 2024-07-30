@@ -14,6 +14,7 @@
 
 static VALUE rb_mAST;
 static VALUE rb_cNode;
+static VALUE rb_cLocation;
 
 struct ASTNodeData {
     VALUE ast_value;
@@ -42,6 +43,32 @@ static const rb_data_type_t rb_node_type = {
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
 };
+
+struct ASTLocationData {
+    int first_lineno;
+    int first_column;
+    int last_lineno;
+    int last_column;
+};
+
+static void
+location_gc_mark(void *ptr)
+{
+}
+
+static size_t
+location_memsize(const void *ptr)
+{
+    return sizeof(struct ASTLocationData);
+}
+
+static const rb_data_type_t rb_location_type = {
+    "AST/location",
+    {location_gc_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 
 static VALUE rb_ast_node_alloc(VALUE klass);
 
@@ -334,6 +361,24 @@ dump_array(VALUE ast_value, const struct RNode_LIST *node)
 }
 
 static VALUE
+dump_parser_array(VALUE ast_value, rb_parser_ary_t *p_ary)
+{
+    VALUE ary;
+
+    if (p_ary->data_type != PARSER_ARY_DATA_NODE) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", p_ary->data_type);
+    }
+
+    ary = rb_ary_new();
+
+    for (long i = 0; i < p_ary->len; i++) {
+        rb_ary_push(ary, NEW_CHILD(ast_value, p_ary->data[i]));
+    }
+
+    return ary;
+}
+
+static VALUE
 var_name(ID id)
 {
     if (!id) return Qnil;
@@ -402,7 +447,7 @@ node_children(VALUE ast_value, const NODE *node)
       case NODE_RESCUE:
         return rb_ary_new_from_node_args(ast_value, 3, RNODE_RESCUE(node)->nd_head, RNODE_RESCUE(node)->nd_resq, RNODE_RESCUE(node)->nd_else);
       case NODE_RESBODY:
-        return rb_ary_new_from_node_args(ast_value, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_next);
+        return rb_ary_new_from_node_args(ast_value, 4, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_exc_var, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_next);
       case NODE_ENSURE:
         return rb_ary_new_from_node_args(ast_value, 2, RNODE_ENSURE(node)->nd_head, RNODE_ENSURE(node)->nd_ensr);
       case NODE_AND:
@@ -577,7 +622,7 @@ node_children(VALUE ast_value, const NODE *node)
       case NODE_VALIAS:
         return rb_ary_new_from_args(2, ID2SYM(RNODE_VALIAS(node)->nd_alias), ID2SYM(RNODE_VALIAS(node)->nd_orig));
       case NODE_UNDEF:
-        return rb_ary_new_from_node_args(ast_value, 1, RNODE_UNDEF(node)->nd_undef);
+        return rb_ary_new_from_args(1, dump_parser_array(ast_value, RNODE_UNDEF(node)->nd_undefs));
       case NODE_CLASS:
         return rb_ary_new_from_node_args(ast_value, 3, RNODE_CLASS(node)->nd_cpath, RNODE_CLASS(node)->nd_super, RNODE_CLASS(node)->nd_body);
       case NODE_MODULE:
@@ -702,6 +747,59 @@ ast_node_children(rb_execution_context_t *ec, VALUE self)
     return node_children(data->ast_value, data->node);
 }
 
+static int
+null_loc_p(rb_code_location_t *loc)
+{
+    return (loc->beg_pos.lineno == 0 && loc->beg_pos.column == -1 && loc->end_pos.lineno == 0 && loc->end_pos.column == -1);
+}
+
+static VALUE
+location_new(rb_code_location_t *loc)
+{
+    VALUE obj;
+    struct ASTLocationData *data;
+
+    if (null_loc_p(loc)) return Qnil;
+
+    obj = TypedData_Make_Struct(rb_cLocation, struct ASTLocationData, &rb_location_type, data);
+    data->first_lineno = loc->beg_pos.lineno;
+    data->first_column = loc->beg_pos.column;
+    data->last_lineno = loc->end_pos.lineno;
+    data->last_column = loc->end_pos.column;
+
+    return obj;
+}
+
+static VALUE
+node_locations(VALUE ast_value, const NODE *node)
+{
+    enum node_type type = nd_type(node);
+    switch (type) {
+      case NODE_UNLESS:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_UNLESS(node)->keyword_loc),
+                                    location_new(&RNODE_UNLESS(node)->then_keyword_loc),
+                                    location_new(&RNODE_UNLESS(node)->end_keyword_loc));
+      case NODE_ARGS_AUX:
+      case NODE_LAST:
+        break;
+      default:
+        return rb_ary_new_from_args(1, location_new(nd_code_loc(node)));
+    }
+
+    rb_bug("node_locations: unknown node: %s", ruby_node_name(type));
+}
+
+static VALUE
+ast_node_locations(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    return node_locations(data->ast_value, data->node);
+}
+
 static VALUE
 ast_node_first_lineno(rb_execution_context_t *ec, VALUE self)
 {
@@ -805,6 +903,61 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
     return rb_parser_build_script_lines_from(ret);
 }
 
+static VALUE
+ast_location_first_lineno(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->first_lineno);
+}
+
+static VALUE
+ast_location_first_column(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->first_column);
+}
+
+static VALUE
+ast_location_last_lineno(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->last_lineno);
+}
+
+static VALUE
+ast_location_last_column(rb_execution_context_t *ec, VALUE self)
+{
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    return INT2NUM(data->last_column);
+}
+
+static VALUE
+ast_location_inspect(rb_execution_context_t *ec, VALUE self)
+{
+    VALUE str;
+    VALUE cname;
+    struct ASTLocationData *data;
+    TypedData_Get_Struct(self, struct ASTLocationData, &rb_location_type, data);
+
+    cname = rb_class_path(rb_obj_class(self));
+    str = rb_str_new2("#<");
+
+    rb_str_append(str, cname);
+    rb_str_catf(str, ":@%d:%d-%d:%d>",
+                data->first_lineno, data->first_column,
+                data->last_lineno, data->last_column);
+
+    return str;
+}
+
 #include "ast.rbinc"
 
 void
@@ -812,5 +965,7 @@ Init_ast(void)
 {
     rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
+    rb_cLocation = rb_define_class_under(rb_mAST, "Location", rb_cObject);
     rb_undef_alloc_func(rb_cNode);
+    rb_undef_alloc_func(rb_cLocation);
 }

@@ -70,6 +70,17 @@ RSpec.describe "bundle check" do
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
+  it "prints a generic error if gem git source is not checked out" do
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "rails", git: "git@github.com:rails/rails.git"
+    G
+
+    bundle :check, raise_on_error: false
+    expect(exitstatus).to eq 1
+    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
+  end
+
   it "prints a generic message if you changed your lockfile" do
     build_repo2 do
       build_gem "rails_pinned_to_old_activesupport" do |s|
@@ -407,7 +418,7 @@ RSpec.describe "bundle check" do
       system_gems "depends_on_myrack-1.0", "myrack-1.0", gem_repo: gem_repo4, path: default_bundle_path
       bundle :check
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "depends_on_myrack", "1.0"
         c.no_checksum "myrack", "1.0"
       end
@@ -470,13 +481,15 @@ RSpec.describe "bundle check" do
 
       bundle "check --verbose", dir: tmp("bundle-check-issue")
 
-      checksums = checksums_section_when_existing do |c|
+      lockfile = File.read(tmp("bundle-check-issue/Gemfile.lock"))
+
+      checksums = checksums_section_when_enabled(lockfile) do |c|
         c.checksum gem_repo4, "awesome_print", "1.0"
         c.no_checksum "bundle-check-issue", "9999"
         c.checksum gem_repo2, "dex-dispatch-engine", "1.0"
       end
 
-      expect(File.read(tmp("bundle-check-issue/Gemfile.lock"))).to eq <<~L
+      expect(lockfile).to eq <<~L
         PATH
           remote: .
           specs:

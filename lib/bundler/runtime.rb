@@ -139,11 +139,6 @@ module Bundler
         spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
       end
 
-      Dir[cache_path.join("*/.git")].each do |git_dir|
-        FileUtils.rm_rf(git_dir)
-        FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
-      end
-
       prune_cache(cache_path) unless Bundler.settings[:no_prune]
     end
 

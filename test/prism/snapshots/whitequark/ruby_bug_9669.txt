@@ -29,7 +29,7 @@
         │   │   ├── flags: ∅
         │   │   └── body: (length: 1)
         │   │       └── @ ReturnNode (location: (2,0)-(2,6))
-        │   │           ├── flags: newline, redundant
+        │   │           ├── flags: newline
         │   │           ├── keyword_loc: (2,0)-(2,6) = "return"
         │   │           └── arguments: ∅
         │   ├── locals: [:b]

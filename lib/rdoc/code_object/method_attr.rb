@@ -268,8 +268,8 @@ class RDoc::MethodAttr < RDoc::CodeObject
       when 'const_get' then 'const'
       when 'new' then
         $1.split('::').last.  # ClassName => class_name
-          gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-          gsub(/([a-z\d])([A-Z])/,'\1_\2').
+          gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').
+          gsub(/([a-z\d])([A-Z])/, '\1_\2').
           downcase
       else
         $2
@@ -291,7 +291,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
   def html_name
     require 'cgi/util'
 
-    CGI.escape(@name.gsub('-', '-2D')).gsub('%','-').sub(/^-/, '')
+    CGI.escape(@name.gsub('-', '-2D')).gsub('%', '-').sub(/^-/, '')
   end
 
   ##

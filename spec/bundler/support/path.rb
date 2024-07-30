@@ -265,6 +265,10 @@ module Spec
       ruby_core? ? source_root : source_root.parent
     end
 
+    def rake_path
+      Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
+    end
+
     private
 
     def git_ls_files(glob)

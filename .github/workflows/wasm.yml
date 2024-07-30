@@ -100,7 +100,7 @@ jobs:
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
 
-      - uses: ruby/setup-ruby@161cd54b698f1fb3ea539faab2e036d409550e3c # v1.187.0
+      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
           ruby-version: '3.0'
           bundler: none

@@ -465,7 +465,7 @@
         │   │   │   ├── flags: ∅
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (21,16)-(21,26))
-        │   │   │           ├── flags: newline, ignore_visibility
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
