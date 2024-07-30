@@ -4781,28 +4781,6 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 #include <sys/timeb.h>
 
-static int have_precisetime = -1;
-
-static void
-get_systemtime(FILETIME *ft)
-{
-    typedef void (WINAPI *get_time_func)(FILETIME *ft);
-    static get_time_func func = (get_time_func)-1;
-
-    if (func == (get_time_func)-1) {
-        /* GetSystemTimePreciseAsFileTime is available since Windows 8 and Windows Server 2012. */
-        func = (get_time_func)get_proc_address("kernel32", "GetSystemTimePreciseAsFileTime", NULL);
-        if (func == NULL) {
-            func = GetSystemTimeAsFileTime;
-            have_precisetime = 0;
-        }
-        else
-            have_precisetime = 1;
-    }
-    if (!ft) return;
-    func(ft);
-}
-
 /* License: Ruby's */
 /* split FILETIME value into UNIX time and sub-seconds in NT ticks */
 static time_t
@@ -4833,7 +4811,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     FILETIME ft;
     long subsec;
 
-    get_systemtime(&ft);
+    GetSystemTimePreciseAsFileTime(&ft);
     tv->tv_sec = filetime_split(&ft, &subsec);
     tv->tv_usec = subsec / 10;
 
@@ -4850,7 +4828,7 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
             FILETIME ft;
             long subsec;
 
-            get_systemtime(&ft);
+            GetSystemTimePreciseAsFileTime(&ft);
             sp->tv_sec = filetime_split(&ft, &subsec);
             sp->tv_nsec = subsec * 100;
             return 0;
@@ -5727,14 +5705,10 @@ filetime_to_unixtime(const FILETIME *ft)
 static long
 filetime_to_nsec(const FILETIME *ft)
 {
-    if (have_precisetime <= 0)
-        return 0;
-    else {
-        ULARGE_INTEGER tmp;
-        tmp.LowPart = ft->dwLowDateTime;
-        tmp.HighPart = ft->dwHighDateTime;
-        return (long)(tmp.QuadPart % 10000000) * 100;
-    }
+    ULARGE_INTEGER tmp;
+    tmp.LowPart = ft->dwLowDateTime;
+    tmp.HighPart = ft->dwHighDateTime;
+    return (long)(tmp.QuadPart % 10000000) * 100;
 }
 
 /* License: Ruby's */
@@ -7665,7 +7639,7 @@ wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags
         }
     }
     else {
-        get_systemtime(&atime);
+        GetSystemTimePreciseAsFileTime(&atime);
         mtime = atime;
     }
 
