@@ -4,16 +4,19 @@ require 'test/unit'
 
 class TestEnsureAndCallcc < Test::Unit::TestCase
   def test_bug20655_dir_chdir_using_rb_ensure
+    require 'tmpdir'
     need_continuation
     called = 0
     tmp = nil
-    Dir.chdir('/tmp') do
-      tmp = Dir.pwd
-      cont = nil
-      callcc{|c| cont = c}
-      assert_equal(tmp, Dir.pwd, "BUG #20655: ensure called and pwd was changed unexpectedly")
-      called += 1
-      cont.call if called < 10
+    Dir.mktmpdir do |tmpdir|
+      Dir.chdir(tmpdir) do
+        tmp = Dir.pwd
+        cont = nil
+        callcc{|c| cont = c}
+        assert_equal(tmp, Dir.pwd, "BUG #20655: ensure called and pwd was changed unexpectedly")
+        called += 1
+        cont.call if called < 10
+      end
     end
   end
 
