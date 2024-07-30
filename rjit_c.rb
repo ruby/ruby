@@ -1559,10 +1559,6 @@ module RubyVM::RJIT # :nodoc: all
     CType::Stub.new(:rb_fiber_t)
   end
 
-  def C.rb_ensure_list_t
-    CType::Stub.new(:rb_ensure_list_t)
-  end
-
   def C.rb_trace_arg_struct
     CType::Stub.new(:rb_trace_arg_struct)
   end
