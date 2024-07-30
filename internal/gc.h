@@ -254,7 +254,6 @@ VALUE rb_gc_disable_no_rest(void);
 
 
 /* gc.c (export) */
-const char *obj_type_name(VALUE obj);
 const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
