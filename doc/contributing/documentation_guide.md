@@ -171,7 +171,9 @@ Code that is a simple string should include the quote marks.
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
-For example, we should write `Array`, not `\Array`.
+For example, we should write `Array`,
+not `\Array` (plain text without link,
+and not  `+Array+` or `\`Array\`` (monofont text without link).
 
 However, suppress when the word in question:
 
@@ -503,3 +505,66 @@ mention `Hash#fetch` as a related method, and `Hash#merge` might mention
 For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
+
+## Further Considerations
+
+### Case Treatments
+
+When a series of paragraphs documents _cases_ that form a _partition_,
+consider using bullets (unordered items) to emphasize that structure;
+such structures may be nested.
+
+The documentation for Array.new is organized thus (some text omitted)
+
+```
+Returns a new +Array+ object:
+
+- With no block given:
+
+    - With no argument given, returns ...:
+    - With argument +array+ given, returns ...:
+    - With numeric argument +size+ given, returns ...:
+
+- With a block given, returns ...:
+
+Raises TypeError if ....
+```
+
+### Trivial \Method Behaviors
+
+For a trivial method behavior,
+it's usually best not to include that behavior in the discussion;
+consider whether it is useful and convenient to show that behavior
+as part of the example code.
+
+In Array.new, the examples for argument `size` include this trivial result:
+
+```
+Array.new(0)    # => []
+```
+
+### Exceptions
+
+Documentation may include discussions of exceptions that may be raised.
+Consider whether it is useful and convenient to include an exceptional behavior in the examples
+(instead of in the discussion).
+
+In Array.new, the examples for argument `size` include this exceptional behavior:
+
+```
+Array.new(-1)   # Raises ArgumentError (negative array size).
+```
+
+### Names of Common Classes
+
+The name of a class or module is by default
+[auto-linked](rdoc-ref:contributing/documentation_guide.md@Auto-Linking).
+If you want to suppress auto-linking for an often-mentioned class,
+consider avoiding the capitalized class name altogether.
+
+For example, for the many mentions of `Array` in the documentation for class `Array`,
+write "array" instead of "\\+Array\\+";
+this more casual usage is unlikely to cause confusion,
+and avoids both auto-linking and distracting font changes.
+
+This principle may be usefully applied, in particular, for array, hash, and string.
