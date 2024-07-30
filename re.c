@@ -1874,8 +1874,8 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         // pointers as object references.  We compute the pointers to the beginning of those
         // objects and use RB_GC_GUARD to keep them on the stack so that even if the `match_alloc`
         // invocation triggers GC, the `beg` and `end` will still be kept alive.
-        root_beg = (VALUE)rb_mmtk_chars_to_strbuf((char*)args.regs.beg);
-        root_end = (VALUE)rb_mmtk_chars_to_strbuf((char*)args.regs.end);
+        root_beg = (VALUE)rb_mmtk_chars_to_strbuf((char*)regs.beg);
+        root_end = (VALUE)rb_mmtk_chars_to_strbuf((char*)regs.end);
     } else {
         root_beg = root_end = Qnil;
     }
