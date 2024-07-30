@@ -18,7 +18,7 @@ RSpec.describe "bundle cache with git" do
     ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -37,7 +37,7 @@ RSpec.describe "bundle cache with git" do
     ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -57,7 +57,7 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -75,7 +75,7 @@ RSpec.describe "bundle cache with git" do
     old_ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -105,7 +105,7 @@ RSpec.describe "bundle cache with git" do
     old_ref = git.ref_for("main", 11)
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
 
@@ -134,7 +134,7 @@ RSpec.describe "bundle cache with git" do
     ref = git.ref_for("main", 11)
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-invalid")}', :branch => :main
     G
 
@@ -164,11 +164,11 @@ RSpec.describe "bundle cache with git" do
       s.add_dependency "submodule"
     end
 
-    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", dir: lib_path("has_submodule-1.0")
-    sys_exec "git commit -m \"submodulator\"", dir: lib_path("has_submodule-1.0")
+    git "submodule add #{lib_path("submodule-1.0")} submodule-1.0", lib_path("has_submodule-1.0")
+    git "commit -m \"submodulator\"", lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       git "#{lib_path("has_submodule-1.0")}", :submodules => true do
         gem "has_submodule"
       end
@@ -192,7 +192,7 @@ RSpec.describe "bundle cache with git" do
     update_git("foo") {|s| s.write "foo.gemspec", spec_lines.join("\n") }
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
@@ -207,7 +207,7 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
@@ -226,7 +226,7 @@ RSpec.describe "bundle cache with git" do
     ref = git.ref_for("main", 11)
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"

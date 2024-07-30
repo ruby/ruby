@@ -8,17 +8,17 @@ RSpec.describe "process lock spec" do
       thread = Thread.new do
         Bundler::ProcessLock.lock(default_bundle_path) do
           sleep 1 # ignore quality_spec
-          expect(the_bundle).not_to include_gems "rack 1.0"
+          expect(the_bundle).not_to include_gems "myrack 1.0"
         end
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       thread.join
-      expect(the_bundle).to include_gems "rack 1.0"
+      expect(the_bundle).to include_gems "myrack 1.0"
     end
 
     context "when creating a lock raises Errno::ENOTSUP" do

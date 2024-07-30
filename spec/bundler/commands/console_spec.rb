@@ -38,16 +38,16 @@ RSpec.describe "bundle console", bundler: "< 3", readline: true do
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
-      gem "rack"
+      source "https://gem.repo2"
+      gem "myrack"
       gem "activesupport", :group => :test
-      gem "rack_middleware", :group => :development
+      gem "myrack_middleware", :group => :development
     G
   end
 
   it "starts IRB with the default group loaded" do
     bundle "console" do |input, _, _|
-      input.puts("puts RACK")
+      input.puts("puts MYRACK")
       input.puts("exit")
     end
     expect(out).to include("0.9.1")
@@ -63,7 +63,7 @@ RSpec.describe "bundle console", bundler: "< 3", readline: true do
 
   it "starts another REPL if configured as such" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
       gem "pry"
     G
     bundle "config set console pry"
@@ -105,7 +105,7 @@ RSpec.describe "bundle console", bundler: "< 3", readline: true do
 
     it "loads the default group" do
       bundle "console test" do |input, _, _|
-        input.puts("puts RACK")
+        input.puts("puts MYRACK")
         input.puts("exit")
       end
       expect(out).to include("0.9.1")
@@ -113,7 +113,7 @@ RSpec.describe "bundle console", bundler: "< 3", readline: true do
 
     it "doesn't load other groups" do
       bundle "console test" do |input, _, _|
-        input.puts("puts RACK_MIDDLEWARE")
+        input.puts("puts MYRACK_MIDDLEWARE")
         input.puts("exit")
       end
       expect(out).to include("NameError")
@@ -122,10 +122,10 @@ RSpec.describe "bundle console", bundler: "< 3", readline: true do
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
-      gem "rack"
+      source "https://gem.repo2"
+      gem "myrack"
       gem "activesupport", :group => :test
-      gem "rack_middleware", :group => :development
+      gem "myrack_middleware", :group => :development
       gem "foo"
     G
 

@@ -30,6 +30,10 @@ module Bundler
         end.compact
       end
 
+      def specs_compatible_with(result)
+        @base.specs_compatible_with(result)
+      end
+
       def [](name)
         @base[name]
       end

@@ -217,7 +217,15 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
   def test_execute_system_update_installed_in_non_default_gem_path
-    rubygems_update_spec = quick_gem "rubygems-update", 9 do |s|
+    rubygems_update_spec = Gem::Specification.new do |s|
+      s.name        = "rubygems-update"
+      s.version     = "9"
+      s.author      = "A User"
+      s.email       = "example@example.com"
+      s.homepage    = "http://example.com"
+      s.summary     = "this is a summary"
+      s.description = "This is a test description"
+
       write_file File.join(@tempdir, "setup.rb")
 
       s.files += %w[setup.rb]

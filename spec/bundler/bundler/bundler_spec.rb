@@ -227,14 +227,14 @@ RSpec.describe Bundler do
   describe "#mkdir_p" do
     it "creates a folder at the given path" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       allow(Bundler).to receive(:root).and_return(bundled_app)
 
-      Bundler.mkdir_p(bundled_app.join("foo", "bar"))
-      expect(bundled_app.join("foo", "bar")).to exist
+      Bundler.mkdir_p(bundled_app("foo", "bar"))
+      expect(bundled_app("foo", "bar")).to exist
     end
   end
 

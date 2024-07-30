@@ -20,7 +20,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
 
       gem "rake"
     G
@@ -57,7 +57,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   context "rake build when path has spaces", :ruby_repo do
     before do
-      spaced_bundled_app = tmp.join("bundled app")
+      spaced_bundled_app = tmp("bundled app")
       FileUtils.cp_r bundled_app, spaced_bundled_app
       bundle "exec rake build", dir: spaced_bundled_app
     end
@@ -69,7 +69,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   context "rake build when path has brackets", :ruby_repo do
     before do
-      bracketed_bundled_app = tmp.join("bundled[app")
+      bracketed_bundled_app = tmp("bundled[app")
       FileUtils.cp_r bundled_app, bracketed_bundled_app
       bundle "exec rake build", dir: bracketed_bundled_app
     end
@@ -86,7 +86,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
     it "works", :ruby_repo do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
 
         gem "rake"
       G

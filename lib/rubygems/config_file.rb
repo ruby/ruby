@@ -510,12 +510,12 @@ if you believe they were disclosed to a third party.
 
   # Return the configuration information for +key+.
   def [](key)
-    @hash[key.to_s]
+    @hash[key] || @hash[key.to_s]
   end
 
   # Set configuration option +key+ to +value+.
   def []=(key, value)
-    @hash[key.to_s] = value
+    @hash[key] = value
   end
 
   def ==(other) # :nodoc:
@@ -543,8 +543,13 @@ if you believe they were disclosed to a third party.
     require_relative "yaml_serializer"
 
     content = Gem::YAMLSerializer.load(yaml)
+    deep_transform_config_keys!(content)
+  end
 
-    content.transform_keys! do |k|
+  private
+
+  def self.deep_transform_config_keys!(config)
+    config.transform_keys! do |k|
       if k.match?(/\A:(.*)\Z/)
         k[1..-1].to_sym
       elsif k.include?("__") || k.match?(%r{/\Z})
@@ -558,7 +563,7 @@ if you believe they were disclosed to a third party.
       end
     end
 
-    content.transform_values! do |v|
+    config.transform_values! do |v|
       if v.is_a?(String)
         if v.match?(/\A:(.*)\Z/)
           v[1..-1].to_sym
@@ -571,17 +576,17 @@ if you believe they were disclosed to a third party.
         else
           v
         end
-      elsif v.is_a?(Hash) && v.empty?
+      elsif v.empty?
         nil
+      elsif v.is_a?(Hash)
+        deep_transform_config_keys!(v)
       else
         v
       end
     end
 
-    content
+    config
   end
-
-  private
 
   def set_config_file_name(args)
     @config_file_name = ENV["GEMRC"]

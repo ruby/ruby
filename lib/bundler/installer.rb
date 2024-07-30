@@ -69,9 +69,7 @@ module Bundler
       Bundler.create_bundle_path
 
       ProcessLock.lock do
-        if Bundler.frozen_bundle?
-          @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
-        end
+        @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
 
         if @definition.dependencies.empty?
           Bundler.ui.warn "The Gemfile specifies no dependencies"

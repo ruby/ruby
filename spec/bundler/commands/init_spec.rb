@@ -32,7 +32,7 @@ RSpec.describe "bundle init" do
 
   context "when a Gemfile already exists" do
     before do
-      create_file "Gemfile", <<-G
+      gemfile <<-G
         gem "rails"
       G
     end
@@ -79,14 +79,14 @@ RSpec.describe "bundle init" do
   end
 
   context "given --gemspec option" do
-    let(:spec_file) { tmp.join("test.gemspec") }
+    let(:spec_file) { tmp("test.gemspec") }
 
     it "should generate from an existing gemspec" do
       File.open(spec_file, "w") do |file|
         file << <<-S
           Gem::Specification.new do |s|
           s.name = 'test'
-          s.add_dependency 'rack', '= 1.0.1'
+          s.add_dependency 'myrack', '= 1.0.1'
           s.add_development_dependency 'rspec', '1.2'
           end
         S
@@ -96,7 +96,7 @@ RSpec.describe "bundle init" do
 
       gemfile = bundled_app_gemfile.read
       expect(gemfile).to match(%r{source 'https://rubygems.org'})
-      expect(gemfile.scan(/gem "rack", "= 1.0.1"/).size).to eq(1)
+      expect(gemfile.scan(/gem "myrack", "= 1.0.1"/).size).to eq(1)
       expect(gemfile.scan(/gem "rspec", "= 1.2"/).size).to eq(1)
       expect(gemfile.scan(/group :development/).size).to eq(1)
     end
@@ -129,7 +129,7 @@ RSpec.describe "bundle init" do
 
     context "when gems.rb already exists" do
       before do
-        create_file("gems.rb", <<-G)
+        gemfile("gems.rb", <<-G)
           gem "rails"
         G
       end
@@ -160,14 +160,14 @@ RSpec.describe "bundle init" do
     end
 
     context "given --gemspec option" do
-      let(:spec_file) { tmp.join("test.gemspec") }
+      let(:spec_file) { tmp("test.gemspec") }
 
       before do
         File.open(spec_file, "w") do |file|
           file << <<-S
             Gem::Specification.new do |s|
             s.name = 'test'
-            s.add_dependency 'rack', '= 1.0.1'
+            s.add_dependency 'myrack', '= 1.0.1'
             s.add_development_dependency 'rspec', '1.2'
             end
           S
@@ -179,7 +179,7 @@ RSpec.describe "bundle init" do
 
         gemfile = bundled_app("gems.rb").read
         expect(gemfile).to match(%r{source 'https://rubygems.org'})
-        expect(gemfile.scan(/gem "rack", "= 1.0.1"/).size).to eq(1)
+        expect(gemfile.scan(/gem "myrack", "= 1.0.1"/).size).to eq(1)
         expect(gemfile.scan(/gem "rspec", "= 1.2"/).size).to eq(1)
         expect(gemfile.scan(/group :development/).size).to eq(1)
       end

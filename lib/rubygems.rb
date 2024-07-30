@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.5.11"
+  VERSION = "3.5.16"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -760,6 +760,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # Safely write a file in binary mode on all platforms.
+
   def self.write_binary(path, data)
     open_file(path, "wb") do |io|
       io.write data
@@ -771,24 +772,29 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags, and on Windows protect access with flock
+  # Open a file with given flags
 
   def self.open_file(path, flags, &block)
+    File.open(path, flags, &block)
+  end
+
+  ##
+  # Open a file with given flags, and protect access with flock
+
+  def self.open_file_with_flock(path, &block)
+    flags = File.exist?(path) ? "r+" : "a+"
+
     File.open(path, flags) do |io|
-      if !java_platform? && win_platform?
-        begin
-          io.flock(File::LOCK_EX)
-        rescue Errno::ENOSYS, Errno::ENOTSUP
-        end
+      begin
+        io.flock(File::LOCK_EX)
+      rescue Errno::ENOSYS, Errno::ENOTSUP
       end
       yield io
-    end
-  rescue Errno::ENOLCK # NFS
-    if Thread.main != Thread.current
-      raise
-    else
-      File.open(path, flags) do |io|
-        yield io
+    rescue Errno::ENOLCK # NFS
+      if Thread.main != Thread.current
+        raise
+      else
+        open_file(path, flags, &block)
       end
     end
   end

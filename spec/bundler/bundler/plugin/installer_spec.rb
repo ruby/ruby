@@ -57,7 +57,7 @@ RSpec.describe Bundler::Plugin::Installer do
         end
 
         let(:result) do
-          installer.install(["ga-plugin"], git: file_uri_for(lib_path("ga-plugin")))
+          installer.install(["ga-plugin"], git: lib_path("ga-plugin").to_s)
         end
 
         it "returns the installed spec after installing" do

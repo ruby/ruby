@@ -5,6 +5,9 @@ require_relative "shared_helpers"
 if Bundler::SharedHelpers.in_bundle?
   require_relative "../bundler"
 
+  # autoswitch to locked Bundler version if available
+  Bundler.auto_switch
+
   # try to auto_install first before we get to the `Bundler.ui.silence`, so user knows what is happening
   Bundler.auto_install
 

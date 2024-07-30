@@ -1,7 +1,37 @@
 # frozen_string_literal: true
 
 module Spec
-  CommandExecution = Struct.new(:command, :working_directory, :exitstatus, :original_stdout, :original_stderr) do
+  class CommandExecution
+    def initialize(command, working_directory:, timeout:)
+      @command = command
+      @working_directory = working_directory
+      @timeout = timeout
+      @original_stdout = String.new
+      @original_stderr = String.new
+    end
+
+    attr_accessor :exitstatus, :command, :original_stdout, :original_stderr
+    attr_reader :timeout
+    attr_writer :failure_reason
+
+    def raise_error!
+      return unless failure?
+
+      error_header = if failure_reason == :timeout
+        "Invoking `#{command}` was aborted after #{timeout} seconds with output:"
+      else
+        "Invoking `#{command}` failed with output:"
+      end
+
+      raise <<~ERROR
+        #{error_header}
+
+        ----------------------------------------------------------------------
+        #{stdboth}
+        ----------------------------------------------------------------------
+      ERROR
+    end
+
     def to_s
       "$ #{command}"
     end
@@ -12,16 +42,11 @@ module Spec
     end
 
     def stdout
-      original_stdout
+      normalize(original_stdout)
     end
 
-    # Can be removed once/if https://github.com/oneclick/rubyinstaller2/pull/369 is resolved
     def stderr
-      return original_stderr unless Gem.win_platform?
-
-      original_stderr.split("\n").reject do |l|
-        l.include?("operating_system_defaults")
-      end.join("\n")
+      normalize(original_stderr)
     end
 
     def to_s_verbose
@@ -41,6 +66,14 @@ module Spec
     def failure?
       return true unless exitstatus
       exitstatus > 0
+    end
+
+    private
+
+    attr_reader :failure_reason
+
+    def normalize(string)
+      string.force_encoding(Encoding::UTF_8).strip.gsub("\r\n", "\n")
     end
   end
 end

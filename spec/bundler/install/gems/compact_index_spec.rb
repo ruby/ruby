@@ -7,12 +7,27 @@ RSpec.describe "compact index api" do
   it "should use the API" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
+  end
+
+  it "has a debug mode" do
+    gemfile <<-G
+      source "#{source_uri}"
+      gem "myrack"
+    G
+
+    bundle :install, artifice: "compact_index", env: { "DEBUG_COMPACT_INDEX" => "true" }
+    expect(out).to include("Fetching gem metadata from #{source_uri}")
+    expect(err).to include("[Bundler::CompactIndexClient] available?")
+    expect(err).to include("[Bundler::CompactIndexClient] fetching versions")
+    expect(err).to include("[Bundler::CompactIndexClient] info(myrack)")
+    expect(err).to include("[Bundler::CompactIndexClient] fetching info/myrack")
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "should URI encode gem names" do
@@ -45,22 +60,22 @@ RSpec.describe "compact index api" do
 
   it "should handle case sensitivity conflicts" do
     build_repo4(build_compact_index: false) do
-      build_gem "rack", "1.0" do |s|
-        s.add_runtime_dependency("Rack", "0.1")
+      build_gem "myrack", "1.0" do |s|
+        s.add_dependency("Myrack", "0.1")
       end
-      build_gem "Rack", "0.1"
+      build_gem "Myrack", "0.1"
     end
 
     install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem "rack", "1.0"
-      gem "Rack", "0.1"
+      gem "myrack", "1.0"
+      gem "Myrack", "0.1"
     G
 
     # can't use `include_gems` here since the `require` will conflict on a
     # case-insensitive FS
-    run "Bundler.require; puts Gem.loaded_specs.values_at('rack', 'Rack').map(&:full_name)"
-    expect(out).to eq("rack-1.0\nRack-0.1")
+    run "Bundler.require; puts Gem.loaded_specs.values_at('myrack', 'Myrack').map(&:full_name)"
+    expect(out).to eq("myrack-1.0\nMyrack-0.1")
   end
 
   it "should handle multiple gem dependencies on the same gem" do
@@ -76,7 +91,7 @@ RSpec.describe "compact index api" do
   it "should use the endpoint when using deployment mode" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
     bundle :install, artifice: "compact_index"
 
@@ -84,7 +99,7 @@ RSpec.describe "compact index api" do
     bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "handles git dependencies that are in rubygems" do
@@ -95,7 +110,7 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      git "#{file_uri_for(lib_path("foo-1.0"))}" do
+      git "#{lib_path("foo-1.0")}" do
         gem 'foo'
       end
     G
@@ -113,7 +128,7 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
+      gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
 
     bundle :install, artifice: "compact_index"
@@ -128,7 +143,7 @@ RSpec.describe "compact index api" do
     build_git "foo"
     gemfile <<-G
       source "#{source_uri}"
-      gem 'foo', :git => "#{file_uri_for(lib_path("foo-1.0"))}"
+      gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
 
     bundle "install", artifice: "compact_index"
@@ -141,31 +156,31 @@ RSpec.describe "compact index api" do
   it "falls back when the API URL returns 403 Forbidden" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle :install, verbose: true, artifice: "compact_index_forbidden"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "falls back when the versions endpoint has a checksum mismatch" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle :install, verbose: true, artifice: "compact_index_checksum_mismatch"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(out).to include("The checksum of /versions does not match the checksum provided by the server!")
     expect(out).to include('Calculated checksums {"sha-256"=>"8KfZiM/fszVkqhP/m5s9lvE6M9xKu4I1bU4Izddp5Ms="} did not match expected {"sha-256"=>"ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0="}')
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "shows proper path when permission errors happen", :permissions do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     versions = Pathname.new(Bundler.rubygems.user_home).join(
@@ -188,28 +203,28 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "handles host redirects" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle :install, artifice: "compact_index_host_redirect"
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "handles host redirects without Gem::Net::HTTP::Persistent" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     FileUtils.mkdir_p lib_path
@@ -227,13 +242,13 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index_host_redirect", requires: [lib_path("disable_net_http_persistent.rb")]
     expect(out).to_not match(/Too many redirects/)
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "times out when Bundler::Fetcher redirects too much" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle :install, artifice: "compact_index_redirects", raise_on_error: false
@@ -244,23 +259,23 @@ RSpec.describe "compact index api" do
     it "should use the modern index for install" do
       gemfile <<-G
         source "#{source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle "install --full-index", artifice: "compact_index"
       expect(out).to include("Fetching source index from #{source_uri}")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     it "should use the modern index for update" do
       gemfile <<-G
         source "#{source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle "update --full-index", artifice: "compact_index", all: true
       expect(out).to include("Fetching source index from #{source_uri}")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
   end
 
@@ -288,16 +303,16 @@ RSpec.describe "compact index api" do
       end
     end
 
-    system_gems %w[rack-1.0.0 thin-1.0 net_a-1.0], gem_repo: gem_repo2
+    system_gems %w[myrack-1.0.0 thin-1.0 net_a-1.0], gem_repo: gem_repo2
     bundle "config set --local path.system true"
     ENV["BUNDLER_SPEC_ALL_REQUESTS"] = <<~EOS.strip
       #{source_uri}/versions
-      #{source_uri}/info/rack
+      #{source_uri}/info/myrack
     EOS
 
     install_gemfile <<-G, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     expect(last_command.stdboth).not_to include "Double checking"
@@ -342,24 +357,24 @@ RSpec.describe "compact index api" do
   it "fetches gem versions even when those gems are already installed" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack", "1.0.0"
+      gem "myrack", "1.0.0"
     G
     bundle :install, artifice: "compact_index_extra_api"
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
 
     build_repo4 do
-      build_gem "rack", "1.2" do |s|
-        s.executables = "rackup"
+      build_gem "myrack", "1.2" do |s|
+        s.executables = "myrackup"
       end
     end
 
     gemfile <<-G
       source "#{source_uri}" do; end
       source "#{source_uri}/extra"
-      gem "rack", "1.2"
+      gem "myrack", "1.2"
     G
     bundle :install, artifice: "compact_index_extra_api"
-    expect(the_bundle).to include_gems "rack 1.2"
+    expect(the_bundle).to include_gems "myrack 1.2"
   end
 
   it "considers all possible versions of dependencies from all api gem sources", bundler: "< 3" do
@@ -519,56 +534,56 @@ RSpec.describe "compact index api" do
   it "installs the binstubs", bundler: "< 3" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle "install --binstubs", artifice: "compact_index"
 
-    gembin "rackup"
+    gembin "myrackup"
     expect(out).to eq("1.0.0")
   end
 
   it "installs the bins when using --path and uses autoclean", bundler: "< 3" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle "install --path vendor/bundle", artifice: "compact_index"
 
-    expect(vendored_gems("bin/rackup")).to exist
+    expect(vendored_gems("bin/myrackup")).to exist
   end
 
   it "installs the bins when using --path and uses bundle clean", bundler: "< 3" do
     gemfile <<-G
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
 
     bundle "install --path vendor/bundle --no-clean", artifice: "compact_index"
 
-    expect(vendored_gems("bin/rackup")).to exist
+    expect(vendored_gems("bin/myrackup")).to exist
   end
 
   it "prints post_install_messages" do
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack-obama'
+      gem 'myrack-obama'
     G
 
     bundle :install, artifice: "compact_index"
-    expect(out).to include("Post-install message from rack:")
+    expect(out).to include("Post-install message from myrack:")
   end
 
   it "should display the post install message for a dependency" do
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack_middleware'
+      gem 'myrack_middleware'
     G
 
     bundle :install, artifice: "compact_index"
-    expect(out).to include("Post-install message from rack:")
-    expect(out).to include("Rack's post install message")
+    expect(out).to include("Post-install message from myrack:")
+    expect(out).to include("Myrack's post install message")
   end
 
   context "when using basic authentication" do
@@ -585,53 +600,53 @@ RSpec.describe "compact index api" do
     it "passes basic authentication details and strips out creds" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle :install, artifice: "compact_index_basic_authentication"
       expect(out).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     it "passes basic authentication details and strips out creds also in verbose mode" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle :install, verbose: true, artifice: "compact_index_basic_authentication"
       expect(out).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     it "strips http basic auth creds when warning about ambiguous sources", bundler: "< 3" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
         source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle :install, artifice: "compact_index_basic_authentication"
-      expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
+      expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
       expect(err).not_to include("#{user}:#{password}")
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     it "does not pass the user / password to different hosts on redirect" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle :install, artifice: "compact_index_creds_diff_host"
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
     describe "with authentication details in bundle config" do
       before do
         gemfile <<-G
           source "#{source_uri}"
-          gem "rack"
+          gem "myrack"
         G
       end
 
@@ -641,7 +656,7 @@ RSpec.describe "compact index api" do
         bundle :install, artifice: "compact_index_strict_basic_authentication"
 
         expect(out).to include("Fetching gem metadata from #{source_uri}")
-        expect(the_bundle).to include_gems "rack 1.0.0"
+        expect(the_bundle).to include_gems "myrack 1.0.0"
       end
 
       it "reads authentication details by full url from bundle config" do
@@ -651,26 +666,26 @@ RSpec.describe "compact index api" do
         bundle :install, artifice: "compact_index_strict_basic_authentication"
 
         expect(out).to include("Fetching gem metadata from #{source_uri}")
-        expect(the_bundle).to include_gems "rack 1.0.0"
+        expect(the_bundle).to include_gems "myrack 1.0.0"
       end
 
       it "should use the API" do
         bundle "config set #{source_hostname} #{user}:#{password}"
         bundle :install, artifice: "compact_index_strict_basic_authentication"
         expect(out).to include("Fetching gem metadata from #{source_uri}")
-        expect(the_bundle).to include_gems "rack 1.0.0"
+        expect(the_bundle).to include_gems "myrack 1.0.0"
       end
 
       it "prefers auth supplied in the source uri" do
         gemfile <<-G
           source "#{basic_auth_source_uri}"
-          gem "rack"
+          gem "myrack"
         G
 
         bundle "config set #{source_hostname} otheruser:wrong"
 
         bundle :install, artifice: "compact_index_strict_basic_authentication"
-        expect(the_bundle).to include_gems "rack 1.0.0"
+        expect(the_bundle).to include_gems "myrack 1.0.0"
       end
 
       it "shows instructions if auth is not provided for the source" do
@@ -701,11 +716,11 @@ RSpec.describe "compact index api" do
       it "passes basic authentication details" do
         gemfile <<-G
           source "#{basic_auth_source_uri}"
-          gem "rack"
+          gem "myrack"
         G
 
         bundle :install, artifice: "compact_index_basic_authentication"
-        expect(the_bundle).to include_gems "rack 1.0.0"
+        expect(the_bundle).to include_gems "myrack 1.0.0"
       end
     end
   end
@@ -726,10 +741,10 @@ RSpec.describe "compact index api" do
     it "explains what to do to get it" do
       gemfile <<-G
         source "#{source_uri.gsub(/http/, "https")}"
-        gem "rack"
+        gem "myrack"
       G
 
-      bundle :install, env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false
+      bundle :install, env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false, artifice: nil
       expect(err).to include("OpenSSL")
     end
   end
@@ -746,7 +761,7 @@ RSpec.describe "compact index api" do
         end
 
         source "#{source_uri.gsub(/http/, "https")}"
-        gem "rack"
+        gem "myrack"
       G
 
       bundle :install, raise_on_error: false
@@ -763,7 +778,7 @@ RSpec.describe "compact index api" do
       begin
         gemfile <<-G
           source "#{source_uri}"
-          gem 'rack'
+          gem 'myrack'
         G
 
         bundle :install, artifice: "compact_index_forbidden"
@@ -782,7 +797,7 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack', '0.9.1'
+      gem 'myrack', '0.9.1'
     G
 
     # Initial install creates the cached versions file and etag file
@@ -794,20 +809,20 @@ RSpec.describe "compact index api" do
     # Update the Gemfile so we can check subsequent install was successful
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
     # Second install should match etag
     bundle :install, artifice: "compact_index_etag_match"
 
     expect(versions_etag.binread).to eq(previous_content)
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "performs full update when range is ignored" do
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack', '0.9.1'
+      gem 'myrack', '0.9.1'
     G
 
     # Initial install creates the cached versions file and etag file
@@ -815,7 +830,7 @@ RSpec.describe "compact index api" do
 
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
     versions = Pathname.new(Bundler.rubygems.user_home).join(
@@ -828,36 +843,36 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index_range_ignored"
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "performs partial update with a non-empty range" do
     build_repo4 do
-      build_gem "rack", "0.9.1"
+      build_gem "myrack", "0.9.1"
     end
 
     # Initial install creates the cached versions file
     install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem 'rack', '0.9.1'
+      gem 'myrack', '0.9.1'
     G
 
     update_repo4 do
-      build_gem "rack", "1.0.0"
+      build_gem "myrack", "1.0.0"
     end
 
     install_gemfile <<-G, artifice: "compact_index_partial_update", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "performs partial update while local cache is updated by another process" do
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack'
+      gem 'myrack'
     G
 
     # Create a partial cache versions file
@@ -871,92 +886,92 @@ RSpec.describe "compact index api" do
     bundle :install, artifice: "compact_index_concurrent_download"
 
     expect(versions.read).to start_with("created_at")
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "performs a partial update that fails digest check, then a full update" do
     build_repo4 do
-      build_gem "rack", "0.9.1"
+      build_gem "myrack", "0.9.1"
     end
 
     install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem 'rack', '0.9.1'
+      gem 'myrack', '0.9.1'
     G
 
     update_repo4 do
-      build_gem "rack", "1.0.0"
+      build_gem "myrack", "1.0.0"
     end
 
     install_gemfile <<-G, artifice: "compact_index_partial_update_bad_digest", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "performs full update if server endpoints serve partial content responses but don't have incremental content and provide no digest" do
     build_repo4 do
-      build_gem "rack", "0.9.1"
+      build_gem "myrack", "0.9.1"
     end
 
     install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem 'rack', '0.9.1'
+      gem 'myrack', '0.9.1'
     G
 
     update_repo4 do
-      build_gem "rack", "1.0.0"
+      build_gem "myrack", "1.0.0"
     end
 
     install_gemfile <<-G, artifice: "compact_index_partial_update_no_digest_not_incremental", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "#{source_uri}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "performs full update of compact index info cache if range is not satisfiable" do
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack', '0.9.1'
+      gem 'myrack', '0.9.1'
     G
 
     bundle :install, artifice: "compact_index"
 
-    # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
-    rake_info_etag_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
-      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "info-etags", "rack-11690b09f16021ff06a6857d784a1870")
-    File.unlink(rake_info_etag_path) if File.exist?(rake_info_etag_path)
+    cache_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
 
-    rake_info_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
-      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "info", "rack")
-    expected_rack_info_content = File.read(rake_info_path)
+    # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
+    myrack_info_etag_path = File.join(cache_path, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
+    File.unlink(myrack_info_etag_path) if File.exist?(myrack_info_etag_path)
+
+    myrack_info_path = File.join(cache_path, "info", "myrack")
+    expected_myrack_info_content = File.read(myrack_info_path)
 
     # Modify the cache files to make the range not satisfiable
-    File.open(rake_info_path, "a") {|f| f << "0.9.2 |checksum:c55b525b421fd833a93171ad3d7f04528ca8e87d99ac273f8933038942a5888c" }
+    File.open(myrack_info_path, "a") {|f| f << "0.9.2 |checksum:c55b525b421fd833a93171ad3d7f04528ca8e87d99ac273f8933038942a5888c" }
 
     # Update the Gemfile so the next install does its normal things
     gemfile <<-G
       source "#{source_uri}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
     # The cache files now being longer means the requested range is going to be not satisfiable
     # Bundler must end up requesting the whole file to fix things up.
     bundle :install, artifice: "compact_index_range_not_satisfiable"
 
-    resulting_rack_info_content = File.read(rake_info_path)
+    resulting_myrack_info_content = File.read(myrack_info_path)
 
-    expect(resulting_rack_info_content).to eq(expected_rack_info_content)
+    expect(resulting_myrack_info_content).to eq(expected_myrack_info_content)
   end
 
   it "fails gracefully when the source URI has an invalid scheme" do
     install_gemfile <<-G, raise_on_error: false
       source "htps://rubygems.org"
-      gem "rack"
+      gem "myrack"
     G
     expect(exitstatus).to eq(15)
     expect(err).to end_with(<<-E.strip)
@@ -970,7 +985,7 @@ RSpec.describe "compact index api" do
         GEM
           remote: #{source_uri}
           specs:
-            rack (1.0.0)
+            myrack (1.0.0)
 
         PLATFORMS
           ruby
@@ -983,35 +998,35 @@ RSpec.describe "compact index api" do
     end
 
     it "handles checksums from the server in base64" do
-      api_checksum = checksum_digest(gem_repo1, "rack", "1.0.0")
-      rack_checksum = [[api_checksum].pack("H*")].pack("m0")
-      install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_RACK_CHECKSUM" => rack_checksum }
+      api_checksum = checksum_digest(gem_repo1, "myrack", "1.0.0")
+      myrack_checksum = [[api_checksum].pack("H*")].pack("m0")
+      install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_MYRACK_CHECKSUM" => myrack_checksum }
         source "#{source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       expect(out).to include("Fetching gem metadata from #{source_uri}")
-      expect(the_bundle).to include_gems("rack 1.0.0")
+      expect(the_bundle).to include_gems("myrack 1.0.0")
     end
 
     it "raises when the checksum does not match" do
       install_gemfile <<-G, artifice: "compact_index_wrong_gem_checksum", raise_on_error: false
         source "#{source_uri}"
-        gem "rack"
+        gem "myrack"
       G
 
       gem_path = if Bundler.feature_flag.global_gem_cache?
-        default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "rack-1.0.0.gem")
+        default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "myrack-1.0.0.gem")
       else
-        default_cache_path.dirname.join("rack-1.0.0.gem")
+        default_cache_path.dirname.join("myrack-1.0.0.gem")
       end
 
       expect(exitstatus).to eq(37)
       expect(err).to eq <<~E.strip
         Bundler found mismatched checksums. This is a potential security risk.
-          rack (1.0.0) sha256=2222222222222222222222222222222222222222222222222222222222222222
+          myrack (1.0.0) sha256=2222222222222222222222222222222222222222222222222222222222222222
             from the API at http://localgemserver.test/
-          #{checksum_to_lock(gem_repo1, "rack", "1.0.0")}
+          #{checksum_to_lock(gem_repo1, "myrack", "1.0.0")}
             from the gem at #{gem_path}
 
         If you trust the API at http://localgemserver.test/, to resolve this issue you can:
@@ -1024,19 +1039,19 @@ RSpec.describe "compact index api" do
     end
 
     it "raises when the checksum is the wrong length" do
-      install_gemfile <<-G, artifice: "compact_index_wrong_gem_checksum", env: { "BUNDLER_SPEC_RACK_CHECKSUM" => "checksum!", "DEBUG" => "1" }, verbose: true, raise_on_error: false
+      install_gemfile <<-G, artifice: "compact_index_wrong_gem_checksum", env: { "BUNDLER_SPEC_MYRACK_CHECKSUM" => "checksum!", "DEBUG" => "1" }, verbose: true, raise_on_error: false
         source "#{source_uri}"
-        gem "rack"
+        gem "myrack"
       G
       expect(exitstatus).to eq(14)
-      expect(err).to include('Invalid checksum for rack-0.9.1: "checksum!" is not a valid SHA256 hex or base64 digest')
+      expect(err).to include('Invalid checksum for myrack-0.9.1: "checksum!" is not a valid SHA256 hex or base64 digest')
     end
 
     it "does not raise when disable_checksum_validation is set" do
       bundle "config set disable_checksum_validation true"
       install_gemfile <<-G, artifice: "compact_index_wrong_gem_checksum"
         source "#{source_uri}"
-        gem "rack"
+        gem "myrack"
       G
     end
   end
@@ -1045,7 +1060,7 @@ RSpec.describe "compact index api" do
     install_gemfile <<-G, artifice: "compact_index"
       File.umask(0000)
       source "#{source_uri}"
-      gem "rack"
+      gem "myrack"
     G
   end
 
@@ -1068,7 +1083,7 @@ Running `bundle update rails` should fix the problem.
 
   it "does not duplicate specs in the lockfile when updating and a dependency is not installed" do
     install_gemfile <<-G, artifice: "compact_index"
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       source "#{source_uri}" do
         gem "rails"
         gem "activemerchant"

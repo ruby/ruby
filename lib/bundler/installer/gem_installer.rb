@@ -54,7 +54,6 @@ module Bundler
       spec.source.install(
         spec,
         force: force,
-        ensure_builtin_gems_cached: standalone,
         build_args: Array(spec_settings),
         previous_spec: previous_spec,
       )

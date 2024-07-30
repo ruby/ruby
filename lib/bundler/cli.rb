@@ -65,7 +65,7 @@ module Bundler
         Bundler.reset_settings_and_root!
       end
 
-      Bundler.self_manager.restart_with_locked_bundler_if_needed
+      Bundler.auto_switch
 
       Bundler.settings.set_command_option_if_given :retry, options[:retry]
 
@@ -550,10 +550,13 @@ module Bundler
     method_option :rubocop, type: :boolean, desc: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
     method_option :changelog, type: :boolean, desc: "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
     method_option :test, type: :string, lazy_default: Bundler.settings["gem.test"] || "", aliases: "-t", banner: "Use the specified test framework for your library",
+                         enum: %w[rspec minitest test-unit],
                          desc: "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
     method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "",
+                       enum: %w[github gitlab circle],
                        desc: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
     method_option :linter, type: :string, lazy_default: Bundler.settings["gem.linter"] || "",
+                           enum: %w[rubocop standard],
                            desc: "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
     method_option :github_username, type: :string, default: Bundler.settings["gem.github_username"], banner: "Set your username on GitHub", desc: "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
 
@@ -767,13 +770,10 @@ module Bundler
 
       return unless SharedHelpers.md5_available?
 
-      latest = Fetcher::CompactIndex.
-               new(nil, Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org")), nil, nil).
-               send(:compact_index_client).
-               instance_variable_get(:@cache).
-               dependencies("bundler").
-               map {|d| Gem::Version.new(d.first) }.
-               max
+      require_relative "vendored_uri"
+      remote = Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org"))
+      cache_path = Bundler.user_cache.join("compact_index", remote.cache_slug)
+      latest = Bundler::CompactIndexClient.new(cache_path).latest_version("bundler")
       return unless latest
 
       current = Gem::Version.new(VERSION)

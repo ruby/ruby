@@ -32,7 +32,6 @@ module Bundler
 
       validate_ext_name if @extension
       validate_rust_builder_rubygems_version if @extension == "rust"
-      travis_removal_info
     end
 
     def run
@@ -276,6 +275,7 @@ module Bundler
     end
 
     def ask_and_set_test_framework
+      return if skip?(:test)
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
@@ -301,6 +301,10 @@ module Bundler
       test_framework
     end
 
+    def skip?(option)
+      options.key?(option) && options[option].nil?
+    end
+
     def hint_text(setting)
       if Bundler.settings["gem.#{setting}"] == false
         "Your choice will only be applied to this gem."
@@ -311,6 +315,7 @@ module Bundler
     end
 
     def ask_and_set_ci
+      return if skip?(:ci)
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
@@ -342,6 +347,7 @@ module Bundler
     end
 
     def ask_and_set_linter
+      return if skip?(:linter)
       linter_template = options[:linter] || Bundler.settings["gem.linter"]
       linter_template = deprecated_rubocop_option if linter_template.nil?
 
@@ -446,19 +452,6 @@ module Bundler
 
     def standard_version
       "1.3"
-    end
-
-    # TODO: remove at next minor release
-    def travis_removal_info
-      if options[:ci] == "travis"
-        Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator."
-        exit 1
-      end
-
-      if Bundler.settings["gem.ci"] == "travis"
-        Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator, but it is present in bundle config. Please configure another provider using `bundle config set gem.ci SERVICE` (where SERVICE is one of github/gitlab/circle) or unset configuration using `bundle config unset gem.ci`."
-        exit 1
-      end
     end
 
     def validate_rust_builder_rubygems_version

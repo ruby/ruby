@@ -70,8 +70,23 @@ module Bundler
       configured_gem_home = ENV["GEM_HOME"]
       configured_gem_path = ENV["GEM_PATH"]
 
-      cmd = [$PROGRAM_NAME, *ARGV]
-      cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
+      # Bundler specs need some stuff to be required before Bundler starts
+      # running, for example, for faking the compact index API. However, these
+      # flags are lost when we reexec to a different version of Bundler. In the
+      # future, we may be able to properly reconstruct the original Ruby
+      # invocation (see https://bugs.ruby-lang.org/issues/6648), but for now
+      # there's no way to do it, so we need to be explicit about how to re-exec.
+      # This may be a feature end users request at some point, but maybe by that
+      # time, we have builtin tools to do. So for now, we use an undocumented
+      # ENV variable only for our specs.
+      bundler_spec_original_cmd = ENV["BUNDLER_SPEC_ORIGINAL_CMD"]
+      if bundler_spec_original_cmd
+        require "shellwords"
+        cmd = [*Shellwords.shellsplit(bundler_spec_original_cmd), *ARGV]
+      else
+        cmd = [$PROGRAM_NAME, *ARGV]
+        cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
+      end
 
       Bundler.with_original_env do
         Kernel.exec(
@@ -92,6 +107,7 @@ module Bundler
     def autoswitching_applies?
       ENV["BUNDLER_VERSION"].nil? &&
         Bundler.rubygems.supports_bundler_trampolining? &&
+        ruby_can_restart_with_same_arguments? &&
         SharedHelpers.in_bundle? &&
         lockfile_version
     end
@@ -149,6 +165,10 @@ module Bundler
 
     def released?(version)
       !version.to_s.end_with?(".dev")
+    end
+
+    def ruby_can_restart_with_same_arguments?
+      $PROGRAM_NAME != "-e"
     end
 
     def updating?

@@ -1,6 +1,6 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-CONFIG" "1" "May 2024" ""
+.TH "BUNDLE\-CONFIG" "1" "June 2024" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -307,7 +307,7 @@ Any \fB\.\fR characters in a host name are mapped to a double underscore (\fB__\
 .P
 This means that if you have a gem server named \fBmy\.gem\-host\.com\fR, you'll need to use the \fBBUNDLE_MY__GEM___HOST__COM\fR variable to configure credentials for it through ENV\.
 .SH "CONFIGURE BUNDLER DIRECTORIES"
-Bundler's home, config, cache and plugin directories are able to be configured through environment variables\. The default location for Bundler's home directory is \fB~/\.bundle\fR, which all directories inherit from by default\. The following outlines the available environment variables and their default values
+Bundler's home, cache and plugin directories and config file can be configured through environment variables\. The default location for Bundler's home directory is \fB~/\.bundle\fR, which all directories inherit from by default\. The following outlines the available environment variables and their default values
 .IP "" 4
 .nf
 BUNDLE_USER_HOME : $HOME/\.bundle
