@@ -1019,11 +1019,14 @@ rb_to_array(VALUE ary)
  *  Attempts to convert the given +object+ to an +Array+ object:
  *
  *  - If +object+ is an +Array+ object, returns +object+.
- *  - Otherwise if +object+ responds to <tt>:to_ary</tt>,
- *    returns <tt>object.to_ary</tt>.
+ *  - Otherwise if +object+ responds to <tt>:to_ary</tt>.
+ *    calls <tt>object.to_ary</tt>:
+ *
+ *    - If the return value is an +Array+ or +nil+, returns that value.
+ *    - Otherwise, raises TypeError.
+ *
  *  - Otherwise returns +nil+.
  *
- *  Raises TypeError unless <tt>object.to_ary</tt> returns an +Array+ object or +nil+.
  */
 
 static VALUE
