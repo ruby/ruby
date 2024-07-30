@@ -3054,7 +3054,6 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 break;
             }
             else if ((lab = find_destination((INSN *)i)) != 0) {
-                if (lab->unremovable) break;
                 unref_counts[lab->label_no]++;
             }
         }
