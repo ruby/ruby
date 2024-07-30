@@ -447,22 +447,9 @@ get_special_folder(int n, WCHAR *buf, size_t len)
     LPITEMIDLIST pidl;
     LPMALLOC alloc;
     BOOL f = FALSE;
-    typedef BOOL (WINAPI *get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
-    static get_path_func func = (get_path_func)-1;
-
-    if (func == (get_path_func)-1) {
-        func = (get_path_func)
-            get_proc_address("shell32", "SHGetPathFromIDListEx", NULL);
-    }
-    if (!func && len < MAX_PATH) return FALSE;
 
     if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
-        if (func) {
-            f = func(pidl, buf, len, 0);
-        }
-        else {
-            f = SHGetPathFromIDListW(pidl, buf);
-        }
+        f = SHGetPathFromIDListEx(pidl, buf, len, 0);
         SHGetMalloc(&alloc);
         alloc->lpVtbl->Free(alloc, pidl);
         alloc->lpVtbl->Release(alloc);
@@ -2025,28 +2012,6 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 // UNIX compatible directory access functions for NT
 //
 
-typedef DWORD (WINAPI *get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
-static get_final_path_func get_final_path;
-
-static DWORD WINAPI
-get_final_path_fail(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
-{
-    return 0;
-}
-
-static DWORD WINAPI
-get_final_path_unknown(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
-{
-    /* Since Windows Vista and Windows Server 2008 */
-    get_final_path_func func = (get_final_path_func)
-        get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
-    if (!func) func = get_final_path_fail;
-    get_final_path = func;
-    return func(f, buf, len, flag);
-}
-
-static get_final_path_func get_final_path = get_final_path_unknown;
-
 /* License: Ruby's */
 /* TODO: better name */
 static HANDLE
@@ -2091,7 +2056,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
-        len = get_final_path(fh, fullname, FINAL_PATH_MAX, 0);
+        len = GetFinalPathNameByHandleW(fh, fullname, FINAL_PATH_MAX, 0);
         CloseHandle(fh);
         if (len >= FINAL_PATH_MAX) {
             errno = ENAMETOOLONG;
@@ -4364,10 +4329,6 @@ str2guid(const char *str, GUID *guid)
         } Info;
     } NET_LUID;
 #endif
-typedef DWORD (WINAPI *cigl_t)(const GUID *, NET_LUID *);
-typedef DWORD (WINAPI *cilnA_t)(const NET_LUID *, char *, size_t);
-static cigl_t pConvertInterfaceGuidToLuid = (cigl_t)-1;
-static cilnA_t pConvertInterfaceLuidToNameA = (cilnA_t)-1;
 
 int
 getifaddrs(struct ifaddrs **ifap)
@@ -4390,15 +4351,6 @@ getifaddrs(struct ifaddrs **ifap)
         return -1;
     }
 
-    if (pConvertInterfaceGuidToLuid == (cigl_t)-1)
-        pConvertInterfaceGuidToLuid =
-            (cigl_t)get_proc_address("iphlpapi.dll",
-                                     "ConvertInterfaceGuidToLuid", NULL);
-    if (pConvertInterfaceLuidToNameA == (cilnA_t)-1)
-        pConvertInterfaceLuidToNameA =
-            (cilnA_t)get_proc_address("iphlpapi.dll",
-                                      "ConvertInterfaceLuidToNameA", NULL);
-
     for (prev = NULL, addr = root; addr; addr = addr->Next) {
         struct ifaddrs *ifa = ruby_xcalloc(1, sizeof(*ifa));
         char name[IFNAMSIZ];
@@ -4411,9 +4363,8 @@ getifaddrs(struct ifaddrs **ifap)
             *ifap = ifa;
 
         str2guid(addr->AdapterName, &guid);
-        if (pConvertInterfaceGuidToLuid && pConvertInterfaceLuidToNameA &&
-            pConvertInterfaceGuidToLuid(&guid, &luid) == NO_ERROR &&
-            pConvertInterfaceLuidToNameA(&luid, name, sizeof(name)) == NO_ERROR) {
+        if (ConvertInterfaceGuidToLuid(&guid, &luid) == NO_ERROR &&
+            ConvertInterfaceLuidToNameA(&luid, name, sizeof(name)) == NO_ERROR) {
             ifa->ifa_name = ruby_strdup(name);
         }
         else {
@@ -5403,20 +5354,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     BOOLEAN ret;
     int e;
 
-    typedef BOOLEAN (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
-    static create_symbolic_link_func create_symbolic_link =
-        (create_symbolic_link_func)-1;
     static DWORD create_flag = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-
-    if (create_symbolic_link == (create_symbolic_link_func)-1) {
-        /* Since Windows Vista and Windows Server 2008 */
-        create_symbolic_link = (create_symbolic_link_func)
-            get_proc_address("kernel32", "CreateSymbolicLinkW", NULL);
-    }
-    if (!create_symbolic_link) {
-        errno = ENOSYS;
-        return -1;
-    }
 
     if (!*link) {
         errno = ENOENT;
@@ -5437,13 +5375,13 @@ w32_symlink(UINT cp, const char *src, const char *link)
     atts = GetFileAttributesW(wsrc);
     if (atts != -1 && atts & FILE_ATTRIBUTE_DIRECTORY)
         flag = SYMBOLIC_LINK_FLAG_DIRECTORY;
-    ret = create_symbolic_link(wlink, wsrc, flag |= create_flag);
+    ret = CreateSymbolicLinkW(wlink, wsrc, flag |= create_flag);
     if (!ret &&
         (e = GetLastError()) == ERROR_INVALID_PARAMETER &&
         (flag & SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
         create_flag = 0;
         flag &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-        ret = create_symbolic_link(wlink, wsrc, flag);
+        ret = CreateSymbolicLinkW(wlink, wsrc, flag);
         if (!ret) e = GetLastError();
     }
     ALLOCV_END(buf);
@@ -5738,23 +5676,10 @@ typedef struct {
 } FILE_ID_INFO;
 #endif
 
-static DWORD
+static BOOL
 get_ino(HANDLE h, FILE_ID_INFO *id)
 {
-    typedef BOOL (WINAPI *gfibhe_t)(HANDLE, int, void *, DWORD);
-    static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
-
-    if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
-        /* Since Windows Vista and Windows Server 2008 */
-        pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
-
-    if (pGetFileInformationByHandleEx) {
-        if (pGetFileInformationByHandleEx(h, FileIdInfo, id, sizeof(*id)))
-            return 0;
-        else
-            return GetLastError();
-    }
-    return ERROR_INVALID_PARAMETER;
+    return GetFileInformationByHandleEx(h, FileIdInfo, id, sizeof(*id));
 }
 
 /* License: Ruby's */
@@ -5775,7 +5700,7 @@ stati128_handle(HANDLE h, struct stati128 *st)
         st->st_ctimensec = filetime_to_nsec(&info.ftCreationTime);
         st->st_nlink = info.nNumberOfLinks;
         attr = info.dwFileAttributes;
-        if (!get_ino(h, &fii)) {
+        if (get_ino(h, &fii)) {
             st->st_ino = *((unsigned __int64 *)&fii.FileId);
             st->st_inohigh = *((__int64 *)&fii.FileId + 1);
         }
@@ -5949,8 +5874,8 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
         DWORD e;
 
         f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
-        e = GetFileInformationByHandleEx( f, FileAttributeTagInfo,
-                &attr_info, sizeof(attr_info));
+        e = GetFileInformationByHandleEx(f, FileAttributeTagInfo,
+                                         &attr_info, sizeof(attr_info));
         if (!e || attr_info.ReparseTag != IO_REPARSE_TAG_AF_UNIX) {
             CloseHandle(f);
             f = INVALID_HANDLE_VALUE;
@@ -5958,7 +5883,7 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     }
     if (f != INVALID_HANDLE_VALUE) {
         DWORD attr = stati128_handle(f, st);
-        const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+        const DWORD len = GetFinalPathNameByHandleW(f, finalname, numberof(finalname), 0);
         unsigned mode = 0;
         switch (GetFileType(f)) {
           case FILE_TYPE_CHAR:
@@ -5972,8 +5897,8 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
                 FILE_ATTRIBUTE_TAG_INFO attr_info;
                 DWORD e;
 
-                e = GetFileInformationByHandleEx( f, FileAttributeTagInfo,
-                        &attr_info, sizeof(attr_info));
+                e = GetFileInformationByHandleEx(f, FileAttributeTagInfo,
+                                                 &attr_info, sizeof(attr_info));
                 if (e && attr_info.ReparseTag == IO_REPARSE_TAG_AF_UNIX) {
                     st->st_size = 0;
                     mode |= S_IFSOCK;
@@ -8034,11 +7959,6 @@ rb_w32_uchmod(const char *path, int mode)
 int
 fchmod(int fd, int mode)
 {
-    typedef BOOL (WINAPI *set_file_information_by_handle_func)
-        (HANDLE, int, void*, DWORD);
-    static set_file_information_by_handle_func set_file_info =
-        (set_file_information_by_handle_func)-1;
-
     /* from winbase.h of the mingw-w64 runtime package. */
     struct {
         LARGE_INTEGER CreationTime;
@@ -8049,23 +7969,9 @@ fchmod(int fd, int mode)
     } info = {{{0}}, {{0}}, {{0}},}; /* fields with 0 are unchanged */
     HANDLE h = (HANDLE)_get_osfhandle(fd);
 
-    if (h == INVALID_HANDLE_VALUE) {
-        errno = EBADF;
-        return -1;
-    }
-    if (set_file_info == (set_file_information_by_handle_func)-1) {
-        /* Since Windows Vista and Windows Server 2008 */
-        set_file_info = (set_file_information_by_handle_func)
-            get_proc_address("kernel32", "SetFileInformationByHandle", NULL);
-    }
-    if (!set_file_info) {
-        errno = ENOSYS;
-        return -1;
-    }
-
     info.FileAttributes = FILE_ATTRIBUTE_NORMAL;
     if (!(mode & 0200)) info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
-    if (!set_file_info(h, 0, &info, sizeof(info))) {
+    if (!SetFileInformationByHandle(h, 0, &info, sizeof(info))) {
         errno = map_errno(GetLastError());
         return -1;
     }
@@ -8120,33 +8026,14 @@ signbit(double x)
 const char * WSAAPI
 rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
-    typedef char *(WSAAPI inet_ntop_t)(int, void *, char *, size_t);
-    static inet_ntop_t *pInetNtop = (inet_ntop_t *)-1;
-    if (pInetNtop == (inet_ntop_t *)-1)
-        pInetNtop = (inet_ntop_t *)get_proc_address("ws2_32", "inet_ntop", NULL);
-    if (pInetNtop) {
-        return pInetNtop(af, (void *)addr, numaddr, numaddr_len);
-    }
-    else {
-        struct in_addr in;
-        memcpy(&in.s_addr, addr, sizeof(in.s_addr));
-        snprintf(numaddr, numaddr_len, "%s", inet_ntoa(in));
-    }
-    return numaddr;
+    return (inet_ntop)(af, (void *)addr, numaddr, numaddr_len);
 }
 
 /* License: Ruby's */
 int WSAAPI
 rb_w32_inet_pton(int af, const char *src, void *dst)
 {
-    typedef int (WSAAPI inet_pton_t)(int, const char*, void *);
-    static inet_pton_t *pInetPton = (inet_pton_t *)-1;
-    if (pInetPton == (inet_pton_t *)-1)
-        pInetPton = (inet_pton_t *)get_proc_address("ws2_32", "inet_pton", NULL);
-    if (pInetPton) {
-        return pInetPton(af, src, dst);
-    }
-    return 0;
+    return (inet_pton)(af, src, dst);
 }
 
 /* License: Ruby's */
@@ -8374,14 +8261,12 @@ w32_io_info(VALUE *file, w32_io_info_t *st)
         ret = f;
     }
     if (GetFileType(f) == FILE_TYPE_DISK) {
-        DWORD err;
         ZeroMemory(st, sizeof(*st));
-        err = get_ino(f, &st->info.fii);
-        if (!err) {
+        if (get_ino(f, &st->info.fii)) {
             st->file_id_p = TRUE;
             return ret;
         }
-        else if (err != ERROR_INVALID_PARAMETER) {
+        else if (GetLastError() != ERROR_INVALID_PARAMETER) {
             CloseHandle(f);
             return INVALID_HANDLE_VALUE;
         }
