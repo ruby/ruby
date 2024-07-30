@@ -1066,43 +1066,46 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
  *    Array.new(size, default_value = nil) -> new_array
  *    Array.new(size = 0) {|index| ... } -> new_array
  *
- *  Returns a new +Array+ object.
+ *  Returns a new array.
  *
- *  - With no block given:
+ *  With no block and no argument given, returns a new empty array:
  *
- *    - With no argument given,
- *      returns a new empty array:
+ *    Array.new # => []
  *
- *        Array.new # => []
+ *  With no block and array argument given, returns a new array with the same elements:
  *
- *    - With argument +array+ given,
- *      returns a new array containing the elements of +array+:
+ *    Array.new([:foo, 'bar', 2]) # => [:foo, "bar", 2]
  *
- *        Array.new([:foo, 'bar', 2]) # => [:foo, "bar", 2]
+ *  With no block and integer argument given, returns a new array containing
+ *  that many instances of the given +default_value+:
  *
- *    - With numeric argument +size+ given,
- *      returns a new array containing +size+ instances of the given +default_value+;
- *      all elements are the _same_ object +default_value+:
+ *    Array.new(0)    # => []
+ *    Array.new(3)    # => [nil, nil, nil]
+ *    Array.new(2, 3) # => [3, 3]
  *
- *        Array.new(3)    # => [nil, nil, nil]
- *        Array.new(0)    # => []
- *        o = Object.new  # => #<Object:0x0000013a6534a170>
- *        Array.new(2, o) # => [#<Object:0x0000013a6534a170>, #<Object:0x0000013a6534a170>]
- *        Array.new(0, o) # => []
- *        Array.new(-1)   # Raises ArgumentError (negative array size).
+ *  With a block given, returns an array of the given +size+;
+ *  calls the block with each +index+ in the range <tt>(0...size)</tt>;
+ *  the element at that +index+ in the returned array is the blocks return value:
  *
- *  - With a block given,
- *    returns an array of the given +size+;
- *    calls the block with each +index+ in the range <tt>(0..size-1)</tt>;
- *    the element at that +index+ is the return value from the block:
+ *    Array.new(3)  {|index| "Element #{index}" } # => ["Element 0", "Element 1", "Element 2"]
  *
- *      Array.new(3)  {|index| "Element #{index}" } # => ["Element 0", "Element 1", "Element 2"]
- *      Array.new(0)  {|index| "Element #{index}" } # => []
- *      Array.new(-1) {|index| "Element #{index}" } # Raises ArgumentError (negative array size).
+ *  A common pitfall for new Rubyists is providing an expression as +default_value+:
  *
- *  Raises TypeError if the argument is not either an array
+ *    array = Array.new(2, {})
+ *    array # => [{}, {}]
+ *    array[0][:a] = 1
+ *    array # => [{a: 1}, {a: 1}], as array[0] and array[1] are same object
+ *
+ *  If you want the elements of the array to be distinct, you should pass a block:
+ *
+ *    array = Array.new(2) { {} }
+ *    array # => [{}, {}]
+ *    array[0][:a] = 1
+ *    array # => [{a: 1}, {}], as array[0] and array[1] are different objects
+ *
+ *  Raises TypeError if the first argument is not either an array
  *  or an {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]).
- *
+ *  Raises ArgumentError if the first argument is a negative integer.
  */
 
 static VALUE
