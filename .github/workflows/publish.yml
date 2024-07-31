@@ -18,6 +18,15 @@ jobs:
             # Convert refs/tags/vX_Y_Z to X.Y.Z
             echo "RUBY_VERSION=$(echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//;s/_/./g')" >> $GITHUB_ENV
 
+      - name: Build release package
+        run: |
+          curl -L -X POST \
+            -H "Authorization: Bearer ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/ruby/actions/dispatches \
+            -d '{"event_type": "${{ github.ref }}"}'
+
       - name: Build and push Docker images
         run: |
           curl -L -X POST \
