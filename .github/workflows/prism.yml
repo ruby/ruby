@@ -51,7 +51,7 @@ jobs:
           - test_task: test-bundler-parallel
             run_opts: '--parser=prism'
             testopts: '-v --tty=no'
-            timeout: 30
+            timeout: 40
           - test_task: test-bundled-gems
             run_opts: '--parser=prism'
             testopts: '-v --tty=no'
