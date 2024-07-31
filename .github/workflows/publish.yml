@@ -15,8 +15,9 @@ jobs:
 
       - name: Convert tag name to dot from underscore
         run: |
-            # vX_Y_Z to X.Y.Z
-            echo "RUBY_VERSION=$(echo ${{ github.ref }} | sed 's/v\([0-9]*\)_\([0-9]*\)_\([0-9]*\)/\1.\2.\3/')" >> $GITHUB_ENV
+            # Convert refs/tags/vX_Y_Z to X.Y.Z
+            echo "RUBY_VERSION=$(echo ${{ github.ref }} | sed -e 's/refs\/tags\/v//;s/_/./g')" >> $GITHUB_ENV
+
       - name: Build and push Docker images
         run: |
           curl -L -X POST \
