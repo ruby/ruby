@@ -7203,10 +7203,11 @@ token_info_pop(struct parser_params *p, const char *token, const rb_code_locatio
     token_info *ptinfo_beg = p->token_info;
 
     if (!ptinfo_beg) return;
-    p->token_info = ptinfo_beg->next;
 
     /* indentation check of matched keywords (begin..end, if..end, etc.) */
     token_info_warn(p, token, ptinfo_beg, 1, loc);
+
+    p->token_info = ptinfo_beg->next;
     ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 
