@@ -2554,7 +2554,7 @@ impl Context {
 
                 let mapping = self.get_temp_mapping(stack_idx);
 
-                match mapping.get_kind() {
+                match mapping {
                     MapToSelf => self.get_opnd_shape(SelfOpnd),
                     _ => None
                 }
@@ -2653,7 +2653,7 @@ impl Context {
 
                 let mapping = self.get_temp_mapping(stack_idx);
 
-                match mapping.get_kind() {
+                match mapping {
                     MapToSelf => self.self_shape = opnd_shape,
                     _ => {}
                 }
