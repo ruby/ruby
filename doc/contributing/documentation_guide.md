@@ -170,30 +170,97 @@ Code that is a simple string should include the quote marks.
 
 ### Auto-Linking
 
-In general, \RDoc's auto-linking should not be suppressed.
-For example, we should write `Array`,
-not `\Array` (plain text without link,
-and not  `+Array+` or `\`Array\`` (monofont text without link).
-
-However, suppress when the word in question:
-
-- Does not refer to a Ruby entity
-  (e.g., some uses of _Class_ or _English_).
-- Refers to the current document
-  (e.g., _Array_ in the documentation for class `Array`);
-  in that case, the word should be forced to
-  [monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
-
 Most often, the name of a class, module, or method
-will be auto-linked:
+is auto-linked:
 
-- Array.
+```
+- Float.
 - Enumerable.
 - File.new
 - File#read.
+```
+renders as:
 
-If not, or if you suppress autolinking, consider forcing
-[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+> - Float.
+> - Enumerable.
+> - File.new
+> - File#read.
+
+In general, \RDoc's auto-linking should not be suppressed.
+For example, we should write just plain _Float_ (which is auto-linked):
+
+```
+Returns a Float.
+```
+
+which renders as:
+
+> Returns a Float.
+
+However, _do_ suppress auto-linking when the word in question
+does not refer to a Ruby entity (e.g., some uses of _Class_ or _English_):
+
+```
+\Class variables can be tricky.
+```
+
+renders as:
+
+> \\Class variables can be tricky.
+
+Also, _do_ suppress auto-linking when the word in question
+refers to the current document
+(e.g., _Float_ in the documentation for class Float).
+
+In this case you may consider forcing the name to
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont),
+which suppresses auto-linking, and also emphasizes that the word is a class name:
+
+```
+A +Float+ object represents ....
+```
+
+renders as:
+
+> A +Float+ object represents ....
+
+For a _very_ few, _very_ often-discussed classes,
+you might consider avoiding the capitalized class name altogether.
+For example, for some mentions of arrays,
+you might write simply the lowercase _array_.
+
+Instead of:
+
+```
+For an empty Array, ....
+```
+
+which renders as:
+
+> For an empty Array, ....
+
+you might write:
+
+```
+For an empty array, ....
+```
+
+which renders as:
+
+> For an empty array, ....
+
+This more casual usage avoids both auto-linking and distracting font changes,
+and is unlikely to cause confusion.
+
+This principle may be usefully applied, in particular, for:
+
+- An array.
+- An integer.
+- A hash.
+- A string.
+
+However, it should be applied _only_ when referring to an _instance_ of the class,
+and _never_ when referring to the class itself.
 
 ### Explicit Links
 
@@ -513,66 +580,3 @@ mention `Hash#fetch` as a related method, and `Hash#merge` might mention
 For methods that accept multiple argument types, in some cases it can
 be useful to document the different argument types separately.  It's
 best to use a separate paragraph for each case you are discussing.
-
-## Further Considerations
-
-### Case Treatments
-
-When a series of paragraphs documents _cases_ that form a _partition_,
-consider using bullets (unordered items) to emphasize that structure;
-such structures may be nested.
-
-The documentation for Array.new is organized thus (some text omitted)
-
-```
-Returns a new +Array+ object:
-
-- With no block given:
-
-    - With no argument given, returns ...:
-    - With argument +array+ given, returns ...:
-    - With numeric argument +size+ given, returns ...:
-
-- With a block given, returns ...:
-
-Raises TypeError if ....
-```
-
-### Trivial \Method Behaviors
-
-For a trivial method behavior,
-it's usually best not to include that behavior in the discussion;
-consider whether it is useful and convenient to show that behavior
-as part of the example code.
-
-In Array.new, the examples for argument `size` include this trivial result:
-
-```
-Array.new(0)    # => []
-```
-
-### Exceptions
-
-Documentation may include discussions of exceptions that may be raised.
-Consider whether it is useful and convenient to include an exceptional behavior in the examples
-(instead of in the discussion).
-
-In Array.new, the examples for argument `size` include this exceptional behavior:
-
-```
-Array.new(-1)   # Raises ArgumentError (negative array size).
-```
-
-### Names of Common Classes
-
-The name of a class or module is by default
-[auto-linked](rdoc-ref:contributing/documentation_guide.md@Auto-Linking).
-If you want to suppress auto-linking for an often-mentioned class,
-consider avoiding the capitalized class name altogether.
-
-For example, for the many mentions of `Array` in the documentation for class `Array`,
-write "array" instead of "\\+Array\\+";
-this more casual usage is unlikely to cause confusion,
-and avoids both auto-linking and distracting font changes.
-
-This principle may be usefully applied, in particular, for array, hash, and string.
