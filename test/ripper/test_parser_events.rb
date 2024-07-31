@@ -1765,4 +1765,26 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_return_out_of_warn_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def warn(msg, *args) = @blk.call(msg)
+      end
+
+      def call_parse = MyRipper.new("{ a: 1, a: 2 }") { |msg| return msg }.parse
+
+      # Check that call_parse does warn
+      raise "call_parse should warn" unless call_parse
+    begin;
+      500_000.times do
+        call_parse
+      end
+    end;
+  end
 end if ripper_test
