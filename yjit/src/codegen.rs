@@ -1999,6 +1999,46 @@ fn guard_object_is_hash(
     }
 }
 
+fn guard_object_is_fixnum(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    object: Opnd,
+    object_opnd: YARVOpnd
+) {
+    let object_type = asm.ctx.get_opnd_type(object_opnd);
+    if object_type.is_heap() {
+        asm_comment!(asm, "arg is heap object");
+        asm.jmp(Target::side_exit(Counter::guard_send_not_fixnum));
+        return;
+    }
+
+    if object_type != Type::Fixnum && object_type.is_specific() {
+        asm_comment!(asm, "arg is not fixnum");
+        asm.jmp(Target::side_exit(Counter::guard_send_not_fixnum));
+        return;
+    }
+
+    assert!(!object_type.is_heap());
+    assert!(object_type == Type::Fixnum || object_type.is_unknown());
+
+    // If not fixnums at run-time, fall back
+    if object_type != Type::Fixnum {
+        asm_comment!(asm, "guard object fixnum");
+        asm.test(object, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+        jit_chain_guard(
+            JCC_JZ,
+            jit,
+            asm,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnum,
+        );
+    }
+
+    // Set the stack type in the context.
+    asm.ctx.upgrade_opnd_type(object.into(), Type::Fixnum);
+}
+
 fn guard_object_is_string(
     asm: &mut Assembler,
     object: Opnd,
@@ -5790,6 +5830,8 @@ fn jit_rb_str_concat_codepoint(
 
     let codepoint = asm.stack_opnd(0);
     let recv = asm.stack_opnd(1);
+
+    guard_object_is_fixnum(jit, asm, codepoint, StackOpnd(0));
 
     asm.ccall(rb_yjit_str_concat_codepoint as *const u8, vec![recv, codepoint]);
 

@@ -12300,7 +12300,7 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 void
 rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
 {
-    if (RB_LIKELY(FIXNUM_P(codepoint)) && RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
+    if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
         ssize_t code = RB_NUM2SSIZE(codepoint);
 
         if (RB_LIKELY(code >= 0 && code < 0xff)) {
