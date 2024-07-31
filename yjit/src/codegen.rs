@@ -660,8 +660,8 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
         let stack_val = jit.peek_at_stack(ctx, i as isize);
         let val_type = Type::from(stack_val);
 
-        match learned_mapping.get_kind() {
-            TempMappingKind::MapToSelf => {
+        match learned_mapping {
+            TempMapping::MapToSelf => {
                 if self_val != stack_val {
                     panic!(
                         "verify_ctx: stack value was mapped to self, but values did not match!\n  stack: {}\n  self: {}",
@@ -670,8 +670,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                     );
                 }
             }
-            TempMappingKind::MapToLocal => {
-                let local_idx: u8 = learned_mapping.get_local_idx();
+            TempMapping::MapToLocal(local_idx) => {
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(
@@ -682,7 +681,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                     );
                 }
             }
-            TempMappingKind::MapToStack => {}
+            TempMapping::MapToStack(_) => {}
         }
 
         // If the actual type differs from the learned type
@@ -7987,7 +7986,7 @@ fn gen_iseq_kw_call(
         asm.ctx.dealloc_reg(stack_kwrest.reg_opnd());
         asm.mov(stack_kwrest, kwrest);
         if stack_kwrest_idx >= 0 {
-            asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(kwrest_type));
+            asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::MapToStack(kwrest_type));
         }
 
         Some(kwrest_type)
@@ -8057,7 +8056,7 @@ fn gen_iseq_kw_call(
             let default_param = asm.stack_opnd(kwargs_stack_base - kwarg_idx as i32);
             let param_type = Type::from(default_value);
             asm.mov(default_param, default_value.into());
-            asm.ctx.set_opnd_mapping(default_param.into(), TempMapping::map_to_stack(param_type));
+            asm.ctx.set_opnd_mapping(default_param.into(), TempMapping::MapToStack(param_type));
         }
     }
 
