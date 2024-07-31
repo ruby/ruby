@@ -15608,6 +15608,10 @@ rb_ruby_parser_free(void *ptr)
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
 
+    if (p->ast) {
+        rb_ast_free(p->ast);
+    }
+
 #ifndef RIPPER
     if (p->tokens) {
         rb_parser_ary_free(p, p->tokens);
