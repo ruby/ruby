@@ -23,6 +23,7 @@ class TestEnsureAndCallcc < Test::Unit::TestCase
   def test_bug20655_extension_using_rb_ensure
     need_continuation
     require '-test-/ensure_and_callcc'
+    EnsureAndCallcc.reset
     assert_equal(0, EnsureAndCallcc.ensure_called)
     EnsureAndCallcc.require_with_ensure(File.join(__dir__, 'required'))
     assert_equal(1, EnsureAndCallcc.ensure_called,

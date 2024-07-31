@@ -40,11 +40,19 @@ ensure_called(VALUE self)
     return rb_iv_get(rb_mEnsureAndCallcc, "@ensure_called");
 }
 
+static VALUE
+reset(VALUE self)
+{
+    rb_iv_set(rb_mEnsureAndCallcc, "@ensure_called", INT2FIX(0));
+    return Qnil;
+}
+
 void
 Init_ensure_and_callcc(void)
 {
     rb_mEnsureAndCallcc = rb_define_module("EnsureAndCallcc");
     rb_iv_set(rb_mEnsureAndCallcc, "@ensure_called", INT2FIX(0));
+    rb_define_singleton_method(rb_mEnsureAndCallcc, "reset", reset, 0);
     rb_define_singleton_method(rb_mEnsureAndCallcc, "ensure_called", ensure_called, 0);
     rb_define_singleton_method(rb_mEnsureAndCallcc, "require_with_ensure", require_with_ensure, 1);
 }
