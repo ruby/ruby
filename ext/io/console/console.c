@@ -1626,7 +1626,6 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 #endif
 #ifdef CONSOLE_DEVICE_FOR_WRITING
         VALUE out;
-        rb_io_t *ofptr;
 #endif
         int fd;
         VALUE path = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
