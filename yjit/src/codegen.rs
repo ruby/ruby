@@ -2999,6 +2999,15 @@ fn gen_set_ivar(
     };
     let new_shape_too_complex = matches!(new_shape, Some((OBJ_TOO_COMPLEX_SHAPE_ID, _, _)));
 
+
+
+    // NOTE: we could be smarter, more selective here.
+    // If the shape being changed doesn't match the known self shape, then we know it can't be the same object,
+    // and so no shape clearing is necessary
+    asm.clear_self_shape();
+
+
+
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
