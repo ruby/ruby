@@ -207,6 +207,9 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
             argc == 3 or raise "unexpected argument number #{argc}"
             (arg = args[1])[0] == :symbol_literal or raise "symbol literal expected #{args}"
             func_name = nil
+          when 'dup', 'pop'
+            argc == 1 or raise "unexpected argument number #{argc}"
+            func_name = nil
           when 'arg'
             argc == 1 or raise "unexpected argument number #{argc}"
             (arg = args.first)[0] == :symbol_literal or raise "symbol literal expected #{args}"

@@ -9138,6 +9138,26 @@ assert_node_type(const NODE * node, int type)
 }
 
 static int
+compile_builtin_dup(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE * call_node, const NODE *node, const NODE *line_node, int popped)
+{
+    assert_node_type(node, NODE_LIST);
+    CHECK(COMPILE(ret, "recv", RNODE_LIST(node)->nd_head));
+    ADD_INSN(ret, RNODE_LIST(node)->nd_head, dup);
+
+    return COMPILE_OK;
+}
+
+static int
+compile_builtin_pop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE * call_node, const NODE *node, const NODE *line_node, int popped)
+{
+    assert_node_type(node, NODE_LIST);
+    CHECK(COMPILE(ret, "recv", RNODE_LIST(node)->nd_head));
+    ADD_INSN(ret, RNODE_LIST(node)->nd_head, pop);
+
+    return COMPILE_OK;
+}
+
+static int
 compile_builtin_send(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE * call_node, const NODE *node, const NODE *line_node, int popped)
 {
     assert_node_type(node, NODE_BLOCK_PASS);
@@ -9158,8 +9178,6 @@ compile_builtin_send(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE * call_
     const NODE *param = params;
 
     NODE *recv = RNODE_LIST(param)->nd_head;
-
-    assert_node_type(recv, NODE_LVAR);
 
     param = RNODE_LIST(param)->nd_next;
 
@@ -9322,6 +9340,14 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
             else if (strcmp("send_delegate!", builtin_func) == 0) {
                 // pop off first two params
                 return compile_builtin_send(iseq, ret, node, args_node, line_node, popped);
+            }
+            else if (strcmp("dup!", builtin_func) == 0) {
+                // add a dup instruction
+                return compile_builtin_dup(iseq, ret, node, args_node, line_node, popped);
+            }
+            else if (strcmp("pop!", builtin_func) == 0) {
+                // add a pop instruction
+                return compile_builtin_pop(iseq, ret, node, args_node, line_node, popped);
             }
             else if (strcmp("mandatory_only?", builtin_func) == 0) {
                 if (popped) {
