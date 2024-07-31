@@ -230,8 +230,9 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.rdoc_options = ["--main", "README.rdoc"]
   s.extra_rdoc_files += s.files.grep(%r[\A[^\/]+\.(?:rdoc|md)\z])
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.7.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 
+  s.add_dependency 'prism', '>= 0.30.0'
   s.add_dependency 'psych', '>= 4.0.0'
 end
