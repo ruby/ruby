@@ -16,18 +16,10 @@
 
 #include <stdio.h>
 
-VALUE rb_cNamespace;
-VALUE rb_cNamespaceEntry;
-
-/*
-static VALUE ns_builtin_load_path;
-static VALUE ns_builtin_expanded_load_path;
-static VALUE ns_builtin_loaded_features;
-static VALUE ns_builtin_loaded_features_realpaths;
-static VALUE ns_builtin_loaded_features_realpath_map;
-
-static VALUE load_path_tree_root;
-*/
+VALUE rb_cNamespace = 0;
+VALUE rb_cNamespaceEntry = 0;
+VALUE rb_mNamespaceRefiner = 0;
+VALUE rb_mNamespaceLoader = 0;
 
 static rb_namespace_t builtin_namespace_data = {
     .ns_object = Qnil,
@@ -41,6 +33,8 @@ static rb_namespace_t * const builtin_namespace = &builtin_namespace_data;
 static rb_namespace_t * main_namespace = 0;
 static char *tmp_dir;
 
+static VALUE namespace_debug_mode;
+
 #define NAMESPACE_TMP_PREFIX "_ruby_ns_"
 
 #ifndef MAXPATHLEN
@@ -53,10 +47,10 @@ static char *tmp_dir;
 # define DIRSEP "/"
 #endif
 
-static int using_builtin_namespace = 0;
 static int namespace_availability = 0;
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
+static VALUE rb_namespace_inspect(VALUE obj);
 
 int
 rb_namespace_available()
@@ -80,13 +74,38 @@ rb_namespace_available()
 void
 rb_namespace_enable_builtin(void)
 {
-    using_builtin_namespace = 1;
+    VALUE require_stack = GET_VM()->require_stack;
+    if (require_stack) {
+        rb_ary_push(require_stack, Qnil);
+    }
 }
 
 void
 rb_namespace_disable_builtin(void)
 {
-    using_builtin_namespace = 0;
+    VALUE require_stack = GET_VM()->require_stack;
+    if (require_stack)
+        rb_ary_pop(require_stack);
+}
+
+void
+rb_namespace_push_loading_namespace(const rb_namespace_t *ns)
+{
+    VALUE require_stack = GET_VM()->require_stack;
+    rb_ary_push(require_stack, ns->ns_object);
+}
+
+void
+rb_namespace_pop_loading_namespace(const rb_namespace_t *ns)
+{
+    VALUE require_stack = GET_VM()->require_stack;
+    long size = RARRAY_LEN(require_stack);
+    if (size == 0)
+        rb_bug("popping on the empty require_stack");
+    VALUE latest = RARRAY_AREF(require_stack, size-1);
+    if (latest != ns->ns_object)
+        rb_bug("Inconsistent loading namespace");
+    rb_ary_pop(require_stack);
 }
 
 rb_namespace_t *
@@ -108,7 +127,6 @@ namespace_ignore_builtin_primitive_methods_p(const rb_namespace_t *ns, rb_method
     if (def->type == VM_METHOD_TYPE_ISEQ) {
         ID mid = def->original_id;
         const char *path = RSTRING_PTR(pathobj_path(def->body.iseq.iseqptr->body->location.pathobj));
-        // printf("Checking primitive method path:%s, method:%s\n", path, rb_id2name(mid));
         if (strcmp(path, "<internal:kernel>") == 0) {
             if (mid == rb_intern("class") || mid == rb_intern("clone") ||
                 mid == rb_intern("tag") || mid == rb_intern("then") ||
@@ -124,17 +142,13 @@ namespace_ignore_builtin_primitive_methods_p(const rb_namespace_t *ns, rb_method
         } else if (strcmp(path, "<internal:marshal>") == 0) {
             if (mid == rb_intern("load"))
                 return true;
-        } else if (strcmp(path, "<internal:prelude>") == 0) {
-            if (mid == rb_intern("irb") || mid == rb_intern("pp") || mid == rb_intern("to_set")) {
-                return true;
-            }
         }
     }
     return false;
 }
 
-const rb_namespace_t *
-rb_current_namespace(void)
+static const rb_namespace_t *
+current_namespace(bool permit_calling_builtin)
 {
     const rb_callable_method_entry_t *cme;
     const rb_namespace_t *ns;
@@ -143,21 +157,14 @@ rb_current_namespace(void)
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int calling = 1;
 
-    if (using_builtin_namespace)
-        return builtin_namespace;
-
-    if (!main_namespace) {
-        // Namespaces are not ready to be created
-        return root_namespace;
-    }
-
     if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
         // temp code to detect the context is in require/load
         calling = 0;
     }
     while (calling) {
-        if (cfp->ns) {
-            return cfp->ns;
+        if (cfp->ns) { // for calling procs
+            if (permit_calling_builtin || NAMESPACE_USER_P(cfp->ns))
+                return cfp->ns;
         }
         cme = rb_vm_frame_method_entry(cfp);
         if (cme && cme->def) {
@@ -166,7 +173,8 @@ rb_current_namespace(void)
                 // this method is not a built-in class/module's method
                 // or a built-in primitive (Ruby) method
                 if (!namespace_ignore_builtin_primitive_methods_p(ns, cme->def)) {
-                    return ns;
+                    if (permit_calling_builtin || NAMESPACE_USER_P(cfp->ns))
+                        return ns;
                 }
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -179,7 +187,123 @@ rb_current_namespace(void)
     if (ns) {
         return ns;
     }
+    if (!main_namespace) {
+        // Namespaces are not ready to be created
+        return root_namespace;
+    }
     return main_namespace;
+}
+
+const rb_namespace_t *
+rb_current_namespace(void)
+{
+    return current_namespace(true);
+}
+
+const rb_namespace_t *
+rb_loading_namespace(void)
+{
+    VALUE namespace;
+    long len;
+    VALUE require_stack = GET_VM()->require_stack;
+    if (!require_stack) {
+        return current_namespace(false);
+    }
+    if ((len = RARRAY_LEN(require_stack)) == 0) {
+        return current_namespace(false);
+    }
+
+    if (!RB_TYPE_P(require_stack, T_ARRAY))
+        rb_bug("require_stack is not an array: %s", rb_type_str(BUILTIN_TYPE(require_stack)));
+    namespace = RARRAY_AREF(require_stack, len-1);
+    return rb_get_namespace_t(namespace);
+}
+
+VALUE
+rb_current_namespace_details(VALUE opt)
+{
+    const rb_callable_method_entry_t *cme;
+    VALUE str, part, nsobj;
+    char buf[2048];
+    const char *path;
+    int calling = 1;
+    long i;
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    const rb_namespace_t *ns = rb_current_namespace();
+    rb_vm_t *vm = GET_VM();
+    VALUE require_stack = vm->require_stack;
+
+    str = rb_namespace_inspect(ns ? ns->ns_object : Qfalse);
+    if (NIL_P(opt)) return str;
+
+    rb_str_cat_cstr(str, "\n");
+
+    part = rb_namespace_inspect(th->ns ? th->ns->ns_object : Qfalse);
+    snprintf(buf, 2048, "main:%s, th->ns:%s, th->nss:%ld, rstack:%ld\n",
+             main_namespace ? "t" : "f",
+             RSTRING_PTR(part),
+             th->namespaces ? RARRAY_LEN(th->namespaces) : 0,
+             require_stack ? RARRAY_LEN(require_stack) : 0);
+    rb_str_cat_cstr(str, buf);
+
+    if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
+        for (i=0; i<RARRAY_LEN(th->namespaces); i++) {
+            nsobj = RARRAY_AREF(th->namespaces, i);
+            part = rb_namespace_inspect(nsobj);
+            snprintf(buf, 2048, "  th->nss[%ld] %s\n", i, RSTRING_PTR(part));
+            rb_str_cat_cstr(str, buf);
+        }
+    }
+
+
+    rb_str_cat_cstr(str, "calls:\n");
+
+    while (calling && cfp) {
+        if (cfp->ns) { // for calling procs
+            part = rb_namespace_inspect(cfp->ns->ns_object);
+            snprintf(buf, 2048, " cfp->ns:%s", RSTRING_PTR(part));
+            calling = 0;
+            break;
+        }
+        cme = rb_vm_frame_method_entry(cfp);
+        if (cme && cme->def) {
+            if (cme->def->type == VM_METHOD_TYPE_ISEQ)
+                path = RSTRING_PTR(pathobj_path(cme->def->body.iseq.iseqptr->body->location.pathobj));
+            else
+                path = "(cfunc)";
+            ns = cme->def->ns;
+            if (ns) {
+                part = rb_namespace_inspect(ns->ns_object);
+                if (!namespace_ignore_builtin_primitive_methods_p(ns, cme->def)) {
+                    snprintf(buf, 2048, " cfp cme->def id:%s, ns:%s, exprim:t, path:%s\n",
+                             rb_id2name(cme->def->original_id),
+                             RSTRING_PTR(part),
+                             path);
+                    rb_str_cat_cstr(str, buf);
+                    calling = 0;
+                    break;
+                } else {
+                    snprintf(buf, 2048, " cfp cme->def id:%s, ns:%s, exprim:f, path:%s\n",
+                             rb_id2name(cme->def->original_id),
+                             RSTRING_PTR(part),
+                             path);
+                    rb_str_cat_cstr(str, buf);
+                }
+            } else {
+                snprintf(buf, 2048, " cfp cme->def id:%s, ns:null, path:%s\n",
+                         rb_id2name(cme->def->original_id),
+                         path);
+                rb_str_cat_cstr(str, buf);
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        } else {
+            calling = 0;
+        }
+    }
+    rb_str_cat_cstr(str, ".\n");
+    return str;
 }
 
 static void
@@ -192,17 +316,6 @@ namespace_entry_initialize(rb_namespace_t *ns)
     ns->ns_id = 0;
 
     ns->top_self = 0;
-    /*
-    ns->load_path = rb_ary_dup(ns_builtin_load_path);
-    ns->expanded_load_path = rb_ary_dup(ns_builtin_expanded_load_path);
-    ns->load_path_snapshot = rb_ary_new();
-    ns->load_path_check_cache = 0;
-    ns->loaded_features = rb_ary_dup(ns_builtin_loaded_features);
-    ns->loaded_features_snapshot = rb_ary_new();
-    ns->loaded_features_index = st_init_numtable();
-    ns->loaded_features_realpaths = rb_hash_dup(ns_builtin_loaded_features_realpaths);
-    ns->loaded_features_realpath_map = rb_hash_dup(ns_builtin_loaded_features_realpath_map);
-    */
     ns->load_path = rb_ary_dup(vm->load_path);
     ns->expanded_load_path = rb_ary_dup(vm->expanded_load_path);
     ns->load_path_snapshot = rb_ary_new();
@@ -313,6 +426,16 @@ rb_get_namespace_t(VALUE namespace)
     return get_namespace_struct_internal(entry);
 }
 
+VALUE
+rb_get_namespace_object(rb_namespace_t *ns)
+{
+    if (!ns) // root namespace
+        return Qfalse;
+    return ns->ns_object;
+}
+
+static void setup_pushing_loading_namespace(rb_namespace_t *ns);
+
 static VALUE
 namespace_initialize(VALUE namespace)
 {
@@ -351,6 +474,9 @@ namespace_initialize(VALUE namespace)
     RCLASS_SET_CONST_TBL(namespace, RCLASSEXT_CONST_TBL(object_classext), true);
 
     rb_ivar_set(namespace, id_namespace_entry, entry);
+
+    setup_pushing_loading_namespace(ns);
+
     return namespace;
 }
 
@@ -676,36 +802,66 @@ rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VALUE arg
     return rb_ensure(func, arg, namespace_pop, (VALUE)th);
 }
 
+struct namespace_pop2_arg {
+    rb_thread_t *th;
+    rb_namespace_t *ns;
+};
+
+static VALUE
+namespace_both_pop(VALUE arg)
+{
+    struct namespace_pop2_arg *data = (struct namespace_pop2_arg *)arg;
+    namespace_pop((VALUE) data->th);
+    rb_namespace_pop_loading_namespace(data->ns);
+    return Qnil;
+}
+
 static VALUE
 rb_namespace_load(int argc, VALUE *argv, VALUE namespace)
 {
     VALUE fname, wrap;
     rb_thread_t *th = GET_THREAD();
+    rb_namespace_t *ns = rb_get_namespace_t(namespace);
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
     VALUE args = rb_ary_new_from_args(2, fname, wrap);
     namespace_push(th, namespace);
-    return rb_ensure(rb_load_entrypoint, args, namespace_pop, (VALUE) th);
+    rb_namespace_push_loading_namespace(ns);
+    struct namespace_pop2_arg arg = {
+        .th = th,
+        .ns = ns
+    };
+    return rb_ensure(rb_load_entrypoint, args, namespace_both_pop, (VALUE)&arg);
 }
 
 static VALUE
 rb_namespace_require(VALUE namespace, VALUE fname)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_namespace_t *ns = rb_get_namespace_t(namespace);
     namespace_push(th, namespace);
-    return rb_ensure(rb_require_string, fname, namespace_pop, (VALUE) th);
+    rb_namespace_push_loading_namespace(ns);
+    struct namespace_pop2_arg arg = {
+        .th = th,
+        .ns = ns
+    };
+    return rb_ensure(rb_require_string, fname, namespace_both_pop, (VALUE)&arg);
 }
 
 static VALUE
 rb_namespace_require_relative(VALUE namespace, VALUE fname)
 {
     rb_thread_t *th = GET_THREAD();
+    rb_namespace_t *ns = rb_get_namespace_t(namespace);
     namespace_push(th, namespace);
-    return rb_ensure(rb_require_relative_entrypoint, fname, namespace_pop, (VALUE) th);
+    rb_namespace_push_loading_namespace(ns);
+    struct namespace_pop2_arg arg = {
+        .th = th,
+        .ns = ns
+    };
+    return rb_ensure(rb_require_relative_entrypoint, fname, namespace_both_pop, (VALUE)&arg);
 }
-
-// #define NS_BUILTIN_INIT(x) (rb_ary_unshift(load_path_tree_root, (x)))
 
 void
 rb_initialize_main_namespace(void)
@@ -714,17 +870,6 @@ rb_initialize_main_namespace(void)
     rb_vm_t *vm = GET_VM();
     rb_thread_t *th = GET_THREAD();
     VALUE main_ns;
-
-    /*
-    // TODO: it's better if those values are hidden (but not GCed)
-    load_path_tree_root = rb_ary_new();
-    NS_BUILTIN_INIT(ns_builtin_load_path = rb_ary_dup(vm->load_path));
-    NS_BUILTIN_INIT(ns_builtin_expanded_load_path = rb_ary_dup(vm->expanded_load_path));
-    NS_BUILTIN_INIT(ns_builtin_loaded_features = rb_ary_dup(vm->loaded_features));
-    NS_BUILTIN_INIT(ns_builtin_loaded_features_realpaths = rb_funcall(rb_cHash, rb_intern("[]"), 1, vm->loaded_features_realpaths));
-    NS_BUILTIN_INIT(ns_builtin_loaded_features_realpath_map = rb_funcall(rb_cHash, rb_intern("[]"), 1, vm->loaded_features_realpath_map));
-    rb_gc_register_mark_object(load_path_tree_root);
-    */
 
     // main_ns initialization must follow initializations of ns_builtin_x members
     // because Namespace#initialize uses those values.
@@ -744,8 +889,14 @@ rb_initialize_main_namespace(void)
 static VALUE
 rb_namespace_inspect(VALUE obj)
 {
-    rb_namespace_t *ns = rb_get_namespace_t(obj);
-    VALUE r = rb_str_new_cstr("#<Namespace:");
+    rb_namespace_t *ns;
+    VALUE r;
+    if (obj == Qfalse) {
+        r = rb_str_new_cstr("#<Namespace:root>");
+        return r;
+    }
+    ns = rb_get_namespace_t(obj);
+    r = rb_str_new_cstr("#<Namespace:");
     rb_str_concat(r, rb_funcall(rb_obj_id(obj), rb_intern("to_s"), 0));
     if (NAMESPACE_BUILTIN_P(ns)) {
         rb_str_cat_cstr(r, ",builtin");
@@ -762,6 +913,112 @@ rb_namespace_inspect(VALUE obj)
     return r;
 }
 
+struct refiner_calling_super_data {
+    int argc;
+    VALUE *argv;
+};
+
+static VALUE
+namespace_builtin_refiner_calling_super(VALUE arg)
+{
+    struct refiner_calling_super_data *data = (struct refiner_calling_super_data *)arg;
+    return rb_call_super(data->argc, data->argv);
+}
+
+static VALUE
+namespace_builtin_refiner_loading_func_ensure(VALUE _)
+{
+    rb_vm_t *vm = GET_VM();
+    if (!vm->require_stack)
+        rb_bug("require_stack is not ready but the namespace refiner is called");
+    rb_namespace_disable_builtin();
+    return Qnil;
+}
+
+static VALUE
+rb_namespace_builtin_refner_loading_func(int argc, VALUE *argv, VALUE _self)
+{
+    rb_vm_t *vm = GET_VM();
+    if (!vm->require_stack)
+        rb_bug("require_stack is not ready but the namespace refiner is called");
+    rb_namespace_enable_builtin();
+    struct refiner_calling_super_data data = {
+        .argc = argc,
+        .argv = argv
+    };
+    return rb_ensure(namespace_builtin_refiner_calling_super, (VALUE)&data,
+                     namespace_builtin_refiner_loading_func_ensure, Qnil);
+}
+
+static void
+setup_builtin_refinement(VALUE mod)
+{
+    struct rb_refinements_data data;
+    rb_refinement_setup(&data, mod, rb_mKernel);
+    rb_define_method(data.refinement, "require", rb_namespace_builtin_refner_loading_func, -1);
+    rb_define_method(data.refinement, "require_relative", rb_namespace_builtin_refner_loading_func, -1);
+    rb_define_method(data.refinement, "load", rb_namespace_builtin_refner_loading_func, -1);
+}
+
+static VALUE
+namespace_user_loading_func_calling_super(VALUE arg)
+{
+    struct refiner_calling_super_data *data = (struct refiner_calling_super_data *)arg;
+    return rb_call_super(data->argc, data->argv);
+}
+
+static VALUE
+namespace_user_loading_func_ensure(VALUE arg)
+{
+    rb_namespace_t *ns = (rb_namespace_t *)arg;
+    rb_namespace_pop_loading_namespace(ns);
+    return Qnil;
+}
+
+static VALUE
+rb_namespace_user_loading_func(int argc, VALUE *argv, VALUE _self)
+{
+    const rb_namespace_t *ns;
+    rb_vm_t *vm = GET_VM();
+    if (!vm->require_stack)
+        rb_bug("require_stack is not ready but the user namespace loading func is called");
+    ns = rb_current_namespace();
+    rb_namespace_push_loading_namespace(ns);
+    struct refiner_calling_super_data data = {
+        .argc = argc,
+        .argv = argv
+    };
+    return rb_ensure(namespace_user_loading_func_calling_super, (VALUE)&data,
+                     namespace_user_loading_func_ensure, (VALUE)ns);
+}
+
+static VALUE
+setup_pushing_loading_namespace_include(VALUE mod)
+{
+    rb_include_module(rb_cObject, mod);
+    return Qnil;
+}
+
+static void
+setup_pushing_loading_namespace(rb_namespace_t *ns)
+{
+    rb_namespace_exec(ns, setup_pushing_loading_namespace_include, rb_mNamespaceLoader);
+}
+
+static VALUE
+rb_namespace_debug_mode(VALUE self, VALUE mode)
+{
+    namespace_debug_mode = mode;
+    return Qnil;
+}
+
+static void
+namespace_define_loader_method(VALUE module, const char *name, VALUE (*func)(ANYARGS), int argc)
+{
+    rb_define_private_method(module, name, func, argc);
+    rb_define_singleton_method(module, name, func, argc);
+}
+
 void
 Init_Namespace(void)
 {
@@ -773,11 +1030,21 @@ Init_Namespace(void)
     rb_cNamespaceEntry = rb_define_class_under(rb_cNamespace, "Entry", rb_cObject);
     rb_define_alloc_func(rb_cNamespaceEntry, rb_namespace_entry_alloc);
 
+    rb_mNamespaceRefiner = rb_define_module_under(rb_cNamespace, "Refiner");
+    setup_builtin_refinement(rb_mNamespaceRefiner);
+
+    rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
+    namespace_define_loader_method(rb_mNamespaceLoader, "require", rb_namespace_user_loading_func, -1);
+    namespace_define_loader_method(rb_mNamespaceLoader, "require_relative", rb_namespace_user_loading_func, -1);
+    namespace_define_loader_method(rb_mNamespaceLoader, "load", rb_namespace_user_loading_func, -1);
+
     rb_define_singleton_method(rb_cNamespace, "enabled", rb_namespace_s_getenabled, 0);
     rb_define_singleton_method(rb_cNamespace, "enabled=", rb_namespace_s_setenabled, 1);
     rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_current, 0);
+    rb_define_singleton_method(rb_cNamespace, "current_details", rb_current_namespace_details, 0);
     rb_define_singleton_method(rb_cNamespace, "is_builtin?", rb_namespace_s_is_builtin_p, 1);
     rb_define_singleton_method(rb_cNamespace, "force_builtin", rb_namespace_s_force_builtin, 1);
+    rb_define_singleton_method(rb_cNamespace, "debug_mode", rb_namespace_debug_mode, 1);
 
     rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
     rb_define_method(rb_cNamespace, "load", rb_namespace_load, -1);
@@ -785,4 +1052,8 @@ Init_Namespace(void)
     rb_define_method(rb_cNamespace, "require_relative", rb_namespace_require_relative, 1);
 
     rb_define_method(rb_cNamespace, "inspect", rb_namespace_inspect, 0);
+
+    rb_vm_t *vm = GET_VM();
+    vm->require_stack = rb_ary_new();
+    namespace_debug_mode = Qnil;
 }

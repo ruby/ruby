@@ -84,6 +84,8 @@ RUBY_EXTERN VALUE rb_cMethod;                 /**< `Method` class. */
 RUBY_EXTERN VALUE rb_cModule;                 /**< `Module` class. */
 RUBY_EXTERN VALUE rb_cRefinement;             /**< `Refinement` class. */
 RUBY_EXTERN VALUE rb_cNameErrorMesg;          /**< `NameError::Message` class. */
+RUBY_EXTERN VALUE rb_cNamespace;              /**< `Namespace` class. */
+RUBY_EXTERN VALUE rb_mNamespaceRefiner;       /**< `Namespace::Refiner` module. */
 RUBY_EXTERN VALUE rb_cNilClass;               /**< `NilClass` class. */
 RUBY_EXTERN VALUE rb_cNumeric;                /**< `Numeric` class. */
 RUBY_EXTERN VALUE rb_cProc;                   /**< `Proc` class. */
@@ -99,7 +101,6 @@ RUBY_EXTERN VALUE rb_cThread;                 /**< `Thread` class. */
 RUBY_EXTERN VALUE rb_cTime;                   /**< `Time` class. */
 RUBY_EXTERN VALUE rb_cTrueClass;              /**< `TrueClass` class. */
 RUBY_EXTERN VALUE rb_cUnboundMethod;          /**< `UnboundMethod` class. */
-RUBY_EXTERN VALUE rb_cNamespace;              /**< `Namespace` class. */
 
 /**
  * @}

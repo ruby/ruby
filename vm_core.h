@@ -822,6 +822,8 @@ typedef struct rb_vm_struct {
         size_t fiber_machine_stack_size;
     } default_params;
 
+    // TODO: a single require_stack can't support multi-threaded require trees
+    VALUE require_stack;
 } rb_vm_t;
 
 /* default values */
@@ -1835,6 +1837,7 @@ NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_iseq_eval(const rb_iseq_t *iseq);
+VALUE rb_iseq_eval_with_refinement(const rb_iseq_t *iseq, VALUE mod);
 VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
 VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);

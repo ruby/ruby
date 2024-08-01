@@ -549,6 +549,28 @@ debug_dump_sorted_list_of_id_table_keys(struct rb_id_table *tbl)
     return rb_ary_join(keys, rb_str_new_cstr(", "));
 }
 
+static enum rb_id_table_iterator_result
+debug_dump_constants_i(ID key, ID value, void *data)
+{
+    VALUE str = rb_str_dup(rb_id2str(key));
+    VALUE results = (VALUE)data;
+    rb_const_entry_t *ce = (rb_const_entry_t *)value;
+    if (UNDEF_P(ce->value)) { // autoload
+        rb_str_cat_cstr(str, "(*)");
+    }
+    rb_ary_push(results, str);
+    return ID_TABLE_CONTINUE;
+}
+
+static VALUE
+debug_dump_sorted_constants(struct rb_id_table *tbl)
+{
+    VALUE results = rb_ary_new_capa(rb_id_table_size(tbl));
+    rb_id_table_foreach(tbl, debug_dump_constants_i, (void *)results);
+    rb_ary_sort_bang(results);
+    return rb_ary_join(results, rb_str_new_cstr(", "));
+}
+
 static VALUE
 debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
 {
@@ -583,7 +605,7 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     } else {
         snprintf(buf, 2048, "Constants: %zu\n  ", rb_id_table_size(RCLASSEXT_CONST_TBL(ext)));
         rb_str_cat_cstr(result, buf);
-        rb_str_concat(result, debug_dump_sorted_list_of_id_table_keys(RCLASSEXT_CONST_TBL(ext)));
+        rb_str_concat(result, debug_dump_sorted_constants(RCLASSEXT_CONST_TBL(ext)));
         rb_str_cat_cstr(result, ".\n");
     }
     if (!RCLASSEXT_M_TBL(ext) || rb_id_table_size(RCLASSEXT_M_TBL(ext)) == 0) {
@@ -713,9 +735,9 @@ debug_dump_classext_i(st_data_t namespace, st_data_t classext_ptr, st_data_t arg
 VALUE
 rb_class_debug_dump_all_classext(VALUE klass)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
     char buf[2048];
-    snprintf(buf, 2048, "=========== current ns id: %ld ===========\n", ns ? ns->ns_id : 0);
+    VALUE ns_str = rb_current_namespace_details(Qnil);
+    snprintf(buf, 2048, "=========== current ns: %s ===========\n", RSTRING_PTR(ns_str));
     VALUE r = rb_str_new_cstr(buf);
     rb_str_concat(r, debug_dump_inspect_or_return_type(klass));
     rb_str_cat_cstr(r, " (");

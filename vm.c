@@ -2858,6 +2858,18 @@ rb_iseq_eval(const rb_iseq_t *iseq)
 }
 
 VALUE
+rb_iseq_eval_with_refinement(const rb_iseq_t *iseq, VALUE mod)
+{
+    rb_execution_context_t *ec = GET_EC();
+    VALUE val;
+    vm_set_top_stack(ec, iseq);
+    rb_vm_using_module(mod);
+    // TODO: set the namespace frame like require/load
+    val = vm_exec(ec);
+    return val;
+}
+
+VALUE
 rb_iseq_eval_main(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
@@ -2958,6 +2970,7 @@ rb_vm_update_references(void *ptr)
         vm->loaded_features_realpaths = rb_gc_location(vm->loaded_features_realpaths);
         vm->loaded_features_realpath_map = rb_gc_location(vm->loaded_features_realpath_map);
         vm->top_self = rb_gc_location(vm->top_self);
+        vm->require_stack = rb_gc_location(vm->require_stack);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
 
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
@@ -3042,6 +3055,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->loaded_features_snapshot);
         rb_gc_mark_movable(vm->loaded_features_realpaths);
         rb_gc_mark_movable(vm->loaded_features_realpath_map);
+        rb_gc_mark_movable(vm->require_stack);
         rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);

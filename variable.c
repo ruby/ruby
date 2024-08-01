@@ -2441,7 +2441,8 @@ struct autoload_const {
     // The shared "autoload_data" if multiple constants are defined from the same feature.
     VALUE autoload_data_value;
 
-    // The namespace object when the autoload is called in a namespace (otherwise, Qnil)
+    // The namespace object when the autoload is called in a user namespace
+    // Otherwise, Qnil means the builtin namespace, Qfalse means unspecified.
     VALUE namespace;
 
     // The module we are loading a constant into.
@@ -2685,13 +2686,8 @@ autoload_synchronized(VALUE _arguments)
 void
 rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
-    rb_namespace_t *ns = GET_THREAD()->ns;
-    VALUE current_namespace = Qnil;
-    if (NAMESPACE_USER_P(ns)) {
-        current_namespace = ns->ns_object;
-    } else if (NAMESPACE_BUILTIN_P(ns)) {
-        current_namespace = Qnil;
-    }
+    const rb_namespace_t *ns = rb_current_namespace();
+    VALUE current_namespace = rb_get_namespace_object((rb_namespace_t *)ns);
 
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
@@ -2970,23 +2966,38 @@ autoload_apply_constants(VALUE _arguments)
 static VALUE
 autoload_feature_require(VALUE _arguments)
 {
+    VALUE rvalue;
     VALUE receiver = rb_vm_top_self();
 
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     struct autoload_const *autoload_const = arguments->autoload_const;
+    VALUE autoload_namespace = autoload_const->namespace;
+    bool using_builtin = false;
 
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
-    if (RTEST(autoload_const->namespace)) {
+    if (NIL_P(autoload_namespace)) {
+        using_builtin = true;
+        rb_namespace_enable_builtin();
+        // builtin namespace, to be loaded into the builtin namespace
+    } else if (RTEST(autoload_namespace)) {
         receiver = autoload_const->namespace;
     }
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 
     if (RTEST(result)) {
-        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+        rvalue = rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+        if (using_builtin) {
+            rb_namespace_disable_builtin();
+        }
+        return rvalue;
+    }
+
+    if (using_builtin) {
+        rb_namespace_disable_builtin();
     }
 
     return result;

@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/eval.h"
 #include "iseq.h"
 #include "vm_core.h"
 #include "builtin.h"
@@ -96,16 +97,16 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
 }
 
 static void
-load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table, bool in_root_namespace)
+load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
     const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
-    if (!in_root_namespace) rb_namespace_enable_builtin();
-    rb_iseq_eval(iseq);
-    if (!in_root_namespace) rb_namespace_disable_builtin();
+    rb_namespace_enable_builtin();
+    rb_iseq_eval_with_refinement(iseq, rb_mNamespaceRefiner);
+    rb_namespace_disable_builtin();
 }
 
 void
 rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
-    load_with_builtin_functions(feature_name, table, false);
+    load_with_builtin_functions(feature_name, table);
 }

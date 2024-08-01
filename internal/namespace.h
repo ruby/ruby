@@ -44,7 +44,7 @@ typedef struct rb_namespace_struct rb_namespace_t;
 #define NAMESPACE_BUILTIN_P(ns) (ns && ns->is_builtin)
 #define NAMESPACE_USER_P(ns) (ns && ns->is_user)
 #define NAMESPACE_OPTIONAL_P(ns) (ns && ns->is_optional)
-#define NAMESPACE_MAIN_P(ns) (ns && !ns->is_optional)
+#define NAMESPACE_MAIN_P(ns) (ns && ns->is_user && !ns->is_optional)
 
 #define NAMESPACE_METHOD_DEFINITION(mdef) (mdef ? mdef->ns : NULL)
 #define NAMESPACE_METHOD_ENTRY(me) (me ? NAMESPACE_METHOD_DEFINITION(me->def) : NULL)
@@ -54,12 +54,17 @@ typedef struct rb_namespace_struct rb_namespace_t;
 int rb_namespace_available(void);
 void rb_namespace_enable_builtin(void);
 void rb_namespace_disable_builtin(void);
+void rb_namespace_push_loading_namespace(const rb_namespace_t *);
+void rb_namespace_pop_loading_namespace(const rb_namespace_t *);
 rb_namespace_t * rb_main_namespace(void);
+const rb_namespace_t * rb_loading_namespace(void);
 const rb_namespace_t * rb_current_namespace(void);
+VALUE rb_current_namespace_details(VALUE);
 
 void rb_namespace_entry_mark(void *);
 
 rb_namespace_t * rb_get_namespace_t(VALUE ns);
+VALUE rb_get_namespace_object(rb_namespace_t *ns);
 typedef VALUE namespace_exec_func(VALUE arg);
 VALUE rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VALUE arg);
 
