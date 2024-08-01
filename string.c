@@ -3308,6 +3308,32 @@ rb_str_resize(VALUE str, long len)
     return str;
 }
 
+static void
+str_ensure_available_capa(VALUE str, long len)
+{
+    str_modify_keep_cr(str);
+
+    const int termlen = TERM_LEN(str);
+    long olen = RSTRING_LEN(str);
+
+    if (RB_UNLIKELY(olen > LONG_MAX - len)) {
+        rb_raise(rb_eArgError, "string sizes too big");
+    }
+
+    long total = olen + len;
+    long capa = str_capacity(str, termlen);
+
+    if (capa < total) {
+        if (total >= LONG_MAX / 2) {
+            capa = total;
+        }
+        while (total > capa) {
+            capa = 2 * capa + termlen; /* == 2*(capa+termlen)-termlen */
+        }
+        RESIZE_CAPA_TERM(str, capa, termlen);
+    }
+}
+
 static VALUE
 str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
 {
@@ -3659,6 +3685,144 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
         rb_str_buf_append(str, arg_str);
     }
 
+    return str;
+}
+
+/*
+ *  call-seq:
+ *    append_as_bytes(*objects) -> string
+ *
+ *  Concatenates each object in +objects+ into +self+ without any encoding
+ *  validation or conversion and returns +self+:
+ *
+ *    s = 'foo'
+ *    s.append_as_bytes(" \xE2\x82")  # => "foo \xE2\x82"
+ *    s.valid_encoding?               # => false
+ *    s.append_as_bytes("\xAC 12")
+ *    s.valid_encoding?               # => true
+ *
+ *  For each given object +object+ that is an Integer,
+ *  the value is considered a Byte. If the Integer is bigger
+ *  than one byte, only the lower byte is considered, similar to String#setbyte:
+ *
+ *    s = ""
+ *    s.append_as_bytes(0, 257)             # =>  "\u0000\u0001"
+ *
+ *  Related: String#<<, String#concat, which do an encoding aware concatenation.
+ */
+
+VALUE
+rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
+{
+    long needed_capacity = 0;
+    volatile VALUE t0;
+    enum ruby_value_type *types = ALLOCV_N(enum ruby_value_type, t0, argc);
+
+    for (int index = 0; index < argc; index++) {
+        VALUE obj = argv[index];
+        enum ruby_value_type type = types[index] = rb_type(obj);
+        switch (type) {
+          case T_FIXNUM:
+          case T_BIGNUM:
+            needed_capacity++;
+            break;
+          case T_STRING:
+            needed_capacity += RSTRING_LEN(obj);
+            break;
+          default:
+            rb_raise(
+                rb_eTypeError,
+                "wrong argument type %"PRIsVALUE" (expected String or Integer)",
+                rb_obj_class(obj)
+            );
+            break;
+        }
+    }
+
+    str_ensure_available_capa(str, needed_capacity);
+    char *sptr = RSTRING_END(str);
+
+    for (int index = 0; index < argc; index++) {
+        VALUE obj = argv[index];
+        enum ruby_value_type type = types[index];
+        switch (type) {
+          case T_FIXNUM:
+          case T_BIGNUM: {
+            argv[index] = obj = rb_int_and(obj, INT2FIX(0xff));
+            char byte = (char)(NUM2INT(obj) & 0xFF);
+            *sptr = byte;
+            sptr++;
+            break;
+          }
+          case T_STRING: {
+            const char *ptr;
+            long len;
+            RSTRING_GETMEM(obj, ptr, len);
+            memcpy(sptr, ptr, len);
+            sptr += len;
+            break;
+          }
+          default:
+            UNREACHABLE;
+            RUBY_ASSERT("append_as_bytes arguments should have been validated");
+            break;
+        }
+    }
+
+    STR_SET_LEN(str, RSTRING_LEN(str) + needed_capacity);
+    TERM_FILL(sptr, TERM_LEN(str)); /* sentinel */
+
+    int cr = ENC_CODERANGE(str);
+    switch (cr) {
+      case ENC_CODERANGE_7BIT: {
+        for (int index = 0; index < argc; index++) {
+            VALUE obj = argv[index];
+            enum ruby_value_type type = types[index];
+            switch (type) {
+              case T_FIXNUM:
+              case T_BIGNUM: {
+                if (!ISASCII(NUM2INT(obj))) {
+                    goto clear_cr;
+                }
+                break;
+              }
+              case T_STRING: {
+                if (ENC_CODERANGE(obj) != ENC_CODERANGE_7BIT) {
+                    goto clear_cr;
+                }
+              }
+              default:
+                UNREACHABLE;
+                RUBY_ASSERT("append_as_bytes arguments should have been validated");
+                break;
+            }
+        }
+        break;
+      }
+      case ENC_CODERANGE_VALID:
+        if (ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT) {
+            goto keep_cr;
+        }
+        else {
+            goto clear_cr;
+        }
+        break;
+      default:
+        goto clear_cr;
+        break;
+    }
+
+    RB_GC_GUARD(t0);
+
+  clear_cr:
+    // If no fast path was hit, we clear the coderange.
+    // append_as_bytes is predominently meant to be used in
+    // buffering situation, hence it's likely the coderange
+    // will never be scanned, so it's not worth spending time
+    // precomputing the coderange except for simple and common
+    // situations.
+    ENC_CODERANGE_CLEAR(str);
+  keep_cr:
     return str;
 }
 
@@ -12433,6 +12597,7 @@ Init_String(void)
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat_multi, -1);
+    rb_define_method(rb_cString, "append_as_bytes", rb_str_append_as_bytes, -1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend_multi, -1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
