@@ -1525,17 +1525,6 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
 #endif
 }
 
-static size_t
-rb_mmtk_number_of_mutators(void)
-{
-    rb_mmtk_assert_mmtk_worker();
-    rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
-
-    rb_ractor_t *main_ractor = GET_VM()->ractor.main_ractor;
-    size_t num_threads = main_ractor->threads.cnt;
-    return num_threads;
-}
-
 static void
 rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), void *data)
 {
@@ -1555,6 +1544,24 @@ rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), v
             RUBY_ASSERT(th->mutator_local == NULL);
         }
     }
+}
+
+static void
+increment_mutator_counter(MMTk_Mutator *mutator, void *data)
+{
+    size_t *counter = (size_t*)data;
+    (*counter)++;
+}
+
+static size_t
+rb_mmtk_number_of_mutators(void)
+{
+    rb_mmtk_assert_mmtk_worker();
+    rb_mmtk_panic_if_multiple_ractor(__FUNCTION__);
+
+    size_t counter = 0;
+    rb_mmtk_get_mutators(increment_mutator_counter, (void*)&counter);
+    return counter;
 }
 
 static void
