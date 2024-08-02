@@ -1016,17 +1016,16 @@ rb_to_array(VALUE ary)
  *  call-seq:
  *    Array.try_convert(object) -> object, new_array, or nil
  *
- *  Attempts to convert the given +object+ to an +Array+ object:
+ *  Attempts to return an array, based on the given +object+.
  *
- *  - If +object+ is an +Array+ object, returns +object+.
- *  - Otherwise if +object+ responds to <tt>:to_ary</tt>.
- *    calls <tt>object.to_ary</tt>:
+ *  If +object+ is an array, returns +object+.
  *
- *    - If the return value is an +Array+ or +nil+, returns that value.
- *    - Otherwise, raises TypeError.
+ *  Otherwise if +object+ responds to <tt>:to_ary</tt>.
+ *  calls <tt>object.to_ary</tt>:
+ *  if the return value is an array or +nil+, returns that value;
+ *  if not, raises TypeError.
  *
- *  - Otherwise returns +nil+.
- *
+ *  Otherwise returns +nil+.
  */
 
 static VALUE
