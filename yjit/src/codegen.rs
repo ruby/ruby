@@ -1999,6 +1999,46 @@ fn guard_object_is_hash(
     }
 }
 
+fn guard_object_is_fixnum(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    object: Opnd,
+    object_opnd: YARVOpnd
+) {
+    let object_type = asm.ctx.get_opnd_type(object_opnd);
+    if object_type.is_heap() {
+        asm_comment!(asm, "arg is heap object");
+        asm.jmp(Target::side_exit(Counter::guard_send_not_fixnum));
+        return;
+    }
+
+    if object_type != Type::Fixnum && object_type.is_specific() {
+        asm_comment!(asm, "arg is not fixnum");
+        asm.jmp(Target::side_exit(Counter::guard_send_not_fixnum));
+        return;
+    }
+
+    assert!(!object_type.is_heap());
+    assert!(object_type == Type::Fixnum || object_type.is_unknown());
+
+    // If not fixnums at run-time, fall back
+    if object_type != Type::Fixnum {
+        asm_comment!(asm, "guard object fixnum");
+        asm.test(object, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+        jit_chain_guard(
+            JCC_JZ,
+            jit,
+            asm,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnum,
+        );
+    }
+
+    // Set the stack type in the context.
+    asm.ctx.upgrade_opnd_type(object.into(), Type::Fixnum);
+}
+
 fn guard_object_is_string(
     asm: &mut Assembler,
     object: Opnd,
@@ -5770,10 +5810,9 @@ fn jit_rb_str_empty_p(
     return true;
 }
 
-// Codegen for rb_str_concat() -- *not* String#concat
-// Frequently strings are concatenated using "out_str << next_str".
-// This is common in Erb and similar templating languages.
-fn jit_rb_str_concat(
+// Codegen for rb_str_concat() with an integer argument -- *not* String#concat
+// Using strings as a byte buffer often includes appending byte values to the end of the string.
+fn jit_rb_str_concat_codepoint(
     jit: &mut JITState,
     asm: &mut Assembler,
     _ci: *const rb_callinfo,
@@ -5782,11 +5821,48 @@ fn jit_rb_str_concat(
     _argc: i32,
     _known_recv_class: Option<VALUE>,
 ) -> bool {
+    asm_comment!(asm, "String#<< with codepoint argument");
+
+    // Either of the string concatenation functions we call will reallocate the string to grow its
+    // capacity if necessary. In extremely rare cases (i.e., string exceeds `LONG_MAX` bytes),
+    // either of the called functions will raise an exception.
+    jit_prepare_non_leaf_call(jit, asm);
+
+    let codepoint = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    guard_object_is_fixnum(jit, asm, codepoint, StackOpnd(0));
+
+    asm.ccall(rb_yjit_str_concat_codepoint as *const u8, vec![recv, codepoint]);
+
+    // The receiver is the return value, so we only need to pop the codepoint argument off the stack.
+    // We can reuse the receiver slot in the stack as the return value.
+    asm.stack_pop(1);
+
+    true
+}
+
+// Codegen for rb_str_concat() -- *not* String#concat
+// Frequently strings are concatenated using "out_str << next_str".
+// This is common in Erb and similar templating languages.
+fn jit_rb_str_concat(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    block: Option<BlockHandler>,
+    argc: i32,
+    known_recv_class: Option<VALUE>,
+) -> bool {
     // The << operator can accept integer codepoints for characters
     // as the argument. We only specially optimise string arguments.
     // If the peeked-at compile time argument is something other than
     // a string, assume it won't be a string later either.
     let comptime_arg = jit.peek_at_stack(&asm.ctx, 0);
+    if unsafe { RB_TYPE_P(comptime_arg, RUBY_T_FIXNUM) } {
+        return jit_rb_str_concat_codepoint(jit, asm, ci, cme, block, argc, known_recv_class);
+    }
+
     if ! unsafe { RB_TYPE_P(comptime_arg, RUBY_T_STRING) } {
         return false;
     }
@@ -5798,7 +5874,14 @@ fn jit_rb_str_concat(
     // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
     jit_prepare_non_leaf_call(jit, asm);
-    asm.spill_regs(); // For ccall. Unconditionally spill them for RegMappings consistency.
+
+    // Explicitly spill temps before making any C calls. `ccall` will spill temps, but it does a
+    // check to only spill if it thinks it's necessary. That logic can't see through the runtime
+    // branching occurring in the code generated for this function. Consequently, the branch for
+    // the first `ccall` will spill registers but the second one will not. At run time, we may
+    // jump over that spill code when executing the second branch, leading situations that are
+    // quite hard to debug. If we spill up front we avoid diverging behavior.
+    asm.spill_regs();
 
     let concat_arg = asm.stack_pop(1);
     let recv = asm.stack_pop(1);
@@ -10220,7 +10303,7 @@ pub fn yjit_reg_method_codegen_fns() {
 }
 
 // Register a specialized codegen function for a particular method. Note that
-// the if the function returns true, the code it generates runs without a
+// if the function returns true, the code it generates runs without a
 // control frame and without interrupt checks. To avoid creating observable
 // behavior changes, the codegen function should only target simple code paths
 // that do not allocate and do not make method calls.

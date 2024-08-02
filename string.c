@@ -3375,8 +3375,7 @@ rb_str_buf_cat_byte(VALUE str, unsigned char byte)
     }
     else {
         // If there's not enough string_capacity, make a call into the general string concatenation function.
-        char buf[1] = {byte};
-        str_buf_cat(str, buf, 1);
+        str_buf_cat(str, (char *)&byte, 1);
     }
 
     // If the code range is already known, we can derive the resulting code range cheaply by looking at the byte we
@@ -12296,6 +12295,23 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 {
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
+
+#if USE_YJIT
+void
+rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+{
+    if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
+        ssize_t code = RB_NUM2SSIZE(codepoint);
+
+        if (RB_LIKELY(code >= 0 && code < 0xff)) {
+            rb_str_buf_cat_byte(str, (char) code);
+            return;
+        }
+    }
+
+    rb_str_concat(str, codepoint);
+}
+#endif
 
 void
 Init_String(void)
