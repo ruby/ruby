@@ -5506,7 +5506,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    self & other_array -> new_array
  *
- *  Returns a new +Array+ object containing the _intersection_ of +self+ and +other_array+;
+ *  Returns a new array containing the _intersection_ of +self+ and +other_array+;
  *  that is, containing those elements found in both +self+ and +other_array+:
  *
  *    [0, 1, 2, 3] & [1, 2] # => [1, 2]
