@@ -30,7 +30,7 @@ class TestStringMemory < Test::Unit::TestCase
       string.byteslice(0, 50_000)
     end
 
-    assert_equal 1, allocations.size
+    assert_equal 1, allocations.size, "One object allocation is expected, but allocated: #{ allocations.inspect }"
   end
 
   def test_byteslice_postfix
@@ -40,7 +40,7 @@ class TestStringMemory < Test::Unit::TestCase
       string.byteslice(50_000, 100_000)
     end
 
-    assert_equal 1, allocations.size
+    assert_equal 1, allocations.size, "One object allocation is expected, but allocated: #{ allocations.inspect }"
   end
 
   def test_byteslice_postfix_twice
@@ -50,6 +50,6 @@ class TestStringMemory < Test::Unit::TestCase
       string.byteslice(50_000, 100_000).byteslice(25_000, 50_000)
     end
 
-    assert_equal 2, allocations.size
+    assert_equal 2, allocations.size, "Two object allocations are expected, but allocated: #{ allocations.inspect }"
   end
 end
