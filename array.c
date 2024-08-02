@@ -5306,32 +5306,38 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *    array <=> other_array -> -1, 0, or 1
+ *    self <=> other_array -> -1, 0, or 1
  *
- *  Returns -1, 0, or 1 as +self+ is less than, equal to, or greater than +other_array+.
- *  For each index +i+ in +self+, evaluates <tt>result = self[i] <=> other_array[i]</tt>.
+ *  Returns -1, 0, or 1 as +self+ is determined
+ *  to be less than, equal to, or greater than +other_array+.
  *
- *  Returns -1 if any result is -1:
+ *  Iterates over each index +i+ in <tt>(0...self.size)</tt>:
  *
- *    [0, 1, 2] <=> [0, 1, 3] # => -1
+ *  - Computes <tt>result[i]</tt> as <tt>self[i] <=> other_array[i]</tt>.
+ *  - Immediately returns 1 if <tt>result[i]</tt> is 1:
  *
- *  Returns 1 if any result is 1:
+ *      [0, 1, 2] <=> [0, 0, 2] # => 1
  *
- *    [0, 1, 2] <=> [0, 1, 1] # => 1
+ *  - Immediately returns -1 if <tt>result[i]</tt> is -1:
  *
- *  When all results are zero:
+ *      [0, 1, 2] <=> [0, 2, 2] # => -1
  *
- *  - Returns -1 if +array+ is smaller than +other_array+:
+ *  - Continues if <tt>result[i]</tt> is 0.
  *
- *      [0, 1, 2] <=> [0, 1, 2, 3] # => -1
+ *  When every +result+ is 0,
+ *  returns <tt>self.size <=> other_array.size</tt>
+ *  (see Integer#<=>):
  *
- *  - Returns 1 if +array+ is larger than +other_array+:
+ *    [0, 1, 2] <=> [0, 1]        # => 1
+ *    [0, 1, 2] <=> [0, 1, 2]     # => 0
+ *    [0, 1, 2] <=> [0, 1, 2, 3]  # => -1
  *
- *      [0, 1, 2] <=> [0, 1] # => 1
+ *  Note that when +other_array+ is larger than +self+,
+ *  its trailing elements do not affect the result:
  *
- *  - Returns 0 if +array+ and +other_array+ are the same size:
- *
- *      [0, 1, 2] <=> [0, 1, 2] # => 0
+ *    [0, 1, 2] <=> [0, 1, 2, -3] # => -1
+ *    [0, 1, 2] <=> [0, 1, 2, 0]  # => -1
+ *    [0, 1, 2] <=> [0, 1, 2, 3]  # => -1
  *
  */
 
