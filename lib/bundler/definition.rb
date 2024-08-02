@@ -476,9 +476,6 @@ module Bundler
       end
     end
 
-    attr_reader :sources
-    private :sources
-
     def nothing_changed?
       return false unless lockfile_exists?
 
@@ -503,6 +500,8 @@ module Bundler
     end
 
     private
+
+    attr_reader :sources
 
     def should_add_extra_platforms?
       !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
