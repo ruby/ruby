@@ -51,3 +51,7 @@ echo
 echo "* Don't show warning bigdecimal/util when bigdecimal on Gemfile"
 ruby test_no_warn_sub_feature.rb
 echo
+
+echo "* Show warning when warn is not the standard one in the current scope"
+ruby test_warn_redefined.rb
+echo
