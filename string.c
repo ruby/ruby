@@ -3658,6 +3658,10 @@ static inline bool
 str_combine_coderange_fastpath(VALUE str, VALUE str2)
 {
     int str_cr = ENC_CODERANGE(str);
+    if (RB_LIKELY(str_cr == ENC_CODERANGE_UNKNOWN)) {
+        return true;
+    }
+
     int str2_cr = ENC_CODERANGE(str2);
     int str_enc = ENCODING_GET_INLINED(str);
 
@@ -3665,7 +3669,6 @@ str_combine_coderange_fastpath(VALUE str, VALUE str2)
     if (RB_LIKELY(str_enc == ENCINDEX_ASCII_8BIT)) {
         switch (str_cr) {
           case ENC_CODERANGE_VALID:
-          case ENC_CODERANGE_UNKNOWN:
             return true;
           case ENC_CODERANGE_7BIT:
             return str2_cr == ENC_CODERANGE_7BIT;
@@ -3685,12 +3688,6 @@ str_combine_coderange_fastpath(VALUE str, VALUE str2)
         }
       case ENC_CODERANGE_7BIT:
         return str2_cr == ENC_CODERANGE_7BIT;
-      case ENC_CODERANGE_UNKNOWN:
-        return true;
-      case ENC_CODERANGE_BROKEN:
-        // rb_str_coderange_scan_restartable isn't capable of repairing a coderange.
-        ENC_CODERANGE_CLEAR(str);
-        return true;
     }
     return false;
 }
@@ -3711,7 +3708,7 @@ str_combine_coderange_fastpath(VALUE str, VALUE str2)
  *  Related: String#<<, String#concat, which do an encoding aware concatenation.
  */
 
-static VALUE
+VALUE
 rb_str_append_bytes(VALUE str, VALUE str2)
 {
     Check_Type(str2, T_STRING);
@@ -3722,17 +3719,14 @@ rb_str_append_bytes(VALUE str, VALUE str2)
         return str;
     }
 
-
     str_buf_cat4(str, RSTRING_PTR(str2), str2_len, true);
 
-    // If no fast path was hit, we restart coderange scanning
+    // If no fast path was hit, we clear the coderange.
+    // append_bytes is predominently meant to be used in
+    // buffering situation, hence it's likely the coderange
+    // will never be scanned.
     if (!str_combine_coderange_fastpath(str, str2)) {
-        const char *const new_end = RSTRING_END(str);
-        const char *const prev_end = new_end - str2_len;
-
-        int coderange;
-        rb_str_coderange_scan_restartable(prev_end, new_end, get_encoding(str), &coderange);
-        ENC_CODERANGE_SET(str, coderange);
+        ENC_CODERANGE_CLEAR(str);
     }
     return str;
 }
