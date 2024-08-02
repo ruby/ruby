@@ -4983,16 +4983,16 @@ rb_ary_concat(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    array * n -> new_array
- *    array * string_separator -> new_string
+ *    self * n -> new_array
+ *    self * string_separator -> new_string
  *
- *  When non-negative argument Integer +n+ is given,
- *  returns a new +Array+ built by concatenating the +n+ copies of +self+:
+ *  When non-negative integer argument +n+ is given,
+ *  returns a new array built by concatenating +n+ copies of +self+:
  *
  *    a = ['x', 'y']
  *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
  *
- *  When String argument +string_separator+ is given,
+ *  When string argument +string_separator+ is given,
  *  equivalent to <tt>array.join(string_separator)</tt>:
  *
  *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
