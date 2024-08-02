@@ -409,7 +409,7 @@ RSpec.describe "bundle remove" do
 
   context "with sources" do
     before do
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "rspec"
       end
     end
