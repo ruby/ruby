@@ -3658,9 +3658,12 @@ static inline bool
 str_combine_coderange_fastpath(VALUE str, VALUE str2)
 {
     int str_cr = ENC_CODERANGE(str);
+
     if (RB_LIKELY(str_cr == ENC_CODERANGE_UNKNOWN)) {
         return true;
     }
+
+    RUBY_ASSERT(str_cr != ENC_CODERANGE_BROKEN, "Broken coderange should be cleared before by str_modifiable");
 
     int str2_cr = ENC_CODERANGE(str2);
     int str_enc = ENCODING_GET_INLINED(str);
@@ -3672,23 +3675,22 @@ str_combine_coderange_fastpath(VALUE str, VALUE str2)
             return true;
           case ENC_CODERANGE_7BIT:
             return str2_cr == ENC_CODERANGE_7BIT;
-          case ENC_CODERANGE_BROKEN:
-            RUBY_ASSERT(false && "ASCII-8BIT strings can't possibly be broken");
-            UNREACHABLE_RETURN(false);
+        }
+    }
+    else if (str_enc == ENCINDEX_UTF_8) {
+        switch (str_cr) {
+          case ENC_CODERANGE_VALID:
+            if (str2_cr == ENC_CODERANGE_VALID) {
+                return str_enc == ENCODING_GET_INLINED(str2);
+            }
+            else {
+                return str2_cr == ENC_CODERANGE_7BIT;
+            }
+          case ENC_CODERANGE_7BIT:
+            return str2_cr == ENC_CODERANGE_7BIT;
         }
     }
 
-    switch (str_cr) {
-      case ENC_CODERANGE_VALID:
-        if (str2_cr == ENC_CODERANGE_VALID) {
-            return str_enc == ENCODING_GET_INLINED(str2);
-        }
-        else {
-            return str2_cr == ENC_CODERANGE_7BIT && enc_fastpath(str_enc);
-        }
-      case ENC_CODERANGE_7BIT:
-        return str2_cr == ENC_CODERANGE_7BIT;
-    }
     return false;
 }
 
