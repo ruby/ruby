@@ -1921,4 +1921,70 @@ RSpec.describe "bundle install with gems on multiple sources" do
       expect(err).to include("Could not find gem 'example' in rubygems repository https://gem.repo4/")
     end
   end
+
+  context "when a gem has versions in two sources, but only the locked one has updates" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://main.source/
+          specs:
+            activesupport (1.0)
+              bigdecimal
+            bigdecimal (1.0.0)
+
+        GEM
+          remote: https://main.source/extra/
+          specs:
+            foo (1.0)
+              bigdecimal
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activesupport
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo3 do
+        build_gem "activesupport" do |s|
+          s.add_dependency "bigdecimal"
+        end
+
+        build_gem "bigdecimal", "1.0.0"
+        build_gem "bigdecimal", "3.3.1"
+      end
+
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.add_dependency "bigdecimal"
+        end
+
+        build_gem "bigdecimal", "1.0.0"
+      end
+
+      gemfile <<~G
+        source "https://main.source"
+
+        gem "activesupport"
+
+        source "https://main.source/extra" do
+          gem "foo"
+        end
+      G
+
+      lockfile original_lockfile
+    end
+
+    it "properly upgrades the lockfile when updating that specific gem" do
+      bundle "update bigdecimal --conservative", artifice: "compact_index_extra_api", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo3.to_s }
+
+      expect(lockfile).to eq original_lockfile.gsub("bigdecimal (1.0.0)", "bigdecimal (3.3.1)")
+    end
+  end
 end
