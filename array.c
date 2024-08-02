@@ -5406,18 +5406,20 @@ ary_make_hash_by(VALUE ary)
 
 /*
  *  call-seq:
- *    array - other_array -> new_array
+ *    self - other_array -> new_array
  *
- *  Returns a new +Array+ containing only those elements from +array+
- *  that are not found in +Array+ +other_array+;
- *  items are compared using <tt>eql?</tt>;
- *  the order from +array+ is preserved:
+ *  Returns a new array containing only those elements of +self+
+ *  that are not found in +other_array+;
+ *  the order from +self+ is preserved:
  *
- *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [1] # => [0, 2, 3]
- *    [0, 1, 2, 3] - [3, 0] # => [1, 2]
- *    [0, 1, 2] - [4] # => [0, 1, 2]
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [1]             # => [0, 2, 3]
+ *    [0, 1, 1, 2, 1, 1, 3, 1, 1] - [3, 2, 0, :foo] # => [1, 1, 1, 1, 1, 1]
+ *    [0, 1, 2] - [:foo]                            # => [0, 1, 2]
  *
- *  Related: Array#difference.
+ *  Element are compared using method <tt>#eql?</tt>
+ *  (as defined in each element of +self+).
+ *
+ *  Related: Array#difference (removes elements from +self+ as found in multiple other arrays).
  */
 
 VALUE
