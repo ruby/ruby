@@ -18,7 +18,14 @@ class TestStringMemory < Test::Unit::TestCase
       end
     end
 
-    return allocations
+    return allocations.map do |instance|
+      [
+        ObjectSpace.allocation_sourcefile(instance),
+        ObjectSpace.allocation_sourceline(instance),
+        instance.class,
+        instance,
+      ]
+    end
   ensure
     GC.enable
   end
