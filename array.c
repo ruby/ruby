@@ -1346,18 +1346,15 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
 
 /*
  *  call-seq:
- *    array << object -> self
+ *    self << object -> self
  *
- *  Appends +object+ to +self+; returns +self+:
+ *  Appends +object+ as the last element in +self+; returns +self+:
  *
- *    a = [:foo, 'bar', 2]
- *    a << :baz # => [:foo, "bar", 2, :baz]
+ *    [:foo, 'bar', 2] << :baz # => [:foo, "bar", 2, :baz]
  *
- *  Appends +object+ as one element, even if it is another +Array+:
+ *  Appends +object+ as a single element, even if it is another array:
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a << [3, 4]
- *    a1 # => [:foo, "bar", 2, [3, 4]]
+ *    [:foo, 'bar', 2] << [3, 4] # => [:foo, "bar", 2, [3, 4]]
  *
  */
 
