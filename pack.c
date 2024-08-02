@@ -173,6 +173,31 @@ unknown_directive(const char *mode, char type, VALUE fmt)
             mode, unknown, fmt);
 }
 
+/* convert float <=> double as IEEE 754-2008, with keeping quiet bit */
+static const uint32_t F32_QBIT = (uint32_t)1U << (FLT_MANT_DIG-2);
+static const uint64_t F64_QBIT = (uint64_t)1U << (DBL_MANT_DIG-2);
+static const uint32_t F32_MANT = ~((uint32_t)~0U << (FLT_MANT_DIG-1));
+static const int F64_QBIT_OFFSET = DBL_MANT_DIG - FLT_MANT_DIG;
+
+typedef union {
+    float f;
+    double d;
+    uint32_t u32;
+    uint64_t u64;
+} float_double_conv;
+
+static inline double
+unpack_flt2dbl(uint32_t u)
+{
+    float_double_conv tmp = {.u32 = u};
+    tmp.d = tmp.f;
+    if (isnan(tmp.d)) {
+        uint64_t qbit = ((uint64_t)(u & F32_QBIT) << F64_QBIT_OFFSET);
+        tmp.u64 = (tmp.u64 & ~F64_QBIT) | qbit;
+    }
+    return tmp.d;
+}
+
 static float
 VALUE_to_float(VALUE obj)
 {
@@ -180,7 +205,12 @@ VALUE_to_float(VALUE obj)
     double d = RFLOAT_VALUE(v);
 
     if (isnan(d)) {
-        return NAN;
+        float_double_conv tmp = {.d = d};
+        uint32_t qbit = (uint32_t)((tmp.u64 & F64_QBIT) >> F64_QBIT_OFFSET);
+        tmp.f = (float)d;
+        tmp.u32 = (tmp.u32 & ~F32_QBIT) | qbit;
+        if (!(tmp.u32 & F32_MANT)) tmp.u32 |= 1;
+        return tmp.f;
     }
     else if (d < -FLT_MAX) {
         return -INFINITY;
@@ -1291,9 +1321,9 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
           case 'F':
             PACK_LENGTH_ADJUST_SIZE(sizeof(float));
             while (len-- > 0) {
-                float tmp;
-                UNPACK_FETCH(&tmp, float);
-                UNPACK_PUSH(DBL2NUM((double)tmp));
+                FLOAT_CONVWITH(tmp);
+                UNPACK_FETCH(&tmp.buf, float);
+                UNPACK_PUSH(DBL2NUM(unpack_flt2dbl(tmp.u)));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1304,7 +1334,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 FLOAT_CONVWITH(tmp);
                 UNPACK_FETCH(tmp.buf, float);
                 VTOHF(tmp);
-                UNPACK_PUSH(DBL2NUM(tmp.f));
+                UNPACK_PUSH(DBL2NUM(unpack_flt2dbl(tmp.u)));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1337,7 +1367,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 FLOAT_CONVWITH(tmp);
                 UNPACK_FETCH(tmp.buf, float);
                 NTOHF(tmp);
-                UNPACK_PUSH(DBL2NUM(tmp.f));
+                UNPACK_PUSH(DBL2NUM(unpack_flt2dbl(tmp.u)));
             }
             PACK_ITEM_ADJUST();
             break;
