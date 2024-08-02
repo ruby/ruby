@@ -10325,7 +10325,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
             return '$';
         }
       gvar:
-        set_yylval_name(TOK_INTERN());
+        tokenize_ident(p);
         return tGVAR;
 
       case '&': 	/* $&: last match */
@@ -10492,7 +10492,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
         if (IS_LABEL_SUFFIX(0)) {
             SET_LEX_STATE(EXPR_ARG|EXPR_LABELED);
             nextc(p);
-            set_yylval_name(TOK_INTERN());
+            tokenize_ident(p);
             return tLABEL;
         }
     }
