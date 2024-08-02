@@ -66,7 +66,7 @@ module Gem::BUNDLED_GEMS
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
         if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names) # rubocop:disable Style/HashSyntax
-          warn message, :uplevel => 1
+          Kernel.warn message, :uplevel => 1
         end
         kernel_class.send(:no_warning_require, name)
       end
