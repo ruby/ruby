@@ -21,12 +21,28 @@ jobs:
         run: |
           echo "RUBY_VERSION=${{ github.event.client_payload.version || github.event.inputs.version }}" >> $GITHUB_ENV
 
+      - name: Store ABI version
+        run: echo "ABI_VERSION=$(echo ${{ env.RUBY_VERSION }} | cut -d '.' -f 1-2)" >> $GITHUB_ENV
+
       - name: Copy draft package `/tmp` to `/pub` directory
         run: tool/release.sh ${{ env.RUBY_VERSION }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.FTP_R_L_O_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.FTP_R_L_O_AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
+
+
+      - name: Purge URLs of release package
+        run: |
+          curl -X POST \
+            -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
+            https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${{ env.ABI_VERSION }}/ruby-${{ env.RUBY_VERSION }}.tar.gz
+          curl -X POST \
+            -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
+            https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${{ env.ABI_VERSION }}/ruby-${{ env.RUBY_VERSION }}.tar.xz
+          curl -X POST \
+            -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
+            https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${{ env.ABI_VERSION }}/ruby-${{ env.RUBY_VERSION }}.zip
 
       # TODO
       # - name: Create a release on GitHub
