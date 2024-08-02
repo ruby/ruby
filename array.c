@@ -4904,15 +4904,19 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array + other_array -> new_array
+ *    self + other_array -> new_array
  *
- *  Returns a new +Array+ containing all elements of +array+
+ *  Returns a new array containing all elements of +self+
  *  followed by all elements of +other_array+:
  *
  *    a = [0, 1] + [2, 3]
  *    a # => [0, 1, 2, 3]
  *
- *  Related: #concat.
+ *  Related:
+ *
+ *  - Array#concat: returns the concatenation of +self+ and multiple other arrays.
+ *  - Array#*: returns the concatenation of multiple copies of +self+.
+ *
  */
 
 VALUE
