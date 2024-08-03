@@ -19,12 +19,12 @@ body {
   font-weight: 300;
 
   /* Layout */
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 body > :last-child {
-  grid-column: 1 / 3;
+  width: 100%;
 }
 
 h1 span,
@@ -203,24 +203,38 @@ nav {
   font-family: Helvetica, sans-serif;
   font-size: 14px;
   border-right: 1px solid #ccc;
-  position: sticky;
+  position: fixed;
   top: 0;
   overflow: auto;
+  z-index: 10;
 
   /* Layout */
-  width: 260px; /* fallback */
-  width: max(50px, 20vw);
-  min-width: 50px;
-  max-width: 80vw;
-  height: calc(100vh - 100px); /* reduce the footer height */
-  resize: horizontal;
+  width: 300px;
+  min-height: 100vh;
+  background: white;
+}
+
+@media (min-width: 1024px) {
+  nav {
+    min-height: unset;
+    height: calc(100vh - 100px); /* reduce the footer height */
+  }
 }
 
 main {
   display: block;
-  margin: 1em;
+  margin: 3em 1em 1em;
   min-width: 340px;
   font-size: 16px;
+  width: 100%;
+  max-width: 64em;
+}
+
+@media (min-width: 1024px) {
+  main {
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 main h1,
@@ -232,8 +246,10 @@ main h6 {
   font-family: Helvetica, sans-serif;
 }
 
-.table-of-contents main {
-  margin-left: 2em;
+@media (min-width: 1024px) {
+  .table-of-contents main {
+    margin-left: 20em;
+  }
 }
 
 #validator-badges {
@@ -278,6 +294,38 @@ nav dl,
 nav p {
   padding: 4px 8px 0;
   list-style: none;
+}
+
+.navigation-toggle {
+  position: fixed;
+  left: 4px;
+  z-index: 100;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 24px;
+}
+.navigation-toggle[aria-expanded="true"] {
+  left: 260px;
+}
+
+/* Adds a suble gradient to help the toggle stand out from the background */
+.navigation-toggle::before {
+  content: "";
+  background: linear-gradient(180deg, rgba(250,250,250,1) 40%, rgba(250,250,250,0.8) 70%, rgba(250,250,250,0) 100%);
+  display: block;
+  z-index: -1;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  height: 50px;
+  width: 100vw;
+}
+
+.navigation-toggle[aria-expanded="true"]::before {
+  height: 0;
 }
 
 #project-navigation .nav-section {
@@ -684,4 +732,3 @@ pre {
 }
 
 /* @end */
-

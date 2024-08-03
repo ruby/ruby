@@ -1,4 +1,13 @@
 <body id="top" class="table-of-contents">
+<%= render '_sidebar_toggle.rhtml' %>
+
+<nav id="navigation" role="navigation">
+  <div id="project-navigation">
+    <%= render '_sidebar_navigation.rhtml' %>
+
+    <%= render '_sidebar_search.rhtml' %>
+  </div>
+</nav>
 <main role="main">
 <h1 class="class"><%= h @title %></h1>
 

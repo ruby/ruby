@@ -1,5 +1,7 @@
 <body role="document">
-<nav role="navigation">
+<%= render '_sidebar_toggle.rhtml' %>
+
+<nav id="navigation" role="navigation">
   <%= render '_sidebar_navigation.rhtml' %>
 
   <%= render '_sidebar_search.rhtml' %>
@@ -15,4 +17,3 @@
 
   <p><%= message %>
 </main>
-
