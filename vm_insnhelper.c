@@ -3751,7 +3751,7 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
     return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
-static inline VALUE
+static VALUE
 vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling,
                           int argc, VALUE *argv, VALUE *stack_bottom)
 {
