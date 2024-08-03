@@ -1509,7 +1509,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 
 /* C -> Ruby: block */
 
-static inline VALUE
+static inline void
 invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_cref_t *cref, VALUE type, int opt_pc)
 {
     int arg_size = ISEQ_BODY(iseq)->param.size;
@@ -1521,15 +1521,13 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
                   ec->cfp->sp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size,
                   ISEQ_BODY(iseq)->stack_max);
-    return vm_exec(ec);
 }
 
-static VALUE
+static inline void
 invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_callable_method_entry_t *me, VALUE type, int opt_pc)
 {
     /* bmethod call from outside the VM */
     int arg_size = ISEQ_BODY(iseq)->param.size;
-    VALUE ret;
 
     VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
 
@@ -1542,9 +1540,6 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
                   ISEQ_BODY(iseq)->stack_max);
 
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec);
-
-    return ret;
 }
 
 ALWAYS_INLINE(static VALUE
@@ -1591,14 +1586,16 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
     cfp->sp = sp;
 
     if (me == NULL) {
-        return invoke_block(ec, iseq, self, captured, cref, type, opt_pc);
+        invoke_block(ec, iseq, self, captured, cref, type, opt_pc);
     }
     else {
-        return invoke_bmethod(ec, iseq, self, captured, me, type, opt_pc);
+        invoke_bmethod(ec, iseq, self, captured, me, type, opt_pc);
     }
+
+    return vm_exec(ec);
 }
 
-static inline VALUE
+static VALUE
 invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
                        int argc, const VALUE *argv,
                        int kw_splat, VALUE passed_block_handler, const rb_cref_t *cref,
