@@ -319,9 +319,6 @@ module TestIRB
     end
 
     def test_case_in
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-        pend 'This test requires ruby version that supports case-in syntax'
-      end
       code = <<~EOS
         case 1
         in 1
