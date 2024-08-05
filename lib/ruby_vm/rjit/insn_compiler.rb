@@ -91,6 +91,7 @@ module RubyVM::RJIT
       when :objtostring then objtostring(jit, ctx, asm)
       when :opt_str_freeze then opt_str_freeze(jit, ctx, asm)
       when :opt_ary_freeze then opt_ary_freeze(jit, ctx, asm)
+      when :opt_hash_freeze then opt_hash_freeze(jit, ctx, asm)
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
       when :opt_newarray_send then opt_newarray_send(jit, ctx, asm)
@@ -1504,6 +1505,24 @@ module RubyVM::RJIT
       # Push the return value onto the stack
       stack_ret = ctx.stack_push(Type::CArray)
       asm.mov(:rax, to_value(ary))
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_hash_freeze(jit, ctx, asm)
+      unless Invariants.assume_bop_not_redefined(jit, C::HASH_REDEFINED_OP_FLAG, C::BOP_FREEZE)
+        return CantCompile;
+      end
+
+      hash = jit.operand(0, ruby: true)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push(Type::CHash)
+      asm.mov(:rax, to_value(hash))
       asm.mov(stack_ret, :rax)
 
       KeepCompiling
