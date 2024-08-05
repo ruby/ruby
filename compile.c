@@ -3430,6 +3430,32 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     /*
+     * duphash {...}
+     * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
+     * =>
+     * opt_hash_freeze {...}, <calldata!mid:freeze, argc:0, ARGS_SIMPLE>
+     */
+    if (IS_INSN_ID(iobj, duphash)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && (IS_INSN_ID(next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(next, 0);
+            const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
+                VALUE hash = iobj->operands[0];
+                rb_obj_reveal(hash, rb_cHash);
+
+                iobj->insn_id = BIN(opt_hash_freeze);
+                iobj->operand_size = 2;
+                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+                iobj->operands[0] = hash;
+                iobj->operands[1] = (VALUE)ci;
+                ELEM_REMOVE(next);
+            }
+        }
+    }
+
+    /*
      * newarray 0
      * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
      * =>
@@ -3446,6 +3472,29 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 iobj->operand_size = 2;
                 iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
                 iobj->operands[0] = rb_cArray_empty_frozen;
+                iobj->operands[1] = (VALUE)ci;
+                ELEM_REMOVE(next);
+            }
+        }
+    }
+
+    /*
+     * newhash 0
+     * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
+     * =>
+     * opt_hash_freeze {}, <calldata!mid:freeze, argc:0, ARGS_SIMPLE>
+     */
+    if (IS_INSN_ID(iobj, newhash) && iobj->operands[0] == INT2FIX(0)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && (IS_INSN_ID(next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(next, 0);
+            const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
+                iobj->insn_id = BIN(opt_hash_freeze);
+                iobj->operand_size = 2;
+                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+                iobj->operands[0] = rb_cHash_empty_frozen;
                 iobj->operands[1] = (VALUE)ci;
                 ELEM_REMOVE(next);
             }
