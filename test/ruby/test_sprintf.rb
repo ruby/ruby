@@ -235,7 +235,7 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_hash
     options = {:capture=>/\d+/}
-    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+    assert_equal("with options #{options.inspect}", sprintf("with options %p" % options))
   end
 
   def test_inspect

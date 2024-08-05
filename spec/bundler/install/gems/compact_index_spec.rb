@@ -173,7 +173,7 @@ RSpec.describe "compact index api" do
     bundle :install, verbose: true, artifice: "compact_index_checksum_mismatch"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(out).to include("The checksum of /versions does not match the checksum provided by the server!")
-    expect(out).to include('Calculated checksums {"sha-256"=>"8KfZiM/fszVkqhP/m5s9lvE6M9xKu4I1bU4Izddp5Ms="} did not match expected {"sha-256"=>"ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0="}')
+    expect(out).to include("Calculated checksums #{{ "sha-256" => "8KfZiM/fszVkqhP/m5s9lvE6M9xKu4I1bU4Izddp5Ms=" }.inspect} did not match expected #{{ "sha-256" => "ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=" }.inspect}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 

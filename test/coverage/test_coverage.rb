@@ -649,9 +649,9 @@ class TestCoverage < Test::Unit::TestCase
         end
 
         exp = [
-          "{:lines=>[1, 0, 0, nil, 0, nil, nil]}",
-          "{:lines=>[0, 1, 1, nil, 0, nil, nil]}",
-          "{:lines=>[0, 1, 0, nil, 1, nil, nil]}",
+          { lines: [1, 0, 0, nil, 0, nil, nil] }.inspect,
+          { lines: [0, 1, 1, nil, 0, nil, nil] }.inspect,
+          { lines: [0, 1, 0, nil, 1, nil, nil] }.inspect,
         ]
         assert_in_out_err(ARGV, <<-"end;", exp, [])
           Coverage.start(lines: true)
@@ -682,10 +682,10 @@ class TestCoverage < Test::Unit::TestCase
         end
 
         exp = [
-          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>0, [:else, 2, 5, 4, 5, 12]=>0}}}",
-          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>1, [:else, 2, 5, 4, 5, 12]=>0}}}",
-          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>0, [:else, 2, 5, 4, 5, 12]=>1}}}",
-          "{:branches=>{[:if, 0, 2, 2, 6, 5]=>{[:then, 1, 3, 4, 3, 8]=>0, [:else, 2, 5, 4, 5, 12]=>1}}}",
+          { branches: { [:if, 0, 2, 2, 6, 5] => { [:then, 1, 3, 4, 3, 8] => 0, [:else, 2, 5, 4, 5, 12] => 0 } } }.inspect,
+          { branches: { [:if, 0, 2, 2, 6, 5] => { [:then, 1, 3, 4, 3, 8] => 1, [:else, 2, 5, 4, 5, 12] => 0 } } }.inspect,
+          { branches: { [:if, 0, 2, 2, 6, 5] => { [:then, 1, 3, 4, 3, 8] => 0, [:else, 2, 5, 4, 5, 12] => 1 } } }.inspect,
+          { branches: { [:if, 0, 2, 2, 6, 5] => { [:then, 1, 3, 4, 3, 8] => 0, [:else, 2, 5, 4, 5, 12] => 1 } } }.inspect,
         ]
         assert_in_out_err(ARGV, <<-"end;", exp, [])
           Coverage.start(branches: true)
@@ -718,10 +718,10 @@ class TestCoverage < Test::Unit::TestCase
         end
 
         exp = [
-          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>0}}",
-          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>1}}",
-          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>1}}",
-          "{:methods=>{[Object, :foo, 1, 0, 7, 3]=>1}}"
+          { methods: { [Object, :foo, 1, 0, 7, 3] => 0 } }.inspect,
+          { methods: { [Object, :foo, 1, 0, 7, 3] => 1 } }.inspect,
+          { methods: { [Object, :foo, 1, 0, 7, 3] => 1 } }.inspect,
+          { methods: { [Object, :foo, 1, 0, 7, 3] => 1 } }.inspect
         ]
         assert_in_out_err(ARGV, <<-"end;", exp, [])
           Coverage.start(methods: true)
@@ -754,10 +754,10 @@ class TestCoverage < Test::Unit::TestCase
         end
 
         exp = [
-          "{:oneshot_lines=>[1]}",
-          "{:oneshot_lines=>[2, 3]}",
-          "{:oneshot_lines=>[5]}",
-          "{:oneshot_lines=>[]}",
+          { oneshot_lines: [1] }.inspect,
+          { oneshot_lines: [2, 3] }.inspect,
+          { oneshot_lines: [5] }.inspect,
+          { oneshot_lines: [] }.inspect,
         ]
         assert_in_out_err(ARGV, <<-"end;", exp, [])
           Coverage.start(oneshot_lines: true)

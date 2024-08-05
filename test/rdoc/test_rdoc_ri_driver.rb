@@ -54,10 +54,10 @@ class TestRDocRIDriver < RDoc::TestCase
       RDoc::RI::Driver.dump @store1.cache_path
     end
 
-    assert_match %r%:class_methods%,    out
-    assert_match %r%:modules%,          out
-    assert_match %r%:instance_methods%, out
-    assert_match %r%:ancestors%,        out
+    assert_match %r%:class_methods|class_methods:%,       out
+    assert_match %r%:modules|modules:%,                   out
+    assert_match %r%:instance_methods|instance_methods:%, out
+    assert_match %r%:ancestors|ancestors:%,               out
   end
 
   def test_add_also_in_empty
