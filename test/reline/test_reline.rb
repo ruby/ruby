@@ -399,7 +399,7 @@ class Reline::Test < Reline::TestCase
       io.close_write
       io.read
     end
-    assert_include(out, '{:result=>"a"}')
+    assert_include(out, { result: 'a' }.inspect)
   end
 
   def test_read_eof_returns_nil_if_empty
@@ -411,7 +411,7 @@ class Reline::Test < Reline::TestCase
       io.close_write
       io.read
     end
-    assert_include(out, '{:result=>nil}')
+    assert_include(out, { result: nil }.inspect)
   end
 
   def test_require_reline_should_not_trigger_winsize
