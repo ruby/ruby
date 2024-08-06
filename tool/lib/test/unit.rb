@@ -406,10 +406,10 @@ module Test
         rescue IOError
         end
 
-        def quit
+        def quit(reason = :normal)
           return if @io.closed?
           @quit_called = true
-          @io.puts "quit"
+          @io.puts "quit #{reason}"
         rescue Errno::EPIPE => e
           warn "#{@pid}:#{@status.to_s.ljust(7)}:#{@file}: #{e.message}"
         end
@@ -534,7 +534,7 @@ module Test
           next unless cond&.call(worker)
           begin
             Timeout.timeout(1) do
-              worker.quit
+              worker.quit(cond ? :timeout : :normal)
             end
           rescue Errno::EPIPE
           rescue Timeout::Error
