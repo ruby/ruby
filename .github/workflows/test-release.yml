@@ -1,0 +1,28 @@
+name: Publish Ruby packages
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.4
+
+      - name: Store Ruby version
+        run: |
+          echo "RUBY_VERSION=3.3.4" >> $GITHUB_ENV
+
+      - name: Store ABI version
+        run: echo "ABI_VERSION=$(echo ${{ env.RUBY_VERSION }} | cut -d '.' -f 1-2)" >> $GITHUB_ENV
+
+      - name: Create a release on GitHub
+        run: |
+          RELEASE_TAG=$(echo v${{ env.RUBY_VERSION }} | sed 's/\./_/g')
+          PREVIOUS_RELEASE_TAG=$(echo $RELEASE_TAG | awk -F_ '{$NF=$NF-1; OFS="_"; print}')
+          tool/gen-github-release.rb $PREVIOUS_RELEASE_TAG $RELEASE_TAG
