@@ -45,6 +45,15 @@ module URI
   end
   self.parser = RFC3986_PARSER
 
+  def self.const_missing(const)
+    if value = RFC2396_PARSER.regexp[const]
+      warn "URI::#{const} is obsolete. Use RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
+      value
+    else
+      super
+    end
+  end
+
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
       tmp = {}
