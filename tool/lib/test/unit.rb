@@ -416,7 +416,7 @@ module Test
 
         def kill
           Process.kill(:KILL, @pid)
-          warn "worker #{@pid} does not respond; SIGKILL is sent"
+          warn "worker #{to_s} does not respond; SIGKILL is sent"
         rescue Errno::ESRCH
         end
 
@@ -534,7 +534,7 @@ module Test
         @workers.reject! do |worker|
           next unless cond&.call(worker)
           begin
-            Timeout.timeout(1) do
+            Timeout.timeout(5) do
               worker.quit(cond ? :timeout : :normal)
             end
           rescue Errno::EPIPE
@@ -542,7 +542,7 @@ module Test
           end
           closed&.push worker
           begin
-            Timeout.timeout(0.2) do
+            Timeout.timeout(1) do
               worker.close
             end
           rescue Timeout::Error
@@ -555,7 +555,7 @@ module Test
         return if (closed ||= @workers).empty?
         pids = closed.map(&:pid)
         begin
-          Timeout.timeout(0.2 * closed.size) do
+          Timeout.timeout(1 * closed.size) do
             Process.waitall
           end
         rescue Timeout::Error
