@@ -416,6 +416,7 @@ module Test
 
         def kill
           Process.kill(:KILL, @pid)
+          warn "worker #{@pid} does not respond; SIGKILL is sent"
         rescue Errno::ESRCH
         end
 
