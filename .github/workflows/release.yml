@@ -31,7 +31,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.FTP_R_L_O_AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
 
-
       - name: Purge URLs of release package
         run: |
           curl -X POST \
@@ -44,8 +43,15 @@ jobs:
             -H "Fastly-Key: ${{ secrets.FASTLY_PURGE_TOKEN }}" \
             https://api.fastly.com/purge/cache.ruby-lang.org/pub/ruby/${{ env.ABI_VERSION }}/ruby-${{ env.RUBY_VERSION }}.zip
 
-      # TODO
-      # - name: Create a release on GitHub
+      - name: Create a release on GitHub
+        run: |
+          RELEASE_TAG=$(echo v${{ env.RUBY_VERSION }} | sed 's/\./_/g')
+          echo $RELEASE_TAG
+          PREVIOUS_RELEASE_TAG=$(echo $RELEASE_TAG | awk 'BEGIN {FS="_"; OFS="_"}{ $NF=$NF-1; print }')
+          echo $PREVIOUS_RELEASE_TAG
+          tool/gen-github-release.rb $PREVIOUS_RELEASE_TAG $RELEASE_TAG --no-dry-run
+        env:
+          GITHUB_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
 
       - name: Update versions index
         run: |
