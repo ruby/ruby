@@ -13528,9 +13528,9 @@ mark_lvar_used(struct parser_params *p, NODE *rhs)
 }
 
 static NODE *
-const_decl_path(struct parser_params *p, NODE **dest)
+const_decl_path(struct parser_params *p, NODE *dest)
 {
-    NODE *n = *dest;
+    NODE *n = dest;
     if (!nd_type_p(n, NODE_CALL)) {
         const YYLTYPE *loc = &n->nd_loc;
         VALUE path;
@@ -13558,7 +13558,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
             path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
             path = rb_fstring(path);
         }
-        *dest = n = NEW_LIT(path, loc);
+        n = NEW_LIT(path, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
     }
     return n;
@@ -13584,7 +13584,7 @@ ensure_shareable_node(struct parser_params *p, NODE **dest, NODE *value, const Y
 {
     NODE *fcore = NEW_LIT(rb_mRubyVMFrozenCore, loc);
     NODE *args = NEW_LIST(value, loc);
-    args = list_append(p, args, const_decl_path(p, dest));
+    args = list_append(p, args, const_decl_path(p, *dest));
     return NEW_CALL(fcore, rb_intern("ensure_shareable"), args, loc);
 }
 
