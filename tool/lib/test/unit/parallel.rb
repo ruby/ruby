@@ -137,7 +137,7 @@ module Test
                   end
                 end
                 err << ""
-                $STDERR.puts err.join("\n")
+                STDERR.puts err.join("\n")
               end
               _report "bye"
               exit
