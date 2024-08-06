@@ -24,5 +24,7 @@ jobs:
       - name: Create a release on GitHub
         run: |
           RELEASE_TAG=$(echo v${{ env.RUBY_VERSION }} | sed 's/\./_/g')
-          PREVIOUS_RELEASE_TAG=$(echo $RELEASE_TAG | awk -F_ '{$NF=$NF-1; OFS="_"; print}')
+          echo $RELEASE_TAG
+          PREVIOUS_RELEASE_TAG=$(echo $RELEASE_TAG | awk 'BEGIN { FS="_"; $NF=$NF-1; OFS="_" }{ print }')
+          echo $PREVIOUS_RELEASE_TAG
           tool/gen-github-release.rb $PREVIOUS_RELEASE_TAG $RELEASE_TAG
