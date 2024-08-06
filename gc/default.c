@@ -3233,10 +3233,16 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
-    if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) return;
 
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
+
+    if (RUBY_ATOMIC_EXCHANGE(finalizing, 1)) {
+        /* Abort incremental marking and lazy sweeping to speed up shutdown. */
+        gc_abort(objspace);
+        dont_gc_on();
+        return;
+    }
 
     /* force to run finalizer */
     while (finalizer_table->num_entries) {
