@@ -4813,6 +4813,35 @@ rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
     }
 }
 
+static int
+pin_value(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_gc_impl_mark_and_pin((void *)data, (VALUE)value);
+
+    return ST_CONTINUE;
+}
+
+static void
+mark_roots(rb_objspace_t *objspace, const char **categoryp)
+{
+#define MARK_CHECKPOINT(category) do { \
+    if (categoryp) *categoryp = category; \
+} while (0)
+
+    MARK_CHECKPOINT("objspace");
+    objspace->rgengc.parent_object = Qfalse;
+
+    if (finalizer_table != NULL) {
+        st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
+    }
+
+    st_foreach(objspace->obj_to_id_tbl, gc_mark_tbl_no_pin_i, (st_data_t)objspace);
+
+    if (stress_to_class) rb_gc_mark(stress_to_class);
+
+    rb_gc_mark_roots(objspace, categoryp);
+}
+
 static inline void
 gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 {
@@ -5037,7 +5066,7 @@ objspace_allrefs(rb_objspace_t *objspace)
     /* traverse root objects */
     PUSH_MARK_FUNC_DATA(&mfd);
     GET_RACTOR()->mfd = &mfd;
-    rb_gc_mark_roots(objspace, &data.category);
+    mark_roots(objspace, &data.category);
     POP_MARK_FUNC_DATA();
 
     /* traverse rest objects reachable from root objects */
@@ -5598,7 +5627,7 @@ gc_marks_finish(rb_objspace_t *objspace)
                    mark_stack_size(&objspace->mark_stack));
         }
 
-        rb_gc_mark_roots(objspace, NULL);
+        mark_roots(objspace, NULL);
         while (gc_mark_stacked_objects_incremental(objspace, INT_MAX) == false);
 
 #if RGENGC_CHECK_MODE >= 2
@@ -6019,7 +6048,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
         }
     }
 
-    rb_gc_mark_roots(objspace, NULL);
+    mark_roots(objspace, NULL);
 
     gc_report(1, objspace, "gc_marks_start: (%s) end, stack in %"PRIdSIZE"\n",
               full_mark ? "full" : "minor", mark_stack_size(&objspace->mark_stack));
@@ -9544,14 +9573,6 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
     free(objspace);
 }
 
-static int
-pin_value(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_impl_mark_and_pin((void *)data, (VALUE)value);
-
-    return ST_CONTINUE;
-}
-
 void rb_gc_impl_mark(void *objspace_ptr, VALUE obj);
 
 #if MALLOC_ALLOCATED_SIZE
@@ -9585,22 +9606,6 @@ gc_malloc_allocations(VALUE self)
     return UINT2NUM(rb_objspace.malloc_params.allocations);
 }
 #endif
-
-void
-rb_gc_impl_objspace_mark(void *objspace_ptr)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    objspace->rgengc.parent_object = Qfalse;
-
-    if (finalizer_table != NULL) {
-        st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
-    }
-
-    st_foreach(objspace->obj_to_id_tbl, gc_mark_tbl_no_pin_i, (st_data_t)objspace);
-
-    if (stress_to_class) rb_gc_mark(stress_to_class);
-}
 
 void *
 rb_gc_impl_objspace_alloc(void)
