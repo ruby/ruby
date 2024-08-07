@@ -4912,11 +4912,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *    a = [0, 1] + [2, 3]
  *    a # => [0, 1, 2, 3]
  *
- *  Related:
- *
- *  - Array#concat: returns the concatenation of +self+ and multiple other arrays.
- *  - Array#*: returns the concatenation of multiple copies of +self+.
- *
+ *  Related: Array#concat, Array#*.
  */
 
 VALUE
