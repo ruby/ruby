@@ -415,8 +415,8 @@ module Test
         end
 
         def kill
-          Process.kill(:KILL, @pid)
-          warn "worker #{to_s} does not respond; SIGKILL is sent"
+          Process.kill(:SEGV, @pid)
+          warn "worker #{to_s} does not respond; SIGSEGV is sent"
         rescue Errno::ESRCH
         end
 
