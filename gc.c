@@ -615,7 +615,6 @@ typedef struct gc_function_map {
     void (*mark_maybe)(void *objspace_ptr, VALUE obj);
     void (*mark_weak)(void *objspace_ptr, VALUE *ptr);
     void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
-    void (*objspace_mark)(void *objspace_ptr);
     // Compaction
     bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
     VALUE (*location)(void *objspace_ptr, VALUE value);
@@ -746,7 +745,6 @@ ruby_external_gc_init(void)
     load_external_gc_func(mark_maybe);
     load_external_gc_func(mark_weak);
     load_external_gc_func(remove_weak);
-    load_external_gc_func(objspace_mark);
     // Compaction
     load_external_gc_func(object_moved_p);
     load_external_gc_func(location);
@@ -825,7 +823,6 @@ ruby_external_gc_init(void)
 # define rb_gc_impl_mark_maybe rb_gc_functions.mark_maybe
 # define rb_gc_impl_mark_weak rb_gc_functions.mark_weak
 # define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
-# define rb_gc_impl_objspace_mark rb_gc_functions.objspace_mark
 // Compaction
 # define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
 # define rb_gc_impl_location rb_gc_functions.location
@@ -2456,9 +2453,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 #define MARK_CHECKPOINT(category) do { \
     if (categoryp) *categoryp = category; \
 } while (0)
-
-    MARK_CHECKPOINT("objspace");
-    rb_gc_impl_objspace_mark(objspace);
 
     MARK_CHECKPOINT("vm");
     SET_STACK_END;
