@@ -5136,17 +5136,21 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *    array == other_array -> true or false
+ *    self == other_array -> true or false
  *
- *  Returns +true+ if both <tt>array.size == other_array.size</tt>
- *  and for each index +i+ in +array+, <tt>array[i] == other_array[i]</tt>:
+ *  Returns whether both:
  *
- *    a0 = [:foo, 'bar', 2]
- *    a1 = [:foo, 'bar', 2.0]
- *    a1 == a0 # => true
- *    [] == [] # => true
+ *  - +self+ and +other_array+ are the same size.
+ *  - Their corresponding elements are the same;
+ *    that is, for each index +i+ in <tt>(0...self.size)</tt>,
+ *    <tt>self[i] == other_array[i]</tt>.
  *
- *  Otherwise, returns +false+.
+ *  Examples:
+ *
+ *    [:foo, 'bar', 2] == [:foo, 'bar', 2]   # => true
+ *    [:foo, 'bar', 2] == [:foo, 'bar', 2.0] # => true
+ *    [:foo, 'bar', 2] == [:foo, 'bar']      # => false # Different sizes.
+ *    [:foo, 'bar', 2] == [:foo, 'bar', 3]   # => false # Different elements.
  *
  *  This method is different from method Array#eql?,
  *  which compares elements using <tt>Object#eql?</tt>.
