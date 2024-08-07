@@ -1745,35 +1745,39 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 
 /*
  *  call-seq:
- *    array[index] -> object or nil
- *    array[start, length] -> object or nil
- *    array[range] -> object or nil
- *    array[aseq] -> object or nil
- *    array.slice(index) -> object or nil
- *    array.slice(start, length) -> object or nil
- *    array.slice(range) -> object or nil
- *    array.slice(aseq) -> object or nil
+ *    self[index] -> object or nil
+ *    self[start, length] -> object or nil
+ *    self[range] -> object or nil
+ *    self[aseq] -> object or nil
+ *    slice(index) -> object or nil
+ *    slice(start, length) -> object or nil
+ *    slice(range) -> object or nil
+ *    slice(aseq) -> object or nil
  *
  *  Returns elements from +self+; does not modify +self+.
  *
  *  In brief:
  *
  *    a = [:foo, 'bar', 2]
- *    a[0]     # => :foo
- *    a[-1]    # => 2
+ *    # Single argument index: returns one element.
+ *    a[0]     # => :foo          # Zero-based index.
+ *    a[-1]    # => 2             # Negative index counts backwards from end.
+ *    # Arguments start and length: returns an array.
  *    a[1, 2]  # => ["bar", 2]
+ *    a[-2, 2] # => ["bar", 2]    # Negative start counts backwards from end.
+ *    # Single argument range: returns an array.
  *    a[0..1]  # => [:foo, "bar"]
- *    a[0..-2] # => [:foo, "bar"]
- *    a[-2..2] # => ["bar", 2]
+ *    a[0..-2] # => [:foo, "bar"] # Negative range-begin counts backwards from end.
+ *    a[-2..2] # => ["bar", 2]    # Negative range-end counts backwards from end.
  *
- *  When a single Integer argument +index+ is given, returns the element at offset +index+:
+ *  When a single integer argument +index+ is given, returns the element at offset +index+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0] # => :foo
  *    a[2] # => 2
  *    a # => [:foo, "bar", 2]
  *
- *  If +index+ is negative, counts relative to the end of +self+:
+ *  If +index+ is negative, counts backwards from the end of +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[-1] # => 2
