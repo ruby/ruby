@@ -382,6 +382,7 @@ The general structure of the method documentation should be:
 
 - Calling sequence (for methods written in C).
 - Synopsis (short description).
+- In-brief examples (optional)
 - Details and examples.
 - Argument description (if necessary).
 - Corner cases and exceptions.
@@ -501,6 +502,16 @@ Returns a count of specified elements.
 This is great as it is short and descriptive.  Avoid documenting
 too much in the synopsis, stick to the most important information
 for the benefit of the reader.
+
+### In-Brief Examples
+
+For a method whose documentation is lengthy,
+consider adding an "in-brief" passage,
+showing examples that summarize the method's uses.
+
+The passage may answer some users' questions
+(without their having to read long documentation);
+see Array#[] and Array#[]=.
 
 ### Details and Examples
 
