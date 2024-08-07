@@ -1196,6 +1196,12 @@ pub fn gen_single_block(
         asm_comment!(asm, "reg_mapping: {:?}", asm.ctx.get_reg_mapping());
     }
 
+
+    //let blockid_idx = blockid.idx;
+    //println!("Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx));
+
+
+
     // Mark the start of an ISEQ for --yjit-perf
     jit_perf_symbol_push!(jit, &mut asm, &get_iseq_name(iseq), PerfMap::ISEQ);
 
@@ -3260,6 +3266,12 @@ fn gen_definedivar(
     // Guard heap object (recv_opnd must be used before stack_pop)
     guard_object_is_heap(asm, recv, SelfOpnd, Counter::definedivar_not_heap);
 
+
+
+    // Disabled for now
+    // This doesn't always use the recv operand, which causes the backend
+    // to panic
+    /*
     jit_guard_known_shape(
         jit,
         asm,
@@ -3269,6 +3281,24 @@ fn gen_definedivar(
         GET_IVAR_MAX_DEPTH,
         Counter::definedivar_megamorphic,
     );
+    */
+
+
+    let shape_id_offset = unsafe { rb_shape_id_offset() };
+    let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
+
+    asm_comment!(asm, "guard shape");
+    asm.cmp(shape_opnd, Opnd::UImm(shape_id as u64));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        GET_IVAR_MAX_DEPTH,
+        Counter::definedivar_megamorphic,
+    );
+
+
+
 
     let result = if ivar_exists { pushval } else { Qnil };
     jit_putobject(asm, result);
