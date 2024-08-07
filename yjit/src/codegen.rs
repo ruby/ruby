@@ -1197,8 +1197,8 @@ pub fn gen_single_block(
     }
 
 
-    //let blockid_idx = blockid.idx;
-    //println!("Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx));
+    let blockid_idx = blockid.idx;
+    println!("Block: {}", iseq_get_location(blockid.iseq, blockid_idx));
 
 
 
@@ -2704,6 +2704,35 @@ fn gen_get_ivar(
     recv: Opnd,
     recv_opnd: YARVOpnd,
 ) -> Option<CodegenStatus> {
+
+
+    /*
+    // If the shape is known at compile time
+    if let Some(shape_id) = asm.ctx.get_opnd_shape(recv_opnd) {
+        let ivar_index = unsafe {
+            let shape = rb_shape_get_shape_by_id(shape_id);
+            let mut ivar_index: u32 = 0;
+            if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
+                Some(ivar_index as usize)
+            } else {
+                None
+            }
+        };
+
+        // If the ivar is not defined on this shape
+        if ivar_index == None {
+            let out_opnd = asm.stack_push(Type::Nil);
+            asm.mov(out_opnd, Qnil.into());
+
+            jump_to_next_insn(jit, asm);
+            return Some(EndBlock);
+        }
+    }
+    */
+
+
+
+
     let comptime_val_klass = comptime_receiver.class_of();
 
     // If recv isn't already a register, load it.
@@ -3271,7 +3300,7 @@ fn gen_definedivar(
     // Disabled for now
     // This doesn't always use the recv operand, which causes the backend
     // to panic
-    /*
+
     jit_guard_known_shape(
         jit,
         asm,
@@ -3281,9 +3310,10 @@ fn gen_definedivar(
         GET_IVAR_MAX_DEPTH,
         Counter::definedivar_megamorphic,
     );
-    */
 
 
+
+    /*
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
 
@@ -3296,6 +3326,7 @@ fn gen_definedivar(
         GET_IVAR_MAX_DEPTH,
         Counter::definedivar_megamorphic,
     );
+    */
 
 
 
