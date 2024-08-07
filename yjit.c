@@ -1156,12 +1156,6 @@ struct yjit_root_struct {
     bool unused; // empty structs are not legal in C99
 };
 
-static void
-yjit_root_free(void *ptr)
-{
-    // Do nothing. The root lives as long as the process.
-}
-
 static size_t
 yjit_root_memsize(const void *ptr)
 {
@@ -1176,7 +1170,7 @@ void rb_yjit_root_update_references(void *ptr); // in Rust
 // TODO: make this write barrier protected
 static const rb_data_type_t yjit_root_type = {
     "yjit_root",
-    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, rb_yjit_root_update_references},
+    {rb_yjit_root_mark, RUBY_DEFAULT_FREE, yjit_root_memsize, rb_yjit_root_update_references},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
