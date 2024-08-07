@@ -5419,7 +5419,7 @@ ary_make_hash_by(VALUE ary)
  *  Element are compared using method <tt>#eql?</tt>
  *  (as defined in each element of +self+).
  *
- *  Related: Array#difference (removes elements from +self+ as found in multiple other arrays).
+ *  Related: Array#difference.
  */
 
 VALUE
