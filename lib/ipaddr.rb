@@ -151,6 +151,16 @@ class IPAddr
     return self.clone.set(addr_mask(~@addr))
   end
 
+  # Returns a new ipaddr greater than the original address by offset
+  def +(offset)
+    self.clone.set(@addr + offset, @family)
+  end
+
+  # Returns a new ipaddr less than the original address by offset
+  def -(offset)
+    self.clone.set(@addr - offset, @family)
+  end
+
   # Returns true if two ipaddrs are equal.
   def ==(other)
     other = coerce_other(other)
