@@ -14,7 +14,7 @@ set -x
 
 DOCKER="$(command -v docker || command -v podman)"
 TAG=ruby-fedora-annocheck
-TOOL_DIR=$(dirname "${0}")
+TOOL_DIR="$(dirname "${0}")"
 TMP_DIR="tmp/annocheck"
 DOCKER_RUN_VOLUME_OPTS=
 
