@@ -84,6 +84,10 @@ module Bundler
           end
         end
 
+        def not_a_bare_repository?
+          git_local("rev-parse", "--is-bare-repository", dir: path).strip == "false"
+        end
+
         def contains?(commit)
           allowed_with_path do
             result, status = git_null("branch", "--contains", commit, dir: path)
