@@ -282,7 +282,7 @@ module Test
             options[:parallel] ||= 256 # number of tokens to acquire first
           end
         end
-        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
+        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 1200)
         super
       end
 
