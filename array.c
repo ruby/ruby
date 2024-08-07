@@ -1759,12 +1759,15 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *  In brief:
  *
  *    a = [:foo, 'bar', 2]
+ *
  *    # Single argument index: returns one element.
  *    a[0]     # => :foo          # Zero-based index.
  *    a[-1]    # => 2             # Negative index counts backwards from end.
+ *
  *    # Arguments start and length: returns an array.
  *    a[1, 2]  # => ["bar", 2]
  *    a[-2, 2] # => ["bar", 2]    # Negative start counts backwards from end.
+ *
  *    # Single argument range: returns an array.
  *    a[0..1]  # => [:foo, "bar"]
  *    a[0..-2] # => [:foo, "bar"] # Negative range-begin counts backwards from end.
