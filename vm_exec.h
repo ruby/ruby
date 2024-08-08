@@ -77,9 +77,12 @@ error !
 
 typedef INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
 
+#define INSN_FUNC_ATTRIBUTES \
+    __attribute__((no_stack_protector))
+
 #define INSN_ENTRY(insn) \
   static INSN_FUNC_RET \
-    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) {
+    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) INSN_FUNC_ATTRIBUTES {
 
 #define TC_DISPATCH(insn) \
   MUSTTAIL return (*(rb_insn_tailcall_func_t *)GET_CURRENT_INSN())(INSN_FUNC_ARGS);
