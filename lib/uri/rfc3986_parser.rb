@@ -147,19 +147,16 @@ module URI
 
     # Compatibility for RFC2396 parser
     def make_regexp(schemes = nil) # :nodoc:
-      warn "URI::RFC3986_PARSER.make_regexp is obsoleted. Use URI::RFC2396_PARSER.make_regexp explicitly.", uplevel: 1 if $VERBOSE
       RFC2396_PARSER.make_regexp(schemes)
     end
 
     # Compatibility for RFC2396 parser
     def escape(str, unsafe = nil) # :nodoc:
-      warn "URI::RFC3986_PARSER.escape is obsoleted. Use URI::RFC2396_PARSER.escape explicitly.", uplevel: 1 if $VERBOSE
       unsafe ? RFC2396_PARSER.escape(str, unsafe) : RFC2396_PARSER.escape(str)
     end
 
     # Compatibility for RFC2396 parser
     def unescape(str, escaped = nil) # :nodoc:
-      warn "URI::RFC3986_PARSER.unescape is obsoleted. Use URI::RFC2396_PARSER.unescape explicitly.", uplevel: 1 if $VERBOSE
       escaped ? RFC2396_PARSER.unescape(str, escaped) : RFC2396_PARSER.unescape(str)
     end
 
