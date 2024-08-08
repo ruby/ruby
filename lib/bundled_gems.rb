@@ -98,7 +98,7 @@ module Gem::BUNDLED_GEMS
         end
       end
     end
-    1
+    require_found ? 1 : 2
   end
 
   def self.find_gem(path)
