@@ -2318,15 +2318,16 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 
 /*
  *  call-seq:
- *    array[index] = object -> object
- *    array[start, length] = object -> object
- *    array[range] = object -> object
+ *    self[index] = object -> object
+ *    self[start, length] = object -> object
+ *    self[range] = object -> object
  *
- *  Assigns elements in +self+; returns the given +object+.
+ *  Assigns elements in +self+, based on the given +object+; returns +object+.
  *
  *  In brief:
  *
  *      a_orig = [:foo, 'bar', 2]
+ *
  *      # With argument index.
  *      a = a_orig.dup
  *      a[0] = 'foo' # => "foo"
@@ -2334,6 +2335,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *      a = a_orig.dup
  *      a[7] = 'foo' # => "foo"
  *      a # => [:foo, "bar", 2, nil, nil, nil, nil, "foo"]
+ *
  *      # With arguments start and length.
  *      a = a_orig.dup
  *      a[0, 2] = 'foo' # => "foo"
@@ -2341,6 +2343,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *      a = a_orig.dup
  *      a[6, 50] = 'foo' # => "foo"
  *      a # => [:foo, "bar", 2, nil, nil, nil, "foo"]
+ *
  *      # With argument range.
  *      a = a_orig.dup
  *      a[0..1] = 'foo' # => "foo"
