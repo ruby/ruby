@@ -55,3 +55,7 @@ echo
 echo "* Show warning when warn is not the standard one in the current scope"
 ruby test_warn_redefined.rb
 echo
+
+echo "* Show warning with bootsnap and some gem in Gemfile"
+ruby test_warn_bootsnap_and_gem.rb
+echo
