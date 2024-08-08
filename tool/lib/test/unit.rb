@@ -533,6 +533,8 @@ module Test
         closed = [] if cond
         @workers.reject! do |worker|
           next unless cond&.call(worker)
+          # Since `record` method is not called when a timeout occurs while waiting for the worker's response, we need to call `record` method here.
+          record(fake_class(worker.current[0]), worker.current[1], 0, @worker_timeout, Timeout::Error.new, worker.real_file) if cond
           begin
             Timeout.timeout(5) do
               worker.quit(cond ? :timeout : :normal)
