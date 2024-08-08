@@ -19,6 +19,7 @@
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
+#include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -186,8 +187,8 @@ typedef union {
     uint64_t u64;
 } float_double_conv;
 
-static inline double
-unpack_flt2dbl(uint32_t u)
+static inline VALUE
+unpack_flt2num(uint32_t u)
 {
     float_double_conv tmp = {.u32 = u};
     tmp.d = tmp.f;
@@ -195,31 +196,51 @@ unpack_flt2dbl(uint32_t u)
         uint64_t qbit = ((uint64_t)(u & F32_QBIT) << F64_QBIT_OFFSET);
         tmp.u64 = (tmp.u64 & ~F64_QBIT) | qbit;
     }
-    return tmp.d;
+    return rb_float_new_from_ptr(&tmp.d);
 }
 
-static float
-VALUE_to_float(VALUE obj)
+static inline VALUE
+unpack_dbl2num(uint64_t u)
+{
+    float_double_conv tmp = {.u64 = u};
+    return rb_float_new_from_ptr(&tmp.d);
+}
+
+static void
+VALUE_to_float(VALUE obj, FLOAT_SWAPPER *result)
 {
     VALUE v = rb_to_float(obj);
     double d = RFLOAT_VALUE(v);
 
     if (isnan(d)) {
-        float_double_conv tmp = {.d = d};
-        uint32_t qbit = (uint32_t)((tmp.u64 & F64_QBIT) >> F64_QBIT_OFFSET);
-        tmp.f = (float)d;
-        tmp.u32 = (tmp.u32 & ~F32_QBIT) | qbit;
-        if (!(tmp.u32 & F32_MANT)) tmp.u32 |= 1;
-        return tmp.f;
+        /* Assume endians of double and uint64_t are same */
+        volatile uint64_t *u = (void *)&RFLOAT(v)->float_value;
+        uint32_t qbit = (uint32_t)((*u & F64_QBIT) >> F64_QBIT_OFFSET);
+        FLOAT_SWAPPER f = {.f = (float)d};
+        f.u = (f.u & ~F32_QBIT) | qbit;
+        if (!(f.u & F32_MANT)) f.u |= 1;
+        *result = f;
     }
     else if (d < -FLT_MAX) {
-        return -INFINITY;
+        result->f = -INFINITY;
     }
     else if (d <= FLT_MAX) {
-        return d;
+        result->f = d;
     }
     else {
-        return INFINITY;
+        result->f = INFINITY;
+    }
+}
+
+static void
+VALUE_to_double(VALUE obj, DOUBLE_SWAPPER *result)
+{
+    VALUE v = rb_to_float(obj);
+    if (FLONUM_P(v)) {
+        result->d = rb_float_value(v);
+    }
+    else {
+        memcpy(result->buf, &RFLOAT(v)->float_value, sizeof(double));
     }
 }
 
@@ -583,20 +604,18 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'f':		/* single precision float in native format */
           case 'F':		/* ditto */
             while (len-- > 0) {
-                float f;
-
+                FLOAT_CONVWITH(tmp);
                 from = NEXTFROM;
-                f = VALUE_to_float(from);
-                rb_str_buf_cat(res, (char*)&f, sizeof(float));
+                VALUE_to_float(from, &tmp);
+                rb_str_buf_cat(res, tmp.buf, sizeof(float));
             }
             break;
 
           case 'e':		/* single precision float in VAX byte-order */
             while (len-- > 0) {
                 FLOAT_CONVWITH(tmp);
-
                 from = NEXTFROM;
-                tmp.f = VALUE_to_float(from);
+                VALUE_to_float(from, &tmp);
                 HTOVF(tmp);
                 rb_str_buf_cat(res, tmp.buf, sizeof(float));
             }
@@ -606,7 +625,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             while (len-- > 0) {
                 DOUBLE_CONVWITH(tmp);
                 from = NEXTFROM;
-                tmp.d = RFLOAT_VALUE(rb_to_float(from));
+                VALUE_to_double(from, &tmp);
                 HTOVD(tmp);
                 rb_str_buf_cat(res, tmp.buf, sizeof(double));
             }
@@ -615,11 +634,10 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'd':		/* double precision float in native format */
           case 'D':		/* ditto */
             while (len-- > 0) {
-                double d;
-
+                DOUBLE_CONVWITH(tmp);
                 from = NEXTFROM;
-                d = RFLOAT_VALUE(rb_to_float(from));
-                rb_str_buf_cat(res, (char*)&d, sizeof(double));
+                VALUE_to_double(from, &tmp);
+                rb_str_buf_cat(res, tmp.buf, sizeof(double));
             }
             break;
 
@@ -627,7 +645,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             while (len-- > 0) {
                 FLOAT_CONVWITH(tmp);
                 from = NEXTFROM;
-                tmp.f = VALUE_to_float(from);
+                VALUE_to_float(from, &tmp);
                 HTONF(tmp);
                 rb_str_buf_cat(res, tmp.buf, sizeof(float));
             }
@@ -636,9 +654,8 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'G':		/* double precision float in network byte-order */
             while (len-- > 0) {
                 DOUBLE_CONVWITH(tmp);
-
                 from = NEXTFROM;
-                tmp.d = RFLOAT_VALUE(rb_to_float(from));
+                VALUE_to_double(from, &tmp);
                 HTOND(tmp);
                 rb_str_buf_cat(res, tmp.buf, sizeof(double));
             }
@@ -1323,7 +1340,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             while (len-- > 0) {
                 FLOAT_CONVWITH(tmp);
                 UNPACK_FETCH(&tmp.buf, float);
-                UNPACK_PUSH(DBL2NUM(unpack_flt2dbl(tmp.u)));
+                UNPACK_PUSH(unpack_flt2num(tmp.u));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1334,7 +1351,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 FLOAT_CONVWITH(tmp);
                 UNPACK_FETCH(tmp.buf, float);
                 VTOHF(tmp);
-                UNPACK_PUSH(DBL2NUM(unpack_flt2dbl(tmp.u)));
+                UNPACK_PUSH(unpack_flt2num(tmp.u));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1345,7 +1362,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 DOUBLE_CONVWITH(tmp);
                 UNPACK_FETCH(tmp.buf, double);
                 VTOHD(tmp);
-                UNPACK_PUSH(DBL2NUM(tmp.d));
+                UNPACK_PUSH(unpack_dbl2num(tmp.u));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1354,9 +1371,9 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
           case 'd':
             PACK_LENGTH_ADJUST_SIZE(sizeof(double));
             while (len-- > 0) {
-                double tmp;
-                UNPACK_FETCH(&tmp, double);
-                UNPACK_PUSH(DBL2NUM(tmp));
+                DOUBLE_CONVWITH(tmp);
+                UNPACK_FETCH(&tmp.buf, double);
+                UNPACK_PUSH(unpack_dbl2num(tmp.u));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1367,7 +1384,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 FLOAT_CONVWITH(tmp);
                 UNPACK_FETCH(tmp.buf, float);
                 NTOHF(tmp);
-                UNPACK_PUSH(DBL2NUM(unpack_flt2dbl(tmp.u)));
+                UNPACK_PUSH(unpack_flt2num(tmp.u));
             }
             PACK_ITEM_ADJUST();
             break;
@@ -1378,7 +1395,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
                 DOUBLE_CONVWITH(tmp);
                 UNPACK_FETCH(tmp.buf, double);
                 NTOHD(tmp);
-                UNPACK_PUSH(DBL2NUM(tmp.d));
+                UNPACK_PUSH(unpack_dbl2num(tmp.u));
             }
             PACK_ITEM_ADJUST();
             break;
