@@ -155,8 +155,18 @@ module Gem::BUNDLED_GEMS
       # Additionally, we need to skip Bootsnap and Zeitwerk if present, these
       # gems decorate Kernel#require, so they are not really the ones issuing
       # the require call users should be warned about. Those are upwards.
-      location = Thread.each_caller_location(2) do |cl|
-        break cl.path unless cl.base_label == "require"
+      frames_to_skip = 2
+      location = nil
+      Thread.each_caller_location do |cl|
+        if frames_to_skip >= 1
+          frames_to_skip -= 1
+          next
+        end
+
+        if cl.base_label != "require"
+          location = cl.path
+          break
+        end
       end
 
       if location && File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
