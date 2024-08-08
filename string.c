@@ -880,7 +880,7 @@ str_capacity(VALUE str, const int termlen)
     if (STR_EMBED_P(str)) {
         return str_embed_capa(str) - termlen;
     }
-    else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+    else if (FL_ANY_RAW(str, STR_SHARED|STR_NOFREE)) {
         return RSTRING(str)->len;
     }
     else {
