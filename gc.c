@@ -1718,35 +1718,10 @@ rb_memory_id(VALUE obj)
 VALUE
 rb_obj_id(VALUE obj)
 {
-    /*
-     *                32-bit VALUE space
-     *          MSB ------------------------ LSB
-     *  false   00000000000000000000000000000000
-     *  true    00000000000000000000000000000010
-     *  nil     00000000000000000000000000000100
-     *  undef   00000000000000000000000000000110
-     *  symbol  ssssssssssssssssssssssss00001110
-     *  object  oooooooooooooooooooooooooooooo00        = 0 (mod sizeof(RVALUE))
-     *  fixnum  fffffffffffffffffffffffffffffff1
-     *
-     *                    object_id space
-     *                                       LSB
-     *  false   00000000000000000000000000000000
-     *  true    00000000000000000000000000000010
-     *  nil     00000000000000000000000000000100
-     *  undef   00000000000000000000000000000110
-     *  symbol   000SSSSSSSSSSSSSSSSSSSSSSSSSSS0        S...S % A = 4 (S...S = s...s * A + 4)
-     *  object   oooooooooooooooooooooooooooooo0        o...o % A = 0
-     *  fixnum  fffffffffffffffffffffffffffffff1        bignum if required
-     *
-     *  where A = sizeof(RVALUE)/4
-     *
-     *  sizeof(RVALUE) is
-     *  20 if 32-bit, double is 4-byte aligned
-     *  24 if 32-bit, double is 8-byte aligned
-     *  40 if 64-bit
-     */
-
+    /* If obj is an immediate, the object ID is obj directly converted to a Numeric.
+     * Otherwise, the object ID is a Numeric that is a non-zero multiple of
+     * (RUBY_IMMEDIATE_MASK + 1) which guarantees that it does not collide with
+     * any immediates. */
     return rb_find_object_id(rb_gc_get_objspace(), obj, rb_gc_impl_object_id);
 }
 
