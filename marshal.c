@@ -116,6 +116,10 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_encoding_short "E"
 #define name_s_ruby2_keywords_flag "K"
 
+VALUE rb_eMarshalError;
+VALUE rb_eMarshalExceedDepthLimitError;
+VALUE rb_eMarshalDataTooShortError;
+
 typedef struct {
     VALUE newclass;
     VALUE oldclass;
@@ -819,7 +823,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     VALUE encname = Qnil;
 
     if (limit == 0) {
-        rb_raise(rb_eArgError, "exceed depth limit");
+        rb_raise(rb_eMarshalExceedDepthLimitError, "exceed depth limit");
     }
 
     if (NIL_P(obj)) {
@@ -1285,7 +1289,7 @@ NORETURN(static void too_short(void));
 static void
 too_short(void)
 {
-    rb_raise(rb_eArgError, "marshal data too short");
+    rb_raise(rb_eMarshalDataTooShortError, "marshal data too short");
 }
 
 static st_index_t
@@ -2505,6 +2509,13 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
     /* minor version */
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
+
+    /* A base class for errors raised by Marshal. */
+    rb_eMarshalError = rb_define_class_under(rb_mMarshal, "MarshalError", rb_eArgError);
+    /* Raised when the depth limit is exceeded. */
+    rb_eMarshalExceedDepthLimitError = rb_define_class_under(rb_mMarshal, "ExceedDepthLimitError", rb_eMarshalError);
+    /* Raised when the loaded data is too short. */
+    rb_eMarshalDataTooShortError = rb_define_class_under(rb_mMarshal, "DataTooShortError", rb_eMarshalError);
 }
 
 static int
