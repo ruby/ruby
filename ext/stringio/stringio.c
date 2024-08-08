@@ -1760,6 +1760,23 @@ strio_size(VALUE self)
 
 /*
  * call-seq:
+ *   strio.empty? -> true or false
+ *
+ * Returns the true when there is no content.
+ */
+static VALUE
+strio_empty(VALUE self)
+{
+    VALUE string = StringIO(self)->string;
+    if (NIL_P(string)) {
+      rb_raise(rb_eIOError, "not opened");
+    }
+    if (RSTRING_LEN(string) == 0) { return Qtrue; }
+    return Qfalse;
+}
+
+/*
+ * call-seq:
  *   strio.truncate(integer)    -> 0
  *
  * Truncates the buffer string to at most _integer_ bytes. The stream
@@ -1973,6 +1990,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "fileno", strio_fileno, 0);
     rb_define_method(StringIO, "size", strio_size, 0);
     rb_define_method(StringIO, "length", strio_size, 0);
+    rb_define_method(StringIO, "empty?", strio_empty, 0);
     rb_define_method(StringIO, "truncate", strio_truncate, 1);
 
     rb_define_method(StringIO, "external_encoding", strio_external_encoding, 0);
