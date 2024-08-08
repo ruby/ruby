@@ -9,6 +9,10 @@
 /* vim: ft=css et sw=2 ts=2 sts=2 */
 /* Base Green is: #6C8C22 */
 
+:root {
+  --sidebar-width: 300px;
+}
+
 .hide { display: none !important; }
 
 * { padding: 0; margin: 0; }
@@ -209,21 +213,15 @@ nav {
   z-index: 10;
 
   /* Layout */
-  width: 300px;
+  width: var(--sidebar-width);
   min-height: 100vh;
   background: white;
 }
 
-@media (min-width: 1024px) {
-  nav {
-    min-height: unset;
-    height: calc(100vh - 100px); /* reduce the footer height */
-  }
-}
-
 main {
   display: block;
-  margin: 3em 1em 1em;
+  margin: 3em auto 1em;
+  padding: 0 1em; /* Add padding to keep space between main content and sidebar/right side of the screen */
   min-width: 340px;
   font-size: 16px;
   width: 100%;
@@ -232,8 +230,7 @@ main {
 
 @media (min-width: 1024px) {
   main {
-    margin-left: auto;
-    margin-right: auto;
+    margin-left: var(--sidebar-width);
   }
 }
 
@@ -729,6 +726,10 @@ pre {
 #search-results pre {
   margin: 0.5em;
   font-family: "Source Code Pro", Monaco, monospace;
+}
+
+footer {
+  z-index: 20;
 }
 
 /* @end */
