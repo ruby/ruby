@@ -6571,7 +6571,6 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
 {
     long beg, len, vbeg, vlen;
     VALUE val;
-    rb_encoding *enc;
     int cr;
 
     rb_check_arity(argc, 2, 5);
@@ -6616,10 +6615,13 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     }
     str_check_beg_len(str, &beg, &len);
     str_check_beg_len(val, &vbeg, &vlen);
-    enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
+
+    if (RB_UNLIKELY(ENCODING_GET_INLINED(str) != ENCODING_GET_INLINED(val))) {
+        rb_enc_associate(str, rb_enc_check(str, val));
+    }
+
     rb_str_update_1(str, beg, len, val, vbeg, vlen);
-    rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
