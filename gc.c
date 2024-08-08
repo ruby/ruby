@@ -122,6 +122,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "ractor_core.h"
+#include "yjit.h"
 
 #include "builtin.h"
 #include "shape.h"
@@ -2474,6 +2475,15 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     MARK_CHECKPOINT("global_tbl");
     rb_gc_mark_global_tbl();
 
+#if USE_YJIT
+    void rb_yjit_root_mark(void); // in Rust
+
+    if (rb_yjit_enabled_p) {
+        MARK_CHECKPOINT("YJIT");
+        rb_yjit_root_mark();
+    }
+#endif
+
     MARK_CHECKPOINT("finish");
 #undef MARK_CHECKPOINT
 }
@@ -3152,6 +3162,14 @@ rb_gc_update_vm_references(void *objspace)
     global_symbols.ids = rb_gc_impl_location(objspace, global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = rb_gc_impl_location(objspace, global_symbols.dsymbol_fstr_hash);
     gc_update_table_refs(objspace, global_symbols.str_sym);
+
+#if USE_YJIT
+    void rb_yjit_root_update_references(void); // in Rust
+
+    if (rb_yjit_enabled_p) {
+        rb_yjit_root_update_references();
+    }
+#endif
 }
 
 void

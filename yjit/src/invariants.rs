@@ -345,7 +345,7 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
 /// Callback for marking GC objects inside [Invariants].
 /// See `struct yjijt_root_struct` in C.
 #[no_mangle]
-pub extern "C" fn rb_yjit_root_mark(_: *mut c_void) {
+pub extern "C" fn rb_yjit_root_mark() {
     // Call rb_gc_mark on exit location's raw_samples to
     // wrap frames in a GC allocated object. This needs to be called
     // at the same time as root mark.
@@ -374,7 +374,7 @@ pub extern "C" fn rb_yjit_root_mark(_: *mut c_void) {
 }
 
 #[no_mangle]
-pub extern "C" fn rb_yjit_root_update_references(_: *mut c_void) {
+pub extern "C" fn rb_yjit_root_update_references() {
     if unsafe { INVARIANTS.is_none() } {
         return;
     }

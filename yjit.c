@@ -1156,24 +1156,6 @@ struct yjit_root_struct {
     bool unused; // empty structs are not legal in C99
 };
 
-static size_t
-yjit_root_memsize(const void *ptr)
-{
-    // Count off-gc-heap allocation size of the dependency table
-    return 0; // TODO: more accurate accounting
-}
-
-void rb_yjit_root_mark(void *ptr); // in Rust
-void rb_yjit_root_update_references(void *ptr); // in Rust
-
-// Custom type for interacting with the GC
-// TODO: make this write barrier protected
-static const rb_data_type_t yjit_root_type = {
-    "yjit_root",
-    {rb_yjit_root_mark, RUBY_DEFAULT_FREE, yjit_root_memsize, rb_yjit_root_update_references},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
 // For dealing with refinements
 void
 rb_yjit_invalidate_all_method_lookup_assumptions(void)
@@ -1256,12 +1238,3 @@ VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VA
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
-
-// Initialize the GC hooks
-void
-rb_yjit_init_gc_hooks(void)
-{
-    struct yjit_root_struct *root;
-    VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
-    rb_vm_register_global_object(yjit_root);
-}
