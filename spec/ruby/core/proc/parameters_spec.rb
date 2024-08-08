@@ -174,4 +174,12 @@ describe "Proc#parameters" do
   it "returns :nokey for **nil parameter" do
     proc { |**nil| }.parameters.should == [[:nokey]]
   end
+
+  ruby_version_is "3.4" do
+    it "returns :noblock for &nil parameter" do
+      eval <<~RUBY
+        proc { |&nil| }.parameters.should == [[:noblock]]
+      RUBY
+    end
+  end
 end
