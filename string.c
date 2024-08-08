@@ -2500,32 +2500,43 @@ rb_check_lockedtmp(VALUE str)
     }
 }
 
+// If none of these flags are set, we know we have an modifiable string.
+// If any is set, we need to do more detailed checks.
+#define STR_UNMODIFIABLE_MASK (FL_FREEZE | STR_TMPLOCK | STR_CHILLED)
 static inline void
 str_modifiable(VALUE str)
 {
-    if (CHILLED_STRING_P(str)) {
-        CHILLED_STRING_MUTATED(str);
+    if (RB_UNLIKELY(FL_ANY_RAW(str, STR_UNMODIFIABLE_MASK))) {
+        if (CHILLED_STRING_P(str)) {
+            CHILLED_STRING_MUTATED(str);
+        }
+        rb_check_lockedtmp(str);
+        rb_check_frozen(str);
     }
-    rb_check_lockedtmp(str);
-    rb_check_frozen(str);
 }
 
 static inline int
 str_dependent_p(VALUE str)
 {
     if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-        return 0;
+        return FALSE;
     }
     else {
-        return 1;
+        return TRUE;
     }
 }
 
+// If none of these flags are set, we know we have an independent string.
+// If any is set, we need to do more detailed checks.
+#define STR_DEPENDANT_MASK (STR_UNMODIFIABLE_MASK | STR_SHARED | STR_NOFREE)
 static inline int
 str_independent(VALUE str)
 {
-    str_modifiable(str);
-    return !str_dependent_p(str);
+    if (RB_UNLIKELY(FL_ANY_RAW(str, STR_DEPENDANT_MASK))) {
+        str_modifiable(str);
+        return !str_dependent_p(str);
+    }
+    return TRUE;
 }
 
 static void
