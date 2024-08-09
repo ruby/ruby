@@ -2456,7 +2456,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 } while (0)
 
     MARK_CHECKPOINT("vm");
-    SET_STACK_END;
     rb_vm_mark(vm);
     if (vm->self) rb_gc_impl_mark(objspace, vm->self);
 
