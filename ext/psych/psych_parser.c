@@ -91,12 +91,12 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
         ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
 
         return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
-        	path,
-        	SIZET2NUM(line),
-        	SIZET2NUM(column),
-        	SIZET2NUM(parser->problem_offset),
-        	parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
-        	parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
+                path,
+                SIZET2NUM(line),
+                SIZET2NUM(column),
+                SIZET2NUM(parser->problem_offset),
+                parser->problem ? rb_usascii_str_new2(parser->problem) : Qnil,
+                parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
     }
 }
 
@@ -269,10 +269,10 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
         yaml = transcode_string(yaml, &parser_encoding);
         yaml_parser_set_encoding(parser, parser_encoding);
         yaml_parser_set_input_string(
-        	parser,
-        	(const unsigned char *)RSTRING_PTR(yaml),
-        	(size_t)RSTRING_LEN(yaml)
-        	);
+                parser,
+                (const unsigned char *)RSTRING_PTR(yaml),
+                (size_t)RSTRING_LEN(yaml)
+                );
     }
 
     while(!done) {
@@ -304,147 +304,147 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
         switch(event.type) {
             case YAML_STREAM_START_EVENT:
               {
-        	  VALUE args[2];
+                  VALUE args[2];
 
-        	  args[0] = handler;
-        	  args[1] = INT2NUM(event.data.stream_start.encoding);
-        	  rb_protect(protected_start_stream, (VALUE)args, &state);
+                  args[0] = handler;
+                  args[1] = INT2NUM(event.data.stream_start.encoding);
+                  rb_protect(protected_start_stream, (VALUE)args, &state);
               }
               break;
           case YAML_DOCUMENT_START_EVENT:
             {
-        	VALUE args[4];
-        	/* Get a list of tag directives (if any) */
-        	VALUE tag_directives = rb_ary_new();
-        	/* Grab the document version */
-        	VALUE version = event.data.document_start.version_directive ?
-        	    rb_ary_new3(
-        		(long)2,
-        		INT2NUM(event.data.document_start.version_directive->major),
-        		INT2NUM(event.data.document_start.version_directive->minor)
-        		) : rb_ary_new();
+                VALUE args[4];
+                /* Get a list of tag directives (if any) */
+                VALUE tag_directives = rb_ary_new();
+                /* Grab the document version */
+                VALUE version = event.data.document_start.version_directive ?
+                    rb_ary_new3(
+                        (long)2,
+                        INT2NUM(event.data.document_start.version_directive->major),
+                        INT2NUM(event.data.document_start.version_directive->minor)
+                        ) : rb_ary_new();
 
-        	if(event.data.document_start.tag_directives.start) {
-        	    yaml_tag_directive_t *start =
-        		event.data.document_start.tag_directives.start;
-        	    yaml_tag_directive_t *end =
-        		event.data.document_start.tag_directives.end;
-        	    for(; start != end; start++) {
-        		VALUE handle = Qnil;
-        		VALUE prefix = Qnil;
-        		if(start->handle) {
-        		    handle = rb_str_new2((const char *)start->handle);
-        		    PSYCH_TRANSCODE(handle, encoding, internal_enc);
-        		}
+                if(event.data.document_start.tag_directives.start) {
+                    yaml_tag_directive_t *start =
+                        event.data.document_start.tag_directives.start;
+                    yaml_tag_directive_t *end =
+                        event.data.document_start.tag_directives.end;
+                    for(; start != end; start++) {
+                        VALUE handle = Qnil;
+                        VALUE prefix = Qnil;
+                        if(start->handle) {
+                            handle = rb_str_new2((const char *)start->handle);
+                            PSYCH_TRANSCODE(handle, encoding, internal_enc);
+                        }
 
-        		if(start->prefix) {
-        		    prefix = rb_str_new2((const char *)start->prefix);
-        		    PSYCH_TRANSCODE(prefix, encoding, internal_enc);
-        		}
+                        if(start->prefix) {
+                            prefix = rb_str_new2((const char *)start->prefix);
+                            PSYCH_TRANSCODE(prefix, encoding, internal_enc);
+                        }
 
-        		rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
-        	    }
-        	}
-        	args[0] = handler;
-        	args[1] = version;
-        	args[2] = tag_directives;
-        	args[3] = event.data.document_start.implicit == 1 ? Qtrue : Qfalse;
-        	rb_protect(protected_start_document, (VALUE)args, &state);
+                        rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
+                    }
+                }
+                args[0] = handler;
+                args[1] = version;
+                args[2] = tag_directives;
+                args[3] = event.data.document_start.implicit == 1 ? Qtrue : Qfalse;
+                rb_protect(protected_start_document, (VALUE)args, &state);
             }
             break;
           case YAML_DOCUMENT_END_EVENT:
             {
-        	VALUE args[2];
+                VALUE args[2];
 
-        	args[0] = handler;
-        	args[1] = event.data.document_end.implicit == 1 ? Qtrue : Qfalse;
-        	rb_protect(protected_end_document, (VALUE)args, &state);
+                args[0] = handler;
+                args[1] = event.data.document_end.implicit == 1 ? Qtrue : Qfalse;
+                rb_protect(protected_end_document, (VALUE)args, &state);
             }
             break;
           case YAML_ALIAS_EVENT:
             {
-        	VALUE args[2];
-        	VALUE alias = Qnil;
-        	if(event.data.alias.anchor) {
-        	    alias = rb_str_new2((const char *)event.data.alias.anchor);
-        	    PSYCH_TRANSCODE(alias, encoding, internal_enc);
-        	}
+                VALUE args[2];
+                VALUE alias = Qnil;
+                if(event.data.alias.anchor) {
+                    alias = rb_str_new2((const char *)event.data.alias.anchor);
+                    PSYCH_TRANSCODE(alias, encoding, internal_enc);
+                }
 
-        	args[0] = handler;
-        	args[1] = alias;
-        	rb_protect(protected_alias, (VALUE)args, &state);
+                args[0] = handler;
+                args[1] = alias;
+                rb_protect(protected_alias, (VALUE)args, &state);
             }
             break;
           case YAML_SCALAR_EVENT:
             {
-        	VALUE args[7];
-        	VALUE anchor = Qnil;
-        	VALUE tag = Qnil;
-        	VALUE plain_implicit, quoted_implicit, style;
-        	VALUE val = rb_str_new(
-        	    (const char *)event.data.scalar.value,
-        	    (long)event.data.scalar.length
-        	    );
+                VALUE args[7];
+                VALUE anchor = Qnil;
+                VALUE tag = Qnil;
+                VALUE plain_implicit, quoted_implicit, style;
+                VALUE val = rb_str_new(
+                    (const char *)event.data.scalar.value,
+                    (long)event.data.scalar.length
+                    );
 
-        	PSYCH_TRANSCODE(val, encoding, internal_enc);
+                PSYCH_TRANSCODE(val, encoding, internal_enc);
 
-        	if(event.data.scalar.anchor) {
-        	    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
-        	    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-        	}
+                if(event.data.scalar.anchor) {
+                    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
+                    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+                }
 
-        	if(event.data.scalar.tag) {
-        	    tag = rb_str_new2((const char *)event.data.scalar.tag);
-        	    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-        	}
+                if(event.data.scalar.tag) {
+                    tag = rb_str_new2((const char *)event.data.scalar.tag);
+                    PSYCH_TRANSCODE(tag, encoding, internal_enc);
+                }
 
-        	plain_implicit =
-        	    event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
+                plain_implicit =
+                    event.data.scalar.plain_implicit == 0 ? Qfalse : Qtrue;
 
-        	quoted_implicit =
-        	    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
+                quoted_implicit =
+                    event.data.scalar.quoted_implicit == 0 ? Qfalse : Qtrue;
 
-        	style = INT2NUM(event.data.scalar.style);
+                style = INT2NUM(event.data.scalar.style);
 
-        	args[0] = handler;
-        	args[1] = val;
-        	args[2] = anchor;
-        	args[3] = tag;
-        	args[4] = plain_implicit;
-        	args[5] = quoted_implicit;
-        	args[6] = style;
-        	rb_protect(protected_scalar, (VALUE)args, &state);
+                args[0] = handler;
+                args[1] = val;
+                args[2] = anchor;
+                args[3] = tag;
+                args[4] = plain_implicit;
+                args[5] = quoted_implicit;
+                args[6] = style;
+                rb_protect(protected_scalar, (VALUE)args, &state);
             }
             break;
           case YAML_SEQUENCE_START_EVENT:
             {
-        	VALUE args[5];
-        	VALUE anchor = Qnil;
-        	VALUE tag = Qnil;
-        	VALUE implicit, style;
-        	if(event.data.sequence_start.anchor) {
-        	    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
-        	    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-        	}
+                VALUE args[5];
+                VALUE anchor = Qnil;
+                VALUE tag = Qnil;
+                VALUE implicit, style;
+                if(event.data.sequence_start.anchor) {
+                    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
+                    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+                }
 
-        	tag = Qnil;
-        	if(event.data.sequence_start.tag) {
-        	    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
-        	    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-        	}
+                tag = Qnil;
+                if(event.data.sequence_start.tag) {
+                    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
+                    PSYCH_TRANSCODE(tag, encoding, internal_enc);
+                }
 
-        	implicit =
-        	    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
+                implicit =
+                    event.data.sequence_start.implicit == 0 ? Qfalse : Qtrue;
 
-        	style = INT2NUM(event.data.sequence_start.style);
+                style = INT2NUM(event.data.sequence_start.style);
 
-        	args[0] = handler;
-        	args[1] = anchor;
-        	args[2] = tag;
-        	args[3] = implicit;
-        	args[4] = style;
+                args[0] = handler;
+                args[1] = anchor;
+                args[2] = tag;
+                args[3] = implicit;
+                args[4] = style;
 
-        	rb_protect(protected_start_sequence, (VALUE)args, &state);
+                rb_protect(protected_start_sequence, (VALUE)args, &state);
             }
             break;
           case YAML_SEQUENCE_END_EVENT:
@@ -452,32 +452,32 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
             break;
           case YAML_MAPPING_START_EVENT:
             {
-        	VALUE args[5];
-        	VALUE anchor = Qnil;
-        	VALUE tag = Qnil;
-        	VALUE implicit, style;
-        	if(event.data.mapping_start.anchor) {
-        	    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
-        	    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-        	}
+                VALUE args[5];
+                VALUE anchor = Qnil;
+                VALUE tag = Qnil;
+                VALUE implicit, style;
+                if(event.data.mapping_start.anchor) {
+                    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
+                    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
+                }
 
-        	if(event.data.mapping_start.tag) {
-        	    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
-        	    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-        	}
+                if(event.data.mapping_start.tag) {
+                    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
+                    PSYCH_TRANSCODE(tag, encoding, internal_enc);
+                }
 
-        	implicit =
-        	    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
+                implicit =
+                    event.data.mapping_start.implicit == 0 ? Qfalse : Qtrue;
 
-        	style = INT2NUM(event.data.mapping_start.style);
+                style = INT2NUM(event.data.mapping_start.style);
 
-        	args[0] = handler;
-        	args[1] = anchor;
-        	args[2] = tag;
-        	args[3] = implicit;
-        	args[4] = style;
+                args[0] = handler;
+                args[1] = anchor;
+                args[2] = tag;
+                args[3] = implicit;
+                args[4] = style;
 
-        	rb_protect(protected_start_mapping, (VALUE)args, &state);
+                rb_protect(protected_start_mapping, (VALUE)args, &state);
             }
             break;
           case YAML_MAPPING_END_EVENT:

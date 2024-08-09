@@ -182,8 +182,8 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
             Check_Type(tuple, T_ARRAY);
 
             if(RARRAY_LEN(tuple) < 2) {
-        	xfree(head);
-        	rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
+                xfree(head);
+                rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
             }
             name  = RARRAY_AREF(tuple, 0);
             value = RARRAY_AREF(tuple, 1);
