@@ -4254,12 +4254,14 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 static void
 str_ensure_byte_pos(VALUE str, long pos)
 {
-    const char *s = RSTRING_PTR(str);
-    const char *e = RSTRING_END(str);
-    const char *p = s + pos;
-    if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
+    if (!single_byte_optimizable(str)) {
+        const char *s = RSTRING_PTR(str);
+        const char *e = RSTRING_END(str);
+        const char *p = s + pos;
+        if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
+            rb_raise(rb_eIndexError,
+                     "offset %ld does not land on character boundary", pos);
+        }
     }
 }
 
