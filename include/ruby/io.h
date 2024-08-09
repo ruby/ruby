@@ -964,6 +964,9 @@ VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
  * }
  * ```
  *
+ * On timeout, ::RUBY_Qfalse is returned. Unless you are specifically handling
+ * the timeouts, you should typically raise ::rb_eIOTimeoutError in this case.
+ *
  * @param[in]  error                System errno.
  * @param[in]  io                   An IO object to wait.
  * @param[in]  events               An integer set of interests.
@@ -974,10 +977,6 @@ VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
  * @retval     RUBY_Qfalse          Operation timed out.
  * @retval     Otherwise            Actual events reached.
  *
- * @internal
- *
- * This function  to return ::RUBY_Qfalse  on timeout could be  unintended.  It
- * seems timeout feature has some rough edge.
  */
 VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
 
