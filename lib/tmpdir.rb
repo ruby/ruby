@@ -36,7 +36,7 @@ class Dir
       case
       when !stat.directory?
         warn "#{name} is not a directory: #{dir}"
-      when !stat.writable?
+      when !File.writable?(dir)
         warn "#{name} is not writable: #{dir}"
       when stat.world_writable? && !stat.sticky?
         warn "#{name} is world-writable: #{dir}"
