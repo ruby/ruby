@@ -217,7 +217,7 @@ def parse_age(data)
       # each version matches all previous versions
       cps.concat(data[last_constname]) if last_constname
       data[constname] = cps
-      make_const(constname, cps, "Derived Age #{current}")
+      make_const(constname, cps, 'Derived Age', "Age=#{current}")
       ages << current
       last_constname = constname
       cps = []
@@ -237,7 +237,7 @@ def parse_GraphemeBreakProperty(data)
     if /^# Total code points: / =~ line
       constname = constantize_Grapheme_Cluster_Break(current)
       data[constname] = cps
-      make_const(constname, cps, "Grapheme_Cluster_Break=#{current}")
+      make_const(constname, cps, 'Grapheme property', "Grapheme_Cluster_Break=#{current}")
       ages << current
       cps = []
     elsif /^(\h+)(?:\.\.(\h+))?\s*;\s*(\w+)/ =~ line
@@ -270,11 +270,11 @@ def parse_block(data)
 end
 
 $const_cache = {}
-# make_const(property, pairs, name): Prints a 'static const' structure for a
-# given property, group of paired codepoints, and a human-friendly name for
-# the group
-def make_const(prop, data, name)
-  puts "\n/* '#{prop}': #{name} */" # comment used to generate documentation
+# make_const(name, pairs, group, prop_name): Prints a 'static const' structure
+# with a given const name, group of paired codepoints, human-friendly name for
+# the group, and optional property name for when it differs from the const name.
+def make_const(prop, data, group, prop_name = prop)
+  puts "\n/* '#{prop_name}': #{group} */" # comment used to generate documentation
   if origprop = $const_cache.key(data)
     puts "#define CR_#{prop} CR_#{origprop}"
   else
@@ -424,11 +424,7 @@ aliases = parse_aliases(data)
 ages = blocks = graphemeBreaks = nil
 define_posix_props(data)
 POSIX_NAMES.each do |name|
-  if name == 'XPosixPunct'
-    make_const(name, data[name], "[[:Punct:]]")
-  else
-    make_const(name, data[name], "[[:#{name}:]]")
-  end
+  make_const(name, data[name], 'POSIX class')
 end
 output.ifdef :USE_UNICODE_PROPERTIES do
   props.each do |name|
