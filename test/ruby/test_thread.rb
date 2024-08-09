@@ -1301,16 +1301,18 @@ q.pop
 
   def test_fork_while_mutex_locked_by_forker
     omit 'needs fork' unless Process.respond_to?(:fork)
-    m = Thread::Mutex.new
-    m.synchronize do
-      pid = fork do
-        exit!(2) unless m.locked?
-        m.unlock rescue exit!(3)
-        m.synchronize {} rescue exit!(4)
-        exit!(0)
+    Timeout.timeout(180) do
+      m = Thread::Mutex.new
+      m.synchronize do
+        pid = fork do
+          exit!(2) unless m.locked?
+          m.unlock rescue exit!(3)
+          m.synchronize {} rescue exit!(4)
+          exit!(0)
+        end
+        _, st = Timeout.timeout(30) { Process.waitpid2(pid) }
+        assert_predicate st, :success?, '[ruby-core:90595] [Bug #15430]'
       end
-      _, st = Timeout.timeout(30) { Process.waitpid2(pid) }
-      assert_predicate st, :success?, '[ruby-core:90595] [Bug #15430]'
     end
   end
 
