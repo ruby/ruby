@@ -5940,6 +5940,41 @@ fn jit_rb_str_concat(
     true
 }
 
+// Codegen for rb_str_append_bytes()
+fn jit_rb_str_append_bytes(
+  jit: &mut JITState,
+  asm: &mut Assembler,
+  _ci: *const rb_callinfo,
+  _cme: *const rb_callable_method_entry_t,
+  _block: Option<BlockHandler>,
+  _argc: i32,
+  _known_recv_class: Option<VALUE>,
+) -> bool {
+  // If the peeked-at compile time argument is something other than
+  // a string, assume it won't be a string later either.
+  let comptime_arg = jit.peek_at_stack(&asm.ctx, 0);
+  if ! unsafe { RB_TYPE_P(comptime_arg, RUBY_T_STRING) } {
+      return false;
+  }
+
+  // Guard that the append_bytes argument is a string
+  guard_object_is_string(asm, asm.stack_opnd(0), StackOpnd(0), Counter::guard_send_not_string);
+
+  // Guard buffers from GC since str_buf_cat4 may allocate.
+  // The only possible exception is FrozenError.
+  jit_prepare_non_leaf_call(jit, asm);
+  asm.spill_regs(); // For ccall. Unconditionally spill them for RegMappings consistency.
+
+  let arg = asm.stack_pop(1);
+  let recv = asm.stack_pop(1);
+
+  let ret_opnd = asm.ccall(rb_str_append_bytes as *const u8, vec![recv, arg]);
+
+  let stack_ret = asm.stack_push(Type::TString);
+  asm.mov(stack_ret, ret_opnd);
+  true
+}
+
 // Codegen for rb_ary_empty_p()
 fn jit_rb_ary_empty_p(
     _jit: &mut JITState,
@@ -10301,6 +10336,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "setbyte", jit_rb_str_setbyte);
         yjit_reg_method(rb_cString, "byteslice", jit_rb_str_byteslice);
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+        yjit_reg_method(rb_cString, "append_bytes", jit_rb_str_append_bytes);
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
         yjit_reg_method(rb_cNilClass, "===", jit_rb_case_equal);

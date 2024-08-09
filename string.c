@@ -137,10 +137,10 @@ VALUE rb_cSymbol;
 } while (0)
 
 static inline bool
-str_enc_fastpath(VALUE str)
+enc_fastpath(int encindex)
 {
     // The overwhelming majority of strings are in one of these 3 encodings.
-    switch (ENCODING_GET_INLINED(str)) {
+    switch (encindex) {
       case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_UTF_8:
       case ENCINDEX_US_ASCII:
@@ -148,6 +148,12 @@ str_enc_fastpath(VALUE str)
       default:
         return false;
     }
+}
+
+static inline bool
+str_enc_fastpath(VALUE str)
+{
+    return enc_fastpath(ENCODING_GET_INLINED(str));
 }
 
 #define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
@@ -3637,6 +3643,85 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
         rb_str_buf_append(str, arg_str);
     }
 
+    return str;
+}
+
+static inline bool
+str_combine_coderange_fastpath(VALUE str, VALUE str2)
+{
+    int str_cr = ENC_CODERANGE(str);
+
+    if (RB_LIKELY(str_cr == ENC_CODERANGE_UNKNOWN)) {
+        return true;
+    }
+
+    RUBY_ASSERT(str_cr != ENC_CODERANGE_BROKEN, "Broken coderange should be cleared before by str_modifiable");
+
+    int str2_cr = ENC_CODERANGE(str2);
+    int str_enc = ENCODING_GET_INLINED(str);
+
+    // Fast path for common cases
+    if (RB_LIKELY(str_enc == ENCINDEX_ASCII_8BIT)) {
+        switch (str_cr) {
+          case ENC_CODERANGE_VALID:
+            return true;
+          case ENC_CODERANGE_7BIT:
+            return str2_cr == ENC_CODERANGE_7BIT;
+        }
+    }
+    else if (str_enc == ENCINDEX_UTF_8) {
+        switch (str_cr) {
+          case ENC_CODERANGE_VALID:
+            if (str2_cr == ENC_CODERANGE_VALID) {
+                return str_enc == ENCODING_GET_INLINED(str2);
+            }
+            else {
+                return str2_cr == ENC_CODERANGE_7BIT;
+            }
+          case ENC_CODERANGE_7BIT:
+            return str2_cr == ENC_CODERANGE_7BIT;
+        }
+    }
+
+    return false;
+}
+
+/*
+ *  call-seq:
+ *    append_bytes(string) -> string
+ *
+ *  Concatenates the content of +string+ into +self+ without any encoding
+ *  validation or conversion and returns +self+:
+ *
+ *    s = 'foo'
+ *    s.append_bytes("price: \xE2\x82")  # => "price: \xE2\x82"
+ *    s.valid_encoding?                  # => false
+ *    s.append_bytes("\xAC 12")          # => "price: € 12"
+ *    s.valid_encoding?                  # => true
+ *
+ *  Related: String#<<, String#concat, which do an encoding aware concatenation.
+ */
+
+VALUE
+rb_str_append_bytes(VALUE str, VALUE str2)
+{
+    Check_Type(str2, T_STRING);
+
+    long str2_len = RSTRING_LEN(str2);
+
+    if (RB_UNLIKELY(str2_len == 0)) {
+        return str;
+    }
+
+    str_buf_cat4(str, RSTRING_PTR(str2), str2_len, true);
+
+    // If no fast path was hit, we clear the coderange.
+    // append_bytes is predominently meant to be used in
+    // buffering situation, hence it's likely the coderange
+    // will never be scanned.
+    if (!str_combine_coderange_fastpath(str, str2)) {
+        ENC_CODERANGE_CLEAR(str);
+    }
     return str;
 }
 
@@ -12414,6 +12499,7 @@ Init_String(void)
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat_multi, -1);
+    rb_define_method(rb_cString, "append_bytes", rb_str_append_bytes, 1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend_multi, -1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);

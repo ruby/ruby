@@ -77,6 +77,7 @@ VALUE rb_fstring_new(const char *ptr, long len);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);
+VALUE rb_str_append_bytes(VALUE str1, VALUE str2);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_id_quote_unprintable(ID);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
