@@ -1649,18 +1649,20 @@ class TestMethod < Test::Unit::TestCase
       b = Proc.new{}
       foo(&b)        # warn
     RUBY
-      assert_equal 3, err.size
-      err = err.join
-      assert_match(/-:2: warning/, err)
-      assert_match(/-:3: warning/, err)
-      assert_match(/-:5: warning/, err)
+      assert_equal 6, err.size
+      assert_match(/-:2: warning/, err.shift)
+      assert_match(/-:1: info/, err.shift)
+      assert_match(/-:3: warning/, err.shift)
+      assert_match(/-:1: info/, err.shift)
+      assert_match(/-:5: warning/, err.shift)
+      assert_match(/-:1: info/, err.shift)
     end
 
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
       def foo = nil
       10.times{foo{}} # warn once
     RUBY
-      assert_equal 1, err.size
+      assert_equal 2, err.size
     end
 
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
@@ -1704,10 +1706,13 @@ class TestMethod < Test::Unit::TestCase
       C1.new.f5{} # warning
       C1.new.f6{} # warning
     RUBY
-      assert_equal 3, err.size, err.join("\n")
-      assert_match(/-:22: warning.+f4/, err.join)
-      assert_match(/-:23: warning.+f5/, err.join)
-      assert_match(/-:24: warning.+f6/, err.join)
+      assert_equal 6, err.size, err.join("\n")
+      assert_match(/-:22: warning.+f4/, err.shift)
+      assert_match(/-:14: info.+C1#f4/, err.shift)
+      assert_match(/-:23: warning.+f5/, err.shift)
+      assert_match(/-:15: info.+C1#f5/, err.shift)
+      assert_match(/-:24: warning.+f6/, err.shift)
+      assert_match(/-:16: info.+C1#f6/, err.shift)
     end
 
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
