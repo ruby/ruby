@@ -3090,7 +3090,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 
     if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
                  calling->block_handler != VM_BLOCK_HANDLER_NONE &&
-                 !(vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER))) {
+                 !(vm_ci_flag(calling->cd->ci) & (VM_CALL_OPT_SEND | VM_CALL_SUPER)))) {
         warn_unused_block(vm_cc_cme(cc), iseq, (void *)ec->cfp->pc);
     }
 
