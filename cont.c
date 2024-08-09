@@ -841,7 +841,7 @@ fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
     rb_thread_t *thread = fiber->cont.saved_ec.thread_ptr;
 
 #ifdef COROUTINE_PTHREAD_CONTEXT
-    ruby_thread_set_native(thread);
+    ruby_thread_set_pthread_native(thread);
 #endif
 
     fiber_restore_thread(thread, fiber);
