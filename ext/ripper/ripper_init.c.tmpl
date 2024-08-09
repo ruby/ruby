@@ -252,6 +252,15 @@ ripper_parser_set_debug_output(VALUE self, VALUE output)
     return output;
 }
 
+static int
+rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width)
+{
+    rb_parser_string_t *str = rb_str_to_parser_string(p, string);
+    int result = rb_parser_dedent_string(p, str, width);
+    rb_str_replace(string, rb_str_new_parser_string(str));
+    return result;
+}
+
 #ifdef UNIVERSAL_PARSER
 struct dedent_string_arg {
     struct parser_params *p;

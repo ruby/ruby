@@ -80,8 +80,6 @@
 #define REALLOC_N(var,type,n) ((var) = (type *)p->config->realloc_n((void *)var, n, sizeof(type)))
 #undef ZALLOC
 #define ZALLOC(type) ((type *)p->config->zalloc(sizeof(type)))
-#undef MEMMOVE
-#define MEMMOVE(p1,p2,type,n) (p->config->rb_memmove((p1), (p2), sizeof(type), (n)))
 #undef MEMCPY
 #define MEMCPY(p1,p2,type,n) (p->config->nonempty_memcpy((p1), (p2), sizeof(type), (n)))
 
@@ -198,7 +196,6 @@
 #define rb_compile_warn    p->config->compile_warn
 #define rb_compile_warning p->config->compile_warning
 #define rb_bug             p->config->bug
-#define rb_fatal           p->config->fatal
 #undef ruby_verbose
 #define ruby_verbose       p->config->verbose()
 #undef errno
