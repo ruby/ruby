@@ -594,22 +594,30 @@ fstring_cmp(VALUE a, VALUE b)
             memcmp(aptr, bptr, alen) != 0);
 }
 
-static inline int
+static inline bool
 single_byte_optimizable(VALUE str)
 {
-    rb_encoding *enc;
-
+    int encindex = ENCODING_GET(str);
+    switch (encindex) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_US_ASCII:
+        return true;
+      case ENCINDEX_UTF_8:
+        // For UTF-8 it's worth scanning the string coderange when unknown.
+        return rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT;
+    }
     /* Conservative.  It may be ENC_CODERANGE_UNKNOWN. */
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
-        return 1;
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+        return true;
+    }
 
-    enc = STR_ENC_GET(str);
-    if (rb_enc_mbmaxlen(enc) == 1)
-        return 1;
+    if (rb_enc_mbmaxlen(rb_enc_from_index(encindex)) == 1) {
+        return true;
+    }
 
     /* Conservative.  Possibly single byte.
      * "\xa1" in Shift_JIS for example. */
-    return 0;
+    return false;
 }
 
 VALUE rb_fs;
