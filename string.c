@@ -150,6 +150,12 @@ str_enc_fastpath(VALUE str)
     }
 }
 
+static inline bool
+str_enc_single_byte_fastpath(VALUE str)
+{
+    return ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT || ENC_CODERANGE(str) == ENC_CODERANGE_7BIT;
+}
+
 #define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
 #define TERM_FILL(ptr, termlen) do {\
     char *const term_fill_ptr = (ptr);\
@@ -4246,9 +4252,16 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 static void
 str_ensure_byte_pos(VALUE str, long pos)
 {
+    // If the string is easily known to be single byte, we can avoid costly
+    // encoding checks.
+    if (str_enc_single_byte_fastpath(str)) {
+        return;
+    }
+
     const char *s = RSTRING_PTR(str);
     const char *e = RSTRING_END(str);
     const char *p = s + pos;
+
     if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
         rb_raise(rb_eIndexError,
                  "offset %ld does not land on character boundary", pos);
@@ -6561,7 +6574,6 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
 {
     long beg, len, vbeg, vlen;
     VALUE val;
-    rb_encoding *enc;
     int cr;
 
     rb_check_arity(argc, 2, 5);
@@ -6606,10 +6618,13 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     }
     str_check_beg_len(str, &beg, &len);
     str_check_beg_len(val, &vbeg, &vlen);
-    enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
+
+    if (RB_UNLIKELY(ENCODING_GET_INLINED(str) != ENCODING_GET_INLINED(val))) {
+        rb_enc_associate(str, rb_enc_check(str, val));
+    }
+
     rb_str_update_1(str, beg, len, val, vbeg, vlen);
-    rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
