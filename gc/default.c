@@ -8035,7 +8035,7 @@ gc_config_set_key(st_data_t key, st_data_t value, st_data_t data)
     rb_objspace_t *objspace = (rb_objspace_t *)data;
     if (rb_sym2id(key) == rb_intern("rgengc_allow_full_mark")) {
         gc_rest(objspace);
-        gc_config_full_mark_set(RBOOL(value));
+        gc_config_full_mark_set(RTEST(value));
     }
     return ST_CONTINUE;
 }

@@ -74,8 +74,10 @@ class TestGc < Test::Unit::TestCase
 
     new_value = GC.config(rgengc_allow_full_mark: false)[:rgengc_allow_full_mark]
     assert_false(new_value)
+    new_value = GC.config(rgengc_allow_full_mark: nil)[:rgengc_allow_full_mark]
+    assert_false(new_value)
   ensure
-    GC.config(rgengc_allow_full_mark: true)
+    GC.config(rgengc_allow_full_mark: old_value)
     GC.start
   end
 
