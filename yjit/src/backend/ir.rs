@@ -1241,6 +1241,13 @@ impl Assembler
         self.ctx.clear_local_types();
     }
 
+    /// Erase self shape if known
+    /// eg: because of a call we can't track
+    pub fn clear_self_shape(&mut self) {
+        asm_comment!(self, "clear self shape");
+        self.ctx.clear_self_shape();
+    }
+
     /// Spill all live registers to the stack
     pub fn spill_regs(&mut self) {
         // Forget registers above the stack top
