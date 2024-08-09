@@ -892,17 +892,29 @@ rb_ary_free(VALUE ary)
     }
 }
 
-VALUE
-rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool freeze)
+static VALUE fake_ary_flags;
+
+static VALUE
+init_fake_ary_flags(void)
 {
-    fake_ary->basic.flags = T_ARRAY;
-    VALUE ary = (VALUE)fake_ary;
-    RBASIC_CLEAR_CLASS(ary);
-    ARY_SET_PTR(ary, list);
-    ARY_SET_HEAP_LEN(ary, len);
-    ARY_SET_CAPA(ary, len);
-    if (freeze) rb_ary_freeze(ary);
-    return ary;
+    struct RArray fake_ary = {0};
+    fake_ary.basic.flags = T_ARRAY;
+    VALUE ary = (VALUE)&fake_ary;
+    rb_ary_freeze(ary);
+    return fake_ary.basic.flags;
+}
+
+VALUE
+rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len)
+{
+    fake_ary->basic.flags = fake_ary_flags;
+    RBASIC_CLEAR_CLASS((VALUE)fake_ary);
+
+    // bypass frozen checks
+    fake_ary->as.heap.ptr = list;
+    fake_ary->as.heap.len = len;
+    fake_ary->as.heap.aux.capa = len;
+    return (VALUE)fake_ary;
 }
 
 size_t
@@ -8677,6 +8689,8 @@ rb_ary_deconstruct(VALUE ary)
 void
 Init_Array(void)
 {
+    fake_ary_flags = init_fake_ary_flags();
+
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 
