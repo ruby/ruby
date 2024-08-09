@@ -865,16 +865,16 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #if 0
 #define dont_gc_on()          (fprintf(stderr, "dont_gc_on@%s:%d\n",      __FILE__, __LINE__), objspace->flags.dont_gc = 1)
 #define dont_gc_off()         (fprintf(stderr, "dont_gc_off@%s:%d\n",     __FILE__, __LINE__), objspace->flags.dont_gc = 0)
-#define dont_gc_set(b)        (fprintf(stderr, "dont_gc_set(%d)@%s:%d\n", __FILE__, __LINE__), (int)b), objspace->flags.dont_gc = (b))
+#define dont_gc_set(b)        (fprintf(stderr, "dont_gc_set(%d)@%s:%d\n", __FILE__, __LINE__), objspace->flags.dont_gc = (int)(b))
 #define dont_gc_val()         (objspace->flags.dont_gc)
 #else
 #define dont_gc_on()          (objspace->flags.dont_gc = 1)
 #define dont_gc_off()         (objspace->flags.dont_gc = 0)
-#define dont_gc_set(b)        (((int)b), objspace->flags.dont_gc = (b))
+#define dont_gc_set(b)        (objspace->flags.dont_gc = (int)(b))
 #define dont_gc_val()         (objspace->flags.dont_gc)
 #endif
 
-#define gc_config_full_mark_set(b) (((int)b), objspace->gc_config.full_mark = (b))
+#define gc_config_full_mark_set(b) (objspace->gc_config.full_mark = (int)(b))
 #define gc_config_full_mark_val    (objspace->gc_config.full_mark)
 
 #ifndef DURING_GC_COULD_MALLOC_REGION_START
