@@ -4607,7 +4607,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
  *    Regexp.last_match(n) -> string or nil
  *    Regexp.last_match(name) -> string or nil
  *
- *  With no argument, returns the value of <tt>$!</tt>,
+ *  With no argument, returns the value of <tt>$~</tt>,
  *  which is the result of the most recent pattern match
  *  (see {Regexp global variables}[rdoc-ref:Regexp@Global+Variables]):
  *
