@@ -1645,15 +1645,15 @@ class TestMethod < Test::Unit::TestCase
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
       def foo = nil
       foo{}          # warn
-      send(:foo){}   # warn
+      send(:foo){}   # don't warn because it uses send
       b = Proc.new{}
       foo(&b)        # warn
     RUBY
-      assert_equal 3, err.size
-      err = err.join
-      assert_match(/-:2: warning/, err)
-      assert_match(/-:3: warning/, err)
-      assert_match(/-:5: warning/, err)
+      errstr = err.join("\n")
+      assert_equal 2, err.size, errstr
+
+      assert_match(/-:2: warning/, errstr)
+      assert_match(/-:5: warning/, errstr)
     end
 
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
