@@ -217,7 +217,7 @@ assert_equal %q{[10, main]}, %q{
 }
 
 %w[break next redo].each do |keyword|
-  assert_match %r"Can't escape from eval with #{keyword}\b", %{
+  assert_match %r"Invalid #{keyword}\b", %{
     $stderr = STDOUT
     begin
       eval "0 rescue #{keyword}"

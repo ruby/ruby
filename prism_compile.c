@@ -5935,7 +5935,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     throw_flag = 0;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    COMPILE_ERROR(iseq, location.line, "Can't escape from eval with break");
+                    COMPILE_ERROR(iseq, location.line, "Invalid break");
                     return;
                 }
                 else {
@@ -7959,7 +7959,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    COMPILE_ERROR(iseq, location.line, "Can't escape from eval with next");
+                    COMPILE_ERROR(iseq, location.line, "Invalid next");
                     return;
                 }
 
@@ -8212,7 +8212,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    COMPILE_ERROR(iseq, location.line, "Can't escape from eval with redo");
+                    COMPILE_ERROR(iseq, location.line, "Invalid redo");
                     return;
                 }
 
