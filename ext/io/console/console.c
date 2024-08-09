@@ -1785,6 +1785,8 @@ Init_console(void)
 void
 InitVM_console(void)
 {
+    rb_ext_ractor_safe(true);
+
     rb_define_method(rb_cIO, "raw", console_raw, -1);
     rb_define_method(rb_cIO, "raw!", console_set_raw, -1);
     rb_define_method(rb_cIO, "cooked", console_cooked, 0);

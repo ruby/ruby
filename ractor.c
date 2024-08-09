@@ -3868,4 +3868,189 @@ ractor_local_value_set(rb_execution_context_t *ec, VALUE self, VALUE sym, VALUE 
     return val;
 }
 
+// Ractor::Channel (emulate with Ractor)
+
+typedef rb_ractor_t rb_ractor_channel_t;
+
+static VALUE
+rb_ractor_channel_new(void)
+{
+    return rb_funcall(rb_const_get(rb_cRactor, rb_intern("Channel")), rb_intern("new"), 0);
+}
+
+static VALUE
+rb_ractor_channel_yield(VALUE vch, VALUE obj)
+{
+    rb_ractor_channel_t *ch = RACTOR_PTR(vch);
+    ractor_send(GET_EC(), (rb_ractor_t *)ch, obj, Qfalse);
+    return Qnil;
+}
+
+static VALUE
+rb_ractor_channel_take(VALUE vch)
+{
+    rb_ractor_channel_t *ch = RACTOR_PTR(vch);
+    return ractor_take(GET_EC(), (rb_ractor_t *)ch);
+}
+
+static VALUE
+rb_ractor_channel_close(VALUE vch)
+{
+    rb_ractor_channel_t *ch = RACTOR_PTR(vch);
+    return ractor_close_incoming(GET_EC(), (rb_ractor_t *)ch);
+}
+
+// Ractor#require
+
+struct cross_ractor_require {
+    VALUE ch;
+    VALUE result;
+    VALUE exception;
+
+    // require
+    VALUE feature;
+
+    // autoload
+    VALUE module;
+    ID name;
+};
+
+static VALUE
+require_body(VALUE data)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+
+    ID require;
+    CONST_ID(require, "require");
+    crr->result = rb_funcallv(Qnil, require, 1, &crr->feature);
+
+    return Qnil;
+}
+
+static VALUE
+require_rescue(VALUE data, VALUE errinfo)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    crr->exception = errinfo;
+    return Qundef;
+}
+
+static VALUE
+require_result_copy_body(VALUE data)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+
+    if (crr->exception != Qundef) {
+        VM_ASSERT(crr->result == Qnil);
+        crr->exception = ractor_copy(crr->exception);
+    }
+    else{
+        VM_ASSERT(crr->result != Qundef);
+        crr->result = ractor_copy(crr->result);
+    }
+
+    return Qnil;
+}
+
+static VALUE
+require_result_copy_resuce(VALUE data, VALUE errinfo)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    crr->exception = errinfo; // ractor_move(crr->exception);
+    return Qnil;
+}
+
+static VALUE
+ractor_require_protect(struct cross_ractor_require *crr, VALUE (*func)(VALUE))
+{
+    // catch any error
+    rb_rescue2(func, (VALUE)crr,
+               require_rescue, (VALUE)crr, rb_eException, 0);
+
+    rb_rescue2(require_result_copy_body, (VALUE)crr,
+               require_result_copy_resuce, (VALUE)crr, rb_eException, 0);
+
+    rb_ractor_channel_yield(crr->ch, Qtrue);
+    return Qnil;
+
+}
+
+static VALUE
+ractore_require_func(void *data)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    return ractor_require_protect(crr, require_body);
+}
+
+VALUE
+rb_ractor_require(VALUE feature)
+{
+    // TODO: make feature shareable
+    struct cross_ractor_require crr = {
+        .feature = feature, // TODO: ractor
+        .ch = rb_ractor_channel_new(),
+        .result = Qundef,
+        .exception = Qundef,
+    };
+
+    rb_ractor_t *r = GET_VM()->ractor.main_ractor;
+    rb_ractor_interrupt_exec(r, ractore_require_func, &crr, 0);
+
+    // wait for require done
+    rb_ractor_channel_take(crr.ch);
+
+    if (crr.exception != Qundef) {
+        rb_exc_raise(crr.exception);
+    }
+    else {
+        return crr.result;
+    }
+}
+
+static VALUE
+ractor_require(rb_execution_context_t *ec, VALUE self, VALUE feature)
+{
+    return rb_ractor_require(feature);
+}
+
+static VALUE
+autoload_load_body(VALUE data)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    crr->result = rb_autoload_load(crr->module, crr->name);
+    return Qnil;
+}
+
+static VALUE
+ractor_autoload_load_func(void *data)
+{
+    struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
+    return ractor_require_protect(crr, autoload_load_body);
+}
+
+VALUE
+rb_ractor_autoload_load(VALUE module, ID name)
+{
+    struct cross_ractor_require crr = {
+        .module = module,
+        .name = name,
+        .ch = rb_ractor_channel_new(),
+        .result = Qundef,
+        .exception = Qundef,
+    };
+
+    rb_ractor_t *r = GET_VM()->ractor.main_ractor;
+    rb_ractor_interrupt_exec(r, ractor_autoload_load_func, &crr, 0);
+
+    // wait for require done
+    rb_ractor_channel_take(crr.ch);
+
+    if (crr.exception != Qundef) {
+        rb_exc_raise(crr.exception);
+    }
+    else {
+        return crr.result;
+    }
+}
+
 #include "ractor.rbinc"
