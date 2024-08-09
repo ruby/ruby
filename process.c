@@ -4228,6 +4228,7 @@ rb_fork_ruby2(struct rb_process_status *status)
         prefork();
 
         before_fork_ruby();
+        rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
         {
             pid = rb_fork();
@@ -4238,6 +4239,10 @@ rb_fork_ruby2(struct rb_process_status *status)
             }
         }
         disable_child_handler_fork_parent(&old); /* yes, bad name */
+        rb_thread_release_fork_lock();
+        if (pid == 0) {
+          rb_thread_reset_fork_lock();
+        }
         after_fork_ruby(pid);
 
         if (pid >= 0) { /* fork succeed */

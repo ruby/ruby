@@ -327,6 +327,12 @@ nogvl_getaddrinfo(void *arg)
     return (void *)(VALUE)ret;
 }
 
+static void *
+fork_safe_getaddrinfo(void *arg)
+{
+    return rb_thread_prevent_fork(nogvl_getaddrinfo, arg);
+}
+
 static int
 rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
 {
@@ -336,7 +342,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
     arg.service = portp;
     arg.hints = hints;
     arg.res = ai;
-    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_getaddrinfo, &arg, RUBY_UBF_IO, 0);
+    return (int)(VALUE)rb_thread_call_without_gvl(fork_safe_getaddrinfo, &arg, RUBY_UBF_IO, 0);
 }
 
 #elif GETADDRINFO_IMPL == 2
@@ -477,6 +483,12 @@ do_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
     return ret;
 }
 
+static void *
+fork_safe_do_getaddrinfo(void *ptr)
+{
+    return rb_thread_prevent_fork(do_getaddrinfo, ptr);
+}
+
 static int
 rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
 {
@@ -493,7 +505,7 @@ start:
     }
 
     pthread_t th;
-    if (do_pthread_create(&th, do_getaddrinfo, arg) != 0) {
+    if (do_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
