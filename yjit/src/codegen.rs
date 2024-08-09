@@ -114,10 +114,13 @@ pub struct JITState<'a> {
 
     /// Stack of symbol names for --yjit-perf
     perf_stack: Vec<String>,
+
+    /// When true, this block is the first block compiled by gen_block_series().
+    first_block: bool,
 }
 
 impl<'a> JITState<'a> {
-    pub fn new(blockid: BlockId, starting_ctx: Context, output_ptr: CodePtr, ec: EcPtr, ocb: &'a mut OutlinedCb) -> Self {
+    pub fn new(blockid: BlockId, starting_ctx: Context, output_ptr: CodePtr, ec: EcPtr, ocb: &'a mut OutlinedCb, first_block: bool) -> Self {
         JITState {
             iseq: blockid.iseq,
             starting_insn_idx: blockid.idx,
@@ -140,6 +143,7 @@ impl<'a> JITState<'a> {
             block_assumes_single_ractor: false,
             perf_map: Rc::default(),
             perf_stack: vec![],
+            first_block,
         }
     }
 
@@ -215,6 +219,13 @@ impl<'a> JITState<'a> {
     // Check if we are compiling the instruction at the stub PC
     // Meaning we are compiling the instruction that is next to execute
     pub fn at_current_insn(&self) -> bool {
+        // If this is not the first block compiled by gen_block_series(),
+        // it might be compiling the same block again with a different Context.
+        // In that case, it should defer_compilation() and inspect the stack there.
+        if !self.first_block {
+            return false;
+        }
+
         let ec_pc: *mut VALUE = unsafe { get_cfp_pc(self.get_cfp()) };
         ec_pc == self.pc
     }
@@ -1172,6 +1183,7 @@ pub fn gen_single_block(
     ec: EcPtr,
     cb: &mut CodeBlock,
     ocb: &mut OutlinedCb,
+    first_block: bool,
 ) -> Result<BlockRef, ()> {
     // Limit the number of specialized versions for this block
     let ctx = limit_block_versions(blockid, start_ctx);
@@ -1195,7 +1207,7 @@ pub fn gen_single_block(
     let mut insn_idx: IseqIdx = blockid.idx;
 
     // Initialize a JIT state object
-    let mut jit = JITState::new(blockid, ctx, cb.get_write_ptr(), ec, ocb);
+    let mut jit = JITState::new(blockid, ctx, cb.get_write_ptr(), ec, ocb, first_block);
     jit.iseq = blockid.iseq;
 
     // Create a backend assembler instance
@@ -2345,7 +2357,16 @@ fn gen_getlocal_generic(
         // Load the local from the block
         // val = *(vm_get_ep(GET_EP(), level) - idx);
         let offs = -(SIZEOF_VALUE_I32 * ep_offset as i32);
-        Opnd::mem(64, ep_opnd, offs)
+        let local_opnd = Opnd::mem(64, ep_opnd, offs);
+
+        // Write back an argument register to the stack. If the local variable
+        // is an argument, it might have an allocated register, but if this ISEQ
+        // is known to escape EP, the register shouldn't be used after this getlocal.
+        if level == 0 && asm.ctx.get_reg_mapping().get_reg(asm.local_opnd(ep_offset).reg_opnd()).is_some() {
+            asm.mov(local_opnd, asm.local_opnd(ep_offset));
+        }
+
+        local_opnd
     };
 
     // Write the local at SP
@@ -2425,6 +2446,13 @@ fn gen_setlocal_generic(
         asm.alloc_reg(local_opnd.reg_opnd());
         (flags_opnd, local_opnd)
     } else {
+        // Make sure getlocal doesn't read a stale register. If the local variable
+        // is an argument, it might have an allocated register, but if this ISEQ
+        // is known to escape EP, the register shouldn't be used after this setlocal.
+        if level == 0 {
+            asm.ctx.dealloc_reg(asm.local_opnd(ep_offset).reg_opnd());
+        }
+
         // Load flags and the local for the level
         let ep_opnd = gen_get_ep(asm, level);
         let flags_opnd = Opnd::mem(
@@ -2627,11 +2655,11 @@ fn gen_checkkeyword(
     // The index of the keyword we want to check
     let index: i64 = jit.get_arg(1).as_i64();
 
-    // Load environment pointer EP
-    let ep_opnd = gen_get_ep(asm, 0);
-
-    // VALUE kw_bits = *(ep - bits);
-    let bits_opnd = Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * -bits_offset);
+    // `unspecified_bits` is a part of the local table. Therefore, we may allocate a register for
+    // that "local" when passing it as an argument. We must use such a register to avoid loading
+    // random bits from the stack if any. We assume that EP is not escaped as of entering a method
+    // with keyword arguments.
+    let bits_opnd = asm.local_opnd(bits_offset as u32);
 
     // unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
     // if ((b & (0x01 << idx))) {
@@ -6433,14 +6461,6 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
-    if frame.iseq.is_some() {
-        // Spill stack temps to let the callee use them (must be done before changing the SP register)
-        asm.spill_regs();
-
-        // Saving SP before calculating ep avoids a dependency on a register
-        // However this must be done after referencing frame.recv, which may be SP-relative
-        asm.mov(SP, sp);
-    }
     let ep = asm.sub(sp, SIZEOF_VALUE.into());
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
 }
@@ -7770,9 +7790,32 @@ fn gen_send_iseq(
         pc: None, // We are calling into jitted code, which will set the PC as necessary
     }));
 
+    // Create a context for the callee
+    let mut callee_ctx = Context::default();
+
+    // Transfer some stack temp registers to the callee's locals for arguments.
+    let mapped_temps = if !forwarding {
+        asm.map_temp_regs_to_args(&mut callee_ctx, argc)
+    } else {
+        // When forwarding, the callee's local table has only a callinfo,
+        // so we can't map the actual arguments to the callee's locals.
+        vec![]
+    };
+
+    // Spill stack temps and locals that are not used by the callee.
+    // This must be done before changing the SP register.
+    asm.spill_regs_except(mapped_temps);
+
+    // Saving SP before calculating ep avoids a dependency on a register
+    // However this must be done after referencing frame.recv, which may be SP-relative
+    asm.mov(SP, callee_sp);
+
     // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
     // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
     if get_option!(gen_stats) {
+        // Protect caller-saved registers in case they're used for arguments
+        asm.cpush_all();
+
         // Assemble the ISEQ name string
         let name_str = get_iseq_name(iseq);
 
@@ -7781,6 +7824,7 @@ fn gen_send_iseq(
 
         // Increment the counter for this cfunc
         asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
+        asm.cpop_all();
     }
 
     // No need to set cfp->pc since the callee sets it whenever calling into routines
@@ -7793,9 +7837,6 @@ fn gen_send_iseq(
         iseq: jit.iseq,
         idx: jit.next_insn_idx(),
     };
-
-    // Create a context for the callee
-    let mut callee_ctx = Context::default();
 
     // If the callee has :inline_block annotation and the callsite has a block ISEQ,
     // duplicate a callee block for each block ISEQ to make its `yield` monomorphic.
@@ -10593,6 +10634,7 @@ mod tests {
             cb.get_write_ptr(),
             ptr::null(), // No execution context in tests. No peeking!
             ocb,
+            true,
         )
     }
 

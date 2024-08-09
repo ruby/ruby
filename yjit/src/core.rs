@@ -371,6 +371,12 @@ impl RegMapping {
             .map(|(reg_idx, _)| reg_idx)
     }
 
+    /// Set a given operand to the register at a given index.
+    pub fn set_reg(&mut self, opnd: RegOpnd, reg_idx: usize) {
+        assert!(self.0[reg_idx].is_none());
+        self.0[reg_idx] = Some(opnd);
+    }
+
     /// Allocate a register for a given operand if available.
     /// Return true if self is updated.
     pub fn alloc_reg(&mut self, opnd: RegOpnd) -> bool {
@@ -2080,9 +2086,8 @@ pub fn take_version_list(blockid: BlockId) -> VersionList {
     }
 }
 
-/// Count the number of block versions matching a given blockid
-/// `inlined: true` counts inlined versions, and `inlined: false` counts other versions.
-fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
+/// Count the number of block versions that match a given BlockId and part of a Context
+fn get_num_versions(blockid: BlockId, ctx: &Context) -> usize {
     let insn_idx = blockid.idx.as_usize();
     match get_iseq_payload(blockid.iseq) {
 
@@ -2094,9 +2099,14 @@ fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
                 .version_map
                 .get(insn_idx)
                 .map(|versions| {
-                    versions.iter().filter(|&&version|
-                        Context::decode(unsafe { version.as_ref() }.ctx).inline() == inlined
-                    ).count()
+                    versions.iter().filter(|&&version| {
+                        let version_ctx = Context::decode(unsafe { version.as_ref() }.ctx);
+                        // Inline versions are counted separately towards MAX_INLINE_VERSIONS.
+                        version_ctx.inline() == ctx.inline() &&
+                            // find_block_versions() finds only blocks with compatible reg_mapping,
+                            // so count only versions with compatible reg_mapping.
+                            version_ctx.reg_mapping == ctx.reg_mapping
+                    }).count()
                 })
                 .unwrap_or(0)
         }
@@ -2166,7 +2176,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return *ctx;
     }
 
-    let next_versions = get_num_versions(blockid, ctx.inline()) + 1;
+    let next_versions = get_num_versions(blockid, ctx) + 1;
     let max_versions = if ctx.inline() {
         MAX_INLINE_VERSIONS
     } else {
@@ -2955,7 +2965,7 @@ fn gen_block_series_body(
     let mut batch = Vec::with_capacity(EXPECTED_BATCH_SIZE);
 
     // Generate code for the first block
-    let first_block = gen_single_block(blockid, start_ctx, ec, cb, ocb).ok()?;
+    let first_block = gen_single_block(blockid, start_ctx, ec, cb, ocb, true).ok()?;
     batch.push(first_block); // Keep track of this block version
 
     // Add the block version to the VersionMap for this ISEQ
@@ -2996,7 +3006,7 @@ fn gen_block_series_body(
 
         // Generate new block using context from the last branch.
         let requested_ctx = Context::decode(requested_ctx);
-        let result = gen_single_block(requested_blockid, &requested_ctx, ec, cb, ocb);
+        let result = gen_single_block(requested_blockid, &requested_ctx, ec, cb, ocb, false);
 
         // If the block failed to compile
         if result.is_err() {
@@ -4312,7 +4322,7 @@ mod tests {
         let cb = CodeBlock::new_dummy(1024);
         let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(1024));
         let dumm_addr = cb.get_write_ptr();
-        let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null(), &mut ocb)
+        let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null(), &mut ocb, true)
             .into_block(0, dumm_addr, dumm_addr, vec![]);
         let _dropper = BlockDropper(block);
 

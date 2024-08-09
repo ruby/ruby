@@ -1032,7 +1032,7 @@ pub struct Assembler {
     pub ctx: Context,
 
     /// The current ISEQ's local table size. asm.local_opnd() uses this, and it's
-    /// sometimes hard to pass this value, e.g. asm.spill_temps() in asm.ccall().
+    /// sometimes hard to pass this value, e.g. asm.spill_regs() in asm.ccall().
     ///
     /// `None` means we're not assembling for an ISEQ, or that the local size is
     /// not relevant.
@@ -1241,8 +1241,36 @@ impl Assembler
         self.ctx.clear_local_types();
     }
 
+    /// Repurpose stack temp registers to the corresponding locals for arguments
+    pub fn map_temp_regs_to_args(&mut self, callee_ctx: &mut Context, argc: i32) -> Vec<RegOpnd> {
+        let mut callee_reg_mapping = callee_ctx.get_reg_mapping();
+        let mut mapped_temps = vec![];
+
+        for arg_idx in 0..argc {
+            let stack_idx: u8 = (self.ctx.get_stack_size() as i32 - argc + arg_idx).try_into().unwrap();
+            let temp_opnd = RegOpnd::Stack(stack_idx);
+
+            // For each argument, if the stack temp for it has a register,
+            // let the callee use the register for the local variable.
+            if let Some(reg_idx) = self.ctx.get_reg_mapping().get_reg(temp_opnd) {
+                let local_opnd = RegOpnd::Local(arg_idx.try_into().unwrap());
+                callee_reg_mapping.set_reg(local_opnd, reg_idx);
+                mapped_temps.push(temp_opnd);
+            }
+        }
+
+        asm_comment!(self, "local maps: {:?}", callee_reg_mapping);
+        callee_ctx.set_reg_mapping(callee_reg_mapping);
+        mapped_temps
+    }
+
     /// Spill all live registers to the stack
     pub fn spill_regs(&mut self) {
+        self.spill_regs_except(vec![]);
+    }
+
+    /// Spill all live registers except `ignored_temps` to the stack
+    pub fn spill_regs_except(&mut self, ignored_temps: Vec<RegOpnd>) {
         // Forget registers above the stack top
         let mut reg_mapping = self.ctx.get_reg_mapping();
         for stack_idx in self.ctx.get_stack_size()..MAX_CTX_TEMPS as u8 {
@@ -1250,36 +1278,46 @@ impl Assembler
         }
         self.set_reg_mapping(reg_mapping);
 
-        // Spill live stack temps
-        if self.ctx.get_reg_mapping() != RegMapping::default() {
-            asm_comment!(self, "spill_temps: {:?} -> {:?}", self.ctx.get_reg_mapping(), RegMapping::default());
-
-            // Spill stack temps
-            for stack_idx in 0..u8::min(MAX_CTX_TEMPS as u8, self.ctx.get_stack_size()) {
-                if reg_mapping.dealloc_reg(RegOpnd::Stack(stack_idx)) {
-                    let idx = self.ctx.get_stack_size() - 1 - stack_idx;
-                    self.spill_temp(self.stack_opnd(idx.into()));
-                }
-            }
-
-            // Spill locals
-            for local_idx in 0..MAX_CTX_TEMPS as u8 {
-                if reg_mapping.dealloc_reg(RegOpnd::Local(local_idx)) {
-                    let first_local_ep_offset = self.num_locals.unwrap() + VM_ENV_DATA_SIZE - 1;
-                    let ep_offset = first_local_ep_offset - local_idx as u32;
-                    self.spill_temp(self.local_opnd(ep_offset));
-                }
-            }
-
-            self.ctx.set_reg_mapping(reg_mapping);
+        // If no registers are in use, skip all checks
+        if self.ctx.get_reg_mapping() == RegMapping::default() {
+            return;
         }
 
-        // Every stack temp should have been spilled
-        assert_eq!(self.ctx.get_reg_mapping(), RegMapping::default());
+        // Collect stack temps to be spilled
+        let mut spilled_opnds = vec![];
+        for stack_idx in 0..u8::min(MAX_CTX_TEMPS as u8, self.ctx.get_stack_size()) {
+            let reg_opnd = RegOpnd::Stack(stack_idx);
+            if !ignored_temps.contains(&reg_opnd) && reg_mapping.dealloc_reg(reg_opnd) {
+                let idx = self.ctx.get_stack_size() - 1 - stack_idx;
+                let spilled_opnd = self.stack_opnd(idx.into());
+                spilled_opnds.push(spilled_opnd);
+                reg_mapping.dealloc_reg(spilled_opnd.reg_opnd());
+            }
+        }
+
+        // Collect locals to be spilled
+        for local_idx in 0..MAX_CTX_TEMPS as u8 {
+            if reg_mapping.dealloc_reg(RegOpnd::Local(local_idx)) {
+                let first_local_ep_offset = self.num_locals.unwrap() + VM_ENV_DATA_SIZE - 1;
+                let ep_offset = first_local_ep_offset - local_idx as u32;
+                let spilled_opnd = self.local_opnd(ep_offset);
+                spilled_opnds.push(spilled_opnd);
+                reg_mapping.dealloc_reg(spilled_opnd.reg_opnd());
+            }
+        }
+
+        // Spill stack temps and locals
+        if !spilled_opnds.is_empty() {
+            asm_comment!(self, "spill_regs: {:?} -> {:?}", self.ctx.get_reg_mapping(), reg_mapping);
+            for &spilled_opnd in spilled_opnds.iter() {
+                self.spill_reg(spilled_opnd);
+            }
+            self.ctx.set_reg_mapping(reg_mapping);
+        }
     }
 
     /// Spill a stack temp from a register to the stack
-    fn spill_temp(&mut self, opnd: Opnd) {
+    fn spill_reg(&mut self, opnd: Opnd) {
         assert_ne!(self.ctx.get_reg_mapping().get_reg(opnd.reg_opnd()), None);
 
         // Use different RegMappings for dest and src operands
@@ -1808,7 +1846,7 @@ impl Assembler {
         // Mark all temps as not being in registers.
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
-        // that don't require spill_temps for GC.
+        // that don't require spill_regs for GC.
         self.set_reg_mapping(RegMapping::default());
     }
 
