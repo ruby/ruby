@@ -2733,11 +2733,11 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
             }
 
             snprintf(argi, sizeof(argi), "%s%s%s%s%s%s",	/* arg, opts, rest, post, kwrest, block */
-                     body->param.lead_num > li ? "Arg" : "",
+                     (body->param.lead_num > li) ? (i == (body->local_table_size - 1) && body->param.flags.ambiguous_param0 ? "AmbiguousArg" : "Arg") : "",
                      opti,
-                     (body->param.flags.has_rest && body->param.rest_start == li) ? "Rest" : "",
+                     (body->param.flags.has_rest && body->param.rest_start == li) ? (body->param.flags.anon_rest ? "AnonRest" : "Rest") : "",
                      (body->param.flags.has_post && body->param.post_start <= li && li < body->param.post_start + body->param.post_num) ? "Post" : "",
-                     (body->param.flags.has_kwrest && keyword->rest_start == li) ? "Kwrest" : "",
+                     (body->param.flags.has_kwrest && keyword->rest_start == li) ? (body->param.flags.anon_kwrest ? "AnonKwrest" : "Kwrest") : "",
                      (body->param.flags.has_block && body->param.block_start == li) ? "Block" : "");
 
             rb_str_cat(str, indent_str, indent_len);
