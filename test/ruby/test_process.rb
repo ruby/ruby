@@ -1725,28 +1725,30 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait_and_sigchild
-    signal_received = []
-    IO.pipe do |sig_r, sig_w|
-      Signal.trap(:CHLD) do
-        signal_received << true
-        sig_w.write('?')
+    Timeout.timeout(180) do
+      signal_received = []
+      IO.pipe do |sig_r, sig_w|
+        Signal.trap(:CHLD) do
+          signal_received << true
+          sig_w.write('?')
+        end
+        pid = nil
+        IO.pipe do |r, w|
+          pid = fork { r.read(1); exit }
+          Thread.start {
+            Thread.current.report_on_exception = false
+            raise
+          }
+          w.puts
+        end
+        Process.wait pid
+        assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
       end
-      pid = nil
-      IO.pipe do |r, w|
-        pid = fork { r.read(1); exit }
-        Thread.start {
-          Thread.current.report_on_exception = false
-          raise
-        }
-        w.puts
+      if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # checking -DRJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
+        assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
+      else
+        assert_equal [true], signal_received, "[ruby-core:19744]"
       end
-      Process.wait pid
-      assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
-    end
-    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # checking -DRJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
-      assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
-    else
-      assert_equal [true], signal_received, "[ruby-core:19744]"
     end
   rescue NotImplementedError, ArgumentError
   ensure
@@ -1860,12 +1862,14 @@ class TestProcess < Test::Unit::TestCase
 
   if Process.respond_to?(:daemon)
     def test_daemon_default
-      data = IO.popen("-", "r+") do |f|
-        break f.read if f
-        Process.daemon
-        puts "ng"
+      Timeout.timeout(180) do
+        data = IO.popen("-", "r+") do |f|
+          break f.read if f
+          Process.daemon
+          puts "ng"
+        end
+        assert_equal("", data)
       end
-      assert_equal("", data)
     end
 
     def test_daemon_noclose
