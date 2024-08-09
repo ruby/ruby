@@ -8,6 +8,22 @@ SUBLIBS = {}
 REQUIRED = {}
 BUILTIN_ATTRS = %w[leaf inline_block use_block]
 
+module CompileWarning
+  @@warnings = 0
+
+  def warn(message)
+    @@warnings += 1
+    super
+  end
+
+  def self.reset
+    w, @@warnings = @@warnings, 0
+    w.nonzero?
+  end
+end
+
+Warning.extend CompileWarning
+
 def string_literal(lit, str = [])
   while lit
     case lit.first
@@ -300,7 +316,15 @@ def mk_builtin_header file
 
   # bs = { func_name => argc }
   code = File.read(file)
-  collect_iseq RubyVM::InstructionSequence.compile(code).to_a
+  begin
+    verbose, $VERBOSE = $VERBOSE, true
+    collect_iseq RubyVM::InstructionSequence.compile(code, base).to_a
+  ensure
+    $VERBOSE = verbose
+  end
+  if warnings = CompileWarning.reset
+    raise "#{warnings} warnings in #{file}"
+  end
   collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
 
   StringIO.open do |f|
