@@ -13,6 +13,15 @@ static const rb_random_interface_t random_loop_if = {
     RB_RANDOM_INTERFACE_DEFINE_WITH_REAL(loop)
 };
 
+static void
+loop_free(void *ptr)
+{
+    rand_loop_t *r = ptr;
+
+    xfree(r->buf);
+    xfree(r);
+}
+
 RB_RANDOM_DEFINE_INIT_INT32_FUNC(loop)
 static size_t
 random_loop_memsize(const void *ptr)
@@ -25,7 +34,7 @@ static rb_random_data_type_t random_loop_type = {
     "random/loop",
     {
         rb_random_mark,
-        RUBY_TYPED_DEFAULT_FREE,
+        loop_free,
         random_loop_memsize,
     },
     RB_RANDOM_PARENT,
