@@ -103,38 +103,40 @@ class TestFiberMutex < Test::Unit::TestCase
   end
 
   def test_condition_variable
-    mutex = Thread::Mutex.new
-    condition = Thread::ConditionVariable.new
+    Timeout.timeout(180) do
+      mutex = Thread::Mutex.new
+      condition = Thread::ConditionVariable.new
 
-    signalled = 0
+      signalled = 0
 
-    Thread.new do
-      scheduler = Scheduler.new
-      Fiber.set_scheduler scheduler
+      Thread.new do
+        scheduler = Scheduler.new
+        Fiber.set_scheduler scheduler
 
-      Fiber.schedule do
-        mutex.synchronize do
-          3.times do
-            condition.wait(mutex)
-            signalled += 1
-          end
-        end
-      end
-
-      Fiber.schedule do
-        3.times do
+        Fiber.schedule do
           mutex.synchronize do
-            condition.signal
+            3.times do
+              condition.wait(mutex)
+              signalled += 1
+            end
           end
-
-          sleep 0.1
         end
-      end
 
-      scheduler.run
-    end.join
+        Fiber.schedule do
+          3.times do
+            mutex.synchronize do
+              condition.signal
+            end
 
-    assert_equal 3, signalled
+            sleep 0.1
+          end
+        end
+
+        scheduler.run
+      end.join
+
+      assert_equal 3, signalled
+    end
   end
 
   def test_queue
