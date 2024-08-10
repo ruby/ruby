@@ -1575,6 +1575,21 @@ x = __ENCODING__
     assert_equal(2, b[1], bug_20341)
   end
 
+  def test_shareable_constant_value_literal_const_refs
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      # [Bug #20668]
+      SOME_CONST = {
+        'Object' => Object,
+        'String' => String,
+        'Array' => Array,
+      }
+      SOME_CONST
+    end;
+    assert_ractor_shareable(a)
+  end
+
   def test_shareable_constant_value_nested
     a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
