@@ -2582,7 +2582,7 @@ set_pioinfo_extra(void)
     char *p = (char*)get_proc_address(UCRTBASE, "_isatty", NULL);
     /* _osfile(fh) & FDEV */
 
-#ifdef _M_ARM64
+#if defined(_M_ARM64) || defined(__aarch64__)
 #define IS_INSN(pc, name) ((*(pc) & name##_mask) == name##_id)
     const int max_num_inst = 500;
     uint32_t *start = (uint32_t*)p;
@@ -2664,15 +2664,21 @@ set_pioinfo_extra(void)
 # else /* x86 */
     /* pop ebp */
 #  define FUNCTION_BEFORE_RET_MARK "\x5d"
+    /* leave */
+#  define FUNCTION_BEFORE_RET_MARK_2 "\xc9"
 #  define FUNCTION_SKIP_BYTES 0
     /* mov eax,dword ptr [eax*4+100EB430h] */
 #  define PIOINFO_MARK "\x8B\x04\x85"
 # endif
     if (p) {
-        for (pend += 10; pend < p + 300; pend++) {
+        for (pend += 10; pend < p + 500; pend++) {
             // find end of function
-            if (memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
-                (*(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET) == FUNCTION_RET) {
+            if ((memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0
+# ifdef FUNCTION_BEFORE_RET_MARK_2
+                || memcmp(pend, FUNCTION_BEFORE_RET_MARK_2, sizeof(FUNCTION_BEFORE_RET_MARK_2) - 1) == 0
+# endif
+                ) &&
+                *(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) == (char)FUNCTION_RET) {
                 // search backwards from end of function
                 for (pend -= (sizeof(PIOINFO_MARK) - 1); pend > p; pend--) {
                     if (memcmp(pend, PIOINFO_MARK, sizeof(PIOINFO_MARK) - 1) == 0) {
