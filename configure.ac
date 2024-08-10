@@ -3526,10 +3526,7 @@ AC_ARG_WITH(soname,
 	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 	    ],
 	    [mingw*], [
-		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
-		AS_IF([test x"${target_cpu}" != xi386], [
-		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
-		])
+	        RUBY_SO_NAME="${target_cpu}-${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 	    ],
 	    [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
 	])
@@ -4427,7 +4424,7 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
     AS_IF([test "${target_os}-${rb_cv_msvcrt}" = "mingw32-ucrt" ], [
-        arch="${target_cpu}-mingw-ucrt"
+        arch="${target_cpu}-${target_os}-ucrt"
     ], [
         arch="${target_cpu}-${target_os}"
     ])
