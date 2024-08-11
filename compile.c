@@ -1985,7 +1985,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->required_num = rkw;
     keyword->table = &body->local_table[keyword->bits_start - keyword->num];
 
-    {
+    if (RARRAY_LEN(default_values)) {
         VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
         for (i = 0; i < RARRAY_LEN(default_values); i++) {
@@ -12769,7 +12769,7 @@ ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_o
         struct rb_iseq_param_keyword *kw = IBF_R(param_keyword_offset, struct rb_iseq_param_keyword, 1);
         ID *ids = IBF_R(kw->table, ID, kw->num);
         int dv_num = kw->num - kw->required_num;
-        VALUE *dvs = IBF_R(kw->default_values, VALUE, dv_num);
+        VALUE *dvs = dv_num ? IBF_R(kw->default_values, VALUE, dv_num) : NULL;
         int i;
 
         for (i=0; i<kw->num; i++) {
