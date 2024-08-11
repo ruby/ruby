@@ -8828,9 +8828,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             const VALUE default_values = rb_ary_hidden_new(1);
             const VALUE complex_mark = rb_str_tmp_new(0);
 
-            ID *ids = xcalloc(keywords_list->size, sizeof(ID));
-
-            size_t kw_index = 0;
+            // ID *ids = xcalloc(keywords_list->size, sizeof(ID));
+            // size_t kw_index = 0;
 
             for (size_t i = 0; i < keywords_list->size; i++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
@@ -8850,7 +8849,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
                     local_index++;
-                    ids[kw_index++] = local;
+                    // ids[kw_index++] = local;
                 }
             }
 
@@ -8880,14 +8879,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     else {
                         pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
-                    ids[kw_index++] = local;
+                    //ids[kw_index++] = local;
                     local_index++;
                 }
 
             }
 
             keyword->bits_start = local_index;
-            keyword->table = ids;
+            keyword->table = &local_table_for_iseq->ids[keyword->bits_start - keyword->num];
 
             if (RARRAY_LEN(default_values)) {
                 VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
