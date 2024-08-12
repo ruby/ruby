@@ -4424,7 +4424,7 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal." RUBY_PLATFORM_CPU "-" RUBY_PLATFORM_OS)
 ], [
     AS_IF([test "${target_os}-${rb_cv_msvcrt}" = "mingw32-ucrt" ], [
-        arch="${target_cpu}-${target_os}-ucrt"
+        arch="${target_cpu}-mingw-ucrt"
     ], [
         arch="${target_cpu}-${target_os}"
     ])
