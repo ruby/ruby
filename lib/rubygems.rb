@@ -798,24 +798,20 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     File.open(path, flags, &block)
   end
 
+  MODE_TO_FLOCK = IO::RDONLY | IO::APPEND | IO::CREAT # :nodoc:
+
   ##
   # Open a file with given flags, and protect access with flock
 
   def self.open_file_with_flock(path, &block)
-    flags = File.exist?(path) ? "r+" : "a+"
-
-    File.open(path, flags) do |io|
+    File.open(path, MODE_TO_FLOCK) do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue Errno::ENOSYS, Errno::ENOTSUP
+      rescue Errno::ENOLCK # NFS
+        raise unless Thread.main == Thread.current
       end
       yield io
-    rescue Errno::ENOLCK # NFS
-      if Thread.main != Thread.current
-        raise
-      else
-        open_file(path, flags, &block)
-      end
     end
   end
 
