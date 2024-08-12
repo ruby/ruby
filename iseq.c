@@ -194,7 +194,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (body->param.keyword != NULL) {
             if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
                 ruby_xfree((void *)body->param.keyword->table);
-            ruby_xfree((void *)body->param.keyword->default_values);
+            if (body->param.keyword->default_values) {
+                ruby_xfree((void *)body->param.keyword->default_values);
+            }
             ruby_xfree((void *)body->param.keyword);
         }
         compile_data_free(ISEQ_COMPILE_DATA(iseq));

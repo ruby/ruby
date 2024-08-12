@@ -136,22 +136,28 @@ static VALUE end_stream(VALUE self)
     return self;
 }
 
-/* call-seq: emitter.start_document(version, tags, implicit)
- *
- * Start a document emission with YAML +version+, +tags+, and an +implicit+
- * start.
- *
- * See Psych::Handler#start_document
- */
-static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
+struct start_document_data {
+    VALUE self;
+    VALUE version;
+    VALUE tags;
+    VALUE imp;
+
+    yaml_tag_directive_t * head;
+};
+
+static VALUE start_document_try(VALUE d)
 {
+    struct start_document_data * data = (struct start_document_data *)d;
+    VALUE self = data->self;
+    VALUE version = data->version;
+    VALUE tags = data->tags;
+    VALUE imp = data->imp;
+
     yaml_emitter_t * emitter;
-    yaml_tag_directive_t * head = NULL;
     yaml_tag_directive_t * tail = NULL;
     yaml_event_t event;
     yaml_version_directive_t version_directive;
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
-
 
     Check_Type(version, T_ARRAY);
 
@@ -171,8 +177,8 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
         Check_Type(tags, T_ARRAY);
 
         len = RARRAY_LEN(tags);
-        head  = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
-        tail  = head;
+        data->head = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
+        tail = data->head;
 
         for(i = 0; i < len && i < RARRAY_LEN(tags); i++) {
             VALUE tuple = RARRAY_AREF(tags, i);
@@ -182,9 +188,9 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
             Check_Type(tuple, T_ARRAY);
 
             if(RARRAY_LEN(tuple) < 2) {
-                xfree(head);
                 rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
             }
+
             name  = RARRAY_AREF(tuple, 0);
             value = RARRAY_AREF(tuple, 1);
             StringValue(name);
@@ -202,16 +208,44 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
     yaml_document_start_event_initialize(
             &event,
             (RARRAY_LEN(version) > 0) ? &version_directive : NULL,
-            head,
+            data->head,
             tail,
             imp ? 1 : 0
             );
 
     emit(emitter, &event);
 
-    if(head) xfree(head);
-
     return self;
+}
+
+static VALUE start_document_ensure(VALUE d)
+{
+    struct start_document_data * data = (struct start_document_data *)d;
+
+    xfree(data->head);
+
+    return Qnil;
+}
+
+/* call-seq: emitter.start_document(version, tags, implicit)
+ *
+ * Start a document emission with YAML +version+, +tags+, and an +implicit+
+ * start.
+ *
+ * See Psych::Handler#start_document
+ */
+static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
+{
+    struct start_document_data data = {
+        .self = self,
+        .version = version,
+        .tags = tags,
+        .imp = imp,
+
+        .head = NULL,
+    };
+
+    return rb_ensure(start_document_try, (VALUE)&data, start_document_ensure, (VALUE)&data);
 }
 
 /* call-seq: emitter.end_document(implicit)
