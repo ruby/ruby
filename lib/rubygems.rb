@@ -773,18 +773,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+", &:read)
-  rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb", &:read)
+    File.binread(path)
   end
 
   ##
   # Safely write a file in binary mode on all platforms.
 
   def self.write_binary(path, data)
-    open_file(path, "wb") do |io|
-      io.write data
-    end
+    File.binwrite(path, data)
   rescue Errno::ENOSPC
     # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
     File.delete(path) if File.exist?(path)
