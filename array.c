@@ -7786,11 +7786,6 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *    ['food', 'fool', 'foot'].all?(/foo/) # => true
  *    ['food', 'drink'].all?(/foo/)        # => false
  *
- *  Note that the criterion in this case involves <tt>object.===</tt>, not <tt>ele.===</tt>.
- *  A class may inherit the method Object#===,
- *  but many classes override with their own implementations;
- *  see, for example, Regexp#===.
- *
  *  With a block given, calls the block with each element in +self+;
  *  returns whether the block returns only truthy values:
  *
