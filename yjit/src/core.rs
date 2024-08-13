@@ -2793,7 +2793,7 @@ impl Context {
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
-        if jit.at_current_insn() {
+        if jit.at_compile_target() {
             let comptime_recv = jit.peek_at_stack(self, 1);
             let comptime_arg = jit.peek_at_stack(self, 0);
             return Some(comptime_recv.fixnum_p() && comptime_arg.fixnum_p());

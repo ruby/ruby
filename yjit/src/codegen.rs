@@ -216,9 +216,9 @@ impl<'a> JITState<'a> {
         self.next_insn_idx() + insn_len(next_opcode) as u16
     }
 
-    // Check if we are compiling the instruction at the stub PC
+    // Check if we are compiling the instruction at the stub PC with the target Context
     // Meaning we are compiling the instruction that is next to execute
-    pub fn at_current_insn(&self) -> bool {
+    pub fn at_compile_target(&self) -> bool {
         // If this is not the first block compiled by gen_block_series(),
         // it might be compiling the same block again with a different Context.
         // In that case, it should defer_compilation() and inspect the stack there.
@@ -233,7 +233,7 @@ impl<'a> JITState<'a> {
     // Peek at the nth topmost value on the Ruby stack.
     // Returns the topmost value when n == 0.
     pub fn peek_at_stack(&self, ctx: &Context, n: isize) -> VALUE {
-        assert!(self.at_current_insn());
+        assert!(self.at_compile_target());
         assert!(n < ctx.get_stack_size() as isize);
 
         // Note: this does not account for ctx->sp_offset because
@@ -252,7 +252,7 @@ impl<'a> JITState<'a> {
     }
 
     fn peek_at_local(&self, n: i32) -> VALUE {
-        assert!(self.at_current_insn());
+        assert!(self.at_compile_target());
 
         let local_table_size: isize = unsafe { get_iseq_body_local_table_size(self.iseq) }
             .try_into()
@@ -268,7 +268,7 @@ impl<'a> JITState<'a> {
     }
 
     fn peek_at_block_handler(&self, level: u32) -> VALUE {
-        assert!(self.at_current_insn());
+        assert!(self.at_compile_target());
 
         unsafe {
             let ep = get_cfp_ep_level(self.get_cfp(), level);
@@ -667,7 +667,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
     }
 
     // Only able to check types when at current insn
-    assert!(jit.at_current_insn());
+    assert!(jit.at_compile_target());
 
     let self_val = jit.peek_at_self();
     let self_val_type = Type::from(self_val);
@@ -1277,7 +1277,7 @@ pub fn gen_single_block(
         }
 
         // In debug mode, verify our existing assumption
-        if cfg!(debug_assertions) && get_option!(verify_ctx) && jit.at_current_insn() {
+        if cfg!(debug_assertions) && get_option!(verify_ctx) && jit.at_compile_target() {
             verify_ctx(&jit, &asm.ctx);
         }
 
@@ -1520,7 +1520,7 @@ fn fuse_putobject_opt_ltlt(
         if shift_amt > 63 || shift_amt < 0 {
             return None;
         }
-        if !jit.at_current_insn() {
+        if !jit.at_compile_target() {
             defer_compilation(jit, asm);
             return Some(EndBlock);
         }
@@ -1784,7 +1784,7 @@ fn gen_splatkw(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime hash operand
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -2158,7 +2158,7 @@ fn gen_expandarray(
     let array_opnd = asm.stack_opnd(0);
 
     // Defer compilation so we can specialize on a runtime `self`
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -2874,7 +2874,7 @@ fn gen_getinstancevariable(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime `self`
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -2938,7 +2938,7 @@ fn gen_setinstancevariable(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime `self`
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -3249,7 +3249,7 @@ fn gen_definedivar(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize base on a runtime receiver
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -3578,7 +3578,7 @@ fn gen_equality_specialized(
         return Some(true);
     }
 
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         return None;
     }
     let comptime_a = jit.peek_at_stack(&asm.ctx, 1);
@@ -3697,7 +3697,7 @@ fn gen_opt_aref(
     }
 
     // Defer compilation so we can specialize base on a runtime receiver
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -3798,7 +3798,7 @@ fn gen_opt_aset(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime `self`
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -4404,7 +4404,7 @@ fn gen_opt_case_dispatch(
     // We'd hope that our jitted code will be sufficiently fast without the
     // hash lookup, at least for small hashes, but it's worth revisiting this
     // assumption in the future.
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -8582,7 +8582,7 @@ fn gen_send_general(
     let mut flags = unsafe { vm_ci_flag(ci) };
 
     // Defer compilation so we can specialize on class of receiver
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -9143,7 +9143,7 @@ fn gen_invokeblock_specialized(
     asm: &mut Assembler,
     cd: *const rb_call_data,
 ) -> Option<CodegenStatus> {
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -9306,7 +9306,7 @@ fn gen_invokesuper_specialized(
     cd: *const rb_call_data,
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on class of receiver
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -9540,7 +9540,7 @@ fn gen_objtostring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
@@ -9883,7 +9883,7 @@ fn gen_getblockparamproxy(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    if !jit.at_current_insn() {
+    if !jit.at_compile_target() {
         defer_compilation(jit, asm);
         return Some(EndBlock);
     }
