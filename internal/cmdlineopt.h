@@ -4,6 +4,13 @@
 #include "rjit.h"
 #include "yjit.h"
 
+struct origarg_struct {
+    int argc;
+    char **argv;
+};
+
+struct origarg_struct ruby_get_original_args(void);
+
 typedef struct {
     unsigned int mask;
     unsigned int set;
