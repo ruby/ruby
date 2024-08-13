@@ -441,6 +441,32 @@ impl RegMapping {
             RegOpnd::Local(_) => index_temps.rev().find(|(_, reg_opnd)| reg_opnd.is_none()),
         }.map(|(index, _)| index)
     }
+
+    /// Return a vector of RegOpnds that have an allocated register
+    pub fn get_reg_opnds(&self) -> Vec<RegOpnd> {
+        self.0.iter().filter_map(|&reg_opnd| reg_opnd).collect()
+    }
+
+    /// Return TypeDiff::Compatible(diff) if dst has a mapping that can be made by moving registers
+    /// in self `diff` times. TypeDiff::Incompatible if they have different things in registers.
+    pub fn diff(&self, dst: RegMapping) -> TypeDiff {
+        let src_opnds = self.get_reg_opnds();
+        let dst_opnds = dst.get_reg_opnds();
+        if src_opnds.len() != dst_opnds.len() {
+            return TypeDiff::Incompatible;
+        }
+
+        let mut diff = 0;
+        for &reg_opnd in src_opnds.iter() {
+            match (self.get_reg(reg_opnd), dst.get_reg(reg_opnd)) {
+                (Some(src_idx), Some(dst_idx)) => if src_idx != dst_idx {
+                    diff += 1;
+                }
+                _ => return TypeDiff::Incompatible,
+            }
+        }
+        TypeDiff::Compatible(diff)
+    }
 }
 
 impl fmt::Debug for RegMapping {
@@ -2138,10 +2164,7 @@ pub fn get_or_create_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
 /// Retrieve a basic block version for an (iseq, idx) tuple
 /// This will return None if no version is found
 fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
-    let versions = match get_version_list(blockid) {
-        Some(versions) => versions,
-        None => return None,
-    };
+    let versions = get_version_list(blockid)?;
 
     // Best match found
     let mut best_version: Option<BlockRef> = None;
@@ -2164,6 +2187,33 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     }
 
     return best_version;
+}
+
+/// Basically find_block_version() but allows RegMapping incompatibility
+/// that can be fixed by register moves and returns Context
+pub fn find_block_ctx_with_same_regs(blockid: BlockId, ctx: &Context) -> Option<Context> {
+    let versions = get_version_list(blockid)?;
+
+    // Best match found
+    let mut best_ctx: Option<Context> = None;
+    let mut best_diff = usize::MAX;
+
+    // For each version matching the blockid
+    for blockref in versions.iter() {
+        let block = unsafe { blockref.as_ref() };
+        let block_ctx = Context::decode(block.ctx);
+
+        // Discover the best block that is compatible if we move registers
+        match ctx.diff_with_same_regs(&block_ctx) {
+            TypeDiff::Compatible(diff) if diff < best_diff => {
+                best_ctx = Some(block_ctx);
+                best_diff = diff;
+            }
+            _ => {}
+        }
+    }
+
+    best_ctx
 }
 
 /// Allow inlining a Block up to MAX_INLINE_VERSIONS times.
@@ -2790,6 +2840,22 @@ impl Context {
         }
 
         return TypeDiff::Compatible(diff);
+    }
+
+    /// Basically diff() but allows RegMapping incompatibility that can be fixed
+    /// by register moves.
+    pub fn diff_with_same_regs(&self, dst: &Context) -> TypeDiff {
+        // Prepare a Context with the same registers
+        let mut dst_with_same_regs = dst.clone();
+        dst_with_same_regs.set_reg_mapping(self.get_reg_mapping());
+
+        // Diff registers and other stuff separately, and merge them
+        match (self.diff(&dst_with_same_regs), self.get_reg_mapping().diff(dst.get_reg_mapping())) {
+            (TypeDiff::Compatible(ctx_diff), TypeDiff::Compatible(reg_diff)) => {
+                TypeDiff::Compatible(ctx_diff + reg_diff)
+            }
+            _ => TypeDiff::Incompatible
+        }
     }
 
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {

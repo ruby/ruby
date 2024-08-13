@@ -3,6 +3,7 @@
 
 use crate::asm::*;
 use crate::backend::ir::*;
+use crate::backend::current::TEMP_REGS;
 use crate::core::*;
 use crate::cruby::*;
 use crate::invariants::*;
@@ -7804,7 +7805,7 @@ fn gen_send_iseq(
 
     // Spill stack temps and locals that are not used by the callee.
     // This must be done before changing the SP register.
-    asm.spill_regs_except(mapped_temps);
+    asm.spill_regs_except(&mapped_temps);
 
     // Saving SP before calculating ep avoids a dependency on a register
     // However this must be done after referencing frame.recv, which may be SP-relative
@@ -7857,12 +7858,36 @@ fn gen_send_iseq(
         callee_ctx.set_local_type(0, Type::Unknown)
     }
 
+    // Set the receiver type in the callee's context
     let recv_type = if captured_self {
         Type::Unknown // we don't track the type information of captured->self for now
     } else {
         asm.ctx.get_opnd_type(StackOpnd(argc.try_into().unwrap()))
     };
     callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type);
+
+    // Now that callee_ctx is prepared, discover a block that can be reused if we move some registers.
+    // If there's such a block, move registers accordingly to avoid creating a new block.
+    let blockid = BlockId { iseq, idx: start_pc_offset };
+    if !mapped_temps.is_empty() {
+        // Discover a block that have the same things in different (or same) registers
+        if let Some(block_ctx) = find_block_ctx_with_same_regs(blockid, &callee_ctx) {
+            // List pairs of moves for making the register mappings compatible
+            let mut moves = vec![];
+            for &reg_opnd in callee_ctx.get_reg_mapping().get_reg_opnds().iter() {
+                let old_reg = TEMP_REGS[callee_ctx.get_reg_mapping().get_reg(reg_opnd).unwrap()];
+                let new_reg = TEMP_REGS[block_ctx.get_reg_mapping().get_reg(reg_opnd).unwrap()];
+                moves.push((new_reg, Opnd::Reg(old_reg)));
+            }
+
+            // Shuffle them to break cycles and generate the moves
+            let moves = Assembler::reorder_reg_moves(&moves);
+            for (reg, opnd) in moves {
+                asm.load_into(Opnd::Reg(reg), opnd);
+            }
+            callee_ctx.set_reg_mapping(block_ctx.get_reg_mapping());
+        }
+    }
 
     // The callee might change locals through Kernel#binding and other means.
     asm.clear_local_types();
@@ -7897,10 +7922,7 @@ fn gen_send_iseq(
     gen_direct_jump(
         jit,
         &callee_ctx,
-        BlockId {
-            iseq: iseq,
-            idx: start_pc_offset,
-        },
+        blockid,
         asm,
     );
 
