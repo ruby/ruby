@@ -825,7 +825,7 @@ eom
         end
         times.compact!
         tmin, tmax = times.minmax
-        tbase = 10 ** Math.log10(tmax * ([(tmax / tmin), 2].max ** 2)).ceil
+        tbase = 10 * tmax * [(tmax / tmin) ** 2 / 4, 1].max
         info = "(tmin: #{tmin}, tmax: #{tmax}, tbase: #{tbase})"
 
         seq.each do |i|
