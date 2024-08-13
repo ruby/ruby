@@ -67,7 +67,7 @@ class TestResolvDNS < Test::Unit::TestCase
   def with_udp_and_tcp(host, port)
     if port == 0
       # Automatic port; we might need to retry until we find a port which is free on both UDP _and_ TCP.
-      retries_remaining = 5
+      retries_remaining = 10
       t = nil
       u = nil
       begin
