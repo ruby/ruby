@@ -67,7 +67,7 @@ class TestResolvDNS < Test::Unit::TestCase
   def with_udp_and_tcp(host, port)
     if port == 0
       # Automatic port; we might need to retry until we find a port which is free on both UDP _and_ TCP.
-      retries_remaining = 5
+      retries_remaining = 10
       t = nil
       u = nil
       begin
@@ -709,7 +709,8 @@ class TestResolvDNS < Test::Unit::TestCase
     num_records = 50
 
     with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
-      with_tcp('0.0.0.0', 0) do |t2|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2,t2|
+        u2.close # XXX: u2 UDP socket is not used, but using #with_udp_and_tcp to enable Windows EACCES workaround
         _, server1_port, _, server1_address = u1.addr
         _, server2_port, _, server2_address = t2.addr
 
