@@ -1083,6 +1083,8 @@ end
     end
 
     assert_match(/ran executable/, e.message)
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_conflicting_binstubs
@@ -1131,6 +1133,8 @@ end
     # We expect the bin stub to activate the version that actually contains
     # the binstub.
     assert_match("I have an executable", e.message)
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_creates_binstub_that_understand_version
@@ -1160,6 +1164,8 @@ end
     end
 
     assert_includes(e.message, "can't find gem a (= 3.0)")
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_creates_binstub_that_prefers_user_installed_gem_to_default
@@ -1192,6 +1198,8 @@ end
     end
 
     assert_equal(e.message, "ran executable")
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_creates_binstub_that_dont_trust_encoding
@@ -1222,6 +1230,8 @@ end
     end
 
     assert_match(/ran executable/, e.message)
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_with_no_prior_files

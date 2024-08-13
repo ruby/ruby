@@ -794,7 +794,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     File.open(path, flags, &block)
   end
 
-  MODE_TO_FLOCK = IO::RDONLY | IO::APPEND | IO::CREAT # :nodoc:
+  MODE_TO_FLOCK = IO::RDONLY | IO::APPEND | IO::CREAT | IO::SHARE_DELETE | IO::BINARY # :nodoc:
 
   ##
   # Open a file with given flags, and protect access with flock
