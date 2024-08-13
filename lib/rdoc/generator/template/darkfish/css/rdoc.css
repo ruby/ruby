@@ -24,7 +24,9 @@ body {
 
   /* Layout */
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
 }
 
 body > :last-child {
@@ -209,16 +211,35 @@ nav {
   border-right: 1px solid #ccc;
   position: fixed;
   top: 0;
-  overflow: auto;
+  bottom: 0;
+  overflow: hidden;
   z-index: 10;
 
   /* Layout */
   width: var(--sidebar-width);
   min-height: 100vh;
   background: white;
+
+  display: flex;
+  flex-direction: column;
+}
+
+nav[hidden] {
+  display: none;
+}
+
+nav #project-metadata {
+  overflow: auto; /* Make the content scrollable */
+  flex: 1; /* Take up remaining space */
+}
+
+nav footer {
+  padding: 1em;
+  border-top: 1px solid #ccc;
 }
 
 main {
+  flex: 1;
   display: block;
   margin: 3em auto 1em;
   padding: 0 1em; /* Add padding to keep space between main content and sidebar/right side of the screen */
@@ -726,10 +747,6 @@ pre {
 #search-results pre {
   margin: 0.5em;
   font-family: "Source Code Pro", Monaco, monospace;
-}
-
-footer {
-  z-index: 20;
 }
 
 /* @end */
