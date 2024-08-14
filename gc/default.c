@@ -3195,24 +3195,6 @@ gc_abort(void *objspace_ptr)
     gc_mode_set(objspace, gc_mode_none);
 }
 
-struct force_finalize_list {
-    VALUE obj;
-    VALUE table;
-    struct force_finalize_list *next;
-};
-
-static int
-force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct force_finalize_list **prev = (struct force_finalize_list **)arg;
-    struct force_finalize_list *curr = ALLOC(struct force_finalize_list);
-    curr->obj = key;
-    curr->table = val;
-    curr->next = *prev;
-    *prev = curr;
-    return ST_CONTINUE;
-}
-
 void
 rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 {
@@ -3235,6 +3217,23 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
     }
 }
 
+static int
+rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    VALUE obj = (VALUE)key;
+    VALUE table = (VALUE)val;
+
+    GC_ASSERT(RB_FL_TEST(obj, FL_FINALIZE));
+    GC_ASSERT(RB_BUILTIN_TYPE(val) == T_ARRAY);
+
+    rb_gc_run_obj_finalizer(rb_gc_impl_object_id(objspace, obj), RARRAY_LEN(table), get_final, (void *)table);
+
+    FL_UNSET(obj, FL_FINALIZE);
+
+    return ST_DELETE;
+}
+
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
@@ -3254,22 +3253,8 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         return;
     }
 
-    /* force to run finalizer */
     while (finalizer_table->num_entries) {
-        struct force_finalize_list *list = 0;
-        st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
-        while (list) {
-            struct force_finalize_list *curr = list;
-
-            rb_gc_run_obj_finalizer(get_object_id_in_finalizer(objspace, curr->obj), RARRAY_LEN(curr->table), get_final, (void *)curr->table);
-
-            st_data_t obj = (st_data_t)curr->obj;
-            st_delete(finalizer_table, &obj, 0);
-            FL_UNSET(curr->obj, FL_FINALIZE);
-
-            list = curr->next;
-            xfree(curr);
-        }
+        st_foreach(finalizer_table, rb_gc_impl_shutdown_call_finalizer_i, (st_data_t)objspace);
     }
 
     /* run finalizers */
