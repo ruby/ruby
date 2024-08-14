@@ -1383,22 +1383,20 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 
 /*
  *  call-seq:
- *    array.push(*objects) -> self
+ *    push(*objects) -> self
+ *    append(*objects) -> self
  *
- *  Appends trailing elements.
+ *  Appends each argument in +objects+ to +self+; returns +self+:
  *
- *  Appends each argument in +objects+ to +self+;  returns +self+:
+ *    a = [:foo, 'bar', 2] # => [:foo, "bar", 2]
+ *    a.push(:baz, :bat)   # => [:foo, "bar", 2, :baz, :bat]
  *
- *    a = [:foo, 'bar', 2]
- *    a.push(:baz, :bat) # => [:foo, "bar", 2, :baz, :bat]
+ *  Appends each argument as a single element, even if it is another array:
  *
- *  Appends each argument as one element, even if it is another +Array+:
+ *    a = [:foo, 'bar', 2]               # => [:foo, "bar", 2]
+      a.push([:baz, :bat], [:bam, :bad]) # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.push([:baz, :bat], [:bam, :bad])
- *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
- *
- *  Related: #pop, #shift, #unshift.
+ *  Related: Array#pop, Array#shift, Array#unshift.
  */
 
 static VALUE
