@@ -51,8 +51,6 @@
 # include <malloc.h>
 #endif
 
-# define GC_ASSERT
-
 /* MALLOC_HEADERS_END */
 
 #ifdef HAVE_SYS_TIME_H
