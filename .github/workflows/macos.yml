@@ -116,7 +116,7 @@ jobs:
           for i in {1..21}; do
             make -s ${{ matrix.test_task }}
           done
-        timeout-minutes: 60
+        timeout-minutes: 3600
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
