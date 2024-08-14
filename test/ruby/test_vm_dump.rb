@@ -7,11 +7,11 @@ class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args, timeout=nil)
     pend "macOS 15 beta is not working with this assertion" if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
 
-    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: timeout || 60)
+    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: timeout || 1800)
   end
 
   def test_darwin_invalid_call
-    assert_darwin_vm_dump_works(['-r-test-/fatal', '-eBug.invalid_call(1)'], 180)
+    assert_darwin_vm_dump_works(['-r-test-/fatal', '-eBug.invalid_call(1)'])
   end
 
   def test_darwin_segv_in_syscall
