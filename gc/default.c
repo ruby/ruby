@@ -3251,11 +3251,11 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         while (list) {
             struct force_finalize_list *curr = list;
 
+            rb_gc_run_obj_finalizer(rb_gc_impl_object_id(objspace, curr->obj), RARRAY_LEN(curr->table), get_final, (void *)curr->table);
+
             st_data_t obj = (st_data_t)curr->obj;
             st_delete(finalizer_table, &obj, 0);
             FL_UNSET(curr->obj, FL_FINALIZE);
-
-            rb_gc_run_obj_finalizer(rb_gc_impl_object_id(objspace, curr->obj), RARRAY_LEN(curr->table), get_final, (void *)curr->table);
 
             list = curr->next;
             xfree(curr);
