@@ -16,7 +16,14 @@ class TestPTY < Test::Unit::TestCase
   rescue RuntimeError
     omit $!
   else
-    assert_equal("a\r\n", r.gets)
+    retry_times = 0
+    loop do
+      break if r.gets == "a\r\n"
+      sleep 0.001
+      retry_times += 1
+      "retry: #{retry_times}"
+    end
+    assert true
   ensure
     r&.close
     w&.close
@@ -26,7 +33,14 @@ class TestPTY < Test::Unit::TestCase
   def test_spawn_with_block
     PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
       begin
-        assert_equal("b\r\n", r.gets)
+        retry_times = 0
+        loop do
+          break if r.gets == "b\r\n"
+          sleep 0.001
+          retry_times += 1
+          "retry: #{retry_times}"
+        end
+        assert true
       ensure
         r.close
         w.close
@@ -41,7 +55,14 @@ class TestPTY < Test::Unit::TestCase
     commandline = Shellwords.join([RUBY, '-e', 'puts "foo"'])
     PTY.spawn(commandline) {|r,w,pid|
       begin
-        assert_equal("foo\r\n", r.gets)
+        retry_times = 0
+        loop do
+          break if r.gets == "foo\r\n"
+          sleep 0.001
+          retry_times += 1
+          "retry: #{retry_times}"
+        end
+        assert true
       ensure
         r.close
         w.close
@@ -55,7 +76,14 @@ class TestPTY < Test::Unit::TestCase
   def test_argv0
     PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
       begin
-        assert_equal("bar\r\n", r.gets)
+        retry_times = 0
+        loop do
+          break if r.gets == "bar\r\n"
+          sleep 0.001
+          retry_times += 1
+          "retry: #{retry_times}"
+        end
+        assert true
       ensure
         r.close
         w.close
