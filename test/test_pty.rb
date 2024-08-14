@@ -21,7 +21,7 @@ class TestPTY < Test::Unit::TestCase
       break if r.gets == "a\r\n"
       sleep 0.001
       retry_times += 1
-      "retry: #{retry_times}"
+      $stderr.puts "retry: #{retry_times}"
     end
     assert true
   ensure
@@ -38,7 +38,7 @@ class TestPTY < Test::Unit::TestCase
           break if r.gets == "b\r\n"
           sleep 0.001
           retry_times += 1
-          "retry: #{retry_times}"
+          $stderr.puts "retry: #{retry_times}"
         end
         assert true
       ensure
@@ -60,7 +60,7 @@ class TestPTY < Test::Unit::TestCase
           break if r.gets == "foo\r\n"
           sleep 0.001
           retry_times += 1
-          "retry: #{retry_times}"
+          $stderr.puts "retry: #{retry_times}"
         end
         assert true
       ensure
@@ -81,7 +81,7 @@ class TestPTY < Test::Unit::TestCase
           break if r.gets == "bar\r\n"
           sleep 0.001
           retry_times += 1
-          "retry: #{retry_times}"
+          $stderr.puts "retry: #{retry_times}"
         end
         assert true
       ensure
