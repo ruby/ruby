@@ -113,8 +113,10 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          ulimit -c unlimited
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          for i in {1..21}; do
+            ulimit -c unlimited
+            make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          done
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'

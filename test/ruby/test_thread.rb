@@ -1301,18 +1301,16 @@ q.pop
 
   def test_fork_while_mutex_locked_by_forker
     omit 'needs fork' unless Process.respond_to?(:fork)
-    Timeout.timeout(180) do
-      m = Thread::Mutex.new
-      m.synchronize do
-        pid = fork do
-          exit!(2) unless m.locked?
-          m.unlock rescue exit!(3)
-          m.synchronize {} rescue exit!(4)
-          exit!(0)
-        end
-        _, st = Timeout.timeout(30) { Process.waitpid2(pid) }
-        assert_predicate st, :success?, '[ruby-core:90595] [Bug #15430]'
+    m = Thread::Mutex.new
+    m.synchronize do
+      pid = fork do
+        exit!(2) unless m.locked?
+        m.unlock rescue exit!(3)
+        m.synchronize {} rescue exit!(4)
+        exit!(0)
       end
+      _, st = Timeout.timeout(30) { Process.waitpid2(pid) }
+      assert_predicate st, :success?, '[ruby-core:90595] [Bug #15430]'
     end
   end
 
@@ -1447,37 +1445,35 @@ q.pop
   end
 
   def test_thread_native_thread_id_across_fork_on_linux
-    Timeout.timeout(180) do
-      begin
-        require '-test-/thread/id'
-      rescue LoadError
-        omit "this test is only for Linux"
-      else
-        extend Bug::ThreadID
-      end
-  
-      parent_thread_id = Thread.main.native_thread_id
-      real_parent_thread_id = gettid
-  
-      assert_equal real_parent_thread_id, parent_thread_id
-  
-      child_lines = nil
-      IO.popen('-') do |pipe|
-        if pipe
-          # parent
-          child_lines = pipe.read.lines
-        else
-          # child
-          puts Thread.main.native_thread_id
-          puts gettid
-        end
-      end
-      child_thread_id = child_lines[0].chomp.to_i
-      real_child_thread_id = child_lines[1].chomp.to_i
-  
-      assert_equal real_child_thread_id, child_thread_id
-      refute_equal parent_thread_id, child_thread_id
+    begin
+      require '-test-/thread/id'
+    rescue LoadError
+      omit "this test is only for Linux"
+    else
+      extend Bug::ThreadID
     end
+
+    parent_thread_id = Thread.main.native_thread_id
+    real_parent_thread_id = gettid
+
+    assert_equal real_parent_thread_id, parent_thread_id
+
+    child_lines = nil
+    IO.popen('-') do |pipe|
+      if pipe
+        # parent
+        child_lines = pipe.read.lines
+      else
+        # child
+        puts Thread.main.native_thread_id
+        puts gettid
+      end
+    end
+    child_thread_id = child_lines[0].chomp.to_i
+    real_child_thread_id = child_lines[1].chomp.to_i
+
+    assert_equal real_child_thread_id, child_thread_id
+    refute_equal parent_thread_id, child_thread_id
   end
 
   def test_thread_interrupt_for_killed_thread
