@@ -7790,35 +7790,39 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.all? -> true or false
- *    array.all? {|element| ... } -> true or false
- *    array.all?(obj) -> true or false
+ *    all? -> true or false
+ *    all?(object) -> true or false
+ *    all? {|element| ... } -> true or false
  *
- *  Returns +true+ if all elements of +self+ meet a given criterion.
+ *  Returns whether for every element of +self+,
+ *  a given criterion is satisfied.
  *
- *  If +self+ has no element, returns +true+ and argument or block
- *  are not used.
+ *  With no block and no argument,
+ *  returns whether every element of +self+ is truthy:
  *
- *  With no block given and no argument, returns +true+ if +self+ contains only truthy elements,
- *  +false+ otherwise:
+ *    [[], {}, '', 0, 0.0, Object.new].all? # => true  # All truthy objects.
+ *    [[], {}, '', 0, 0.0, nil].all?        # => false # nil is not truthy.
+ *    [[], {}, '', 0, 0.0, false].all?      # => false # false is not truthy.
  *
- *    [0, 1, :foo].all? # => true
- *    [0, nil, 2].all? # => false
- *    [].all? # => true
+ *  With argument +object+ given, returns whether <tt>object === ele</tt>
+ *  for every element +ele+ in +self+:
  *
- *  With a block given and no argument, calls the block with each element in +self+;
- *  returns +true+ if the block returns only truthy values, +false+ otherwise:
- *
- *    [0, 1, 2].all? { |element| element < 3 } # => true
- *    [0, 1, 2].all? { |element| element < 2 } # => false
- *
- *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> every element, +false+ otherwise:
- *
+ *    [0, 0, 0].all?(0)                    # => true
+ *    [0, 1, 2].all?(1)                    # => false
  *    ['food', 'fool', 'foot'].all?(/foo/) # => true
- *    ['food', 'drink'].all?(/bar/) # => false
- *    [].all?(/foo/) # => true
- *    [0, 0, 0].all?(0) # => true
- *    [0, 1, 2].all?(1) # => false
+ *    ['food', 'drink'].all?(/foo/)        # => false
+ *
+ *  With a block given, calls the block with each element in +self+;
+ *  returns whether the block returns only truthy values:
+ *
+ *    [0, 1, 2].all? { |ele| ele < 3 } # => true
+ *    [0, 1, 2].all? { |ele| ele < 2 } # => false
+ *
+ *  With both a block and argument +object+ given,
+ *  ignores the block and uses +object+ as above.
+ *
+ *  <b>Special case</b>: returns +true+ if +self+ is empty
+ *  (regardless of any given argument or block).
  *
  *  Related: Enumerable#all?
  */
