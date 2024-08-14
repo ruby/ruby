@@ -825,6 +825,8 @@ eom
         end
         times.compact!
         tmin, tmax = times.minmax
+
+        # safe_factor * tmax * rehearsal_time_variance_factor(equals to 1 when variance is small)
         tbase = 10 * tmax * [(tmax / tmin) ** 2 / 4, 1].max
         info = "(tmin: #{tmin}, tmax: #{tmax}, tbase: #{tbase})"
 
