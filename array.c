@@ -7827,7 +7827,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *  <b>Special case</b>: returns +true+ if +self+ is empty
  *  (regardless of any given argument or block).
  *
- *  Related: Enumerable#all?
+ *  Related: Array#any?, Array#none?, Array#one?.
  */
 
 static VALUE
