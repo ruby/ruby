@@ -589,7 +589,7 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
     {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
 
 COMPILER_WARNING_PUSH
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 #endif
 static inline SIZE_T

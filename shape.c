@@ -98,6 +98,15 @@ redblack_find(redblack_node_t * tree, ID key)
     }
 }
 
+static inline rb_shape_t *
+redblack_value(redblack_node_t * node)
+{
+    // Color is stored in the bottom bit of the shape pointer
+    // Mask away the bit so we get the actual pointer back
+    return (rb_shape_t *)((uintptr_t)node->value & (((uintptr_t)-1) - 1));
+}
+
+#ifdef HAVE_MMAP
 static inline char
 redblack_color(redblack_node_t * node)
 {
@@ -110,15 +119,6 @@ redblack_red_p(redblack_node_t * node)
     return redblack_color(node) == RED;
 }
 
-static inline rb_shape_t *
-redblack_value(redblack_node_t * node)
-{
-    // Color is stored in the bottom bit of the shape pointer
-    // Mask away the bit so we get the actual pointer back
-    return (rb_shape_t *)((uintptr_t)node->value & (((uintptr_t)-1) - 1));
-}
-
-#ifdef HAVE_MMAP
 static redblack_id_t
 redblack_id_for(redblack_node_t * node)
 {
