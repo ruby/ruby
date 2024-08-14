@@ -114,8 +114,7 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           for i in {1..21}; do
-            ulimit -c unlimited
-            make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+            make -s ${{ matrix.test_task }}
           done
         timeout-minutes: 60
         env:

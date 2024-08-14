@@ -126,8 +126,6 @@ jobs:
         run: >-
           for i in {1..21}; do
             $SETARCH make -s ${{ matrix.test_task }}
-            ${TESTS:+TESTS="$TESTS"}
-            ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
           done
         timeout-minutes: 3600
         env:
