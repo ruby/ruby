@@ -7726,38 +7726,41 @@ rb_ary_drop_while(VALUE ary)
 
 /*
  *  call-seq:
- *    array.any? -> true or false
- *    array.any? {|element| ... } -> true or false
- *    array.any?(obj) -> true or false
+ *    any? -> true or false
+ *    any?(object) -> true or false
+ *    any? {|element| ... } -> true or false
  *
- *  Returns +true+ if any element of +self+ meets a given criterion.
+ *  Returns whether for any element of +self+, a given criterion is satisfied.
  *
- *  If +self+ has no element, returns +false+ and argument or block
- *  are not used.
+ *  With no block and no argument, returns whether any element of +self+ is truthy:
  *
- *  With no block given and no argument, returns +true+ if +self+ has any truthy element,
- *  +false+ otherwise:
+ *    [nil, false, []].any? # => true  # Array object is truthy.
+ *    [nil, false, {}].any? # => true  # Hash object is truthy.
+ *    [nil, false, ''].any? # => true  # String object is truthy.
+ *    [nil, false].any?     # => false # Nil and false are not truthy.
  *
- *    [nil, 0, false].any? # => true
- *    [nil, false].any? # => false
- *    [].any? # => false
+ *  With argument +object+ given,
+ *  returns whether <tt>object === ele</tt> for any element +ele+ in +self+:
  *
- *  With a block given and no argument, calls the block with each element in +self+;
- *  returns +true+ if the block returns any truthy value, +false+ otherwise:
+ *    [nil, false, 0].any?(0)          # => true
+ *    [nil, false, 1].any?(0)          # => false
+ *    [nil, false, 'food'].any?(/foo/) # => true
+ *    [nil, false, 'food'].any?(/bar/) # => false
  *
- *    [0, 1, 2].any? {|element| element > 1 } # => true
- *    [0, 1, 2].any? {|element| element > 2 } # => false
+ *  With a block given,
+ *  calls the block with each element in +self+;
+ *  returns whether the block returns any truthy value:
  *
- *  If argument +obj+ is given, returns +true+ if +obj+.<tt>===</tt> any element,
- *  +false+ otherwise:
+ *    [0, 1, 2].any? {|ele| ele < 1 } # => true
+ *    [0, 1, 2].any? {|ele| ele < 0 } # => false
  *
- *    ['food', 'drink'].any?(/foo/) # => true
- *    ['food', 'drink'].any?(/bar/) # => false
- *    [].any?(/foo/) # => false
- *    [0, 1, 2].any?(1) # => true
- *    [0, 1, 2].any?(3) # => false
+ *  With both a block and argument +object+ given,
+ *  ignores the block and uses +object+ as above.
  *
- *  Related: Enumerable#any?
+ *  <b>Special case</b>: returns +false+ if +self+ is empty
+ *  (regardless of any given argument or block).
+ *
+ *  Related: Array#all?, Array#none?, Array#one?.
  */
 
 static VALUE
