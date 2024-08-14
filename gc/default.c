@@ -248,11 +248,6 @@ int ruby_rgengc_debug;
 # define RGENGC_CHECK_MODE  0
 #endif
 
-#ifndef GC_ASSERT
-// Note: using RUBY_ASSERT_WHEN() extend a macro in expr (info by nobu).
-# define GC_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(RGENGC_CHECK_MODE > 0, expr, #expr)
-#endif
-
 /* RGENGC_PROFILE
  * 0: disable RGenGC profiling
  * 1: enable profiling for basic information
