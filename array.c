@@ -7794,7 +7794,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 0, 0].all?(0) # => true
  *    [0, 1, 2].all?(1) # => false
  *
- *  Related: Enumerable#all?
+ *  Related: Array#any?, Array#none?, Array#one?.
  */
 
 static VALUE
