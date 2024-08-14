@@ -2099,6 +2099,37 @@ process_script(ruby_cmdline_options_t *opt)
     return ast_value;
 }
 
+static uint8_t
+prism_script_command_line(ruby_cmdline_options_t *opt)
+{
+    uint8_t command_line = 0;
+    if (opt->do_split) command_line |= PM_OPTIONS_COMMAND_LINE_A;
+    if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
+    if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
+    if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
+    if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
+    return command_line;
+}
+
+static void
+prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size_t length, void *data)
+{
+    ruby_cmdline_options_t *opt = (ruby_cmdline_options_t *) data;
+    opt->warning = 0;
+
+    char *switches = malloc(length + 1);
+    memcpy(switches, source, length);
+    switches[length] = '\0';
+
+    moreswitches(switches, opt, 0);
+    free(switches);
+
+    pm_options_command_line_set(options, prism_script_command_line(opt));
+    if (opt->ext.enc.name != 0) {
+        pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+    }
+}
+
 /**
  * Process the command line options and parse the script into the given result.
  * Raise an error if the script cannot be parsed.
@@ -2115,17 +2146,13 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
     }
 
-    uint8_t command_line = 0;
-    if (opt->do_split) command_line |= PM_OPTIONS_COMMAND_LINE_A;
-    if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
-    if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
-    if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
-
+    uint8_t command_line = prism_script_command_line(opt);
     VALUE error;
+
     if (strcmp(opt->script, "-") == 0) {
-        if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
         pm_options_command_line_set(options, command_line);
         pm_options_filepath_set(options, "-");
+        pm_options_shebang_callback_set(options, prism_script_shebang_callback, (void *) opt);
 
         ruby_opt_init(opt);
         error = pm_parse_stdin(result);
@@ -2138,7 +2165,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         }
     }
     else if (opt->e_script) {
-        command_line |= PM_OPTIONS_COMMAND_LINE_E;
+        command_line = (uint8_t) ((command_line | PM_OPTIONS_COMMAND_LINE_E) & ~PM_OPTIONS_COMMAND_LINE_X);
         pm_options_command_line_set(options, command_line);
 
         ruby_opt_init(opt);
@@ -2146,8 +2173,9 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"));
     }
     else {
-        if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
         pm_options_command_line_set(options, command_line);
+        pm_options_shebang_callback_set(options, prism_script_shebang_callback, (void *) opt);
+
         error = pm_load_file(result, opt->script_name, true);
 
         // If reading the file did not error, at that point we load the command
