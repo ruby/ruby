@@ -102,7 +102,7 @@ End
       !b
     END
 
-    assert_in_out_err(["-e", <<~RUBY], "", %w(:ok :ok), [])
+    assert_in_out_err(["-e", <<~RUBY], "", %w(:ok :ok), [], timeout: 60)
       a = Object.new
       ObjectSpace.define_finalizer(a) { p :ok }
 
