@@ -5043,8 +5043,8 @@ rb_ary_times(VALUE ary, VALUE times)
  *  call-seq:
  *    assoc(object) -> found_array or nil
  *
- *  Returns the first element in +self+ that is an array
- *  whose first element <tt>==</tt> +object+:
+ *  Returns the first element +ele+ in +self+ such that +ele+ is an array
+ *  and <tt>ele[0] == object</tt>:
  *
  *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
  *    a.assoc(4) # => [4, 5, 6]
