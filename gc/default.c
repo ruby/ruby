@@ -1683,8 +1683,10 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
     rb_objspace_t *objspace = objspace_ptr;
 
     unsigned int lev = rb_gc_vm_lock();
-    if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &id)) {
+    st_data_t val;
+    if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &val)) {
         GC_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
+        id = (VALUE)val;
     }
     else {
         GC_ASSERT(!FL_TEST(obj, FL_SEEN_OBJ_ID));
