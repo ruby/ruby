@@ -3044,6 +3044,19 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 }
 
 static VALUE
+get_object_id_in_finalizer(rb_objspace_t *objspace, VALUE obj)
+{
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
+        return rb_gc_impl_object_id(objspace, obj);
+    }
+    else {
+        VALUE id = ULL2NUM(objspace->next_object_id);
+        objspace->next_object_id += OBJ_ID_INCREMENT;
+        return id;
+    }
+}
+
+static VALUE
 get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
@@ -3063,7 +3076,7 @@ run_final(rb_objspace_t *objspace, VALUE zombie)
         FL_UNSET(zombie, FL_FINALIZE);
         st_data_t table;
         if (st_delete(finalizer_table, &key, &table)) {
-            rb_gc_run_obj_finalizer(rb_gc_impl_object_id(objspace, zombie), RARRAY_LEN(table), get_final, (void *)table);
+            rb_gc_run_obj_finalizer(get_object_id_in_finalizer(objspace, zombie), RARRAY_LEN(table), get_final, (void *)table);
         }
         else {
             rb_bug("FL_FINALIZE flag is set, but finalizers are not found");
@@ -3246,7 +3259,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         while (list) {
             struct force_finalize_list *curr = list;
 
-            rb_gc_run_obj_finalizer(rb_gc_impl_object_id(objspace, curr->obj), RARRAY_LEN(curr->table), get_final, (void *)curr->table);
+            rb_gc_run_obj_finalizer(get_object_id_in_finalizer(objspace, curr->obj), RARRAY_LEN(curr->table), get_final, (void *)curr->table);
 
             st_data_t obj = (st_data_t)curr->obj;
             st_delete(finalizer_table, &obj, 0);
