@@ -26,6 +26,7 @@ class TestPTY < Test::Unit::TestCase
           break
         end
       rescue Errno::ECHILD
+        is_exit = true
       end
       if r.gets == "a\r\n"
         is_success = true
@@ -59,6 +60,7 @@ class TestPTY < Test::Unit::TestCase
               break
             end
           rescue Errno::ECHILD
+            is_exit = true
           end
           if r.gets == "b\r\n"
             is_success = true
@@ -97,6 +99,7 @@ class TestPTY < Test::Unit::TestCase
               break
             end
           rescue Errno::ECHILD
+            is_exit = true
           end
           if r.gets == "foo\r\n"
             is_success = true
@@ -134,6 +137,7 @@ class TestPTY < Test::Unit::TestCase
               break
             end
           rescue Errno::ECHILD
+            is_exit = true
           end
           if r.gets == "bar\r\n"
             is_success = true
