@@ -212,7 +212,7 @@ nav {
   position: fixed;
   top: 0;
   bottom: 0;
-  overflow: hidden;
+  overflow: auto;
   z-index: 10;
 
   /* Layout */
@@ -226,11 +226,6 @@ nav {
 
 nav[hidden] {
   display: none;
-}
-
-nav #project-metadata {
-  overflow: auto; /* Make the content scrollable */
-  flex: 1; /* Take up remaining space */
 }
 
 nav footer {
@@ -286,7 +281,7 @@ nav .nav-section {
   margin-top: 2em;
   border-top: 2px solid #aaa;
   font-size: 90%;
-  overflow: hidden;
+  flex: 1;
 }
 
 nav h2 {
