@@ -17,15 +17,19 @@ class TestPTY < Test::Unit::TestCase
     omit $!
   else
     retry_times = 0
-    loop do
-      break if r.gets == "a\r\n"
-      sleep 0.001
-      retry_times += 1
+    is_success = false
+    until retry_times > 10
+      if r.gets == "a\r\n"
+        is_success = true
+        break
+      end
     end
-    if retry_times > 0
-      $stderr.puts "success after retry #{retry_times} times"
+    if is_success
+      $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}"
+      assert true
+    else
+      assert false, "RUBY: #{RUBY}, Process: #{pid}"
     end
-    assert true
   ensure
     r&.close
     w&.close
@@ -36,15 +40,19 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
       begin
         retry_times = 0
-        loop do
-          break if r.gets == "b\r\n"
-          sleep 0.001
-          retry_times += 1
+        is_success = false
+        until retry_times > 10
+          if r.gets == "b\r\n"
+            is_success = true
+            break
+          end
         end
-        if retry_times > 0
-          $stderr.puts "success after retry #{retry_times} times"
+        if is_success
+          $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}"
+          assert true
+        else
+          assert false, "RUBY: #{RUBY}, Process: #{pid}"
         end
-        assert true
       ensure
         r.close
         w.close
@@ -60,15 +68,19 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn(commandline) {|r,w,pid|
       begin
         retry_times = 0
-        loop do
-          break if r.gets == "foo\r\n"
-          sleep 0.001
-          retry_times += 1
+        is_success = false
+        until retry_times > 10
+          if r.gets == "foo\r\n"
+            is_success = true
+            break
+          end
         end
-        if retry_times > 0
-          $stderr.puts "success after retry #{retry_times} times"
+        if is_success
+          $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}"
+          assert true
+        else
+          assert false, "RUBY: #{RUBY}, Process: #{pid}"
         end
-        assert true
       ensure
         r.close
         w.close
@@ -83,15 +95,19 @@ class TestPTY < Test::Unit::TestCase
     PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
       begin
         retry_times = 0
-        loop do
-          break if r.gets == "bar\r\n"
-          sleep 0.001
-          retry_times += 1
+        is_success = false
+        until retry_times > 10
+          if r.gets == "bar\r\n"
+            is_success = true
+            break
+          end
         end
-        if retry_times > 0
-          $stderr.puts "success after retry #{retry_times} times"
+        if is_success
+          $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}"
+          assert true
+        else
+          assert false, "RUBY: #{RUBY}, Process: #{pid}"
         end
-        assert true
       ensure
         r.close
         w.close
