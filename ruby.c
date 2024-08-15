@@ -2142,8 +2142,8 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     pm_options_t *options = &result->options;
     pm_options_line_set(options, 1);
 
-    if (opt->ext.enc.name != 0) {
-        pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+    if (opt->src.enc.name != 0) {
+        pm_options_encoding_set(options, StringValueCStr(opt->src.enc.name));
     }
 
     uint8_t command_line = prism_script_command_line(opt);
