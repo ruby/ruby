@@ -1609,7 +1609,7 @@ eom
   end
 
   def test_invalid_jump
-    assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+    assert_in_out_err(%w[-e redo], "", [], /^-e:1: |~ Invalid redo/)
   end
 
   def test_keyword_not_parens
