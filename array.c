@@ -7726,6 +7726,42 @@ rb_ary_drop_while(VALUE ary)
 
 /*
  *  call-seq:
+ *    array.drop_while! {|element| ... } -> self
+ *    array.drop_while! -> new_enumerator
+ *
+ *   Removes zero or more trailing elements of +self+.
+ *
+ *    a = [0, 1, 2, 3, 4, 5]
+ *    a.drop_while! {|element| element < 3 }
+ *    a # => [3, 4, 5]
+ *
+ *  With no block given, returns a new Enumerator:
+ *
+ *    a = [0, 1]
+ *    a.drop_while! # => # => #<Enumerator: [0, 1]:drop_while>
+ *
+ */
+
+static VALUE
+rb_ary_drop_while_bang(VALUE ary)
+{
+    long i;
+
+    RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+    rb_ary_modify_check(ary);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        if (!RTEST(rb_yield(RARRAY_AREF(ary, i)))) break;
+    }
+
+    if (i == 0) return Qnil;
+
+    ary_slice_bang_by_rb_ary_splice(ary, 0, i);
+    return ary;
+}
+
+
+/*
+ *  call-seq:
  *    array.any? -> true or false
  *    array.any? {|element| ... } -> true or false
  *    array.any?(obj) -> true or false
@@ -8806,6 +8842,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "take_while", rb_ary_take_while, 0);
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
+    rb_define_method(rb_cArray, "drop_while!", rb_ary_drop_while_bang, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);

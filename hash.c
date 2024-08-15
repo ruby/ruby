@@ -6424,6 +6424,50 @@ env_shift(VALUE _)
     return result;
 }
 
+
+static int
+drop_while_i(VALUE key, VALUE value, VALUE hash)
+{
+    if (RTEST(rb_yield_values(2, key, value))) {
+        return ST_DELETE;
+    }
+    return ST_STOP;
+}
+
+/*
+ *  call-seq:
+ *    hash.drop_while! {|key, value| ... } -> self
+ *    hash.drop_while! -> new_enumerator
+ *
+ *   Removes zero or more trailing elements of +self+.
+ *
+ *    a = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5 }
+ *    a.drop_while! {|key, value| value < 3 }
+ *    a # => { d: 3, e: 4, f: 5 }
+ *
+ *  With no block given, returns a new Enumerator:
+ *
+ *    a = { a: 0, b: 1 }
+ *    a.drop_while! # => # => #<Enumerator: {a: 0, b: 1 }:drop_while>
+ *
+ */
+
+static VALUE
+rb_hash_drop_while_bang(VALUE hash)
+{
+    st_index_t n;
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    rb_hash_modify_check(hash);
+    n = RHASH_SIZE(hash);
+    if (!n) return Qnil;
+
+    rb_hash_foreach(hash, drop_while_i, hash);
+    compact_after_delete(hash);
+    if (n == RHASH_SIZE(hash)) return Qnil;
+    return hash;
+}
+
+
 /*
  * call-seq:
  *   ENV.invert -> hash of value/name pairs
@@ -7168,6 +7212,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "filter!", rb_hash_select_bang, 0);
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
+    rb_define_method(rb_cHash, "drop_while!", rb_hash_drop_while_bang, 0);
     rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
     rb_define_method(rb_cHash, "except", rb_hash_except, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
