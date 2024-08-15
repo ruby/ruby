@@ -20,9 +20,12 @@ class TestPTY < Test::Unit::TestCase
     is_success = false
     is_exit = false
     until retry_times > 10
-      if p = Process.waitpid(pid, Process::WNOHANG)
-        is_exit = true
-        break
+      begin
+        if p = Process.waitpid(pid, Process::WNOHANG)
+          is_exit = true
+          break
+        end
+      rescue Errno::ECHILD
       end
       if r.gets == "a\r\n"
         is_success = true
@@ -88,9 +91,12 @@ class TestPTY < Test::Unit::TestCase
         is_success = false
         is_exit = false
         until retry_times > 10
-          if p = Process.waitpid(pid, Process::WNOHANG)
-            is_exit = true
-            break
+          begin
+            if p = Process.waitpid(pid, Process::WNOHANG)
+              is_exit = true
+              break
+            end
+          rescue Errno::ECHILD
           end
           if r.gets == "foo\r\n"
             is_success = true
@@ -122,9 +128,12 @@ class TestPTY < Test::Unit::TestCase
         is_success = false
         is_exit = false
         until retry_times > 10
-          if p = Process.waitpid(pid, Process::WNOHANG)
-            is_exit = true
-            break
+          begin
+            if p = Process.waitpid(pid, Process::WNOHANG)
+              is_exit = true
+              break
+            end
+          rescue Errno::ECHILD
           end
           if r.gets == "bar\r\n"
             is_success = true
