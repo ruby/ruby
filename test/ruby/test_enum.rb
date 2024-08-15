@@ -1297,6 +1297,28 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
 
+  if RUBY_VERSION >= "3.4"
+    def test_uniq_map
+      arr = [1, 1, 1, 1, 2, 2, 3, 4, 5, 6]
+      assert_equal([2, 4, 6, 8, 10, 12], arr.uniq_map { |i| i * 2 })
+
+      hash = {
+        1   => 'One',
+        1.0 => 'One',
+        2   => 'Two',
+        3   => 'Three',
+        4   => 'Four',
+      }
+      assert_equal(['One', 'Two', 'Three', 'Four'], hash.uniq_map { |_k, v| v })
+
+      range = 1..100
+      assert_equal([1, 0], range.uniq_map { |i| i % 2 })
+
+      enum = Foo.new.to_enum
+      assert_equal([1], enum.uniq_map { |i| i })
+    end
+  end
+
   def test_compact
     class << (enum = Object.new)
       include Enumerable
