@@ -38,6 +38,12 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError) {
       OpenSSL::PKey.generate_parameters("EC", "invalid" => "option")
     }
+  end
+
+  def test_s_generate_parameters_with_block
+    # DSA kengen is not FIPS-approved.
+    # https://github.com/openssl/openssl/commit/49a35f0#diff-605396c063194975af8ce31399d42690ab18186b422fb5012101cc9132660fe1R611-R614
+    omit_on_fips
 
     # Parameter generation callback is called
     if openssl?(3, 0, 0, 0) && !openssl?(3, 0, 0, 6)
