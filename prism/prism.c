@@ -9771,7 +9771,10 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             } else {
                 size_t length = pm_strspn_hexadecimal_digit(parser->current.end, MIN(parser->end - parser->current.end, 4));
 
-                if (length == 4) {
+                if (length == 0) {
+                    const uint8_t *start = parser->current.end - 2;
+                    PM_PARSER_ERR_FORMAT(parser, start, parser->current.end, PM_ERR_ESCAPE_INVALID_UNICODE_SHORT, 2, start);
+                } else if (length == 4) {
                     uint32_t value = escape_unicode(parser, parser->current.end, 4);
 
                     if (flags & PM_ESCAPE_FLAG_REGEXP) {
