@@ -228,22 +228,25 @@ class Tempfile < DelegateClass(File)
       tmpfile = File.open(tmpname, @mode, **opts)
       @opts = opts.freeze
     end
-    ObjectSpace.define_finalizer(@finalizer_obj, Remover.new(tmpfile.path))
-    ObjectSpace.define_finalizer(self, Closer.new(tmpfile))
 
     super(tmpfile)
+
+    define_finalizers
+  end
+
+  private def define_finalizers
+    ObjectSpace.define_finalizer(@finalizer_obj, Closer.new(__getobj__))
+    ObjectSpace.define_finalizer(@finalizer_obj, Remover.new(__getobj__.path))
   end
 
   def initialize_dup(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
-    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
   end
 
   def initialize_clone(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
-    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
   end
 
   private def initialize_copy_iv(other) # :nodoc:
@@ -256,10 +259,13 @@ class Tempfile < DelegateClass(File)
   # Opens or reopens the file with mode "r+".
   def open
     _close
-    ObjectSpace.undefine_finalizer(self)
+
     mode = @mode & ~(File::CREAT|File::EXCL)
     __setobj__(File.open(__getobj__.path, mode, **@opts))
-    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+
+    ObjectSpace.undefine_finalizer(@finalizer_obj)
+    define_finalizers
+
     __getobj__
   end
 
@@ -327,7 +333,10 @@ class Tempfile < DelegateClass(File)
       # may not be able to unlink on Windows; just ignore
       return
     end
+
     ObjectSpace.undefine_finalizer(@finalizer_obj)
+    ObjectSpace.define_finalizer(@finalizer_obj, Closer.new(__getobj__))
+
     @unlinked = true
   end
   alias delete unlink
