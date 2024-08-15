@@ -117,6 +117,7 @@ extern "C" {
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -799,10 +800,6 @@ pub(crate) mod ids {
 
     def_ids! {
         name: NULL               content: b""
-        name: min                content: b"min"
-        name: max                content: b"max"
-        name: hash               content: b"hash"
-        name: pack               content: b"pack"
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
         name: eq                 content: b"=="

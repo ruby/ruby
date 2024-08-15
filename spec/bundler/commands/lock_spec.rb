@@ -1061,7 +1061,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     G
 
-    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock --update" }
+    simulate_platform("x86_64-darwin-19") { bundle "lock --update" }
 
     expect(out).to match(/Writing lockfile to.+Gemfile\.lock/)
   end
@@ -1083,7 +1083,7 @@ RSpec.describe "bundle lock" do
       gem "libv8"
     G
 
-    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock" }
+    simulate_platform("x86_64-darwin-19") { bundle "lock" }
 
     checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "libv8", "8.4.255.0", "x86_64-darwin-19"
@@ -1151,7 +1151,7 @@ RSpec.describe "bundle lock" do
     previous_lockfile = lockfile
 
     %w[x86_64-darwin-19 x86_64-darwin-20].each do |platform|
-      simulate_platform(Gem::Platform.new(platform)) do
+      simulate_platform(platform) do
         bundle "lock"
         expect(lockfile).to eq(previous_lockfile)
 
@@ -1797,10 +1797,11 @@ RSpec.describe "bundle lock" do
       G
     end
 
-    it "locks ruby specs" do
+    it "locks both ruby and platform specific specs" do
       checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
-        c.no_checksum "nokogiri", "1.14.2"
+        c.checksum gem_repo4, "nokogiri", "1.14.2"
+        c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
       end
 
       simulate_platform "x86_64-linux" do
@@ -1818,6 +1819,7 @@ RSpec.describe "bundle lock" do
           remote: https://gem.repo4/
           specs:
             nokogiri (1.14.2)
+            nokogiri (1.14.2-x86_64-linux)
 
         PLATFORMS
           ruby
@@ -1829,6 +1831,73 @@ RSpec.describe "bundle lock" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+    end
+
+    context "and a lockfile with platform specific gems only already exists" do
+      before do
+        checksums = checksums_section_when_enabled do |c|
+          c.no_checksum "foo", "1.0"
+          c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
+        end
+
+        lockfile <<~L
+          PATH
+            remote: .
+            specs:
+              foo (1.0)
+                nokogiri
+
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              nokogiri (1.14.2-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            foo!
+          #{checksums}
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "keeps platform specific gems" do
+        checksums = checksums_section_when_enabled do |c|
+          c.no_checksum "foo", "1.0"
+          c.checksum gem_repo4, "nokogiri", "1.14.2"
+          c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
+        end
+
+        simulate_platform "x86_64-linux" do
+          bundle "install"
+        end
+
+        expect(lockfile).to eq <<~L
+          PATH
+            remote: .
+            specs:
+              foo (1.0)
+                nokogiri
+
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              nokogiri (1.14.2)
+              nokogiri (1.14.2-x86_64-linux)
+
+          PLATFORMS
+            ruby
+            x86_64-linux
+
+          DEPENDENCIES
+            foo!
+          #{checksums}
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
     end
   end
 
@@ -1916,6 +1985,66 @@ RSpec.describe "bundle lock" do
           activesupport (= 7.0.4.3)
           govuk_app_config
         #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
+  context "when lockfile has incorrectly indented platforms" do
+    before do
+      build_repo4 do
+        build_gem "ffi", "1.1.0" do |s|
+          s.platform = "x86_64-linux"
+        end
+
+        build_gem "ffi", "1.1.0" do |s|
+          s.platform = "arm64-darwin"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "ffi"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            ffi (1.1.0-arm64-darwin)
+
+        PLATFORMS
+           arm64-darwin
+
+        DEPENDENCIES
+          ffi
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "does not remove any gems" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock --update"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            ffi (1.1.0-arm64-darwin)
+            ffi (1.1.0-x86_64-linux)
+
+        PLATFORMS
+          arm64-darwin
+          x86_64-linux
+
+        DEPENDENCIES
+          ffi
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L

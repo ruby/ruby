@@ -6,12 +6,12 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest        5.24.1  https://github.com/minitest/minitest
+minitest        5.25.0  https://github.com/minitest/minitest
 power_assert    2.0.3   https://github.com/ruby/power_assert 84e85124c5014a139af39161d484156cfe87a9ed
 rake            13.2.1  https://github.com/ruby/rake
 test-unit       3.6.2   https://github.com/test-unit/test-unit
-rexml           3.3.2   https://github.com/ruby/rexml
-rss             0.3.0   https://github.com/ruby/rss
+rexml           3.3.5   https://github.com/ruby/rexml
+rss             0.3.1   https://github.com/ruby/rss
 net-ftp         0.3.7   https://github.com/ruby/net-ftp
 net-imap        0.4.14  https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
@@ -21,7 +21,7 @@ prime           0.1.2   https://github.com/ruby/prime
 rbs             3.5.2   https://github.com/ruby/rbs
 typeprof        0.21.11 https://github.com/ruby/typeprof b19a6416da3a05d57fadd6ffdadb382b6d236ca5
 debug           1.9.2   https://github.com/ruby/debug
-racc            1.8.0   https://github.com/ruby/racc
+racc            1.8.1   https://github.com/ruby/racc
 mutex_m         0.2.0   https://github.com/ruby/mutex_m
 getoptlong      0.2.1   https://github.com/ruby/getoptlong
 base64          0.2.0   https://github.com/ruby/base64

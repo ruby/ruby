@@ -579,7 +579,7 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
         .locals = { 0 },
         .parameters = PM_SCOPE_PARAMETERS_NONE,
         .implicit_parameters = { 0 },
-        .shareable_constant = (closed || parser->current_scope == NULL) ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
+        .shareable_constant = parser->current_scope == NULL ? PM_SCOPE_SHAREABLE_CONSTANT_NONE : parser->current_scope->shareable_constant,
         .closed = closed
     };
 
@@ -21714,6 +21714,33 @@ pm_parser_warn_shebang_carriage_return(pm_parser_t *parser, const uint8_t *start
 }
 
 /**
+ * Process the shebang when initializing the parser. This function assumes that
+ * the shebang_callback option has already been checked for nullability.
+ */
+static void
+pm_parser_init_shebang(pm_parser_t *parser, const pm_options_t *options, const char *engine, size_t length) {
+    const char *switches = pm_strnstr(engine, " -", length);
+    if (switches == NULL) return;
+
+    pm_options_t next_options = *options;
+    options->shebang_callback(
+        &next_options,
+        (const uint8_t *) (switches + 1),
+        length - ((size_t) (switches - engine)) - 1,
+        options->shebang_callback_data
+    );
+
+    size_t encoding_length;
+    if ((encoding_length = pm_string_length(&next_options.encoding)) > 0) {
+        const uint8_t *encoding_source = pm_string_source(&next_options.encoding);
+        parser_lex_magic_comment_encoding_value(parser, encoding_source, encoding_source + encoding_length);
+    }
+
+    parser->command_line = next_options.command_line;
+    parser->frozen_string_literal = next_options.frozen_string_literal;
+}
+
+/**
  * Initialize a parser with the given start and end pointers.
  */
 PRISM_EXPORTED_FUNCTION void
@@ -21872,9 +21899,13 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         const uint8_t *newline = next_newline(parser->start, parser->end - parser->start);
         size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->start);
 
-        if (pm_strnstr((const char *) parser->start, "ruby", length) != NULL) {
+        const char *engine;
+        if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
             pm_parser_warn_shebang_carriage_return(parser, parser->start, length);
             if (newline != NULL) parser->encoding_comment_start = newline + 1;
+            if (options != NULL && options->shebang_callback != NULL) {
+                pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) parser->start)));
+            }
             search_shebang = false;
         } else if (!parser->parsing_eval) {
             search_shebang = true;
@@ -21908,9 +21939,13 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
                     pm_parser_warn_shebang_carriage_return(parser, cursor, length);
                 }
 
-                if (pm_strnstr((const char *) cursor, "ruby", length) != NULL) {
+                const char *engine;
+                if ((engine = pm_strnstr((const char *) cursor, "ruby", length)) != NULL) {
                     found_shebang = true;
-                    parser->encoding_comment_start = newline + 1;
+                    if (newline != NULL) parser->encoding_comment_start = newline + 1;
+                    if (options != NULL && options->shebang_callback != NULL) {
+                        pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) cursor)));
+                    }
                     break;
                 }
             }

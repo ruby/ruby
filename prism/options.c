@@ -1,6 +1,15 @@
 #include "prism/options.h"
 
 /**
+ * Set the shebang callback option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data) {
+    options->shebang_callback = shebang_callback;
+    options->shebang_callback_data = shebang_callback_data;
+}
+
+/**
  * Set the filepath option on the given options struct.
  */
 PRISM_EXPORTED_FUNCTION void

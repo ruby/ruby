@@ -526,9 +526,6 @@ module TestIRB
       end
 
       def test_heredoc_with_indent
-        if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-          pend 'This test needs Ripper::Lexer#scan to take broken tokens'
-        end
         input_with_correct_indents = [
           [%q(<<~Q+<<~R), 0, 2, 1],
           [%q(a), 2, 2, 1],

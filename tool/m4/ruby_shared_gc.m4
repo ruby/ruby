@@ -6,6 +6,10 @@ AC_ARG_WITH(shared-gc,
     [shared_gc_dir=$withval], [unset shared_gc_dir]
 )
 
+AS_IF([test "$shared_gc_dir" = yes], [
+    AC_MSG_ERROR(you must specify a directory when using --with-shared-gc)
+])
+
 AC_MSG_CHECKING([if building with shared GC support])
 AS_IF([test x"$shared_gc_dir" != x], [
     AC_MSG_RESULT([yes])

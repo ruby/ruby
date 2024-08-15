@@ -396,6 +396,7 @@ typedef struct RNode_RESBODY {
     NODE node;
 
     struct RNode *nd_args;
+    struct RNode *nd_exc_var;
     struct RNode *nd_body;
     struct RNode *nd_next;
 } rb_node_resbody_t;
@@ -572,8 +573,6 @@ typedef struct RNode_ZSUPER {
    * alen (length of list) |     * nd_end (point to the last LIST)
    * next -----------------+     * next
 
-
-  RNode_LIST and RNode_VALUES should be same structure
 */
 typedef struct RNode_LIST {
     NODE node;
@@ -589,14 +588,6 @@ typedef struct RNode_LIST {
 typedef struct RNode_ZLIST {
     NODE node;
 } rb_node_zlist_t;
-
-typedef struct RNode_VALUES {
-    NODE node;
-
-    struct RNode *nd_head;
-    long nd_alen;
-    struct RNode *nd_next;
-} rb_node_values_t;
 
 typedef struct RNode_HASH {
     NODE node;

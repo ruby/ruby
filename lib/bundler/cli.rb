@@ -110,8 +110,8 @@ module Bundler
     default_task(Bundler.feature_flag.default_cli_command)
 
     class_option "no-color", type: :boolean, desc: "Disable colorization in output"
-    class_option "retry",    type: :numeric, aliases: "-r", banner: "NUM",
-                             desc: "Specify the number of times you wish to attempt network commands"
+    class_option "retry", type: :numeric, aliases: "-r", banner: "NUM",
+                          desc: "Specify the number of times you wish to attempt network commands"
     class_option "verbose", type: :boolean, desc: "Enable verbose output mode", aliases: "-V"
 
     def help(cli = nil)
@@ -262,15 +262,15 @@ module Bundler
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "group", aliases: "-g", type: :array, banner: "Update a specific group"
     method_option "jobs", aliases: "-j", type: :numeric, banner: "Specify the number of jobs to run in parallel"
-    method_option "local", type: :boolean, banner:       "Do not attempt to fetch gems remotely and use the gem cache instead"
-    method_option "quiet", type: :boolean, banner:       "Only output warnings and errors."
+    method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
+    method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "source", type: :array, banner: "Update a specific source (and all gems associated with it)"
     method_option "redownload", type: :boolean, aliases: "--force", banner: "Force downloading every gem."
     method_option "ruby", type: :boolean, banner: "Update ruby specified in Gemfile.lock"
     method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
-    method_option "patch", type: :boolean, banner:       "Prefer updating only to next patch version"
-    method_option "minor", type: :boolean, banner:       "Prefer updating only to next minor version"
-    method_option "major", type: :boolean, banner:       "Prefer updating to next major version (default)"
+    method_option "patch", type: :boolean, banner: "Prefer updating only to next patch version"
+    method_option "minor", type: :boolean, banner: "Prefer updating only to next minor version"
+    method_option "major", type: :boolean, banner: "Prefer updating to next major version (default)"
     method_option "pre", type: :boolean, banner: "Always choose the highest allowed version when updating gems, regardless of prerelease status"
     method_option "strict", type: :boolean, banner: "Do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", type: :boolean, banner: "Use bundle install conservative update behavior and do not allow shared dependencies to be updated."
@@ -399,11 +399,11 @@ module Bundler
     end
 
     desc "cache [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
-    method_option "all",  type: :boolean,
-                          default: Bundler.feature_flag.cache_all?,
-                          banner: "Include all sources (including path and git)."
+    method_option "all", type: :boolean,
+                         default: Bundler.feature_flag.cache_all?,
+                         banner: "Include all sources (including path and git)."
     method_option "all-platforms", type: :boolean, banner: "Include gems for all platforms present in the lockfile, not only the current one"
-    method_option "cache-path", type: :string, banner:       "Specify a different cache path than the default (vendor/cache)."
+    method_option "cache-path", type: :string, banner: "Specify a different cache path than the default (vendor/cache)."
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "no-install", type: :boolean, banner: "Don't install the gems, only update the cache."
     method_option "no-prune", type: :boolean, banner: "Don't remove stale gems from the cache."
@@ -607,7 +607,7 @@ module Bundler
     end
 
     desc "inject GEM VERSION", "Add the named gem, with version requirements, to the resolved Gemfile", hide: true
-    method_option "source", type: :string, banner:      "Install gem from the given source"
+    method_option "source", type: :string, banner: "Install gem from the given source"
     method_option "group", type: :string, banner: "Install gem into a bundler group"
     def inject(name, version)
       SharedHelpers.major_deprecation 2, "The `inject` command has been replaced by the `add` command"
@@ -617,16 +617,16 @@ module Bundler
 
     desc "lock", "Creates a lockfile without installing"
     method_option "update", type: :array, lazy_default: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
-    method_option "local", type: :boolean, default: false, banner:       "do not attempt to fetch remote gemspecs and use the local gem cache only"
-    method_option "print", type: :boolean, default: false, banner:       "print the lockfile to STDOUT instead of writing to the file system"
+    method_option "local", type: :boolean, default: false, banner: "do not attempt to fetch remote gemspecs and use the local gem cache only"
+    method_option "print", type: :boolean, default: false, banner: "print the lockfile to STDOUT instead of writing to the file system"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
     method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
-    method_option "remove-platform", type: :array, default: [], banner:       "Remove a platform from the lockfile"
-    method_option "patch", type: :boolean, banner:       "If updating, prefer updating only to next patch version"
-    method_option "minor", type: :boolean, banner:       "If updating, prefer updating only to next minor version"
-    method_option "major", type: :boolean, banner:       "If updating, prefer updating to next major version (default)"
+    method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
+    method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
+    method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"
+    method_option "major", type: :boolean, banner: "If updating, prefer updating to next major version (default)"
     method_option "pre", type: :boolean, banner: "If updating, always choose the highest allowed version, regardless of prerelease status"
     method_option "strict", type: :boolean, banner: "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", type: :boolean, banner: "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"

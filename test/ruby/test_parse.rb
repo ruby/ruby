@@ -463,6 +463,8 @@ class TestParse < Test::Unit::TestCase
     assert_parse_error(%q[def ((%w();1)).foo; end], msg)
     assert_parse_error(%q[def ("#{42}").foo; end], msg)
     assert_parse_error(%q[def (:"#{42}").foo; end], msg)
+    assert_parse_error(%q[def ([]).foo; end], msg)
+    assert_parse_error(%q[def ([1]).foo; end], msg)
   end
 
   def test_flip_flop
@@ -1571,6 +1573,21 @@ x = __ENCODING__
     assert_equal([2], a.values, bug_20339)
     assert_equal(1, b[0], bug_20341)
     assert_equal(2, b[1], bug_20341)
+  end
+
+  def test_shareable_constant_value_literal_const_refs
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      # [Bug #20668]
+      SOME_CONST = {
+        'Object' => Object,
+        'String' => String,
+        'Array' => Array,
+      }
+      SOME_CONST
+    end;
+    assert_ractor_shareable(a)
   end
 
   def test_shareable_constant_value_nested

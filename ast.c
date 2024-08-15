@@ -447,7 +447,7 @@ node_children(VALUE ast_value, const NODE *node)
       case NODE_RESCUE:
         return rb_ary_new_from_node_args(ast_value, 3, RNODE_RESCUE(node)->nd_head, RNODE_RESCUE(node)->nd_resq, RNODE_RESCUE(node)->nd_else);
       case NODE_RESBODY:
-        return rb_ary_new_from_node_args(ast_value, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_next);
+        return rb_ary_new_from_node_args(ast_value, 4, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_exc_var, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_next);
       case NODE_ENSURE:
         return rb_ary_new_from_node_args(ast_value, 2, RNODE_ENSURE(node)->nd_head, RNODE_ENSURE(node)->nd_ensr);
       case NODE_AND:

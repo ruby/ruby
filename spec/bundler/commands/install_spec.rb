@@ -249,12 +249,14 @@ RSpec.describe "bundle install with gem sources" do
 
     describe "with a gem that installs multiple platforms" do
       it "installs gems for the local platform as first choice" do
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "x86-darwin-100" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 #{Bundler.local_platform}")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-darwin-100")
+        end
       end
 
       it "falls back on plain ruby" do
@@ -1134,11 +1136,15 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
-  context "in a frozen bundle" do
-    before do
+  context "when current platform not included in the lockfile" do
+    around do |example|
       build_repo4 do
         build_gem "libv8", "8.4.255.0" do |s|
           s.platform = "x86_64-darwin-19"
+        end
+
+        build_gem "libv8", "8.4.255.0" do |s|
+          s.platform = "x86_64-linux"
         end
       end
 
@@ -1164,11 +1170,36 @@ RSpec.describe "bundle install with gem sources" do
            #{Bundler::VERSION}
       L
 
-      bundle "config set --local deployment true"
+      simulate_platform("x86_64-linux", &example)
     end
 
-    it "should fail loudly if the lockfile platforms don't include the current platform" do
-      simulate_platform(Gem::Platform.new("x86_64-linux")) { bundle "install", raise_on_error: false }
+    it "adds the current platform to the lockfile" do
+      bundle "install --verbose"
+
+      expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            libv8 (8.4.255.0-x86_64-darwin-19)
+            libv8 (8.4.255.0-x86_64-linux)
+
+        PLATFORMS
+          x86_64-darwin-19
+          x86_64-linux
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "fails loudly if frozen mode set" do
+      bundle "config set --local deployment true"
+      bundle "install", raise_on_error: false
 
       expect(err).to eq(
         "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \

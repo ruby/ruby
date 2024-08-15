@@ -594,22 +594,30 @@ fstring_cmp(VALUE a, VALUE b)
             memcmp(aptr, bptr, alen) != 0);
 }
 
-static inline int
+static inline bool
 single_byte_optimizable(VALUE str)
 {
-    rb_encoding *enc;
-
+    int encindex = ENCODING_GET(str);
+    switch (encindex) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_US_ASCII:
+        return true;
+      case ENCINDEX_UTF_8:
+        // For UTF-8 it's worth scanning the string coderange when unknown.
+        return rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT;
+    }
     /* Conservative.  It may be ENC_CODERANGE_UNKNOWN. */
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
-        return 1;
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+        return true;
+    }
 
-    enc = STR_ENC_GET(str);
-    if (rb_enc_mbmaxlen(enc) == 1)
-        return 1;
+    if (rb_enc_mbmaxlen(rb_enc_from_index(encindex)) == 1) {
+        return true;
+    }
 
     /* Conservative.  Possibly single byte.
      * "\xa1" in Shift_JIS for example. */
-    return 0;
+    return false;
 }
 
 VALUE rb_fs;
@@ -880,7 +888,7 @@ str_capacity(VALUE str, const int termlen)
     if (STR_EMBED_P(str)) {
         return str_embed_capa(str) - termlen;
     }
-    else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+    else if (FL_ANY_RAW(str, STR_SHARED|STR_NOFREE)) {
         return RSTRING(str)->len;
     }
     else {
@@ -2500,32 +2508,43 @@ rb_check_lockedtmp(VALUE str)
     }
 }
 
+// If none of these flags are set, we know we have an modifiable string.
+// If any is set, we need to do more detailed checks.
+#define STR_UNMODIFIABLE_MASK (FL_FREEZE | STR_TMPLOCK | STR_CHILLED)
 static inline void
 str_modifiable(VALUE str)
 {
-    if (CHILLED_STRING_P(str)) {
-        CHILLED_STRING_MUTATED(str);
+    if (RB_UNLIKELY(FL_ANY_RAW(str, STR_UNMODIFIABLE_MASK))) {
+        if (CHILLED_STRING_P(str)) {
+            CHILLED_STRING_MUTATED(str);
+        }
+        rb_check_lockedtmp(str);
+        rb_check_frozen(str);
     }
-    rb_check_lockedtmp(str);
-    rb_check_frozen(str);
 }
 
 static inline int
 str_dependent_p(VALUE str)
 {
     if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-        return 0;
+        return FALSE;
     }
     else {
-        return 1;
+        return TRUE;
     }
 }
 
+// If none of these flags are set, we know we have an independent string.
+// If any is set, we need to do more detailed checks.
+#define STR_DEPENDANT_MASK (STR_UNMODIFIABLE_MASK | STR_SHARED | STR_NOFREE)
 static inline int
 str_independent(VALUE str)
 {
-    str_modifiable(str);
-    return !str_dependent_p(str);
+    if (RB_UNLIKELY(FL_ANY_RAW(str, STR_DEPENDANT_MASK))) {
+        str_modifiable(str);
+        return !str_dependent_p(str);
+    }
+    return TRUE;
 }
 
 static void
@@ -3375,8 +3394,7 @@ rb_str_buf_cat_byte(VALUE str, unsigned char byte)
     }
     else {
         // If there's not enough string_capacity, make a call into the general string concatenation function.
-        char buf[1] = {byte};
-        str_buf_cat(str, buf, 1);
+        str_buf_cat(str, (char *)&byte, 1);
     }
 
     // If the code range is already known, we can derive the resulting code range cheaply by looking at the byte we
@@ -4236,12 +4254,14 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 static void
 str_ensure_byte_pos(VALUE str, long pos)
 {
-    const char *s = RSTRING_PTR(str);
-    const char *e = RSTRING_END(str);
-    const char *p = s + pos;
-    if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
+    if (!single_byte_optimizable(str)) {
+        const char *s = RSTRING_PTR(str);
+        const char *e = RSTRING_END(str);
+        const char *p = s + pos;
+        if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
+            rb_raise(rb_eIndexError,
+                     "offset %ld does not land on character boundary", pos);
+        }
     }
 }
 
@@ -6551,7 +6571,6 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
 {
     long beg, len, vbeg, vlen;
     VALUE val;
-    rb_encoding *enc;
     int cr;
 
     rb_check_arity(argc, 2, 5);
@@ -6596,10 +6615,13 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     }
     str_check_beg_len(str, &beg, &len);
     str_check_beg_len(val, &vbeg, &vlen);
-    enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
+
+    if (RB_UNLIKELY(ENCODING_GET_INLINED(str) != ENCODING_GET_INLINED(val))) {
+        rb_enc_associate(str, rb_enc_check(str, val));
+    }
+
     rb_str_update_1(str, beg, len, val, vbeg, vlen);
-    rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
@@ -12296,6 +12318,23 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 {
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
+
+#if USE_YJIT
+void
+rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+{
+    if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
+        ssize_t code = RB_NUM2SSIZE(codepoint);
+
+        if (RB_LIKELY(code >= 0 && code < 0xff)) {
+            rb_str_buf_cat_byte(str, (char) code);
+            return;
+        }
+    }
+
+    rb_str_concat(str, codepoint);
+}
+#endif
 
 void
 Init_String(void)

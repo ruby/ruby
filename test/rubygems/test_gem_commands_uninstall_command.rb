@@ -102,6 +102,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert File.exist? File.join(@gemhome, "bin", "executable")
+    assert File.exist? File.join(@gemhome, "gems", "z-1", "bin", "executable")
 
     output = @ui.output.split "\n"
 

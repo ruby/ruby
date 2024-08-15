@@ -1902,6 +1902,22 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", timeout: 100, rss: true)
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+      str = "a" * 1_000_000 + "x"
+
+      code = proc do
+        regex =~ str
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
+    end;
+  end
+
   def test_match_cache_exponential
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }

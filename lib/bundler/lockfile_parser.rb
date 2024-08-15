@@ -272,7 +272,7 @@ module Bundler
     end
 
     def parse_platform(line)
-      @platforms << Gem::Platform.new($1) if line =~ /^  (.*)$/
+      @platforms << Gem::Platform.new($1.strip) if line =~ /^  (.*)$/
     end
 
     def parse_bundled_with(line)

@@ -88,7 +88,7 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - uses: ruby/setup-ruby@50ba3386b050ad5b97a41fcb81240cbee1d1821f # v1.188.0
+      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -173,9 +173,23 @@ jobs:
       - run: nmake test-spec
         timeout-minutes: 10
 
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+          test-task: test-all
+          # If we support a new test task, we need to change this test-opts.
+          test-opts: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
+
       - run: nmake test-all
         env:
-          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
+          RUBY_TESTOPTS: >-
+            -j${{ env.TEST_JOBS || 4 }}
+            --job-status=normal
         timeout-minutes: 60
 
       - uses: ./.github/actions/slack

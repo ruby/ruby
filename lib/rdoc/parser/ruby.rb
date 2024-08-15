@@ -8,6 +8,15 @@
 #       by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
+if ENV['RDOC_USE_PRISM_PARSER']
+  require 'rdoc/parser/prism_ruby'
+  RDoc::Parser.const_set(:Ruby, RDoc::Parser::PrismRuby)
+  puts "========================================================================="
+  puts "RDoc is using the experimental Prism parser to generate the documentation"
+  puts "========================================================================="
+  return
+end
+
 require 'ripper'
 require_relative 'ripper_state_lex'
 

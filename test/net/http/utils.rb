@@ -41,8 +41,9 @@ module TestNetHTTPUtils
     end
 
     def shutdown
-      @thread.kill if @thread
-      @server.close if @server
+      @thread&.kill
+      @server&.close
+      @thread&.join
     end
 
     def mount(path, proc)
@@ -234,7 +235,7 @@ module TestNetHTTPUtils
   def new
     klass = Net::HTTP::Proxy(config('proxy_host'), config('proxy_port'))
     http = klass.new(config('host'), config('port'))
-    http.set_debug_output logfile()
+    http.set_debug_output logfile
     http
   end
 
@@ -244,7 +245,7 @@ module TestNetHTTPUtils
   end
 
   def logfile
-    $DEBUG ? $stderr : NullWriter.new
+    $stderr if $DEBUG
   end
 
   def setup
@@ -333,16 +334,6 @@ module TestNetHTTPUtils
   $test_net_http_data = (0...256).to_a.map { |i| i.chr }.join('') * 64
   $test_net_http_data.force_encoding("ASCII-8BIT")
   $test_net_http_data_type = 'application/octet-stream'
-
-  class NullWriter
-    def <<(_s); end
-
-    def puts(*_args); end
-
-    def print(*_args); end
-
-    def printf(*_args); end
-  end
 
   def self.clean_http_proxy_env
     orig = {

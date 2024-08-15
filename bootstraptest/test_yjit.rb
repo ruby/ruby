@@ -5185,3 +5185,19 @@ end
 
 test
 RUBY
+
+assert_equal '[true, true]', <<~'RUBY'
+  def pack
+    v = 1.23
+    [v, v*2, v*3].pack("E*").unpack("E*") == [v, v*2, v*3]
+  end
+
+  def with_buffer
+    v = 4.56
+    b = +"x"
+    [v, v*2, v*3].pack("E*", buffer: b)
+    b[1..].unpack("E*") == [v, v*2, v*3]
+  end
+
+  [pack, with_buffer]
+RUBY

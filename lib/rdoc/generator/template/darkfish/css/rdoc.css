@@ -9,6 +9,10 @@
 /* vim: ft=css et sw=2 ts=2 sts=2 */
 /* Base Green is: #6C8C22 */
 
+:root {
+  --sidebar-width: 300px;
+}
+
 .hide { display: none !important; }
 
 * { padding: 0; margin: 0; }
@@ -19,12 +23,14 @@ body {
   font-weight: 300;
 
   /* Layout */
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
 }
 
 body > :last-child {
-  grid-column: 1 / 3;
+  width: 100%;
 }
 
 h1 span,
@@ -203,24 +209,45 @@ nav {
   font-family: Helvetica, sans-serif;
   font-size: 14px;
   border-right: 1px solid #ccc;
-  position: sticky;
+  position: fixed;
   top: 0;
+  bottom: 0;
   overflow: auto;
+  z-index: 10;
 
   /* Layout */
-  width: 260px; /* fallback */
-  width: max(50px, 20vw);
-  min-width: 50px;
-  max-width: 80vw;
-  height: calc(100vh - 100px); /* reduce the footer height */
-  resize: horizontal;
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  background: white;
+
+  display: flex;
+  flex-direction: column;
+}
+
+nav[hidden] {
+  display: none;
+}
+
+nav footer {
+  padding: 1em;
+  border-top: 1px solid #ccc;
 }
 
 main {
+  flex: 1;
   display: block;
-  margin: 1em;
+  margin: 3em auto 1em;
+  padding: 0 1em; /* Add padding to keep space between main content and sidebar/right side of the screen */
   min-width: 340px;
   font-size: 16px;
+  width: 100%;
+  max-width: 64em;
+}
+
+@media (min-width: 1024px) {
+  main {
+    margin-left: var(--sidebar-width);
+  }
 }
 
 main h1,
@@ -232,8 +259,10 @@ main h6 {
   font-family: Helvetica, sans-serif;
 }
 
-.table-of-contents main {
-  margin-left: 2em;
+@media (min-width: 1024px) {
+  .table-of-contents main {
+    margin-left: 20em;
+  }
 }
 
 #validator-badges {
@@ -252,7 +281,7 @@ nav .nav-section {
   margin-top: 2em;
   border-top: 2px solid #aaa;
   font-size: 90%;
-  overflow: hidden;
+  flex: 1;
 }
 
 nav h2 {
@@ -278,6 +307,38 @@ nav dl,
 nav p {
   padding: 4px 8px 0;
   list-style: none;
+}
+
+.navigation-toggle {
+  position: fixed;
+  left: 4px;
+  z-index: 100;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 24px;
+}
+.navigation-toggle[aria-expanded="true"] {
+  left: 260px;
+}
+
+/* Adds a suble gradient to help the toggle stand out from the background */
+.navigation-toggle::before {
+  content: "";
+  background: linear-gradient(180deg, rgba(250,250,250,1) 40%, rgba(250,250,250,0.8) 70%, rgba(250,250,250,0) 100%);
+  display: block;
+  z-index: -1;
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  height: 50px;
+  width: 100vw;
+}
+
+.navigation-toggle[aria-expanded="true"]::before {
+  height: 0;
 }
 
 #project-navigation .nav-section {
@@ -684,4 +745,3 @@ pre {
 }
 
 /* @end */
-

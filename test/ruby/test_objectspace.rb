@@ -101,6 +101,20 @@ End
       ObjectSpace.define_finalizer(a) { p :ok }
       !b
     END
+
+    assert_in_out_err(["-e", <<~RUBY], "", %w(:ok :ok), [], timeout: 60)
+      a = Object.new
+      ObjectSpace.define_finalizer(a) { p :ok }
+
+      1_000_000.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o) { }
+      end
+
+      b = Object.new
+      ObjectSpace.define_finalizer(b) { p :ok }
+    RUBY
+
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
 
     code = proc do |priv|

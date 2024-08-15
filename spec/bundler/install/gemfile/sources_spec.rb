@@ -8,7 +8,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     before do
       # Oh no! Someone evil is trying to hijack myrack :(
       # need this to be broken to check for correct source ordering
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "myrack", repo3_myrack_version do |s|
           s.write "lib/myrack.rb", "MYRACK = 'FAIL'"
         end
@@ -156,7 +156,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         # Oh no! Someone evil is trying to hijack myrack :(
         # need this to be broken to check for correct source ordering
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack", "1.0.0" do |s|
             s.write "lib/myrack.rb", "MYRACK = 'FAIL'"
           end
@@ -200,7 +200,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         # Oh no! Someone evil is trying to hijack myrack :(
         # need this to be broken to check for correct source ordering
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack", "1.0.0" do |s|
             s.write "lib/myrack.rb", "MYRACK = 'FAIL'"
           end
@@ -225,7 +225,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a pinned gem has an indirect dependency in the pinned source" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_myrack", "1.0.1" do |s|
             s.add_dependency "myrack"
           end
@@ -287,7 +287,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         # In these tests, we need a working myrack gem in repo2 and not repo3
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_myrack", "1.0.1" do |s|
             s.add_dependency "myrack"
           end
@@ -502,7 +502,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         build_repo2
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "private_gem_1", "1.0.0"
           build_gem "private_gem_2", "1.0.0"
         end
@@ -528,7 +528,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         build_repo2
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_missing", "1.0.1" do |s|
             s.add_dependency "missing"
           end
@@ -565,7 +565,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
         end
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "unrelated_gem", "1.0.0"
         end
 
@@ -645,7 +645,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a scoped gem has a deeply nested indirect dependency" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_depends_on_myrack", "1.0.1" do |s|
             s.add_dependency "depends_on_myrack"
           end
@@ -764,7 +764,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           build_gem "zeitwerk", "2.4.2"
         end
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "sidekiq-pro", "5.2.1" do |s|
             s.add_dependency "connection_pool", ">= 2.2.3"
             s.add_dependency "sidekiq", ">= 6.1.0"
@@ -1080,7 +1080,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a pinned gem has an indirect dependency with more than one level of indirection in the default source " do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "handsoap", "0.2.5.5" do |s|
             s.add_dependency "nokogiri", ">= 1.2.3"
           end
@@ -1157,7 +1157,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "with a gem that is only found in the wrong source" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "not_in_repo1", "1.0.0"
         end
 
@@ -1250,7 +1250,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack", "0.9.1"
         end
 
@@ -1393,7 +1393,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
   context "re-resolving" do
     context "when there is a mix of sources in the gemfile" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack"
         end
 
@@ -1919,6 +1919,72 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end.not_to change { lockfile }
 
       expect(err).to include("Could not find gem 'example' in rubygems repository https://gem.repo4/")
+    end
+  end
+
+  context "when a gem has versions in two sources, but only the locked one has updates" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://main.source/
+          specs:
+            activesupport (1.0)
+              bigdecimal
+            bigdecimal (1.0.0)
+
+        GEM
+          remote: https://main.source/extra/
+          specs:
+            foo (1.0)
+              bigdecimal
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activesupport
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo3 do
+        build_gem "activesupport" do |s|
+          s.add_dependency "bigdecimal"
+        end
+
+        build_gem "bigdecimal", "1.0.0"
+        build_gem "bigdecimal", "3.3.1"
+      end
+
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.add_dependency "bigdecimal"
+        end
+
+        build_gem "bigdecimal", "1.0.0"
+      end
+
+      gemfile <<~G
+        source "https://main.source"
+
+        gem "activesupport"
+
+        source "https://main.source/extra" do
+          gem "foo"
+        end
+      G
+
+      lockfile original_lockfile
+    end
+
+    it "properly upgrades the lockfile when updating that specific gem" do
+      bundle "update bigdecimal --conservative", artifice: "compact_index_extra_api", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo3.to_s }
+
+      expect(lockfile).to eq original_lockfile.gsub("bigdecimal (1.0.0)", "bigdecimal (3.3.1)")
     end
   end
 end

@@ -51,8 +51,6 @@
 # include <malloc.h>
 #endif
 
-# define GC_ASSERT
-
 /* MALLOC_HEADERS_END */
 
 #ifdef HAVE_SYS_TIME_H
@@ -83,7 +81,6 @@
 #include "debug_counter.h"
 #include "eval_intern.h"
 #include "gc/gc.h"
-#include "gc/gc_impl.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/class.h"
@@ -123,6 +120,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "ractor_core.h"
+#include "yjit.h"
 
 #include "builtin.h"
 #include "shape.h"
@@ -158,7 +156,7 @@ rb_gc_cr_unlock(unsigned int lev)
 unsigned int
 rb_gc_vm_lock_no_barrier(void)
 {
-    unsigned int lev;
+    unsigned int lev = 0;
     RB_VM_LOCK_ENTER_LEV_NB(&lev);
     return lev;
 }
@@ -565,6 +563,10 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 }
 #endif
 
+static const char *obj_type_name(VALUE obj);
+#define RB_AMALGAMATED_DEFAULT_GC
+#include "gc/default.c"
+
 #if USE_SHARED_GC && !defined(HAVE_DLOPEN)
 # error "Shared GC requires dlopen"
 #elif USE_SHARED_GC
@@ -612,7 +614,6 @@ typedef struct gc_function_map {
     void (*mark_maybe)(void *objspace_ptr, VALUE obj);
     void (*mark_weak)(void *objspace_ptr, VALUE *ptr);
     void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
-    void (*objspace_mark)(void *objspace_ptr);
     // Compaction
     bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
     VALUE (*location)(void *objspace_ptr, VALUE value);
@@ -743,7 +744,6 @@ ruby_external_gc_init(void)
     load_external_gc_func(mark_maybe);
     load_external_gc_func(mark_weak);
     load_external_gc_func(remove_weak);
-    load_external_gc_func(objspace_mark);
     // Compaction
     load_external_gc_func(object_moved_p);
     load_external_gc_func(location);
@@ -822,7 +822,6 @@ ruby_external_gc_init(void)
 # define rb_gc_impl_mark_maybe rb_gc_functions.mark_maybe
 # define rb_gc_impl_mark_weak rb_gc_functions.mark_weak
 # define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
-# define rb_gc_impl_objspace_mark rb_gc_functions.objspace_mark
 // Compaction
 # define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
 # define rb_gc_impl_location rb_gc_functions.location
@@ -1715,35 +1714,10 @@ rb_memory_id(VALUE obj)
 VALUE
 rb_obj_id(VALUE obj)
 {
-    /*
-     *                32-bit VALUE space
-     *          MSB ------------------------ LSB
-     *  false   00000000000000000000000000000000
-     *  true    00000000000000000000000000000010
-     *  nil     00000000000000000000000000000100
-     *  undef   00000000000000000000000000000110
-     *  symbol  ssssssssssssssssssssssss00001110
-     *  object  oooooooooooooooooooooooooooooo00        = 0 (mod sizeof(RVALUE))
-     *  fixnum  fffffffffffffffffffffffffffffff1
-     *
-     *                    object_id space
-     *                                       LSB
-     *  false   00000000000000000000000000000000
-     *  true    00000000000000000000000000000010
-     *  nil     00000000000000000000000000000100
-     *  undef   00000000000000000000000000000110
-     *  symbol   000SSSSSSSSSSSSSSSSSSSSSSSSSSS0        S...S % A = 4 (S...S = s...s * A + 4)
-     *  object   oooooooooooooooooooooooooooooo0        o...o % A = 0
-     *  fixnum  fffffffffffffffffffffffffffffff1        bignum if required
-     *
-     *  where A = sizeof(RVALUE)/4
-     *
-     *  sizeof(RVALUE) is
-     *  20 if 32-bit, double is 4-byte aligned
-     *  24 if 32-bit, double is 8-byte aligned
-     *  40 if 64-bit
-     */
-
+    /* If obj is an immediate, the object ID is obj directly converted to a Numeric.
+     * Otherwise, the object ID is a Numeric that is a non-zero multiple of
+     * (RUBY_IMMEDIATE_MASK + 1) which guarantees that it does not collide with
+     * any immediates. */
     return rb_find_object_id(rb_gc_get_objspace(), obj, rb_gc_impl_object_id);
 }
 
@@ -1897,43 +1871,6 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
     VALUE hash = (VALUE)arg;
     rb_hash_aset(hash, k, INT2FIX(0));
     return ST_CONTINUE;
-}
-
-static VALUE
-type_sym(size_t type)
-{
-    switch (type) {
-#define COUNT_TYPE(t) case (t): return ID2SYM(rb_intern(#t)); break;
-        COUNT_TYPE(T_NONE);
-        COUNT_TYPE(T_OBJECT);
-        COUNT_TYPE(T_CLASS);
-        COUNT_TYPE(T_MODULE);
-        COUNT_TYPE(T_FLOAT);
-        COUNT_TYPE(T_STRING);
-        COUNT_TYPE(T_REGEXP);
-        COUNT_TYPE(T_ARRAY);
-        COUNT_TYPE(T_HASH);
-        COUNT_TYPE(T_STRUCT);
-        COUNT_TYPE(T_BIGNUM);
-        COUNT_TYPE(T_FILE);
-        COUNT_TYPE(T_DATA);
-        COUNT_TYPE(T_MATCH);
-        COUNT_TYPE(T_COMPLEX);
-        COUNT_TYPE(T_RATIONAL);
-        COUNT_TYPE(T_NIL);
-        COUNT_TYPE(T_TRUE);
-        COUNT_TYPE(T_FALSE);
-        COUNT_TYPE(T_SYMBOL);
-        COUNT_TYPE(T_FIXNUM);
-        COUNT_TYPE(T_IMEMO);
-        COUNT_TYPE(T_UNDEF);
-        COUNT_TYPE(T_NODE);
-        COUNT_TYPE(T_ICLASS);
-        COUNT_TYPE(T_ZOMBIE);
-        COUNT_TYPE(T_MOVED);
-#undef COUNT_TYPE
-        default:              return SIZET2NUM(type); break;
-    }
 }
 
 struct count_objects_data {
@@ -2392,16 +2329,6 @@ rb_mark_tbl(st_table *tbl)
     st_foreach(tbl, rb_mark_tbl_i, (st_data_t)rb_gc_get_objspace());
 }
 
-static int
-gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    void *objspace = (void *)data;
-
-    rb_gc_impl_mark(objspace, (VALUE)value);
-
-    return ST_CONTINUE;
-}
-
 static void
 gc_mark_tbl_no_pin(void *objspace, st_table *tbl)
 {
@@ -2501,11 +2428,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     if (categoryp) *categoryp = category; \
 } while (0)
 
-    MARK_CHECKPOINT("objspace");
-    rb_gc_impl_objspace_mark(objspace);
-
     MARK_CHECKPOINT("vm");
-    SET_STACK_END;
     rb_vm_mark(vm);
     if (vm->self) rb_gc_impl_mark(objspace, vm->self);
 
@@ -2517,6 +2440,15 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 
     MARK_CHECKPOINT("global_tbl");
     rb_gc_mark_global_tbl();
+
+#if USE_YJIT
+    void rb_yjit_root_mark(void); // in Rust
+
+    if (rb_yjit_enabled_p) {
+        MARK_CHECKPOINT("YJIT");
+        rb_yjit_root_mark();
+    }
+#endif
 
     MARK_CHECKPOINT("finish");
 #undef MARK_CHECKPOINT
@@ -2963,8 +2895,6 @@ gc_ref_update_array(void *objspace, VALUE v)
     }
 }
 
-static void gc_ref_update_table_values_only(void *objspace, st_table *tbl);
-
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
@@ -2990,88 +2920,10 @@ gc_ref_update_object(void *objspace, VALUE v)
     }
 }
 
-static int
-hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*key)) {
-        *key = rb_gc_impl_location(objspace, (VALUE)*key);
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)key)) {
-        return ST_REPLACE;
-    }
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
-        return ST_REPLACE;
-    }
-    return ST_CONTINUE;
-}
-
-static int
-hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
-        return ST_REPLACE;
-    }
-    return ST_CONTINUE;
-}
-
-static void
-gc_ref_update_table_values_only(void *objspace, st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, (st_data_t)objspace)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
-}
-
 void
 rb_gc_ref_update_table_values_only(st_table *tbl)
 {
     gc_ref_update_table_values_only(rb_gc_get_objspace(), tbl);
-}
-
-static void
-gc_update_table_refs(void *objspace, st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
 }
 
 /* Update MOVED references in a VALUE=>VALUE st_table */
@@ -3276,6 +3128,14 @@ rb_gc_update_vm_references(void *objspace)
     global_symbols.ids = rb_gc_impl_location(objspace, global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = rb_gc_impl_location(objspace, global_symbols.dsymbol_fstr_hash);
     gc_update_table_refs(objspace, global_symbols.str_sym);
+
+#if USE_YJIT
+    void rb_yjit_root_update_references(void); // in Rust
+
+    if (rb_yjit_enabled_p) {
+        rb_yjit_root_update_references();
+    }
+#endif
 }
 
 void
@@ -4255,12 +4115,6 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
     rb_raise(rb_eArgError,
              "malloc: possible integer overflow (%"PRIuSIZE"*%"PRIuSIZE")",
              count, elsize);
-}
-
-static inline size_t
-xmalloc2_size(const size_t count, const size_t elsize)
-{
-    return size_mul_or_raise(count, elsize, rb_eArgError);
 }
 
 void *

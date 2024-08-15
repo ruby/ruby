@@ -356,7 +356,7 @@ option)
 
     top_level = @store.add_file filename, relative_name: relative_path.to_s
 
-    parser = RDoc::Parser.for top_level, filename, content, @options, @stats
+    parser = RDoc::Parser.for top_level, content, @options, @stats
 
     return unless parser
 

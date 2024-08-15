@@ -209,7 +209,7 @@ describe "C-API Util function" do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     describe "rb_long2int" do
       it "raises a RangeError if the value is outside the range of a C int" do
         -> { @o.rb_long2int(0xffff_ffff_ffff) }.should raise_error(RangeError)

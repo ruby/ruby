@@ -38,6 +38,7 @@ jobs:
             shared_gc_dir: '/home/runner/ruby_gc'
             configure: '--with-shared-gc=/home/runner/ruby_gc'
           - test_task: test-bundler-parallel
+            timeout: 50
           - test_task: test-bundled-gems
           - test_task: check
             os: ubuntu-20.04
@@ -69,7 +70,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@50ba3386b050ad5b97a41fcb81240cbee1d1821f # v1.188.0
+      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
           ruby-version: '3.0'
           bundler: none
@@ -126,7 +127,7 @@ jobs:
           $SETARCH make -s ${{ matrix.test_task }}
           ${TESTS:+TESTS="$TESTS"}
           ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
-        timeout-minutes: 40
+        timeout-minutes: ${{ matrix.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''

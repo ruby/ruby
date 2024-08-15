@@ -83,7 +83,7 @@ module Reline::Terminfo
   end
 
   def self.setupterm(term, fildes)
-    errret_int = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT)
+    errret_int = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT, Fiddle::RUBY_FREE)
     ret = @setupterm.(term, fildes, errret_int)
     case ret
     when 0 # OK

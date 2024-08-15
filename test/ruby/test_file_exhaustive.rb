@@ -1409,7 +1409,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_flock_exclusive
     omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
-    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
+    timeout = EnvUtil.apply_timeout_scale(1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_EX)
       assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
@@ -1440,7 +1440,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_flock_shared
     omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
-    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
+    timeout = EnvUtil.apply_timeout_scale(1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_SH)
       assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")

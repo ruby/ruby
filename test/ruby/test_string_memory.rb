@@ -18,7 +18,18 @@ class TestStringMemory < Test::Unit::TestCase
       end
     end
 
-    return allocations
+    return allocations.map do |instance|
+      [
+        ObjectSpace.allocation_sourcefile(instance),
+        ObjectSpace.allocation_sourceline(instance),
+        instance.class,
+        instance,
+      ]
+    end.select do |path,|
+      # drop strings not created in this file
+      # (the parallel testing framework may create strings in a separate thread)
+      path == __FILE__
+    end
   ensure
     GC.enable
   end
@@ -30,7 +41,7 @@ class TestStringMemory < Test::Unit::TestCase
       string.byteslice(0, 50_000)
     end
 
-    assert_equal 1, allocations.size
+    assert_equal 1, allocations.size, "One object allocation is expected, but allocated: #{ allocations.inspect }"
   end
 
   def test_byteslice_postfix
@@ -40,7 +51,7 @@ class TestStringMemory < Test::Unit::TestCase
       string.byteslice(50_000, 100_000)
     end
 
-    assert_equal 1, allocations.size
+    assert_equal 1, allocations.size, "One object allocation is expected, but allocated: #{ allocations.inspect }"
   end
 
   def test_byteslice_postfix_twice
@@ -50,6 +61,6 @@ class TestStringMemory < Test::Unit::TestCase
       string.byteslice(50_000, 100_000).byteslice(25_000, 50_000)
     end
 
-    assert_equal 2, allocations.size
+    assert_equal 2, allocations.size, "Two object allocations are expected, but allocated: #{ allocations.inspect }"
   end
 end

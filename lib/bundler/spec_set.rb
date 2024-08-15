@@ -280,7 +280,7 @@ module Bundler
       if platform
         GemHelpers.select_best_platform_match(specs_for_name, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform)
+        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
       end
     end
 

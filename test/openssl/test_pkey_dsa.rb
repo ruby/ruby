@@ -4,6 +4,11 @@ require_relative 'utils'
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
 
 class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
+  def setup
+    # May not be available in FIPS mode as DSA has been deprecated in FIPS 186-5
+    omit_on_fips
+  end
+
   def test_private
     key = Fixtures.pkey("dsa1024")
     assert_equal true, key.private?
@@ -31,6 +36,11 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   def test_generate
     # DSA.generate used to call DSA_generate_parameters_ex(), which adjusts the
     # size of q according to the size of p
+    key1024 = OpenSSL::PKey::DSA.generate(1024)
+    assert_predicate key1024, :private?
+    assert_equal 1024, key1024.p.num_bits
+    assert_equal 160, key1024.q.num_bits
+
     key2048 = OpenSSL::PKey::DSA.generate(2048)
     assert_equal 2048, key2048.p.num_bits
     assert_equal 256, key2048.q.num_bits
@@ -40,17 +50,6 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
       assert_equal 3072, key3072.p.num_bits
       assert_equal 256, key3072.q.num_bits
     end
-  end
-
-  def test_generate_on_non_fips
-    # DSA with 1024 bits is invalid on FIPS 186-4.
-    # https://github.com/openssl/openssl/commit/49ed5ba8f62875074f04417189147fd3dda072ab
-    omit_on_fips
-
-    key1024 = OpenSSL::PKey::DSA.generate(1024)
-    assert_predicate key1024, :private?
-    assert_equal 1024, key1024.p.num_bits
-    assert_equal 160, key1024.q.num_bits
   end
 
   def test_sign_verify
@@ -135,8 +134,6 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   end
 
   def test_DSAPrivateKey_encrypted
-    omit_on_fips
-
     # key = abcdef
     dsa512 = Fixtures.pkey("dsa512")
     pem = <<~EOF

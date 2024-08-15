@@ -1,19 +1,20 @@
 <body id="top" role="document" class="<%= klass.type %>">
-<nav role="navigation">
+<%= render '_sidebar_toggle.rhtml' %>
+
+<nav id="navigation" role="navigation">
   <div id="project-navigation">
     <%= render '_sidebar_navigation.rhtml' %>
     <%= render '_sidebar_search.rhtml' %>
   </div>
 
   <%= render '_sidebar_table_of_contents.rhtml' %>
+  <%= render '_sidebar_sections.rhtml' %>
+  <%= render '_sidebar_parent.rhtml' %>
+  <%= render '_sidebar_includes.rhtml' %>
+  <%= render '_sidebar_extends.rhtml' %>
+  <%= render '_sidebar_methods.rhtml' %>
 
-  <div id="class-metadata">
-    <%= render '_sidebar_sections.rhtml' %>
-    <%= render '_sidebar_parent.rhtml' %>
-    <%= render '_sidebar_includes.rhtml' %>
-    <%= render '_sidebar_extends.rhtml' %>
-    <%= render '_sidebar_methods.rhtml' %>
-  </div>
+  <%= render '_footer.rhtml' %>
 </nav>
 
 <main role="main" aria-labelledby="<%=h klass.aref %>">

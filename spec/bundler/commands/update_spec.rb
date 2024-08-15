@@ -559,37 +559,39 @@ RSpec.describe "bundle update" do
         gem "myrack-obama"
         gem "platform_specific"
       G
-
-      lockfile <<~L
-        GEM
-          remote: https://gem.repo2/
-          specs:
-            activesupport (2.3.5)
-            platform_specific (1.0-#{local_platform})
-            myrack (1.0.0)
-            myrack-obama (1.0)
-              myrack
-
-        PLATFORMS
-          #{local_platform}
-
-        DEPENDENCIES
-          activesupport
-          platform_specific
-          myrack-obama
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
-
-      bundle "install"
     end
 
     it "doesn't hit repo2" do
-      FileUtils.rm_rf(gem_repo2)
+      simulate_platform "x86-darwin-100" do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo2/
+            specs:
+              activesupport (2.3.5)
+              platform_specific (1.0-x86-darwin-100)
+              myrack (1.0.0)
+              myrack-obama (1.0)
+                myrack
 
-      bundle "update --local --all"
-      expect(out).not_to include("Fetching source index")
+          PLATFORMS
+            #{local_platform}
+
+          DEPENDENCIES
+            activesupport
+            platform_specific
+            myrack-obama
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+
+        bundle "install"
+
+        FileUtils.rm_rf(gem_repo2)
+
+        bundle "update --local --all"
+        expect(out).not_to include("Fetching source index")
+      end
     end
   end
 
@@ -954,7 +956,7 @@ RSpec.describe "bundle update" do
         build_gem "vcr", "6.0.0"
       end
 
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "pkg-gem-flowbyte-with-dep", "1.0.0" do |s|
           s.add_dependency "oj"
         end

@@ -300,6 +300,7 @@ fn main() {
         .allowlist_type("ruby_tag_type")
         .allowlist_type("ruby_vm_throw_flags")
         .allowlist_type("vm_check_match_type")
+        .allowlist_type("vm_opt_newarray_send_type")
         .allowlist_type("rb_iseq_type")
 
         // From yjit.c
@@ -338,6 +339,7 @@ fn main() {
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
+        .allowlist_function("rb_yjit_str_concat_codepoint")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 

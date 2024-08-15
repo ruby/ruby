@@ -653,9 +653,9 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
 /**
  * call-seq:
- *   Prism::lex(source, **options) -> Array
+ *   Prism::lex(source, **options) -> ParseLexResult
  *
- * Return an array of Token instances corresponding to the given string. For
+ * Return a ParseLexResult instance that contains an array of Token instances corresponding to the given string. For
  * supported options, see Prism::parse.
  */
 static VALUE
@@ -673,9 +673,9 @@ lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::lex_file(filepath, **options) -> Array
+ *   Prism::lex_file(filepath, **options) -> ParseLexResult
  *
- * Return an array of Token instances corresponding to the given file. For
+ * Return a ParseLexResult instance that contains an array of Token instances corresponding to the given file. For
  * supported options, see Prism::parse.
  */
 static VALUE
@@ -961,9 +961,9 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_lex(source, **options) -> ParseResult
+ *   Prism::parse_lex(source, **options) -> ParseLexResult
  *
- * Parse the given string and return a ParseResult instance that contains a
+ * Parse the given string and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
@@ -988,9 +988,9 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_lex_file(filepath, **options) -> ParseResult
+ *   Prism::parse_lex_file(filepath, **options) -> ParseLexResult
  *
- * Parse the given file and return a ParseResult instance that contains a
+ * Parse the given file and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *

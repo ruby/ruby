@@ -4220,7 +4220,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   xfree(xmalloc_base);
   if (stk_base != stk_alloc || IS_NOT_NULL(msa->stack_p))
       xfree(stk_base);
-  HANDLE_REG_TIMEOUT_IN_MATCH_AT;
+  return ONIGERR_TIMEOUT;
 }
 
 
@@ -5212,44 +5212,64 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 # ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #  define MATCH_AND_RETURN_CHECK(upper_range) \
   r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
-  if (r != ONIG_MISMATCH) {\
-    if (r >= 0) {\
-      if (! IS_FIND_LONGEST(reg->options)) {\
-        goto match;\
+  switch (r) { \
+    case ONIG_MISMATCH: \
+      break; \
+    case ONIGERR_TIMEOUT: \
+      goto timeout; \
+    default: \
+      if (r >= 0) { \
+        if (! IS_FIND_LONGEST(reg->options)) { \
+          goto match; \
+        }\
       }\
-    }\
-    else goto finish; /* error */ \
+      else goto finish; /* error */ \
   }
 # else
 #  define MATCH_AND_RETURN_CHECK(upper_range) \
   r = match_at(reg, str, end, (upper_range), s, prev, &msa); \
-  if (r != ONIG_MISMATCH) {\
-    if (r >= 0) {\
-      goto match;\
-    }\
-    else goto finish; /* error */ \
+  switch (r) { \
+    case ONIG_MISMATCH: \
+      break; \
+    case ONIGERR_TIMEOUT: \
+      goto timeout; \
+    default: \
+      if (r >= 0) { \
+        goto match; \
+      }\
+      else goto finish; /* error */ \
   }
 # endif /* USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE */
 #else
 # ifdef USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE
 #  define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
-  if (r != ONIG_MISMATCH) {\
-    if (r >= 0) {\
-      if (! IS_FIND_LONGEST(reg->options)) {\
-        goto match;\
-      }\
-    }\
-    else goto finish; /* error */ \
+  switch (r) { \
+    case ONIG_MISMATCH: \
+      break; \
+    case ONIGERR_TIMEOUT: \
+      goto timeout; \
+    default: \
+      if (r >= 0) { \
+        if (! IS_FIND_LONGEST(reg->options)) { \
+          goto match; \
+        } \
+      } \
+      else goto finish; /* error */ \
   }
 # else
 #  define MATCH_AND_RETURN_CHECK(none) \
   r = match_at(reg, str, end, s, prev, &msa);\
-  if (r != ONIG_MISMATCH) {\
-    if (r >= 0) {\
-      goto match;\
-    }\
-    else goto finish; /* error */ \
+  switch (r) { \
+    case ONIG_MISMATCH: \
+      break; \
+    case ONIGERR_TIMEOUT: \
+      goto timeout; \
+    default: \
+    if (r >= 0) { \
+        goto match; \
+      } \
+      else goto finish; /* error */ \
   }
 # endif /* USE_FIND_LONGEST_SEARCH_ALL_OF_RANGE */
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
@@ -5552,6 +5572,10 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
  match:
   MATCH_ARG_FREE(msa);
   return s - str;
+
+timeout:
+  MATCH_ARG_FREE(msa);
+  return ONIGERR_TIMEOUT;
 }
 
 extern OnigPosition
