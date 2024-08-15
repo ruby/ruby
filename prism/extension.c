@@ -21,6 +21,7 @@ VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
 VALUE rb_cPrismResult;
 VALUE rb_cPrismParseResult;
+VALUE rb_cPrismLexResult;
 VALUE rb_cPrismParseLexResult;
 
 VALUE rb_cPrismDebugEncoding;
@@ -635,16 +636,16 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         rb_ary_push(offsets, ULONG2NUM(parser.newline_list.offsets[index]));
     }
 
-    VALUE value;
+    VALUE result;
     if (return_nodes) {
-        value = rb_ary_new_capa(2);
+        VALUE value = rb_ary_new_capa(2);
         rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source));
         rb_ary_push(value, parse_lex_data.tokens);
+        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source);
     } else {
-        value = parse_lex_data.tokens;
+        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source);
     }
 
-    VALUE result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
 
@@ -653,10 +654,10 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
 /**
  * call-seq:
- *   Prism::lex(source, **options) -> ParseLexResult
+ *   Prism::lex(source, **options) -> LexResult
  *
- * Return a ParseLexResult instance that contains an array of Token instances corresponding to the given string. For
- * supported options, see Prism::parse.
+ * Return a LexResult instance that contains an array of Token instances
+ * corresponding to the given string. For supported options, see Prism::parse.
  */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
@@ -673,10 +674,10 @@ lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::lex_file(filepath, **options) -> ParseLexResult
+ *   Prism::lex_file(filepath, **options) -> LexResult
  *
- * Return a ParseLexResult instance that contains an array of Token instances corresponding to the given file. For
- * supported options, see Prism::parse.
+ * Return a LexResult instance that contains an array of Token instances
+ * corresponding to the given file. For supported options, see Prism::parse.
  */
 static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
@@ -1131,6 +1132,7 @@ Init_prism(void) {
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
     rb_cPrismResult = rb_define_class_under(rb_cPrism, "Result", rb_cObject);
     rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cPrismResult);
+    rb_cPrismLexResult = rb_define_class_under(rb_cPrism, "LexResult", rb_cPrismResult);
     rb_cPrismParseLexResult = rb_define_class_under(rb_cPrism, "ParseLexResult", rb_cPrismResult);
 
     // Intern all of the IDs eagerly that we support so that we don't have to do
