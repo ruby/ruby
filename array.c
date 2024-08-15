@@ -1919,13 +1919,25 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 
 /*
  *  call-seq:
- *    array.at(index) -> object
+ *    at(index) -> object or nil
  *
- *  Returns the element at Integer offset +index+; does not modify +self+.
+ *  Returns the element of +self+ specified by the given +index+
+ *  or +nil+ if there is no such element;
+ *  +index+ must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *
+ *  For non-negative +index+, returns the element of +self+ at offset +index+:
+ *
  *    a = [:foo, 'bar', 2]
- *    a.at(0) # => :foo
- *    a.at(2) # => 2
+ *    a.at(0)   # => :foo
+ *    a.at(2)   # => 2
+ *    a.at(2.0) # => 2
  *
+ *  For negative +index+, counts backwards from the end of +self+:
+ *
+ *    a.at(-2) # => "bar"
+ *
+ *  Related: Array#[].
  */
 
 VALUE
