@@ -51,8 +51,6 @@
 # include <malloc.h>
 #endif
 
-# define GC_ASSERT
-
 /* MALLOC_HEADERS_END */
 
 #ifdef HAVE_SYS_TIME_H
@@ -616,7 +614,6 @@ typedef struct gc_function_map {
     void (*mark_maybe)(void *objspace_ptr, VALUE obj);
     void (*mark_weak)(void *objspace_ptr, VALUE *ptr);
     void (*remove_weak)(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
-    void (*objspace_mark)(void *objspace_ptr);
     // Compaction
     bool (*object_moved_p)(void *objspace_ptr, VALUE obj);
     VALUE (*location)(void *objspace_ptr, VALUE value);
@@ -747,7 +744,6 @@ ruby_external_gc_init(void)
     load_external_gc_func(mark_maybe);
     load_external_gc_func(mark_weak);
     load_external_gc_func(remove_weak);
-    load_external_gc_func(objspace_mark);
     // Compaction
     load_external_gc_func(object_moved_p);
     load_external_gc_func(location);
@@ -826,7 +822,6 @@ ruby_external_gc_init(void)
 # define rb_gc_impl_mark_maybe rb_gc_functions.mark_maybe
 # define rb_gc_impl_mark_weak rb_gc_functions.mark_weak
 # define rb_gc_impl_remove_weak rb_gc_functions.remove_weak
-# define rb_gc_impl_objspace_mark rb_gc_functions.objspace_mark
 // Compaction
 # define rb_gc_impl_object_moved_p rb_gc_functions.object_moved_p
 # define rb_gc_impl_location rb_gc_functions.location
@@ -1719,35 +1714,10 @@ rb_memory_id(VALUE obj)
 VALUE
 rb_obj_id(VALUE obj)
 {
-    /*
-     *                32-bit VALUE space
-     *          MSB ------------------------ LSB
-     *  false   00000000000000000000000000000000
-     *  true    00000000000000000000000000000010
-     *  nil     00000000000000000000000000000100
-     *  undef   00000000000000000000000000000110
-     *  symbol  ssssssssssssssssssssssss00001110
-     *  object  oooooooooooooooooooooooooooooo00        = 0 (mod sizeof(RVALUE))
-     *  fixnum  fffffffffffffffffffffffffffffff1
-     *
-     *                    object_id space
-     *                                       LSB
-     *  false   00000000000000000000000000000000
-     *  true    00000000000000000000000000000010
-     *  nil     00000000000000000000000000000100
-     *  undef   00000000000000000000000000000110
-     *  symbol   000SSSSSSSSSSSSSSSSSSSSSSSSSSS0        S...S % A = 4 (S...S = s...s * A + 4)
-     *  object   oooooooooooooooooooooooooooooo0        o...o % A = 0
-     *  fixnum  fffffffffffffffffffffffffffffff1        bignum if required
-     *
-     *  where A = sizeof(RVALUE)/4
-     *
-     *  sizeof(RVALUE) is
-     *  20 if 32-bit, double is 4-byte aligned
-     *  24 if 32-bit, double is 8-byte aligned
-     *  40 if 64-bit
-     */
-
+    /* If obj is an immediate, the object ID is obj directly converted to a Numeric.
+     * Otherwise, the object ID is a Numeric that is a non-zero multiple of
+     * (RUBY_IMMEDIATE_MASK + 1) which guarantees that it does not collide with
+     * any immediates. */
     return rb_find_object_id(rb_gc_get_objspace(), obj, rb_gc_impl_object_id);
 }
 
@@ -2458,11 +2428,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     if (categoryp) *categoryp = category; \
 } while (0)
 
-    MARK_CHECKPOINT("objspace");
-    rb_gc_impl_objspace_mark(objspace);
-
     MARK_CHECKPOINT("vm");
-    SET_STACK_END;
     rb_vm_mark(vm);
     if (vm->self) rb_gc_impl_mark(objspace, vm->self);
 

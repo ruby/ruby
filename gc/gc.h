@@ -51,6 +51,10 @@ void rb_ractor_finish_marking(void);
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c
 
+#ifndef GC_ASSERT
+# define GC_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(RGENGC_CHECK_MODE > 0, expr, #expr)
+#endif
+
 static int
 hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
 {

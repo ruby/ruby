@@ -677,7 +677,6 @@ class RDoc::Generator::Darkfish
     return body if body =~ /<html/
 
     head_file = @template_dir + '_head.rhtml'
-    footer_file = @template_dir + '_footer.rhtml'
 
     <<-TEMPLATE
 <!DOCTYPE html>
@@ -687,8 +686,6 @@ class RDoc::Generator::Darkfish
 #{head_file.read}
 
 #{body}
-
-#{footer_file.read}
     TEMPLATE
   end
 

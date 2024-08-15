@@ -892,17 +892,29 @@ rb_ary_free(VALUE ary)
     }
 }
 
-VALUE
-rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool freeze)
+static VALUE fake_ary_flags;
+
+static VALUE
+init_fake_ary_flags(void)
 {
-    fake_ary->basic.flags = T_ARRAY;
-    VALUE ary = (VALUE)fake_ary;
-    RBASIC_CLEAR_CLASS(ary);
-    ARY_SET_PTR(ary, list);
-    ARY_SET_HEAP_LEN(ary, len);
-    ARY_SET_CAPA(ary, len);
-    if (freeze) rb_ary_freeze(ary);
-    return ary;
+    struct RArray fake_ary = {0};
+    fake_ary.basic.flags = T_ARRAY;
+    VALUE ary = (VALUE)&fake_ary;
+    rb_ary_freeze(ary);
+    return fake_ary.basic.flags;
+}
+
+VALUE
+rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len)
+{
+    fake_ary->basic.flags = fake_ary_flags;
+    RBASIC_CLEAR_CLASS((VALUE)fake_ary);
+
+    // bypass frozen checks
+    fake_ary->as.heap.ptr = list;
+    fake_ary->as.heap.len = len;
+    fake_ary->as.heap.aux.capa = len;
+    return (VALUE)fake_ary;
 }
 
 size_t
@@ -1383,22 +1395,20 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 
 /*
  *  call-seq:
- *    array.push(*objects) -> self
+ *    push(*objects) -> self
+ *    append(*objects) -> self
  *
- *  Appends trailing elements.
+ *  Appends each argument in +objects+ to +self+; returns +self+:
  *
- *  Appends each argument in +objects+ to +self+;  returns +self+:
+ *    a = [:foo, 'bar', 2] # => [:foo, "bar", 2]
+ *    a.push(:baz, :bat)   # => [:foo, "bar", 2, :baz, :bat]
  *
- *    a = [:foo, 'bar', 2]
- *    a.push(:baz, :bat) # => [:foo, "bar", 2, :baz, :bat]
+ *  Appends each argument as a single element, even if it is another array:
  *
- *  Appends each argument as one element, even if it is another +Array+:
+ *    a = [:foo, 'bar', 2]               # => [:foo, "bar", 2]
+      a.push([:baz, :bat], [:bam, :bad]) # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.push([:baz, :bat], [:bam, :bad])
- *    a1 # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
- *
- *  Related: #pop, #shift, #unshift.
+ *  Related: Array#pop, Array#shift, Array#unshift.
  */
 
 static VALUE
@@ -1909,13 +1919,25 @@ rb_ary_aref1(VALUE ary, VALUE arg)
 
 /*
  *  call-seq:
- *    array.at(index) -> object
+ *    at(index) -> object or nil
  *
- *  Returns the element at Integer offset +index+; does not modify +self+.
+ *  Returns the element of +self+ specified by the given +index+
+ *  or +nil+ if there is no such element;
+ *  +index+ must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *
+ *  For non-negative +index+, returns the element of +self+ at offset +index+:
+ *
  *    a = [:foo, 'bar', 2]
- *    a.at(0) # => :foo
- *    a.at(2) # => 2
+ *    a.at(0)   # => :foo
+ *    a.at(2)   # => 2
+ *    a.at(2.0) # => 2
  *
+ *  For negative +index+, counts backwards from the end of +self+:
+ *
+ *    a.at(-2) # => "bar"
+ *
+ *  Related: Array#[].
  */
 
 VALUE
@@ -7714,38 +7736,41 @@ rb_ary_drop_while(VALUE ary)
 
 /*
  *  call-seq:
- *    array.any? -> true or false
- *    array.any? {|element| ... } -> true or false
- *    array.any?(obj) -> true or false
+ *    any? -> true or false
+ *    any?(object) -> true or false
+ *    any? {|element| ... } -> true or false
  *
- *  Returns +true+ if any element of +self+ meets a given criterion.
+ *  Returns whether for any element of +self+, a given criterion is satisfied.
  *
- *  If +self+ has no element, returns +false+ and argument or block
- *  are not used.
+ *  With no block and no argument, returns whether any element of +self+ is truthy:
  *
- *  With no block given and no argument, returns +true+ if +self+ has any truthy element,
- *  +false+ otherwise:
+ *    [nil, false, []].any? # => true  # Array object is truthy.
+ *    [nil, false, {}].any? # => true  # Hash object is truthy.
+ *    [nil, false, ''].any? # => true  # String object is truthy.
+ *    [nil, false].any?     # => false # Nil and false are not truthy.
  *
- *    [nil, 0, false].any? # => true
- *    [nil, false].any? # => false
- *    [].any? # => false
+ *  With argument +object+ given,
+ *  returns whether <tt>object === ele</tt> for any element +ele+ in +self+:
  *
- *  With a block given and no argument, calls the block with each element in +self+;
- *  returns +true+ if the block returns any truthy value, +false+ otherwise:
+ *    [nil, false, 0].any?(0)          # => true
+ *    [nil, false, 1].any?(0)          # => false
+ *    [nil, false, 'food'].any?(/foo/) # => true
+ *    [nil, false, 'food'].any?(/bar/) # => false
  *
- *    [0, 1, 2].any? {|element| element > 1 } # => true
- *    [0, 1, 2].any? {|element| element > 2 } # => false
+ *  With a block given,
+ *  calls the block with each element in +self+;
+ *  returns whether the block returns any truthy value:
  *
- *  If argument +obj+ is given, returns +true+ if +obj+.<tt>===</tt> any element,
- *  +false+ otherwise:
+ *    [0, 1, 2].any? {|ele| ele < 1 } # => true
+ *    [0, 1, 2].any? {|ele| ele < 0 } # => false
  *
- *    ['food', 'drink'].any?(/foo/) # => true
- *    ['food', 'drink'].any?(/bar/) # => false
- *    [].any?(/foo/) # => false
- *    [0, 1, 2].any?(1) # => true
- *    [0, 1, 2].any?(3) # => false
+ *  With both a block and argument +object+ given,
+ *  ignores the block and uses +object+ as above.
  *
- *  Related: Enumerable#any?
+ *  <b>Special case</b>: returns +false+ if +self+ is empty
+ *  (regardless of any given argument or block).
+ *
+ *  Related: Array#all?, Array#none?, Array#one?.
  */
 
 static VALUE
@@ -7778,37 +7803,41 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.all? -> true or false
- *    array.all? {|element| ... } -> true or false
- *    array.all?(obj) -> true or false
+ *    all? -> true or false
+ *    all?(object) -> true or false
+ *    all? {|element| ... } -> true or false
  *
- *  Returns +true+ if all elements of +self+ meet a given criterion.
+ *  Returns whether for every element of +self+,
+ *  a given criterion is satisfied.
  *
- *  If +self+ has no element, returns +true+ and argument or block
- *  are not used.
+ *  With no block and no argument,
+ *  returns whether every element of +self+ is truthy:
  *
- *  With no block given and no argument, returns +true+ if +self+ contains only truthy elements,
- *  +false+ otherwise:
+ *    [[], {}, '', 0, 0.0, Object.new].all? # => true  # All truthy objects.
+ *    [[], {}, '', 0, 0.0, nil].all?        # => false # nil is not truthy.
+ *    [[], {}, '', 0, 0.0, false].all?      # => false # false is not truthy.
  *
- *    [0, 1, :foo].all? # => true
- *    [0, nil, 2].all? # => false
- *    [].all? # => true
+ *  With argument +object+ given, returns whether <tt>object === ele</tt>
+ *  for every element +ele+ in +self+:
  *
- *  With a block given and no argument, calls the block with each element in +self+;
- *  returns +true+ if the block returns only truthy values, +false+ otherwise:
- *
- *    [0, 1, 2].all? { |element| element < 3 } # => true
- *    [0, 1, 2].all? { |element| element < 2 } # => false
- *
- *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> every element, +false+ otherwise:
- *
+ *    [0, 0, 0].all?(0)                    # => true
+ *    [0, 1, 2].all?(1)                    # => false
  *    ['food', 'fool', 'foot'].all?(/foo/) # => true
- *    ['food', 'drink'].all?(/bar/) # => false
- *    [].all?(/foo/) # => true
- *    [0, 0, 0].all?(0) # => true
- *    [0, 1, 2].all?(1) # => false
+ *    ['food', 'drink'].all?(/foo/)        # => false
  *
- *  Related: Enumerable#all?
+ *  With a block given, calls the block with each element in +self+;
+ *  returns whether the block returns only truthy values:
+ *
+ *    [0, 1, 2].all? { |ele| ele < 3 } # => true
+ *    [0, 1, 2].all? { |ele| ele < 2 } # => false
+ *
+ *  With both a block and argument +object+ given,
+ *  ignores the block and uses +object+ as above.
+ *
+ *  <b>Special case</b>: returns +true+ if +self+ is empty
+ *  (regardless of any given argument or block).
+ *
+ *  Related: Array#any?, Array#none?, Array#one?.
  */
 
 static VALUE
@@ -8677,6 +8706,8 @@ rb_ary_deconstruct(VALUE ary)
 void
 Init_Array(void)
 {
+    fake_ary_flags = init_fake_ary_flags();
+
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 

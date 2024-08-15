@@ -100,7 +100,7 @@ module IRB
 
     private def easter_egg_logo(type)
       @easter_egg_logos ||= File.read(File.join(__dir__, 'ruby_logo.aa'), encoding: 'UTF-8:UTF-8')
-        .split(/TYPE: ([A-Z]+)\n/)[1..]
+        .split(/TYPE: ([A-Z_]+)\n/)[1..]
         .each_slice(2)
         .to_h
       @easter_egg_logos[type.to_s.upcase]
@@ -112,7 +112,8 @@ module IRB
       when :logo
         require "rdoc"
         RDoc::RI::Driver.new.page do |io|
-          io.write easter_egg_logo(:large)
+          type = STDOUT.external_encoding == Encoding::UTF_8 ? :unicode_large : :ascii_large
+          io.write easter_egg_logo(type)
         end
       when :dancing
         STDOUT.cooked do

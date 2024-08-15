@@ -8,14 +8,13 @@
   </div>
 
   <%= render '_sidebar_table_of_contents.rhtml' %>
+  <%= render '_sidebar_sections.rhtml' %>
+  <%= render '_sidebar_parent.rhtml' %>
+  <%= render '_sidebar_includes.rhtml' %>
+  <%= render '_sidebar_extends.rhtml' %>
+  <%= render '_sidebar_methods.rhtml' %>
 
-  <div id="class-metadata">
-    <%= render '_sidebar_sections.rhtml' %>
-    <%= render '_sidebar_parent.rhtml' %>
-    <%= render '_sidebar_includes.rhtml' %>
-    <%= render '_sidebar_extends.rhtml' %>
-    <%= render '_sidebar_methods.rhtml' %>
-  </div>
+  <%= render '_footer.rhtml' %>
 </nav>
 
 <main role="main" aria-labelledby="<%=h klass.aref %>">

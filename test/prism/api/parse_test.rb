@@ -4,6 +4,14 @@ require_relative "../test_helper"
 
 module Prism
   class ParseTest < TestCase
+    def test_parse_result
+      result = Prism.parse("")
+      assert_kind_of ParseResult, result
+
+      result = Prism.parse_file(__FILE__)
+      assert_kind_of ParseResult, result
+    end
+
     def test_parse_empty_string
       result = Prism.parse("")
       assert_equal [], result.value.statements.body

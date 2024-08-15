@@ -346,7 +346,7 @@ RBIMPL_ATTR_CONSTEXPR(CXX11)
 static inline VALUE
 rb_special_const_p(VALUE obj)
 {
-    return RB_SPECIAL_CONST_P(obj) * RUBY_Qtrue;
+    return (unsigned int)RB_SPECIAL_CONST_P(obj) * RUBY_Qtrue;
 }
 
 /**

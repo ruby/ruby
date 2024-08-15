@@ -3526,10 +3526,7 @@ AC_ARG_WITH(soname,
 	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 	    ],
 	    [mingw*], [
-		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
-		AS_IF([test x"${target_cpu}" != xi386], [
-		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
-		])
+	        RUBY_SO_NAME="${target_cpu}-${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 	    ],
 	    [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
 	])
