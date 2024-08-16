@@ -635,8 +635,9 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
     establishShell(argc, argv, &info, SlaveName);
 
     VALUE pty_path = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    VALUE timeout = INT2FIX(300);
     VALUE rport = rb_io_open_descriptor(
-        rb_cFile, info.fd, FMODE_READABLE, pty_path, RUBY_IO_TIMEOUT_DEFAULT, NULL
+        rb_cFile, info.fd, FMODE_READABLE, pty_path, timeout, NULL
     );
 
     int wpty_fd = rb_cloexec_dup(info.fd);
