@@ -103,7 +103,7 @@ redblack_value(redblack_node_t * node)
 {
     // Color is stored in the bottom bit of the shape pointer
     // Mask away the bit so we get the actual pointer back
-    return (rb_shape_t *)((uintptr_t)node->value & (((uintptr_t)-1) - 1));
+    return (rb_shape_t *)((uintptr_t)node->value & ~(uintptr_t)1);
 }
 
 #ifdef HAVE_MMAP
