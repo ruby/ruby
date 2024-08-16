@@ -4182,7 +4182,7 @@ gc_sweep_rest(rb_objspace_t *objspace)
 static void
 gc_sweep_continue(rb_objspace_t *objspace, rb_size_pool_t *sweep_size_pool, rb_heap_t *heap)
 {
-    GC_ASSERT(dont_gc_val() == FALSE);
+    GC_ASSERT(dont_gc_val() == FALSE || objspace->profile.latest_gc_info & GPR_FLAG_METHOD);
     if (!GC_ENABLE_LAZY_SWEEP) return;
 
     gc_sweeping_enter(objspace);
@@ -5985,7 +5985,7 @@ gc_marks_step(rb_objspace_t *objspace, size_t slots)
 static bool
 gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap)
 {
-    GC_ASSERT(dont_gc_val() == FALSE);
+    GC_ASSERT(dont_gc_val() == FALSE || objspace->profile.latest_gc_info & GPR_FLAG_METHOD);
     bool marking_finished = true;
 
     gc_marking_enter(objspace);
