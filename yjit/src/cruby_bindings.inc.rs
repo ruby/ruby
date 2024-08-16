@@ -976,6 +976,7 @@ extern "C" {
     pub fn rb_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_method_basic_definition_p(klass: VALUE, mid: ID) -> ::std::os::raw::c_int;
     pub fn rb_bug(fmt: *const ::std::os::raw::c_char, ...) -> !;
+    pub fn rb_float_new(d: f64) -> VALUE;
     pub fn rb_gc_mark(obj: VALUE);
     pub fn rb_gc_mark_movable(obj: VALUE);
     pub fn rb_gc_location(obj: VALUE) -> VALUE;

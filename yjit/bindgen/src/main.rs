@@ -264,6 +264,9 @@ fn main() {
         .blocklist_type("rb_method_definition_.*") // Large struct with a bitfield and union of many types - don't import (yet?)
         .opaque_type("rb_method_definition_.*")
 
+        // From numeric.c
+        .allowlist_function("rb_float_new")
+
         // From vm_core.h
         .allowlist_var("rb_mRubyVMFrozenCore")
         .allowlist_var("VM_BLOCK_HANDLER_NONE")

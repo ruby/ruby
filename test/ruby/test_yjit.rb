@@ -1623,6 +1623,21 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_runtime_stats_types
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      def test = :ok
+      3.times { test }
+
+      stats = RubyVM::YJIT.runtime_stats
+      return true unless stats[:all_stats]
+
+      [
+        stats[:object_shape_count].is_a?(Integer),
+        stats[:ratio_in_yjit].is_a?(Float),
+      ].all?
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
