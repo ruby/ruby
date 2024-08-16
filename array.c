@@ -5073,17 +5073,17 @@ rb_ary_times(VALUE ary, VALUE times)
 
 /*
  *  call-seq:
- *    array.assoc(obj) -> found_array or nil
+ *    assoc(object) -> found_array or nil
  *
- *  Returns the first element in +self+ that is an +Array+
- *  whose first element <tt>==</tt> +obj+:
+ *  Returns the first element +ele+ in +self+ such that +ele+ is an array
+ *  and <tt>ele[0] == object</tt>:
  *
  *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
  *    a.assoc(4) # => [4, 5, 6]
  *
  *  Returns +nil+ if no such element is found.
  *
- *  Related: #rassoc.
+ *  Related: Array#rassoc.
  */
 
 VALUE
