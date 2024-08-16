@@ -45,7 +45,7 @@ class TestPTY < Test::Unit::TestCase
       $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
       assert true
     else
-      assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statues: #{statues}"
+      assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
     end
   ensure
     r&.close
@@ -88,7 +88,7 @@ class TestPTY < Test::Unit::TestCase
           $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
           assert true
         else
-          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statues: #{statues}"
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
         end
       ensure
         r.close
@@ -136,7 +136,7 @@ class TestPTY < Test::Unit::TestCase
           $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
           assert true
         else
-          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statues: #{statues}"
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
         end
       ensure
         r.close
@@ -183,7 +183,7 @@ class TestPTY < Test::Unit::TestCase
           $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
           assert true
         else
-          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statues: #{statues}"
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
         end
       ensure
         r.close
