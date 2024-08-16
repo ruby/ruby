@@ -1342,7 +1342,7 @@ void
 rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line)
 {
     rb_tp_t *tp = tpptr(tpval);
-    rb_event_hook_t *hook = alloc_event_hook((rb_event_hook_func_t)tp_call_trace, tp->events, tpval,
+    rb_event_hook_t *hook = alloc_event_hook((rb_event_hook_func_t)tp_call_trace, tp->events & ISEQ_TRACE_EVENTS, tpval,
                                              RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     hook->filter.target_line = target_line;
     hook_list_connect(target, list, hook, FALSE);
