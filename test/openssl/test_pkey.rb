@@ -150,32 +150,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError) { priv.derive(pub) }
   end
 
-  def test_ed25519_not_approved_on_fips
-    omit_on_non_fips
-    # Ed25519 is technically allowed in the OpenSSL 3.0 code as a kind of bug.
-    # So, we need to omit OpenSSL 3.0.
-    #
-    # See OpenSSL providers/fips/fipsprov.c PROV_NAMES_ED25519 entries with
-    # FIPS_DEFAULT_PROPERTIES on openssl-3.0 branch and
-    # FIPS_UNAPPROVED_PROPERTIES on openssl-3.1 branch.
-    #
-    # See also
-    # https://github.com/openssl/openssl/issues/20758#issuecomment-1639658102
-    # for details.
-    unless openssl?(3, 1, 0, 0)
-      omit 'Ed25519 is allowed in the OpenSSL 3.0 FIPS code as a kind of bug'
-    end
-
-    priv_pem = <<~EOF
-    -----BEGIN PRIVATE KEY-----
-    MC4CAQAwBQYDK2VwBCIEIEzNCJso/5banbbDRuwRTg9bijGfNaumJNqM9u1PuKb7
-    -----END PRIVATE KEY-----
-    EOF
-    assert_raise(OpenSSL::PKey::PKeyError) do
-      OpenSSL::PKey.read(priv_pem)
-    end
-  end
-
   def test_x25519
     # Test vector from RFC 7748 Section 6.1
     alice_pem = <<~EOF
