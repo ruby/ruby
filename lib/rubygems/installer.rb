@@ -546,7 +546,8 @@ class Gem::Installer
         file.write app_script_text(filename)
         file.chmod(options[:prog_mode] || 0o755)
       end
-      File.unlink(lock.path)
+    ensure
+      FileUtils.rm_f lock.path
     end
 
     verbose bin_script_path

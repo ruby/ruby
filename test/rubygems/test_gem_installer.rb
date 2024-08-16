@@ -1234,6 +1234,34 @@ end
     assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
+  def test_install_does_not_leave_lockfile_for_binstub
+    installer = util_setup_installer
+
+    installer.wrappers = true
+
+    File.class_eval do
+      alias_method :original_chmod, :chmod
+      define_method(:chmod) do |mode|
+        original_chmod(mode)
+        raise Gem::Ext::BuildError if path.end_with?("/executable")
+      end
+    end
+
+    assert_raise(Gem::Ext::BuildError) do
+      installer.install
+    end
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
+    # TODO: remove already copied files at failures.
+    # assert_path_not_exist(File.join(installer.bin_dir, "executable"))
+  ensure
+    File.class_eval do
+      remove_method :chmod
+      alias_method :chmod, :original_chmod
+      remove_method :original_chmod
+    end
+  end
+
   def test_install_with_no_prior_files
     installer = util_setup_installer
 
