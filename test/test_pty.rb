@@ -19,6 +19,7 @@ class TestPTY < Test::Unit::TestCase
     retry_times = 0
     is_success = false
     is_exit = false
+    reads = []
     until retry_times > 10
       begin
         if p = Process.waitpid(pid, Process::WNOHANG)
@@ -28,7 +29,9 @@ class TestPTY < Test::Unit::TestCase
       rescue Errno::ECHILD
         is_exit = true
       end
-      if r.gets == "a\r\n"
+      read = r.gets
+      reads << read
+      if read == "a\r\n"
         is_success = true
         break
       end
@@ -39,7 +42,7 @@ class TestPTY < Test::Unit::TestCase
       $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
       assert true
     else
-      assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times}"
+      assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}"
     end
   ensure
     r&.close
@@ -56,6 +59,7 @@ class TestPTY < Test::Unit::TestCase
         retry_times = 0
         is_success = false
         is_exit = false
+        reads = []
         until retry_times > 10
           begin
             if p = Process.waitpid(pid, Process::WNOHANG)
@@ -65,7 +69,9 @@ class TestPTY < Test::Unit::TestCase
           rescue Errno::ECHILD
             is_exit = true
           end
-          if r.gets == "b\r\n"
+          read = r.gets
+          reads << read
+          if read == "b\r\n"
             is_success = true
             break
           end
@@ -76,7 +82,7 @@ class TestPTY < Test::Unit::TestCase
           $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
           assert true
         else
-          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times}"
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}"
         end
       ensure
         r.close
@@ -98,6 +104,7 @@ class TestPTY < Test::Unit::TestCase
         retry_times = 0
         is_success = false
         is_exit = false
+        reads = []
         until retry_times > 10
           begin
             if p = Process.waitpid(pid, Process::WNOHANG)
@@ -107,7 +114,9 @@ class TestPTY < Test::Unit::TestCase
           rescue Errno::ECHILD
             is_exit = true
           end
-          if r.gets == "foo\r\n"
+          read = r.gets
+          reads << read
+          if read == "foo\r\n"
             is_success = true
             break
           end
@@ -118,7 +127,7 @@ class TestPTY < Test::Unit::TestCase
           $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
           assert true
         else
-          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times}"
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}"
         end
       ensure
         r.close
@@ -139,6 +148,7 @@ class TestPTY < Test::Unit::TestCase
         retry_times = 0
         is_success = false
         is_exit = false
+        reads = []
         until retry_times > 10
           begin
             if p = Process.waitpid(pid, Process::WNOHANG)
@@ -148,7 +158,9 @@ class TestPTY < Test::Unit::TestCase
           rescue Errno::ECHILD
             is_exit = true
           end
-          if r.gets == "bar\r\n"
+          read = r.gets
+          reads << read
+          if read == "bar\r\n"
             is_success = true
             break
           end
@@ -159,7 +171,7 @@ class TestPTY < Test::Unit::TestCase
           $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
           assert true
         else
-          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times}"
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}"
         end
       ensure
         r.close
