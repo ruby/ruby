@@ -44,7 +44,10 @@ class TestPTY < Test::Unit::TestCase
   ensure
     r&.close
     w&.close
-    # Process.wait pid if pid
+    begin
+      Process.wait pid if pid
+    rescue Errno::ECHILD
+    end
   end
 
   def test_spawn_with_block
@@ -78,7 +81,10 @@ class TestPTY < Test::Unit::TestCase
       ensure
         r.close
         w.close
-        # Process.wait(pid)
+        begin
+          Process.wait pid if pid
+        rescue Errno::ECHILD
+        end
       end
     }
   rescue RuntimeError
@@ -117,7 +123,10 @@ class TestPTY < Test::Unit::TestCase
       ensure
         r.close
         w.close
-        # Process.wait(pid)
+        begin
+          Process.wait pid if pid
+        rescue Errno::ECHILD
+        end
       end
     }
   rescue RuntimeError
@@ -155,7 +164,10 @@ class TestPTY < Test::Unit::TestCase
       ensure
         r.close
         w.close
-        # Process.wait(pid)
+        begin
+          Process.wait pid if pid
+        rescue Errno::ECHILD
+        end
       end
     }
   rescue RuntimeError
