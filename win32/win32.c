@@ -2461,7 +2461,7 @@ rb_w32_rewinddir(DIR *dirp)
 //
 
 /* License: Artistic or GPL */
-void
+int
 rb_w32_closedir(DIR *dirp)
 {
     if (dirp) {
@@ -2471,6 +2471,7 @@ rb_w32_closedir(DIR *dirp)
         free(dirp->bits);
         free(dirp);
     }
+    return 0;
 }
 
 #if RUBY_MSVCRT_VERSION >= 140
