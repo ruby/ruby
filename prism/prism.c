@@ -1304,9 +1304,10 @@ pm_void_statement_check(pm_parser_t *parser, const pm_node_t *node) {
  * a "void" statement.
  */
 static void
-pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node) {
+pm_void_statements_check(pm_parser_t *parser, const pm_statements_node_t *node, bool last_value) {
     assert(node->body.size > 0);
-    for (size_t index = 0; index < node->body.size - 1; index++) {
+    const size_t size = node->body.size - (last_value ? 1 : 0);
+    for (size_t index = 0; index < size; index++) {
         pm_void_statement_check(parser, node->body.nodes[index]);
     }
 }
@@ -13858,7 +13859,16 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
     }
 
     context_pop(parser);
-    pm_void_statements_check(parser, statements);
+    bool last_value = true;
+    switch (context) {
+        case PM_CONTEXT_BEGIN_ENSURE:
+        case PM_CONTEXT_DEF_ENSURE:
+            last_value = false;
+            break;
+        default:
+            break;
+    }
+    pm_void_statements_check(parser, statements, last_value);
 
     return statements;
 }
@@ -18052,7 +18062,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pop_block_exits(parser, previous_block_exits);
             pm_node_list_free(&current_block_exits);
 
-            pm_void_statements_check(parser, statements);
+            pm_void_statements_check(parser, statements, true);
             return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous);
         }
         case PM_TOKEN_BRACE_LEFT: {

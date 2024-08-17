@@ -3005,7 +3005,7 @@ program		:  {
 
 top_compstmt	: top_stmts terms?
                     {
-                        $$ = void_stmts(p, $1);
+                        void_stmts(p, $$ = $1);
                     }
                 ;
 
@@ -3082,7 +3082,7 @@ bodystmt	: compstmt[body]
 
 compstmt	: stmts terms?
                     {
-                        $$ = void_stmts(p, $1);
+                        void_stmts(p, $$ = $1);
                     }
                 ;
 
@@ -5994,10 +5994,11 @@ exc_var		: tASSOC lhs
                 | none
                 ;
 
-opt_ensure	: k_ensure compstmt
+opt_ensure	: k_ensure stmts terms?
                     {
                         p->ctxt.in_rescue = $1.in_rescue;
                         $$ = $2;
+                        void_expr(p, void_stmts(p, $$));
                     /*% ripper: ensure!($:2) %*/
                     }
                 | none
@@ -14038,6 +14039,7 @@ void_expr(struct parser_params *p, NODE *node)
     }
 }
 
+/* warns useless use of block and returns the last statement node */
 static NODE *
 void_stmts(struct parser_params *p, NODE *node)
 {
@@ -14050,7 +14052,7 @@ void_stmts(struct parser_params *p, NODE *node)
         void_expr(p, RNODE_BLOCK(node)->nd_head);
         node = RNODE_BLOCK(node)->nd_next;
     }
-    return n;
+    return RNODE_BLOCK(node)->nd_head;
 }
 
 static NODE *
