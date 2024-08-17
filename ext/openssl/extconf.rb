@@ -145,6 +145,13 @@ have_func("SSL_CTX_set1_sigalgs_list(NULL, NULL)", ssl_h)
 # added in OpenSSL 1.0.2, not in LibreSSL or AWS-LC yet
 have_func("SSL_CTX_set1_client_sigalgs_list(NULL, NULL)", ssl_h)
 
+# SSL options can be uint64_t (OpenSSL >= 3), unsigned long (OpenSSL >= 1.1),
+# long (LibreSSL), or uint32_t (AWS-LC)
+if checking_for("whether SSL_CTX_get_options() returns a 64-bit value") {
+    try_static_assert("sizeof(SSL_CTX_get_options(NULL)) == 8", ssl_h) }
+  $defs.push("-DOSSL_SIZEOF_SSL_OPTIONS_IS_8")
+end
+
 # added in 1.1.0, currently not in LibreSSL
 have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
 
