@@ -3665,21 +3665,19 @@ rb_ary_sort_by_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.map {|element| ... } -> new_array
- *    array.map -> new_enumerator
+ *    collect {|element| ... } -> new_array
+ *    collect -> new_enumerator
+ *    map {|element| ... } -> new_array
+ *    map -> new_enumerator
  *
- *  Calls the block, if given, with each element of +self+;
- *  returns a new +Array+ whose elements are the return values from the block:
+ *  With a block given, calls the block with each element of +self+;
+ *  returns a new array whose elements are the return values from the block:
  *
  *    a = [:foo, 'bar', 2]
  *    a1 = a.map {|element| element.class }
  *    a1 # => [Symbol, String, Integer]
  *
- *  Returns a new Enumerator if no block given:
- *    a = [:foo, 'bar', 2]
- *    a1 = a.map
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:map>
- *
+ *  With no block given, returns a new Enumerator.
  */
 
 static VALUE
