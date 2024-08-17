@@ -12,7 +12,7 @@ class TestPTY < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
   def test_spawn_without_block
-    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
+    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"; STDOUT.flush')
   rescue RuntimeError
     omit $!
   else
@@ -57,7 +57,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_spawn_with_block
-    PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
+    PTY.spawn(RUBY, '-e', 'puts "b"; STDOUT.flush') {|r,w,pid|
       begin
         retry_times = 0
         is_success = false
@@ -104,7 +104,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_commandline
-    commandline = Shellwords.join([RUBY, '-e', 'puts "foo"'])
+    commandline = Shellwords.join([RUBY, '-e', 'puts "foo"; STDOUT.flush'])
     PTY.spawn(commandline) {|r,w,pid|
       begin
         retry_times = 0
@@ -152,7 +152,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_argv0
-    PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
+    PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"; STDOUT.flush') {|r,w,pid|
       begin
         retry_times = 0
         is_success = false
