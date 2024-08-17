@@ -3563,11 +3563,13 @@ rb_ary_bsearch(VALUE ary)
 
 /*
  *  call-seq:
- *    array.bsearch_index {|element| ... } -> integer or nil
- *    array.bsearch_index -> new_enumerator
+ *    bsearch_index {|element| ... } -> integer or nil
+ *    bsearch_index -> new_enumerator
  *
- *  Searches +self+ as described at method #bsearch,
- *  but returns the _index_ of the found element instead of the element itself.
+ *  Returns the integer index of the element from +self+ found by a binary search,
+ *  or +nil+ if the search found no suitable element.
+ *
+ *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
  */
 
 static VALUE
