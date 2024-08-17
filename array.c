@@ -4640,9 +4640,9 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
 /*
  *  call-seq:
- *     array.clear -> self
+ *    clear -> self
  *
- *  Removes all elements from +self+:
+ *  Removes all elements from +self+; returns +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a.clear # => []
