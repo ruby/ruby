@@ -101,14 +101,6 @@ English - <tt>$INPUT_RECORD_SEPARATOR</tt>, <tt>$RS</tt>.
 
 Aliased as <tt>$-0</tt>.
 
-=== <tt>$;</tt> (Input Field Separator)
-
-An input field separator, initially +nil+.
-
-English - <tt>$FIELD_SEPARATOR</tt>, <tt>$FS</tt>.
-
-Aliased as <tt>$-F</tt>.
-
 === <tt>$\\</tt> (Output Record Separator)
 
 An output record separator, initially +nil+.
@@ -284,6 +276,8 @@ Whether command-line option <tt>-p</tt> was given; read-only.
 === <tt>$=</tt>
 
 === <tt>$,</tt>
+
+=== <tt>$;</tt>
 
 = Pre-Defined Global Constants
 
