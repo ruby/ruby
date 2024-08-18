@@ -43,6 +43,13 @@ Note: We're only listing outstanding class updates.
 * Range
 
   * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
+  * Range#step now consistently has a semantics of iterating by using `+` operator
+    for all types, not only numerics. [[Feature #18368]]
+
+    ```ruby
+    (Time.utc(2022, 2, 24)..).step(24*60*60).take(3)
+    #=> [2022-02-24 00:00:00 UTC, 2022-02-25 00:00:00 UTC, 2022-02-26 00:00:00 UTC]
+    ```
 
 * RubyVM::AbstractSyntaxTree
 
@@ -168,3 +175,4 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
+[Feature #18368]: https://bugs.ruby-lang.org/issues/18368
