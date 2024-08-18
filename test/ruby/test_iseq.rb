@@ -781,4 +781,25 @@ class TestISeq < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_unreachable_next_in_block
+    bug20344 = '[ruby-core:117210] [Bug #20344]'
+    assert_nothing_raised(SyntaxError, bug20344) do
+      compile(<<~RUBY)
+        proc do
+          next
+
+          case nil
+          when "a"
+            next
+          when "b"
+          when "c"
+            proc {}
+          end
+
+          next
+        end
+      RUBY
+    end
+  end
 end
