@@ -19,6 +19,10 @@ class URI::TestHTTP < Test::Unit::TestCase
     assert_kind_of(URI::HTTP, u)
   end
 
+  def test_build_empty_host
+    assert_raise(URI::InvalidComponentError) { URI::HTTP.build(host: '') }
+  end
+
   def test_parse
     u = URI.parse('http://a')
     assert_kind_of(URI::HTTP, u)

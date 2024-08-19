@@ -846,8 +846,10 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal("http://[::1]/bar", u.to_s)
     u.hostname = "::1"
     assert_equal("http://[::1]/bar", u.to_s)
-    u.hostname = ""
-    assert_equal("http:///bar", u.to_s)
+
+    u = URI("file://foo/bar")
+    u.hostname = ''
+    assert_equal("file:///bar", u.to_s)
   end
 
   def test_build
