@@ -838,9 +838,9 @@ sys_failure(void *function)
 static void *
 nogvl_readdir(void *dir)
 {
-    errno = 0;
+    rb_errno_set(0);
     if ((dir = readdir(dir)) == NULL) {
-        if (errno)
+        if (rb_errno())
             rb_thread_call_with_gvl(sys_failure, (void *)"readdir");
     }
     return dir;
