@@ -29,11 +29,12 @@
 #include "internal/range.h"
 
 VALUE rb_cRange;
-static ID id_beg, id_end, id_excl, id_plus;
+static ID id_beg, id_end, id_excl;
 #define id_cmp idCmp
 #define id_succ idSucc
 #define id_min idMin
 #define id_max idMax
+#define id_plus  '+'
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
@@ -2659,7 +2660,6 @@ Init_Range(void)
     id_beg = rb_intern_const("begin");
     id_end = rb_intern_const("end");
     id_excl = rb_intern_const("excl");
-    id_plus = rb_intern_const("+");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,
