@@ -62,11 +62,34 @@ def gemfile(force_latest_compatible = false, options = {}, &gemfile)
       definition.validate_runtime!
 
       if force_latest_compatible || definition.missing_specs?
-        Bundler.settings.temporary(inline: true, no_install: false) do
-          installer = Bundler::Installer.install(Bundler.root, definition, system: true)
-          installer.post_install_messages.each do |name, message|
-            Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+        do_install = -> do
+          Bundler.settings.temporary(inline: true, no_install: false) do
+            installer = Bundler::Installer.install(Bundler.root, definition, system: true)
+            installer.post_install_messages.each do |name, message|
+              Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+            end
           end
+        end
+
+        # When possible we do the install in a subprocess because to install
+        # gems we need to require some default gems like `securerandom` etc
+        # which may later conflict with the Gemfile requirements.
+        if Process.respond_to?(:fork)
+          _, status = Process.waitpid2(Process.fork(&do_install))
+          exit(status.exitstatus || status.to_i) unless status.success?
+
+          # If the install succeeded, we need to refresh gem info
+          Bundler.reset!
+
+          builder = Bundler::Dsl.new
+          builder.instance_eval(&gemfile)
+          builder.check_primary_source_safety
+
+          definition = builder.to_definition(nil, true)
+          def definition.lock(*); end
+          definition.validate_runtime!
+        else
+          do_install.call
         end
       end
 
