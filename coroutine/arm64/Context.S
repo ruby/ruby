@@ -89,7 +89,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 .section .note.GNU-stack,"",%progbits
 #endif
 
-#if (defined(__ARM_FEATURE_BTI_DEFAULT) && __ARM_FEATURE_BTI_DEFAULT != 0) || (defined(____ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0)
+#if (defined(__ARM_FEATURE_BTI_DEFAULT) && __ARM_FEATURE_BTI_DEFAULT != 0) || (defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0)
 /*  See "ELF for the Arm 64-bit Architecture (AArch64)"
     https://github.com/ARM-software/abi-aa/blob/2023Q3/aaelf64/aaelf64.rst#program-property */
 #  define GNU_PROPERTY_AARCH64_FEATURE_1_BTI (1<<0)
