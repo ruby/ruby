@@ -60,6 +60,8 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 .section .note.GNU-stack,"",%progbits
 #endif
 
+#if defined(__ELF__)
+
 #if defined(__CET__) && (__CET__ & 0x01) != 0
 # define IBT_FLAG 0x01
 #else
@@ -84,3 +86,4 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 .long 0x0        /* 8-byte alignment padding */
 /* End descriptor */
 .popsection
+#endif
