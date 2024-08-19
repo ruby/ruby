@@ -767,8 +767,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                         keyword_hash = converted_keyword_hash;
                     }
                     else {
+                        locals[args->argc] = converted_keyword_hash;
                         args->argc += 1;
-                        locals[i] = converted_keyword_hash;
                         keyword_hash = Qnil;
                         kw_flag = 0;
                     }
