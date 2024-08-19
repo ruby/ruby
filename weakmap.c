@@ -785,7 +785,7 @@ wkmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t data_args, int exis
     struct wkmap_aset_args *args = (struct wkmap_aset_args *)data_args;
 
     if (!existing) {
-        *key = (st_data_t)xmalloc(sizeof(VALUE));
+        *key = (st_data_t)xmalloc(sizeof(VALUE *));
     }
 
     *(VALUE *)*key = args->new_key;
