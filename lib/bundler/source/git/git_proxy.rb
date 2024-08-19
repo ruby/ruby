@@ -336,8 +336,6 @@ module Bundler
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
             remote.to_s
-          elsif File.exist?(uri)
-            "file://#{uri}"
           else
             uri.to_s
           end

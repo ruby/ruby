@@ -56,7 +56,7 @@ RSpec.describe "bundle install with :allow_offline_install" do
           fetch_args = %w(fetch --force --quiet --no-tags)
           clone_args = %w(clone --bare --no-hardlinks --quiet)
 
-          if (fetch_args.-(ARGV).empty? || clone_args.-(ARGV).empty?) && ARGV.any? {|arg| arg.start_with?("file://") }
+          if (fetch_args.-(ARGV).empty? || clone_args.-(ARGV).empty?) && File.exist?(ARGV[ARGV.index("--") + 1])
             warn "git remote ops have been disabled"
             exit 1
           end
