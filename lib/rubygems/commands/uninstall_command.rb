@@ -157,9 +157,14 @@ that is a dependency of an existing gem.  You can use the
 
       gem_specs = Gem::Specification.find_all_by_name(name, original_gem_version[name])
 
-      say("Gem '#{name}' is not installed") if gem_specs.empty?
-      gem_specs.each do |spec|
-        deplist.add spec
+      if gem_specs.empty?
+        say("Gem '#{name}' is not installed")
+      else
+        gem_specs.reject!(&:default_gem?) if gem_specs.size > 1
+
+        gem_specs.each do |spec|
+          deplist.add spec
+        end
       end
     end
 
