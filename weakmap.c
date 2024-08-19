@@ -30,6 +30,11 @@ struct weakmap {
     st_table *table;
 };
 
+struct weakmap_entry {
+    VALUE key;
+    VALUE val;
+};
+
 static bool
 wmap_live_p(VALUE obj)
 {
@@ -43,7 +48,7 @@ wmap_free_entry(VALUE *key, VALUE *val)
 
     /* We only need to free key because val is allocated beside key on in the
      * same malloc call. */
-    ruby_sized_xfree(key, sizeof(VALUE) * 2);
+    ruby_sized_xfree(key, sizeof(struct weakmap_entry));
 }
 
 static int
@@ -421,10 +426,10 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
         assert(*(VALUE *)*key == new_key);
     }
     else {
-        VALUE *pair = xmalloc(sizeof(VALUE) * 2);
+        struct weakmap_entry *entry = xmalloc(sizeof(struct weakmap_entry));
 
-        *key = (st_data_t)pair;
-        *val = (st_data_t)(pair + 1);
+        *key = (st_data_t)&entry->key;;
+        *val = (st_data_t)&entry->val;
     }
 
     *(VALUE *)*key = new_key;
