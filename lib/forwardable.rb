@@ -192,9 +192,7 @@ module Forwardable
 
     # If it's not a class or module, it's an instance
     mod = Module === self ? self : singleton_class
-    ret = mod.module_eval(&gen)
-    mod.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
-    ret
+    mod.module_eval(&gen)
   end
 
   alias delegate instance_delegate
@@ -211,7 +209,8 @@ module Forwardable
       accessor = "#{accessor}()"
     end
 
-    method_call = ".__send__(:#{method}, *args, &block)"
+    args = RUBY_VERSION >= '2.7' ? '...' : '*args, &block'
+    method_call = ".__send__(:#{method}, #{args})"
     if _valid_method?(method)
       loc, = caller_locations(2,1)
       pre = "_ ="
@@ -222,7 +221,7 @@ module Forwardable
             ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
             _#{method_call}
           else
-            _.#{method}(*args, &block)
+            _.#{method}(#{args})
           end
         end;
     end
@@ -230,7 +229,7 @@ module Forwardable
     _compile_method("#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1)
     begin;
       proc do
-        def #{ali}(*args, &block)
+        def #{ali}(#{args})
           #{pre}
           begin
             #{accessor}
@@ -312,9 +311,7 @@ module SingleForwardable
   def def_single_delegator(accessor, method, ali = method)
     gen = Forwardable._delegator_method(self, accessor, method, ali)
 
-    ret = instance_eval(&gen)
-    singleton_class.__send__(:ruby2_keywords, ali) if RUBY_VERSION >= '2.7'
-    ret
+    instance_eval(&gen)
   end
 
   alias delegate single_delegate
