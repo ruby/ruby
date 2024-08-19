@@ -96,7 +96,7 @@ module Bundler
         end
 
         if names_to_allow_prereleases_for.any?
-          Bundler.ui.debug "Found conflicts with dependencies with prereleases. Will retrying considering prereleases for #{names_to_allow_prereleases_for.join(", ")}...", true
+          Bundler.ui.debug "Found conflicts with dependencies with prereleases. Will retry considering prereleases for #{names_to_allow_prereleases_for.join(", ")}...", true
 
           @base.include_prereleases(names_to_allow_prereleases_for)
         end
