@@ -42,7 +42,7 @@ wmap_free_entry(VALUE *key, VALUE *val)
 
     /* We only need to free key because val is allocated beside key on in the
      * same malloc call. */
-    ruby_sized_xfree(key, sizeof(VALUE) * 2);
+    ruby_sized_xfree(key, sizeof(VALUE *) * 2);
 }
 
 static int
@@ -420,7 +420,7 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
         RUBY_ASSERT(*(VALUE *)*key == new_key);
     }
     else {
-        VALUE *pair = xmalloc(sizeof(VALUE) * 2);
+        VALUE *pair = xmalloc(sizeof(VALUE *) * 2);
 
         *key = (st_data_t)pair;
         *val = (st_data_t)(pair + 1);
