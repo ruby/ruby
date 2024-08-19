@@ -357,11 +357,16 @@ rb_mmtk_flush_mutator_local_buffers(MMTk_VMMutatorThread thread)
 }
 
 void
-rb_mmtk_destroy_mutator(MMTk_VMMutatorThread cur_thread)
+rb_mmtk_destroy_mutator(MMTk_VMMutatorThread cur_thread, bool at_fork)
 {
-    // Currently a thread can only destroy its own mutator.
-    RUBY_ASSERT(cur_thread == GET_THREAD());
-    RUBY_ASSERT(cur_thread->mutator_local == &rb_mmtk_mutator_local);
+    if (!at_fork) {
+        // A thread only destroys its own mutator when it exits normally (not at fork).
+        // But after forking, only the forking thread continue to live in the child process.
+        // The living thread will call this function to close the mutators of all dead threads.
+        // So we skip the assertions at fork.
+        RUBY_ASSERT(cur_thread == GET_THREAD());
+        RUBY_ASSERT(cur_thread->mutator_local == &rb_mmtk_mutator_local);
+    }
 
     rb_mmtk_flush_mutator_local_buffers(cur_thread);
 

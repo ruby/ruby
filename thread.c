@@ -515,6 +515,32 @@ thread_cleanup_func(void *th_ptr, int atfork)
     th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
 
+#if USE_MMTK
+    // Release MMTk-specific per-mutator structs.
+    if (rb_mmtk_enabled_p()) {
+        bool destroy_mutator = true;
+
+        if (!atfork) {
+            // If called when a thread exits normally (not at fork),
+            // the current thread should have mutator-local data,
+            // and we will destroy the mutator.
+            RUBY_ASSERT(th->mutator != NULL);
+            RUBY_ASSERT(th->mutator_local != NULL);
+        } else {
+            // If called after fork, we visit all threads,
+            // including the threads that have been "scheduled dead".
+            // We only destry the mutator if not already destroyed.
+            if (th->mutator == NULL) {
+                destroy_mutator = false;
+            }
+        }
+
+        if (destroy_mutator) {
+            rb_mmtk_destroy_mutator(th, atfork);
+        }
+    }
+#endif
+
     /*
      * Unfortunately, we can't release native threading resource at fork
      * because libc may have unstable locking state therefore touching
@@ -778,17 +804,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     thread_cleanup_func(th, FALSE);
     VM_ASSERT(th->ec->vm_stack == NULL);
-
-#if USE_MMTK
-    // Release MMTk-specific per-mutator structs.
-    // We are still holding the thread_sched, so other threads cannot inspect the following
-    // per-mutator structs.  It's safe for us to clean them up at this time.
-    if (rb_mmtk_enabled_p()) {
-        RUBY_ASSERT(th->mutator != NULL);
-        RUBY_ASSERT(th->mutator_local != NULL);
-        rb_mmtk_destroy_mutator(th);
-    }
-#endif
 
     if (th->invoke_type == thread_invoke_type_ractor_proc) {
         // after rb_ractor_living_threads_remove()

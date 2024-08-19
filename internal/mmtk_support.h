@@ -44,7 +44,7 @@ void rb_mmtk_main_thread_init(void);
 
 // Flushing and de-initialization
 void rb_mmtk_flush_mutator_local_buffers(MMTk_VMMutatorThread thread);
-void rb_mmtk_destroy_mutator(MMTk_VMMutatorThread cur_thread);
+void rb_mmtk_destroy_mutator(MMTk_VMMutatorThread cur_thread, bool at_fork);
 
 // Object layout
 size_t rb_mmtk_prefix_size(void);
