@@ -50,23 +50,53 @@ wmap_free_entry(VALUE *key, VALUE *val)
     ruby_sized_xfree(key, sizeof(struct weakmap_entry));
 }
 
+struct wmap_foreach_data {
+    void (*func)(struct weakmap_entry *, st_data_t);
+    st_data_t arg;
+};
+
 static int
-wmap_mark_weak_table_i(st_data_t key, st_data_t val, st_data_t _)
+wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    VALUE key_obj = *(VALUE *)key;
-    VALUE val_obj = *(VALUE *)val;
+    struct wmap_foreach_data *data = (struct wmap_foreach_data *)arg;
 
-    if (wmap_live_p(key_obj) && wmap_live_p(val_obj)) {
-        rb_gc_mark_weak((VALUE *)key);
-        rb_gc_mark_weak((VALUE *)val);
+    struct weakmap_entry *entry = (struct weakmap_entry *)key;
+    RUBY_ASSERT(&entry->val == (VALUE *)val);
 
-        return ST_CONTINUE;
+    if (wmap_live_p(entry->key) && wmap_live_p(entry->val)) {
+        VALUE k = entry->key;
+        VALUE v = entry->val;
+
+        data->func(entry, data->arg);
+
+        RB_GC_GUARD(k);
+        RB_GC_GUARD(v);
     }
     else {
         wmap_free_entry((VALUE *)key, (VALUE *)val);
 
         return ST_DELETE;
     }
+
+    return ST_CONTINUE;
+}
+
+static void
+wmap_foreach(struct weakmap *w, void (*func)(struct weakmap_entry *, st_data_t), st_data_t arg)
+{
+    struct wmap_foreach_data foreach_data = {
+        .func = func,
+        .arg = arg,
+    };
+
+    st_foreach(w->table, wmap_foreach_i, (st_data_t)&foreach_data);
+}
+
+static void
+wmap_mark_weak_table_i(struct weakmap_entry *entry, st_data_t _)
+{
+    rb_gc_mark_weak(&entry->key);
+    rb_gc_mark_weak(&entry->val);
 }
 
 static void
@@ -74,7 +104,7 @@ wmap_mark(void *ptr)
 {
     struct weakmap *w = ptr;
     if (w->table) {
-        st_foreach(w->table, wmap_mark_weak_table_i, (st_data_t)0);
+        wmap_foreach(w, wmap_mark_weak_table_i, (st_data_t)0);
     }
 }
 
@@ -188,48 +218,6 @@ wmap_allocate(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct weakmap, &weakmap_type, w);
     w->table = st_init_table(&wmap_hash_type);
     return obj;
-}
-
-struct wmap_foreach_data {
-    void (*func)(struct weakmap_entry *, st_data_t);
-    st_data_t arg;
-};
-
-static int
-wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    struct wmap_foreach_data *data = (struct wmap_foreach_data *)arg;
-
-    struct weakmap_entry *entry = (struct weakmap_entry *)key;
-    RUBY_ASSERT(&entry->val == (VALUE *)val);
-
-    if (wmap_live_p(entry->key) && wmap_live_p(entry->val)) {
-        VALUE k = entry->key;
-        VALUE v = entry->val;
-
-        data->func(entry, data->arg);
-
-        RB_GC_GUARD(k);
-        RB_GC_GUARD(v);
-    }
-    else {
-        wmap_free_entry((VALUE *)key, (VALUE *)val);
-
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static void
-wmap_foreach(struct weakmap *w, void (*func)(struct weakmap_entry *, st_data_t), st_data_t arg)
-{
-    struct wmap_foreach_data foreach_data = {
-        .func = func,
-        .arg = arg,
-    };
-
-    st_foreach(w->table, wmap_foreach_i, (st_data_t)&foreach_data);
 }
 
 static VALUE
