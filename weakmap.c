@@ -186,7 +186,6 @@ wmap_allocate(VALUE klass)
 }
 
 struct wmap_foreach_data {
-    struct weakmap *w;
     void (*func)(VALUE, VALUE, st_data_t);
     st_data_t arg;
 };
@@ -215,7 +214,6 @@ static void
 wmap_foreach(struct weakmap *w, void (*func)(VALUE, VALUE, st_data_t), st_data_t arg)
 {
     struct wmap_foreach_data foreach_data = {
-        .w = w,
         .func = func,
         .arg = arg,
     };
