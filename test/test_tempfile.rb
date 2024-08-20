@@ -3,6 +3,8 @@ require 'test/unit'
 require 'tempfile'
 
 class TestTempfile < Test::Unit::TestCase
+  LIB_TEMPFILE_RB_PATH = File.expand_path(__dir__ + "/../lib/tempfile.rb")
+
   def initialize(*)
     super
     @tempfile = nil
@@ -171,6 +173,38 @@ class TestTempfile < Test::Unit::TestCase
       File.unlink(path) rescue nil
     end
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_finalizer_removes_file
+    assert_in_out_err(["-r#{LIB_TEMPFILE_RB_PATH}"], <<~RUBY) do |(filename,*), (error,*)|
+      file = Tempfile.new("foo")
+      puts file.path
+    RUBY
+      assert_file.not_exist?(filename)
+      assert_nil error
+    end
+  end
+
+  def test_finalizer_removes_file_when_dup
+    assert_in_out_err(["-r#{LIB_TEMPFILE_RB_PATH}"], <<~RUBY) do |(filename,*), (error,*)|
+      file = Tempfile.new("foo")
+      file.dup
+      puts file.path
+    RUBY
+      assert_file.not_exist?(filename)
+      assert_nil error
+    end
+  end
+
+  def test_finalizer_removes_file_when_clone
+    assert_in_out_err(["-r#{LIB_TEMPFILE_RB_PATH}"], <<~RUBY) do |(filename,*), (error,*)|
+      file = Tempfile.new("foo")
+      file.clone
+      puts file.path
+    RUBY
+      assert_file.not_exist?(filename)
+      assert_nil error
+    end
+  end
 
   def test_finalizer_does_not_unlink_if_already_unlinked
     assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,*), (error,*)|
@@ -474,5 +508,4 @@ puts Tempfile.new('foo').path
       assert_equal(true, t.autoclose?)
     }
   end
-
 end

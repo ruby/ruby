@@ -221,7 +221,6 @@ class Tempfile < DelegateClass(File)
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
-    @finalizer_obj = Object.new
     tmpfile = nil
     ::Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
       opts[:perm] = 0600
@@ -231,29 +230,27 @@ class Tempfile < DelegateClass(File)
 
     super(tmpfile)
 
-    define_finalizers
-  end
-
-  private def define_finalizers
-    ObjectSpace.define_finalizer(@finalizer_obj, Closer.new(__getobj__))
-    ObjectSpace.define_finalizer(@finalizer_obj, Remover.new(__getobj__.path))
+    @finalizer_manager = FinalizerManager.new(__getobj__.path)
+    @finalizer_manager.register(self, __getobj__)
   end
 
   def initialize_dup(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
+    @finalizer_manager.register(self, __getobj__)
   end
 
   def initialize_clone(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
+    @finalizer_manager.register(self, __getobj__)
   end
 
   private def initialize_copy_iv(other) # :nodoc:
     @unlinked = other.unlinked
     @mode = other.mode
     @opts = other.opts
-    @finalizer_obj = other.finalizer_obj
+    @finalizer_manager = other.finalizer_manager
   end
 
   # Opens or reopens the file with mode "r+".
@@ -263,8 +260,7 @@ class Tempfile < DelegateClass(File)
     mode = @mode & ~(File::CREAT|File::EXCL)
     __setobj__(File.open(__getobj__.path, mode, **@opts))
 
-    ObjectSpace.undefine_finalizer(@finalizer_obj)
-    define_finalizers
+    @finalizer_manager.register(self, __getobj__)
 
     __getobj__
   end
@@ -334,9 +330,6 @@ class Tempfile < DelegateClass(File)
       return
     end
 
-    ObjectSpace.undefine_finalizer(@finalizer_obj)
-    ObjectSpace.define_finalizer(@finalizer_obj, Closer.new(__getobj__))
-
     @unlinked = true
   end
   alias delete unlink
@@ -370,35 +363,32 @@ class Tempfile < DelegateClass(File)
 
   protected
 
-  attr_reader :unlinked, :mode, :opts, :finalizer_obj
+  attr_reader :unlinked, :mode, :opts, :finalizer_manager
 
-  class Closer # :nodoc:
-    def initialize(tmpfile)
-      @tmpfile = tmpfile
-    end
-
-    def call(*args)
-      @tmpfile.close
-    end
-  end
-
-  class Remover # :nodoc:
+  class FinalizerManager # :nodoc:
     def initialize(path)
-      @pid = Process.pid
+      @open_files = {}
       @path = path
+      @pid = Process.pid
     end
 
-    def call(*args)
-      return if @pid != Process.pid
+    def register(obj, file)
+      ObjectSpace.undefine_finalizer(obj)
+      ObjectSpace.define_finalizer(obj, self)
+      @open_files[obj.object_id] = file
+    end
 
-      $stderr.puts "removing #{@path}..." if $DEBUG
+    def call(object_id)
+      @open_files.delete(object_id).close
 
-      begin
-        File.unlink(@path)
-      rescue Errno::ENOENT
+      if @open_files.empty? && Process.pid == @pid
+        $stderr.puts "removing #{@path}..." if $DEBUG
+        begin
+          File.unlink(@path)
+        rescue Errno::ENOENT
+        end
+        $stderr.puts "done" if $DEBUG
       end
-
-      $stderr.puts "done" if $DEBUG
     end
   end
 
