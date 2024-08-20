@@ -313,7 +313,13 @@ module Prism
         names << [:nokey]
       end
 
-      names << [:block, block.name || :&] if block
+      case block
+      when BlockParameterNode
+        names << [:block, block.name || :&]
+      when NoBlockParameterNode
+        names << [:noblock]
+      end
+
       names
     end
   end

@@ -32,6 +32,7 @@ class TestMethod < Test::Unit::TestCase
   def mk7(a, b = nil, *c, d, **o) nil && o end
   def mk8(a, b = nil, *c, d, e:, f: nil, **o) nil && o end
   def mnk(**nil) end
+  def mnb(&nil) end
   def mf(...) end
 
   class Base
@@ -577,6 +578,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
   define_method(:pmk8) {|a, b = nil, *c, d, e:, f: nil, **o|}
   define_method(:pmnk) {|**nil|}
+  define_method(:pmnb) {|&nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -600,6 +602,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
+    assert_equal([[:noblock]], method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
@@ -626,6 +629,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
@@ -651,6 +655,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:pmk8).parameters)
     assert_equal([[:nokey]], method(:pmnk).parameters)
+    assert_equal([[:noblock]], method(:pmnb).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -675,6 +680,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:pmk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:pmnb).parameters)
   end
 
   def test_hidden_parameters
