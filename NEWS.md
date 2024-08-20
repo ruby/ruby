@@ -162,6 +162,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #15554]: https://bugs.ruby-lang.org/issues/15554
 [Feature #16495]: https://bugs.ruby-lang.org/issues/16495
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
+[Feature #18368]: https://bugs.ruby-lang.org/issues/18368
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Misc #18984]:    https://bugs.ruby-lang.org/issues/18984
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
@@ -175,4 +176,3 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
-[Feature #18368]: https://bugs.ruby-lang.org/issues/18368
