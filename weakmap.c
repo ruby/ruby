@@ -41,16 +41,6 @@ wmap_live_p(VALUE obj)
     return !UNDEF_P(obj);
 }
 
-static void
-wmap_free_entry(VALUE *key, VALUE *val)
-{
-    assert(key + 1 == val);
-
-    /* We only need to free key because val is allocated beside key on in the
-     * same malloc call. */
-    ruby_sized_xfree(key, sizeof(struct weakmap_entry));
-}
-
 struct wmap_foreach_data {
     int (*func)(struct weakmap_entry *, st_data_t);
     st_data_t arg;
@@ -76,7 +66,7 @@ wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
         return ret;
     }
     else {
-        wmap_free_entry((VALUE *)key, (VALUE *)val);
+        ruby_sized_xfree(entry, sizeof(struct weakmap_entry));
 
         return ST_DELETE;
     }
@@ -114,7 +104,10 @@ wmap_mark(void *ptr)
 static int
 wmap_free_table_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    wmap_free_entry((VALUE *)key, (VALUE *)val);
+    struct weakmap_entry *entry = (struct weakmap_entry *)key;
+    RUBY_ASSERT(&entry->val == (VALUE *)val);
+    ruby_sized_xfree(entry, sizeof(struct weakmap_entry));
+
     return ST_CONTINUE;
 }
 
@@ -534,7 +527,8 @@ wmap_delete(VALUE self, VALUE key)
         rb_gc_remove_weak(self, (VALUE *)orig_key_data);
         rb_gc_remove_weak(self, (VALUE *)orig_val_data);
 
-        wmap_free_entry((VALUE *)orig_key_data, (VALUE *)orig_val_data);
+        struct weakmap_entry *entry = (struct weakmap_entry *)orig_key_data;
+        ruby_sized_xfree(entry, sizeof(struct weakmap_entry));
 
         if (wmap_live_p(orig_val)) {
             return orig_val;
