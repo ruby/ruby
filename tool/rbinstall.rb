@@ -746,7 +746,9 @@ module RbInstall
       name = formatted_program_filename(filename)
       unless $dryrun
         super
-        File.chmod($script_mode, File.join(bindir, name))
+        script = File.join(bindir, name)
+        File.chmod($script_mode, script)
+        File.unlink("#{script}.lock") rescue nil
       end
       $installed_list.puts(File.join(without_destdir(bindir), name)) if $installed_list
     end
