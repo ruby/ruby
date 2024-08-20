@@ -191,7 +191,7 @@ wmap_allocate(VALUE klass)
 }
 
 struct wmap_foreach_data {
-    void (*func)(VALUE, VALUE, st_data_t);
+    void (*func)(struct weakmap_entry *, st_data_t);
     st_data_t arg;
 };
 
@@ -200,11 +200,17 @@ wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     struct wmap_foreach_data *data = (struct wmap_foreach_data *)arg;
 
-    VALUE key_obj = *(VALUE *)key;
-    VALUE val_obj = *(VALUE *)val;
+    struct weakmap_entry *entry = (struct weakmap_entry *)key;
+    RUBY_ASSERT(&entry->val == (VALUE *)val);
 
-    if (wmap_live_p(key_obj) && wmap_live_p(val_obj)) {
-        data->func(key_obj, val_obj, data->arg);
+    if (wmap_live_p(entry->key) && wmap_live_p(entry->val)) {
+        VALUE k = entry->key;
+        VALUE v = entry->val;
+
+        data->func(entry, data->arg);
+
+        RB_GC_GUARD(k);
+        RB_GC_GUARD(v);
     }
     else {
         wmap_free_entry((VALUE *)key, (VALUE *)val);
@@ -216,7 +222,7 @@ wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 static void
-wmap_foreach(struct weakmap *w, void (*func)(VALUE, VALUE, st_data_t), st_data_t arg)
+wmap_foreach(struct weakmap *w, void (*func)(struct weakmap_entry *, st_data_t), st_data_t arg)
 {
     struct wmap_foreach_data foreach_data = {
         .func = func,
@@ -238,7 +244,7 @@ wmap_inspect_append(VALUE str, VALUE obj)
 }
 
 static void
-wmap_inspect_i(VALUE key, VALUE val, st_data_t data)
+wmap_inspect_i(struct weakmap_entry *entry, st_data_t data)
 {
     VALUE str = (VALUE)data;
 
@@ -250,9 +256,9 @@ wmap_inspect_i(VALUE key, VALUE val, st_data_t data)
         RSTRING_PTR(str)[0] = '#';
     }
 
-    wmap_inspect_append(str, key);
+    wmap_inspect_append(str, entry->key);
     rb_str_cat2(str, " => ");
-    wmap_inspect_append(str, val);
+    wmap_inspect_append(str, entry->val);
 }
 
 static VALUE
@@ -273,9 +279,9 @@ wmap_inspect(VALUE self)
 }
 
 static void
-wmap_each_i(VALUE key, VALUE val, st_data_t _)
+wmap_each_i(struct weakmap_entry *entry, st_data_t _)
 {
-    rb_yield_values(2, key, val);
+    rb_yield_values(2, entry->key, entry->val);
 }
 
 /*
@@ -298,9 +304,9 @@ wmap_each(VALUE self)
 }
 
 static void
-wmap_each_key_i(VALUE key, VALUE _val, st_data_t _data)
+wmap_each_key_i(struct weakmap_entry *entry, st_data_t _data)
 {
-    rb_yield(key);
+    rb_yield(entry->key);
 }
 
 /*
@@ -323,9 +329,9 @@ wmap_each_key(VALUE self)
 }
 
 static void
-wmap_each_value_i(VALUE _key, VALUE val, st_data_t _data)
+wmap_each_value_i(struct weakmap_entry *entry, st_data_t _data)
 {
-    rb_yield(val);
+    rb_yield(entry->val);
 }
 
 /*
@@ -348,11 +354,11 @@ wmap_each_value(VALUE self)
 }
 
 static void
-wmap_keys_i(st_data_t key, st_data_t _, st_data_t arg)
+wmap_keys_i(struct weakmap_entry *entry, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
 
-    rb_ary_push(ary, key);
+    rb_ary_push(ary, entry->key);
 }
 
 /*
@@ -375,11 +381,11 @@ wmap_keys(VALUE self)
 }
 
 static void
-wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
+wmap_values_i(struct weakmap_entry *entry, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
 
-    rb_ary_push(ary, (VALUE)val);
+    rb_ary_push(ary, entry->val);
 }
 
 /*
