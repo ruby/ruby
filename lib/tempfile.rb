@@ -330,6 +330,8 @@ class Tempfile < DelegateClass(File)
       return
     end
 
+    @finalizer_manager.unlinked = true
+
     @unlinked = true
   end
   alias delete unlink
@@ -366,10 +368,13 @@ class Tempfile < DelegateClass(File)
   attr_reader :unlinked, :mode, :opts, :finalizer_manager
 
   class FinalizerManager # :nodoc:
+    attr_accessor :unlinked
+
     def initialize(path)
       @open_files = {}
       @path = path
       @pid = Process.pid
+      @unlinked = false
     end
 
     def register(obj, file)
@@ -381,7 +386,7 @@ class Tempfile < DelegateClass(File)
     def call(object_id)
       @open_files.delete(object_id).close
 
-      if @open_files.empty? && Process.pid == @pid
+      if @open_files.empty? && !@unlinked && Process.pid == @pid
         $stderr.puts "removing #{@path}..." if $DEBUG
         begin
           File.unlink(@path)
