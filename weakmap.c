@@ -51,7 +51,7 @@ wmap_free_entry(VALUE *key, VALUE *val)
 }
 
 struct wmap_foreach_data {
-    void (*func)(struct weakmap_entry *, st_data_t);
+    int (*func)(struct weakmap_entry *, st_data_t);
     st_data_t arg;
 };
 
@@ -67,22 +67,22 @@ wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
         VALUE k = entry->key;
         VALUE v = entry->val;
 
-        data->func(entry, data->arg);
+        int ret = data->func(entry, data->arg);
 
         RB_GC_GUARD(k);
         RB_GC_GUARD(v);
+
+        return ret;
     }
     else {
         wmap_free_entry((VALUE *)key, (VALUE *)val);
 
         return ST_DELETE;
     }
-
-    return ST_CONTINUE;
 }
 
 static void
-wmap_foreach(struct weakmap *w, void (*func)(struct weakmap_entry *, st_data_t), st_data_t arg)
+wmap_foreach(struct weakmap *w, int (*func)(struct weakmap_entry *, st_data_t), st_data_t arg)
 {
     struct wmap_foreach_data foreach_data = {
         .func = func,
@@ -92,11 +92,13 @@ wmap_foreach(struct weakmap *w, void (*func)(struct weakmap_entry *, st_data_t),
     st_foreach(w->table, wmap_foreach_i, (st_data_t)&foreach_data);
 }
 
-static void
+static int
 wmap_mark_weak_table_i(struct weakmap_entry *entry, st_data_t _)
 {
     rb_gc_mark_weak(&entry->key);
     rb_gc_mark_weak(&entry->val);
+
+    return ST_CONTINUE;
 }
 
 static void
@@ -138,34 +140,24 @@ wmap_memsize(const void *ptr)
 }
 
 static int
-wmap_compact_table_i(st_data_t key, st_data_t val, st_data_t data)
+wmap_compact_table_i(struct weakmap_entry *entry, st_data_t data)
 {
     st_table *table = (st_table *)data;
 
-    VALUE key_obj = *(VALUE *)key;
-    VALUE val_obj = *(VALUE *)val;
+    VALUE new_key = rb_gc_location(entry->key);
 
-    if (wmap_live_p(key_obj) && wmap_live_p(val_obj)) {
-        VALUE new_key_obj = rb_gc_location(key_obj);
+    entry->val = rb_gc_location(entry->val);
 
-        *(VALUE *)val = rb_gc_location(val_obj);
+    /* If the key object moves, then we must reinsert because the hash is
+        * based on the pointer rather than the object itself. */
+    if (entry->key != new_key) {
+        entry->key = new_key;
 
-        /* If the key object moves, then we must reinsert because the hash is
-         * based on the pointer rather than the object itself. */
-        if (key_obj != new_key_obj) {
-            *(VALUE *)key = new_key_obj;
-
-            DURING_GC_COULD_MALLOC_REGION_START();
-            {
-                st_insert(table, key, val);
-            }
-            DURING_GC_COULD_MALLOC_REGION_END();
-
-            return ST_DELETE;
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            st_insert(table, (st_data_t)&entry->key, (st_data_t)&entry->val);
         }
-    }
-    else {
-        wmap_free_entry((VALUE *)key, (VALUE *)val);
+        DURING_GC_COULD_MALLOC_REGION_END();
 
         return ST_DELETE;
     }
@@ -179,7 +171,7 @@ wmap_compact(void *ptr)
     struct weakmap *w = ptr;
 
     if (w->table) {
-        st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+        wmap_foreach(w, wmap_compact_table_i, (st_data_t)w->table);
     }
 }
 
@@ -231,7 +223,7 @@ wmap_inspect_append(VALUE str, VALUE obj)
     }
 }
 
-static void
+static int
 wmap_inspect_i(struct weakmap_entry *entry, st_data_t data)
 {
     VALUE str = (VALUE)data;
@@ -247,6 +239,8 @@ wmap_inspect_i(struct weakmap_entry *entry, st_data_t data)
     wmap_inspect_append(str, entry->key);
     rb_str_cat2(str, " => ");
     wmap_inspect_append(str, entry->val);
+
+    return ST_CONTINUE;
 }
 
 static VALUE
@@ -266,10 +260,12 @@ wmap_inspect(VALUE self)
     return str;
 }
 
-static void
+static int
 wmap_each_i(struct weakmap_entry *entry, st_data_t _)
 {
     rb_yield_values(2, entry->key, entry->val);
+
+    return ST_CONTINUE;
 }
 
 /*
@@ -291,10 +287,12 @@ wmap_each(VALUE self)
     return self;
 }
 
-static void
+static int
 wmap_each_key_i(struct weakmap_entry *entry, st_data_t _data)
 {
     rb_yield(entry->key);
+
+    return ST_CONTINUE;
 }
 
 /*
@@ -316,10 +314,12 @@ wmap_each_key(VALUE self)
     return self;
 }
 
-static void
+static int
 wmap_each_value_i(struct weakmap_entry *entry, st_data_t _data)
 {
     rb_yield(entry->val);
+
+    return ST_CONTINUE;
 }
 
 /*
@@ -341,12 +341,14 @@ wmap_each_value(VALUE self)
     return self;
 }
 
-static void
+static int
 wmap_keys_i(struct weakmap_entry *entry, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
 
     rb_ary_push(ary, entry->key);
+
+    return ST_CONTINUE;
 }
 
 /*
@@ -368,12 +370,14 @@ wmap_keys(VALUE self)
     return ary;
 }
 
-static void
+static int
 wmap_values_i(struct weakmap_entry *entry, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
 
     rb_ary_push(ary, entry->val);
+
+    return ST_CONTINUE;
 }
 
 /*
