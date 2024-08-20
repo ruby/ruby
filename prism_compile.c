@@ -3825,6 +3825,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_YIELD_NODE:
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
+        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
         return;
       case PM_SUPER_NODE:
       case PM_FORWARDING_SUPER_NODE:
@@ -6962,6 +6963,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             PUSH_LABEL(ret, retry_label);
         }
+        else {
+            iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        }
 
         PUSH_INSN(ret, location, putself);
         int flag = VM_CALL_ZSUPER | VM_CALL_SUPER | VM_CALL_FCALL;
@@ -8994,6 +8998,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (parameters_node->block) {
                 body->param.block_start = local_index;
                 body->param.flags.has_block = true;
+                iseq_set_use_block(iseq);
 
                 pm_constant_id_t name = ((const pm_block_parameter_node_t *) parameters_node->block)->name;
 
@@ -9549,6 +9554,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_destroy(&next_scope_node);
         }
 
+        if (!cast->block) {
+            iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        }
+
         if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
             PUSH_INSN(args, location, splatkw);
         }
@@ -9681,6 +9690,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_INSN1(ret, location, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
+        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
         if (popped) PUSH_INSN(ret, location, pop);
 
         int level = 0;
