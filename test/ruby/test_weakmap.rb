@@ -258,4 +258,11 @@ class TestWeakMap < Test::Unit::TestCase
 
     assert_equal b, @wm[1]
   end
+
+  def test_use_after_free_bug_20688
+    assert_normal_exit(<<~RUBY)
+      weakmap = ObjectSpace::WeakMap.new
+      10_000.times { weakmap[Object.new] = Object.new }
+    RUBY
+  end
 end

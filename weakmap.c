@@ -43,12 +43,19 @@ wmap_live_p(VALUE obj)
 struct wmap_foreach_data {
     int (*func)(struct weakmap_entry *, st_data_t);
     st_data_t arg;
+
+    struct weakmap_entry *dead_entry;
 };
 
 static int
 wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     struct wmap_foreach_data *data = (struct wmap_foreach_data *)arg;
+
+    if (data->dead_entry != NULL) {
+        ruby_sized_xfree(data->dead_entry, sizeof(struct weakmap_entry));
+        data->dead_entry = NULL;
+    }
 
     struct weakmap_entry *entry = (struct weakmap_entry *)key;
     RUBY_ASSERT(&entry->val == (VALUE *)val);
@@ -65,7 +72,11 @@ wmap_foreach_i(st_data_t key, st_data_t val, st_data_t arg)
         return ret;
     }
     else {
-        ruby_sized_xfree(entry, sizeof(struct weakmap_entry));
+        /* We cannot free the weakmap_entry here because the ST_DELETE could
+         * hash the key which would read the weakmap_entry and would cause a
+         * use-after-free. Instead, we store this entry and free it on the next
+         * iteration. */
+        data->dead_entry = entry;
 
         return ST_DELETE;
     }
@@ -77,9 +88,12 @@ wmap_foreach(struct weakmap *w, int (*func)(struct weakmap_entry *, st_data_t), 
     struct wmap_foreach_data foreach_data = {
         .func = func,
         .arg = arg,
+        .dead_entry = NULL,
     };
 
     st_foreach(w->table, wmap_foreach_i, (st_data_t)&foreach_data);
+
+    ruby_sized_xfree(foreach_data.dead_entry, sizeof(struct weakmap_entry));
 }
 
 static int
