@@ -10532,6 +10532,9 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     return string;
 }
 
+// We need access to this function when we're done parsing stdin.
+void rb_reset_argf_lineno(long n);
+
 /**
  * Parse the source off STDIN and store the resulting scope node in the given
  * parse result struct. It is assumed that the parse result object is zeroed
@@ -10549,6 +10552,10 @@ pm_parse_stdin(pm_parse_result_t *result)
     // freed. At this point we've handed over ownership, so we don't need to
     // free the buffer itself.
     pm_string_owned_init(&result->input, (uint8_t *) pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+
+    // When we're done parsing, we reset $. because we don't want the fact that
+    // we went through an IO object to be visible to the user.
+    rb_reset_argf_lineno(0);
 
     return pm_parse_process(result, node);
 }
