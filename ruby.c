@@ -2186,6 +2186,12 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
             error = pm_parse_file(result, opt->script_name);
         }
 
+        // Check if (after requiring all of the files through -r flags) we have
+        // coverage enabled and need to enable coverage on the main script.
+        if (RTEST(rb_get_coverages())) {
+            result->node.coverage_enabled = 1;
+        }
+
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
