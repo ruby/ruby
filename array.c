@@ -4657,11 +4657,9 @@ rb_ary_clear(VALUE ary)
 {
     rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
-        if (!ARY_EMBED_P(ary)) {
-            rb_ary_unshare(ary);
-            FL_SET_EMBED(ary);
-            ARY_SET_EMBED_LEN(ary, 0);
-        }
+        rb_ary_unshare(ary);
+        FL_SET_EMBED(ary);
+        ARY_SET_EMBED_LEN(ary, 0);
     }
     else {
         ARY_SET_LEN(ary, 0);
@@ -6235,7 +6233,7 @@ rb_ary_uniq_bang(VALUE ary)
     }
     rb_ary_modify_check(ary);
     ARY_SET_LEN(ary, 0);
-    if (ARY_SHARED_P(ary) && !ARY_EMBED_P(ary)) {
+    if (ARY_SHARED_P(ary)) {
         rb_ary_unshare(ary);
         FL_SET_EMBED(ary);
     }
