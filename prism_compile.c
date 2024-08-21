@@ -5792,6 +5792,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         }
                     }
                     else {
+                        PM_COMPILE_NOT_POPPED(element);
+                        if (++new_array_size >= max_new_array_size) FLUSH_CHUNK;
                         static_literal = true;
                     }
                 } else {
