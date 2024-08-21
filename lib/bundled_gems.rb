@@ -103,6 +103,11 @@ module Gem::BUNDLED_GEMS
           require_found = true
         end
       end
+      # Don't show script name when bundle exec and call ruby script directly.
+      if cl.path.end_with?("bundle")
+        frame_count = 0
+        break
+      end
     end
     require_found ? 1 : frame_count - 1
   end
