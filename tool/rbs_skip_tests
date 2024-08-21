@@ -60,3 +60,6 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
+
+test_initialize(TempfileRemoverSingletonTest) Remover class is removed at https://github.com/ruby/tempfile/commit/753ab16642fdc3cf92e1cf3dd1d80e8f75128735
+test_call(TempfileRemoverTest) Remover class is removed at https://github.com/ruby/tempfile/commit/753ab16642fdc3cf92e1cf3dd1d80e8f75128735
