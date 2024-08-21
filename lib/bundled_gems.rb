@@ -79,10 +79,12 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.uplevel
+    frame_count = 0
     frames_to_skip = 3
     uplevel = 0
     require_found = false
     Thread.each_caller_location do |cl|
+      frame_count += 1
       if frames_to_skip >= 1
         frames_to_skip -= 1
         next
@@ -98,7 +100,7 @@ module Gem::BUNDLED_GEMS
         end
       end
     end
-    require_found ? 1 : 2
+    require_found ? 1 : frame_count - 1
   end
 
   def self.find_gem(path)
