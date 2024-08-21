@@ -612,18 +612,24 @@ struct weakkeymap {
 };
 
 static int
-wkmap_mark_table_i(st_data_t key, st_data_t val_obj, st_data_t _)
+wkmap_mark_table_i(st_data_t key, st_data_t val_obj, st_data_t data)
 {
-    VALUE key_obj = *(VALUE *)key;
+    VALUE **dead_entry = (VALUE **)data;
+    if (dead_entry != NULL) {
+        ruby_sized_xfree(*dead_entry, sizeof(VALUE));
+        *dead_entry = NULL;
+    }
 
-    if (wmap_live_p(key_obj)) {
-        rb_gc_mark_weak((VALUE *)key);
+    VALUE *key_ptr = (VALUE *)key;
+
+    if (wmap_live_p(*key_ptr)) {
+        rb_gc_mark_weak(key_ptr);
         rb_gc_mark_movable((VALUE)val_obj);
 
         return ST_CONTINUE;
     }
     else {
-        ruby_sized_xfree((VALUE *)key, sizeof(VALUE));
+        *dead_entry = key_ptr;
 
         return ST_DELETE;
     }
@@ -634,7 +640,11 @@ wkmap_mark(void *ptr)
 {
     struct weakkeymap *w = ptr;
     if (w->table) {
-        st_foreach(w->table, wkmap_mark_table_i, (st_data_t)0);
+        VALUE *dead_entry = NULL;
+        st_foreach(w->table, wkmap_mark_table_i, (st_data_t)&dead_entry);
+        if (dead_entry != NULL) {
+            ruby_sized_xfree(dead_entry, sizeof(VALUE));
+        }
     }
 }
 
@@ -668,22 +678,28 @@ wkmap_memsize(const void *ptr)
 }
 
 static int
-wkmap_compact_table_i(st_data_t key, st_data_t val_obj, st_data_t _data, int _error)
+wkmap_compact_table_i(st_data_t key, st_data_t val_obj, st_data_t data, int _error)
 {
-    VALUE key_obj = *(VALUE *)key;
+    VALUE **dead_entry = (VALUE **)data;
+    if (dead_entry != NULL) {
+        ruby_sized_xfree(*dead_entry, sizeof(VALUE));
+        *dead_entry = NULL;
+    }
 
-    if (wmap_live_p(key_obj)) {
-        if (key_obj != rb_gc_location(key_obj) || val_obj != rb_gc_location(val_obj)) {
+    VALUE *key_ptr = (VALUE *)key;
+
+    if (wmap_live_p(*key_ptr)) {
+        if (*key_ptr != rb_gc_location(*key_ptr) || val_obj != rb_gc_location(val_obj)) {
             return ST_REPLACE;
         }
+
+        return ST_CONTINUE;
     }
     else {
-        ruby_sized_xfree((VALUE *)key, sizeof(VALUE));
+        *dead_entry = key_ptr;
 
         return ST_DELETE;
     }
-
-    return ST_CONTINUE;
 }
 
 static int
@@ -703,7 +719,11 @@ wkmap_compact(void *ptr)
     struct weakkeymap *w = ptr;
 
     if (w->table) {
-        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
+        VALUE *dead_entry = NULL;
+        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)&dead_entry);
+        if (dead_entry != NULL) {
+            ruby_sized_xfree(dead_entry, sizeof(VALUE));
+        }
     }
 }
 
