@@ -73,9 +73,7 @@ hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int exi
 {
     void *objspace = (void *)argp;
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
+    *value = rb_gc_impl_location(objspace, (VALUE)*value);
 
     return ST_CONTINUE;
 }
