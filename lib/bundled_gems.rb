@@ -137,7 +137,7 @@ module Gem::BUNDLED_GEMS
       # We'll fail to warn requires for files that are not the entry point
       # of the gem, e.g. require "logger/formatter.rb" won't warn.
       # But that's acceptable because this warning is best effort,
-      # and in the overwhelming majority of case logger.rb will end
+      # and in the overwhelming majority of cases logger.rb will end
       # up required.
       return unless SINCE_FAST_PATH[File.basename(feature, ".*")]
     else
