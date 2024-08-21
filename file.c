@@ -3706,6 +3706,7 @@ rb_home_dir_of(VALUE user, VALUE result)
 #else
     extern char *getlogin(void);
     const char *pwPtr = 0;
+    const char *login;
     # define endpwent() ((void)0)
 #endif
     const char *dir, *username = RSTRING_PTR(user);
@@ -3722,7 +3723,7 @@ rb_home_dir_of(VALUE user, VALUE result)
 #ifdef HAVE_PWD_H
     pwPtr = (struct passwd *)IO_WITHOUT_GVL(nogvl_getpwnam, (void *)username);
 #else
-    if (strcasecmp(username, getlogin()) == 0)
+    if ((login = getlogin()) && strcasecmp(username, login) == 0)
         dir = pwPtr = getenv("HOME");
 #endif
     if (!pwPtr) {
