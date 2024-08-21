@@ -1523,11 +1523,8 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread tls)
     RB_VM_SAVE_MACHINE_CONTEXT(cur_th);
     rb_mmtk_use_mmtk_global(rb_mmtk_block_for_gc_internal, NULL);
 
-#if USE_MMTK
-    if (rb_mmtk_enabled_p()) {
-        RUBY_DEBUG_LOG("GC finished.  Mutator resumed.");
-    }
-#endif
+    // Trigger postponed job so that a mutator will start running pending final jobs soon.
+    rb_mmtk_gc_finalize_deferred_register();
 }
 
 static void

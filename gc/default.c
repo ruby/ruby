@@ -2998,6 +2998,10 @@ rb_mmtk_make_dfree_job(void (*dfree)(void *), void *data)
     job->kind = MMTK_FJOB_DFREE;
     job->as.dfree.dfree = dfree;
     job->as.dfree.data = data;
+
+    RUBY_DEBUG_LOG("Created dfree job %p.  dfree: %p, data: %p\n",
+                   job, dfree, data);
+
     rb_mmtk_push_final_job(job);
 }
 
@@ -3010,6 +3014,9 @@ rb_mmtk_make_finalize_job(VALUE obj, VALUE finalizer_array)
 
     struct MMTk_FinalJob *job = (struct MMTk_FinalJob*)xmalloc(sizeof(struct MMTk_FinalJob));
     job->kind = MMTK_FJOB_FINALIZE;
+
+    RUBY_DEBUG_LOG("Created finalize job %p.  obj: %p, finalizer_array: %p\n",
+                   job, (void*)obj, (void*)finalizer_array);
 
     VALUE observed_id = Qnil;
     if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
@@ -3364,16 +3371,22 @@ rb_mmtk_run_final_job(struct MMTk_FinalJob *job)
 {
     switch (job->kind) {
         case MMTK_FJOB_DFREE: {
+            RUBY_DEBUG_LOG("Running dfree job %p. dfree: %p, data: %p\n",
+                           job, job->as.dfree.dfree, job->as.dfree.data);
             job->as.dfree.dfree(job->as.dfree.data);
             break;
         }
         case MMTK_FJOB_FINALIZE: {
+            VALUE objid = job->as.finalize.observed_id;
+            VALUE table = job->as.finalize.finalizer_array;
+
+            RUBY_DEBUG_LOG("Running finalize job %p. observed_id: %p, table: %p\n",
+                           job, (void*)objid, (void*)table);
+
             if (rb_gc_obj_free_on_exit_started()) {
                 rb_bug("Finalize job still exists after obj_free on exit has started.");
             }
 
-            VALUE objid = job->as.finalize.observed_id;
-            VALUE table = job->as.finalize.finalizer_array;
             rb_gc_run_obj_finalizer(objid, RARRAY_LEN(table), get_final, (void *)table);
 
             break;
@@ -3580,7 +3593,13 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         // Force to run finalizers, the MMTk style.
-        while (finalizer_table->num_entries) {
+        // We repeatedly vacate the finalizer table and run final jobs
+        // until the finalizer table is empty and there are no pending final jobs
+        // Note: Final jobs are executed immediately after `GC.start`,
+        // and are also executed when interrupted after a GC triggered by allocation.
+        // Just in case the VM exits before the interrupts are handled,
+        // we explicitly drain the pending final jobs here.
+        while (finalizer_table->num_entries || heap_pages_deferred_final != 0) {
             // We move all elements from the finalizer_table to heap_pages_deferred_final.
             st_foreach(finalizer_table, rb_mmtk_evacuate_finalizer_table_on_exit_i, 0);
 
@@ -3589,6 +3608,9 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
             // We need to repeat because a finalizer may register new finalizers.
         }
+
+        RUBY_ASSERT(finalizer_table->num_entries == 0);
+        RUBY_ASSERT(heap_pages_deferred_final == 0);
 
         // Tell the world that obj_free on exit has started.
         rb_gc_set_obj_free_on_exit_started();
@@ -10607,5 +10629,12 @@ VALUE
 rb_mmtk_newobj_raw(VALUE klass, VALUE flags, int wb_protected, size_t payload_size)
 {
     return rb_mmtk_newobj_of_inner(klass, flags, wb_protected, payload_size);
+}
+
+void
+rb_mmtk_gc_finalize_deferred_register(void)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    gc_finalize_deferred_register(objspace);
 }
 #endif

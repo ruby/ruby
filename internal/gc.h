@@ -235,6 +235,7 @@ void rb_mmtk_run_finalizer(VALUE obj, VALUE table);
 void rb_mmtk_set_during_gc(bool is_during_gc);
 void rb_mmtk_get_vanilla_times(uint64_t *mark, uint64_t *sweep);
 VALUE rb_mmtk_newobj_raw(VALUE klass, VALUE flags, int wb_protected, size_t payload_size);
+void rb_mmtk_gc_finalize_deferred_register(void);
 #endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
