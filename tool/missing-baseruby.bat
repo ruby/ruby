@@ -7,6 +7,10 @@
     exit /b 1
 )||(
 :)"||(
+  # necessary libraries
+  require 'erb'
+  require 'fileutils'
+  require 'tempfile'
   s = %^#
 )
 : ; call() { local call=${1#:}; shift; $call "$@"; }
