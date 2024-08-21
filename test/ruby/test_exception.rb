@@ -1498,7 +1498,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         assert_not_empty(stderr.grep(pattern))
         error, = stderr.grep(/unexpected end-of-input/)
         assert_not_nil(error)
-        assert_match(/<.*unexpected end-of-input.*>/, error)
+        assert_match(/<.*unexpected end-of-input.*>|\^ unexpected end-of-input,/, error)
       end
     end
   end
