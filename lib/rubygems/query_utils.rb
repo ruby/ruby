@@ -132,7 +132,7 @@ module Gem::QueryUtils
       version_matches = show_prereleases? || !s.version.prerelease?
 
       name_matches && version_matches
-    end
+    end.uniq(&:full_name)
 
     spec_tuples = specs.map do |spec|
       [spec.name_tuple, spec]

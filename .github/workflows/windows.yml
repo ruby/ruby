@@ -173,9 +173,23 @@ jobs:
       - run: nmake test-spec
         timeout-minutes: 10
 
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+          test-task: test-all
+          # If we support a new test task, we need to change this test-opts.
+          test-opts: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
+
       - run: nmake test-all
         env:
-          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
+          RUBY_TESTOPTS: >-
+            -j${{ env.TEST_JOBS || 4 }}
+            --job-status=normal
         timeout-minutes: 60
 
       - uses: ./.github/actions/slack

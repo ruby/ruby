@@ -1985,7 +1985,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->required_num = rkw;
     keyword->table = &body->local_table[keyword->bits_start - keyword->num];
 
-    {
+    if (RARRAY_LEN(default_values)) {
         VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
         for (i = 0; i < RARRAY_LEN(default_values); i++) {
@@ -3054,7 +3054,6 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 break;
             }
             else if ((lab = find_destination((INSN *)i)) != 0) {
-                if (lab->unremovable) break;
                 unref_counts[lab->label_no]++;
             }
         }
@@ -3071,8 +3070,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
             /* do nothing */
         }
         else if (IS_ADJUST(i)) {
-            LABEL *dest = ((ADJUST *)i)->label;
-            if (dest && dest->unremovable) return 0;
+            return 0;
         }
         end = i;
     } while ((i = i->next) != 0);
@@ -6578,7 +6576,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label);
+    CHECK(compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label));
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
@@ -7986,13 +7984,13 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ADD_LABEL(ret, next_label);	/* next */
 
     if (type == NODE_WHILE) {
-        compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                 redo_label, end_label);
+        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                       redo_label, end_label));
     }
     else {
         /* until */
-        compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                 end_label, redo_label);
+        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                       end_label, redo_label));
     }
 
     ADD_LABEL(ret, end_label);
@@ -8206,7 +8204,6 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         add_ensure_iseq(ret, iseq, 0);
         ADD_INSNL(ret, line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
         ADD_ADJUST_RESTORE(ret, splabel);
-        splabel->unremovable = FALSE;
 
         if (!popped) {
             ADD_INSN(ret, line_node, putnil);
@@ -12770,7 +12767,7 @@ ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_o
         struct rb_iseq_param_keyword *kw = IBF_R(param_keyword_offset, struct rb_iseq_param_keyword, 1);
         ID *ids = IBF_R(kw->table, ID, kw->num);
         int dv_num = kw->num - kw->required_num;
-        VALUE *dvs = IBF_R(kw->default_values, VALUE, dv_num);
+        VALUE *dvs = dv_num ? IBF_R(kw->default_values, VALUE, dv_num) : NULL;
         int i;
 
         for (i=0; i<kw->num; i++) {

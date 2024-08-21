@@ -456,6 +456,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
     bug3921 = '[ruby-dev:42350]'
     ok = false
     func = lambda{|e, f, l, i, b, k|
+      # In parallel testing, unexpected events like IO operations may be traced,
+      # so we filter out events here.
+      next unless f == __FILE__
       set_trace_func(nil)
       ok = eval("self", b)
     }
@@ -2304,7 +2307,7 @@ CODE
     _c = a + b
   end
 
-  def check_with_events *trace_events
+  def check_with_events(trace_point_events, expected_events = trace_point_events)
     all_events = [[:call, :method_for_enable_target1],
                   [:line, :method_for_enable_target1],
                   [:line, :method_for_enable_target1],
@@ -2326,7 +2329,7 @@ CODE
                   [:return, :method_for_enable_target1],
                  ]
     events = []
-    TracePoint.new(*trace_events) do |tp|
+    TracePoint.new(*trace_point_events) do |tp|
       next unless target_thread?
       events << [tp.event, tp.method_id]
     end.enable(target: method(:method_for_enable_target1)) do
@@ -2334,15 +2337,23 @@ CODE
       method_for_enable_target2
       method_for_enable_target1
     end
-    assert_equal all_events.find_all{|(ev)| trace_events.include? ev}, events
+
+    exp_events = all_events
+    assert_equal all_events.keep_if { |(ev)| expected_events.include? ev }, events
   end
 
   def test_tracepoint_enable_target
-    check_with_events :line
-    check_with_events :call, :return
-    check_with_events :line, :call, :return
-    check_with_events :call, :return, :b_call, :b_return
-    check_with_events :line, :call, :return, :b_call, :b_return
+    check_with_events([:line])
+    check_with_events([:call, :return])
+    check_with_events([:line, :call, :return])
+    check_with_events([:call, :return, :b_call, :b_return])
+    check_with_events([:line, :call, :return, :b_call, :b_return])
+
+    # No arguments passed into TracePoint.new enables all ISEQ_TRACE_EVENTS
+    check_with_events([], [:line, :class, :end, :call, :return, :c_call, :c_return, :b_call, :b_return, :rescue])
+
+    # Raise event should be ignored
+    check_with_events([:line, :raise])
   end
 
   def test_tracepoint_nested_enabled_with_target

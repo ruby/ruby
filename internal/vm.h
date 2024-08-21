@@ -64,8 +64,6 @@ void rb_lastline_set_up(VALUE val, unsigned int up);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-                                 rb_check_funcall_hook *hook, VALUE arg);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);

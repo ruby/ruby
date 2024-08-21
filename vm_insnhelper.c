@@ -2189,7 +2189,7 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS), "klass=%"PRIxVALUE", type=%d", klass, TYPE(klass));
 
     RB_VM_LOCK_ENTER();
     {
@@ -2739,9 +2739,11 @@ vm_caller_setup_keyword_hash(const struct rb_callinfo *ci, VALUE keyword_hash)
             keyword_hash = rb_hash_dup(rb_to_hash_type(keyword_hash));
         }
     }
-    else if (!IS_ARGS_KW_SPLAT_MUT(ci)) {
+    else if (!IS_ARGS_KW_SPLAT_MUT(ci) && !RHASH_EMPTY_P(keyword_hash)) {
         /* Convert a hash keyword splat to a new hash unless
          * a mutable keyword splat was passed.
+         * Skip allocating new hash for empty keyword splat, as empty
+         * keyword splat will be ignored by both callers.
          */
         keyword_hash = rb_hash_dup(keyword_hash);
     }
@@ -3090,7 +3092,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
 
     if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
                  calling->block_handler != VM_BLOCK_HANDLER_NONE &&
-                 !(vm_ci_flag(calling->cd->ci) & VM_CALL_SUPER))) {
+                 !(vm_ci_flag(calling->cd->ci) & (VM_CALL_OPT_SEND | VM_CALL_SUPER)))) {
         warn_unused_block(vm_cc_cme(cc), iseq, (void *)ec->cfp->pc);
     }
 
@@ -3751,7 +3753,7 @@ vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
     return UNALIGNED_MEMBER_PTR(me->def, body.cfunc);
 }
 
-static inline VALUE
+static VALUE
 vm_call_cfunc_with_frame_(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling,
                           int argc, VALUE *argv, VALUE *stack_bottom)
 {
@@ -4002,13 +4004,12 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
 
     /* control block frame */
     GetProcPtr(procv, proc);
-    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, CALLING_ARGC(calling), argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
+    val = vm_invoke_bmethod(ec, proc, calling->recv, CALLING_ARGC(calling), argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
 
     return val;
 }
 
 static int vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_callinfo *ci, const rb_iseq_t *iseq, VALUE *argv, const enum arg_setup_type arg_setup_type);
-static VALUE invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_callable_method_entry_t *me, VALUE type, int opt_pc);
 
 static VALUE
 vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
@@ -6200,7 +6201,7 @@ rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *p
     return vm_opt_newarray_hash(ec, num, ptr);
 }
 
-VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len, bool freeze);
+VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
@@ -6208,7 +6209,7 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALU
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
         struct RArray fake_ary;
-        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num, true);
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
     }
     else {

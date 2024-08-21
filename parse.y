@@ -322,7 +322,6 @@ struct lex_context {
 };
 
 typedef struct RNode_DEF_TEMP rb_node_def_temp_t;
-typedef struct RNode_EXITS rb_node_exits_t;
 
 #if defined(__GNUC__) && !defined(__clang__)
 // Suppress "parameter passing for argument of type 'struct
@@ -542,6 +541,8 @@ struct parser_params {
 
     rb_ast_t *ast;
     int node_id;
+
+    st_table *warn_duplicate_keys_table;
 
     int max_numparam;
     ID it_id;
@@ -1780,13 +1781,6 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const rb_cod
 # define compile_error(p, ...) parser_compile_error(p, NULL, __VA_ARGS__)
 #endif
 
-struct RNode_EXITS {
-    NODE node;
-
-    NODE *nd_chain; /* Assume NODE_BREAK, NODE_NEXT, NODE_REDO have nd_chain here */
-    NODE *nd_end;
-};
-
 #define RNODE_EXITS(node) ((rb_node_exits_t*)(node))
 
 static NODE *
@@ -1805,8 +1799,8 @@ add_block_exit(struct parser_params *p, NODE *node)
     if (!p->ctxt.in_defined) {
         rb_node_exits_t *exits = p->exits;
         if (exits) {
-            RNODE_EXITS(exits->nd_end)->nd_chain = node;
-            exits->nd_end = node;
+            RNODE_EXITS(exits->nd_stts)->nd_chain = node;
+            exits->nd_stts = node;
         }
     }
     return node;
@@ -1818,7 +1812,7 @@ init_block_exit(struct parser_params *p)
     rb_node_exits_t *old = p->exits;
     rb_node_exits_t *exits = NODE_NEW_INTERNAL(NODE_EXITS, rb_node_exits_t);
     exits->nd_chain = 0;
-    exits->nd_end = RNODE(exits);
+    exits->nd_stts = RNODE(exits);
     p->exits = exits;
     return old;
 }
@@ -1861,7 +1855,7 @@ clear_block_exit(struct parser_params *p, bool error)
         }
       end_checks:;
     }
-    exits->nd_end = RNODE(exits);
+    exits->nd_stts = RNODE(exits);
     exits->nd_chain = 0;
 }
 
@@ -7201,10 +7195,11 @@ token_info_pop(struct parser_params *p, const char *token, const rb_code_locatio
     token_info *ptinfo_beg = p->token_info;
 
     if (!ptinfo_beg) return;
-    p->token_info = ptinfo_beg->next;
 
     /* indentation check of matched keywords (begin..end, if..end, etc.) */
     token_info_warn(p, token, ptinfo_beg, 1, loc);
+
+    p->token_info = ptinfo_beg->next;
     ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 
@@ -10325,7 +10320,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
             return '$';
         }
       gvar:
-        set_yylval_name(TOK_INTERN());
+        tokenize_ident(p);
         return tGVAR;
 
       case '&': 	/* $&: last match */
@@ -10492,7 +10487,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
         if (IS_LABEL_SUFFIX(0)) {
             SET_LEX_STATE(EXPR_ARG|EXPR_LABELED);
             nextc(p);
-            set_yylval_name(TOK_INTERN());
+            tokenize_ident(p);
             return tLABEL;
         }
     }
@@ -14701,7 +14696,7 @@ static void
 warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
     /* See https://bugs.ruby-lang.org/issues/20331 for discussion about what is warned. */
-    st_table *literal_keys = st_init_table_with_size(&literal_type, RNODE_LIST(hash)->as.nd_alen / 2);
+    p->warn_duplicate_keys_table = st_init_table_with_size(&literal_type, RNODE_LIST(hash)->as.nd_alen / 2);
     while (hash && RNODE_LIST(hash)->nd_next) {
         NODE *head = RNODE_LIST(hash)->nd_head;
         NODE *value = RNODE_LIST(hash)->nd_next;
@@ -14717,16 +14712,17 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
         if (nd_type_st_key_enable_p(head)) {
             key = (st_data_t)head;
 
-            if (st_delete(literal_keys, &key, &data)) {
+            if (st_delete(p->warn_duplicate_keys_table, &key, &data)) {
                 rb_warn2L(nd_line((NODE *)data),
                           "key %+"PRIsWARN" is duplicated and overwritten on line %d",
                           nd_value(p, head), WARN_I(nd_line(head)));
             }
-            st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
+            st_insert(p->warn_duplicate_keys_table, (st_data_t)key, (st_data_t)hash);
         }
         hash = next;
     }
-    st_free_table(literal_keys);
+    st_free_table(p->warn_duplicate_keys_table);
+    p->warn_duplicate_keys_table = NULL;
 }
 
 static NODE *
@@ -15607,6 +15603,14 @@ rb_ruby_parser_free(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
+
+    if (p->ast) {
+        rb_ast_free(p->ast);
+    }
+
+    if (p->warn_duplicate_keys_table) {
+        st_free_table(p->warn_duplicate_keys_table);
+    }
 
 #ifndef RIPPER
     if (p->tokens) {

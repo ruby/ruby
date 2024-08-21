@@ -1668,8 +1668,8 @@ no-test-bundler-parallel:
 # The annocheck supports ELF format binaries compiled for any OS and for any
 # architecture. It is designed to be independent of the host OS and the
 # architecture. The test-annocheck.sh requires docker or podman.
-test-annocheck: $(PROGRAM)
-	$(tooldir)/test-annocheck.sh $(PROGRAM)
+test-annocheck: $(PROGRAM) $(LIBRUBY_SO)
+	$(tooldir)/test-annocheck.sh $(PROGRAM) $(LIBRUBY_SO)
 
 GEM = up
 sync-default-gems:
@@ -7505,6 +7505,7 @@ gc.$(OBJEXT): {$(VPATH)}vm_core.h
 gc.$(OBJEXT): {$(VPATH)}vm_debug.h
 gc.$(OBJEXT): {$(VPATH)}vm_opts.h
 gc.$(OBJEXT): {$(VPATH)}vm_sync.h
+gc.$(OBJEXT): {$(VPATH)}yjit.h
 goruby.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 goruby.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 goruby.$(OBJEXT): $(CCAN_DIR)/list/list.h

@@ -74,8 +74,10 @@ class TestGc < Test::Unit::TestCase
 
     new_value = GC.config(rgengc_allow_full_mark: false)[:rgengc_allow_full_mark]
     assert_false(new_value)
+    new_value = GC.config(rgengc_allow_full_mark: nil)[:rgengc_allow_full_mark]
+    assert_false(new_value)
   ensure
-    GC.config(rgengc_allow_full_mark: true)
+    GC.config(rgengc_allow_full_mark: old_value)
     GC.start
   end
 
@@ -850,6 +852,16 @@ class TestGc < Test::Unit::TestCase
       disabled = GC.disable
       c = GC.count
       GC.start
+      assert_equal 1, GC.count - c
+    ensure
+      GC.enable unless disabled
+    end
+
+    begin
+      disabled = GC.disable
+      c = GC.count
+      GC.start(immediate_mark: false, immediate_sweep: false)
+      10_000.times { Object.new }
       assert_equal 1, GC.count - c
     ensure
       GC.enable unless disabled

@@ -1732,15 +1732,20 @@ class TestProcess < Test::Unit::TestCase
         sig_w.write('?')
       end
       pid = nil
+      th = nil
       IO.pipe do |r, w|
         pid = fork { r.read(1); exit }
-        Thread.start {
+        th = Thread.start {
           Thread.current.report_on_exception = false
           raise
         }
         w.puts
       end
       Process.wait pid
+      begin
+        th.join
+      rescue Exception
+      end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
     if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # checking -DRJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.

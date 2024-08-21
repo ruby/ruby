@@ -1729,9 +1729,9 @@ XXX
             end
           end
           begin
-            opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = callback!(cb, 1, *val) if cb
-            callback!(setter, 2, sw.switch_name, *val) if setter
+            opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            val = callback!(cb, 1, val) if cb
+            callback!(setter, 2, sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1761,7 +1761,7 @@ XXX
             raise $!.set_option(arg, true)
           end
           begin
-            opt, cb, *val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+            opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           else
@@ -1769,8 +1769,8 @@ XXX
           end
           begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
-            val = callback!(cb, 1, *val) if cb
-            callback!(setter, 2, sw.switch_name, *val) if setter
+            val = callback!(cb, 1, val) if cb
+            callback!(setter, 2, sw.switch_name, val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1798,6 +1798,8 @@ XXX
 
   # Calls callback with _val_.
   def callback!(cb, max_arity, *args) # :nodoc:
+    args.compact!
+
     if (size = args.size) < max_arity and cb.to_proc.lambda?
       (arity = cb.arity) < 0 and arity = (1-arity)
       arity = max_arity if arity > max_arity

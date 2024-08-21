@@ -3,16 +3,12 @@
 
 require_relative 'helper'
 
-class TestRDocParser < RDoc::TestCase
-
+class RDocParserTest < RDoc::TestCase
   def setup
     super
 
     @RP = RDoc::Parser
-    @binary_dat = File.expand_path '../binary.dat', __FILE__
-
-    @fn = 'file.rb'
-    @top_level = RDoc::TopLevel.new @fn
+    @binary_dat_fixture_path = File.expand_path '../binary.dat', __FILE__
     @options = RDoc::Options.new
   end
 
@@ -71,7 +67,7 @@ class TestRDocParser < RDoc::TestCase
 
     assert_equal @RP::Simple, @RP.can_parse(readme_file_name)
 
-    assert_equal @RP::Simple, @RP.can_parse(@binary_dat)
+    assert_equal @RP::Simple, @RP.can_parse(@binary_dat_fixture_path)
 
     jtest_file_name = File.expand_path '../test.ja.txt', __FILE__
     assert_equal @RP::Simple, @RP.can_parse(jtest_file_name)
@@ -90,16 +86,12 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_for_executable
-    temp_dir do
-      content = "#!/usr/bin/env ruby -w\n"
-      File.open 'app', 'w' do |io| io.write content end
-      app = @store.add_file 'app'
-
-      parser = @RP.for app, 'app', content, @options, :stats
+    with_top_level("app", "#!/usr/bin/env ruby -w\n") do |top_level, content|
+      parser = @RP.for top_level, content, @options, :stats
 
       assert_kind_of RDoc::Parser::Ruby, parser
 
-      assert_equal 'app', parser.file_name
+      assert_equal top_level.absolute_name, parser.file_name
     end
   end
 
@@ -111,7 +103,7 @@ class TestRDocParser < RDoc::TestCase
         File.chmod 0000, io.path
         forbidden = @store.add_file io.path
 
-        parser = @RP.for forbidden, 'forbidden', '', @options, :stats
+        parser = @RP.for forbidden, '', @options, :stats
 
         assert_nil parser
       ensure
@@ -123,13 +115,8 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_for_modeline
-    temp_dir do
-      content = "# -*- rdoc -*-\n= NEWS\n"
-
-      File.open 'NEWS', 'w' do |io| io.write content end
-      app = @store.add_file 'NEWS'
-
-      parser = @RP.for app, 'NEWS', content, @options, :stats
+    with_top_level("NEWS", "# -*- rdoc -*-\n= NEWS\n") do |top_level, content|
+      parser = @RP.for top_level, content, @options, :stats
 
       assert_kind_of RDoc::Parser::Simple, parser
 
@@ -226,25 +213,18 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_for_binary
-    rp = @RP.dup
-
-    class << rp
-      alias old_can_parse can_parse
+    dat_fixture = File.read(@binary_dat_fixture_path)
+    with_top_level("binary.dat", dat_fixture) do |top_level, content|
+      assert_nil @RP.for(top_level, content, @options, nil)
     end
-
-    def rp.can_parse(*args) nil end
-
-    assert_nil @RP.for(nil, @binary_dat, nil, nil, nil)
   end
 
   def test_class_for_markup
-    content = <<-CONTENT
-# coding: utf-8 markup: rd
-    CONTENT
+    with_top_level("file.rb", "# coding: utf-8 markup: rd") do |top_level, content|
+      parser = @RP.for top_level, content, @options, nil
 
-    parser = @RP.for @top_level, __FILE__, content, @options, nil
-
-    assert_kind_of @RP::RD, parser
+      assert_kind_of @RP::RD, parser
+    end
   end
 
   def test_class_use_markup
@@ -329,9 +309,26 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_initialize
-    @RP.new @top_level, @fn, '', @options, nil
+    with_top_level("file.rb", "") do |top_level, content|
+      @RP.new top_level, top_level.absolute_name, content, @options, nil
 
-    assert_equal @RP, @top_level.parser
+      assert_equal @RP, top_level.parser
+    end
+  end
+
+  private
+
+  def with_top_level(filename, content, &block)
+    absoluate_filename  = File.join Dir.tmpdir, filename
+    File.open absoluate_filename, 'w' do |io|
+      io.write content
+    end
+
+    top_level = RDoc::TopLevel.new absoluate_filename
+
+    yield(top_level, content)
+  ensure
+    File.unlink absoluate_filename
   end
 
 end

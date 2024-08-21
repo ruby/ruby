@@ -8889,18 +8889,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             keyword->bits_start = local_index;
             keyword->table = ids;
 
-            VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
+            if (RARRAY_LEN(default_values)) {
+                VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
-            for (int i = 0; i < RARRAY_LEN(default_values); i++) {
-                VALUE dv = RARRAY_AREF(default_values, i);
-                if (dv == complex_mark) dv = Qundef;
-                if (!SPECIAL_CONST_P(dv)) {
-                    RB_OBJ_WRITTEN(iseq, Qundef, dv);
+                for (int i = 0; i < RARRAY_LEN(default_values); i++) {
+                    VALUE dv = RARRAY_AREF(default_values, i);
+                    if (dv == complex_mark) dv = Qundef;
+                    if (!SPECIAL_CONST_P(dv)) {
+                        RB_OBJ_WRITTEN(iseq, Qundef, dv);
+                    }
+                    dvs[i] = dv;
                 }
-                dvs[i] = dv;
-            }
 
-            keyword->default_values = dvs;
+                keyword->default_values = dvs;
+            }
 
             // Hidden local for keyword arguments
             ID local = rb_make_temporary_id(local_index);

@@ -116,8 +116,8 @@ static YJIT_OPTIONS: [(&str, &str); 9] = [
 pub enum TraceExits {
     // Trace all exits
     All,
-    // Trace a specific counted exit
-    CountedExit(Counter),
+    // Trace a specific counter
+    Counter(Counter),
 }
 
 #[derive(Debug)]
@@ -293,7 +293,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             OPTIONS.trace_exits = match opt_val {
                 "" => Some(TraceExits::All),
                 name => match Counter::get(name) {
-                    Some(counter) => Some(TraceExits::CountedExit(counter)),
+                    Some(counter) => Some(TraceExits::Counter(counter)),
                     None => return None,
                 },
             };

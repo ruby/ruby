@@ -179,7 +179,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
   This can allow you to use a lower executable memory size limit, but may cause a slight drop in performance when the limit is hit.
 - `--yjit-perf`: enable frame pointers and profiling with the `perf` tool
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from all exits. Automatically enables `--yjit-stats`
-- `--yjit-trace-exits=COUNTER`: produce a Marshal dump of backtraces from specified exits. Automatically enables `--yjit-stats`
+- `--yjit-trace-exits=COUNTER`: produce a Marshal dump of backtraces from a counted exit or a fallback. Automatically enables `--yjit-stats`
 - `--yjit-trace-exits-sample-rate=N`: trace exit locations only every Nth occurrence. Automatically enables `--yjit-trace-exits`
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.

@@ -390,6 +390,7 @@ module SyncDefaultGems
       cp_r("#{upstream}/resolv.gemspec", "lib")
       cp_r("#{upstream}/ext/win32/resolv", "ext/win32")
       move("ext/win32/resolv/lib/win32/resolv.rb", "ext/win32/lib/win32")
+      rm_rf("ext/win32/resolv/lib") # Clean up empty directory
       cp_r("#{upstream}/test/resolv", "test")
       `git checkout ext/win32/resolv/depend`
     else

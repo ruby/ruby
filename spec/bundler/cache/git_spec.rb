@@ -158,7 +158,7 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set path vendor/bundle"
@@ -176,7 +176,7 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
@@ -195,7 +195,7 @@ RSpec.describe "bundle cache with git" do
     build_git "foo"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :git => '#{lib_path("foo-1.0")}'
     G
     bundle "config set cache_all true"
@@ -331,7 +331,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all all"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "puma", :git => "#{lib_path("puma-1.0")}"
     G
 

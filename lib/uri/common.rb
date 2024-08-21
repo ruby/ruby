@@ -45,6 +45,15 @@ module URI
   end
   self.parser = RFC3986_PARSER
 
+  def self.const_missing(const)
+    if value = RFC2396_PARSER.regexp[const]
+      warn "URI::#{const} is obsolete. Use RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
+      value
+    else
+      super
+    end
+  end
+
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
       tmp = {}
@@ -181,7 +190,7 @@ module URI
   #    ["fragment", "top"]]
   #
   def self.split(uri)
-    RFC3986_PARSER.split(uri)
+    DEFAULT_PARSER.split(uri)
   end
 
   # Returns a new \URI object constructed from the given string +uri+:
@@ -195,7 +204,7 @@ module URI
   # if it may contain invalid URI characters.
   #
   def self.parse(uri)
-    RFC3986_PARSER.parse(uri)
+    DEFAULT_PARSER.parse(uri)
   end
 
   # Merges the given URI strings +str+
@@ -222,7 +231,7 @@ module URI
   #   # => #<URI::HTTP http://example.com/foo/bar>
   #
   def self.join(*str)
-    RFC3986_PARSER.join(*str)
+    DEFAULT_PARSER.join(*str)
   end
 
   #

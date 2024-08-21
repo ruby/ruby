@@ -63,7 +63,6 @@ module RubyVM::RJIT
       when :toregexp then toregexp(jit, ctx, asm)
       when :intern then intern(jit, ctx, asm)
       when :newarray then newarray(jit, ctx, asm)
-      # newarraykwsplat
       when :duparray then duparray(jit, ctx, asm)
       # duphash
       when :expandarray then expandarray(jit, ctx, asm)
@@ -943,8 +942,6 @@ module RubyVM::RJIT
 
       KeepCompiling
     end
-
-    # newarraykwsplat
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]

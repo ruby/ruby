@@ -140,11 +140,11 @@ module URI
 
         if !scheme
           raise InvalidURIError,
-            "bad URI(absolute but no scheme): #{uri}"
+            "bad URI (absolute but no scheme): #{uri}"
         end
         if !opaque && (!path && (!host && !registry))
           raise InvalidURIError,
-            "bad URI(absolute but no path): #{uri}"
+            "bad URI (absolute but no path): #{uri}"
         end
 
       when @regexp[:REL_URI]
@@ -173,7 +173,7 @@ module URI
         # server        = [ [ userinfo "@" ] hostport ]
 
       else
-        raise InvalidURIError, "bad URI(is not URI?): #{uri}"
+        raise InvalidURIError, "bad URI (is not URI?): #{uri}"
       end
 
       path = '' if !path && !opaque # (see RFC2396 Section 5.2)

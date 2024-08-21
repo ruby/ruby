@@ -82,7 +82,7 @@ module URI
         if args.kind_of?(Array)
           return self.build(args.collect{|x|
             if x.is_a?(String)
-              DEFAULT_PARSER.escape(x)
+              URI::RFC2396_PARSER.escape(x)
             else
               x
             end
@@ -91,7 +91,7 @@ module URI
           tmp = {}
           args.each do |key, value|
             tmp[key] = if value
-                DEFAULT_PARSER.escape(value)
+                URI::RFC2396_PARSER.escape(value)
               else
                 value
               end

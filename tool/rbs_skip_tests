@@ -16,6 +16,7 @@
 #
 
 test_replicate(EncodingTest) the method was removed in 3.3
+test_step(RangeTest) the method protocol was changed in 3.4
 
 test_collection_install(RBS::CliTest) running tests without Bundler
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
@@ -59,3 +60,6 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
+
+test_initialize(TempfileRemoverSingletonTest) Remover class is removed at https://github.com/ruby/tempfile/commit/753ab16642fdc3cf92e1cf3dd1d80e8f75128735
+test_call(TempfileRemoverTest) Remover class is removed at https://github.com/ruby/tempfile/commit/753ab16642fdc3cf92e1cf3dd1d80e8f75128735

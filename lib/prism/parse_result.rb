@@ -711,5 +711,11 @@ module Prism
         other.type == type &&
         other.value == value
     end
+
+    # Returns a string representation of this token.
+    def inspect
+      location
+      super
+    end
   end
 end

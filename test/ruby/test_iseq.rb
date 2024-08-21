@@ -813,6 +813,11 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_unreachable_pattern_matching
+    assert_in_out_err([], "true or 1 in 1")
+    assert_in_out_err([], "true or (case 1; in 1; 1; in 2; 2; end)")
+  end
+
+  def test_unreachable_pattern_matching_in_if_condition
     assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[1])
     begin;
       if true or {a: 0} in {a:}
@@ -821,6 +826,27 @@ class TestISeq < Test::Unit::TestCase
         p a
       end
     end;
+  end
+
+  def test_unreachable_next_in_block
+    bug20344 = '[ruby-core:117210] [Bug #20344]'
+    assert_nothing_raised(SyntaxError, bug20344) do
+      compile(<<~RUBY)
+        proc do
+          next
+
+          case nil
+          when "a"
+            next
+          when "b"
+          when "c"
+            proc {}
+          end
+
+          next
+        end
+      RUBY
+    end
   end
 
   def test_loading_kwargs_memory_leak

@@ -34,6 +34,7 @@ static ID id_beg, id_end, id_excl;
 #define id_succ idSucc
 #define id_min idMin
 #define id_max idMax
+#define id_plus  '+'
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
@@ -308,40 +309,6 @@ range_each_func(VALUE range, int (*func)(VALUE, VALUE), VALUE arg)
     }
 }
 
-static bool
-step_i_iter(VALUE arg)
-{
-    VALUE *iter = (VALUE *)arg;
-
-    if (FIXNUM_P(iter[0])) {
-        iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
-    }
-    else {
-        iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
-    }
-    if (iter[0] != INT2FIX(0)) return false;
-    iter[0] = iter[1];
-    return true;
-}
-
-static int
-sym_step_i(VALUE i, VALUE arg)
-{
-    if (step_i_iter(arg)) {
-        rb_yield(rb_str_intern(i));
-    }
-    return 0;
-}
-
-static int
-step_i(VALUE i, VALUE arg)
-{
-    if (step_i_iter(arg)) {
-        rb_yield(i);
-    }
-    return 0;
-}
-
 static int
 discrete_object_p(VALUE obj)
 {
@@ -400,72 +367,123 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    step(n = 1) {|element| ... } -> self
- *    step(n = 1)                  -> enumerator
+ *    step(s = 1) {|element| ... } -> self
+ *    step(s = 1)                  -> enumerator/arithmetic_sequence
  *
- *  Iterates over the elements of +self+.
+ *  Iterates over the elements of range in steps of +s+. The iteration is performed
+ *  by <tt>+</tt> operator:
  *
- *  With a block given and no argument,
- *  calls the block each element of the range; returns +self+:
+ *    (0..6).step(2) { puts _1 } #=> 1..5
+ *    # Prints: 0, 2, 4, 6
  *
- *    a = []
- *    (1..5).step {|element| a.push(element) } # => 1..5
- *    a # => [1, 2, 3, 4, 5]
- *    a = []
- *    ('a'..'e').step {|element| a.push(element) } # => "a".."e"
- *    a # => ["a", "b", "c", "d", "e"]
+ *    # Iterate between two dates in step of 1 day (24 hours)
+ *    (Time.utc(2022, 2, 24)..Time.utc(2022, 3, 1)).step(24*60*60) { puts _1 }
+ *    # Prints:
+ *    #   2022-02-24 00:00:00 UTC
+ *    #   2022-02-25 00:00:00 UTC
+ *    #   2022-02-26 00:00:00 UTC
+ *    #   2022-02-27 00:00:00 UTC
+ *    #   2022-02-28 00:00:00 UTC
+ *    #   2022-03-01 00:00:00 UTC
  *
- *  With a block given and a positive integer argument +n+ given,
- *  calls the block with element +0+, element +n+, element <tt>2n</tt>, and so on:
+ *  If <tt> + step</tt> decreases the value, iteration is still performed when
+ *  step +begin+ is higher than the +end+:
  *
- *    a = []
- *    (1..5).step(2) {|element| a.push(element) } # => 1..5
- *    a # => [1, 3, 5]
- *    a = []
- *    ('a'..'e').step(2) {|element| a.push(element) } # => "a".."e"
- *    a # => ["a", "c", "e"]
+ *    (0..6).step(-2) { puts _1 }
+ *    # Prints nothing
  *
- *  With no block given, returns an enumerator,
- *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
- *  otherwise of class Enumerator:
+ *    (6..0).step(-2) { puts _1 }
+ *    # Prints: 6, 4, 2, 0
  *
- *    e = (1..5).step(2) # => ((1..5).step(2))
- *    e.class            # => Enumerator::ArithmeticSequence
- *    ('a'..'e').step # => #<Enumerator: ...>
+ *    (Time.utc(2022, 3, 1)..Time.utc(2022, 2, 24)).step(-24*60*60) { puts _1 }
+ *    # Prints:
+ *    #   2022-03-01 00:00:00 UTC
+ *    #   2022-02-28 00:00:00 UTC
+ *    #   2022-02-27 00:00:00 UTC
+ *    #   2022-02-26 00:00:00 UTC
+ *    #   2022-02-25 00:00:00 UTC
+ *    #   2022-02-24 00:00:00 UTC
  *
- *  Related: Range#%.
+ *  When the block is not provided, and range boundaries and step are Numeric,
+ *  the method returns Enumerator::ArithmeticSequence.
+ *
+ *    (1..5).step(2) # => ((1..5).step(2))
+ *    (1.0..).step(1.5) #=> ((1.0..).step(1.5))
+ *    (..3r).step(1/3r) #=> ((..3/1).step((1/3)))
+ *
+ *  Enumerator::ArithmeticSequence can be further used as a value object for iteration
+ *  or slicing of collections (see Array#[]). There is a convenience method #% with
+ *  behavior similar to +step+ to produce arithmetic sequences more expressively:
+ *
+ *    # Same as (1..5).step(2)
+ *    (1..5) % 2 # => ((1..5).%(2))
+ *
+ *  In a generic case, when the block is not provided, Enumerator is returned:
+ *
+ *    ('a'..).step('b')         #=> #<Enumerator: "a"..:step("b")>
+ *    ('a'..).step('b').take(3) #=> ["a", "ab", "abb"]
+ *
+ *  If +s+ is not provided, it is considered +1+ for ranges with numeric +begin+:
+ *
+ *    (1..5).step { p _1 }
+ *    # Prints: 1, 2, 3, 4, 5
+ *
+ *  For non-Numeric ranges, step absence is an error:
+ *
+ *    ('a'..'z').step { p _1 }
+ *    # raises: step is required for non-numeric ranges (ArgumentError)
+ *
  */
 static VALUE
 range_step(int argc, VALUE *argv, VALUE range)
 {
-    VALUE b, e, step, tmp;
+    VALUE b, e, v, step;
+    int c, dir;
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    step = (!rb_check_arity(argc, 0, 1) ? INT2FIX(1) : argv[0]);
+
+    const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
+    const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
+
+    if (rb_check_arity(argc, 0, 1))
+        step = argv[0];
+    else {
+        if (b_num_p || (NIL_P(b) && e_num_p))
+            step = INT2FIX(1);
+        else
+            rb_raise(rb_eArgError, "step is required for non-numeric ranges");
+    }
+
+    const VALUE step_num_p = rb_obj_is_kind_of(step, rb_cNumeric);
+
+    if (step_num_p && b_num_p && rb_equal(step, INT2FIX(0))) {
+        rb_raise(rb_eArgError, "step can't be 0");
+    }
 
     if (!rb_block_given_p()) {
-        if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
-            step = rb_to_int(step);
-        }
-        if (rb_equal(step, INT2FIX(0))) {
-            rb_raise(rb_eArgError, "step can't be 0");
-        }
-
-        const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
-        const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
-        if ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p)) {
+        // This code is allowed to create even beginless ArithmeticSequence, which can be useful,
+        // e.g., for array slicing:
+        //   ary[(..-1) % 3]
+        if (step_num_p && ((b_num_p && (NIL_P(e) || e_num_p)) || (NIL_P(b) && e_num_p))) {
             return rb_arith_seq_new(range, ID2SYM(rb_frame_this_func()), argc, argv,
                     range_step_size, b, e, step, EXCL(range));
         }
 
-        RETURN_SIZED_ENUMERATOR(range, argc, argv, range_step_size);
+        // ...but generic Enumerator from beginless range is useless and probably an error.
+        if (NIL_P(b)) {
+            rb_raise(rb_eArgError, "#step for non-numeric beginless ranges is meaningless");
+        }
+
+        RETURN_SIZED_ENUMERATOR(range, argc, argv, 0);
     }
 
-    step = check_step_domain(step);
-    VALUE iter[2] = {INT2FIX(1), step};
+    if (NIL_P(b)) {
+        rb_raise(rb_eArgError, "#step iteration for beginless ranges is meaningless");
+    }
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
+        /* perform summation of numbers in C until their reach Fixnum limit */
         long i = FIX2LONG(b), unit = FIX2LONG(step);
         do {
             rb_yield(LONG2FIX(i));
@@ -473,71 +491,77 @@ range_step(int argc, VALUE *argv, VALUE range)
         } while (FIXABLE(i));
         b = LONG2NUM(i);
 
+        /* then switch to Bignum API */
         for (;; b = rb_big_plus(b, step))
             rb_yield(b);
     }
-    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
+    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) {
+        /* fixnums are special: summation is performed in C for performance */
         long end = FIX2LONG(e);
         long i, unit = FIX2LONG(step);
 
-        if (!EXCL(range))
-            end += 1;
-        i = FIX2LONG(b);
-        while (i < end) {
-            rb_yield(LONG2NUM(i));
-            if (i + unit < i) break;
-            i += unit;
+        if (unit < 0) {
+            if (!EXCL(range))
+                end -= 1;
+            i = FIX2LONG(b);
+            while (i > end) {
+                rb_yield(LONG2NUM(i));
+                i += unit;
+            }
+        } else {
+            if (!EXCL(range))
+                end += 1;
+            i = FIX2LONG(b);
+            while (i < end) {
+                rb_yield(LONG2NUM(i));
+                i += unit;
+            }
         }
-
     }
-    else if (SYMBOL_P(b) && (NIL_P(e) || SYMBOL_P(e))) { /* symbols are special */
-        b = rb_sym2str(b);
-        if (NIL_P(e)) {
-            rb_str_upto_endless_each(b, sym_step_i, (VALUE)iter);
-        }
-        else {
-            rb_str_upto_each(b, rb_sym2str(e), EXCL(range), sym_step_i, (VALUE)iter);
-        }
-    }
-    else if (ruby_float_step(b, e, step, EXCL(range), TRUE)) {
+    else if (b_num_p && step_num_p && ruby_float_step(b, e, step, EXCL(range), TRUE)) {
         /* done */
     }
-    else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
-             !NIL_P(rb_check_to_integer(b, "to_int")) ||
-             !NIL_P(rb_check_to_integer(e, "to_int"))) {
-        ID op = EXCL(range) ? '<' : idLE;
-        VALUE v = b;
-        int i = 0;
-
-        while (NIL_P(e) || RTEST(rb_funcall(v, op, 1, e))) {
-            rb_yield(v);
-            i++;
-            v = rb_funcall(b, '+', 1, rb_funcall(INT2NUM(i), '*', 1, step));
-        }
-    }
     else {
-        tmp = rb_check_string_type(b);
+        v = b;
+        if (!NIL_P(e)) {
+            if (b_num_p && step_num_p && r_less(step, INT2FIX(0)) < 0) {
+                // iterate backwards, for consistency with ArithmeticSequence
+                if (EXCL(range)) {
+                    for (; r_less(e, v) < 0; v = rb_funcall(v, id_plus, 1, step))
+                        rb_yield(v);
+                }
+                else {
+                    for (; (c = r_less(e, v)) <= 0; v = rb_funcall(v, id_plus, 1, step)) {
+                        rb_yield(v);
+                        if (!c) break;
+                    }
+                }
 
-        if (!NIL_P(tmp)) {
-            b = tmp;
-            if (NIL_P(e)) {
-                rb_str_upto_endless_each(b, step_i, (VALUE)iter);
-            }
-            else {
-                rb_str_upto_each(b, e, EXCL(range), step_i, (VALUE)iter);
+            } else {
+                // Direction of the comparison. We use it as a comparison operator in cycle:
+                // if begin < end, the cycle performs while value < end (iterating forward)
+                // if begin > end, the cycle performs while value > end (iterating backward with
+                // a negative step)
+                dir = r_less(b, e);
+                // One preliminary addition to check the step moves iteration in the same direction as
+                // from begin to end; otherwise, the iteration should be empty.
+                if (r_less(b, rb_funcall(b, id_plus, 1, step)) == dir) {
+                    if (EXCL(range)) {
+                        for (; r_less(v, e) == dir; v = rb_funcall(v, id_plus, 1, step))
+                            rb_yield(v);
+                    }
+                    else {
+                        for (; (c = r_less(v, e)) == dir || c == 0; v = rb_funcall(v, id_plus, 1, step)) {
+                            rb_yield(v);
+                            if (!c) break;
+                        }
+                    }
+                }
             }
         }
-        else {
-            if (!discrete_object_p(b)) {
-                rb_raise(rb_eTypeError, "can't iterate from %s",
-                         rb_obj_classname(b));
-            }
-            if (!NIL_P(e))
-                range_each_func(range, step_i, (VALUE)iter);
-            else
-                for (;; b = rb_funcallv(b, id_succ, 0, 0))
-                    step_i(b, (VALUE)iter);
-        }
+        else
+            for (;; v = rb_funcall(v, id_plus, 1, step))
+                rb_yield(v);
     }
     return range;
 }
@@ -545,29 +569,24 @@ range_step(int argc, VALUE *argv, VALUE range)
 /*
  *  call-seq:
  *    %(n) {|element| ... } -> self
- *    %(n)                  -> enumerator
+ *    %(n)                  -> enumerator or arithmetic_sequence
  *
- *  Iterates over the elements of +self+.
+ *  Same as #step (but doesn't provide default value for +n+).
+ *  The method is convenient for experssive producing of Enumerator::ArithmeticSequence.
  *
- *  With a block given, calls the block with selected elements of the range;
- *  returns +self+:
+ *    array = [0, 1, 2, 3, 4, 5, 6]
  *
- *    a = []
- *    (1..5).%(2) {|element| a.push(element) } # => 1..5
- *    a # => [1, 3, 5]
- *    a = []
- *    ('a'..'e').%(2) {|element| a.push(element) } # => "a".."e"
- *    a # => ["a", "c", "e"]
+ *    # slice each second element:
+ *    seq = (0..) % 2 #=> ((0..).%(2))
+ *    array[seq] #=> [0, 2, 4, 6]
+ *    # or just
+ *    array[(0..) % 2] #=> [0, 2, 4, 6]
  *
- *  With no block given, returns an enumerator,
- *  which will be of class Enumerator::ArithmeticSequence if +self+ is numeric;
- *  otherwise of class Enumerator:
+ *  Note that due to operator precedence in Ruby, parentheses are mandatory around range
+ *  in this case:
  *
- *    e = (1..5) % 2 # => ((1..5).%(2))
- *    e.class        # => Enumerator::ArithmeticSequence
- *    ('a'..'e') % 2 # =>  #<Enumerator: ...>
- *
- *  Related: Range#step.
+ *      (0..7) % 2 #=> ((0..7).%(2)) -- as expected
+ *      0..7 % 2 #=> 0..1 -- parsed as 0..(7 % 2)
  */
 static VALUE
 range_percent_step(VALUE range, VALUE step)

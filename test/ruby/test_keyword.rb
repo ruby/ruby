@@ -2848,6 +2848,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(1, process(:foo, bar: :baz))
   end
 
+  def test_ruby2_keywords_bug_20679
+    c = Class.new do
+       def self.get(_, _, h, &block)
+         h[1]
+       end
+
+      ruby2_keywords def get(*args, &block)
+        self.class.get(*args, &block)
+      end
+    end
+
+    assert_equal 2, c.new.get(true, {}, 1 => 2)
+  end
+
   def test_top_ruby2_keywords
     assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
       def bar(*a, **kw)

@@ -10,6 +10,15 @@ class URI::TestCommon < Test::Unit::TestCase
   def teardown
   end
 
+  def test_fallback_constants
+    orig_verbose = $VERBOSE
+    $VERBOSE = nil
+    assert URI::ABS_URI
+    assert_raise(NameError) { URI::FOO }
+  ensure
+    $VERBOSE = orig_verbose
+  end
+
   def test_parser_switch
     assert_equal(URI::Parser, URI::RFC3986_Parser)
     refute defined?(URI::REGEXP)

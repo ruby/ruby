@@ -726,13 +726,6 @@ rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
     return rb_vm_call_kw(ec, recv, mid, argc, argv, me, kw_splat);
 }
 
-VALUE
-rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-                           rb_check_funcall_hook *hook, VALUE arg)
-{
-    return rb_check_funcall_with_hook_kw(recv, mid, argc, argv, hook, arg, RB_NO_KEYWORDS);
-}
-
 const char *
 rb_type_str(enum ruby_value_type type)
 {
