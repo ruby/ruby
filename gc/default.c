@@ -3701,26 +3701,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     RUBY_ATOMIC_SET(finalizing, 0);
 }
 
-#if USE_MMTK
-/* Mark all final jobs. */
-static void
-rb_mmtk_mark_final_jobs(void)
-{
-    rb_vm_t *vm = GET_VM();
-
-    struct MMTk_FinalJob *cur_job = (struct MMTk_FinalJob*)vm->objspace->heap_pages.deferred_final;
-    while (cur_job != NULL) {
-        if (cur_job->kind == MMTK_FJOB_FINALIZE) {
-            // The finalizer array is a proper MMTk heap object, and needs to be kept alive.
-            // We treat it as a root.  Currently we pin all roots.
-            rb_gc_mark(cur_job->as.finalize.finalizer_array);
-        }
-
-        cur_job = cur_job->next;
-    }
-}
-#endif
-
 void
 rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data)
 {
@@ -5329,6 +5309,26 @@ rb_mmtk_scan_misc_roots(void)
     rb_objspace_t *objspace = vm->objspace;
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
+}
+
+// When using MMTk, final jobs are roots, too.
+// Specifically, finalizer jobs contain pointers to finalizer arrays
+// which are allocated in the heap.
+void
+rb_mmtk_scan_final_jobs_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+
+    struct MMTk_FinalJob *cur_job = (struct MMTk_FinalJob*)vm->objspace->heap_pages.deferred_final;
+    while (cur_job != NULL) {
+        if (cur_job->kind == MMTK_FJOB_FINALIZE) {
+            // The finalizer array is a proper MMTk heap object, and needs to be kept alive.
+            // We treat it as a root.  Currently we pin all roots.
+            rb_gc_mark(cur_job->as.finalize.finalizer_array);
+        }
+
+        cur_job = cur_job->next;
+    }
 }
 #endif
 
@@ -10576,12 +10576,6 @@ rb_mmtk_get_ci_table(void)
 /////////////// END: Global table updating ////////////////
 
 // Workaround private functions
-void
-rb_mmtk_scan_final_jobs_roots(void)
-{
-    rb_mmtk_mark_final_jobs();
-}
-
 void
 rb_mmtk_mark_children(VALUE obj)
 {

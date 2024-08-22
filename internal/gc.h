@@ -221,9 +221,10 @@ void rb_gc_initial_stress_set(VALUE flag);
 
 #if USE_MMTK
 void rb_mmtk_scan_vm_roots(void);
-void rb_mmtk_scan_finalizer_tbl_roots(void);
 void rb_mmtk_scan_end_proc_roots(void);
 void rb_mmtk_scan_global_tbl_roots(void);
+void rb_mmtk_scan_yjit_roots(void);
+void rb_mmtk_scan_finalizer_tbl_roots(void);
 void rb_mmtk_scan_obj_to_id_tbl_roots(void);
 void rb_mmtk_scan_misc_roots(void);
 void rb_mmtk_scan_final_jobs_roots(void);

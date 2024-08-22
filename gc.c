@@ -2516,6 +2516,18 @@ rb_mmtk_scan_global_tbl_roots(void)
 {
     rb_gc_mark_global_tbl();
 }
+
+void
+rb_mmtk_scan_yjit_roots(void)
+{
+#if USE_YJIT
+    void rb_yjit_root_mark(void); // in Rust
+
+    if (rb_yjit_enabled_p) {
+        rb_yjit_root_mark();
+    }
+#endif
+}
 #endif
 
 void
