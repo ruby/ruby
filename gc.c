@@ -2520,6 +2520,32 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 #undef MARK_CHECKPOINT
 }
 
+#if USE_MMTK
+// When using MMTk, we scan different kinds of roots in different functions
+// so that the Rust part of the binding can call them in different work packets.
+void
+rb_mmtk_scan_vm_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    rb_vm_mark(vm);
+    if (vm->self) gc_mark(objspace, vm->self);
+}
+
+void
+rb_mmtk_scan_end_proc_roots(void)
+{
+    rb_mark_end_proc();
+}
+
+void
+rb_mmtk_scan_global_tbl_roots(void)
+{
+    rb_gc_mark_global_tbl();
+}
+#endif
+
 void
 rb_gc_mark_children(void *objspace, VALUE obj)
 {

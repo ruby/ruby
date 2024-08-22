@@ -5300,6 +5300,38 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
     rb_gc_mark_roots(objspace, categoryp);
 }
 
+#if USE_MMTK
+// When using MMTk, we scan different kinds of roots in different functions
+// so that the Rust part of the binding can call them in different work packets.
+void
+rb_mmtk_scan_finalizer_tbl_roots(void)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (finalizer_table != NULL) {
+        st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
+    }
+}
+
+void
+rb_mmtk_scan_obj_to_id_tbl_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    rb_mark_tbl_no_pin(objspace->obj_to_id_tbl); /* Only mark ids */
+}
+
+void
+rb_mmtk_scan_misc_roots(void)
+{
+    rb_vm_t *vm = GET_VM();
+    rb_objspace_t *objspace = vm->objspace;
+
+    if (stress_to_class) rb_gc_mark(stress_to_class);
+}
+#endif
+
 static inline void
 gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 {
@@ -5856,48 +5888,6 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
     }
     return remembered_old_objects;
 }
-
-#if USE_MMTK
-void
-rb_mmtk_scan_vm_roots(void)
-{
-    rb_vm_t *vm = GET_VM();
-    rb_objspace_t *objspace = vm->objspace;
-
-    rb_vm_mark(vm);
-    if (vm->self) gc_mark(objspace, vm->self);
-}
-
-void
-rb_mmtk_scan_end_proc_roots(void)
-{
-    rb_mark_end_proc();
-}
-
-void
-rb_mmtk_scan_global_tbl_roots(void)
-{
-    rb_gc_mark_global_tbl();
-}
-
-void
-rb_mmtk_scan_obj_to_id_tbl_roots(void)
-{
-    rb_vm_t *vm = GET_VM();
-    rb_objspace_t *objspace = vm->objspace;
-
-    rb_mark_tbl_no_pin(objspace->obj_to_id_tbl); /* Only mark ids */
-}
-
-void
-rb_mmtk_scan_misc_roots(void)
-{
-    rb_vm_t *vm = GET_VM();
-    rb_objspace_t *objspace = vm->objspace;
-
-    if (stress_to_class) rb_gc_mark(stress_to_class);
-}
-#endif
 
 static void
 gc_verify_internal_consistency_(rb_objspace_t *objspace)
@@ -10260,18 +10250,6 @@ static VALUE
 gc_malloc_allocations(VALUE self)
 {
     return UINT2NUM(rb_objspace.malloc_params.allocations);
-}
-#endif
-
-#if USE_MMTK
-void
-rb_mmtk_scan_finalizer_tbl_roots(void)
-{
-    rb_objspace_t *objspace = rb_gc_get_objspace();
-
-    if (finalizer_table != NULL) {
-        st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
-    }
 }
 #endif
 
