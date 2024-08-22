@@ -3,11 +3,7 @@
 require 'socket'
 require 'timeout'
 require 'io/wait'
-
-begin
-  require 'securerandom'
-rescue LoadError
-end
+require 'securerandom'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -615,16 +611,10 @@ class Resolv
       }
     end
 
-    if defined? SecureRandom
-      def self.random(arg) # :nodoc:
-        begin
-          SecureRandom.random_number(arg)
-        rescue NotImplementedError
-          rand(arg)
-        end
-      end
-    else
-      def self.random(arg) # :nodoc:
+    def self.random(arg) # :nodoc:
+      begin
+        SecureRandom.random_number(arg)
+      rescue NotImplementedError
         rand(arg)
       end
     end
