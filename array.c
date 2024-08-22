@@ -7096,56 +7096,37 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    array.combination(n) {|element| ... } -> self
- *    array.combination(n) -> new_enumerator
+ *    combination(n) {|element| ... } -> self
+ *    combination(n) -> new_enumerator
  *
- *  Calls the block, if given, with combinations of elements of +self+;
- *  returns +self+. The order of combinations is indeterminate.
+ *  With a block given and value +n+ is an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  in range <tt>1..self.size</tt>,
+ *  calls the block with each +n+-tuple combination of the elements of +self+;
+ *  returns +self+:
  *
- *  When a block and an in-range positive Integer argument +n+ (<tt>0 < n <= self.size</tt>)
- *  are given, calls the block with all +n+-tuple combinations of +self+.
- *
- *  Example:
- *
- *    a = [0, 1, 2]
- *    a.combination(2) {|combination| p combination }
+ *    a = %w[a b c]                                   # => ["a", "b", "c"]
+ *    a.combination(2) {|combination| p combination } # => ["a", "b", "c"]
  *
  *  Output:
  *
- *    [0, 1]
- *    [0, 2]
- *    [1, 2]
+ *    ["a", "b"]
+ *    ["a", "c"]
+ *    ["b", "c"]
  *
- *  Another example:
+ *  The order of the combinations is indeterminate.
  *
- *    a = [0, 1, 2]
- *    a.combination(3) {|combination| p combination }
+ *  When +n+ is zero, calls the block once with a new empty array.
  *
- *  Output:
- *
- *    [0, 1, 2]
- *
- *  When +n+ is zero, calls the block once with a new empty +Array+:
- *
- *    a = [0, 1, 2]
- *    a1 = a.combination(0) {|combination| p combination }
- *
- *  Output:
- *
- *    []
- *
- *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
+ *  When +n+ is out-of-range or +self+ is empty,
  *  does not call the block:
  *
- *    a = [0, 1, 2]
- *    a.combination(-1) {|combination| fail 'Cannot happen' }
- *    a.combination(4) {|combination| fail 'Cannot happen' }
+ *    a.combination(4)  {|combination| fail 'Cannot happen' } # => ["a", "b", "c"]
+ *    [].combination(2) {|combination| fail 'Cannot happen' } # => []
  *
- *  Returns a new Enumerator if no block given:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [0, 1, 2]
- *    a.combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
- *
+ *  Related: Array#permutation.
  */
 
 static VALUE
