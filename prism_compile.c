@@ -1395,15 +1395,19 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     for (size_t index = 0; index < elements->size; index++) {
         const pm_node_t *element = elements->nodes[index];
 
+
         switch (PM_NODE_TYPE(element)) {
           case PM_ASSOC_NODE: {
             // Pre-allocation check (this branch can be omitted).
-            if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && !static_literal && ((index + min_tmp_hash_length) < elements->size)) {
+            if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && (
+                (!static_literal && ((index + min_tmp_hash_length) < elements->size)) ||
+                (first_chunk && stack_length == 0)
+              )) {
                 // Count the elements that are statically-known.
                 size_t count = 1;
                 while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
 
-                if (count >= min_tmp_hash_length) {
+                if ((first_chunk && stack_length == 0) || count >= min_tmp_hash_length) {
                     // The subsequence of elements in this hash is long enough
                     // to merit its own hash.
                     VALUE ary = rb_ary_hidden_new(count);
@@ -1419,6 +1423,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
                         rb_ary_cat(ary, elem, 2);
                     }
+                    index --;
 
                     VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                     rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
@@ -1530,7 +1535,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
 // This is details. Users should call pm_setup_args() instead.
 static int
-pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
+pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, VALUE *dup_rest, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
     const pm_node_location_t location = *node_location;
 
@@ -1563,7 +1568,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     *flags |= VM_CALL_KW_SPLAT;
                     has_keyword_splat = true;
 
-                    if (elements->size > 1) {
+                    if (elements->size > 1 || !(elements->size == 1 && PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE))) {
                         // A new hash will be created for the keyword arguments
                         // in this case, so mark the method as passing mutable
                         // keyword splat.
@@ -1676,8 +1681,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     // foo(a, *b, c)
                     //        ^^
                     if (index + 1 < arguments->size || has_regular_blockarg) {
-                        PUSH_INSN1(ret, location, splatarray, Qtrue);
-                        *flags |= VM_CALL_ARGS_SPLAT_MUT;
+                        PUSH_INSN1(ret, location, splatarray, *dup_rest);
+                        if (*dup_rest == Qtrue) *dup_rest = Qfalse;
                     }
                     // If this is the first spalt array seen and it's the last
                     // parameter, we don't want splatarray to dup it.
@@ -1796,10 +1801,49 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
     return orig_argc;
 }
 
+static bool
+pm_setup_args_dup_rest_p(const pm_node_t *node) {
+    switch(PM_NODE_TYPE(node)) {
+      case PM_CALL_NODE:
+        return true;
+      default:
+        return false;
+    }
+}
+
 // Compile the argument parts of a call
 static int
 pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
+    VALUE dup_rest = Qtrue;
+
+    if (arguments_node != NULL) {
+        if (arguments_node->arguments.size >= 2 && PM_NODE_TYPE_P(arguments_node->arguments.nodes[0], PM_SPLAT_NODE) && PM_NODE_TYPE_P(arguments_node->arguments.nodes[1], PM_KEYWORD_HASH_NODE)) {
+            dup_rest = Qfalse;
+
+            const pm_keyword_hash_node_t *keyword_arg = (const pm_keyword_hash_node_t *) arguments_node->arguments.nodes[1];
+            const pm_node_list_t *elements = &keyword_arg->elements;
+
+            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_NODE)) {
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[0];
+
+                if (pm_setup_args_dup_rest_p(assoc->value)) {
+                    dup_rest = Qtrue;
+                }
+            }
+
+            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE)) {
+                const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) elements->nodes[0];
+
+                if (assoc->value && pm_setup_args_dup_rest_p(assoc->value)) {
+                    dup_rest = Qtrue;
+                }
+            }
+        }
+    }
+
+    VALUE initial_dup_rest = dup_rest;
+
     if (block && PM_NODE_TYPE_P(block, PM_BLOCK_ARGUMENT_NODE)) {
         // We compile the `&block_arg` expression first and stitch it later
         // since the nature of the expression influences whether splat should
@@ -1825,12 +1869,24 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
             }
         }
 
-        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, iseq, ret, scope_node, node_location);
+        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
+
+        if (*flags & VM_CALL_ARGS_SPLAT && dup_rest != initial_dup_rest) {
+            *flags |= VM_CALL_ARGS_SPLAT_MUT;
+        }
+
         PUSH_SEQ(ret, block_arg);
+
         return argc;
     }
 
-    return pm_setup_args_core(arguments_node, block, flags, false, kw_arg, iseq, ret, scope_node, node_location);
+    int argc = pm_setup_args_core(arguments_node, block, flags, false, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
+
+    if (*flags & VM_CALL_ARGS_SPLAT && dup_rest != initial_dup_rest) {
+        *flags |= VM_CALL_ARGS_SPLAT_MUT;
+    }
+
+    return argc;
 }
 
 /**
