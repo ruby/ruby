@@ -321,6 +321,44 @@ module Prism
       assert_warning("tap { redo; foo }", "statement not reached")
     end
 
+    def test_shebang_ending_with_carriage_return
+      msg = "shebang line ending with \\r may cause problems"
+
+      assert_warning(<<~RUBY, msg, compare: false)
+        #!ruby\r
+        p(123)
+      RUBY
+
+      assert_warning(<<~RUBY, msg, compare: false)
+        #!ruby \r
+        p(123)
+      RUBY
+
+      assert_warning(<<~RUBY, msg, compare: false)
+        #!ruby -Eutf-8\r
+        p(123)
+      RUBY
+
+      # Used with the `-x` object, to ignore the script up until the first shebang that mentioned "ruby".
+      assert_warning(<<~SCRIPT, msg, compare: false)
+        #!/usr/bin/env bash
+        # Some initial shell script or other content
+        # that Ruby should ignore
+        echo "This is shell script part"
+        exit 0
+
+        #! /usr/bin/env ruby -Eutf-8\r
+        # Ruby script starts here
+        puts "Hello from Ruby!"
+      SCRIPT
+
+      refute_warning("#ruby not_a_shebang\r\n", compare: false)
+
+      # CRuby doesn't emit the warning if a malformed file only has `\r` and not `\n`.
+      # https://bugs.ruby-lang.org/issues/20700
+      refute_warning("#!ruby\r", compare: false)
+    end
+
     def test_warnings_verbosity
       warning = Prism.parse("def foo; END { }; end").warnings.first
       assert_equal "END in method; use at_exit", warning.message
@@ -333,7 +371,7 @@ module Prism
 
     private
 
-    def assert_warning(source, *messages)
+    def assert_warning(source, *messages, compare: true)
       warnings = Prism.parse(source).warnings
       assert_equal messages.length, warnings.length, "Expected #{messages.length} warning(s) in #{source.inspect}, got #{warnings.map(&:message).inspect}"
 
@@ -341,7 +379,7 @@ module Prism
         assert_include warning.message, message
       end
 
-      if defined?(RubyVM::AbstractSyntaxTree)
+      if compare && defined?(RubyVM::AbstractSyntaxTree)
         stderr = capture_stderr { RubyVM::AbstractSyntaxTree.parse(source) }
         messages.each { |message| assert_include stderr, message }
       end

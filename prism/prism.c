@@ -21767,7 +21767,7 @@ pm_strnstr(const char *big, const char *little, size_t big_length) {
  */
 static void
 pm_parser_warn_shebang_carriage_return(pm_parser_t *parser, const uint8_t *start, size_t length) {
-    if (length > 2 && start[length - 1] == '\n' && start[length - 2] == '\r') {
+    if (length > 2 && start[length - 2] == '\r' && start[length - 1] == '\n') {
         pm_parser_warn(parser, start, start + length, PM_WARN_SHEBANG_CARRIAGE_RETURN);
     }
 }
@@ -21960,11 +21960,17 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
         const char *engine;
         if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
-            pm_parser_warn_shebang_carriage_return(parser, parser->start, length);
-            if (newline != NULL) parser->encoding_comment_start = newline + 1;
+            if (newline != NULL) {
+                size_t length_including_newline = length + 1;
+                pm_parser_warn_shebang_carriage_return(parser, parser->start, length_including_newline);
+
+                parser->encoding_comment_start = newline + 1;
+            }
+
             if (options != NULL && options->shebang_callback != NULL) {
                 pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) parser->start)));
             }
+
             search_shebang = false;
         } else if (!parser->parsing_eval) {
             search_shebang = true;
@@ -21994,17 +22000,20 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
             size_t length = (size_t) ((newline != NULL ? newline : parser->end) - cursor);
             if (length > 2 && cursor[0] == '#' && cursor[1] == '!') {
-                if (parser->newline_list.size == 1) {
-                    pm_parser_warn_shebang_carriage_return(parser, cursor, length);
-                }
-
                 const char *engine;
                 if ((engine = pm_strnstr((const char *) cursor, "ruby", length)) != NULL) {
                     found_shebang = true;
-                    if (newline != NULL) parser->encoding_comment_start = newline + 1;
+                    if (newline != NULL) {
+                        size_t length_including_newline = length + 1;
+                        pm_parser_warn_shebang_carriage_return(parser, cursor, length_including_newline);
+
+                        parser->encoding_comment_start = newline + 1;
+                    }
+
                     if (options != NULL && options->shebang_callback != NULL) {
                         pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) cursor)));
                     }
+
                     break;
                 }
             }
