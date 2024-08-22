@@ -2459,30 +2459,8 @@ mark_const_table_i(VALUE value, void *objspace)
 void
 rb_gc_mark_roots(void *objspace, const char **categoryp)
 {
-    rb_execution_context_t *ec;
-    rb_vm_t *vm;
-#if USE_MMTK
-    const bool mmtk_enabled_local = rb_mmtk_enabled_p(); // Allows control-flow sensitive analysis of ec etc
-    if (mmtk_enabled_local) {
-        if (GET_RACTOR()->mfd == NULL) {
-            // When using MMTk, we don't directly call `gc_mark_roots` for scanning roots.
-            // Instead, we split this function into multiple functions named `rb_mmtk_scan_*_roots`
-            // so that they can be paralleled by calling them from different work packets.
-            rb_bug("gc_mark_roots should not be called when using MMTk.");
-        } else {
-            // We still call `gc_mark_roots` when enumerating objects reachable from roots.
-            // In this case, this function will be called from mutator.
-            rb_mmtk_assert_mutator();
-        }
-
-        vm = GET_VM();
-    } else {
-#endif
-        ec = GET_EC();
-        vm = rb_ec_vm_ptr(ec);
-#if USE_MMTK
-    }
-#endif
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
 #define MARK_CHECKPOINT(category) do { \
     if (categoryp) *categoryp = category; \
@@ -2492,14 +2470,8 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     rb_vm_mark(vm);
     if (vm->self) rb_gc_impl_mark(objspace, vm->self);
 
-#if USE_MMTK
-    if (!mmtk_enabled_local) {
-#endif
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(objspace, ec);
-#if USE_MMTK
-    }
-#endif
 
     MARK_CHECKPOINT("end_proc");
     rb_mark_end_proc();
