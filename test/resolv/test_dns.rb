@@ -758,7 +758,7 @@ class TestResolvDNS < Test::Unit::TestCase
           u1.send(msg[0...512], 0, client_address, client_port)
         end
 
-        tcp_server1_thread = Thread.new { t1.accept }
+        tcp_server1_thread = Thread.new { t1.accept; t1.close }
 
         tcp_server2_thread = Thread.new do
           ct = t2.accept
