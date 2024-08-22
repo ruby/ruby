@@ -151,12 +151,14 @@ typedef struct pm_node {
 <%- nodes.each do |node| -%>
 
 /**
+ * <%= node.name %>
+ *
 <%- node.each_comment_line do |line| -%>
  *<%= line %>
 <%- end -%>
- * <%= node.name %> (type: <%= node.type %>)
-<%- if (node_flags = node.flags) -%>
  *
+ * Type: <%= node.type %>
+<%- if (node_flags = node.flags) -%>
  * Flags:
 <%- node_flags.values.each do |value| -%>
  *    PM_<%= node_flags.human.upcase %>_<%= value.name %>
