@@ -958,6 +958,17 @@ wkmap_has_key(VALUE self, VALUE key)
     return RBOOL(!UNDEF_P(wkmap_lookup(self, key)));
 }
 
+static int
+wkmap_clear_i(st_data_t key, st_data_t val, st_data_t data)
+{
+    VALUE self = (VALUE)data;
+
+    /* This WeakKeyMap may have already been marked, so we need to remove the
+     * keys to prevent a use-after-free. */
+    rb_gc_remove_weak(self, (VALUE *)key);
+    return wkmap_free_table_i(key, val, 0);
+}
+
 /*
  *  call-seq:
  *    map.clear -> self
@@ -970,7 +981,7 @@ wkmap_clear(VALUE self)
     struct weakkeymap *w;
     TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
 
-    st_foreach(w->table, wkmap_free_table_i, 0);
+    st_foreach(w->table, wkmap_clear_i, (st_data_t)self);
     st_clear(w->table);
 
     return self;
