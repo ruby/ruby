@@ -426,7 +426,7 @@ For example, in Array, use:
 ```
 
 ```
-* call-seq:
+*  call-seq:
 *    <=> other -> -1, 0, 1, or nil
 ```
 
@@ -434,8 +434,8 @@ For a binary-operator style method (e.g., Array#&),
 cite `self` in the call-seq (not, e.g., `array` or `receiver`):
 
 ```
-* call-seq:
-*   self & other_array -> new_array
+*  call-seq:
+*    self & other_array -> new_array
 ```
 
 Arguments:
@@ -450,7 +450,8 @@ Arguments:
       For example, use:
 
         ```
-        respond_to?(symbol, include_all = false) -> true or false
+        *  call-seq:
+        *    respond_to?(symbol, include_all = false) -> true or false
         ```
 
     - If the behavior is different with an omitted or an explicit argument,
@@ -458,6 +459,7 @@ Arguments:
       For example, in Enumerable, use:
 
         ```
+        *  call-seq:
         *    max    -> element
         *    max(n) -> array
         ```
@@ -467,6 +469,14 @@ Block:
 - If the method does not accept a block, omit the block.
 - If the method accepts a block, the `call-seq` should have `{|args| ... }`,
   not `{|args| block }` or `{|args| code }`.
+- If the method accepts a block, but returns an Enumerator when the block is omitted,
+  the `call-seq` should show both forms:
+
+    ```
+    *  call-seq:
+    *    array.select {|element| ... } -> new_array
+    *    array.select -> new_enumerator
+    ```
 
 Return types:
 
@@ -534,6 +544,15 @@ Only add an example if it provides the user additional information,
 do not add an example if it provides the same information given
 in the synopsis or details.  The purpose of examples is not to prove
 what the details are stating.
+
+Many methods that can take an optional block call the block if it is given,
+but return a new Enumerator if the block is not given;
+in that case, do not provide an example,
+but do state the fact (with the auto-linking uppercase Enumerator):
+
+```
+*  With no block given, returns a new Enumerator.
+```
 
 ### Argument Description (if necessary)
 
