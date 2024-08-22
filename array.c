@@ -3705,8 +3705,9 @@ rb_ary_collect(VALUE ary)
  *    map! {|element| ... } -> new_array
  *    map! -> new_enumerator
  *
- *  With a block given, calls the block with each element of +self+;
- *  replaces the element with the block's return value:
+ *  With a block given, calls the block with each element of +self+
+ *  and replaces the element with the block's return value;
+ *  returns +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a.map! { |element| element.class } # => [Symbol, String, Integer]
