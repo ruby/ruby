@@ -415,8 +415,9 @@ module Test
         end
 
         def kill
-          Process.kill(:SEGV, @pid)
-          warn "worker #{to_s} does not respond; SIGSEGV is sent"
+          signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
+          Process.kill(signal, @pid)
+          warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
         end
 
