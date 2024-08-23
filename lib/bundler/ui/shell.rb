@@ -84,7 +84,7 @@ module Bundler
         @shell.yes?(msg)
       end
 
-      def no?
+      def no?(msg)
         @shell.no?(msg)
       end
 

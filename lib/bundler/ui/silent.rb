@@ -60,7 +60,7 @@ module Bundler
         raise "Cannot ask yes? with a silent shell"
       end
 
-      def no?
+      def no?(msg)
         raise "Cannot ask no? with a silent shell"
       end
 
