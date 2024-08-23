@@ -488,11 +488,7 @@ puts Tempfile.new('foo').path
     Dir.mktmpdir {|d|
       t = Tempfile.create("", d, anonymous: true)
       t.close
-      if RUBY_VERSION >= '3.2'
-        assert_equal([], Dir.children(d))
-      else
-        refute_equal([], Dir.children(d))
-      end
+      assert_equal([], Dir.children(d))
     }
   end
 
@@ -500,11 +496,7 @@ puts Tempfile.new('foo').path
     Dir.mktmpdir {|d|
       begin
         t = Tempfile.create("", d, anonymous: true)
-        if RUBY_VERSION >= '3.2'
-          assert_equal(File.join(d, ""), t.path)
-        else
-          refute_equal(File.join(d, ""), t.path)
-        end
+        assert_equal(File.join(d, ""), t.path)
       ensure
         t.close if t
       end

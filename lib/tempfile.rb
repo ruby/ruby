@@ -556,7 +556,7 @@ end
 # Related: Tempfile.new.
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **options, &block)
-  if anonymous && RUBY_VERSION >= '3.2'
+  if anonymous
     create_anonymous(basename, tmpdir, mode: mode, **options, &block)
   else
     create_with_filename(basename, tmpdir, mode: mode, **options, &block)
@@ -593,6 +593,18 @@ private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
+File.open(IO::NULL) do |f|
+  File.new(f.fileno, autoclose: false, path: "").path
+rescue IOError
+  module PathAttr               # :nodoc:
+    attr_reader :path
+
+    def self.set_path(file, path)
+      file.extend(self).instance_variable_set(:@path, path)
+    end
+  end
+end
+
 private def create_anonymous(basename="", tmpdir=nil, mode: 0, **options, &block)
   tmpfile = nil
   tmpdir = Dir.tmpdir() if tmpdir.nil?
@@ -608,12 +620,14 @@ private def create_anonymous(basename="", tmpdir=nil, mode: 0, **options, &block
     mode |= File::SHARE_DELETE | File::BINARY # Windows needs them to unlink the opened file.
     tmpfile = create_with_filename(basename, tmpdir, mode: mode, **options)
     File.unlink(tmpfile.path)
+    tmppath = tmpfile.path
   end
   path = File.join(tmpdir, '')
-  if tmpfile.path != path
+  unless tmppath == path
     # clear path.
     tmpfile.autoclose = false
     tmpfile = File.new(tmpfile.fileno, mode: File::RDWR, path: path)
+    PathAttr.set_path(tmpfile, path) if defined?(PathAttr)
   end
   if block
     begin
