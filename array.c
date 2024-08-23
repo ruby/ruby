@@ -3700,21 +3700,19 @@ rb_ary_collect(VALUE ary)
 
 /*
  *  call-seq:
- *    array.map! {|element| ... } -> self
- *    array.map! -> new_enumerator
+ *    collect! {|element| ... } -> new_array
+ *    collect! -> new_enumerator
+ *    map! {|element| ... } -> new_array
+ *    map! -> new_enumerator
  *
- *  Calls the block, if given, with each element;
- *  replaces the element with the block's return value:
+ *  With a block given, calls the block with each element of +self+
+ *  and replaces the element with the block's return value;
+ *  returns +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a.map! { |element| element.class } # => [Symbol, String, Integer]
  *
- *  Returns a new Enumerator if no block given:
- *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.map!
- *    a1 # => #<Enumerator: [:foo, "bar", 2]:map!>
- *
+ *  With no block given, returns a new Enumerator.
  */
 
 static VALUE
