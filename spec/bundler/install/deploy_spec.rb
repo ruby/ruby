@@ -74,6 +74,18 @@ RSpec.describe "install in deployment or frozen mode" do
     end
   end
 
+  it "fails without a lockfile and says that deployment requires a lock" do
+    bundle "config deployment true"
+    bundle "install", raise_on_error: false
+    expect(err).to include("The deployment setting requires a lockfile")
+  end
+
+  it "fails without a lockfile and says that frozen requires a lock" do
+    bundle "config frozen true"
+    bundle "install", raise_on_error: false
+    expect(err).to include("The frozen setting requires a lockfile")
+  end
+
   it "still works if you are not in the app directory and specify --gemfile" do
     bundle "install"
     simulate_new_machine

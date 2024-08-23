@@ -29,9 +29,10 @@ module Bundler
 
       if options[:deployment] || options[:frozen] || Bundler.frozen_bundle?
         unless Bundler.default_lockfile.exist?
-          flag   = "--deployment flag" if options[:deployment]
-          flag ||= "--frozen flag"     if options[:frozen]
-          flag ||= "deployment setting"
+          flag = "--deployment flag" if options[:deployment]
+          flag ||= "--frozen flag" if options[:frozen]
+          flag ||= "deployment setting" if Bundler.settings[:deployment]
+          flag ||= "frozen setting" if Bundler.settings[:frozen]
           raise ProductionError, "The #{flag} requires a lockfile. Please make " \
                                  "sure you have checked your #{SharedHelpers.relative_lockfile_path} into version control " \
                                  "before deploying."
