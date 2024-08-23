@@ -4345,7 +4345,19 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-#ifdef HAVE_MEMRCHR
+#ifndef HAVE_MEMRCHR
+static void*
+memrchr(const char *search_str, int chr, long search_len)
+{
+    const char *ptr = search_str + search_len;
+    do {
+        if ((unsigned char)*(--ptr) == chr) return (void *)ptr;
+    } while (ptr >= search_str);
+
+    return ((void *)0);
+}
+#endif
+
 static long
 str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
@@ -4362,6 +4374,10 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     c = *t & 0xff;
     searchlen = s - sbeg + 1;
 
+    if (memcmp(s, t, slen) == 0) {
+        return s - sbeg;
+    }
+
     do {
         hit = memrchr(sbeg, c, searchlen);
         if (!hit) break;
@@ -4377,29 +4393,6 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 
     return -1;
 }
-#else
-static long
-str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
-{
-    long slen;
-    char *sbeg, *e, *t;
-
-    sbeg = RSTRING_PTR(str);
-    e = RSTRING_END(str);
-    t = RSTRING_PTR(sub);
-    slen = RSTRING_LEN(sub);
-
-    while (s) {
-        if (memcmp(s, t, slen) == 0) {
-            return s - sbeg;
-        }
-        if (s <= sbeg) break;
-        s = rb_enc_prev_char(sbeg, s, e, enc);
-    }
-
-    return -1;
-}
-#endif
 
 /* found index in byte */
 static long
