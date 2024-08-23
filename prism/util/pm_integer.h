@@ -19,12 +19,6 @@
  */
 typedef struct {
     /**
-     * Embedded value for small integer. This value is set to 0 if the value
-     * does not fit into uint32_t.
-     */
-    uint32_t value;
-
-    /**
      * The number of allocated values. length is set to 0 if the integer fits
      * into uint32_t.
      */
@@ -34,6 +28,12 @@ typedef struct {
      * List of 32-bit integers. Set to NULL if the integer fits into uint32_t.
      */
     uint32_t *values;
+
+    /**
+     * Embedded value for small integer. This value is set to 0 if the value
+     * does not fit into uint32_t.
+     */
+    uint32_t value;
 
     /**
      * Whether or not the integer is negative. It is stored this way so that a
