@@ -130,6 +130,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(111, 10), Rational('1.11e1'))
     assert_equal(Rational(111, 100), Rational('1.11e0'))
     assert_equal(Rational(111, 1000), Rational('1.11e-1'))
+    assert_equal(Rational(5, 4), Rational('3.0r','2.4R'))
   end
 
   def test_conv_error
@@ -838,6 +839,10 @@ class Rational_Test < Test::Unit::TestCase
     ng[5, 3, '5/3x']
 
     ng[5, 1, '5/-3']
+
+    ok[30, 24, '3.0r/2.4R']
+    ng[30, 24, '3.0r/2.4re1']
+    ng[30, 240, '3.0r/2.4e1r']
   end
 
   def test_parse_zero_denominator
