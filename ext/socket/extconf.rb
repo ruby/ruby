@@ -661,7 +661,7 @@ EOS
 
   $distcleanfiles << "constants.h" << "constdefs.*"
 
-  if enable_config("socks", ENV["SOCKS_SERVER"])
+  if enable_config("socks", true)
     if have_library("socks5", "SOCKSinit")
       $defs << "-DSOCKS5" << "-DSOCKS"
     elsif have_library("socksd", "Rconnect") || have_library("socks", "Rconnect")
