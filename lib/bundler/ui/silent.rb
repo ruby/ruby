@@ -53,6 +53,13 @@ module Bundler
         false
       end
 
+      def output_stream=(_symbol)
+      end
+
+      def output_stream
+        nil
+      end
+
       def ask(message)
       end
 

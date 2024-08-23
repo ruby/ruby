@@ -10,12 +10,26 @@ RSpec.describe Bundler::UI::Shell do
     it "prints to stdout" do
       expect { subject.info("info") }.to output("info\n").to_stdout
     end
+
+    context "when output_stream is :stderr" do
+      before { subject.output_stream = :stderr }
+      it "prints to stderr" do
+        expect { subject.info("info") }.to output("info\n").to_stderr
+      end
+    end
   end
 
   describe "#confirm" do
     before { subject.level = "confirm" }
     it "prints to stdout" do
       expect { subject.confirm("confirm") }.to output("confirm\n").to_stdout
+    end
+
+    context "when output_stream is :stderr" do
+      before { subject.output_stream = :stderr }
+      it "prints to stderr" do
+        expect { subject.confirm("confirm") }.to output("confirm\n").to_stderr
+      end
     end
   end
 
@@ -32,6 +46,13 @@ RSpec.describe Bundler::UI::Shell do
   describe "#debug" do
     it "prints to stdout" do
       expect { subject.debug("debug") }.to output("debug\n").to_stdout
+    end
+
+    context "when output_stream is :stderr" do
+      before { subject.output_stream = :stderr }
+      it "prints to stderr" do
+        expect { subject.debug("debug") }.to output("debug\n").to_stderr
+      end
     end
   end
 

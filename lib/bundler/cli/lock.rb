@@ -15,8 +15,8 @@ module Bundler
       end
 
       print = options[:print]
-      previous_ui_level = Bundler.ui.level
-      Bundler.ui.level = "silent" if print
+      previous_output_stream = Bundler.ui.output_stream
+      Bundler.ui.output_stream = :stderr if print
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
@@ -68,7 +68,7 @@ module Bundler
         end
       end
 
-      Bundler.ui.level = previous_ui_level
+      Bundler.ui.output_stream = previous_output_stream
     end
   end
 end
