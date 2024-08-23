@@ -21,8 +21,11 @@ RSpec.describe Bundler::UI::Shell do
 
   describe "#warn" do
     before { subject.level = "warn" }
-    it "prints to stderr" do
+    it "prints to stderr, implicitly adding a newline" do
       expect { subject.warn("warning") }.to output("warning\n").to_stderr
+    end
+    it "can be told not to emit a newline" do
+      expect { subject.warn("warning", false) }.to output("warning").to_stderr
     end
   end
 
