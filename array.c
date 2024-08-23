@@ -7099,10 +7099,10 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    combination(n) {|element| ... } -> self
  *    combination(n) -> new_enumerator
  *
- *  With a block given and value +n+ is an
+ *  When a block and an in-range positive
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
- *  in range <tt>1..self.size</tt>,
- *  calls the block with each +n+-tuple combination of the elements of +self+;
+ *  argument +n+ (<tt>0 < n <= self.size</tt>)
+ *  are given, calls the block with all +n+-tuple combinations of +self+;
  *  returns +self+:
  *
  *    a = %w[a b c]                                   # => ["a", "b", "c"]
@@ -7114,7 +7114,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    ["a", "c"]
  *    ["b", "c"]
  *
- *  The order of the combinations is indeterminate.
+ *  The order of the yielded combinations is not guaranteed.
  *
  *  When +n+ is zero, calls the block once with a new empty array:
  *
