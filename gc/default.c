@@ -2636,7 +2636,10 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t si
         obj = newobj_cache_miss(objspace, cache, size_pool_idx, vm_locked);
     }
 
-    size_pools[size_pool_idx].total_allocated_objects++;
+    rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
+    size_pool->total_allocated_objects++;
+    GC_ASSERT(SIZE_POOL_EDEN_HEAP(size_pool)->total_slots + SIZE_POOL_TOMB_HEAP(size_pool)->total_slots >=
+        (size_pool->total_allocated_objects - size_pool->total_freed_objects - size_pool->final_slots_count));
 
     return obj;
 }
@@ -7283,6 +7286,9 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     RMOVED(src)->dummy = Qundef;
     RMOVED(src)->destination = dest;
     GC_ASSERT(BUILTIN_TYPE(dest) != T_NONE);
+
+    GET_HEAP_PAGE(src)->size_pool->total_freed_objects++;
+    GET_HEAP_PAGE(dest)->size_pool->total_allocated_objects++;
 
     return src;
 }
