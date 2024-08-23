@@ -94,7 +94,7 @@ The following bundled gems are updated.
 * net-ftp 0.3.7
 * net-imap 0.4.14
 * net-smtp 0.5.0
-* rbs 3.5.2
+* rbs 3.5.3
 * typeprof 0.21.11
 * debug 1.9.2
 * racc 1.8.1
