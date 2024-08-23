@@ -65,7 +65,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_instance_of(String, c.to_s)
   end
 
-  def test_conv
+  def test_conv_integer
     c = Rational(0,1)
     assert_equal(Rational(0,1), c)
 
@@ -94,6 +94,11 @@ class Rational_Test < Test::Unit::TestCase
     c = Rational(Rational(1,2),Rational(1,2))
     assert_equal(Rational(1), c)
 
+    assert_equal(Rational(3),Rational(3))
+    assert_equal(Rational(1),Rational(3,3))
+  end
+
+  def test_conv_complex
     c = Rational(Complex(1,2),2)
     assert_equal(Complex(Rational(1,2),1), c)
 
@@ -102,11 +107,21 @@ class Rational_Test < Test::Unit::TestCase
 
     c = Rational(Complex(1,2),Complex(1,2))
     assert_equal(Rational(1), c)
+  end
 
-    assert_equal(Rational(3),Rational(3))
-    assert_equal(Rational(1),Rational(3,3))
+  def test_conv_float
     assert_equal(3.3.to_r,Rational(3.3))
     assert_equal(1,Rational(3.3,3.3))
+
+    if (0.0/0).nan?
+      assert_raise(FloatDomainError){Rational(0.0/0)}
+    end
+    if (1.0/0).infinite?
+      assert_raise(FloatDomainError){Rational(1.0/0)}
+    end
+  end
+
+  def test_conv_string
     assert_equal(Rational(3),Rational('3'))
     assert_equal(Rational(1),Rational('3.0','3.0'))
     assert_equal(Rational(1),Rational('3/3','3/3'))
@@ -115,6 +130,9 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(111, 10), Rational('1.11e1'))
     assert_equal(Rational(111, 100), Rational('1.11e0'))
     assert_equal(Rational(111, 1000), Rational('1.11e-1'))
+  end
+
+  def test_conv_error
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
     assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
@@ -127,7 +145,9 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(TypeError){Rational(Object.new)}
     assert_raise(TypeError){Rational(Object.new, Object.new)}
     assert_raise(TypeError){Rational(1, Object.new)}
+  end
 
+  def test_conv_coerce
     bug12485 = '[ruby-core:75995] [Bug #12485]'
     o = Object.new
     def o.to_int; 1; end
@@ -158,13 +178,6 @@ class Rational_Test < Test::Unit::TestCase
 
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
-
-    if (0.0/0).nan?
-      assert_raise(FloatDomainError){Rational(0.0/0)}
-    end
-    if (1.0/0).infinite?
-      assert_raise(FloatDomainError){Rational(1.0/0)}
-    end
 
     bug16518 = "[ruby-core:96942] [Bug #16518]"
     cls = Class.new(Numeric) do
