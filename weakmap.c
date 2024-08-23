@@ -1019,7 +1019,7 @@ wkmap_inspect(VALUE self)
  *     val1 = Object.new
  *     m[key1] = val1
  *
- *     key2 = "foo"
+ *     key2 = "bar"
  *     val2 = Object.new
  *     m[key2] = val2
  *
