@@ -556,7 +556,7 @@ end
 # Related: Tempfile.new.
 #
 def Tempfile.create(basename="", tmpdir=nil, mode: 0, anonymous: false, **options, &block)
-  if anonymous
+  if anonymous && RUBY_VERSION >= '3.2'
     create_anonymous(basename, tmpdir, mode: mode, **options, &block)
   else
     create_with_filename(basename, tmpdir, mode: mode, **options, &block)
