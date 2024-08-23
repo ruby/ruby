@@ -7116,9 +7116,17 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  The order of the combinations is indeterminate.
  *
- *  When +n+ is zero, calls the block once with a new empty array.
+ *  When +n+ is zero, calls the block once with a new empty array:
  *
- *  When +n+ is out-of-range or +self+ is empty,
+ *    a.combination(0) {|combination| p combination }
+ *    [].combination(0) {|combination| p combination }
+ *
+ *  Output:
+ *
+ *    []
+ *    []
+ *
+ *  Otherwise, when +n+ is out-of-range or +self+ is empty,
  *  does not call the block:
  *
  *    a.combination(4)  {|combination| fail 'Cannot happen' } # => ["a", "b", "c"]
