@@ -119,6 +119,10 @@ module Bundler
         with_level("silent", &blk)
       end
 
+      def progress(&blk)
+        with_output_stream(:stderr, &blk)
+      end
+
       def unprinted_warnings
         []
       end
@@ -169,6 +173,14 @@ module Bundler
         yield
       ensure
         @level = original
+      end
+
+      def with_output_stream(symbol)
+        original = output_stream
+        self.output_stream = symbol
+        yield
+      ensure
+        @output_stream = original
       end
     end
   end

@@ -438,18 +438,39 @@ RSpec.describe "bundle outdated" do
         G
       end
 
-      it "outputs a sorted list of outdated gems with a more minimal format" do
+      it "outputs a sorted list of outdated gems with a more minimal format to stdout" do
         minimal_output = "activesupport (newest 3.0, installed 2.3.5, requested = 2.3.5)\n" \
                          "weakling (newest 0.2, installed 0.0.3, requested ~> 0.0.1)"
         subject
         expect(out).to eq(minimal_output)
       end
+
+      it "outputs progress to stderr" do
+        subject
+        expect(err).to include("Fetching gem metadata")
+      end
     end
 
     context "and no gems are outdated" do
-      it "has empty output" do
+      before do
+        build_repo2 do
+          build_gem "activesupport", "3.0"
+        end
+
+        install_gemfile <<-G
+          source "https://gem.repo2"
+          gem "activesupport", "3.0"
+        G
+      end
+
+      it "does not output to stdout" do
         subject
         expect(out).to be_empty
+      end
+
+      it "outputs progress to stderr" do
+        subject
+        expect(err).to include("Fetching gem metadata")
       end
     end
   end

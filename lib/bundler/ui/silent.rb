@@ -84,6 +84,10 @@ module Bundler
         yield
       end
 
+      def progress
+        yield
+      end
+
       def unprinted_warnings
         @warnings
       end
