@@ -7099,7 +7099,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    combination(n) {|element| ... } -> self
  *    combination(n) -> new_enumerator
  *
- *  When a block and an in-range positive
+ *  When a block and a positive
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
  *  argument +n+ (<tt>0 < n <= self.size</tt>)
  *  are given, calls the block with all +n+-tuple combinations of +self+;
@@ -7126,11 +7126,11 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    []
  *    []
  *
- *  Otherwise, when +n+ is out-of-range or +self+ is empty,
+ *  When +n+ is negative or larger than +self.size+ and +self+ is non-empty,
  *  does not call the block:
  *
+ *    a.combination(-1) {|combination| fail 'Cannot happen' } # => ["a", "b", "c"]
  *    a.combination(4)  {|combination| fail 'Cannot happen' } # => ["a", "b", "c"]
- *    [].combination(2) {|combination| fail 'Cannot happen' } # => []
  *
  *  With no block given, returns a new Enumerator.
  *
