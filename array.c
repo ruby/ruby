@@ -6337,29 +6337,27 @@ rb_ary_compact(VALUE ary)
 
 /*
  *  call-seq:
- *    array.count -> an_integer
- *    array.count(obj) -> an_integer
- *    array.count {|element| ... } -> an_integer
+ *    count -> integer
+ *    count(object) -> integer
+ *    count {|element| ... } -> integer
  *
  *  Returns a count of specified elements.
  *
  *  With no argument and no block, returns the count of all elements:
  *
- *    [0, 1, 2].count # => 3
- *    [].count # => 0
+ *    [0, :one, 'two', 3, 3.0].count # => 5
  *
- *  With argument +obj+, returns the count of elements <tt>==</tt> to +obj+:
+ *  With argument +object+ given, returns the count of elements <tt>==</tt> to +object+:
  *
- *    [0, 1, 2, 0.0].count(0) # => 2
- *    [0, 1, 2].count(3) # => 0
+ *    [0, :one, 'two', 3, 3.0].count(3) # => 2
  *
  *  With no argument and a block given, calls the block with each element;
  *  returns the count of elements for which the block returns a truthy value:
  *
  *    [0, 1, 2, 3].count {|element| element > 1} # => 2
  *
- *  With argument +obj+ and a block given, issues a warning, ignores the block,
- *  and returns the count of elements <tt>==</tt> to +obj+.
+ *  With argument +object+ and a block given, issues a warning, ignores the block,
+ *  and returns the count of elements <tt>==</tt> to +object+.
  */
 
 static VALUE
