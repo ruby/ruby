@@ -335,7 +335,7 @@ class Set
     end
   end
 
-  # Converts the set to an array.  The order of elements is uncertain.
+  # Converts the set to an array.
   #
   #     Set[1, 2].to_a                    #=> [1, 2]
   #     Set[1, 'c', :s].to_a              #=> [1, "c", :s]
