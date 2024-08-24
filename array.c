@@ -6319,12 +6319,15 @@ rb_ary_compact_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.compact -> new_array
+ *    compact -> new_array
  *
- *  Returns a new +Array+ containing all non-+nil+ elements from +self+:
+ *  Returns a new array containing only the non-+nil+ elements from +self+;
+ *  element order is preserved:
  *
- *    a = [nil, 0, nil, 1, nil, 2, nil]
- *    a.compact # => [0, 1, 2]
+ *    a = [nil, 0, nil, false, nil, '', nil, [], nil, {}]
+ *    a.compact # => [0, false, "", [], {}]
+ *
+ *  Related: Array#compact!.
  */
 
 static VALUE
