@@ -4973,12 +4973,14 @@ ary_append(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    array.concat(*other_arrays) -> self
+ *    concat(*other_arrays) -> self
  *
- *  Adds to +array+ all elements from each +Array+ in +other_arrays+; returns +self+:
+ *  Adds to +self+ all elements from each array in +other_arrays+; returns +self+:
  *
  *    a = [0, 1]
- *    a.concat([2, 3], [4, 5]) # => [0, 1, 2, 3, 4, 5]
+ *    a.concat(['two', 'three'], [:four, :five], a)
+ *    # => [0, 1, "two", "three", :four, :five, 0, 1]
+ *
  */
 
 static VALUE
