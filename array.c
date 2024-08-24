@@ -6287,11 +6287,17 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
- *    array.compact! -> self or nil
+ *    compact! -> self or nil
  *
- *  Removes all +nil+ elements from +self+.
+ *  Removes all +nil+ elements from +self+;
+ *  Returns +self+ if any elements are removed, +nil+ otherwise:
  *
- *  Returns +self+ if any elements removed, otherwise +nil+.
+ *    a = [nil, 0, nil, false, nil, '', nil, [], nil, {}]
+ *    a.compact! # => [0, false, "", [], {}]
+ *    a          # => [0, false, "", [], {}]
+ *    a.compact! # => nil
+ *
+ *  Related: Array#compact.
  */
 
 static VALUE
