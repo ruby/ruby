@@ -1326,9 +1326,6 @@ rb_parser_t *rb_ruby_parser_allocate(const rb_parser_config_t *config);
 rb_parser_t *rb_ruby_parser_new(const rb_parser_config_t *config);
 #endif
 
-long rb_parser_string_length(rb_parser_string_t *str);
-char *rb_parser_string_pointer(rb_parser_string_t *str);
-
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_RUBYPARSER_H */
