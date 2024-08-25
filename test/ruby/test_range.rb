@@ -427,11 +427,11 @@ class TestRange < Test::Unit::TestCase
     assert_raise(ArgumentError) { (...'aaa').step('a') }
 
     # step is not provided
-    assert_raise(ArgumentError) { ('a'...'aaaa').step }
+    assert_raise(ArgumentError) { (Time.new(2022)...Time.new(2023)).step }
 
     # step is incompatible
-    assert_raise(TypeError) { ('a'...'aaaa').step(1) {} }
-    assert_raise(TypeError) { ('a'...'aaaa').step(1).to_a }
+    assert_raise(TypeError) { (Time.new(2022)...Time.new(2023)).step('a') {} }
+    assert_raise(TypeError) { (Time.new(2022)...Time.new(2023)).step('a').to_a }
 
     # step is compatible, but shouldn't convert into numeric domain:
     a = []
@@ -465,6 +465,58 @@ class TestRange < Test::Unit::TestCase
     a = []
     (Time.utc(2022, 2, 24)...Time.utc(2022, 2, 24, 01, 01, 03)).step(-1) { a << _1 }
     assert_equal([], a)
+  end
+
+  def test_step_string_legacy
+    # finite
+    a = []
+    ('a'..'g').step(2) { a << _1 }
+    assert_equal(%w[a c e g], a)
+
+    assert_kind_of(Enumerator, ('a'..'g').step(2))
+    assert_equal(%w[a c e g], ('a'..'g').step(2).to_a)
+
+    a = []
+    ('a'...'g').step(2) { a << _1 }
+    assert_equal(%w[a c e], a)
+
+    assert_kind_of(Enumerator, ('a'...'g').step(2))
+    assert_equal(%w[a c e], ('a'...'g').step(2).to_a)
+
+    # endless
+    a = []
+    ('a'...).step(2) { a << _1; break if a.size == 3 }
+    assert_equal(%w[a c e], a)
+
+    assert_kind_of(Enumerator, ('a'...).step(2))
+    assert_equal(%w[a c e], ('a'...).step(2).take(3))
+
+    # beginless
+    assert_raise(ArgumentError) { (...'g').step(2) {} }
+    assert_raise(ArgumentError) { (...'g').step(2) }
+
+    # step is not provided
+    a = []
+    ('a'..'d').step { a << _1 }
+    assert_equal(%w[a b c d], a)
+
+    assert_kind_of(Enumerator, ('a'..'d').step)
+    assert_equal(%w[a b c d], ('a'..'d').step.to_a)
+
+    a = []
+    ('a'...'d').step { a << _1 }
+    assert_equal(%w[a b c], a)
+
+    assert_kind_of(Enumerator, ('a'...'d').step)
+    assert_equal(%w[a b c], ('a'...'d').step.to_a)
+
+    # endless
+    a = []
+    ('a'...).step { a << _1; break if a.size == 3 }
+    assert_equal(%w[a b c], a)
+
+    assert_kind_of(Enumerator, ('a'...).step)
+    assert_equal(%w[a b c], ('a'...).step.take(3))
   end
 
   def test_step_bug15537
