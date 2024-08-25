@@ -175,21 +175,21 @@ describe "Range#step" do
     end
 
     describe "and String values" do
+      it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
+        ("A".."E").step { |x| ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "B", "C", "D", "E"]
+      end
+
+      it "yields String values incremented by #succ called Integer step times" do
+        ("A".."G").step(2) { |x| ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "C", "E", "G"]
+      end
+
+      it "raises a TypeError when passed a Float step" do
+        -> { ("A".."G").step(2.0) { } }.should raise_error(TypeError)
+      end
+
       ruby_version_is ""..."3.4" do
-        it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
-          ("A".."E").step { |x| ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "B", "C", "D", "E"]
-        end
-
-        it "yields String values incremented by #succ called Integer step times" do
-          ("A".."G").step(2) { |x| ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "C", "E", "G"]
-        end
-
-        it "raises a TypeError when passed a Float step" do
-          -> { ("A".."G").step(2.0) { } }.should raise_error(TypeError)
-        end
-
         it "calls #succ on begin and each element returned by #succ" do
           obj = mock("Range#step String start")
           obj.should_receive(:<=>).exactly(3).times.and_return(-1, -1, -1, 0)
@@ -201,17 +201,13 @@ describe "Range#step" do
       end
 
       ruby_version_is "3.4" do
-        it "raises an ArgumentError when not passed a step" do
-          -> { ("A".."E").step {  } }.should raise_error(ArgumentError)
-        end
-
         it "yields String values adjusted by step and less than or equal to end" do
           ("A".."AAA").step("A") { |x| ScratchPad << x }
           ScratchPad.recorded.should == ["A", "AA", "AAA"]
         end
 
         it "raises a TypeError when passed an incompatible type step" do
-          -> { ("A".."G").step(2) { } }.should raise_error(TypeError)
+          -> { ("A".."G").step([]) { } }.should raise_error(TypeError)
         end
 
         it "calls #+ on begin and each element returned by #+" do
@@ -397,17 +393,13 @@ describe "Range#step" do
       end
 
       ruby_version_is "3.4" do
-        it "raises an ArgumentError when not passed a step" do
-          -> { ("A".."E").step {  } }.should raise_error(ArgumentError)
-        end
-
         it "yields String values adjusted by step and less than or equal to end" do
           ("A"..."AAA").step("A") { |x| ScratchPad << x }
           ScratchPad.recorded.should == ["A", "AA"]
         end
 
         it "raises a TypeError when passed an incompatible type step" do
-          -> { ("A".."G").step(2) { } }.should raise_error(TypeError)
+          -> { ("A".."G").step([]) { } }.should raise_error(TypeError)
         end
       end
     end
@@ -482,36 +474,30 @@ describe "Range#step" do
     end
 
     describe "and String values" do
-      ruby_version_is ""..."3.4" do
-        it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
-          eval("('A'..)").step { |x| break if x > "D"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "B", "C", "D"]
+      it "yields String values incremented by #succ and less than or equal to end when not passed a step" do
+        eval("('A'..)").step { |x| break if x > "D"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "B", "C", "D"]
 
-          ScratchPad.record []
-          eval("('A'...)").step { |x| break if x > "D"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "B", "C", "D"]
-        end
+        ScratchPad.record []
+        eval("('A'...)").step { |x| break if x > "D"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "B", "C", "D"]
+      end
 
-        it "yields String values incremented by #succ called Integer step times" do
-          eval("('A'..)").step(2) { |x| break if x > "F"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "C", "E"]
+      it "yields String values incremented by #succ called Integer step times" do
+        eval("('A'..)").step(2) { |x| break if x > "F"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "C", "E"]
 
-          ScratchPad.record []
-          eval("('A'...)").step(2) { |x| break if x > "F"; ScratchPad << x }
-          ScratchPad.recorded.should == ["A", "C", "E"]
-        end
+        ScratchPad.record []
+        eval("('A'...)").step(2) { |x| break if x > "F"; ScratchPad << x }
+        ScratchPad.recorded.should == ["A", "C", "E"]
+      end
 
-        it "raises a TypeError when passed a Float step" do
-          -> { eval("('A'..)").step(2.0) { } }.should raise_error(TypeError)
-          -> { eval("('A'...)").step(2.0) { } }.should raise_error(TypeError)
-        end
+      it "raises a TypeError when passed a Float step" do
+        -> { eval("('A'..)").step(2.0) { } }.should raise_error(TypeError)
+        -> { eval("('A'...)").step(2.0) { } }.should raise_error(TypeError)
       end
 
       ruby_version_is "3.4" do
-        it "raises an ArgumentError when not passed a step" do
-          -> { ("A"..).step {  } }.should raise_error(ArgumentError)
-        end
-
         it "yields String values adjusted by step" do
           eval("('A'..)").step("A") { |x| break if x > "AAA"; ScratchPad << x }
           ScratchPad.recorded.should == ["A", "AA", "AAA"]
@@ -522,8 +508,8 @@ describe "Range#step" do
         end
 
         it "raises a TypeError when passed an incompatible type step" do
-          -> { eval("('A'..)").step(2) { } }.should raise_error(TypeError)
-          -> { eval("('A'...)").step(2) { } }.should raise_error(TypeError)
+          -> { eval("('A'..)").step([]) { } }.should raise_error(TypeError)
+          -> { eval("('A'...)").step([]) { } }.should raise_error(TypeError)
         end
       end
     end
