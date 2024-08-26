@@ -6908,11 +6908,7 @@ static void tokaddmbc(struct parser_params *p, int c, rb_encoding *enc);
 static enum yytokentype parse_string(struct parser_params*,rb_strterm_literal_t*);
 static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t*);
 
-#ifndef RIPPER
-#define set_parser_s_value(x) (void)(x)
-#else
-#define set_parser_s_value(x) (p->s_value = (x))
-#endif
+#define set_parser_s_value(x) (ifdef_ripper(p->s_value = (x), (void)0))
 
 # define set_yylval_node(x) {				\
   YYLTYPE _cur_loc;					\
