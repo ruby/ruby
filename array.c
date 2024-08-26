@@ -6782,9 +6782,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    cycle {|element| ... } -> nil
  *    cycle(count = nil) {|element| ... } -> nil
- *    cycle -> new_enumerator
  *    cycle(count = nil) -> new_enumerator
  *
  *  With a block given, may call the block, depending on the value of argument +count+;
