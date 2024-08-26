@@ -2637,8 +2637,9 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t si
 
     rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
     size_pool->total_allocated_objects++;
-    GC_ASSERT(SIZE_POOL_EDEN_HEAP(size_pool)->total_slots + SIZE_POOL_TOMB_HEAP(size_pool)->total_slots >=
-        (size_pool->total_allocated_objects - size_pool->total_freed_objects - size_pool->final_slots_count));
+    GC_ASSERT(rb_gc_multi_ractor_p() ||
+        SIZE_POOL_EDEN_HEAP(size_pool)->total_slots + SIZE_POOL_TOMB_HEAP(size_pool)->total_slots >=
+            (size_pool->total_allocated_objects - size_pool->total_freed_objects - size_pool->final_slots_count));
 
     return obj;
 }
