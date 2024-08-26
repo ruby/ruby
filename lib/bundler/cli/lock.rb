@@ -48,8 +48,8 @@ module Bundler
         options["add-platform"].each do |platform_string|
           platform = Gem::Platform.new(platform_string)
           if platform.to_s == "unknown"
-            Bundler.ui.warn "The platform `#{platform_string}` is unknown to RubyGems " \
-              "and adding it will likely lead to resolution errors"
+            Bundler.ui.error "The platform `#{platform_string}` is unknown to RubyGems and can't be added to the lockfile."
+            exit 1
           end
           definition.add_platform(platform)
         end

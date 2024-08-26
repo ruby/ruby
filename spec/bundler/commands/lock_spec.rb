@@ -857,9 +857,10 @@ RSpec.describe "bundle lock" do
     expect(lockfile.platforms).to match_array(default_platform_list("ruby"))
   end
 
-  it "warns when adding an unknown platform" do
-    bundle "lock --add-platform foobarbaz"
-    expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and adding it will likely lead to resolution errors")
+  it "fails when adding an unknown platform" do
+    bundle "lock --add-platform foobarbaz", raise_on_error: false
+    expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and can't be added to the lockfile")
+    expect(last_command).to be_failure
   end
 
   it "allows removing platforms" do
