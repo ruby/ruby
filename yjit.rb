@@ -156,13 +156,7 @@ module RubyVM::YJIT
   # Return a hash for statistics generated for the `--yjit-stats` command line option.
   # Return `nil` when option is not passed or unavailable.
   def self.runtime_stats()
-    stats = Primitive.rb_yjit_get_stats()
-    return stats if stats.nil?
-
-    stats[:object_shape_count] = Primitive.object_shape_count
-    return stats unless Primitive.rb_yjit_stats_enabled_p
-
-    stats
+    Primitive.rb_yjit_get_stats
   end
 
   # Format and print out counters as a String. This returns a non-empty

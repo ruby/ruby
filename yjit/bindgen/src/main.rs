@@ -307,6 +307,7 @@ fn main() {
         .allowlist_type("rb_iseq_type")
 
         // From yjit.c
+        .allowlist_function("rb_object_shape_count")
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")

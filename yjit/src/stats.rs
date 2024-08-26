@@ -768,6 +768,8 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
         hash_aset_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
         hash_aset_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
+
+        rb_hash_aset(hash, rust_str_to_sym("object_shape_count"), rb_object_shape_count());
     }
 
     // If we're not generating stats, put only default counters
