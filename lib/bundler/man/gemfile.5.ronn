@@ -242,6 +242,12 @@ The following platform values are deprecated and should be replaced with `window
 
   * `mswin`, `mswin64`, `mingw32`, `x64_mingw`
 
+Note that, while unfortunately using the same terminology, the values of this
+option are different from the values that `bundle lock --add-platform` can take.
+The values of this option are more closer to "Ruby Implementation" while the
+values that `bundle lock --add-platform` understands are more related to OS and
+architecture of the different systems where your lockfile will be used.
+
 ### FORCE_RUBY_PLATFORM
 
 If you always want the pure ruby variant of a gem to be chosen over platform
