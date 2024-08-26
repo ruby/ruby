@@ -1078,10 +1078,16 @@ class Socket < BasicSocket
   # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
     sockets = []
+    ai_seen = {}
     begin
       sockets.clear
       port = nil
       ai_list.each {|ai|
+        ai_id = [ai.pfamily, ai.socktype, ai.protocol, ai.ip_address]
+        if ai_seen.include?(ai_id)
+          next
+        end
+        ai_seen[ai_id] = nil
         begin
           s = Socket.new(ai.pfamily, ai.socktype, ai.protocol)
         rescue SystemCallError
