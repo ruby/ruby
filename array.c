@@ -4107,9 +4107,10 @@ rb_ary_delete_at(VALUE ary, long pos)
 
 /*
  *  call-seq:
- *    array.delete_at(index) -> deleted_object or nil
+ *    delete_at(index) -> deleted_object or nil
  *
- *  Deletes an element from +self+, per the given Integer +index+.
+ *  Deletes the element of +self+ at the given +index+, which must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  When +index+ is non-negative, deletes the element at offset +index+:
  *
@@ -4117,15 +4118,18 @@ rb_ary_delete_at(VALUE ary, long pos)
  *    a.delete_at(1) # => "bar"
  *    a # => [:foo, 2]
  *
- *  If index is too large, returns +nil+.
- *
  *  When +index+ is negative, counts backward from the end of the array:
  *
  *    a = [:foo, 'bar', 2]
  *    a.delete_at(-2) # => "bar"
  *    a # => [:foo, 2]
  *
- *  If +index+ is too small (far from zero), returns nil.
+ *  When +index+ is out of range, returns +nil+.
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a.delete_at(3)  # => nil
+ *    a.delete_at(-4) # => nil
+ *
  */
 
 static VALUE
