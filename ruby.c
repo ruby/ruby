@@ -2121,12 +2121,24 @@ prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size
     memcpy(switches, source, length);
     switches[length] = '\0';
 
+    int no_src_enc = !opt->src.enc.name;
+    int no_ext_enc = !opt->ext.enc.name;
+    int no_int_enc = !opt->intern.enc.name;
+
     moreswitches(switches, opt, 0);
     free(switches);
 
     pm_options_command_line_set(options, prism_script_command_line(opt));
-    if (opt->ext.enc.name != 0) {
+
+    if (no_src_enc && opt->src.enc.name) {
+        opt->src.enc.index = opt_enc_index(opt->src.enc.name);
         pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+    }
+    if (no_ext_enc && opt->ext.enc.name) {
+        opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
+    }
+    if (no_int_enc && opt->intern.enc.name) {
+        opt->intern.enc.index = opt_enc_index(opt->intern.enc.name);
     }
 }
 
