@@ -3995,37 +3995,37 @@ ary_resize_smaller(VALUE ary, long len)
 
 /*
  *  call-seq:
- *    array.delete(obj) -> deleted_object
- *    array.delete(obj) {|nosuch| ... } -> deleted_object or block_return
+ *    delete(object) -> last_deleted_object
+ *    delete(object) {|element| ... } -> last_deleted_object or block_return
  *
  *  Removes zero or more elements from +self+.
  *
- *  When no block is given,
- *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>;
+ *  With no block given,
+ *  removes from +self+ each element +ele+ such that <tt>ele == object</tt>;
  *  returns the last deleted element:
  *
- *    s1 = 'bar'; s2 = 'bar'
- *    a = [:foo, s1, 2, s2]
- *    a.delete('bar') # => "bar"
- *    a # => [:foo, 2]
+ *    a = [0, 1, 2, 2.0]
+ *    a.delete(2) # => 2.0
+ *    a           # => [0, 1]
  *
- *  Returns +nil+ if no elements removed.
+ *  Returns +nil+ if no elements removed:
  *
- *  When a block is given,
- *  removes from +self+ each element +ele+ such that <tt>ele == obj</tt>.
+ *    a.delete(2) # => nil
+ *
+ *  With a block given,
+ *  removes from +self+ each element +ele+ such that <tt>ele == object</tt>.
  *
  *  If any such elements are found, ignores the block
  *  and returns the last deleted element:
  *
- *    s1 = 'bar'; s2 = 'bar'
- *    a = [:foo, s1, 2, s2]
- *    deleted_obj = a.delete('bar') {|obj| fail 'Cannot happen' }
- *    a # => [:foo, 2]
+ *    a = [0, 1, 2, 2.0]
+ *    a.delete(2) {|element| fail 'Cannot happen' } # => 2.0
+ *    a                                             # => [0, 1]
  *
- *  If no such elements are found, returns the block's return value:
+ *  If no such element is found, returns the block's return value:
  *
- *    a = [:foo, 'bar', 2]
- *    a.delete(:nosuch) {|obj| "#{obj} not found" } # => "nosuch not found"
+ *    a.delete(2) {|element| "Element #{element} not found." }
+ *    # => "Element 2 not found."
  *
  */
 
