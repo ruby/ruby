@@ -294,6 +294,8 @@ RSpec.describe "bundle cache with git" do
     FileUtils.mkdir_p bundled_app("vendor/cache")
     FileUtils.cp_r git_path, bundled_app("vendor/cache/foo-1.0-#{path_revision}")
     FileUtils.rm_rf bundled_app("vendor/cache/foo-1.0-#{path_revision}/.git")
+    # bundle install with git repo needs to be run under the git environment.
+    Dir.chdir(bundled_app) { system(*%W[git init --quiet]) }
 
     bundle :install, env: { "BUNDLE_DEPLOYMENT" => "true", "BUNDLE_CACHE_ALL" => "true" }
   end
