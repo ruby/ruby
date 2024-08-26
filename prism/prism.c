@@ -5239,7 +5239,7 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
 
     switch (PM_NODE_TYPE(part)) {
         case PM_STRING_NODE:
-            pm_node_flag_set(part, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+            part->flags = (pm_node_flags_t) ((part->flags | PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN) & ~PM_STRING_FLAGS_MUTABLE);
             break;
         case PM_INTERPOLATED_STRING_NODE:
             if (PM_NODE_FLAG_P(part, PM_NODE_FLAG_STATIC_LITERAL)) {
@@ -5263,7 +5263,7 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
                 // If the embedded statement is a string, then we can make that
                 // string as frozen and static literal, and not touch the static
                 // literal status of this string.
-                pm_node_flag_set(embedded, PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN);
+                embedded->flags = (pm_node_flags_t) ((embedded->flags | PM_NODE_FLAG_STATIC_LITERAL | PM_STRING_FLAGS_FROZEN) & ~PM_STRING_FLAGS_MUTABLE);
 
                 if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_STATIC_LITERAL)) {
                     MUTABLE_FLAGS(node);
