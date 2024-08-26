@@ -623,7 +623,6 @@ typedef struct rb_objspace {
     rb_postponed_job_handle_t finalize_deferred_pjob;
 
     unsigned long live_ractor_cache_count;
-    bool multi_ractor_p;
 } rb_objspace_t;
 
 #ifndef HEAP_PAGE_ALIGN_LOG
@@ -5446,7 +5445,7 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace)
 
     if (!is_lazy_sweeping(objspace) &&
             !finalizing &&
-            !objspace->multi_ractor_p) {
+            !rb_gc_multi_ractor_p()) {
         if (objspace_live_slots(objspace) != data.live_object_count) {
             fprintf(stderr, "heap_pages_final_slots: %"PRIdSIZE", total_freed_objects: %"PRIdSIZE"\n",
                     total_final_slots_count(objspace), total_freed_objects(objspace));
@@ -6468,10 +6467,6 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr)
     rb_objspace_t *objspace = objspace_ptr;
 
     objspace->live_ractor_cache_count++;
-
-    if (objspace->live_ractor_cache_count > 1) {
-        objspace->multi_ractor_p = true;
-    }
 
     return calloc1(sizeof(rb_ractor_newobj_cache_t));
 }
