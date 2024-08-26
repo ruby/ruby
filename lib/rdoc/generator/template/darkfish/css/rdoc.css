@@ -219,17 +219,15 @@ nav a:hover {
 #navigation-toggle {
   z-index: 1000;
   font-size: 2em;
-  position: absolute;
+  display: block;
+  position: fixed;
+  top: 10px;
+  left: 20px;
 }
 
 #navigation-toggle[aria-expanded="true"] {
   top: 10px;
   left: 250px;
-}
-
-#navigation-toggle[aria-expanded="false"] {
-  top: 10px;
-  left: 20px;
 }
 
 nav ul li details {
@@ -265,6 +263,7 @@ main {
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-color);
+  box-sizing: border-box;
 }
 
 @media (min-width: 1024px) {
@@ -715,4 +714,31 @@ main .attribute-access-type {
   font-family: var(--font-code);
 }
 
+@media (max-width: 480px) {
+  nav {
+    width: 100%;
+  }
+
+  main {
+    margin: 1em auto;
+    padding: 0 1em;
+    max-width: 100%;
+  }
+
+  #navigation-toggle {
+    right: 10px;
+    left: auto;
+  }
+
+  #navigation-toggle[aria-expanded="true"] {
+    left: auto;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
 /* @end */
+
