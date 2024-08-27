@@ -33,10 +33,10 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_read_lines
     @config.read_lines(<<~LINES.lines)
-      set bell-style on
+      set show-mode-in-prompt on
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal true, @config.instance_variable_get(:@show_mode_in_prompt)
   end
 
   def test_read_lines_with_variable
@@ -160,21 +160,21 @@ class Reline::Config::Test < Reline::TestCase
   def test_include
     File.open('included_partial', 'wt') do |f|
       f.write(<<~PARTIAL_LINES)
-        set bell-style on
+        set show-mode-in-prompt on
       PARTIAL_LINES
     end
     @config.read_lines(<<~LINES.lines)
       $include included_partial
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal true, @config.instance_variable_get(:@show_mode_in_prompt)
   end
 
   def test_include_expand_path
     home_backup = ENV['HOME']
     File.open('included_partial', 'wt') do |f|
       f.write(<<~PARTIAL_LINES)
-        set bell-style on
+        set show-mode-in-prompt on
       PARTIAL_LINES
     end
     ENV['HOME'] = Dir.pwd
@@ -182,7 +182,7 @@ class Reline::Config::Test < Reline::TestCase
       $include ~/included_partial
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal true, @config.instance_variable_get(:@show_mode_in_prompt)
   ensure
     ENV['HOME'] = home_backup
   end
@@ -190,39 +190,39 @@ class Reline::Config::Test < Reline::TestCase
   def test_if
     @config.read_lines(<<~LINES.lines)
       $if Ruby
-      set bell-style audible
+      set vi-cmd-mode-string (cmd)
       $else
-      set bell-style visible
+      set vi-cmd-mode-string [cmd]
       $endif
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal '(cmd)', @config.instance_variable_get(:@vi_cmd_mode_string)
   end
 
   def test_if_with_false
     @config.read_lines(<<~LINES.lines)
       $if Python
-      set bell-style audible
+      set vi-cmd-mode-string (cmd)
       $else
-      set bell-style visible
+      set vi-cmd-mode-string [cmd]
       $endif
     LINES
 
-    assert_equal :visible, @config.instance_variable_get(:@bell_style)
+    assert_equal '[cmd]', @config.instance_variable_get(:@vi_cmd_mode_string)
   end
 
   def test_if_with_indent
     %w[Ruby Reline].each do |cond|
       @config.read_lines(<<~LINES.lines)
-        set bell-style none
+        set vi-cmd-mode-string {cmd}
           $if #{cond}
-            set bell-style audible
+            set vi-cmd-mode-string (cmd)
           $else
-            set bell-style visible
+            set vi-cmd-mode-string [cmd]
           $endif
       LINES
 
-      assert_equal :audible, @config.instance_variable_get(:@bell_style)
+      assert_equal '(cmd)', @config.instance_variable_get(:@vi_cmd_mode_string)
     end
   end
 

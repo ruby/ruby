@@ -245,22 +245,6 @@ class Reline::Config
       rescue ArgumentError
         @history_size = 500
       end
-    when 'bell-style'
-      @bell_style =
-        case value
-        when 'none', 'off'
-          :none
-        when 'audible', 'on'
-          :audible
-        when 'visible'
-          :visible
-        else
-          :audible
-        end
-    when 'comment-begin'
-      @comment_begin = value.dup
-    when 'completion-query-items'
-      @completion_query_items = value.to_i
     when 'isearch-terminators'
       @isearch_terminators = retrieve_string(raw_value)
     when 'editing-mode'
