@@ -890,7 +890,7 @@
         │   ├── opening_loc: (52,3)-(52,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (52,4)-(52,9))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (52,4)-(52,9))
         │   │           ├── flags: ∅
@@ -931,7 +931,7 @@
         │   ├── opening_loc: (53,3)-(53,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (53,4)-(53,14))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (53,4)-(53,14))
         │   │           ├── flags: ∅
@@ -1000,7 +1000,7 @@
         │   ├── opening_loc: (56,3)-(56,4) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (56,4)-(56,14))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 2)
         │   │       ├── @ CallNode (location: (56,4)-(56,7))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -1123,7 +1123,7 @@
         │   ├── opening_loc: (59,7)-(59,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (59,8)-(59,25))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 3)
         │   │       ├── @ SplatNode (location: (59,8)-(59,13))
         │   │       │   ├── flags: ∅
@@ -1184,7 +1184,7 @@
         │   ├── opening_loc: (60,7)-(60,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (60,8)-(60,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (60,8)-(60,13))
         │   │           ├── flags: ∅
@@ -1221,7 +1221,7 @@
         │   ├── opening_loc: (61,7)-(61,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (61,8)-(61,18))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SplatNode (location: (61,8)-(61,13))
         │   │       │   ├── flags: ∅
@@ -1415,7 +1415,7 @@
         │   ├── opening_loc: (65,7)-(65,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (65,8)-(65,18))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 2)
         │   │       ├── @ CallNode (location: (65,8)-(65,11))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -1462,7 +1462,7 @@
         │   ├── opening_loc: (66,7)-(66,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (66,8)-(66,18))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 2)
         │   │       ├── @ CallNode (location: (66,8)-(66,11))
         │   │       │   ├── flags: variable_call, ignore_visibility
@@ -1773,7 +1773,7 @@
         │   ├── opening_loc: (73,3)-(73,4) = "["
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (73,4)-(73,8))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (73,4)-(73,8))
         │   │           ├── flags: ∅
@@ -2136,7 +2136,7 @@
         │   │           ├── opening_loc: (80,13)-(80,14) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (80,14)-(80,16))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (80,14)-(80,16))
         │   │           │           ├── flags: ∅

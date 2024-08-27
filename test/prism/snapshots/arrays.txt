@@ -1418,7 +1418,7 @@
         │   │           ├── opening_loc: (108,11)-(108,12) = "["
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (108,12)-(108,13))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (108,12)-(108,13))
         │   │           │           ├── flags: ∅
@@ -1476,7 +1476,7 @@
         │   │           ├── opening_loc: (110,11)-(110,12) = "["
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (110,12)-(110,16))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ IntegerNode (location: (110,12)-(110,13))
         │   │           │       │   ├── flags: static_literal, decimal
@@ -1537,7 +1537,7 @@
         │   │           ├── opening_loc: (112,11)-(112,12) = "["
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (112,12)-(112,18))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ SplatNode (location: (112,12)-(112,13))
         │   │           │       │   ├── flags: ∅
@@ -1598,7 +1598,7 @@
         │   │           ├── opening_loc: (114,11)-(114,12) = "["
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (114,12)-(114,21))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 3)
         │   │           │       ├── @ IntegerNode (location: (114,12)-(114,13))
         │   │           │       │   ├── flags: static_literal, decimal
@@ -1660,7 +1660,7 @@
         │   │           ├── opening_loc: (116,11)-(116,12) = "["
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (116,12)-(116,13))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (116,12)-(116,13))
         │   │           │           ├── flags: ∅
@@ -1722,7 +1722,7 @@
         │   │           ├── opening_loc: (118,11)-(118,12) = "["
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (118,12)-(118,16))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ IntegerNode (location: (118,12)-(118,13))
         │   │           │       │   ├── flags: static_literal, decimal
@@ -1793,7 +1793,7 @@
         │   │   │   │   ├── opening_loc: (120,21)-(120,22) = "["
         │   │   │   │   ├── arguments:
         │   │   │   │   │   @ ArgumentsNode (location: (120,22)-(120,23))
-        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── flags: contains_splat
         │   │   │   │   │   └── arguments: (length: 1)
         │   │   │   │   │       └── @ SplatNode (location: (120,22)-(120,23))
         │   │   │   │   │           ├── flags: ∅
@@ -1861,7 +1861,7 @@
             │   │   │   ├── opening_loc: (122,21)-(122,22) = "["
             │   │   │   ├── arguments:
             │   │   │   │   @ ArgumentsNode (location: (122,22)-(122,26))
-            │   │   │   │   ├── flags: ∅
+            │   │   │   │   ├── flags: contains_splat
             │   │   │   │   └── arguments: (length: 2)
             │   │   │   │       ├── @ IntegerNode (location: (122,22)-(122,23))
             │   │   │   │       │   ├── flags: static_literal, decimal

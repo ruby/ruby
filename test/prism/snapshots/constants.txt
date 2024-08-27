@@ -99,7 +99,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (15,4)-(15,8))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (15,4)-(15,8))
         │   │           ├── flags: ∅
@@ -183,7 +183,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (21,9)-(21,13))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ SplatNode (location: (21,9)-(21,13))
         │   │           ├── flags: ∅

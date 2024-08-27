@@ -38,7 +38,7 @@
             │           ├── opening_loc: (1,15)-(1,16) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,16)-(1,17))
-            │           │   ├── flags: ∅
+            │           │   ├── flags: contains_splat
             │           │   └── arguments: (length: 1)
             │           │       └── @ SplatNode (location: (1,16)-(1,17))
             │           │           ├── flags: ∅

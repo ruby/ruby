@@ -2063,6 +2063,10 @@ pm_arguments_node_arguments_append(pm_arguments_node_t *node, pm_node_t *argumen
 
     node->base.location.end = argument->location.end;
     pm_node_list_append(&node->arguments, argument);
+
+    if (PM_NODE_TYPE_P(argument, PM_SPLAT_NODE)) {
+        pm_node_flag_set((pm_node_t *) node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT);
+    }
 }
 
 /**

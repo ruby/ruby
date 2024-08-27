@@ -54,7 +54,7 @@
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (5,7)-(5,9))
-        │       ├── flags: ∅
+        │       ├── flags: contains_splat
         │       └── arguments: (length: 1)
         │           └── @ SplatNode (location: (5,7)-(5,9))
         │               ├── flags: ∅
