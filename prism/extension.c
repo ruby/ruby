@@ -372,7 +372,7 @@ dump_file(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parser_comments(pm_parser_t *parser, VALUE source) {
-    VALUE comments = rb_ary_new();
+    VALUE comments = rb_ary_new_capa(parser->comment_list.size);
 
     for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
         VALUE location_argv[] = {
@@ -394,7 +394,7 @@ parser_comments(pm_parser_t *parser, VALUE source) {
  */
 static VALUE
 parser_magic_comments(pm_parser_t *parser, VALUE source) {
-    VALUE magic_comments = rb_ary_new();
+    VALUE magic_comments = rb_ary_new_capa(parser->magic_comment_list.size);
 
     for (pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) parser->magic_comment_list.head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
         VALUE key_loc_argv[] = {
@@ -444,7 +444,7 @@ parser_data_loc(const pm_parser_t *parser, VALUE source) {
  */
 static VALUE
 parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
-    VALUE errors = rb_ary_new();
+    VALUE errors = rb_ary_new_capa(parser->error_list.size);
     pm_diagnostic_t *error;
 
     for (error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
@@ -487,7 +487,7 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
  */
 static VALUE
 parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
-    VALUE warnings = rb_ary_new();
+    VALUE warnings = rb_ary_new_capa(parser->warning_list.size);
     pm_diagnostic_t *warning;
 
     for (warning = (pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
@@ -564,9 +564,10 @@ static void
 parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
 
-    VALUE yields = rb_ary_new_capa(2);
-    rb_ary_push(yields, pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source));
-    rb_ary_push(yields, INT2FIX(parser->lex_state));
+    VALUE yields = rb_assoc_new(
+        pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source),
+        INT2FIX(parser->lex_state)
+    );
 
     rb_ary_push(parse_lex_data->tokens, yields);
 }
@@ -607,7 +608,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
-    VALUE offsets = rb_ary_new();
+    VALUE offsets = rb_ary_new_capa(parser.newline_list.size);
     VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser.start_line), offsets);
 
     parse_lex_data_t parse_lex_data = {
