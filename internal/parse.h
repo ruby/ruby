@@ -12,6 +12,13 @@
 #include "rubyparser.h"
 #include "internal/static_assert.h"
 
+// The default parser to use for Ruby code.
+// 0: parse.y
+// 1: Prism
+#ifndef RB_DEFAULT_PARSER
+#define RB_DEFAULT_PARSER 0
+#endif
+
 #ifdef UNIVERSAL_PARSER
 #define rb_encoding const void
 #endif
