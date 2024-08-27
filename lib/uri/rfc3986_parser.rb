@@ -142,6 +142,7 @@ module URI
 
     # Compatibility for RFC2396 parser
     def extract(str, schemes = nil, &block) # :nodoc:
+      warn "URI::RFC3986_PARSER.extract is obsoleted. Use URI::RFC2396_PARSER.extract explicitly.", uplevel: 1 if $VERBOSE
       RFC2396_PARSER.extract(str, schemes, &block)
     end
 
