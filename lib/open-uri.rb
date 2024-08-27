@@ -109,6 +109,7 @@ module OpenURI
     :redirect => true,
     :encoding => nil,
     :max_redirects => 64,
+    :request_specific_fields => nil,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -148,7 +149,11 @@ module OpenURI
       end
       encoding = Encoding.find(options[:encoding])
     end
-
+    if options.has_key? :request_specific_fields
+      if !(options[:request_specific_fields].is_a?(Hash) || options[:request_specific_fields].is_a?(Proc))
+        raise ArgumentError, "Invalid request_specific_fields' format: #{options[:request_specific_fields]}"
+      end
+    end
     unless mode == nil ||
            mode == 'r' || mode == 'rb' ||
            mode == File::RDONLY
@@ -215,9 +220,17 @@ module OpenURI
     max_redirects = options[:max_redirects] || Options.fetch(:max_redirects)
     buf = nil
     while true
+      request_specific_fields = {}
+      if options.has_key? :request_specific_fields
+        request_specific_fields = if options[:request_specific_fields].is_a?(Hash)
+                                    options[:request_specific_fields]
+                                  else options[:request_specific_fields].is_a?(Proc)
+                                    options[:request_specific_fields].call(uri)
+                                  end
+      end
       redirect = catch(:open_uri_redirect) {
         buf = Buffer.new
-        uri.buffer_open(buf, find_proxy.call(uri), options)
+        uri.buffer_open(buf, find_proxy.call(uri), options.merge(request_specific_fields))
         nil
       }
       if redirect
@@ -236,6 +249,10 @@ module OpenURI
           # send authentication only for the URI directly specified.
           options = options.dup
           options.delete :http_basic_authentication
+        end
+        if options.include?(:request_specific_fields) && options[:request_specific_fields].is_a?(Hash)
+          # Send request specific headers only for the initial request.
+          options.delete :request_specific_fields
         end
         uri = redirect
         raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
