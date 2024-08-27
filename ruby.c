@@ -1428,10 +1428,10 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     }
     else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
         if (strcmp("prism", s) == 0) {
-            (*rb_ruby_prism_ptr()) = true;
+            *rb_ruby_prism_ptr() = true;
         }
         else if (strcmp("parse.y", s) == 0) {
-            // default behavior
+            *rb_ruby_prism_ptr() = false;
         }
         else {
             rb_raise(rb_eRuntimeError, "unknown parser %s", s);
@@ -2184,6 +2184,12 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         if (NIL_P(error)) {
             ruby_opt_init(opt);
             error = pm_parse_file(result, opt->script_name);
+        }
+
+        // Check if (after requiring all of the files through -r flags) we have
+        // coverage enabled and need to enable coverage on the main script.
+        if (RTEST(rb_get_coverages())) {
+            result->node.coverage_enabled = 1;
         }
 
         // If we found an __END__ marker, then we're going to define a global
@@ -3107,8 +3113,6 @@ ruby_process_options(int argc, char **argv)
     ruby_cmdline_options_t opt;
     VALUE iseq;
     const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
-
-    (*rb_ruby_prism_ptr()) = false;
 
     if (!origarg.argv || origarg.argc <= 0) {
         origarg.argc = argc;

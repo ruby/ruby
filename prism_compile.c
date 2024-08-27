@@ -1395,15 +1395,19 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     for (size_t index = 0; index < elements->size; index++) {
         const pm_node_t *element = elements->nodes[index];
 
+
         switch (PM_NODE_TYPE(element)) {
           case PM_ASSOC_NODE: {
             // Pre-allocation check (this branch can be omitted).
-            if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && !static_literal && ((index + min_tmp_hash_length) < elements->size)) {
+            if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && (
+                (!static_literal && ((index + min_tmp_hash_length) < elements->size)) ||
+                (first_chunk && stack_length == 0)
+              )) {
                 // Count the elements that are statically-known.
                 size_t count = 1;
                 while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
 
-                if (count >= min_tmp_hash_length) {
+                if ((first_chunk && stack_length == 0) || count >= min_tmp_hash_length) {
                     // The subsequence of elements in this hash is long enough
                     // to merit its own hash.
                     VALUE ary = rb_ary_hidden_new(count);
@@ -1419,6 +1423,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
                         rb_ary_cat(ary, elem, 2);
                     }
+                    index --;
 
                     VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                     rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
@@ -1530,7 +1535,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
 // This is details. Users should call pm_setup_args() instead.
 static int
-pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
+pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, VALUE *dup_rest, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
     const pm_node_location_t location = *node_location;
 
@@ -1563,7 +1568,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     *flags |= VM_CALL_KW_SPLAT;
                     has_keyword_splat = true;
 
-                    if (elements->size > 1) {
+                    if (elements->size > 1 || !(elements->size == 1 && PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE))) {
                         // A new hash will be created for the keyword arguments
                         // in this case, so mark the method as passing mutable
                         // keyword splat.
@@ -1676,8 +1681,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     // foo(a, *b, c)
                     //        ^^
                     if (index + 1 < arguments->size || has_regular_blockarg) {
-                        PUSH_INSN1(ret, location, splatarray, Qtrue);
-                        *flags |= VM_CALL_ARGS_SPLAT_MUT;
+                        PUSH_INSN1(ret, location, splatarray, *dup_rest);
+                        if (*dup_rest == Qtrue) *dup_rest = Qfalse;
                     }
                     // If this is the first spalt array seen and it's the last
                     // parameter, we don't want splatarray to dup it.
@@ -1796,10 +1801,49 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
     return orig_argc;
 }
 
+static bool
+pm_setup_args_dup_rest_p(const pm_node_t *node) {
+    switch(PM_NODE_TYPE(node)) {
+      case PM_CALL_NODE:
+        return true;
+      default:
+        return false;
+    }
+}
+
 // Compile the argument parts of a call
 static int
 pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
+    VALUE dup_rest = Qtrue;
+
+    if (arguments_node != NULL) {
+        if (arguments_node->arguments.size >= 2 && PM_NODE_TYPE_P(arguments_node->arguments.nodes[0], PM_SPLAT_NODE) && PM_NODE_TYPE_P(arguments_node->arguments.nodes[1], PM_KEYWORD_HASH_NODE)) {
+            dup_rest = Qfalse;
+
+            const pm_keyword_hash_node_t *keyword_arg = (const pm_keyword_hash_node_t *) arguments_node->arguments.nodes[1];
+            const pm_node_list_t *elements = &keyword_arg->elements;
+
+            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_NODE)) {
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[0];
+
+                if (pm_setup_args_dup_rest_p(assoc->value)) {
+                    dup_rest = Qtrue;
+                }
+            }
+
+            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE)) {
+                const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) elements->nodes[0];
+
+                if (assoc->value && pm_setup_args_dup_rest_p(assoc->value)) {
+                    dup_rest = Qtrue;
+                }
+            }
+        }
+    }
+
+    VALUE initial_dup_rest = dup_rest;
+
     if (block && PM_NODE_TYPE_P(block, PM_BLOCK_ARGUMENT_NODE)) {
         // We compile the `&block_arg` expression first and stitch it later
         // since the nature of the expression influences whether splat should
@@ -1825,12 +1869,24 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
             }
         }
 
-        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, iseq, ret, scope_node, node_location);
+        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
+
+        if (*flags & VM_CALL_ARGS_SPLAT && dup_rest != initial_dup_rest) {
+            *flags |= VM_CALL_ARGS_SPLAT_MUT;
+        }
+
         PUSH_SEQ(ret, block_arg);
+
         return argc;
     }
 
-    return pm_setup_args_core(arguments_node, block, flags, false, kw_arg, iseq, ret, scope_node, node_location);
+    int argc = pm_setup_args_core(arguments_node, block, flags, false, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
+
+    if (*flags & VM_CALL_ARGS_SPLAT && dup_rest != initial_dup_rest) {
+        *flags |= VM_CALL_ARGS_SPLAT_MUT;
+    }
+
+    return argc;
 }
 
 /**
@@ -3825,6 +3881,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_YIELD_NODE:
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
+        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
         return;
       case PM_SUPER_NODE:
       case PM_FORWARDING_SUPER_NODE:
@@ -5792,6 +5849,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         }
                     }
                     else {
+                        PM_COMPILE_NOT_POPPED(element);
+                        if (++new_array_size >= max_new_array_size) FLUSH_CHUNK;
                         static_literal = true;
                     }
                 } else {
@@ -6961,6 +7020,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             retry_end_l = NEW_LABEL(location.line);
 
             PUSH_LABEL(ret, retry_label);
+        }
+        else {
+            iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
         }
 
         PUSH_INSN(ret, location, putself);
@@ -8994,6 +9056,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (parameters_node->block) {
                 body->param.block_start = local_index;
                 body->param.flags.has_block = true;
+                iseq_set_use_block(iseq);
 
                 pm_constant_id_t name = ((const pm_block_parameter_node_t *) parameters_node->block)->name;
 
@@ -9549,6 +9612,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_destroy(&next_scope_node);
         }
 
+        if (!cast->block) {
+            iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+        }
+
         if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
             PUSH_INSN(args, location, splatkw);
         }
@@ -9681,6 +9748,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_INSN1(ret, location, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
+        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
         if (popped) PUSH_INSN(ret, location, pop);
 
         int level = 0;
@@ -10388,6 +10456,123 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
     return lines;
 }
 
+// This is essentially pm_string_mapped_init(), preferring to memory map the
+// file, with additional handling for files that require blocking to properly
+// read (e.g. pipes).
+static bool
+read_entire_file(pm_string_t *string, const char *filepath)
+{
+#ifdef _WIN32
+    // Open the file for reading.
+    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (file == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    // Get the file size.
+    DWORD file_size = GetFileSize(file, NULL);
+    if (file_size == INVALID_FILE_SIZE) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // If the file is empty, then we don't need to do anything else, we'll set
+    // the source to a constant empty string and return.
+    if (file_size == 0) {
+        CloseHandle(file);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        return true;
+    }
+
+    // Create a mapping of the file.
+    HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (mapping == NULL) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // Map the file into memory.
+    uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+    CloseHandle(mapping);
+    CloseHandle(file);
+
+    if (source == NULL) {
+        return false;
+    }
+
+    *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = (size_t) file_size };
+    return true;
+#elif defined(_POSIX_MAPPED_FILES)
+    // Open the file for reading
+    const int open_mode = O_RDONLY | O_NONBLOCK;
+    int fd = open(filepath, open_mode);
+    if (fd == -1) {
+        return false;
+    }
+
+    // Stat the file to get the file size
+    struct stat sb;
+    if (fstat(fd, &sb) == -1) {
+        close(fd);
+        return false;
+    }
+
+    // Ensure it is a file and not a directory
+    if (S_ISDIR(sb.st_mode)) {
+        close(fd);
+        errno = EISDIR;
+        return false;
+    }
+
+    // We need to wait for data first before reading from pipes and character
+    // devices. To not block the entire VM, we need to release the GVL while
+    // reading. Use IO#read to do this and let the GC handle closing the FD.
+    if (S_ISFIFO(sb.st_mode) || S_ISCHR(sb.st_mode)) {
+        VALUE io = rb_io_fdopen((int) fd, open_mode, filepath);
+        rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+        VALUE contents = rb_funcall(io, rb_intern("read"), 0);
+
+        if (!RB_TYPE_P(contents, T_STRING)) {
+            return false;
+        }
+
+        long len = RSTRING_LEN(contents);
+        if (len < 0) {
+            return false;
+        }
+        size_t length = (size_t) len;
+
+        uint8_t *source = xmalloc(length);
+        memcpy(source, RSTRING_PTR(contents), length);
+        *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
+
+        return true;
+    }
+
+    // mmap the file descriptor to virtually get the contents
+    size_t size = (size_t) sb.st_size;
+    uint8_t *source = NULL;
+
+    if (size == 0) {
+        close(fd);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        return true;
+    }
+
+    source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (source == MAP_FAILED) {
+        return false;
+    }
+
+    close(fd);
+    *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
+    return true;
+#endif
+}
+
 /**
  * Attempt to load the file into memory. Return a Ruby error if the file cannot
  * be read.
@@ -10395,7 +10580,7 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
 VALUE
 pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 {
-    if (!pm_string_mapped_init(&result->input, RSTRING_PTR(filepath))) {
+    if (!read_entire_file(&result->input, RSTRING_PTR(filepath))) {
 #ifdef _WIN32
         int e = rb_w32_map_errno(GetLastError());
 #else
@@ -10522,6 +10707,9 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     return string;
 }
 
+// We need access to this function when we're done parsing stdin.
+void rb_reset_argf_lineno(long n);
+
 /**
  * Parse the source off STDIN and store the resulting scope node in the given
  * parse result struct. It is assumed that the parse result object is zeroed
@@ -10539,6 +10727,10 @@ pm_parse_stdin(pm_parse_result_t *result)
     // freed. At this point we've handed over ownership, so we don't need to
     // free the buffer itself.
     pm_string_owned_init(&result->input, (uint8_t *) pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+
+    // When we're done parsing, we reset $. because we don't want the fact that
+    // we went through an IO object to be visible to the user.
+    rb_reset_argf_lineno(0);
 
     return pm_parse_process(result, node);
 }

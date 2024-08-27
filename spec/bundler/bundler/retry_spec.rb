@@ -68,7 +68,7 @@ RSpec.describe Bundler::Retry do
       it "print error message with newlines" do
         allow(Bundler.ui).to  receive(:debug?).and_return(false)
         expect(Bundler.ui).to receive(:info).with("").twice
-        expect(Bundler.ui).to receive(:warn).with(failure_message, false)
+        expect(Bundler.ui).to receive(:warn).with(failure_message, true)
 
         expect do
           Bundler::Retry.new("test", [], 1).attempt do

@@ -2189,7 +2189,7 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS), "klass=%"PRIxVALUE", type=%d", klass, TYPE(klass));
 
     RB_VM_LOCK_ENTER();
     {

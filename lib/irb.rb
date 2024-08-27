@@ -1131,7 +1131,7 @@ module IRB
       end
 
       code.force_encoding(@context.io.encoding)
-      if (command, arg = parse_command(code))
+      if (command, arg = @context.parse_command(code))
         command_class = Command.load_command(command)
         Statement::Command.new(code, command_class, arg)
       else
@@ -1140,35 +1140,8 @@ module IRB
       end
     end
 
-    ASSIGN_OPERATORS_REGEXP = Regexp.union(%w[= += -= *= /= %= **= &= |= &&= ||= ^= <<= >>=])
-
-    def parse_command(code)
-      command_name, arg = code.strip.split(/\s+/, 2)
-      return unless code.lines.size == 1 && command_name
-
-      arg ||= ''
-      command = command_name.to_sym
-      # Command aliases are always command. example: $, @
-      if (alias_name = @context.command_aliases[command])
-        return [alias_name, arg]
-      end
-
-      # Assignment-like expression is not a command
-      return if arg.start_with?(ASSIGN_OPERATORS_REGEXP) && !arg.start_with?(/==|=~/)
-
-      # Local variable have precedence over command
-      return if @context.local_variables.include?(command)
-
-      # Check visibility
-      public_method = !!Kernel.instance_method(:public_method).bind_call(@context.main, command) rescue false
-      private_method = !public_method && !!Kernel.instance_method(:method).bind_call(@context.main, command) rescue false
-      if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
-        [command, arg]
-      end
-    end
-
     def command?(code)
-      !!parse_command(code)
+      !!@context.parse_command(code)
     end
 
     def configure_io

@@ -856,6 +856,16 @@ class TestGc < Test::Unit::TestCase
     ensure
       GC.enable unless disabled
     end
+
+    begin
+      disabled = GC.disable
+      c = GC.count
+      GC.start(immediate_mark: false, immediate_sweep: false)
+      10_000.times { Object.new }
+      assert_equal 1, GC.count - c
+    ensure
+      GC.enable unless disabled
+    end
   end
 
   def test_vm_object

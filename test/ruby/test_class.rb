@@ -721,9 +721,13 @@ class TestClass < Test::Unit::TestCase
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
-      Date = (class C\u{1f5ff}; self; end).new
+      module Bug
+        module Class
+          TestClassDefinedInC = (class C\u{1f5ff}; self; end).new
+        end
+      end
       assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
-        require 'date'
+        require '-test-/class'
       }
     end;
   end

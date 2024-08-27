@@ -427,11 +427,11 @@ pm_regexp_options_remove(pm_regexp_options_t *options, uint8_t key) {
 /**
  * True if the given key is set in the options.
  */
-static bool
-pm_regexp_options_added_p(pm_regexp_options_t *options, uint8_t key) {
+static uint8_t
+pm_regexp_options_state(pm_regexp_options_t *options, uint8_t key) {
     if (key >= PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM && key <= PRISM_REGEXP_OPTION_STATE_SLOT_MAXIMUM) {
         key = (uint8_t) (key - PRISM_REGEXP_OPTION_STATE_SLOT_MINIMUM);
-        return options->values[key] == PM_REGEXP_OPTION_STATE_ADDED;
+        return options->values[key];
     }
 
     return false;
@@ -583,7 +583,10 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                 // subexpression, then we are going to be setting the options
                 // for the parent group. In this case we are safe to return now.
                 if (*parser->cursor == ')') {
-                    if (pm_regexp_options_added_p(&options, 'x')) parser->extended_mode = true;
+                    if (pm_regexp_options_state(&options, 'x') == PM_REGEXP_OPTION_STATE_ADDED) {
+                        parser->extended_mode = true;
+                    }
+
                     parser->cursor++;
                     return true;
                 }
@@ -610,7 +613,15 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                 // subexpression, then we are going to be setting the options
                 // for the parent group. In this case we are safe to return now.
                 if (*parser->cursor == ')') {
-                    if (pm_regexp_options_added_p(&options, 'x')) parser->extended_mode = true;
+                    switch (pm_regexp_options_state(&options, 'x')) {
+                        case PM_REGEXP_OPTION_STATE_ADDED:
+                            parser->extended_mode = true;
+                            break;
+                        case PM_REGEXP_OPTION_STATE_REMOVED:
+                            parser->extended_mode = false;
+                            break;
+                    }
+
                     parser->cursor++;
                     return true;
                 }
@@ -624,8 +635,13 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
     }
 
     bool extended_mode = parser->extended_mode;
-    if (pm_regexp_options_added_p(&options, 'x')) {
-        parser->extended_mode = true;
+    switch (pm_regexp_options_state(&options, 'x')) {
+        case PM_REGEXP_OPTION_STATE_ADDED:
+            parser->extended_mode = true;
+            break;
+        case PM_REGEXP_OPTION_STATE_REMOVED:
+            parser->extended_mode = false;
+            break;
     }
 
     // Now, parse the expressions within this group.

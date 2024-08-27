@@ -215,9 +215,13 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
         else {
 #if defined HAVE_PWD_H
             const char *username = getenv("USER");
-            struct passwd *pwent = getpwnam(username ? username : getlogin());
-            if (pwent && pwent->pw_shell)
-                shellname = pwent->pw_shell;
+            if (username == NULL)
+                username = getlogin();
+            if (username != NULL) {
+                struct passwd *pwent = getpwnam(username);
+                if (pwent && pwent->pw_shell)
+                    shellname = pwent->pw_shell;
+            }
 #endif
         }
         v = rb_str_new2(shellname);

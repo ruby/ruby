@@ -15,7 +15,7 @@ module Bundler
     class Package
       attr_reader :name, :platforms, :dependency, :locked_version
 
-      def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, dependency: nil)
+      def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, prefer_local: false, dependency: nil)
         @name = name
         @platforms = platforms
         @locked_version = locked_specs[name].first&.version
@@ -23,6 +23,7 @@ module Bundler
         @dependency = dependency || Dependency.new(name, @locked_version)
         @top_level = !dependency.nil?
         @prerelease = @dependency.prerelease? || @locked_version&.prerelease? || prerelease ? :consider_first : :ignore
+        @prefer_local = prefer_local
       end
 
       def platform_specs(specs)
@@ -67,6 +68,14 @@ module Bundler
 
       def consider_prereleases!
         @prerelease = :consider_last
+      end
+
+      def prefer_local?
+        @prefer_local
+      end
+
+      def consider_remote_versions!
+        @prefer_local = false
       end
 
       def force_ruby_platform?

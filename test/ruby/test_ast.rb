@@ -273,7 +273,7 @@ class TestAst < Test::Unit::TestCase
     assert_parse("def m; defined?(retry); end")
     assert_parse("!begin defined?(retry); end")
     assert_parse("begin rescue; else; defined?(retry); end")
-    assert_parse("begin rescue; ensure; defined?(retry); end")
+    assert_parse("begin rescue; ensure; p defined?(retry); end")
     assert_parse("END {defined?(retry)}")
     assert_parse("begin rescue; END {defined?(retry)}; end")
     assert_parse("!defined? retry")
@@ -281,7 +281,7 @@ class TestAst < Test::Unit::TestCase
     assert_parse("def m; defined? retry; end")
     assert_parse("!begin defined? retry; end")
     assert_parse("begin rescue; else; defined? retry; end")
-    assert_parse("begin rescue; ensure; defined? retry; end")
+    assert_parse("begin rescue; ensure; p defined? retry; end")
     assert_parse("END {defined? retry}")
     assert_parse("begin rescue; END {defined? retry}; end")
 

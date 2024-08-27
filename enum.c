@@ -1235,29 +1235,47 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *    tally -> new_hash
- *    tally(hash) -> hash
+ *    tally(hash = {}) -> hash
  *
- *  Returns a hash containing the counts of equal elements:
- *
- *  - Each key is an element of +self+.
- *  - Each value is the number elements equal to that key.
- *
- *  With no argument:
+ *  When argument +hash+ is not given,
+ *  returns a new hash whose keys are the distinct elements in +self+;
+ *  each integer value is the count of occurrences of each element:
  *
  *    %w[a b c b c a c b].tally # => {"a"=>2, "b"=>3, "c"=>3}
  *
- *  With a hash argument, that hash is used for the tally (instead of a new hash),
- *  and is returned;
- *  this may be useful for accumulating tallies across multiple enumerables:
+ *  When argument +hash+ is given,
+ *  returns +hash+, possibly augmented; for each element +ele+ in +self+:
  *
- *    hash = {}
- *    hash = %w[a c d b c a].tally(hash)
- *    hash # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
- *    hash = %w[b a z].tally(hash)
- *    hash # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
- *    hash = %w[b a m].tally(hash)
- *    hash # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=> 1}
+ *  - Adds it as a key with a zero value if that key does not already exist:
+ *
+ *      hash[ele] = 0 unless hash.include?(ele)
+ *
+ *  - Increments the value of key +ele+:
+ *
+ *      hash[ele] += 1
+ *
+ *  This is useful for accumulating tallies across multiple enumerables:
+ *
+ *    h = {}                   # => {}
+ *    %w[a c d b c a].tally(h) # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
+ *    %w[b a z].tally(h)       # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
+ *    %w[b a m].tally(h)       # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=>1}
+ *
+ *  The key to be added or found for an element depends on the class of +self+;
+ *  see {Enumerable in Ruby Classes}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes].
+ *
+ *  Examples:
+ *
+ *  - Array (and certain array-like classes):
+ *    the key is the element (as above).
+ *  - Hash (and certain hash-like classes):
+ *    the key is the 2-element array formed from the key-value pair:
+ *
+ *      h = {}                        # => {}
+ *      {foo: 'a', bar: 'b'}.tally(h) # => {[:foo, "a"]=>1, [:bar, "b"]=>1}
+ *      {foo: 'c', bar: 'd'}.tally(h) # => {[:foo, "a"]=>1, [:bar, "b"]=>1, [:foo, "c"]=>1, [:bar, "d"]=>1}
+ *      {foo: 'a', bar: 'b'}.tally(h) # => {[:foo, "a"]=>2, [:bar, "b"]=>2, [:foo, "c"]=>1, [:bar, "d"]=>1}
+ *      {foo: 'c', bar: 'd'}.tally(h) # => {[:foo, "a"]=>2, [:bar, "b"]=>2, [:foo, "c"]=>2, [:bar, "d"]=>2}
  *
  */
 

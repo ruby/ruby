@@ -9,18 +9,33 @@
 /* vim: ft=css et sw=2 ts=2 sts=2 */
 /* Base Green is: #6C8C22 */
 
+/* 1. Variables and Root Styles */
 :root {
   --sidebar-width: 300px;
+  --primary-color: #2c8c5e;  /* A more muted green */
+  --secondary-color: #246b4b;  /* A darker, muted green */
+  --text-color: #333;
+  --background-color: #f8f9fa;
+  --code-block-background-color: #f0f4f8;
+  --code-block-border-color: #d1d5da;
+  --link-color: #246b4b;  /* A muted teal-green color */
+  --link-hover-color: #25a28a;  /* A slightly brighter teal-green */
+  --border-color: #e0e0e0;
+  --sidebar-text-color: #2c3e50;  /* Dark blue-gray for contrast */
+
+  /* Font family variables */
+  --font-primary: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+  --font-heading: 'Helvetica Neue', Arial, sans-serif;
+  --font-code: 'Source Code Pro', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
-.hide { display: none !important; }
-
-* { padding: 0; margin: 0; }
-
+/* 2. Global Styles */
 body {
-  background: #fafafa;
-  font-family: Lato, sans-serif;
-  font-weight: 300;
+  background: var(--background-color);
+  font-family: var(--font-primary);
+  font-weight: 400;
+  color: var(--text-color);
+  line-height: 1.6;
 
   /* Layout */
   display: flex;
@@ -29,10 +44,7 @@ body {
   margin: 0;
 }
 
-body > :last-child {
-  width: 100%;
-}
-
+/* 3. Typography */
 h1 span,
 h2 span,
 h3 span,
@@ -74,36 +86,36 @@ h6:target {
   border-left: 10px solid #f1edba;
 }
 
+/* 4. Links */
 :link,
 :visited {
-  color: #6C8C22;
+  color: var(--link-color);
   text-decoration: none;
+  transition: color 0.3s ease;
+  font-weight: 600;  /* Make links bolder */
 }
 
 :link:hover,
 :visited:hover {
-  border-bottom: 1px dotted #6C8C22;
+  color: var(--link-hover-color);
+  text-decoration: underline;
 }
 
+/* 5. Code and Pre */
 code,
 pre {
-  font-family: "Source Code Pro", Monaco, monospace;
-  background-color: rgba(27,31,35,0.05);
-  padding: 0em 0.2em;
-  border-radius: 0.2em;
+  font-family: var(--font-code);
+  background-color: var(--code-block-background-color);
+  border: 1px solid var(--code-block-border-color);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 15px;  /* Increased from 14px */
+  line-height: 1.5;  /* Slightly increased for better readability with larger font */
+  margin: 1em 0;  /* Add some vertical margin */
 }
 
-em {
-  text-decoration-color: rgba(52, 48, 64, 0.25);
-  text-decoration-line: underline;
-  text-decoration-style: dotted;
-}
-
-strong,
-em {
-  background-color: rgba(158, 178, 255, 0.1);
-}
-
+/* 6. Tables */
 table {
   margin: 0;
   border-spacing: 0;
@@ -123,56 +135,252 @@ table tr:nth-child(even) td {
   background-color: #f5f4f6;
 }
 
-/* @group Generic Classes */
+/* 7. Navigation and Sidebar */
+nav {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  border-right: 1px solid var(--border-color);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  background: var(--background-color);
+  overflow-y: auto;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  color: var(--sidebar-text-color);
+}
 
-.initially-hidden {
+nav[hidden] {
   display: none;
 }
 
-#search-field {
-  width: 98%;
-  background: white;
-  border: none;
-  height: 1.5em;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  text-align: left;
-}
-#search-field:focus {
-  background: #f1edba;
-}
-#search-field:-moz-placeholder,
-#search-field::-webkit-input-placeholder {
-  font-weight: bold;
-  color: #666;
+nav footer {
+  padding: 1em;
+  border-top: 1px solid #ccc;
 }
 
-.missing-docs {
-  font-size: 120%;
-  background: white url(../images/wrench_orange.png) no-repeat 4px center;
-  color: #ccc;
-  line-height: 2em;
-  border: 1px solid #d00;
-  opacity: 1;
-  padding-left: 20px;
-  text-indent: 24px;
-  letter-spacing: 3px;
-  font-weight: bold;
-  -webkit-border-radius: 5px;
-  -moz-border-radius: 5px;
-}
-
-.target-section {
-  border: 2px solid #dcce90;
-  border-left-width: 8px;
+nav .nav-section {
+  margin-top: 1em;
   padding: 0 1em;
-  background: #fff3c2;
 }
 
-/* @end */
+nav h2 {
+  margin: 0 0 0.5em;
+  padding: 0.5em 0;
+  font-size: 1.2em;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+}
 
-/* @group Index Page, Standalone file pages */
+nav h3,
+#table-of-contents-navigation {
+  margin: 0;
+  padding: 0.5em 0;
+  font-size: 1em;
+  color: var(--text-color);
+}
+
+nav ul,
+nav dl,
+nav p {
+  padding: 0;
+  list-style: none;
+  margin: 0.5em 0;
+}
+
+nav ul li {
+  margin-bottom: 0.3em;
+}
+
+nav ul ul {
+  padding-left: 1em;
+}
+
+nav ul ul ul {
+  padding-left: 1em;
+}
+
+nav ul ul ul ul {
+  padding-left: 1em;
+}
+
+nav a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+#navigation-toggle {
+  z-index: 1000;
+  font-size: 2em;
+  display: block;
+  position: fixed;
+  top: 10px;
+  left: 20px;
+}
+
+#navigation-toggle[aria-expanded="true"] {
+  top: 10px;
+  left: 250px;
+}
+
+nav ul li details {
+  position: relative;
+  padding-right: 1.5em;  /* Add space for the marker on the right */
+}
+
+nav ul li details > summary {
+  list-style: none;  /* Remove the default marker */
+  position: relative; /* So that the open/close triangle can position itself absolutely inside */
+}
+
+nav ul li details > summary::after {
+  content: '▶';  /* Unicode right-pointing triangle */
+  position: absolute;
+  font-size: 0.8em;
+  bottom: 0.1em;
+  margin-left: 0.3em;
+  transition: transform 0.2s ease;
+}
+
+nav ul li details[open] > summary::after {
+  transform: rotate(90deg);  /* Rotate the triangle when open */
+}
+
+/* 8. Main Content */
+main {
+  flex: 1;
+  display: block;
+  margin: 3em auto;
+  padding: 0 2em;
+  max-width: 800px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+  main {
+    margin-left: var(--sidebar-width);
+  }
+}
+
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6 {
+  font-family: var(--font-heading);
+}
+
+@media (min-width: 1024px) {
+  .table-of-contents main {
+    margin-left: 20em;
+  }
+}
+
+#validator-badges {
+  margin: 1em 1em 2em;
+  font-size: smaller;
+}
+
+/* 9. Search */
+#search-section {
+  padding: 1em;
+  background-color: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+#search-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+#search-field {
+  width: 100%;
+  padding: 0.5em 1em 0.5em 2em;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s ease;
+  background-color: var(--background-color);
+}
+
+#search-field:focus {
+  border-color: var(--primary-color);
+}
+
+#search-field::placeholder {
+  color: var(--text-color);
+  opacity: 0.6;
+}
+
+#search-field-wrapper::before {
+  content: "\1F50D";  /* Unicode for magnifying glass */
+  position: absolute;
+  left: 0.75em;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-color);
+  opacity: 0.6;
+}
+
+/* 10. Utility Classes */
+.hide { display: none !important; }
+.initially-hidden { display: none; }
+
+/* 11. Media Queries */
+@media (min-width: 1024px) {
+  /* Styles for larger screens */
+}
+
+/* 12. Print Styles */
+@media print {
+  /* Print-specific styles */
+}
+
+/* 13. Syntax Highlighting */
+.ruby-constant   { color: #0366d6; }  /* Bright blue for constants */
+.ruby-keyword    { color: #d73a49; }  /* Red for keywords */
+.ruby-ivar       { color: #e36209; }  /* Orange for instance variables */
+.ruby-operator   { color: #005cc5; }  /* Dark blue for operators */
+.ruby-identifier { color: #24292e; }  /* Dark gray for identifiers */
+.ruby-node       { color: #22863a; }  /* Green for interpolation */
+.ruby-comment    { color: #6a737d; }  /* Gray for comments */
+.ruby-regexp     { color: #032f62; }  /* Navy for regular expressions */
+.ruby-value      { color: #005cc5; }  /* Dark blue for numeric values */
+.ruby-string     { color: #22863a; }  /* Green for strings */
+
+code {
+  background-color: #f0f4f8;  /* Match pre background */
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 85%;
+}
+
+em {
+  text-decoration-color: rgba(52, 48, 64, 0.25);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+}
+
+strong,
+em {
+  background-color: rgba(158, 178, 255, 0.1);
+}
+
+/* 14. Specific Component Styles */
 .table-of-contents ul {
   margin: 1em;
   list-style: none;
@@ -201,222 +409,6 @@ table tr:nth-child(even) td {
   background: url(../images/delete.png) no-repeat;
 }
 
-/* @end */
-
-/* @group Top-Level Structure */
-
-nav {
-  font-family: Helvetica, sans-serif;
-  font-size: 14px;
-  border-right: 1px solid #ccc;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  overflow: auto;
-  z-index: 10;
-
-  /* Layout */
-  width: var(--sidebar-width);
-  min-height: 100vh;
-  background: white;
-
-  display: flex;
-  flex-direction: column;
-}
-
-nav[hidden] {
-  display: none;
-}
-
-nav footer {
-  padding: 1em;
-  border-top: 1px solid #ccc;
-}
-
-main {
-  flex: 1;
-  display: block;
-  margin: 3em auto 1em;
-  padding: 0 1em; /* Add padding to keep space between main content and sidebar/right side of the screen */
-  min-width: 340px;
-  font-size: 16px;
-  width: 100%;
-  max-width: 64em;
-}
-
-@media (min-width: 1024px) {
-  main {
-    margin-left: var(--sidebar-width);
-  }
-}
-
-main h1,
-main h2,
-main h3,
-main h4,
-main h5,
-main h6 {
-  font-family: Helvetica, sans-serif;
-}
-
-@media (min-width: 1024px) {
-  .table-of-contents main {
-    margin-left: 20em;
-  }
-}
-
-#validator-badges {
-  margin: 1em 1em 2em;
-  font-size: smaller;
-}
-
-/* @end */
-
-/* @group navigation */
-nav {
-  margin-bottom: 1em;
-}
-
-nav .nav-section {
-  margin-top: 2em;
-  border-top: 2px solid #aaa;
-  font-size: 90%;
-  flex: 1;
-}
-
-nav h2 {
-  margin: 0;
-  padding: 2px 8px 2px 8px;
-  background-color: #e8e8e8;
-  color: #555;
-  font-size: 125%;
-  text-align: center;
-}
-
-nav h3,
-#table-of-contents-navigation {
-  margin: 0;
-  padding: 2px 8px 2px 8px;
-  text-align: right;
-  background-color: #e8e8e8;
-  color: #555;
-}
-
-nav ul,
-nav dl,
-nav p {
-  padding: 4px 8px 0;
-  list-style: none;
-}
-
-.navigation-toggle {
-  position: fixed;
-  left: 4px;
-  z-index: 100;
-
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  font-size: 24px;
-}
-.navigation-toggle[aria-expanded="true"] {
-  left: 260px;
-}
-
-/* Adds a suble gradient to help the toggle stand out from the background */
-.navigation-toggle::before {
-  content: "";
-  background: linear-gradient(180deg, rgba(250,250,250,1) 40%, rgba(250,250,250,0.8) 70%, rgba(250,250,250,0) 100%);
-  display: block;
-  z-index: -1;
-  pointer-events: none;
-  position: fixed;
-  top: 0;
-  height: 50px;
-  width: 100vw;
-}
-
-.navigation-toggle[aria-expanded="true"]::before {
-  height: 0;
-}
-
-#project-navigation .nav-section {
-  margin: 0;
-  border-top: 0;
-}
-
-#home-section h2 {
-  text-align: center;
-}
-
-#table-of-contents-navigation {
-  font-size: 1.2em;
-  font-weight: bold;
-  text-align: center;
-}
-
-#search-section {
-  margin-top: 0;
-  border-top: 0;
-}
-
-#search-field-wrapper {
-  border-top: 1px solid #aaa;
-  border-bottom: 1px solid #aaa;
-  padding: 3px 8px;
-  background-color: #e8e8e8;
-  color: #555;
-}
-
-ul.link-list li {
-  white-space: nowrap;
-  line-height: 1.4em;
-}
-
-ul.link-list .type {
-  font-size: 8px;
-  text-transform: uppercase;
-  color: white;
-  background: #969696;
-  padding: 2px 4px;
-  -webkit-border-radius: 5px;
-}
-
-dl.note-list dt {
-  float: left;
-  margin-right: 1em;
-}
-
-.calls-super {
-  background: url(../images/arrow_up.png) no-repeat right center;
-}
-
-.nav-section details > summary {
-  display: block;
-}
-
-.nav-section details > summary::-webkit-details-marker {
-  display: none;
-}
-
-.nav-section details > summary::before {
-  content: "";
-}
-
-.nav-section details > summary::after {
-  content: "\25B6"; /* BLACK RIGHT-POINTING TRIANGLE */
-  font-size: 0.8em;
-  margin-left: 0.4em;
-}
-
-.nav-section details[open] > summary::after {
-  content: "\25BD"; /* WHITE DOWN-POINTING TRIANGLE */
-}
-
-/* @end */
-
-/* @group Documentation Section */
 main {
   color: #333;
 }
@@ -439,43 +431,43 @@ main sup {
 main h1[class] {
   margin-top: 0;
   margin-bottom: 1em;
-  font-size: 2em;
-  color: #6C8C22;
+  font-size: 2.5em;
+  color: var(--primary-color);
 }
 
 main h1 {
-  margin: 2em 0 0.5em;
-  font-size: 1.7em;
+  margin: 1.5em 0 0.5em;
+  font-size: 2.2em;
+  color: var(--secondary-color);
 }
 
 main h2 {
-  margin: 2em 0 0.5em;
-  font-size: 1.5em;
+  margin: 1.3em 0 0.5em;
+  font-size: 1.8em;
+  color: var(--secondary-color);
 }
 
 main h3 {
-  margin: 2em 0 0.5em;
-  font-size: 1.2em;
+  margin: 1.2em 0 0.5em;
+  font-size: 1.5em;
+  color: var(--secondary-color);
 }
 
 main h4 {
-  margin: 2em 0 0.5em;
+  margin: 1.1em 0 0.5em;
+  font-size: 1.3em;
+  color: var(--secondary-color);
+}
+
+main h5, main h6 {
+  margin: 1em 0 0.5em;
   font-size: 1.1em;
-}
-
-main h5 {
-  margin: 2em 0 0.5em;
-  font-size: 1em;
-}
-
-main h6 {
-  margin: 2em 0 0.5em;
-  font-size: 1em;
+  color: var(--secondary-color);
 }
 
 main p {
-  margin: 0 0 0.5em;
-  line-height: 1.4em;
+  line-height: 1.5em;
+  font-weight: 400;
 }
 
 main pre {
@@ -510,6 +502,8 @@ main dl {
 
 main dt {
   margin-bottom: 0.5em;
+  margin-right: 1em;
+  float: left;
   font-weight: bold;
 }
 
@@ -556,7 +550,7 @@ main header h3 {
 .constants-list > dl dt {
   margin-bottom: 0.75em;
   padding-left: 0;
-  font-family: "Source Code Pro", Monaco, monospace;
+  font-family: var(--font-code);
   font-size: 110%;
 }
 
@@ -603,7 +597,7 @@ main .method-source-code.active-menu {
 }
 
 main .method-description .method-calls-super {
-  color: #333;
+  color: var(--text-color);
   font-weight: bold;
 }
 
@@ -619,10 +613,10 @@ main .method-detail:target {
 
 main .method-heading {
   position: relative;
-  font-family: "Source Code Pro", Monaco, monospace;
+  font-family: var(--font-code);
   font-size: 110%;
   font-weight: bold;
-  color: #333;
+  color: var(--text-color);
 }
 main .method-heading :link,
 main .method-heading :visited {
@@ -650,7 +644,7 @@ main .method-alias .method-heading {
 main .method-description,
 main .aliases {
   margin-top: 0.75em;
-  color: #333;
+  color: var(--text-color);
 }
 
 main .aliases {
@@ -674,38 +668,14 @@ main .attribute-access-type {
 
 /* @end */
 
-/* @group Source Code */
-
-pre {
-  margin: 0.5em 0;
-  border: 1px dashed #999;
-  padding: 0.5em;
-  background: #262626;
-  color: white;
-  overflow: auto;
-}
-
-.ruby-constant   { color: #7fffd4; background: transparent; }
-.ruby-keyword    { color: #00ffff; background: transparent; }
-.ruby-ivar       { color: #eedd82; background: transparent; }
-.ruby-operator   { color: #00ffee; background: transparent; }
-.ruby-identifier { color: #ffdead; background: transparent; }
-.ruby-node       { color: #ffa07a; background: transparent; }
-.ruby-comment    { color: #dc0000; background: transparent; }
-.ruby-regexp     { color: #ffa07a; background: transparent; }
-.ruby-value      { color: #7fffd4; background: transparent; }
-
-/* @end */
-
-
 /* @group search results */
 #search-results {
-  font-family: Lato, sans-serif;
+  font-family: var(--font-primary);
   font-weight: 300;
 }
 
 #search-results .search-match {
-  font-family: Helvetica, sans-serif;
+  font-family: var(--font-heading);
   font-weight: normal;
 }
 
@@ -741,7 +711,34 @@ pre {
 
 #search-results pre {
   margin: 0.5em;
-  font-family: "Source Code Pro", Monaco, monospace;
+  font-family: var(--font-code);
 }
 
+@media (max-width: 480px) {
+  nav {
+    width: 100%;
+  }
+
+  main {
+    margin: 1em auto;
+    padding: 0 1em;
+    max-width: 100%;
+  }
+
+  #navigation-toggle {
+    right: 10px;
+    left: auto;
+  }
+
+  #navigation-toggle[aria-expanded="true"] {
+    left: auto;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
 /* @end */
+

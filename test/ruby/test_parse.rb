@@ -952,6 +952,7 @@ x = __ENCODING__
     assert_nil assert_warning(useless_use) {eval("true; nil")}
     assert_nil assert_warning(useless_use) {eval("false; nil")}
     assert_nil assert_warning(useless_use) {eval("defined?(1); nil")}
+    assert_nil assert_warning(useless_use) {eval("begin; ensure; x; end")}
     assert_equal 1, x
 
     assert_syntax_error("1; next; 2", /Invalid next/)

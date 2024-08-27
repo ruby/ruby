@@ -188,9 +188,11 @@ module Bundler
       end
 
       def specs(*)
-        set_cache_path!(app_cache_path) if has_app_cache? && !local?
+        set_cache_path!(app_cache_path) if use_app_cache?
 
         if requires_checkout? && !@copied
+          FileUtils.rm_rf(app_cache_path) if use_app_cache? && git_proxy.not_a_bare_repository?
+
           fetch
           checkout
         end
@@ -319,6 +321,10 @@ module Bundler
 
       def has_app_cache?
         cached_revision && super
+      end
+
+      def use_app_cache?
+        has_app_cache? && !local?
       end
 
       def requires_checkout?

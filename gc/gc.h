@@ -10,7 +10,6 @@
  *             first introduced for [Feature #20470].
  */
 #include "ruby/ruby.h"
-#include "gc/gc_impl.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
 unsigned int rb_gc_vm_lock(void);
@@ -58,11 +57,7 @@ void rb_ractor_finish_marking(void);
 static int
 hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+    if (rb_gc_location((VALUE)value) != (VALUE)value) {
         return ST_REPLACE;
     }
     return ST_CONTINUE;
@@ -71,21 +66,17 @@ hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int e
 static int
 hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
-    }
+    *value = rb_gc_location((VALUE)*value);
 
     return ST_CONTINUE;
 }
 
 static void
-gc_ref_update_table_values_only(void *objspace, st_table *tbl)
+gc_ref_update_table_values_only(st_table *tbl)
 {
     if (!tbl || tbl->num_entries == 0) return;
 
-    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, (st_data_t)objspace)) {
+    if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, 0)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
@@ -93,9 +84,7 @@ gc_ref_update_table_values_only(void *objspace, st_table *tbl)
 static int
 gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    void *objspace = (void *)data;
-
-    rb_gc_impl_mark(objspace, (VALUE)value);
+    rb_gc_mark_movable((VALUE)value);
 
     return ST_CONTINUE;
 }
@@ -103,42 +92,37 @@ gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
 static int
 hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
-    void *objspace;
-
-    objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)key)) {
+    if (rb_gc_location((VALUE)key) != (VALUE)key) {
         return ST_REPLACE;
     }
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)value)) {
+    if (rb_gc_location((VALUE)value) != (VALUE)value) {
         return ST_REPLACE;
     }
+
     return ST_CONTINUE;
 }
 
 static int
 hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    void *objspace = (void *)argp;
-
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*key)) {
-        *key = rb_gc_impl_location(objspace, (VALUE)*key);
+    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
+        *key = rb_gc_location((VALUE)*key);
     }
 
-    if (rb_gc_impl_object_moved_p(objspace, (VALUE)*value)) {
-        *value = rb_gc_impl_location(objspace, (VALUE)*value);
+    if (rb_gc_location((VALUE)*value) != (VALUE)*value) {
+        *value = rb_gc_location((VALUE)*value);
     }
 
     return ST_CONTINUE;
 }
 
 static void
-gc_update_table_refs(void *objspace, st_table *tbl)
+gc_update_table_refs(st_table *tbl)
 {
     if (!tbl || tbl->num_entries == 0) return;
 
-    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace)) {
+    if (st_foreach_with_replace(tbl, hash_foreach_replace, hash_replace_ref, 0)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }

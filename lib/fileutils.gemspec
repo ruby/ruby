@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.description = "Several file utility methods for copying, moving, removing, etc."
 
   s.require_path = %w{lib}
-  s.files = ["LICENSE.txt", "README.md", "Rakefile", "fileutils.gemspec", "lib/fileutils.rb"]
+  s.files = ["COPYING", "BSDL", "README.md", "Rakefile", "fileutils.gemspec", "lib/fileutils.rb"]
   s.required_ruby_version = ">= 2.5.0"
 
   s.authors = ["Minero Aoki"]

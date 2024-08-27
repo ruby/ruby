@@ -159,6 +159,11 @@ module Prism
         # to validate backreferences so these are all going to fail.
         next if (context.name == "//" || context.name.start_with?("%r")) && ord.chr.start_with?(/\d/)
 
+        # \u is passed directly on to the regular expression engine and it is
+        # responsible for handling syntax errors. In this case we do not check
+        # it because it would require going through the compiler.
+        next if context.is_a?(Context::RegExp) && ord.chr == "u"
+
         # \a \b \c ...
         assert_unescape(context, ord.chr)
       end

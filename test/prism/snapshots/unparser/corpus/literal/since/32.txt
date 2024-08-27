@@ -99,7 +99,7 @@
         │   │           ├── opening_loc: (6,5)-(6,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (6,6)-(6,17))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 2)
         │   │           │       ├── @ LocalVariableReadNode (location: (6,6)-(6,14))
         │   │           │       │   ├── flags: ∅

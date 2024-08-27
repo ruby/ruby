@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+abort "RubyGems only supports Ruby 3.0 or higher" if RUBY_VERSION < "3.0.0"
+
 require_relative "path"
 
 $LOAD_PATH.unshift(Spec::Path.source_lib_dir.to_s)

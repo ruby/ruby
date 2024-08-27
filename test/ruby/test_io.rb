@@ -2543,7 +2543,7 @@ class TestIO < Test::Unit::TestCase
     end
     assert_raise(Errno::ESPIPE) do
       assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
-        IO.read("|echo foo", 1, 1)
+        IO.read("|#{EnvUtil.rubybin} -e 'puts :foo'", 1, 1)
       end
     end
   end

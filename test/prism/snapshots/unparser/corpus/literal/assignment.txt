@@ -399,7 +399,7 @@
         │   │   │   ├── opening_loc: (15,2)-(15,3) = "["
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (15,3)-(15,7))
-        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── flags: contains_splat
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ SplatNode (location: (15,3)-(15,7))
         │   │   │   │           ├── flags: ∅
@@ -723,7 +723,7 @@
         │   ├── opening_loc: (29,3)-(29,4) = "["
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (29,4)-(29,19))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: contains_splat
         │   │   └── arguments: (length: 2)
         │   │       ├── @ SplatNode (location: (29,4)-(29,10))
         │   │       │   ├── flags: ∅

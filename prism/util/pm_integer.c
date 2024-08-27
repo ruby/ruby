@@ -43,7 +43,7 @@ big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint
         length++;
     }
 
-    *destination = (pm_integer_t) { 0, length, values, false };
+    *destination = (pm_integer_t) { length, values, 0, false };
 }
 
 /**
@@ -87,7 +87,7 @@ big_sub2(pm_integer_t *destination, pm_integer_t *a, pm_integer_t *b, pm_integer
     }
 
     while (a_length > 1 && values[a_length - 1] == 0) a_length--;
-    *destination = (pm_integer_t) { 0, a_length, values, false };
+    *destination = (pm_integer_t) { a_length, values, 0, false };
 }
 
 /**
@@ -130,7 +130,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
         }
 
         while (length > 1 && values[length - 1] == 0) length--;
-        *destination = (pm_integer_t) { 0, length, values, false };
+        *destination = (pm_integer_t) { length, values, 0, false };
         return;
     }
 
@@ -142,16 +142,16 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
             if (end_offset > right_length) end_offset = right_length;
 
             pm_integer_t sliced_left = {
-                .value = 0,
                 .length = left_length,
                 .values = left_values,
+                .value = 0,
                 .negative = false
             };
 
             pm_integer_t sliced_right = {
-                .value = 0,
                 .length = end_offset - start_offset,
                 .values = right_values + start_offset,
+                .value = 0,
                 .negative = false
             };
 
@@ -169,15 +169,15 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
             pm_integer_free(&product);
         }
 
-        *destination = (pm_integer_t) { 0, left_length + right_length, values, false };
+        *destination = (pm_integer_t) { left_length + right_length, values, 0, false };
         return;
     }
 
     size_t half = left_length / 2;
-    pm_integer_t x0 = { 0, half, left_values, false };
-    pm_integer_t x1 = { 0, left_length - half, left_values + half, false };
-    pm_integer_t y0 = { 0, half, right_values, false };
-    pm_integer_t y1 = { 0, right_length - half, right_values + half, false };
+    pm_integer_t x0 = { half, left_values, 0, false };
+    pm_integer_t x1 = { left_length - half, left_values + half, 0, false };
+    pm_integer_t y0 = { half, right_values, 0, false };
+    pm_integer_t y1 = { right_length - half, right_values + half, 0, false };
 
     pm_integer_t z0 = { 0 };
     karatsuba_multiply(&z0, &x0, &y0, base);
@@ -229,7 +229,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     pm_integer_free(&y01);
     pm_integer_free(&xy);
 
-    *destination = (pm_integer_t) { 0, length, values, false };
+    *destination = (pm_integer_t) { length, values, 0, false };
 }
 
 /**
@@ -323,7 +323,7 @@ pm_integer_normalize(pm_integer_t *integer) {
     bool negative = integer->negative && value != 0;
 
     pm_integer_free(integer);
-    *integer = (pm_integer_t) { .value = value, .length = 0, .values = NULL, .negative = negative };
+    *integer = (pm_integer_t) { .values = NULL, .value = value, .length = 0, .negative = negative };
 }
 
 /**
@@ -412,7 +412,7 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
     }
 
     while (length > 1 && values[length - 1] == 0) length--;
-    *integer = (pm_integer_t) { .value = 0, .length = length, .values = values, .negative = false };
+    *integer = (pm_integer_t) { .length = length, .values = values, .value = 0, .negative = false };
     pm_integer_normalize(integer);
 }
 
@@ -438,7 +438,7 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
     }
 
     // Convert base from 10**9 to 1<<32.
-    pm_integer_convert_base(integer, &((pm_integer_t) { .value = 0, .length = length, .values = values, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
+    pm_integer_convert_base(integer, &((pm_integer_t) { .length = length, .values = values,  .value = 0, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
     xfree(values);
 }
 

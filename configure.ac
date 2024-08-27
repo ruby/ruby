@@ -83,7 +83,7 @@ AC_ARG_WITH(baseruby,
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
 AS_IF([test "$HAVE_BASERUBY" != no], [
-    RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
+    RUBYOPT=- $BASERUBY --disable=gems -rerb -rfileutils -rtempfile "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [
@@ -839,7 +839,7 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     # aarch64 branch protection
-    AS_CASE(["$target_cpu"], [aarch64], [
+    AS_CASE(["$target_cpu"], [aarch64|arm64], [
 	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
             # Try these flags in the _prepended_ position - i.e. we want to try building a program
             # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
@@ -1388,7 +1388,7 @@ AC_CHECK_HEADERS(sys/event.h)
 AC_CHECK_HEADERS(stdckdint.h)
 AC_CHECK_HEADERS(stdatomic.h)
 
-AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
+AS_CASE("$target_cpu", [x64|x86_64|[i[3-6]86*]], [
   AC_CHECK_HEADERS(x86intrin.h)
 ])
 RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
@@ -3526,7 +3526,10 @@ AC_ARG_WITH(soname,
 	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 	    ],
 	    [mingw*], [
-	        RUBY_SO_NAME="${target_cpu}-${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
+		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
+		AS_IF([test x"${target_cpu}" != xi386 || test x"${rb_cv_msvcrt}" != xmsvcrt], [
+		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
+		])
 	    ],
 	    [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
 	])
@@ -4098,6 +4101,7 @@ enum {
 	[mingw*], [
 	    AS_IF([test x"$enable_shared" = xyes], [
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
+		LIBRUBY_SONAME=''
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    ])
 	    EXPORT_PREFIX=' '

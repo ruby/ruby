@@ -66,7 +66,11 @@ module Gem::BUNDLED_GEMS
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
         if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
-          Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
+          if ::Gem::BUNDLED_GEMS.uplevel > 0
+            Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
+          else
+            Kernel.warn message
+          end
         end
         kernel_class.send(:no_warning_require, name)
       end
@@ -79,10 +83,12 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.uplevel
+    frame_count = 0
     frames_to_skip = 3
     uplevel = 0
     require_found = false
     Thread.each_caller_location do |cl|
+      frame_count += 1
       if frames_to_skip >= 1
         frames_to_skip -= 1
         next
@@ -97,8 +103,13 @@ module Gem::BUNDLED_GEMS
           require_found = true
         end
       end
+      # Don't show script name when bundle exec and call ruby script directly.
+      if cl.path.end_with?("bundle")
+        frame_count = 0
+        break
+      end
     end
-    require_found ? 1 : 2
+    require_found ? 1 : frame_count - 1
   end
 
   def self.find_gem(path)

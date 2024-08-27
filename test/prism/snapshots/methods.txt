@@ -1041,7 +1041,7 @@
         │   │           ├── opening_loc: (110,11)-(110,12) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (110,12)-(110,13))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SplatNode (location: (110,12)-(110,13))
         │   │           │           ├── flags: ∅

@@ -887,8 +887,6 @@ class TestISeq < Test::Unit::TestCase
   def test_unused_param
     a = RubyVM::InstructionSequence.of(method(:block_using_method)).to_a
 
-    omit 'TODO: Prism' if a.dig(4, :parser) != :"parse.y"
-
     assert_equal true, a.dig(11, :use_block)
 
     b = RubyVM::InstructionSequence.of(method(:block_unused_method)).to_a
