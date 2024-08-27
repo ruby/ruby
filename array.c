@@ -4027,6 +4027,8 @@ ary_resize_smaller(VALUE ary, long len)
  *    a.delete(2) {|element| "Element #{element} not found." }
  *    # => "Element 2 not found."
  *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
+ *
  */
 
 VALUE
