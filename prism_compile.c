@@ -10400,6 +10400,123 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
     return lines;
 }
 
+// This is essentially pm_string_mapped_init(), preferring to memory map the
+// file, with additional handling for files that require blocking to properly
+// read (e.g. pipes).
+static bool
+read_entire_file(pm_string_t *string, const char *filepath)
+{
+#ifdef _WIN32
+    // Open the file for reading.
+    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (file == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    // Get the file size.
+    DWORD file_size = GetFileSize(file, NULL);
+    if (file_size == INVALID_FILE_SIZE) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // If the file is empty, then we don't need to do anything else, we'll set
+    // the source to a constant empty string and return.
+    if (file_size == 0) {
+        CloseHandle(file);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        return true;
+    }
+
+    // Create a mapping of the file.
+    HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (mapping == NULL) {
+        CloseHandle(file);
+        return false;
+    }
+
+    // Map the file into memory.
+    uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
+    CloseHandle(mapping);
+    CloseHandle(file);
+
+    if (source == NULL) {
+        return false;
+    }
+
+    *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = (size_t) file_size };
+    return true;
+#elif defined(_POSIX_MAPPED_FILES)
+    // Open the file for reading
+    const int open_mode = O_RDONLY | O_NONBLOCK;
+    int fd = open(filepath, open_mode);
+    if (fd == -1) {
+        return false;
+    }
+
+    // Stat the file to get the file size
+    struct stat sb;
+    if (fstat(fd, &sb) == -1) {
+        close(fd);
+        return false;
+    }
+
+    // Ensure it is a file and not a directory
+    if (S_ISDIR(sb.st_mode)) {
+        close(fd);
+        errno = EISDIR;
+        return false;
+    }
+
+    // We need to wait for data first before reading from pipes and character
+    // devices. To not block the entire VM, we need to release the GVL while
+    // reading. Use IO#read to do this and let the GC handle closing the FD.
+    if (S_ISFIFO(sb.st_mode) || S_ISCHR(sb.st_mode)) {
+        VALUE io = rb_io_fdopen((int) fd, open_mode, filepath);
+        rb_io_wait(io, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
+        VALUE contents = rb_funcall(io, rb_intern("read"), 0);
+
+        if (!RB_TYPE_P(contents, T_STRING)) {
+            return false;
+        }
+
+        long len = RSTRING_LEN(contents);
+        if (len < 0) {
+            return false;
+        }
+        size_t length = (size_t) len;
+
+        uint8_t *source = xmalloc(length);
+        memcpy(source, RSTRING_PTR(contents), length);
+        *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
+
+        return true;
+    }
+
+    // mmap the file descriptor to virtually get the contents
+    size_t size = (size_t) sb.st_size;
+    uint8_t *source = NULL;
+
+    if (size == 0) {
+        close(fd);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
+        return true;
+    }
+
+    source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (source == MAP_FAILED) {
+        return false;
+    }
+
+    close(fd);
+    *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
+    return true;
+#endif
+}
+
 /**
  * Attempt to load the file into memory. Return a Ruby error if the file cannot
  * be read.
@@ -10407,7 +10524,7 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
 VALUE
 pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 {
-    if (!pm_string_mapped_init(&result->input, RSTRING_PTR(filepath))) {
+    if (!read_entire_file(&result->input, RSTRING_PTR(filepath))) {
 #ifdef _WIN32
         int e = rb_w32_map_errno(GetLastError());
 #else
