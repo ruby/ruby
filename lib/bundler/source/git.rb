@@ -70,13 +70,13 @@ module Bundler
       end
 
       def hash
-        [self.class, uri, ref, branch, name, version, glob, submodules].hash
+        [self.class, uri, ref, branch, name, glob, submodules].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
-          version == other.version && glob == other.glob &&
+          glob == other.glob &&
           submodules == other.submodules
       end
 

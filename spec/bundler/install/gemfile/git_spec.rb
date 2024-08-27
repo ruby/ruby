@@ -1107,6 +1107,25 @@ RSpec.describe "bundle install with git sources" do
       run "require 'new_file'"
       expect(out).to eq("USING GIT")
     end
+
+    it "doesn't explode when removing an explicit exact version from a git gem with dependencies" do
+      build_lib "activesupport", "7.1.4", path: lib_path("rails/activesupport")
+      build_git "rails", "7.1.4", path: lib_path("rails") do |s|
+        s.add_dependency "activesupport", "= 7.1.4"
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rails", "7.1.4", :git => "#{lib_path("rails")}"
+      G
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rails", :git => "#{lib_path("rails")}"
+      G
+
+      expect(the_bundle).to include_gem "rails 7.1.4", "activesupport 7.1.4"
+    end
   end
 
   describe "bundle install after the remote has been updated" do
