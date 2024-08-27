@@ -6784,13 +6784,16 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    array.cycle {|element| ... } -> nil
- *    array.cycle(count) {|element| ... } -> nil
- *    array.cycle -> new_enumerator
- *    array.cycle(count) -> new_enumerator
+ *    cycle(count = nil) {|element| ... } -> nil
+ *    cycle(count = nil) -> new_enumerator
  *
- *  When called with positive Integer argument +count+ and a block,
- *  calls the block with each element, then does so again,
+ *  With a block given, may call the block, depending on the value of argument +count+;
+ *  +count+ must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects],
+ *  or +nil+.
+ *
+ *  If +count+ is positive,
+ *  calls the block with each element, then does so repeatedly,
  *  until it has done so +count+ times; returns +nil+:
  *
  *    output = []
@@ -6799,21 +6802,16 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  If +count+ is zero or negative, does not call the block:
  *
- *    [0, 1].cycle(0) {|element| fail 'Cannot happen' } # => nil
+ *    [0, 1].cycle(0) {|element| fail 'Cannot happen' }  # => nil
  *    [0, 1].cycle(-1) {|element| fail 'Cannot happen' } # => nil
  *
- *  When a block is given, and argument is omitted or +nil+, cycles forever:
+ *  If +count+ is +nil+, cycles forever:
  *
  *    # Prints 0 and 1 forever.
  *    [0, 1].cycle {|element| puts element }
  *    [0, 1].cycle(nil) {|element| puts element }
  *
- *  When no block is given, returns a new Enumerator:
- *
- *    [0, 1].cycle(2) # => #<Enumerator: [0, 1]:cycle(2)>
- *    [0, 1].cycle # => # => #<Enumerator: [0, 1]:cycle>
- *    [0, 1].cycle.first(5) # => [0, 1, 0, 1, 0]
- *
+ *  With no block given, returns a new Enumerator.
  */
 static VALUE
 rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
