@@ -21961,10 +21961,10 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
     // If the first two bytes of the source are a shebang, then we'll indicate
     // that the encoding comment is at the end of the shebang.
-    if (peek(parser) == '#' && peek_offset(parser, 1) == '!') {
-        const uint8_t *newline = next_newline(parser->start, parser->end - parser->start);
-        size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->start);
+    const uint8_t *newline = next_newline(parser->start, parser->end - parser->start);
+    size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->start);
 
+    if (length > 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
         const char *engine;
         if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
             if (newline != NULL) {
