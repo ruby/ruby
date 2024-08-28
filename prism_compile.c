@@ -1818,25 +1818,40 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
     VALUE dup_rest = Qtrue;
 
     if (arguments_node != NULL) {
-        if (arguments_node->arguments.size >= 2 && PM_NODE_TYPE_P(arguments_node->arguments.nodes[0], PM_SPLAT_NODE) && PM_NODE_TYPE_P(arguments_node->arguments.nodes[1], PM_KEYWORD_HASH_NODE)) {
+        size_t arg_size = arguments_node->arguments.size;
+        const pm_node_list_t *args = &arguments_node->arguments;
+        // Calls like foo(1, *f, **hash) that use splat and kwsplat
+        // could be eligible for eliding duping the rest array (dup_reset=false).
+        if (arg_size >= 2
+                && PM_NODE_TYPE_P(args->nodes[arg_size - 2], PM_SPLAT_NODE)
+                && PM_NODE_TYPE_P(args->nodes[arg_size - 1], PM_KEYWORD_HASH_NODE)) {
+            // Reject calls that have more than one splat.
             dup_rest = Qfalse;
-
-            const pm_keyword_hash_node_t *keyword_arg = (const pm_keyword_hash_node_t *) arguments_node->arguments.nodes[1];
-            const pm_node_list_t *elements = &keyword_arg->elements;
-
-            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_NODE)) {
-                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[0];
-
-                if (pm_setup_args_dup_rest_p(assoc->value)) {
+            for (size_t i = 0; i < arg_size - 2; i++) {
+                if (PM_NODE_TYPE_P(args->nodes[i], PM_SPLAT_NODE)) {
                     dup_rest = Qtrue;
+                    break;
                 }
             }
 
-            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE)) {
-                const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) elements->nodes[0];
+            if (dup_rest == Qfalse) {
+                const pm_keyword_hash_node_t *keyword_arg = (const pm_keyword_hash_node_t *) args->nodes[arg_size - 1];
+                const pm_node_list_t *elements = &keyword_arg->elements;
 
-                if (assoc->value && pm_setup_args_dup_rest_p(assoc->value)) {
-                    dup_rest = Qtrue;
+                if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_NODE)) {
+                    const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[0];
+
+                    if (pm_setup_args_dup_rest_p(assoc->value)) {
+                        dup_rest = Qtrue;
+                    }
+                }
+
+                if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE)) {
+                    const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) elements->nodes[0];
+
+                    if (assoc->value && pm_setup_args_dup_rest_p(assoc->value)) {
+                        dup_rest = Qtrue;
+                    }
                 }
             }
         }
