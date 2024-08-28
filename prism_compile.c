@@ -505,7 +505,7 @@ parse_regexp_flags(const pm_node_t *node)
 static rb_encoding *
 parse_regexp_encoding(const pm_scope_node_t *scope_node, const pm_node_t *node)
 {
-    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) {
+    if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_FORCED_BINARY_ENCODING) || PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT)) {
         return rb_ascii8bit_encoding();
     }
     else if (PM_NODE_FLAG_P(node, PM_REGULAR_EXPRESSION_FLAGS_UTF_8)) {
