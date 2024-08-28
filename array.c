@@ -1368,6 +1368,7 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *
  *    [:foo, 'bar', 2] << [3, 4] # => [:foo, "bar", 2, [3, 4]]
  *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 VALUE
@@ -8608,7 +8609,8 @@ rb_ary_deconstruct(VALUE ary)
  *  These methods add, replace, or reorder elements in +self+.
  *
  *  - #[]=: Assigns specified elements with a given object.
- *  - #push, #append, #<<: Appends trailing elements.
+ *  - #<<: Appends an element.
+ *  - #push (and its alias #append): Appends elements.
  *  - #unshift, #prepend: Prepends leading elements.
  *  - #insert: Inserts given objects at a given offset; does not replace elements.
  *  - #concat: Appends all elements from given arrays.
