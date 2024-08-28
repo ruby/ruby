@@ -34,7 +34,7 @@
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           └── block: ∅
-            ├── consequent:
+            ├── subsequent:
             │   @ IfNode (location: (1,13)-(1,38))
             │   ├── flags: newline
             │   ├── if_keyword_loc: (1,13)-(1,18) = "elsif"
@@ -57,7 +57,7 @@
             │   │       └── @ IntegerNode (location: (1,24)-(1,25))
             │   │           ├── flags: newline, static_literal, decimal
             │   │           └── value: 1
-            │   ├── consequent:
+            │   ├── subsequent:
             │   │   @ ElseNode (location: (1,27)-(1,38))
             │   │   ├── flags: ∅
             │   │   ├── else_keyword_loc: (1,27)-(1,31) = "else"

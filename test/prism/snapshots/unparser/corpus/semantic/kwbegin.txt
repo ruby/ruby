@@ -17,7 +17,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
@@ -33,7 +33,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (7,0)-(8,3))
         │   │   ├── flags: ∅
@@ -101,7 +101,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (18,0)-(18,3) = "end"
@@ -153,7 +153,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (25,0)-(25,3) = "end"
@@ -172,7 +172,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (29,0)-(30,3))
         │   │   ├── flags: ∅
@@ -196,7 +196,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause:
         │   │   @ ElseNode (location: (32,17)-(32,26))
         │   │   ├── flags: ∅
@@ -246,7 +246,7 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           └── block: ∅
-            │   └── consequent:
+            │   └── subsequent:
             │       @ RescueNode (location: (38,0)-(39,3))
             │       ├── flags: ∅
             │       ├── keyword_loc: (38,0)-(38,6) = "rescue"
@@ -270,7 +270,7 @@
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
-            │       └── consequent: ∅
+            │       └── subsequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause:
             │   @ EnsureNode (location: (40,0)-(42,3))

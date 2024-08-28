@@ -47,7 +47,7 @@
             │                   │   │       └── @ IntegerNode (location: (2,0)-(2,1))
             │                   │   │           ├── flags: newline, static_literal, decimal
             │                   │   │           └── value: 1
-            │                   │   ├── consequent:
+            │                   │   ├── subsequent:
             │                   │   │   @ ElseNode (location: (3,0)-(5,3))
             │                   │   │   ├── flags: ∅
             │                   │   │   ├── else_keyword_loc: (3,0)-(3,4) = "else"

@@ -36,7 +36,7 @@
             │           │                   └── @ IntegerNode (location: (3,17)-(3,19))
             │           │                       ├── flags: static_literal, decimal
             │           │                       └── value: 42
-            │           ├── consequent: ∅
+            │           ├── subsequent: ∅
             │           └── end_keyword_loc: (4,8)-(4,11) = "end"
             ├── locals: []
             ├── def_keyword_loc: (1,6)-(1,9) = "def"

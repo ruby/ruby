@@ -91,7 +91,7 @@
         │   │           │           └── value: 1
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ UnlessNode (location: (7,0)-(7,18))
         │   ├── flags: newline
@@ -134,7 +134,7 @@
         │   │           │           └── value: 1
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: ∅
         ├── @ WhileNode (location: (9,0)-(9,17))
         │   ├── flags: newline

@@ -17,7 +17,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
@@ -93,7 +93,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (17,0)-(17,3) = "end"
@@ -145,7 +145,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (24,0)-(24,3) = "end"
@@ -164,7 +164,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (28,0)-(28,3) = "end"
@@ -187,7 +187,7 @@
         │   │   │   ├── name: :foo
         │   │   │   └── depth: 0
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (32,0)-(32,3) = "end"
@@ -232,7 +232,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent:
+        │   │   └── subsequent:
         │   │       @ RescueNode (location: (38,0)-(39,3))
         │   │       ├── flags: ∅
         │   │       ├── keyword_loc: (38,0)-(38,6) = "rescue"
@@ -256,7 +256,7 @@
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           └── block: ∅
-        │   │       └── consequent: ∅
+        │   │       └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause:
         │   │   @ EnsureNode (location: (40,0)-(42,3))
@@ -314,7 +314,7 @@
         │   │           │   ├── operator_loc: ∅
         │   │           │   ├── reference: ∅
         │   │           │   ├── statements: ∅
-        │   │           │   └── consequent: ∅
+        │   │           │   └── subsequent: ∅
         │   │           ├── else_clause: ∅
         │   │           ├── ensure_clause: ∅
         │   │           └── end_keyword_loc: (49,2)-(49,5) = "end"
@@ -349,7 +349,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (53,0)-(53,3) = "end"
@@ -409,7 +409,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (58,0)-(58,3) = "end"
@@ -443,7 +443,7 @@
         │   │   │           ├── flags: newline
         │   │   │           ├── name: :bar
         │   │   │           └── depth: 0
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (64,0)-(64,3) = "end"
@@ -483,7 +483,7 @@
         │   │   │           ├── flags: newline
         │   │   │           ├── name: :bar
         │   │   │           └── depth: 0
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (70,0)-(70,3) = "end"
@@ -534,7 +534,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (76,0)-(76,3) = "end"

@@ -122,7 +122,7 @@
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements: ∅
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (9,16)-(9,19) = "end"

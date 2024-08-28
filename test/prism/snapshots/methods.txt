@@ -717,7 +717,7 @@
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements: ∅
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (77,15)-(77,27))
         │   │   │   ├── flags: ∅
@@ -901,7 +901,7 @@
         │   │       │   │                       ├── value_loc: (99,8)-(99,10) = "hi"
         │   │       │   │                       ├── closing_loc: ∅
         │   │       │   │                       └── unescaped: "hi"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       └── @ SymbolNode (location: (100,0)-(100,4))
         │   │           ├── flags: newline, static_literal, forced_us_ascii_encoding

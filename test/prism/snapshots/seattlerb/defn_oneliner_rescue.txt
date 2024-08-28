@@ -61,7 +61,7 @@
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ NilNode (location: (4,2)-(4,5))
         │   │   │   │           └── flags: newline, static_literal
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"

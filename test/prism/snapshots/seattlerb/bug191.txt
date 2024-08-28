@@ -30,7 +30,7 @@
         │   │           ├── content_loc: (1,5)-(1,5) = ""
         │   │           ├── closing_loc: (1,5)-(1,6) = "\""
         │   │           └── unescaped: ""
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (1,6)-(1,9))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (1,6)-(1,7) = ":"
@@ -75,7 +75,7 @@
             │           ├── content_loc: (3,5)-(3,5) = ""
             │           ├── closing_loc: (3,5)-(3,6) = "'"
             │           └── unescaped: ""
-            ├── consequent:
+            ├── subsequent:
             │   @ ElseNode (location: (3,6)-(3,9))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (3,6)-(3,7) = ":"

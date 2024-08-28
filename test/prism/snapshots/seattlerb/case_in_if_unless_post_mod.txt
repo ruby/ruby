@@ -32,7 +32,7 @@
             │   │   │   │       └── @ ConstantReadNode (location: (2,3)-(2,4))
             │   │   │   │           ├── flags: newline
             │   │   │   │           └── name: :A
-            │   │   │   ├── consequent: ∅
+            │   │   │   ├── subsequent: ∅
             │   │   │   └── end_keyword_loc: ∅
             │   │   ├── statements:
             │   │   │   @ StatementsNode (location: (3,2)-(3,4))
@@ -63,7 +63,7 @@
             │       │   │       └── @ ConstantReadNode (location: (4,3)-(4,4))
             │       │   │           ├── flags: newline
             │       │   │           └── name: :D
-            │       │   ├── consequent: ∅
+            │       │   ├── else_clause: ∅
             │       │   └── end_keyword_loc: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (5,2)-(5,4))
@@ -77,6 +77,6 @@
             │       │           └── unescaped: "E"
             │       ├── in_loc: (4,0)-(4,2) = "in"
             │       └── then_loc: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"
             └── end_keyword_loc: (6,0)-(6,3) = "end"

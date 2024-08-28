@@ -67,7 +67,7 @@
         │   │                   ├── arguments: ∅
         │   │                   ├── closing_loc: ∅
         │   │                   └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         ├── @ CaseNode (location: (7,0)-(11,3))
@@ -129,7 +129,7 @@
         │   │                   ├── arguments: ∅
         │   │                   ├── closing_loc: ∅
         │   │                   └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (7,0)-(7,4) = "case"
         │   └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ CaseNode (location: (12,0)-(17,3))
@@ -204,7 +204,7 @@
         │   │                   ├── arguments: ∅
         │   │                   ├── closing_loc: ∅
         │   │                   └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (12,0)-(12,4) = "case"
         │   └── end_keyword_loc: (17,0)-(17,3) = "end"
         ├── @ CaseNode (location: (18,0)-(21,3))
@@ -256,7 +256,7 @@
         │   │                   ├── value_loc: (20,3)-(20,8) = "other"
         │   │                   ├── closing_loc: ∅
         │   │                   └── unescaped: "other"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (18,0)-(18,4) = "case"
         │   └── end_keyword_loc: (21,0)-(21,3) = "end"
         ├── @ CaseNode (location: (22,0)-(25,3))
@@ -302,7 +302,7 @@
         │   │                   ├── value_loc: (24,3)-(24,8) = "value"
         │   │                   ├── closing_loc: ∅
         │   │                   └── unescaped: "value"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (22,0)-(22,4) = "case"
         │   └── end_keyword_loc: (25,0)-(25,3) = "end"
         ├── @ CaseNode (location: (26,0)-(31,3))
@@ -348,7 +348,7 @@
         │   │                   ├── arguments: ∅
         │   │                   ├── closing_loc: ∅
         │   │                   └── block: ∅
-        │   ├── consequent:
+        │   ├── else_clause:
         │   │   @ ElseNode (location: (29,0)-(31,3))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (29,0)-(29,4) = "else"
@@ -422,7 +422,7 @@
         │   │       │           └── block: ∅
         │   │       ├── then_keyword_loc: ∅
         │   │       └── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (32,0)-(32,4) = "case"
         │   └── end_keyword_loc: (34,0)-(34,3) = "end"
         └── @ CaseNode (location: (35,0)-(37,3))
@@ -475,6 +475,6 @@
             │       │           └── block: ∅
             │       ├── then_keyword_loc: ∅
             │       └── statements: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (35,0)-(35,4) = "case"
             └── end_keyword_loc: (37,0)-(37,3) = "end"

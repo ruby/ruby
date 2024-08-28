@@ -57,7 +57,7 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           └── block: ∅
-            │   └── consequent: ∅
+            │   └── subsequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅
             └── end_keyword_loc: (1,36)-(1,39) = "end"

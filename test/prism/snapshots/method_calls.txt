@@ -727,7 +727,7 @@
         │   │           │           └── unescaped: "b"
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ CallNode (location: (53,0)-(56,1))
         │   ├── flags: newline, ignore_visibility
@@ -2047,7 +2047,7 @@
         │   │           │               │           └── depth: 0
         │   │           │               ├── opening_loc: (121,8)-(121,10) = "do"
         │   │           │               └── closing_loc: (123,4)-(123,7) = "end"
-        │   │           ├── consequent: ∅
+        │   │           ├── subsequent: ∅
         │   │           └── end_keyword_loc: (124,2)-(124,5) = "end"
         │   ├── closing_loc: ∅
         │   └── block: ∅

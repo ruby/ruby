@@ -30,5 +30,5 @@
             │   └── block: ∅
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (1,9)-(1,12) = "end"

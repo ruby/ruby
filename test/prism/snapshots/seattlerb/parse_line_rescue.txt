@@ -43,7 +43,7 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           └── block: ∅
-            │   └── consequent:
+            │   └── subsequent:
             │       @ RescueNode (location: (5,0)-(6,3))
             │       ├── flags: ∅
             │       ├── keyword_loc: (5,0)-(5,6) = "rescue"
@@ -64,7 +64,7 @@
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           └── block: ∅
-            │       └── consequent: ∅
+            │       └── subsequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅
             └── end_keyword_loc: (7,0)-(7,3) = "end"

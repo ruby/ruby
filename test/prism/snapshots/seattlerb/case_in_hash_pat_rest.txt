@@ -60,6 +60,6 @@
             │       │           └── unescaped: "d"
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: (2,16)-(2,20) = "then"
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"
             └── end_keyword_loc: (3,0)-(3,3) = "end"

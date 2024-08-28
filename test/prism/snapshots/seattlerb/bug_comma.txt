@@ -40,5 +40,5 @@
             │   └── block: ∅
             ├── then_keyword_loc: (1,16)-(1,20) = "then"
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (1,21)-(1,24) = "end"

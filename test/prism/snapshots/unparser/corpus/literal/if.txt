@@ -30,7 +30,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ IfNode (location: (4,0)-(6,3))
         │   ├── flags: newline
@@ -47,7 +47,7 @@
         │   │       └── @ IntegerNode (location: (5,2)-(5,3))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 9
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         ├── @ IfNode (location: (7,0)-(11,3))
         │   ├── flags: newline
@@ -64,7 +64,7 @@
         │   │       └── @ IntegerNode (location: (8,2)-(8,3))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 5
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (9,0)-(11,3))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (9,0)-(9,4) = "else"
@@ -91,7 +91,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ NilNode (location: (13,2)-(13,5))
         │   │           └── flags: newline, static_literal
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: (14,0)-(14,3) = "end"
         ├── @ UnlessNode (location: (15,0)-(17,3))
         │   ├── flags: newline
@@ -108,7 +108,7 @@
         │   │       └── @ IntegerNode (location: (16,2)-(16,3))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 9
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: (17,0)-(17,3) = "end"
         ├── @ IfNode (location: (18,0)-(19,3))
         │   ├── flags: newline
@@ -126,7 +126,7 @@
         │   │   └── block: ∅
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         ├── @ ModuleNode (location: (21,0)-(23,3))
         │   ├── flags: newline
@@ -170,7 +170,7 @@
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   └── block: ∅
         │   │           │           └── operator_loc: (22,6)-(22,7) = "="
-        │   │           ├── consequent: ∅
+        │   │           ├── subsequent: ∅
         │   │           └── end_keyword_loc: ∅
         │   ├── end_keyword_loc: (23,0)-(23,3) = "end"
         │   └── name: :A
@@ -216,7 +216,7 @@
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   └── block: ∅
         │   │           │           └── operator_loc: (26,6)-(26,7) = "="
-        │   │           ├── consequent: ∅
+        │   │           ├── else_clause: ∅
         │   │           └── end_keyword_loc: ∅
         │   ├── end_keyword_loc: (27,0)-(27,3) = "end"
         │   └── name: :B
@@ -256,7 +256,7 @@
         │   │           │   ├── closing_loc: ∅
         │   │           │   └── block: ∅
         │   │           └── operator_loc: (29,6)-(29,7) = "="
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         └── @ IfNode (location: (31,0)-(36,3))
             ├── flags: newline
@@ -326,5 +326,5 @@
             │           ├── flags: newline
             │           ├── name: :foo
             │           └── depth: 0
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (36,0)-(36,3) = "end"

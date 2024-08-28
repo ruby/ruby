@@ -39,6 +39,6 @@
             │       │           └── block: ∅
             │       ├── then_keyword_loc: (1,16)-(1,20) = "then"
             │       └── statements: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"
             └── end_keyword_loc: (1,22)-(1,25) = "end"

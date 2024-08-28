@@ -147,7 +147,7 @@ module Prism
             end
 
             current = node.rescue_clause
-            until (current = current.consequent).nil?
+            until (current = current.subsequent).nil?
               result << visit(current)
             end
           end
@@ -347,13 +347,13 @@ module Prism
         # case foo; when bar; end
         # ^^^^^^^^^^^^^^^^^^^^^^^
         def visit_case_node(node)
-          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.consequent)
+          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.else_clause)
         end
 
         # case foo; in bar; end
         # ^^^^^^^^^^^^^^^^^^^^^
         def visit_case_match_node(node)
-          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.consequent)
+          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.else_clause)
         end
 
         # class Foo; end
@@ -700,7 +700,7 @@ module Prism
         # foo ? bar : baz
         # ^^^^^^^^^^^^^^^
         def visit_if_node(node)
-          s(node, :if, visit(node.predicate), visit(node.statements), visit(node.consequent))
+          s(node, :if, visit(node.predicate), visit(node.statements), visit(node.subsequent))
         end
 
         # 1i
@@ -1470,7 +1470,7 @@ module Prism
         # bar unless foo
         # ^^^^^^^^^^^^^^
         def visit_unless_node(node)
-          s(node, :if, visit(node.predicate), visit(node.consequent), visit(node.statements))
+          s(node, :if, visit(node.predicate), visit(node.else_clause), visit(node.statements))
         end
 
         # until foo; bar end

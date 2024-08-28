@@ -19,7 +19,7 @@
         │   │       └── @ IntegerNode (location: (1,9)-(1,10))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (1,12)-(1,15) = "end"
         ├── @ IfNode (location: (3,0)-(4,12))
         │   ├── flags: newline
@@ -35,7 +35,7 @@
         │   │       └── @ IntegerNode (location: (4,0)-(4,1))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (4,2)-(4,12))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (4,2)-(4,6) = "else"
@@ -61,7 +61,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ TrueNode (location: (6,13)-(6,17))
         │   │           └── flags: newline, static_literal
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ IfNode (location: (6,18)-(6,73))
         │   │   ├── flags: newline
         │   │   ├── if_keyword_loc: (6,18)-(6,23) = "elsif"
@@ -75,7 +75,7 @@
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ FalseNode (location: (6,35)-(6,40))
         │   │   │           └── flags: newline, static_literal
-        │   │   ├── consequent:
+        │   │   ├── subsequent:
         │   │   │   @ IfNode (location: (6,41)-(6,73))
         │   │   │   ├── flags: newline
         │   │   │   ├── if_keyword_loc: (6,41)-(6,46) = "elsif"
@@ -89,7 +89,7 @@
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ NilNode (location: (6,56)-(6,59))
         │   │   │   │           └── flags: newline, static_literal
-        │   │   │   ├── consequent:
+        │   │   │   ├── subsequent:
         │   │   │   │   @ ElseNode (location: (6,60)-(6,73))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── else_keyword_loc: (6,60)-(6,64) = "else"
@@ -117,7 +117,7 @@
         │   │       └── @ IntegerNode (location: (8,0)-(8,1))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ CallNode (location: (10,0)-(10,21))
         │   ├── flags: newline, ignore_visibility
@@ -152,7 +152,7 @@
         │       │           │           ├── flags: newline
         │       │           │           ├── arguments: ∅
         │       │           │           └── keyword_loc: (10,6)-(10,11) = "break"
-        │       │           ├── consequent: ∅
+        │       │           ├── subsequent: ∅
         │       │           └── end_keyword_loc: ∅
         │       ├── opening_loc: (10,4)-(10,5) = "{"
         │       └── closing_loc: (10,20)-(10,21) = "}"
@@ -189,7 +189,7 @@
         │       │           │           ├── flags: newline
         │       │           │           ├── arguments: ∅
         │       │           │           └── keyword_loc: (12,6)-(12,10) = "next"
-        │       │           ├── consequent: ∅
+        │       │           ├── subsequent: ∅
         │       │           └── end_keyword_loc: ∅
         │       ├── opening_loc: (12,4)-(12,5) = "{"
         │       └── closing_loc: (12,19)-(12,20) = "}"
@@ -208,7 +208,7 @@
         │   │           ├── flags: newline
         │   │           ├── keyword_loc: (14,0)-(14,6) = "return"
         │   │           └── arguments: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ CallNode (location: (16,0)-(16,38))
         │   ├── flags: newline, ignore_visibility
@@ -257,7 +257,7 @@
         │       │           │           │           ├── flags: static_literal, decimal
         │       │           │           │           └── value: 42
         │       │           │           └── keyword_loc: (16,24)-(16,29) = "break"
-        │       │           ├── consequent: ∅
+        │       │           ├── subsequent: ∅
         │       │           └── end_keyword_loc: (16,33)-(16,36) = "end"
         │       ├── opening_loc: (16,4)-(16,5) = "{"
         │       └── closing_loc: (16,37)-(16,38) = "}"
@@ -290,7 +290,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (20,0)-(20,3) = "end"
         ├── @ IfNode (location: (22,0)-(22,11))
         │   ├── flags: newline
@@ -340,9 +340,9 @@
         │   │           │           ├── arguments: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block: ∅
-        │   │           ├── consequent: ∅
+        │   │           ├── subsequent: ∅
         │   │           └── end_keyword_loc: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: ∅
         ├── @ IfNode (location: (24,0)-(27,3))
         │   ├── flags: newline
@@ -395,7 +395,7 @@
         │   │           │                   └── operator_loc: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (26,0)-(27,3))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (26,0)-(26,4) = "else"
@@ -426,7 +426,7 @@
         │   │   └── operator_loc: (29,8)-(29,10) = "in"
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ IfNode (location: (30,0)-(31,3))
         │   │   ├── flags: newline
         │   │   ├── if_keyword_loc: (30,0)-(30,5) = "elsif"
@@ -451,7 +451,7 @@
         │   │   │   └── operator_loc: (30,11)-(30,13) = "in"
         │   │   ├── then_keyword_loc: ∅
         │   │   ├── statements: ∅
-        │   │   ├── consequent: ∅
+        │   │   ├── subsequent: ∅
         │   │   └── end_keyword_loc: (31,0)-(31,3) = "end"
         │   └── end_keyword_loc: (31,0)-(31,3) = "end"
         └── @ IfNode (location: (33,0)-(42,3))
@@ -508,7 +508,7 @@
             │               ├── body: ∅
             │               ├── opening_loc: (34,9)-(34,11) = "do"
             │               └── closing_loc: (35,2)-(35,5) = "end"
-            ├── consequent:
+            ├── subsequent:
             │   @ IfNode (location: (36,0)-(42,3))
             │   ├── flags: newline
             │   ├── if_keyword_loc: (36,0)-(36,5) = "elsif"
@@ -563,7 +563,7 @@
             │   │               ├── body: ∅
             │   │               ├── opening_loc: (37,9)-(37,11) = "do"
             │   │               └── closing_loc: (38,2)-(38,5) = "end"
-            │   ├── consequent:
+            │   ├── subsequent:
             │   │   @ ElseNode (location: (39,0)-(42,3))
             │   │   ├── flags: ∅
             │   │   ├── else_keyword_loc: (39,0)-(39,4) = "else"

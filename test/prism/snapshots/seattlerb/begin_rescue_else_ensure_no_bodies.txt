@@ -17,7 +17,7 @@
             │   ├── operator_loc: ∅
             │   ├── reference: ∅
             │   ├── statements: ∅
-            │   └── consequent: ∅
+            │   └── subsequent: ∅
             ├── else_clause:
             │   @ ElseNode (location: (5,0)-(7,6))
             │   ├── flags: ∅

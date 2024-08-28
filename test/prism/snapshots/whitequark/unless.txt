@@ -34,7 +34,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: (1,21)-(1,24) = "end"
         └── @ UnlessNode (location: (3,0)-(3,20))
             ├── flags: newline
@@ -65,5 +65,5 @@
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           └── block: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             └── end_keyword_loc: (3,17)-(3,20) = "end"

@@ -43,7 +43,7 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           └── block: ∅
-            │   └── consequent: ∅
+            │   └── subsequent: ∅
             ├── else_clause:
             │   @ ElseNode (location: (1,26)-(1,40))
             │   ├── flags: ∅

@@ -105,7 +105,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         ├── @ IfNode (location: (4,0)-(6,3))
         │   ├── flags: newline
@@ -207,7 +207,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         ├── @ IfNode (location: (7,0)-(8,3))
         │   ├── flags: newline
@@ -230,7 +230,7 @@
         │   │   └── operator_loc: (7,3)-(7,5) = ".."
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (8,0)-(8,3) = "end"
         └── @ IfNode (location: (9,0)-(10,3))
             ├── flags: newline
@@ -253,5 +253,5 @@
             │   └── operator_loc: (9,6)-(9,8) = ".."
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (10,0)-(10,3) = "end"

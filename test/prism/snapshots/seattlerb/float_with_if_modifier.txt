@@ -19,5 +19,5 @@
             │       └── @ FloatNode (location: (1,0)-(1,3))
             │           ├── flags: newline, static_literal
             │           └── value: 1.0
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: ∅

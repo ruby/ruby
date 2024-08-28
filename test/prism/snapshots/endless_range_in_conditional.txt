@@ -22,7 +22,7 @@
         │   │   └── operator_loc: (1,4)-(1,6) = ".."
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (1,10)-(1,13) = "end"
         ├── @ IfNode (location: (2,0)-(2,12))
         │   ├── flags: newline
@@ -38,7 +38,7 @@
         │   │   └── operator_loc: (2,3)-(2,5) = ".."
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (2,9)-(2,12) = "end"
         └── @ IfNode (location: (3,0)-(3,12))
             ├── flags: newline
@@ -54,5 +54,5 @@
             │   └── operator_loc: (3,4)-(3,6) = ".."
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (3,9)-(3,12) = "end"

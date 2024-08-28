@@ -179,7 +179,7 @@
         │   │   │   │   │           ├── rest: ∅
         │   │   │   │   │           ├── opening_loc: (10,3)-(10,4) = "{"
         │   │   │   │   │           └── closing_loc: (10,4)-(10,5) = "}"
-        │   │   │   │   ├── consequent: ∅
+        │   │   │   │   ├── subsequent: ∅
         │   │   │   │   └── end_keyword_loc: ∅
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (11,2)-(11,6))
@@ -425,7 +425,7 @@
         │   │       │           └── flags: newline, static_literal
         │   │       ├── in_loc: (29,0)-(29,2) = "in"
         │   │       └── then_loc: (29,5)-(29,9) = "then"
-        │   ├── consequent:
+        │   ├── else_clause:
         │   │   @ ElseNode (location: (31,0)-(33,3))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (31,0)-(31,4) = "else"
@@ -486,7 +486,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (35,0)-(35,2) = "in"
         │   │       └── then_loc: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (34,0)-(34,4) = "case"
         │   └── end_keyword_loc: (36,0)-(36,3) = "end"
         ├── @ CaseMatchNode (location: (37,0)-(40,3))
@@ -512,7 +512,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (38,0)-(38,2) = "in"
         │   │       └── then_loc: ∅
-        │   ├── consequent:
+        │   ├── else_clause:
         │   │   @ ElseNode (location: (39,0)-(40,3))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (39,0)-(39,4) = "else"

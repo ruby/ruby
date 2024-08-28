@@ -41,7 +41,7 @@
         │   │           │           ├── content_loc: (1,7)-(1,8) = "a"
         │   │           │           ├── closing_loc: (1,8)-(1,9) = "\""
         │   │           │           └── unescaped: "a"
-        │   │           ├── consequent:
+        │   │           ├── subsequent:
         │   │           │   @ ElseNode (location: (1,9)-(1,11))
         │   │           │   ├── flags: ∅
         │   │           │   ├── else_keyword_loc: (1,9)-(1,10) = ":"

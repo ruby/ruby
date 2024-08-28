@@ -60,7 +60,7 @@ module Prism
           location: node.location,
           body: [public_send(read_class, location: node.name_loc, **arguments)]
         ),
-        consequent: else_node(
+        subsequent: else_node(
           location: node.location,
           else_keyword_loc: node.operator_loc,
           statements: statements_node(

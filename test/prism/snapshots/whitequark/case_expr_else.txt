@@ -44,7 +44,7 @@
             │                   ├── arguments: ∅
             │                   ├── closing_loc: ∅
             │                   └── block: ∅
-            ├── consequent:
+            ├── else_clause:
             │   @ ElseNode (location: (1,27)-(1,40))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (1,27)-(1,31) = "else"

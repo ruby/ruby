@@ -34,7 +34,7 @@
             │                   ├── content_loc: (1,17)-(1,20) = "foo"
             │                   ├── closing_loc: (1,20)-(1,21) = "'"
             │                   └── unescaped: "foo"
-            ├── consequent:
+            ├── else_clause:
             │   @ ElseNode (location: (1,23)-(1,38))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (1,23)-(1,27) = "else"

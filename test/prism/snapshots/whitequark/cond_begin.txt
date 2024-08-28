@@ -42,5 +42,5 @@
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           └── block: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (1,15)-(1,18) = "end"

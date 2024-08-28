@@ -158,7 +158,7 @@
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements: ∅
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (15,0)-(15,3) = "end"
@@ -220,7 +220,7 @@
         │   │   │       │       └── block: ∅
         │   │   │       ├── then_keyword_loc: ∅
         │   │   │       └── statements: ∅
-        │   │   ├── consequent: ∅
+        │   │   ├── else_clause: ∅
         │   │   ├── case_keyword_loc: (16,0)-(16,4) = "case"
         │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   ├── call_operator_loc: (19,3)-(19,4) = "."
@@ -263,7 +263,7 @@
         │   │   │       │       └── block: ∅
         │   │   │       ├── then_keyword_loc: ∅
         │   │   │       └── statements: ∅
-        │   │   ├── consequent: ∅
+        │   │   ├── else_clause: ∅
         │   │   ├── case_keyword_loc: (20,0)-(20,4) = "case"
         │   │   └── end_keyword_loc: (22,0)-(22,3) = "end"
         │   ├── call_operator_loc: (22,3)-(22,4) = "."
@@ -441,7 +441,7 @@
         │   │   │   └── block: ∅
         │   │   ├── then_keyword_loc: ∅
         │   │   ├── statements: ∅
-        │   │   ├── consequent: ∅
+        │   │   ├── subsequent: ∅
         │   │   └── end_keyword_loc: (36,0)-(36,3) = "end"
         │   ├── call_operator_loc: (36,3)-(36,4) = "."
         │   ├── name: :baz

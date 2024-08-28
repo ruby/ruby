@@ -262,7 +262,7 @@
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
         │   │           └── closing_loc: (80,0)-(81,0) = "  DOC\n"
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (81,0)-(81,3) = "end"
         ├── @ IfNode (location: (83,0)-(87,3))
         │   ├── flags: newline
@@ -297,7 +297,7 @@
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "\n"
         │   │           └── closing_loc: (86,0)-(87,0) = "  DOC\n"
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (87,0)-(87,3) = "end"
         ├── @ IfNode (location: (89,0)-(93,3))
         │   ├── flags: newline
@@ -326,7 +326,7 @@
         │   │           │       ├── closing_loc: ∅
         │   │           │       └── unescaped: "a\n"
         │   │           └── closing_loc: (92,0)-(93,0) = "  DOC\n"
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (93,0)-(93,3) = "end"
         ├── @ IfNode (location: (95,0)-(101,3))
         │   ├── flags: newline
@@ -345,7 +345,7 @@
         │   │           ├── content_loc: (97,0)-(100,0) = "   a\n\n   b\n"
         │   │           ├── closing_loc: (100,0)-(101,0) = "  DOC\n"
         │   │           └── unescaped: "   a\n\n   b\n"
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (101,0)-(101,3) = "end"
         ├── @ InterpolatedStringNode (location: (103,0)-(103,6))
         │   ├── flags: newline

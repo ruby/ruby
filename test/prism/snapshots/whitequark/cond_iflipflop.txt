@@ -79,5 +79,5 @@
             │   └── operator_loc: (3,6)-(3,8) = ".."
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (3,13)-(3,16) = "end"

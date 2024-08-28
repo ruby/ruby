@@ -54,7 +54,7 @@
                 │   │   │           ├── value_loc: (4,3)-(4,9) = "rescue"
                 │   │   │           ├── closing_loc: ∅
                 │   │   │           └── unescaped: "rescue"
-                │   │   └── consequent: ∅
+                │   │   └── subsequent: ∅
                 │   ├── else_clause:
                 │   │   @ ElseNode (location: (5,0)-(7,6))
                 │   │   ├── flags: ∅

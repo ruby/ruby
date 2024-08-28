@@ -34,7 +34,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (1,17)-(1,20) = "end"
         └── @ IfNode (location: (3,0)-(3,16))
             ├── flags: newline
@@ -65,5 +65,5 @@
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           └── block: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (3,13)-(3,16) = "end"
