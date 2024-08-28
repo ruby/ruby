@@ -2111,19 +2111,19 @@ each_location(register const VALUE *x, register long n, void (*cb)(void *data, V
 }
 
 static void
-gc_mark_locations(void *objspace, const VALUE *start, const VALUE *end, void (*cb)(void *, VALUE))
+gc_mark_locations(const VALUE *start, const VALUE *end, void (*cb)(void *, VALUE), void *data)
 {
     long n;
 
     if (end <= start) return;
     n = end - start;
-    each_location(start, n, cb, objspace);
+    each_location(start, n, cb, data);
 }
 
 void
 rb_gc_mark_locations(const VALUE *start, const VALUE *end)
 {
-    gc_mark_locations(rb_gc_get_objspace(), start, end, gc_mark_maybe_internal);
+    gc_mark_locations(start, end, rb_gc_impl_mark_maybe, rb_gc_get_objspace());
 }
 
 void
@@ -2241,15 +2241,14 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
 #endif
 
 static void
-each_stack_location(void *objspace, const rb_execution_context_t *ec,
-                     const VALUE *stack_start, const VALUE *stack_end, void (*cb)(void *objspace, VALUE obj))
+each_stack_location(const rb_execution_context_t *ec,
+                    const VALUE *stack_start, const VALUE *stack_end, void (*cb)(void *data, VALUE obj), void *data)
 {
-    gc_mark_locations(objspace, stack_start, stack_end, cb);
+    gc_mark_locations(stack_start, stack_end, cb, data);
 
 #if defined(__mc68000__)
-    gc_mark_locations(objspace,
-                      (VALUE*)((char*)stack_start + 2),
-                      (VALUE*)((char*)stack_end - 2), cb);
+    gc_mark_locations((VALUE*)((char*)stack_start + 2),
+                      (VALUE*)((char*)stack_end - 2), cb, data);
 #endif
 }
 
@@ -2277,7 +2276,7 @@ gc_mark_machine_stack_location_maybe(void *data, VALUE obj)
         &fake_frame_start, &fake_frame_end
     );
     if (is_fake_frame) {
-        each_stack_location(objspace, ec, fake_frame_start, fake_frame_end, gc_mark_maybe_internal);
+        each_stack_location(ec, fake_frame_start, fake_frame_end, rb_gc_impl_mark_maybe, objspace);
     }
 #endif
 }
@@ -2300,10 +2299,10 @@ static void
 mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
 {
     emscripten_scan_stack(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_internal);
+    each_stack_location(ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
 
     emscripten_scan_registers(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_internal);
+    each_stack_location(ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
 }
 # else // use Asyncify version
 
@@ -2313,10 +2312,10 @@ mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
     VALUE *stack_start, *stack_end;
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
-    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe_internal);
+    each_stack_location(ec, stack_start, stack_end, rb_gc_impl_mark_maybe, objspace);
 
     rb_wasm_scan_locals(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_internal);
+    each_stack_location(ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
 }
 
 # endif
@@ -2351,7 +2350,7 @@ mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
     };
 
     each_location(save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe, &data);
-    each_stack_location((void *)&data, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
+    each_stack_location(ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe, &data);
 }
 #endif
 
@@ -2370,7 +2369,7 @@ rb_gc_mark_machine_context(const rb_execution_context_t *ec)
 #endif
     };
 
-    each_stack_location((void *)&data, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
+    each_stack_location(ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe, &data);
     int num_regs = sizeof(ec->machine.regs)/(sizeof(VALUE));
     each_location((VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe, &data);
 }
