@@ -270,7 +270,13 @@ module IRB
           proc do |output, complete: |
             next unless IRB::Color.colorable?
             lvars = IRB.CurrentContext&.local_variables || []
-            IRB::Color.colorize_code(output, complete: complete, local_variables: lvars)
+            if IRB.CurrentContext&.parse_command(output)
+              name, sep, arg = output.split(/(\s+)/, 2)
+              arg = IRB::Color.colorize_code(arg, complete: complete, local_variables: lvars)
+              "#{IRB::Color.colorize(name, [:BOLD])}\e[m#{sep}#{arg}"
+            else
+              IRB::Color.colorize_code(output, complete: complete, local_variables: lvars)
+            end
           end
         else
           proc do |output|

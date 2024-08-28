@@ -8,6 +8,7 @@ module TestIRB
   class InputMethodTest < TestCase
     def setup
       @conf_backup = IRB.conf.dup
+      IRB.init_config(nil)
       IRB.conf[:LC_MESSAGES] = IRB::Locale.new
       save_encodings
     end
@@ -31,6 +32,21 @@ module TestIRB
       assert_equal IRB::InputMethod::BASIC_WORD_BREAK_CHARACTERS, Reline.basic_word_break_characters
       assert_not_nil Reline.completion_proc
       assert_not_nil Reline.dig_perfect_match_proc
+    end
+
+    def test_colorize
+      original_colorable = IRB::Color.method(:colorable?)
+      IRB::Color.instance_eval { undef :colorable? }
+      IRB::Color.define_singleton_method(:colorable?) { true }
+      workspace = IRB::WorkSpace.new(binding)
+      input_method = IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
+      IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new(workspace, input_method).context
+      assert_equal "\e[1m$\e[0m\e[m", Reline.output_modifier_proc.call('$', complete: false)
+      assert_equal "\e[1m$\e[0m\e[m  \e[34m\e[1m1\e[0m + \e[34m\e[1m2\e[0m", Reline.output_modifier_proc.call('$  1 + 2', complete: false)
+      assert_equal "\e[32m\e[1m$a\e[0m", Reline.output_modifier_proc.call('$a', complete: false)
+    ensure
+      IRB::Color.instance_eval { undef :colorable? }
+      IRB::Color.define_singleton_method(:colorable?, original_colorable)
     end
 
     def test_initialization_without_use_autocomplete
