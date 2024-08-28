@@ -70,10 +70,10 @@ module Prism
     def <%= node.human %>(<%= ["source: default_source", "node_id: 0", "location: default_location", "flags: 0", *node.fields.map { |field|
       case field
       when Prism::Template::NodeField
-        if !field.kind?
+        kind = field.specific_kind || field.union_kind&.first
+        if kind.nil?
           "#{field.name}: default_node(source, location)"
         else
-          kind = field.specific_kind || field.union_kind.first
           "#{field.name}: #{kind.gsub(/(?<=.)[A-Z]/, "_\\0").downcase}(source: source)"
         end
       when Prism::Template::ConstantField

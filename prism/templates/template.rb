@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# typed: false
+# typed: ignore
 
 require "erb"
 require "fileutils"
@@ -8,6 +8,7 @@ require "yaml"
 module Prism
   module Template
     SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
+    REMOVE_ON_ERROR_TYPES = SERIALIZE_ONLY_SEMANTICS_FIELDS
     CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
 
     JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
@@ -95,8 +96,9 @@ module Prism
     # Some node fields can be specialized if they point to a specific kind of
     # node and not just a generic node.
     class NodeKindField < Field
-      def kind?
-        options.key?(:kind)
+      def initialize(kind:, **options)
+        @kind = kind
+        super(**options)
       end
 
       def c_type
@@ -117,18 +119,18 @@ module Prism
 
       def java_cast
         if specific_kind
-          "(Nodes.#{options[:kind]}) "
+          "(Nodes.#{@kind}) "
         else
           ""
         end
       end
 
       def specific_kind
-        options[:kind] unless options[:kind].is_a?(Array)
+        @kind unless @kind.is_a?(Array)
       end
 
       def union_kind
-        options[:kind] if options[:kind].is_a?(Array)
+        @kind if @kind.is_a?(Array)
       end
     end
 
@@ -418,6 +420,34 @@ module Prism
             # If/when we have documentation on every field, this should be
             # changed to use fetch instead of delete.
             comment = options.delete(:comment)
+
+            if kinds = options[:kind]
+              kinds = [kinds] unless kinds.is_a?(Array)
+              kinds = kinds.map do |kind|
+                case kind
+                when "non-void expression"
+                  # the actual list of types would be way too long
+                  "Node"
+                when "pattern expression"
+                  # the list of all possible types is too long with 37+ different classes
+                  "Node"
+                when Hash
+                  kind = kind.fetch("on error")
+                  REMOVE_ON_ERROR_TYPES ? nil : kind
+                else
+                  kind
+                end
+              end.compact
+              if kinds.size == 1
+                kinds = kinds.first
+                kinds = nil if kinds == "Node"
+              end
+              options[:kind] = kinds
+            else
+              if type < NodeKindField
+                raise "Missing kind in config.yml for field #{@name}##{options.fetch(:name)}"
+              end
+            end
 
             type.new(comment: comment, **options)
           end

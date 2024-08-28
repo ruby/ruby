@@ -2990,6 +2990,7 @@ pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, cons
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
+    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_and_write_node_t) {
         {
             .type = PM_INDEX_AND_WRITE_NODE,
@@ -3005,7 +3006,7 @@ pm_index_and_write_node_create(pm_parser_t *parser, pm_call_node_t *target, cons
         .opening_loc = target->opening_loc,
         .arguments = target->arguments,
         .closing_loc = target->closing_loc,
-        .block = target->block,
+        .block = (pm_block_argument_node_t *) target->block,
         .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
@@ -3065,6 +3066,7 @@ pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target,
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
+    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_operator_write_node_t) {
         {
             .type = PM_INDEX_OPERATOR_WRITE_NODE,
@@ -3080,7 +3082,7 @@ pm_index_operator_write_node_create(pm_parser_t *parser, pm_call_node_t *target,
         .opening_loc = target->opening_loc,
         .arguments = target->arguments,
         .closing_loc = target->closing_loc,
-        .block = target->block,
+        .block = (pm_block_argument_node_t *) target->block,
         .binary_operator = pm_parser_constant_id_location(parser, operator->start, operator->end - 1),
         .binary_operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value
@@ -3142,6 +3144,7 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
+    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_or_write_node_t) {
         {
             .type = PM_INDEX_OR_WRITE_NODE,
@@ -3157,7 +3160,7 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
         .opening_loc = target->opening_loc,
         .arguments = target->arguments,
         .closing_loc = target->closing_loc,
-        .block = target->block,
+        .block = (pm_block_argument_node_t *) target->block,
         .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .value = value
     };
@@ -3210,6 +3213,7 @@ pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
 
     pm_index_arguments_check(parser, target->arguments, target->block);
 
+    assert(!target->block || PM_NODE_TYPE_P(target->block, PM_BLOCK_ARGUMENT_NODE));
     *node = (pm_index_target_node_t) {
         {
             .type = PM_INDEX_TARGET_NODE,
@@ -3221,7 +3225,7 @@ pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
         .opening_loc = target->opening_loc,
         .arguments = target->arguments,
         .closing_loc = target->closing_loc,
-        .block = target->block
+        .block = (pm_block_argument_node_t *) target->block,
     };
 
     // Here we're going to free the target, since it is no longer necessary.
@@ -3236,7 +3240,7 @@ pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
  * Allocate and initialize a new CapturePatternNode node.
  */
 static pm_capture_pattern_node_t *
-pm_capture_pattern_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *target, const pm_token_t *operator) {
+pm_capture_pattern_node_create(pm_parser_t *parser, pm_node_t *value, pm_local_variable_target_node_t *target, const pm_token_t *operator) {
     pm_capture_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_capture_pattern_node_t);
 
     *node = (pm_capture_pattern_node_t) {
@@ -3245,7 +3249,7 @@ pm_capture_pattern_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t 
             .node_id = PM_NODE_IDENTIFY(parser),
             .location = {
                 .start = value->location.start,
-                .end = target->location.end
+                .end = target->base.location.end
             },
         },
         .value = value,
@@ -4037,14 +4041,25 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
     pm_find_pattern_node_t *node = PM_NODE_ALLOC(parser, pm_find_pattern_node_t);
 
     pm_node_t *left = nodes->nodes[0];
+    assert(PM_NODE_TYPE_P(left, PM_SPLAT_NODE));
+    pm_splat_node_t *left_splat_node = (pm_splat_node_t *) left;
+
     pm_node_t *right;
 
     if (nodes->size == 1) {
         right = (pm_node_t *) pm_missing_node_create(parser, left->location.end, left->location.end);
     } else {
         right = nodes->nodes[nodes->size - 1];
+        assert(PM_NODE_TYPE_P(right, PM_SPLAT_NODE));
     }
 
+#if PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS
+    // FindPatternNode#right is typed as SplatNode in this case, so replace the potential MissingNode with a SplatNode.
+    // The resulting AST will anyway be ignored, but this file still needs to compile.
+    pm_splat_node_t *right_splat_node = PM_NODE_TYPE_P(right, PM_SPLAT_NODE) ? (pm_splat_node_t *) right : left_splat_node;
+#else
+    pm_node_t *right_splat_node = right;
+#endif
     *node = (pm_find_pattern_node_t) {
         {
             .type = PM_FIND_PATTERN_NODE,
@@ -4055,8 +4070,8 @@ pm_find_pattern_node_create(pm_parser_t *parser, pm_node_list_t *nodes) {
             },
         },
         .constant = NULL,
-        .left = left,
-        .right = right,
+        .left = left_splat_node,
+        .right = right_splat_node,
         .requireds = { 0 },
         .opening_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
@@ -17429,7 +17444,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
         }
 
         parse_pattern_capture(parser, captures, constant_id, &PM_LOCATION_TOKEN_VALUE(&parser->previous));
-        pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create(
+        pm_local_variable_target_node_t *target = pm_local_variable_target_node_create(
             parser,
             &PM_LOCATION_TOKEN_VALUE(&parser->previous),
             constant_id,

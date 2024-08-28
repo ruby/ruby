@@ -793,8 +793,8 @@ nodes:
           - GlobalVariableReadNode
           - BackReferenceReadNode
           - NumberedReferenceReadNode
-          - SymbolNode # On parsing error of `alias $a b`
-          - MissingNode # On parsing error of `alias $a 42`
+          - on error: SymbolNode # alias $a b
+          - on error: MissingNode # alias $a 42
         comment: |
           Represents the old name of the global variable that can be used before aliasing.
 
@@ -824,8 +824,8 @@ nodes:
         kind:
           - SymbolNode
           - InterpolatedSymbolNode
-          - GlobalVariableReadNode # On parsing error of `alias a $b`
-          - MissingNode # On parsing error of `alias a 42`
+          - on error: GlobalVariableReadNode # alias a $b
+          - on error: MissingNode # alias a 42
       - name: keyword_loc
         type: location
     comment: |
@@ -837,8 +837,10 @@ nodes:
     fields:
       - name: left
         type: node
+        kind: pattern expression
       - name: right
         type: node
+        kind: pattern expression
       - name: operator_loc
         type: location
     comment: |
@@ -850,6 +852,7 @@ nodes:
     fields:
       - name: left
         type: node
+        kind: non-void expression
         comment: |
           Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -860,8 +863,9 @@ nodes:
               ^
       - name: right
         type: node
+        kind: Node
         comment: |
-          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+          Represents the right side of the expression.
 
               left && right
                       ^^^^^
@@ -885,6 +889,7 @@ nodes:
     fields:
       - name: arguments
         type: node[]
+        kind: non-void expression
     comment: |
       Represents a set of arguments to a method or a keyword.
 
@@ -895,6 +900,7 @@ nodes:
     fields:
       - name: elements
         type: node[]
+        kind: non-void expression
         comment: Represent the list of zero or more [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression) within the array.
       - name: opening_loc
         type: location?
@@ -923,12 +929,18 @@ nodes:
     fields:
       - name: constant
         type: node?
+        kind:
+          - ConstantReadNode
+          - ConstantPathNode
       - name: requireds
         type: node[]
+        kind: pattern expression
       - name: rest
         type: node?
+        kind: pattern expression
       - name: posts
         type: node[]
+        kind: pattern expression
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -954,6 +966,7 @@ nodes:
     fields:
       - name: key
         type: node
+        kind: non-void expression
         comment: |
           The key of the association. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -967,6 +980,7 @@ nodes:
                 ^^^^^^^^^^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value of the association, if present. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -991,6 +1005,7 @@ nodes:
     fields:
       - name: value
         type: node?
+        kind: non-void expression
         comment: |
           The value to be splatted, if present. Will be missing when keyword rest argument forwarding is used.
 
@@ -1053,6 +1068,7 @@ nodes:
     fields:
       - name: expression
         type: node?
+        kind: non-void expression
       - name: operator_loc
         type: location
     comment: |
@@ -1157,6 +1173,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: call_operator_loc
         type: location?
       - name: message_loc
@@ -1169,6 +1186,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator on a call.
 
@@ -1179,6 +1197,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
         comment: |
           The object that the method is being called on. This can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -1205,6 +1224,9 @@ nodes:
         type: location?
       - name: block
         type: node?
+        kind:
+          - BlockNode
+          - BlockArgumentNode
     comment: |
       Represents a method call, in all of the various forms that can take.
 
@@ -1230,6 +1252,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: call_operator_loc
         type: location?
       - name: message_loc
@@ -1244,6 +1267,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of an assignment operator on a call.
 
@@ -1254,6 +1278,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: call_operator_loc
         type: location?
       - name: message_loc
@@ -1266,6 +1291,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator on a call.
 
@@ -1276,6 +1302,7 @@ nodes:
     fields:
       - name: receiver
         type: node
+        kind: non-void expression
       - name: call_operator_loc
         type: location
       - name: name
@@ -1299,8 +1326,10 @@ nodes:
     fields:
       - name: value
         type: node
+        kind: pattern expression
       - name: target
         type: node
+        kind: LocalVariableTargetNode
       - name: operator_loc
         type: location
     comment: |
@@ -1312,8 +1341,10 @@ nodes:
     fields:
       - name: predicate
         type: node?
+        kind: non-void expression
       - name: conditions
         type: node[]
+        kind: InNode
       - name: else_clause
         type: node?
         kind: ElseNode
@@ -1332,8 +1363,10 @@ nodes:
     fields:
       - name: predicate
         type: node?
+        kind: non-void expression
       - name: conditions
         type: node[]
+        kind: WhenNode
       - name: else_clause
         type: node?
         kind: ElseNode
@@ -1356,12 +1389,20 @@ nodes:
         type: location
       - name: constant_path
         type: node
+        kind:
+          - ConstantReadNode
+          - ConstantPathNode
+          - on error: CallNode # class 0.X end
       - name: inheritance_operator_loc
         type: location?
       - name: superclass
         type: node?
+        kind: non-void expression
       - name: body
         type: node?
+        kind:
+          - StatementsNode
+          - BeginNode
       - name: end_keyword_loc
         type: location
       - name: name
@@ -1381,6 +1422,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator for assignment to a class variable.
 
@@ -1396,6 +1438,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: binary_operator
         type: constant
     comment: |
@@ -1413,6 +1456,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator for assignment to a class variable.
 
@@ -1461,6 +1505,7 @@ nodes:
               ^^^^^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the class variable. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -1491,6 +1536,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator for assignment to a constant.
 
@@ -1506,6 +1552,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: binary_operator
         type: constant
     comment: |
@@ -1523,6 +1570,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator for assignment to a constant.
 
@@ -1537,6 +1585,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator for assignment to a constant path.
 
@@ -1546,6 +1595,7 @@ nodes:
     fields:
       - name: parent
         type: node?
+        kind: non-void expression
         comment: |
           The left-hand node of the path, if present. It can be `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression). It will be `nil` when the constant lookup is at the root of the module tree.
 
@@ -1594,6 +1644,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: binary_operator
         type: constant
     comment: |
@@ -1610,6 +1661,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator for assignment to a constant path.
 
@@ -1619,6 +1671,7 @@ nodes:
     fields:
       - name: parent
         type: node?
+        kind: non-void expression
       - name: name
         type: constant?
       - name: delimiter_loc
@@ -1652,6 +1705,7 @@ nodes:
                     ^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the constant path. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -1711,6 +1765,7 @@ nodes:
               ^^^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the constant. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -1739,11 +1794,15 @@ nodes:
         type: location
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: parameters
         type: node?
         kind: ParametersNode
       - name: body
         type: node?
+        kind:
+          - StatementsNode
+          - BeginNode
       - name: locals
         type: constant[]
       - name: def_keyword_loc
@@ -1770,6 +1829,7 @@ nodes:
         type: location?
       - name: value
         type: node
+        kind: Node # More than non-void expression as defined?(return) is allowed, yet defined?(BEGIN{}) is SyntaxError
       - name: rparen_loc
         type: location?
       - name: keyword_loc
@@ -1813,6 +1873,12 @@ nodes:
         type: location
       - name: variable
         type: node
+        kind:
+          - InstanceVariableReadNode
+          - ClassVariableReadNode
+          - GlobalVariableReadNode
+          - BackReferenceReadNode
+          - NumberedReferenceReadNode
     comment: |
       Represents an interpolated variable.
 
@@ -1846,12 +1912,20 @@ nodes:
     fields:
       - name: constant
         type: node?
+        kind:
+          - ConstantReadNode
+          - ConstantPathNode
       - name: left
         type: node
+        kind: SplatNode
       - name: requireds
         type: node[]
+        kind: pattern expression
       - name: right
         type: node
+        kind:
+          - SplatNode
+          - on error: MissingNode
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -1872,8 +1946,10 @@ nodes:
     fields:
       - name: left
         type: node?
+        kind: non-void expression
       - name: right
         type: node?
+        kind: non-void expression
       - name: operator_loc
         type: location
     comment: |
@@ -1895,6 +1971,19 @@ nodes:
     fields:
       - name: index
         type: node
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - MultiTargetNode
+          - on error: BackReferenceReadNode # for $& in a end
+          - on error: NumberedReferenceReadNode # for $1 in a end
+          - on error: MissingNode # for in 1..10; end
         comment: |
           The index expression for `for` loops.
 
@@ -1902,6 +1991,7 @@ nodes:
                   ^
       - name: collection
         type: node
+        kind: non-void expression
         comment: |
           The collection to iterate over.
 
@@ -1985,6 +2075,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator for assignment to a global variable.
 
@@ -2000,6 +2091,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: binary_operator
         type: constant
     comment: |
@@ -2017,6 +2109,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator for assignment to a global variable.
 
@@ -2065,6 +2158,7 @@ nodes:
               ^^^^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the global variable. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -2123,6 +2217,9 @@ nodes:
     fields:
       - name: constant
         type: node?
+        kind:
+          - ConstantReadNode
+          - ConstantPathNode
       - name: elements
         type: node[]
         kind: AssocNode
@@ -2156,6 +2253,7 @@ nodes:
           The `if_keyword_loc` field will be `nil` when the `IfNode` represents a ternary expression.
       - name: predicate
         type: node
+        kind: non-void expression
         comment: |
           The node for the condition the `IfNode` is testing.
 
@@ -2248,6 +2346,11 @@ nodes:
     fields:
       - name: value
         type: node
+        kind:
+          - LocalVariableReadNode
+          - CallNode
+          - ConstantReadNode
+          - LocalVariableTargetNode
     comment: |
       Represents a node that is implicitly being added to the tree but doesn't correspond directly to a node in the source.
 
@@ -2278,6 +2381,7 @@ nodes:
     fields:
       - name: pattern
         type: node
+        kind: pattern expression
       - name: statements
         type: node?
         kind: StatementsNode
@@ -2295,6 +2399,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: call_operator_loc
         type: location?
       - name: opening_loc
@@ -2306,10 +2411,12 @@ nodes:
         type: location
       - name: block
         type: node?
+        kind: BlockArgumentNode # foo[&b] &&= value, only valid on Ruby < 3.4
       - name: operator_loc
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator on a call to the `[]` method.
 
@@ -2320,6 +2427,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: call_operator_loc
         type: location?
       - name: opening_loc
@@ -2331,12 +2439,14 @@ nodes:
         type: location
       - name: block
         type: node?
+        kind: BlockArgumentNode # foo[&b] += value, only valid on Ruby < 3.4
       - name: binary_operator
         type: constant
       - name: binary_operator_loc
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of an assignment operator on a call to `[]`.
 
@@ -2347,6 +2457,7 @@ nodes:
     fields:
       - name: receiver
         type: node?
+        kind: non-void expression
       - name: call_operator_loc
         type: location?
       - name: opening_loc
@@ -2358,10 +2469,12 @@ nodes:
         type: location
       - name: block
         type: node?
+        kind: BlockArgumentNode # foo[&b] ||= value, only valid on Ruby < 3.4
       - name: operator_loc
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator on a call to `[]`.
 
@@ -2372,6 +2485,7 @@ nodes:
     fields:
       - name: receiver
         type: node
+        kind: non-void expression
       - name: opening_loc
         type: location
       - name: arguments
@@ -2381,6 +2495,7 @@ nodes:
         type: location
       - name: block
         type: node?
+        kind: BlockArgumentNode # foo[&b], = 1, only valid on Ruby < 3.4
     comment: |
       Represents assigning to an index.
 
@@ -2404,6 +2519,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `&&=` operator for assignment to an instance variable.
 
@@ -2419,6 +2535,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: binary_operator
         type: constant
     comment: |
@@ -2436,6 +2553,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents the use of the `||=` operator for assignment to an instance variable.
 
@@ -2484,6 +2602,7 @@ nodes:
               ^^^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the instance variable. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -2661,8 +2780,15 @@ nodes:
         type: location
       - name: parameters
         type: node?
+        kind:
+          - BlockParametersNode
+          - NumberedParametersNode
+          - ItParametersNode
       - name: body
         type: node?
+        kind:
+          - StatementsNode
+          - BeginNode
     comment: |
       Represents using a lambda literal (not the lambda method call).
 
@@ -2676,6 +2802,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: name
         type: constant
       - name: depth
@@ -2693,6 +2820,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: name
         type: constant
       - name: binary_operator
@@ -2712,6 +2840,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
       - name: name
         type: constant
       - name: depth
@@ -2791,6 +2920,7 @@ nodes:
               ^^^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the local variable. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -2835,8 +2965,10 @@ nodes:
     fields:
       - name: value
         type: node
+        kind: non-void expression
       - name: pattern
         type: node
+        kind: pattern expression
       - name: operator_loc
         type: location
     comment: |
@@ -2848,8 +2980,10 @@ nodes:
     fields:
       - name: value
         type: node
+        kind: non-void expression
       - name: pattern
         type: node
+        kind: pattern expression
       - name: operator_loc
         type: location
     comment: |
@@ -2881,8 +3015,15 @@ nodes:
         type: location
       - name: constant_path
         type: node
+        kind:
+          - ConstantReadNode
+          - ConstantPathNode
+          - on error: MissingNode # module Parent module end
       - name: body
         type: node?
+        kind:
+          - StatementsNode
+          - BeginNode
       - name: end_keyword_loc
         type: location
       - name: name
@@ -2906,9 +3047,9 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - RequiredParameterNode
-          - BackReferenceReadNode # On parsing error of `$',`
-          - NumberedReferenceReadNode # On parsing error of `$1,`
+          - RequiredParameterNode # def m((a,b)); end
+          - on error: BackReferenceReadNode # a, (b, $&) = z
+          - on error: NumberedReferenceReadNode # a, (b, $1) = z
         comment: |
           Represents the targets expressions before a splat node.
 
@@ -2951,8 +3092,9 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - RequiredParameterNode
-          - BackReferenceReadNode # On parsing error of `*,$'`
+          - RequiredParameterNode # def m((*,b)); end
+          - on error: BackReferenceReadNode # a, (*, $&) = z
+          - on error: NumberedReferenceReadNode # a, (*, $1) = z
         comment: |
           Represents the targets expressions after a splat node.
 
@@ -2996,6 +3138,8 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
+          - on error: BackReferenceReadNode # $&, = z
+          - on error: NumberedReferenceReadNode # $1, = z
         comment: |
           Represents the targets expressions before a splat node.
 
@@ -3038,6 +3182,8 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
+          - on error: BackReferenceReadNode # *, $& = z
+          - on error: NumberedReferenceReadNode # *, $1 = z
         comment: |
           Represents the targets expressions after a splat node.
 
@@ -3066,6 +3212,7 @@ nodes:
                       ^
       - name: value
         type: node
+        kind: non-void expression
         comment: |
           The value to write to the targets. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -3141,6 +3288,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents an optional keyword parameter to a method, block, or lambda definition.
 
@@ -3158,6 +3306,7 @@ nodes:
         type: location
       - name: value
         type: node
+        kind: non-void expression
     comment: |
       Represents an optional parameter to a method, block, or lambda definition.
 
@@ -3168,6 +3317,7 @@ nodes:
     fields:
       - name: left
         type: node
+        kind: non-void expression
         comment: |
           Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -3178,8 +3328,9 @@ nodes:
               ^
       - name: right
         type: node
+        kind: Node
         comment: |
-          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+          Represents the right side of the expression.
 
               left || right
                       ^^^^^
@@ -3219,10 +3370,10 @@ nodes:
           - RequiredParameterNode
           - MultiTargetNode
           # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
-          - KeywordRestParameterNode
-          - NoKeywordsParameterNode
+          - on error: KeywordRestParameterNode
+          - on error: NoKeywordsParameterNode
           # On parsing error of `f(..., ...)`, the first forwarding parameter is moved here:
-          - ForwardingParameterNode
+          - on error: ForwardingParameterNode
       - name: keywords
         type: node[]
         kind:
@@ -3247,6 +3398,7 @@ nodes:
     fields:
       - name: body
         type: node?
+        kind: non-void expression # Usually a StatementsNode but not always e.g. `1 in (..10)`
       - name: opening_loc
         type: location
       - name: closing_loc
@@ -3261,6 +3413,7 @@ nodes:
     fields:
       - name: expression
         type: node
+        kind: non-void expression
       - name: operator_loc
         type: location
       - name: lparen_loc
@@ -3276,6 +3429,15 @@ nodes:
     fields:
       - name: variable
         type: node
+        kind:
+          - LocalVariableReadNode
+          - InstanceVariableReadNode
+          - ClassVariableReadNode
+          - GlobalVariableReadNode # foo in ^$a
+          - BackReferenceReadNode # foo in ^$&
+          - NumberedReferenceReadNode # foo in ^$1
+          - ItLocalVariableReadNode # proc { 1 in ^it }
+          - on error: MissingNode # foo in ^Bar
       - name: operator_loc
         type: location
     comment: |
@@ -3328,6 +3490,7 @@ nodes:
     fields:
       - name: left
         type: node?
+        kind: non-void expression
         comment: |
           The left-hand side of the range, if present. It can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -3338,6 +3501,7 @@ nodes:
               ^^^^^
       - name: right
         type: node?
+        kind: non-void expression
         comment: |
           The right-hand side of the range, if present. It can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -3429,10 +3593,12 @@ nodes:
     fields:
       - name: expression
         type: node
+        kind: Node
       - name: keyword_loc
         type: location
       - name: rescue_expression
         type: node
+        kind: Node
     newline: expression
     comment: |
       Represents an expression modified with a rescue.
@@ -3445,10 +3611,23 @@ nodes:
         type: location
       - name: exceptions
         type: node[]
+        kind: non-void expression
       - name: operator_loc
         type: location?
       - name: reference
         type: node?
+        kind:
+          - LocalVariableTargetNode
+          - InstanceVariableTargetNode
+          - ClassVariableTargetNode
+          - GlobalVariableTargetNode
+          - ConstantTargetNode
+          - ConstantPathTargetNode
+          - CallTargetNode
+          - IndexTargetNode
+          - on error: BackReferenceReadNode # => begin; rescue => $&; end
+          - on error: NumberedReferenceReadNode # => begin; rescue => $1; end
+          - on error: MissingNode # begin; rescue =>; end
       - name: statements
         type: node?
         kind: StatementsNode
@@ -3535,8 +3714,12 @@ nodes:
         type: location
       - name: expression
         type: node
+        kind: non-void expression
       - name: body
         type: node?
+        kind:
+          - StatementsNode
+          - BeginNode
       - name: end_keyword_loc
         type: location
     comment: |
@@ -3573,6 +3756,7 @@ nodes:
         type: location
       - name: expression
         type: node?
+        kind: non-void expression
     comment: |
       Represents the use of the splat operator.
 
@@ -3582,6 +3766,7 @@ nodes:
     fields:
       - name: body
         type: node[]
+        kind: Node
     comment: |
       Represents a set of statements contained within some scope.
 
@@ -3622,6 +3807,9 @@ nodes:
         type: location?
       - name: block
         type: node?
+        kind:
+          - BlockNode
+          - BlockArgumentNode
     comment: |
       Represents the use of the `super` keyword with parentheses or arguments.
 
@@ -3683,6 +3871,7 @@ nodes:
                   ^^^^^^
       - name: predicate
         type: node
+        kind: non-void expression
         comment: |
           The condition to be evaluated for the unless expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
@@ -3740,6 +3929,7 @@ nodes:
         type: location?
       - name: predicate
         type: node
+        kind: non-void expression
       - name: statements
         type: node?
         kind: StatementsNode
@@ -3758,6 +3948,7 @@ nodes:
         type: location
       - name: conditions
         type: node[]
+        kind: non-void expression
       - name: then_keyword_loc
         type: location?
       - name: statements
@@ -3779,6 +3970,7 @@ nodes:
         type: location?
       - name: predicate
         type: node
+        kind: non-void expression
       - name: statements
         type: node?
         kind: StatementsNode
