@@ -5194,6 +5194,8 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
  *
  *  This method is different from method Array#eql?,
  *  which compares elements using <tt>Object#eql?</tt>.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Array@Methods+for+Comparing].
  */
 
 static VALUE
@@ -5383,6 +5385,7 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
  *    [0, 1, 2] <=> [0, 1, 2, 0]  # => -1
  *    [0, 1, 2] <=> [0, 1, 2, 3]  # => -1
  *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Array@Methods+for+Comparing].
  */
 
 VALUE
@@ -8566,7 +8569,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Comparing
  *
- *  - #<=>: Returns -1, 0, or 1 * as +self+ is less than, equal to, or
+ *  - #<=>: Returns -1, 0, or 1, as +self+ is less than, equal to, or
  *    greater than a given object.
  *  - #==: Returns whether each element in +self+ is <tt>==</tt> to the corresponding element
  *    in a given object.
