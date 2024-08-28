@@ -16,7 +16,7 @@
 // 0: parse.y
 // 1: Prism
 #ifndef RB_DEFAULT_PARSER
-#define RB_DEFAULT_PARSER 0
+#define RB_DEFAULT_PARSER 1
 #endif
 
 #ifdef UNIVERSAL_PARSER

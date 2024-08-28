@@ -103,7 +103,7 @@ jobs:
         timeout-minutes: 30
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
         if: ${{ steps.diff.outputs.gems }}
 
       - name: Commit

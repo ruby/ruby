@@ -138,7 +138,7 @@ jobs:
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests

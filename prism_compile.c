@@ -1399,10 +1399,12 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         switch (PM_NODE_TYPE(element)) {
           case PM_ASSOC_NODE: {
             // Pre-allocation check (this branch can be omitted).
-            if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && (
-                (!static_literal && ((index + min_tmp_hash_length) < elements->size)) ||
-                (first_chunk && stack_length == 0)
-              )) {
+            if (
+                PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && (
+                    (!static_literal && ((index + min_tmp_hash_length) < elements->size)) ||
+                    (first_chunk && stack_length == 0)
+                )
+            ) {
                 // Count the elements that are statically-known.
                 size_t count = 1;
                 while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
@@ -5641,6 +5643,14 @@ pm_compile_constant_path_operator_write_node(rb_iseq_t *iseq, const pm_constant_
 }
 
 /**
+ * Many nodes in Prism can be marked as a static literal, which means slightly
+ * different things depending on which node it is. Occasionally we need to omit
+ * container nodes from static literal checks, which is where this macro comes
+ * in.
+ */
+#define PM_CONTAINER_P(node) (PM_NODE_TYPE_P(node, PM_ARRAY_NODE) || PM_NODE_TYPE_P(node, PM_HASH_NODE) || PM_NODE_TYPE_P(node, PM_RANGE_NODE))
+
+/**
  * Compiles a prism node into instruction sequences.
  *
  * iseq -            The current instruction sequence object (used for locals)
@@ -5867,12 +5877,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         new_array_size++;
                     }
                 }
-                else if (PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && !static_literal && ((index + min_tmp_array_size) < elements->size)) {
+                else if (
+                    PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) &&
+                    !PM_CONTAINER_P(element) &&
+                    !static_literal &&
+                    ((index + min_tmp_array_size) < elements->size)
+                ) {
                     // If we have a static literal, then there's the potential
                     // to group a bunch of them together with a literal array
                     // and then concat them together.
                     size_t right_index = index + 1;
-                    while (right_index < elements->size && PM_NODE_FLAG_P(elements->nodes[right_index], PM_NODE_FLAG_STATIC_LITERAL)) right_index++;
+                    while (
+                        right_index < elements->size &&
+                        PM_NODE_FLAG_P(elements->nodes[right_index], PM_NODE_FLAG_STATIC_LITERAL) &&
+                        !PM_CONTAINER_P(elements->nodes[right_index])
+                    ) right_index++;
 
                     size_t tmp_array_size = right_index - index;
                     if (tmp_array_size >= min_tmp_array_size) {
@@ -8975,7 +8994,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    if (PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) && !(PM_NODE_TYPE_P(value, PM_ARRAY_NODE) || PM_NODE_TYPE_P(value, PM_HASH_NODE) || PM_NODE_TYPE_P(value, PM_RANGE_NODE))) {
+                    if (PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) && !PM_CONTAINER_P(value)) {
                        rb_ary_push(default_values, pm_static_literal_value(iseq, value, scope_node));
                     }
                     else {
@@ -9285,7 +9304,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    if (!PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) || PM_NODE_TYPE_P(value, PM_ARRAY_NODE) || PM_NODE_TYPE_P(value, PM_HASH_NODE) || PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
+                    if (!PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL) || PM_CONTAINER_P(value)) {
                         LABEL *end_label = NEW_LABEL(location.line);
 
                         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, name, 0);
@@ -9814,6 +9833,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
     }
 }
+
+#undef PM_CONTAINER_P
 
 /** True if the given iseq can have pre execution blocks. */
 static inline bool
