@@ -460,4 +460,49 @@ module Prism
       binary_operator_loc
     end
   end
+
+  class CaseMatchNode < Node
+    # Returns the else clause of the case match node. This method is deprecated
+    # in favor of #else_clause.
+    def consequent
+      deprecated("else_clause")
+      else_clause
+    end
+  end
+
+  class CaseNode < Node
+    # Returns the else clause of the case node. This method is deprecated in
+    # favor of #else_clause.
+    def consequent
+      deprecated("else_clause")
+      else_clause
+    end
+  end
+
+  class IfNode < Node
+    # Returns the subsequent if/elsif/else clause of the if node. This method is
+    # deprecated in favor of #subsequent.
+    def consequent
+      deprecated("subsequent")
+      subsequent
+    end
+  end
+
+  class RescueNode < Node
+    # Returns the subsequent rescue clause of the rescue node. This method is
+    # deprecated in favor of #subsequent.
+    def consequent
+      deprecated("subsequent")
+      subsequent
+    end
+  end
+
+  class UnlessNode < Node
+    # Returns the else clause of the unless node. This method is deprecated in
+    # favor of #else_clause.
+    def consequent
+      deprecated("else_clause")
+      else_clause
+    end
+  end
 end
