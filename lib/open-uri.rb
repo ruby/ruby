@@ -769,6 +769,38 @@ module OpenURI
     #
     #  Number of HTTP redirects allowed before OpenURI::TooManyRedirects is raised.
     #  The default is 64.
+    #
+    # [:request_specific_fields]
+    #  Synopsis:
+    #    :request_specific_fields => {}
+    #    :request_specific_fields => lambda {|url| ...}
+    #
+    #  :request_specific_fields option allows specifying custom header fields that
+    #  are sent with the HTTP request. It can be passed as a Hash or a Proc that
+    #  gets evaluated on each request and returns a Hash of header fields.
+    #
+    #  If a Hash is provided, it specifies the headers only for the initial
+    #  request and these headers will not be sent on redirects.
+    #
+    #  If a Proc is provided, it will be executed for each request including
+    #  redirects, allowing dynamic header customization based on the request URL.
+    #  It is important that the Proc returns a Hash. And this Hash specifies the
+    #  headers to be sent with the request.
+    #
+    #  For Example with Hash
+    #    URI.open("http://...",
+    #             request_specific_fields: {"Authorization" => "token dummy"}) {|f| ... }
+    #
+    #  For Example with Proc:
+    #    URI.open("http://...",
+    #             request_specific_fields: lambda { |uri|
+    #               if uri.host == "example.com"
+    #                 {"Authorization" => "token dummy"}
+    #               else
+    #                 {}
+    #               end
+    #             }) {|f| ... }
+    #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
     end
