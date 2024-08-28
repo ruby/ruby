@@ -1,4 +1,4 @@
-name: Prism
+name: parse.y
 on:
   push:
     paths-ignore:
@@ -33,31 +33,31 @@ jobs:
       matrix:
         include:
           - test_task: test
-            run_opts: '--parser=prism'
+            run_opts: '--parser=parse.y'
             testopts: '-v --tty=no'
             timeout: 30
           - test_task: test-all
-            run_opts: '--parser=prism'
-            testopts: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="error_highlight/test_error_highlight.rb"'
+            run_opts: '--parser=parse.y'
+            testopts: '-q --tty=no --excludes-dir="../src/test/.excludes-parsey"'
             timeout: 40
           - test_task: test-spec
-            run_opts: '--parser=prism'
-            specopts: '-T --parser=prism'
+            run_opts: '--parser=parse.y'
+            specopts: '-T --parser=parse.y'
             timeout: 10
           - test_task: test-tool
-            run_opts: '--parser=prism'
+            run_opts: '--parser=parse.y'
             testopts: '-v --tty=no'
             timeout: 30
           - test_task: test-bundler-parallel
-            run_opts: '--parser=prism'
+            run_opts: '--parser=parse.y'
             testopts: '-v --tty=no'
             timeout: 50
           - test_task: test-bundled-gems
-            run_opts: '--parser=prism'
+            run_opts: '--parser=parse.y'
             testopts: '-v --tty=no'
             timeout: 30
           - test_task: test-syntax-suggest
-            run_opts: '--parser=prism'
+            run_opts: '--parser=parse.y'
             testopts: '-v --tty=no'
             timeout: 30
       fail-fast: false
@@ -105,6 +105,7 @@ jobs:
           RUBY_TESTOPTS: ${{ matrix.testopts }}
           RUN_OPTS: ${{ matrix.run_opts }}
           SPECOPTS: ${{ matrix.specopts }}
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
 
       - uses: ./.github/actions/slack
         with:

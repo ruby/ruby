@@ -63,3 +63,17 @@ TestInstanceNetHTTPResponse depending on external resources
 
 test_initialize(TempfileRemoverSingletonTest) Remover class is removed at https://github.com/ruby/tempfile/commit/753ab16642fdc3cf92e1cf3dd1d80e8f75128735
 test_call(TempfileRemoverTest) Remover class is removed at https://github.com/ruby/tempfile/commit/753ab16642fdc3cf92e1cf3dd1d80e8f75128735
+
+# Switching to prism resulted in an unexpected error, `RuntimeError: cannot get AST for ISEQ compiled by prism`, raised by `RubyVM::AbstractSyntax.of(method)`
+test_1(RBS::RuntimePrototypeTest)
+test_decls_for_anonymous_class_or_module(RBS::RuntimePrototypeTest)
+test_decls_structure(RBS::RuntimePrototypeTest)
+test_define_method_alias(RBS::RuntimePrototypeTest)
+test_for_initialize_type(RBS::RuntimePrototypeTest)
+test_for_overwritten_module_name(RBS::RuntimePrototypeTest)
+test_for_yield(RBS::RuntimePrototypeTest)
+test_include_owner(RBS::RuntimePrototypeTest)
+test_merge_types(RBS::RuntimePrototypeTest)
+test_reflection(RBS::RuntimePrototypeTest)
+test_todo(RBS::RuntimePrototypeTest)
+test_of(RubyVM::AbstractSyntaxTreeSingletonTest)
