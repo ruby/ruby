@@ -5187,7 +5187,8 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
  *  This method is different from method Array#eql?,
  *  which compares elements using <tt>Object#eql?</tt>.
  *
- *  Related: see {Methods for Comparing}[rdoc-ref:Array@Methods+for+Comparing]. */
+ *  Related: see {Methods for Comparing}[rdoc-ref:Array@Methods+for+Comparing].
+ */
 
 static VALUE
 rb_ary_equal(VALUE ary1, VALUE ary2)
