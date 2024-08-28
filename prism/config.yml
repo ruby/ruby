@@ -653,6 +653,8 @@ flags:
         comment: "if arguments contain keyword splat"
       - name: CONTAINS_SPLAT
         comment: "if arguments contain splat"
+      - name: CONTAINS_MULTIPLE_SPLATS
+        comment: "if arguments contain multiple splats"
     comment: Flags for arguments nodes.
   - name: ArrayNodeFlags
     values:

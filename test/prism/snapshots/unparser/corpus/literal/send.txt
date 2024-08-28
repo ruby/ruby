@@ -1123,7 +1123,7 @@
         │   ├── opening_loc: (59,7)-(59,8) = "("
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (59,8)-(59,25))
-        │   │   ├── flags: contains_splat
+        │   │   ├── flags: contains_splat, contains_multiple_splats
         │   │   └── arguments: (length: 3)
         │   │       ├── @ SplatNode (location: (59,8)-(59,13))
         │   │       │   ├── flags: ∅
