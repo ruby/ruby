@@ -8671,6 +8671,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 if (PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_FORWARDING_PARAMETER_NODE)) {
                     // Only optimize specifically methods like this: `foo(...)`
                     if (requireds_list->size == 0 && optionals_list->size == 0 && keywords_list->size == 0) {
+                        ISEQ_BODY(iseq)->param.flags.use_block = TRUE;
                         ISEQ_BODY(iseq)->param.flags.forwardable = TRUE;
                         table_size += 1;
                     }
