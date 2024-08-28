@@ -371,6 +371,12 @@ impl RegMapping {
             .map(|(reg_idx, _)| reg_idx)
     }
 
+    /// Set a given operand to the register at a given index.
+    pub fn set_reg(&mut self, opnd: RegOpnd, reg_idx: usize) {
+        assert!(self.0[reg_idx].is_none());
+        self.0[reg_idx] = Some(opnd);
+    }
+
     /// Allocate a register for a given operand if available.
     /// Return true if self is updated.
     pub fn alloc_reg(&mut self, opnd: RegOpnd) -> bool {
@@ -434,6 +440,32 @@ impl RegMapping {
             RegOpnd::Stack(_) => index_temps.find(|(_, reg_opnd)| reg_opnd.is_none()),
             RegOpnd::Local(_) => index_temps.rev().find(|(_, reg_opnd)| reg_opnd.is_none()),
         }.map(|(index, _)| index)
+    }
+
+    /// Return a vector of RegOpnds that have an allocated register
+    pub fn get_reg_opnds(&self) -> Vec<RegOpnd> {
+        self.0.iter().filter_map(|&reg_opnd| reg_opnd).collect()
+    }
+
+    /// Return TypeDiff::Compatible(diff) if dst has a mapping that can be made by moving registers
+    /// in self `diff` times. TypeDiff::Incompatible if they have different things in registers.
+    pub fn diff(&self, dst: RegMapping) -> TypeDiff {
+        let src_opnds = self.get_reg_opnds();
+        let dst_opnds = dst.get_reg_opnds();
+        if src_opnds.len() != dst_opnds.len() {
+            return TypeDiff::Incompatible;
+        }
+
+        let mut diff = 0;
+        for &reg_opnd in src_opnds.iter() {
+            match (self.get_reg(reg_opnd), dst.get_reg(reg_opnd)) {
+                (Some(src_idx), Some(dst_idx)) => if src_idx != dst_idx {
+                    diff += 1;
+                }
+                _ => return TypeDiff::Incompatible,
+            }
+        }
+        TypeDiff::Compatible(diff)
     }
 }
 
@@ -2080,9 +2112,8 @@ pub fn take_version_list(blockid: BlockId) -> VersionList {
     }
 }
 
-/// Count the number of block versions matching a given blockid
-/// `inlined: true` counts inlined versions, and `inlined: false` counts other versions.
-fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
+/// Count the number of block versions that match a given BlockId and part of a Context
+fn get_num_versions(blockid: BlockId, ctx: &Context) -> usize {
     let insn_idx = blockid.idx.as_usize();
     match get_iseq_payload(blockid.iseq) {
 
@@ -2094,9 +2125,14 @@ fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
                 .version_map
                 .get(insn_idx)
                 .map(|versions| {
-                    versions.iter().filter(|&&version|
-                        Context::decode(unsafe { version.as_ref() }.ctx).inline() == inlined
-                    ).count()
+                    versions.iter().filter(|&&version| {
+                        let version_ctx = Context::decode(unsafe { version.as_ref() }.ctx);
+                        // Inline versions are counted separately towards MAX_INLINE_VERSIONS.
+                        version_ctx.inline() == ctx.inline() &&
+                            // find_block_versions() finds only blocks with compatible reg_mapping,
+                            // so count only versions with compatible reg_mapping.
+                            version_ctx.reg_mapping == ctx.reg_mapping
+                    }).count()
                 })
                 .unwrap_or(0)
         }
@@ -2128,10 +2164,7 @@ pub fn get_or_create_iseq_block_list(iseq: IseqPtr) -> Vec<BlockRef> {
 /// Retrieve a basic block version for an (iseq, idx) tuple
 /// This will return None if no version is found
 fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
-    let versions = match get_version_list(blockid) {
-        Some(versions) => versions,
-        None => return None,
-    };
+    let versions = get_version_list(blockid)?;
 
     // Best match found
     let mut best_version: Option<BlockRef> = None;
@@ -2156,6 +2189,33 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     return best_version;
 }
 
+/// Basically find_block_version() but allows RegMapping incompatibility
+/// that can be fixed by register moves and returns Context
+pub fn find_block_ctx_with_same_regs(blockid: BlockId, ctx: &Context) -> Option<Context> {
+    let versions = get_version_list(blockid)?;
+
+    // Best match found
+    let mut best_ctx: Option<Context> = None;
+    let mut best_diff = usize::MAX;
+
+    // For each version matching the blockid
+    for blockref in versions.iter() {
+        let block = unsafe { blockref.as_ref() };
+        let block_ctx = Context::decode(block.ctx);
+
+        // Discover the best block that is compatible if we move registers
+        match ctx.diff_with_same_regs(&block_ctx) {
+            TypeDiff::Compatible(diff) if diff < best_diff => {
+                best_ctx = Some(block_ctx);
+                best_diff = diff;
+            }
+            _ => {}
+        }
+    }
+
+    best_ctx
+}
+
 /// Allow inlining a Block up to MAX_INLINE_VERSIONS times.
 const MAX_INLINE_VERSIONS: usize = 1000;
 
@@ -2166,7 +2226,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return *ctx;
     }
 
-    let next_versions = get_num_versions(blockid, ctx.inline()) + 1;
+    let next_versions = get_num_versions(blockid, ctx) + 1;
     let max_versions = if ctx.inline() {
         MAX_INLINE_VERSIONS
     } else {
@@ -2782,8 +2842,24 @@ impl Context {
         return TypeDiff::Compatible(diff);
     }
 
+    /// Basically diff() but allows RegMapping incompatibility that can be fixed
+    /// by register moves.
+    pub fn diff_with_same_regs(&self, dst: &Context) -> TypeDiff {
+        // Prepare a Context with the same registers
+        let mut dst_with_same_regs = dst.clone();
+        dst_with_same_regs.set_reg_mapping(self.get_reg_mapping());
+
+        // Diff registers and other stuff separately, and merge them
+        match (self.diff(&dst_with_same_regs), self.get_reg_mapping().diff(dst.get_reg_mapping())) {
+            (TypeDiff::Compatible(ctx_diff), TypeDiff::Compatible(reg_diff)) => {
+                TypeDiff::Compatible(ctx_diff + reg_diff)
+            }
+            _ => TypeDiff::Incompatible
+        }
+    }
+
     pub fn two_fixnums_on_stack(&self, jit: &mut JITState) -> Option<bool> {
-        if jit.at_current_insn() {
+        if jit.at_compile_target() {
             let comptime_recv = jit.peek_at_stack(self, 1);
             let comptime_arg = jit.peek_at_stack(self, 0);
             return Some(comptime_recv.fixnum_p() && comptime_arg.fixnum_p());
@@ -2955,7 +3031,7 @@ fn gen_block_series_body(
     let mut batch = Vec::with_capacity(EXPECTED_BATCH_SIZE);
 
     // Generate code for the first block
-    let first_block = gen_single_block(blockid, start_ctx, ec, cb, ocb).ok()?;
+    let first_block = gen_single_block(blockid, start_ctx, ec, cb, ocb, true).ok()?;
     batch.push(first_block); // Keep track of this block version
 
     // Add the block version to the VersionMap for this ISEQ
@@ -2996,7 +3072,7 @@ fn gen_block_series_body(
 
         // Generate new block using context from the last branch.
         let requested_ctx = Context::decode(requested_ctx);
-        let result = gen_single_block(requested_blockid, &requested_ctx, ec, cb, ocb);
+        let result = gen_single_block(requested_blockid, &requested_ctx, ec, cb, ocb, false);
 
         // If the block failed to compile
         if result.is_err() {
@@ -4312,7 +4388,7 @@ mod tests {
         let cb = CodeBlock::new_dummy(1024);
         let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(1024));
         let dumm_addr = cb.get_write_ptr();
-        let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null(), &mut ocb)
+        let block = JITState::new(blockid, Context::default(), dumm_addr, ptr::null(), &mut ocb, true)
             .into_block(0, dumm_addr, dumm_addr, vec![]);
         let _dropper = BlockDropper(block);
 

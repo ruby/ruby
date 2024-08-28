@@ -1032,7 +1032,7 @@ pub struct Assembler {
     pub ctx: Context,
 
     /// The current ISEQ's local table size. asm.local_opnd() uses this, and it's
-    /// sometimes hard to pass this value, e.g. asm.spill_temps() in asm.ccall().
+    /// sometimes hard to pass this value, e.g. asm.spill_regs() in asm.ccall().
     ///
     /// `None` means we're not assembling for an ISEQ, or that the local size is
     /// not relevant.
@@ -1241,8 +1241,36 @@ impl Assembler
         self.ctx.clear_local_types();
     }
 
+    /// Repurpose stack temp registers to the corresponding locals for arguments
+    pub fn map_temp_regs_to_args(&mut self, callee_ctx: &mut Context, argc: i32) -> Vec<RegOpnd> {
+        let mut callee_reg_mapping = callee_ctx.get_reg_mapping();
+        let mut mapped_temps = vec![];
+
+        for arg_idx in 0..argc {
+            let stack_idx: u8 = (self.ctx.get_stack_size() as i32 - argc + arg_idx).try_into().unwrap();
+            let temp_opnd = RegOpnd::Stack(stack_idx);
+
+            // For each argument, if the stack temp for it has a register,
+            // let the callee use the register for the local variable.
+            if let Some(reg_idx) = self.ctx.get_reg_mapping().get_reg(temp_opnd) {
+                let local_opnd = RegOpnd::Local(arg_idx.try_into().unwrap());
+                callee_reg_mapping.set_reg(local_opnd, reg_idx);
+                mapped_temps.push(temp_opnd);
+            }
+        }
+
+        asm_comment!(self, "local maps: {:?}", callee_reg_mapping);
+        callee_ctx.set_reg_mapping(callee_reg_mapping);
+        mapped_temps
+    }
+
     /// Spill all live registers to the stack
     pub fn spill_regs(&mut self) {
+        self.spill_regs_except(&vec![]);
+    }
+
+    /// Spill all live registers except `ignored_temps` to the stack
+    pub fn spill_regs_except(&mut self, ignored_temps: &Vec<RegOpnd>) {
         // Forget registers above the stack top
         let mut reg_mapping = self.ctx.get_reg_mapping();
         for stack_idx in self.ctx.get_stack_size()..MAX_CTX_TEMPS as u8 {
@@ -1250,36 +1278,46 @@ impl Assembler
         }
         self.set_reg_mapping(reg_mapping);
 
-        // Spill live stack temps
-        if self.ctx.get_reg_mapping() != RegMapping::default() {
-            asm_comment!(self, "spill_temps: {:?} -> {:?}", self.ctx.get_reg_mapping(), RegMapping::default());
-
-            // Spill stack temps
-            for stack_idx in 0..u8::min(MAX_CTX_TEMPS as u8, self.ctx.get_stack_size()) {
-                if reg_mapping.dealloc_reg(RegOpnd::Stack(stack_idx)) {
-                    let idx = self.ctx.get_stack_size() - 1 - stack_idx;
-                    self.spill_temp(self.stack_opnd(idx.into()));
-                }
-            }
-
-            // Spill locals
-            for local_idx in 0..MAX_CTX_TEMPS as u8 {
-                if reg_mapping.dealloc_reg(RegOpnd::Local(local_idx)) {
-                    let first_local_ep_offset = self.num_locals.unwrap() + VM_ENV_DATA_SIZE - 1;
-                    let ep_offset = first_local_ep_offset - local_idx as u32;
-                    self.spill_temp(self.local_opnd(ep_offset));
-                }
-            }
-
-            self.ctx.set_reg_mapping(reg_mapping);
+        // If no registers are in use, skip all checks
+        if self.ctx.get_reg_mapping() == RegMapping::default() {
+            return;
         }
 
-        // Every stack temp should have been spilled
-        assert_eq!(self.ctx.get_reg_mapping(), RegMapping::default());
+        // Collect stack temps to be spilled
+        let mut spilled_opnds = vec![];
+        for stack_idx in 0..u8::min(MAX_CTX_TEMPS as u8, self.ctx.get_stack_size()) {
+            let reg_opnd = RegOpnd::Stack(stack_idx);
+            if !ignored_temps.contains(&reg_opnd) && reg_mapping.dealloc_reg(reg_opnd) {
+                let idx = self.ctx.get_stack_size() - 1 - stack_idx;
+                let spilled_opnd = self.stack_opnd(idx.into());
+                spilled_opnds.push(spilled_opnd);
+                reg_mapping.dealloc_reg(spilled_opnd.reg_opnd());
+            }
+        }
+
+        // Collect locals to be spilled
+        for local_idx in 0..MAX_CTX_TEMPS as u8 {
+            if reg_mapping.dealloc_reg(RegOpnd::Local(local_idx)) {
+                let first_local_ep_offset = self.num_locals.unwrap() + VM_ENV_DATA_SIZE - 1;
+                let ep_offset = first_local_ep_offset - local_idx as u32;
+                let spilled_opnd = self.local_opnd(ep_offset);
+                spilled_opnds.push(spilled_opnd);
+                reg_mapping.dealloc_reg(spilled_opnd.reg_opnd());
+            }
+        }
+
+        // Spill stack temps and locals
+        if !spilled_opnds.is_empty() {
+            asm_comment!(self, "spill_regs: {:?} -> {:?}", self.ctx.get_reg_mapping(), reg_mapping);
+            for &spilled_opnd in spilled_opnds.iter() {
+                self.spill_reg(spilled_opnd);
+            }
+            self.ctx.set_reg_mapping(reg_mapping);
+        }
     }
 
     /// Spill a stack temp from a register to the stack
-    fn spill_temp(&mut self, opnd: Opnd) {
+    fn spill_reg(&mut self, opnd: Opnd) {
         assert_ne!(self.ctx.get_reg_mapping().get_reg(opnd.reg_opnd()), None);
 
         // Use different RegMappings for dest and src operands
@@ -1306,6 +1344,42 @@ impl Assembler
             asm_comment!(self, "reg_mapping: {:?} -> {:?}", self.ctx.get_reg_mapping(), reg_mapping);
             self.ctx.set_reg_mapping(reg_mapping);
         }
+    }
+
+    // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
+    // so that they will not rewrite each other before they are used.
+    pub fn reorder_reg_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
+        // Return the index of a move whose destination is not used as a source if any.
+        fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
+            moves.iter().enumerate().find(|(_, &(dest_reg, _))| {
+                moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
+            }).map(|(index, _)| index)
+        }
+
+        // Remove moves whose source and destination are the same
+        let mut old_moves: Vec<(Reg, Opnd)> = old_moves.clone().into_iter()
+            .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
+
+        let mut new_moves = vec![];
+        while old_moves.len() > 0 {
+            // Keep taking safe moves
+            while let Some(index) = find_safe_move(&old_moves) {
+                new_moves.push(old_moves.remove(index));
+            }
+
+            // No safe move. Load the source of one move into SCRATCH_REG, and
+            // then load SCRATCH_REG into the destination when it's safe.
+            if old_moves.len() > 0 {
+                // Make sure it's safe to use SCRATCH_REG
+                assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
+
+                // Move SCRATCH <- opnd, and delay reg <- SCRATCH
+                let (reg, opnd) = old_moves.remove(0);
+                new_moves.push((Assembler::SCRATCH_REG, opnd));
+                old_moves.push((reg, Opnd::Reg(Assembler::SCRATCH_REG)));
+            }
+        }
+        new_moves
     }
 
     /// Sets the out field on the various instructions that require allocated
@@ -1351,42 +1425,6 @@ impl Assembler
             if let Some(reg_index) = reg_index {
                 *pool &= !(1 << reg_index);
             }
-        }
-
-        // Reorder C argument moves, sometimes adding extra moves using SCRATCH_REG,
-        // so that they will not rewrite each other before they are used.
-        fn reorder_c_args(c_args: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
-            // Return the index of a move whose destination is not used as a source if any.
-            fn find_safe_arg(c_args: &Vec<(Reg, Opnd)>) -> Option<usize> {
-                c_args.iter().enumerate().find(|(_, &(dest_reg, _))| {
-                    c_args.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
-                }).map(|(index, _)| index)
-            }
-
-            // Remove moves whose source and destination are the same
-            let mut c_args: Vec<(Reg, Opnd)> = c_args.clone().into_iter()
-                .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
-
-            let mut moves = vec![];
-            while c_args.len() > 0 {
-                // Keep taking safe moves
-                while let Some(index) = find_safe_arg(&c_args) {
-                    moves.push(c_args.remove(index));
-                }
-
-                // No safe move. Load the source of one move into SCRATCH_REG, and
-                // then load SCRATCH_REG into the destination when it's safe.
-                if c_args.len() > 0 {
-                    // Make sure it's safe to use SCRATCH_REG
-                    assert!(c_args.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
-
-                    // Move SCRATCH <- opnd, and delay reg <- SCRATCH
-                    let (reg, opnd) = c_args.remove(0);
-                    moves.push((Assembler::SCRATCH_REG, opnd));
-                    c_args.push((reg, Opnd::Reg(Assembler::SCRATCH_REG)));
-                }
-            }
-            moves
         }
 
         // Adjust the number of entries in live_ranges so that it can be indexed by mapped indexes.
@@ -1564,7 +1602,7 @@ impl Assembler
                 if c_args.len() > 0 {
                     // Resolve C argument dependencies
                     let c_args_len = c_args.len() as isize;
-                    let moves = reorder_c_args(&c_args.drain(..).into_iter().collect());
+                    let moves = Self::reorder_reg_moves(&c_args.drain(..).into_iter().collect());
                     shift_live_ranges(&mut shifted_live_ranges, asm.insns.len(), moves.len() as isize - c_args_len);
 
                     // Push batched C arguments
@@ -1808,7 +1846,7 @@ impl Assembler {
         // Mark all temps as not being in registers.
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
-        // that don't require spill_temps for GC.
+        // that don't require spill_regs for GC.
         self.set_reg_mapping(RegMapping::default());
     }
 
