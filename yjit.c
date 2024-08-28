@@ -1165,8 +1165,8 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
 }
 
 // Number of object shapes, which might be useful for investigating YJIT exit reasons.
-static VALUE
-object_shape_count(rb_execution_context_t *ec, VALUE self)
+VALUE
+rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
     return ULONG2NUM((unsigned long)GET_SHAPE_TREE()->next_shape_id);

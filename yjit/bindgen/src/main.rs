@@ -264,6 +264,9 @@ fn main() {
         .blocklist_type("rb_method_definition_.*") // Large struct with a bitfield and union of many types - don't import (yet?)
         .opaque_type("rb_method_definition_.*")
 
+        // From numeric.c
+        .allowlist_function("rb_float_new")
+
         // From vm_core.h
         .allowlist_var("rb_mRubyVMFrozenCore")
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
@@ -304,6 +307,7 @@ fn main() {
         .allowlist_type("rb_iseq_type")
 
         // From yjit.c
+        .allowlist_function("rb_object_shape_count")
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")

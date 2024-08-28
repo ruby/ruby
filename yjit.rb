@@ -156,34 +156,7 @@ module RubyVM::YJIT
   # Return a hash for statistics generated for the `--yjit-stats` command line option.
   # Return `nil` when option is not passed or unavailable.
   def self.runtime_stats()
-    stats = Primitive.rb_yjit_get_stats()
-    return stats if stats.nil?
-
-    stats[:object_shape_count] = Primitive.object_shape_count
-    return stats unless Primitive.rb_yjit_stats_enabled_p
-
-    side_exits = total_exit_count(stats)
-    total_exits = side_exits + stats[:leave_interp_return]
-
-    # Number of instructions that finish executing in YJIT.
-    # See :count-placement: about the subtraction.
-    retired_in_yjit = stats[:yjit_insns_count] - side_exits
-
-    # Average length of instruction sequences executed by YJIT
-    avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0
-
-    # Proportion of instructions that retire in YJIT
-    total_insns_count = retired_in_yjit + stats[:vm_insns_count]
-    yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
-    stats[:total_insns_count] = total_insns_count
-    stats[:ratio_in_yjit] = yjit_ratio_pct
-
-    # Make those stats available in RubyVM::YJIT.runtime_stats as well
-    stats[:side_exit_count]  = side_exits
-    stats[:total_exit_count] = total_exits
-    stats[:avg_len_in_yjit]  = avg_len_in_yjit
-
-    stats
+    Primitive.rb_yjit_get_stats
   end
 
   # Format and print out counters as a String. This returns a non-empty
@@ -437,7 +410,7 @@ module RubyVM::YJIT
     end
 
     def print_sorted_exit_counts(stats, out:, prefix:, how_many: 20, left_pad: 4) # :nodoc:
-      total_exits = total_exit_count(stats)
+      total_exits = stats[:side_exit_count]
 
       if total_exits > 0
         exits = []
@@ -462,14 +435,6 @@ module RubyVM::YJIT
       else
         out.puts "total_exits:           " + format_number(13, total_exits)
       end
-    end
-
-    def total_exit_count(stats, prefix: "exit_") # :nodoc:
-      total = 0
-      stats.each do |k,v|
-        total += v if k.start_with?(prefix)
-      end
-      total
     end
 
     def print_counters(counters, out:, prefix:, prompt:, optional: false) # :nodoc:

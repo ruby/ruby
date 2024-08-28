@@ -116,6 +116,11 @@ extern "C" {
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
+
+    // Floats within range will be encoded without creating objects in the heap.
+    // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
+    pub fn rb_float_new(d: f64) -> VALUE;
+
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
     pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
