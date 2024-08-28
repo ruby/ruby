@@ -35,6 +35,7 @@ module TestIRB
     end
 
     def test_colorize
+      IRB.conf[:USE_COLORIZE] = true
       original_colorable = IRB::Color.method(:colorable?)
       IRB::Color.instance_eval { undef :colorable? }
       IRB::Color.define_singleton_method(:colorable?) { true }
