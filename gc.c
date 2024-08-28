@@ -2034,6 +2034,44 @@ ruby_stack_check(void)
     return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
+/* ==================== Marking ==================== */
+
+void
+rb_gc_mark_movable(VALUE obj)
+{
+    rb_gc_impl_mark(rb_gc_get_objspace(), obj);
+}
+
+void
+rb_gc_mark_and_move(VALUE *ptr)
+{
+    rb_gc_impl_mark_and_move(rb_gc_get_objspace(), ptr);
+}
+
+void
+rb_gc_mark(VALUE obj)
+{
+    rb_gc_impl_mark_and_pin(rb_gc_get_objspace(), obj);
+}
+
+void
+rb_gc_mark_maybe(VALUE obj)
+{
+    rb_gc_impl_mark_maybe(rb_gc_get_objspace(), obj);
+}
+
+void
+rb_gc_mark_weak(VALUE *ptr)
+{
+    rb_gc_impl_mark_weak(rb_gc_get_objspace(), ptr);
+}
+
+void
+rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
+{
+    rb_gc_impl_remove_weak(rb_gc_get_objspace(), parent_obj, ptr);
+}
+
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(void *objspace, register const VALUE *x, register long n, void (*cb)(void *objspace, VALUE)));
 static void
 each_location(void *objspace, register const VALUE *x, register long n, void (*cb)(void *objspace, VALUE))
@@ -2343,12 +2381,6 @@ rb_mark_tbl_no_pin(st_table *tbl)
     gc_mark_tbl_no_pin(rb_gc_get_objspace(), tbl);
 }
 
-void
-rb_gc_mark_maybe(VALUE obj)
-{
-    rb_gc_impl_mark_maybe(rb_gc_get_objspace(), obj);
-}
-
 static enum rb_id_table_iterator_result
 mark_cvc_tbl_i(VALUE cvc_entry, void *objspace)
 {
@@ -2369,36 +2401,6 @@ mark_cvc_tbl(void *objspace, VALUE klass)
     if (tbl) {
         rb_id_table_foreach_values(tbl, mark_cvc_tbl_i, objspace);
     }
-}
-
-void
-rb_gc_mark_movable(VALUE obj)
-{
-    rb_gc_impl_mark(rb_gc_get_objspace(), obj);
-}
-
-void
-rb_gc_mark(VALUE obj)
-{
-    rb_gc_impl_mark_and_pin(rb_gc_get_objspace(), obj);
-}
-
-void
-rb_gc_mark_and_move(VALUE *ptr)
-{
-    rb_gc_impl_mark_and_move(rb_gc_get_objspace(), ptr);
-}
-
-void
-rb_gc_mark_weak(VALUE *ptr)
-{
-    rb_gc_impl_mark_weak(rb_gc_get_objspace(), ptr);
-}
-
-void
-rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
-{
-    rb_gc_impl_remove_weak(rb_gc_get_objspace(), parent_obj, ptr);
 }
 
 static bool
