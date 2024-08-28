@@ -166,7 +166,7 @@
         │       │       └── @ IntegerNode (location: (14,17)-(14,18))
         │       │           ├── flags: newline, static_literal, decimal
         │       │           └── value: 1
-        │       ├── consequent:
+        │       ├── subsequent:
         │       │   @ ElseNode (location: (14,19)-(14,22))
         │       │   ├── flags: ∅
         │       │   ├── else_keyword_loc: (14,19)-(14,20) = ":"
@@ -218,7 +218,7 @@
         │   │   ├── operator_loc: ∅
         │   │   ├── reference: ∅
         │   │   ├── statements: ∅
-        │   │   └── consequent: ∅
+        │   │   └── subsequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
         │   └── end_keyword_loc: (16,21)-(16,24) = "end"
@@ -363,7 +363,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (24,0)-(24,3) = "end"
         ├── @ DefNode (location: (26,0)-(26,44))
         │   ├── flags: newline
@@ -467,7 +467,7 @@
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements: ∅
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (31,0)-(31,3) = "end"
@@ -510,7 +510,7 @@
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           └── block: ∅
-        │   │   ├── consequent: ∅
+        │   │   ├── subsequent: ∅
         │   │   └── end_keyword_loc: ∅
         │   ├── keyword_loc: (33,11)-(33,17) = "rescue"
         │   └── rescue_expression:

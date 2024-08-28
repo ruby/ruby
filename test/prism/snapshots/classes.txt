@@ -80,7 +80,7 @@
         │   │   │   ├── operator_loc: ∅
         │   │   │   ├── reference: ∅
         │   │   │   ├── statements: ∅
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (5,17)-(5,29))
         │   │   │   ├── flags: ∅
@@ -227,7 +227,7 @@
         │   │           │   │   ├── operator_loc: ∅
         │   │           │   │   ├── reference: ∅
         │   │           │   │   ├── statements: ∅
-        │   │           │   │   └── consequent: ∅
+        │   │           │   │   └── subsequent: ∅
         │   │           │   ├── else_clause:
         │   │           │   │   @ ElseNode (location: (16,32)-(16,44))
         │   │           │   │   ├── flags: ∅

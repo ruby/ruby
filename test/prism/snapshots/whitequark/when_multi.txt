@@ -50,6 +50,6 @@
             │                   ├── arguments: ∅
             │                   ├── closing_loc: ∅
             │                   └── block: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"
             └── end_keyword_loc: (1,34)-(1,37) = "end"

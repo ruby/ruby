@@ -26,5 +26,5 @@
             │   └── operator_loc: (1,6)-(1,9) = "..."
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (1,11)-(1,14) = "end"

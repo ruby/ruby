@@ -34,5 +34,5 @@
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           └── block: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             └── end_keyword_loc: ∅

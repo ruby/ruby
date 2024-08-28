@@ -33,7 +33,7 @@
             │       │   │       └── @ IntegerNode (location: (1,17)-(1,19))
             │       │   │           ├── flags: newline, static_literal, decimal
             │       │   │           └── value: 42
-            │       │   ├── consequent: ∅
+            │       │   ├── subsequent: ∅
             │       │   └── end_keyword_loc: (1,20)-(1,23) = "end"
             │       └── operator_loc: ∅
             └── closing_loc: (1,23)-(1,24) = "}"

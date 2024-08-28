@@ -3226,7 +3226,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (135,10)-(135,12) = "in"
         │   │       └── then_loc: (135,17)-(135,21) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (135,0)-(135,4) = "case"
         │   └── end_keyword_loc: (135,22)-(135,25) = "end"
         ├── @ CaseMatchNode (location: (136,0)-(136,23))
@@ -3252,7 +3252,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (136,10)-(136,12) = "in"
         │   │       └── then_loc: (136,15)-(136,19) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (136,0)-(136,4) = "case"
         │   └── end_keyword_loc: (136,20)-(136,23) = "end"
         ├── @ CaseMatchNode (location: (137,0)-(137,25))
@@ -3278,7 +3278,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (137,10)-(137,12) = "in"
         │   │       └── then_loc: (137,17)-(137,21) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (137,0)-(137,4) = "case"
         │   └── end_keyword_loc: (137,22)-(137,25) = "end"
         ├── @ CaseMatchNode (location: (138,0)-(138,24))
@@ -3307,7 +3307,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (138,10)-(138,12) = "in"
         │   │       └── then_loc: (138,16)-(138,20) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (138,0)-(138,4) = "case"
         │   └── end_keyword_loc: (138,21)-(138,24) = "end"
         ├── @ CaseMatchNode (location: (139,0)-(139,24))
@@ -3334,7 +3334,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (139,10)-(139,12) = "in"
         │   │       └── then_loc: (139,16)-(139,20) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (139,0)-(139,4) = "case"
         │   └── end_keyword_loc: (139,21)-(139,24) = "end"
         ├── @ CaseMatchNode (location: (140,0)-(140,26))
@@ -3363,7 +3363,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (140,10)-(140,12) = "in"
         │   │       └── then_loc: (140,18)-(140,22) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (140,0)-(140,4) = "case"
         │   └── end_keyword_loc: (140,23)-(140,26) = "end"
         ├── @ CaseMatchNode (location: (141,0)-(141,29))
@@ -3392,7 +3392,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (141,10)-(141,12) = "in"
         │   │       └── then_loc: (141,21)-(141,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (141,0)-(141,4) = "case"
         │   └── end_keyword_loc: (141,26)-(141,29) = "end"
         ├── @ CaseMatchNode (location: (142,0)-(142,28))
@@ -3421,7 +3421,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (142,10)-(142,12) = "in"
         │   │       └── then_loc: (142,20)-(142,24) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (142,0)-(142,4) = "case"
         │   └── end_keyword_loc: (142,25)-(142,28) = "end"
         ├── @ CaseMatchNode (location: (143,0)-(143,27))
@@ -3450,7 +3450,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (143,10)-(143,12) = "in"
         │   │       └── then_loc: (143,19)-(143,23) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (143,0)-(143,4) = "case"
         │   └── end_keyword_loc: (143,24)-(143,27) = "end"
         ├── @ CaseMatchNode (location: (144,0)-(144,27))
@@ -3479,7 +3479,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (144,10)-(144,12) = "in"
         │   │       └── then_loc: (144,19)-(144,23) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (144,0)-(144,4) = "case"
         │   └── end_keyword_loc: (144,24)-(144,27) = "end"
         ├── @ CaseMatchNode (location: (145,0)-(145,29))
@@ -3508,7 +3508,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (145,10)-(145,12) = "in"
         │   │       └── then_loc: (145,21)-(145,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (145,0)-(145,4) = "case"
         │   └── end_keyword_loc: (145,26)-(145,29) = "end"
         ├── @ CaseMatchNode (location: (146,0)-(146,29))
@@ -3542,7 +3542,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (146,10)-(146,12) = "in"
         │   │       └── then_loc: (146,21)-(146,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (146,0)-(146,4) = "case"
         │   └── end_keyword_loc: (146,26)-(146,29) = "end"
         ├── @ CaseMatchNode (location: (147,0)-(147,29))
@@ -3576,7 +3576,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (147,10)-(147,12) = "in"
         │   │       └── then_loc: (147,21)-(147,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (147,0)-(147,4) = "case"
         │   └── end_keyword_loc: (147,26)-(147,29) = "end"
         ├── @ CaseMatchNode (location: (148,0)-(148,29))
@@ -3610,7 +3610,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (148,10)-(148,12) = "in"
         │   │       └── then_loc: (148,21)-(148,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (148,0)-(148,4) = "case"
         │   └── end_keyword_loc: (148,26)-(148,29) = "end"
         ├── @ CaseMatchNode (location: (149,0)-(149,29))
@@ -3644,7 +3644,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (149,10)-(149,12) = "in"
         │   │       └── then_loc: (149,21)-(149,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (149,0)-(149,4) = "case"
         │   └── end_keyword_loc: (149,26)-(149,29) = "end"
         ├── @ CaseMatchNode (location: (150,0)-(150,29))
@@ -3673,7 +3673,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (150,10)-(150,12) = "in"
         │   │       └── then_loc: (150,21)-(150,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (150,0)-(150,4) = "case"
         │   └── end_keyword_loc: (150,26)-(150,29) = "end"
         ├── @ CaseMatchNode (location: (151,0)-(151,29))
@@ -3702,7 +3702,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (151,10)-(151,12) = "in"
         │   │       └── then_loc: (151,21)-(151,25) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (151,0)-(151,4) = "case"
         │   └── end_keyword_loc: (151,26)-(151,29) = "end"
         ├── @ CaseMatchNode (location: (152,0)-(152,27))
@@ -3731,7 +3731,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (152,10)-(152,12) = "in"
         │   │       └── then_loc: (152,19)-(152,23) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (152,0)-(152,4) = "case"
         │   └── end_keyword_loc: (152,24)-(152,27) = "end"
         ├── @ CaseMatchNode (location: (153,0)-(153,25))
@@ -3756,7 +3756,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (153,10)-(153,12) = "in"
         │   │       └── then_loc: (153,17)-(153,21) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (153,0)-(153,4) = "case"
         │   └── end_keyword_loc: (153,22)-(153,25) = "end"
         ├── @ CaseMatchNode (location: (154,0)-(154,26))
@@ -3781,7 +3781,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (154,10)-(154,12) = "in"
         │   │       └── then_loc: (154,18)-(154,22) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (154,0)-(154,4) = "case"
         │   └── end_keyword_loc: (154,23)-(154,26) = "end"
         ├── @ CaseMatchNode (location: (155,0)-(155,26))
@@ -3806,7 +3806,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (155,10)-(155,12) = "in"
         │   │       └── then_loc: (155,18)-(155,22) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (155,0)-(155,4) = "case"
         │   └── end_keyword_loc: (155,23)-(155,26) = "end"
         ├── @ CaseMatchNode (location: (156,0)-(156,27))
@@ -3831,7 +3831,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (156,10)-(156,12) = "in"
         │   │       └── then_loc: (156,19)-(156,23) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (156,0)-(156,4) = "case"
         │   └── end_keyword_loc: (156,24)-(156,27) = "end"
         ├── @ CaseMatchNode (location: (157,0)-(157,30))
@@ -3857,7 +3857,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (157,10)-(157,12) = "in"
         │   │       └── then_loc: (157,22)-(157,26) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (157,0)-(157,4) = "case"
         │   └── end_keyword_loc: (157,27)-(157,30) = "end"
         ├── @ CaseMatchNode (location: (158,0)-(158,30))
@@ -3882,7 +3882,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (158,10)-(158,12) = "in"
         │   │       └── then_loc: (158,22)-(158,26) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (158,0)-(158,4) = "case"
         │   └── end_keyword_loc: (158,27)-(158,30) = "end"
         ├── @ CaseMatchNode (location: (159,0)-(159,34))
@@ -3907,7 +3907,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (159,10)-(159,12) = "in"
         │   │       └── then_loc: (159,26)-(159,30) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (159,0)-(159,4) = "case"
         │   └── end_keyword_loc: (159,31)-(159,34) = "end"
         ├── @ CaseMatchNode (location: (160,0)-(160,32))
@@ -3945,7 +3945,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (160,10)-(160,12) = "in"
         │   │       └── then_loc: (160,24)-(160,28) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (160,0)-(160,4) = "case"
         │   └── end_keyword_loc: (160,29)-(160,32) = "end"
         ├── @ CaseMatchNode (location: (162,0)-(162,32))
@@ -3982,12 +3982,12 @@
         │   │       │   │           ├── flags: newline
         │   │       │   │           ├── name: :bar
         │   │       │   │           └── depth: 0
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (162,10)-(162,12) = "in"
         │   │       └── then_loc: (162,24)-(162,28) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (162,0)-(162,4) = "case"
         │   └── end_keyword_loc: (162,29)-(162,32) = "end"
         ├── @ CaseMatchNode (location: (163,0)-(163,30))
@@ -4023,12 +4023,12 @@
         │   │       │   │       └── @ IntegerNode (location: (163,13)-(163,14))
         │   │       │   │           ├── flags: newline, static_literal, decimal
         │   │       │   │           └── value: 1
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (163,10)-(163,12) = "in"
         │   │       └── then_loc: (163,22)-(163,26) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (163,0)-(163,4) = "case"
         │   └── end_keyword_loc: (163,27)-(163,30) = "end"
         ├── @ CaseMatchNode (location: (164,0)-(164,32))
@@ -4064,12 +4064,12 @@
         │   │       │   │       └── @ FloatNode (location: (164,13)-(164,16))
         │   │       │   │           ├── flags: newline, static_literal
         │   │       │   │           └── value: 1.0
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (164,10)-(164,12) = "in"
         │   │       └── then_loc: (164,24)-(164,28) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (164,0)-(164,4) = "case"
         │   └── end_keyword_loc: (164,29)-(164,32) = "end"
         ├── @ CaseMatchNode (location: (165,0)-(165,31))
@@ -4108,12 +4108,12 @@
         │   │       │   │               @ IntegerNode (location: (165,13)-(165,14))
         │   │       │   │               ├── flags: static_literal, decimal
         │   │       │   │               └── value: 1
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (165,10)-(165,12) = "in"
         │   │       └── then_loc: (165,23)-(165,27) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (165,0)-(165,4) = "case"
         │   └── end_keyword_loc: (165,28)-(165,31) = "end"
         ├── @ CaseMatchNode (location: (166,0)-(166,31))
@@ -4150,12 +4150,12 @@
         │   │       │   │           ├── flags: newline, static_literal, decimal
         │   │       │   │           ├── numerator: 1
         │   │       │   │           └── denominator: 1
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (166,10)-(166,12) = "in"
         │   │       └── then_loc: (166,23)-(166,27) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (166,0)-(166,4) = "case"
         │   └── end_keyword_loc: (166,28)-(166,31) = "end"
         ├── @ CaseMatchNode (location: (167,0)-(167,33))
@@ -4194,12 +4194,12 @@
         │   │       │   │           ├── value_loc: (167,14)-(167,17) = "foo"
         │   │       │   │           ├── closing_loc: ∅
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (167,10)-(167,12) = "in"
         │   │       └── then_loc: (167,25)-(167,29) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (167,0)-(167,4) = "case"
         │   └── end_keyword_loc: (167,30)-(167,33) = "end"
         ├── @ CaseMatchNode (location: (168,0)-(168,36))
@@ -4238,12 +4238,12 @@
         │   │       │   │           ├── value_loc: (168,16)-(168,19) = "foo"
         │   │       │   │           ├── closing_loc: (168,19)-(168,20) = "]"
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (168,10)-(168,12) = "in"
         │   │       └── then_loc: (168,28)-(168,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (168,0)-(168,4) = "case"
         │   └── end_keyword_loc: (168,33)-(168,36) = "end"
         ├── @ CaseMatchNode (location: (169,0)-(169,35))
@@ -4282,12 +4282,12 @@
         │   │       │   │           ├── value_loc: (169,15)-(169,18) = "foo"
         │   │       │   │           ├── closing_loc: (169,18)-(169,19) = "\""
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (169,10)-(169,12) = "in"
         │   │       └── then_loc: (169,27)-(169,31) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (169,0)-(169,4) = "case"
         │   └── end_keyword_loc: (169,32)-(169,35) = "end"
         ├── @ CaseMatchNode (location: (170,0)-(170,34))
@@ -4326,12 +4326,12 @@
         │   │       │   │           ├── content_loc: (170,14)-(170,17) = "foo"
         │   │       │   │           ├── closing_loc: (170,17)-(170,18) = "/"
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (170,10)-(170,12) = "in"
         │   │       └── then_loc: (170,26)-(170,30) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (170,0)-(170,4) = "case"
         │   └── end_keyword_loc: (170,31)-(170,34) = "end"
         ├── @ CaseMatchNode (location: (171,0)-(171,34))
@@ -4370,12 +4370,12 @@
         │   │       │   │           ├── content_loc: (171,14)-(171,17) = "foo"
         │   │       │   │           ├── closing_loc: (171,17)-(171,18) = "`"
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (171,10)-(171,12) = "in"
         │   │       └── then_loc: (171,26)-(171,30) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (171,0)-(171,4) = "case"
         │   └── end_keyword_loc: (171,31)-(171,34) = "end"
         ├── @ CaseMatchNode (location: (172,0)-(172,36))
@@ -4414,12 +4414,12 @@
         │   │       │   │           ├── content_loc: (172,16)-(172,19) = "foo"
         │   │       │   │           ├── closing_loc: (172,19)-(172,20) = "]"
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (172,10)-(172,12) = "in"
         │   │       └── then_loc: (172,28)-(172,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (172,0)-(172,4) = "case"
         │   └── end_keyword_loc: (172,33)-(172,36) = "end"
         ├── @ CaseMatchNode (location: (173,0)-(173,36))
@@ -4463,12 +4463,12 @@
         │   │       │   │           │       └── unescaped: "foo"
         │   │       │   │           ├── opening_loc: (173,13)-(173,16) = "%i["
         │   │       │   │           └── closing_loc: (173,19)-(173,20) = "]"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (173,10)-(173,12) = "in"
         │   │       └── then_loc: (173,28)-(173,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (173,0)-(173,4) = "case"
         │   └── end_keyword_loc: (173,33)-(173,36) = "end"
         ├── @ CaseMatchNode (location: (174,0)-(174,36))
@@ -4512,12 +4512,12 @@
         │   │       │   │           │       └── unescaped: "foo"
         │   │       │   │           ├── opening_loc: (174,13)-(174,16) = "%I["
         │   │       │   │           └── closing_loc: (174,19)-(174,20) = "]"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (174,10)-(174,12) = "in"
         │   │       └── then_loc: (174,28)-(174,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (174,0)-(174,4) = "case"
         │   └── end_keyword_loc: (174,33)-(174,36) = "end"
         ├── @ CaseMatchNode (location: (175,0)-(175,36))
@@ -4561,12 +4561,12 @@
         │   │       │   │           │       └── unescaped: "foo"
         │   │       │   │           ├── opening_loc: (175,13)-(175,16) = "%w["
         │   │       │   │           └── closing_loc: (175,19)-(175,20) = "]"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (175,10)-(175,12) = "in"
         │   │       └── then_loc: (175,28)-(175,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (175,0)-(175,4) = "case"
         │   └── end_keyword_loc: (175,33)-(175,36) = "end"
         ├── @ CaseMatchNode (location: (176,0)-(176,36))
@@ -4610,12 +4610,12 @@
         │   │       │   │           │       └── unescaped: "foo"
         │   │       │   │           ├── opening_loc: (176,13)-(176,16) = "%W["
         │   │       │   │           └── closing_loc: (176,19)-(176,20) = "]"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (176,10)-(176,12) = "in"
         │   │       └── then_loc: (176,28)-(176,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (176,0)-(176,4) = "case"
         │   └── end_keyword_loc: (176,33)-(176,36) = "end"
         ├── @ CaseMatchNode (location: (177,0)-(177,36))
@@ -4654,12 +4654,12 @@
         │   │       │   │           ├── content_loc: (177,16)-(177,19) = "foo"
         │   │       │   │           ├── closing_loc: (177,19)-(177,20) = "]"
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (177,10)-(177,12) = "in"
         │   │       └── then_loc: (177,28)-(177,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (177,0)-(177,4) = "case"
         │   └── end_keyword_loc: (177,33)-(177,36) = "end"
         ├── @ CaseMatchNode (location: (178,0)-(178,36))
@@ -4698,12 +4698,12 @@
         │   │       │   │           ├── content_loc: (178,16)-(178,19) = "foo"
         │   │       │   │           ├── closing_loc: (178,19)-(178,20) = "]"
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (178,10)-(178,12) = "in"
         │   │       └── then_loc: (178,28)-(178,32) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (178,0)-(178,4) = "case"
         │   └── end_keyword_loc: (178,33)-(178,36) = "end"
         ├── @ CaseMatchNode (location: (179,0)-(179,34))
@@ -4742,12 +4742,12 @@
         │   │       │   │           ├── content_loc: (179,14)-(179,17) = "foo"
         │   │       │   │           ├── closing_loc: (179,17)-(179,18) = "\""
         │   │       │   │           └── unescaped: "foo"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (179,10)-(179,12) = "in"
         │   │       └── then_loc: (179,26)-(179,30) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (179,0)-(179,4) = "case"
         │   └── end_keyword_loc: (179,31)-(179,34) = "end"
         ├── @ CaseMatchNode (location: (180,0)-(180,32))
@@ -4782,12 +4782,12 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ NilNode (location: (180,13)-(180,16))
         │   │       │   │           └── flags: newline, static_literal
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (180,10)-(180,12) = "in"
         │   │       └── then_loc: (180,24)-(180,28) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (180,0)-(180,4) = "case"
         │   └── end_keyword_loc: (180,29)-(180,32) = "end"
         ├── @ CaseMatchNode (location: (181,0)-(181,33))
@@ -4822,12 +4822,12 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SelfNode (location: (181,13)-(181,17))
         │   │       │   │           └── flags: newline
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (181,10)-(181,12) = "in"
         │   │       └── then_loc: (181,25)-(181,29) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (181,0)-(181,4) = "case"
         │   └── end_keyword_loc: (181,30)-(181,33) = "end"
         ├── @ CaseMatchNode (location: (182,0)-(182,33))
@@ -4862,12 +4862,12 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ TrueNode (location: (182,13)-(182,17))
         │   │       │   │           └── flags: newline, static_literal
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (182,10)-(182,12) = "in"
         │   │       └── then_loc: (182,25)-(182,29) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (182,0)-(182,4) = "case"
         │   └── end_keyword_loc: (182,30)-(182,33) = "end"
         ├── @ CaseMatchNode (location: (183,0)-(183,34))
@@ -4902,12 +4902,12 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ FalseNode (location: (183,13)-(183,18))
         │   │       │   │           └── flags: newline, static_literal
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (183,10)-(183,12) = "in"
         │   │       └── then_loc: (183,26)-(183,30) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (183,0)-(183,4) = "case"
         │   └── end_keyword_loc: (183,31)-(183,34) = "end"
         ├── @ CaseMatchNode (location: (184,0)-(184,37))
@@ -4943,12 +4943,12 @@
         │   │       │   │       └── @ SourceFileNode (location: (184,13)-(184,21))
         │   │       │   │           ├── flags: newline
         │   │       │   │           └── filepath: "patterns.txt"
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (184,10)-(184,12) = "in"
         │   │       └── then_loc: (184,29)-(184,33) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (184,0)-(184,4) = "case"
         │   └── end_keyword_loc: (184,34)-(184,37) = "end"
         ├── @ CaseMatchNode (location: (185,0)-(185,37))
@@ -4983,12 +4983,12 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SourceLineNode (location: (185,13)-(185,21))
         │   │       │   │           └── flags: newline, static_literal
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (185,10)-(185,12) = "in"
         │   │       └── then_loc: (185,29)-(185,33) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (185,0)-(185,4) = "case"
         │   └── end_keyword_loc: (185,34)-(185,37) = "end"
         ├── @ CaseMatchNode (location: (186,0)-(186,41))
@@ -5023,12 +5023,12 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SourceEncodingNode (location: (186,13)-(186,25))
         │   │       │   │           └── flags: newline, static_literal
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (186,10)-(186,12) = "in"
         │   │       └── then_loc: (186,33)-(186,37) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (186,0)-(186,4) = "case"
         │   └── end_keyword_loc: (186,38)-(186,41) = "end"
         ├── @ CaseMatchNode (location: (187,0)-(187,39))
@@ -5076,12 +5076,12 @@
         │   │       │   │                       ├── flags: newline
         │   │       │   │                       ├── name: :bar
         │   │       │   │                       └── depth: 1
-        │   │       │   ├── consequent: ∅
+        │   │       │   ├── subsequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (187,10)-(187,12) = "in"
         │   │       └── then_loc: (187,31)-(187,35) = "then"
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (187,0)-(187,4) = "case"
         │   └── end_keyword_loc: (187,36)-(187,39) = "end"
         ├── @ IfNode (location: (189,0)-(190,3))
@@ -5113,7 +5113,7 @@
         │   │   └── operator_loc: (189,5)-(189,7) = "in"
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (190,0)-(190,3) = "end"
         ├── @ MatchRequiredNode (location: (192,0)-(194,1))
         │   ├── flags: newline
@@ -5497,7 +5497,7 @@
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (219,9)-(219,11) = "in"
         │   │       └── then_loc: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   ├── case_keyword_loc: (219,0)-(219,4) = "case"
         │   └── end_keyword_loc: (219,22)-(219,25) = "end"
         └── @ CaseMatchNode (location: (220,0)-(220,31))
@@ -5565,6 +5565,6 @@
             │       ├── statements: ∅
             │       ├── in_loc: (220,9)-(220,11) = "in"
             │       └── then_loc: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (220,0)-(220,4) = "case"
             └── end_keyword_loc: (220,28)-(220,31) = "end"

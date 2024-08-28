@@ -27,7 +27,7 @@
             │       │           └── value: 3
             │       ├── in_loc: (1,8)-(1,10) = "in"
             │       └── then_loc: ∅
-            ├── consequent:
+            ├── else_clause:
             │   @ ElseNode (location: (1,17)-(1,26))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (1,17)-(1,21) = "else"

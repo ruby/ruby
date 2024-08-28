@@ -942,7 +942,7 @@
         │       │   │   │   ├── name: :e
         │       │   │   │   └── depth: 0
         │       │   │   ├── statements: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (51,0)-(51,3) = "end"
@@ -1002,7 +1002,7 @@
         │       │   │   │           ├── flags: newline
         │       │   │   │           ├── name: :bar
         │       │   │   │           └── depth: 0
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (56,0)-(56,3) = "end"
@@ -1078,7 +1078,7 @@
         │       │   │   │           ├── arguments: ∅
         │       │   │   │           ├── closing_loc: ∅
         │       │   │   │           └── block: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (61,0)-(61,3) = "end"
@@ -1158,7 +1158,7 @@
         │       │   │   │           ├── arguments: ∅
         │       │   │   │           ├── closing_loc: ∅
         │       │   │   │           └── block: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (66,0)-(66,3) = "end"
@@ -1231,7 +1231,7 @@
         │       │   │   │           ├── arguments: ∅
         │       │   │   │           ├── closing_loc: ∅
         │       │   │   │           └── block: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (71,0)-(71,3) = "end"
@@ -1280,7 +1280,7 @@
         │       │   │   ├── operator_loc: ∅
         │       │   │   ├── reference: ∅
         │       │   │   ├── statements: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (75,0)-(75,3) = "end"
@@ -1326,7 +1326,7 @@
         │       │   │   ├── operator_loc: ∅
         │       │   │   ├── reference: ∅
         │       │   │   ├── statements: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause:
         │       │   │   @ ElseNode (location: (79,0)-(81,3))
         │       │   │   ├── flags: ∅
@@ -1421,7 +1421,7 @@
         │       │   │   │           ├── arguments: ∅
         │       │   │   │           ├── closing_loc: ∅
         │       │   │   │           └── block: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (86,0)-(86,3) = "end"
@@ -1484,7 +1484,7 @@
         │       │   │   ├── operator_loc: ∅
         │       │   │   ├── reference: ∅
         │       │   │   ├── statements: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause:
         │       │   │   @ EnsureNode (location: (92,0)-(93,3))

@@ -1310,7 +1310,7 @@ nodes:
         type: node?
       - name: conditions
         type: node[]
-      - name: consequent
+      - name: else_clause
         type: node?
         kind: ElseNode
       - name: case_keyword_loc
@@ -1330,7 +1330,7 @@ nodes:
         type: node?
       - name: conditions
         type: node[]
-      - name: consequent
+      - name: else_clause
         type: node?
         kind: ElseNode
       - name: case_keyword_loc
@@ -2187,7 +2187,7 @@ nodes:
                 baz
                 ^^^
               end
-      - name: consequent
+      - name: subsequent
         type: node?
         kind:
           - ElseNode
@@ -3448,7 +3448,7 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: consequent
+      - name: subsequent
         type: node?
         kind: RescueNode
     comment: |
@@ -3703,7 +3703,7 @@ nodes:
 
               unless cond then bar end
                                ^^^
-      - name: consequent
+      - name: else_clause
         type: node?
         kind: ElseNode
         comment: |

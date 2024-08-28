@@ -29,7 +29,7 @@
             │   │       └── @ IntegerNode (location: (4,2)-(4,3))
             │   │           ├── flags: newline, static_literal, decimal
             │   │           └── value: 2
-            │   └── consequent: ∅
+            │   └── subsequent: ∅
             ├── else_clause:
             │   @ ElseNode (location: (5,0)-(7,6))
             │   ├── flags: ∅

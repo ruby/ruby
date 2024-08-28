@@ -58,6 +58,6 @@
             │       ├── statements: ∅
             │       ├── in_loc: (2,10)-(2,12) = "in"
             │       └── then_loc: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (1,8)-(1,12) = "case"
             └── end_keyword_loc: (3,8)-(3,11) = "end"

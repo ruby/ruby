@@ -93,7 +93,7 @@
             │       │           │           │           └── unescaped: ""
             │       │           │           ├── closing_loc: ∅
             │       │           │           └── block: ∅
-            │       │           ├── consequent:
+            │       │           ├── subsequent:
             │       │           │   @ ElseNode (location: (1,17)-(1,21))
             │       │           │   ├── flags: ∅
             │       │           │   ├── else_keyword_loc: (1,17)-(1,18) = ":"

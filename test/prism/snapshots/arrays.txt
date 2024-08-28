@@ -1802,7 +1802,7 @@
         │   │   │   │   ├── closing_loc: (120,23)-(120,24) = "]"
         │   │   │   │   └── block: ∅
         │   │   │   ├── statements: ∅
-        │   │   │   └── consequent: ∅
+        │   │   │   └── subsequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
         │   │   └── end_keyword_loc: (120,26)-(120,29) = "end"
@@ -1873,7 +1873,7 @@
             │   │   │   ├── closing_loc: (122,26)-(122,27) = "]"
             │   │   │   └── block: ∅
             │   │   ├── statements: ∅
-            │   │   └── consequent: ∅
+            │   │   └── subsequent: ∅
             │   ├── else_clause: ∅
             │   ├── ensure_clause: ∅
             │   └── end_keyword_loc: (122,29)-(122,32) = "end"

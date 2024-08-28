@@ -34,7 +34,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (1,6)-(1,9))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (1,6)-(1,7) = ":"
@@ -89,7 +89,7 @@
         │   │           │   └── block: ∅
         │   │           ├── rparen_loc: ∅
         │   │           └── keyword_loc: (3,4)-(3,12) = "defined?"
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (3,15)-(3,27))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (3,15)-(3,16) = ":"
@@ -136,7 +136,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ TrueNode (location: (5,7)-(5,11))
         │   │           └── flags: newline, static_literal
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (5,11)-(5,15))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (5,11)-(5,12) = ":"
@@ -169,7 +169,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ FalseNode (location: (7,7)-(7,12))
         │   │           └── flags: newline, static_literal
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (7,12)-(7,16))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (7,12)-(7,13) = ":"
@@ -202,7 +202,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ NilNode (location: (9,7)-(9,10))
         │   │           └── flags: newline, static_literal
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (9,10)-(9,14))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (9,10)-(9,11) = ":"
@@ -235,7 +235,7 @@
         │   │   └── body: (length: 1)
         │   │       └── @ NilNode (location: (11,3)-(11,6))
         │   │           └── flags: newline, static_literal
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (11,6)-(11,10))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (11,6)-(11,7) = ":"
@@ -276,7 +276,7 @@
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (13,8)-(13,14))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (13,8)-(13,9) = ":"
@@ -325,7 +325,7 @@
             │           │   ├── flags: static_literal, decimal
             │           │   └── value: 2
             │           └── operator_loc: (15,8)-(15,9) = "="
-            ├── consequent:
+            ├── subsequent:
             │   @ ElseNode (location: (15,10)-(15,12))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (15,10)-(15,11) = ":"

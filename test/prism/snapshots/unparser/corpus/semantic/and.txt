@@ -176,7 +176,7 @@
         │   │   └── operator_loc: (4,9)-(4,11) = "or"
         │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         └── @ IfNode (location: (7,0)-(8,3))
             ├── flags: newline
@@ -239,5 +239,5 @@
             │   └── operator_loc: (7,9)-(7,12) = "and"
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (8,0)-(8,3) = "end"

@@ -409,7 +409,7 @@
         │       │   │   ├── operator_loc: ∅
         │       │   │   ├── reference: ∅
         │       │   │   ├── statements: ∅
-        │       │   │   └── consequent: ∅
+        │       │   │   └── subsequent: ∅
         │       │   ├── else_clause: ∅
         │       │   ├── ensure_clause: ∅
         │       │   └── end_keyword_loc: (22,0)-(22,3) = "end"

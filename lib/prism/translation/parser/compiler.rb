@@ -181,7 +181,7 @@ module Prism
           if (rescue_clause = node.rescue_clause)
             begin
               find_start_offset = (rescue_clause.reference&.location || rescue_clause.exceptions.last&.location || rescue_clause.keyword_loc).end_offset
-              find_end_offset = (rescue_clause.statements&.location&.start_offset || rescue_clause.consequent&.location&.start_offset || (find_start_offset + 1))
+              find_end_offset = (rescue_clause.statements&.location&.start_offset || rescue_clause.subsequent&.location&.start_offset || (find_start_offset + 1))
 
               rescue_bodies << builder.rescue_body(
                 token(rescue_clause.keyword_loc),
@@ -191,7 +191,7 @@ module Prism
                 srange_find(find_start_offset, find_end_offset, [";"]),
                 visit(rescue_clause.statements)
               )
-            end until (rescue_clause = rescue_clause.consequent).nil?
+            end until (rescue_clause = rescue_clause.subsequent).nil?
           end
 
           begin_body =
@@ -410,8 +410,8 @@ module Prism
             token(node.case_keyword_loc),
             visit(node.predicate),
             visit_all(node.conditions),
-            token(node.consequent&.else_keyword_loc),
-            visit(node.consequent),
+            token(node.else_clause&.else_keyword_loc),
+            visit(node.else_clause),
             token(node.end_keyword_loc)
           )
         end
@@ -423,8 +423,8 @@ module Prism
             token(node.case_keyword_loc),
             visit(node.predicate),
             visit_all(node.conditions),
-            token(node.consequent&.else_keyword_loc),
-            visit(node.consequent),
+            token(node.else_clause&.else_keyword_loc),
+            visit(node.else_clause),
             token(node.end_keyword_loc)
           )
         end
@@ -858,8 +858,8 @@ module Prism
               visit(node.predicate),
               token(node.then_keyword_loc),
               visit(node.statements),
-              token(node.consequent.else_keyword_loc),
-              visit(node.consequent)
+              token(node.subsequent.else_keyword_loc),
+              visit(node.subsequent)
             )
           elsif node.if_keyword_loc.start_offset == node.location.start_offset
             builder.condition(
@@ -868,16 +868,16 @@ module Prism
               if node.then_keyword_loc
                 token(node.then_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.consequent&.location || node.end_keyword_loc).start_offset, [";"])
+                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.subsequent&.location || node.end_keyword_loc).start_offset, [";"])
               end,
               visit(node.statements),
-              case node.consequent
+              case node.subsequent
               when IfNode
-                token(node.consequent.if_keyword_loc)
+                token(node.subsequent.if_keyword_loc)
               when ElseNode
-                token(node.consequent.else_keyword_loc)
+                token(node.subsequent.else_keyword_loc)
               end,
-              visit(node.consequent),
+              visit(node.subsequent),
               if node.if_keyword != "elsif"
                 token(node.end_keyword_loc)
               end
@@ -885,7 +885,7 @@ module Prism
           else
             builder.condition_mod(
               visit(node.statements),
-              visit(node.consequent),
+              visit(node.subsequent),
               token(node.if_keyword_loc),
               visit(node.predicate)
             )
@@ -1784,16 +1784,16 @@ module Prism
               if node.then_keyword_loc
                 token(node.then_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.consequent&.location || node.end_keyword_loc).start_offset, [";"])
+                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.else_clause&.location || node.end_keyword_loc).start_offset, [";"])
               end,
-              visit(node.consequent),
-              token(node.consequent&.else_keyword_loc),
+              visit(node.else_clause),
+              token(node.else_clause&.else_keyword_loc),
               visit(node.statements),
               token(node.end_keyword_loc)
             )
           else
             builder.condition_mod(
-              visit(node.consequent),
+              visit(node.else_clause),
               visit(node.statements),
               token(node.keyword_loc),
               visit(node.predicate)

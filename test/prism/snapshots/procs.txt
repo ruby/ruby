@@ -88,7 +88,7 @@
         │       │   ├── operator_loc: ∅
         │       │   ├── reference: ∅
         │       │   ├── statements: ∅
-        │       │   └── consequent: ∅
+        │       │   └── subsequent: ∅
         │       ├── else_clause:
         │       │   @ ElseNode (location: (9,0)-(10,6))
         │       │   ├── flags: ∅

@@ -21,6 +21,6 @@
             │       │       └── unescaped: "blahblah"
             │       ├── then_keyword_loc: ∅
             │       └── statements: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"
             └── end_keyword_loc: (1,25)-(1,28) = "end"

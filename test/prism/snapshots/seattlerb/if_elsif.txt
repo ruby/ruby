@@ -14,7 +14,7 @@
             │   └── value: 1
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent:
+            ├── subsequent:
             │   @ IfNode (location: (1,6)-(1,18))
             │   ├── flags: newline
             │   ├── if_keyword_loc: (1,6)-(1,11) = "elsif"
@@ -24,6 +24,6 @@
             │   │   └── value: 2
             │   ├── then_keyword_loc: ∅
             │   ├── statements: ∅
-            │   ├── consequent: ∅
+            │   ├── subsequent: ∅
             │   └── end_keyword_loc: (1,15)-(1,18) = "end"
             └── end_keyword_loc: (1,15)-(1,18) = "end"

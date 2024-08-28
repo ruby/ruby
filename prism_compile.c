@@ -1021,7 +1021,7 @@ again:
  * Compile an if or unless node.
  */
 static void
-pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_node_type_t type, const pm_node_t *node, const pm_statements_node_t *statements, const pm_node_t *consequent, const pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_node_type_t type, const pm_node_t *node, const pm_statements_node_t *statements, const pm_node_t *subsequent, const pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = *node_location;
     LABEL *then_label = NEW_LABEL(location.line);
@@ -1088,8 +1088,8 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
         DECL_ANCHOR(else_seq);
         INIT_ANCHOR(else_seq);
 
-        if (consequent != NULL) {
-            pm_compile_node(iseq, consequent, else_seq, popped, scope_node);
+        if (subsequent != NULL) {
+            pm_compile_node(iseq, subsequent, else_seq, popped, scope_node);
         }
         else if (!popped) {
             PUSH_SYNTHETIC_PUTNIL(else_seq, iseq);
@@ -1099,13 +1099,13 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
         if (then_label->refcnt && PM_BRANCH_COVERAGE_P(iseq)) {
             rb_code_location_t branch_location;
 
-            if (consequent == NULL) {
+            if (subsequent == NULL) {
                 branch_location = conditional_location;
-            } else if (PM_NODE_TYPE_P(consequent, PM_ELSE_NODE)) {
-                const pm_else_node_t *else_node = (const pm_else_node_t *) consequent;
+            } else if (PM_NODE_TYPE_P(subsequent, PM_ELSE_NODE)) {
+                const pm_else_node_t *else_node = (const pm_else_node_t *) subsequent;
                 branch_location = pm_code_location(scope_node, else_node->statements != NULL ? ((const pm_node_t *) else_node->statements) : (const pm_node_t *) else_node);
             } else {
-                branch_location = pm_code_location(scope_node, (const pm_node_t *) consequent);
+                branch_location = pm_code_location(scope_node, (const pm_node_t *) subsequent);
             }
 
             add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, 1, type == PM_IF_NODE ? "else" : "then", branches);
@@ -6294,20 +6294,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (PM_BRANCH_COVERAGE_P(iseq)) {
                 rb_code_location_t branch_location;
 
-                if (cast->consequent == NULL) {
+                if (cast->else_clause == NULL) {
                     branch_location = case_location;
-                } else if (cast->consequent->statements == NULL) {
-                    branch_location = pm_code_location(scope_node, (const pm_node_t *) cast->consequent);
+                } else if (cast->else_clause->statements == NULL) {
+                    branch_location = pm_code_location(scope_node, (const pm_node_t *) cast->else_clause);
                 } else {
-                    branch_location = pm_code_location(scope_node, (const pm_node_t *) cast->consequent->statements);
+                    branch_location = pm_code_location(scope_node, (const pm_node_t *) cast->else_clause->statements);
                 }
 
                 add_trace_branch_coverage(iseq, cond_seq, &branch_location, branch_location.beg_pos.column, branch_id, "else", branches);
             }
 
-            // Compile the consequent else clause if there is one.
-            if (cast->consequent != NULL) {
-                pm_compile_node(iseq, (const pm_node_t *) cast->consequent, cond_seq, popped, scope_node);
+            // Compile the else clause if there is one.
+            if (cast->else_clause != NULL) {
+                pm_compile_node(iseq, (const pm_node_t *) cast->else_clause, cond_seq, popped, scope_node);
             }
             else if (!popped) {
                 PUSH_SYNTHETIC_PUTNIL(cond_seq, iseq);
@@ -6420,7 +6420,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             // Now that we have compiled the conditions and the bodies of the
             // various when clauses, we can compile the predicate, lay out the
-            // conditions, compile the fallback consequent if there is one, and
+            // conditions, compile the fallback subsequent if there is one, and
             // finally put in the bodies of the when clauses.
             PM_COMPILE_NOT_POPPED(cast->predicate);
 
@@ -6438,17 +6438,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // clause.
             PUSH_LABEL(ret, else_label);
 
-            if (cast->consequent != NULL) {
-                pm_node_location_t else_location = PM_NODE_START_LOCATION(parser, cast->consequent->statements != NULL ? ((const pm_node_t *) cast->consequent->statements) : ((const pm_node_t *) cast->consequent));
+            if (cast->else_clause != NULL) {
+                pm_node_location_t else_location = PM_NODE_START_LOCATION(parser, cast->else_clause->statements != NULL ? ((const pm_node_t *) cast->else_clause->statements) : ((const pm_node_t *) cast->else_clause));
                 PUSH_INSN(ret, else_location, pop);
 
                 // Establish branch coverage for the else clause.
                 if (PM_BRANCH_COVERAGE_P(iseq)) {
-                    rb_code_location_t branch_location = pm_code_location(scope_node, cast->consequent->statements != NULL ? ((const pm_node_t *) cast->consequent->statements) : ((const pm_node_t *) cast->consequent));
+                    rb_code_location_t branch_location = pm_code_location(scope_node, cast->else_clause->statements != NULL ? ((const pm_node_t *) cast->else_clause->statements) : ((const pm_node_t *) cast->else_clause));
                     add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, branch_id, "else", branches);
                 }
 
-                PM_COMPILE((const pm_node_t *) cast->consequent);
+                PM_COMPILE((const pm_node_t *) cast->else_clause);
                 PUSH_INSNL(ret, else_location, jump, end_label);
             }
             else {
@@ -6515,7 +6515,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // If there is only one pattern, then the behavior changes a bit. It
         // effectively gets treated as a match required node (this is how it is
         // represented in the other parser).
-        bool in_single_pattern = cast->consequent == NULL && cast->conditions.size == 1;
+        bool in_single_pattern = cast->else_clause == NULL && cast->conditions.size == 1;
 
         // First, we're going to push a bunch of stuff onto the stack that is
         // going to serve as our scratch space.
@@ -6572,11 +6572,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             LABEL_UNREMOVABLE(next_pattern_label);
         }
 
-        if (cast->consequent != NULL) {
+        if (cast->else_clause != NULL) {
             // If we have an `else` clause, then this becomes our fallback (and
             // there is no need to compile in code to potentially raise an
             // error).
-            const pm_else_node_t *else_node = (const pm_else_node_t *) cast->consequent;
+            const pm_else_node_t *else_node = cast->else_clause;
 
             PUSH_LABEL(cond_seq, else_label);
             PUSH_INSN(cond_seq, location, pop);
@@ -7316,7 +7316,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // foo ? bar : baz
         // ^^^^^^^^^^^^^^^
         const pm_if_node_t *cast = (const pm_if_node_t *) node;
-        pm_compile_conditional(iseq, &location, PM_IF_NODE, (const pm_node_t *) cast, cast->statements, cast->consequent, cast->predicate, ret, popped, scope_node);
+        pm_compile_conditional(iseq, &location, PM_IF_NODE, (const pm_node_t *) cast, cast->statements, cast->subsequent, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_IMAGINARY_NODE: {
@@ -8408,8 +8408,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // either jump to the next rescue clause or it will fall through to the
         // subsequent instruction returning the raised error.
         PUSH_LABEL(ret, rescue_end_label);
-        if (cast->consequent) {
-            PM_COMPILE((const pm_node_t *) cast->consequent);
+        if (cast->subsequent) {
+            PM_COMPILE((const pm_node_t *) cast->subsequent);
         }
         else {
             PUSH_GETLOCAL(ret, location, 1, 0);
@@ -9696,12 +9696,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // bar unless foo
         // ^^^^^^^^^^^^^^
         const pm_unless_node_t *cast = (const pm_unless_node_t *) node;
-        const pm_statements_node_t *consequent = NULL;
-        if (cast->consequent != NULL) {
-            consequent = ((const pm_else_node_t *) cast->consequent)->statements;
+        const pm_statements_node_t *statements = NULL;
+        if (cast->else_clause != NULL) {
+            statements = ((const pm_else_node_t *) cast->else_clause)->statements;
         }
 
-        pm_compile_conditional(iseq, &location, PM_UNLESS_NODE, (const pm_node_t *) cast, consequent, (const pm_node_t *) cast->statements, cast->predicate, ret, popped, scope_node);
+        pm_compile_conditional(iseq, &location, PM_UNLESS_NODE, (const pm_node_t *) cast, statements, (const pm_node_t *) cast->statements, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_UNTIL_NODE: {

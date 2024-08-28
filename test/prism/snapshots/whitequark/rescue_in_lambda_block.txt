@@ -25,7 +25,7 @@
                 │   ├── operator_loc: ∅
                 │   ├── reference: ∅
                 │   ├── statements: ∅
-                │   └── consequent: ∅
+                │   └── subsequent: ∅
                 ├── else_clause: ∅
                 ├── ensure_clause: ∅
                 └── end_keyword_loc: (1,14)-(1,17) = "end"

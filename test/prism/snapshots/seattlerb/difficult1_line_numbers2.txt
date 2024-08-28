@@ -72,7 +72,7 @@
         │   │           │   ├── flags: static_literal, decimal
         │   │           │   └── value: 1
         │   │           └── operator_loc: (5,4)-(5,5) = "="
-        │   ├── consequent: ∅
+        │   ├── subsequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         └── @ CallNode (location: (7,0)-(7,1))
             ├── flags: newline, variable_call, ignore_visibility

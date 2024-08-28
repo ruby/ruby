@@ -43,7 +43,7 @@
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           └── block: ∅
-            │   └── consequent: ∅
+            │   └── subsequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause:
             │   @ EnsureNode (location: (1,26)-(1,42))

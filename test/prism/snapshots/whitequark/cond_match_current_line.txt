@@ -33,5 +33,5 @@
             │   └── unescaped: "wat"
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (3,10)-(3,13) = "end"

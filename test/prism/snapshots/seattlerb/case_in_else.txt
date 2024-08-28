@@ -30,7 +30,7 @@
             │       │           └── unescaped: "b"
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
-            ├── consequent:
+            ├── else_clause:
             │   @ ElseNode (location: (4,0)-(6,3))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (4,0)-(4,4) = "else"

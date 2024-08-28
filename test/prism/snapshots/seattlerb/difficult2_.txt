@@ -36,7 +36,7 @@
         │   │           │           └── unescaped: ""
         │   │           ├── closing_loc: (1,8)-(1,9) = ")"
         │   │           └── block: ∅
-        │   ├── consequent:
+        │   ├── subsequent:
         │   │   @ ElseNode (location: (1,10)-(1,13))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (1,10)-(1,11) = ":"

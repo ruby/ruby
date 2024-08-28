@@ -268,5 +268,5 @@
             │           │           └── value: 7
             │           ├── closing_loc: (11,10)-(11,11) = ")"
             │           └── block: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (12,0)-(12,3) = "end"

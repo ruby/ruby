@@ -19,7 +19,7 @@
         │   │       └── @ IntegerNode (location: (1,13)-(1,14))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: (1,16)-(1,19) = "end"
         ├── @ UnlessNode (location: (3,0)-(4,12))
         │   ├── flags: newline
@@ -35,7 +35,7 @@
         │   │       └── @ IntegerNode (location: (4,0)-(4,1))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
-        │   ├── consequent:
+        │   ├── else_clause:
         │   │   @ ElseNode (location: (4,2)-(4,12))
         │   │   ├── flags: ∅
         │   │   ├── else_keyword_loc: (4,2)-(4,6) = "else"
@@ -62,7 +62,7 @@
         │   │       └── @ IntegerNode (location: (6,0)-(6,1))
         │   │           ├── flags: newline, static_literal, decimal
         │   │           └── value: 1
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: ∅
         ├── @ CallNode (location: (8,0)-(8,25))
         │   ├── flags: newline, ignore_visibility
@@ -97,7 +97,7 @@
         │       │           │           ├── flags: newline
         │       │           │           ├── arguments: ∅
         │       │           │           └── keyword_loc: (8,6)-(8,11) = "break"
-        │       │           ├── consequent: ∅
+        │       │           ├── else_clause: ∅
         │       │           └── end_keyword_loc: ∅
         │       ├── opening_loc: (8,4)-(8,5) = "{"
         │       └── closing_loc: (8,24)-(8,25) = "}"
@@ -134,7 +134,7 @@
         │       │           │           ├── flags: newline
         │       │           │           ├── arguments: ∅
         │       │           │           └── keyword_loc: (10,6)-(10,10) = "next"
-        │       │           ├── consequent: ∅
+        │       │           ├── else_clause: ∅
         │       │           └── end_keyword_loc: ∅
         │       ├── opening_loc: (10,4)-(10,5) = "{"
         │       └── closing_loc: (10,23)-(10,24) = "}"
@@ -153,7 +153,7 @@
         │   │           ├── flags: newline
         │   │           ├── keyword_loc: (12,0)-(12,6) = "return"
         │   │           └── arguments: ∅
-        │   ├── consequent: ∅
+        │   ├── else_clause: ∅
         │   └── end_keyword_loc: ∅
         └── @ UnlessNode (location: (14,0)-(14,22))
             ├── flags: newline
@@ -199,5 +199,5 @@
             │           │           └── unescaped: "b"
             │           ├── closing_loc: ∅
             │           └── block: ∅
-            ├── consequent: ∅
+            ├── else_clause: ∅
             └── end_keyword_loc: ∅

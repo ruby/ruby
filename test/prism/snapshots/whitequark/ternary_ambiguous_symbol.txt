@@ -46,7 +46,7 @@
             │           ├── flags: newline
             │           ├── name: :t
             │           └── depth: 0
-            ├── consequent:
+            ├── subsequent:
             │   @ ElseNode (location: (1,11)-(1,13))
             │   ├── flags: ∅
             │   ├── else_keyword_loc: (1,11)-(1,12) = ":"

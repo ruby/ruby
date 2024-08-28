@@ -14,5 +14,5 @@
             │   └── value: -1
             ├── then_keyword_loc: ∅
             ├── statements: ∅
-            ├── consequent: ∅
+            ├── subsequent: ∅
             └── end_keyword_loc: (1,7)-(1,10) = "end"
