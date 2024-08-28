@@ -4696,7 +4696,6 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
 static inline void
 gc_mark_and_pin(rb_objspace_t *objspace, VALUE obj)
 {
-    if (SPECIAL_CONST_P(obj)) return;
     gc_pin(objspace, obj);
     gc_mark(objspace, obj);
 }
@@ -4705,8 +4704,6 @@ void
 rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
-
-    if (SPECIAL_CONST_P(*ptr)) return;
 
     if (RB_UNLIKELY(objspace->flags.during_reference_updating)) {
         GC_ASSERT(objspace->flags.during_compacting);
@@ -4724,8 +4721,6 @@ rb_gc_impl_mark(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    if (RB_SPECIAL_CONST_P(obj)) return;
-
     gc_mark(objspace, obj);
 }
 
@@ -4733,8 +4728,6 @@ void
 rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
-
-    if (RB_SPECIAL_CONST_P(obj)) return;
 
     gc_mark_and_pin(objspace, obj);
 }
