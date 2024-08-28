@@ -2098,14 +2098,14 @@ rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr)
     rb_gc_impl_remove_weak(rb_gc_get_objspace(), parent_obj, ptr);
 }
 
-ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(void *objspace, register const VALUE *x, register long n, void (*cb)(void *objspace, VALUE)));
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(register const VALUE *x, register long n, void (*cb)(void *data, VALUE), void *data));
 static void
-each_location(void *objspace, register const VALUE *x, register long n, void (*cb)(void *objspace, VALUE))
+each_location(register const VALUE *x, register long n, void (*cb)(void *data, VALUE obj), void *data)
 {
     VALUE v;
     while (n--) {
         v = *x;
-        cb(objspace, v);
+        cb(data, v);
         x++;
     }
 }
@@ -2117,7 +2117,7 @@ gc_mark_locations(void *objspace, const VALUE *start, const VALUE *end, void (*c
 
     if (end <= start) return;
     n = end - start;
-    each_location(objspace, start, n, cb);
+    each_location(start, n, cb, objspace);
 }
 
 void
@@ -2350,7 +2350,7 @@ mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
 #endif
     };
 
-    each_location((void *)&data, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe);
+    each_location(save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe, &data);
     each_stack_location((void *)&data, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
 }
 #endif
@@ -2372,7 +2372,7 @@ rb_gc_mark_machine_context(const rb_execution_context_t *ec)
 
     each_stack_location((void *)&data, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
     int num_regs = sizeof(ec->machine.regs)/(sizeof(VALUE));
-    each_location((void *)&data, (VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe);
+    each_location((VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe, &data);
 }
 
 static int
