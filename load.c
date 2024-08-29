@@ -748,7 +748,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             result.options.line = 1;
             result.node.coverage_enabled = 1;
 
-            VALUE error = pm_load_parse_file(&result, fname);
+            VALUE error = pm_load_parse_file(&result, fname, NULL);
 
             if (error == Qnil) {
                 iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL);

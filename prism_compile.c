@@ -3107,6 +3107,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         scope->filepath_encoding = previous->filepath_encoding;
         scope->constants = previous->constants;
         scope->coverage_enabled = previous->coverage_enabled;
+        scope->script_lines = previous->script_lines;
     }
 
     switch (PM_NODE_TYPE(node)) {
@@ -10379,7 +10380,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
  * result object is zeroed out.
  */
 static VALUE
-pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
+pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines)
 {
     pm_parser_t *parser = &result->parser;
 
@@ -10396,6 +10397,20 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node)
     if (!scope_node->encoding) rb_bug("Encoding not found %s!", parser->encoding->name);
 
     scope_node->coverage_enabled = coverage_enabled;
+
+    // If RubyVM.keep_script_lines is set to true, then we need to create that
+    // array of script lines here.
+    if (script_lines != NULL) {
+        *script_lines = rb_ary_new_capa(parser->newline_list.size);
+
+        for (size_t index = 0; index < parser->newline_list.size; index++) {
+            size_t offset = parser->newline_list.offsets[index];
+            size_t length = index == parser->newline_list.size - 1 ? (parser->end - (parser->start + offset)) : (parser->newline_list.offsets[index + 1] - offset);
+            rb_ary_push(*script_lines, rb_enc_str_new((const char *) parser->start + offset, length, scope_node->encoding));
+        }
+
+        scope_node->script_lines = script_lines;
+    }
 
     // Emit all of the various warnings from the parse.
     const pm_diagnostic_t *warning;
@@ -10663,7 +10678,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
  * is zeroed out.
  */
 VALUE
-pm_parse_file(pm_parse_result_t *result, VALUE filepath)
+pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
 {
     result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
@@ -10672,7 +10687,7 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
-    VALUE error = pm_parse_process(result, node);
+    VALUE error = pm_parse_process(result, node, script_lines);
 
     // If we're parsing a filepath, then we need to potentially support the
     // SCRIPT_LINES__ constant, which can be a hash that has an array of lines
@@ -10680,10 +10695,10 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
     ID id_script_lines = rb_intern("SCRIPT_LINES__");
 
     if (rb_const_defined_at(rb_cObject, id_script_lines)) {
-        VALUE script_lines = rb_const_get_at(rb_cObject, id_script_lines);
+        VALUE constant_script_lines = rb_const_get_at(rb_cObject, id_script_lines);
 
-        if (RB_TYPE_P(script_lines, T_HASH)) {
-            rb_hash_aset(script_lines, filepath, pm_parse_file_script_lines(&result->node, &result->parser));
+        if (RB_TYPE_P(constant_script_lines, T_HASH)) {
+            rb_hash_aset(constant_script_lines, filepath, pm_parse_file_script_lines(&result->node, &result->parser));
         }
     }
 
@@ -10695,11 +10710,11 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
  * cannot be read or if it cannot be parsed properly.
  */
 VALUE
-pm_load_parse_file(pm_parse_result_t *result, VALUE filepath)
+pm_load_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines)
 {
     VALUE error = pm_load_file(result, filepath, false);
     if (NIL_P(error)) {
-        error = pm_parse_file(result, filepath);
+        error = pm_parse_file(result, filepath, script_lines);
     }
 
     return error;
@@ -10712,7 +10727,7 @@ pm_load_parse_file(pm_parse_result_t *result, VALUE filepath)
  * error is returned.
  */
 VALUE
-pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
+pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *script_lines)
 {
     rb_encoding *encoding = rb_enc_get(source);
     if (!rb_enc_asciicompat(encoding)) {
@@ -10730,7 +10745,7 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
-    return pm_parse_process(result, node);
+    return pm_parse_process(result, node, script_lines);
 }
 
 /**
@@ -10780,7 +10795,7 @@ pm_parse_stdin(pm_parse_result_t *result)
     // we went through an IO object to be visible to the user.
     rb_reset_argf_lineno(0);
 
-    return pm_parse_process(result, node);
+    return pm_parse_process(result, node, NULL);
 }
 
 #undef NEW_ISEQ

@@ -1719,7 +1719,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // Add our empty local scope at the very end of the array for our eval
     // scope's locals.
     pm_options_scope_init(&result.options.scopes[scopes_count], 0);
-    VALUE error = pm_parse_string(&result, src, fname);
+    VALUE error = pm_parse_string(&result, src, fname, NULL);
 
     // If the parse failed, clean up and raise.
     if (error != Qnil) {

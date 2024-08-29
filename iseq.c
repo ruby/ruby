@@ -1050,7 +1050,7 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     };
 
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, -1,
-                       parent, isolated_depth, type, Qnil, option);
+                       parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
 
     pm_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
@@ -1296,15 +1296,17 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         break;
     }
 
+    VALUE script_lines;
     VALUE error;
+
     if (RB_TYPE_P(src, T_FILE)) {
         VALUE filepath = rb_io_path(src);
-        error = pm_load_parse_file(&result, filepath);
+        error = pm_load_parse_file(&result, filepath, ruby_vm_keep_script_lines ? &script_lines : NULL);
         RB_GC_GUARD(filepath);
     }
     else {
         src = StringValue(src);
-        error = pm_parse_string(&result, src, file);
+        error = pm_parse_string(&result, src, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
 
     if (error == Qnil) {
@@ -1718,7 +1720,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     result.options.line = 1;
     result.node.coverage_enabled = 1;
 
-    VALUE error = pm_load_parse_file(&result, file);
+    VALUE script_lines;
+    VALUE error = pm_load_parse_file(&result, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
 
     if (error == Qnil) {
         make_compile_option(&option, opt);
