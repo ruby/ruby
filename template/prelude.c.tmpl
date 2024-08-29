@@ -158,7 +158,7 @@ static void
 pm_prelude_load(pm_parse_result_t *result, VALUE name, VALUE code, int line)
 {
     pm_options_line_set(&result->options, line);
-    VALUE error = pm_parse_string(result, code, name);
+    VALUE error = pm_parse_string(result, code, name, NULL);
 
     if (!NIL_P(error)) {
         pm_parse_result_free(result);
