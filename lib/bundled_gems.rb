@@ -32,6 +32,7 @@ module Gem::BUNDLED_GEMS
     "win32ole" => "3.5.0",
     "fiddle" => "3.5.0",
     "logger" => "3.5.0",
+    "benchmark" => "3.5.0",
   }.freeze
 
   SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
