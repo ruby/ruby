@@ -2244,11 +2244,6 @@ static void
 each_stack_location(const VALUE *stack_start, const VALUE *stack_end, void (*cb)(void *data, VALUE obj), void *data)
 {
     gc_mark_locations(stack_start, stack_end, cb, data);
-
-#if defined(__mc68000__)
-    gc_mark_locations((VALUE*)((char*)stack_start + 2),
-                      (VALUE*)((char*)stack_end - 2), cb, data);
-#endif
 }
 
 struct mark_machine_stack_location_maybe_data {
