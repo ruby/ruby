@@ -8568,7 +8568,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  These methods do not modify +self+.
  *
- *  - #[] (aliased as #slice): Returns consecutive elements as determined by a given argument.
+ *  - #[], #slice: Returns consecutive elements as determined by a given argument.
  *  - #fetch: Returns the element at a given offset.
  *  - #first: Returns one or more leading elements.
  *  - #last: Returns one or more trailing elements.
