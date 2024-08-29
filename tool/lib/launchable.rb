@@ -13,6 +13,7 @@ module Launchable
       @indent_level = 0
       @is_first_key_val = true
       @is_first_obj = true
+      @my_counter = 0
       write_new_line
     end
 
@@ -39,6 +40,8 @@ module Launchable
       # },
       # To prevent this, IO#flush is called here.
       @file.flush
+      @my_counter += 1
+      puts "File #{@file.path} has size #{File.size(@file.path)}" if @my_counter % 1000 == 0
     rescue Errno::ENOSPC
       puts "File #{@file.path} has size #{File.size(@file.path)}"
       raise
