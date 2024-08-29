@@ -7771,7 +7771,7 @@ rb_ary_drop_while(VALUE ary)
  *  <b>Special case</b>: returns +false+ if +self+ is empty
  *  (regardless of any given argument or block).
  *
- *  Related: Array#all?, Array#none?, Array#one?.
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
@@ -7838,7 +7838,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *  <b>Special case</b>: returns +true+ if +self+ is empty
  *  (regardless of any given argument or block).
  *
- *  Related: Array#any?, Array#none?, Array#one?.
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
