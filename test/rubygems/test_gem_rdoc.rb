@@ -134,4 +134,4 @@ class TestGemRDoc < Gem::TestCase
       FileUtils.rm_r @a.doc_dir
     end
   end
-end
+end if defined?(Gem::RDoc)
