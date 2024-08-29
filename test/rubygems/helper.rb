@@ -19,7 +19,6 @@ require "shellwords"
 require "tmpdir"
 require "rubygems/vendor/uri/lib/uri"
 require "zlib"
-require "benchmark" # stdlib
 require_relative "mock_gem_ui"
 
 module Gem
