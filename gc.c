@@ -2111,19 +2111,16 @@ each_location(register const VALUE *x, register long n, void (*cb)(void *data, V
 }
 
 static void
-gc_mark_locations(const VALUE *start, const VALUE *end, void (*cb)(void *, VALUE), void *data)
+each_location_ptr(const VALUE *start, const VALUE *end, void (*cb)(void *, VALUE), void *data)
 {
-    long n;
-
     if (end <= start) return;
-    n = end - start;
-    each_location(start, n, cb, data);
+    each_location(start, end - start, cb, data);
 }
 
 void
 rb_gc_mark_locations(const VALUE *start, const VALUE *end)
 {
-    gc_mark_locations(start, end, rb_gc_impl_mark_maybe, rb_gc_get_objspace());
+    each_location_ptr(start, end, rb_gc_impl_mark_maybe, rb_gc_get_objspace());
 }
 
 void
@@ -2240,12 +2237,6 @@ mark_m_tbl(void *objspace, struct rb_id_table *tbl)
      ((start) = STACK_END, (end) = STACK_START) : ((start) = STACK_START, (end) = STACK_END+(appendix)))
 #endif
 
-static void
-each_stack_location(const VALUE *stack_start, const VALUE *stack_end, void (*cb)(void *data, VALUE obj), void *data)
-{
-    gc_mark_locations(stack_start, stack_end, cb, data);
-}
-
 struct mark_machine_stack_location_maybe_data {
     void *objspace;
 #ifdef RUBY_ASAN_ENABLED
@@ -2270,7 +2261,7 @@ gc_mark_machine_stack_location_maybe(void *data, VALUE obj)
         &fake_frame_start, &fake_frame_end
     );
     if (is_fake_frame) {
-        each_stack_location(fake_frame_start, fake_frame_end, rb_gc_impl_mark_maybe, objspace);
+        each_location_ptr(ec, fake_frame_start, fake_frame_end, rb_gc_impl_mark_maybe, objspace);
     }
 #endif
 }
@@ -2293,10 +2284,10 @@ static void
 mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
 {
     emscripten_scan_stack(rb_mark_locations);
-    each_stack_location(rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
+    each_location_ptr(rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
 
     emscripten_scan_registers(rb_mark_locations);
-    each_stack_location(rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
+    each_location_ptr(rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
 }
 # else // use Asyncify version
 
@@ -2306,10 +2297,10 @@ mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
     VALUE *stack_start, *stack_end;
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
-    each_stack_location(stack_start, stack_end, rb_gc_impl_mark_maybe, objspace);
+    each_location_ptr(stack_start, stack_end, rb_gc_impl_mark_maybe, objspace);
 
     rb_wasm_scan_locals(rb_mark_locations);
-    each_stack_location(rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
+    each_location_ptr(rb_stack_range_tmp[0], rb_stack_range_tmp[1], rb_gc_impl_mark_maybe, objspace);
 }
 
 # endif
@@ -2344,7 +2335,7 @@ mark_current_machine_context(void *objspace, rb_execution_context_t *ec)
     };
 
     each_location(save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe, &data);
-    each_stack_location(stack_start, stack_end, gc_mark_machine_stack_location_maybe, &data);
+    each_location_ptr(stack_start, stack_end, gc_mark_machine_stack_location_maybe, &data);
 }
 #endif
 
@@ -2363,7 +2354,7 @@ rb_gc_mark_machine_context(const rb_execution_context_t *ec)
 #endif
     };
 
-    each_stack_location(stack_start, stack_end, gc_mark_machine_stack_location_maybe, &data);
+    each_location_ptr(stack_start, stack_end, gc_mark_machine_stack_location_maybe, &data);
     int num_regs = sizeof(ec->machine.regs)/(sizeof(VALUE));
     each_location((VALUE*)&ec->machine.regs, num_regs, gc_mark_machine_stack_location_maybe, &data);
 }
