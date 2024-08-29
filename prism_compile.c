@@ -10616,6 +10616,8 @@ read_entire_file(pm_string_t *string, const char *filepath)
     close(fd);
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
     return true;
+#else
+    return pm_string_file_init(string, filepath);
 #endif
 }
 
