@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-require 'benchmark'
-
 if defined?(OpenSSL)
 
 class OpenSSL::OSSL < OpenSSL::SSLTestCase
@@ -44,6 +42,12 @@ class OpenSSL::OSSL < OpenSSL::SSLTestCase
   end
 
   def test_memcmp_timing
+    begin
+      require "benchmark"
+    rescue LoadError
+      pend "Benchmark is not available in this environment. Please install it with `gem install benchmark`."
+    end
+
     # Ensure using fixed_length_secure_compare takes almost exactly the same amount of time to compare two different strings.
     # Regular string comparison will short-circuit on the first non-matching character, failing this test.
     # NOTE: this test may be susceptible to noise if the system running the tests is otherwise under load.
