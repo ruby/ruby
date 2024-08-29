@@ -56,51 +56,26 @@ class Reline::Unicode
 
   require 'reline/unicode/east_asian_width'
 
-  HalfwidthDakutenHandakuten = /[\u{FF9E}\u{FF9F}]/
-
-  MBCharWidthRE = /
-    (?<width_2_1>
-      [#{ EscapedChars.map {|c| "\\x%02x" % c.ord }.join }] (?# ^ + char, such as ^M, ^H, ^[, ...)
-    )
-  | (?<width_3>^\u{2E3B}) (?# THREE-EM DASH)
-  | (?<width_0>^\p{M})
-  | (?<width_2_2>
-      #{ EastAsianWidth::TYPE_F }
-    | #{ EastAsianWidth::TYPE_W }
-    )
-  | (?<width_1>
-      #{ EastAsianWidth::TYPE_H }
-    | #{ EastAsianWidth::TYPE_NA }
-    | #{ EastAsianWidth::TYPE_N }
-    )(?!#{ HalfwidthDakutenHandakuten })
-  | (?<width_2_3>
-      (?: #{ EastAsianWidth::TYPE_H }
-        | #{ EastAsianWidth::TYPE_NA }
-        | #{ EastAsianWidth::TYPE_N })
-      #{ HalfwidthDakutenHandakuten }
-    )
-  | (?<ambiguous_width>
-      #{EastAsianWidth::TYPE_A}
-    )
-  /x
-
   def self.get_mbchar_width(mbchar)
     ord = mbchar.ord
-    if (0x00 <= ord and ord <= 0x1F) # in EscapedPairs
+    if ord <= 0x1F # in EscapedPairs
       return 2
-    elsif (0x20 <= ord and ord <= 0x7E) # printable ASCII chars
+    elsif ord <= 0x7E # printable ASCII chars
       return 1
     end
-    m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
-    case
-    when m.nil? then 1 # TODO should be U+FFFD � REPLACEMENT CHARACTER
-    when m[:width_2_1], m[:width_2_2], m[:width_2_3] then 2
-    when m[:width_3] then 3
-    when m[:width_0] then 0
-    when m[:width_1] then 1
-    when m[:ambiguous_width] then Reline.ambiguous_width
+    utf8_mbchar = mbchar.encode(Encoding::UTF_8)
+    ord = utf8_mbchar.ord
+    chunk_index = EastAsianWidth::CHUNK_LAST.bsearch_index { |o| ord <= o }
+    size = EastAsianWidth::CHUNK_WIDTH[chunk_index]
+    if size == -1
+      Reline.ambiguous_width
+    elsif size == 1 && utf8_mbchar.size >= 2
+      second_char_ord = utf8_mbchar[1].ord
+      # Halfwidth Dakuten Handakuten
+      # Only these two character has Letter Modifier category and can be combined in a single grapheme cluster
+      (second_char_ord == 0xFF9E || second_char_ord == 0xFF9F) ? 2 : 1
     else
-      nil
+      size
     end
   end
 
