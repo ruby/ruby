@@ -143,7 +143,7 @@ to the same gem path as user-installed gems.
   end
 
   def set_gem_exec_install_paths
-    home = File.join(Gem.dir, "gem_exec")
+    home = Gem.dir
 
     ENV["GEM_PATH"] = ([home] + Gem.path).join(File::PATH_SEPARATOR)
     ENV["GEM_HOME"] = home
