@@ -172,6 +172,10 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 {
 	size_t len = s - *start;
 	size_t nlen = len + n * 2;
+	size_t capa = rb_str_capacity(ftime);
+	if (nlen < capa * 2) {
+	    nlen = capa * 2;
+	}
 
 	if (nlen < len || nlen > maxsize) {
 		return 0;
