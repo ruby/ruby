@@ -7764,7 +7764,7 @@ rb_ary_drop_while(VALUE ary)
  *  <b>Special case</b>: returns +false+ if +self+ is empty
  *  (regardless of any given argument or block).
  *
- *  Related: See {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
