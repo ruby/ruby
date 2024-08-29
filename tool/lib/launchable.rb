@@ -39,6 +39,9 @@ module Launchable
       # },
       # To prevent this, IO#flush is called here.
       @file.flush
+    rescue Errno::ENOSPC
+      puts "File #{@file.path} has size #{File.size(@file.path)}"
+      raise
     end
 
     def write_array(key)
