@@ -4946,7 +4946,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
  *    a = [0, 1] + [2, 3]
  *    a # => [0, 1, 2, 3]
  *
- *  Related: Array#concat, Array#*.
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 VALUE
@@ -5468,7 +5468,7 @@ ary_make_hash_by(VALUE ary)
  *  Element are compared using method <tt>#eql?</tt>
  *  (as defined in each element of +self+).
  *
- *  Related: Array#difference.
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 VALUE
@@ -5574,12 +5574,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
  *  Identifies common elements using method <tt>#eql?</tt>
  *  (as defined in each element of +self+).
  *
- *  Related:
- *
- *  - Array#intersection: intersection of +self+ and multiple other arrays.
- *  - Array#|: union of +self+ and one other array.
- *  - Array#union: union of +self+ and multiple other arrays.
- *
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 
