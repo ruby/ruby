@@ -1801,61 +1801,99 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
     return orig_argc;
 }
 
-static bool
-pm_setup_args_dup_rest_p(const pm_node_t *node) {
-    switch(PM_NODE_TYPE(node)) {
-      case PM_CALL_NODE:
-        return true;
-      default:
+/**
+ * True if the given kind of node could potentially mutate the array that is
+ * being splatted in a set of call arguments.
+ */
+static inline bool
+pm_setup_args_dup_rest_p(const pm_node_t *node)
+{
+    switch (PM_NODE_TYPE(node)) {
+      case PM_BACK_REFERENCE_READ_NODE:
+      case PM_CLASS_VARIABLE_READ_NODE:
+      case PM_CONSTANT_PATH_NODE:
+      case PM_CONSTANT_READ_NODE:
+      case PM_FALSE_NODE:
+      case PM_FLOAT_NODE:
+      case PM_GLOBAL_VARIABLE_READ_NODE:
+      case PM_IMAGINARY_NODE:
+      case PM_INSTANCE_VARIABLE_READ_NODE:
+      case PM_INTEGER_NODE:
+      case PM_LAMBDA_NODE:
+      case PM_LOCAL_VARIABLE_READ_NODE:
+      case PM_NIL_NODE:
+      case PM_NUMBERED_REFERENCE_READ_NODE:
+      case PM_RATIONAL_NODE:
+      case PM_REGULAR_EXPRESSION_NODE:
+      case PM_SELF_NODE:
+      case PM_STRING_NODE:
+      case PM_SYMBOL_NODE:
+      case PM_TRUE_NODE:
         return false;
+      case PM_IMPLICIT_NODE:
+        return pm_setup_args_dup_rest_p(((const pm_implicit_node_t *) node)->value);
+      default:
+        return true;
     }
 }
 
-// Compile the argument parts of a call
+/**
+ * Compile the argument parts of a call.
+ */
 static int
 pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
     VALUE dup_rest = Qtrue;
 
-    if (arguments_node != NULL) {
-        size_t arg_size = arguments_node->arguments.size;
-        const pm_node_list_t *args = &arguments_node->arguments;
-        // Calls like foo(1, *f, **hash) that use splat and kwsplat
-        // could be eligible for eliding duping the rest array (dup_reset=false).
-        if (arg_size >= 2
-                && PM_NODE_FLAG_P(arguments_node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT)
-                && !PM_NODE_FLAG_P(arguments_node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS)
-                && PM_NODE_TYPE_P(args->nodes[arg_size - 1], PM_KEYWORD_HASH_NODE)) {
-            dup_rest = Qfalse;
+    const pm_node_list_t *arguments;
+    size_t arguments_size;
 
-            const pm_keyword_hash_node_t *keyword_arg = (const pm_keyword_hash_node_t *) args->nodes[arg_size - 1];
-            const pm_node_list_t *elements = &keyword_arg->elements;
+    // Calls like foo(1, *f, **hash) that use splat and kwsplat could be
+    // eligible for eliding duping the rest array (dup_reset=false).
+    if (
+        arguments_node != NULL &&
+        (arguments = &arguments_node->arguments, arguments_size = arguments->size) >= 2 &&
+        PM_NODE_FLAG_P(arguments_node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_SPLAT) &&
+        !PM_NODE_FLAG_P(arguments_node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS) &&
+        PM_NODE_TYPE_P(arguments->nodes[arguments_size - 1], PM_KEYWORD_HASH_NODE)
+    ) {
+        // Start by assuming that dup_rest=false, then check each element of the
+        // hash to ensure we don't need to flip it back to true (in case one of
+        // the elements could potentially mutate the array).
+        dup_rest = Qfalse;
 
-            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_NODE)) {
-                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[0];
+        const pm_keyword_hash_node_t *keyword_hash = (const pm_keyword_hash_node_t *) arguments->nodes[arguments_size - 1];
+        const pm_node_list_t *elements = &keyword_hash->elements;
 
-                if (pm_setup_args_dup_rest_p(assoc->value)) {
-                    dup_rest = Qtrue;
-                }
-            }
+        for (size_t index = 0; dup_rest == Qfalse && index < elements->size; index++) {
+            const pm_node_t *element = elements->nodes[index];
 
-            if (PM_NODE_TYPE_P(elements->nodes[0], PM_ASSOC_SPLAT_NODE)) {
-                const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) elements->nodes[0];
-
-                if (assoc->value && pm_setup_args_dup_rest_p(assoc->value)) {
-                    dup_rest = Qtrue;
-                }
+            switch (PM_NODE_TYPE(element)) {
+              case PM_ASSOC_NODE: {
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+                if (pm_setup_args_dup_rest_p(assoc->key) || pm_setup_args_dup_rest_p(assoc->value)) dup_rest = Qtrue;
+                break;
+              }
+              case PM_ASSOC_SPLAT_NODE: {
+                const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) element;
+                if (assoc->value != NULL && pm_setup_args_dup_rest_p(assoc->value)) dup_rest = Qtrue;
+                break;
+              }
+              default:
+                break;
             }
         }
     }
 
     VALUE initial_dup_rest = dup_rest;
+    int argc;
 
     if (block && PM_NODE_TYPE_P(block, PM_BLOCK_ARGUMENT_NODE)) {
         // We compile the `&block_arg` expression first and stitch it later
         // since the nature of the expression influences whether splat should
         // duplicate the array.
         bool regular_block_arg = true;
+
         DECL_ANCHOR(block_arg);
         INIT_ANCHOR(block_arg);
         pm_compile_node(iseq, block, block_arg, false, scope_node);
@@ -1869,26 +1907,26 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
                 if (iobj->insn_id == BIN(getblockparam)) {
                     iobj->insn_id = BIN(getblockparamproxy);
                 }
+
                 // Allow splat without duplication for simple one-instruction
-                // block arguments like `&arg`. It is known that this optimization
-                // can be too aggressive in some cases. See [Bug #16504].
+                // block arguments like `&arg`. It is known that this
+                // optimization can be too aggressive in some cases. See
+                // [Bug #16504].
                 regular_block_arg = false;
             }
         }
 
-        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
-
-        if (*flags & VM_CALL_ARGS_SPLAT && dup_rest != initial_dup_rest) {
-            *flags |= VM_CALL_ARGS_SPLAT_MUT;
-        }
-
+        argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
         PUSH_SEQ(ret, block_arg);
-
-        return argc;
+    }
+    else {
+        argc = pm_setup_args_core(arguments_node, block, flags, false, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
     }
 
-    int argc = pm_setup_args_core(arguments_node, block, flags, false, kw_arg, &dup_rest, iseq, ret, scope_node, node_location);
-
+    // If the dup_rest flag was consumed while compiling the arguments (which
+    // effectively means we found the splat node), then it would have changed
+    // during the call to pm_setup_args_core. In this case, we want to add the
+    // VM_CALL_ARGS_SPLAT_MUT flag.
     if (*flags & VM_CALL_ARGS_SPLAT && dup_rest != initial_dup_rest) {
         *flags |= VM_CALL_ARGS_SPLAT_MUT;
     }
