@@ -407,4 +407,23 @@ module Gem
       end
     end
   end
+
+  unless Gem.rubygems_version >= Gem::Version.new("3.5.19")
+    class Resolver::ActivationRequest
+      remove_method :installed?
+
+      def installed?
+        case @spec
+        when Gem::Resolver::VendorSpecification then
+          true
+        else
+          this_spec = full_spec
+
+          Gem::Specification.any? do |s|
+            s == this_spec && s.base_dir == this_spec.base_dir
+          end
+        end
+      end
+    end
+  end
 end
