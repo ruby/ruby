@@ -3294,6 +3294,33 @@ rb_str_resize(VALUE str, long len)
     return str;
 }
 
+long
+rb_str_ensure_capa_for(VALUE str, long len)
+{
+    str_modify_keep_cr(str);
+    const int termlen = TERM_LEN(str);
+    long olen = RSTRING_LEN(str);
+
+    if (RB_UNLIKELY(olen > LONG_MAX - len)) {
+        rb_raise(rb_eArgError, "string sizes too big");
+    }
+
+    long total = olen + len;
+
+    long capa = str_capacity(str, termlen);
+    if (capa < total) {
+        if (total >= LONG_MAX / 2) {
+            capa = total;
+        }
+        while (total > capa) {
+            capa = 2 * capa + termlen; /* == 2*(capa+termlen)-termlen */
+        }
+        RESIZE_CAPA_TERM(str, capa, termlen);
+        return capa;
+    }
+    return capa;
+}
+
 static VALUE
 str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
 {

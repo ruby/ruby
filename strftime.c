@@ -172,18 +172,15 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 {
 	size_t len = s - *start;
 	size_t nlen = len + n * 2;
-	size_t capa = rb_str_capacity(ftime);
-	if (nlen < capa * 2) {
-	    nlen = capa * 2;
-	}
 
 	if (nlen < len || nlen > maxsize) {
 		return 0;
 	}
+
 	rb_str_set_len(ftime, len);
-	rb_str_modify_expand(ftime, nlen-len);
+    long capa = rb_str_ensure_capa_for(ftime, n);
 	s = RSTRING_PTR(ftime);
-	*endp = s + nlen;
+	*endp = s + capa;
 	*start = s;
 	return s += len;
 }
