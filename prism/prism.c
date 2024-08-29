@@ -6151,14 +6151,14 @@ pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *to
     errno = 0;
     unsigned long value = strtoul(digits, &endptr, 10);
 
-    if ((digits == endptr) || (*endptr != '\0') || (errno == ERANGE)) {
+    if ((digits == endptr) || (*endptr != '\0')) {
         pm_parser_err(parser, start, end, PM_ERR_INVALID_NUMBER_DECIMAL);
         value = 0;
     }
 
     xfree(digits);
 
-    if (value > NTH_REF_MAX) {
+    if ((errno == ERANGE) || (value > NTH_REF_MAX)) {
         PM_PARSER_WARN_FORMAT(parser, start, end, PM_WARN_INVALID_NUMBERED_REFERENCE, (int) (length + 1), (const char *) token->start);
         value = 0;
     }
