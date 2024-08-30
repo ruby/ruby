@@ -23,7 +23,6 @@ size_t rb_gc_obj_optimal_size(VALUE obj);
 void rb_gc_mark_children(void *objspace, VALUE obj);
 void rb_gc_update_object_references(void *objspace, VALUE obj);
 void rb_gc_update_vm_references(void *objspace);
-void rb_gc_reachable_objects_from_callback(VALUE obj);
 void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
 void *rb_gc_get_objspace(void);
 size_t rb_size_mul_or_raise(size_t x, size_t y, VALUE exc);
