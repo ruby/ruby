@@ -3,7 +3,7 @@
 require_relative "vendored_persistent"
 require_relative "vendored_timeout"
 require "cgi"
-require "securerandom"
+require_relative "vendored_securerandom"
 require "zlib"
 
 module Bundler
@@ -182,7 +182,7 @@ module Bundler
         agent << " ci/#{cis.join(",")}" if cis.any?
 
         # add a random ID so we can consolidate runs server-side
-        agent << " " << SecureRandom.hex(8)
+        agent << " " << Gem::SecureRandom.hex(8)
 
         # add any user agent strings set in the config
         extra_ua = Bundler.settings[:user_agent]
