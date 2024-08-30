@@ -3,5 +3,5 @@ require_relative 'shared/xmlschema'
 require 'time'
 
 describe "Time.xmlschema" do
-  it_behaves_like :time_xmlschema, :iso8601
+  it_behaves_like :time_library_xmlschema, :iso8601
 end
