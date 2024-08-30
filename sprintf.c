@@ -66,13 +66,7 @@ sign_bits(int base, const char *p)
 #define FPREC0 128
 
 #define CHECK(l) do {\
-    int cr = ENC_CODERANGE(result);\
-    while ((l) >= bsiz - blen) {\
-        bsiz*=2;\
-        if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
-    }\
-    rb_str_resize(result, bsiz);\
-    ENC_CODERANGE_SET(result, cr);\
+    rb_str_ensure_capa_for(result, l); \
     buf = RSTRING_PTR(result);\
 } while (0)
 
@@ -1085,7 +1079,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
         len -= n;
     }
     fp->_p = (unsigned char *)buf;
-    rb_str_set_len(result, buf - RSTRING_PTR(result));
+    rb_str_raw_set_len(result, buf - RSTRING_PTR(result));
     return 0;
 }
 
@@ -1169,7 +1163,7 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
         rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
         ENC_CODERANGE_SET(result, coderange);
     }
-    rb_str_resize(result, blen);
+    rb_str_raw_set_len(result, blen);
 #undef f
 }
 
