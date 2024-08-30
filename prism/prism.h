@@ -56,6 +56,8 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
  * @param size The size of the source.
  * @param options The optional options to use when parsing. These options must
  *   live for the whole lifetime of this parser.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
 
@@ -65,6 +67,8 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *
  *
  * @param parser The parser to register the callback with.
  * @param callback The callback to register.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback);
 
@@ -75,6 +79,8 @@ PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_par
  * parser.
  *
  * @param parser The parser to free.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
 
@@ -83,11 +89,13 @@ PRISM_EXPORTED_FUNCTION void pm_parser_free(pm_parser_t *parser);
  *
  * @param parser The parser to use.
  * @return The AST representing the source.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse(pm_parser_t *parser);
 
 /**
- * This function is used in pm_parse_stream to retrieve a line of input from a
+ * This function is used in pm_parse_stream() to retrieve a line of input from a
  * stream. It closely mirrors that of fgets so that fgets can be used as the
  * default implementation.
  */
@@ -110,6 +118,8 @@ typedef int (pm_parse_stream_feof_t)(void *stream);
  * @param stream_feof The function to use to determine if the stream has hit eof.
  * @param options The optional options to use when parsing.
  * @return The AST representing the source.
+ *
+ * \public \memberof pm_parser
  */
 PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, pm_parse_stream_feof_t *stream_feof, const pm_options_t *options);
 
