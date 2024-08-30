@@ -4650,32 +4650,29 @@ gc_grey(rb_objspace_t *objspace, VALUE obj)
 static void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
-    if (RB_LIKELY(during_gc)) {
-        rgengc_check_relation(objspace, obj);
-        if (!gc_mark_set(objspace, obj)) return; /* already marked */
+    GC_ASSERT(during_gc);
 
-        if (0) { // for debug GC marking miss
-            if (objspace->rgengc.parent_object) {
-                RUBY_DEBUG_LOG("%p (%s) parent:%p (%s)",
-                               (void *)obj, obj_type_name(obj),
-                               (void *)objspace->rgengc.parent_object, obj_type_name(objspace->rgengc.parent_object));
-            }
-            else {
-                RUBY_DEBUG_LOG("%p (%s)", (void *)obj, obj_type_name(obj));
-            }
+    rgengc_check_relation(objspace, obj);
+    if (!gc_mark_set(objspace, obj)) return; /* already marked */
+
+    if (0) { // for debug GC marking miss
+        if (objspace->rgengc.parent_object) {
+            RUBY_DEBUG_LOG("%p (%s) parent:%p (%s)",
+                            (void *)obj, obj_type_name(obj),
+                            (void *)objspace->rgengc.parent_object, obj_type_name(objspace->rgengc.parent_object));
         }
-
-        if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
-            rb_obj_info_dump(obj);
-            rb_bug("try to mark T_NONE object"); /* check here will help debugging */
+        else {
+            RUBY_DEBUG_LOG("%p (%s)", (void *)obj, obj_type_name(obj));
         }
+    }
 
-        gc_aging(objspace, obj);
-        gc_grey(objspace, obj);
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_NONE))) {
+        rb_obj_info_dump(obj);
+        rb_bug("try to mark T_NONE object"); /* check here will help debugging */
     }
-    else {
-        rb_gc_reachable_objects_from_callback(obj);
-    }
+
+    gc_aging(objspace, obj);
+    gc_grey(objspace, obj);
 }
 
 static inline void

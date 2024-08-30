@@ -748,7 +748,13 @@ typedef struct rb_vm_struct {
     VALUE coverages, me2counter;
     int coverage_mode;
 
-    struct rb_objspace *objspace;
+    struct {
+        struct rb_objspace *objspace;
+        struct gc_mark_func_data_struct {
+            void *data;
+            void (*mark_func)(VALUE v, void *data);
+        } *mark_func_data;
+    } gc;
 
     rb_at_exit_list *at_exit;
 
