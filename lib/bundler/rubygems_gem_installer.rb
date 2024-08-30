@@ -150,6 +150,7 @@ module Bundler
 
     def strict_rm_rf(dir)
       return unless File.exist?(dir)
+      return if Dir.empty?(dir)
 
       parent = File.dirname(dir)
       parent_st = File.stat(parent)
