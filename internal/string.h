@@ -52,6 +52,7 @@ int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
 VALUE rb_str_include(VALUE str, VALUE arg);
 VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
 long rb_str_ensure_capa_for(VALUE str, long len);
+void rb_str_raw_set_len(VALUE str, long len);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);

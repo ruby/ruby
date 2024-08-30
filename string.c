@@ -3194,6 +3194,18 @@ rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
 }
 
 void
+rb_str_raw_set_len(VALUE str, long len)
+{
+    const int termlen = TERM_LEN(str);
+
+    RUBY_ASSERT(!STR_SHARED_P(str));
+    RUBY_ASSERT(!(len > (long)str_capacity(str, termlen) || len < 0), "probable buffer overflow");
+    STR_SET_LEN(str, len);
+    TERM_FILL(&RSTRING_PTR(str)[len], termlen);
+    ENC_CODERANGE_CLEAR(str);
+}
+
+void
 rb_str_set_len(VALUE str, long len)
 {
     long capa;
