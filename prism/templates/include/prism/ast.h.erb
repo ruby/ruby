@@ -157,11 +157,11 @@ typedef struct pm_node {
  *<%= line %>
 <%- end -%>
  *
- * Type: <%= node.type %>
-<%- if (node_flags = node.flags) -%>
- * Flags:
+ * Type: ::<%= node.type %>
+<% if (node_flags = node.flags) %>
+ * Applicable flags (#pm_<%= node_flags.human %>):
 <%- node_flags.values.each do |value| -%>
- *    PM_<%= node_flags.human.upcase %>_<%= value.name %>
+ * * ::PM_<%= node_flags.human.upcase %>_<%= value.name %>
 <%- end -%>
 <%- end -%>
  *
@@ -170,6 +170,7 @@ typedef struct pm_node {
 typedef struct pm_<%= node.human %> {
     /** The embedded base node. */
     pm_node_t base;
+
 <%- node.fields.each do |field| -%>
 
     /**
