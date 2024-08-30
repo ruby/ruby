@@ -112,12 +112,12 @@ matrix:
     # https://github.com/rubygems/rubygems/issues/7132
     - <<: *arm32-linux
   allow_failures:
-    # Allow failures for the unstable jobs.
-    # - name: arm64-linux
+    # The arm64 is very slow to start the jobs.
+    - name: arm64-linux
     - name: ppc64le-linux
     - name: s390x-linux
-    # The 2nd arm64 pipeline may be unstable.
-    # - name: arm32-linux
+    # The arm64 is very slow to start the jobs.
+    - name: arm32-linux
   fast_finish: true
 
 before_script:
