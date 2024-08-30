@@ -322,10 +322,10 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * to want to use and be aware of are:
  *
  * * `pm_parser_t` - the main parser structure
- * * `pm_parser_init` - initialize a parser
- * * `pm_parse` - parse and return the root node
- * * `pm_node_destroy` - deallocate the root node returned by `pm_parse`
- * * `pm_parser_free` - free the internal memory of the parser
+ * * `pm_parser_init()` - initialize a parser
+ * * `pm_parse()` - parse and return the root node
+ * * `pm_node_destroy()` - deallocate the root node returned by `pm_parse()`
+ * * `pm_parser_free()` - free the internal memory of the parser
  *
  * Putting all of this together would look something like:
  *
@@ -342,8 +342,8 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * }
  * ```
  *
- * All of the nodes "inherit" from `pm_node_t` by embedding those structures as
- * their first member. This means you can downcast and upcast any node in the
+ * All of the nodes "inherit" from `pm_node_t` by embedding those structures
+ * as their first member. This means you can downcast and upcast any node in the
  * tree to a `pm_node_t`.
  *
  * @section serializing Serializing
@@ -355,9 +355,9 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * use and be aware of are:
  *
  * * `pm_buffer_t` - a small buffer object that will hold the serialized AST
- * * `pm_buffer_free` - free the memory associated with the buffer
- * * `pm_serialize` - serialize the AST into a buffer
- * * `pm_serialize_parse` - parse and serialize the AST into a buffer
+ * * `pm_buffer_free()` - free the memory associated with the buffer
+ * * `pm_serialize()` - serialize the AST into a buffer
+ * * `pm_serialize_parse()` - parse and serialize the AST into a buffer
  *
  * Putting all of this together would look something like:
  *
@@ -375,7 +375,7 @@ PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint
  * @section inspecting Inspecting
  *
  * Prism provides the ability to inspect the AST by pretty-printing nodes. You
- * can do this with the `pm_prettyprint` function, which you would use like:
+ * can do this with the `pm_prettyprint()` function, which you would use like:
  *
  * ```c
  * void prettyprint(const uint8_t *source, size_t length) {

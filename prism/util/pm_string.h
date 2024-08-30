@@ -45,11 +45,11 @@ typedef struct {
         /** This is a slice of another string, and should not be freed. */
         PM_STRING_SHARED,
 
-        /** This string owns its memory, and should be freed using `pm_string_free`. */
+        /** This string owns its memory, and should be freed using `pm_string_free()`. */
         PM_STRING_OWNED,
 
 #ifdef PRISM_HAS_MMAP
-        /** This string is a memory-mapped file, and should be freed using `pm_string_free`. */
+        /** This string is a memory-mapped file, and should be freed using `pm_string_free()`. */
         PM_STRING_MAPPED
 #endif
     } type;
