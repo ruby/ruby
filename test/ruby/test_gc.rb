@@ -374,15 +374,17 @@ class TestGc < Test::Unit::TestCase
       objects.append(100.times.map { '*' })
     end
 
-    # We need to ensure that no GC gets ran before the call to GC.start since
-    # it would trigger a major GC. Assertions could allocate objects and
-    # trigger a GC so we don't run assertions until we perform the major GC.
-    need_major_by = GC.latest_gc_info(:need_major_by)
-    GC.start(full_mark: false) # should be upgraded to major
-    major_by = GC.latest_gc_info(:major_by)
+    EnvUtil.without_gc do
+      # We need to ensure that no GC gets ran before the call to GC.start since
+      # it would trigger a major GC. Assertions could allocate objects and
+      # trigger a GC so we don't run assertions until we perform the major GC.
+      need_major_by = GC.latest_gc_info(:need_major_by)
+      GC.start(full_mark: false) # should be upgraded to major
+      major_by = GC.latest_gc_info(:major_by)
 
-    assert_not_nil(need_major_by)
-    assert_not_nil(major_by)
+      assert_not_nil(need_major_by)
+      assert_not_nil(major_by)
+    end
   end
 
   def test_latest_gc_info_weak_references_count
