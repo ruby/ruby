@@ -1055,7 +1055,7 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle "install --redownload", raise_on_error: false
 
-      expect(err).to include("The installation path is insecure. Bundler cannot continue.")
+      expect(err).to include("Bundler cannot reinstall foo-1.0.0 because there's a previous installation of it at #{gems_path}/foo-1.0.0 that is unsafe to remove")
     end
   end
 

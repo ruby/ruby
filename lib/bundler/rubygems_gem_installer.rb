@@ -155,7 +155,7 @@ module Bundler
       parent_st = File.stat(parent)
 
       if parent_st.world_writable? && !parent_st.sticky?
-        raise InsecureInstallPathError.new(parent)
+        raise InsecureInstallPathError.new(spec.full_name, dir)
       end
 
       begin
