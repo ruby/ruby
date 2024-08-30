@@ -4,7 +4,7 @@
 # == \Random number formatter.
 #
 # Formats generated random numbers in many manners. When <tt>'random/formatter'</tt>
-# is required, several methods are added to empty core module <tt>Random::Formatter</tt>,
+# is required, several methods are added to empty core module <tt>Gem::Random::Formatter</tt>,
 # making them available as Random's instance and module methods.
 #
 # Standard library Gem::SecureRandom is also extended with the module, and the methods
@@ -14,7 +14,7 @@
 #
 # Generate random hexadecimal strings:
 #
-#   require 'random/formatter'
+#   require 'rubygems/vendor/securerandom/lib/random/formatter'
 #
 #   prng = Random.new
 #   prng.hex(10) #=> "52750b30ffbc7de3b362"
@@ -52,7 +52,7 @@
 #
 #   Gem::SecureRandom.hex #=> "05b45376a30c67238eb93b16499e50cf"
 
-module Random::Formatter
+module Gem::Random::Formatter
 
   # Generate a random binary string.
   #
@@ -63,7 +63,7 @@ module Random::Formatter
   #
   # The result may contain any byte: "\x00" - "\xff".
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
   #   # or
@@ -84,7 +84,7 @@ module Random::Formatter
   #
   # The result may contain 0-9 and a-f.
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
   #   # or
@@ -104,7 +104,7 @@ module Random::Formatter
   #
   # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
   #   # or
@@ -132,7 +132,7 @@ module Random::Formatter
   # The result may contain A-Z, a-z, 0-9, "-" and "_".
   # "=" is also used if _padding_ is true.
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
   #   # or
@@ -152,7 +152,7 @@ module Random::Formatter
 
   # Generate a random v4 UUID (Universally Unique IDentifier).
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
   #   Random.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
@@ -178,7 +178,7 @@ module Random::Formatter
 
   # Generate a random v7 UUID (Universally Unique IDentifier).
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.uuid_v7 # => "0188d4c3-1311-7f96-85c7-242a7aa58f1e"
   #   Random.uuid_v7 # => "0188d4c3-16fe-744f-86af-38fa04c62bb5"
@@ -307,7 +307,7 @@ module Random::Formatter
   #
   # The result may contain whatever characters are in the source array.
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   prng.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
   #   prng.choose([*'0'..'9'], 5)  #=> "27309"
@@ -355,7 +355,7 @@ module Random::Formatter
   #
   # The result may contain A-Z, a-z and 0-9, unless _chars_ is specified.
   #
-  #   require 'random/formatter'
+  #   require 'rubygems/vendor/securerandom/lib/random/formatter'
   #
   #   Random.alphanumeric     #=> "2BuBuLf3WfSKyQbR"
   #   # or

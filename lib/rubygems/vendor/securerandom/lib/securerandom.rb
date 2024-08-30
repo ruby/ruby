@@ -1,7 +1,7 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
 
-require 'random/formatter'
+require_relative 'random/formatter'
 
 # == Secure random number generator interface.
 #
@@ -18,7 +18,7 @@ require 'random/formatter'
 # * /dev/urandom
 # * Win32
 #
-# Gem::SecureRandom is extended by the Random::Formatter module which
+# Gem::SecureRandom is extended by the Gem::Random::Formatter module which
 # defines the following methods:
 #
 # * alphanumeric
@@ -88,9 +88,9 @@ module Gem::SecureRandom
 
     # :startdoc:
 
-    # Generate random data bytes for Random::Formatter
+    # Generate random data bytes for Gem::Random::Formatter
     public :gen_random
   end
 end
 
-Gem::SecureRandom.extend(Random::Formatter)
+Gem::SecureRandom.extend(Gem::Random::Formatter)

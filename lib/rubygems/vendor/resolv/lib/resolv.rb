@@ -5,7 +5,7 @@ require_relative '../../timeout/lib/timeout'
 require 'io/wait'
 
 begin
-  require_relative '../../securerandom/lib/securerandom'
+  require_relative '../../../vendored_securerandom'
 rescue LoadError
 end
 
