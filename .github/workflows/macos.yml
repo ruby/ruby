@@ -80,6 +80,14 @@ jobs:
           sudo sysctl -w kern.coredump=1
           sudo chmod -R +rwx /cores/
 
+      - name: Delete unused SDKs
+        # To free up disk space to not run out during the run
+        run: |
+          sudo rm -rf ~/.dotnet
+          sudo rm -rf /Library/Android
+          sudo rm -rf /Library/Developer/CoreSimulator
+        continue-on-error: true
+
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
 
