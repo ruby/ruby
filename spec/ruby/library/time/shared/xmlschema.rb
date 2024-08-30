@@ -1,4 +1,4 @@
-describe :time_xmlschema, shared: true do
+describe :time_library_xmlschema, shared: true do
   it "parses ISO-8601 strings" do
     t = Time.utc(1985, 4, 12, 23, 20, 50, 520000)
     s = "1985-04-12T23:20:50.52Z"
