@@ -2261,7 +2261,7 @@ gc_mark_machine_stack_location_maybe(void *data, VALUE obj)
         &fake_frame_start, &fake_frame_end
     );
     if (is_fake_frame) {
-        each_location_ptr(ec, fake_frame_start, fake_frame_end, rb_gc_impl_mark_maybe, objspace);
+        each_location_ptr(fake_frame_start, fake_frame_end, rb_gc_impl_mark_maybe, objspace);
     }
 #endif
 }
