@@ -4955,7 +4955,7 @@ enum_compact(VALUE obj)
  *
  * These methods return information about the \Enumerable other than the elements themselves:
  *
- * - #include?, #member?: Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
+ * - #member? (aliased as #include?): Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
  * - #all?: Returns +true+ if all elements meet a specified criterion; +false+ otherwise.
  * - #any?: Returns +true+ if any element meets a specified criterion; +false+ otherwise.
  * - #none?: Returns +true+ if no element meets a specified criterion; +false+ otherwise.
@@ -4970,7 +4970,7 @@ enum_compact(VALUE obj)
  *
  * <i>Leading, trailing, or all elements</i>:
  *
- * - #entries, #to_a: Returns all elements.
+ * - #to_a (aliased as #entries): Returns all elements.
  * - #first: Returns the first element or leading elements.
  * - #take: Returns a specified number of leading elements.
  * - #drop: Returns a specified number of trailing elements.
@@ -5005,8 +5005,8 @@ enum_compact(VALUE obj)
  *
  * These methods return elements that meet a specified criterion:
  *
- * - #find, #detect: Returns an element selected by the block.
- * - #find_all, #filter, #select: Returns elements selected by the block.
+ * - #find (aliased as #detect): Returns an element selected by the block.
+ * - #find_all (aliased as #filter, #select): Returns elements selected by the block.
  * - #find_index: Returns the index of an element selected by a given object or block.
  * - #reject: Returns elements not rejected by the block.
  * - #uniq: Returns elements that are not duplicates.
@@ -5031,14 +5031,14 @@ enum_compact(VALUE obj)
  *
  * === Other Methods
  *
- * - #map, #collect: Returns objects returned by the block.
+ * - #collect (aliased as #map): Returns objects returned by the block.
  * - #filter_map: Returns truthy objects returned by the block.
- * - #flat_map, #collect_concat: Returns flattened objects returned by the block.
+ * - #flat_map (aliased as #collect_concat): Returns flattened objects returned by the block.
  * - #grep: Returns elements selected by a given object
  *   or objects returned by a given block.
  * - #grep_v: Returns elements selected by a given object
  *   or objects returned by a given block.
- * - #reduce, #inject: Returns the object formed by combining all elements.
+ * - #inject (aliased as #reduce): Returns the object formed by combining all elements.
  * - #sum: Returns the sum of the elements, using method <tt>+</tt>.
  * - #zip: Combines each element with elements from other enumerables;
  *   returns the n-tuples or calls the block with each.
