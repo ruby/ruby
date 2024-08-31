@@ -1415,7 +1415,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    a = [:foo, 'bar', 2]               # => [:foo, "bar", 2]
       a.push([:baz, :bat], [:bam, :bad]) # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  *
- *  Related: Array#pop, Array#shift, Array#unshift.
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
