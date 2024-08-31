@@ -71,7 +71,7 @@ The following default gems are updated.
 * RubyGems 3.6.0.dev
 * bundler 2.6.0.dev
 * erb 4.0.4
-* fiddle 1.1.3
+* fiddle 1.1.3.dev
 * io-console 0.7.2
 * irb 1.14.0
 * json 2.7.2
@@ -81,8 +81,8 @@ The following default gems are updated.
 * rdoc 6.7.0
 * reline 0.5.9
 * resolv 0.4.0
-* stringio 3.1.2
-* strscan 3.1.1
+* stringio 3.1.2.dev
+* strscan 3.1.1.dev
 * uri 0.13.1
 * zlib 3.1.1
 
