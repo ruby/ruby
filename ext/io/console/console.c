@@ -1566,7 +1566,13 @@ rb_io_closed_p(VALUE io)
 }
 #endif
 
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
+#if defined(RB_EXT_RACTOR_SAFE) && defined(HAVE_RB_RACTOR_LOCAL_STORAGE_VALUE_NEWKEY)
+# define USE_RACTOR_STORAGE 1
+#else
+# define USE_RACTOR_STORAGE 0
+#endif
+
+#if USE_RACTOR_STORAGE
 #include "ruby/ractor.h"
 static rb_ractor_local_key_t key_console_dev;
 
@@ -1813,12 +1819,12 @@ io_getpass(int argc, VALUE *argv, VALUE io)
 void
 Init_console(void)
 {
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
+#if USE_RACTOR_STORAGE
     RB_EXT_RACTOR_SAFE(true);
 #endif
 
 #undef rb_intern
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
+#if USE_RACTOR_STORAGE
     key_console_dev = rb_ractor_local_storage_value_newkey();
 #else
     id_console = rb_intern("console");
