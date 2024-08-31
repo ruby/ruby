@@ -1764,6 +1764,10 @@ io_getpass(int argc, VALUE *argv, VALUE io)
 void
 Init_console(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
+
 #undef rb_intern
     id_getc = rb_intern("getc");
     id_gets = rb_intern("gets");
