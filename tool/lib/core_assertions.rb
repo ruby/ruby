@@ -744,13 +744,16 @@ eom
       #
       # :yield: each elements of +seq+.
       def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        # Timeout testing generally doesn't work when RJIT compilation happens.
+        rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+
         first = seq.first
         *arg = pre.call(first)
         times = (0..(rehearsal || (2 * first))).map do
           st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           yield(*arg)
           t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
-          assert_operator 0, :<=, t
+          assert_operator 0, :<=, t unless rjit_enabled
           t.nonzero?
         end
         times.compact!
@@ -766,7 +769,7 @@ eom
           Timeout.timeout(t, Timeout::Error, message) do
             st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             yield(*arg)
-            assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message
+            assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message unless rjit_enabled
           end
         end
       end
