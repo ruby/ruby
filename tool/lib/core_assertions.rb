@@ -746,15 +746,18 @@ eom
       def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
         # Timeout testing generally doesn't work when RJIT compilation happens.
         rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        measure = proc do |arg, message|
+          st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          yield(*arg)
+          t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
+          assert_operator 0, :<=, t, message unless rjit_enabled
+          t
+        end
 
         first = seq.first
         *arg = pre.call(first)
         times = (0..(rehearsal || (2 * first))).map do
-          st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          yield(*arg)
-          t = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st)
-          assert_operator 0, :<=, t unless rjit_enabled
-          t.nonzero?
+          measure[arg, "rehearsal"].nonzero?
         end
         times.compact!
         tmin, tmax = times.minmax
@@ -767,9 +770,7 @@ eom
           *arg = pre.call(i)
           message = "[#{i}]: in #{t}s #{info}"
           Timeout.timeout(t, Timeout::Error, message) do
-            st = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            yield(*arg)
-            assert_operator (Process.clock_gettime(Process::CLOCK_MONOTONIC) - st), :<=, t, message unless rjit_enabled
+            measure[arg, message]
           end
         end
       end
