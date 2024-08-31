@@ -758,7 +758,10 @@ class TestResolvDNS < Test::Unit::TestCase
           u1.send(msg[0...512], 0, client_address, client_port)
         end
 
-        tcp_server1_thread = Thread.new { t1.accept; t1.close }
+        tcp_server1_thread = Thread.new do
+          # Keep this socket open so that the client experiences a timeout
+          t1.accept
+        end
 
         tcp_server2_thread = Thread.new do
           ct = t2.accept
@@ -800,7 +803,7 @@ class TestResolvDNS < Test::Unit::TestCase
           ct.send(msg, 0)
           ct.close
         end
-        result, = assert_join_threads([client_thread, udp_server1_thread, tcp_server1_thread, tcp_server2_thread])
+        result, _, tcp_server1_socket, = assert_join_threads([client_thread, udp_server1_thread, tcp_server1_thread, tcp_server2_thread])
         assert_instance_of(Array, result)
         assert_equal(50, result.length)
         result.each_with_index do |rr, i|
@@ -809,6 +812,8 @@ class TestResolvDNS < Test::Unit::TestCase
           assert_equal("192.0.2.#{i}", rr.address.to_s)
           assert_equal(3600, rr.ttl)
         end
+      ensure
+        tcp_server1_socket&.close
       end
     end
   end
