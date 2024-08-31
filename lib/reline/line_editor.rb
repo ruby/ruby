@@ -2554,4 +2554,8 @@ class Reline::LineEditor
   private def set_next_action_state(type, value)
     @next_action_state = [type, value]
   end
+
+  private def re_read_init_file(_key)
+    @config.reload
+  end
 end

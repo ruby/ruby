@@ -13,6 +13,7 @@ class Reline::Config::Test < Reline::TestCase
     Dir.chdir(@tmpdir)
     Reline.test_mode
     @config = Reline::Config.new
+    @inputrc_backup = ENV['INPUTRC']
   end
 
   def teardown
@@ -20,6 +21,7 @@ class Reline::Config::Test < Reline::TestCase
     FileUtils.rm_rf(@tmpdir)
     Reline.test_reset
     @config.reset
+    ENV['INPUTRC'] = @inputrc_backup
   end
 
   def additional_key_bindings(keymap_label)
@@ -561,5 +563,18 @@ class Reline::Config::Test < Reline::TestCase
     FileUtils.rm(expected)
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
+  end
+
+  def test_reload
+    inputrc = "#{@tmpdir}/inputrc"
+    ENV['INPUTRC'] = inputrc
+
+    File.write(inputrc, "set emacs-mode-string !")
+    @config.read
+    assert_equal '!', @config.emacs_mode_string
+
+    File.write(inputrc, "set emacs-mode-string ?")
+    @config.reload
+    assert_equal '?', @config.emacs_mode_string
   end
 end
