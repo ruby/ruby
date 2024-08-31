@@ -281,7 +281,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 #elif !defined(OPENSSL_NO_RC2)
 	ciph = EVP_rc2_40_cbc();
 #elif !defined(OPENSSL_NO_AES)
-	ciph = EVP_EVP_aes_128_cbc();
+	ciph = EVP_aes_128_cbc();
 #else
 	ossl_raise(ePKCS7Error, "Must specify cipher");
 #endif
