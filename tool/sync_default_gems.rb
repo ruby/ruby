@@ -427,7 +427,7 @@ module SyncDefaultGems
     ].find{|gemspec| File.exist?(gemspec)}
     spec = Gem::Specification.load(gemspec)
     puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
-  end 
+  end
 
   def ignore_file_pattern_for(gem)
     patterns = []
