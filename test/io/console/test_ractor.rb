@@ -20,5 +20,15 @@ class TestIOConsoleInRactor < Test::Unit::TestCase
       end
       puts r.take
     end;
+
+    assert_in_out_err(%W[-r#{path}], "#{<<~"begin;"}\n#{<<~'end;'}", ["true"], [])
+    begin;
+      console = IO.console
+      $VERBOSE = nil
+      r = Ractor.new do
+        IO.console
+      end
+      puts console.class == r.take.class
+    end;
   end
 end if defined? Ractor
