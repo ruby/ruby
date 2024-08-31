@@ -397,10 +397,37 @@ module SyncDefaultGems
       sync_lib gem, upstream
     end
 
+    check_prerelease_version(gem)
+
     # Architecture-dependent files must not pollute libdir.
     rm_rf(Dir["lib/**/*.#{RbConfig::CONFIG['DLEXT']}"])
     replace_rdoc_ref_all
   end
+
+  def check_prerelease_version(gem)
+    return if gem == "rubygems"
+
+    gem = gem.downcase
+
+    require "net/https"
+    require "json"
+    require "uri"
+
+    uri = URI("https://rubygems.org/api/v1/versions/#{gem}/latest.json")
+    response = Net::HTTP.get(uri)
+    latest_version = JSON.parse(response)["version"]
+
+    gemspec = [
+      "lib/#{gem}/#{gem}.gemspec",
+      "lib/#{gem}.gemspec",
+      "ext/#{gem}/#{gem}.gemspec",
+      "ext/#{gem.split("-").join("/")}/#{gem}.gemspec",
+      "lib/#{gem.split("-").first}/#{gem}.gemspec",
+      "lib/#{gem.split("-").join("/")}/#{gem}.gemspec",
+    ].find{|gemspec| File.exist?(gemspec)}
+    spec = Gem::Specification.load(gemspec)
+    puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
+  end 
 
   def ignore_file_pattern_for(gem)
     patterns = []
