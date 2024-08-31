@@ -5093,7 +5093,8 @@ rb_ary_times(VALUE ary, VALUE times)
  *
  *  Returns +nil+ if no such element is found.
  *
- *  Related: Array#rassoc.
+ *  Related: Array#rassoc;
+ *  see also {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 VALUE
