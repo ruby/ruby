@@ -83,6 +83,7 @@ The following default gems are updated.
 * resolv 0.4.0
 * stringio 3.1.2
 * strscan 3.1.1
+* zlib 3.1.1
 
 The following bundled gems are updated.
 
