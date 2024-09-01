@@ -178,7 +178,7 @@ sequences are as follows:
 The last one, <tt>\<newline></tt>, represents an empty string instead of a character.
 It is used to fold a line in a string.
 
-=== Double-quoted \String Literals
+=== Double-Quoted \String Literals
 
 The most common way of writing strings is using <tt>"</tt>:
 
@@ -213,7 +213,7 @@ See also:
 
 * {% and %Q: Interpolable String Literals}[#label-25+and+-25Q-3A+Interpolable+String+Literals]
 
-=== Single-quoted \String Literals
+=== Single-Quoted \String Literals
 
 Interpolation may be disabled by escaping the "#" character or using
 single-quoted strings:
