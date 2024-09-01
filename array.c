@@ -4663,6 +4663,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
  *    a = [:foo, 'bar', 2]
  *    a.clear # => []
  *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 VALUE
@@ -8648,6 +8649,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #delete: Removes elements equal to a given object.
  *  - #delete_at: Removes the element at a given offset.
  *  - #delete_if: Removes elements specified by a given block.
+ *  - #clear: Removes all elements.
  *  - #keep_if: Removes elements not specified by a given block.
  *  - #reject!: Removes elements specified by a given block.
  *  - #select! (aliased as #filter!): Removes elements not specified by a given block.
