@@ -1598,14 +1598,14 @@ console_dev_remove(VALUE klass)
 
 static ID id_console;
 
-static bool
+static int
 console_dev_get(VALUE klass, VALUE *dev)
 {
     if (rb_const_defined(klass, id_console)) {
 	*dev = rb_const_get(klass, id_console);
-	return true;
+	return 1;
     }
-    return false;
+    return 0;
 }
 
 static void
