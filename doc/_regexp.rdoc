@@ -212,7 +212,7 @@ Method Regexp.escape returns an escaped string:
 === Source Literals
 
 The source literal largely behaves like a double-quoted string;
-see {String Literals}[rdoc-ref:syntax/literals.rdoc@String+Literals].
+see {Double-Quoted String Literals}[rdoc-ref:syntax/literals.rdoc@Double-Quoted+String+Literals].
 
 In particular, a source literal may contain interpolated expressions:
 
@@ -1050,7 +1050,7 @@ Example:
   re.match('TEst') # => #<MatchData "TEst">
   re.match('TEST') # => nil
   re.match('teST') # => nil
-  
+
   re = /t(?i:e)st/
   re.match('test') # => #<MatchData "test">
   re.match('tEst') # => #<MatchData "tEst">
