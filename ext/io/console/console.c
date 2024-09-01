@@ -1538,10 +1538,8 @@ console_clear_screen(VALUE io)
 static VALUE
 io_open_descriptor_fallback(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, void *encoding)
 {
-    rb_update_max_fd(descriptor);
-
     VALUE arguments[2] = {
-        INT2NUM(descriptor),
+        (rb_update_max_fd(descriptor), INT2NUM(descriptor)),
         INT2FIX(mode),
     };
 
