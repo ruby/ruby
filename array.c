@@ -3559,6 +3559,8 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  or +nil+ if the search found no suitable element.
  *
  *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
@@ -3581,6 +3583,8 @@ rb_ary_bsearch(VALUE ary)
  *  or +nil+ if the search found no suitable element.
  *
  *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
