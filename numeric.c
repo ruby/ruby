@@ -2744,7 +2744,7 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
  *  Returns the largest float or integer that is less than or equal to +self+,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  Equivalent to <tt>self.to_f.floor(ndigits)</tt>.
  *
@@ -2764,7 +2764,7 @@ num_floor(int argc, VALUE *argv, VALUE num)
  *  Returns the smallest float or integer that is greater than or equal to +self+,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  Equivalent to <tt>self.to_f.ceil(ndigits)</tt>.
  *
