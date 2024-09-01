@@ -1944,7 +1944,8 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *
  *    a.at(-2) # => "bar"
  *
- *  Related: Array#[].
+ *  Related: Array#[];
+ *  see also {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 VALUE
