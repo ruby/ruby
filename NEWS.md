@@ -75,6 +75,7 @@ The following default gems are updated.
 * io-console 0.7.2
 * irb 1.14.0
 * json 2.7.2
+* logger 1.6.1
 * net-http 0.4.1
 * optparse 0.5.0
 * prism 1.0.0
