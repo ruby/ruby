@@ -392,9 +392,12 @@ module Bundler
       def validate_spec(_spec); end
 
       def load_gemspec(file)
-        stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s
-        StubSpecification.from_stub(stub)
+        dirname = Pathname.new(file).dirname
+        SharedHelpers.chdir(dirname.to_s) do
+          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+          stub.full_gem_path = dirname.expand_path(root).to_s
+          StubSpecification.from_stub(stub)
+        end
       end
 
       def git_scope
