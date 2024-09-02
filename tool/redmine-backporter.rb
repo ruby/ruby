@@ -351,10 +351,9 @@ eom
       next
     end
 
-    if rev.nil? && log = find_git_log("##@issue]")
-      /^commit (?<rev>\h{40})$/ =~ log
-    end
-    if log && rev
+    if rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
+      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
+    elsif rev.nil? && (log = find_git_log("##@issue]")) && /^commit (?<rev>\h{40})$/ =~ log
       str = log[/merge revision\(s\) ([^:]+)(?=:)/]
       if str
         str.sub!(/\Amerge/, 'merged')
@@ -368,10 +367,6 @@ eom
         str << notes
       end
       notes = str
-    elsif rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
-      # Backport commit's log doesn't have the issue number.
-      # Instead of that manually it's provided.
-      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
     else
       puts "no commit is found whose log include ##@issue"
       next
