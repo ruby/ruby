@@ -66,6 +66,10 @@ static FBuffer *fbuffer_dup(FBuffer *fb);
 static VALUE fbuffer_to_s(FBuffer *fb);
 #endif
 
+#ifndef RB_UNLIKELY
+#define RB_UNLIKELY(expr) expr
+#endif
+
 static FBuffer *fbuffer_alloc(unsigned long initial_length)
 {
     FBuffer *fb;
@@ -87,20 +91,22 @@ static void fbuffer_clear(FBuffer *fb)
     fb->len = 0;
 }
 
-static void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
+static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
 {
-    unsigned long required;
+    if (RB_UNLIKELY(requested > fb->capa - fb->len)) {
+        unsigned long required;
 
-    if (!fb->ptr) {
-        fb->ptr = ALLOC_N(char, fb->initial_length);
-        fb->capa = fb->initial_length;
-    }
+        if (RB_UNLIKELY(!fb->ptr)) {
+            fb->ptr = ALLOC_N(char, fb->initial_length);
+            fb->capa = fb->initial_length;
+        }
 
-    for (required = fb->capa; requested > required - fb->len; required <<= 1);
+        for (required = fb->capa; requested > required - fb->len; required <<= 1);
 
-    if (required > fb->capa) {
-        REALLOC_N(fb->ptr, char, required);
-        fb->capa = required;
+        if (required > fb->capa) {
+            REALLOC_N(fb->ptr, char, required);
+            fb->capa = required;
+        }
     }
 }
 
