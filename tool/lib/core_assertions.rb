@@ -74,6 +74,11 @@ module Test
     module CoreAssertions
       require_relative 'envutil'
       require 'pp'
+      begin
+        require '-test-/asan'
+      rescue LoadError
+      end
+
       nil.pretty_inspect
 
       def mu_pp(obj) #:nodoc:
@@ -152,6 +157,9 @@ module Test
         pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
         # For previous versions which implemented MJIT
         pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+        # ASAN has the same problem - its shadow memory greatly increases memory usage
+        # (plus asan has better ways to detect memory leaks than this assertion)
+        pend 'assert_no_memory_leak may consider ASAN memory usage as leak' if defined?(Test::ASAN) && Test::ASAN.enabled?
 
         require_relative 'memory_status'
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
@@ -817,7 +825,9 @@ eom
         end
         times.compact!
         tmin, tmax = times.minmax
-        tbase = 10 ** Math.log10(tmax * ([(tmax / tmin), 2].max ** 2)).ceil
+
+        # safe_factor * tmax * rehearsal_time_variance_factor(equals to 1 when variance is small)
+        tbase = 10 * tmax * [(tmax / tmin) ** 2 / 4, 1].max
         info = "(tmin: #{tmin}, tmax: #{tmax}, tbase: #{tbase})"
 
         seq.each do |i|
