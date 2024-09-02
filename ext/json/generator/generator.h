@@ -46,7 +46,6 @@ static const int halfShift  = 10; /* used for shifting by 10 bits */
 static const UTF32 halfBase = 0x0010000UL;
 static const UTF32 halfMask = 0x3FFUL;
 
-static unsigned char isLegalUTF8(const UTF8 *source, unsigned long length);
 static void unicode_escape(char *buf, UTF16 character);
 static void unicode_escape_to_buffer(FBuffer *buffer, char buf[6], UTF16 character);
 static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char script_safe);
