@@ -327,6 +327,18 @@ class TestCall < Test::Unit::TestCase
     assert_equal Hash, f(*[], **o).class
   end
 
+  def test_call_args_splat_with_pos_arg_kw_splat_is_not_mutable
+    o = Object.new
+    def o.foo(a, **h)= h[:splat_modified] = true
+
+    a = []
+    b = {splat_modified: false}
+
+    o.foo(*a, :x, **b)
+
+    assert_equal({splat_modified: false}, b)
+  end
+
   def test_kwsplat_block_order
     o = Object.new
     ary = []

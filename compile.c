@@ -6105,7 +6105,6 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         if (kwnode) {
             // kwsplat
             *flag_ptr |= VM_CALL_KW_SPLAT;
-            *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
             compile_hash(iseq, args, kwnode, TRUE, FALSE);
             argc += 1;
         }
