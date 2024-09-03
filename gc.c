@@ -2042,7 +2042,10 @@ ruby_stack_check(void)
         if (LIKELY(vm->gc.mark_func_data == NULL)) { \
             (func)(vm->gc.objspace, (obj_or_ptr)); \
         } \
-        else if (check_obj ? rb_gc_impl_pointer_to_heap_p(vm->gc.objspace, (const void *)obj) : true) { \
+        else if (check_obj ? \
+                rb_gc_impl_pointer_to_heap_p(vm->gc.objspace, (const void *)obj) && \
+                    !rb_gc_impl_garbage_object_p(vm->gc.objspace, obj) : \
+                true) { \
             GC_ASSERT(!rb_gc_impl_during_gc_p(vm->gc.objspace)); \
             struct gc_mark_func_data_struct *mark_func_data = vm->gc.mark_func_data; \
             vm->gc.mark_func_data = NULL; \
