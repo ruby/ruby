@@ -110,9 +110,23 @@ module Bundler
           if gemspec_dep
             gemfile_dep = [dep, current].find(&:runtime?)
 
-            unless current_requirement_open
+            if gemfile_dep && !current_requirement_open
               Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
                               "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
+            elsif gemfile_dep.nil?
+              require_relative "vendor/pub_grub/lib/pub_grub/version_range"
+              require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
+              require_relative "vendor/pub_grub/lib/pub_grub/version_union"
+              require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+
+              current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
+              next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+
+              if current_gemspec_range.intersects?(next_gemspec_range)
+                dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+              else
+                raise GemfileError, "Two gemspecs have conflicting requirements on the same gem: #{dep} and #{current}"
+              end
             end
           else
             update_prompt = ""
@@ -133,20 +147,22 @@ module Bundler
           end
         end
 
-        # Always prefer the dependency from the Gemfile
-        if current.gemspec_dev_dep?
-          @dependencies.delete(current)
-        elsif dep.gemspec_dev_dep?
-          return
-        elsif current.source != dep.source
-          raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                          "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                          "#{current.source || "an unspecified source"} and #{dep.source}\n"
-        else
-          Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                          "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once.\n" \
-                          "While it's not a problem now, it could cause errors if you change the version of one of them later."
+        unless current.gemspec_dev_dep? && dep.gemspec_dev_dep?
+          # Always prefer the dependency from the Gemfile
+          if current.gemspec_dev_dep?
+            @dependencies.delete(current)
+          elsif dep.gemspec_dev_dep?
+            return
+          elsif current.source != dep.source
+            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
+          else
+            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+                            "You should probably keep only one of them.\n" \
+                            "Remove any duplicate entries and specify the gem only once.\n" \
+                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
+          end
         end
       end
 
