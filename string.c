@@ -137,10 +137,10 @@ VALUE rb_cSymbol;
 } while (0)
 
 static inline bool
-str_enc_fastpath(VALUE str)
+str_encindex_fastpath(int encindex)
 {
     // The overwhelming majority of strings are in one of these 3 encodings.
-    switch (ENCODING_GET_INLINED(str)) {
+    switch (encindex) {
       case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_UTF_8:
       case ENCINDEX_US_ASCII:
@@ -148,6 +148,12 @@ str_enc_fastpath(VALUE str)
       default:
         return false;
     }
+}
+
+static inline bool
+str_enc_fastpath(VALUE str)
+{
+    return str_encindex_fastpath(ENCODING_GET_INLINED(str));
 }
 
 #define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
@@ -862,16 +868,24 @@ rb_enc_str_coderange(VALUE str)
     return cr;
 }
 
+static inline bool
+rb_enc_str_asciicompat(VALUE str)
+{
+    int encindex = ENCODING_GET_INLINED(str);
+    return str_encindex_fastpath(encindex) || rb_enc_asciicompat(rb_enc_get_from_index(encindex));
+}
+
 int
 rb_enc_str_asciionly_p(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
-
-    if (!rb_enc_asciicompat(enc))
-        return FALSE;
-    else if (is_ascii_string(str))
-        return TRUE;
-    return FALSE;
+    switch(ENC_CODERANGE(str)) {
+        case ENC_CODERANGE_UNKNOWN:
+            return rb_enc_str_asciicompat(str) && is_ascii_string(str);
+        case ENC_CODERANGE_7BIT:
+            return true;
+        default:
+            return false;
+    }
 }
 
 static inline void
