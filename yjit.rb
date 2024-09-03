@@ -155,8 +155,12 @@ module RubyVM::YJIT
 
   # Return a hash for statistics generated for the `--yjit-stats` command line option.
   # Return `nil` when option is not passed or unavailable.
-  def self.runtime_stats()
-    Primitive.rb_yjit_get_stats
+  # If a symbol argument is provided, return only the value for the named stat.
+  # If any other type is provided, raises TypeError.
+  def self.runtime_stats(key = nil)
+    raise TypeError, "non-symbol given" unless key.nil? || Symbol === key
+
+    Primitive.rb_yjit_get_stats(key)
   end
 
   # Format and print out counters as a String. This returns a non-empty

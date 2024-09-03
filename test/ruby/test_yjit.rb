@@ -1638,6 +1638,41 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_runtime_stats_key_arg
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      def test = :ok
+      3.times { test }
+
+      # Collect single stat.
+      stat = RubyVM::YJIT.runtime_stats(:ratio_in_yjit)
+
+      # Ensure this invocation had stats.
+      return true unless RubyVM::YJIT.runtime_stats[:all_stats]
+
+      stat > 0.0
+    RUBY
+  end
+
+  def test_runtime_stats_arg_error
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      begin
+        RubyVM::YJIT.runtime_stats(Object.new)
+        :no_error
+      rescue TypeError => e
+        e.message == "non-symbol given"
+      end
+    RUBY
+  end
+
+  def test_runtime_stats_unknown_key
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      def test = :ok
+      3.times { test }
+
+      RubyVM::YJIT.runtime_stats(:some_key_unlikely_to_exist).nil?
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
