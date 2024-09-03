@@ -3156,6 +3156,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                 | keyword_undef undef_list
                     {
                         nd_set_first_loc($2, @1.beg_pos);
+                        RNODE_UNDEF($2)->keyword_loc = @1;
                         $$ = $2;
                     /*% ripper: undef!($:2) %*/
                     }
@@ -12324,6 +12325,7 @@ rb_node_undef_new(struct parser_params *p, NODE *nd_undef, const YYLTYPE *loc)
 {
     rb_node_undef_t *n = NODE_NEWNODE(NODE_UNDEF, rb_node_undef_t, loc);
     n->nd_undefs = rb_parser_ary_new_capa_for_node(p, 1);
+    n->keyword_loc = NULL_LOC;
     rb_parser_ary_push_node(p, n->nd_undefs, nd_undef);
 
     return n;
