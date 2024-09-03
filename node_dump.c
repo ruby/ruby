@@ -922,8 +922,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: alias [nd_1st] [nd_2nd]");
         ANN("example: alias bar foo");
         F_NODE(nd_1st, RNODE_ALIAS, "new name");
-        LAST_NODE;
         F_NODE(nd_2nd, RNODE_ALIAS, "old name");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_ALIAS);
         return;
 
       case NODE_VALIAS:

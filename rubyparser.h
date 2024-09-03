@@ -820,6 +820,7 @@ typedef struct RNode_ALIAS {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
+    rb_code_location_t keyword_loc;
 } rb_node_alias_t;
 
 typedef struct RNode_VALIAS {
