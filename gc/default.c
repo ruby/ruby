@@ -1653,13 +1653,15 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    switch (BUILTIN_TYPE(ptr)) {
-      case T_NONE:
-      case T_MOVED:
-      case T_ZOMBIE:
-        return true;
-      default:
-        break;
+    asan_unpoisoning_object(ptr) {
+        switch (BUILTIN_TYPE(ptr)) {
+        case T_NONE:
+        case T_MOVED:
+        case T_ZOMBIE:
+            return true;
+        default:
+            break;
+        }
     }
 
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
