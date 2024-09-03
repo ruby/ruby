@@ -70,6 +70,7 @@ module TestIRB
     end
 
     def test_initialization_with_use_autocomplete
+      omit 'This test requires RDoc' unless defined?(RDoc)
       original_show_doc_proc = Reline.dialog_proc(:show_doc)&.dialog_proc
       empty_proc = Proc.new {}
       Reline.add_dialog_proc(:show_doc, empty_proc)
@@ -190,5 +191,5 @@ module TestIRB
     def has_rdoc_content?
       File.exist?(RDoc::RI::Paths::BASE)
     end
-  end
-end if defined?(RDoc)
+  end if defined?(RDoc)
+end
