@@ -335,7 +335,11 @@ module Reline
       line_editor.prompt_proc = prompt_proc
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
+
+      # Readline calls pre_input_hook just after printing the first prompt.
+      line_editor.print_nomultiline_prompt
       pre_input_hook&.call
+
       unless Reline::IOGate == Reline::GeneralIO
         @dialog_proc_list.each_pair do |name_sym, d|
           line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
@@ -354,7 +358,7 @@ module Reline
             inputs.each do |key|
               if key.char == :bracketed_paste_start
                 text = io_gate.read_bracketed_paste
-                line_editor.insert_pasted_text(text)
+                line_editor.insert_multiline_text(text)
                 line_editor.scroll_into_view
               else
                 line_editor.update(key)
@@ -521,8 +525,8 @@ module Reline
   def_single_delegator :line_editor, :byte_pointer, :point
   def_single_delegator :line_editor, :byte_pointer=, :point=
 
-  def self.insert_text(*args, &block)
-    line_editor.insert_text(*args, &block)
+  def self.insert_text(text)
+    line_editor.insert_multiline_text(text)
     self
   end
 
