@@ -34,7 +34,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.FTP_R_L_O_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.FTP_R_L_O_AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
-          AWS_CLI_OPTS: # drop `--profile ruby`
 
       - name: Purge URLs of release package
         run: |
