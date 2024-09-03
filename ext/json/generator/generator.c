@@ -814,7 +814,6 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     long delim2_len = FBUFFER_LEN(state->object_delim2);
     long depth = state->depth;
     int j;
-    VALUE klass, key_to_s;
 
     if (arg->iter > 0) fbuffer_append(buffer, delim, delim_len);
     if (object_nl) {
@@ -826,15 +825,19 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
         }
     }
 
-    klass = CLASS_OF(key);
-    if (klass == rb_cString) {
-        key_to_s = key;
-    } else if (klass == rb_cSymbol) {
-        key_to_s = rb_sym2str(key);
-    } else {
-        key_to_s = rb_funcall(key, i_to_s, 0);
+    VALUE key_to_s;
+    switch(rb_type(key)) {
+        case T_STRING:
+            key_to_s = key;
+            break;
+        case T_SYMBOL:
+            key_to_s = rb_sym2str(key);
+            break;
+        default:
+            key_to_s = rb_convert_type(key, T_STRING, "String", "to_s");
+            break;
     }
-    Check_Type(key_to_s, T_STRING);
+
     generate_json(buffer, Vstate, state, key_to_s);
     fbuffer_append(buffer, delim2, delim2_len);
     generate_json(buffer, Vstate, state, val);
