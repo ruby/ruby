@@ -1655,11 +1655,11 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 
     asan_unpoisoning_object(ptr) {
         switch (BUILTIN_TYPE(ptr)) {
-        case T_NONE:
-        case T_MOVED:
-        case T_ZOMBIE:
+          case T_NONE:
+          case T_MOVED:
+          case T_ZOMBIE:
             return true;
-        default:
+          default:
             break;
         }
     }
