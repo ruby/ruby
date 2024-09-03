@@ -2386,10 +2386,10 @@ end
     installer = Gem::Installer.for_spec @spec
     installer.gem_home = @gemhome
 
-    File.class_eval do
-      alias_method :original_write, :write
+    File.singleton_class.class_eval do
+      alias_method :original_binwrite, :binwrite
 
-      def write(data)
+      def binwrite(path, data)
         raise Errno::ENOSPC
       end
     end
@@ -2400,10 +2400,10 @@ end
 
     assert_path_not_exist @spec.spec_file
   ensure
-    File.class_eval do
-      remove_method :write
-      alias_method :write, :original_write
-      remove_method :original_write
+    File.singleton_class.class_eval do
+      remove_method :binwrite
+      alias_method :binwrite, :original_binwrite
+      remove_method :original_binwrite
     end
   end
 

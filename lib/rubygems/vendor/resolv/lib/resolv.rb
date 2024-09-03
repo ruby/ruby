@@ -5,7 +5,7 @@ require_relative '../../timeout/lib/timeout'
 require 'io/wait'
 
 begin
-  require 'securerandom'
+  require_relative '../../../vendored_securerandom'
 rescue LoadError
 end
 
@@ -602,10 +602,10 @@ class Gem::Resolv
       }
     end
 
-    if defined? SecureRandom
+    if defined? Gem::SecureRandom
       def self.random(arg) # :nodoc:
         begin
-          SecureRandom.random_number(arg)
+          Gem::SecureRandom.random_number(arg)
         rescue NotImplementedError
           rand(arg)
         end

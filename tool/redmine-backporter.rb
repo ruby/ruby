@@ -351,27 +351,22 @@ eom
       next
     end
 
-    if rev.nil? && log = find_git_log("##@issue]")
-      /^commit (?<rev>\h{40})$/ =~ log
-    end
-    if log && rev
-      str = log[/merge revision\(s\) ([^:]+)(?=:)/]
-      if str
-        str.sub!(/\Amerge/, 'merged')
-        str.gsub!(/\h{8,40}/, 'commit:\0')
-        str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev} #{str}."
+    if rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
+      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
+    elsif rev.nil? && (log = find_git_log("##@issue]")) && !(revs = log.scan(/^commit (\h{40})$/).flatten).empty?
+      commits = revs.map { |rev| "commit:#{rev}" }.join(", ")
+      if merged_revs = log[/merge revision\(s\) ([^:]+)(?=:)/]
+        merged_revs.sub!(/\Amerge/, 'merged')
+        merged_revs.gsub!(/\h{8,40}/, 'commit:\0')
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{commits} #{merged_revs}."
       else
-        str = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
+        str = "ruby_#{TARGET_VERSION.tr('.','_')} #{commits}."
       end
       if notes
         str << "\n"
         str << notes
       end
       notes = str
-    elsif rev && has_commit(rev, "ruby_#{TARGET_VERSION.tr('.','_')}")
-      # Backport commit's log doesn't have the issue number.
-      # Instead of that manually it's provided.
-      notes = "ruby_#{TARGET_VERSION.tr('.','_')} commit:#{rev}."
     else
       puts "no commit is found whose log include ##@issue"
       next
