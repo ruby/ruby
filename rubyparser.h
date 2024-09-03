@@ -833,6 +833,7 @@ typedef struct RNode_UNDEF {
     NODE node;
 
     rb_parser_ary_t *nd_undefs;
+    rb_code_location_t keyword_loc;
 } rb_node_undef_t;
 
 typedef struct RNode_CLASS {

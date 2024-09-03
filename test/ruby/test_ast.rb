@@ -1338,6 +1338,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 2, 1, 8], nil, nil])
     end
 
+    def test_undef_locations
+      node = RubyVM::AbstractSyntaxTree.parse("undef foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 0, 1, 5]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("undef foo, bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 14], [1, 0, 1, 5]])
+    end
+
     private
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }

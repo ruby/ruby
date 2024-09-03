@@ -940,6 +940,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: undef foo");
         LAST_NODE;
         F_ARRAY(nd_undefs, RNODE_UNDEF, "nd_undefs");
+        F_LOC(keyword_loc, RNODE_UNDEF);
         return;
 
       case NODE_CLASS:
