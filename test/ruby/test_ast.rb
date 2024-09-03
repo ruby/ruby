@@ -1330,6 +1330,11 @@ dummy
       assert_locations(node.locations, [[1, 0, 1, 5]])
     end
 
+    def test_alias_locations
+      node = RubyVM::AbstractSyntaxTree.parse("alias foo bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+    end
+
     def test_unless_locations
       node = RubyVM::AbstractSyntaxTree.parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
