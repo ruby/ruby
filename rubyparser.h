@@ -828,6 +828,7 @@ typedef struct RNode_VALIAS {
 
     ID nd_alias;
     ID nd_orig;
+    rb_code_location_t keyword_loc;
 } rb_node_valias_t;
 
 typedef struct RNode_UNDEF {

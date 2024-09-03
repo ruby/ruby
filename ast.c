@@ -789,6 +789,10 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_UNLESS(node)->keyword_loc),
                                     location_new(&RNODE_UNLESS(node)->then_keyword_loc),
                                     location_new(&RNODE_UNLESS(node)->end_keyword_loc));
+      case NODE_VALIAS:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_VALIAS(node)->keyword_loc));
       case NODE_ARGS_AUX:
       case NODE_LAST:
         break;
