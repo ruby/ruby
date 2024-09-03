@@ -62,10 +62,11 @@ class Reline::Config
     @keyseq_timeout = 500
     @test_mode = false
     @autocompletion = false
-    @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
+    @convert_meta = seven_bit_encoding?(Reline::IOGate.encoding)
     @loaded = false
     @enable_bracketed_paste = true
     @show_mode_in_prompt = false
+    @default_inputrc_path = nil
   end
 
   def editing_mode

@@ -24,8 +24,12 @@ class Reline::Config::Test < Reline::TestCase
     ENV['INPUTRC'] = @inputrc_backup
   end
 
+  def get_config_variable(variable)
+    @config.instance_variable_get(variable)
+  end
+
   def additional_key_bindings(keymap_label)
-    @config.instance_variable_get(:@additional_key_bindings)[keymap_label].instance_variable_get(:@key_bindings)
+    get_config_variable(:@additional_key_bindings)[keymap_label].instance_variable_get(:@key_bindings)
   end
 
   def registered_key_bindings(keys)
@@ -38,7 +42,7 @@ class Reline::Config::Test < Reline::TestCase
       set show-mode-in-prompt on
     LINES
 
-    assert_equal true, @config.instance_variable_get(:@show_mode_in_prompt)
+    assert_equal true, get_config_variable(:@show_mode_in_prompt)
   end
 
   def test_read_lines_with_variable
@@ -46,7 +50,7 @@ class Reline::Config::Test < Reline::TestCase
       set disable-completion on
     LINES
 
-    assert_equal true, @config.instance_variable_get(:@disable_completion)
+    assert_equal true, get_config_variable(:@disable_completion)
   end
 
   def test_string_value
@@ -55,7 +59,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string Emacs
     LINES
 
-    assert_equal 'Emacs', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal 'Emacs', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_brackets
@@ -64,7 +68,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string [Emacs]
     LINES
 
-    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '[Emacs]', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_brackets_and_quotes
@@ -73,7 +77,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string "[Emacs]"
     LINES
 
-    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '[Emacs]', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_parens
@@ -82,7 +86,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string (Emacs)
     LINES
 
-    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '(Emacs)', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_parens_and_quotes
@@ -91,7 +95,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string "(Emacs)"
     LINES
 
-    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '(Emacs)', get_config_variable(:@emacs_mode_string)
   end
 
   def test_encoding_is_ascii
@@ -105,7 +109,7 @@ class Reline::Config::Test < Reline::TestCase
   def test_encoding_is_not_ascii
     @config = Reline::Config.new
 
-    assert_equal nil, @config.convert_meta
+    assert_equal false, @config.convert_meta
   end
 
   def test_invalid_keystroke
@@ -169,7 +173,7 @@ class Reline::Config::Test < Reline::TestCase
       $include included_partial
     LINES
 
-    assert_equal true, @config.instance_variable_get(:@show_mode_in_prompt)
+    assert_equal true, get_config_variable(:@show_mode_in_prompt)
   end
 
   def test_include_expand_path
@@ -184,7 +188,7 @@ class Reline::Config::Test < Reline::TestCase
       $include ~/included_partial
     LINES
 
-    assert_equal true, @config.instance_variable_get(:@show_mode_in_prompt)
+    assert_equal true, get_config_variable(:@show_mode_in_prompt)
   ensure
     ENV['HOME'] = home_backup
   end
@@ -198,7 +202,7 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal '(cmd)', @config.instance_variable_get(:@vi_cmd_mode_string)
+    assert_equal '(cmd)', get_config_variable(:@vi_cmd_mode_string)
   end
 
   def test_if_with_false
@@ -210,7 +214,7 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal '[cmd]', @config.instance_variable_get(:@vi_cmd_mode_string)
+    assert_equal '[cmd]', get_config_variable(:@vi_cmd_mode_string)
   end
 
   def test_if_with_indent
@@ -224,7 +228,7 @@ class Reline::Config::Test < Reline::TestCase
           $endif
       LINES
 
-      assert_equal '(cmd)', @config.instance_variable_get(:@vi_cmd_mode_string)
+      assert_equal '(cmd)', get_config_variable(:@vi_cmd_mode_string)
     end
   end
 
@@ -446,7 +450,7 @@ class Reline::Config::Test < Reline::TestCase
       set history-size 5000
     LINES
 
-    assert_equal 5000, @config.instance_variable_get(:@history_size)
+    assert_equal 5000, get_config_variable(:@history_size)
     history = Reline::History.new(@config)
     history << "a\n"
     assert_equal 1, history.size
@@ -477,7 +481,7 @@ class Reline::Config::Test < Reline::TestCase
       set vi-ins-mode-string aaa aaa
       set vi-cmd-mode-string bbb ccc # comment
     LINES
-    assert_equal :vi_insert, @config.instance_variable_get(:@editing_mode_label)
+    assert_equal :vi_insert, get_config_variable(:@editing_mode_label)
     assert_equal 'aaa aaa', @config.vi_ins_mode_string
     assert_equal 'bbb ccc # comment', @config.vi_cmd_mode_string
   end
@@ -576,5 +580,9 @@ class Reline::Config::Test < Reline::TestCase
     File.write(inputrc, "set emacs-mode-string ?")
     @config.reload
     assert_equal '?', @config.emacs_mode_string
+
+    File.write(inputrc, "")
+    @config.reload
+    assert_equal '@', @config.emacs_mode_string
   end
 end
