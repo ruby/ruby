@@ -933,6 +933,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: alias $y $x");
         F_ID(nd_alias, RNODE_VALIAS, "new name");
         F_ID(nd_orig, RNODE_VALIAS, "old name");
+        F_LOC(keyword_loc, RNODE_VALIAS);
         return;
 
       case NODE_UNDEF:
