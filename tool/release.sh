@@ -5,6 +5,7 @@
 #   tool/release.sh 3.0.0-rc1
 
 EXTS='.tar.gz .tar.xz .zip'
+AWS_CLI_OPTS="${AWS_CLI_OPTS:=--profile ruby}"
 
 ver=$1
 if [[ $ver =~ ^([1-9]\.[0-9])\.([0-9]|[1-9][0-9]|0-(preview[1-9]|rc[1-9]))$ ]]; then
@@ -18,5 +19,5 @@ short=${BASH_REMATCH[1]}
 echo $ver
 echo $short
 for ext in $EXTS; do
-  aws --profile ruby s3 cp s3://ftp.r-l.o/pub/tmp/ruby-$ver-draft$ext s3://ftp.r-l.o/pub/ruby/$short/ruby-$ver$ext
+  aws $AWS_CLI_OPTS s3 cp s3://ftp.r-l.o/pub/tmp/ruby-$ver-draft$ext s3://ftp.r-l.o/pub/ruby/$short/ruby-$ver$ext
 done
