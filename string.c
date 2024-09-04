@@ -879,12 +879,12 @@ int
 rb_enc_str_asciionly_p(VALUE str)
 {
     switch(ENC_CODERANGE(str)) {
-        case ENC_CODERANGE_UNKNOWN:
-            return rb_enc_str_asciicompat(str) && is_ascii_string(str);
-        case ENC_CODERANGE_7BIT:
-            return true;
-        default:
-            return false;
+      case ENC_CODERANGE_UNKNOWN:
+        return rb_enc_str_asciicompat(str) && is_ascii_string(str);
+      case ENC_CODERANGE_7BIT:
+        return true;
+      default:
+        return false;
     }
 }
 
