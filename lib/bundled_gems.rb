@@ -65,14 +65,17 @@ module Gem::BUNDLED_GEMS
     [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
-        if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
+        result = kernel_class.send(:no_warning_require, name)
+
+        if result && message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
           if ::Gem::BUNDLED_GEMS.uplevel > 0
             Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
           else
             Kernel.warn message
           end
         end
-        kernel_class.send(:no_warning_require, name)
+
+        result
       end
       if kernel_class == ::Kernel
         kernel_class.send(:private, :require)
