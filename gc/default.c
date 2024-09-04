@@ -511,7 +511,6 @@ typedef struct rb_objspace {
     struct {
         struct heap_page **sorted;
         size_t allocated_pages;
-        size_t allocatable_pages;
         size_t sorted_length;
         uintptr_t range[2];
         size_t freeable_pages;
