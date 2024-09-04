@@ -176,9 +176,8 @@ class Reline::LineEditor
     scroll_into_view
     Reline::IOGate.move_cursor_up @rendered_screen.cursor_y
     @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
-    @rendered_screen.lines = []
-    @rendered_screen.cursor_y = 0
-    render_differential
+    clear_rendered_screen_cache
+    render
   end
 
   private def handle_interrupted
@@ -186,11 +185,11 @@ class Reline::LineEditor
 
     @interrupted = false
     clear_dialogs
-    scrolldown = render_differential
-    Reline::IOGate.scroll_down scrolldown
+    render
+    cursor_to_bottom_offset = @rendered_screen.lines.size - @rendered_screen.cursor_y
+    Reline::IOGate.scroll_down cursor_to_bottom_offset
     Reline::IOGate.move_cursor_column 0
-    @rendered_screen.lines = []
-    @rendered_screen.cursor_y = 0
+    clear_rendered_screen_cache
     case @old_trap
     when 'DEFAULT', 'SYSTEM_DEFAULT'
       raise Interrupt
@@ -460,28 +459,7 @@ class Reline::LineEditor
   end
 
   def render_finished
-    clear_rendered_lines
-    render_full_content
-  end
-
-  def clear_rendered_lines
-    Reline::IOGate.move_cursor_up @rendered_screen.cursor_y
-    Reline::IOGate.move_cursor_column 0
-
-    num_lines = @rendered_screen.lines.size
-    return unless num_lines && num_lines >= 1
-
-    Reline::IOGate.move_cursor_down num_lines - 1
-    (num_lines - 1).times do
-      Reline::IOGate.erase_after_cursor
-      Reline::IOGate.move_cursor_up 1
-    end
-    Reline::IOGate.erase_after_cursor
-    @rendered_screen.lines = []
-    @rendered_screen.cursor_y = 0
-  end
-
-  def render_full_content
+    render_differential([], 0, 0)
     lines = @buffer_of_lines.size.times.map do |i|
       line = prompt_list[i] + modified_lines[i]
       wrapped_lines, = split_by_width(line, screen_width)
@@ -495,10 +473,8 @@ class Reline::LineEditor
     @output.write @prompt if @prompt && !@is_multiline
   end
 
-  def render_differential
+  def render
     wrapped_cursor_x, wrapped_cursor_y = wrapped_cursor_position
-
-    rendered_lines = @rendered_screen.lines
     new_lines = wrapped_prompt_and_input_lines.flatten(1)[screen_scroll_top, screen_height].map do |prompt, line|
       prompt_width = Reline::Unicode.calculate_width(prompt, true)
       [[0, prompt_width, prompt], [prompt_width, Reline::Unicode.calculate_width(line, true), line]]
@@ -516,12 +492,21 @@ class Reline::LineEditor
       x_range, y_range = dialog_range dialog, wrapped_cursor_y - screen_scroll_top
       y_range.each do |row|
         next if row < 0 || row >= screen_height
+
         dialog_rows = new_lines[row] ||= []
         # index 0 is for prompt, index 1 is for line, index 2.. is for dialog
         dialog_rows[index + 2] = [x_range.begin, dialog.width, dialog.contents[row - y_range.begin]]
       end
     end
 
+    render_differential new_lines, wrapped_cursor_x, wrapped_cursor_y - screen_scroll_top
+  end
+
+  # Reflects lines to be rendered and new cursor position to the screen
+  # by calculating the difference from the previous render.
+
+  private def render_differential(new_lines, new_cursor_x, new_cursor_y)
+    rendered_lines = @rendered_screen.lines
     cursor_y = @rendered_screen.cursor_y
     if new_lines != rendered_lines
       # Hide cursor while rendering to avoid cursor flickering.
@@ -548,11 +533,14 @@ class Reline::LineEditor
       @rendered_screen.lines = new_lines
       Reline::IOGate.show_cursor
     end
-    y = wrapped_cursor_y - screen_scroll_top
-    Reline::IOGate.move_cursor_column wrapped_cursor_x
-    Reline::IOGate.move_cursor_down y - cursor_y
-    @rendered_screen.cursor_y = y
-    new_lines.size - y
+    Reline::IOGate.move_cursor_column new_cursor_x
+    Reline::IOGate.move_cursor_down new_cursor_y - cursor_y
+    @rendered_screen.cursor_y = new_cursor_y
+  end
+
+  private def clear_rendered_screen_cache
+    @rendered_screen.lines = []
+    @rendered_screen.cursor_y = 0
   end
 
   def upper_space_height(wrapped_cursor_y)
@@ -564,7 +552,7 @@ class Reline::LineEditor
   end
 
   def rerender
-    render_differential unless @in_pasting
+    render unless @in_pasting
   end
 
   class DialogProcScope
@@ -1978,9 +1966,8 @@ class Reline::LineEditor
   private def ed_clear_screen(key)
     Reline::IOGate.clear_screen
     @screen_size = Reline::IOGate.get_screen_size
-    @rendered_screen.lines = []
     @rendered_screen.base_y = 0
-    @rendered_screen.cursor_y = 0
+    clear_rendered_screen_cache
   end
   alias_method :clear_screen, :ed_clear_screen
 
