@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
-# https://rubygems.org/gems/diffy
-require "diffy"
+
+require "bundler/inline"
+
+gemfile do
+  source "https://rubygems.org"
+  gem "diffy"
+end
+
 require "open-uri"
 require "yaml"
 
