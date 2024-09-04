@@ -126,6 +126,11 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name, specs: nil)
+    # If a dependency is loaded with $VERBOSE set to nil, let the next require
+    # warn instead to handle optional dependencies. Example:
+    # https://github.com/ruby/reline/blob/v0.5.9/lib/reline/terminfo.rb#L1-L15
+    return false if $VERBOSE == nil
+
     # name can be a feature name or a file path with String or Pathname
     feature = File.path(name)
 

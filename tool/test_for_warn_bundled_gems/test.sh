@@ -28,6 +28,10 @@ echo "* Show warning when bundle exec with -r option"
 bundle exec ruby -rostruct -e ''
 echo
 
+echo "* Show warning after require with \$VERBOSE = nil for optional dependencies"
+bundle exec ruby test_warn_bundle_exec_optional_dependency.rb
+echo
+
 echo "* Show warning with bootsnap"
 ruby test_warn_bootsnap.rb
 echo
