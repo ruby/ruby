@@ -178,7 +178,7 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 	if (nlen < len || nlen > maxsize) {
 		return 0;
 	}
-	rb_str_set_len(ftime, len);
+	rb_str_raw_set_len(ftime, len);
 	rb_str_modify_expand(ftime, nlen-len);
 	s = RSTRING_PTR(ftime);
 	*endp = s + nlen;
@@ -313,7 +313,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			precision = FMT_PRECISION(def_prec); \
 			len = s - start; \
 			NEEDS(precision); \
-			rb_str_set_len(ftime, len); \
+			rb_str_raw_set_len(ftime, len); \
 			rb_str_catf(ftime, FMT_PADDING(fmt, def_pad), \
 				    precision, (val)); \
 			RSTRING_GETMEM(ftime, s, len); \
@@ -323,7 +323,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 #define STRFTIME(fmt) \
 		do { \
 			len = s - start; \
-			rb_str_set_len(ftime, len); \
+			rb_str_raw_set_len(ftime, len); \
 			if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), \
 						       enc, time, vtm, timev, ts, gmt, maxsize)) \
 				return 0; \
@@ -357,7 +357,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				tmp = format_value(tmp, base); \
 				i = RSTRING_LEN(tmp); \
 				FILL_PADDING(i); \
-				rb_str_set_len(ftime, s-start); \
+				rb_str_raw_set_len(ftime, s-start); \
 				rb_str_append(ftime, tmp); \
 				RSTRING_GETMEM(ftime, s, len); \
 				endp = (start = s) + rb_str_capacity(ftime); \
@@ -910,8 +910,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		return 0;
 	}
 	len = s - start;
-	rb_str_set_len(ftime, len);
-	rb_str_resize(ftime, len);
+	rb_str_raw_set_len(ftime, len);
 	return ftime;
 
 err:

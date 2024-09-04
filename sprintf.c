@@ -67,13 +67,15 @@ sign_bits(int base, const char *p)
 
 #define CHECK(l) do {\
     int cr = ENC_CODERANGE(result);\
-    while ((l) >= bsiz - blen) {\
-        bsiz*=2;\
-        if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
+    long nbsiz = bsiz;\
+    while ((l) >= nbsiz - blen) {\
+        nbsiz*=2;\
+        if (nbsiz<0) rb_raise(rb_eArgError, "too big specifier");\
     }\
-    rb_str_resize(result, bsiz);\
+    rb_str_modify_expand(result, nbsiz - bsiz);\
     ENC_CODERANGE_SET(result, cr);\
     buf = RSTRING_PTR(result);\
+    bsiz = nbsiz;\
 } while (0)
 
 #define PUSH(s, l) do { \
@@ -942,7 +944,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
         if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
         if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
     }
-    rb_str_resize(result, blen);
+    rb_str_raw_set_len(result, blen);
 
     return result;
 }
@@ -1085,7 +1087,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
         len -= n;
     }
     fp->_p = (unsigned char *)buf;
-    rb_str_set_len(result, buf - RSTRING_PTR(result));
+    rb_str_raw_set_len(result, buf - RSTRING_PTR(result));
     return 0;
 }
 
@@ -1171,7 +1173,7 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
         rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
         ENC_CODERANGE_SET(result, coderange);
     }
-    rb_str_resize(result, blen);
+    rb_str_raw_set_len(result, blen);
 #undef f
 }
 
