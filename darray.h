@@ -53,6 +53,19 @@
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
+#define rb_darray_insert(ptr_to_ary, idx, element) do { \
+    rb_darray_ensure_space((ptr_to_ary), \
+                           sizeof(**(ptr_to_ary)), \
+                           sizeof((*(ptr_to_ary))->data[0])); \
+    MEMMOVE( \
+        rb_darray_ref(*(ptr_to_ary), idx + 1), \
+        rb_darray_ref(*(ptr_to_ary), idx), \
+        sizeof((*(ptr_to_ary))->data[0]), \
+        rb_darray_size(*(ptr_to_ary)) - idx); \
+    rb_darray_set(*(ptr_to_ary), idx, element); \
+    (*(ptr_to_ary))->meta.size++; \
+} while (0)
+
 // Iterate over items of the array in a for loop
 //
 #define rb_darray_foreach(ary, idx_name, elem_ptr_var) \
@@ -106,6 +119,14 @@ rb_darray_size(const void *ary)
 {
     const rb_darray_meta_t *meta = ary;
     return meta ? meta->size : 0;
+}
+
+
+static inline void
+rb_darray_pop(void *ary, size_t count)
+{
+    rb_darray_meta_t *meta = ary;
+    meta->size -= count;
 }
 
 // Get the capacity of the dynamic array.
