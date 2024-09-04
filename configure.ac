@@ -839,7 +839,7 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     # aarch64 branch protection
-    AS_CASE(["$target_cpu"], [aarch64|arm64], [
+    AS_CASE(["$target_cpu"], [aarch64], [
 	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
             # Try these flags in the _prepended_ position - i.e. we want to try building a program
             # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
