@@ -75,7 +75,6 @@ class Gem::RemoteFetcher
   def initialize(proxy=nil, dns=nil, headers={})
     require_relative "core_ext/tcpsocket_init" if Gem.configuration.ipv4_fallback_enabled
     require_relative "vendored_net_http"
-    require "stringio"
     require_relative "vendor/uri/lib/uri"
 
     Socket.do_not_reverse_lookup = true
