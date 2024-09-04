@@ -4480,7 +4480,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    $~ #=> #<MatchData "oo">
  *
  *  Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
- *   string to _end_ the search:
+ *  string to _end_ the search:
  *
  *    'foo'.rindex('o', 0) # => nil
  *    'foo'.rindex('o', 1) # => 1
@@ -4613,7 +4613,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    $~ #=> #<MatchData "oo">
  *
  *  Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
- *   string to _end_ the search:
+ *  string to _end_ the search:
  *
  *    'foo'.byterindex('o', 0) # => nil
  *    'foo'.byterindex('o', 1) # => 1
