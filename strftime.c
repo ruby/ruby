@@ -932,6 +932,7 @@ rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
+	ENC_CODERANGE_CLEAR(result);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
 					 time, vtm, timev, NULL, gmt,
 					 strftime_size_limit(format_len));
@@ -942,6 +943,7 @@ rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
 		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
+	ENC_CODERANGE_CLEAR(result);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt,
 					 strftime_size_limit(format_len));
