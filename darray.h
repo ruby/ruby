@@ -43,10 +43,7 @@
  *
  * void rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
  */
-#define rb_darray_append(ptr_to_ary, element) \
-    rb_darray_append_impl(ptr_to_ary, element)
-
-#define rb_darray_append_impl(ptr_to_ary, element) do {  \
+#define rb_darray_append(ptr_to_ary, element) do {  \
     rb_darray_ensure_space((ptr_to_ary), \
                            sizeof(**(ptr_to_ary)), \
                            sizeof((*(ptr_to_ary))->data[0])); \
