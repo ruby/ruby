@@ -459,6 +459,17 @@ class Reline::Config::Test < Reline::TestCase
     ENV['INPUTRC'] = inputrc_backup
   end
 
+  def test_inputrc_raw_value
+    @config.read_lines(<<~'LINES'.lines)
+      set editing-mode vi ignored-string
+      set vi-ins-mode-string aaa aaa
+      set vi-cmd-mode-string bbb ccc # comment
+    LINES
+    assert_equal :vi_insert, @config.instance_variable_get(:@editing_mode_label)
+    assert_equal 'aaa aaa', @config.vi_ins_mode_string
+    assert_equal 'bbb ccc # comment', @config.vi_cmd_mode_string
+  end
+
   def test_inputrc_with_utf8
     # This file is encoded by UTF-8 so this heredoc string is also UTF-8.
     @config.read_lines(<<~'LINES'.lines)
@@ -542,4 +553,3 @@ class Reline::Config::Test < Reline::TestCase
     ENV['HOME'] = home_backup
   end
 end
-

@@ -1498,11 +1498,115 @@ class Reline::KeyActor::Emacs::Test < Reline::TestCase
   end
 
   def test_undo_with_many_times
-    str = "a" + "b" * 100
+    str = "a" + "b" * 99
     input_keys(str, false)
     100.times { input_keys("\C-_", false) }
     assert_line_around_cursor('a', '')
     input_keys("\C-_", false)
     assert_line_around_cursor('a', '')
+  end
+
+  def test_redo
+    input_keys("aあb", false)
+    assert_line_around_cursor('aあb', '')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor('aあb', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('aあ', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('a', '')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor('aあ', '')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor('aあb', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('aあ', '')
+    input_keys("c", false)
+    assert_line_around_cursor('aあc', '')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor('aあc', '')
+  end
+
+  def test_redo_with_cursor_position
+    input_keys("abc\C-b\C-h", false)
+    assert_line_around_cursor('a', 'c')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor('a', 'c')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('ab', 'c')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor('a', 'c')
+  end
+
+  def test_redo_with_multiline
+    @line_editor.multiline_on
+    @line_editor.confirm_multiline_termination_proc = proc {}
+    input_keys("1\n2\n3", false)
+    assert_whole_lines(["1", "2", "3"])
+    assert_line_index(2)
+    assert_line_around_cursor('3', '')
+
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "2", ""])
+    assert_line_index(2)
+    assert_line_around_cursor('', '')
+
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "2"])
+    assert_line_index(1)
+    assert_line_around_cursor('2', '')
+
+    input_keys("\M-\C-_", false)
+    assert_whole_lines(["1", "2", ""])
+    assert_line_index(2)
+    assert_line_around_cursor('', '')
+
+    input_keys("\M-\C-_", false)
+    assert_whole_lines(["1", "2", "3"])
+    assert_line_index(2)
+    assert_line_around_cursor('3', '')
+
+    input_keys("\C-p\C-h\C-h", false)
+    assert_whole_lines(["1", "3"])
+    assert_line_index(0)
+    assert_line_around_cursor('1', '')
+
+    input_keys("\C-n", false)
+    assert_whole_lines(["1", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('3', '')
+
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('', '')
+
+    input_keys("\C-_", false)
+    assert_whole_lines(["1", "2", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('2', '')
+
+    input_keys("\M-\C-_", false)
+    assert_whole_lines(["1", "", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('', '')
+
+    input_keys("\M-\C-_", false)
+    assert_whole_lines(["1", "3"])
+    assert_line_index(1)
+    assert_line_around_cursor('3', '')
+  end
+
+  def test_redo_with_many_times
+    str = "a" + "b" * 98 + "c"
+    input_keys(str, false)
+    100.times { input_keys("\C-_", false) }
+    assert_line_around_cursor('a', '')
+    input_keys("\C-_", false)
+    assert_line_around_cursor('a', '')
+    100.times { input_keys("\M-\C-_", false) }
+    assert_line_around_cursor(str, '')
+    input_keys("\M-\C-_", false)
+    assert_line_around_cursor(str, '')
   end
 end
