@@ -53,7 +53,7 @@ module Bundler
         "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
         "`#{File.basename gemfile.to_s}`: #{e.message}"
 
-      raise DSLError.new(message, gemfile, e.backtrace, contents)
+      raise DSLError.new(message, gemfile.to_s, e.backtrace, contents)
     ensure
       @gemfile = original_gemfile
     end
@@ -577,7 +577,7 @@ module Bundler
 
           return m unless backtrace && dsl_path && contents
 
-          trace_line = backtrace.find {|l| l.include?(dsl_path.to_s) } || trace_line
+          trace_line = backtrace.find {|l| l.include?(dsl_path) } || trace_line
           return m unless trace_line
           line_numer = trace_line.split(":")[1].to_i - 1
           return m unless line_numer
@@ -603,7 +603,7 @@ module Bundler
 
       def parse_line_number_from_description
         description = self.description
-        if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path.to_s}):\d+)/
+        if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path}):\d+)/
           trace_line = Regexp.last_match[1]
           description = description.sub(/\n.*\n(\.\.\.)? *\^~+$/, "").sub(/#{Regexp.quote trace_line}:\s*/, "").sub("\n", " - ")
         end
