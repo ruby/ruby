@@ -107,7 +107,7 @@ class Reline::Face
 
     def sgr_rgb_256color(key, value)
       # 256 colors are
-      # 0..15: standard colors, hight intensity colors
+      # 0..15: standard colors, high intensity colors
       # 16..232: 216 colors (R, G, B each 6 steps)
       # 233..255: grayscale colors (24 steps)
       # This methods converts rgb_expression to 216 colors

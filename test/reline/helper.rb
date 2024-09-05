@@ -96,7 +96,7 @@ class Reline::TestCase < Test::Unit::TestCase
       end
     }.join
   rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
-    input.unicode_normalize!(:nfc)
+    input = input.unicode_normalize(:nfc)
     if normalized
       options[:undef] = :replace
       options[:replace] = '?'

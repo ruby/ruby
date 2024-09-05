@@ -738,6 +738,13 @@ class Reline::ViInsertTest < Reline::TestCase
     assert_line_around_cursor('aaa ', 'ddd eee')
   end
 
+  def test_vi_delete_meta_nothing
+    input_keys("foo\C-[0")
+    assert_line_around_cursor('', 'foo')
+    input_keys('dhp')
+    assert_line_around_cursor('', 'foo')
+  end
+
   def test_vi_delete_meta_with_vi_next_word_at_eol
     input_keys("foo bar\C-[0w")
     assert_line_around_cursor('foo ', 'bar')
@@ -846,6 +853,13 @@ class Reline::ViInsertTest < Reline::TestCase
     assert_line_around_cursor('foofo', 'o barbar')
     input_keys('yyP')
     assert_line_around_cursor('foofofoofoo barba', 'ro barbar')
+  end
+
+  def test_vi_yank_nothing
+    input_keys("foo\C-[0")
+    assert_line_around_cursor('', 'foo')
+    input_keys('yhp')
+    assert_line_around_cursor('', 'foo')
   end
 
   def test_vi_end_word_with_operator

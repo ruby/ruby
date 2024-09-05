@@ -159,14 +159,24 @@ class Reline::Windows < Reline::IO
   FILE_NAME_INFO = 2
   ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4
 
+  # Calling Win32API with console handle is reported to fail after executing some external command.
+  # We need to refresh console handle and retry the call again.
+  private def call_with_console_handle(win32func, *args)
+    val = win32func.call(@hConsoleHandle, *args)
+    return val if val != 0
+
+    @hConsoleHandle = @GetStdHandle.call(STD_OUTPUT_HANDLE)
+    win32func.call(@hConsoleHandle, *args)
+  end
+
   private def getconsolemode
     mode = "\000\000\000\000"
-    @GetConsoleMode.call(@hConsoleHandle, mode)
+    call_with_console_handle(@GetConsoleMode, mode)
     mode.unpack1('L')
   end
 
   private def setconsolemode(mode)
-    @SetConsoleMode.call(@hConsoleHandle, mode)
+    call_with_console_handle(@SetConsoleMode, mode)
   end
 
   #if @legacy_console
@@ -334,7 +344,7 @@ class Reline::Windows < Reline::IO
     # [18,2] dwMaximumWindowSize.X
     # [20,2] dwMaximumWindowSize.Y
     csbi = 0.chr * 22
-    return if @GetConsoleScreenBufferInfo.call(@hConsoleHandle, csbi) == 0
+    return if call_with_console_handle(@GetConsoleScreenBufferInfo, csbi) == 0
     csbi
   end
 
@@ -355,14 +365,14 @@ class Reline::Windows < Reline::IO
   end
 
   def move_cursor_column(val)
-    @SetConsoleCursorPosition.call(@hConsoleHandle, cursor_pos.y * 65536 + val)
+    call_with_console_handle(@SetConsoleCursorPosition, cursor_pos.y * 65536 + val)
   end
 
   def move_cursor_up(val)
     if val > 0
       y = cursor_pos.y - val
       y = 0 if y < 0
-      @SetConsoleCursorPosition.call(@hConsoleHandle, y * 65536 + cursor_pos.x)
+      call_with_console_handle(@SetConsoleCursorPosition, y * 65536 + cursor_pos.x)
     elsif val < 0
       move_cursor_down(-val)
     end
@@ -374,7 +384,7 @@ class Reline::Windows < Reline::IO
       screen_height = get_screen_size.first
       y = cursor_pos.y + val
       y = screen_height - 1 if y > (screen_height - 1)
-      @SetConsoleCursorPosition.call(@hConsoleHandle, (cursor_pos.y + val) * 65536 + cursor_pos.x)
+      call_with_console_handle(@SetConsoleCursorPosition, (cursor_pos.y + val) * 65536 + cursor_pos.x)
     elsif val < 0
       move_cursor_up(-val)
     end
@@ -385,8 +395,8 @@ class Reline::Windows < Reline::IO
     attributes = csbi[8, 2].unpack1('S')
     cursor = csbi[4, 4].unpack1('L')
     written = 0.chr * 4
-    @FillConsoleOutputCharacter.call(@hConsoleHandle, 0x20, get_screen_size.last - cursor_pos.x, cursor, written)
-    @FillConsoleOutputAttribute.call(@hConsoleHandle, attributes, get_screen_size.last - cursor_pos.x, cursor, written)
+    call_with_console_handle(@FillConsoleOutputCharacter, 0x20, get_screen_size.last - cursor_pos.x, cursor, written)
+    call_with_console_handle(@FillConsoleOutputAttribute, attributes, get_screen_size.last - cursor_pos.x, cursor, written)
   end
 
   def scroll_down(val)
@@ -404,7 +414,7 @@ class Reline::Windows < Reline::IO
       scroll_rectangle = [0, val, buffer_width, buffer_lines - val].pack('s4')
       destination_origin = 0 # y * 65536 + x
       fill = [' '.ord, attributes].pack('SS')
-      @ScrollConsoleScreenBuffer.call(@hConsoleHandle, scroll_rectangle, nil, destination_origin, fill)
+      call_with_console_handle(@ScrollConsoleScreenBuffer, scroll_rectangle, nil, destination_origin, fill)
     else
       origin_x = x + 1
       origin_y = y - window_top + 1
@@ -423,9 +433,9 @@ class Reline::Windows < Reline::IO
       fill_length = buffer_width * (window_bottom - window_top + 1)
       screen_topleft = window_top * 65536
       written = 0.chr * 4
-      @FillConsoleOutputCharacter.call(@hConsoleHandle, 0x20, fill_length, screen_topleft, written)
-      @FillConsoleOutputAttribute.call(@hConsoleHandle, attributes, fill_length, screen_topleft, written)
-      @SetConsoleCursorPosition.call(@hConsoleHandle, screen_topleft)
+      call_with_console_handle(@FillConsoleOutputCharacter, 0x20, fill_length, screen_topleft, written)
+      call_with_console_handle(@FillConsoleOutputAttribute, attributes, fill_length, screen_topleft, written)
+      call_with_console_handle(@SetConsoleCursorPosition, screen_topleft)
     else
       @output.write "\e[2J" "\e[H"
     end
@@ -439,14 +449,14 @@ class Reline::Windows < Reline::IO
     size = 100
     visible = 0 # 0 means false
     cursor_info = [size, visible].pack('Li')
-    @SetConsoleCursorInfo.call(@hConsoleHandle, cursor_info)
+    call_with_console_handle(@SetConsoleCursorInfo, cursor_info)
   end
 
   def show_cursor
     size = 100
     visible = 1 # 1 means true
     cursor_info = [size, visible].pack('Li')
-    @SetConsoleCursorInfo.call(@hConsoleHandle, cursor_info)
+    call_with_console_handle(@SetConsoleCursorInfo, cursor_info)
   end
 
   def set_winch_handler(&handler)
