@@ -1066,7 +1066,7 @@ static rb_node_unless_t *rb_node_unless_new(struct parser_params *p, NODE *nd_co
 static rb_node_case_t *rb_node_case_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_case2_t *rb_node_case2_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_case3_t *rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_when_t *rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_when_t *rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc);
 static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_while_t *rb_node_while_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc);
 static rb_node_until_t *rb_node_until_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc);
@@ -1174,7 +1174,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_CASE(h,b,loc) (NODE *)rb_node_case_new(p,h,b,loc)
 #define NEW_CASE2(b,loc) (NODE *)rb_node_case2_new(p,b,loc)
 #define NEW_CASE3(h,b,loc) (NODE *)rb_node_case3_new(p,h,b,loc)
-#define NEW_WHEN(c,t,e,loc) (NODE *)rb_node_when_new(p,c,t,e,loc)
+#define NEW_WHEN(c,t,e,loc,k_loc,t_loc) (NODE *)rb_node_when_new(p,c,t,e,loc,k_loc,t_loc)
 #define NEW_IN(c,t,e,loc) (NODE *)rb_node_in_new(p,c,t,e,loc)
 #define NEW_WHILE(c,b,n,loc) (NODE *)rb_node_while_new(p,c,b,n,loc)
 #define NEW_UNTIL(c,b,n,loc) (NODE *)rb_node_until_new(p,c,b,n,loc)
@@ -5443,7 +5443,7 @@ case_body	: k_when case_args then
                   compstmt
                   cases
                     {
-                        $$ = NEW_WHEN($2, $4, $5, &@$);
+                        $$ = NEW_WHEN($2, $4, $5, &@$, &@1, &@3);
                         fixpos($$, $2);
                     /*% ripper: when!($:2, $:4, $:5) %*/
                     }
@@ -11643,12 +11643,14 @@ rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const Y
 }
 
 static rb_node_when_t *
-rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc)
+rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc)
 {
     rb_node_when_t *n = NODE_NEWNODE(NODE_WHEN, rb_node_when_t, loc);
     n->nd_head = nd_head;
     n->nd_body = nd_body;
     n->nd_next = nd_next;
+    n->keyword_loc = *keyword_loc;
+    n->then_keyword_loc = *then_keyword_loc;
 
     return n;
 }

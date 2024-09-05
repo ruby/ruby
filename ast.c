@@ -801,6 +801,11 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_VALIAS(node)->keyword_loc));
+      case NODE_WHEN:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_WHEN(node)->keyword_loc),
+                                    location_new(&RNODE_WHEN(node)->then_keyword_loc));
       case NODE_ARGS_AUX:
       case NODE_LAST:
         break;
