@@ -382,6 +382,7 @@ typedef struct {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
+    rb_code_location_t operator_loc;
 } rb_node_and_t, rb_node_or_t;
 
 typedef struct RNode_MASGN {

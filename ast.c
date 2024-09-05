@@ -779,6 +779,14 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_ALIAS(node)->keyword_loc));
+      case NODE_AND:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_AND(node)->operator_loc));
+      case NODE_OR:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_OR(node)->operator_loc));
       case NODE_UNDEF:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
