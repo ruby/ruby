@@ -80,7 +80,7 @@ The following default gems are updated.
 * optparse 0.5.0
 * prism 1.0.0
 * rdoc 6.7.0
-* reline 0.5.9
+* reline 0.5.10
 * resolv 0.4.0
 * stringio 3.1.2.dev
 * strscan 3.1.1.dev
