@@ -210,4 +210,26 @@ class Array
       end
     end
   end
+
+  #  call-seq:
+  #    array.fetch_values(*indexes) -> new_array
+  #    array.fetch_values(*indexes) {|key| ... } -> new_array
+  #
+  #  Returns a new Array containing the values associated with the given indexes *indexes:
+  #    a = [:foo, :bar, :baz]
+  #    a.fetch_values(3, 1) # => [:baz, :foo]
+  #
+  #  Returns a new empty Array if no arguments given.
+  #
+  #  When a block is given, calls the block with each missing index,
+  #  treating the block's return value as the value for that index:
+  #    a = [:foo, :bar, :baz]
+  #    values = a.fetch_values(1, 0, 42, 777) {|index| index.to_s}
+  #    values # => [:bar, :foo, "42", "777"]
+  #
+  #  When no block is given, raises an exception if any given key is not found.
+  def fetch_values(*indexes, &block)
+    indexes.map! { |i| fetch(i, &block) }
+    indexes
+  end
 end
