@@ -2030,7 +2030,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
  */
 
 static VALUE
-rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
+rb_ary_fetch_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE pos, ifnone;
     long block_given;
@@ -2056,6 +2056,45 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
     }
     return RARRAY_AREF(ary, idx);
 }
+
+static VALUE
+rb_ary_fetch(VALUE array, VALUE index)
+{
+    return rb_ary_fetch_m(1, &index, array);
+}
+
+/*
+ *  call-seq:
+ *    array.fetch_values(*indexes) -> new_array
+ *    array.fetch_values(*indexes) {|key| ... } -> new_array
+ *
+ *  Returns a new Array containing the values associated with the given indexes *indexes:
+ *    a = [:foo, :bar, :baz]
+ *    a.fetch_values(3, 1) # => [:baz, :foo]
+ *
+ *  Returns a new empty Array if no arguments given.
+ *
+ *  When a block is given, calls the block with each missing index,
+ *  treating the block's return value as the value for that index:
+ *    a = [:foo, :bar, :baz]
+ *    values = a.fetch_values(1, 0, 42, 777) {|index| index.to_s}
+ *    values # => [:bar, :foo, "42", "777"]
+ *
+ *  When no block is given, raises an exception if any given key is not found.
+ */
+
+static VALUE
+rb_ary_fetch_values(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i=0; i<argc; i++) {
+        rb_ary_push(result, rb_ary_fetch(ary, argv[i]));
+    }
+    return result;
+}
+
 
 /*
  *  call-seq:
@@ -8735,7 +8774,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "[]", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);
     rb_define_method(rb_cArray, "at", rb_ary_at, 1);
-    rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
+    rb_define_method(rb_cArray, "fetch", rb_ary_fetch_m, -1);
+    rb_define_method(rb_cArray, "fetch_values", rb_ary_fetch_values, -1);
     rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);
