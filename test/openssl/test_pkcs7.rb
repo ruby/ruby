@@ -153,6 +153,11 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(data, p7.decrypt(@rsa1024, @ee2_cert))
 
     assert_equal(data, p7.decrypt(@rsa1024))
+
+    # Default cipher has been removed in v3.3
+    assert_raise_with_message(ArgumentError, /RC2-40-CBC/) {
+      OpenSSL::PKCS7.encrypt(certs, data)
+    }
   end
 
   def test_empty_signed_data_ruby_bug_19974

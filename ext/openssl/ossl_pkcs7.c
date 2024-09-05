@@ -259,7 +259,14 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    PKCS7.encrypt(certs, data, [, cipher [, flags]]) => pkcs7
+ *    PKCS7.encrypt(certs, data, cipher, flags = 0) => pkcs7
+ *
+ * Creates a PKCS #7 enveloped-data structure.
+ *
+ * Before version 3.3.0, +cipher+ was optional and defaulted to
+ * <tt>"RC2-40-CBC"</tt>.
+ *
+ * See also the man page PKCS7_encrypt(3).
  */
 static VALUE
 ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
@@ -273,21 +280,12 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     PKCS7 *p7;
 
     rb_scan_args(argc, argv, "22", &certs, &data, &cipher, &flags);
-    if(NIL_P(cipher)){
-#if !defined(OPENSSL_NO_RC2)
-	ciph = EVP_rc2_40_cbc();
-#elif !defined(OPENSSL_NO_DES)
-	ciph = EVP_des_ede3_cbc();
-#elif !defined(OPENSSL_NO_RC2)
-	ciph = EVP_rc2_40_cbc();
-#elif !defined(OPENSSL_NO_AES)
-	ciph = EVP_EVP_aes_128_cbc();
-#else
-	ossl_raise(ePKCS7Error, "Must specify cipher");
-#endif
-
+    if (NIL_P(cipher)) {
+        rb_raise(rb_eArgError,
+                 "cipher must be specified. Before version 3.3, " \
+                 "the default cipher was RC2-40-CBC.");
     }
-    else ciph = ossl_evp_get_cipherbyname(cipher);
+    ciph = ossl_evp_get_cipherbyname(cipher);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     ret = NewPKCS7(cPKCS7);
     in = ossl_obj2bio(&data);
