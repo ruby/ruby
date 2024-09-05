@@ -1335,6 +1335,22 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
     end
 
+    def test_and_locations
+      node = RubyVM::AbstractSyntaxTree.parse("1 and 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 2, 1, 5]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 && 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+    end
+
+    def test_or_locations
+      node = RubyVM::AbstractSyntaxTree.parse("1 or 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 || 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+    end
+
     def test_unless_locations
       node = RubyVM::AbstractSyntaxTree.parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])

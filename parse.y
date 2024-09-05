@@ -1078,8 +1078,8 @@ static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body
 static rb_node_rescue_t *rb_node_rescue_new(struct parser_params *p, NODE *nd_head, NODE *nd_resq, NODE *nd_else, const YYLTYPE *loc);
 static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
-static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
-static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
+static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_masgn_t *rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_lasgn_t *rb_node_lasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 static rb_node_dasgn_t *rb_node_dasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
@@ -1186,8 +1186,8 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_RESCUE(b,res,e,loc) (NODE *)rb_node_rescue_new(p,b,res,e,loc)
 #define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
 #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
-#define NEW_AND(f,s,loc) (NODE *)rb_node_and_new(p,f,s,loc)
-#define NEW_OR(f,s,loc) (NODE *)rb_node_or_new(p,f,s,loc)
+#define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
+#define NEW_OR(f,s,loc,op_loc) (NODE *)rb_node_or_new(p,f,s,loc,op_loc)
 #define NEW_MASGN(l,r,loc)   rb_node_masgn_new(p,l,r,loc)
 #define NEW_LASGN(v,val,loc) (NODE *)rb_node_lasgn_new(p,v,val,loc)
 #define NEW_DASGN(v,val,loc) (NODE *)rb_node_dasgn_new(p,v,val,loc)
@@ -5544,7 +5544,7 @@ p_as		: p_expr tASSOC p_variable
 
 p_alt		: p_alt '|' p_expr_basic
                     {
-                        $$ = NEW_OR($1, $3, &@$);
+                        $$ = NEW_OR($1, $3, &@$, &@2);
                     /*% ripper: binary!($:1, ID2VAL(idOr), $:3) %*/
                     }
                 | p_expr_basic
@@ -11489,21 +11489,23 @@ rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const 
 }
 
 static rb_node_and_t *
-rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc)
+rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
 {
     rb_node_and_t *n = NODE_NEWNODE(NODE_AND, rb_node_and_t, loc);
     n->nd_1st = nd_1st;
     n->nd_2nd = nd_2nd;
+    n->operator_loc = *operator_loc;
 
     return n;
 }
 
 static rb_node_or_t *
-rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc)
+rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
 {
     rb_node_or_t *n = NODE_NEWNODE(NODE_OR, rb_node_or_t, loc);
     n->nd_1st = nd_1st;
     n->nd_2nd = nd_2nd;
+    n->operator_loc = *operator_loc;
 
     return n;
 }
@@ -14340,7 +14342,7 @@ new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYL
     return newline_node(NEW_UNLESS(cc, left, right, loc, keyword_loc, then_keyword_loc, end_keyword_loc));
 }
 
-#define NEW_AND_OR(type, f, s, loc) (type == NODE_AND ? NEW_AND(f,s,loc) : NEW_OR(f,s,loc))
+#define NEW_AND_OR(type, f, s, loc, op_loc) (type == NODE_AND ? NEW_AND(f,s,loc,op_loc) : NEW_OR(f,s,loc,op_loc))
 
 static NODE*
 logop(struct parser_params *p, ID id, NODE *left, NODE *right,
@@ -14354,12 +14356,12 @@ logop(struct parser_params *p, ID id, NODE *left, NODE *right,
         while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
             node = second;
         }
-        RNODE_AND(node)->nd_2nd = NEW_AND_OR(type, second, right, loc);
+        RNODE_AND(node)->nd_2nd = NEW_AND_OR(type, second, right, loc, op_loc);
         nd_set_line(RNODE_AND(node)->nd_2nd, op_loc->beg_pos.lineno);
         left->nd_loc.end_pos = loc->end_pos;
         return left;
     }
-    op = NEW_AND_OR(type, left, right, loc);
+    op = NEW_AND_OR(type, left, right, loc, op_loc);
     nd_set_line(op, op_loc->beg_pos.lineno);
     return op;
 }

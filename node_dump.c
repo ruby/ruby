@@ -431,8 +431,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
                 break;
             node = RNODE_AND(node)->nd_2nd;
         }
-        LAST_NODE;
         F_NODE(nd_2nd, RNODE_AND, "right expr");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_AND);
         return;
 
       case NODE_MASGN:
