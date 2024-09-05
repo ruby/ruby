@@ -749,6 +749,9 @@ describe "String#%" do
       (format % "-10.4e-20").should == (format % -10.4e-20)
       (format % ".5").should == (format % 0.5)
       (format % "-.5").should == (format % -0.5)
+      ruby_bug("#20705", ""..."3.4") do
+        (format % "10.").should == (format % 10)
+      end
       # Something's strange with this spec:
       # it works just fine in individual mode, but not when run as part of a group
       (format % "10_1_0.5_5_5").should == (format % 1010.555)
@@ -758,7 +761,6 @@ describe "String#%" do
       -> { format % "" }.should raise_error(ArgumentError)
       -> { format % "x" }.should raise_error(ArgumentError)
       -> { format % "." }.should raise_error(ArgumentError)
-      -> { format % "10." }.should raise_error(ArgumentError)
       -> { format % "5x" }.should raise_error(ArgumentError)
       -> { format % "0b1" }.should raise_error(ArgumentError)
       -> { format % "10e10.5" }.should raise_error(ArgumentError)
