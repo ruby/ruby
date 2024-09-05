@@ -1,5 +1,5 @@
-class Reline::KeyActor::Emacs < Reline::KeyActor::Base
-  MAPPING = [
+module Reline::KeyActor
+  EMACS_MAPPING = [
     #   0 ^@
     :em_set_mark,
     #   1 ^A

@@ -22,6 +22,15 @@ class Reline::Config::Test < Reline::TestCase
     @config.reset
   end
 
+  def additional_key_bindings(keymap_label)
+    @config.instance_variable_get(:@additional_key_bindings)[keymap_label].instance_variable_get(:@key_bindings)
+  end
+
+  def registered_key_bindings(keys)
+    key_bindings = @config.key_bindings
+    keys.to_h { |key| [key, key_bindings.get(key)] }
+  end
+
   def test_read_lines
     @config.read_lines(<<~LINES.lines)
       set bell-style on
@@ -85,28 +94,29 @@ class Reline::Config::Test < Reline::TestCase
 
   def test_encoding_is_ascii
     @config.reset
-    Reline.core.io_gate.reset(encoding: Encoding::US_ASCII)
+    Reline.core.io_gate.instance_variable_set(:@encoding, Encoding::US_ASCII)
     @config = Reline::Config.new
 
     assert_equal true, @config.convert_meta
   end
 
   def test_encoding_is_not_ascii
-    @config.reset
-    Reline.core.io_gate.reset(encoding: Encoding::UTF_8)
     @config = Reline::Config.new
 
     assert_equal nil, @config.convert_meta
   end
 
-  def test_comment_line
-    @config.read_lines([" #a: error\n"])
-    assert_not_include @config.key_bindings, nil
-  end
-
   def test_invalid_keystroke
-    @config.read_lines(["a: error\n"])
-    assert_not_include @config.key_bindings, nil
+    @config.read_lines(<<~LINES.lines)
+      #"a": comment
+      a: error
+      "b": no-error
+    LINES
+    key_bindings = additional_key_bindings(:emacs)
+    assert_not_include key_bindings, 'a'.bytes
+    assert_not_include key_bindings, nil
+    assert_not_include key_bindings, []
+    assert_include key_bindings, 'b'.bytes
   end
 
   def test_bind_key
@@ -244,8 +254,8 @@ class Reline::Config::Test < Reline::TestCase
       "\xC": "O"
     LINES
     keys = [0x1, 0x3, 0x4, 0x6, 0x7, 0xC]
-    key_bindings = keys.to_h { |k| [[k.ord], ['O'.ord]] }
-    assert_equal(key_bindings, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    key_bindings = keys.to_h { |k| [[k], ['O'.ord]] }
+    assert_equal(key_bindings, additional_key_bindings(:emacs))
   end
 
   def test_unclosed_if
@@ -284,9 +294,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[5] => :history_search_backward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_else
@@ -298,9 +308,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[6] => :history_search_forward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_if_with_invalid_mode
@@ -312,9 +322,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[6] => :history_search_forward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_mode_label_differs_from_keymap_label
@@ -329,9 +339,9 @@ class Reline::Config::Test < Reline::TestCase
         "\C-e": history-search-backward
       $endif
     LINES
-    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[5] => :history_search_backward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_if_without_else_condition
@@ -342,9 +352,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({}, additional_key_bindings(:emacs))
+    assert_equal({[5] => :history_search_backward}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_default_key_bindings
@@ -355,7 +365,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'abcd'.bytes => 'ABCD'.bytes, 'ijkl'.bytes => 'IJKL'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings
@@ -365,7 +375,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings_with_nesting_and_comment_out
@@ -377,7 +387,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings_for_other_keymap
@@ -392,7 +402,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'cd'.bytes => 'CD'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings_for_auxiliary_emacs_keymaps
@@ -414,7 +424,7 @@ class Reline::Config::Test < Reline::TestCase
       "\C-xef".bytes => 'EF'.bytes,
       "\egh".bytes => 'GH'.bytes,
     }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_key_bindings_with_reset
@@ -426,7 +436,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
     @config.reset
     expected = { 'default'.bytes => 'DEFAULT'.bytes, 'additional'.bytes => 'ADDITIONAL'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_history_size
