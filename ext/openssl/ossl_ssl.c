@@ -55,7 +55,6 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_verify_hostname, id_i_keylog_cb;
 static ID id_i_io, id_i_context, id_i_hostname;
 
-static int ossl_ssl_ex_vcb_idx;
 static int ossl_ssl_ex_ptr_idx;
 static int ossl_sslctx_ex_ptr_idx;
 
@@ -327,9 +326,9 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
     int status;
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
-    cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx);
     ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    cb = rb_attr_get(sslctx_obj, id_i_verify_callback);
     verify_hostname = rb_attr_get(sslctx_obj, id_i_verify_hostname);
 
     if (preverify_ok && RTEST(verify_hostname) && !SSL_is_server(ssl) &&
@@ -1553,11 +1552,6 @@ ossl_ssl_mark(void *ptr)
 {
     SSL *ssl = ptr;
     rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx));
-
-    // Note: this reference is stored as @verify_callback so we don't need to mark it.
-    // However we do need to ensure GC compaction won't move it, hence why
-    // we call rb_gc_mark here.
-    rb_gc_mark((VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx));
 }
 
 static void
@@ -1622,7 +1616,7 @@ peeraddr_ip_str(VALUE self)
 static VALUE
 ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE io, v_ctx, verify_cb;
+    VALUE io, v_ctx;
     SSL *ssl;
     SSL_CTX *ctx;
 
@@ -1649,10 +1643,6 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self);
     SSL_set_info_callback(ssl, ssl_info_cb);
-    verify_cb = rb_attr_get(v_ctx, id_i_verify_callback);
-    // We don't need to trigger a write barrier because it's already
-    // an instance variable of this object.
-    SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)verify_cb);
 
     rb_call_super(0, NULL);
 
@@ -2603,9 +2593,6 @@ Init_ossl_ssl(void)
     id_call = rb_intern_const("call");
     ID_callback_state = rb_intern_const("callback_state");
 
-    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_vcb_idx", 0, 0, 0);
-    if (ossl_ssl_ex_vcb_idx < 0)
-	ossl_raise(rb_eRuntimeError, "SSL_get_ex_new_index");
     ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_ptr_idx", 0, 0, 0);
     if (ossl_ssl_ex_ptr_idx < 0)
 	ossl_raise(rb_eRuntimeError, "SSL_get_ex_new_index");
