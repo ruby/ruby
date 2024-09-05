@@ -42,20 +42,16 @@ module Bundler
     end
 
     def eval_gemfile(gemfile, contents = nil)
-      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
-      original_gemfile = @gemfile
-      @gemfile = expanded_gemfile_path
-      @gemfiles << expanded_gemfile_path
-      contents ||= Bundler.read_file(@gemfile.to_s)
-      instance_eval(contents, @gemfile.to_s, 1)
-    rescue Exception => e # rubocop:disable Lint/RescueException
-      message = "There was an error " \
-        "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
-        "`#{File.basename gemfile.to_s}`: #{e.message}"
+      with_gemfile(gemfile) do |current_gemfile|
+        contents ||= Bundler.read_file(current_gemfile)
+        instance_eval(contents, current_gemfile, 1)
+      rescue Exception => e # rubocop:disable Lint/RescueException
+        message = "There was an error " \
+          "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
+          "`#{File.basename current_gemfile}`: #{e.message}"
 
-      raise DSLError.new(message, gemfile.to_s, e.backtrace, contents)
-    ensure
-      @gemfile = original_gemfile
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      end
     end
 
     def gemspec(opts = nil)
@@ -284,6 +280,16 @@ module Bundler
     end
 
     private
+
+    def with_gemfile(gemfile)
+      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
+      original_gemfile = @gemfile
+      @gemfile = expanded_gemfile_path
+      @gemfiles << expanded_gemfile_path
+      yield @gemfile.to_s
+    ensure
+      @gemfile = original_gemfile
+    end
 
     def add_git_sources
       git_source(:github) do |repo_name|
