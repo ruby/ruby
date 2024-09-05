@@ -289,6 +289,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_body, RNODE_WHEN, "when body");
         LAST_NODE;
         F_NODE(nd_next, RNODE_WHEN, "next when clause");
+        F_LOC(keyword_loc, RNODE_WHEN);
+        LAST_NODE;
+        F_LOC(then_keyword_loc, RNODE_WHEN);
         return;
 
       case NODE_IN:

@@ -305,6 +305,8 @@ typedef struct RNode_WHEN {
     struct RNode *nd_head;
     struct RNode *nd_body;
     struct RNode *nd_next;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t then_keyword_loc;
 } rb_node_when_t;
 
 typedef struct RNode_IN {

@@ -1375,6 +1375,11 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
     end
 
+    def test_when_locations
+      node = RubyVM::AbstractSyntaxTree.parse("case a; when 1 then 2; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 22], [1, 8, 1, 12], [1, 15, 1, 19]])
+    end
+
     private
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
