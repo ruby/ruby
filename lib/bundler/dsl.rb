@@ -45,11 +45,15 @@ module Bundler
       with_gemfile(gemfile) do |current_gemfile|
         contents ||= Bundler.read_file(current_gemfile)
         instance_eval(contents, current_gemfile, 1)
-      rescue StandardError, ScriptError => e
-        message = "There was an error " \
-          "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
-          "`#{File.basename current_gemfile}`: #{e.message}"
-
+      rescue GemfileEvalError => e
+        message = "There was an error evaluating `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      rescue GemfileError, InvalidArgumentError, InvalidOption, DeprecatedError, ScriptError => e
+        message = "There was an error parsing `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      rescue StandardError => e
+        raise unless e.backtrace_locations.first.path == current_gemfile
+        message = "There was an error parsing `#{File.basename current_gemfile}`: #{e.message}"
         raise DSLError.new(message, current_gemfile, e.backtrace, contents)
       end
     end
@@ -215,7 +219,7 @@ module Bundler
     end
 
     def github(repo, options = {})
-      raise ArgumentError, "GitHub sources require a block" unless block_given?
+      raise InvalidArgumentError, "GitHub sources require a block" unless block_given?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)

@@ -244,4 +244,6 @@ module Bundler
 
     status_code(39)
   end
+
+  class InvalidArgumentError < BundlerError; status_code(40); end
 end

@@ -80,7 +80,7 @@ RSpec.describe Bundler::RubyDsl do
     context "with two requirements in the same string" do
       let(:ruby_version) { ">= 2.0.0, < 3.0" }
       it "raises an error" do
-        expect { subject }.to raise_error(ArgumentError)
+        expect { subject }.to raise_error(Bundler::InvalidArgumentError)
       end
     end
 
@@ -168,7 +168,7 @@ RSpec.describe Bundler::RubyDsl do
         let(:file_content) { "ruby-#{version}@gemset\n" }
 
         it "raises an error" do
-          expect { subject }.to raise_error(Gem::Requirement::BadRequirementError, "Illformed requirement [\"#{version}@gemset\"]")
+          expect { subject }.to raise_error(Bundler::InvalidArgumentError, "2.0.0@gemset is not a valid requirement on the Ruby version")
         end
       end
 

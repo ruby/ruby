@@ -23,7 +23,13 @@ module Bundler
       #   specified must match the version.
 
       @versions = Array(versions).map do |v|
-        op, v = Gem::Requirement.parse(normalize_version(v))
+        normalized_v = normalize_version(v)
+
+        unless Gem::Requirement::PATTERN.match?(normalized_v)
+          raise InvalidArgumentError, "#{v} is not a valid requirement on the Ruby version"
+        end
+
+        op, v = Gem::Requirement.parse(normalized_v)
         op == "=" ? v.to_s : "#{op} #{v}"
       end
 
