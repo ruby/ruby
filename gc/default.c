@@ -948,17 +948,6 @@ heap_eden_total_slots(rb_objspace_t *objspace)
 }
 
 static inline size_t
-total_allocated_pages(rb_objspace_t *objspace)
-{
-    size_t count = 0;
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        rb_size_pool_t *size_pool = &size_pools[i];
-        count += size_pool->total_allocated_pages;
-    }
-    return count;
-}
-
-static inline size_t
 total_allocated_objects(rb_objspace_t *objspace)
 {
     size_t count = 0;
@@ -7532,6 +7521,8 @@ enum gc_stat_sym {
     gc_stat_sym_marking_time,
     gc_stat_sym_sweeping_time,
     gc_stat_sym_heap_allocated_pages,
+    gc_stat_sym_heap_empty_pages,
+    gc_stat_sym_heap_allocatable_slots,
     gc_stat_sym_heap_available_slots,
     gc_stat_sym_heap_live_slots,
     gc_stat_sym_heap_free_slots,
@@ -7581,6 +7572,8 @@ setup_gc_stat_symbols(void)
         S(marking_time),
         S(sweeping_time),
         S(heap_allocated_pages);
+        S(heap_empty_pages);
+        S(heap_allocatable_slots);
         S(heap_available_slots);
         S(heap_live_slots);
         S(heap_free_slots);
@@ -7656,6 +7649,8 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 
     /* implementation dependent counters */
     SET(heap_allocated_pages, rb_darray_size(objspace->heap_pages.sorted));
+    SET(heap_empty_pages, objspace->empty_pages_count)
+    SET(heap_allocatable_slots, objspace->heap_pages.allocatable_slots);
     SET(heap_available_slots, objspace_available_slots(objspace));
     SET(heap_live_slots, objspace_live_slots(objspace));
     SET(heap_free_slots, objspace_free_slots(objspace));
@@ -7714,8 +7709,6 @@ enum gc_stat_heap_sym {
     gc_stat_heap_sym_slot_size,
     gc_stat_heap_sym_heap_eden_pages,
     gc_stat_heap_sym_heap_eden_slots,
-    gc_stat_heap_sym_heap_tomb_pages,
-    gc_stat_heap_sym_heap_tomb_slots,
     gc_stat_heap_sym_total_allocated_pages,
     gc_stat_heap_sym_force_major_gc_count,
     gc_stat_heap_sym_force_incremental_marking_finish_count,
