@@ -21,11 +21,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
     @cmd.options[:args] = %w[a]
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a2 = specs["a-2"]
 
@@ -46,11 +42,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @cmd.options[:args] = %w[a]
     @cmd.options[:version] = req(">= 0.1")
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a2 = specs["a-2"]
     assert_path_exist(File.join(@tempdir, a2.file_name),
@@ -68,11 +60,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @cmd.options[:args] = %w[a]
     @cmd.options[:prerelease] = true
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a2 = specs["a-2"]
 
@@ -105,11 +93,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     FileUtils.cp a2_universal_darwin, a2_universal_darwin_spec.cache_file
 
     util_set_arch "arm64-darwin20" do
-      use_ui @ui do
-        Dir.chdir @tempdir do
-          @cmd.execute
-        end
-      end
+      execute_with_exit_code
     end
 
     assert_path_exist(File.join(@tempdir, a2_universal_darwin_spec.file_name),
@@ -126,11 +110,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @cmd.options[:prerelease] = true
     @cmd.options[:version] = "2.a"
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a2_pre = specs["a-2.a"]
 
@@ -147,11 +127,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @cmd.options[:args] = %w[a]
     @cmd.options[:version] = Gem::Requirement.new "1"
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a1 = specs["a-1"]
 
@@ -166,11 +142,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
     @cmd.options[:args] = %w[a:1]
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a1 = specs["a-1"]
 
@@ -182,11 +154,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
     @cmd.options[:args] = %w[a b]
     @cmd.options[:version] = Gem::Requirement.new "1"
 
-    use_ui @ui do
-      assert_raise Gem::MockGemUi::TermError, @ui.error do
-        @cmd.execute
-      end
-    end
+    execute_with_term_error
 
     msg = "ERROR:  Can't use --version with multiple gems. You can specify multiple gems with" \
       " version requirements using `gem fetch 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
@@ -203,11 +171,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
     @cmd.options[:args] = %w[a:1 b:1]
 
-    use_ui @ui do
-      Dir.chdir @tempdir do
-        @cmd.execute
-      end
-    end
+    execute_with_exit_code
 
     a1 = specs["a-1"]
     b1 = specs["b-1"]
@@ -225,9 +189,7 @@ class TestGemCommandsFetchCommand < Gem::TestCase
 
     @cmd.options[:args] = %w[foo:2]
 
-    use_ui @ui do
-      @cmd.execute
-    end
+    execute_with_term_error
 
     expected = <<-EXPECTED
 ERROR:  Could not find a valid gem 'foo' (2) in any repository
@@ -245,14 +207,32 @@ ERROR:  Possible alternatives: foo
     @cmd.options[:args] = %w[foo:2]
     @cmd.options[:suggest_alternate] = false
 
-    use_ui @ui do
-      @cmd.execute
-    end
+    execute_with_term_error
 
     expected = <<-EXPECTED
 ERROR:  Could not find a valid gem 'foo' (2) in any repository
     EXPECTED
 
     assert_equal expected, @ui.error
+  end
+
+  private
+
+  def execute_with_term_error
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::TermError, @ui.error do
+        @cmd.execute
+      end
+    end
+  end
+
+  def execute_with_exit_code
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+          @cmd.execute
+        end
+      end
+    end
   end
 end
