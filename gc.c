@@ -1051,7 +1051,7 @@ rb_data_free(void *objspace, VALUE obj)
 
         if (dfree) {
             if (dfree == RUBY_DEFAULT_FREE) {
-                if (!RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (!RTYPEDDATA_P(obj) || !RTYPEDDATA_EMBEDDED_P(obj)) {
                     xfree(data);
                     RB_DEBUG_COUNTER_INC(obj_data_xfree);
                 }
