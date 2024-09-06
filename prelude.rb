@@ -1,7 +1,11 @@
 class Binding
   # :nodoc:
   def irb
-    force_activate "irb" if defined?(Bundler) && !Gem.loaded_specs["irb"]
+    if defined?(Bundler) && !Gem.loaded_specs["irb"]
+      unless force_activate "irb"
+        warn "irb is not found. Install irb from RubyGems or add irb to Gemfile."
+      end
+    end
     require 'irb'
     irb
   end
