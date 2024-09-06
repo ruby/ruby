@@ -84,6 +84,7 @@ The following default gems are updated.
 * resolv 0.4.0
 * stringio 3.1.2.dev
 * strscan 3.1.1.dev
+* time 0.4.0
 * uri 0.13.1
 * zlib 3.1.1
 
