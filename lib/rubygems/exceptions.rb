@@ -134,6 +134,8 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   attr_reader :errors
 end
 
+Gem.deprecate_constant :SpecificGemNotFoundException
+
 ##
 # Raised by Gem::Resolver when dependencies conflict and create the
 # inability to find a valid possible spec for a request.
