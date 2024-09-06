@@ -226,6 +226,7 @@ module Bundler
         git_proxy.checkout if requires_checkout?
         FileUtils.cp_r("#{cache_path}/.", app_cache_path)
         FileUtils.touch(app_cache_path.join(".bundlecache"))
+        FileUtils.rm_rf(Dir.glob(app_cache_path.join("hooks/*.sample")))
       end
 
       def load_spec_files
