@@ -29,10 +29,8 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
     pick_sets if @remote && @sets.empty?
 
     super
-  rescue Gem::RemoteFetcher::FetchError => e
-    replace_failed_api_set e
-
-    retry
+  rescue Gem::RemoteFetcher::FetchError
+    []
   end
 
   def prefetch(reqs) # :nodoc:
@@ -48,30 +46,6 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
 
       q.breakable
       q.pp @sets
-    end
-  end
-
-  ##
-  # Replaces a failed APISet for the URI in +error+ with an IndexSet.
-  #
-  # If no matching APISet can be found the original +error+ is raised.
-  #
-  # The calling method must retry the exception to repeat the lookup.
-
-  def replace_failed_api_set(error) # :nodoc:
-    uri = error.original_uri
-    uri = Gem::URI uri unless Gem::URI === uri
-    uri += "."
-
-    raise error unless api_set = @sets.find do |set|
-      Gem::Resolver::APISet === set && set.dep_uri == uri
-    end
-
-    index_set = Gem::Resolver::IndexSet.new api_set.source
-
-    @sets.map! do |set|
-      next set unless set == api_set
-      index_set
     end
   end
 end
