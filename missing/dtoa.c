@@ -1647,8 +1647,12 @@ break2:
     }
 #endif
     if (c == '.') {
-        if (!ISDIGIT(s[1]))
+        if (!ISDIGIT(s[1])) {
+            if (s[1] == 'e' || s[1] == 'E' || s[1] == '\0') {
+                c = *++s;
+            }
             goto dig_done;
+        }
         c = *++s;
         if (!nd) {
             for (; c == '0'; c = *++s)

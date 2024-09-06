@@ -129,9 +129,16 @@ class TestFloat < Test::Unit::TestCase
     assert_in_delta(a, 0, Float::EPSILON)
     a = Float("-.0")
     assert_in_delta(a, 0, Float::EPSILON)
-    assert_raise(ArgumentError){Float("0.")}
-    assert_raise(ArgumentError){Float("+0.")}
-    assert_raise(ArgumentError){Float("-0.")}
+    a = Float("0.")
+    assert_in_delta(a, 0, Float::EPSILON)
+    a = Float("+0.")
+    assert_in_delta(a, 0, Float::EPSILON)
+    a = Float("-0.")
+    assert_in_delta(a, 0, Float::EPSILON)
+    a = Float("1.")
+    assert_in_delta(a, 1, Float::EPSILON)
+    a = Float("1.e+00")
+    assert_in_delta(a, 1, Float::EPSILON)
     assert_raise(ArgumentError){Float(".")}
     assert_raise(ArgumentError){Float("+")}
     assert_raise(ArgumentError){Float("+.")}
@@ -139,8 +146,6 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("-.")}
     assert_raise(ArgumentError){Float("1e")}
     assert_raise(ArgumentError){Float("1__1")}
-    assert_raise(ArgumentError){Float("1.")}
-    assert_raise(ArgumentError){Float("1.e+00")}
     assert_raise(ArgumentError){Float("0x.1")}
     assert_raise(ArgumentError){Float("0x1.")}
     assert_raise(ArgumentError){Float("0x1.0")}

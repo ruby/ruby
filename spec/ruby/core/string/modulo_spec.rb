@@ -758,7 +758,6 @@ describe "String#%" do
       -> { format % "" }.should raise_error(ArgumentError)
       -> { format % "x" }.should raise_error(ArgumentError)
       -> { format % "." }.should raise_error(ArgumentError)
-      -> { format % "10." }.should raise_error(ArgumentError)
       -> { format % "5x" }.should raise_error(ArgumentError)
       -> { format % "0b1" }.should raise_error(ArgumentError)
       -> { format % "10e10.5" }.should raise_error(ArgumentError)
@@ -769,6 +768,19 @@ describe "String#%" do
       obj.should_receive(:to_f).and_return(5.0)
       (format % obj).should == (format % 5.0)
     end
+
+    ruby_version_is ""..."3.4" do
+      it "behaves as if calling Kernel#Float for #{format} arguments, when the passed argument does not respond to #to_ary and no fractional part floating point string" do
+        -> { format % "10." }.should raise_error(ArgumentError)
+      end
+    end
+
+    ruby_version_is "3.4" do
+      it "behaves as if calling Kernel#Float for #{format} arguments, when the passed argument does not respond to #to_ary and no fractional part floating point string" do
+        (format % "10.").should == (format % 10.0)
+      end
+    end
+
 
     it "behaves as if calling Kernel#Float for #{format} arguments, when the passed argument is hexadecimal string" do
       (format % "0xA").should == (format % 0xA)
