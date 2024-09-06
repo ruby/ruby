@@ -151,7 +151,7 @@ module OpenURI
     end
     if options.has_key? :request_specific_fields
       if !(options[:request_specific_fields].is_a?(Hash) || options[:request_specific_fields].is_a?(Proc))
-        raise ArgumentError, "Invalid request_specific_fields' format: #{options[:request_specific_fields]}"
+        raise ArgumentError, "Invalid request_specific_fields option: #{options[:request_specific_fields].inspect}"
       end
     end
     unless mode == nil ||

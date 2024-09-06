@@ -393,7 +393,7 @@ class TestOpenURI < Test::Unit::TestCase
     with_http {|srv, url|
       srv.mount_proc("/r1/", lambda {|req, res| res.body = "r1" } )
       exc = assert_raise(ArgumentError) { URI.open("#{url}/r1/", request_specific_fields: "dummy_token") {} }
-      assert_equal("Invalid request_specific_fields' format: dummy_token", exc.message)
+      assert_equal('Invalid request_specific_fields option: "dummy_token"', exc.message)
     }
   end
 
