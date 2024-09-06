@@ -210,7 +210,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_equal stat[:heap_available_slots], stat[:heap_live_slots] + stat[:heap_free_slots] + stat[:heap_final_slots]
     assert_equal stat[:heap_live_slots], stat[:total_allocated_objects] - stat[:total_freed_objects] - stat[:heap_final_slots]
-    assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages] + stat[:heap_tomb_pages]
+    assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages]
 
     if use_rgengc?
       assert_equal stat[:count], stat[:major_gc_count] + stat[:minor_gc_count]
@@ -236,13 +236,9 @@ class TestGc < Test::Unit::TestCase
       end
 
       assert_equal (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) * (2**i), stat_heap[:slot_size]
-      assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
       assert_operator stat_heap[:heap_eden_pages], :<=, stat[:heap_eden_pages]
       assert_operator stat_heap[:heap_eden_slots], :>=, 0
-      assert_operator stat_heap[:heap_tomb_pages], :<=, stat[:heap_tomb_pages]
-      assert_operator stat_heap[:heap_tomb_slots], :>=, 0
       assert_operator stat_heap[:total_allocated_pages], :>=, 0
-      assert_operator stat_heap[:total_freed_pages], :>=, 0
       assert_operator stat_heap[:force_major_gc_count], :>=, 0
       assert_operator stat_heap[:force_incremental_marking_finish_count], :>=, 0
       assert_operator stat_heap[:total_allocated_objects], :>=, 0
@@ -296,12 +292,8 @@ class TestGc < Test::Unit::TestCase
       hash.each { |k, v| stat_heap_sum[k] += v }
     end
 
-    assert_equal stat[:heap_allocatable_pages], stat_heap_sum[:heap_allocatable_pages]
     assert_equal stat[:heap_eden_pages], stat_heap_sum[:heap_eden_pages]
-    assert_equal stat[:heap_tomb_pages], stat_heap_sum[:heap_tomb_pages]
-    assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots] + stat_heap_sum[:heap_tomb_slots]
-    assert_equal stat[:total_allocated_pages], stat_heap_sum[:total_allocated_pages]
-    assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
+    assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
   end
@@ -328,7 +320,7 @@ class TestGc < Test::Unit::TestCase
 
     assert_separately([], __FILE__, __LINE__, <<-'RUBY')
       GC.start
-      count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT]
+      count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_slots)
       count.times{ "a" + "b" }
       assert_equal :newobj, GC.latest_gc_info[:gc_by]
     RUBY
@@ -388,6 +380,7 @@ class TestGc < Test::Unit::TestCase
 
   def test_latest_gc_info_weak_references_count
     assert_separately([], __FILE__, __LINE__, <<~RUBY)
+      GC.disable
       count = 10_000
       # Some weak references may be created, so allow some margin of error
       error_tolerance = 100
@@ -542,114 +535,40 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter_init_slots
-    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       # Constant from gc.c.
       GC_HEAP_INIT_SLOTS = 10_000
-      GC.stat_heap.each do |_, s|
-        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
-        # Allocatable pages are assumed to have lost 1 slot due to alignment.
-        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
 
-        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-        assert_operator(total_slots, :>=, GC_HEAP_INIT_SLOTS, s)
+      gc_count = GC.stat(:count)
+      # Fill up all of the size pools to the init slots
+      GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+        capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
+        while GC.stat_heap(i, :heap_eden_slots) < GC_HEAP_INIT_SLOTS
+          Array.new(capa)
+        end
       end
+
+      assert_equal gc_count, GC.stat(:count)
     RUBY
 
     env = {}
-    # Make the heap big enough to ensure the heap never needs to grow.
-    sizes = GC.stat_heap.keys.reverse.map { |i| (i + 1) * 100_000 }
+    sizes = GC.stat_heap.keys.reverse.map { 20_000 }
     GC.stat_heap.keys.each do |heap|
       env["RUBY_GC_HEAP_#{heap}_INIT_SLOTS"] = sizes[heap].to_s
     end
-    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
-      SIZES = #{sizes}
-      GC.stat_heap.each do |i, s|
-        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
-        # Allocatable pages are assumed to have lost 1 slot due to alignment.
-        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
-
-        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-
-        # The delta is calculated as follows:
-        #  - For allocated pages, each page can vary by 1 slot due to alignment.
-        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
-        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
-      end
-    RUBY
-
-    # Check that the configured sizes are "remembered" across GC invocations.
-    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       SIZES = #{sizes}
 
-      # Fill size pool 0 with transient objects.
-      ary = []
-      while GC.stat_heap(0, :heap_allocatable_pages) != 0
-        ary << Object.new
-      end
-      ary.clear
-      ary = nil
-
-      # Clear all the objects that were allocated.
-      GC.start
-
-      # Check that we still have the same number of slots as initially configured.
-      GC.stat_heap.each do |i, s|
-        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
-        # Allocatable pages are assumed to have lost 1 slot due to alignment.
-        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
-
-        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-
-        # The delta is calculated as follows:
-        #  - For allocated pages, each page can vary by 1 slot due to alignment.
-        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
-        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
-      end
-    RUBY
-
-    # Check that we don't grow the heap in minor GC if we have alloctable pages.
-    env["RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO"] = "0.3"
-    env["RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO"] = "0.99"
-    env["RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO"] = "1.0"
-    env["RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR"] = "100" # Large value to disable major GC
-    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY)
-      SIZES = #{sizes}
-
-      # Run a major GC to clear out dead objects.
-      GC.start
-
-      # Disable GC so we can control when GC is ran.
-      GC.disable
-
-      # Run minor GC enough times so that we don't grow the heap because we
-      # haven't yet ran RVALUE_OLD_AGE minor GC cycles.
-      GC::INTERNAL_CONSTANTS[:RVALUE_OLD_AGE].times { GC.start(full_mark: false) }
-
-      # Fill size pool 0 to over 50% full so that the number of allocatable
-      # pages that will be created will be over the number in heap_allocatable_pages
-      # (calculated using RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO).
-      # 70% was chosen here to guarantee that.
-      ary = []
-      while GC.stat_heap(0, :heap_allocatable_pages) >
-          (GC.stat_heap(0, :heap_allocatable_pages) + GC.stat_heap(0, :heap_eden_pages)) * 0.3
-        ary << Object.new
+      gc_count = GC.stat(:count)
+      # Fill up all of the size pools to the init slots
+      GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+        capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
+        while GC.stat_heap(i, :heap_eden_slots) < SIZES[i]
+          Array.new(capa)
+        end
       end
 
-      GC.start(full_mark: false)
-
-      # Check that we still have the same number of slots as initially configured.
-      GC.stat_heap.each do |i, s|
-        multiple = s[:slot_size] / (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
-        # Allocatable pages are assumed to have lost 1 slot due to alignment.
-        slots_per_page = (GC::INTERNAL_CONSTANTS[:HEAP_PAGE_OBJ_LIMIT] / multiple) - 1
-
-        total_slots = s[:heap_eden_slots] + s[:heap_allocatable_pages] * slots_per_page
-
-        # The delta is calculated as follows:
-        #  - For allocated pages, each page can vary by 1 slot due to alignment.
-        #  - For allocatable pages, we can end up with at most 1 extra page of slots.
-        assert_in_delta(SIZES[i], total_slots, s[:heap_eden_pages] + slots_per_page, s)
-      end
+      assert_equal gc_count, GC.stat(:count)
     RUBY
   end
 
@@ -749,7 +668,7 @@ class TestGc < Test::Unit::TestCase
 
       # Should not be thrashing in page creation
       assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
-      assert_equal 0, after_stats[:heap_tomb_pages], debug_msg
+      assert_equal 0, after_stats[:heap_empty_pages], debug_msg
       assert_equal 0, after_stats[:total_freed_pages], debug_msg
       # Only young objects, so should not trigger major GC
       assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count], debug_msg
