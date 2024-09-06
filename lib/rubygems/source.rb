@@ -79,7 +79,7 @@ class Gem::Source
       uri
     end
 
-    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "./versions"
+    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
 
     begin
       fetcher = Gem::RemoteFetcher.fetcher
