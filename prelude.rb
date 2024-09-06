@@ -1,18 +1,15 @@
 class Binding
   # :nodoc:
   def irb
-    begin
-      require 'irb'
-    rescue LoadError
-      force_require "irb" if defined?(Bundler)
-    end
+    force_activate "irb" if defined?(Bundler) && !Gem.loaded_specs["irb"]
+    require 'irb'
     irb
   end
 
   # suppress redefinition warning
   alias irb irb # :nodoc:
 
-  private def force_require(gem)
+  private def force_activate(gem)
     gemspecs = (Gem::Specification.dirs + [Gem.default_specifications_dir]).map{|d|
                 Dir.glob("#{d}/#{gem}*.gemspec").reverse
               }.flatten
@@ -20,9 +17,8 @@ class Binding
       false
     else
       gemspec = Gem::Specification.load(gemspecs[0])
-      gemspec.dependencies.each{|dep| force_require dep.name }
+      gemspec.dependencies.each{|dep| force_activate dep.name }
       gemspec.activate
-      require gem.gsub("-", "/")
     end
   end
 end
