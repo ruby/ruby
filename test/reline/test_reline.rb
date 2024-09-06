@@ -303,12 +303,12 @@ class Reline::Test < Reline::TestCase
 
   def test_vi_editing_mode
     Reline.vi_editing_mode
-    assert_equal(Reline::KeyActor::ViInsert, Reline.core.config.editing_mode.class)
+    assert_equal(:vi_insert, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
-    assert_equal(Reline::KeyActor::Emacs, Reline.core.config.editing_mode.class)
+    assert_equal(:emacs, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_add_dialog_proc
@@ -375,7 +375,43 @@ class Reline::Test < Reline::TestCase
   def test_dumb_terminal
     lib = File.expand_path("../../lib", __dir__)
     out = IO.popen([{"TERM"=>"dumb"}, Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", "p Reline.core.io_gate"], &:read)
-    assert_equal("Reline::GeneralIO", out.chomp)
+    assert_match(/#<Reline::Dumb/, out.chomp)
+  end
+
+  def test_print_prompt_before_everything_else
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p Reline::IOGate.class; p Reline.readline 'prompt> '"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "abc\n"
+      io.close_write
+      io.read
+    end
+    assert_match(/\AReline::ANSI\nprompt> /, out)
+  end
+
+  def test_read_eof_returns_input
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-a"
+      io.close_write
+      io.read
+    end
+    assert_include(out, { result: 'a' }.inspect)
+  end
+
+  def test_read_eof_returns_nil_if_empty
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-h"
+      io.close_write
+      io.read
+    end
+    assert_include(out, { result: nil }.inspect)
   end
 
   def test_require_reline_should_not_trigger_winsize
@@ -389,7 +425,7 @@ class Reline::Test < Reline::TestCase
       require("reline") && p(Reline.core.io_gate)
     RUBY
     out = IO.popen([{}, Reline.test_rubybin, "-I#{lib}", "-e", code], &:read)
-    assert_equal("Reline::ANSI", out.chomp)
+    assert_include(out.chomp, "Reline::ANSI")
   end
 
   def win?

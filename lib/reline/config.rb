@@ -29,29 +29,7 @@ class Reline::Config
   attr_accessor :autocompletion
 
   def initialize
-    @additional_key_bindings = {} # from inputrc
-    @additional_key_bindings[:emacs] = {}
-    @additional_key_bindings[:vi_insert] = {}
-    @additional_key_bindings[:vi_command] = {}
-    @oneshot_key_bindings = {}
-    @editing_mode_label = :emacs
-    @keymap_label = :emacs
-    @keymap_prefix = []
-    @key_actors = {}
-    @key_actors[:emacs] = Reline::KeyActor::Emacs.new
-    @key_actors[:vi_insert] = Reline::KeyActor::ViInsert.new
-    @key_actors[:vi_command] = Reline::KeyActor::ViCommand.new
-    @vi_cmd_mode_string = '(cmd)'
-    @vi_ins_mode_string = '(ins)'
-    @emacs_mode_string = '@'
-    # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
-    @history_size = -1 # unlimited
-    @keyseq_timeout = 500
-    @test_mode = false
-    @autocompletion = false
-    @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
-    @loaded = false
-    @enable_bracketed_paste = true
+    reset_variables
   end
 
   def reset
@@ -61,8 +39,38 @@ class Reline::Config
     @oneshot_key_bindings.clear
   end
 
+  def reset_variables
+    @additional_key_bindings = { # from inputrc
+      emacs: Reline::KeyActor::Base.new,
+      vi_insert: Reline::KeyActor::Base.new,
+      vi_command: Reline::KeyActor::Base.new
+    }
+    @oneshot_key_bindings = Reline::KeyActor::Base.new
+    @editing_mode_label = :emacs
+    @keymap_label = :emacs
+    @keymap_prefix = []
+    @default_key_bindings = {
+      emacs: Reline::KeyActor::Base.new(Reline::KeyActor::EMACS_MAPPING),
+      vi_insert: Reline::KeyActor::Base.new(Reline::KeyActor::VI_INSERT_MAPPING),
+      vi_command: Reline::KeyActor::Base.new(Reline::KeyActor::VI_COMMAND_MAPPING)
+    }
+    @vi_cmd_mode_string = '(cmd)'
+    @vi_ins_mode_string = '(ins)'
+    @emacs_mode_string = '@'
+    # https://tiswww.case.edu/php/chet/readline/readline.html#IDX25
+    @history_size = -1 # unlimited
+    @keyseq_timeout = 500
+    @test_mode = false
+    @autocompletion = false
+    @convert_meta = seven_bit_encoding?(Reline::IOGate.encoding)
+    @loaded = false
+    @enable_bracketed_paste = true
+    @show_mode_in_prompt = false
+    @default_inputrc_path = nil
+  end
+
   def editing_mode
-    @key_actors[@editing_mode_label]
+    @default_key_bindings[@editing_mode_label]
   end
 
   def editing_mode=(val)
@@ -74,7 +82,7 @@ class Reline::Config
   end
 
   def keymap
-    @key_actors[@keymap_label]
+    @default_key_bindings[@keymap_label]
   end
 
   def loaded?
@@ -133,14 +141,14 @@ class Reline::Config
 
   def key_bindings
     # The key bindings for each editing mode will be overwritten by the user-defined ones.
-    kb = @key_actors[@editing_mode_label].default_key_bindings.dup
-    kb.merge!(@additional_key_bindings[@editing_mode_label])
-    kb.merge!(@oneshot_key_bindings)
-    kb
+    Reline::KeyActor::Composite.new([@oneshot_key_bindings, @additional_key_bindings[@editing_mode_label], @default_key_bindings[@editing_mode_label]])
   end
 
   def add_oneshot_key_binding(keystroke, target)
-    @oneshot_key_bindings[keystroke] = target
+    # IRB sets invalid keystroke [Reline::Key]. We should ignore it.
+    return unless keystroke.all? { |c| c.is_a?(Integer) }
+
+    @oneshot_key_bindings.add(keystroke, target)
   end
 
   def reset_oneshot_key_bindings
@@ -148,11 +156,11 @@ class Reline::Config
   end
 
   def add_default_key_binding_by_keymap(keymap, keystroke, target)
-    @key_actors[keymap].default_key_bindings[keystroke] = target
+    @default_key_bindings[keymap].add(keystroke, target)
   end
 
   def add_default_key_binding(keystroke, target)
-    @key_actors[@keymap_label].default_key_bindings[keystroke] = target
+    add_default_key_binding_by_keymap(@keymap_label, keystroke, target)
   end
 
   def read_lines(lines, file = nil)
@@ -182,16 +190,17 @@ class Reline::Config
       next if if_stack.any? { |_no, skip| skip }
 
       case line
-      when /^set +([^ ]+) +([^ ]+)/i
-        var, value = $1.downcase, $2
-        bind_variable(var, value)
+      when /^set +([^ ]+) +(.+)/i
+        # value ignores everything after a space, raw_value does not.
+        var, value, raw_value = $1.downcase, $2.partition(' ').first, $2
+        bind_variable(var, value, raw_value)
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
         key, func_name = $1, $2
         func_name = func_name.split.first
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
-        @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
+        @additional_key_bindings[@keymap_label].add(@keymap_prefix + keystroke, func)
       end
     end
     unless if_stack.empty?
@@ -234,7 +243,7 @@ class Reline::Config
     end
   end
 
-  def bind_variable(name, value)
+  def bind_variable(name, value, raw_value)
     case name
     when 'history-size'
       begin
@@ -242,24 +251,8 @@ class Reline::Config
       rescue ArgumentError
         @history_size = 500
       end
-    when 'bell-style'
-      @bell_style =
-        case value
-        when 'none', 'off'
-          :none
-        when 'audible', 'on'
-          :audible
-        when 'visible'
-          :visible
-        else
-          :audible
-        end
-    when 'comment-begin'
-      @comment_begin = value.dup
-    when 'completion-query-items'
-      @completion_query_items = value.to_i
     when 'isearch-terminators'
-      @isearch_terminators = retrieve_string(value)
+      @isearch_terminators = retrieve_string(raw_value)
     when 'editing-mode'
       case value
       when 'emacs'
@@ -301,11 +294,11 @@ class Reline::Config
         @show_mode_in_prompt = false
       end
     when 'vi-cmd-mode-string'
-      @vi_cmd_mode_string = retrieve_string(value)
+      @vi_cmd_mode_string = retrieve_string(raw_value)
     when 'vi-ins-mode-string'
-      @vi_ins_mode_string = retrieve_string(value)
+      @vi_ins_mode_string = retrieve_string(raw_value)
     when 'emacs-mode-string'
-      @emacs_mode_string = retrieve_string(value)
+      @emacs_mode_string = retrieve_string(raw_value)
     when *VARIABLE_NAMES then
       variable_name = :"@#{name.tr(?-, ?_)}"
       instance_variable_set(variable_name, value.nil? || value == '1' || value == 'on')
@@ -371,6 +364,11 @@ class Reline::Config
       ret << key_notation_to_code($&)
     end
     ret
+  end
+
+  def reload
+    reset_variables
+    read
   end
 
   private def seven_bit_encoding?(encoding)
