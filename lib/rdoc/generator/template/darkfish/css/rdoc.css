@@ -307,7 +307,7 @@ main h6 {
 
 #search-field {
   width: 100%;
-  padding: 0.5em 1em 0.5em 2em;
+  padding: 0.5em 1em 0.5em 2.5em;
   border: 1px solid var(--border-color);
   border-radius: 20px;
   font-size: 14px;
