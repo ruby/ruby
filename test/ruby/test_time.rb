@@ -1490,6 +1490,9 @@ class TestTime < Test::Unit::TestCase
         assert_equal("1960-12-31T23:00:00.123456Z", t.__send__(method, 6))
       end
 
+      t = get_t2000.getlocal("-09:30") # Pacific/Marquesas
+      assert_equal("1999-12-31T14:30:00-09:30", t.__send__(method))
+
       assert_equal("10000-01-01T00:00:00Z", Time.utc(10000).__send__(method))
       assert_equal("9999-01-01T00:00:00Z", Time.utc(9999).__send__(method))
       assert_equal("0001-01-01T00:00:00Z", Time.utc(1).__send__(method)) # 1 AD

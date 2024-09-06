@@ -5285,13 +5285,15 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     }
     else {
         long offset = NUM2LONG(rb_time_utc_offset(time));
+        *ptr++ = offset < 0 ? '-' : '+';
+        if (offset < 0) offset = -offset;
         int offset_hours = (int)(offset / 3600);
-        int offset_minutes = (int)((offset % 3600 / 60));
-        written = snprintf(ptr, sizeof("+ZH:ZM"), "%+03d:%02d", offset_hours, offset_minutes);
-        RUBY_ASSERT(written == sizeof("+ZH:ZM") - 1);
+        int offset_minutes = (int)(offset % 3600 / 60);
+        written = snprintf(ptr, sizeof("ZH:ZM"), "%02d:%02d", offset_hours, offset_minutes);
+        RUBY_ASSERT(written == sizeof("ZH:ZM") - 1, "%d[%.*s]", written, written, ptr);
         ptr += written;
     }
-    rb_str_set_len(str, ptr -start); // We could skip coderange scanning as we know it's full ASCII.
+    rb_str_set_len(str, ptr - start); // We could skip coderange scanning as we know it's full ASCII.
     return str;
 }
 
