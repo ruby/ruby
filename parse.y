@@ -15132,11 +15132,11 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
 #endif
-    rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), loc);
+    rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), argsloc);
     NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
     block->forwarding = TRUE;
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
-    args = arg_append(p, args, new_hash(p, kwrest, loc), loc);
+    args = arg_append(p, args, new_hash(p, kwrest, loc), argsloc);
 #endif
     return arg_blk_pass(args, block);
 }
