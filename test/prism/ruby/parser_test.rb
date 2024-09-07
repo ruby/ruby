@@ -271,8 +271,6 @@ module Prism
           case actual_token[0]
           when :kDO
             actual_token[0] = expected_token[0] if %i[kDO_BLOCK kDO_LAMBDA].include?(expected_token[0])
-          when :tLPAREN
-            actual_token[0] = expected_token[0] if expected_token[0] == :tLPAREN2
           when :tPOW
             actual_token[0] = expected_token[0] if expected_token[0] == :tDSTAR
           end
