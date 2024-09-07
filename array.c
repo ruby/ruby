@@ -7146,7 +7146,8 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  With no block given, returns a new Enumerator.
  *
- *  Related: Array#permutation.
+ *  Related: Array#permutation;
+ *  see also {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
  */
 
 static VALUE
