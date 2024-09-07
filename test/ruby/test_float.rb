@@ -850,6 +850,12 @@ class TestFloat < Test::Unit::TestCase
     o = Object.new
     def o.to_f; inf = Float::INFINITY; inf/inf; end
     assert_predicate(Float(o), :nan?)
+
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-16be"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-16le"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32be"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("utf-32le"))}
+    assert_raise(Encoding::CompatibilityError) {Float("0".encode("iso-2022-jp"))}
   end
 
   def test_invalid_str
