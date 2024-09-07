@@ -3695,6 +3695,9 @@ rb_ary_sort_by_bang(VALUE ary)
  *    a1 # => [Symbol, String, Integer]
  *
  *  With no block given, returns a new Enumerator.
+ *
+ *  Related: #collect!;
+ *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
