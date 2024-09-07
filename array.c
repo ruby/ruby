@@ -3721,6 +3721,9 @@ rb_ary_collect(VALUE ary)
  *    a.map! { |element| element.class } # => [Symbol, String, Integer]
  *
  *  With no block given, returns a new Enumerator.
+ *
+ *  Related: #collect;
+ *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
