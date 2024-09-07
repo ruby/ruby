@@ -1708,7 +1708,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
 
                 break;
               }
-              case PM_FORWARDING_ARGUMENTS_NODE: {
+              case PM_FORWARDING_ARGUMENTS_NODE: { // not counted in argc return value
                 if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
                     *flags |= VM_CALL_FORWARDING;
 
@@ -9628,9 +9628,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
-      case PM_SUPER_NODE: {
+      case PM_SUPER_NODE: { // any super with arguments or `super()`
+        // super()
         // super(foo)
-        // ^^^^^^^^^^
+        // super(...)
         const pm_super_node_t *cast = (const pm_super_node_t *) node;
 
         DECL_ANCHOR(args);
@@ -9649,6 +9650,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int flags = 0;
         struct rb_callinfo_kwarg *keywords = NULL;
         int argc = pm_setup_args(cast->arguments, cast->block, &flags, &keywords, iseq, ret, scope_node, &location);
+        bool is_forwardable = (cast->arguments != NULL) && PM_NODE_FLAG_P(cast->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_FORWARDING);
         flags |= VM_CALL_SUPER | VM_CALL_FCALL;
 
         if (cast->block && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)) {
@@ -9668,7 +9670,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_SEQ(ret, args);
-        if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
+        if (is_forwardable && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
             flags |= VM_CALL_FORWARDING;
             PUSH_INSN2(ret, location, invokesuperforward, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
         }

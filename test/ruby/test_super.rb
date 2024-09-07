@@ -8,6 +8,7 @@ class TestSuper < Test::Unit::TestCase
     def array(*a) a end
     def optional(a = 0) a end
     def keyword(**a) a end
+    def forward(*a) a end
   end
   class Single1 < Base
     def single(*) super end
@@ -61,6 +62,16 @@ class TestSuper < Test::Unit::TestCase
       foo = "changed2"
       y = super
       [x, y]
+    end
+  end
+  class Forward < Base
+    def forward(...)
+      w = super()
+      x = super
+      y = super(...)
+      a = 1
+      z = super(a, ...)
+      [w, x, y, z]
     end
   end
 
@@ -132,6 +143,11 @@ class TestSuper < Test::Unit::TestCase
   end
   def test_keyword2
     assert_equal([{foo: "changed1"}, {foo: "changed2"}], Keyword2.new.keyword)
+  end
+  def test_forwardable(...)
+    assert_equal([[],[],[],[1]], Forward.new.forward())
+    assert_equal([[],[1,2],[1,2],[1,1,2]], Forward.new.forward(1,2))
+    assert_equal([[],[:test],[:test],[1,:test]], Forward.new.forward(:test, ...))
   end
 
   class A
