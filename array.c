@@ -6318,7 +6318,8 @@ rb_ary_uniq(VALUE ary)
  *    a          # => [0, false, "", [], {}]
  *    a.compact! # => nil
  *
- *  Related: Array#compact.
+ *  Related: Array#compact;
+ *  see also {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
