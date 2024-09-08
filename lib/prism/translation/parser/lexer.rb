@@ -173,7 +173,7 @@ module Prism
           UMINUS_NUM: :tUNARY_NUM,
           UPLUS: :tUPLUS,
           USTAR: :tSTAR,
-          USTAR_STAR: :tPOW,
+          USTAR_STAR: :tDSTAR,
           WORDS_SEP: :tSPACE
         }
 
