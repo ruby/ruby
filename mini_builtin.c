@@ -6,15 +6,43 @@
 
 #include "miniprelude.c"
 
+static VALUE
+prelude_ast_value(VALUE name, VALUE code, int line)
+{
+    rb_ast_t *ast;
+    VALUE ast_value = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    ast = rb_ruby_ast_data_get(ast_value);
+    if (!ast || !ast->body.root) {
+        if (ast) rb_ast_dispose(ast);
+        rb_exc_raise(rb_errinfo());
+    }
+    return ast_value;
+}
 
-bool pm_builtin_ast_value(pm_parse_result_t *result, const char *feature_name, VALUE *name_str);
-VALUE rb_builtin_ast_value(const char *feature_name, VALUE *name_str);
+static void
+pm_prelude_load(pm_parse_result_t *result, VALUE name, VALUE code, int line)
+{
+    pm_options_line_set(&result->options, line);
+    VALUE error = pm_parse_string(result, code, name, NULL);
+
+    if (!NIL_P(error)) {
+        pm_parse_result_free(result);
+        rb_exc_raise(error);
+    }
+}
 
 static const rb_iseq_t *
 builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *table)
 {
     VALUE name_str = 0;
+    int start_line;
     const rb_iseq_t *iseq;
+    VALUE code = rb_builtin_find(feature_name, &name_str, &start_line);
+    if (NIL_P(code)) {
+        rb_fatal("builtin_iseq_load: can not find %s; "
+                 "probably miniprelude.c is out of date",
+                 feature_name);
+    }
 
     rb_vm_t *vm = GET_VM();
     static const rb_compile_option_t optimization = {
@@ -32,33 +60,22 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
 
     if (*rb_ruby_prism_ptr()) {
         pm_parse_result_t result = { 0 };
-        if (!pm_builtin_ast_value(&result, feature_name, &name_str)) {
-            rb_fatal("builtin_iseq_load: can not find %s; "
-                     "probably miniprelude.c is out of date",
-                     feature_name);
-        }
+        pm_prelude_load(&result, name_str, code, start_line);
 
         vm->builtin_function_table = table;
         iseq = pm_iseq_new_with_opt(&result.node, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization);
 
-        GET_VM()->builtin_function_table = NULL;
+        vm->builtin_function_table = NULL;
         pm_parse_result_free(&result);
     }
     else {
-        VALUE ast_value = rb_builtin_ast_value(feature_name, &name_str);
-
-        if (NIL_P(ast_value)) {
-            rb_fatal("builtin_iseq_load: can not find %s; "
-                     "probably miniprelude.c is out of date",
-                     feature_name);
-        }
-
+        VALUE ast_value = prelude_ast_value(name_str, code, start_line);
         rb_ast_t *ast = rb_ruby_ast_data_get(ast_value);
 
         vm->builtin_function_table = table;
         iseq = rb_iseq_new_with_opt(ast_value, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization, Qnil);
 
-        GET_VM()->builtin_function_table = NULL;
+        vm->builtin_function_table = NULL;
         rb_ast_dispose(ast);
     }
 
