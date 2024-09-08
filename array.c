@@ -4990,6 +4990,7 @@ ary_append(VALUE x, VALUE y)
  *    a.concat(['two', 'three'], [:four, :five], a)
  *    # => [0, 1, "two", "three", :four, :five, 0, 1]
  *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
