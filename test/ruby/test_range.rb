@@ -519,6 +519,58 @@ class TestRange < Test::Unit::TestCase
     assert_equal(%w[a b c], ('a'...).step.take(3))
   end
 
+  def test_step_symbol_legacy
+    # finite
+    a = []
+    (:a..:g).step(2) { a << _1 }
+    assert_equal(%i[a c e g], a)
+
+    assert_kind_of(Enumerator, (:a..:g).step(2))
+    assert_equal(%i[a c e g], (:a..:g).step(2).to_a)
+
+    a = []
+    (:a...:g).step(2) { a << _1 }
+    assert_equal(%i[a c e], a)
+
+    assert_kind_of(Enumerator, (:a...:g).step(2))
+    assert_equal(%i[a c e], (:a...:g).step(2).to_a)
+
+    # endless
+    a = []
+    (:a...).step(2) { a << _1; break if a.size == 3 }
+    assert_equal(%i[a c e], a)
+
+    assert_kind_of(Enumerator, (:a...).step(2))
+    assert_equal(%i[a c e], (:a...).step(2).take(3))
+
+    # beginless
+    assert_raise(ArgumentError) { (...:g).step(2) {} }
+    assert_raise(ArgumentError) { (...:g).step(2) }
+
+    # step is not provided
+    a = []
+    (:a..:d).step { a << _1 }
+    assert_equal(%i[a b c d], a)
+
+    assert_kind_of(Enumerator, (:a..:d).step)
+    assert_equal(%i[a b c d], (:a..:d).step.to_a)
+
+    a = []
+    (:a...:d).step { a << _1 }
+    assert_equal(%i[a b c], a)
+
+    assert_kind_of(Enumerator, (:a...:d).step)
+    assert_equal(%i[a b c], (:a...:d).step.to_a)
+
+    # endless
+    a = []
+    (:a...).step { a << _1; break if a.size == 3 }
+    assert_equal(%i[a b c], a)
+
+    assert_kind_of(Enumerator, (:a...).step)
+    assert_equal(%i[a b c], (:a...).step.take(3))
+  end
+
   def test_step_bug15537
     assert_equal([10.0, 9.0, 8.0, 7.0], (10 ..).step(-1.0).take(4))
     assert_equal([10.0, 9.0, 8.0, 7.0], (10.0 ..).step(-1).take(4))
