@@ -223,6 +223,7 @@ nav a:hover {
   position: fixed;
   top: 10px;
   left: 20px;
+  cursor: pointer;
 }
 
 #navigation-toggle[aria-expanded="true"] {
