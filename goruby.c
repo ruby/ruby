@@ -60,7 +60,8 @@ int
 goruby_run_node(void *arg)
 {
     int state;
-    if (NIL_P(rb_protect(init_golf, Qtrue, &state))) {
+    if (ruby_executable_node(arg, NULL) &&
+        NIL_P(rb_protect(init_golf, Qtrue, &state))) {
         return state == EXIT_SUCCESS ? EXIT_FAILURE : state;
     }
     return ruby_run_node(arg);
