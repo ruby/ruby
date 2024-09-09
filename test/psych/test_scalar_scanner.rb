@@ -126,6 +126,19 @@ module Psych
       assert_equal '100_', ss.tokenize('100_')
     end
 
+    def test_scan_strings_with_legacy_int_delimiters
+      assert_equal '0x_,_', ss.tokenize('0x_,_')
+      assert_equal '+0__,,', ss.tokenize('+0__,,')
+      assert_equal '-0b,_,', ss.tokenize('-0b,_,')
+    end
+
+    def test_scan_strings_with_strict_int_delimiters
+      scanner = Psych::ScalarScanner.new ClassLoader.new, strict_integer: true
+      assert_equal '0x___', scanner.tokenize('0x___')
+      assert_equal '+0____', scanner.tokenize('+0____')
+      assert_equal '-0b___', scanner.tokenize('-0b___')
+    end
+
     def test_scan_int_commas_and_underscores
       # NB: This test is to ensure backward compatibility with prior Psych versions,
       # not to test against any actual YAML specification.
