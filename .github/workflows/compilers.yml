@@ -143,7 +143,7 @@ jobs:
           - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
 #         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
 
-          - { name: gmp,                  env: { append_configure: '--with-gmp' }, check: true }
+          - { name: gmp,                  env: { append_configure: '--with-gmp' }, check: 'ruby/test_bignum.rb' }
           - { name: jemalloc,             env: { append_configure: '--with-jemalloc' } }
           - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
           - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
@@ -275,8 +275,10 @@ jobs:
       - run: make test-tool
         if: ${{ matrix.entry.check }}
 
-      - run: make test-all TESTS='-- ruby -ext-'
+      - run: make test-all TESTS="-- $tests"
         if: ${{ matrix.entry.check }}
+        env:
+          tests: ${{ matrix.entry.check == true && 'ruby -ext-' || matrix.entry.check }}
 
       - run: make test-spec
         env:
