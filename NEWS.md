@@ -79,6 +79,7 @@ The following default gems are updated.
 * net-http 0.4.1
 * optparse 0.5.0
 * prism 1.0.0
+* psych 5.2.0.beta1
 * rdoc 6.7.0
 * reline 0.5.10
 * resolv 0.4.0
