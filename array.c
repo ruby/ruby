@@ -8619,7 +8619,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #[]=: Assigns specified elements with a given object.
  *  - #<<: Appends an element.
  *  - #push (aliased as #append): Appends elements.
- *  - #unshift (aliased as) #prepend: Prepends leading elements.
+ *  - #unshift (aliased as #prepend): Prepends leading elements.
  *  - #insert: Inserts given objects at a given offset; does not replace elements.
  *  - #concat: Appends all elements from given arrays.
  *  - #fill: Replaces specified elements with specified objects.
