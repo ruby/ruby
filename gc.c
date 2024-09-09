@@ -2349,7 +2349,8 @@ rb_gc_mark_machine_context(const rb_execution_context_t *ec)
 
     void *data =
 #ifdef RUBY_ASAN_ENABLED
-        ec;
+        /* gc_mark_machine_stack_location_maybe() uses data as const */
+        (rb_execution_context_t *)ec;
 #else
         NULL;
 #endif
