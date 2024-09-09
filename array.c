@@ -6797,7 +6797,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects],
  *  or +nil+.
  *
- *  If +count+ is positive,
+ *  When +count+ is positive,
  *  calls the block with each element, then does so repeatedly,
  *  until it has done so +count+ times; returns +nil+:
  *
@@ -6805,18 +6805,20 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *    [0, 1].cycle(2) {|element| output.push(element) } # => nil
  *    output # => [0, 1, 0, 1]
  *
- *  If +count+ is zero or negative, does not call the block:
+ *  When +count+ is zero or negative, does not call the block:
  *
  *    [0, 1].cycle(0) {|element| fail 'Cannot happen' }  # => nil
  *    [0, 1].cycle(-1) {|element| fail 'Cannot happen' } # => nil
  *
- *  If +count+ is +nil+, cycles forever:
+ *  When +count+ is +nil+, cycles forever:
  *
  *    # Prints 0 and 1 forever.
  *    [0, 1].cycle {|element| puts element }
  *    [0, 1].cycle(nil) {|element| puts element }
  *
  *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
  */
 static VALUE
 rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
