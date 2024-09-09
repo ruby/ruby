@@ -6386,10 +6386,12 @@ rb_ary_compact(VALUE ary)
  *  With no argument and a block given, calls the block with each element;
  *  returns the count of elements for which the block returns a truthy value:
  *
- *    [0, 1, 2, 3].count {|element| element > 1} # => 2
+ *    [0, 1, 2, 3].count {|element| element > 1 } # => 2
  *
  *  With argument +object+ and a block given, issues a warning, ignores the block,
  *  and returns the count of elements <tt>==</tt> to +object+.
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
