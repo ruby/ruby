@@ -494,7 +494,7 @@
 #
 #  _Duplication_
 #
-#  - #to_s (aliased as $to_str): If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
+#  - #to_s (aliased as #to_str): If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
 #    otherwise, returns +self+.
 #
 #  === Methods for Converting to Non-+String+
