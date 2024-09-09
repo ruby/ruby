@@ -8553,7 +8553,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Querying
  *
- *  - #length, #size: Returns the count of elements.
+ *  - #length (aliased as #size): Returns the count of elements.
  *  - #include?: Returns whether any element <tt>==</tt> a given object.
  *  - #empty?: Returns whether there are no elements.
  *  - #all?: Returns whether all elements meet a given criterion.
@@ -8561,7 +8561,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #none?: Returns whether no element <tt>==</tt> a given object.
  *  - #one?: Returns whether exactly one element <tt>==</tt> a given object.
  *  - #count: Returns the count of elements that meet a given criterion.
- *  - #find_index, #index: Returns the index of the first element that meets a given criterion.
+ *  - #find_index (aliased as #index): Returns the index of the first element that meets a given criterion.
  *  - #rindex: Returns the index of the last element that meets a given criterion.
  *  - #hash: Returns the integer hash code.
  *
@@ -8578,7 +8578,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  These methods do not modify +self+.
  *
- *  - #[], #slice: Returns consecutive elements as determined by a given argument.
+ *  - #[] (aliased as #slice): Returns consecutive elements as determined by a given argument.
  *  - #fetch: Returns the element at a given offset.
  *  - #first: Returns one or more leading elements.
  *  - #last: Returns one or more trailing elements.
@@ -8603,7 +8603,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #sort: Returns all elements in an order determined by <tt><=></tt> or a given block.
  *  - #reverse: Returns all elements in reverse order.
  *  - #compact: Returns an array containing all non-+nil+ elements.
- *  - #select, #filter: Returns an array containing elements selected by a given block.
+ *  - #select (aliased as #filter): Returns an array containing elements selected by a given block.
  *  - #uniq: Returns an array containing non-duplicate elements.
  *  - #rotate: Returns all elements with some rotated from one end to the other.
  *  - #bsearch: Returns an element selected via a binary search
@@ -8619,12 +8619,12 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - #[]=: Assigns specified elements with a given object.
  *  - #<<: Appends an element.
- *  - #push (and its alias #append): Appends elements.
- *  - #unshift, #prepend: Prepends leading elements.
+ *  - #push (aliased as #append): Appends elements.
+ *  - #unshift (aliased as #prepend): Prepends leading elements.
  *  - #insert: Inserts given objects at a given offset; does not replace elements.
  *  - #concat: Appends all elements from given arrays.
  *  - #fill: Replaces specified elements with specified objects.
- *  - #replace: Replaces the content of +self+ with the content of a given array.
+ *  - #initialize_copy (aliased as #replace): Replaces the content of +self+ with the content of a given array.
  *  - #reverse!: Replaces +self+ with its elements reversed.
  *  - #rotate!: Replaces +self+ with its elements rotated.
  *  - #shuffle!: Replaces +self+ with its elements in random order.
@@ -8644,7 +8644,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #delete_if: Removes elements specified by a given block.
  *  - #keep_if: Removes elements not specified by a given block.
  *  - #reject!: Removes elements specified by a given block.
- *  - #select!, #filter!: Removes elements not specified by a given block.
+ *  - #select! (aliased as #filter!): Removes elements not specified by a given block.
  *  - #slice!: Removes and returns a sequence of elements.
  *  - #uniq!: Removes duplicates.
  *
@@ -8681,11 +8681,11 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Converting
  *
- *  - #map, #collect: Returns an array containing the block return-value for each element.
- *  - #map!, #collect!: Replaces each element with a block return-value.
+ *  - #collect (aliased as #map): Returns an array containing the block return-value for each element.
+ *  - #collect! (aliased as #map!): Replaces each element with a block return-value.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
  *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
- *  - #inspect, #to_s: Returns a new String containing the elements.
+ *  - #inspect (aliased as #to_s): Returns a new String containing the elements.
  *  - #join: Returns a newsString containing the elements joined by the field separator.
  *  - #to_a: Returns +self+ or a new array containing all elements.
  *  - #to_ary: Returns +self+.
