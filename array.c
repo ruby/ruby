@@ -4003,14 +4003,14 @@ ary_resize_smaller(VALUE ary, long len)
 
 /*
  *  call-seq:
- *    delete(object) -> last_deleted_object
- *    delete(object) {|element| ... } -> last_deleted_object or block_return
+ *    delete(object) -> last_removed_object
+ *    delete(object) {|element| ... } -> last_removed_object or block_return
  *
  *  Removes zero or more elements from +self+.
  *
  *  With no block given,
  *  removes from +self+ each element +ele+ such that <tt>ele == object</tt>;
- *  returns the last deleted element:
+ *  returns the last removed element:
  *
  *    a = [0, 1, 2, 2.0]
  *    a.delete(2) # => 2.0
@@ -4024,7 +4024,7 @@ ary_resize_smaller(VALUE ary, long len)
  *  removes from +self+ each element +ele+ such that <tt>ele == object</tt>.
  *
  *  If any such elements are found, ignores the block
- *  and returns the last deleted element:
+ *  and returns the last removed element:
  *
  *    a = [0, 1, 2, 2.0]
  *    a.delete(2) {|element| fail 'Cannot happen' } # => 2.0
@@ -4036,7 +4036,6 @@ ary_resize_smaller(VALUE ary, long len)
  *    # => "Element 2 not found."
  *
  *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
- *
  */
 
 VALUE
