@@ -97,10 +97,10 @@ jobs:
           - { name: clang-8,   env: { default_cc: clang-8,   append_configure: '--disable-yjit' } }
           - { name: clang-7,   env: { default_cc: clang-7,   append_configure: '--disable-yjit' } }
           - { name: clang-6.0, env: { default_cc: clang-6.0, append_configure: '--disable-yjit' } }
-          - name: 'clang-16 LTO'
-            container: clang-16
+          - name: 'clang-18 LTO'
+            container: clang-18
             env:
-              default_cc: 'clang-16 -flto=auto'
+              default_cc: 'clang-18 -flto=auto'
               optflags: '-O2'
             shared: disable
             # check: true
