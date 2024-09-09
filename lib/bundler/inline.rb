@@ -71,6 +71,7 @@ def gemfile(install = false, options = {}, &gemfile)
           "The #{name} gem was resolved to #{version}, but #{activated_version} was activated by Bundler while installing it, causing a conflict. " \
           "Bundler will now retry resolving with #{activated_version} instead."
 
+        builder.dependencies.delete_if {|d| d.name == name }
         builder.instance_eval { gem name, activated_version }
         definition = builder.to_definition(nil, true)
 
