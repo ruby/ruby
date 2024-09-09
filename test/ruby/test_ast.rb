@@ -1380,6 +1380,22 @@ dummy
       assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 22], [1, 8, 1, 12], [1, 15, 1, 19]])
     end
 
+    def test_while_locations
+      node = RubyVM::AbstractSyntaxTree.parse("while cond do 1 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 5], [1, 16, 1, 19]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 while 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
+    end
+
+    def test_until_locations
+      node = RubyVM::AbstractSyntaxTree.parse("until cond do 1 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 5], [1, 16, 1, 19]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 until 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
+    end
+
     private
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
