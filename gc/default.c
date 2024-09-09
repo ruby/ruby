@@ -2050,13 +2050,14 @@ size_pool_add_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t
     page->slot_size = size_pool->slot_size;
     page->size_pool = size_pool;
 
+    asan_unlock_freelist(page);
     page->freelist = NULL;
     for (VALUE p = (VALUE)start; p < start + (slot_count * size_pool->slot_size); p += size_pool->slot_size) {
         heap_page_add_freeobj(objspace, page, p);
     }
-    page->free_slots = slot_count;
-
     asan_lock_freelist(page);
+
+    page->free_slots = slot_count;
 
     size_pool->total_allocated_pages++;
 
