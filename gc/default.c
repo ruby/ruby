@@ -3973,7 +3973,10 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
             sweep_page->slot_size = 0;
             sweep_page->size_pool = NULL;
             sweep_page->free_slots = 0;
+
+            asan_unlock_freelist(sweep_page);
             sweep_page->freelist = NULL;
+            asan_lock_freelist(sweep_page);
 
             objspace->empty_pages_count++;
             sweep_page->free_next = objspace->empty_pages;
