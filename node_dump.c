@@ -319,8 +319,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             A((RNODE_WHILE(node)->nd_state == 1) ? " (while-end)" : " (begin-end-while)");
         }
         F_NODE(nd_cond, RNODE_WHILE, "condition");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_WHILE, "body");
+        F_LOC(keyword_loc, RNODE_WHILE);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_WHILE);
         return;
 
       case NODE_ITER:
