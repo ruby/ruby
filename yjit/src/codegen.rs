@@ -4187,6 +4187,40 @@ fn gen_opt_str_freeze(
     Some(KeepCompiling)
 }
 
+fn gen_opt_ary_freeze(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    if !assume_bop_not_redefined(jit, asm, ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE) {
+        return None;
+    }
+
+    let str = jit.get_arg(0);
+
+    // Push the return value onto the stack
+    let stack_ret = asm.stack_push(Type::CArray);
+    asm.mov(stack_ret, str.into());
+
+    Some(KeepCompiling)
+}
+
+fn gen_opt_hash_freeze(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    if !assume_bop_not_redefined(jit, asm, HASH_REDEFINED_OP_FLAG, BOP_FREEZE) {
+        return None;
+    }
+
+    let str = jit.get_arg(0);
+
+    // Push the return value onto the stack
+    let stack_ret = asm.stack_push(Type::CHash);
+    asm.mov(stack_ret, str.into());
+
+    Some(KeepCompiling)
+}
+
 fn gen_opt_str_uminus(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10228,6 +10262,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_gt => Some(gen_opt_gt),
         YARVINSN_opt_ge => Some(gen_opt_ge),
         YARVINSN_opt_mod => Some(gen_opt_mod),
+        YARVINSN_opt_ary_freeze => Some(gen_opt_ary_freeze),
+        YARVINSN_opt_hash_freeze => Some(gen_opt_hash_freeze),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),

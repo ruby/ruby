@@ -1841,6 +1841,40 @@ begin
       EOC
     end
 
+    def test_pre_input_hook_with_redisplay
+      code = <<~'RUBY'
+        puts 'Multiline REPL.'
+        Reline.pre_input_hook = -> do
+          Reline.insert_text 'abc'
+          Reline.redisplay # Reline doesn't need this but Readline requires calling redisplay
+        end
+        Reline.readline('prompt> ')
+      RUBY
+      start_terminal(6, 30, ['ruby', "-I#{@pwd}/lib", '-rreline', '-e', code], startup_message: 'Multiline REPL.')
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> abc
+      EOC
+    end
+
+    def test_pre_input_hook_with_multiline_text_insert
+      # Frequently used pattern of pre_input_hook
+      code = <<~'RUBY'
+        puts 'Multiline REPL.'
+        Reline.pre_input_hook = -> do
+          Reline.insert_text "abc\nef"
+        end
+        Reline.readline('>')
+      RUBY
+      start_terminal(6, 30, ['ruby', "-I#{@pwd}/lib", '-rreline', '-e', code], startup_message: 'Multiline REPL.')
+      write("\C-ad")
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        >abc
+        def
+      EOC
+    end
+
     def test_thread_safe
       start_terminal(6, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write("[Thread.new{Reline.readline'>'},Thread.new{Reline.readmultiline('>'){true}}].map(&:join).size\n")

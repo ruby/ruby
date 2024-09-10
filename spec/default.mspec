@@ -90,7 +90,7 @@ require 'mspec/runner/formatters/dotted'
 class DottedFormatter
   prepend Module.new {
     BASE = __dir__ + "/ruby/" unless defined?(BASE)
-    COUNT_WIDTH = 6
+    COUNT_WIDTH = 6 unless defined?(COUNT_WIDTH)
 
     def initialize(out = nil)
       super

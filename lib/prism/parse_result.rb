@@ -155,7 +155,7 @@ module Prism
 
     # Specialized version of `code_units_column` that does not depend on
     # `code_units_offset`, which is a more expensive operation. This is
-    # essentialy the same as `Prism::Source#column`.
+    # essentially the same as `Prism::Source#column`.
     def code_units_column(byte_offset, encoding)
       byte_offset - line_start(byte_offset)
     end

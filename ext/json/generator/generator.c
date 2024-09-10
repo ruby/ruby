@@ -947,23 +947,20 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     fbuffer_append_char(buffer, ']');
 }
 
-#ifdef HAVE_RUBY_ENCODING_H
 static int enc_utf8_compatible_p(rb_encoding *enc)
 {
     if (enc == rb_usascii_encoding()) return 1;
     if (enc == rb_utf8_encoding()) return 1;
     return 0;
 }
-#endif
 
 static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
-#ifdef HAVE_RUBY_ENCODING_H
     if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
         obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
     }
-#endif
+
     if (state->ascii_only) {
         convert_UTF8_to_JSON_ASCII(buffer, obj, state->script_safe);
     } else {

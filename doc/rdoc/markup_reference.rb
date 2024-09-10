@@ -918,10 +918,6 @@ require 'rdoc'
 #
 #   - Linked: <tt>https://github.com</tt> links to https://github.com.
 #
-# [Protocol +www+]
-#
-#   - Linked: <tt>www.yahoo.com</tt> links to www.yahoo.com.
-#
 # [Protocol +ftp+]
 #
 #   - Linked: <tt>ftp://nosuch.site</tt> links to ftp://nosuch.site.

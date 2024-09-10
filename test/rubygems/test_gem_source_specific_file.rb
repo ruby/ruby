@@ -73,4 +73,8 @@ class TestGemSourceSpecificFile < Gem::TestCase
     assert_equal(0, a1_source.<=>(a1_source), "a1_source <=> a1_source") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     assert_equal(1, a2_source.<=>(a1_source), "a2_source <=> a1_source")
   end
+
+  def test_pretty_print
+    assert_equal "#<Gem::Source::SpecificFile[SpecificFile:\n   #{@sf.path}]>\n", @sf.pretty_inspect
+  end
 end

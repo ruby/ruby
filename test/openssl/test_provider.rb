@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require_relative 'utils'
-if defined?(OpenSSL) && defined?(OpenSSL::Provider) && !OpenSSL.fips_mode
+if defined?(OpenSSL) && defined?(OpenSSL::Provider)
 
 class OpenSSL::TestProvider < OpenSSL::TestCase
   def test_openssl_provider_name_inspect
@@ -12,14 +12,22 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
   end
 
   def test_openssl_provider_names
+    # We expect the following providers are loaded in the cases:
+    # * Non-FIPS: default
+    # * FIPS: fips, base
+    # Use the null provider to test the added provider.
+    # See provider(7) - OPENSSL PROVIDERS to see the list of providers, and
+    # OSSL_PROVIDER-null(7) to check the details of the null provider.
     with_openssl <<-'end;'
-      base_provider = OpenSSL::Provider.load("base")
-      assert_equal(2, OpenSSL::Provider.provider_names.size)
-      assert_includes(OpenSSL::Provider.provider_names, "base")
+      num = OpenSSL::Provider.provider_names.size
 
-      assert_equal(true, base_provider.unload)
-      assert_equal(1, OpenSSL::Provider.provider_names.size)
-      assert_not_includes(OpenSSL::Provider.provider_names, "base")
+      added_provider = OpenSSL::Provider.load("null")
+      assert_equal(num + 1, OpenSSL::Provider.provider_names.size)
+      assert_includes(OpenSSL::Provider.provider_names, "null")
+
+      assert_equal(true, added_provider.unload)
+      assert_equal(num, OpenSSL::Provider.provider_names.size)
+      assert_not_includes(OpenSSL::Provider.provider_names, "null")
     end;
   end
 
@@ -33,6 +41,9 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
   end
 
   def test_openssl_legacy_provider
+    # The legacy provider is not supported on FIPS.
+    omit_on_fips
+
     with_openssl(<<-'end;')
       begin
         OpenSSL::Provider.load("legacy")

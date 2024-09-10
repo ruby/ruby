@@ -773,18 +773,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+", &:read)
-  rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb", &:read)
+    File.binread(path)
   end
 
   ##
   # Safely write a file in binary mode on all platforms.
 
   def self.write_binary(path, data)
-    open_file(path, "wb") do |io|
-      io.write data
-    end
+    File.binwrite(path, data)
   rescue Errno::ENOSPC
     # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
     File.delete(path) if File.exist?(path)
@@ -798,24 +794,22 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     File.open(path, flags, &block)
   end
 
+  mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+  mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+  MODE_TO_FLOCK = mode # :nodoc:
+
   ##
   # Open a file with given flags, and protect access with flock
 
   def self.open_file_with_flock(path, &block)
-    flags = File.exist?(path) ? "r+" : "a+"
-
-    File.open(path, flags) do |io|
+    File.open(path, MODE_TO_FLOCK) do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue Errno::ENOSYS, Errno::ENOTSUP
+      rescue Errno::ENOLCK # NFS
+        raise unless Thread.main == Thread.current
       end
       yield io
-    rescue Errno::ENOLCK # NFS
-      if Thread.main != Thread.current
-        raise
-      else
-        open_file(path, flags, &block)
-      end
     end
   end
 

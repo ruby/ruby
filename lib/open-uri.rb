@@ -109,6 +109,7 @@ module OpenURI
     :redirect => true,
     :encoding => nil,
     :max_redirects => 64,
+    :request_specific_fields => nil,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -148,7 +149,11 @@ module OpenURI
       end
       encoding = Encoding.find(options[:encoding])
     end
-
+    if options.has_key? :request_specific_fields
+      if !(options[:request_specific_fields].is_a?(Hash) || options[:request_specific_fields].is_a?(Proc))
+        raise ArgumentError, "Invalid request_specific_fields option: #{options[:request_specific_fields].inspect}"
+      end
+    end
     unless mode == nil ||
            mode == 'r' || mode == 'rb' ||
            mode == File::RDONLY
@@ -215,9 +220,17 @@ module OpenURI
     max_redirects = options[:max_redirects] || Options.fetch(:max_redirects)
     buf = nil
     while true
+      request_specific_fields = {}
+      if options.has_key? :request_specific_fields
+        request_specific_fields = if options[:request_specific_fields].is_a?(Hash)
+                                    options[:request_specific_fields]
+                                  else options[:request_specific_fields].is_a?(Proc)
+                                    options[:request_specific_fields].call(uri)
+                                  end
+      end
       redirect = catch(:open_uri_redirect) {
         buf = Buffer.new
-        uri.buffer_open(buf, find_proxy.call(uri), options)
+        uri.buffer_open(buf, find_proxy.call(uri), options.merge(request_specific_fields))
         nil
       }
       if redirect
@@ -236,6 +249,10 @@ module OpenURI
           # send authentication only for the URI directly specified.
           options = options.dup
           options.delete :http_basic_authentication
+        end
+        if options.include?(:request_specific_fields) && options[:request_specific_fields].is_a?(Hash)
+          # Send request specific headers only for the initial request.
+          options.delete :request_specific_fields
         end
         uri = redirect
         raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
@@ -752,6 +769,38 @@ module OpenURI
     #
     #  Number of HTTP redirects allowed before OpenURI::TooManyRedirects is raised.
     #  The default is 64.
+    #
+    # [:request_specific_fields]
+    #  Synopsis:
+    #    :request_specific_fields => {}
+    #    :request_specific_fields => lambda {|url| ...}
+    #
+    #  :request_specific_fields option allows specifying custom header fields that
+    #  are sent with the HTTP request. It can be passed as a Hash or a Proc that
+    #  gets evaluated on each request and returns a Hash of header fields.
+    #
+    #  If a Hash is provided, it specifies the headers only for the initial
+    #  request and these headers will not be sent on redirects.
+    #
+    #  If a Proc is provided, it will be executed for each request including
+    #  redirects, allowing dynamic header customization based on the request URL.
+    #  It is important that the Proc returns a Hash. And this Hash specifies the
+    #  headers to be sent with the request.
+    #
+    #  For Example with Hash
+    #    URI.open("http://...",
+    #             request_specific_fields: {"Authorization" => "token dummy"}) {|f| ... }
+    #
+    #  For Example with Proc:
+    #    URI.open("http://...",
+    #             request_specific_fields: lambda { |uri|
+    #               if uri.host == "example.com"
+    #                 {"Authorization" => "token dummy"}
+    #               else
+    #                 {}
+    #               end
+    #             }) {|f| ... }
+    #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
     end

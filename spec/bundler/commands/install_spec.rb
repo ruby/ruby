@@ -1055,7 +1055,35 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle "install --redownload", raise_on_error: false
 
-      expect(err).to include("The installation path is insecure. Bundler cannot continue.")
+      expect(err).to include("Bundler cannot reinstall foo-1.0.0 because there's a previous installation of it at #{gems_path}/foo-1.0.0 that is unsafe to remove")
+    end
+  end
+
+  describe "when gems path is world writable (no sticky bit set), but previous install is just an empty dir (like it happens with default gems)", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:full_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem 'foo'
+      G
+    end
+
+    it "does not try to remove the directory and thus don't abort with an error about unsafe directory removal" do
+      bundle "config set --local path vendor"
+
+      FileUtils.mkdir_p(gems_path)
+      FileUtils.chmod(0o777, gems_path)
+      Dir.mkdir(full_path)
+
+      bundle "install"
     end
   end
 

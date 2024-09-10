@@ -21,16 +21,11 @@ class Prelude
   def initialize(output, preludes, vpath)
     @output = output
     @vpath = vpath
-    @prelude_count = 0
     @builtin_count = 0
     @preludes = {}
     @mains = preludes.map do |filename|
-      if prelude = filename.end_with?("golf_prelude.rb")
-        @prelude_count += 1
-      else
-        @builtin_count += 1
-      end
-      translate(filename, (filename unless prelude))[0]
+      @builtin_count += 1
+      translate(filename, filename)[0]
     end
     @preludes.delete_if {|_, (_, _, lines, sub)| sub && lines.empty?}
   end
@@ -58,7 +53,7 @@ class Prelude
       if line.size > LINE_LIMIT
         raise "#{filename}:#{lines.size+1}: too long line"
       end
-      line.sub!(/require(_relative)?\s*\(?\s*(["'])(.*?)(?:\.rb)?\2\)?/) do
+      line.sub!(/require(_relative)?\s*\(?\s*([\"\'])(.*?)(?:\.rb)?\2\)?/) do
         orig, rel, path = $&, $2, $3
         if rel
           path = File.join(File.dirname(filename), path)
@@ -137,137 +132,38 @@ static const struct {
 
 COMPILER_WARNING_POP
 
-% unless preludes.empty?
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 #define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
 
-static VALUE
-prelude_ast_value(VALUE name, VALUE code, int line)
-{
-    rb_ast_t *ast;
-    VALUE ast_value = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    ast = rb_ruby_ast_data_get(ast_value);
-    if (!ast || !ast->body.root) {
-        if (ast) rb_ast_dispose(ast);
-        rb_exc_raise(rb_errinfo());
-    }
-    return ast_value;
-}
-
-static void
-pm_prelude_load(pm_parse_result_t *result, VALUE name, VALUE code, int line)
-{
-    pm_options_line_set(&result->options, line);
-    VALUE error = pm_parse_string(result, code, name, NULL);
-
-    if (!NIL_P(error)) {
-        pm_parse_result_free(result);
-        rb_exc_raise(error);
-    }
-}
-
 % end
 % if @builtin_count > 0
-#define PRELUDE_VAST(n, name_str, start_line) \
+#define PRELUDE_MATCH(n) \
     (((sizeof(prelude_name<%='##'%><%=%>n) - prefix_len - 2) == namelen) && \
-     (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0) ? \
-     prelude_ast_value((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), start_line) : Qnil)
+     (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0))
 
 VALUE
-rb_builtin_ast_value(const char *feature_name, VALUE *name_str)
-{
-    const size_t prefix_len = rb_strlen_lit("<internal:");
-    size_t namelen = strlen(feature_name);
-    VALUE ast_value = Qnil;
-
-%   @preludes.each_value do |i, prelude, lines, sub, start_line|
-%     if sub
-    if (!NIL_P(ast_value = PRELUDE_VAST(<%=i%><%=%>, *name_str, <%=start_line%>))) return ast_value;
-%     end
-%   end
-    return ast_value;
-}
-
-bool
-pm_builtin_ast_value(pm_parse_result_t *result, const char *feature_name, VALUE *name_str)
+rb_builtin_find(const char *feature_name, VALUE *name_str, int *start_line)
 {
     const size_t prefix_len = rb_strlen_lit("<internal:");
     size_t namelen = strlen(feature_name);
 
+#define PRELUDE_FOUND(n, l) \
+    (*name_str = PRELUDE_NAME(n), *start_line = (l), PRELUDE_CODE(n))
+
 %   @preludes.each_value do |i, prelude, lines, sub, start_line|
 %     if sub
-    if (
-        (sizeof(prelude_name<%= i %>) - prefix_len - 2 == namelen) &&
-        (strncmp(prelude_name<%= i %> + prefix_len, feature_name, namelen) == 0)
-    ) {
-        *name_str = PRELUDE_NAME(<%= i %>);
-        pm_prelude_load(result, *name_str, PRELUDE_CODE(<%= i %>), <%= start_line %>);
-        return true;
-    }
+    if (PRELUDE_MATCH(<%=i%>)) return PRELUDE_FOUND(<%=i%>, <%=start_line%>);
 %     end
 %   end
+#undef PRELUDE_FOUND
 
-    return false;
+    return Qnil;
 }
 
-% end
-% if @prelude_count > 0
-COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(4, 2, 0)
-COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
-#endif
-static void
-prelude_eval(VALUE code, VALUE name, int line)
-{
-    static const rb_compile_option_t optimization = {
-        TRUE, /* unsigned int inline_const_cache; */
-        TRUE, /* unsigned int peephole_optimization; */
-        FALSE,/* unsigned int tailcall_optimization; */
-        TRUE, /* unsigned int specialized_instruction; */
-        TRUE, /* unsigned int operands_unification; */
-        TRUE, /* unsigned int instructions_unification; */
-        TRUE, /* unsigned int frozen_string_literal; */
-        FALSE, /* unsigned int debug_frozen_string_literal; */
-        FALSE, /* unsigned int coverage_enabled; */
-        0, /* int debug_level; */
-    };
-
-    if (*rb_ruby_prism_ptr()) {
-        pm_parse_result_t result = { 0 };
-        pm_prelude_load(&result, name, code, line);
-        rb_iseq_eval(pm_iseq_new_with_opt(&result.node, name, name, Qnil, line,
-                                          NULL, 0, ISEQ_TYPE_TOP, &optimization));
-        pm_parse_result_free(&result);
-    }
-    else {
-        rb_ast_t *ast;
-        VALUE ast_value = prelude_ast_value(name, code, line);
-        ast = rb_ruby_ast_data_get(ast_value);
-        rb_iseq_eval(rb_iseq_new_with_opt(ast_value, name, name, Qnil, line,
-                                        NULL, 0, ISEQ_TYPE_TOP, &optimization,
-                                        Qnil));
-        rb_ast_dispose(ast);
-    }
-}
-COMPILER_WARNING_POP
-
-% end
 %end
 % init_name = @output && @output[/\w+(?=_prelude.c\b)/] || 'prelude'
 void
 Init_<%=init_name%><%=%>(void)
 {
-%unless @prelude_count.zero?
-% preludes.each do |i, prelude, lines, sub, start_line|
-%   next if sub
-    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), <%=start_line%><%=%>);
-% end
-
-#if 0
-% preludes.length.times {|i|
-    printf("%.*s", (int)sizeof(prelude_code<%=i%><%=%>), prelude_code<%=i%><%=%>.L0);
-% }
-#endif
-%end
 }
 <%end -%>

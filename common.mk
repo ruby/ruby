@@ -6,7 +6,7 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-.SUFFIXES: .rbinc .rb .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
+.SUFFIXES: .rbinc .rbbin .rb .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
@@ -291,7 +291,7 @@ DEFAULT_PRELUDES = $(GEM_PRELUDE)
 PRELUDE_SCRIPTS = $(DEFAULT_PRELUDES)
 GEM_PRELUDE   =
 PRELUDES      = {$(srcdir)}miniprelude.c
-GOLFPRELUDES  = {$(srcdir)}golf_prelude.c
+GOLFPRELUDES  = golf_prelude.rbbin
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
@@ -758,7 +758,7 @@ clean-rubyspec: clean-spec
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
-	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES) *.rbinc
+	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES) *.rbinc *.rbbin
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
@@ -1304,10 +1304,7 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS)
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
 
-$(GOLF_PRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -c -o $@ \
-		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
+golf_prelude.rbbin: {$(srcdir)}golf_prelude.rb $(tooldir)/mk_rbbin.rb $(PREP)
 
 MAINCPPFLAGS = $(ENABLE_DEBUG_ENV:yes=-DRUBY_DEBUG_ENV=1)
 
@@ -1325,7 +1322,10 @@ probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
 prereq: incs srcs preludes PHONY
 
 preludes: {$(VPATH)}miniprelude.c
-preludes: {$(srcdir)}golf_prelude.c
+
+{$(srcdir)}.rb.rbbin:
+	$(ECHO) making $@
+	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $< > $@
 
 {$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
@@ -7565,7 +7565,7 @@ goruby.$(OBJEXT): {$(VPATH)}config.h
 goruby.$(OBJEXT): {$(VPATH)}constant.h
 goruby.$(OBJEXT): {$(VPATH)}defines.h
 goruby.$(OBJEXT): {$(VPATH)}encoding.h
-goruby.$(OBJEXT): {$(VPATH)}golf_prelude.c
+goruby.$(OBJEXT): {$(VPATH)}golf_prelude.rbbin
 goruby.$(OBJEXT): {$(VPATH)}goruby.c
 goruby.$(OBJEXT): {$(VPATH)}id.h
 goruby.$(OBJEXT): {$(VPATH)}id_table.h

@@ -268,13 +268,8 @@ module Prism
           # There are a lot of tokens that have very specific meaning according
           # to the context of the parser. We don't expose that information in
           # prism, so we need to normalize these tokens a bit.
-          case actual_token[0]
-          when :kDO
-            actual_token[0] = expected_token[0] if %i[kDO_BLOCK kDO_LAMBDA].include?(expected_token[0])
-          when :tLPAREN
-            actual_token[0] = expected_token[0] if expected_token[0] == :tLPAREN2
-          when :tPOW
-            actual_token[0] = expected_token[0] if expected_token[0] == :tDSTAR
+          if actual_token[0] == :kDO && %i[kDO_BLOCK kDO_LAMBDA].include?(expected_token[0])
+            actual_token[0] = expected_token[0]
           end
 
           # Now we can assert that the tokens are actually equal.

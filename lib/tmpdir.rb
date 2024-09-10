@@ -148,7 +148,11 @@ class Dir
     # Generates and yields random names to create a temporary name
     def create(basename, tmpdir=nil, max_try: nil, **opts)
       origdir = tmpdir
-      tmpdir ||= tmpdir()
+      if tmpdir
+        raise ArgumentError, "empty parent path" if tmpdir.empty?
+      else
+        tmpdir = tmpdir()
+      end
       n = nil
       prefix, suffix = basename
       prefix = (String.try_convert(prefix) or

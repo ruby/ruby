@@ -836,6 +836,32 @@ RSpec.describe "bundle install with git sources" do
     expect(the_bundle).to include_gems "rails 2.3.2"
   end
 
+  it "runs the gemspec in the context of its parent directory, when using local overrides" do
+    build_git "foo", path: lib_path("foo"), gemspec: false do |s|
+      s.write lib_path("foo/lib/foo/version.rb"), %(FOO_VERSION = '1.0')
+      s.write "foo.gemspec", <<-G
+        $:.unshift Dir.pwd
+        require 'lib/foo/version'
+        Gem::Specification.new do |s|
+          s.name        = 'foo'
+          s.author      = 'no one'
+          s.version     = FOO_VERSION
+          s.summary     = 'Foo'
+          s.files       = Dir["lib/**/*.rb"]
+        end
+      G
+    end
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => "https://github.com/gems/foo", branch: "main"
+    G
+
+    bundle %(config set local.foo #{lib_path("foo")})
+
+    expect(the_bundle).to include_gems "foo 1.0"
+  end
+
   it "installs from git even if a rubygems gem is present" do
     build_gem "foo", "1.0", path: lib_path("fake_foo"), to_system: true do |s|
       s.write "lib/foo.rb", "raise 'FAIL'"

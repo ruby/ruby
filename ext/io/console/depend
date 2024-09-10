@@ -169,6 +169,7 @@ console.o: $(hdrdir)/ruby/io.h
 console.o: $(hdrdir)/ruby/missing.h
 console.o: $(hdrdir)/ruby/onigmo.h
 console.o: $(hdrdir)/ruby/oniguruma.h
+console.o: $(hdrdir)/ruby/ractor.h
 console.o: $(hdrdir)/ruby/ruby.h
 console.o: $(hdrdir)/ruby/st.h
 console.o: $(hdrdir)/ruby/subst.h

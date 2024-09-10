@@ -1165,7 +1165,9 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     RBASIC_SET_CLASS_RAW(result, klass);
     p = RSTRING_PTR(result);
     long blen = (char *)f._p - p;
-    if (scanned < blen) {
+
+    coderange = ENC_CODERANGE(result);
+    if (coderange != ENC_CODERANGE_UNKNOWN && scanned < blen) {
         rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
         ENC_CODERANGE_SET(result, coderange);
     }

@@ -305,6 +305,8 @@ typedef struct RNode_WHEN {
     struct RNode *nd_head;
     struct RNode *nd_body;
     struct RNode *nd_next;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t then_keyword_loc;
 } rb_node_when_t;
 
 typedef struct RNode_IN {
@@ -382,6 +384,7 @@ typedef struct {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
+    rb_code_location_t operator_loc;
 } rb_node_and_t, rb_node_or_t;
 
 typedef struct RNode_MASGN {
@@ -820,6 +823,7 @@ typedef struct RNode_ALIAS {
 
     struct RNode *nd_1st;
     struct RNode *nd_2nd;
+    rb_code_location_t keyword_loc;
 } rb_node_alias_t;
 
 typedef struct RNode_VALIAS {
@@ -827,12 +831,14 @@ typedef struct RNode_VALIAS {
 
     ID nd_alias;
     ID nd_orig;
+    rb_code_location_t keyword_loc;
 } rb_node_valias_t;
 
 typedef struct RNode_UNDEF {
     NODE node;
 
     rb_parser_ary_t *nd_undefs;
+    rb_code_location_t keyword_loc;
 } rb_node_undef_t;
 
 typedef struct RNode_CLASS {

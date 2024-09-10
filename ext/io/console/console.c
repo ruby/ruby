@@ -1538,10 +1538,8 @@ console_clear_screen(VALUE io)
 static VALUE
 io_open_descriptor_fallback(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, void *encoding)
 {
-    rb_update_max_fd(descriptor);
-
     VALUE arguments[2] = {
-        INT2NUM(descriptor),
+        (rb_update_max_fd(descriptor), INT2NUM(descriptor)),
         INT2FIX(mode),
     };
 
@@ -1598,14 +1596,14 @@ console_dev_remove(VALUE klass)
 
 static ID id_console;
 
-static bool
+static int
 console_dev_get(VALUE klass, VALUE *dev)
 {
     if (rb_const_defined(klass, id_console)) {
 	*dev = rb_const_get(klass, id_console);
-	return true;
+	return 1;
     }
-    return false;
+    return 0;
 }
 
 static void

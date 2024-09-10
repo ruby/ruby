@@ -6956,7 +6956,10 @@ sysopen_func(void *ptr)
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
-    int fd = IO_WITHOUT_GVL_INT(sysopen_func, data);
+    int fd;
+    do {
+        fd = IO_WITHOUT_GVL_INT(sysopen_func, data);
+    } while (fd < 0 && errno == EINTR);
     if (0 <= fd)
         rb_update_max_fd(fd);
     return fd;

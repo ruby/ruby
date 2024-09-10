@@ -38,6 +38,7 @@
 #include "ruby_assert.h"
 
 VALUE rb_cArray;
+VALUE rb_cArray_empty_frozen;
 
 /* Flags of RArray
  *
@@ -1414,7 +1415,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
  *    a = [:foo, 'bar', 2]               # => [:foo, "bar", 2]
       a.push([:baz, :bat], [:bam, :bad]) # => [:foo, "bar", 2, [:baz, :bat], [:bam, :bad]]
  *
- *  Related: Array#pop, Array#shift, Array#unshift.
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
@@ -1944,7 +1945,8 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *
  *    a.at(-2) # => "bar"
  *
- *  Related: Array#[].
+ *  Related: Array#[];
+ *  see also {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 VALUE
@@ -3557,6 +3559,8 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  or +nil+ if the search found no suitable element.
  *
  *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
@@ -3579,6 +3583,8 @@ rb_ary_bsearch(VALUE ary)
  *  or +nil+ if the search found no suitable element.
  *
  *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
@@ -3689,6 +3695,9 @@ rb_ary_sort_by_bang(VALUE ary)
  *    a1 # => [Symbol, String, Integer]
  *
  *  With no block given, returns a new Enumerator.
+ *
+ *  Related: #collect!;
+ *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
@@ -3721,6 +3730,9 @@ rb_ary_collect(VALUE ary)
  *    a.map! { |element| element.class } # => [Symbol, String, Integer]
  *
  *  With no block given, returns a new Enumerator.
+ *
+ *  Related: #collect;
+ *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
@@ -4657,6 +4669,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
  *    a = [:foo, 'bar', 2]
  *    a.clear # => []
  *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 VALUE
@@ -5093,7 +5106,8 @@ rb_ary_times(VALUE ary, VALUE times)
  *
  *  Returns +nil+ if no such element is found.
  *
- *  Related: Array#rassoc.
+ *  Related: Array#rassoc;
+ *  see also {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 VALUE
@@ -7147,7 +7161,8 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  With no block given, returns a new Enumerator.
  *
- *  Related: Array#permutation.
+ *  Related: Array#permutation;
+ *  see also {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
  */
 
 static VALUE
@@ -8553,7 +8568,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Querying
  *
- *  - #length, #size: Returns the count of elements.
+ *  - #length (aliased as #size): Returns the count of elements.
  *  - #include?: Returns whether any element <tt>==</tt> a given object.
  *  - #empty?: Returns whether there are no elements.
  *  - #all?: Returns whether all elements meet a given criterion.
@@ -8561,7 +8576,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #none?: Returns whether no element <tt>==</tt> a given object.
  *  - #one?: Returns whether exactly one element <tt>==</tt> a given object.
  *  - #count: Returns the count of elements that meet a given criterion.
- *  - #find_index, #index: Returns the index of the first element that meets a given criterion.
+ *  - #find_index (aliased as #index): Returns the index of the first element that meets a given criterion.
  *  - #rindex: Returns the index of the last element that meets a given criterion.
  *  - #hash: Returns the integer hash code.
  *
@@ -8578,7 +8593,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  These methods do not modify +self+.
  *
- *  - #[], #slice: Returns consecutive elements as determined by a given argument.
+ *  - #[] (aliased as #slice): Returns consecutive elements as determined by a given argument.
  *  - #fetch: Returns the element at a given offset.
  *  - #first: Returns one or more leading elements.
  *  - #last: Returns one or more trailing elements.
@@ -8603,7 +8618,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #sort: Returns all elements in an order determined by <tt><=></tt> or a given block.
  *  - #reverse: Returns all elements in reverse order.
  *  - #compact: Returns an array containing all non-+nil+ elements.
- *  - #select, #filter: Returns an array containing elements selected by a given block.
+ *  - #select (aliased as #filter): Returns an array containing elements selected by a given block.
  *  - #uniq: Returns an array containing non-duplicate elements.
  *  - #rotate: Returns all elements with some rotated from one end to the other.
  *  - #bsearch: Returns an element selected via a binary search
@@ -8619,12 +8634,12 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - #[]=: Assigns specified elements with a given object.
  *  - #<<: Appends an element.
- *  - #push (and its alias #append): Appends elements.
- *  - #unshift, #prepend: Prepends leading elements.
+ *  - #push (aliased as #append): Appends elements.
+ *  - #unshift (aliased as #prepend): Prepends leading elements.
  *  - #insert: Inserts given objects at a given offset; does not replace elements.
  *  - #concat: Appends all elements from given arrays.
  *  - #fill: Replaces specified elements with specified objects.
- *  - #replace: Replaces the content of +self+ with the content of a given array.
+ *  - #initialize_copy (aliased as #replace): Replaces the content of +self+ with the content of a given array.
  *  - #reverse!: Replaces +self+ with its elements reversed.
  *  - #rotate!: Replaces +self+ with its elements rotated.
  *  - #shuffle!: Replaces +self+ with its elements in random order.
@@ -8642,9 +8657,10 @@ rb_ary_deconstruct(VALUE ary)
  *  - #delete: Removes elements equal to a given object.
  *  - #delete_at: Removes the element at a given offset.
  *  - #delete_if: Removes elements specified by a given block.
+ *  - #clear: Removes all elements.
  *  - #keep_if: Removes elements not specified by a given block.
  *  - #reject!: Removes elements specified by a given block.
- *  - #select!, #filter!: Removes elements not specified by a given block.
+ *  - #select! (aliased as #filter!): Removes elements not specified by a given block.
  *  - #slice!: Removes and returns a sequence of elements.
  *  - #uniq!: Removes duplicates.
  *
@@ -8681,11 +8697,11 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  === Methods for Converting
  *
- *  - #map, #collect: Returns an array containing the block return-value for each element.
- *  - #map!, #collect!: Replaces each element with a block return-value.
+ *  - #collect (aliased as #map): Returns an array containing the block return-value for each element.
+ *  - #collect! (aliased as #map!): Replaces each element with a block return-value.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
  *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
- *  - #inspect, #to_s: Returns a new String containing the elements.
+ *  - #inspect (aliased as #to_s): Returns a new String containing the elements.
  *  - #join: Returns a newsString containing the elements joined by the field separator.
  *  - #to_a: Returns +self+ or a new array containing all elements.
  *  - #to_ary: Returns +self+.
@@ -8834,6 +8850,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "freeze", rb_ary_freeze, 0);
 
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
+
+    rb_cArray_empty_frozen = rb_ary_freeze(rb_ary_new());
+    rb_vm_register_global_object(rb_cArray_empty_frozen);
 }
 
 #include "array.rbinc"

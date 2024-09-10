@@ -32,6 +32,10 @@ module Gem::BUNDLED_GEMS
     "win32ole" => "3.5.0",
     "fiddle" => "3.5.0",
     "logger" => "3.5.0",
+    "benchmark" => "3.5.0",
+    "irb" => "3.5.0",
+    "reline" => "3.5.0",
+    # "readline" => "3.5.0", # This is wrapper for reline. We don't warn for this.
   }.freeze
 
   SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze

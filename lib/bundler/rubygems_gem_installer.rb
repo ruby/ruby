@@ -150,12 +150,13 @@ module Bundler
 
     def strict_rm_rf(dir)
       return unless File.exist?(dir)
+      return if Dir.empty?(dir)
 
       parent = File.dirname(dir)
       parent_st = File.stat(parent)
 
       if parent_st.world_writable? && !parent_st.sticky?
-        raise InsecureInstallPathError.new(parent)
+        raise InsecureInstallPathError.new(spec.full_name, dir)
       end
 
       begin
