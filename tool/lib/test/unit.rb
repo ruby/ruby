@@ -1893,6 +1893,7 @@ module Test
         @backtrace = ex.backtrace
       end
 
+
       attr_accessor :message, :backtrace
     end
   end

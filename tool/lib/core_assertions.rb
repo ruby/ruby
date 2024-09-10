@@ -861,6 +861,65 @@ eom
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         return token.dump, Regexp.quote(token)
       end
+
+      # Platform predicates
+
+      def self.mswin?
+        defined?(@mswin) ? @mswin : @mswin = RUBY_PLATFORM.include?('mswin')
+      end
+      private def mswin?
+        CoreAssertions.mswin?
+      end
+
+      def self.mingw?
+        defined?(@mingw) ? @mingw : @mingw = RUBY_PLATFORM.include?('mingw')
+      end
+      private def mingw?
+        CoreAssertions.mingw?
+      end
+
+      module_function def windows?
+        mswin? or mingw?
+      end
+
+      def self.compare_version(a, b)
+        b.empty? ? true && a : a && (a <=> b) >= 0
+      end
+
+      def self.linux?(*ver)
+        unless defined?(@linux)
+          @linux = RUBY_PLATFORM.include?('linux') && `uname -r`.scan(/\d+/).map(&:to_i)
+        end
+        compare_version @linux, ver
+      end
+      private def linux?(*ver)
+        CoreAssertions.linux?(*ver)
+      end
+
+      def self.glibc?(*ver)
+        unless defined?(@glibc)
+          libc = `/usr/bin/ldd /bin/sh`[/^\s*libc.*=> *\K\S*/]
+          if libc and /version (\d+)\.(\d+)\.$/ =~ IO.popen([libc], &:read)[]
+            @glibc = [$1.to_i, $2.to_i]
+          else
+            @glibc = false
+          end
+        end
+        compare_version @glibc, ver
+      end
+      private def glibc?(*ver)
+        CoreAssertions.glibc?(*ver)
+      end
+
+      def self.macos?(*ver)
+        unless defined?(@macos)
+          @macos = RUBY_PLATFORM.include?('darwin') && `sw_vers -productVersion`.scan(/\d+/).map(&:to_i)
+        end
+        compare_version @macos, ver
+      end
+      private def macos?(*ver)
+        CoreAssertions.macos?(*ver)
+      end
     end
   end
 end
