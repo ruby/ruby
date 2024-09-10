@@ -1533,9 +1533,13 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 #undef FLUSH_CHUNK
 }
 
+#define SPLATARRAY_FALSE 0
+#define SPLATARRAY_TRUE 1
+#define DUP_SINGLE_KW_SPLAT 2
+
 // This is details. Users should call pm_setup_args() instead.
 static int
-pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, VALUE *dup_rest, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
+pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, int *dup_rest, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
     const pm_node_location_t location = *node_location;
 
@@ -1573,9 +1577,18 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                         // in this case, so mark the method as passing mutable
                         // keyword splat.
                         *flags |= VM_CALL_KW_SPLAT_MUT;
+                        pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
                     }
-
-                    pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
+                    else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
+                        *flags |= VM_CALL_KW_SPLAT_MUT;
+                        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                        PUSH_INSN1(ret, location, newhash, INT2FIX(0));
+                        pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
+                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                    }
+                    else {
+                        pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
+                    }
                 }
                 else {
                     // We need to first figure out if all elements of the
@@ -1681,8 +1694,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     // foo(a, *b, c)
                     //        ^^
                     if (index + 1 < arguments->size || has_regular_blockarg) {
-                        PUSH_INSN1(ret, location, splatarray, *dup_rest);
-                        if (*dup_rest == Qtrue) *dup_rest = Qfalse;
+                        PUSH_INSN1(ret, location, splatarray, (*dup_rest & SPLATARRAY_TRUE) ? Qtrue : Qfalse);
+                        if (*dup_rest & SPLATARRAY_TRUE) *dup_rest &= ~SPLATARRAY_TRUE;
                     }
                     // If this is the first spalt array seen and it's the last
                     // parameter, we don't want splatarray to dup it.
@@ -1843,7 +1856,7 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
 static int
 pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_node_location_t *node_location)
 {
-    VALUE dup_rest = Qtrue;
+    int dup_rest = SPLATARRAY_TRUE;
 
     const pm_node_list_t *arguments;
     size_t arguments_size;
@@ -1860,23 +1873,23 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         // Start by assuming that dup_rest=false, then check each element of the
         // hash to ensure we don't need to flip it back to true (in case one of
         // the elements could potentially mutate the array).
-        dup_rest = Qfalse;
+        dup_rest = SPLATARRAY_FALSE;
 
         const pm_keyword_hash_node_t *keyword_hash = (const pm_keyword_hash_node_t *) arguments->nodes[arguments_size - 1];
         const pm_node_list_t *elements = &keyword_hash->elements;
 
-        for (size_t index = 0; dup_rest == Qfalse && index < elements->size; index++) {
+        for (size_t index = 0; dup_rest == SPLATARRAY_FALSE && index < elements->size; index++) {
             const pm_node_t *element = elements->nodes[index];
 
             switch (PM_NODE_TYPE(element)) {
               case PM_ASSOC_NODE: {
                 const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
-                if (pm_setup_args_dup_rest_p(assoc->key) || pm_setup_args_dup_rest_p(assoc->value)) dup_rest = Qtrue;
+                if (pm_setup_args_dup_rest_p(assoc->key) || pm_setup_args_dup_rest_p(assoc->value)) dup_rest = SPLATARRAY_TRUE;
                 break;
               }
               case PM_ASSOC_SPLAT_NODE: {
                 const pm_assoc_splat_node_t *assoc = (const pm_assoc_splat_node_t *) element;
-                if (assoc->value != NULL && pm_setup_args_dup_rest_p(assoc->value)) dup_rest = Qtrue;
+                if (assoc->value != NULL && pm_setup_args_dup_rest_p(assoc->value)) dup_rest = SPLATARRAY_TRUE;
                 break;
               }
               default:
@@ -1885,7 +1898,7 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         }
     }
 
-    VALUE initial_dup_rest = dup_rest;
+    int initial_dup_rest = dup_rest;
     int argc;
 
     if (block && PM_NODE_TYPE_P(block, PM_BLOCK_ARGUMENT_NODE)) {
@@ -1893,6 +1906,11 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         // since the nature of the expression influences whether splat should
         // duplicate the array.
         bool regular_block_arg = true;
+
+        if (pm_setup_args_dup_rest_p(block)) {
+            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
+            initial_dup_rest = dup_rest;
+        }
 
         DECL_ANCHOR(block_arg);
         INIT_ANCHOR(block_arg);
