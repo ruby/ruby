@@ -382,6 +382,8 @@
 #
 #  - #insert: Returns +self+ with a given string inserted at a given offset.
 #  - #<<: Returns +self+ concatenated with a given string or integer.
+#  - #append_as_bytes: Returns +self+ concatenated with strings without performing any
+#    encoding validation or conversion.
 #
 #  _Substitution_
 #
