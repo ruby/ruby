@@ -18,6 +18,11 @@ module RubyVM::YJIT
     Primitive.rb_yjit_stats_enabled_p
   end
 
+  # Check if `--yjit-compilation-log` is used.
+  def self.compilation_log_enabled?
+    Primitive.rb_yjit_compilation_log_enabled_p
+  end
+
   # Check if rb_yjit_trace_exit_locations_enabled_p is enabled.
   def self.trace_exit_locations_enabled? # :nodoc:
     Primitive.rb_yjit_trace_exit_locations_enabled_p
@@ -223,6 +228,10 @@ module RubyVM::YJIT
   # Avoid calling a Ruby method here to not interfere with compilation tests
   if Primitive.rb_yjit_stats_enabled_p
     at_exit { print_and_dump_stats }
+  end
+
+  if Primitive.rb_yjit_compilation_log_enabled_p
+    at_exit { $stderr.puts("***YJIT: Printing YJIT compilation log on exit***") if Primitive.rb_yjit_print_compilation_log_p }
   end
 
   class << self

@@ -82,6 +82,12 @@ pub struct Options {
 
     /// Enable writing /tmp/perf-{pid}.map for Linux perf
     pub perf_map: Option<PerfMap>,
+
+    // Log compilations
+    pub gen_compilation_log: bool,
+
+    // Print compilation log on exit (when gen_compilation_log is also true)
+    pub print_compilation_log: bool,
 }
 
 // Initialize the options to default values
@@ -103,6 +109,8 @@ pub static mut OPTIONS: Options = Options {
     frame_pointer: false,
     code_gc: false,
     perf_map: None,
+    gen_compilation_log: false,
+    print_compilation_log: true,
 };
 
 /// YJIT option descriptions for `ruby --help`.
@@ -113,6 +121,7 @@ pub const YJIT_OPTIONS: &'static [(&str, &str)] = &[
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT."),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)."),
     ("--yjit-stats",                       "Enable collecting YJIT statistics."),
+    ("--yjit-compilation-log",             "Enable logging of YJIT's compilation activity."),
     ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable."),
     ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit."),
     ("--yjit-perf",                        "Enable frame pointers and perf profiling."),
@@ -306,6 +315,15 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 OPTIONS.gen_stats = true;
                 OPTIONS.print_stats = false;
             },
+            _ => {
+                return None;
+            }
+        },
+        ("compilation-log", _) => match opt_val {
+            "" => unsafe {
+                OPTIONS.gen_compilation_log = true;
+                OPTIONS.print_compilation_log = true;
+            }
             _ => {
                 return None;
             }
