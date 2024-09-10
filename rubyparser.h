@@ -343,6 +343,7 @@ typedef struct RNode_EXITS {
 
     struct RNode *nd_chain;
     struct RNode *nd_stts;
+    rb_code_location_t keyword_loc;
 } rb_node_exits_t, rb_node_break_t, rb_node_next_t, rb_node_redo_t;
 
 typedef struct RNode_RETRY {
