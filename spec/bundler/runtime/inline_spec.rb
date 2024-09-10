@@ -656,7 +656,7 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("after: [\"Test_Variable\"]")
   end
 
-  it "does not load specified version of psych and stringio" do
+  it "does not load specified version of psych and stringio", :ruby_repo do
     build_repo4 do
       build_gem "psych", "999"
       build_gem "stringio", "999"
