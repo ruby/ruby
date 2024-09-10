@@ -6358,7 +6358,8 @@ rb_ary_compact_bang(VALUE ary)
  *    a = [nil, 0, nil, false, nil, '', nil, [], nil, {}]
  *    a.compact # => [0, false, "", [], {}]
  *
- *  Related: Array#compact!.
+ *  Related: Array#compact!;
+ *  see also {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
