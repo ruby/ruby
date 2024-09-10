@@ -749,6 +749,98 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
   end
 
+  def test_peephole_array_freeze
+    code = "#{<<~'begin;'}\n#{<<~'end;'}"
+    begin;
+      [1].freeze
+    end;
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_match(/opt_ary_freeze/, insn)
+    assert_no_match(/duparray/, insn)
+    assert_no_match(/send/, insn)
+    assert_predicate([1].freeze, :frozen?)
+    assert_in_out_err([], <<~RUBY, [":ok"])
+      class Array
+        prepend Module.new {
+          def freeze
+            :ok
+          end
+        }
+      end
+      p [1].freeze
+    RUBY
+  end
+
+  def test_peephole_array_freeze_empty
+    code = "#{<<~'begin;'}\n#{<<~'end;'}"
+    begin;
+      [].freeze
+    end;
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_match(/opt_ary_freeze/, insn)
+    assert_no_match(/duparray/, insn)
+    assert_no_match(/send/, insn)
+    assert_predicate([].freeze, :frozen?)
+    assert_in_out_err([], <<~RUBY, [":ok"])
+      class Array
+        prepend Module.new {
+          def freeze
+            :ok
+          end
+        }
+      end
+      p [].freeze
+    RUBY
+  end
+
+  def test_peephole_hash_freeze
+    code = "#{<<~'begin;'}\n#{<<~'end;'}"
+    begin;
+      {a:1}.freeze
+    end;
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_match(/opt_hash_freeze/, insn)
+    assert_no_match(/duphash/, insn)
+    assert_no_match(/send/, insn)
+    assert_predicate([1].freeze, :frozen?)
+    assert_in_out_err([], <<~RUBY, [":ok"])
+      class Hash
+        prepend Module.new {
+          def freeze
+            :ok
+          end
+        }
+      end
+      p({a:1}.freeze)
+    RUBY
+  end
+
+  def test_peephole_hash_freeze_empty
+    code = "#{<<~'begin;'}\n#{<<~'end;'}"
+    begin;
+      {}.freeze
+    end;
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_match(/opt_hash_freeze/, insn)
+    assert_no_match(/duphash/, insn)
+    assert_no_match(/send/, insn)
+    assert_predicate([].freeze, :frozen?)
+    assert_in_out_err([], <<~RUBY, [":ok"])
+      class Hash
+        prepend Module.new {
+          def freeze
+            :ok
+          end
+        }
+      end
+      p({}.freeze)
+    RUBY
+  end
+
   def test_branch_condition_backquote
     bug = '[ruby-core:80740] [Bug #13444] redefined backquote should be called'
     class << self

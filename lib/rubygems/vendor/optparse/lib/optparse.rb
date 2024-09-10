@@ -1084,7 +1084,7 @@ XXX
     Switch::OptionalArgument.new do |pkg|
       if pkg
         begin
-          require 'rubygems/vendor/optparse/lib/optparse/version'
+          require_relative 'optparse/version'
         rescue LoadError
         else
           show_version(*pkg.split(/,/)) or

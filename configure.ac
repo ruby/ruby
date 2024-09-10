@@ -840,18 +840,38 @@ AS_IF([test "$GCC" = yes], [
 
     # aarch64 branch protection
     AS_CASE(["$target_cpu"], [aarch64|arm64], [
-	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
-            # Try these flags in the _prepended_ position - i.e. we want to try building a program
-            # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
-            # branch protection flags in CFLAGS, we don't want to overwrite those. We just want to
-            # find some branch protection flags which work if none were provided.
-            RUBY_TRY_CFLAGS_PREPEND(option, [branch_protection=yes], [branch_protection=no])
-            AS_IF([test "x$branch_protection" = xyes], [
-                # _prepend_ the options to CFLAGS, so that user-provided flags will overwrite them.
-                # These CFLAGS are used during the configure script to compile further test programs;
-                # however, $harden_flags is prepended separately to CFLAGS at the end of the script.
-                RUBY_PREPEND_OPTION(hardenflags, $opt)
-                break
+        # LLVM libunwind is not actually capable of unwinding code compiled with pointer
+        # authentication unless it's built without LIBUNWIND_ENABLE_CROSS_UNWINDING (see
+        # https://github.com/llvm/llvm-project/blob/8e35c86977ce5529a9387657321ac9fefcdae5b5/libunwind/src/DwarfInstructions.hpp#L294)
+        # It seems that macOS ships LLVM compiled this way.
+        # Detect this and disable automatic insertion of pac-ret flags in that case, since we assume
+        # that reliable backtraces are more important than hardening flags.
+        AC_MSG_CHECKING([for a broken LLVM libunwind that cannot unwind code with RA signing])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+            @%:@include <libunwind.h>
+            int foo = UNW_ECROSSRASIGNING;
+            ]])],
+            # If compilation succeeds, that means we a) had libunwind, and b) it was NOT native only
+            [rb_cv_libunwind_broken_ra_signing=yes],
+            # if compilation fails, that means we either a) do not have libunwind, or b) have it in
+            # native only mode (which is good!)
+            [rb_cv_libunwind_broken_ra_signing=no]
+        )
+        AC_MSG_RESULT(["$rb_cv_libunwind_broken_ra_signing"])
+        AS_IF([test "x$rb_cv_libunwind_broken_ra_signing" = "xno"], [
+            AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
+                # Try these flags in the _prepended_ position - i.e. we want to try building a program
+                # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
+                # branch protection flags in CFLAGS, we don't want to overwrite those. We just want to
+                # find some branch protection flags which work if none were provided.
+                RUBY_TRY_CFLAGS_PREPEND(option, [branch_protection=yes], [branch_protection=no])
+                AS_IF([test "x$branch_protection" = xyes], [
+                    # _prepend_ the options to CFLAGS, so that user-provided flags will overwrite them.
+                    # These CFLAGS are used during the configure script to compile further test programs;
+                    # however, $harden_flags is prepended separately to CFLAGS at the end of the script.
+                    RUBY_PREPEND_OPTION(hardenflags, $opt)
+                    break
+                ])
             ])
         ])
     ])

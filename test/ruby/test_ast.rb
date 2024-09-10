@@ -1330,12 +1330,54 @@ dummy
       assert_locations(node.locations, [[1, 0, 1, 5]])
     end
 
+    def test_alias_locations
+      node = RubyVM::AbstractSyntaxTree.parse("alias foo bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+    end
+
+    def test_and_locations
+      node = RubyVM::AbstractSyntaxTree.parse("1 and 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 2, 1, 5]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 && 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+    end
+
+    def test_or_locations
+      node = RubyVM::AbstractSyntaxTree.parse("1 or 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("1 || 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+    end
+
     def test_unless_locations
       node = RubyVM::AbstractSyntaxTree.parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
 
       node = RubyVM::AbstractSyntaxTree.parse("1 unless 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 2, 1, 8], nil, nil])
+    end
+
+    def test_undef_locations
+      node = RubyVM::AbstractSyntaxTree.parse("undef foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 0, 1, 5]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("undef foo, bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 14], [1, 0, 1, 5]])
+    end
+
+    def test_valias_locations
+      node = RubyVM::AbstractSyntaxTree.parse("alias $foo $bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 5]])
+
+      node = RubyVM::AbstractSyntaxTree.parse("alias $foo $&")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+    end
+
+    def test_when_locations
+      node = RubyVM::AbstractSyntaxTree.parse("case a; when 1 then 2; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 22], [1, 8, 1, 12], [1, 15, 1, 19]])
     end
 
     private

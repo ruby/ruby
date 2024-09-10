@@ -65,6 +65,8 @@ jobs:
 
       - run: make all golf
 
+      - run: ./goruby -veh
+
       - run: ruby tool/update-deps --fix
 
       - run: git diff --no-ext-diff --ignore-submodules --exit-code

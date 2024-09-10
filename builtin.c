@@ -7,7 +7,7 @@
 
 #ifndef BUILTIN_BINARY_SIZE
 
-#define INCLUDED_BY_BUILTIN_C 1
+#define BUILTIN_LOADED(feature_name, iseq) ((void)0)
 #include "mini_builtin.c"
 
 #else

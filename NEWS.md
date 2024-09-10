@@ -75,14 +75,17 @@ The following default gems are updated.
 * io-console 0.7.2
 * irb 1.14.0
 * json 2.7.2
+* logger 1.6.1
 * net-http 0.4.1
 * optparse 0.5.0
 * prism 1.0.0
+* psych 5.2.0.beta1
 * rdoc 6.7.0
-* reline 0.5.9
+* reline 0.5.10
 * resolv 0.4.0
 * stringio 3.1.2.dev
 * strscan 3.1.1.dev
+* time 0.4.0
 * uri 0.13.1
 * zlib 3.1.1
 
@@ -91,10 +94,10 @@ The following bundled gems are updated.
 * minitest 5.25.1
 * rake 13.2.1
 * test-unit 3.6.2
-* rexml 3.3.6
+* rexml 3.3.7
 * rss 0.3.1
 * net-ftp 0.3.7
-* net-imap 0.4.15
+* net-imap 0.4.16
 * net-smtp 0.5.0
 * rbs 3.5.3
 * typeprof 0.21.11

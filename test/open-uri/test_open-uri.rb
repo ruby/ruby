@@ -337,6 +337,66 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_redirect_without_request_specific_fields_hash
+    authorization_header = nil
+    redirected_authorization_header = nil
+    with_http {|srv, url|
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; authorization_header = req["Authorization"]; } )
+      srv.mount_proc("/r2/", lambda {|req, res| redirected_authorization_header = req["Authorization"]; } )
+      URI.open("#{url}/r1/", "Authorization" => "dummy_token") {|f|
+        assert_equal("dummy_token", authorization_header)
+        assert_equal("#{url}/r2", f.base_uri.to_s)
+        assert_equal("dummy_token", redirected_authorization_header)
+      }
+    }
+  end
+
+  def test_redirect_with_request_specific_fields_hash
+    authorization_header = nil
+    redirected_authorization_header = "exposed_dummy_token"
+    with_http {|srv, url|
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; authorization_header = req["Authorization"]; } )
+      srv.mount_proc("/r2/", lambda {|req, res| redirected_authorization_header = req["Authorization"]; } )
+      URI.open("#{url}/r1/", request_specific_fields: {"Authorization" => "dummy_token"}) {|f|
+        assert_equal("dummy_token", authorization_header)
+        assert_equal("#{url}/r2", f.base_uri.to_s)
+        assert_equal(nil, redirected_authorization_header)
+      }
+    }
+  end
+
+  def test_redirect_with_request_specific_fields_proc
+    authorization_header = nil
+    redirected_authorization_header = nil
+
+    modify_authorization_header = Proc.new do |uri|
+      authorization_token = if uri.to_s.include?("/r1")
+                              "dummy_token"
+                            else
+                              "masked_dummy_token"
+                            end
+      { "Authorization" => authorization_token }
+    end
+
+    with_http {|srv, url|
+      srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; authorization_header = req["Authorization"] } )
+      srv.mount_proc("/r2/", lambda {|req, res| redirected_authorization_header = req["Authorization"]; } )
+      URI.open("#{url}/r1/", request_specific_fields: modify_authorization_header) {|f|
+        assert_equal("dummy_token", authorization_header)
+        assert_equal("#{url}/r2", f.base_uri.to_s)
+        assert_equal("masked_dummy_token", redirected_authorization_header)
+      }
+    }
+  end
+
+  def test_redirect_with_invalid_request_specific_fields_format
+    with_http {|srv, url|
+      srv.mount_proc("/r1/", lambda {|req, res| res.body = "r1" } )
+      exc = assert_raise(ArgumentError) { URI.open("#{url}/r1/", request_specific_fields: "dummy_token") {} }
+      assert_equal('Invalid request_specific_fields option: "dummy_token"', exc.message)
+    }
+  end
+
   def test_max_redirects_success
     with_http {|srv, url|
       srv.mount_proc("/r1/", lambda {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" } )

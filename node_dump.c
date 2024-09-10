@@ -289,6 +289,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_body, RNODE_WHEN, "when body");
         LAST_NODE;
         F_NODE(nd_next, RNODE_WHEN, "next when clause");
+        F_LOC(keyword_loc, RNODE_WHEN);
+        LAST_NODE;
+        F_LOC(then_keyword_loc, RNODE_WHEN);
         return;
 
       case NODE_IN:
@@ -431,8 +434,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
                 break;
             node = RNODE_AND(node)->nd_2nd;
         }
-        LAST_NODE;
         F_NODE(nd_2nd, RNODE_AND, "right expr");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_AND);
         return;
 
       case NODE_MASGN:
@@ -922,8 +926,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: alias [nd_1st] [nd_2nd]");
         ANN("example: alias bar foo");
         F_NODE(nd_1st, RNODE_ALIAS, "new name");
-        LAST_NODE;
         F_NODE(nd_2nd, RNODE_ALIAS, "old name");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_ALIAS);
         return;
 
       case NODE_VALIAS:
@@ -932,6 +937,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: alias $y $x");
         F_ID(nd_alias, RNODE_VALIAS, "new name");
         F_ID(nd_orig, RNODE_VALIAS, "old name");
+        F_LOC(keyword_loc, RNODE_VALIAS);
         return;
 
       case NODE_UNDEF:
@@ -940,6 +946,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: undef foo");
         LAST_NODE;
         F_ARRAY(nd_undefs, RNODE_UNDEF, "nd_undefs");
+        F_LOC(keyword_loc, RNODE_UNDEF);
         return;
 
       case NODE_CLASS:

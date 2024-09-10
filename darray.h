@@ -43,16 +43,26 @@
  *
  * void rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
  */
-#define rb_darray_append(ptr_to_ary, element) \
-    rb_darray_append_impl(ptr_to_ary, element)
-
-#define rb_darray_append_impl(ptr_to_ary, element) do {  \
+#define rb_darray_append(ptr_to_ary, element) do {  \
     rb_darray_ensure_space((ptr_to_ary), \
                            sizeof(**(ptr_to_ary)), \
                            sizeof((*(ptr_to_ary))->data[0])); \
     rb_darray_set(*(ptr_to_ary), \
                   (*(ptr_to_ary))->meta.size, \
                   (element)); \
+    (*(ptr_to_ary))->meta.size++; \
+} while (0)
+
+#define rb_darray_insert(ptr_to_ary, idx, element) do { \
+    rb_darray_ensure_space((ptr_to_ary), \
+                           sizeof(**(ptr_to_ary)), \
+                           sizeof((*(ptr_to_ary))->data[0])); \
+    MEMMOVE( \
+        rb_darray_ref(*(ptr_to_ary), idx + 1), \
+        rb_darray_ref(*(ptr_to_ary), idx), \
+        sizeof((*(ptr_to_ary))->data[0]), \
+        rb_darray_size(*(ptr_to_ary)) - idx); \
+    rb_darray_set(*(ptr_to_ary), idx, element); \
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
@@ -109,6 +119,14 @@ rb_darray_size(const void *ary)
 {
     const rb_darray_meta_t *meta = ary;
     return meta ? meta->size : 0;
+}
+
+
+static inline void
+rb_darray_pop(void *ary, size_t count)
+{
+    rb_darray_meta_t *meta = ary;
+    meta->size -= count;
 }
 
 // Get the capacity of the dynamic array.

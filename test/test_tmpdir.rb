@@ -104,6 +104,12 @@ class TestTmpdir < Test::Unit::TestCase
     end
   end
 
+  def test_mktmpdir_not_empty_parent
+    assert_raise(ArgumentError) do
+      Dir.mktmpdir("foo", "")
+    end
+  end
+
   def assert_mktmpdir_traversal
     Dir.mktmpdir do |target|
       target = target.chomp('/') + '/'

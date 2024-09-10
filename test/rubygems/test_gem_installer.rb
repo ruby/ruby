@@ -1083,6 +1083,8 @@ end
     end
 
     assert_match(/ran executable/, e.message)
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_conflicting_binstubs
@@ -1131,6 +1133,8 @@ end
     # We expect the bin stub to activate the version that actually contains
     # the binstub.
     assert_match("I have an executable", e.message)
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_creates_binstub_that_understand_version
@@ -1160,6 +1164,8 @@ end
     end
 
     assert_includes(e.message, "can't find gem a (= 3.0)")
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_creates_binstub_that_prefers_user_installed_gem_to_default
@@ -1192,6 +1198,8 @@ end
     end
 
     assert_equal(e.message, "ran executable")
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
   end
 
   def test_install_creates_binstub_that_dont_trust_encoding
@@ -1222,6 +1230,36 @@ end
     end
 
     assert_match(/ran executable/, e.message)
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
+  end
+
+  def test_install_does_not_leave_lockfile_for_binstub
+    installer = util_setup_installer
+
+    installer.wrappers = true
+
+    File.class_eval do
+      alias_method :original_chmod, :chmod
+      define_method(:chmod) do |mode|
+        original_chmod(mode)
+        raise Gem::Ext::BuildError if path.end_with?("/executable")
+      end
+    end
+
+    assert_raise(Gem::Ext::BuildError) do
+      installer.install
+    end
+
+    assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
+    # TODO: remove already copied files at failures.
+    # assert_path_not_exist(File.join(installer.bin_dir, "executable"))
+  ensure
+    File.class_eval do
+      remove_method :chmod
+      alias_method :chmod, :original_chmod
+      remove_method :original_chmod
+    end
   end
 
   def test_install_with_no_prior_files
@@ -2386,10 +2424,10 @@ end
     installer = Gem::Installer.for_spec @spec
     installer.gem_home = @gemhome
 
-    File.class_eval do
-      alias_method :original_write, :write
+    File.singleton_class.class_eval do
+      alias_method :original_binwrite, :binwrite
 
-      def write(data)
+      def binwrite(path, data)
         raise Errno::ENOSPC
       end
     end
@@ -2400,10 +2438,10 @@ end
 
     assert_path_not_exist @spec.spec_file
   ensure
-    File.class_eval do
-      remove_method :write
-      alias_method :write, :original_write
-      remove_method :original_write
+    File.singleton_class.class_eval do
+      remove_method :binwrite
+      alias_method :binwrite, :original_binwrite
+      remove_method :original_binwrite
     end
   end
 

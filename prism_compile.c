@@ -10405,7 +10405,7 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
 
         for (size_t index = 0; index < parser->newline_list.size; index++) {
             size_t offset = parser->newline_list.offsets[index];
-            size_t length = index == parser->newline_list.size - 1 ? (parser->end - (parser->start + offset)) : (parser->newline_list.offsets[index + 1] - offset);
+            size_t length = index == parser->newline_list.size - 1 ? ((size_t) (parser->end - (parser->start + offset))) : (parser->newline_list.offsets[index + 1] - offset);
             rb_ary_push(*script_lines, rb_enc_str_new((const char *) parser->start + offset, length, scope_node->encoding));
         }
 

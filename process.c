@@ -4227,12 +4227,17 @@ rb_fork_ruby(int *status)
         prefork();
 
         before_fork_ruby();
+        rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
         child.pid = pid = rb_fork();
         child.error = err = errno;
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
+        rb_thread_release_fork_lock();
+        if (pid == 0) {
+          rb_thread_reset_fork_lock();
+        }
         after_fork_ruby(pid);
 
         /* repeat while fork failed but retryable */
@@ -5700,6 +5705,12 @@ check_gid_switch(void)
 
 
 #if defined(HAVE_PWD_H)
+static inline bool
+login_not_found(int err)
+{
+    return (err == ENOTTY || err == ENXIO || err == ENOENT);
+}
+
 /**
  * Best-effort attempt to obtain the name of the login user, if any,
  * associated with the process. Processes not descended from login(1) (or
@@ -5708,18 +5719,18 @@ check_gid_switch(void)
 VALUE
 rb_getlogin(void)
 {
-#if ( !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN) )
+# if !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN)
     return Qnil;
-#else
+# else
     char MAYBE_UNUSED(*login) = NULL;
 
 # ifdef USE_GETLOGIN_R
 
-#if defined(__FreeBSD__)
+#   if defined(__FreeBSD__)
     typedef int getlogin_r_size_t;
-#else
+#   else
     typedef size_t getlogin_r_size_t;
-#endif
+#   endif
 
     long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5733,10 +5744,8 @@ rb_getlogin(void)
     rb_str_set_len(maybe_result, loginsize);
 
     int gle;
-    errno = 0;
     while ((gle = getlogin_r(login, (getlogin_r_size_t)loginsize)) != 0) {
-
-        if (gle == ENOTTY || gle == ENXIO || gle == ENOENT) {
+        if (login_not_found(gle)) {
             rb_str_resize(maybe_result, 0);
             return Qnil;
         }
@@ -5756,17 +5765,19 @@ rb_getlogin(void)
         return Qnil;
     }
 
+    rb_str_set_len(maybe_result, strlen(login));
     return maybe_result;
 
-# elif USE_GETLOGIN
+# elif defined(USE_GETLOGIN)
 
     errno = 0;
     login = getlogin();
-    if (errno) {
-        if (errno == ENOTTY || errno == ENXIO || errno == ENOENT) {
+    int err = errno;
+    if (err) {
+        if (login_not_found(err)) {
             return Qnil;
         }
-        rb_syserr_fail(errno, "getlogin");
+        rb_syserr_fail(err, "getlogin");
     }
 
     return login ? rb_str_new_cstr(login) : Qnil;
@@ -5775,10 +5786,26 @@ rb_getlogin(void)
 #endif
 }
 
+/* avoid treating as errors errno values that indicate "not found" */
+static inline bool
+pwd_not_found(int err)
+{
+    switch (err) {
+      case 0:
+      case ENOENT:
+      case ESRCH:
+      case EBADF:
+      case EPERM:
+        return true;
+      default:
+        return false;
+    }
+}
+
 VALUE
 rb_getpwdirnam_for_login(VALUE login_name)
 {
-#if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
+#if !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM)
     return Qnil;
 #else
 
@@ -5787,7 +5814,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
         return Qnil;
     }
 
-    char *login = RSTRING_PTR(login_name);
+    const char *login = RSTRING_PTR(login_name);
 
     struct passwd *pwptr;
 
@@ -5807,11 +5834,8 @@ rb_getpwdirnam_for_login(VALUE login_name)
     rb_str_set_len(getpwnm_tmp, bufsizenm);
 
     int enm;
-    errno = 0;
     while ((enm = getpwnam_r(login, &pwdnm, bufnm, bufsizenm, &pwptr)) != 0) {
-
-        if (enm == ENOENT || enm== ESRCH || enm == EBADF || enm == EPERM) {
-            /* not found; non-errors */
+        if (pwd_not_found(enm)) {
             rb_str_resize(getpwnm_tmp, 0);
             return Qnil;
         }
@@ -5837,21 +5861,21 @@ rb_getpwdirnam_for_login(VALUE login_name)
     rb_str_resize(getpwnm_tmp, 0);
     return result;
 
-# elif USE_GETPWNAM
+# elif defined(USE_GETPWNAM)
 
     errno = 0;
-    pwptr = getpwnam(login);
-    if (pwptr) {
-        /* found it */
-        return rb_str_new_cstr(pwptr->pw_dir);
-    }
-    if (errno
-        /*   avoid treating as errors errno values that indicate "not found" */
-        && ( errno != ENOENT && errno != ESRCH && errno != EBADF && errno != EPERM)) {
-        rb_syserr_fail(errno, "getpwnam");
+    if (!(pwptr = getpwnam(login))) {
+        int err = errno;
+
+        if (pwd_not_found(err)) {
+            return Qnil;
+        }
+
+        rb_syserr_fail(err, "getpwnam");
     }
 
-    return Qnil;  /* not found */
+    /* found it */
+    return rb_str_new_cstr(pwptr->pw_dir);
 # endif
 
 #endif
@@ -5887,11 +5911,8 @@ rb_getpwdiruid(void)
     rb_str_set_len(getpwid_tmp, bufsizeid);
 
     int eid;
-    errno = 0;
     while ((eid = getpwuid_r(ruid, &pwdid, bufid, bufsizeid, &pwptr)) != 0) {
-
-        if (eid == ENOENT || eid== ESRCH || eid == EBADF || eid == EPERM) {
-            /* not found; non-errors */
+        if (pwd_not_found(eid)) {
             rb_str_resize(getpwid_tmp, 0);
             return Qnil;
         }
@@ -5920,18 +5941,18 @@ rb_getpwdiruid(void)
 # elif defined(USE_GETPWUID)
 
     errno = 0;
-    pwptr = getpwuid(ruid);
-    if (pwptr) {
-        /* found it */
-        return rb_str_new_cstr(pwptr->pw_dir);
-    }
-    if (errno
-        /*   avoid treating as errors errno values that indicate "not found" */
-        && ( errno == ENOENT || errno == ESRCH || errno == EBADF || errno == EPERM)) {
-        rb_syserr_fail(errno, "getpwuid");
+    if (!(pwptr = getpwuid(ruid))) {
+        int err = errno;
+
+        if (pwd_not_found(err)) {
+            return Qnil;
+        }
+
+        rb_syserr_fail(err, "getpwuid");
     }
 
-    return Qnil;  /* not found */
+    /* found it */
+    return rb_str_new_cstr(pwptr->pw_dir);
 # endif
 
 #endif /* !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID) */

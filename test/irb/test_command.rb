@@ -765,7 +765,7 @@ module TestIRB
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
       EnvUtil.suppress_warning { load "irb/command/help.rb" }
-    end
+    end if defined?(RDoc)
 
     def test_show_doc_without_rdoc
       _, err = without_rdoc do

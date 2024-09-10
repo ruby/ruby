@@ -107,13 +107,14 @@ module IRB
     end
 
     private def easter_egg(type = nil)
+      print "\e[?1049h"
       type ||= [:logo, :dancing].sample
       case type
       when :logo
-        require "rdoc"
-        RDoc::RI::Driver.new.page do |io|
-          type = STDOUT.external_encoding == Encoding::UTF_8 ? :unicode_large : :ascii_large
-          io.write easter_egg_logo(type)
+        Pager.page do |io|
+          logo_type = STDOUT.external_encoding == Encoding::UTF_8 ? :unicode_large : :ascii_large
+          io.write easter_egg_logo(logo_type)
+          STDIN.raw { STDIN.getc } if io == STDOUT
         end
       when :dancing
         STDOUT.cooked do
@@ -138,10 +139,11 @@ module IRB
           end
         rescue Interrupt
         ensure
-          print "\e[0m\e[?1049l"
           trap("SIGINT", prev_trap)
         end
       end
+    ensure
+      print "\e[0m\e[?1049l"
     end
   end
 end

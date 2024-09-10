@@ -79,7 +79,7 @@ class Gem::Source
       uri
     end
 
-    bundler_api_uri = enforce_trailing_slash(fetch_uri)
+    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
 
     begin
       fetcher = Gem::RemoteFetcher.fetcher
@@ -213,14 +213,16 @@ class Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, "[Remote:", "]" do
-      q.breakable
-      q.text @uri.to_s
-
-      if api = uri
+    q.object_group(self) do
+      q.group 2, "[Remote:", "]" do
         q.breakable
-        q.text "API URI: "
-        q.text api.to_s
+        q.text @uri.to_s
+
+        if api = uri
+          q.breakable
+          q.text "API URI: "
+          q.text api.to_s
+        end
       end
     end
   end

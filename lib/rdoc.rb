@@ -21,7 +21,7 @@ $DEBUG_RDOC = nil
 # see RDoc::Markup and refer to <tt>rdoc --help</tt> for command line usage.
 #
 # If you want to set the default markup format see
-# RDoc::Markup@Supported+Formats
+# RDoc::Markup@Markup+Formats
 #
 # If you want to store rdoc configuration in your gem (such as the default
 # markup format) see RDoc::Options@Saved+Options

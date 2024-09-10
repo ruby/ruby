@@ -920,6 +920,36 @@ objtostring
 }
 
 DEFINE_INSN
+opt_ary_freeze
+(VALUE ary, CALL_DATA cd)
+()
+(VALUE val)
+{
+    val = vm_opt_ary_freeze(ary, BOP_FREEZE, idFreeze);
+
+    if (UNDEF_P(val)) {
+        RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
+        PUSH(rb_ary_resurrect(ary));
+        CALL_SIMPLE_METHOD();
+    }
+}
+
+DEFINE_INSN
+opt_hash_freeze
+(VALUE hash, CALL_DATA cd)
+()
+(VALUE val)
+{
+    val = vm_opt_hash_freeze(hash, BOP_FREEZE, idFreeze);
+
+    if (UNDEF_P(val)) {
+        RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
+        PUSH(rb_hash_resurrect(hash));
+        CALL_SIMPLE_METHOD();
+    }
+}
+
+DEFINE_INSN
 opt_str_freeze
 (VALUE str, CALL_DATA cd)
 ()
