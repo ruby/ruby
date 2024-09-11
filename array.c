@@ -7697,9 +7697,9 @@ rb_ary_take_while(VALUE ary)
 
 /*
  *  call-seq:
- *    array.drop(n) -> new_array
+ *    drop(n) -> new_array
  *
- *  Returns a new +Array+ containing all but the first +n+ element of +self+,
+ *  Returns a new array containing all but the first +n+ element of +self+,
  *  where +n+ is a non-negative Integer;
  *  does not modify +self+.
  *
@@ -7709,7 +7709,9 @@ rb_ary_take_while(VALUE ary)
  *    a.drop(0) # => [0, 1, 2, 3, 4, 5]
  *    a.drop(1) # => [1, 2, 3, 4, 5]
  *    a.drop(2) # => [2, 3, 4, 5]
+ *    a.drop(9) # => []
  *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
