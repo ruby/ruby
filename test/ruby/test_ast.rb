@@ -359,7 +359,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method
-    omit if ParserSupport.prism_enabled?
+    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
@@ -793,7 +793,7 @@ dummy
   end
 
   def test_keep_script_lines_for_of_with_existing_SCRIPT_LINES__that_has__FILE__as_a_key
-    omit if ParserSupport.prism_enabled?
+    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     # This test confirms that the bug that previously occurred because of
     # `AbstractSyntaxTree.of`s unnecessary dependence on SCRIPT_LINES__ does not reproduce.
@@ -862,7 +862,7 @@ dummy
   end
 
   def test_e_option
-    omit if ParserSupport.prism_enabled?
+    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
