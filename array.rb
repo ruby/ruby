@@ -1,11 +1,10 @@
 class Array
   # call-seq:
-  #   array.each {|element| ... } -> self
-  #   array.each -> Enumerator
+  #   each {|element| ... } -> self
+  #   each -> new_enumerator
   #
-  # Iterates over array elements.
-  #
-  # When a block given, passes each successive array element to the block;
+  # With a block given, iterates over the elements of +self+,
+  # passing each element to the block;
   # returns +self+:
   #
   #   a = [:foo, 'bar', 2]
@@ -27,20 +26,10 @@ class Array
   #   foo
   #   bar
   #
-  # When no block given, returns a new Enumerator:
-  #   a = [:foo, 'bar', 2]
+  # With no block given, returns a new Enumerator.
   #
-  #   e = a.each
-  #   e # => #<Enumerator: [:foo, "bar", 2]:each>
-  #   a1 = e.each {|element|  puts "#{element.class} #{element}" }
-  #
-  # Output:
-  #
-  #   Symbol foo
-  #   String bar
-  #   Integer 2
-  #
-  # Related: #each_index, #reverse_each.
+  # Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
+
   def each
     Primitive.attr! :inline_block
 
