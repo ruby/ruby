@@ -21772,6 +21772,9 @@ pm_strnstr(const char *big, const char *little, size_t big_length) {
     return NULL;
 }
 
+#ifdef _WIN32
+#define pm_parser_warn_shebang_carriage_return(parser, start, length) ((void) 0)
+#else
 /**
  * Potentially warn the user if the shebang that has been found to include
  * "ruby" has a carriage return at the end, as that can cause problems on some
@@ -21783,6 +21786,7 @@ pm_parser_warn_shebang_carriage_return(pm_parser_t *parser, const uint8_t *start
         pm_parser_warn(parser, start, start + length, PM_WARN_SHEBANG_CARRIAGE_RETURN);
     }
 }
+#endif
 
 /**
  * Process the shebang when initializing the parser. This function assumes that
@@ -21973,9 +21977,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         const char *engine;
         if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
             if (newline != NULL) {
-                size_t length_including_newline = length + 1;
-                pm_parser_warn_shebang_carriage_return(parser, parser->start, length_including_newline);
-
+                pm_parser_warn_shebang_carriage_return(parser, parser->start, length + 1);
                 parser->encoding_comment_start = newline + 1;
             }
 
@@ -22015,10 +22017,9 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
                 const char *engine;
                 if ((engine = pm_strnstr((const char *) cursor, "ruby", length)) != NULL) {
                     found_shebang = true;
-                    if (newline != NULL) {
-                        size_t length_including_newline = length + 1;
-                        pm_parser_warn_shebang_carriage_return(parser, cursor, length_including_newline);
 
+                    if (newline != NULL) {
+                        pm_parser_warn_shebang_carriage_return(parser, cursor, length + 1);
                         parser->encoding_comment_start = newline + 1;
                     }
 
