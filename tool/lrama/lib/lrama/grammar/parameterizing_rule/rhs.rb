@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class ParameterizingRule
@@ -13,6 +15,7 @@ module Lrama
         def resolve_user_code(bindings)
           return unless user_code
 
+          resolved = Lexer::Token::UserCode.new(s_value: user_code.s_value, location: user_code.location)
           var_to_arg = {}
           symbols.each do |sym|
             resolved_sym = bindings.resolve_symbol(sym)
@@ -22,14 +25,14 @@ module Lrama
           end
 
           var_to_arg.each do |var, arg|
-            user_code.references.each do |ref|
+            resolved.references.each do |ref|
               if ref.name == var
                 ref.name = arg
               end
             end
           end
 
-          return user_code
+          return resolved
         end
       end
     end

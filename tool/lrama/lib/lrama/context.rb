@@ -1,4 +1,6 @@
-require "lrama/report/duration"
+# frozen_string_literal: true
+
+require_relative "report/duration"
 
 module Lrama
   # This is passed to a template
@@ -253,7 +255,7 @@ module Lrama
 
         # If no default_reduction_rule, default behavior is an
         # error then replace ErrorActionNumber with zero.
-        if !state.default_reduction_rule
+        unless state.default_reduction_rule
           actions.map! do |e|
             if e == ErrorActionNumber
               0
@@ -301,10 +303,7 @@ module Lrama
       end
 
       @states.nterms.each do |nterm|
-        if !(states = nterm_to_next_states[nterm])
-          default_goto = 0
-          not_default_gotos = []
-        else
+        if (states = nterm_to_next_states[nterm])
           default_state = states.map(&:last).group_by {|s| s }.max_by {|_, v| v.count }.first
           default_goto = default_state.id
           not_default_gotos = []
@@ -312,6 +311,9 @@ module Lrama
             next if to_state.id == default_goto
             not_default_gotos << [from_state.id, to_state.id]
           end
+        else
+          default_goto = 0
+          not_default_gotos = []
         end
 
         k = nterm_number_to_sequence_number(nterm.number)

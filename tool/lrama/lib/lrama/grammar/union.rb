@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class Union < Struct.new(:code, :lineno, keyword_init: true)

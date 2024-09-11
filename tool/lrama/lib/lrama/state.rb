@@ -1,8 +1,10 @@
-require "lrama/state/reduce"
-require "lrama/state/reduce_reduce_conflict"
-require "lrama/state/resolved_conflict"
-require "lrama/state/shift"
-require "lrama/state/shift_reduce_conflict"
+# frozen_string_literal: true
+
+require_relative "state/reduce"
+require_relative "state/reduce_reduce_conflict"
+require_relative "state/resolved_conflict"
+require_relative "state/shift"
+require_relative "state/shift_reduce_conflict"
 
 module Lrama
   class State

@@ -1,42 +1,39 @@
+# frozen_string_literal: true
+
 require "forwardable"
-require "lrama/grammar/auxiliary"
-require "lrama/grammar/binding"
-require "lrama/grammar/code"
-require "lrama/grammar/counter"
-require "lrama/grammar/destructor"
-require "lrama/grammar/error_token"
-require "lrama/grammar/parameterizing_rule"
-require "lrama/grammar/percent_code"
-require "lrama/grammar/precedence"
-require "lrama/grammar/printer"
-require "lrama/grammar/reference"
-require "lrama/grammar/rule"
-require "lrama/grammar/rule_builder"
-require "lrama/grammar/symbol"
-require "lrama/grammar/symbols"
-require "lrama/grammar/type"
-require "lrama/grammar/union"
-require "lrama/lexer"
+require_relative "grammar/auxiliary"
+require_relative "grammar/binding"
+require_relative "grammar/code"
+require_relative "grammar/counter"
+require_relative "grammar/destructor"
+require_relative "grammar/error_token"
+require_relative "grammar/parameterizing_rule"
+require_relative "grammar/percent_code"
+require_relative "grammar/precedence"
+require_relative "grammar/printer"
+require_relative "grammar/reference"
+require_relative "grammar/rule"
+require_relative "grammar/rule_builder"
+require_relative "grammar/symbol"
+require_relative "grammar/symbols"
+require_relative "grammar/type"
+require_relative "grammar/union"
+require_relative "lexer"
 
 module Lrama
   # Grammar is the result of parsing an input grammar file
   class Grammar
     extend Forwardable
 
-    attr_reader :percent_codes, :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol, :aux
-    attr_accessor :union, :expect,
-                  :printers, :error_tokens,
-                  :lex_param, :parse_param, :initial_action,
+    attr_reader :percent_codes, :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol, :aux, :parameterizing_rule_resolver
+    attr_accessor :union, :expect, :printers, :error_tokens, :lex_param, :parse_param, :initial_action,
                   :after_shift, :before_reduce, :after_reduce, :after_shift_error_token, :after_pop_stack,
-                  :symbols_resolver, :types,
-                  :rules, :rule_builders,
-                  :sym_to_rules, :no_stdlib
+                  :symbols_resolver, :types, :rules, :rule_builders, :sym_to_rules, :no_stdlib, :locations
 
     def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term,
                                         :find_symbol_by_number!, :find_symbol_by_id!, :token_to_symbol,
                                         :find_symbol_by_s_value!, :fill_symbol_number, :fill_nterm_type,
                                         :fill_printer, :fill_destructor, :fill_error_token, :sort_by_number!
-
 
     def initialize(rule_counter)
       @rule_counter = rule_counter
@@ -59,8 +56,13 @@ module Lrama
       @accept_symbol = nil
       @aux = Auxiliary.new
       @no_stdlib = false
+      @locations = false
 
       append_special_symbols
+    end
+
+    def create_rule_builder(rule_counter, midrule_action_counter)
+      RuleBuilder.new(rule_counter, midrule_action_counter, @parameterizing_rule_resolver)
     end
 
     def add_percent_code(id:, code:)
@@ -141,6 +143,7 @@ module Lrama
     end
 
     def prepare
+      resolve_inline_rules
       normalize_rules
       collect_symbols
       set_lhs_and_rhs
@@ -149,6 +152,7 @@ module Lrama
       fill_sym_to_rules
       compute_nullable
       compute_first_set
+      set_locations
     end
 
     # TODO: More validation methods
@@ -255,7 +259,7 @@ module Lrama
 
     def setup_rules
       @rule_builders.each do |builder|
-        builder.setup_rules(@parameterizing_rule_resolver)
+        builder.setup_rules
       end
     end
 
@@ -289,10 +293,23 @@ module Lrama
       @accept_symbol = term
     end
 
+    def resolve_inline_rules
+      while @rule_builders.any? {|r| r.has_inline_rules? } do
+        @rule_builders = @rule_builders.flat_map do |builder|
+          if builder.has_inline_rules?
+            builder.resolve_inline_rules
+          else
+            builder
+          end
+        end
+      end
+    end
+
     def normalize_rules
       # Add $accept rule to the top of rules
-      lineno = @rule_builders.first ? @rule_builders.first.line : 0
-      @rules << Rule.new(id: @rule_counter.increment, _lhs: @accept_symbol.id, _rhs: [@rule_builders.first.lhs, @eof_symbol.id], token_code: nil, lineno: lineno)
+      rule_builder = @rule_builders.first # : RuleBuilder
+      lineno = rule_builder ? rule_builder.line : 0
+      @rules << Rule.new(id: @rule_counter.increment, _lhs: @accept_symbol.id, _rhs: [rule_builder.lhs, @eof_symbol.id], token_code: nil, lineno: lineno)
 
       setup_rules
 
@@ -370,12 +387,16 @@ module Lrama
       rules.each do |rule|
         next if rule.lhs.nterm?
 
-        errors << "[BUG] LHS of #{rule} (line: #{rule.lineno}) is term. It should be nterm."
+        errors << "[BUG] LHS of #{rule.display_name} (line: #{rule.lineno}) is term. It should be nterm."
       end
 
       return if errors.empty?
 
       raise errors.join("\n")
+    end
+
+    def set_locations
+      @locations = @locations || @rules.any? {|rule| rule.contains_at_reference? }
     end
   end
 end
