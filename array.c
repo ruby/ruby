@@ -7731,23 +7731,20 @@ rb_ary_drop(VALUE ary, VALUE n)
 
 /*
  *  call-seq:
- *    array.drop_while {|element| ... } -> new_array
- *    array.drop_while -> new_enumerator
-
- *  Returns a new +Array+ containing zero or more trailing elements of +self+;
- *  does not modify +self+.
+ *    drop_while {|element| ... } -> new_array
+ *    drop_while -> new_enumerator
  *
  *  With a block given, calls the block with each successive element of +self+;
  *  stops if the block returns +false+ or +nil+;
- *  returns a new +Array+ _omitting_ those elements for which the block returned a truthy value:
+ *  returns a new array _omitting_ those elements for which the block returned a truthy value;
+ *  does not modify +self+:
  *
  *    a = [0, 1, 2, 3, 4, 5]
  *    a.drop_while {|element| element < 3 } # => [3, 4, 5]
  *
- *  With no block given, returns a new Enumerator:
+ *  With no block given, returns a new Enumerator.
  *
- *    [0, 1].drop_while # => # => #<Enumerator: [0, 1]:drop_while>
- *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
