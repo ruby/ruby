@@ -263,18 +263,32 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
     *encoded_filepath = rb_str_encode_ospath(filepath);
     extract_options(options, *encoded_filepath, keywords);
 
-    const char * string_source = (const char *) pm_string_source(&options->filepath);
+    const char *source = (const char *) pm_string_source(&options->filepath);
+    pm_string_init_result_t result;
 
-    if (!pm_string_file_init(input, string_source)) {
-        pm_options_free(options);
+    switch (result = pm_string_file_init(input, source)) {
+        case PM_STRING_INIT_SUCCESS:
+            break;
+        case PM_STRING_INIT_ERROR_GENERIC: {
+            pm_options_free(options);
 
 #ifdef _WIN32
-        int e = rb_w32_map_errno(GetLastError());
+            int e = rb_w32_map_errno(GetLastError());
 #else
-        int e = errno;
+            int e = errno;
 #endif
 
-        rb_syserr_fail(e, string_source);
+            rb_syserr_fail(e, source);
+            break;
+        }
+        case PM_STRING_INIT_ERROR_DIRECTORY:
+            pm_options_free(options);
+            rb_syserr_fail(EISDIR, source);
+            break;
+        default:
+            pm_options_free(options);
+            rb_raise(rb_eRuntimeError, "Unknown error (%d) initializing file: %s", result, source);
+            break;
     }
 }
 

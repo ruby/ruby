@@ -79,6 +79,20 @@ module Prism
       end
     end
 
+    def test_parse_directory
+      error = nil
+
+      begin
+        Prism.parse_file(__dir__)
+      rescue SystemCallError => error
+      end
+
+      refute_nil error
+      return if error.is_a?(Errno::ENOMEM)
+
+      assert_kind_of Errno::EISDIR, error
+    end
+
     private
 
     def find_source_file_node(program)
