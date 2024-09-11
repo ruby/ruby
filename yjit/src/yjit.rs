@@ -167,7 +167,7 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_compilation_log: VALUE, print_compilation_log: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
         // Initialize and enable YJIT
         if gen_stats.test() {
@@ -176,6 +176,14 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
                 OPTIONS.print_stats = print_stats.test();
             }
         }
+
+        if gen_compilation_log.test() {
+            unsafe {
+                OPTIONS.gen_compilation_log = gen_compilation_log.test();
+                OPTIONS.print_compilation_log = print_compilation_log.test();
+            }
+        }
+
         yjit_init();
 
         // Add "+YJIT" to RUBY_DESCRIPTION
