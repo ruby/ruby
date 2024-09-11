@@ -4406,6 +4406,8 @@ rb_ary_reject(VALUE ary)
  *    a.delete_if {|element| element.to_s.start_with?('b') } # => [:foo, 2]
  *
  *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
