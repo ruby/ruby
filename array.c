@@ -8028,9 +8028,9 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    array.dig(index, *identifiers) -> object
  *
- *  Finds and returns the object in nested objects
- *  that is specified by +index+ and +identifiers+.
- *  The nested objects may be instances of various classes.
+ *  Finds and returns the object in nested object
+ *  specified by +index+ and +identifiers+;
+ *  the nested objects may be instances of various classes.
  *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
  *
  *  Examples:
@@ -8041,6 +8041,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
  *    a.dig(1, 2, 0) # => :bat
  *    a.dig(1, 2, 3) # => nil
  *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
