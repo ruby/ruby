@@ -4128,9 +4128,9 @@ rb_ary_delete_at(VALUE ary, long pos)
 
 /*
  *  call-seq:
- *    delete_at(index) -> deleted_object or nil
+ *    delete_at(index) -> removed_object or nil
  *
- *  Deletes the element of +self+ at the given +index+, which must be an
+ *  Removes the element of +self+ at the given +index+, which must be an
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  When +index+ is non-negative, deletes the element at offset +index+:
@@ -4151,6 +4151,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *    a.delete_at(3)  # => nil
  *    a.delete_at(-4) # => nil
  *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
