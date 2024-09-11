@@ -10558,9 +10558,18 @@ read_entire_file(pm_string_t *string, const char *filepath)
 {
 #ifdef _WIN32
     // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+    int length = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, NULL, 0);
+    if (length == 0) return false;
 
+    WCHAR *wfilepath = xmalloc(sizeof(WCHAR) * ((size_t) length));
+    if ((wfilepath == NULL) || (MultiByteToWideChar(CP_UTF8, 0, filepath, -1, wfilepath, length) == 0)) {
+        xfree(wfilepath);
+        return false;
+    }
+
+    HANDLE file = CreateFileW(wfilepath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
     if (file == INVALID_HANDLE_VALUE) {
+        xfree(wfilepath);
         return false;
     }
 
@@ -10568,6 +10577,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
     DWORD file_size = GetFileSize(file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
         CloseHandle(file);
+        xfree(wfilepath);
         return false;
     }
 
@@ -10575,6 +10585,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
+        xfree(wfilepath);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
@@ -10584,6 +10595,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
     HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
     if (mapping == NULL) {
         CloseHandle(file);
+        xfree(wfilepath);
         return false;
     }
 
@@ -10591,6 +10603,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
     uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(mapping);
     CloseHandle(file);
+    xfree(wfilepath);
 
     if (source == NULL) {
         return false;
