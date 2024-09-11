@@ -2613,12 +2613,11 @@ rb_ary_each(VALUE ary)
 
 /*
  *  call-seq:
- *    array.each_index {|index| ... } -> self
- *    array.each_index -> Enumerator
+ *    each_index {|index| ... } -> self
+ *    each_index -> new_enumerator
  *
- *  Iterates over array indexes.
- *
- *  When a block given, passes each successive array index to the block;
+ *  With a block given, iterates over the elements of +self+,
+ *  passing each <i>array index</i> to the block;
  *  returns +self+:
  *
  *    a = [:foo, 'bar', 2]
@@ -2640,20 +2639,9 @@ rb_ary_each(VALUE ary)
  *    0
  *    1
  *
- *  When no block given, returns a new Enumerator:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [:foo, 'bar', 2]
- *    e = a.each_index
- *    e # => #<Enumerator: [:foo, "bar", 2]:each_index>
- *    a1 = e.each {|index|  puts "#{index} #{a[index]}"}
- *
- *  Output:
- *
- *    0 foo
- *    1 bar
- *    2 2
- *
- *  Related: #each, #reverse_each.
+ *  Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
  */
 
 static VALUE
