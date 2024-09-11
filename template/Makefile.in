@@ -524,9 +524,9 @@ ext/realclean:: ext/realclean.sub
 .bundle/distclean:: .bundle/distclean.sub
 .bundle/realclean:: .bundle/realclean.sub
 
-ext/clean.sub:: ext/clean.mk
-ext/distclean.sub:: ext/distclean.mk
-ext/realclean.sub:: ext/realclean.mk
+.bundle/clean.sub:: ext/clean.mk
+.bundle/distclean.sub:: ext/distclean.mk
+.bundle/realclean.sub:: ext/realclean.mk
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
 .bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
