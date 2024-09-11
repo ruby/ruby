@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   # Algorithm Digraph of https://dl.acm.org/doi/pdf/10.1145/69622.357187 (P. 625)
   class Digraph

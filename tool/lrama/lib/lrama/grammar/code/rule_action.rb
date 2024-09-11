@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class Code
@@ -41,6 +43,7 @@ module Lrama
           when ref.type == :dollar && ref.name == "$" # $$
             tag = ref.ex_tag || lhs.tag
             raise_tag_not_found_error(ref) unless tag
+            # @type var tag: Lexer::Token::Tag
             "(yyval.#{tag.member})"
           when ref.type == :at && ref.name == "$" # @$
             "(yyloc)"
@@ -50,6 +53,7 @@ module Lrama
             i = -position_in_rhs + ref.index
             tag = ref.ex_tag || rhs[ref.index - 1].tag
             raise_tag_not_found_error(ref) unless tag
+            # @type var tag: Lexer::Token::Tag
             "(yyvsp[#{i}].#{tag.member})"
           when ref.type == :at # @n
             i = -position_in_rhs + ref.index
@@ -69,18 +73,18 @@ module Lrama
           @rule.position_in_original_rule_rhs || @rule.rhs.count
         end
 
-        # If this is midrule action, RHS is a RHS of the original rule.
+        # If this is midrule action, RHS is an RHS of the original rule.
         def rhs
           (@rule.original_rule || @rule).rhs
         end
 
-        # Unlike `rhs`, LHS is always a LHS of the rule.
+        # Unlike `rhs`, LHS is always an LHS of the rule.
         def lhs
           @rule.lhs
         end
 
         def raise_tag_not_found_error(ref)
-          raise "Tag is not specified for '$#{ref.value}' in '#{@rule}'"
+          raise "Tag is not specified for '$#{ref.value}' in '#{@rule.display_name}'"
         end
       end
     end

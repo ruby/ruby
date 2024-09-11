@@ -1,13 +1,15 @@
+# frozen_string_literal: true
+
 require "set"
 
-require "lrama/counterexamples/derivation"
-require "lrama/counterexamples/example"
-require "lrama/counterexamples/path"
-require "lrama/counterexamples/production_path"
-require "lrama/counterexamples/start_path"
-require "lrama/counterexamples/state_item"
-require "lrama/counterexamples/transition_path"
-require "lrama/counterexamples/triple"
+require_relative "counterexamples/derivation"
+require_relative "counterexamples/example"
+require_relative "counterexamples/path"
+require_relative "counterexamples/production_path"
+require_relative "counterexamples/start_path"
+require_relative "counterexamples/state_item"
+require_relative "counterexamples/transition_path"
+require_relative "counterexamples/triple"
 
 module Lrama
   # See: https://www.cs.cornell.edu/andru/papers/cupex/cupex.pdf
@@ -171,7 +173,13 @@ module Lrama
               break
             end
 
-            if !si.item.beginning_of_rule?
+            if si.item.beginning_of_rule?
+              key = [si.state, si.item.lhs]
+              @reverse_productions[key].each do |item|
+                state_item = StateItem.new(si.state, item)
+                queue << (sis + [state_item])
+              end
+            else
               key = [si, si.item.previous_sym]
               @reverse_transitions[key].each do |prev_target_state_item|
                 next if prev_target_state_item.state != prev_state_item.state
@@ -182,12 +190,6 @@ module Lrama
                 i = j
                 queue.clear
                 break
-              end
-            else
-              key = [si.state, si.item.lhs]
-              @reverse_productions[key].each do |item|
-                state_item = StateItem.new(si.state, item)
-                queue << (sis + [state_item])
               end
             end
           end
