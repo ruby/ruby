@@ -5518,7 +5518,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *    array.difference(*other_arrays = []) -> new_array
+ *    difference(*other_arrays = []) -> new_array
  *
  *  Returns a new array containing only those elements from +self+
  *  that are not found in any of the given +other_arrays+;
@@ -5528,6 +5528,8 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *    [0, 1, 2, 3].difference([3, 0], [1, 3])     # => [2]
  *    [0, 1, 2].difference([4])                   # => [0, 1, 2]
  *    [0, 1, 2].difference                        # => [0, 1, 2]
+ *
+ *  Returns a copy of +self+ if no arguments are given.
  *
  *  Related: Array#-;
  *  see also {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
