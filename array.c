@@ -5244,7 +5244,7 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *    array.eql?(other_array) -> true or false
+ *    eql?(other_array) -> true or false
  *
  *  Returns +true+ if +self+ and +other_array+ are the same size,
  *  and if, for each index +i+ in +self+, <tt>self[i].eql?(other_array[i])</tt>:
@@ -5257,6 +5257,8 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
  *
  *  This method is different from method Array#==,
  *  which compares using method <tt>Object#==</tt>.
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
