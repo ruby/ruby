@@ -47,6 +47,53 @@ pm_string_constant_init(pm_string_t *string, const char *source, size_t length) 
     };
 }
 
+#ifdef _WIN32
+/**
+ * Represents a file handle on Windows, where the path will need to be freed
+ * when the file is closed.
+ */
+typedef struct {
+    /** The path to the file, which will become allocated memory. */
+    WCHAR *path;
+
+    /** The handle to the file, which will start as uninitialized memory. */
+    HANDLE file;
+} pm_string_file_handle_t;
+
+/**
+ * Open the file indicated by the filepath parameter for reading on Windows.
+ * Perform any kind of normalization that needs to happen on the filepath.
+ */
+static bool
+pm_string_file_handle_open(pm_string_file_handle_t *handle, const char *filepath) {
+    int length = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, NULL, 0);
+    if (length == 0) return false;
+
+    handle->path = xmalloc(sizeof(WCHAR) * ((size_t) length));
+    if ((handle->path == NULL) || (MultiByteToWideChar(CP_UTF8, 0, filepath, -1, handle->path, length) == 0)) {
+        xfree(handle->path);
+        return false;
+    }
+
+    handle->file = CreateFileW(handle->path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+    if (handle->file == INVALID_HANDLE_VALUE) {
+        xfree(handle->path);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Close the file handle and free the path.
+ */
+static void
+pm_string_file_handle_close(pm_string_file_handle_t *handle) {
+    xfree(handle->path);
+    CloseHandle(handle->file);
+}
+#endif
+
 /**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
@@ -62,39 +109,36 @@ PRISM_EXPORTED_FUNCTION bool
 pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
-
-    if (file == INVALID_HANDLE_VALUE) {
-        return false;
-    }
+    pm_string_file_handle_t handle;
+    if (!pm_string_file_handle_open(&handle, filepath)) return false;
 
     // Get the file size.
-    DWORD file_size = GetFileSize(file, NULL);
+    DWORD file_size = GetFileSize(handle.file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         return false;
     }
 
     // If the file is empty, then we don't need to do anything else, we'll set
     // the source to a constant empty string and return.
     if (file_size == 0) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
     }
 
     // Create a mapping of the file.
-    HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+    HANDLE mapping = CreateFileMapping(handle.file, NULL, PAGE_READONLY, 0, 0, NULL);
     if (mapping == NULL) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         return false;
     }
 
     // Map the file into memory.
     uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(mapping);
-    CloseHandle(file);
+    pm_string_file_handle_close(&handle);
 
     if (source == NULL) {
         return false;
@@ -156,23 +200,20 @@ PRISM_EXPORTED_FUNCTION bool
 pm_string_file_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
-
-    if (file == INVALID_HANDLE_VALUE) {
-        return false;
-    }
+    pm_string_file_handle_t handle;
+    if (!pm_string_file_handle_open(&handle, filepath)) return false;
 
     // Get the file size.
-    DWORD file_size = GetFileSize(file, NULL);
+    DWORD file_size = GetFileSize(handle.file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         return false;
     }
 
     // If the file is empty, then we don't need to do anything else, we'll set
     // the source to a constant empty string and return.
     if (file_size == 0) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
@@ -181,25 +222,25 @@ pm_string_file_init(pm_string_t *string, const char *filepath) {
     // Create a buffer to read the file into.
     uint8_t *source = xmalloc(file_size);
     if (source == NULL) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         return false;
     }
 
     // Read the contents of the file
     DWORD bytes_read;
-    if (!ReadFile(file, source, file_size, &bytes_read, NULL)) {
-        CloseHandle(file);
+    if (!ReadFile(handle.file, source, file_size, &bytes_read, NULL)) {
+        pm_string_file_handle_close(&handle);
         return false;
     }
 
     // Check the number of bytes read
     if (bytes_read != file_size) {
         xfree(source);
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         return false;
     }
 
-    CloseHandle(file);
+    pm_string_file_handle_close(&handle);
     *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = (size_t) file_size };
     return true;
 #elif defined(PRISM_HAS_FILESYSTEM)

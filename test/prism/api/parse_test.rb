@@ -69,6 +69,16 @@ module Prism
       end
     end
 
+    if RUBY_ENGINE != "truffleruby"
+      def test_parse_nonascii
+        Dir.mktmpdir do |dir|
+          path = File.join(dir, "\u{3042 3044 3046 3048 304a}.rb".encode(Encoding::Windows_31J))
+          File.write(path, "ok")
+          Prism.parse_file(path)
+        end
+      end
+    end
+
     private
 
     def find_source_file_node(program)

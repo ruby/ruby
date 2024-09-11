@@ -254,14 +254,14 @@ string_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options)
  * Read options for methods that look like (filepath, **options).
  */
 static void
-file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
+file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, VALUE *encoded_filepath) {
     VALUE filepath;
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     Check_Type(filepath, T_STRING);
-
-    extract_options(options, filepath, keywords);
+    *encoded_filepath = rb_str_encode_ospath(filepath);
+    extract_options(options, *encoded_filepath, keywords);
 
     const char * string_source = (const char *) pm_string_source(&options->filepath);
 
@@ -352,7 +352,8 @@ dump_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = dump_input(&input, &options);
     pm_string_free(&input);
@@ -685,7 +686,8 @@ lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_lex_input(&input, &options, false);
     pm_string_free(&input);
@@ -782,7 +784,8 @@ parse_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_input(&input, &options);
     pm_string_free(&input);
@@ -838,7 +841,9 @@ profile_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
+
     profile_input(&input, &options);
     pm_string_free(&input);
     pm_options_free(&options);
@@ -952,7 +957,8 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_input_comments(&input, &options);
     pm_string_free(&input);
@@ -1007,7 +1013,8 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_free(&input);
@@ -1077,7 +1084,8 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE result = parse_input_success_p(&input, &options);
     pm_string_free(&input);
