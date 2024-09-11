@@ -61,6 +61,14 @@ module Prism
       end
     end
 
+    def test_parse_tempfile
+      Tempfile.create(["test_parse_tempfile", ".rb"]) do |t|
+        t.puts ["begin\n", " end\n"]
+        t.flush
+        Prism.parse_file(t.path)
+      end
+    end
+
     private
 
     def find_source_file_node(program)
