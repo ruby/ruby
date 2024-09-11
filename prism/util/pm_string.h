@@ -94,6 +94,26 @@ void pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length);
 void pm_string_constant_init(pm_string_t *string, const char *source, size_t length);
 
 /**
+ * Represents the result of calling pm_string_mapped_init or
+ * pm_string_file_init. We need this additional information because there is
+ * not a platform-agnostic way to indicate that the file that was attempted to
+ * be opened was a directory.
+ */
+typedef enum {
+    /** Indicates that the string was successfully initialized. */
+    PM_STRING_INIT_SUCCESS = 0,
+    /**
+     * Indicates a generic error from a string_*_init function, where the type
+     * of error should be read from `errno` or `GetLastError()`.
+     */
+    PM_STRING_INIT_ERROR_GENERIC = 1,
+    /**
+     * Indicates that the file that was attempted to be opened was a directory.
+     */
+    PM_STRING_INIT_ERROR_DIRECTORY = 2
+} pm_string_init_result_t;
+
+/**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
  * should be freed using `pm_string_free` when it is no longer used.
@@ -106,9 +126,9 @@ void pm_string_constant_init(pm_string_t *string, const char *source, size_t len
  *
  * @param string The string to initialize.
  * @param filepath The filepath to read.
- * @return Whether or not the file was successfully mapped.
+ * @return The success of the read, indicated by the value of the enum.
  */
-PRISM_EXPORTED_FUNCTION bool pm_string_mapped_init(pm_string_t *string, const char *filepath);
+PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_mapped_init(pm_string_t *string, const char *filepath);
 
 /**
  * Read the file indicated by the filepath parameter into source and load its
@@ -117,9 +137,9 @@ PRISM_EXPORTED_FUNCTION bool pm_string_mapped_init(pm_string_t *string, const ch
  *
  * @param string The string to initialize.
  * @param filepath The filepath to read.
- * @return Whether or not the file was successfully read.
+ * @return The success of the read, indicated by the value of the enum.
  */
-PRISM_EXPORTED_FUNCTION bool pm_string_file_init(pm_string_t *string, const char *filepath);
+PRISM_EXPORTED_FUNCTION pm_string_init_result_t pm_string_file_init(pm_string_t *string, const char *filepath);
 
 /**
  * Ensure the string is owned. If it is not, then reinitialize it as owned and
