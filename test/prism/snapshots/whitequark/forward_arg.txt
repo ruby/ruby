@@ -35,7 +35,7 @@
             │           ├── opening_loc: (1,17)-(1,18) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,18)-(1,21))
-            │           │   ├── flags: ∅
+            │           │   ├── flags: contains_forwarding
             │           │   └── arguments: (length: 1)
             │           │       └── @ ForwardingArgumentsNode (location: (1,18)-(1,21))
             │           │           └── flags: ∅

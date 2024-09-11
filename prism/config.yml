@@ -647,14 +647,16 @@ tokens:
 flags:
   - name: ArgumentsNodeFlags
     values:
+      - name: CONTAINS_FORWARDING
+        comment: "if the arguments contain forwarding"
       - name: CONTAINS_KEYWORDS
-        comment: "if arguments contain keywords"
+        comment: "if the arguments contain keywords"
       - name: CONTAINS_KEYWORD_SPLAT
-        comment: "if arguments contain keyword splat"
+        comment: "if the arguments contain a keyword splat"
       - name: CONTAINS_SPLAT
-        comment: "if arguments contain splat"
+        comment: "if the arguments contain a splat"
       - name: CONTAINS_MULTIPLE_SPLATS
-        comment: "if arguments contain multiple splats"
+        comment: "if the arguments contain multiple splats"
     comment: Flags for arguments nodes.
   - name: ArrayNodeFlags
     values:

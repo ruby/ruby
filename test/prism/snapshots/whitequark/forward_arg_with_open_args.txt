@@ -41,7 +41,7 @@
         │   │           │           ├── opening_loc: (2,5)-(2,6) = "("
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (2,6)-(2,9))
-        │   │           │           │   ├── flags: ∅
+        │   │           │           │   ├── flags: contains_forwarding
         │   │           │           │   └── arguments: (length: 1)
         │   │           │           │       └── @ ForwardingArgumentsNode (location: (2,6)-(2,9))
         │   │           │           │           └── flags: ∅
@@ -92,7 +92,7 @@
         │   │           │           ├── opening_loc: (5,17)-(5,18) = "("
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (5,18)-(5,21))
-        │   │           │           │   ├── flags: ∅
+        │   │           │           │   ├── flags: contains_forwarding
         │   │           │           │   └── arguments: (length: 1)
         │   │           │           │       └── @ ForwardingArgumentsNode (location: (5,18)-(5,21))
         │   │           │           │           └── flags: ∅
@@ -162,7 +162,7 @@
         │   │           ├── opening_loc: (10,16)-(10,17) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (10,17)-(10,20))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (10,17)-(10,20))
         │   │           │           └── flags: ∅
@@ -208,7 +208,7 @@
         │   │           ├── opening_loc: (13,5)-(13,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (13,6)-(13,9))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (13,6)-(13,9))
         │   │           │           └── flags: ∅
@@ -254,7 +254,7 @@
         │   │           ├── opening_loc: (16,19)-(16,20) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (16,20)-(16,23))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (16,20)-(16,23))
         │   │           │           └── flags: ∅
@@ -343,7 +343,7 @@
         │   │           ├── opening_loc: (22,5)-(22,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (22,6)-(22,9))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (22,6)-(22,9))
         │   │           │           └── flags: ∅
@@ -395,7 +395,7 @@
         │   │           ├── opening_loc: (25,23)-(25,24) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (25,24)-(25,27))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (25,24)-(25,27))
         │   │           │           └── flags: ∅
@@ -441,7 +441,7 @@
             │           ├── opening_loc: (27,19)-(27,20) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (27,20)-(27,23))
-            │           │   ├── flags: ∅
+            │           │   ├── flags: contains_forwarding
             │           │   └── arguments: (length: 1)
             │           │       └── @ ForwardingArgumentsNode (location: (27,20)-(27,23))
             │           │           └── flags: ∅

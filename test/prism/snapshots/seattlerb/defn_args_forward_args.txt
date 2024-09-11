@@ -44,7 +44,7 @@
             │           ├── opening_loc: (1,22)-(1,23) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,23)-(1,35))
-            │           │   ├── flags: ∅
+            │           │   ├── flags: contains_forwarding
             │           │   └── arguments: (length: 3)
             │           │       ├── @ SymbolNode (location: (1,23)-(1,27))
             │           │       │   ├── flags: static_literal, forced_us_ascii_encoding

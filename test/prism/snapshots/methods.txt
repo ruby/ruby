@@ -1086,7 +1086,7 @@
         │   │           ├── opening_loc: (112,13)-(112,14) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (112,14)-(112,17))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (112,14)-(112,17))
         │   │           │           └── flags: ∅
@@ -1129,7 +1129,7 @@
         │   │           ├── opening_loc: (114,13)-(114,14) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (114,14)-(114,23))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 3)
         │   │           │       ├── @ IntegerNode (location: (114,14)-(114,15))
         │   │           │       │   ├── flags: static_literal, decimal
@@ -1382,7 +1382,7 @@
         │   │           │       │           ├── opening_loc: (136,19)-(136,20) = "("
         │   │           │       │           ├── arguments:
         │   │           │       │           │   @ ArgumentsNode (location: (136,20)-(136,23))
-        │   │           │       │           │   ├── flags: ∅
+        │   │           │       │           │   ├── flags: contains_forwarding
         │   │           │       │           │   └── arguments: (length: 1)
         │   │           │       │           │       └── @ ForwardingArgumentsNode (location: (136,20)-(136,23))
         │   │           │       │           │           └── flags: ∅
@@ -2095,7 +2095,7 @@
         │   │           ├── opening_loc: (178,5)-(178,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (178,6)-(178,9))
-        │   │           │   ├── flags: ∅
+        │   │           │   ├── flags: contains_forwarding
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ ForwardingArgumentsNode (location: (178,6)-(178,9))
         │   │           │           └── flags: ∅

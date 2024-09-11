@@ -38,7 +38,7 @@
             │           ├── opening_loc: (1,16)-(1,17) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (1,17)-(1,23))
-            │           │   ├── flags: ∅
+            │           │   ├── flags: contains_forwarding
             │           │   └── arguments: (length: 2)
             │           │       ├── @ LocalVariableReadNode (location: (1,17)-(1,18))
             │           │       │   ├── flags: ∅
