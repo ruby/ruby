@@ -2751,6 +2751,8 @@ rb_ary_length(VALUE ary)
  *
  *  Returns +true+ if the count of elements in +self+ is zero,
  *  +false+ otherwise.
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
