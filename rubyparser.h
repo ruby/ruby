@@ -573,6 +573,7 @@ typedef struct RNode_RETURN {
     NODE node;
 
     struct RNode *nd_stts;
+    rb_code_location_t keyword_loc;
 } rb_node_return_t;
 
 typedef struct RNode_YIELD {
