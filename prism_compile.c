@@ -10558,7 +10558,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
 {
 #ifdef _WIN32
     // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
 
     if (file == INVALID_HANDLE_VALUE) {
         return false;
