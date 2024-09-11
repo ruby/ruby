@@ -277,7 +277,6 @@ p Foo::Bar
     # Skip this on macOS 10.13 because of the following error:
     # http://rubyci.s3.amazonaws.com/osx1013/ruby-master/log/20231011T014505Z.fail.html.gz
     require "rbconfig"
-    omit if RbConfig::CONFIG["target_os"] == "darwin17"
 
     script = File.join(__dir__, 'bug-13526.rb')
     assert_ruby_status([script], '', '[ruby-core:81016] [Bug #13526]')
