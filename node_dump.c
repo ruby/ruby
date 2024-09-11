@@ -374,8 +374,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("return statement");
         ANN("format: return [nd_stts]");
         ANN("example: return 1");
-        LAST_NODE;
         F_NODE(nd_stts, RNODE_RETURN, "value");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_RETURN);
         return;
 
       case NODE_REDO:

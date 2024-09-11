@@ -1386,6 +1386,14 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 11], [1, 7, 1, 11]])
     end
 
+    def test_return_locations
+      node = ast_parse("return 1")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 6]])
+
+      node = ast_parse("return")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 6]])
+    end
+
     def test_unless_locations
       node = ast_parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
