@@ -1236,7 +1236,7 @@ VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq)
 VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats);
+VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_compilation_log, VALUE print_compilation_log);
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"

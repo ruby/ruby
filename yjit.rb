@@ -33,15 +33,23 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not.
+  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `compilation_log` decides
+  # whether to enable \YJIT compilation logging or not.
   #
+  # `stats`:
   # * `false`: Disable stats.
   # * `true`: Enable stats. Print stats at exit.
   # * `:quiet`: Enable stats. Do not print stats at exit.
-  def self.enable(stats: false)
+  #
+  # `compilation_log`:
+  # * `false`: Don't enable the compilation log.
+  # * `true`: Enable the compilation log. Print compilation log at exit.
+  # * `:quiet`: Enable the compilation log. Do not print compilation log at exit.
+  def self.enable(stats: false, compilation_log: false)
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
-    Primitive.rb_yjit_enable(stats, stats != :quiet)
+    at_exit { print_compilation_log } if compilation_log
+    Primitive.rb_yjit_enable(stats, stats != :quiet, compilation_log, compilation_log != :quiet)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -231,7 +239,7 @@ module RubyVM::YJIT
   end
 
   if Primitive.rb_yjit_compilation_log_enabled_p
-    at_exit { $stderr.puts("***YJIT: Printing YJIT compilation log on exit***") if Primitive.rb_yjit_print_compilation_log_p }
+    at_exit { print_compilation_log }
   end
 
   class << self
@@ -244,6 +252,13 @@ module RubyVM::YJIT
         _print_stats
       end
       _dump_locations
+    end
+
+    # Print the compilation log
+    def print_compilation_log # :nodoc:
+      if Primitive.rb_yjit_print_compilation_log_p
+        $stderr.puts("***YJIT: Printing YJIT compilation log on exit***")
+      end
     end
 
     def _dump_locations # :nodoc:
