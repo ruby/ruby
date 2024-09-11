@@ -538,7 +538,7 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-    Gem.open_file_with_flock("#{bin_script_path}.lock") do |lock|
+    Gem.open_file_with_lock(bin_script_path) do
       require "fileutils"
       FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
@@ -546,8 +546,6 @@ class Gem::Installer
         file.write app_script_text(filename)
         file.chmod(options[:prog_mode] || 0o755)
       end
-    ensure
-      FileUtils.rm_f lock.path
     end
 
     verbose bin_script_path

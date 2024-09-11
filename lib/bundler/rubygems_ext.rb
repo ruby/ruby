@@ -30,20 +30,31 @@ module Gem
     end
   end
 
-  # Can be removed once RubyGems 3.5.14 support is dropped
-  unless Gem.respond_to?(:open_file_with_flock)
-    def self.open_file_with_flock(path, &block)
-      mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
-      mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+  # Can be removed once RubyGems 3.5.18 support is dropped
+  unless Gem.respond_to?(:open_file_with_lock)
+    class << self
+      remove_method :open_file_with_flock if Gem.respond_to?(:open_file_with_flock)
 
-      File.open(path, mode) do |io|
-        begin
-          io.flock(File::LOCK_EX)
-        rescue Errno::ENOSYS, Errno::ENOTSUP
-        rescue Errno::ENOLCK # NFS
-          raise unless Thread.main == Thread.current
+      def open_file_with_flock(path, &block)
+        mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+        mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+
+        File.open(path, mode) do |io|
+          begin
+            io.flock(File::LOCK_EX)
+          rescue Errno::ENOSYS, Errno::ENOTSUP
+          rescue Errno::ENOLCK # NFS
+            raise unless Thread.main == Thread.current
+          end
+          yield io
         end
-        yield io
+      end
+
+      def open_file_with_lock(path, &block)
+        file_lock = "#{path}.lock"
+        open_file_with_flock(file_lock, &block)
+      ensure
+        FileUtils.rm_f file_lock
       end
     end
   end

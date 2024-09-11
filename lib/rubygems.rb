@@ -795,6 +795,16 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Open a file with given flags, and protect access with a file lock
+
+  def self.open_file_with_lock(path, &block)
+    file_lock = "#{path}.lock"
+    open_file_with_flock(file_lock, &block)
+  ensure
+    FileUtils.rm_f file_lock
+  end
+
+  ##
   # Open a file with given flags, and protect access with flock
 
   def self.open_file_with_flock(path, &block)

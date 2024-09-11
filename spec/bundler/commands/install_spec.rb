@@ -1591,4 +1591,17 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).to include("The running version of Bundler (9.99.9) does not match the version of the specification installed for it (9.99.8)")
     end
   end
+
+  it "only installs executable files in bin" do
+    bundle "config set --local path vendor/bundle"
+
+    install_gemfile <<~G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    expected_executables = [vendored_gems("bin/myrackup").to_s]
+    expected_executables << vendored_gems("bin/myrackup.bat").to_s if Gem.win_platform?
+    expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
+  end
 end
