@@ -354,7 +354,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: break 1");
         F_NODE(nd_stts, RNODE_BREAK, "value");
         LAST_NODE;
-        F_LOC(keyword_loc, RNODE_REDO);
+        F_LOC(keyword_loc, RNODE_BREAK);
         return;
       case NODE_NEXT:
         ANN("next statement");
@@ -362,7 +362,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: next 1");
         F_NODE(nd_stts, RNODE_NEXT, "value");
         LAST_NODE;
-        F_LOC(keyword_loc, RNODE_REDO);
+        F_LOC(keyword_loc, RNODE_NEXT);
         return;
       case NODE_RETURN:
         ANN("return statement");
