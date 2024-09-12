@@ -710,7 +710,9 @@ class TestDir < Test::Unit::TestCase
         assert_equal(new_dir.chdir{Dir.pwd}, for_fd_dir.chdir{Dir.pwd})
       ensure
         new_dir&.close
-        for_fd_dir&.close
+        if for_fd_dir
+          assert_raise(Errno::EBADF) { for_fd_dir.close }
+        end
       end
     else
       assert_raise(NotImplementedError) { Dir.for_fd(0) }

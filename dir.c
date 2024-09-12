@@ -571,6 +571,25 @@ opendir_without_gvl(const char *path)
         return opendir(path);
 }
 
+static void
+close_dir_data(struct dir_data *dp)
+{
+    if (dp->dir) {
+        if (closedir(dp->dir) < 0) {
+            dp->dir = NULL;
+            rb_sys_fail("closedir");
+        }
+        dp->dir = NULL;
+    }
+}
+
+static void
+check_closedir(DIR *dirp)
+{
+    if (closedir(dirp) < 0)
+        rb_sys_fail("closedir");
+}
+
 static VALUE
 dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
 {
@@ -585,8 +604,7 @@ dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
     dirname = rb_str_dup_frozen(dirname);
 
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dp);
-    if (dp->dir) closedir(dp->dir);
-    dp->dir = NULL;
+    close_dir_data(dp);
     RB_OBJ_WRITE(dir, &dp->path, Qnil);
     dp->enc = fsenc;
     path = RSTRING_PTR(dirname);
@@ -810,10 +828,22 @@ fundamental_encoding_p(rb_encoding *enc)
 # define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
 # define READDIR_NOGVL READDIR
 #else
+NORETURN(static void *sys_failure(void *function));
+static void *
+sys_failure(void *function)
+{
+    rb_sys_fail(function);
+}
+
 static void *
 nogvl_readdir(void *dir)
 {
-    return readdir(dir);
+    rb_errno_set(0);
+    if ((dir = readdir(dir)) == NULL) {
+        if (rb_errno())
+            rb_thread_call_with_gvl(sys_failure, (void *)"readdir");
+    }
+    return dir;
 }
 
 # define READDIR(dir, enc) IO_WITHOUT_GVL(nogvl_readdir, (void *)(dir))
@@ -962,7 +992,8 @@ dir_tell(VALUE dir)
     long pos;
 
     GetDIR(dir, dirp);
-    pos = telldir(dirp->dir);
+    if((pos = telldir(dirp->dir)) < 0)
+        rb_sys_fail("telldir");
     return rb_int2inum(pos);
 }
 #else
@@ -1081,8 +1112,7 @@ dir_close(VALUE dir)
 
     dirp = dir_get(dir);
     if (!dirp->dir) return Qnil;
-    closedir(dirp->dir);
-    dirp->dir = NULL;
+    close_dir_data(dirp);
 
     return Qnil;
 }
@@ -2585,7 +2615,7 @@ static void
 glob_dir_finish(ruby_glob_entries_t *ent, int flags)
 {
     if (flags & FNM_GLOB_NOSORT) {
-        closedir(ent->nosort.dirp);
+        check_closedir(ent->nosort.dirp);
         ent->nosort.dirp = NULL;
     }
     else if (ent->sort.entries) {
@@ -2616,7 +2646,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
 #ifdef _WIN32
         if ((capacity = dirp->nfiles) > 0) {
             if (!(newp = GLOB_ALLOC_N(rb_dirent_t, capacity))) {
-                closedir(dirp);
+                check_closedir(dirp);
                 return NULL;
             }
             ent->sort.entries = newp;
@@ -2636,7 +2666,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
             ent->sort.entries[count++] = rdp;
             ent->sort.count = count;
         }
-        closedir(dirp);
+        check_closedir(dirp);
         if (count < capacity) {
             if (!(newp = GLOB_REALLOC_N(ent->sort.entries, count))) {
                 glob_dir_finish(ent, 0);
@@ -2651,7 +2681,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
 
   nomem:
     glob_dir_finish(ent, 0);
-    closedir(dirp);
+    check_closedir(dirp);
     return NULL;
 }
 
@@ -2814,7 +2844,7 @@ glob_helper(
 
 # if NORMALIZE_UTF8PATH
         if (!(norm_p || magical || recursive)) {
-            closedir(dirp);
+            check_closedir(dirp);
             goto literally;
         }
 # endif
@@ -3712,7 +3742,7 @@ nogvl_dir_empty_p(void *ptr)
             break;
         }
     }
-    closedir(dir);
+    check_closedir(dir);
     return (void *)result;
 }
 
