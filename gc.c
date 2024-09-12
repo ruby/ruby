@@ -2041,6 +2041,7 @@ ruby_stack_check(void)
         rb_vm_t *vm = GET_VM(); \
         void *objspace = vm->gc.objspace; \
         if (LIKELY(vm->gc.mark_func_data == NULL)) { \
+            GC_ASSERT(rb_gc_impl_during_gc_p(objspace)); \
             (func)(objspace, (obj_or_ptr)); \
         } \
         else if (check_obj ? \
