@@ -882,15 +882,32 @@ eom
         mswin? or mingw?
       end
 
-      def self.compare_version(a, b)
-        b.empty? ? true && a : a && (a <=> b) >= 0
+      def self.version_compare(expected, actual)
+        expected.zip(actual).each {|e, a| z = (e <=> a); return z if z.nonzero?}
+        0
+      end
+
+      def self.version_match?(expected, actual)
+        if !actual
+          false
+        elsif expected.empty?
+          true
+        elsif expected.size == 1 and Range === (range = expected.first)
+          b, e = range.begin, range.end
+          return false if b and (c = version_compare(Array(b), actual)) > 0
+          return false if e and (c = version_compare(Array(e), actual)) < 0
+          return false if e and range.exclude_end? and c == 0
+          true
+        else
+          version_compare(expected, actual).zero?
+        end
       end
 
       def self.linux?(*ver)
         unless defined?(@linux)
           @linux = RUBY_PLATFORM.include?('linux') && `uname -r`.scan(/\d+/).map(&:to_i)
         end
-        compare_version @linux, ver
+        version_match? ver, @linux
       end
       private def linux?(*ver)
         CoreAssertions.linux?(*ver)
@@ -905,7 +922,7 @@ eom
             @glibc = false
           end
         end
-        compare_version @glibc, ver
+        version_match? ver, @glibc
       end
       private def glibc?(*ver)
         CoreAssertions.glibc?(*ver)
@@ -915,7 +932,7 @@ eom
         unless defined?(@macos)
           @macos = RUBY_PLATFORM.include?('darwin') && `sw_vers -productVersion`.scan(/\d+/).map(&:to_i)
         end
-        compare_version @macos, ver
+        version_match? ver, @macos
       end
       private def macos?(*ver)
         CoreAssertions.macos?(*ver)
