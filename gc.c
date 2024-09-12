@@ -2039,14 +2039,15 @@ ruby_stack_check(void)
 #define RB_GC_MARK_OR_TRAVERSE(func, obj_or_ptr, obj, check_obj) do { \
     if (!RB_SPECIAL_CONST_P(obj)) { \
         rb_vm_t *vm = GET_VM(); \
+        void *objspace = vm->gc.objspace; \
         if (LIKELY(vm->gc.mark_func_data == NULL)) { \
-            (func)(vm->gc.objspace, (obj_or_ptr)); \
+            (func)(objspace, (obj_or_ptr)); \
         } \
         else if (check_obj ? \
-                rb_gc_impl_pointer_to_heap_p(vm->gc.objspace, (const void *)obj) && \
-                    !rb_gc_impl_garbage_object_p(vm->gc.objspace, obj) : \
+                rb_gc_impl_pointer_to_heap_p(objspace, (const void *)obj) && \
+                    !rb_gc_impl_garbage_object_p(objspace, obj) : \
                 true) { \
-            GC_ASSERT(!rb_gc_impl_during_gc_p(vm->gc.objspace)); \
+            GC_ASSERT(!rb_gc_impl_during_gc_p(objspace)); \
             struct gc_mark_func_data_struct *mark_func_data = vm->gc.mark_func_data; \
             vm->gc.mark_func_data = NULL; \
             mark_func_data->mark_func((obj), mark_func_data->data); \
