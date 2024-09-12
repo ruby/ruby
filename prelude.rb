@@ -35,6 +35,8 @@ class Binding
       Bundler::Definition.no_lock = true
 
       Bundler::Runtime.new(nil, definition).setup
+    rescue Bundler::GemNotFound
+      warn "Failed to activate #{gem}, please install it with 'gem install #{gem}'"
     ensure
       Bundler.ui = orig_ui
       Bundler::Definition.no_lock = orig_no_lock
