@@ -148,7 +148,7 @@ module Bundler
       end
 
       def install(spec, options = {})
-        if (spec.default_gem? && !cached_built_in_gem(spec)) || (installed?(spec) && !options[:force])
+        if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
           print_using_message "Using #{version_message(spec, options[:previous_spec])}"
           return nil # no post-install message
         end
@@ -222,9 +222,9 @@ module Bundler
         raise InstallError, e.message
       end
 
-      def cached_built_in_gem(spec)
+      def cached_built_in_gem(spec, local: false)
         cached_path = cached_gem(spec)
-        if cached_path.nil?
+        if cached_path.nil? && !local
           remote_spec = remote_specs.search(spec).first
           if remote_spec
             cached_path = fetch_gem(remote_spec)

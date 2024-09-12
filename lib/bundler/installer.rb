@@ -196,8 +196,9 @@ module Bundler
     def install(options)
       standalone = options[:standalone]
       force = options[:force]
+      local = options[:local]
       jobs = installation_parallelization(options)
-      spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force)
+      spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
