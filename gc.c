@@ -2104,7 +2104,16 @@ rb_gc_mark_weak(VALUE *ptr)
 {
     if (RB_SPECIAL_CONST_P(*ptr)) return;
 
-    rb_gc_impl_mark_weak(rb_gc_get_objspace(), ptr);
+    rb_vm_t *vm = GET_VM();
+    void *objspace = vm->gc.objspace;
+    if (LIKELY(vm->gc.mark_func_data == NULL)) {
+        GC_ASSERT(rb_gc_impl_during_gc_p(objspace));
+
+        rb_gc_impl_mark_weak(objspace, ptr);
+    }
+    else {
+        GC_ASSERT(!rb_gc_impl_during_gc_p(objspace));
+    }
 }
 
 void
