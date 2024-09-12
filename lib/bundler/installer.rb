@@ -194,7 +194,7 @@ module Bundler
     # that said, it's a rare situation (other than rake), and parallel
     # installation is SO MUCH FASTER. so we let people opt in.
     def install(options)
-      force = options["force"]
+      force = options[:force]
       jobs = installation_parallelization(options)
       install_in_parallel jobs, options[:standalone], force
     end
@@ -233,9 +233,9 @@ module Bundler
 
     # returns whether or not a re-resolve was needed
     def resolve_if_needed(options)
-      @definition.prefer_local! if options["prefer-local"]
+      @definition.prefer_local! if options[:"prefer-local"]
 
-      if options["local"] || (@definition.no_resolve_needed? && !@definition.missing_specs?)
+      if options[:local] || (@definition.no_resolve_needed? && !@definition.missing_specs?)
         @definition.resolve_with_cache!
         false
       else
