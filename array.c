@@ -8600,6 +8600,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  - #[] (aliased as #slice): Returns consecutive elements as determined by a given argument.
  *  - #fetch: Returns the element at a given offset.
+ *  - #fetch_values: Returns elements at given offsets.
  *  - #first: Returns one or more leading elements.
  *  - #last: Returns one or more trailing elements.
  *  - #max: Returns one or more maximum-valued elements,
