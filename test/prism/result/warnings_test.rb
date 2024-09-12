@@ -174,6 +174,10 @@ module Prism
       assert_warning("if true\nelsif\nfalse; end", "end of line")
     end
 
+    def test_numbered_reference
+      assert_warning("_ = _ = $999999999999999999999", "too big for a number variable, always nil")
+    end
+
     def test_shareable_constant_value
       assert_warning("foo # shareable_constant_value: none", "ignored")
       assert_warning("\v  # shareable_constant_value: none", "ignored")
