@@ -212,8 +212,8 @@ class Array
   end
 
   #  call-seq:
-  #    fetch_values(*indexes = []) -> new_array
-  #    fetch_values(*indexes = []) {|index| ... } -> new_array
+  #    fetch_values(*indexes) -> new_array
+  #    fetch_values(*indexes) {|index| ... } -> new_array
   #
   #  With no block given, returns a new array containing the elements of +self+
   #  at the offsets given by +indexes+;
