@@ -6782,8 +6782,6 @@ gc_with_gvl(void *ptr)
     return (void *)(VALUE)garbage_collect(oar->objspace, oar->reason);
 }
 
-int ruby_thread_has_gvl_p(void);
-
 static int
 garbage_collect_with_gvl(rb_objspace_t *objspace, unsigned int reason)
 {

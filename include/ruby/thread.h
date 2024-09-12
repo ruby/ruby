@@ -63,6 +63,20 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
+/**
+ * Check if current native thread has GVL.
+ * @return 1 if the current thread has acquired the GVL.
+ *
+ * Usage:
+ *   if (ruby_thread_has_gvl_p()) {
+ *     method_call(&context);
+ *   }
+ *   else {
+ *     rb_thread_call_with_gvl(method_call, &context);
+ *   }
+ */
+int ruby_thread_has_gvl_p(void);
+
 RBIMPL_ATTR_NONNULL((1))
 /**
  * (Re-)acquires the GVL.   This manoeuvre makes it possible  for an out-of-GVL
