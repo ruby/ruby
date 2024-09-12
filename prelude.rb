@@ -14,11 +14,6 @@ class Binding
 
     Bundler.reset!
 
-    orig_ui = Bundler.ui
-    ui = Bundler::UI::Shell.new
-    ui.level = "silent"
-    Bundler.ui = ui
-
     builder = Bundler::Dsl.new
     if Bundler.definition.gemfiles.empty? # bundler/inline
       Bundler.definition.locked_gems.specs.each{|spec| builder.gem spec.name, spec.version.to_s }
@@ -29,12 +24,21 @@ class Binding
 
     definition = builder.to_definition(nil, true)
     definition.validate_runtime!
-    orig_no_lock = Bundler::Definition.no_lock
-    Bundler::Definition.no_lock = true
-    Bundler::Runtime.new(nil, definition).setup
-  ensure
-    Bundler.ui = orig_ui
-    Bundler::Definition.no_lock = orig_no_lock
+
+    begin
+      orig_ui = Bundler.ui
+      orig_no_lock = Bundler::Definition.no_lock
+
+      ui = Bundler::UI::Shell.new
+      ui.level = "silent"
+      Bundler.ui = ui
+      Bundler::Definition.no_lock = true
+
+      Bundler::Runtime.new(nil, definition).setup
+    ensure
+      Bundler.ui = orig_ui
+      Bundler::Definition.no_lock = orig_no_lock
+    end
   end
 end
 
