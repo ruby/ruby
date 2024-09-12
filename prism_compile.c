@@ -994,15 +994,16 @@ again:
         pm_compile_node(iseq, cond, cond_seq, false, scope_node);
 
         if (LIST_INSN_SIZE_ONE(cond_seq)) {
-            INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
+            INSN *insn = (INSN *) ELEM_FIRST_INSN(FIRST_ELEMENT(cond_seq));
+
             if (insn->insn_id == BIN(putobject)) {
                 if (RTEST(insn->operands[0])) {
-                    ADD_INSNL(ret, cond, jump, then_label);
+                    PUSH_INSNL(ret, location, jump, then_label);
                     // maybe unreachable
                     return;
                 }
                 else {
-                    ADD_INSNL(ret, cond, jump, else_label);
+                    PUSH_INSNL(ret, location, jump, else_label);
                     return;
                 }
             }
@@ -5936,7 +5937,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     bool trailing_comma = false;
 
     if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
-        ADD_TRACE(ret, RUBY_EVENT_CLASS);
+        PUSH_TRACE(ret, RUBY_EVENT_CLASS);
     }
 
     if (scope_node->parameters != NULL) {
@@ -6822,7 +6823,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
 
     if (PM_NODE_TYPE_P(scope_node->ast_node, PM_CLASS_NODE) || PM_NODE_TYPE_P(scope_node->ast_node, PM_MODULE_NODE)) {
         const pm_node_location_t end_location = PM_NODE_END_LOCATION(scope_node->parser, scope_node->ast_node);
-        ADD_TRACE(ret, RUBY_EVENT_END);
+        PUSH_TRACE(ret, RUBY_EVENT_END);
         ISEQ_COMPILE_DATA(iseq)->last_line = end_location.line;
     }
 
