@@ -103,8 +103,7 @@ RSpec.describe "bundle cache" do
         end
       end
 
-      it "uses remote gems when installing to system gems" do
-        bundle "config set path.system true"
+      it "uses remote gems when installing" do
         install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true
         expect(out).to include("Installing json #{default_json_version}")
       end
