@@ -1999,7 +1999,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
  *    fetch(index, default_value) -> element or default_value
  *    fetch(index) {|index| ... } -> element or block_return_value
  *
- *  If +index+ is in range, returns the element of +self+ at offset +index+, which must be an
+ *  Returns the element of +self+ at offset +index+ if +index+ is in range; +index+ must be an
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  With the single argument +index+ and no block,
