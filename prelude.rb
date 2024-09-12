@@ -1,11 +1,7 @@
 class Binding
   # :nodoc:
   def irb
-    if defined?(Bundler) && !Gem.loaded_specs["irb"]
-      unless force_activate "irb"
-        warn "irb is not found. Install irb from RubyGems or add irb to Gemfile."
-      end
-    end
+    force_activate 'irb'
     require 'irb'
     irb
   end
@@ -14,16 +10,22 @@ class Binding
   alias irb irb # :nodoc:
 
   private def force_activate(gem)
-    gemspecs = (Gem::Specification.dirs + [Gem.default_specifications_dir]).map{|d|
-                Dir.glob("#{d}/#{gem}*.gemspec").reverse
-              }.flatten
-    if gemspecs.empty?
-      false
-    else
-      gemspec = Gem::Specification.load(gemspecs[0])
-      gemspec.dependencies.each{|dep| force_activate dep.name }
-      gemspec.activate
-    end
+    return if !defined?(Bundler) || Gem.loaded_specs.key?(gem)
+
+    Bundler.reset!
+
+    ui = Bundler::UI::Shell.new
+    ui.level = "silent"
+    Bundler.ui = ui
+
+    @builder = Bundler::Dsl.new
+    Bundler.definition.gemfiles.each{|gemfile| @builder.eval_gemfile(gemfile) }
+    @builder.gem gem
+
+    definition = @builder.to_definition(nil, true)
+    definition.validate_runtime!
+    Bundler::Definition.no_lock = true
+    Bundler::Runtime.new(nil, definition).setup
   end
 end
 
