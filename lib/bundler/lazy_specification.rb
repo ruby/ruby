@@ -99,15 +99,24 @@ module Bundler
       out
     end
 
+    def materialize_strictly
+      source.local!
+
+      matching_specs = source.specs.search(self)
+      return self if matching_specs.empty?
+
+      __materialize__(matching_specs)
+    end
+
     def materialize_for_installation(most_specific_locked_platform = nil)
       source.local!
 
-      matching_specs = source.specs.search(use_exact_resolved_specifications?(most_specific_locked_platform) ? self : [name, version])
-      return self if matching_specs.empty?
-
-      candidates = if use_exact_resolved_specifications?(most_specific_locked_platform)
-        matching_specs
+      if use_exact_resolved_specifications?(most_specific_locked_platform)
+        materialize_strictly
       else
+        matching_specs = source.specs.search([name, version])
+        return self if matching_specs.empty?
+
         target_platform = source.is_a?(Source::Path) ? platform : local_platform
 
         installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
@@ -119,10 +128,8 @@ module Bundler
           installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
         end
 
-        installable_candidates
+        __materialize__(installable_candidates)
       end
-
-      __materialize__(candidates)
     end
 
     # If in frozen mode, we fallback to a non-installable candidate because by
@@ -143,8 +150,12 @@ module Bundler
         # `bundler/setup` performance
         if search.is_a?(StubSpecification)
           search.dependencies = dependencies
-        elsif !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
-          raise IncorrectLockfileDependencies.new(self)
+        else
+          if !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
+            raise IncorrectLockfileDependencies.new(self)
+          end
+
+          search.locked_platform = platform if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
         end
       end
       search

@@ -58,7 +58,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       bundle "install --verbose"
-
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
       expect(out).to include("Installing sass-embedded 1.72.0 (x86_64-darwin-15)")
 
       expect(the_bundle).to include_gem("sass-embedded 1.72.0 x86_64-darwin-15")
@@ -130,6 +130,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       bundle "update"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
 
       checksums.checksum gem_repo2, "google-protobuf", "3.0.0.alpha.5.0.5.1"
 
@@ -238,6 +239,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       bundle "install --verbose"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
       expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
 
       bundle "add mini_racer --verbose"
@@ -275,6 +277,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       bundle "install --verbose", artifice: "compact_index_precompiled_before"
+      expect(err).to include("The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version")
       expect(out).to include("Installing grpc 1.50.0 (universal-darwin)")
     end
   end

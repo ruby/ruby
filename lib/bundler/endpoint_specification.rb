@@ -6,7 +6,7 @@ module Bundler
     include MatchRemoteMetadata
 
     attr_reader :name, :version, :platform, :checksum
-    attr_accessor :remote, :dependencies
+    attr_accessor :remote, :dependencies, :locked_platform
 
     def initialize(name, version, platform, spec_fetcher, dependencies, metadata = nil)
       super()
@@ -18,8 +18,13 @@ module Bundler
 
       @loaded_from          = nil
       @remote_specification = nil
+      @locked_platform = nil
 
       parse_metadata(metadata)
+    end
+
+    def insecurely_materialized?
+      @locked_platform.to_s != @platform.to_s
     end
 
     def fetch_platform

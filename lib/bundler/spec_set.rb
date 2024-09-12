@@ -143,7 +143,7 @@ module Bundler
       @specs.map do |s|
         next s unless s.is_a?(LazySpecification)
         s.source.remote!
-        spec = s.materialize_for_installation
+        spec = s.materialize_strictly
         raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
         spec
       end
@@ -160,6 +160,10 @@ module Bundler
 
     def missing_specs
       @specs.select {|s| s.is_a?(LazySpecification) }
+    end
+
+    def insecurely_materialized_specs
+      @specs.select(&:insecurely_materialized?)
     end
 
     def -(other)
