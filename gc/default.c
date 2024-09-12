@@ -7259,33 +7259,6 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 }
 #endif
 
-struct desired_compaction_pages_i_data {
-    rb_objspace_t *objspace;
-    size_t required_slots[SIZE_POOL_COUNT];
-};
-
-static int
-desired_compaction_pages_i(struct heap_page *page, void *data)
-{
-    struct desired_compaction_pages_i_data *tdata = data;
-    rb_objspace_t *objspace = tdata->objspace;
-    VALUE vstart = (VALUE)page->start;
-    VALUE vend = vstart + (VALUE)(page->total_slots * page->size_pool->slot_size);
-
-    for (VALUE v = vstart; v != vend; v += page->size_pool->slot_size) {
-        asan_unpoisoning_object(v) {
-            /* skip T_NONEs; they won't be moved */
-            if (BUILTIN_TYPE(v) != T_NONE) {
-                rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, page->size_pool, v);
-                size_t dest_pool_idx = dest_pool - size_pools;
-                tdata->required_slots[dest_pool_idx]++;
-            }
-        }
-    }
-
-    return 0;
-}
-
 bool
 rb_gc_impl_during_gc_p(void *objspace_ptr)
 {
@@ -9166,6 +9139,34 @@ gc_compact(VALUE self)
 #endif
 
 #if GC_CAN_COMPILE_COMPACTION
+struct desired_compaction_pages_i_data {
+    rb_objspace_t *objspace;
+    size_t required_slots[SIZE_POOL_COUNT];
+};
+
+static int
+desired_compaction_pages_i(struct heap_page *page, void *data)
+{
+    struct desired_compaction_pages_i_data *tdata = data;
+    rb_objspace_t *objspace = tdata->objspace;
+    VALUE vstart = (VALUE)page->start;
+    VALUE vend = vstart + (VALUE)(page->total_slots * page->size_pool->slot_size);
+
+
+    for (VALUE v = vstart; v != vend; v += page->size_pool->slot_size) {
+        asan_unpoisoning_object(v) {
+            /* skip T_NONEs; they won't be moved */
+            if (BUILTIN_TYPE(v) != T_NONE) {
+                rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, page->size_pool, v);
+                size_t dest_pool_idx = dest_pool - size_pools;
+                tdata->required_slots[dest_pool_idx]++;
+            }
+        }
+    }
+
+    return 0;
+}
+
 /* call-seq:
  *    GC.verify_compaction_references(toward: nil, double_heap: false) -> hash
  *
