@@ -212,22 +212,37 @@ class Array
   end
 
   #  call-seq:
-  #    array.fetch_values(*indexes) -> new_array
-  #    array.fetch_values(*indexes) {|key| ... } -> new_array
+  #    fetch_values(*indexes = []) -> new_array
+  #    fetch_values(*indexes = []) {|index| ... } -> new_array
   #
-  #  Returns a new Array containing the values associated with the given indexes *indexes:
+  #  With no block given, returns a new array containing the elements of +self+
+  #  at the offsets given by +indexes+;
+  #  each of the +indexes+ must be an
+  #  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
+  #
   #    a = [:foo, :bar, :baz]
-  #    a.fetch_values(3, 1) # => [:baz, :foo]
+  #    a.fetch_values(3, 1)   # => [:baz, :foo]
+  #    a.fetch_values(3.1, 1) # => [:baz, :foo]
+  #    a.fetch_values         # => []
   #
-  #  Returns a new empty Array if no arguments given.
+  #  For a negative index, counts backwards from the end of the array:
   #
-  #  When a block is given, calls the block with each missing index,
-  #  treating the block's return value as the value for that index:
+  #    a.fetch_values([-2, -1]) # [:bar, :baz]
+  #
+  #  Raises an exception if any index is out of range.
+  #
+  #  With a block given, for each index:
+  #
+  #  - If the index in in range, uses an element of +self+ (as above).
+  #  - Otherwise calls, the block with the index, and uses the block's return value.
+  #
+  #  Example:
+  #
   #    a = [:foo, :bar, :baz]
-  #    values = a.fetch_values(1, 0, 42, 777) {|index| index.to_s}
-  #    values # => [:bar, :foo, "42", "777"]
+  #    a.fetch_values(1, 0, 42, 777) {|index| index.to_s}
+  #    # => [:bar, :foo, "42", "777"]
   #
-  #  When no block is given, raises an exception if any given key is not found.
+  #  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
   def fetch_values(*indexes, &block)
     indexes.map! { |i| fetch(i, &block) }
     indexes
