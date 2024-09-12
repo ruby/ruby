@@ -149,9 +149,10 @@ RSpec.describe "bundle cache" do
     end
 
     context "when a remote gem is not available for caching" do
-      it "uses builtin gems when installing to system gems" do
+      it "warns, but uses builtin gems when installing to system gems" do
         bundle "config set path.system true"
         install_gemfile %(source "https://gem.repo1"; gem 'json', '#{default_json_version}'), verbose: true
+        expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
         expect(out).to include("Using json #{default_json_version}")
       end
 
