@@ -4527,7 +4527,12 @@ void
 rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wdangling-pointer")
+COMPILER_WARNING_IGNORED(-Wdangling-pointer);
+#endif
     *stack_end_p = &stack_end;
+COMPILER_WARNING_POP
 }
 #endif
 
