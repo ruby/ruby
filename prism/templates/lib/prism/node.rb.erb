@@ -389,13 +389,13 @@ module Prism
     end
   end
   <%- end -%>
-  <%- flags.each_with_index do |flag, flag_index| -%>
+  <%- flags.each do |flag| -%>
 
   # <%= flag.comment %>
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
-    <%= value.name %> = 1 << <%= (index + 2) %>
+    <%= value.name %> = 1 << <%= index + 2 %>
 <%= "\n" if value != flag.values.last -%>
     <%- end -%>
   end
