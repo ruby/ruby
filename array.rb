@@ -229,7 +229,7 @@ class Array
   #
   #    a.fetch_values([-2, -1]) # [:bar, :baz]
   #
-  #  Raises an exception if any index is out of range.
+  #  When no block is given, raises an exception if any index is out of range.
   #
   #  With a block given, for each index:
   #
