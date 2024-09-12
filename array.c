@@ -1995,17 +1995,19 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
 
 /*
  *  call-seq:
- *    array.fetch(index) -> element
- *    array.fetch(index, default_value) -> element
- *    array.fetch(index) {|index| ... } -> element
+ *    fetch(index) -> element
+ *    fetch(index, default_value) -> element or default_value
+ *    fetch(index) {|index| ... } -> element or block_return_value
  *
- *  Returns the element at offset  +index+.
+ *  Returns the element of +self+ at offset +index+ if +index+ is in range; +index+ must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
- *  With the single Integer argument +index+,
+ *  With the single argument +index+ and no block,
  *  returns the element at offset +index+:
  *
  *    a = [:foo, 'bar', 2]
- *    a.fetch(1) # => "bar"
+ *    a.fetch(1)   # => "bar"
+ *    a.fetch(1.1) # => "bar"
  *
  *  If +index+ is negative, counts from the end of the array:
  *
@@ -2013,12 +2015,12 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
  *    a.fetch(-1) # => 2
  *    a.fetch(-2) # => "bar"
  *
- *  With arguments +index+ and +default_value+,
- *  returns the element at offset +index+ if index is in range,
- *  otherwise returns +default_value+:
+ *  With arguments +index+ and +default_value+ (which may be any object) and no block,
+ *  returns +default_value+ if +index+ is out-of-range:
  *
  *    a = [:foo, 'bar', 2]
- *    a.fetch(1, nil) # => "bar"
+ *    a.fetch(1, nil)  # => "bar"
+ *    a.fetch(3, :foo) # => :foo
  *
  *  With argument +index+ and a block,
  *  returns the element at offset +index+ if index is in range
@@ -2028,6 +2030,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
  *    a.fetch(1) {|index| raise 'Cannot happen' } # => "bar"
  *    a.fetch(50) {|index| "Value for #{index}" } # => "Value for 50"
  *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
