@@ -10553,24 +10553,33 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
 // This is essentially pm_string_mapped_init(), preferring to memory map the
 // file, with additional handling for files that require blocking to properly
 // read (e.g. pipes).
-static bool
-read_entire_file(pm_string_t *string, const char *filepath)
+static pm_string_init_result_t
+pm_read_file(pm_string_t *string, const char *filepath)
 {
 #ifdef _WIN32
     // Open the file for reading.
     int length = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, NULL, 0);
-    if (length == 0) return false;
+    if (length == 0) return PM_STRING_INIT_ERROR_GENERIC;
 
     WCHAR *wfilepath = xmalloc(sizeof(WCHAR) * ((size_t) length));
     if ((wfilepath == NULL) || (MultiByteToWideChar(CP_UTF8, 0, filepath, -1, wfilepath, length) == 0)) {
         xfree(wfilepath);
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     HANDLE file = CreateFileW(wfilepath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
     if (file == INVALID_HANDLE_VALUE) {
+        pm_string_init_result_t result = PM_STRING_INIT_ERROR_GENERIC;
+
+        if (GetLastError() == ERROR_ACCESS_DENIED) {
+            DWORD attributes = GetFileAttributesW(wfilepath);
+            if ((attributes != INVALID_FILE_ATTRIBUTES) && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                result = PM_STRING_INIT_ERROR_DIRECTORY;
+            }
+        }
+
         xfree(wfilepath);
-        return false;
+        return result;
     }
 
     // Get the file size.
@@ -10578,7 +10587,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
     if (file_size == INVALID_FILE_SIZE) {
         CloseHandle(file);
         xfree(wfilepath);
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // If the file is empty, then we don't need to do anything else, we'll set
@@ -10588,7 +10597,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
         xfree(wfilepath);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
     // Create a mapping of the file.
@@ -10596,7 +10605,7 @@ read_entire_file(pm_string_t *string, const char *filepath)
     if (mapping == NULL) {
         CloseHandle(file);
         xfree(wfilepath);
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Map the file into memory.
@@ -10606,31 +10615,30 @@ read_entire_file(pm_string_t *string, const char *filepath)
     xfree(wfilepath);
 
     if (source == NULL) {
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = (size_t) file_size };
-    return true;
+    return PM_STRING_INIT_SUCCESS;
 #elif defined(_POSIX_MAPPED_FILES)
     // Open the file for reading
     const int open_mode = O_RDONLY | O_NONBLOCK;
     int fd = open(filepath, open_mode);
     if (fd == -1) {
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Stat the file to get the file size
     struct stat sb;
     if (fstat(fd, &sb) == -1) {
         close(fd);
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Ensure it is a file and not a directory
     if (S_ISDIR(sb.st_mode)) {
         close(fd);
-        errno = EISDIR;
-        return false;
+        return PM_STRING_INIT_ERROR_DIRECTORY;
     }
 
     // We need to wait for data first before reading from pipes and character
@@ -10642,20 +10650,20 @@ read_entire_file(pm_string_t *string, const char *filepath)
         VALUE contents = rb_funcall(io, rb_intern("read"), 0);
 
         if (!RB_TYPE_P(contents, T_STRING)) {
-            return false;
+            return PM_STRING_INIT_ERROR_GENERIC;
         }
 
         long len = RSTRING_LEN(contents);
         if (len < 0) {
-            return false;
+            return PM_STRING_INIT_ERROR_GENERIC;
         }
-        size_t length = (size_t) len;
 
+        size_t length = (size_t) len;
         uint8_t *source = xmalloc(length);
         memcpy(source, RSTRING_PTR(contents), length);
         *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
 
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
     // mmap the file descriptor to virtually get the contents
@@ -10666,17 +10674,17 @@ read_entire_file(pm_string_t *string, const char *filepath)
         close(fd);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     close(fd);
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
-    return true;
+    return PM_STRING_INIT_SUCCESS;
 #else
     return pm_string_file_init(string, filepath);
 #endif
@@ -10689,32 +10697,38 @@ read_entire_file(pm_string_t *string, const char *filepath)
 VALUE
 pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 {
-    if (!read_entire_file(&result->input, RSTRING_PTR(filepath))) {
-#ifdef _WIN32
-        int e = rb_w32_map_errno(GetLastError());
-#else
-        int e = errno;
-#endif
+    pm_string_init_result_t init_result = pm_read_file(&result->input, RSTRING_PTR(filepath));
 
-        VALUE error;
-
-        if (load_error) {
-            VALUE message = rb_str_buf_new_cstr(strerror(e));
-            rb_str_cat2(message, " -- ");
-            rb_str_append(message, filepath);
-
-            error = rb_exc_new3(rb_eLoadError, message);
-            rb_ivar_set(error, rb_intern_const("@path"), filepath);
-        } else {
-            error = rb_syserr_new(e, RSTRING_PTR(filepath));
-            RB_GC_GUARD(filepath);
-        }
-
-        return error;
+    if (init_result == PM_STRING_INIT_SUCCESS) {
+        pm_options_frozen_string_literal_init(&result->options);
+        return Qnil;
     }
 
-    pm_options_frozen_string_literal_init(&result->options);
-    return Qnil;
+    int err;
+    if (init_result == PM_STRING_INIT_ERROR_DIRECTORY) {
+        err = EISDIR;
+    } else {
+#ifdef _WIN32
+        err = rb_w32_map_errno(GetLastError());
+#else
+        err = errno;
+#endif
+    }
+
+    VALUE error;
+    if (load_error) {
+        VALUE message = rb_str_buf_new_cstr(strerror(err));
+        rb_str_cat2(message, " -- ");
+        rb_str_append(message, filepath);
+
+        error = rb_exc_new3(rb_eLoadError, message);
+        rb_ivar_set(error, rb_intern_const("@path"), filepath);
+    } else {
+        error = rb_syserr_new(err, RSTRING_PTR(filepath));
+        RB_GC_GUARD(filepath);
+    }
+
+    return error;
 }
 
 /**
