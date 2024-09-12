@@ -14,6 +14,7 @@ class Binding
 
     Bundler.reset!
 
+    orig_ui = Bundler.ui
     ui = Bundler::UI::Shell.new
     ui.level = "silent"
     Bundler.ui = ui
@@ -28,8 +29,12 @@ class Binding
 
     definition = @builder.to_definition(nil, true)
     definition.validate_runtime!
+    orig_no_lock = Bundler::Definition.no_lock
     Bundler::Definition.no_lock = true
     Bundler::Runtime.new(nil, definition).setup
+  ensure
+    Bundler.ui = orig_ui
+    Bundler::Definition.no_lock = orig_no_lock
   end
 end
 
