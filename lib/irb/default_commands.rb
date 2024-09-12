@@ -181,9 +181,15 @@ module IRB
       [:edit, NO_OVERRIDE]
     )
 
-    _register_with_aliases(:irb_break, Command::Break)
-    _register_with_aliases(:irb_catch, Command::Catch)
-    _register_with_aliases(:irb_next, Command::Next)
+    _register_with_aliases(:irb_break, Command::Break,
+      [:break, OVERRIDE_ALL]
+    )
+    _register_with_aliases(:irb_catch, Command::Catch,
+      [:catch, OVERRIDE_PRIVATE_ONLY]
+    )
+    _register_with_aliases(:irb_next, Command::Next,
+      [:next, OVERRIDE_ALL]
+    )
     _register_with_aliases(:irb_delete, Command::Delete,
       [:delete, NO_OVERRIDE]
     )

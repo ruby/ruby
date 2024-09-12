@@ -149,25 +149,13 @@ module IRB
         @newline_before_multiline_output = true
       end
 
-      @user_aliases = IRB.conf[:COMMAND_ALIASES].dup
-      @command_aliases = @user_aliases.merge(KEYWORD_ALIASES)
+      @command_aliases = IRB.conf[:COMMAND_ALIASES].dup
     end
 
     private def term_interactive?
       return true if ENV['TEST_IRB_FORCE_INTERACTIVE']
       STDIN.tty? && ENV['TERM'] != 'dumb'
     end
-
-    # because all input will eventually be evaluated as Ruby code,
-    # command names that conflict with Ruby keywords need special workaround
-    # we can remove them once we implemented a better command system for IRB
-    KEYWORD_ALIASES = {
-      :break => :irb_break,
-      :catch => :irb_catch,
-      :next => :irb_next,
-    }.freeze
-
-    private_constant :KEYWORD_ALIASES
 
     def use_tracer=(val)
       require_relative "ext/tracer" if val
