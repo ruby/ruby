@@ -19,7 +19,11 @@ class Binding
     Bundler.ui = ui
 
     @builder = Bundler::Dsl.new
-    Bundler.definition.gemfiles.each{|gemfile| @builder.eval_gemfile(gemfile) }
+    if Bundler.definition.gemfiles.empty? # bundler/inline
+      Bundler.definition.locked_gems.specs.each{|spec| @builder.gem spec.name, spec.version.to_s }
+    else
+      Bundler.definition.gemfiles.each{|gemfile| @builder.eval_gemfile(gemfile) }
+    end
     @builder.gem gem
 
     definition = @builder.to_definition(nil, true)
