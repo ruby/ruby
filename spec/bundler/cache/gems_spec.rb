@@ -134,9 +134,7 @@ RSpec.describe "bundle cache" do
       end
 
       it "doesn't make remote request after caching the gem" do
-        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache") do |s|
-          s.summary = "This builtin_gem is bundled with Ruby"
-        end
+        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache"), default: true
 
         install_gemfile <<-G
           source "https://gem.repo2"
