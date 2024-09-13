@@ -29,7 +29,7 @@ module TestNetHTTPUtils
         loop do
           socket = @ssl_server ? @ssl_server.accept : @server.accept
           run(socket)
-        rescue => e
+        rescue
         ensure
           socket.close if socket
         end
@@ -58,7 +58,7 @@ module TestNetHTTPUtils
       request_line = socket.gets
       return if request_line.nil? || request_line.strip.empty?
 
-      method, path, version = request_line.split
+      method, path, _version = request_line.split
       headers = {}
       while (line = socket.gets)
         break if line.strip.empty?
@@ -119,10 +119,6 @@ module TestNetHTTPUtils
 
       def continue
         @socket.write "HTTP\/1.1 100 continue\r\n\r\n"
-      end
-
-      def query
-        @query
       end
 
       def remote_ip
