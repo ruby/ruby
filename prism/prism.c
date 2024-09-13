@@ -21926,6 +21926,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
         // scopes option
         parser->parsing_eval = options->scopes_count > 0;
+        if (parser->parsing_eval) parser->warn_mismatched_indentation = false;
 
         for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
             const pm_options_scope_t *scope = pm_options_scope_get(options, scope_index);
