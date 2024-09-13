@@ -383,6 +383,9 @@ module SyncDefaultGems
       rm_rf("prism/templates/rbi")
       rm_rf("prism/templates/sig")
 
+      rm("test/prism/snapshots_test.rb")
+      rm_rf("test/prism/snapshots")
+
       rm("prism/extconf.rb")
     when "resolv"
       rm_rf(%w[lib/resolv.* ext/win32/resolv test/resolv ext/win32/lib/win32/resolv.rb])
