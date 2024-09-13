@@ -4708,6 +4708,9 @@ rb_ary_clear(VALUE ary)
  *
  *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *
+ *  In all cases, numeric arguments +start+ and +length+ must be
+ *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *
  *  In brief:
  *
  *    # Argument object.
@@ -4766,7 +4769,7 @@ rb_ary_clear(VALUE ary)
  *    a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *    a.fill('-')         # => ["-", "-", "-", "-"]
  *
- *  With argument +object+ and integer argument +start+,
+ *  With argument +object+ and numeric argument +start+,
  *  replaces elements based on the given +start+:
  *
  *  - If +start+ is in range (<tt>0 <= start < array.size</tt>),
@@ -4790,7 +4793,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -9)     # => ["-", "-", "-", "-"]
  *
- *  With argument +object+ and integer arguments +start+ and +length+,
+ *  With argument +object+ and numeric arguments +start+ and +length+,
  *  replaces elements based on the given +start+ and +length+:
  *
  *  - If +start+ is in range, replaces +length+ elements beginning at offset +start+:
@@ -4850,7 +4853,7 @@ rb_ary_clear(VALUE ary)
  *    a = ('a'..'d').to_a               # => ["a", "b", "c", "d"]
  *    a.fill { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
  *
- *  With integer argument +start+ given, calls the block with each index
+ *  With numeric argument +start+, calls the block with each index
  *  from offset +start+ to the end; replaces the corresponding element
  *  with the block's return value:
  *
@@ -4875,7 +4878,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a                   # => ["a", "b", "c", "d"]
  *      a.fill(-4) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
  *
- *  With integer arguments +start+ and +length+,
+ *  With numeric arguments +start+ and +length+,
  *  calls the block for each index specified by start length;
  *  replaces the corresponding element with the block's return value:
  *
