@@ -13,6 +13,8 @@ module Prism
     JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
     JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
 
+    COMMON_FLAGS_COUNT = 2
+
     class Error
       attr_reader :name
 

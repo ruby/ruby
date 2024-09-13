@@ -395,7 +395,7 @@ module Prism
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
-    <%= value.name %> = 1 << <%= index + 2 %>
+    <%= value.name %> = 1 << <%= index + Prism::Template::COMMON_FLAGS_COUNT %>
 <%= "\n" if value != flag.values.last -%>
     <%- end -%>
   end

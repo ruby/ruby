@@ -207,7 +207,7 @@ typedef enum pm_<%= flag.human %> {
     <%- flag.values.each_with_index do |value, index| -%>
 <%= "\n" if index > 0 -%>
     /** <%= value.comment %> */
-    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + 2) %>,
+    PM_<%= flag.human.upcase %>_<%= value.name %> = <%= 1 << (index + Prism::Template::COMMON_FLAGS_COUNT) %>,
     <%- end -%>
 } pm_<%= flag.human %>_t;
 <%- end -%>
