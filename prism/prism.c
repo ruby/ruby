@@ -11277,7 +11277,16 @@ parser_lex(pm_parser_t *parser) {
 
                     pm_token_type_t type = PM_TOKEN_AMPERSAND;
                     if (lex_state_spcarg_p(parser, space_seen)) {
-                        pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_PREFIX_AMPERSAND);
+                        if ((peek(parser) != ':') || (peek_offset(parser, 1) == '\0')) {
+                            pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_PREFIX_AMPERSAND);
+                        } else {
+                            const uint8_t delim = peek_offset(parser, 1);
+
+                            if ((delim != '\'') && (delim != '"') && !char_is_identifier(parser, parser->current.end + 1)) {
+                                pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_PREFIX_AMPERSAND);
+                            }
+                        }
+
                         type = PM_TOKEN_UAMPERSAND;
                     } else if (lex_state_beg_p(parser)) {
                         type = PM_TOKEN_UAMPERSAND;

@@ -22,6 +22,15 @@ module Prism
       assert_warning("a /b/", "wrap regexp in parentheses")
     end
 
+    def test_ambiguous_ampersand
+      assert_warning("a &b", "argument prefix")
+      assert_warning("a &:+", "argument prefix")
+
+      refute_warning("a &:b")
+      refute_warning("a &:'b'")
+      refute_warning("a &:\"b\"")
+    end
+
     def test_binary_operator
       [
         [:**, "argument prefix"],
