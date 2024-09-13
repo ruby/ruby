@@ -378,7 +378,7 @@ class TestFile < Test::Unit::TestCase
       file.close
       path = file.path
 
-      t0 = measure_time do
+      measure_time do
         File.write(path, "foo")
       end
 
