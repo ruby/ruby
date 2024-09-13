@@ -5804,7 +5804,7 @@ pwd_not_found(int err)
 
 # if defined(USE_GETPWNAM_R)
 struct getpwnam_r_args {
-    char *login;
+    const char *login;
     char *buf;
     size_t bufsize;
     struct passwd *result;
@@ -5850,7 +5850,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
     bufnm = RSTRING_PTR(getpwnm_tmp);
     bufsizenm = rb_str_capacity(getpwnm_tmp);
     rb_str_set_len(getpwnm_tmp, bufsizenm);
-    struct getpwnam_r_args args = GETPWNAM_R_ARGS((char*)login, bufnm, (size_t)bufsizenm);
+    struct getpwnam_r_args args = GETPWNAM_R_ARGS(login, bufnm, (size_t)bufsizenm);
 
     int enm;
     while ((enm = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
