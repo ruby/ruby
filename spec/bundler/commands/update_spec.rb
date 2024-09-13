@@ -1583,17 +1583,16 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "errors if the explicit target version does not exist" do
-    pristine_system_gems "bundler-2.3.9"
+    pristine_system_gems "bundler-9.9.9"
 
     build_repo4 do
       build_gem "myrack", "1.0"
     end
 
-    install_gemfile <<-G, env: { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+    install_gemfile <<-G
       source "https://gem.repo4"
       gem "myrack"
     G
-    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
     bundle :update, bundler: "999.999.999", artifice: "compact_index", raise_on_error: false
 
@@ -1601,7 +1600,7 @@ RSpec.describe "bundle update --bundler" do
 
     if Gem.rubygems_version >= Gem::Version.new("3.3.0.dev")
       expect(last_command).to be_failure
-      expect(err).to include("The `bundle update --bundler` target version (999.999.999) does not exist")
+      expect(err).to eq("The `bundle update --bundler` target version (999.999.999) does not exist")
     end
   end
 
