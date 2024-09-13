@@ -123,11 +123,6 @@ module Gem
       end
     end
 
-    remove_method :gem_dir
-    def gem_dir
-      full_gem_path
-    end
-
     unless const_defined?(:LATEST_RUBY_WITHOUT_PATCH_VERSIONS)
       LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
 

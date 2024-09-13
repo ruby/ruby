@@ -1913,7 +1913,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Work around bundler removing my methods
+  # Work around old bundler versions removing my methods
 
   def gem_dir # :nodoc:
     super
