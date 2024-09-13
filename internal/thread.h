@@ -57,6 +57,7 @@ int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 struct rb_io_close_wait_list {
     struct ccan_list_head pending_fd_users;
     VALUE closing_thread;
+    VALUE closing_fiber;
     VALUE wakeup_mutex;
 };
 int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
