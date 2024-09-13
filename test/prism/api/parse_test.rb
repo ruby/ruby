@@ -87,7 +87,6 @@ module Prism
       rescue SystemCallError => error
       end
 
-      return if error.nil? || error.is_a?(Errno::ENOMEM)
       assert_kind_of Errno::EISDIR, error
     end
 

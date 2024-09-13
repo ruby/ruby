@@ -22,6 +22,9 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#elif defined(PRISM_HAS_FILESYSTEM)
+#include <fcntl.h>
+#include <sys/stat.h>
 #endif
 
 /**
