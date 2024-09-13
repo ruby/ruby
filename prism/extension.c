@@ -31,6 +31,7 @@ ID rb_id_option_encoding;
 ID rb_id_option_filepath;
 ID rb_id_option_frozen_string_literal;
 ID rb_id_option_line;
+ID rb_id_option_main_script;
 ID rb_id_option_scopes;
 ID rb_id_option_version;
 ID rb_id_source_for;
@@ -179,6 +180,8 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
 
             pm_options_command_line_set(options, command_line);
         }
+    } else if (key_id == rb_id_option_main_script) {
+        if (!NIL_P(value)) pm_options_main_script_set(options, RTEST(value));
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, key);
     }
@@ -1165,6 +1168,7 @@ Init_prism(void) {
     rb_id_option_filepath = rb_intern_const("filepath");
     rb_id_option_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_id_option_line = rb_intern_const("line");
+    rb_id_option_main_script = rb_intern_const("main_script");
     rb_id_option_scopes = rb_intern_const("scopes");
     rb_id_option_version = rb_intern_const("version");
     rb_id_source_for = rb_intern("for");

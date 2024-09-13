@@ -2155,6 +2155,8 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 
     pm_options_t *options = &result->options;
     pm_options_line_set(options, 1);
+    pm_options_main_script_set(options, true);
+
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
 
     if (read_stdin) {
