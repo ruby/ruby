@@ -1471,6 +1471,7 @@ class TestRange < Test::Unit::TestCase
     assert_operator((..3), :overlap?, (3..))
     assert_operator((nil..nil), :overlap?, (3..))
     assert_operator((nil...nil), :overlap?, (nil..))
+    assert_operator((nil..nil), :overlap?, (..3))
 
     assert_raise(TypeError) { (1..3).overlap?(1) }
 
