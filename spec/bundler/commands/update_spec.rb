@@ -1541,26 +1541,29 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "does not update the bundler version in the lockfile if the latest version is not compatible with current ruby", :ruby_repo do
-    pristine_system_gems "bundler-2.3.9"
+    pristine_system_gems "bundler-9.9.9"
 
     build_repo4 do
       build_gem "myrack", "1.0"
 
-      build_bundler "2.3.9"
+      build_bundler "9.9.9"
       build_bundler "999.0.0" do |s|
         s.required_ruby_version = "> #{Gem.ruby_version}"
       end
     end
 
-    install_gemfile <<-G, env: { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+    checksums = checksums_section do |c|
+      c.checksum(gem_repo4, "myrack", "1.0")
+    end
+
+    install_gemfile <<-G
       source "https://gem.repo4"
       gem "myrack"
     G
-    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
-    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
-    expect(out).to include("Using bundler 2.3.9")
+    expect(out).to include("Using bundler 9.9.9")
 
     expect(lockfile).to eq <<~L
       GEM
@@ -1573,12 +1576,12 @@ RSpec.describe "bundle update --bundler" do
 
       DEPENDENCIES
         myrack
-
+      #{checksums}
       BUNDLED WITH
-         2.3.9
+         9.9.9
     L
 
-    expect(the_bundle).to include_gems "bundler 2.3.9"
+    expect(the_bundle).to include_gems "bundler 9.9.9"
     expect(the_bundle).to include_gems "myrack 1.0"
   end
 
