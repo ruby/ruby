@@ -8043,6 +8043,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_GETLOCAL(ret, location, mult_local.index, mult_local.level);
             PUSH_INSN2(ret, location, invokesuperforward, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
             if (popped) PUSH_INSN(ret, location, pop);
+            if (cast->block) {
+                ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
+            }
             return;
         }
 
