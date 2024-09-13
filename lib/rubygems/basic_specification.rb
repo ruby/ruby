@@ -139,10 +139,10 @@ class Gem::BasicSpecification
   # The full path to the gem (install path + full name).
 
   def full_gem_path
-    # TODO: This is a heavily used method by gems, so we'll need
-    # to aleast just alias it to #gem_dir rather than remove it.
     @full_gem_path ||= find_full_gem_path
   end
+
+  alias_method :gem_dir, :full_gem_path
 
   ##
   # Returns the full name (name-version) of this Gem.  Platform information
@@ -211,14 +211,6 @@ class Gem::BasicSpecification
       end
       @paths_map[path]
     end
-  end
-
-  ##
-  # Returns the full path to this spec's gem directory.
-  # eg: /usr/local/lib/ruby/1.8/gems/mygem-1.0
-
-  def gem_dir
-    @gem_dir ||= File.expand_path File.join(gems_dir, full_name)
   end
 
   ##
