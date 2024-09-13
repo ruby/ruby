@@ -139,6 +139,13 @@ typedef struct pm_options {
      * but ignore any encoding magic comments at the top of the file.
      */
     bool encoding_locked;
+
+    /**
+     * When the file being parsed is the main script, the shebang will be
+     * considered for command-line flags (or for implicit -x). The caller needs
+     * to pass this information to the parser so that it can behave correctly.
+     */
+    bool main_script;
 } pm_options_t;
 
 /**
@@ -247,6 +254,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, 
  * @return Whether or not the version was parsed successfully.
  */
 PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length);
+
+/**
+ * Set the main script option on the given options struct.
+ *
+ * @param options The options struct to set the main script value on.
+ * @param main_script The main script value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, bool main_script);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.

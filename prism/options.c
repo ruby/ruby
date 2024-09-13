@@ -100,6 +100,14 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
     }
 }
 
+/**
+ * Set the main script option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_main_script_set(pm_options_t *options, bool main_script) {
+    options->main_script = main_script;
+}
+
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
 // locals here, even though we definitely aren't. This is a false positive.
 // Ideally we wouldn't need to suppress this.

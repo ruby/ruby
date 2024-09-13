@@ -21968,25 +21968,42 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
     // "ruby" and start parsing from there.
     bool search_shebang = PM_PARSER_COMMAND_LINE_OPTION_X(parser);
 
-    // If the first two bytes of the source are a shebang, then we'll indicate
-    // that the encoding comment is at the end of the shebang.
+    // If the first two bytes of the source are a shebang, then we will do a bit
+    // of extra processing.
+    //
+    // First, we'll indicate that the encoding comment is at the end of the
+    // shebang. This means that when a shebang is present the encoding comment
+    // can begin on the second line.
+    //
+    // Second, we will check if the shebang includes "ruby". If it does, then we
+    // we will start parsing from there. We will also potentially warning the
+    // user if there is a carriage return at the end of the shebang. We will
+    // also potentially call the shebang callback if this is the main script to
+    // allow the caller to parse the shebang and find any command-line options.
+    // If the shebang does not include "ruby" and this is the main script being
+    // parsed, then we will start searching the file for a shebang that does
+    // contain "ruby" as if -x were passed on the command line.
     const uint8_t *newline = next_newline(parser->start, parser->end - parser->start);
     size_t length = (size_t) ((newline != NULL ? newline : parser->end) - parser->start);
 
     if (length > 2 && parser->current.end[0] == '#' && parser->current.end[1] == '!') {
         const char *engine;
+
         if ((engine = pm_strnstr((const char *) parser->start, "ruby", length)) != NULL) {
             if (newline != NULL) {
-                pm_parser_warn_shebang_carriage_return(parser, parser->start, length + 1);
                 parser->encoding_comment_start = newline + 1;
+
+                if (options == NULL || options->main_script) {
+                    pm_parser_warn_shebang_carriage_return(parser, parser->start, length + 1);
+                }
             }
 
-            if (options != NULL && options->shebang_callback != NULL) {
+            if (options != NULL && options->main_script && options->shebang_callback != NULL) {
                 pm_parser_init_shebang(parser, options, engine, length - ((size_t) (engine - (const char *) parser->start)));
             }
 
             search_shebang = false;
-        } else if (!parser->parsing_eval) {
+        } else if (options->main_script && !parser->parsing_eval) {
             search_shebang = true;
         }
     }

@@ -67,7 +67,7 @@ module Prism
     end
 
     def test_command_line_x_implicit
-      result = Prism.parse_statement(<<~RUBY)
+      result = Prism.parse_statement(<<~RUBY, main_script: true)
         #!/bin/bash
         exit 1
 
@@ -90,7 +90,7 @@ module Prism
     end
 
     def test_command_line_x_implicit_fail
-      result = Prism.parse(<<~RUBY)
+      result = Prism.parse(<<~RUBY, main_script: true)
         #!/bin/bash
         exit 1
       RUBY
