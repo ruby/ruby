@@ -1914,6 +1914,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Work around old bundler versions removing my methods
+  # Can be removed once RubyGems can no longer install Bundler 2.5
 
   def gem_dir # :nodoc:
     super
