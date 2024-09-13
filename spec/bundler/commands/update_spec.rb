@@ -1535,7 +1535,7 @@ RSpec.describe "bundle update --bundler" do
 
     bundle :cache, verbose: true
 
-    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle :update, bundler: true, verbose: true
 
     expect(out).not_to include("Updating bundler to")
   end
@@ -1561,7 +1561,7 @@ RSpec.describe "bundle update --bundler" do
       gem "myrack"
     G
 
-    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle :update, bundler: true, verbose: true
 
     expect(out).to include("Using bundler 9.9.9")
 
@@ -1597,7 +1597,7 @@ RSpec.describe "bundle update --bundler" do
       gem "myrack"
     G
 
-    bundle :update, bundler: "999.999.999", artifice: "compact_index", raise_on_error: false
+    bundle :update, bundler: "999.999.999", raise_on_error: false
 
     # Only gives a meaningful error message on modern RubyGems.
 
