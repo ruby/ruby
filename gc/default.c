@@ -1373,13 +1373,9 @@ gc_object_moved_p(rb_objspace_t *objspace, VALUE obj)
         return FALSE;
     }
     else {
-        void *poisoned = asan_unpoison_object_temporary(obj);
-
-        int ret = BUILTIN_TYPE(obj) == T_MOVED;
-        /* Re-poison slot if it's not the one we want */
-        if (poisoned) {
-            GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
-            asan_poison_object(obj);
+        int ret;
+        asan_unpoisoning_object(obj) {
+            ret = BUILTIN_TYPE(obj) == T_MOVED;
         }
         return ret;
     }
@@ -3153,15 +3149,10 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         uintptr_t pend = p + page->total_slots * stride;
         for (; p < pend; p += stride) {
             VALUE vp = (VALUE)p;
-            void *poisoned = asan_unpoison_object_temporary(vp);
-
-            if (rb_gc_shutdown_call_finalizer_p(vp)) {
-                rb_gc_obj_free(objspace, vp);
-            }
-
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(vp) == T_NONE);
-                asan_poison_object(vp);
+            asan_unpoisoning_object(vp) {
+                if (rb_gc_shutdown_call_finalizer_p(vp)) {
+                    rb_gc_obj_free(objspace, vp);
+                }
             }
         }
     }
@@ -3189,13 +3180,8 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
         for (; p < pend; p += stride) {
             VALUE obj = (VALUE)p;
 
-            void *poisoned = asan_unpoison_object_temporary(obj);
-
-            func(obj, data);
-
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
-                asan_poison_object(obj);
+            asan_unpoisoning_object(obj) {
+                func(obj, data);
             }
         }
     }
@@ -4061,20 +4047,14 @@ rb_gc_impl_location(void *objspace_ptr, VALUE value)
     VALUE destination;
 
     if (!SPECIAL_CONST_P(value)) {
-        void *poisoned = asan_unpoison_object_temporary(value);
-
-        if (BUILTIN_TYPE(value) == T_MOVED) {
-            destination = (VALUE)RMOVED(value)->destination;
-            GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
-        }
-        else {
-            destination = value;
-        }
-
-        /* Re-poison slot if it's not the one we want */
-        if (poisoned) {
-            GC_ASSERT(BUILTIN_TYPE(value) == T_NONE);
-            asan_poison_object(value);
+        asan_unpoisoning_object(value) {
+            if (BUILTIN_TYPE(value) == T_MOVED) {
+                destination = (VALUE)RMOVED(value)->destination;
+                GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
+            }
+            else {
+                destination = value;
+            }
         }
     }
     else {
@@ -4583,21 +4563,16 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
     (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
 
     if (is_pointer_to_heap(objspace, (void *)obj)) {
-        void *ptr = asan_unpoison_object_temporary(obj);
-
-        /* Garbage can live on the stack, so do not mark or pin */
-        switch (BUILTIN_TYPE(obj)) {
-          case T_ZOMBIE:
-          case T_NONE:
-            break;
-          default:
-            gc_mark_and_pin(objspace, obj);
-            break;
-        }
-
-        if (ptr) {
-            GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
-            asan_poison_object(obj);
+        asan_unpoisoning_object(obj) {
+            /* Garbage can live on the stack, so do not mark or pin */
+            switch (BUILTIN_TYPE(obj)) {
+            case T_ZOMBIE:
+            case T_NONE:
+                break;
+            default:
+                gc_mark_and_pin(objspace, obj);
+                break;
+            }
         }
     }
 }
@@ -5080,59 +5055,55 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
     rb_objspace_t *objspace = data->objspace;
 
     for (obj = (VALUE)page_start; obj != (VALUE)page_end; obj += stride) {
-        void *poisoned = asan_unpoison_object_temporary(obj);
-
-        if (!rb_gc_impl_garbage_object_p(objspace, obj)) {
-            /* count objects */
-            data->live_object_count++;
-            data->parent = obj;
-
-            /* Normally, we don't expect T_MOVED objects to be in the heap.
-             * But they can stay alive on the stack, */
-            if (!gc_object_moved_p(objspace, obj)) {
-                /* moved slots don't have children */
-                rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
-            }
-
-            /* check health of children */
-            if (RVALUE_OLD_P(objspace, obj)) data->old_object_count++;
-            if (RVALUE_WB_UNPROTECTED(objspace, obj) && RVALUE_UNCOLLECTIBLE(objspace, obj)) data->remembered_shady_count++;
-
-            if (!is_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
-                /* reachable objects from an oldgen object should be old or (young with remember) */
+        asan_unpoisoning_object(obj) {
+            if (!rb_gc_impl_garbage_object_p(objspace, obj)) {
+                /* count objects */
+                data->live_object_count++;
                 data->parent = obj;
-                rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
-            }
 
-            if (is_incremental_marking(objspace)) {
-                if (RVALUE_BLACK_P(objspace, obj)) {
-                    /* reachable objects from black objects should be black or grey objects */
+                /* Normally, we don't expect T_MOVED objects to be in the heap.
+                * But they can stay alive on the stack, */
+                if (!gc_object_moved_p(objspace, obj)) {
+                    /* moved slots don't have children */
+                    rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
+                }
+
+                /* check health of children */
+                if (RVALUE_OLD_P(objspace, obj)) data->old_object_count++;
+                if (RVALUE_WB_UNPROTECTED(objspace, obj) && RVALUE_UNCOLLECTIBLE(objspace, obj)) data->remembered_shady_count++;
+
+                if (!is_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
+                    /* reachable objects from an oldgen object should be old or (young with remember) */
                     data->parent = obj;
-                    rb_objspace_reachable_objects_from(obj, check_color_i, (void *)data);
-                }
-            }
-        }
-        else {
-            if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
-                data->zombie_object_count++;
-
-                if ((RBASIC(obj)->flags & ~ZOMBIE_OBJ_KEPT_FLAGS) != T_ZOMBIE) {
-                    fprintf(stderr, "verify_internal_consistency_i: T_ZOMBIE has extra flags set: %s\n",
-                            rb_obj_info(obj));
-                    data->err_count++;
+                    rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
                 }
 
-                if (!!FL_TEST(obj, FL_FINALIZE) != !!st_is_member(finalizer_table, obj)) {
-                    fprintf(stderr, "verify_internal_consistency_i: FL_FINALIZE %s but %s finalizer_table: %s\n",
-                            FL_TEST(obj, FL_FINALIZE) ? "set" : "not set", st_is_member(finalizer_table, obj) ? "in" : "not in",
-                            rb_obj_info(obj));
-                    data->err_count++;
+                if (is_incremental_marking(objspace)) {
+                    if (RVALUE_BLACK_P(objspace, obj)) {
+                        /* reachable objects from black objects should be black or grey objects */
+                        data->parent = obj;
+                        rb_objspace_reachable_objects_from(obj, check_color_i, (void *)data);
+                    }
                 }
             }
-        }
-        if (poisoned) {
-            GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
-            asan_poison_object(obj);
+            else {
+                if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
+                    data->zombie_object_count++;
+
+                    if ((RBASIC(obj)->flags & ~ZOMBIE_OBJ_KEPT_FLAGS) != T_ZOMBIE) {
+                        fprintf(stderr, "verify_internal_consistency_i: T_ZOMBIE has extra flags set: %s\n",
+                                rb_obj_info(obj));
+                        data->err_count++;
+                    }
+
+                    if (!!FL_TEST(obj, FL_FINALIZE) != !!st_is_member(finalizer_table, obj)) {
+                        fprintf(stderr, "verify_internal_consistency_i: FL_FINALIZE %s but %s finalizer_table: %s\n",
+                                FL_TEST(obj, FL_FINALIZE) ? "set" : "not set", st_is_member(finalizer_table, obj) ? "in" : "not in",
+                                rb_obj_info(obj));
+                        data->err_count++;
+                    }
+                }
+            }
         }
     }
 
@@ -5154,22 +5125,18 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 
     for (uintptr_t ptr = start; ptr < end; ptr += slot_size) {
         VALUE val = (VALUE)ptr;
-        void *poisoned = asan_unpoison_object_temporary(val);
-        enum ruby_value_type type = BUILTIN_TYPE(val);
+        asan_unpoisoning_object(val) {
+            enum ruby_value_type type = BUILTIN_TYPE(val);
 
-        if (type == T_NONE) free_objects++;
-        if (type == T_ZOMBIE) zombie_objects++;
-        if (RVALUE_PAGE_UNCOLLECTIBLE(page, val) && RVALUE_PAGE_WB_UNPROTECTED(page, val)) {
-            has_remembered_shady = TRUE;
-        }
-        if (RVALUE_PAGE_MARKING(page, val)) {
-            has_remembered_old = TRUE;
-            remembered_old_objects++;
-        }
-
-        if (poisoned) {
-            GC_ASSERT(BUILTIN_TYPE(val) == T_NONE);
-            asan_poison_object(val);
+            if (type == T_NONE) free_objects++;
+            if (type == T_ZOMBIE) zombie_objects++;
+            if (RVALUE_PAGE_UNCOLLECTIBLE(page, val) && RVALUE_PAGE_WB_UNPROTECTED(page, val)) {
+                has_remembered_shady = TRUE;
+            }
+            if (RVALUE_PAGE_MARKING(page, val)) {
+                has_remembered_old = TRUE;
+                remembered_old_objects++;
+            }
         }
     }
 
@@ -7174,32 +7141,28 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t *objspace, 
 
     /* For each object on the page */
     for (; v != (VALUE)vend; v += stride) {
-        void *poisoned = asan_unpoison_object_temporary(v);
-
-        switch (BUILTIN_TYPE(v)) {
-          case T_NONE:
-          case T_MOVED:
-          case T_ZOMBIE:
-            break;
-          default:
-            if (RVALUE_WB_UNPROTECTED(objspace, v)) {
-                page->flags.has_uncollectible_wb_unprotected_objects = TRUE;
-            }
-            if (RVALUE_REMEMBERED(objspace, v)) {
-                page->flags.has_remembered_objects = TRUE;
-            }
-            if (page->flags.before_sweep) {
-                if (RVALUE_MARKED(objspace, v)) {
+        asan_unpoisoning_object(v) {
+            switch (BUILTIN_TYPE(v)) {
+              case T_NONE:
+              case T_MOVED:
+              case T_ZOMBIE:
+                break;
+              default:
+                if (RVALUE_WB_UNPROTECTED(objspace, v)) {
+                    page->flags.has_uncollectible_wb_unprotected_objects = TRUE;
+                }
+                if (RVALUE_REMEMBERED(objspace, v)) {
+                    page->flags.has_remembered_objects = TRUE;
+                }
+                if (page->flags.before_sweep) {
+                    if (RVALUE_MARKED(objspace, v)) {
+                        rb_gc_update_object_references(objspace, v);
+                    }
+                }
+                else {
                     rb_gc_update_object_references(objspace, v);
                 }
             }
-            else {
-                rb_gc_update_object_references(objspace, v);
-            }
-        }
-
-        if (poisoned) {
-            asan_poison_object(v);
         }
     }
 
@@ -7271,21 +7234,16 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
             /* Moved object still on the heap, something may have a reference. */
         }
         else {
-            void *poisoned = asan_unpoison_object_temporary(v);
-
-            switch (BUILTIN_TYPE(v)) {
-              case T_NONE:
-              case T_ZOMBIE:
-                break;
-              default:
-                if (!rb_gc_impl_garbage_object_p(objspace, v)) {
-                    rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+            asan_unpoisoning_object(v) {
+                switch (BUILTIN_TYPE(v)) {
+                  case T_NONE:
+                  case T_ZOMBIE:
+                    break;
+                  default:
+                    if (!rb_gc_impl_garbage_object_p(objspace, v)) {
+                        rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+                    }
                 }
-            }
-
-            if (poisoned) {
-                GC_ASSERT(BUILTIN_TYPE(v) == T_NONE);
-                asan_poison_object(v);
             }
         }
     }
@@ -7307,20 +7265,15 @@ desired_compaction_pages_i(struct heap_page *page, void *data)
     VALUE vstart = (VALUE)page->start;
     VALUE vend = vstart + (VALUE)(page->total_slots * page->size_pool->slot_size);
 
-
     for (VALUE v = vstart; v != vend; v += page->size_pool->slot_size) {
-        /* skip T_NONEs; they won't be moved */
-        void *poisoned = asan_unpoison_object_temporary(v);
-        if (BUILTIN_TYPE(v) == T_NONE) {
-            if (poisoned) {
-                asan_poison_object(v);
+        asan_unpoisoning_object(v) {
+            /* skip T_NONEs; they won't be moved */
+            if (BUILTIN_TYPE(v) != T_NONE) {
+                rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, page->size_pool, v);
+                size_t dest_pool_idx = dest_pool - size_pools;
+                tdata->required_slots[dest_pool_idx]++;
             }
-            continue;
         }
-
-        rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, page->size_pool, v);
-        size_t dest_pool_idx = dest_pool - size_pools;
-        tdata->required_slots[dest_pool_idx]++;
     }
 
     return 0;
