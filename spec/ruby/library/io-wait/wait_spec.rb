@@ -84,7 +84,7 @@ describe "IO#wait" do
     end
 
     it "changes thread status to 'sleep' when waits for READABLE event" do
-      t = Thread.new { @r.wait(IO::READABLE, 10) }
+      t = Thread.new { @r.wait(IO::READABLE, 10_000) }
       sleep 1
       t.status.should == 'sleep'
       t.kill
@@ -94,7 +94,7 @@ describe "IO#wait" do
     it "changes thread status to 'sleep' when waits for WRITABLE event" do
       IOSpec.exhaust_write_buffer(@w)
 
-      t = Thread.new { @w.wait(IO::WRITABLE, 10) }
+      t = Thread.new { @w.wait(IO::WRITABLE, 10_000) }
       sleep 1
       t.status.should == 'sleep'
       t.kill
@@ -105,7 +105,7 @@ describe "IO#wait" do
       start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
       t = Thread.new do
-        @r.wait(IO::READABLE, 10)
+        @r.wait(IO::READABLE, 10_000)
       end
 
       Thread.pass until t.stop?
@@ -121,7 +121,7 @@ describe "IO#wait" do
       start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
       t = Thread.new do
-        @w.wait(IO::WRITABLE, 10)
+        @w.wait(IO::WRITABLE, 10_000)
       end
 
       Thread.pass until t.stop?
