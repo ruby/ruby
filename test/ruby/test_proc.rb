@@ -207,10 +207,13 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_given_method
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     m = method(:m_block_given?)
     assert(!m.call, "without block")
     assert(m.call {}, "with block")
     assert(!m.call, "without block second")
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_block_given_method_to_proc
