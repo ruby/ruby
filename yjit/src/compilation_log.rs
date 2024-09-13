@@ -1,4 +1,7 @@
-use crate::cruby::{EcPtr, Qfalse, Qtrue, VALUE};
+#![allow(dead_code)]
+
+use crate::core::BlockId;
+use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
@@ -22,4 +25,11 @@ pub extern "C" fn rb_yjit_print_compilation_log_p(_ec: EcPtr, _ruby_self: VALUE)
     } else {
         return Qfalse;
     }
+}
+
+/// Primitive called in yjit.rb.
+/// Export all YJIT compilation log entries as a Ruby array.
+#[no_mangle]
+pub extern "C" fn rb_yjit_get_compilation_log(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || unsafe { rb_ary_new_capa(0) })
 }
