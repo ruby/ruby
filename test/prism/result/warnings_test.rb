@@ -115,6 +115,9 @@ module Prism
       assert_warning("case 1; when 2\n  end", "mismatched indentations at 'end' with 'case'")
       assert_warning("case 1; in 2\n  end", "mismatched indentations at 'end' with 'case'")
 
+      assert_warning("  case 1\nwhen 2\n  end", "mismatched indentations at 'when' with 'case'")
+      refute_warning("case 1\n  when 2\n    when 3\nend") # case/when allows more indentation
+
       assert_warning("-> {\n  }", "mismatched indentations at '}' with '->'")
       assert_warning("-> do\n  end", "mismatched indentations at 'end' with '->'")
       assert_warning("-> do\n  rescue\nend", "mismatched indentations at 'rescue' with '->'")

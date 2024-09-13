@@ -14836,7 +14836,7 @@ token_column(const pm_parser_t *parser, size_t newline_index, const pm_token_t *
  * function warns if the indentation of the two tokens does not match.
  */
 static void
-parser_warn_indentation_mismatch(pm_parser_t *parser, size_t opening_newline_index, const pm_token_t *opening_token, bool if_after_else) {
+parser_warn_indentation_mismatch(pm_parser_t *parser, size_t opening_newline_index, const pm_token_t *opening_token, bool if_after_else, bool allow_indent) {
     // If these warnings are disabled (unlikely), then we can just return.
     if (!parser->warn_mismatched_indentation) return;
 
@@ -14857,6 +14857,10 @@ parser_warn_indentation_mismatch(pm_parser_t *parser, size_t opening_newline_ind
     // If the tokens are at the same indentation, we do not warn.
     int64_t closing_column = token_column(parser, closing_newline_index, closing_token, true);
     if ((closing_column == -1) || (opening_column == closing_column)) return;
+
+    // If the closing column is greater than the opening column and we are
+    // allowing indentation, then we do not warn.
+    if (allow_indent && (closing_column > opening_column)) return;
 
     // Otherwise, add a warning.
     PM_PARSER_WARN_FORMAT(
@@ -14891,7 +14895,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
     pm_rescue_node_t *current = NULL;
 
     while (match1(parser, PM_TOKEN_KEYWORD_RESCUE)) {
-        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false, false);
         parser_lex(parser);
 
         pm_rescue_node_t *rescue = pm_rescue_node_create(parser, &parser->previous);
@@ -14997,7 +15001,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
 
     pm_token_t else_keyword;
     if (match1(parser, PM_TOKEN_KEYWORD_ELSE)) {
-        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false, false);
         opening_newline_index = token_newline_index(parser);
 
         else_keyword = parser->current;
@@ -15037,7 +15041,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
     }
 
     if (match1(parser, PM_TOKEN_KEYWORD_ENSURE)) {
-        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false, false);
         pm_token_t ensure_keyword = parser->current;
 
         parser_lex(parser);
@@ -15070,7 +15074,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
     }
 
     if (match1(parser, PM_TOKEN_KEYWORD_END)) {
-        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false);
+        if (opening != NULL) parser_warn_indentation_mismatch(parser, opening_newline_index, opening, false, false);
         pm_begin_node_end_keyword_set(parent_node, &parser->current);
     } else {
         pm_token_t end_keyword = (pm_token_t) { .type = PM_TOKEN_MISSING, .start = parser->previous.end, .end = parser->previous.end };
@@ -15703,7 +15707,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
                 PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, parser->current, PM_WARN_KEYWORD_EOL);
             }
 
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
             pm_token_t elsif_keyword = parser->current;
             parser_lex(parser);
 
@@ -15721,7 +15725,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
     }
 
     if (match1(parser, PM_TOKEN_KEYWORD_ELSE)) {
-        parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
         opening_newline_index = token_newline_index(parser);
 
         parser_lex(parser);
@@ -15732,7 +15736,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
         pm_accepts_block_stack_pop(parser);
 
         accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-        parser_warn_indentation_mismatch(parser, opening_newline_index, &else_keyword, false);
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &else_keyword, false, false);
         expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM_ELSE);
 
         pm_else_node_t *else_node = pm_else_node_create(parser, &else_keyword, else_statements, &parser->previous);
@@ -15749,7 +15753,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
                 break;
         }
     } else {
-        parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, if_after_else);
+        parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, if_after_else, false);
         expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CONDITIONAL_TERM);
     }
 
@@ -18537,7 +18541,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             if (match1(parser, PM_TOKEN_KEYWORD_END)) {
-                parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false, false);
                 parser_lex(parser);
 
                 pop_block_exits(parser, previous_block_exits);
@@ -18560,7 +18564,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // case-when node. We will continue to parse the when nodes
                 // until we hit the end of the list.
                 while (match1(parser, PM_TOKEN_KEYWORD_WHEN)) {
-                    parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false, true);
                     parser_lex(parser);
 
                     pm_token_t when_keyword = parser->previous;
@@ -18635,7 +18639,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // will continue to parse the in nodes until we hit the end of
                 // the list.
                 while (match1(parser, PM_TOKEN_KEYWORD_IN)) {
-                    parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false, true);
 
                     bool previous_pattern_matching_newlines = parser->pattern_matching_newlines;
                     parser->pattern_matching_newlines = true;
@@ -18722,7 +18726,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
             }
 
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false);
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &case_keyword, false, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CASE_TERM);
 
             if (PM_NODE_TYPE_P(node, PM_CASE_NODE)) {
@@ -18899,7 +18903,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
                     statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &class_keyword, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_SCLASS);
                 } else {
-                    parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false);
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
                 }
 
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
@@ -18957,7 +18961,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
                 statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &class_keyword, class_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_CLASS);
             } else {
-                parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false);
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &class_keyword, false, false);
             }
 
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
@@ -19228,7 +19232,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
                     statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &def_keyword, def_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_DEF);
                 } else {
-                    parser_warn_indentation_mismatch(parser, opening_newline_index, &def_keyword, false);
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &def_keyword, false, false);
                 }
 
                 pm_accepts_block_stack_pop(parser);
@@ -19381,7 +19385,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 statements = parse_statements(parser, PM_CONTEXT_FOR);
             }
 
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &for_keyword, false);
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &for_keyword, false, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM);
 
             return (pm_node_t *) pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, &do_keyword, &parser->previous);
@@ -19511,7 +19515,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 assert(statements == NULL || PM_NODE_TYPE_P(statements, PM_STATEMENTS_NODE));
                 statements = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &module_keyword, module_keyword.start, (pm_statements_node_t *) statements, PM_RESCUES_MODULE);
             } else {
-                parser_warn_indentation_mismatch(parser, opening_newline_index, &module_keyword, false);
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &module_keyword, false, false);
             }
 
             pm_constant_id_list_t locals;
@@ -19577,7 +19581,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
             }
 
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM);
 
             return (pm_node_t *) pm_until_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
@@ -19605,7 +19609,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
             }
 
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false);
+            parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM);
 
             return (pm_node_t *) pm_while_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
@@ -20298,7 +20302,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     body = (pm_node_t *) parse_statements(parser, PM_CONTEXT_LAMBDA_BRACES);
                 }
 
-                parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false);
+                parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
                 expect1(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_LAMBDA_TERM_BRACE);
             } else {
                 expect1(parser, PM_TOKEN_KEYWORD_DO, PM_ERR_LAMBDA_OPEN);
@@ -20314,7 +20318,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     assert(body == NULL || PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE));
                     body = (pm_node_t *) parse_rescues_implicit_begin(parser, opening_newline_index, &operator, opening.start, (pm_statements_node_t *) body, PM_RESCUES_LAMBDA);
                 } else {
-                    parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false);
+                    parser_warn_indentation_mismatch(parser, opening_newline_index, &operator, false, false);
                 }
 
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END);
