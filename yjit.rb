@@ -186,6 +186,12 @@ module RubyVM::YJIT
     strio.string
   end
 
+  # Return an array of compilation log entries.
+  # Return `nil` when option is not passed or unavailable.
+  def self.compilation_log
+    Primitive.rb_yjit_get_compilation_log
+  end
+
   # Produce disassembly for an iseq. This requires a `--enable-yjit=dev` build.
   def self.disasm(iseq) # :nodoc:
     # If a method or proc is passed in, get its iseq
