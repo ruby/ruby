@@ -59,3 +59,7 @@ echo
 echo "* Show warning with bootsnap and some gem in Gemfile"
 ruby test_warn_bootsnap_and_gem.rb
 echo
+
+echo "* Don't show warning for reline when using irb from standard library"
+bundle exec ruby -rirb -e ''
+echo

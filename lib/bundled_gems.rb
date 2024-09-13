@@ -133,6 +133,11 @@ module Gem::BUNDLED_GEMS
     # name can be a feature name or a file path with String or Pathname
     feature = File.path(name)
 
+    # irb already has reline as a dependency on gemspec, so we don't want to warn about it.
+    # We should update this with a more general solution when we have another case.
+    # ex: Gem.loaded_specs[called_gem].dependencies.any? {|d| d.name == feature }
+    return false if feature.start_with?("reline") && caller_locations(2, 1)[0].to_s.include?("irb")
+
     # The actual checks needed to properly identify the gem being required
     # are costly (see [Bug #20641]), so we first do a much cheaper check
     # to exclude the vast majority of candidates.
