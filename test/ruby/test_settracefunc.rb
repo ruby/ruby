@@ -2338,7 +2338,6 @@ CODE
       method_for_enable_target1
     end
 
-    exp_events = all_events
     assert_equal all_events.keep_if { |(ev)| expected_events.include? ev }, events
   end
 
