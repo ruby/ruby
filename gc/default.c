@@ -2052,6 +2052,7 @@ size_pool_add_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t
 
     asan_unlock_freelist(page);
     page->freelist = NULL;
+    asan_unpoison_memory_region(page->body, HEAP_PAGE_SIZE, false);
     for (VALUE p = (VALUE)start; p < start + (slot_count * size_pool->slot_size); p += size_pool->slot_size) {
         heap_page_add_freeobj(objspace, page, p);
     }
@@ -3968,6 +3969,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
             asan_unlock_freelist(sweep_page);
             sweep_page->freelist = NULL;
             asan_lock_freelist(sweep_page);
+
+            asan_poison_memory_region(sweep_page->body, HEAP_PAGE_SIZE);
 
             objspace->empty_pages_count++;
             sweep_page->free_next = objspace->empty_pages;
