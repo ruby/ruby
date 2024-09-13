@@ -648,11 +648,11 @@ class Socket < BasicSocket
   #     sock.close_write
   #     puts sock.read
   #   }
-  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, fast_fallback: tcp_fast_fallback, &block) # :yield: socket
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
     sock = if fast_fallback && !(host && ip_address?(host))
-      tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, &block)
+      tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
     else
-      tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, &block)
+      tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
     end
 
     if block_given?
@@ -897,7 +897,7 @@ class Socket < BasicSocket
     end
   end
 
-  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, &block)
+  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
     last_error = nil
     ret = nil
 

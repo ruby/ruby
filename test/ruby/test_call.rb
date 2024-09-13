@@ -3,7 +3,24 @@ require 'test/unit'
 require '-test-/iter'
 
 class TestCall < Test::Unit::TestCase
-  def aaa(a, b=100, *rest)
+  # These dummy method definitions prevent warnings "the block passed to 'a'..."
+  def a(&) = nil
+  def b(&) = nil
+  def c(&) = nil
+  def d(&) = nil
+  def e(&) = nil
+  def f(&) = nil
+  def g(&) = nil
+  def h(&) = nil
+  def i(&) = nil
+  def j(&) = nil
+  def k(&) = nil
+  def l(&) = nil
+  def m(&) = nil
+  def n(&) = nil
+  def o(&) = nil
+
+  def aaa(a, b=100, *rest, &)
     res = [a, b]
     res += rest if rest
     return res
