@@ -241,6 +241,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->command_line = (uint8_t) *data++;
     options->version = (pm_options_version_t) *data++;
     options->encoding_locked = ((uint8_t) *data++) > 0;
+    options->main_script = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;

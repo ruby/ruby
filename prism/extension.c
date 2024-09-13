@@ -756,6 +756,11 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       has been set. This should be a boolean or nil.
  * * `line` - the line number that the parse starts on. This should be an
  *       integer or nil. Note that this is 1-indexed.
+ * * `main_script` - a boolean indicating whether or not the source being parsed
+ *       is the main script being run by the interpreter. This controls whether
+ *       or not shebangs are parsed for additional flags and whether or not the
+ *       parser will attempt to find a matching shebang if the first one does
+ *       not contain the word "ruby".
  * * `scopes` - the locals that are in scope surrounding the code that is being
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
