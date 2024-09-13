@@ -4701,11 +4701,60 @@ rb_ary_clear(VALUE ary)
  *    fill(start, length) {|index| ... } -> self
  *    fill(range) {|index| ... } -> self
  *
- *  Replaces specified elements in +self+ with specified objects; returns +self+.
+ *  Replaces specified elements in +self+ with specified objects;
+ *  always returns +self+ (never a new array).
  *
- *  Note: many examples here initialize arrays using a Range of characters:
+ *  Note: many examples here use this array, derived from a Range of characters:
  *
- *    a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
+ *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
+ *
+ *  In brief:
+ *
+ *    # Argument object.
+ *    ('a'..'d').to_a.fill('-') # => ["-", "-", "-", "-"]
+ *
+ *    # Arguments object and start.
+ *    ('a'..'d').to_a.fill('-', 2)  # => ["a", "b", "-", "-"]
+ *    ('a'..'d').to_a.fill('-', 4)  # => ["a", "b", "c", "d"]
+ *    ('a'..'d').to_a.fill('-', -2) # => ["a", "b", "-", "-"]
+ *    ('a'..'d').to_a.fill('-', -9) # => ["-", "-", "-", "-"]
+ *
+ *    # Arguments object, start, and length.
+ *    ('a'..'d').to_a.fill('-', 1, 2)  # => ["a", "-", "-", "d"]
+ *    ('a'..'d').to_a.fill('-', -3, 2) # => ["a", "-", "-", "d"]
+ *    ('a'..'d').to_a.fill('-', 6, 2)  # => ["a", "b", "c", "d", nil, nil, "-", "-"]
+ *    ('a'..'d').to_a.fill('-', 6, 0)  # => ["a", "b", "c", "d", nil, nil]
+ *
+ *    # Arguments object and range.
+ *    ('a'..'d').to_a.fill('-', (1..2))   # => ["a", "-", "-", "d"]
+ *    ('a'..'d').to_a.fill('-', (-1..2))  # => ["a", "b", "c", "d"]
+ *    ('a'..'d').to_a.fill('-', (1..-2))  # => ["a", "-", "-", "d"]
+ *    ('a'..'d').to_a.fill('-', (-3..-2)) # => ["a", "-", "-", "d"]
+ *
+ *    # No argument, with a block.
+ *    ('a'..'d').to_a.fill  { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *
+ *    # Argument start, with a block.
+ *    ('a'..'d').to_a.fill(2)  { |index| "new_#{index}" }      # => ["a", "b", "new_2", "new_3"]
+ *    ('a'..'d').to_a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *    ('a'..'d').to_a.fill(-2) { |index| "new_#{index}" }      # => ["a", "b", "new_2", "new_3"]
+ *    ('a'..'d').to_a.fill(-4) { |index| "new_#{index}" }      # => ["new_0", "new_1", "new_2", "new_3"]
+ *
+ *    # Arguments start and length, with a block.
+ *    ('a'..'d').to_a.fill(1, 2) { |index| "new_#{index}" }  # => ["a", "new_1", "new_2", "d"]
+ *    ('a'..'d').to_a.fill(-3, 2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
+ *    ('a'..'d').to_a.fill(5, 2) { |index| "new_#{index}" }  # => ["a", "b", "c", "d", nil, "new_5", "new_6"]
+ *    ('a'..'d').to_a.fill(5, 0) { |index| "new_#{index}" }  # => ["a", "b", "c", "d", nil]
+ *    ('a'..'d').to_a.fill(1, 0) { |index| "new_#{index}" }  # => ["a", "b", "c", "d"]
+ *    ('a'..'d').to_a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *
+ *    # Argument range, with a block.
+ *    ('a'..'d').to_a.fill(1..1) { |index| "new_#{index}" }        # => ["a", "new_1", "c", "d"]
+ *    ('a'..'d').to_a.fill(-1..1) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *    ('a'..'d').to_a.fill(0..-2) { |index| "new_#{index}" }       # => ["new_0", "new_1", "new_2", "d"]
+ *    ('a'..'d').to_a.fill(1..-2) { |index| "new_#{index}" }       # => ["a", "new_1", "new_2", "d"]
+ *    ('a'..'d').to_a.fill(-1..-1) { |index| "new_#{index}" }      # => ["a", "b", "c", "new_3"]
+ *    ('a'..'d').to_a.fill(-2..-2) { |index| "new_#{index}" }      # => ["a", "b", "new_2", "d"]
  *
  *  <b>With No Block Given</b>
  *
