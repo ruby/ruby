@@ -78,7 +78,7 @@ module URI
       return unless @path
 
       url = @query ? "#@path?#@query" : @path.dup
-      url.start_with?(?/.freeze) ? url : ?/ + url
+      url.start_with?('/'.freeze) ? url : "/#{url}"
     end
 
     #

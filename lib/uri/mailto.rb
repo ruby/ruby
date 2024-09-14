@@ -85,13 +85,13 @@ module URI
     def self.build(args)
       tmp = Util.make_components_hash(self, args)
 
-      case tmp[:to]
+      tmp[:opaque] = case tmp[:to]
       when Array
-        tmp[:opaque] = tmp[:to].join(',')
+        tmp[:to].join(',')
       when String
-        tmp[:opaque] = tmp[:to].dup
+        tmp[:to].dup
       else
-        tmp[:opaque] = ''
+        ''
       end
 
       if tmp[:headers]
@@ -99,22 +99,20 @@ module URI
           case tmp[:headers]
           when Array
             tmp[:headers].collect { |x|
-              if x.kind_of?(Array)
-                x[0] + '=' + x[1..-1].join
+              if x.is_a?(Array)
+                "#{x[0]}=#{x[1..].join}"
               else
                 x.to_s
               end
             }.join('&')
           when Hash
             tmp[:headers].collect { |h,v|
-              h + '=' + v
+              "#{h}=#{v}"
             }.join('&')
           else
             tmp[:headers].to_s
           end
-        unless query.empty?
-          tmp[:opaque] << '?' << query
-        end
+        tmp[:opaque] << '?' << query unless query.empty?
       end
 
       super(tmp)
@@ -249,7 +247,7 @@ module URI
           ''
         end +
         if @fragment
-          '#' + @fragment
+          "##{@fragment}"
         else
           ''
         end
@@ -274,10 +272,9 @@ module URI
         when 'body'
           body = URI.decode_www_form_component(x[1])
         when 'to'
-          to << ', ' + URI.decode_www_form_component(x[1])
+          to << ", #{URI.decode_www_form_component(x[1])}"
         else
-          head << URI.decode_www_form_component(x[0]).capitalize + ': ' +
-            URI.decode_www_form_component(x[1])  + "\n"
+          head << "#{URI.decode_www_form_component(x[0]).capitalize}: #{URI.decode_www_form_component(x[1])}\n"
         end
       end
 

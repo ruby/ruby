@@ -74,9 +74,7 @@ module URI
     def self.build(args)
       tmp = Util::make_components_hash(self, args)
 
-      if tmp[:dn]
-        tmp[:path] = tmp[:dn]
-      end
+      tmp[:path] = tmp[:dn] if tmp[:dn]
 
       query = []
       [:extensions, :filter, :scope, :attributes].collect do |x|
@@ -86,7 +84,7 @@ module URI
 
       tmp[:query] = query.join('?')
 
-      return super(tmp)
+      super(tmp)
     end
 
     #
@@ -108,9 +106,7 @@ module URI
     def initialize(*arg)
       super(*arg)
 
-      if @fragment
-        raise InvalidURIError, 'bad LDAP URL'
-      end
+      raise InvalidURIError, 'bad LDAP URL' if @fragment
 
       parse_dn
       parse_query
@@ -144,11 +140,12 @@ module URI
 
     # Private method to assemble +query+ from +attributes+, +scope+, +filter+, and +extensions+.
     def build_path_query
-      @path = '/' + @dn
+      @path = "/#{@dn}"
 
       query = []
       [@extensions, @filter, @scope, @attributes].each do |x|
-        next if !x && query.size == 0
+        next if !x && query.size.zero?
+
         query.unshift(x)
       end
       @query = query.join('?')

@@ -49,7 +49,7 @@ module URI
       # Do not use this method!  Not tested.  [Bug #7301]
       # This methods remains just for compatibility,
       # Keep it undocumented until the active maintainer is assigned.
-      typecode = nil if typecode.size == 0
+      typecode = nil if typecode.size.zero?
       if typecode && !TYPECODE.include?(typecode)
         raise ArgumentError,
           "bad typecode is specified: #{typecode}"
@@ -100,7 +100,7 @@ module URI
       # foo/bar       /foo/bar
       # /foo/bar      /%2Ffoo/bar
       #
-      if args.kind_of?(Array)
+      if args.is_a?(Array)
         args[3] = '/' + args[3].sub(/^\//, '%2F')
       else
         args[:path] = '/' + args[:path].sub(/^\//, '%2F')
@@ -109,13 +109,11 @@ module URI
       tmp = Util::make_components_hash(self, args)
 
       if tmp[:typecode]
-        if tmp[:typecode].size == 1
-          tmp[:typecode] = TYPECODE_PREFIX + tmp[:typecode]
-        end
+        tmp[:typecode] = TYPECODE_PREFIX + tmp[:typecode] if tmp[:typecode].size == 1
         tmp[:path] << tmp[:typecode]
       end
 
-      return super(tmp)
+      super(tmp)
     end
 
     #
@@ -165,7 +163,7 @@ module URI
     #
     def check_typecode(v)
       if TYPECODE.include?(v)
-        return true
+        true
       else
         raise InvalidComponentError,
           "bad typecode(expected #{TYPECODE.join(', ')}): #{v}"
@@ -213,11 +211,9 @@ module URI
 
     def merge(oth) # :nodoc:
       tmp = super(oth)
-      if self != tmp
-        tmp.set_typecode(oth.typecode)
-      end
+      tmp.set_typecode(oth.typecode) if self != tmp
 
-      return tmp
+      tmp
     end
 
     # Returns the path from an FTP URI.
@@ -238,7 +234,7 @@ module URI
     # This method will then return "/pub/ruby".
     #
     def path
-      return @path.sub(/^\//,'').sub(/^%2F/,'/')
+      @path.sub(/^\//,'').sub(/^%2F/,'/')
     end
 
     # Private setter for the path of the URI::FTP.
@@ -255,11 +251,9 @@ module URI
         @path = @path + TYPECODE_PREFIX + @typecode
       end
       str = super
-      if @typecode
-        @path = save_path
-      end
+      @path = save_path if @typecode
 
-      return str
+      str
     end
   end
 

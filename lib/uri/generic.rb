@@ -77,17 +77,17 @@ module URI
     #
     def self.build2(args)
       begin
-        return self.build(args)
+        self.build(args)
       rescue InvalidComponentError
-        if args.kind_of?(Array)
-          return self.build(args.collect{|x|
+        if args.is_a?(Array)
+          self.build(args.collect{|x|
             if x.is_a?(String)
               URI::RFC2396_PARSER.escape(x)
             else
               x
             end
           })
-        elsif args.kind_of?(Hash)
+        elsif args.is_a?(Hash)
           tmp = {}
           args.each do |key, value|
             tmp[key] = if value
@@ -96,7 +96,7 @@ module URI
                 value
               end
           end
-          return self.build(tmp)
+          self.build(tmp)
         end
       end
     end
@@ -114,16 +114,12 @@ module URI
     # See ::new for hash keys to use or for order of array items.
     #
     def self.build(args)
-      if args.kind_of?(Array) &&
+      if args.is_a?(Array) &&
           args.size == ::URI::Generic::COMPONENT.size
         tmp = args.dup
-      elsif args.kind_of?(Hash)
+      elsif args.is_a?(Hash)
         tmp = ::URI::Generic::COMPONENT.collect do |c|
-          if args.include?(c)
-            args[c]
-          else
-            nil
-          end
+          args[c] if args.include?(c)
         end
       else
         component = self.class.component rescue ::URI::Generic::COMPONENT
@@ -133,7 +129,7 @@ module URI
 
       tmp << nil
       tmp << true
-      return self.new(*tmp)
+      self.new(*tmp)
     end
 
     #
@@ -323,7 +319,7 @@ module URI
           "bad component(expected scheme component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_scheme
 
@@ -373,13 +369,11 @@ module URI
     # See also URI::Generic.check_user, URI::Generic.check_password.
     #
     def check_userinfo(user, password = nil)
-      if !password
-        user, password = split_userinfo(user)
-      end
+      user, password = split_userinfo(user) if !password
       check_user(user)
       check_password(password, user)
 
-      return true
+      true
     end
     private :check_userinfo
 
@@ -403,7 +397,7 @@ module URI
           "bad component(expected userinfo component or user component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_user
 
@@ -431,7 +425,7 @@ module URI
           "bad password component"
       end
 
-      return true
+      true
     end
     private :check_password
 
@@ -439,9 +433,8 @@ module URI
     # Sets userinfo, argument is string like 'name:pass'.
     #
     def userinfo=(userinfo)
-      if userinfo.nil?
-        return nil
-      end
+      return nil if userinfo.nil?
+
       check_userinfo(*userinfo)
       set_userinfo(*userinfo)
       # returns userinfo
@@ -507,9 +500,7 @@ module URI
     # See also URI::Generic.userinfo=.
     #
     def set_userinfo(user, password = nil)
-      unless password
-        user, password = split_userinfo(user)
-      end
+      user, password = split_userinfo(user) unless password
       @user     = user
       @password = password if password
 
@@ -541,9 +532,10 @@ module URI
     # if properly formatted as 'user:password'.
     def split_userinfo(ui)
       return nil, nil unless ui
+
       user, password = ui.split(':', 2)
 
-      return user, password
+      [user, password]
     end
     private :split_userinfo
 
@@ -602,7 +594,7 @@ module URI
           "bad component(expected host component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_host
 
@@ -686,12 +678,12 @@ module URI
       if @opaque
         raise InvalidURIError,
           "can not set port with registry or opaque"
-      elsif !v.kind_of?(Integer) && parser.regexp[:PORT] !~ v
+      elsif !v.is_a?(Integer) && parser.regexp[:PORT] !~ v
         raise InvalidComponentError,
           "bad component(expected port component): #{v.inspect}"
       end
 
-      return true
+      true
     end
     private :check_port
 
@@ -700,7 +692,7 @@ module URI
     # See also URI::Generic.port=.
     #
     def set_port(v)
-      v = v.empty? ? nil : v.to_i unless !v || v.kind_of?(Integer)
+      v = v.empty? ? nil : v.to_i unless !v || v.is_a?(Integer)
       @port = v
     end
     protected :set_port
@@ -778,7 +770,7 @@ module URI
         end
       end
 
-      return true
+      true
     end
     private :check_path
 
@@ -846,6 +838,7 @@ module URI
       v.delete!("\t\r\n")
       v.force_encoding(Encoding::ASCII_8BIT)
       raise InvalidURIError, "invalid percent escape: #{$1}" if /(%\H\H)/n.match(v)
+
       v.gsub!(/(?!%\h\h|[!$-&(-;=?-_a-~])./n.freeze){'%%%02X' % $&.ord}
       v.force_encoding(Encoding::US_ASCII)
       @query = v
@@ -872,7 +865,7 @@ module URI
           "bad component(expected opaque component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_opaque
 
@@ -1056,7 +1049,7 @@ module URI
       end
       base_path.push('') if add_trailer_slash
 
-      return base_path.join('/')
+      base_path.join('/')
     end
     private :merge_path
 
@@ -1115,9 +1108,7 @@ module URI
         return rel
       end
 
-      unless self.absolute?
-        raise BadURIError, "both URI are relative"
-      end
+      raise BadURIError, "both URI are relative" unless self.absolute?
 
       base = self.dup
 
@@ -1147,7 +1138,7 @@ module URI
       base.query = rel.query       if rel.query
       base.fragment=(rel.fragment) if rel.fragment
 
-      return base
+      base
     end # merge
     alias + merge
 
@@ -1185,7 +1176,7 @@ module URI
         end
       end
 
-      return '../' * src_path.size + tmp
+      '../' * src_path.size + tmp
     end
     private :route_from_path
     # :startdoc:
@@ -1202,9 +1193,8 @@ module URI
           "relative URI: #{oth}"
       end
 
-      if self.scheme != oth.scheme
-        return self, self.dup
-      end
+      return self, self.dup if self.scheme != oth.scheme
+
       rel = URI::Generic.new(nil, # it is relative URI
                              self.userinfo, self.host, self.port,
                              nil, self.path, self.opaque,
@@ -1214,9 +1204,7 @@ module URI
           rel.host.to_s.downcase != oth.host.to_s.downcase ||
           rel.port != oth.port
 
-        if self.userinfo.nil? && self.host.nil?
-          return self, self.dup
-        end
+        return self, self.dup if self.userinfo.nil? && self.host.nil?
 
         rel.set_port(nil) if rel.port == oth.default_port
         return rel, rel
@@ -1236,7 +1224,7 @@ module URI
       end
 
       # you can modify `rel', but can not `oth'.
-      return oth, rel
+      [oth, rel]
     end
     private :route_from0
     # :startdoc:
@@ -1266,9 +1254,7 @@ module URI
       rescue
         raise $!.class, $!.message
       end
-      if oth == rel
-        return rel
-      end
+      return rel if oth == rel
 
       rel.set_path(route_from_path(oth.path, self.path))
       if rel.path == './' && self.query
@@ -1276,7 +1262,7 @@ module URI
         rel.set_path('')
       end
 
-      return rel
+      rel
     end
 
     alias - route_from
@@ -1326,15 +1312,9 @@ module URI
     # Destructive version of #normalize.
     #
     def normalize!
-      if path&.empty?
-        set_path('/')
-      end
-      if scheme && scheme != scheme.downcase
-        set_scheme(self.scheme.downcase)
-      end
-      if host && host != host.downcase
-        set_host(self.host.downcase)
-      end
+      set_path('/') if path&.empty?
+      set_scheme(self.scheme.downcase) if scheme && scheme != scheme.downcase
+      set_host(self.host.downcase) if host && host != host.downcase
     end
 
     #
@@ -1350,23 +1330,17 @@ module URI
       if @opaque
         str << @opaque
       else
-        if @host || %w[file postgres].include?(@scheme)
-          str << '//'
-        end
+        str << '//' if @host || %w[file postgres].include?(@scheme)
         if self.userinfo
           str << self.userinfo
           str << '@'
         end
-        if @host
-          str << @host
-        end
+        str << @host if @host
         if @port && @port != self.default_port
           str << ':'
           str << @port.to_s
         end
-        if (@host || @port) && !@path.empty? && !@path.start_with?('/')
-          str << '/'
-        end
+        str << '/' if (@host || @port) && !@path.empty? && !@path.start_with?('/')
         str << @path
         if @query
           str << '?'
@@ -1469,7 +1443,7 @@ module URI
         super
       end
 
-      return oth, self
+      [oth, self]
     end
 
     # Returns a proxy URI.
@@ -1489,6 +1463,7 @@ module URI
     # CGI_HTTP_PROXY can be used instead.
     def find_proxy(env=ENV)
       raise BadURIError, "relative URI: #{self}" if self.relative?
+
       name = self.scheme.downcase + '_proxy'
       proxy_uri = nil
       if name == 'http_proxy' && env.include?('REQUEST_METHOD') # CGI?
@@ -1534,9 +1509,7 @@ module URI
         proxy_uri = env[name] || env[name.upcase]
       end
 
-      if proxy_uri.nil? || proxy_uri.empty?
-        return nil
-      end
+      return nil if proxy_uri.nil? || proxy_uri.empty?
 
       if self.hostname
         begin
