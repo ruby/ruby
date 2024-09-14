@@ -262,7 +262,7 @@ module StringScannerTests
   end
 
   def test_scan
-    s = create_string_scanner('stra strb strc', true)
+    s = create_string_scanner("stra strb\0strc", true)
     tmp = s.scan(/\w+/)
     assert_equal 'stra', tmp
 
@@ -270,7 +270,7 @@ module StringScannerTests
     assert_equal ' ', tmp
 
     assert_equal 'strb', s.scan(/\w+/)
-    assert_equal ' ',    s.scan(/\s+/)
+    assert_equal "\u0000", s.scan(/\0/)
 
     tmp = s.scan(/\w+/)
     assert_equal 'strc', tmp
@@ -312,11 +312,14 @@ module StringScannerTests
   end
 
   def test_scan_string
-    s = create_string_scanner('stra strb strc')
+    s = create_string_scanner("stra strb\0strc")
     assert_equal 'str', s.scan('str')
     assert_equal 'str', s[0]
     assert_equal 3, s.pos
     assert_equal 'a ', s.scan('a ')
+    assert_equal 'strb', s.scan('strb')
+    assert_equal "\u0000", s.scan("\0")
+    assert_equal 'strc', s.scan('strc')
 
     str = 'stra strb strc'.dup
     s = create_string_scanner(str, false)
@@ -668,11 +671,45 @@ module StringScannerTests
     assert_equal(nil, s.exist?(/e/))
   end
 
-  def test_exist_p_string
+  def test_exist_p_invalid_argument
     s = create_string_scanner("test string")
     assert_raise(TypeError) do
-      s.exist?(" ")
+      s.exist?(1)
     end
+  end
+
+  def test_exist_p_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner("test string")
+    assert_equal(3, s.exist?("s"))
+    assert_equal(0, s.pos)
+    s.scan("test")
+    assert_equal(2, s.exist?("s"))
+    assert_equal(4, s.pos)
+    assert_equal(nil, s.exist?("e"))
+  end
+
+  def test_scan_until
+    s = create_string_scanner("Foo Bar\0Baz")
+    assert_equal("Foo", s.scan_until(/Foo/))
+    assert_equal(3, s.pos)
+    assert_equal(" Bar", s.scan_until(/Bar/))
+    assert_equal(7, s.pos)
+    assert_equal(nil, s.skip_until(/Qux/))
+    assert_equal("\u0000Baz", s.scan_until(/Baz/))
+    assert_equal(11, s.pos)
+  end
+
+  def test_scan_until_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner("Foo Bar\0Baz")
+    assert_equal("Foo", s.scan_until("Foo"))
+    assert_equal(3, s.pos)
+    assert_equal(" Bar", s.scan_until("Bar"))
+    assert_equal(7, s.pos)
+    assert_equal(nil, s.skip_until("Qux"))
+    assert_equal("\u0000Baz", s.scan_until("Baz"))
+    assert_equal(11, s.pos)
   end
 
   def test_skip_until
@@ -684,6 +721,16 @@ module StringScannerTests
     assert_equal(nil, s.skip_until(/Qux/))
   end
 
+  def test_skip_until_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner("Foo Bar Baz")
+    assert_equal(3, s.skip_until("Foo"))
+    assert_equal(3, s.pos)
+    assert_equal(4, s.skip_until("Bar"))
+    assert_equal(7, s.pos)
+    assert_equal(nil, s.skip_until("Qux"))
+  end
+
   def test_check_until
     s = create_string_scanner("Foo Bar Baz")
     assert_equal("Foo", s.check_until(/Foo/))
@@ -691,6 +738,16 @@ module StringScannerTests
     assert_equal("Foo Bar", s.check_until(/Bar/))
     assert_equal(0, s.pos)
     assert_equal(nil, s.check_until(/Qux/))
+  end
+
+  def test_check_until_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner("Foo Bar Baz")
+    assert_equal("Foo", s.check_until("Foo"))
+    assert_equal(0, s.pos)
+    assert_equal("Foo Bar", s.check_until("Bar"))
+    assert_equal(0, s.pos)
+    assert_equal(nil, s.check_until("Qux"))
   end
 
   def test_search_full
@@ -702,6 +759,19 @@ module StringScannerTests
     assert_equal(8, s.search_full(/Bar /, true, false))
     assert_equal(8, s.pos)
     assert_equal("Baz", s.search_full(/az/, true, true))
+    assert_equal(11, s.pos)
+  end
+
+  def test_search_full_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner("Foo Bar Baz")
+    assert_equal(8, s.search_full("Bar ", false, false))
+    assert_equal(0, s.pos)
+    assert_equal("Foo Bar ", s.search_full("Bar ", false, true))
+    assert_equal(0, s.pos)
+    assert_equal(8, s.search_full("Bar ", true, false))
+    assert_equal(8, s.pos)
+    assert_equal("Baz", s.search_full("az", true, true))
     assert_equal(11, s.pos)
   end
 
