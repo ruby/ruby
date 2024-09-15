@@ -193,7 +193,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     # cfunc call
     assert_equal(nil, p(**nil))
 
-    def self.a0; end
+    def self.a0(&); end
     assert_equal(nil, a0(**nil))
     assert_equal(nil, :a0.to_proc.call(self, **nil))
     assert_equal(nil, a0(**nil, &:block))
