@@ -39,6 +39,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_string
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     assert_instance_of String, ?a
     assert_equal "a", ?a
     assert_instance_of String, ?A
@@ -94,6 +96,9 @@ class TestRubyLiteral < Test::Unit::TestCase
 
     assert_equal "ab", eval("?a 'b'")
     assert_equal "a\nb", eval("<<A 'b'\na\nA")
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_dstring
@@ -591,6 +596,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_integer
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     head = ['', '0x', '0o', '0b', '0d', '-', '+']
     chars = ['0', '1', '_', '9', 'f']
     head.each {|h|
@@ -620,9 +627,14 @@ class TestRubyLiteral < Test::Unit::TestCase
         assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
     end
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_float
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     head = ['', '-', '+']
     chars = ['0', '1', '_', '9', 'f', '.']
     head.each {|h|
@@ -659,6 +671,9 @@ class TestRubyLiteral < Test::Unit::TestCase
       }
     }
     assert_equal(100.0, 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100e100)
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_symbol_list
