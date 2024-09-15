@@ -591,7 +591,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_with_hidden_local_variables
-    assert_iseq_to_binary("for foo in bar; end")
+    assert_iseq_to_binary("for _foo in bar; end")
 
     bin = RubyVM::InstructionSequence.compile(<<-RUBY).to_binary
       Object.new.instance_eval do
@@ -868,7 +868,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_compile_prism_with_file
     Tempfile.create(%w"test_iseq .rb") do |f|
-      f.puts "name = 'Prism'; puts 'hello'"
+      f.puts "_name = 'Prism'; puts 'hello'"
       f.close
 
       assert_nothing_raised(TypeError) do
