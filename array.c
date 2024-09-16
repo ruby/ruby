@@ -4778,7 +4778,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', 2)      # => ["a", "b", "-", "-"]
  *
- *   - If +start+ is too large (<tt>start >= array.size</tt>), does nothing:
+ *   - If +start+ is too large (<tt>start >= self.size</tt>), does nothing:
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', 4)      # => ["a", "b", "c", "d"]
