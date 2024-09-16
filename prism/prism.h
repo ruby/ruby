@@ -49,10 +49,13 @@ PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 /**
  * Initialize a parser with the given start and end pointers.
  *
+ * The resulting parser must eventually be freed with `pm_parser_free()`.
+ *
  * @param parser The parser to initialize.
  * @param source The source to parse.
  * @param size The size of the source.
- * @param options The optional options to use when parsing.
+ * @param options The optional options to use when parsing. These options must
+ *   live for the whole lifetime of this parser.
  */
 PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm_options_t *options);
 
@@ -67,6 +70,9 @@ PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_par
 
 /**
  * Free any memory associated with the given parser.
+ *
+ * This does not free the `pm_options_t` object that was used to initialize the
+ * parser.
  *
  * @param parser The parser to free.
  */
