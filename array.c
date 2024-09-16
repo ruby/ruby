@@ -4772,7 +4772,7 @@ rb_ary_clear(VALUE ary)
  *  With argument +object+ and numeric argument +start+,
  *  replaces elements based on the given +start+:
  *
- *  - If +start+ is in range (<tt>0 <= start < array.size</tt>),
+ *  - If +start+ is in range (<tt>0 <= start < self.size</tt>),
  *    replaces all elements from offset +start+ through the end:
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
