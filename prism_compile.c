@@ -3889,6 +3889,12 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       }
       case PM_CALL_NODE: {
         const pm_call_node_t *cast = ((const pm_call_node_t *) node);
+
+        if (cast->block != NULL && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)) {
+            dtype = DEFINED_EXPR;
+            break;
+        }
+
         ID method_id = pm_constant_id_lookup(scope_node, cast->name);
 
         if (cast->receiver || cast->arguments) {
