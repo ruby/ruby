@@ -17620,7 +17620,12 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
  */
 static void
 parse_retry(pm_parser_t *parser, const pm_node_t *node) {
+#define CONTEXT_NONE 0
+#define CONTEXT_THROUGH_ENSURE 1
+#define CONTEXT_THROUGH_ELSE 2
+
     pm_context_node_t *context_node = parser->current_context;
+    int context = CONTEXT_NONE;
 
     while (context_node != NULL) {
         switch (context_node->context) {
@@ -17644,7 +17649,13 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_SCLASS:
                 // These are the bad cases. We're not allowed to have a retry in
                 // these contexts.
-                pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
+                if (context == CONTEXT_NONE) {
+                    pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
+                } else if (context == CONTEXT_THROUGH_ENSURE) {
+                    pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ENSURE);
+                } else if (context == CONTEXT_THROUGH_ELSE) {
+                    pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ELSE);
+                }
                 return;
             case PM_CONTEXT_BEGIN_ELSE:
             case PM_CONTEXT_BLOCK_ELSE:
@@ -17655,8 +17666,8 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_SCLASS_ELSE:
                 // These are also bad cases, but with a more specific error
                 // message indicating the else.
-                pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ELSE);
-                return;
+                context = CONTEXT_THROUGH_ELSE;
+                break;
             case PM_CONTEXT_BEGIN_ENSURE:
             case PM_CONTEXT_BLOCK_ENSURE:
             case PM_CONTEXT_CLASS_ENSURE:
@@ -17666,8 +17677,8 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_SCLASS_ENSURE:
                 // These are also bad cases, but with a more specific error
                 // message indicating the ensure.
-                pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_AFTER_ENSURE);
-                return;
+                context = CONTEXT_THROUGH_ENSURE;
+                break;
             case PM_CONTEXT_NONE:
                 // This case should never happen.
                 assert(false && "unreachable");
@@ -17701,6 +17712,10 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
 
         context_node = context_node->prev;
     }
+
+#undef CONTEXT_NONE
+#undef CONTEXT_ENSURE
+#undef CONTEXT_ELSE
 }
 
 /**
