@@ -79,7 +79,7 @@ module Gem
     include ::Bundler::MatchMetadata
     include ::Bundler::MatchPlatform
 
-    attr_accessor :remote, :location, :relative_loaded_from
+    attr_accessor :remote, :relative_loaded_from
 
     remove_method :source
     attr_writer :source
