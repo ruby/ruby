@@ -3853,22 +3853,22 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.select {|element| ... } -> new_array
- *    array.select -> new_enumerator
+ *    select {|element| ... } -> new_array
+ *    select -> new_enumerator
+ *    filter {|element| ... } -> new_array
+ *    filter -> new_enumerator
  *
- *  Calls the block, if given, with each element of +self+;
- *  returns a new +Array+ containing those elements of +self+
+ *  With a block given, calls the block with each element of +self+;
+ *  returns a new array containing those elements of +self+
  *  for which the block returns a truthy value:
  *
  *    a = [:foo, 'bar', 2, :bam]
- *    a1 = a.select {|element| element.to_s.start_with?('b') }
- *    a1 # => ["bar", :bam]
+ *    a.select {|element| element.to_s.start_with?('b') }
+ *    # => ["bar", :bam]
  *
- *  Returns a new Enumerator if no block given:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [:foo, 'bar', 2, :bam]
- *    a.select # => #<Enumerator: [:foo, "bar", 2, :bam]:select>
- *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
