@@ -244,39 +244,38 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_trace_object_allocations_start_stop_clear
     ObjectSpace.trace_object_allocations_clear # clear object_table to get rid of erroneous detection for obj3
-    GC.disable # suppress potential object reuse. see [Bug #11271]
-    begin
-      ObjectSpace.trace_object_allocations_start
+    EnvUtil.without_gc do # suppress potential object reuse. see [Bug #11271]
       begin
         ObjectSpace.trace_object_allocations_start
         begin
           ObjectSpace.trace_object_allocations_start
-          obj0 = Object.new
+          begin
+            ObjectSpace.trace_object_allocations_start
+            obj0 = Object.new
+          ensure
+            ObjectSpace.trace_object_allocations_stop
+            obj1 = Object.new
+          end
         ensure
           ObjectSpace.trace_object_allocations_stop
-          obj1 = Object.new
+          obj2 = Object.new
         end
       ensure
         ObjectSpace.trace_object_allocations_stop
-        obj2 = Object.new
+        obj3 = Object.new
       end
-    ensure
-      ObjectSpace.trace_object_allocations_stop
-      obj3 = Object.new
+
+      assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj0))
+      assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj1))
+      assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj2))
+      assert_equal(nil     , ObjectSpace.allocation_sourcefile(obj3)) # after tracing
+
+      ObjectSpace.trace_object_allocations_clear
+      assert_equal(nil, ObjectSpace.allocation_sourcefile(obj0))
+      assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
+      assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
+      assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
     end
-
-    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj0))
-    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj1))
-    assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(obj2))
-    assert_equal(nil     , ObjectSpace.allocation_sourcefile(obj3)) # after tracing
-
-    ObjectSpace.trace_object_allocations_clear
-    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj0))
-    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
-    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
-    assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
-  ensure
-    GC.enable
   end
 
   def test_trace_object_allocations_gc_stress
