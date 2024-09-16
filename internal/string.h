@@ -51,6 +51,12 @@ int rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc);
 int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
 VALUE rb_str_include(VALUE str, VALUE arg);
 VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
+VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
+void rb_str_make_embedded(VALUE);
+VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
+size_t rb_str_size_as_embedded(VALUE);
+bool rb_str_reembeddable_p(VALUE);
+VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
@@ -63,14 +69,8 @@ static inline VALUE rb_str_eql_internal(const VALUE str1, const VALUE str2);
 RUBY_SYMBOL_EXPORT_BEGIN
 /* string.c (export) */
 VALUE rb_str_tmp_frozen_acquire(VALUE str);
-VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
-VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
-VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
-void rb_str_make_embedded(VALUE);
-size_t rb_str_size_as_embedded(VALUE);
-bool rb_str_reembeddable_p(VALUE);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
