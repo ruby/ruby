@@ -330,8 +330,7 @@ RSpec.describe "bundle install with specific platforms" do
         specs:
 
       PLATFORMS
-        java
-        #{lockfile_platforms}
+        #{lockfile_platforms("java")}
 
       DEPENDENCIES
         pg_array_parser!
