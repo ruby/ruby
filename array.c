@@ -4783,7 +4783,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', 4)      # => ["a", "b", "c", "d"]
  *
- *  - If +start+ is negative, counts from the end (starting index is <tt>start + array.size</tt>):
+ *  - If +start+ is negative, counts from the end (starting index is <tt>start + self.size</tt>):
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -3)     # => ["a", "-", "-", "-"]
