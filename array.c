@@ -4788,7 +4788,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -3)     # => ["a", "-", "-", "-"]
  *
- *  - If +start+ is too small (less than and far from zero), replaces all elements:
+ *  - If +start+ is too small (<tt>start <= -self.size</tt>), replaces all elements:
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -9)     # => ["-", "-", "-", "-"]
