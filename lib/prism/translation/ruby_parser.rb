@@ -1428,7 +1428,13 @@ module Prism
         # "foo"
         # ^^^^^
         def visit_string_node(node)
-          s(node, :str, node.unescaped)
+          unescaped = node.unescaped
+
+          if node.forced_binary_encoding?
+            unescaped.force_encoding(Encoding::BINARY)
+          end
+
+          s(node, :str, unescaped)
         end
 
         # super(foo)

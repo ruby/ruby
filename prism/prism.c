@@ -168,6 +168,7 @@ lex_mode_push_regexp(pm_parser_t *parser, uint8_t incrementor, uint8_t terminato
         breakpoints[index++] = incrementor;
     }
 
+    parser->explicit_encoding = NULL;
     return lex_mode_push(parser, lex_mode);
 }
 

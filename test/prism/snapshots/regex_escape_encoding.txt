@@ -1,0 +1,43 @@
+@ ProgramNode (location: (2,0)-(3,21))
+├── flags: ∅
+├── locals: [:str]
+└── statements:
+    @ StatementsNode (location: (2,0)-(3,21))
+    ├── flags: ∅
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (2,0)-(2,18))
+        │   ├── flags: newline
+        │   ├── name: :str
+        │   ├── depth: 0
+        │   ├── name_loc: (2,0)-(2,3) = "str"
+        │   ├── value:
+        │   │   @ StringNode (location: (2,6)-(2,18))
+        │   │   ├── flags: forced_binary_encoding
+        │   │   ├── opening_loc: (2,6)-(2,7) = "\""
+        │   │   ├── content_loc: (2,7)-(2,17) = "hello \\xFC"
+        │   │   ├── closing_loc: (2,17)-(2,18) = "\""
+        │   │   └── unescaped: "hello \xFC"
+        │   └── operator_loc: (2,4)-(2,5) = "="
+        └── @ CallNode (location: (3,0)-(3,21))
+            ├── flags: newline
+            ├── receiver:
+            │   @ LocalVariableReadNode (location: (3,0)-(3,3))
+            │   ├── flags: ∅
+            │   ├── name: :str
+            │   └── depth: 0
+            ├── call_operator_loc: ∅
+            ├── name: :=~
+            ├── message_loc: (3,4)-(3,6) = "=~"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (3,7)-(3,21))
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ RegularExpressionNode (location: (3,7)-(3,21))
+            │           ├── flags: static_literal, forced_utf8_encoding
+            │           ├── opening_loc: (3,7)-(3,8) = "/"
+            │           ├── content_loc: (3,8)-(3,20) = "hello \\u{fc}"
+            │           ├── closing_loc: (3,20)-(3,21) = "/"
+            │           └── unescaped: "hello \\u{fc}"
+            ├── closing_loc: ∅
+            └── block: ∅
