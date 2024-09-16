@@ -4806,7 +4806,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -3, 2)  # => ["a", "-", "-", "d"]
  *
- *  - If +start+ is large (<tt>start >= array.size</tt>), extends +self+ with +nil+:
+ *  - If +start+ is large (<tt>start >= self.size</tt>), extends +self+ with +nil+:
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', 6, 2)   # => ["a", "b", "c", "d", nil, nil, "-", "-"]
