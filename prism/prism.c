@@ -17645,7 +17645,6 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
                 // these contexts.
                 pm_parser_err_node(parser, node, PM_ERR_INVALID_RETRY_WITHOUT_RESCUE);
                 return;
-            case PM_CONTEXT_BEGIN_ELSE:
             case PM_CONTEXT_BLOCK_ELSE:
             case PM_CONTEXT_CLASS_ELSE:
             case PM_CONTEXT_DEF_ELSE:
@@ -17679,6 +17678,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_DEFAULT_PARAMS:
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
+            case PM_CONTEXT_BEGIN_ELSE:
             case PM_CONTEXT_EMBEXPR:
             case PM_CONTEXT_FOR_INDEX:
             case PM_CONTEXT_FOR:
