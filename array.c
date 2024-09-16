@@ -4857,13 +4857,13 @@ rb_ary_clear(VALUE ary)
  *  from offset +start+ to the end; replaces the corresponding element
  *  with the block's return value:
  *
- *  - If start is in range (<tt>0 <= start < array.size</tt>),
+ *  - If start is in range (<tt>0 <= start < self.size</tt>),
  *    replaces from offset +start+ to the end:
  *
  *      a = ('a'..'d').to_a                  # => ["a", "b", "c", "d"]
  *      a.fill(2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
  *
- *  - If +start+ is too large(<tt>start >= array.size</tt>), does nothing:
+ *  - If +start+ is too large(<tt>start >= self.size</tt>), does nothing:
  *
  *      a = ('a'..'d').to_a                        # => ["a", "b", "c", "d"]
  *      a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
@@ -4873,7 +4873,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a                   # => ["a", "b", "c", "d"]
  *      a.fill(-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
  *
- *  - If start is too small (<tt>start <= - array.size</tt>, replaces all elements:
+ *  - If start is too small (<tt>start <= - self.size</tt>, replaces all elements:
  *
  *      a = ('a'..'d').to_a                   # => ["a", "b", "c", "d"]
  *      a.fill(-4) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
@@ -4892,7 +4892,7 @@ rb_ary_clear(VALUE ary)
  *      a = ('a'..'d').to_a                      # => ["a", "b", "c", "d"]
  *      a.fill(-3, 2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
  *
- *  - If +start+ is large (<tt>start >= array.size</tt>), extends +self+ with +nil+:
+ *  - If +start+ is large (<tt>start >= self.size</tt>), extends +self+ with +nil+:
  *
  *      a = ('a'..'d').to_a                     # => ["a", "b", "c", "d"]
  *      a.fill(5, 2) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil, "new_5", "new_6"]
@@ -5097,7 +5097,7 @@ rb_ary_concat(VALUE x, VALUE y)
  *    a * 3 # => ["x", "y", "x", "y", "x", "y"]
  *
  *  When string argument +string_separator+ is given,
- *  equivalent to <tt>array.join(string_separator)</tt>:
+ *  equivalent to <tt>self.join(string_separator)</tt>:
  *
  *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
  *
