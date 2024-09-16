@@ -40,16 +40,16 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_enable_disable
-    GC.enable
-    assert_equal(false, GC.enable)
-    assert_equal(false, GC.disable)
-    assert_equal(true, GC.disable)
-    assert_equal(true, GC.disable)
-    assert_nil(GC.start)
-    assert_equal(true, GC.enable)
-    assert_equal(false, GC.enable)
-  ensure
-    GC.enable
+    EnvUtil.without_gc do
+      GC.enable
+      assert_equal(false, GC.enable)
+      assert_equal(false, GC.disable)
+      assert_equal(true, GC.disable)
+      assert_equal(true, GC.disable)
+      assert_nil(GC.start)
+      assert_equal(true, GC.enable)
+      assert_equal(false, GC.enable)
+    end
   end
 
   def test_gc_config_full_mark_by_default
@@ -227,12 +227,9 @@ class TestGc < Test::Unit::TestCase
     GC.stat(stat)
 
     GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
-      begin
-        reenable_gc = !GC.disable
+      EnvUtil.without_gc do
         GC.stat_heap(i, stat_heap)
         GC.stat(stat)
-      ensure
-        GC.enable if reenable_gc
       end
 
       assert_equal (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) * (2**i), stat_heap[:slot_size]
@@ -768,23 +765,17 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_disabled_start
-    begin
-      disabled = GC.disable
+    EnvUtil.without_gc do
       c = GC.count
       GC.start
       assert_equal 1, GC.count - c
-    ensure
-      GC.enable unless disabled
     end
 
-    begin
-      disabled = GC.disable
+    EnvUtil.without_gc do
       c = GC.count
       GC.start(immediate_mark: false, immediate_sweep: false)
       10_000.times { Object.new }
       assert_equal 1, GC.count - c
-    ensure
-      GC.enable unless disabled
     end
   end
 
@@ -859,28 +850,26 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_old_to_young_reference
-    original_gc_disabled = GC.disable
+    EnvUtil.without_gc do
+      require "objspace"
 
-    require "objspace"
+      old_obj = Object.new
+      4.times { GC.start }
 
-    old_obj = Object.new
-    4.times { GC.start }
+      assert_include ObjectSpace.dump(old_obj), '"old":true'
 
-    assert_include ObjectSpace.dump(old_obj), '"old":true'
+      young_obj = Object.new
+      old_obj.instance_variable_set(:@test, young_obj)
 
-    young_obj = Object.new
-    old_obj.instance_variable_set(:@test, young_obj)
+      # Not immediately promoted to old generation
+      3.times do
+        assert_not_include ObjectSpace.dump(young_obj), '"old":true'
+        GC.start
+      end
 
-    # Not immediately promoted to old generation
-    3.times do
-      assert_not_include ObjectSpace.dump(young_obj), '"old":true'
+      # Takes 4 GC to promote to old generation
       GC.start
+      assert_include ObjectSpace.dump(young_obj), '"old":true'
     end
-
-    # Takes 4 GC to promote to old generation
-    GC.start
-    assert_include ObjectSpace.dump(young_obj), '"old":true'
-  ensure
-    GC.enable if !original_gc_disabled
   end
 end
