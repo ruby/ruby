@@ -3941,10 +3941,12 @@ select_bang_ensure(VALUE a)
 
 /*
  *  call-seq:
- *    array.select! {|element| ... } -> self or nil
- *    array.select! -> new_enumerator
+ *    select! {|element| ... } -> self or nil
+ *    select! -> new_enumerator
+ *    filter! {|element| ... } -> self or nil
+ *    filter! -> new_enumerator
  *
- *  Calls the block, if given  with each element of +self+;
+ *  With a block given, calls the block with each element of +self+;
  *  removes from +self+ those elements for which the block returns +false+ or +nil+.
  *
  *  Returns +self+ if any elements were removed:
@@ -3954,11 +3956,9 @@ select_bang_ensure(VALUE a)
  *
  *  Returns +nil+ if no elements were removed.
  *
- *  Returns a new Enumerator if no block given:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [:foo, 'bar', 2, :bam]
- *    a.select! # => #<Enumerator: [:foo, "bar", 2, :bam]:select!>
- *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
