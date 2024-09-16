@@ -6699,6 +6699,14 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     switch (body->type) {
+      case ISEQ_TYPE_PLAIN: {
+        RUBY_ASSERT(PM_NODE_TYPE_P(scope_node->ast_node, PM_INTERPOLATED_REGULAR_EXPRESSION_NODE));
+
+        const pm_interpolated_regular_expression_node_t *cast = (const pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
+        pm_compile_regexp_dynamic(iseq, (const pm_node_t *) cast, &cast->parts, &location, ret, popped, scope_node);
+
+        break;
+      }
       case ISEQ_TYPE_BLOCK: {
         LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
         LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
@@ -8468,7 +8476,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init(node, &next_scope_node, scope_node);
 
-            block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, location.line);
+            block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, location.line);
             pm_scope_node_destroy(&next_scope_node);
 
             ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
