@@ -700,6 +700,9 @@ module ErrorHighlight
     #   foo 42
     #       ^^
     def prism_spot_call_for_args
+      # Disallow highlighting arguments if there are no arguments.
+      return if @node.arguments.nil?
+
       # Explicitly turn off foo.() syntax because error_highlight expects this
       # to not work.
       return nil if @node.name == :call && @node.message_loc.nil?
