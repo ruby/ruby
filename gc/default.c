@@ -563,9 +563,9 @@ typedef struct rb_objspace {
 
         /* basic statistics */
         size_t count;
-        uint64_t marking_time_ns;
+        unsigned long long marking_time_ns;
         struct timespec marking_start_time;
-        uint64_t sweeping_time_ns;
+        unsigned long long sweeping_time_ns;
         struct timespec sweeping_start_time;
 
         /* Weak references */
@@ -1527,8 +1527,8 @@ rb_gc_impl_get_profile_total_time(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    uint64_t marking_time = objspace->profile.marking_time_ns;
-    uint64_t sweeping_time = objspace->profile.sweeping_time_ns;
+    unsigned long long marking_time = objspace->profile.marking_time_ns;
+    unsigned long long sweeping_time = objspace->profile.sweeping_time_ns;
 
     return ULL2NUM(marking_time + sweeping_time);
 }
@@ -6671,7 +6671,7 @@ gc_clock_start(struct timespec *ts)
     }
 }
 
-static uint64_t
+static unsigned long long
 gc_clock_end(struct timespec *ts)
 {
     struct timespec end_time;
@@ -6679,7 +6679,7 @@ gc_clock_end(struct timespec *ts)
     if ((ts->tv_sec > 0 || ts->tv_nsec > 0) &&
             current_process_time(&end_time) &&
             end_time.tv_sec >= ts->tv_sec) {
-        return (uint64_t)(end_time.tv_sec - ts->tv_sec) * (1000 * 1000 * 1000) +
+        return (unsigned long long)(end_time.tv_sec - ts->tv_sec) * (1000 * 1000 * 1000) +
                     (end_time.tv_nsec - ts->tv_nsec);
     }
 
