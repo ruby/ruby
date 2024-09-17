@@ -14432,7 +14432,8 @@ parse_parameters(
     pm_binding_power_t binding_power,
     bool uses_parentheses,
     bool allows_trailing_comma,
-    bool allows_forwarding_parameters
+    bool allows_forwarding_parameters,
+    bool accepts_blocks_in_defaults
 ) {
     pm_parameters_node_t *params = pm_parameters_node_create(parser);
     bool looping = true;
@@ -14550,11 +14551,14 @@ parse_parameters(
                     pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &name);
                     uint32_t reads = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
 
+                    if (accepts_blocks_in_defaults) pm_accepts_block_stack_push(parser, true);
                     pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT);
+                    if (accepts_blocks_in_defaults) pm_accepts_block_stack_pop(parser);
+
                     pm_optional_parameter_node_t *param = pm_optional_parameter_node_create(parser, &name, &operator, value);
 
                     if (repeated) {
-                        pm_node_flag_set_repeated_parameter((pm_node_t *)param);
+                        pm_node_flag_set_repeated_parameter((pm_node_t *) param);
                     }
                     pm_parameters_node_optionals_append(params, param);
 
@@ -14641,7 +14645,10 @@ parse_parameters(
 
                             pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &local);
                             uint32_t reads = parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 ? pm_locals_reads(&parser->current_scope->locals, name_id) : 0;
+
+                            if (accepts_blocks_in_defaults) pm_accepts_block_stack_push(parser, true);
                             pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT_KW);
+                            if (accepts_blocks_in_defaults) pm_accepts_block_stack_pop(parser);
 
                             if (parser->version == PM_OPTIONS_VERSION_CRUBY_3_3 && (pm_locals_reads(&parser->current_scope->locals, name_id) != reads)) {
                                 PM_PARSER_ERR_TOKEN_FORMAT_CONTENT(parser, local, PM_ERR_PARAMETER_CIRCULAR);
@@ -15115,7 +15122,8 @@ parse_block_parameters(
     pm_parser_t *parser,
     bool allows_trailing_comma,
     const pm_token_t *opening,
-    bool is_lambda_literal
+    bool is_lambda_literal,
+    bool accepts_blocks_in_defaults
 ) {
     pm_parameters_node_t *parameters = NULL;
     if (!match1(parser, PM_TOKEN_SEMICOLON)) {
@@ -15124,7 +15132,8 @@ parse_block_parameters(
             is_lambda_literal ? PM_BINDING_POWER_DEFINED : PM_BINDING_POWER_INDEX,
             false,
             allows_trailing_comma,
-            false
+            false,
+            accepts_blocks_in_defaults
         );
     }
 
@@ -15294,7 +15303,7 @@ parse_block(pm_parser_t *parser) {
             parser->command_start = true;
             parser_lex(parser);
         } else {
-            block_parameters = parse_block_parameters(parser, true, &block_parameters_opening, false);
+            block_parameters = parse_block_parameters(parser, true, &block_parameters_opening, false, true);
             accept1(parser, PM_TOKEN_NEWLINE);
             parser->command_start = true;
             expect1(parser, PM_TOKEN_PIPE, PM_ERR_BLOCK_PARAM_PIPE_TERM);
@@ -19167,7 +19176,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                         params = NULL;
                     } else {
-                        params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, true, false, true);
+                        params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, true, false, true, true);
                     }
 
                     lex_state_set(parser, PM_LEX_STATE_BEG);
@@ -19191,7 +19200,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     lparen = not_provided(parser);
                     rparen = not_provided(parser);
-                    params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, false, false, true);
+                    params = parse_parameters(parser, PM_BINDING_POWER_DEFINED, false, false, true, true);
                     break;
                 }
                 default: {
@@ -20294,7 +20303,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                         block_parameters = pm_block_parameters_node_create(parser, NULL, &opening);
                     } else {
-                        block_parameters = parse_block_parameters(parser, false, &opening, true);
+                        block_parameters = parse_block_parameters(parser, false, &opening, true, true);
                     }
 
                     accept1(parser, PM_TOKEN_NEWLINE);
@@ -20306,7 +20315,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 case PM_CASE_PARAMETER: {
                     pm_accepts_block_stack_push(parser, false);
                     pm_token_t opening = not_provided(parser);
-                    block_parameters = parse_block_parameters(parser, false, &opening, true);
+                    block_parameters = parse_block_parameters(parser, false, &opening, true, false);
                     pm_accepts_block_stack_pop(parser);
                     break;
                 }
