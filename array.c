@@ -4692,103 +4692,80 @@ rb_ary_clear(VALUE ary)
 
 /*
  *  call-seq:
- *    fill(object) -> self
- *    fill(object, start) -> self
- *    fill(object, start, length) -> self
- *    fill(object, range) -> self
- *    fill {|index| ... } -> self
- *    fill(start) {|index| ... } -> self
- *    fill(start, length) {|index| ... } -> self
- *    fill(range) {|index| ... } -> self
+ *    fill(object, start = nil, count = nil) -> new_array
+ *    fill(start = nil, count = nil) {|element| ... } -> new_array
+ *    fill(object, range) -> new_array
+ *    fill(range) {|element| ... } -> new_array
  *
- *  Replaces specified elements in +self+ with specified objects;
+ *  Replaces selected elements in +self+;
+ *  may add elements to +self+;
  *  always returns +self+ (never a new array).
  *
- *  Note: many examples here use this array, derived from a Range of characters:
+ *  <b>Arguments +start+ and +count+</b>
  *
- *    ('a'..'d').to_a # => ["a", "b", "c", "d"]
+ *  Arguments +start+ and +count+ must be
+ *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  (or +nil+).
  *
- *  In all cases, numeric arguments +start+ and +length+ must be
- *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  When arguments +start+ and +count+ are given,
+ *  they select the elements of +self+ to be replaced:
  *
- *  In brief:
+ *  - +start+ is the zero-based offset of the first element to be replaced;
+ *    +nil+ means zero;
+ *  - +count+ is the number of consecutive elements to be replaced;
+ *    +nil+ means "all the rest."
+ *  - If <tt>start + count</tt> is greater than <tt>self.size</tt>, elements are appended.
  *
- *    # Argument object.
- *    ('a'..'d').to_a.fill('-') # => ["-", "-", "-", "-"]
+ *  If argument +object+ is given,
+ *  that one object is the sole replacement value:
  *
- *    # Arguments object and start.
- *    ('a'..'d').to_a.fill('-', 2)  # => ["a", "b", "-", "-"]
- *    ('a'..'d').to_a.fill('-', 4)  # => ["a", "b", "c", "d"]
- *    ('a'..'d').to_a.fill('-', -2) # => ["a", "b", "-", "-"]
- *    ('a'..'d').to_a.fill('-', -9) # => ["-", "-", "-", "-"]
+ *    o = Object.new           # => #<Object:0x0000014e7bff7600>
+ *    a = ['a', 'b', 'c', 'd'] # => ["a", "b", "c", "d"]
+ *    a.fill(o, 1, 2)
+ *    # => ["a", #<Object:0x0000014e7bff7600>, #<Object:0x0000014e7bff7600>, "d"]
  *
- *    # Arguments object, start, and length.
- *    ('a'..'d').to_a.fill('-', 1, 2)  # => ["a", "-", "-", "d"]
- *    ('a'..'d').to_a.fill('-', -3, 2) # => ["a", "-", "-", "d"]
- *    ('a'..'d').to_a.fill('-', 6, 2)  # => ["a", "b", "c", "d", nil, nil, "-", "-"]
- *    ('a'..'d').to_a.fill('-', 6, 0)  # => ["a", "b", "c", "d", nil, nil]
+ *  If a block is given, the block is called with <i>the index of</i> each element to be replaced;
+ *  the block's return value is the replacement object:
  *
- *    # Arguments object and range.
- *    ('a'..'d').to_a.fill('-', (1..2))   # => ["a", "-", "-", "d"]
- *    ('a'..'d').to_a.fill('-', (-1..2))  # => ["a", "b", "c", "d"]
- *    ('a'..'d').to_a.fill('-', (1..-2))  # => ["a", "-", "-", "d"]
- *    ('a'..'d').to_a.fill('-', (-3..-2)) # => ["a", "-", "-", "d"]
+ *    a = ['a', 'b', 'c', 'd']               # => ["a", "b", "c", "d"]
+ *    a.fill(1, 2) {|element| element.to_s } # => ["a", "1", "2", "d"]
  *
- *    # No argument, with a block.
- *    ('a'..'d').to_a.fill  { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
+ *  For argument +start+:
  *
- *    # Argument start, with a block.
- *    ('a'..'d').to_a.fill(2)  { |index| "new_#{index}" }      # => ["a", "b", "new_2", "new_3"]
- *    ('a'..'d').to_a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
- *    ('a'..'d').to_a.fill(-2) { |index| "new_#{index}" }      # => ["a", "b", "new_2", "new_3"]
- *    ('a'..'d').to_a.fill(-4) { |index| "new_#{index}" }      # => ["new_0", "new_1", "new_2", "new_3"]
+ *  - If +start+ is non-negative,
+ *    replaces +count+ elements from offset +start+ through the end:
  *
- *    # Arguments start and length, with a block.
- *    ('a'..'d').to_a.fill(1, 2) { |index| "new_#{index}" }  # => ["a", "new_1", "new_2", "d"]
- *    ('a'..'d').to_a.fill(-3, 2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
- *    ('a'..'d').to_a.fill(5, 2) { |index| "new_#{index}" }  # => ["a", "b", "c", "d", nil, "new_5", "new_6"]
- *    ('a'..'d').to_a.fill(5, 0) { |index| "new_#{index}" }  # => ["a", "b", "c", "d", nil]
- *    ('a'..'d').to_a.fill(1, 0) { |index| "new_#{index}" }  # => ["a", "b", "c", "d"]
- *    ('a'..'d').to_a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 0, 2) # => ["-", "-", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 1, 2) # => ["a", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 2, 2) # => ["a", "b", "-", "-"]
  *
- *    # Argument range, with a block.
- *    ('a'..'d').to_a.fill(1..1) { |index| "new_#{index}" }        # => ["a", "new_1", "c", "d"]
- *    ('a'..'d').to_a.fill(-1..1) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
- *    ('a'..'d').to_a.fill(0..-2) { |index| "new_#{index}" }       # => ["new_0", "new_1", "new_2", "d"]
- *    ('a'..'d').to_a.fill(1..-2) { |index| "new_#{index}" }       # => ["a", "new_1", "new_2", "d"]
- *    ('a'..'d').to_a.fill(-1..-1) { |index| "new_#{index}" }      # => ["a", "b", "c", "new_3"]
- *    ('a'..'d').to_a.fill(-2..-2) { |index| "new_#{index}" }      # => ["a", "b", "new_2", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(0, 2) {|e| e.to_s } # => ["0", "1", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(1, 2) {|e| e.to_s } # => ["a", "1", "2", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(2, 2) {|e| e.to_s } # => ["a", "b", "2", "3"]
  *
- *  <b>With No Block Given</b>
+ *    Extends +self+ if necessary:
  *
- *  With no block given, argument +object+ is required,
- *  and its value may be any object.
+ *      ['a', 'b', 'c', 'd'].fill('-', 3, 2) # => ["a", "b", "c", "-", "-"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 4, 2) # => ["a", "b", "c", "d", "-", "-"]
  *
- *  With the single argument +object+, replaces all elements with that one object:
+ *      ['a', 'b', 'c', 'd'].fill(3, 2) {|e| e.to_s } # => ["a", "b", "c", "3", "4"]
+ *      ['a', 'b', 'c', 'd'].fill(4, 2) {|e| e.to_s } # => ["a", "b", "c", "d", "4", "5"]
  *
- *    a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *    a.fill('-')         # => ["-", "-", "-", "-"]
+ *    Fills with +nil+ if necessary:
  *
- *  With argument +object+ and numeric argument +start+,
- *  replaces elements based on the given +start+:
+ *      ['a', 'b', 'c', 'd'].fill('-', 5, 2) # => ["a", "b", "c", "d", nil, "-", "-"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 6, 2) # => ["a", "b", "c", "d", nil, nil, "-", "-"]
  *
- *  - If +start+ is in range (<tt>0 <= start < self.size</tt>),
- *    replaces all elements from offset +start+ through the end:
+ *      ['a', 'b', 'c', 'd'].fill(5, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, "5", "6"]
+ *      ['a', 'b', 'c', 'd'].fill(6, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, nil, "6", "7"]
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', 2)      # => ["a", "b", "-", "-"]
- *
- *   - If +start+ is too large (<tt>start >= self.size</tt>), does nothing:
- *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', 4)      # => ["a", "b", "c", "d"]
- *
- *  - If +start+ is negative, counts from the end (starting index is <tt>start + self.size</tt>):
+ *  - If +start+ is negative and in-range (<tt> - self.size < start < 0</tt>),
+ *    counts from the end (starting index is <tt>start + self.size</tt>):
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -3)     # => ["a", "-", "-", "-"]
  *
- *  - If +start+ is too small (<tt>start <= -self.size</tt>), replaces all elements:
+ *  - If +start+ is negative and out-of-range (<tt>start <= -self.size</tt>), replaces all elements:
  *
  *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
  *      a.fill('-', -9)     # => ["-", "-", "-", "-"]
