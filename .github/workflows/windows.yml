@@ -117,9 +117,12 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          set VS=${{ matrix.vs }}
-          set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          ::- Set up VC ${{ matrix.vc || matrix.vs }}
+          set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+          for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
+            set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
+          )
+          set VCVARS
           set | C:\msys64\usr\bin\sort > old.env
           call %VCVARS% ${{ matrix.vcvars || '' }}
           nmake -f nul
