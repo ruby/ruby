@@ -4701,14 +4701,11 @@ rb_ary_clear(VALUE ary)
  *  may add elements to +self+;
  *  always returns +self+ (never a new array).
  *
- *  <b>Arguments +start+ and +count+</b>
- *
- *  Arguments +start+ and +count+ must be
- *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
- *  (or +nil+).
- *
  *  When arguments +start+ and +count+ are given,
- *  they select the elements of +self+ to be replaced:
+ *  they select the elements of +self+ to be replaced;
+ *  each must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  (or +nil+):
  *
  *  - +start+ is the zero-based offset of the first element to be replaced;
  *    +nil+ means zero;
@@ -4724,13 +4721,13 @@ rb_ary_clear(VALUE ary)
  *    a.fill(o, 1, 2)
  *    # => ["a", #<Object:0x0000014e7bff7600>, #<Object:0x0000014e7bff7600>, "d"]
  *
- *  If a block is given, the block is called with <i>the index of</i> each element to be replaced;
- *  the block's return value is the replacement object:
+ *  If a block is given, the block is called with the <i>index</i> of each element to be replaced;
+ *  the block's return value is the element's replacement:
  *
  *    a = ['a', 'b', 'c', 'd']               # => ["a", "b", "c", "d"]
  *    a.fill(1, 2) {|element| element.to_s } # => ["a", "1", "2", "d"]
  *
- *  For argument +start+:
+ *  For arguments +start+ and +count+:
  *
  *  - If +start+ is non-negative,
  *    replaces +count+ elements from offset +start+ through the end:
@@ -4759,159 +4756,63 @@ rb_ary_clear(VALUE ary)
  *      ['a', 'b', 'c', 'd'].fill(5, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, "5", "6"]
  *      ['a', 'b', 'c', 'd'].fill(6, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, nil, "6", "7"]
  *
- *  - If +start+ is negative and in-range (<tt> - self.size < start < 0</tt>),
- *    counts from the end (starting index is <tt>start + self.size</tt>):
+ *    Extends +self+ if <tt>start + count</tt> is greater than <tt>self.size</tt>:
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', -3)     # => ["a", "-", "-", "-"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 2, 3) # => ["a", "b", "-", "-", "-"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 2, 4) # => ["a", "b", "-", "-", "-", "-"]
  *
- *  - If +start+ is negative and out-of-range (<tt>start <= -self.size</tt>), replaces all elements:
+ *      ['a', 'b', 'c', 'd'].fill(2, 3) {|e| e.to_s } # => ["a", "b", "2", "3", "4"]
+ *      ['a', 'b', 'c', 'd'].fill(2, 4) {|e| e.to_s } # => ["a", "b", "2", "3", "4", "5"]
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', -9)     # => ["-", "-", "-", "-"]
+ *    Does nothing if +count+ is non-positive:
  *
- *  With argument +object+ and numeric arguments +start+ and +length+,
- *  replaces elements based on the given +start+ and +length+:
+ *      ['a', 'b', 'c', 'd'].fill('-', 2, 0)    # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 2, -100) # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 6, -100) # => ["a", "b", "c", "d"]
  *
- *  - If +start+ is in range, replaces +length+ elements beginning at offset +start+:
+ *      ['a', 'b', 'c', 'd'].fill(2, 0) {|e| fail 'Cannot happen' }    # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(2, -100) {|e| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(6, -100) {|e| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', 1, 2)   # => ["a", "-", "-", "d"]
+ *  - If +start+ is negative, counts backwards from the end of +self+:
  *
- *  - If +start+ is negative, counts from the end:
+ *      ['a', 'b', 'c', 'd'].fill('-', -4, 3) # => ["-", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', -3, 3) # => ["a", "-", "-", "-"]
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', -3, 2)  # => ["a", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(-4, 3) {|e| e.to_s } # => ["0", "1", "2", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(-3, 3) {|e| e.to_s } # => ["a", "1", "2", "3"]
  *
- *  - If +start+ is large (<tt>start >= self.size</tt>), extends +self+ with +nil+:
+ *    Extends +self+ if necessary:
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', 6, 2)   # => ["a", "b", "c", "d", nil, nil, "-", "-"]
- *      # Extends even if length is zero.
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', 6, 0)   # => ["a", "b", "c", "d", nil, nil]
+ *      ['a', 'b', 'c', 'd'].fill('-', -2, 3) # => ["a", "b", "-", "-", "-"]
+ *      ['a', 'b', 'c', 'd'].fill('-', -1, 3) # => ["a", "b", "c", "-", "-", "-"]
  *
- *  - If +length+ is zero or negative, replaces no elements:
+ *      ['a', 'b', 'c', 'd'].fill(-2, 3) {|e| e.to_s } # => ["a", "b", "2", "3", "4"]
+ *      ['a', 'b', 'c', 'd'].fill(-1, 3) {|e| e.to_s } # => ["a", "b", "c", "3", "4", "5"]
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', 2, 0)   # => ["a", "b", "c", "d"]
- *      a.fill('-', 2, -1)  # => ["a", "b", "c", "d"]
+ *    Starts at the beginning of +self+ if +start+ is negative and out-of-range:
  *
- *  With argument +object+ and Range argument +range+,
- *  replaces elements based on the given range:
+ *      ['a', 'b', 'c', 'd'].fill('-', -5, 2) # => ["-", "-", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', -6, 2) # => ["-", "-", "c", "d"]
  *
- *  - If the range is positive and ascending (<tt>0 < range.begin <= range.end</tt>),
- *    replaces elements from <tt>range.begin</tt> to <tt>range.end</tt>:
+ *      ['a', 'b', 'c', 'd'].fill(-5, 2) {|e| e.to_s } # => ["0", "1", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(-6, 2) {|e| e.to_s } # => ["0", "1", "c", "d"]
  *
- *      a = ('a'..'d').to_a # => ["a", "b", "c", "d"]
- *      a.fill('-', (1..2)) # => ["a", "-", "-", "d"]
+ *    Does nothing if +count+ is non-positive:
  *
- *  - If <tt>range.first</tt> is negative, replaces no elements:
+ *      ['a', 'b', 'c', 'd'].fill('-', -2, 0)  # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', -2, -1) # => ["a", "b", "c", "d"]
  *
- *      a = ('a'..'d').to_a  # => ["a", "b", "c", "d"]
- *      a.fill('-', (-1..2)) # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(-2, 0) {|e| fail 'Cannot happen' }  # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(-2, -1) {|e| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
  *
- *  - If <tt>range.last</tt> is negative, counts from the end:
+ *  When argument +range+ is given,
+ *  it must be a Range object whose members are numeric;
+ *  its effect is the same as above, where:
  *
- *      a = ('a'..'d').to_a  # => ["a", "b", "c", "d"]
- *      a.fill('-', (1..-2)) # => ["a", "-", "-", "d"]
- *
- *  - If <tt>range.last</tt> and <tt>range.last</tt> are both negative,
- *    both count from the end of the array:
- *
- *      a = ('a'..'d').to_a   # => ["a", "b", "c", "d"]
- *      a.fill('-', (-3..-2)) # => ["a", "-", "-", "d"]
- *
- *  <b>With a Block Given</b>
- *
- *  With no argument, calls the block with each index;
- *  replaces the corresponding element with the block's return value:
- *
- *    a = ('a'..'d').to_a               # => ["a", "b", "c", "d"]
- *    a.fill { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
- *
- *  With numeric argument +start+, calls the block with each index
- *  from offset +start+ to the end; replaces the corresponding element
- *  with the block's return value:
- *
- *  - If start is in range (<tt>0 <= start < self.size</tt>),
- *    replaces from offset +start+ to the end:
- *
- *      a = ('a'..'d').to_a                  # => ["a", "b", "c", "d"]
- *      a.fill(2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
- *
- *  - If +start+ is too large(<tt>start >= self.size</tt>), does nothing:
- *
- *      a = ('a'..'d').to_a                        # => ["a", "b", "c", "d"]
- *      a.fill(4) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
- *
- *  - If +start+ is negative, counts from the end:
- *
- *      a = ('a'..'d').to_a                   # => ["a", "b", "c", "d"]
- *      a.fill(-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "new_3"]
- *
- *  - If start is too small (<tt>start <= - self.size</tt>, replaces all elements:
- *
- *      a = ('a'..'d').to_a                   # => ["a", "b", "c", "d"]
- *      a.fill(-4) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "new_3"]
- *
- *  With numeric arguments +start+ and +length+,
- *  calls the block for each index specified by start length;
- *  replaces the corresponding element with the block's return value:
- *
- *  - If +start+ is in range, replaces +length+ elements beginning at offset +start+:
- *
- *      a = ('a'..'d').to_a                     # => ["a", "b", "c", "d"]
- *      a.fill(1, 2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
- *
- *  - If +start+ is negative, counts from the end:
- *
- *      a = ('a'..'d').to_a                      # => ["a", "b", "c", "d"]
- *      a.fill(-3, 2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
- *
- *  - If +start+ is large (<tt>start >= self.size</tt>), extends +self+ with +nil+:
- *
- *      a = ('a'..'d').to_a                     # => ["a", "b", "c", "d"]
- *      a.fill(5, 2) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil, "new_5", "new_6"]
- *      # Extends even if length is zero.
- *      a = ('a'..'d').to_a                     # => ["a", "b", "c", "d"]
- *      a.fill(5, 0) { |index| "new_#{index}" } # => ["a", "b", "c", "d", nil]
- *
- *  - If +length+ is zero or less, replaces no elements:
- *
- *      a = ('a'..'d').to_a                      # => ["a", "b", "c", "d"]
- *      a.fill(1, 0) { |index| "new_#{index}" }  # => ["a", "b", "c", "d"]
- *      a.fill(1, -1) { |index| "new_#{index}" } # => ["a", "b", "c", "d"]
- *
- *  With Range argument +range+ given,
- *  calls the block with each index in the given range;
- *  replaces the corresponding element with the block's return value:
- *
- *  - If the range is positive and ascending (<tt>range 0 < range.begin <= range.end</tt>,
- *    replaces elements from <tt>range.begin</tt> to <tt>range.end</tt>:
- *
- *      a = ('a'..'d').to_a                     # => ["a", "b", "c", "d"]
- *      a.fill(1..1) { |index| "new_#{index}" } # => ["a", "new_1", "c", "d"]
- *
- *  - If +range.first+ is negative, does nothing:
- *
- *      a = ('a'..'d').to_a                            # => ["a", "b", "c", "d"]
- *      a.fill(-1..1) { |index| fail 'Cannot happen' } # => ["a", "b", "c", "d"]
- *
- *  - If <tt>range.last</tt> is negative, counts from the end:
- *
- *      a = ('a'..'d').to_a                      # => ["a", "b", "c", "d"]
- *      a.fill(0..-2) { |index| "new_#{index}" } # => ["new_0", "new_1", "new_2", "d"]
- *      a = ('a'..'d').to_a                      # => ["a", "b", "c", "d"]
- *      a.fill(1..-2) { |index| "new_#{index}" } # => ["a", "new_1", "new_2", "d"]
- *
- *  - If <tt>range.first</tt> and <tt>range.last</tt> are both negative,
- *    both count from the end:
- *
- *      a = ('a'..'d').to_a                       # => ["a", "b", "c", "d"]
- *      a.fill(-1..-1) { |index| "new_#{index}" } # => ["a", "b", "c", "new_3"]
- *      a = ('a'..'d').to_a                       # => ["a", "b", "c", "d"]
- *      a.fill(-2..-2) { |index| "new_#{index}" } # => ["a", "b", "new_2", "d"]
+ *  - +start+ is <tt>range.min</tt>, or zero if the range is beginless.
+ *  - +end+ is <tt>range.max</tt>
+ *  - +count+ is <tt>range.size</tt>, or "all the rest" if the range is endless.
  *
  *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
