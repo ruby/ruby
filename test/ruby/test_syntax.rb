@@ -332,7 +332,7 @@ class TestSyntax < Test::Unit::TestCase
     o = KW2.new
     begin
       verbose_bak, $VERBOSE = $VERBOSE, nil
-      assert_equal([23, 2], eval("o.kw(**{k1: 22}, **{k1: 23}"), bug10315)
+      assert_equal([23, 2], eval("o.kw(**{k1: 22}, **{k1: 23})"), bug10315)
     ensure
       $VERBOSE = verbose_bak
     end
