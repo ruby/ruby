@@ -1298,7 +1298,12 @@ dummy
   end
 
   def test_locations
-    node = RubyVM::AbstractSyntaxTree.parse("1 + 2")
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, false
+      node = RubyVM::AbstractSyntaxTree.parse("1 + 2")
+    ensure
+      $VERBOSE = verbose_bak
+    end
     locations = node.locations
 
     assert_equal(RubyVM::AbstractSyntaxTree::Location, locations[0].class)
@@ -1326,92 +1331,101 @@ dummy
 
   class TestLocation < Test::Unit::TestCase
     def test_lineno_and_column
-      node = RubyVM::AbstractSyntaxTree.parse("1 + 2")
+      node = ast_parse("1 + 2")
       assert_locations(node.locations, [[1, 0, 1, 5]])
     end
 
     def test_alias_locations
-      node = RubyVM::AbstractSyntaxTree.parse("alias foo bar")
+      node = ast_parse("alias foo bar")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
     end
 
     def test_and_locations
-      node = RubyVM::AbstractSyntaxTree.parse("1 and 2")
+      node = ast_parse("1 and 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 2, 1, 5]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("1 && 2")
+      node = ast_parse("1 && 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
     end
 
     def test_break_locations
-      node = RubyVM::AbstractSyntaxTree.parse("loop { break 1 }")
+      node = ast_parse("loop { break 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 14], [1, 7, 1, 12]])
     end
 
     def test_next_locations
-      node = RubyVM::AbstractSyntaxTree.parse("loop { next 1 }")
+      node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
     end
 
     def test_or_locations
-      node = RubyVM::AbstractSyntaxTree.parse("1 or 2")
+      node = ast_parse("1 or 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("1 || 2")
+      node = ast_parse("1 || 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
     end
 
     def test_redo_locations
-      node = RubyVM::AbstractSyntaxTree.parse("loop { redo }")
+      node = ast_parse("loop { redo }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 11], [1, 7, 1, 11]])
     end
 
     def test_unless_locations
-      node = RubyVM::AbstractSyntaxTree.parse("unless cond then 1 else 2 end")
+      node = ast_parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("1 unless 2")
+      node = ast_parse("1 unless 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 2, 1, 8], nil, nil])
     end
 
     def test_undef_locations
-      node = RubyVM::AbstractSyntaxTree.parse("undef foo")
+      node = ast_parse("undef foo")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 0, 1, 5]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("undef foo, bar")
+      node = ast_parse("undef foo, bar")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 14], [1, 0, 1, 5]])
     end
 
     def test_valias_locations
-      node = RubyVM::AbstractSyntaxTree.parse("alias $foo $bar")
+      node = ast_parse("alias $foo $bar")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 5]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("alias $foo $&")
+      node = ast_parse("alias $foo $&")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
     end
 
     def test_when_locations
-      node = RubyVM::AbstractSyntaxTree.parse("case a; when 1 then 2; end")
+      node = ast_parse("case a; when 1 then 2; end")
       assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 22], [1, 8, 1, 12], [1, 15, 1, 19]])
     end
 
     def test_while_locations
-      node = RubyVM::AbstractSyntaxTree.parse("while cond do 1 end")
+      node = ast_parse("while cond do 1 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 5], [1, 16, 1, 19]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("1 while 2")
+      node = ast_parse("1 while 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
     end
 
     def test_until_locations
-      node = RubyVM::AbstractSyntaxTree.parse("until cond do 1 end")
+      node = ast_parse("until cond do 1 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 5], [1, 16, 1, 19]])
 
-      node = RubyVM::AbstractSyntaxTree.parse("1 until 2")
+      node = ast_parse("1 until 2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
     end
 
     private
+    def ast_parse(src, **options)
+      begin
+        verbose_bak, $VERBOSE = $VERBOSE, false
+        RubyVM::AbstractSyntaxTree.parse(src, **options)
+      ensure
+        $VERBOSE = verbose_bak
+      end
+    end
+
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
 
