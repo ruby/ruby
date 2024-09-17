@@ -15446,7 +15446,6 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_CASE_IN:
             case PM_CONTEXT_CASE_WHEN:
             case PM_CONTEXT_DEFAULT_PARAMS:
-            case PM_CONTEXT_DEF_PARAMS:
             case PM_CONTEXT_DEFINED:
             case PM_CONTEXT_ELSE:
             case PM_CONTEXT_ELSIF:
@@ -15492,6 +15491,7 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_BLOCK_RESCUE:
             case PM_CONTEXT_DEF_ELSE:
             case PM_CONTEXT_DEF_ENSURE:
+            case PM_CONTEXT_DEF_PARAMS:
             case PM_CONTEXT_DEF_RESCUE:
             case PM_CONTEXT_DEF:
             case PM_CONTEXT_LAMBDA_BRACES:
