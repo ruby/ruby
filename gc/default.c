@@ -1522,7 +1522,7 @@ rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event)
     objspace->flags.has_newobj_hook = !!(objspace->hook_events & RUBY_INTERNAL_EVENT_NEWOBJ);
 }
 
-VALUE
+unsigned long long
 rb_gc_impl_get_profile_total_time(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
@@ -1530,7 +1530,7 @@ rb_gc_impl_get_profile_total_time(void *objspace_ptr)
     unsigned long long marking_time = objspace->profile.marking_time_ns;
     unsigned long long sweeping_time = objspace->profile.sweeping_time_ns;
 
-    return ULL2NUM(marking_time + sweeping_time);
+    return marking_time + sweeping_time;
 }
 
 VALUE
