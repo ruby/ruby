@@ -343,7 +343,7 @@ module GC
   # Note that measurement can affect the application performance.
   def self.measure_total_time
     Primitive.cexpr! %{
-      rb_gc_impl_get_measure_total_time(rb_gc_get_objspace())
+      RBOOL(rb_gc_impl_get_measure_total_time(rb_gc_get_objspace()))
     }
   end
 

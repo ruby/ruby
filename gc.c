@@ -635,7 +635,7 @@ typedef struct gc_function_map {
     VALUE (*object_id_to_ref)(void *objspace_ptr, VALUE object_id);
     // Statistics
     void (*set_measure_total_time)(void *objspace_ptr, VALUE flag);
-    VALUE (*get_measure_total_time)(void *objspace_ptr);
+    bool (*get_measure_total_time)(void *objspace_ptr);
     unsigned long long (*get_total_time)(void *objspace_ptr);
     size_t (*gc_count)(void *objspace_ptr);
     VALUE (*latest_gc_info)(void *objspace_ptr, VALUE key);

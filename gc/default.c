@@ -1541,12 +1541,12 @@ rb_gc_impl_set_measure_total_time(void *objspace_ptr, VALUE flag)
     objspace->flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
 }
 
-VALUE
+bool
 rb_gc_impl_get_measure_total_time(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    return objspace->flags.measure_gc ? Qtrue : Qfalse;
+    return objspace->flags.measure_gc;
 }
 
 static size_t
