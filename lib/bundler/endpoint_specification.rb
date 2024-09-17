@@ -6,7 +6,7 @@ module Bundler
     include MatchRemoteMetadata
 
     attr_reader :name, :version, :platform, :checksum
-    attr_accessor :source, :remote, :dependencies
+    attr_accessor :remote, :dependencies
 
     def initialize(name, version, platform, spec_fetcher, dependencies, metadata = nil)
       super()
