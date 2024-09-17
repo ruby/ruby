@@ -3376,19 +3376,6 @@ rb_gc_latest_gc_info(VALUE key)
 }
 
 static VALUE
-gc_latest_gc_info(rb_execution_context_t *ec, VALUE self, VALUE arg)
-{
-    if (NIL_P(arg)) {
-        arg = rb_hash_new();
-    }
-    else if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
-        rb_raise(rb_eTypeError, "non-hash or symbol given");
-    }
-
-    return rb_gc_latest_gc_info(arg);
-}
-
-static VALUE
 gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || hash || symbol)
 {
     if (NIL_P(arg)) {

@@ -320,7 +320,15 @@ module GC
   # it is overwritten and returned.
   # This is intended to avoid probe effect.
   def self.latest_gc_info hash_or_key = nil
-    Primitive.gc_latest_gc_info hash_or_key
+    if hash_or_key == nil
+      hash_or_key = {}
+    elsif Primitive.cexpr!("RBOOL(!SYMBOL_P(hash_or_key) && !RB_TYPE_P(hash_or_key, T_HASH))")
+      raise TypeError, "non-hash or symbol given"
+    end
+
+    Primitive.cstmt! %{
+      return rb_gc_latest_gc_info(hash_or_key);
+    }
   end
 
   # call-seq:
