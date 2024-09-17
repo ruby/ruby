@@ -770,8 +770,10 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  * * `version` - the version of Ruby syntax that prism should used to parse Ruby
  *       code. By default prism assumes you want to parse with the latest version
  *       of Ruby syntax (which you can trigger with `nil` or `"latest"`). You
- *       may also restrict the syntax to a specific version of Ruby. The
- *       supported values are `"3.3.0"` and `"3.4.0"`.
+ *       may also restrict the syntax to a specific version of Ruby, e.g., with `"3.3.0"`.
+ *       To parse with the same syntax version that the current Ruby is running
+ *       use `version: RUBY_VERSION`. Raises ArgumentError if the version is not
+ *       currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {

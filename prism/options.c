@@ -1,4 +1,5 @@
 #include "prism/options.h"
+#include "prism/util/pm_char.h"
 
 /**
  * Set the shebang callback option on the given options struct.
@@ -57,6 +58,10 @@ pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
     options->command_line = command_line;
 }
 
+static bool is_number(const char *string, size_t length) {
+    return pm_strspn_decimal_digit((const uint8_t *) string, (ptrdiff_t) length) == length;
+}
+
 /**
  * Set the version option on the given options struct by parsing the given
  * string. If the string contains an invalid option, this returns false.
@@ -64,40 +69,31 @@ pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
  */
 PRISM_EXPORTED_FUNCTION bool
 pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
-    switch (length) {
-        case 0:
-            if (version == NULL) {
-                options->version = PM_OPTIONS_VERSION_LATEST;
-                return true;
-            }
-
-            return false;
-        case 5:
-            assert(version != NULL);
-
-            if ((strncmp(version, "3.3.0", length) == 0) || (strncmp(version, "3.3.1", length) == 0)) {
-                options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
-                return true;
-            }
-
-            if (strncmp(version, "3.4.0", length) == 0) {
-                options->version = PM_OPTIONS_VERSION_LATEST;
-                return true;
-            }
-
-            return false;
-        case 6:
-            assert(version != NULL);
-
-            if (strncmp(version, "latest", length) == 0) {
-                options->version = PM_OPTIONS_VERSION_LATEST;
-                return true;
-            }
-
-            return false;
-        default:
-            return false;
+    if (version == NULL) {
+        options->version = PM_OPTIONS_VERSION_LATEST;
+        return true;
     }
+
+    if (length >= 4) {
+        if (strncmp(version, "3.3.", 4) == 0 && is_number(version + 4, length - 4)) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+            return true;
+        }
+
+        if (strncmp(version, "3.4.", 4) == 0 && is_number(version + 4, length - 4)) {
+            options->version = PM_OPTIONS_VERSION_LATEST;
+            return true;
+        }
+    }
+
+    if (length >= 6) {
+        if (strncmp(version, "latest", 7) == 0) { // 7 to compare the \0 as well
+            options->version = PM_OPTIONS_VERSION_LATEST;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
