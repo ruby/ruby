@@ -81,11 +81,15 @@ module Gem
 
     attr_accessor :remote, :relative_loaded_from
 
-    remove_method :source
-    attr_writer :source
-    def source
-      (defined?(@source) && @source) || Gem::Source::Installed.new
+    module AllowSettingSource
+      attr_writer :source
+
+      def source
+        (defined?(@source) && @source) || super
+      end
     end
+
+    prepend AllowSettingSource
 
     alias_method :rg_full_gem_path, :full_gem_path
     alias_method :rg_loaded_from,   :loaded_from
