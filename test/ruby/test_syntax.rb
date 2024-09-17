@@ -330,7 +330,12 @@ class TestSyntax < Test::Unit::TestCase
     bug10315 = '[ruby-core:65368] [Bug #10315]'
 
     o = KW2.new
-    assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_equal([23, 2], eval("o.kw(**{k1: 22}, **{k1: 23}"), bug10315)
+    ensure
+      $VERBOSE = verbose_bak
+    end
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
