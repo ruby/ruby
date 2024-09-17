@@ -1,8 +1,12 @@
 class Binding
   # :nodoc:
   def irb
-    force_activate 'irb'
-    require 'irb'
+    begin
+      require 'irb'
+    rescue LoadError, Gem::LoadError
+      force_activate 'irb'
+      retry
+    end
     irb
   end
 
@@ -10,8 +14,6 @@ class Binding
   alias irb irb # :nodoc:
 
   private def force_activate(gem)
-    return if !defined?(Bundler) || Gem.loaded_specs.key?(gem)
-
     Bundler.reset!
 
     builder = Bundler::Dsl.new
