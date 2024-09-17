@@ -247,8 +247,6 @@ class TestFiberIO < Test::Unit::TestCase
       o.nonblock = true
     end
 
-    message = nil
-
     reading_thread = Thread.new do
       Thread.current.report_on_exception = false
       i.wait_readable
