@@ -87,7 +87,7 @@ GC_IMPL_FN VALUE rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id
 // Statistics
 GC_IMPL_FN VALUE rb_gc_impl_set_measure_total_time(void *objspace_ptr, VALUE flag);
 GC_IMPL_FN VALUE rb_gc_impl_get_measure_total_time(void *objspace_ptr);
-GC_IMPL_FN unsigned long long rb_gc_impl_get_profile_total_time(void *objspace_ptr);
+GC_IMPL_FN unsigned long long rb_gc_impl_get_total_time(void *objspace_ptr);
 GC_IMPL_FN size_t rb_gc_impl_gc_count(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key);
 GC_IMPL_FN size_t rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym);

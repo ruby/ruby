@@ -1523,7 +1523,7 @@ rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event)
 }
 
 unsigned long long
-rb_gc_impl_get_profile_total_time(void *objspace_ptr)
+rb_gc_impl_get_total_time(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
