@@ -636,7 +636,7 @@ typedef struct gc_function_map {
     // Statistics
     VALUE (*set_measure_total_time)(void *objspace_ptr, VALUE flag);
     VALUE (*get_measure_total_time)(void *objspace_ptr);
-    unsigned long long (*get_profile_total_time)(void *objspace_ptr);
+    unsigned long long (*get_total_time)(void *objspace_ptr);
     size_t (*gc_count)(void *objspace_ptr);
     VALUE (*latest_gc_info)(void *objspace_ptr, VALUE key);
     size_t (*stat)(void *objspace_ptr, VALUE hash_or_sym);
@@ -766,7 +766,7 @@ ruby_external_gc_init(void)
     // Statistics
     load_external_gc_func(set_measure_total_time);
     load_external_gc_func(get_measure_total_time);
-    load_external_gc_func(get_profile_total_time);
+    load_external_gc_func(get_total_time);
     load_external_gc_func(gc_count);
     load_external_gc_func(latest_gc_info);
     load_external_gc_func(stat);
@@ -844,7 +844,7 @@ ruby_external_gc_init(void)
 // Statistics
 # define rb_gc_impl_set_measure_total_time rb_gc_functions.set_measure_total_time
 # define rb_gc_impl_get_measure_total_time rb_gc_functions.get_measure_total_time
-# define rb_gc_impl_get_profile_total_time rb_gc_functions.get_profile_total_time
+# define rb_gc_impl_get_total_time rb_gc_functions.get_total_time
 # define rb_gc_impl_gc_count rb_gc_functions.gc_count
 # define rb_gc_impl_latest_gc_info rb_gc_functions.latest_gc_info
 # define rb_gc_impl_stat rb_gc_functions.stat
