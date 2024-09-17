@@ -1533,14 +1533,12 @@ rb_gc_impl_get_profile_total_time(void *objspace_ptr)
     return ULL2NUM(marking_time + sweeping_time);
 }
 
-VALUE
+void
 rb_gc_impl_set_measure_total_time(void *objspace_ptr, VALUE flag)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
     objspace->flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
-
-    return flag;
 }
 
 VALUE

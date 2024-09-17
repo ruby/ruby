@@ -331,7 +331,8 @@ module GC
   # Note that \GC time measurement can cause some performance overhead.
   def self.measure_total_time=(flag)
     Primitive.cstmt! %{
-      return rb_gc_impl_set_measure_total_time(rb_gc_get_objspace(), flag);
+      rb_gc_impl_set_measure_total_time(rb_gc_get_objspace(), flag);
+      return flag;
     }
   end
 
