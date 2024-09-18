@@ -15,6 +15,7 @@ array.rb
 ast.rb
 dir.rb
 gc.rb
+hash.rb
 io.rb
 kernel.rb
 marshal.rb
