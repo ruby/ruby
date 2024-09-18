@@ -257,9 +257,9 @@ module GC
   #     GC.config -> hash
   #     GC.config(hash) -> hash
   #
-  # Sets or gets information about the current GC config.
+  # Sets or gets information about the current \GC config.
   #
-  # Configuration parameters are GC implementation specific and may change
+  # Configuration parameters are \GC implementation specific and may change
   # without notice.
   #
   # This method can be called without parameters to retrieve the current config.
@@ -269,26 +269,26 @@ module GC
   # unmodified.
   #
   # If a key/value pair is passed to this function that does not correspond to
-  # a valid config key for the GC implementation being used, no config will be
+  # a valid config key for the \GC implementation being used, no config will be
   # updated, the key will be present in the returned Hash, and it's value will
-  # be +nil+. This is to facilitate easy migration between GC implementations.
+  # be +nil+. This is to facilitate easy migration between \GC implementations.
   #
   # In both call-seqs the return value of <code>GC.config</code> will be a +Hash+
   # containing the most recent full configuration. ie. All keys and values
-  # defined by the specific GC implementation being used. In the case of a
+  # defined by the specific \GC implementation being used. In the case of a
   # config update, the return value will include the new values being updated.
   #
   # This method is only expected to work on CRuby.
   #
-  # Valid config keys for Ruby's default GC implementation are:
+  # Valid config keys for Ruby's default \GC implementation are:
   #
   # [rgengc_allow_full_mark]
-  #   Control whether the GC is allowed to run a full mark (young & old objects).
+  #   Control whether the \GC is allowed to run a full mark (young & old objects).
   #
-  #   When +true+ GC interleaves major and minor collections. This is default. GC
+  #   When +true+ \GC interleaves major and minor collections. This is default. \GC
   #   will function as intended.
   #
-  #   When +false+, the GC will never trigger a full marking cycle unless
+  #   When +false+, the \GC will never trigger a full marking cycle unless
   #   explicitly requested by user code. Instead only a minor mark will run -
   #   only young objects will be marked. When the heap space is exhausted, new
   #   pages will be allocated immediately instead of running a full mark.
