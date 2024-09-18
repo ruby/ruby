@@ -312,13 +312,17 @@ module GC
   # call-seq:
   #     GC.latest_gc_info -> hash
   #     GC.latest_gc_info(hash) -> hash
-  #     GC.latest_gc_info(:major_by) -> :malloc
+  #     GC.latest_gc_info(key) -> value
   #
   # Returns information about the most recent garbage collection.
   #
-  # If the optional argument, hash, is given,
+  # If the argument +hash+ is given and is a Hash object,
   # it is overwritten and returned.
   # This is intended to avoid probe effect.
+  #
+  # If the argument +key+ is given and is a Symbol object,
+  # it returns the value associated with the key.
+  # This is equivalent to <tt>GC.latest_gc_info[key]</tt>.
   def self.latest_gc_info hash_or_key = nil
     Primitive.gc_latest_gc_info hash_or_key
   end
