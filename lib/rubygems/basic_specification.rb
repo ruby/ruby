@@ -129,7 +129,6 @@ class Gem::BasicSpecification
   end
 
   def find_full_gem_path # :nodoc:
-    # TODO: also, shouldn't it default to full_name if it hasn't been written?
     File.expand_path File.join(gems_dir, full_name)
   end
 
