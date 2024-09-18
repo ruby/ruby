@@ -1556,14 +1556,6 @@ minimum_slots_for_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
     return gc_params.size_pool_init_slots[size_pool_idx];
 }
 
-static VALUE initial_stress = Qfalse;
-
-void
-rb_gc_impl_initial_stress_set(VALUE flag)
-{
-    initial_stress = flag;
-}
-
 static int
 object_id_cmp(st_data_t x, st_data_t y)
 {
@@ -9359,9 +9351,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     rb_objspace_t *objspace = objspace_ptr;
 
     gc_config_full_mark_set(TRUE);
-
-    objspace->flags.gc_stressful = RTEST(initial_stress);
-    objspace->gc_stress_mode = initial_stress;
 
     objspace->flags.measure_gc = true;
     malloc_limit = gc_params.malloc_limit_min;
