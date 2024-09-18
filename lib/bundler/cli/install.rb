@@ -12,7 +12,11 @@ module Bundler
 
       warn_if_root
 
-      Bundler.self_manager.install_locked_bundler_and_restart_with_it_if_needed
+      if options[:local]
+        Bundler.self_manager.restart_with_locked_bundler_if_needed
+      else
+        Bundler.self_manager.install_locked_bundler_and_restart_with_it_if_needed
+      end
 
       Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Gem.freebsd_platform?
 
