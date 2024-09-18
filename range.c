@@ -2502,7 +2502,7 @@ range_overlap(VALUE range, VALUE other)
  *     (1...4).to_a     # => [1, 2, 3]
  *     ('a'...'d').to_a # => ["a", "b", "c"]
  *
- * A range may be created using method Range.new:
+ * - Method Range.new:
  *
  *   # Ranges that by default include the given end value.
  *   Range.new(1, 4).to_a     # => [1, 2, 3, 4]
