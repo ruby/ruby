@@ -650,8 +650,8 @@ pub extern "C" fn rb_yjit_print_stats_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE 
 /// Primitive called in yjit.rb.
 /// Export all YJIT statistics as a Ruby hash.
 #[no_mangle]
-pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict())
+pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, key: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || rb_yjit_gen_stats_dict(key))
 }
 
 /// Primitive called in yjit.rb
@@ -709,25 +709,41 @@ pub extern "C" fn rb_yjit_incr_counter(counter_name: *const std::os::raw::c_char
     unsafe { *counter_ptr += 1 };
 }
 
-fn hash_aset_usize(hash: VALUE, key: &str, value: usize) {
-    let rb_key = rust_str_to_sym(key);
-    let rb_value = VALUE::fixnum_from_usize(value);
-    unsafe { rb_hash_aset(hash, rb_key, rb_value); }
-}
-
-fn hash_aset_double(hash: VALUE, key: &str, value: f64) {
-    let rb_key = rust_str_to_sym(key);
-    unsafe { rb_hash_aset(hash, rb_key, rb_float_new(value)); }
-}
-
 /// Export all YJIT statistics as a Ruby hash.
-fn rb_yjit_gen_stats_dict() -> VALUE {
+fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
     // If YJIT is not enabled, return Qnil
     if !yjit_enabled_p() {
         return Qnil;
     }
 
-    let hash = unsafe { rb_hash_new() };
+    let hash = if key == Qnil {
+        unsafe { rb_hash_new() }
+    } else {
+        Qnil
+    };
+
+    macro_rules! set_stat {
+        ($hash:ident, $name:expr, $value:expr) => {
+            let rb_key = rust_str_to_sym($name);
+            if key == rb_key {
+                return $value;
+            } else if hash != Qnil {
+                rb_hash_aset($hash, rb_key, $value);
+            }
+        }
+    }
+
+    macro_rules! set_stat_usize {
+        ($hash:ident, $name:expr, $value:expr) => {
+            set_stat!($hash, $name, VALUE::fixnum_from_usize($value));
+        }
+    }
+
+    macro_rules! set_stat_double {
+        ($hash:ident, $name:expr, $value:expr) => {
+            set_stat!($hash, $name, rb_float_new($value));
+        }
+    }
 
     unsafe {
         // Get the inline and outlined code blocks
@@ -735,39 +751,39 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         let ocb = CodegenGlobals::get_outlined_cb();
 
         // Inline code size
-        hash_aset_usize(hash, "inline_code_size", cb.code_size());
+        set_stat_usize!(hash, "inline_code_size", cb.code_size());
 
         // Outlined code size
-        hash_aset_usize(hash, "outlined_code_size", ocb.unwrap().code_size());
+        set_stat_usize!(hash, "outlined_code_size", ocb.unwrap().code_size());
 
         // GCed pages
         let freed_page_count = cb.num_freed_pages();
-        hash_aset_usize(hash, "freed_page_count", freed_page_count);
+        set_stat_usize!(hash, "freed_page_count", freed_page_count);
 
         // GCed code size
-        hash_aset_usize(hash, "freed_code_size", freed_page_count * cb.page_size());
+        set_stat_usize!(hash, "freed_code_size", freed_page_count * cb.page_size());
 
         // Live pages
-        hash_aset_usize(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
+        set_stat_usize!(hash, "live_page_count", cb.num_mapped_pages() - freed_page_count);
 
         // Size of memory region allocated for JIT code
-        hash_aset_usize(hash, "code_region_size", cb.mapped_region_size());
+        set_stat_usize!(hash, "code_region_size", cb.mapped_region_size());
 
         // Rust global allocations in bytes
-        hash_aset_usize(hash, "yjit_alloc_size", GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst));
+        set_stat_usize!(hash, "yjit_alloc_size", GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst));
 
         // How many bytes we are using to store context data
         let context_data = CodegenGlobals::get_context_data();
-        hash_aset_usize(hash, "context_data_bytes", context_data.num_bytes());
-        hash_aset_usize(hash, "context_cache_bytes", crate::core::CTX_CACHE_BYTES);
+        set_stat_usize!(hash, "context_data_bytes", context_data.num_bytes());
+        set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_CACHE_BYTES);
 
         // VM instructions count
-        hash_aset_usize(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
 
-        hash_aset_usize(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
-        hash_aset_usize(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
+        set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
+        set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
 
-        rb_hash_aset(hash, rust_str_to_sym("object_shape_count"), rb_object_shape_count());
+        set_stat!(hash, "object_shape_count", rb_object_shape_count());
     }
 
     // If we're not generating stats, put only default counters
@@ -778,9 +794,9 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
             let counter_val = unsafe { *counter_ptr };
 
             // Put counter into hash
-            let key = rust_str_to_sym(&counter.get_name());
+            let key = &counter.get_name();
             let value = VALUE::fixnum_from_usize(counter_val as usize);
-            unsafe { rb_hash_aset(hash, key, value); }
+            unsafe { set_stat!(hash, key, value); }
         }
 
         return hash;
@@ -788,18 +804,14 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
 
     unsafe {
         // Indicate that the complete set of stats is available
-        rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
+        set_stat!(hash, "all_stats", Qtrue);
 
         // For each counter we track
         for counter_name in COUNTER_NAMES {
             // Get the counter value
             let counter_ptr = get_counter_ptr(counter_name);
             let counter_val = *counter_ptr;
-
-            // Put counter into hash
-            let key = rust_str_to_sym(counter_name);
-            let value = VALUE::fixnum_from_usize(counter_val as usize);
-            rb_hash_aset(hash, key, value);
+            set_stat_usize!(hash, counter_name, counter_val as usize);
         }
 
         let mut side_exits = 0;
@@ -809,17 +821,15 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         for op_idx in 0..VM_INSTRUCTION_SIZE_USIZE {
             let op_name = insn_name(op_idx);
             let key_string = "exit_".to_owned() + &op_name;
-            let key = rust_str_to_sym(&key_string);
             let count = EXIT_OP_COUNT[op_idx];
             side_exits += count;
-            let value = VALUE::fixnum_from_usize(count as usize);
-            rb_hash_aset(hash, key, value);
+            set_stat_usize!(hash, &key_string, count as usize);
         }
 
-        hash_aset_usize(hash, "side_exit_count", side_exits as usize);
+        set_stat_usize!(hash, "side_exit_count", side_exits as usize);
 
         let total_exits = side_exits + *get_counter_ptr(&Counter::leave_interp_return.get_name());
-        hash_aset_usize(hash, "total_exit_count", total_exits as usize);
+        set_stat_usize!(hash, "total_exit_count", total_exits as usize);
 
         // Number of instructions that finish executing in YJIT.
         // See :count-placement: about the subtraction.
@@ -831,14 +841,14 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         } else {
             0_f64
         };
-        hash_aset_double(hash, "avg_len_in_yjit", avg_len_in_yjit);
+        set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
         let total_insns_count = retired_in_yjit + rb_vm_insns_count;
-        hash_aset_usize(hash, "total_insns_count", total_insns_count as usize);
+        set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
         let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
-        hash_aset_double(hash, "ratio_in_yjit", ratio_in_yjit);
+        set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
 
         // Set method call counts in a Ruby dict
         fn set_call_counts(
@@ -871,14 +881,18 @@ fn rb_yjit_gen_stats_dict() -> VALUE {
         }
 
         // Create a hash for the cfunc call counts
-        let cfunc_calls = rb_hash_new();
-        rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), cfunc_calls);
-        set_call_counts(cfunc_calls, &mut *addr_of_mut!(CFUNC_NAME_TO_IDX), &mut *addr_of_mut!(CFUNC_CALL_COUNT));
+        set_stat!(hash, "cfunc_calls", {
+            let cfunc_calls = rb_hash_new();
+            set_call_counts(cfunc_calls, &mut *addr_of_mut!(CFUNC_NAME_TO_IDX), &mut *addr_of_mut!(CFUNC_CALL_COUNT));
+            cfunc_calls
+        });
 
         // Create a hash for the ISEQ call counts
-        let iseq_calls = rb_hash_new();
-        rb_hash_aset(hash, rust_str_to_sym("iseq_calls"), iseq_calls);
-        set_call_counts(iseq_calls, &mut *addr_of_mut!(ISEQ_NAME_TO_IDX), &mut *addr_of_mut!(ISEQ_CALL_COUNT));
+        set_stat!(hash, "iseq_calls", {
+            let iseq_calls = rb_hash_new();
+            set_call_counts(iseq_calls, &mut *addr_of_mut!(ISEQ_NAME_TO_IDX), &mut *addr_of_mut!(ISEQ_CALL_COUNT));
+            iseq_calls
+        });
     }
 
     hash
