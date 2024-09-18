@@ -85,7 +85,7 @@ module ErrorHighlight
   # corresponding to the backtrace location in the source code.
   def self.prism_find(location)
     require "prism"
-    return nil if Prism::VERSION < "0.29.0"
+    return nil if Prism::VERSION < "1.0.0"
 
     absolute_path = location.absolute_path
     return unless absolute_path
