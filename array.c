@@ -4707,11 +4707,17 @@ rb_ary_clear(VALUE ary)
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
  *  (or +nil+):
  *
- *  - +start+ is the zero-based offset of the first element to be replaced;
- *    +nil+ means zero;
+ *  - +start+ specifies the zero-based offset of the first element to be replaced:
+ *
+ *    - If +start+ is non-negative, the effective start is +start+.
+ *    - If +start+ is +nil+, the effective start is zero.
+ *    - If +start+ is negative, counts backwards from the end of self;
+ *      the effective start is <tt>self.size + start</tt>.
+ *
  *  - +count+ is the number of consecutive elements to be replaced;
  *    +nil+ means "all the rest."
- *  - If <tt>start + count</tt> is greater than <tt>self.size</tt>, elements are appended.
+ *  - If the effective start plus +count+ is greater than <tt>self.size</tt>,
+ *    elements are appended.
  *
  *  If argument +object+ is given,
  *  that one object is the sole replacement value:
