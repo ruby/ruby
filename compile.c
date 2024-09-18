@@ -6284,6 +6284,21 @@ keyword_node_single_splat_p(NODE *kwnode)
            RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next == NULL;
 }
 
+static void
+compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
+                                     NODE *kwnode, unsigned int *flag_ptr)
+{
+    *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+    ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    ADD_INSN1(args, argn, newhash, INT2FIX(0));
+    compile_hash(iseq, args, kwnode, TRUE, FALSE);
+    ADD_SEND(args, argn, id_core_hash_merge_kwd, INT2FIX(2));
+}
+
+#define SPLATARRAY_FALSE 0
+#define SPLATARRAY_TRUE 1
+#define DUP_SINGLE_KW_SPLAT 2
+
 static int
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 unsigned int *dup_rest, unsigned int *flag_ptr, struct rb_callinfo_kwarg **kwarg_ptr)
@@ -6303,7 +6318,12 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 len -= 1;
             }
             else {
-                compile_hash(iseq, args, kwnode, TRUE, FALSE);
+                if (keyword_node_single_splat_p(kwnode) && (*dup_rest & DUP_SINGLE_KW_SPLAT)) {
+                    compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
+                }
+                else {
+                    compile_hash(iseq, args, kwnode, TRUE, FALSE);
+                }
             }
         }
 
@@ -6312,8 +6332,8 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
       case NODE_SPLAT: {
         // f(*a)
         NO_CHECK(COMPILE(args, "args (splat)", RNODE_SPLAT(argn)->nd_head));
-        ADD_INSN1(args, argn, splatarray, RBOOL(*dup_rest));
-        if (*dup_rest) *dup_rest = 0;
+        ADD_INSN1(args, argn, splatarray, RBOOL(*dup_rest & SPLATARRAY_TRUE));
+        if (*dup_rest & SPLATARRAY_TRUE) *dup_rest &= ~SPLATARRAY_TRUE;
         if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
         RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_KW_SPLAT) == 0);
         return 1;
@@ -6335,8 +6355,8 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         }
 
         if (nd_type_p(RNODE_ARGSCAT(argn)->nd_head, NODE_LIST)) {
-            ADD_INSN1(args, argn, splatarray, RBOOL(*dup_rest));
-            if (*dup_rest) *dup_rest = 0;
+            ADD_INSN1(args, argn, splatarray, RBOOL(*dup_rest & SPLATARRAY_TRUE));
+            if (*dup_rest & SPLATARRAY_TRUE) *dup_rest &= ~SPLATARRAY_TRUE;
             argc += 1;
         }
         else if (!args_pushed) {
@@ -6378,8 +6398,14 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             *flag_ptr |= VM_CALL_KW_SPLAT;
             if (!keyword_node_single_splat_p(kwnode)) {
                 *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+                compile_hash(iseq, args, kwnode, TRUE, FALSE);
             }
-            compile_hash(iseq, args, kwnode, TRUE, FALSE);
+            else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
+                compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
+            }
+            else {
+                compile_hash(iseq, args, kwnode, TRUE, FALSE);
+            }
             argc += 1;
         }
 
@@ -6437,7 +6463,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
            unsigned int *flag, struct rb_callinfo_kwarg **keywords)
 {
     VALUE ret;
-    unsigned int dup_rest = 1, initial_dup_rest;
+    unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest;
 
     if (argn) {
         const NODE *check_arg = nd_type_p(argn, NODE_BLOCK_PASS) ?
@@ -6447,7 +6473,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             switch(nd_type(check_arg)) {
               case(NODE_SPLAT):
                 // avoid caller side array allocation for f(*arg)
-                dup_rest = 0;
+                dup_rest = SPLATARRAY_FALSE;
                 break;
               case(NODE_ARGSCAT):
                 // avoid caller side array allocation for f(1, *arg)
@@ -6461,20 +6487,20 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                     nd_type_p(RNODE_ARGSPUSH(check_arg)->nd_body, NODE_HASH) &&
                     !RNODE_HASH(RNODE_ARGSPUSH(check_arg)->nd_body)->nd_brace);
 
-                if (!dup_rest) {
+                if (dup_rest == SPLATARRAY_FALSE) {
                     // require allocation for keyword key/value/splat that may modify splatted argument
                     NODE *node = RNODE_HASH(RNODE_ARGSPUSH(check_arg)->nd_body)->nd_head;
                     while (node) {
                         NODE *key_node = RNODE_LIST(node)->nd_head;
                         if (key_node && setup_args_dup_rest_p(key_node)) {
-                            dup_rest = 1;
+                            dup_rest = SPLATARRAY_TRUE;
                             break;
                         }
 
                         node = RNODE_LIST(node)->nd_next;
                         NODE *value_node = RNODE_LIST(node)->nd_head;
                         if (setup_args_dup_rest_p(value_node)) {
-                            dup_rest = 1;
+                            dup_rest = SPLATARRAY_TRUE;
                             break;
                         }
 
@@ -6487,9 +6513,9 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             }
         }
 
-        if (!dup_rest && (check_arg != argn) && setup_args_dup_rest_p(RNODE_BLOCK_PASS(argn)->nd_body)) {
-            // require allocation for block pass that may modify splatted argument
-            dup_rest = 1;
+        if (check_arg != argn && setup_args_dup_rest_p(RNODE_BLOCK_PASS(argn)->nd_body)) {
+            // for block pass that may modify splatted argument, dup rest and kwrest if given
+            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
         }
     }
     initial_dup_rest = dup_rest;
