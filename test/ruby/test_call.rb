@@ -374,6 +374,21 @@ class TestCall < Test::Unit::TestCase
     assert_equal({splat_modified: false}, b)
   end
 
+  def test_kwsplat_block_eval_order
+    def self.t(**kw, &b) [kw, b] end
+
+    pr = ->{}
+    h = {a: pr}
+    a = []
+
+    ary = t(**h, &h.delete(:a))
+    assert_equal([{a: pr}, pr], ary)
+
+    h = {a: pr}
+    ary = t(*a, **h, &h.delete(:a))
+    assert_equal([{a: pr}, pr], ary)
+  end
+
   def test_kwsplat_block_order
     o = Object.new
     ary = []
