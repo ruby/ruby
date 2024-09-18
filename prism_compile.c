@@ -1909,8 +1909,9 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         // since the nature of the expression influences whether splat should
         // duplicate the array.
         bool regular_block_arg = true;
+        const pm_node_t *block_expr = ((const pm_block_argument_node_t *)block)->expression;
 
-        if (pm_setup_args_dup_rest_p(((const pm_block_argument_node_t *)block)->expression)) {
+        if (block_expr && pm_setup_args_dup_rest_p(block_expr)) {
             dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
             initial_dup_rest = dup_rest;
         }
