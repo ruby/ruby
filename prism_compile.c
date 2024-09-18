@@ -1910,7 +1910,7 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         // duplicate the array.
         bool regular_block_arg = true;
 
-        if (pm_setup_args_dup_rest_p(block)) {
+        if (pm_setup_args_dup_rest_p(((const pm_block_argument_node_t *)block)->expression)) {
             dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
             initial_dup_rest = dup_rest;
         }
