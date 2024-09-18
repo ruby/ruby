@@ -1991,10 +1991,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
         for (i = 0; i < RARRAY_LEN(default_values); i++) {
             VALUE dv = RARRAY_AREF(default_values, i);
             if (dv == complex_mark) dv = Qundef;
-            if (!SPECIAL_CONST_P(dv)) {
-                RB_OBJ_WRITTEN(iseq, Qundef, dv);
-            }
-            dvs[i] = dv;
+            RB_OBJ_WRITE(iseq, &dvs[i], dv);
         }
 
         keyword->default_values = dvs;
