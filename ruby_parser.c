@@ -418,7 +418,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_coderange_7bit = ENC_CODERANGE_7BIT,
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
     .usascii_encoding = usascii_encoding,
-    .enc_coderange_broken = ENC_CODERANGE_BROKEN,
     .enc_mbminlen = enc_mbminlen,
     .enc_isascii = enc_isascii,
     .enc_mbc_to_codepoint = enc_mbc_to_codepoint,

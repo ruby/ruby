@@ -10,7 +10,7 @@ module Bundler
     end
 
     def setup(*groups)
-      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen_bundle?
+      @definition.ensure_equivalent_gemfile_and_lockfile
 
       # Has to happen first
       clean_load_path
@@ -137,11 +137,6 @@ module Bundler
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
         spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
-      end
-
-      Dir[cache_path.join("*/.git")].each do |git_dir|
-        FileUtils.rm_rf(git_dir)
-        FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 
       prune_cache(cache_path) unless Bundler.settings[:no_prune]

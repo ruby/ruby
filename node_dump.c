@@ -27,6 +27,10 @@
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_dump_literal(lit))
+#define A_LOC(loc) \
+    rb_str_catf(buf, "(%d,%d)-(%d,%d)", \
+                loc.beg_pos.lineno, loc.beg_pos.column, \
+                loc.end_pos.lineno, loc.end_pos.column)
 #define A_NODE_HEADER(node, term) \
     rb_str_catf(buf, "@ %s (id: %d, line: %d, location: (%d,%d)-(%d,%d))%s"term, \
                 ruby_node_name(nd_type(node)), nd_node_id(node), nd_line(node), \
@@ -84,6 +88,7 @@
 #define F_LIT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(type(node)->name)
 #define F_VALUE(name, val, ann)     SIMPLE_FIELD1(#name, ann) A_LIT(val)
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
+#define F_LOC(name, type)           SIMPLE_FIELD1(#name, "")  A_LOC(type(node)->name)
 #define F_SHAREABILITY(name, type, ann) SIMPLE_FIELD1(#name, ann) A_SHAREABILITY(type(node)->name)
 
 #define F_NODE(name, type, ann) \
@@ -91,6 +96,9 @@
 
 #define F_NODE2(name, n, ann) \
     COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, n);}
+
+#define F_ARRAY(name, type, ann) \
+    COMPOUND_FIELD1(#name, ann) {dump_parser_array(buf, indent, comment, type(node)->name);}
 
 #define ANN(ann) \
     if (comment) { \
@@ -165,6 +173,28 @@ dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
 }
 
 static void
+dump_parser_array(VALUE buf, VALUE indent, int comment, const rb_parser_ary_t *ary)
+{
+    int field_flag;
+    const char *next_indent = default_indent;
+
+    if (ary->data_type != PARSER_ARY_DATA_NODE) {
+        rb_bug("unexpected rb_parser_ary_data_type: %d", ary->data_type);
+    }
+
+    F_CUSTOM1(length, "length") { A_LONG(ary->len); }
+    for (long i = 0; i < ary->len; i++) {
+        if (i == ary->len - 1) LAST_NODE;
+        A_INDENT;
+        rb_str_catf(buf, "+- element (%s%ld):\n",
+                    comment ? "statement #" : "", i);
+        D_INDENT;
+        dump_node(buf, indent, comment, ary->data[i]);
+        D_DEDENT;
+    }
+}
+
+static void
 dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 {
     int field_flag;
@@ -219,8 +249,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: unless x == 1 then foo else bar end");
         F_NODE(nd_cond, RNODE_UNLESS, "condition expr");
         F_NODE(nd_body, RNODE_UNLESS, "then clause");
-        LAST_NODE;
         F_NODE(nd_else, RNODE_UNLESS, "else clause");
+        F_LOC(keyword_loc, RNODE_UNLESS);
+        F_LOC(then_keyword_loc, RNODE_UNLESS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_UNLESS);
         return;
 
       case NODE_CASE:
@@ -256,6 +289,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_body, RNODE_WHEN, "when body");
         LAST_NODE;
         F_NODE(nd_next, RNODE_WHEN, "next when clause");
+        F_LOC(keyword_loc, RNODE_WHEN);
+        LAST_NODE;
+        F_LOC(then_keyword_loc, RNODE_WHEN);
         return;
 
       case NODE_IN:
@@ -283,8 +319,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             A((RNODE_WHILE(node)->nd_state == 1) ? " (while-end)" : " (begin-end-while)");
         }
         F_NODE(nd_cond, RNODE_WHILE, "condition");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_WHILE, "body");
+        F_LOC(keyword_loc, RNODE_WHILE);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_WHILE);
         return;
 
       case NODE_ITER:
@@ -314,15 +352,17 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("break statement");
         ANN("format: break [nd_stts]");
         ANN("example: break 1");
-        LAST_NODE;
         F_NODE(nd_stts, RNODE_BREAK, "value");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_BREAK);
         return;
       case NODE_NEXT:
         ANN("next statement");
         ANN("format: next [nd_stts]");
         ANN("example: next 1");
-        LAST_NODE;
         F_NODE(nd_stts, RNODE_NEXT, "value");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_NEXT);
         return;
       case NODE_RETURN:
         ANN("return statement");
@@ -336,6 +376,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("redo statement");
         ANN("format: redo");
         ANN("example: redo");
+        F_LOC(keyword_loc, RNODE_REDO);
         return;
 
       case NODE_RETRY:
@@ -364,9 +405,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_RESBODY:
         ANN("rescue clause (cont'd)");
-        ANN("format: rescue [nd_args]; [nd_body]; (rescue) [nd_head]");
+        ANN("format: rescue [nd_args] (=> [nd_exc_var]); [nd_body]; (rescue) [nd_next]");
         ANN("example: begin; foo; rescue; bar; else; baz; end");
         F_NODE(nd_args, RNODE_RESBODY, "rescue exceptions");
+        F_NODE(nd_exc_var, RNODE_RESBODY, "exception variable");
         F_NODE(nd_body, RNODE_RESBODY, "rescue clause");
         LAST_NODE;
         F_NODE(nd_next, RNODE_RESBODY, "next rescue clause");
@@ -397,8 +439,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
                 break;
             node = RNODE_AND(node)->nd_2nd;
         }
-        LAST_NODE;
         F_NODE(nd_2nd, RNODE_AND, "right expr");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_AND);
         return;
 
       case NODE_MASGN:
@@ -853,6 +896,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("arguments with block argument");
         ANN("format: ..([nd_head], &[nd_body])");
         ANN("example: foo(x, &blk)");
+        F_CUSTOM1(forwarding, "arguments forwarding or not") {
+            switch (RNODE_BLOCK_PASS(node)->forwarding) {
+              case 0: A("0 (no forwarding)"); break;
+              case 1: A("1 (forwarding)"); break;
+            }
+        }
         F_NODE(nd_head, RNODE_BLOCK_PASS, "other arguments");
         LAST_NODE;
         F_NODE(nd_body, RNODE_BLOCK_PASS, "block argument");
@@ -882,8 +931,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: alias [nd_1st] [nd_2nd]");
         ANN("example: alias bar foo");
         F_NODE(nd_1st, RNODE_ALIAS, "new name");
-        LAST_NODE;
         F_NODE(nd_2nd, RNODE_ALIAS, "old name");
+        LAST_NODE;
+        F_LOC(keyword_loc, RNODE_ALIAS);
         return;
 
       case NODE_VALIAS:
@@ -892,14 +942,16 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: alias $y $x");
         F_ID(nd_alias, RNODE_VALIAS, "new name");
         F_ID(nd_orig, RNODE_VALIAS, "old name");
+        F_LOC(keyword_loc, RNODE_VALIAS);
         return;
 
       case NODE_UNDEF:
         ANN("method undef statement");
-        ANN("format: undef [nd_undef]");
+        ANN("format: undef [nd_undefs]");
         ANN("example: undef foo");
         LAST_NODE;
-        F_NODE(nd_undef, RNODE_UNDEF, "old name");
+        F_ARRAY(nd_undefs, RNODE_UNDEF, "nd_undefs");
+        F_LOC(keyword_loc, RNODE_UNDEF);
         return;
 
       case NODE_CLASS:
@@ -1008,6 +1060,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("defined? expression");
         ANN("format: defined?([nd_head])");
         ANN("example: defined?(foo)");
+        LAST_NODE;
         F_NODE(nd_head, RNODE_DEFINED, "expr");
         return;
 
@@ -1073,6 +1126,12 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("method parameters");
         ANN("format: def method_name(.., [nd_ainfo.nd_optargs], *[nd_ainfo.rest_arg], [nd_ainfo.first_post_arg], .., [nd_ainfo.kw_args], **[nd_ainfo.kw_rest_arg], &[nd_ainfo.block_arg])");
         ANN("example: def foo(a, b, opt1=1, opt2=2, *rest, y, z, kw: 1, **kwrest, &blk); end");
+        F_CUSTOM1(nd_ainfo.forwarding, "arguments forwarding or not") {
+            switch (RNODE_ARGS(node)->nd_ainfo.forwarding) {
+              case 0: A("0 (no forwarding)"); break;
+              case 1: A("1 (forwarding)"); break;
+            }
+        }
         F_INT(nd_ainfo.pre_args_num, RNODE_ARGS, "count of mandatory (pre-)arguments");
         F_NODE(nd_ainfo.pre_init, RNODE_ARGS, "initialization of (pre-)arguments");
         F_INT(nd_ainfo.post_args_num, RNODE_ARGS, "count of mandatory post-arguments");

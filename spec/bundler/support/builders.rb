@@ -27,8 +27,6 @@ module Spec
     end
 
     def build_repo1
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
 
@@ -91,75 +89,57 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = Gem::Platform.local
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 #{Gem::Platform.local}'"
-        end
-
-        build_gem "platform_specific" do |s|
           s.platform = "java"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 JAVA'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "ruby"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 RUBY'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mswin32"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mswin32'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x64-mswin64"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mswin64'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mingw32"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x86-mingw32'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x64-mingw32"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw32'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x64-mingw-ucrt"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0 x64-mingw-ucrt'"
         end
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-darwin-100"
-          s.write "lib/platform_specific.rb", "PLATFORM_SPECIFIC = '1.0.0 x86-darwin-100'"
         end
 
         build_gem "only_java", "1.0" do |s|
           s.platform = "java"
-          s.write "lib/only_java.rb", "ONLY_JAVA = '1.0.0 JAVA'"
         end
 
         build_gem "only_java", "1.1" do |s|
           s.platform = "java"
-          s.write "lib/only_java.rb", "ONLY_JAVA = '1.1.0 JAVA'"
         end
 
         build_gem "nokogiri", "1.4.2"
         build_gem "nokogiri", "1.4.2" do |s|
           s.platform = "java"
-          s.write "lib/nokogiri.rb", "NOKOGIRI = '1.4.2 JAVA'"
           s.add_dependency "weakling", ">= 0.0.3"
         end
 
         build_gem "laduradura", "5.15.2"
         build_gem "laduradura", "5.15.2" do |s|
           s.platform = "java"
-          s.write "lib/laduradura.rb", "LADURADURA = '5.15.2 JAVA'"
         end
         build_gem "laduradura", "5.15.3" do |s|
           s.platform = "java"
-          s.write "lib/laduradura.rb", "LADURADURA = '5.15.2 JAVA'"
         end
 
         build_gem "weakling", "0.0.3"
@@ -208,9 +188,15 @@ module Spec
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
+    def build_repo3(**kwargs, &blk)
+      build_empty_repo gem_repo3, **kwargs, &blk
+    end
+
+    # Like build_repo3, this is a repo that has no pre-installed gems included.
+    # We have two different methods for situations where two different empty
+    # sources are needed.
     def build_repo4(**kwargs, &blk)
-      FileUtils.rm_rf gem_repo4
-      build_repo(gem_repo4, **kwargs, &blk)
+      build_empty_repo gem_repo4, **kwargs, &blk
     end
 
     def update_repo4(&blk)
@@ -245,12 +231,9 @@ module Spec
     end
 
     def check_test_gems!
-      rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
-
       if rake_path.nil?
         FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
-        rake_path = Dir["#{base_system_gems}/**/rake*.gem"].first
       end
 
       if rake_path.nil?
@@ -259,7 +242,8 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      if path == gem_repo1 && caller.first.split(" ").last == "`build_repo`"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
       return unless block_given?
@@ -328,6 +312,11 @@ module Spec
     end
 
     private
+
+    def build_empty_repo(gem_repo, **kwargs, &blk)
+      FileUtils.rm_rf gem_repo
+      build_repo(gem_repo, **kwargs, &blk)
+    end
 
     def build_with(builder, name, args, &blk)
       @_build_path ||= nil
@@ -494,7 +483,6 @@ module Spec
       end
 
       def add_c_extension
-        require_paths << "ext"
         extensions << "ext/extconf.rb"
         write "ext/extconf.rb", <<-RUBY
           require "mkmf"

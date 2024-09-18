@@ -489,6 +489,10 @@ EOS
     assert_equal [1, 2, 3], enum.map { |x| x / 2 }
   end
 
+  def test_lazy_zip_map_yield_arity_bug_20623
+    assert_equal([[1, 2]], [1].lazy.zip([2].lazy).map { |x| x }.force)
+  end
+
   def test_lazy_to_enum
     lazy = [1, 2, 3].lazy
     def lazy.foo(*args)

@@ -90,12 +90,15 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_inspect_dollar
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     # 4) :$- always treats next character literally:
     assert_raise(SyntaxError) {eval ':$-'}
     assert_raise(SyntaxError) {eval ":$-\n"}
     assert_raise(SyntaxError) {eval ":$- "}
     assert_raise(SyntaxError) {eval ":$-#"}
     assert_raise(SyntaxError) {eval ':$-('}
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_inspect_number

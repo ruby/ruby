@@ -64,8 +64,6 @@ void rb_lastline_set_up(VALUE val, unsigned int up);
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
-VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-                                 rb_check_funcall_hook *hook, VALUE arg);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
                                  rb_check_funcall_hook *hook, VALUE arg, int kw_splat);
 const char *rb_type_str(enum ruby_value_type type);
@@ -77,6 +75,8 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                      rb_block_call_func_t bl_proc, int min_argc, int max_argc,
                      VALUE data2);
 void rb_check_stack_overflow(void);
+#define RB_BLOCK_NO_USE_PACKED_ARGS 2
+VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 
 #if USE_YJIT
 /* vm_exec.c */

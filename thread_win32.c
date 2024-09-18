@@ -589,7 +589,7 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
     {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
 
 COMPILER_WARNING_PUSH
-#if defined(__GNUC__)
+#if __has_warning("-Wmaybe-uninitialized")
 COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 #endif
 static inline SIZE_T
@@ -1009,6 +1009,12 @@ bool
 rb_thread_lock_native_thread(void)
 {
     return false;
+}
+
+void *
+rb_thread_prevent_fork(void *(*func)(void *), void *data)
+{
+    return func(data);
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

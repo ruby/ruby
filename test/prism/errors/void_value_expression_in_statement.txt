@@ -1,0 +1,26 @@
+if (return)
+    ^~~~~~ unexpected void value expression
+end
+unless (return)
+        ^~~~~~ unexpected void value expression
+end
+while (return)
+       ^~~~~~ unexpected void value expression
+end
+until (return)
+       ^~~~~~ unexpected void value expression
+end
+case (return)
+      ^~~~~~ unexpected void value expression
+when 1
+end
+class A < (return)
+           ^~~~~~ unexpected void value expression
+end
+class << (return)
+          ^~~~~~ unexpected void value expression
+end
+for x in (return)
+          ^~~~~~ unexpected void value expression
+end
+

@@ -1048,12 +1048,6 @@ rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE dat
     volatile VALUE result = Qnil;
     VALUE errinfo;
     rb_execution_context_t * volatile ec = GET_EC();
-    rb_ensure_list_t ensure_list;
-    ensure_list.entry.marker = 0;
-    ensure_list.entry.e_proc = e_proc;
-    ensure_list.entry.data2 = data2;
-    ensure_list.next = ec->ensure_list;
-    ec->ensure_list = &ensure_list;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = (*b_proc) (data1);
@@ -1063,8 +1057,7 @@ rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE dat
     if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
         ec->errinfo = Qnil;
     }
-    ec->ensure_list=ensure_list.next;
-    (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
+    (*e_proc)(data2);
     ec->errinfo = errinfo;
     if (state)
         EC_JUMP_TAG(ec, state);

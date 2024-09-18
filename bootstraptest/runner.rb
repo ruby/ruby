@@ -78,6 +78,7 @@ bt = Struct.new(:ruby,
                 :platform,
                 :timeout,
                 :timeout_scale,
+                :launchable_test_reports
                 )
 BT = Class.new(bt) do
   def indent=(n)
@@ -229,6 +230,19 @@ End
       exit true
     when /\A-j/
       true
+    when /--launchable-test-reports=(.*)/
+      if File.exist?($1)
+        # To protect files from overwritten, do nothing when the file exists.
+        return true
+      end
+
+      require_relative '../tool/lib/launchable'
+      BT.launchable_test_reports = writer = Launchable::JsonStreamWriter.new($1)
+      writer.write_array('testCases')
+      at_exit {
+        writer.close
+      }
+      true
     else
       false
     end
@@ -345,6 +359,59 @@ def concurrent_exec_test
   end
 end
 
+##
+# Module for writing a test file for uploading test results into Launchable.
+# In bootstraptest, we aggregate the test results based on file level.
+module Launchable
+  @@last_test_name = nil
+  @@failure_log = ''
+  @@duration = 0
+
+  def show_progress(message = '')
+    faildesc, t = super
+
+    if writer = BT.launchable_test_reports
+      if faildesc
+        @@failure_log += faildesc
+      end
+      repo_path = File.expand_path("#{__dir__}/../")
+      relative_path = File.join(__dir__, self.path).delete_prefix("#{repo_path}/")
+      if @@last_test_name != nil && @@last_test_name != relative_path
+        # The test path is a URL-encoded representation.
+        # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
+        test_path = "#{encode_test_path_component("file")}=#{encode_test_path_component(@@last_test_name)}"
+        if @@failure_log.size > 0
+          status = 'TEST_FAILED'
+        else
+          status = 'TEST_PASSED'
+        end
+        writer.write_object(
+          {
+            testPath: test_path,
+            status: status,
+            duration: t,
+            createdAt: Time.now.to_s,
+            stderr: @@failure_log,
+            stdout: nil,
+            data: {
+              lineNumber: self.lineno
+            }
+          }
+        )
+        @@duration = 0
+        @@failure_log.clear
+      end
+      @@last_test_name = relative_path
+      @@duration += t
+    end
+  end
+
+  private
+  def encode_test_path_component component
+    component.to_s.gsub('%', '%25').gsub('=', '%3D').gsub('#', '%23').gsub('&', '%26')
+  end
+end
+
 def exec_test(paths)
   # setup
   load_test paths
@@ -421,6 +488,7 @@ def target_platform
 end
 
 class Assertion < Struct.new(:src, :path, :lineno, :proc)
+  prepend Launchable
   @count = 0
   @all = Hash.new{|h, k| h[k] = []}
   @errbuf = []
@@ -495,9 +563,9 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
       $stderr.print "#{BT.progress_bs}#{BT.progress[BT_STATE.count % BT.progress.size]}"
     end
 
-    t = Time.now if BT.verbose
+    t = Time.now if BT.verbose || BT.launchable_test_reports
     faildesc, errout = with_stderr {yield}
-    t = Time.now - t if BT.verbose
+    t = Time.now - t if BT.verbose || BT.launchable_test_reports
 
     if !faildesc
       # success
@@ -524,6 +592,8 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
         $stderr.printf("%-*s%s", BT.width, path, BT.progress[BT_STATE.count % BT.progress.size])
       end
     end
+
+    [faildesc, t]
   rescue Interrupt
     $stderr.puts "\##{@id} #{path}:#{lineno}"
     raise
@@ -648,23 +718,19 @@ def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
       timeout_signaled = false
       logfile = "assert_normal_exit.#{as.path}.#{as.lineno}.log"
 
-      begin
-        err = open(logfile, "w")
-        io = IO.popen("#{BT.ruby} -W0 #{filename}", err: err)
-        pid = io.pid
-        th = Thread.new {
-          io.read
-          io.close
-          $?
-        }
-        if !th.join(timeout)
-          Process.kill :KILL, pid
-          timeout_signaled = true
-        end
-        status = th.value
-      ensure
-        err.close
+      io = IO.popen("#{BT.ruby} -W0 #{filename}", err: logfile)
+      pid = io.pid
+      th = Thread.new {
+        io.read
+        io.close
+        $?
+      }
+      if !th.join(timeout)
+        Process.kill :KILL, pid
+        timeout_signaled = true
       end
+      status = th.value
+
       if status && status.signaled?
         signo = status.termsig
         signame = Signal.list.invert[signo]

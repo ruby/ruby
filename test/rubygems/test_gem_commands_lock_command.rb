@@ -9,11 +9,11 @@ class TestGemCommandsLockCommand < Gem::TestCase
 
     @a1 = quick_gem "a", "1"
     @b1 = quick_gem "b", "1" do |s|
-      s.add_runtime_dependency "a"
+      s.add_dependency "a"
     end
 
     @d1 = quick_gem "d", "1" do |s|
-      s.add_runtime_dependency "z"
+      s.add_dependency "z"
     end
 
     @cmd = Gem::Commands::LockCommand.new

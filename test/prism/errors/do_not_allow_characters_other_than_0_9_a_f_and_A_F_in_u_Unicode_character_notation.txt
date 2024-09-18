@@ -1,0 +1,4 @@
+"\u{000z}"
+       ^ invalid Unicode escape sequence
+       ^ unterminated Unicode escape
+

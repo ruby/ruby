@@ -773,17 +773,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+", &:read)
-  rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb", &:read)
+    File.binread(path)
   end
 
   ##
   # Safely write a file in binary mode on all platforms.
+
   def self.write_binary(path, data)
-    open_file(path, "wb") do |io|
-      io.write data
-    end
+    File.binwrite(path, data)
   rescue Errno::ENOSPC
     # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
     File.delete(path) if File.exist?(path)
@@ -791,33 +788,37 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags. It requires special logic on Windows, like
-  # protecting access with flock
+  # Open a file with given flags
 
   def self.open_file(path, flags, &block)
-    if !java_platform? && win_platform?
-      open_file_with_flock(path, flags, &block)
-    else
-      open_file_without_flock(path, flags, &block)
-    end
+    File.open(path, flags, &block)
+  end
+
+  ##
+  # Open a file with given flags, and protect access with a file lock
+
+  def self.open_file_with_lock(path, &block)
+    file_lock = "#{path}.lock"
+    open_file_with_flock(file_lock, &block)
+  ensure
+    FileUtils.rm_f file_lock
   end
 
   ##
   # Open a file with given flags, and protect access with flock
 
-  def self.open_file_with_flock(path, flags, &block)
-    File.open(path, flags) do |io|
+  def self.open_file_with_flock(path, &block)
+    mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+    mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+
+    File.open(path, mode) do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue Errno::ENOSYS, Errno::ENOTSUP
+      rescue Errno::ENOLCK # NFS
+        raise unless Thread.main == Thread.current
       end
       yield io
-    end
-  rescue Errno::ENOLCK # NFS
-    if Thread.main != Thread.current
-      raise
-    else
-      open_file_without_flock(path, flags, &block)
     end
   end
 
@@ -1316,10 +1317,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     attr_reader :pre_uninstall_hooks
 
     private
-
-    def open_file_without_flock(path, flags, &block)
-      File.open(path, flags, &block)
-    end
 
     def already_loaded?(file)
       $LOADED_FEATURES.any? do |feature_path|

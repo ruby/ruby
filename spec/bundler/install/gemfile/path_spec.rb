@@ -98,7 +98,7 @@ RSpec.describe "bundle install with explicit source paths" do
       gem "aaa", :path => "./aaa"
     G
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.no_checksum "aaa", "1.0"
       c.no_checksum "demo", "1.0"
     end
@@ -346,7 +346,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
     lockfile_path = lib_path("foo/Gemfile.lock")
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.no_checksum "foo", "0.1.0"
       c.checksum gem_repo4, "graphql", "2.0.15"
     end
@@ -675,7 +675,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
       expect(the_bundle).to include_gems "myrack 0.9.1"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
         c.checksum gem_repo1, "myrack", "0.9.1"
       end
@@ -742,7 +742,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
       expect(the_bundle).to include_gems "myrack 0.9.1"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
         c.checksum gem_repo1, "myrack", "0.9.1"
       end
@@ -810,7 +810,7 @@ RSpec.describe "bundle install with explicit source paths" do
         s.add_dependency "myrack", "0.9.1"
       end
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
       end
 
@@ -832,7 +832,7 @@ RSpec.describe "bundle install with explicit source paths" do
 
       bundle "lock"
 
-      checksums.no_checksum "myrack", "0.9.1"
+      checksums.checksum gem_repo1, "myrack", "0.9.1"
 
       expect(lockfile).to eq <<~G
         PATH

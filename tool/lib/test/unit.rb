@@ -282,7 +282,7 @@ module Test
             options[:parallel] ||= 256 # number of tokens to acquire first
           end
         end
-        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
+        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 1200)
         super
       end
 
@@ -406,16 +406,18 @@ module Test
         rescue IOError
         end
 
-        def quit
+        def quit(reason = :normal)
           return if @io.closed?
           @quit_called = true
-          @io.puts "quit"
+          @io.puts "quit #{reason}"
         rescue Errno::EPIPE => e
           warn "#{@pid}:#{@status.to_s.ljust(7)}:#{@file}: #{e.message}"
         end
 
         def kill
-          Process.kill(:KILL, @pid)
+          signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
+          Process.kill(signal, @pid)
+          warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
         end
 
@@ -533,15 +535,15 @@ module Test
         @workers.reject! do |worker|
           next unless cond&.call(worker)
           begin
-            Timeout.timeout(1) do
-              worker.quit
+            Timeout.timeout(5) do
+              worker.quit(cond ? :timeout : :normal)
             end
           rescue Errno::EPIPE
           rescue Timeout::Error
           end
           closed&.push worker
           begin
-            Timeout.timeout(0.2) do
+            Timeout.timeout(1) do
               worker.close
             end
           rescue Timeout::Error
@@ -554,7 +556,7 @@ module Test
         return if (closed ||= @workers).empty?
         pids = closed.map(&:pid)
         begin
-          Timeout.timeout(0.2 * closed.size) do
+          Timeout.timeout(1 * closed.size) do
             Process.waitall
           end
         rescue Timeout::Error
@@ -1450,9 +1452,8 @@ module Test
       def setup_options(opts, options)
         super
         opts.on_tail '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
-          require 'json'
-          require 'uri'
-          options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
+          require_relative '../launchable'
+          options[:launchable_test_reports] = writer = Launchable::JsonStreamWriter.new(path)
           writer.write_array('testCases')
           main_pid = Process.pid
           at_exit {
@@ -1467,92 +1468,6 @@ module Test
 
         def encode_test_path_component component
           component.to_s.gsub('%', '%25').gsub('=', '%3D').gsub('#', '%23').gsub('&', '%26')
-        end
-      end
-
-      ##
-      # JsonStreamWriter writes a JSON file using a stream.
-      # By utilizing a stream, we can minimize memory usage, especially for large files.
-      class JsonStreamWriter
-        def initialize(path)
-          @file = File.open(path, "w")
-          @file.write("{")
-          @indent_level = 0
-          @is_first_key_val = true
-          @is_first_obj = true
-          write_new_line
-        end
-
-        def write_object obj
-          if @is_first_obj
-            @is_first_obj = false
-          else
-            write_comma
-            write_new_line
-          end
-          @indent_level += 1
-          @file.write(to_json_str(obj))
-          @indent_level -= 1
-          @is_first_key_val = true
-          # Occasionally, invalid JSON will be created as shown below, especially when `--repeat-count` is specified.
-          # {
-          #   "testPath": "file=test%2Ftest_timeout.rb&class=TestTimeout&testcase=test_allows_zero_seconds",
-          #   "status": "TEST_PASSED",
-          #   "duration": 2.7e-05,
-          #   "createdAt": "2024-02-09 12:21:07 +0000",
-          #   "stderr": null,
-          #   "stdout": null
-          # }: null <- here
-          # },
-          # To prevent this, IO#flush is called here.
-          @file.flush
-        end
-
-        def write_array(key)
-          @indent_level += 1
-          @file.write(to_json_str(key))
-          write_colon
-          @file.write(" ", "[")
-          write_new_line
-        end
-
-        def close
-          return if @file.closed?
-          close_array
-          @indent_level -= 1
-          write_new_line
-          @file.write("}", "\n")
-          @file.flush
-          @file.close
-        end
-
-        private
-        def to_json_str(obj)
-          json = JSON.pretty_generate(obj)
-          json.gsub(/^/, ' ' * (2 * @indent_level))
-        end
-
-        def write_indent
-          @file.write(" " * 2 * @indent_level)
-        end
-
-        def write_new_line
-          @file.write("\n")
-        end
-
-        def write_comma
-          @file.write(',')
-        end
-
-        def write_colon
-          @file.write(":")
-        end
-
-        def close_array
-          write_new_line
-          write_indent
-          @file.write("]")
-          @indent_level -= 1
         end
       end
     end

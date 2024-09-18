@@ -81,7 +81,7 @@ getattr(int fd, conmode *t)
 
 #define CSI "\x1b\x5b"
 
-static ID id_getc, id_console, id_close;
+static ID id_getc, id_close;
 static ID id_gets, id_flush, id_chomp_bang;
 
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
@@ -1538,10 +1538,8 @@ console_clear_screen(VALUE io)
 static VALUE
 io_open_descriptor_fallback(VALUE klass, int descriptor, int mode, VALUE path, VALUE timeout, void *encoding)
 {
-    rb_update_max_fd(descriptor);
-
     VALUE arguments[2] = {
-        INT2NUM(descriptor),
+        (rb_update_max_fd(descriptor), INT2NUM(descriptor)),
         INT2FIX(mode),
     };
 
@@ -1564,6 +1562,62 @@ rb_io_closed_p(VALUE io)
     rb_io_t *fptr = RFILE(io)->fptr;
     return fptr->fd == -1 ? Qtrue : Qfalse;
 }
+#endif
+
+#if defined(RB_EXT_RACTOR_SAFE) && defined(HAVE_RB_RACTOR_LOCAL_STORAGE_VALUE_NEWKEY)
+# define USE_RACTOR_STORAGE 1
+#else
+# define USE_RACTOR_STORAGE 0
+#endif
+
+#if USE_RACTOR_STORAGE
+#include "ruby/ractor.h"
+static rb_ractor_local_key_t key_console_dev;
+
+static bool
+console_dev_get(VALUE klass, VALUE *dev)
+{
+    return rb_ractor_local_storage_value_lookup(key_console_dev, dev);
+}
+
+static void
+console_dev_set(VALUE klass, VALUE value)
+{
+    rb_ractor_local_storage_value_set(key_console_dev, value);
+}
+
+static void
+console_dev_remove(VALUE klass)
+{
+    console_dev_set(klass, Qnil);
+}
+
+#else
+
+static ID id_console;
+
+static int
+console_dev_get(VALUE klass, VALUE *dev)
+{
+    if (rb_const_defined(klass, id_console)) {
+	*dev = rb_const_get(klass, id_console);
+	return 1;
+    }
+    return 0;
+}
+
+static void
+console_dev_set(VALUE klass, VALUE value)
+{
+    rb_const_set(klass, id_console, value);
+}
+
+static void
+console_dev_remove(VALUE klass)
+{
+    rb_const_remove(klass, id_console);
+}
+
 #endif
 
 /*
@@ -1594,10 +1648,9 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     // Force the class to be File.
     if (klass == rb_cIO) klass = rb_cFile;
 
-    if (rb_const_defined(klass, id_console)) {
-        con = rb_const_get(klass, id_console);
+    if (console_dev_get(klass, &con)) {
         if (!RB_TYPE_P(con, T_FILE) || RTEST(rb_io_closed_p(con))) {
-            rb_const_remove(klass, id_console);
+	    console_dev_remove(klass);
             con = 0;
         }
     }
@@ -1606,7 +1659,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
         if (sym == ID2SYM(id_close) && argc == 1) {
             if (con) {
                 rb_io_close(con);
-                rb_const_remove(klass, id_console);
+                console_dev_remove(klass);
                 con = 0;
             }
             return Qnil;
@@ -1626,7 +1679,6 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 #endif
 #ifdef CONSOLE_DEVICE_FOR_WRITING
         VALUE out;
-        rb_io_t *ofptr;
 #endif
         int fd;
         VALUE path = rb_obj_freeze(rb_str_new2(CONSOLE_DEVICE));
@@ -1648,7 +1700,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 #ifdef CONSOLE_DEVICE_FOR_WRITING
         rb_io_set_write_io(con, out);
 #endif
-        rb_const_set(klass, id_console, con);
+        console_dev_set(klass, con);
     }
 
     if (sym) {
@@ -1765,12 +1817,20 @@ io_getpass(int argc, VALUE *argv, VALUE io)
 void
 Init_console(void)
 {
+#if USE_RACTOR_STORAGE
+    RB_EXT_RACTOR_SAFE(true);
+#endif
+
 #undef rb_intern
+#if USE_RACTOR_STORAGE
+    key_console_dev = rb_ractor_local_storage_value_newkey();
+#else
+    id_console = rb_intern("console");
+#endif
     id_getc = rb_intern("getc");
     id_gets = rb_intern("gets");
     id_flush = rb_intern("flush");
     id_chomp_bang = rb_intern("chomp!");
-    id_console = rb_intern("console");
     id_close = rb_intern("close");
 #define init_rawmode_opt_id(name) \
     rawmode_opt_ids[kwd_##name] = rb_intern(#name)

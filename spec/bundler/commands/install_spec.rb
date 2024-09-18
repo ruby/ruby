@@ -249,49 +249,47 @@ RSpec.describe "bundle install with gem sources" do
 
     describe "with a gem that installs multiple platforms" do
       it "installs gems for the local platform as first choice" do
-        skip "version is 1.0, not 1.0.0" if Gem.win_platform?
+        simulate_platform "x86-darwin-100" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
-
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 #{Bundler.local_platform}")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-darwin-100")
+        end
       end
 
       it "falls back on plain ruby" do
-        simulate_platform "foo-bar-baz"
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "foo-bar-baz" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 RUBY")
+          expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
+        end
       end
 
       it "installs gems for java" do
-        simulate_platform "java"
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "java" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0.0 JAVA")
+          expect(the_bundle).to include_gems("platform_specific 1.0 java")
+        end
       end
 
       it "installs gems for windows" do
-        simulate_platform x86_mswin32
+        simulate_platform x86_mswin32 do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
-
-        run "require 'platform_specific' ; puts PLATFORM_SPECIFIC"
-        expect(out).to eq("1.0 x86-mswin32")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
+        end
       end
     end
 
@@ -678,7 +676,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "writes current Ruby version to Gemfile.lock" do
-        checksums = checksums_section_when_existing
+        checksums = checksums_section_when_enabled
         expect(lockfile).to eq <<~L
          GEM
            remote: https://gem.repo1/
@@ -703,7 +701,7 @@ RSpec.describe "bundle install with gem sources" do
           source "https://gem.repo1"
         G
 
-        checksums = checksums_section_when_existing
+        checksums = checksums_section_when_enabled
 
         expect(lockfile).to eq <<~L
          GEM
@@ -1057,7 +1055,35 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle "install --redownload", raise_on_error: false
 
-      expect(err).to include("The installation path is insecure. Bundler cannot continue.")
+      expect(err).to include("Bundler cannot reinstall foo-1.0.0 because there's a previous installation of it at #{gems_path}/foo-1.0.0 that is unsafe to remove")
+    end
+  end
+
+  describe "when gems path is world writable (no sticky bit set), but previous install is just an empty dir (like it happens with default gems)", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:full_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem 'foo'
+      G
+    end
+
+    it "does not try to remove the directory and thus don't abort with an error about unsafe directory removal" do
+      bundle "config set --local path vendor"
+
+      FileUtils.mkdir_p(gems_path)
+      FileUtils.chmod(0o777, gems_path)
+      Dir.mkdir(full_path)
+
+      bundle "install"
     end
   end
 
@@ -1138,11 +1164,15 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
-  context "in a frozen bundle" do
-    before do
+  context "when current platform not included in the lockfile" do
+    around do |example|
       build_repo4 do
         build_gem "libv8", "8.4.255.0" do |s|
           s.platform = "x86_64-darwin-19"
+        end
+
+        build_gem "libv8", "8.4.255.0" do |s|
+          s.platform = "x86_64-linux"
         end
       end
 
@@ -1168,11 +1198,36 @@ RSpec.describe "bundle install with gem sources" do
            #{Bundler::VERSION}
       L
 
-      bundle "config set --local deployment true"
+      simulate_platform("x86_64-linux", &example)
     end
 
-    it "should fail loudly if the lockfile platforms don't include the current platform" do
-      simulate_platform(Gem::Platform.new("x86_64-linux")) { bundle "install", raise_on_error: false }
+    it "adds the current platform to the lockfile" do
+      bundle "install --verbose"
+
+      expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            libv8 (8.4.255.0-x86_64-darwin-19)
+            libv8 (8.4.255.0-x86_64-linux)
+
+        PLATFORMS
+          x86_64-darwin-19
+          x86_64-linux
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "fails loudly if frozen mode set" do
+      bundle "config set --local deployment true"
+      bundle "install", raise_on_error: false
 
       expect(err).to eq(
         "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
@@ -1188,19 +1243,19 @@ RSpec.describe "bundle install with gem sources" do
 
         build_gem "nokogiri", "1.12.4" do |s|
           s.platform = "x86_64-darwin"
-          s.add_runtime_dependency "racca", "~> 1.4"
+          s.add_dependency "racca", "~> 1.4"
         end
 
         build_gem "nokogiri", "1.12.4" do |s|
           s.platform = "x86_64-linux"
-          s.add_runtime_dependency "racca", "~> 1.4"
+          s.add_dependency "racca", "~> 1.4"
         end
 
         build_gem "crass", "1.0.6"
 
         build_gem "loofah", "2.12.0" do |s|
-          s.add_runtime_dependency "crass", "~> 1.0.2"
-          s.add_runtime_dependency "nokogiri", ">= 1.5.9"
+          s.add_dependency "crass", "~> 1.0.2"
+          s.add_dependency "nokogiri", ">= 1.5.9"
         end
       end
 
@@ -1253,7 +1308,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle "install", artifice: "compact_index"
       end
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "crass", "1.0.6"
         c.checksum gem_repo4, "loofah", "2.12.0"
         c.checksum gem_repo4, "nokogiri", "1.12.4", "x86_64-darwin"
@@ -1335,12 +1390,20 @@ RSpec.describe "bundle install with gem sources" do
         build_gem "foo", "1.0.1"
         build_gem "foo", "1.0.0"
         build_gem "bar", "1.0.0"
+
+        build_gem "a", "1.0.0" do |s|
+          s.add_dependency "foo", "~> 1.0.0"
+        end
+
+        build_gem "b", "1.0.0" do |s|
+          s.add_dependency "foo", "~> 1.0.1"
+        end
       end
 
       system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
     end
 
-    it "fetches remote sources only when not available locally" do
+    it "fetches remote sources when not available locally" do
       install_gemfile <<-G, "prefer-local": true, verbose: true
         source "https://gem.repo4"
 
@@ -1349,6 +1412,40 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+      expect(last_command).to be_success
+    end
+
+    it "fetches remote sources when local version does not match requirements" do
+      install_gemfile <<-G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "foo", "1.0.1"
+        gem "bar"
+      G
+
+      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+      expect(last_command).to be_success
+    end
+
+    it "uses the locally available version for sub-dependencies when possible" do
+      install_gemfile <<-G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "a"
+      G
+
+      expect(out).to include("Using foo 1.0.0").and include("Fetching a 1.0.0").and include("Installing a 1.0.0")
+      expect(last_command).to be_success
+    end
+
+    it "fetches remote sources for sub-dependencies when the locally available version does not satisfy the requirement" do
+      install_gemfile <<-G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "b"
+      G
+
+      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
       expect(last_command).to be_success
     end
   end
@@ -1493,5 +1590,18 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).not_to include("ERROR REPORT TEMPLATE")
       expect(err).to include("The running version of Bundler (9.99.9) does not match the version of the specification installed for it (9.99.8)")
     end
+  end
+
+  it "only installs executable files in bin" do
+    bundle "config set --local path vendor/bundle"
+
+    install_gemfile <<~G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    expected_executables = [vendored_gems("bin/myrackup").to_s]
+    expected_executables << vendored_gems("bin/myrackup.bat").to_s if Gem.win_platform?
+    expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
   end
 end

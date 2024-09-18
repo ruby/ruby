@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.1"
+#define STRSCAN_VERSION "3.1.1.dev"
 
 /* =======================================================================
                          Data Type Definitions
@@ -686,14 +686,6 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 {
     struct strscanner *p;
 
-    if (headonly) {
-        if (!RB_TYPE_P(pattern, T_REGEXP)) {
-            StringValue(pattern);
-        }
-    }
-    else {
-        Check_Type(pattern, T_REGEXP);
-    }
     GET_SCANNER(self, p);
 
     CLEAR_MATCH_STATUS(p);
@@ -714,14 +706,25 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
         }
     }
     else {
+        StringValue(pattern);
         rb_enc_check(p->str, pattern);
         if (S_RESTLEN(p) < RSTRING_LEN(pattern)) {
             return Qnil;
         }
-        if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
-            return Qnil;
+
+        if (headonly) {
+            if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
+                return Qnil;
+            }
+            set_registers(p, RSTRING_LEN(pattern));
+        } else {
+            long pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
+                                    CURPTR(p), S_RESTLEN(p), rb_enc_get(pattern));
+            if (pos == -1) {
+                return Qnil;
+            }
+            set_registers(p, RSTRING_LEN(pattern) + pos);
         }
-        set_registers(p, RSTRING_LEN(pattern));
     }
 
     MATCHED(p);

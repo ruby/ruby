@@ -193,7 +193,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
     entries << [entry_name, entry_body] if entry_name
 
-    entries.reject! do |(entry,_)|
+    entries.reject! do |(entry, _)|
       entry == nil
     end
 

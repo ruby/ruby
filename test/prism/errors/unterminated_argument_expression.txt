@@ -1,0 +1,5 @@
+a %
+  ^ unterminated quoted string meets end of file
+   ^ unexpected end-of-input; expected an expression after the operator
+   ^ unexpected end-of-input, assuming it is closing the parent top level context
+

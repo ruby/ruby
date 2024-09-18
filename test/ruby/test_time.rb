@@ -1444,4 +1444,63 @@ class TestTime < Test::Unit::TestCase
   def test_parse_zero_bigint
     assert_equal 0, Time.new("2020-10-28T16:48:07.000Z").nsec, '[Bug #19390]'
   end
+
+  def test_xmlschema_encode
+    [:xmlschema, :iso8601].each do |method|
+      bug6100 = '[ruby-core:42997]'
+
+      t = Time.utc(2001, 4, 17, 19, 23, 17, 300000)
+      assert_equal("2001-04-17T19:23:17Z", t.__send__(method))
+      assert_equal("2001-04-17T19:23:17.3Z", t.__send__(method, 1))
+      assert_equal("2001-04-17T19:23:17.300000Z", t.__send__(method, 6))
+      assert_equal("2001-04-17T19:23:17.3000000Z", t.__send__(method, 7))
+      assert_equal("2001-04-17T19:23:17.3Z", t.__send__(method, 1.9), bug6100)
+
+      t = Time.utc(2001, 4, 17, 19, 23, 17, 123456)
+      assert_equal("2001-04-17T19:23:17.1234560Z", t.__send__(method, 7))
+      assert_equal("2001-04-17T19:23:17.123456Z", t.__send__(method, 6))
+      assert_equal("2001-04-17T19:23:17.12345Z", t.__send__(method, 5))
+      assert_equal("2001-04-17T19:23:17.1Z", t.__send__(method, 1))
+      assert_equal("2001-04-17T19:23:17.1Z", t.__send__(method, 1.9), bug6100)
+
+      t = Time.at(2.quo(3)).getlocal("+09:00")
+      assert_equal("1970-01-01T09:00:00.666+09:00", t.__send__(method, 3))
+      assert_equal("1970-01-01T09:00:00.6666666666+09:00", t.__send__(method, 10))
+      assert_equal("1970-01-01T09:00:00.66666666666666666666+09:00", t.__send__(method, 20))
+      assert_equal("1970-01-01T09:00:00.6+09:00", t.__send__(method, 1.1), bug6100)
+      assert_equal("1970-01-01T09:00:00.666+09:00", t.__send__(method, 3.2), bug6100)
+
+      t = Time.at(123456789.quo(9999999999)).getlocal("+09:00")
+      assert_equal("1970-01-01T09:00:00.012+09:00", t.__send__(method, 3))
+      assert_equal("1970-01-01T09:00:00.012345678+09:00", t.__send__(method, 9))
+      assert_equal("1970-01-01T09:00:00.0123456789+09:00", t.__send__(method, 10))
+      assert_equal("1970-01-01T09:00:00.0123456789012345678+09:00", t.__send__(method, 19))
+      assert_equal("1970-01-01T09:00:00.01234567890123456789+09:00", t.__send__(method, 20))
+      assert_equal("1970-01-01T09:00:00.012+09:00", t.__send__(method, 3.8), bug6100)
+
+      t = Time.utc(1)
+      assert_equal("0001-01-01T00:00:00Z", t.__send__(method))
+
+      begin
+        Time.at(-1)
+      rescue ArgumentError
+        # ignore
+      else
+        t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
+        assert_equal("1960-12-31T23:00:00.123456Z", t.__send__(method, 6))
+      end
+
+      t = get_t2000.getlocal("-09:30") # Pacific/Marquesas
+      assert_equal("1999-12-31T14:30:00-09:30", t.__send__(method))
+
+      assert_equal("10000-01-01T00:00:00Z", Time.utc(10000).__send__(method))
+      assert_equal("9999-01-01T00:00:00Z", Time.utc(9999).__send__(method))
+      assert_equal("0001-01-01T00:00:00Z", Time.utc(1).__send__(method)) # 1 AD
+      assert_equal("0000-01-01T00:00:00Z", Time.utc(0).__send__(method)) # 1 BC
+      assert_equal("-0001-01-01T00:00:00Z", Time.utc(-1).__send__(method)) # 2 BC
+      assert_equal("-0004-01-01T00:00:00Z", Time.utc(-4).__send__(method)) # 5 BC
+      assert_equal("-9999-01-01T00:00:00Z", Time.utc(-9999).__send__(method))
+      assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
+    end
+  end
 end

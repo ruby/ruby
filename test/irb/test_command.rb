@@ -15,9 +15,7 @@ module TestIRB
         Dir.mkdir(@tmpdir)
       end
       Dir.chdir(@tmpdir)
-      @home_backup = ENV["HOME"]
-      ENV["HOME"] = @tmpdir
-      @xdg_config_home_backup = ENV.delete("XDG_CONFIG_HOME")
+      setup_envs(home: @tmpdir)
       save_encodings
       IRB.instance_variable_get(:@CONF).clear
       IRB.instance_variable_set(:@existing_rc_name_generators, nil)
@@ -25,8 +23,7 @@ module TestIRB
     end
 
     def teardown
-      ENV["XDG_CONFIG_HOME"] = @xdg_config_home_backup
-      ENV["HOME"] = @home_backup
+      teardown_envs
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       restore_encodings
@@ -768,7 +765,7 @@ module TestIRB
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
       EnvUtil.suppress_warning { load "irb/command/help.rb" }
-    end
+    end if defined?(RDoc)
 
     def test_show_doc_without_rdoc
       _, err = without_rdoc do

@@ -54,11 +54,11 @@ module Spec
       ChecksumsBuilder.new(enabled, &block)
     end
 
-    def checksums_section_when_existing(&block)
+    def checksums_section_when_enabled(target_lockfile = nil, &block)
       begin
-        enabled = lockfile.match?(/^CHECKSUMS$/)
+        enabled = (target_lockfile || lockfile).match?(/^CHECKSUMS$/)
       rescue Errno::ENOENT
-        enabled = false
+        enabled = Bundler.feature_flag.bundler_3_mode?
       end
       checksums_section(enabled, &block)
     end

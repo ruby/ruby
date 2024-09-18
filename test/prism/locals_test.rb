@@ -9,6 +9,15 @@
 # to test on the most recent versions.
 return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
+# If we're on Ruby 3.4.0 and the default parser is Prism, then there is no point
+# in comparing the locals because they will be the same.
+return if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
+
+# In Ruby 3.4.0, the local table for method forwarding changed. But 3.4.0 can
+# refer to the dev version, so while 3.4.0 still isn't released, we need to
+# check if we have a high enough revision.
+return if RubyVM::InstructionSequence.compile("def foo(...); end").to_a[13][2][2][10].length != 1
+
 # Omit tests if running on a 32-bit machine because there is a bug with how
 # Ruby is handling large ISeqs on 32-bit machines
 return if RUBY_PLATFORM =~ /i686/

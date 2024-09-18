@@ -1,6 +1,8 @@
+# frozen_string_literal: true
+
 require "erb"
 require "forwardable"
-require "lrama/report/duration"
+require_relative "report/duration"
 
 module Lrama
   class Output
@@ -63,37 +65,29 @@ module Lrama
 
     # A part of b4_token_enums
     def token_enums
-      str = ""
-
-      @context.yytokentype.each do |s_value, token_id, display_name|
+      @context.yytokentype.map do |s_value, token_id, display_name|
         s = sprintf("%s = %d%s", s_value, token_id, token_id == yymaxutok ? "" : ",")
 
         if display_name
-          str << sprintf("    %-30s /* %s  */\n", s, display_name)
+          sprintf("    %-30s /* %s  */\n", s, display_name)
         else
-          str << sprintf("    %s\n", s)
+          sprintf("    %s\n", s)
         end
-      end
-
-      str
+      end.join
     end
 
     # b4_symbol_enum
     def symbol_enum
-      str = ""
-
       last_sym_number = @context.yysymbol_kind_t.last[1]
-      @context.yysymbol_kind_t.each do |s_value, sym_number, display_name|
+      @context.yysymbol_kind_t.map do |s_value, sym_number, display_name|
         s = sprintf("%s = %d%s", s_value, sym_number, (sym_number == last_sym_number) ? "" : ",")
 
         if display_name
-          str << sprintf("  %-40s /* %s  */\n", s, display_name)
+          sprintf("  %-40s /* %s  */\n", s, display_name)
         else
-          str << sprintf("  %s\n", s)
+          sprintf("  %s\n", s)
         end
-      end
-
-      str
+      end.join
     end
 
     def yytranslate
@@ -132,12 +126,10 @@ module Lrama
     end
 
     def symbol_actions_for_printer
-      str = ""
-
-      @grammar.symbols.each do |sym|
+      @grammar.symbols.map do |sym|
         next unless sym.printer
 
-        str << <<-STR
+        <<-STR
     case #{sym.enum_name}: /* #{sym.comment}  */
 #line #{sym.printer.lineno} "#{@grammar_file_path}"
          {#{sym.printer.translated_code(sym.tag)}}
@@ -145,18 +137,14 @@ module Lrama
         break;
 
         STR
-      end
-
-      str
+      end.join
     end
 
     def symbol_actions_for_destructor
-      str = ""
-
-      @grammar.symbols.each do |sym|
+      @grammar.symbols.map do |sym|
         next unless sym.destructor
 
-        str << <<-STR
+        <<-STR
     case #{sym.enum_name}: /* #{sym.comment}  */
 #line #{sym.destructor.lineno} "#{@grammar_file_path}"
          {#{sym.destructor.translated_code(sym.tag)}}
@@ -164,9 +152,7 @@ module Lrama
         break;
 
         STR
-      end
-
-      str
+      end.join
     end
 
     # b4_user_initial_action
@@ -236,12 +222,10 @@ module Lrama
     end
 
     def symbol_actions_for_error_token
-      str = ""
-
-      @grammar.symbols.each do |sym|
+      @grammar.symbols.map do |sym|
         next unless sym.error_token
 
-        str << <<-STR
+        <<-STR
     case #{sym.enum_name}: /* #{sym.comment}  */
 #line #{sym.error_token.lineno} "#{@grammar_file_path}"
          {#{sym.error_token.translated_code(sym.tag)}}
@@ -249,22 +233,18 @@ module Lrama
         break;
 
         STR
-      end
-
-      str
+      end.join
     end
 
     # b4_user_actions
     def user_actions
-      str = ""
-
-      @context.states.rules.each do |rule|
+      action = @context.states.rules.map do |rule|
         next unless rule.token_code
 
         code = rule.token_code
         spaces = " " * (code.column - 1)
 
-        str << <<-STR
+        <<-STR
   case #{rule.id + 1}: /* #{rule.as_comment}  */
 #line #{code.line} "#{@grammar_file_path}"
 #{spaces}{#{rule.translated_code}}
@@ -272,14 +252,12 @@ module Lrama
     break;
 
         STR
-      end
+      end.join
 
-      str << <<-STR
+      action + <<-STR
 
 #line [@oline@] [@ofile@]
       STR
-
-      str
     end
 
     def omit_blanks(param)
@@ -343,7 +321,7 @@ module Lrama
 
     # b4_parse_param_use
     def parse_param_use(val, loc)
-      str = <<-STR
+      str = <<-STR.dup
   YY_USE (#{val});
   YY_USE (#{loc});
       STR
@@ -357,7 +335,8 @@ module Lrama
 
     # b4_yylex_formals
     def yylex_formals
-      ary = ["&yylval", "&yylloc"]
+      ary = ["&yylval"]
+      ary << "&yylloc" if @grammar.locations
 
       if @grammar.lex_param
         ary << lex_param_name
@@ -397,17 +376,9 @@ module Lrama
     def int_array_to_string(ary)
       last = ary.count - 1
 
-      s = ary.each_with_index.each_slice(10).map do |slice|
-        str = "  "
-
-        slice.each do |e, i|
-          str << sprintf("%6d%s", e, (i == last) ? "" : ",")
-        end
-
-        str
-      end
-
-      s.join("\n")
+      ary.each_with_index.each_slice(10).map do |slice|
+        "  " + slice.map { |e, i| sprintf("%6d%s", e, (i == last) ? "" : ",") }.join
+      end.join("\n")
     end
 
     def spec_mapped_header_file
@@ -457,26 +428,24 @@ module Lrama
     end
 
     def template_dir
-      File.expand_path("../../../template", __FILE__)
+      File.expand_path('../../template', __dir__)
     end
 
     def string_array_to_string(ary)
-      str = ""
+      result = ""
       tmp = " "
 
       ary.each do |s|
-        s = s.gsub('\\', '\\\\\\\\')
-        s = s.gsub('"', '\\"')
-
-        if (tmp + s + " \"\",").length > 75
-          str << tmp << "\n"
-          tmp = "  \"#{s}\","
+        replaced = s.gsub('\\', '\\\\\\\\').gsub('"', '\\"')
+        if (tmp + replaced + " \"\",").length > 75
+          result = "#{result}#{tmp}\n"
+          tmp = "  \"#{replaced}\","
         else
-          tmp << " \"#{s}\","
+          tmp = "#{tmp} \"#{replaced}\","
         end
       end
 
-      str << tmp
+      result + tmp
     end
 
     def replace_special_variables(str, ofile)

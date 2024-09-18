@@ -166,7 +166,8 @@ class RDoc::Parser
   # Finds and instantiates the correct parser for the given +file_name+ and
   # +content+.
 
-  def self.for top_level, file_name, content, options, stats
+  def self.for top_level, content, options, stats
+    file_name = top_level.absolute_name
     return if binary? file_name
 
     parser = use_markup content

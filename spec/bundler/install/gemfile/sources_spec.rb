@@ -8,7 +8,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     before do
       # Oh no! Someone evil is trying to hijack myrack :(
       # need this to be broken to check for correct source ordering
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "myrack", repo3_myrack_version do |s|
           s.write "lib/myrack.rb", "MYRACK = 'FAIL'"
         end
@@ -156,7 +156,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         # Oh no! Someone evil is trying to hijack myrack :(
         # need this to be broken to check for correct source ordering
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack", "1.0.0" do |s|
             s.write "lib/myrack.rb", "MYRACK = 'FAIL'"
           end
@@ -200,7 +200,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         # Oh no! Someone evil is trying to hijack myrack :(
         # need this to be broken to check for correct source ordering
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack", "1.0.0" do |s|
             s.write "lib/myrack.rb", "MYRACK = 'FAIL'"
           end
@@ -225,7 +225,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a pinned gem has an indirect dependency in the pinned source" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_myrack", "1.0.1" do |s|
             s.add_dependency "myrack"
           end
@@ -287,7 +287,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         # In these tests, we need a working myrack gem in repo2 and not repo3
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_myrack", "1.0.1" do |s|
             s.add_dependency "myrack"
           end
@@ -377,7 +377,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo2")
 
-          checksums = checksums_section_when_existing do |c|
+          checksums = checksums_section_when_enabled do |c|
             c.checksum gem_repo3, "depends_on_myrack", "1.0.1"
             c.checksum gem_repo2, "myrack", "1.0.0"
           end
@@ -417,7 +417,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo2")
 
-          checksums = checksums_section_when_existing do |c|
+          checksums = checksums_section_when_enabled do |c|
             c.no_checksum "depends_on_myrack", "1.0.1"
             c.no_checksum "myrack", "1.0.0"
           end
@@ -502,7 +502,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         build_repo2
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "private_gem_1", "1.0.0"
           build_gem "private_gem_2", "1.0.0"
         end
@@ -528,7 +528,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       before do
         build_repo2
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_missing", "1.0.1" do |s|
             s.add_dependency "missing"
           end
@@ -565,7 +565,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
         end
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "unrelated_gem", "1.0.0"
         end
 
@@ -645,7 +645,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a scoped gem has a deeply nested indirect dependency" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "depends_on_depends_on_myrack", "1.0.1" do |s|
             s.add_dependency "depends_on_myrack"
           end
@@ -764,7 +764,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           build_gem "zeitwerk", "2.4.2"
         end
 
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "sidekiq-pro", "5.2.1" do |s|
             s.add_dependency "connection_pool", ">= 2.2.3"
             s.add_dependency "sidekiq", ">= 6.1.0"
@@ -783,7 +783,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
         G
 
-        @locked_checksums = checksums_section_when_existing do |c|
+        @locked_checksums = checksums_section_when_enabled do |c|
           c.checksum gem_repo2, "activesupport", "6.0.3.4"
           c.checksum gem_repo2, "concurrent-ruby", "1.1.8"
           c.checksum gem_repo2, "connection_pool", "2.2.3"
@@ -1080,7 +1080,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a pinned gem has an indirect dependency with more than one level of indirection in the default source " do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "handsoap", "0.2.5.5" do |s|
             s.add_dependency "nokogiri", ">= 1.2.3"
           end
@@ -1106,7 +1106,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "installs from the default source without any warnings or errors and generates a proper lockfile" do
-        checksums = checksums_section_when_existing do |c|
+        checksums = checksums_section_when_enabled do |c|
           c.checksum gem_repo3, "handsoap", "0.2.5.5"
           c.checksum gem_repo2, "nokogiri", "1.11.1"
           c.checksum gem_repo2, "racca", "1.5.2"
@@ -1157,7 +1157,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "with a gem that is only found in the wrong source" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "not_in_repo1", "1.0.0"
         end
 
@@ -1250,7 +1250,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack", "0.9.1"
         end
 
@@ -1393,7 +1393,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
   context "re-resolving" do
     context "when there is a mix of sources in the gemfile" do
       before do
-        build_repo gem_repo3 do
+        build_repo3 do
           build_gem "myrack"
         end
 
@@ -1692,7 +1692,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     it "upgrades the lockfile correctly" do
       bundle "lock --update", artifice: "compact_index"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo2, "capybara", "2.5.0"
         c.checksum gem_repo4, "mime-types", "3.0.0"
       end
@@ -1742,28 +1742,28 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       gemfile <<~G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
 
-        gem "ruport", "= 1.7.0.3", :source => "https://localgemserver.test/extra"
+        gem "ruport", "= 1.7.0.3", :source => "https://gem.repo4/extra"
       G
     end
 
     it "handles that fine" do
-      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install", artifice: "compact_index_extra"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
         c.checksum gem_repo2, "ruport", "1.7.0.3"
       end
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             pdf-writer (1.1.8)
 
         GEM
-          remote: https://localgemserver.test/extra/
+          remote: https://gem.repo4/extra/
           specs:
             ruport (1.7.0.3)
               pdf-writer (= 1.1.8)
@@ -1800,28 +1800,28 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       gemfile <<~G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
 
-        gem "ruport", "= 1.7.0.3", :source => "https://localgemserver.test/extra"
+        gem "ruport", "= 1.7.0.3", :source => "https://gem.repo4/extra"
       G
     end
 
     it "handles that fine" do
-      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install", artifice: "compact_index_extra"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
         c.checksum gem_repo2, "ruport", "1.7.0.3"
       end
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             pdf-writer (1.1.8)
 
         GEM
-          remote: https://localgemserver.test/extra/
+          remote: https://gem.repo4/extra/
           specs:
             ruport (1.7.0.3)
               pdf-writer (= 1.1.8)
@@ -1852,22 +1852,22 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       gemfile <<~G
-        source "https://localgemserver.test"
+        source "https://gem.repo4"
 
         gem "pdf-writer", "= 1.1.8"
       G
     end
 
     it "handles that fine" do
-      bundle "install --verbose", artifice: "endpoint", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "endpoint"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
       end
 
       expect(lockfile).to eq <<~L
         GEM
-          remote: https://localgemserver.test/
+          remote: https://gem.repo4/
           specs:
             pdf-writer (1.1.8)
 
@@ -1919,6 +1919,72 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end.not_to change { lockfile }
 
       expect(err).to include("Could not find gem 'example' in rubygems repository https://gem.repo4/")
+    end
+  end
+
+  context "when a gem has versions in two sources, but only the locked one has updates" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://main.source/
+          specs:
+            activesupport (1.0)
+              bigdecimal
+            bigdecimal (1.0.0)
+
+        GEM
+          remote: https://main.source/extra/
+          specs:
+            foo (1.0)
+              bigdecimal
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          activesupport
+          foo!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo3 do
+        build_gem "activesupport" do |s|
+          s.add_dependency "bigdecimal"
+        end
+
+        build_gem "bigdecimal", "1.0.0"
+        build_gem "bigdecimal", "3.3.1"
+      end
+
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.add_dependency "bigdecimal"
+        end
+
+        build_gem "bigdecimal", "1.0.0"
+      end
+
+      gemfile <<~G
+        source "https://main.source"
+
+        gem "activesupport"
+
+        source "https://main.source/extra" do
+          gem "foo"
+        end
+      G
+
+      lockfile original_lockfile
+    end
+
+    it "properly upgrades the lockfile when updating that specific gem" do
+      bundle "update bigdecimal --conservative", artifice: "compact_index_extra_api", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo3.to_s }
+
+      expect(lockfile).to eq original_lockfile.gsub("bigdecimal (1.0.0)", "bigdecimal (3.3.1)")
     end
   end
 end

@@ -1,0 +1,6 @@
+x.each { x end
+           ^~~ unexpected 'end', expecting end-of-input
+           ^~~ unexpected 'end', ignoring it
+              ^ unexpected end-of-input, assuming it is closing the parent top level context
+              ^ expected a block beginning with `{` to end with `}`
+

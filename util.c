@@ -564,7 +564,7 @@ ruby_getcwd(void)
         rb_imemo_tmpbuf_set_ptr(guard, buf);
         buf = xrealloc(buf, size);
     }
-    rb_free_tmp_buffer(&guard);
+    rb_imemo_tmpbuf_set_ptr(guard, NULL);
     return buf;
 }
 

@@ -591,7 +591,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_with_hidden_local_variables
-    assert_iseq_to_binary("for foo in bar; end")
+    assert_iseq_to_binary("for _foo in bar; end")
 
     bin = RubyVM::InstructionSequence.compile(<<-RUBY).to_binary
       Object.new.instance_eval do
@@ -813,6 +813,11 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_unreachable_pattern_matching
+    assert_in_out_err([], "true or 1 in 1")
+    assert_in_out_err([], "true or (case 1; in 1; 1; in 2; 2; end)")
+  end
+
+  def test_unreachable_pattern_matching_in_if_condition
     assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[1])
     begin;
       if true or {a: 0} in {a:}
@@ -821,6 +826,27 @@ class TestISeq < Test::Unit::TestCase
         p a
       end
     end;
+  end
+
+  def test_unreachable_next_in_block
+    bug20344 = '[ruby-core:117210] [Bug #20344]'
+    assert_nothing_raised(SyntaxError, bug20344) do
+      compile(<<~RUBY)
+        proc do
+          next
+
+          case nil
+          when "a"
+            next
+          when "b"
+          when "c"
+            proc {}
+          end
+
+          next
+        end
+      RUBY
+    end
   end
 
   def test_loading_kwargs_memory_leak
@@ -842,7 +868,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_compile_prism_with_file
     Tempfile.create(%w"test_iseq .rb") do |f|
-      f.puts "name = 'Prism'; puts 'hello'"
+      f.puts "_name = 'Prism'; puts 'hello'"
       f.close
 
       assert_nothing_raised(TypeError) do
@@ -860,8 +886,6 @@ class TestISeq < Test::Unit::TestCase
 
   def test_unused_param
     a = RubyVM::InstructionSequence.of(method(:block_using_method)).to_a
-
-    omit 'TODO: Prism' if a.dig(4, :parser) != :"parse.y"
 
     assert_equal true, a.dig(11, :use_block)
 

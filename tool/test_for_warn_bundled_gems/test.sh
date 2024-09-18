@@ -51,3 +51,15 @@ echo
 echo "* Don't show warning bigdecimal/util when bigdecimal on Gemfile"
 ruby test_no_warn_sub_feature.rb
 echo
+
+echo "* Show warning when warn is not the standard one in the current scope"
+ruby test_warn_redefined.rb
+echo
+
+echo "* Show warning with bootsnap and some gem in Gemfile"
+ruby test_warn_bootsnap_and_gem.rb
+echo
+
+echo "* Don't show warning for reline when using irb from standard library"
+bundle exec ruby -rirb -e ''
+echo

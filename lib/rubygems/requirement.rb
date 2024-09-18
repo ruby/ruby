@@ -214,10 +214,6 @@ class Gem::Requirement
     yaml_initialize coder.tag, coder.map
   end
 
-  def to_yaml_properties # :nodoc:
-    ["@requirements"]
-  end
-
   def encode_with(coder) # :nodoc:
     coder.add "requirements", @requirements
   end

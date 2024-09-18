@@ -132,14 +132,14 @@ class LeakChecker
         attr_accessor :count
       end
 
-      def new(data)
+      def new(...)
         LeakChecker::TempfileCounter.count += 1
-        super(data)
+        super
       end
     }
     LeakChecker.const_set(:TempfileCounter, m)
 
-    class << Tempfile::Remover
+    class << Tempfile
       prepend LeakChecker::TempfileCounter
     end
   end

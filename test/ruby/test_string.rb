@@ -1971,6 +1971,22 @@ CODE
     assert_nil($&)
   end
 
+  def test_start_with_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true)
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+      str = "a" * 1_000_000 + "x"
+
+      code = proc do
+        str.start_with?(regex)
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
+    end;
+  end
+
   def test_strip
     assert_equal(S("x"), S("      x        ").strip)
     assert_equal(S("x"), S(" \n\r\t     x  \t\r\n\n      ").strip)
@@ -3612,6 +3628,55 @@ CODE
     assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0)
     assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0..-1)
     assert_bytesplice_raise(ArgumentError, S("hello"), 0..-1, "bye", 0, 3)
+  end
+
+  def test_append_bytes_into_binary
+    buf = S("".b)
+    assert_equal Encoding::BINARY, buf.encoding
+
+    buf.append_as_bytes(S("hello"))
+    assert_equal "hello".b, buf
+    assert_equal Encoding::BINARY, buf.encoding
+
+    buf.append_as_bytes(S("こんにちは"))
+    assert_equal S("helloこんにちは".b), buf
+    assert_equal Encoding::BINARY, buf.encoding
+  end
+
+  def test_append_bytes_into_utf8
+    buf = S("")
+    assert_equal Encoding::UTF_8, buf.encoding
+
+    buf.append_as_bytes(S("hello"))
+    assert_equal S("hello"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    assert_predicate buf, :ascii_only?
+    assert_predicate buf, :valid_encoding?
+
+    buf.append_as_bytes(S("こんにちは"))
+    assert_equal S("helloこんにちは"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    refute_predicate buf, :ascii_only?
+    assert_predicate buf, :valid_encoding?
+
+    buf.append_as_bytes(S("\xE2\x82".b))
+    assert_equal S("helloこんにちは\xE2\x82"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    refute_predicate buf, :valid_encoding?
+
+    buf.append_as_bytes(S("\xAC".b))
+    assert_equal S("helloこんにちは€"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    assert_predicate buf, :valid_encoding?
+  end
+
+  def test_append_bytes_into_utf32
+    buf = S("abc".encode(Encoding::UTF_32LE))
+    assert_equal Encoding::UTF_32LE, buf.encoding
+
+    buf.append_as_bytes("def")
+    assert_equal Encoding::UTF_32LE, buf.encoding
+    refute_predicate buf, :valid_encoding?
   end
 
   def test_chilled_string

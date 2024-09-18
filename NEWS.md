@@ -25,6 +25,12 @@ Note that each entry is kept to a minimum, see links for details.
 * Keyword arguments are no longer allowed in index assignment
   (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
+* `GC.config` added to allow setting configuration variables on the Garbage
+  Collector. [[Feature #20443]]
+
+* GC configuration parameter `rgengc_allow_full_mark` introduced. When `false`
+  GC will only mark young objects. Default is `true`. [[Feature #20443]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -37,6 +43,19 @@ Note: We're only listing outstanding class updates.
 * Range
 
   * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
+  * Range#step now consistently has a semantics of iterating by using `+` operator
+    for all types, not only numerics. [[Feature #18368]]
+
+    ```ruby
+    (Time.utc(2022, 2, 24)..).step(24*60*60).take(3)
+    #=> [2022-02-24 00:00:00 UTC, 2022-02-25 00:00:00 UTC, 2022-02-26 00:00:00 UTC]
+    ```
+
+* RubyVM::AbstractSyntaxTree
+
+  * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
+    associated with the AST node. [[Feature #20624]]
+  * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
 
 ## Stdlib updates
 
@@ -52,32 +71,38 @@ The following default gems are updated.
 * RubyGems 3.6.0.dev
 * bundler 2.6.0.dev
 * erb 4.0.4
-* fiddle 1.1.3
+* fiddle 1.1.3.dev
 * io-console 0.7.2
-* irb 1.13.2
+* irb 1.14.0
 * json 2.7.2
+* logger 1.6.1
 * net-http 0.4.1
 * optparse 0.5.0
-* prism 0.30.0
+* prism 1.0.0
+* psych 5.2.0.beta1
 * rdoc 6.7.0
-* reline 0.5.9
+* reline 0.5.10
 * resolv 0.4.0
-* stringio 3.1.2
-* strscan 3.1.1
+* stringio 3.1.2.dev
+* strscan 3.1.1.dev
+* time 0.4.0
+* uri 0.13.1
+* zlib 3.1.1
 
 The following bundled gems are updated.
 
-* minitest 5.24.1
+* minitest 5.25.1
 * rake 13.2.1
 * test-unit 3.6.2
-* rexml 3.3.1
+* rexml 3.3.7
+* rss 0.3.1
 * net-ftp 0.3.7
-* net-imap 0.4.14
+* net-imap 0.4.16
 * net-smtp 0.5.0
-* rbs 3.5.1
+* rbs 3.5.3
 * typeprof 0.21.11
 * debug 1.9.2
-* racc 1.8.0
+* racc 1.8.1
 
 The following bundled gems are promoted from default gems.
 
@@ -142,6 +167,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #15554]: https://bugs.ruby-lang.org/issues/15554
 [Feature #16495]: https://bugs.ruby-lang.org/issues/16495
 [Feature #18290]: https://bugs.ruby-lang.org/issues/18290
+[Feature #18368]: https://bugs.ruby-lang.org/issues/18368
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Misc #18984]:    https://bugs.ruby-lang.org/issues/18984
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
@@ -152,4 +178,6 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
+[Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
+[Feature #20624]: https://bugs.ruby-lang.org/issues/20624

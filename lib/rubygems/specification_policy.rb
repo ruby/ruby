@@ -307,7 +307,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     elsif !VALID_NAME_PATTERN.match?(name)
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
     elsif SPECIAL_CHARACTERS.match?(name)
-      error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
+      error "invalid value for attribute name: #{name.dump} cannot begin with a period, dash, or underscore"
     end
   end
 

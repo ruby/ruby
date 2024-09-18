@@ -670,7 +670,7 @@ module Bundler
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
-      raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
+      raise GemspecError, Dsl::DSLError.new(msg, path.to_s, e.backtrace, contents)
     end
 
     def configure_gem_path

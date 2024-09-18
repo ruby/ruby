@@ -163,9 +163,6 @@
     rb_thread_check_ints(); \
   } \
 } while(0)
-# define HANDLE_REG_TIMEOUT_IN_MATCH_AT do { \
-  rb_reg_raise_timeout(); \
-} while (0)
 # define onig_st_init_table                  st_init_table
 # define onig_st_init_table_with_size        st_init_table_with_size
 # define onig_st_init_numtable               st_init_numtable
@@ -1002,7 +999,6 @@ extern int onig_st_insert_strend(hash_table_type* table, const UChar* str_key, c
 extern size_t onig_memsize(const regex_t *reg);
 extern size_t onig_region_memsize(const struct re_registers *regs);
 bool rb_reg_timeout_p(regex_t *reg, void *end_time);
-NORETURN(void rb_reg_raise_timeout(void));
 #endif
 
 RUBY_SYMBOL_EXPORT_END

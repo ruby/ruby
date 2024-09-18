@@ -163,9 +163,9 @@
 #
 #  These instance methods make use of slicing:
 #
-#  - String#[] (also aliased as String#slice) returns a slice copied from +self+.
-#  - String#[]= returns a copy of +self+ with a slice replaced.
-#  - String#slice! returns +self+ with a slice removed.
+#  - String#[] (aliased as String#slice): returns a slice copied from +self+.
+#  - String#[]=: returns a copy of +self+ with a slice replaced.
+#  - String#slice!: returns +self+ with a slice removed.
 #
 #  Each of the above methods takes arguments that determine the slice
 #  to be copied or replaced.
@@ -323,7 +323,7 @@
 #
 #  - #+@: Returns a string that is not frozen: +self+, if not frozen;
 #    +self.dup+ otherwise.
-#  - #-@: Returns a string that is frozen: +self+, if already frozen;
+#  - #-@ (aliased as #dedup): Returns a string that is frozen: +self+, if already frozen;
 #    +self.freeze+ otherwise.
 #  - #freeze: Freezes +self+, if not already frozen; returns +self+.
 #
@@ -331,7 +331,7 @@
 #
 #  _Counts_
 #
-#  - #length, #size: Returns the count of characters (not bytes).
+#  - #length (aliased as #size): Returns the count of characters (not bytes).
 #  - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
 #  - #bytesize: Returns the count of bytes.
 #  - #count: Returns the count of substrings matching given strings.
@@ -365,7 +365,7 @@
 #
 #  === Methods for Comparing
 #
-#  - #==, #===: Returns +true+ if a given other string has the same content as +self+.
+#  - #== (aliased as #===): Returns +true+ if a given other string has the same content as +self+.
 #  - #eql?: Returns +true+ if the content is the same as the given other string.
 #  - #<=>: Returns -1, 0, or 1 as a given other string is smaller than,
 #    equal to, or larger than +self+.
@@ -382,6 +382,8 @@
 #
 #  - #insert: Returns +self+ with a given string inserted at a given offset.
 #  - #<<: Returns +self+ concatenated with a given string or integer.
+#  - #append_as_bytes: Returns +self+ concatenated with strings without performing any
+#    encoding validation or conversion.
 #
 #  _Substitution_
 #
@@ -389,8 +391,8 @@
 #    returns +self+ if any changes, +nil+ otherwise.
 #  - #gsub!: Replaces each substring that matches a given pattern with a given replacement string;
 #    returns +self+ if any changes, +nil+ otherwise.
-#  - #succ!, #next!: Returns +self+ modified to become its own successor.
-#  - #replace: Returns +self+ with its entire content replaced by a given string.
+#  - #succ! (aliased as #next!): Returns +self+ modified to become its own successor.
+#  - #initialize_copy (aliased as #replace): Returns +self+ with its entire content replaced by a given string.
 #  - #reverse!: Returns +self+ with its characters in reverse order.
 #  - #setbyte: Sets the byte at a given integer offset to a given value; returns the argument.
 #  - #tr!: Replaces specified characters in +self+ with specified replacement characters;
@@ -460,7 +462,7 @@
 #    replaced with a given replacement string;.
 #  - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
 #    replaced with a given replacement string.
-#  - #succ, #next: Returns the string that is the successor to +self+.
+#  - #succ (aliased as #next): Returns the string that is the successor to +self+.
 #  - #reverse: Returns a copy of +self+ with its characters in reverse order.
 #  - #tr: Returns a copy of +self+ with specified characters replaced with specified      replacement characters.
 #  - #tr_s: Returns a copy of +self+ with specified characters replaced with
@@ -488,13 +490,13 @@
 #  - #chomp: Returns a copy of +self+ with a trailing record separator removed, if found.
 #  - #chop: Returns a copy of +self+ with trailing newline characters or the last character removed.
 #  - #squeeze: Returns a copy of +self+ with contiguous duplicate characters removed.
-#  - #[], #slice: Returns a substring determined by a given index, start/length, or range, or string.
+#  - #[] (aliased as #slice): Returns a substring determined by a given index, start/length, or range, or string.
 #  - #byteslice: Returns a substring determined by a given index, start/length, or range.
 #  - #chr: Returns the first character.
 #
 #  _Duplication_
 #
-#  - #to_s, $to_str: If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
+#  - #to_s (aliased as #to_str): If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
 #    otherwise, returns +self+.
 #
 #  === Methods for Converting to Non-+String+
@@ -537,7 +539,7 @@
 #  <em>Strings and Symbols</em>
 #
 #  - #inspect: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
-#  - #to_sym, #intern: Returns the symbol corresponding to +self+.
+#  - #intern (aliased as #to_sym): Returns the symbol corresponding to +self+.
 #
 #  === Methods for Iterating
 #

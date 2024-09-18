@@ -33,7 +33,11 @@ module IRB
       # the `IRB::Abort` exception only interrupts IRB's execution but doesn't affect the pager
       # So to properly terminate the pager with Ctrl-C, we need to catch `IRB::Abort` and kill the pager process
       rescue IRB::Abort
-        Process.kill("TERM", pid) if pid
+        begin
+          Process.kill("TERM", pid) if pid
+        rescue Errno::ESRCH
+          # Pager process already terminated
+        end
         nil
       rescue Errno::EPIPE
       end

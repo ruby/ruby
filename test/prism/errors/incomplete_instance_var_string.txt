@@ -1,0 +1,4 @@
+%@#@@#
+    ^ '@' without identifiers is not allowed as an instance variable name
+    ^ unexpected instance variable, expecting end-of-input
+

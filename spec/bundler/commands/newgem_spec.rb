@@ -681,6 +681,9 @@ RSpec.describe "bundle gem" do
 
       it "builds exe skeleton" do
         expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to exist
+        unless Gem.win_platform?
+          expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to be_executable
+        end
       end
 
       it "requires the main file" do
@@ -736,6 +739,30 @@ RSpec.describe "bundle gem" do
 
       it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb").read).to include("expect(false).to eq(true)")
+      end
+    end
+
+    context "init_gems_rb setting to true" do
+      before do
+        bundle "config set init_gems_rb true"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates gems.rb instead of Gemfile" do
+        expect(bundled_app("#{gem_name}/gems.rb")).to exist
+        expect(bundled_app("#{gem_name}/Gemfile")).to_not exist
+      end
+    end
+
+    context "init_gems_rb setting to false" do
+      before do
+        bundle "config set init_gems_rb false"
+        bundle "gem #{gem_name}"
+      end
+
+      it "generates Gemfile instead of gems.rb" do
+        expect(bundled_app("#{gem_name}/gems.rb")).to_not exist
+        expect(bundled_app("#{gem_name}/Gemfile")).to exist
       end
     end
 

@@ -170,14 +170,23 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                 <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                 case <%= node.type %>: {
-                    <%- if node.fields.any? { |field| ![Prism::Template::NodeField, Prism::Template::OptionalNodeField, Prism::Template::FlagsField].include?(field.class) } -%>
+                    <%- if node.fields.any? { |field| ![Prism::Template::NodeField, Prism::Template::OptionalNodeField].include?(field.class) } -%>
                     pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
                     <%- end -%>
-                    VALUE argv[<%= node.fields.length + 2 %>];
+                    VALUE argv[<%= node.fields.length + 4 %>];
 
                     // source
                     argv[0] = source;
-                    <%- node.fields.each.with_index(1) do |field, index| -%>
+
+                    // node_id
+                    argv[1] = ULONG2NUM(node->node_id);
+
+                    // location
+                    argv[2] = pm_location_new(parser, node->location.start, node->location.end);
+
+                    // flags
+                    argv[3] = ULONG2NUM(node->flags);
+                    <%- node.fields.each.with_index(4) do |field, index| -%>
 
                     // <%= field.name %>
                     <%- case field -%>
@@ -218,9 +227,6 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- when Prism::Template::UInt32Field -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);
-                    <%- when Prism::Template::FlagsField -%>
-#line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
-                    argv[<%= index %>] = ULONG2NUM(node->flags & ~PM_NODE_FLAG_COMMON_MASK);
                     <%- when Prism::Template::IntegerField -%>
 #line <%= __LINE__ + 1 %> "prism/templates/ext/prism/<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = pm_integer_new(&cast-><%= field.name %>);
@@ -232,10 +238,7 @@ pm_ast_new(const pm_parser_t *parser, const pm_node_t *node, rb_encoding *encodi
                     <%- end -%>
                     <%- end -%>
 
-                    // location
-                    argv[<%= node.fields.length + 1 %>] = pm_location_new(parser, node->location.start, node->location.end);
-
-                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 2 %>, argv, rb_cPrism<%= node.name %>));
+                    rb_ary_push(value_stack, rb_class_new_instance(<%= node.fields.length + 4 %>, argv, rb_cPrism<%= node.name %>));
                     break;
                 }
                 <%- end -%>

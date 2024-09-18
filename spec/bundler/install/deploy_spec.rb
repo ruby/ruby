@@ -74,6 +74,18 @@ RSpec.describe "install in deployment or frozen mode" do
     end
   end
 
+  it "fails without a lockfile and says that deployment requires a lock" do
+    bundle "config deployment true"
+    bundle "install", raise_on_error: false
+    expect(err).to include("The deployment setting requires a lockfile")
+  end
+
+  it "fails without a lockfile and says that frozen requires a lock" do
+    bundle "config frozen true"
+    bundle "install", raise_on_error: false
+    expect(err).to include("The frozen setting requires a lockfile")
+  end
+
   it "still works if you are not in the app directory and specify --gemfile" do
     bundle "install"
     simulate_new_machine
@@ -388,7 +400,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(out).not_to include("* myrack-obama")
     end
 
-    it "explodes if you remove a gem and don't check in the lockfile" do
+    it "explodes if you replace a gem and don't check in the lockfile" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "activesupport"
@@ -398,6 +410,17 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle :install, raise_on_error: false
       expect(err).to include("frozen mode")
       expect(err).to include("You have added to the Gemfile:\n* activesupport\n\n")
+      expect(err).to include("You have deleted from the Gemfile:\n* myrack")
+      expect(err).not_to include("You have changed in the Gemfile")
+    end
+
+    it "explodes if you remove a gem and don't check in the lockfile" do
+      gemfile 'source "https://gem.repo1"'
+
+      bundle "config set --local deployment true"
+      bundle :install, raise_on_error: false
+      expect(err).to include("Some dependencies were deleted")
+      expect(err).to include("frozen mode")
       expect(err).to include("You have deleted from the Gemfile:\n* myrack")
       expect(err).not_to include("You have changed in the Gemfile")
     end

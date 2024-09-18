@@ -116,8 +116,8 @@ static YJIT_OPTIONS: [(&str, &str); 9] = [
 pub enum TraceExits {
     // Trace all exits
     All,
-    // Trace a specific counted exit
-    CountedExit(Counter),
+    // Trace a specific counter
+    Counter(Counter),
 }
 
 #[derive(Debug)]
@@ -250,7 +250,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("dump-disasm", _) => {
             if !cfg!(feature = "disasm") {
-                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+                eprintln!("WARNING: the {} option works best when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
             }
 
             match opt_val {
@@ -293,7 +293,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             OPTIONS.trace_exits = match opt_val {
                 "" => Some(TraceExits::All),
                 name => match Counter::get(name) {
-                    Some(counter) => Some(TraceExits::CountedExit(counter)),
+                    Some(counter) => Some(TraceExits::Counter(counter)),
                     None => return None,
                 },
             };

@@ -30,7 +30,6 @@ pub struct Invariants {
     /// quick access to all of the blocks that are making this assumption when
     /// the operator is redefined.
     basic_operator_blocks: HashMap<(RedefinitionFlag, ruby_basic_operators), HashSet<BlockRef>>,
-
     /// A map from a block to a set of classes and their associated basic
     /// operators that the block is assuming are not redefined. This is used for
     /// quick access to all of the assumptions that a block is making when it
@@ -48,7 +47,6 @@ pub struct Invariants {
     /// a constant `A::B` is redefined, then all blocks that are assuming that
     /// `A` and `B` have not be redefined must be invalidated.
     constant_state_blocks: HashMap<ID, HashSet<BlockRef>>,
-
     /// A map from a block to a set of IDs that it is assuming have not been
     /// redefined.
     block_constant_states: HashMap<BlockRef, HashSet<ID>>,
@@ -57,6 +55,9 @@ pub struct Invariants {
     /// will have no singleton class. When the set is empty, it means that
     /// there has been a singleton class for the class after boot, so you cannot
     /// assume no singleton class going forward.
+    /// For now, the key can be only Array, Hash, or String. Consider making
+    /// an inverted HashMap if we start using this for user-defined classes
+    /// to maintain the performance of block_assumptions_free().
     no_singleton_classes: HashMap<VALUE, HashSet<BlockRef>>,
 
     /// A map from an ISEQ to a set of blocks that assume base pointer is equal
@@ -345,7 +346,7 @@ pub extern "C" fn rb_yjit_constant_state_changed(id: ID) {
 /// Callback for marking GC objects inside [Invariants].
 /// See `struct yjijt_root_struct` in C.
 #[no_mangle]
-pub extern "C" fn rb_yjit_root_mark(_: *mut c_void) {
+pub extern "C" fn rb_yjit_root_mark() {
     // Call rb_gc_mark on exit location's raw_samples to
     // wrap frames in a GC allocated object. This needs to be called
     // at the same time as root mark.
@@ -374,7 +375,7 @@ pub extern "C" fn rb_yjit_root_mark(_: *mut c_void) {
 }
 
 #[no_mangle]
-pub extern "C" fn rb_yjit_root_update_references(_: *mut c_void) {
+pub extern "C" fn rb_yjit_root_update_references() {
     if unsafe { INVARIANTS.is_none() } {
         return;
     }
@@ -462,11 +463,15 @@ pub fn block_assumptions_free(blockref: BlockRef) {
     }
 
     // Remove tracking for blocks assuming no singleton class
+    // NOTE: no_singleton_class has up to 3 keys (Array, Hash, or String) for now.
+    // This is effectively an O(1) access unless we start using it for more classes.
     for (_, blocks) in invariants.no_singleton_classes.iter_mut() {
         blocks.remove(&blockref);
     }
+
     // Remove tracking for blocks assuming EP doesn't escape
-    for (_, blocks) in invariants.no_ep_escape_iseqs.iter_mut() {
+    let iseq = unsafe { blockref.as_ref() }.get_blockid().iseq;
+    if let Some(blocks) = invariants.no_ep_escape_iseqs.get_mut(&iseq) {
         blocks.remove(&blockref);
     }
 }
@@ -683,7 +688,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
             cb.without_page_end_reserve(|cb| {
-                let mut asm = crate::backend::ir::Assembler::new();
+                let mut asm = crate::backend::ir::Assembler::new_without_iseq();
                 asm.jmp(patch.outlined_target_pos.as_side_exit());
                 if asm.compile(cb, None).is_none() {
                     panic!("Failed to apply patch at {:?}", patch.inline_patch_pos);

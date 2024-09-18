@@ -1,0 +1,7 @@
+begin
+$+ = nil
+^~ Can't set variable $+
+$1466 = nil
+^~~~~ Can't set variable $1466
+end
+

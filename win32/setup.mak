@@ -130,7 +130,9 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 
 -headers-: nul
 
+!ifdef VS2022_FP_BUG_CHECK # Fixed In: Visual Studio 2022 version 17.3
 -headers-: vs2022-fp-bug
+!endif
 
 # Check the bug reported at:
 # https://developercommunity.visualstudio.com/t/With-__assume-isnan-after-isinf/1515649

@@ -75,12 +75,6 @@ fn yjit_init() {
         let _ = std::fs::remove_file(&perf_map);
         println!("YJIT perf map: {perf_map}");
     }
-
-    // Initialize the GC hooks. Do this at last as some code depend on Rust initialization.
-    extern "C" {
-        fn rb_yjit_init_gc_hooks();
-    }
-    unsafe { rb_yjit_init_gc_hooks() }
 }
 
 /// At the moment, we abort in all cases we panic.

@@ -1426,9 +1426,10 @@ ole_variant2val(VARIANT *pvar)
         vt = V_VT(pvar);
     }
 
+#define ARG_AS(type, pvar) (V_ISBYREF(pvar) ? *V_##type##REF(pvar) : V_##type(pvar))
     if(V_ISARRAY(pvar)) {
         VARTYPE vt_base = vt & VT_TYPEMASK;
-        SAFEARRAY *psa = V_ISBYREF(pvar) ? *V_ARRAYREF(pvar) : V_ARRAY(pvar);
+        SAFEARRAY *psa = ARG_AS(ARRAY, pvar);
         UINT i = 0;
         LONG *pid, *plb, *pub;
         VARIANT variant;
@@ -1495,109 +1496,58 @@ ole_variant2val(VARIANT *pvar)
     case VT_NULL:
         break;
     case VT_I1:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_I1REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_I1(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(I1, pvar));
         break;
 
     case VT_UI1:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UI1REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UI1(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UI1, pvar));
         break;
 
     case VT_I2:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_I2REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_I2(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(I2, pvar));
         break;
 
     case VT_UI2:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UI2REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UI2(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UI2, pvar));
         break;
 
     case VT_I4:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_I4REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_I4(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(I4, pvar));
         break;
 
     case VT_UI4:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UI4REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UI4(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UI4, pvar));
         break;
 
     case VT_INT:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_INTREF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_INT(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(INT, pvar));
         break;
 
     case VT_UINT:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UINTREF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UINT(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UINT, pvar));
         break;
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
-        if(V_ISBYREF(pvar))
-#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
-#ifdef V_I8REF
-            obj = I8_2_NUM(*V_I8REF(pvar));
-#endif
-#else
-            obj = Qnil;
-#endif
-        else
-            obj = I8_2_NUM(V_I8(pvar));
+        obj = I8_2_NUM(ARG_AS(I8, pvar));
         break;
     case VT_UI8:
-        if(V_ISBYREF(pvar))
-#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
-#ifdef V_UI8REF
-            obj = UI8_2_NUM(*V_UI8REF(pvar));
-#endif
-#else
-            obj = Qnil;
-#endif
-        else
-            obj = UI8_2_NUM(V_UI8(pvar));
+        obj = UI8_2_NUM(ARG_AS(UI8, pvar));
         break;
 #endif  /* (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__) */
 
     case VT_R4:
-        if(V_ISBYREF(pvar))
-            obj = rb_float_new(*V_R4REF(pvar));
-        else
-            obj = rb_float_new(V_R4(pvar));
+        obj = rb_float_new(ARG_AS(R4, pvar));
         break;
 
     case VT_R8:
-        if(V_ISBYREF(pvar))
-            obj = rb_float_new(*V_R8REF(pvar));
-        else
-            obj = rb_float_new(V_R8(pvar));
+        obj = rb_float_new(ARG_AS(R8, pvar));
         break;
 
     case VT_BSTR:
     {
         BSTR bstr;
-        if(V_ISBYREF(pvar))
-            bstr = *V_BSTRREF(pvar);
-        else
-            bstr = V_BSTR(pvar);
+        bstr = ARG_AS(BSTR, pvar);
         obj = (SysStringLen(bstr) == 0)
             ? rb_str_new2("")
             : ole_wc2vstr(bstr, FALSE);
@@ -1605,27 +1555,18 @@ ole_variant2val(VARIANT *pvar)
     }
 
     case VT_ERROR:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM(*V_ERRORREF(pvar));
-        else
-            obj = RB_INT2NUM(V_ERROR(pvar));
+        obj = RB_INT2NUM(ARG_AS(ERROR, pvar));
         break;
 
     case VT_BOOL:
-        if (V_ISBYREF(pvar))
-            obj = (*V_BOOLREF(pvar) ? Qtrue : Qfalse);
-        else
-            obj = (V_BOOL(pvar) ? Qtrue : Qfalse);
+        obj = (ARG_AS(BOOL, pvar) ? Qtrue : Qfalse);
         break;
 
     case VT_DISPATCH:
     {
         IDispatch *pDispatch;
 
-        if (V_ISBYREF(pvar))
-            pDispatch = *V_DISPATCHREF(pvar);
-        else
-            pDispatch = V_DISPATCH(pvar);
+        pDispatch = ARG_AS(DISPATCH, pvar);
 
         if (pDispatch != NULL ) {
             OLE_ADDREF(pDispatch);
@@ -1642,10 +1583,7 @@ ole_variant2val(VARIANT *pvar)
         void *p;
         HRESULT hr;
 
-        if (V_ISBYREF(pvar))
-            punk = *V_UNKNOWNREF(pvar);
-        else
-            punk = V_UNKNOWN(pvar);
+        punk = ARG_AS(UNKNOWN, pvar);
 
         if(punk != NULL) {
            hr = punk->lpVtbl->QueryInterface(punk, &IID_IDispatch, &p);
@@ -1660,10 +1598,7 @@ ole_variant2val(VARIANT *pvar)
     case VT_DATE:
     {
         DATE date;
-        if(V_ISBYREF(pvar))
-            date = *V_DATEREF(pvar);
-        else
-            date = V_DATE(pvar);
+        date = ARG_AS(DATE, pvar);
 
         obj =  vtdate2rbtime(date);
         break;
@@ -1693,6 +1628,7 @@ ole_variant2val(VARIANT *pvar)
         }
     }
     return obj;
+#undef ARG_AS
 }
 
 LONG

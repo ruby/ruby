@@ -1,0 +1,3 @@
+BEGIN 1 }
+     ^ expected a `{` after `BEGIN`
+

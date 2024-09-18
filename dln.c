@@ -76,12 +76,6 @@ void *xrealloc();
 # include <unistd.h>
 #endif
 
-bool
-dln_supported_p(void)
-{
-    return true;
-}
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -200,6 +194,7 @@ dln_strerror(char *message, size_t size)
     }
     return message;
 }
+#define dln_strerror() dln_strerror(message, sizeof message)
 #elif defined USE_DLN_DLOPEN
 static const char *
 dln_strerror(void)
@@ -344,13 +339,16 @@ dln_disable_dlclose(void)
 #endif
 
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-void *
-dln_open(const char *file, char *error, size_t size)
+static void *
+dln_open(const char *file)
 {
     static const char incompatible[] = "incompatible library version";
+    const char *error = NULL;
     void *handle;
 
 #if defined(_WIN32)
+    char message[1024];
+
     /* Convert the file path to wide char */
     WCHAR *winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
     if (!winfile) {
@@ -362,15 +360,15 @@ dln_open(const char *file, char *error, size_t size)
     free(winfile);
 
     if (!handle) {
-        strlcpy(error, dln_strerror(error, size), size);
-        return NULL;
+        error = dln_strerror();
+        goto failed;
     }
 
 # if defined(RUBY_EXPORT)
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
         FreeLibrary(handle);
-        strlcpy(error, incompatible, size);
-        return NULL;
+        error = incompatible;
+        goto failed;
     }
 # endif
 
@@ -389,8 +387,8 @@ dln_open(const char *file, char *error, size_t size)
     /* Load file */
     handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL);
     if (handle == NULL) {
-        strlcpy(error, dln_strerror(), size);
-        return NULL;
+        error = dln_strerror();
+        goto failed;
     }
 
 # if defined(RUBY_EXPORT)
@@ -412,15 +410,11 @@ dln_open(const char *file, char *error, size_t size)
                     libruby_name = tmp;
                 }
                 dlclose(handle);
-
                 if (libruby_name) {
-                    snprintf(error, size, "linked to incompatible %s - %s", libruby_name, file);
+                    dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
                 }
-                else {
-                    strlcpy(error, incompatible, size);
-                }
-
-                return NULL;
+                error = incompatible;
+                goto failed;
             }
         }
     }
@@ -428,9 +422,12 @@ dln_open(const char *file, char *error, size_t size)
 #endif
 
     return handle;
+
+  failed:
+    dln_loaderror("%s - %s", error, file);
 }
 
-void *
+static void *
 dln_sym(void *handle, const char *symbol)
 {
 #if defined(_WIN32)
@@ -449,7 +446,7 @@ dln_sym_func(void *handle, const char *symbol)
         const char *error;
 #if defined(_WIN32)
         char message[1024];
-        error = dln_strerror(message, sizeof(message));
+        error = dln_strerror();
 #elif defined(USE_DLN_DLOPEN)
         const size_t errlen = strlen(error = dln_strerror()) + 1;
         error = memcpy(ALLOCA_N(char, errlen), error, errlen);
@@ -504,12 +501,7 @@ void *
 dln_load(const char *file)
 {
 #if defined(_WIN32) || defined(USE_DLN_DLOPEN)
-    char error[1024];
-    void *handle = dln_open(file, error, sizeof(error));
-
-    if (handle == NULL) {
-        dln_loaderror("%s - %s", error, file);
-    }
+    void *handle = dln_open(file);
 
 #ifdef RUBY_DLN_CHECK_ABI
     typedef unsigned long long abi_version_number;

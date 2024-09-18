@@ -11,7 +11,7 @@ module Prism
     #
     # In C, this would look something like:
     #
-    #     ((flags & ~DECIMAL) << 1) || 10
+    #     ((flags & ~DECIMAL) >> 1) || 10
     #
     # We have to do some other work in Ruby because 0 is truthy and ~ on an
     # integer doesn't have a fixed width.
@@ -26,7 +26,7 @@ module Prism
 
     def base(source)
       node = Prism.parse_statement(source)
-      value = (node.send(:flags) & (0b1111 - IntegerBaseFlags::DECIMAL)) << 1
+      value = (node.send(:flags) & (0b111100 - IntegerBaseFlags::DECIMAL)) >> 1
       value == 0 ? 10 : value
     end
   end

@@ -315,8 +315,8 @@ module Prism
     end
 
     def test_ElseNode
-      assert_location(ElseNode, "if foo; bar; else; baz; end", 13...27, &:consequent)
-      assert_location(ElseNode, "foo ? bar : baz", 10...15, &:consequent)
+      assert_location(ElseNode, "if foo; bar; else; baz; end", 13...27, &:subsequent)
+      assert_location(ElseNode, "foo ? bar : baz", 10...15, &:subsequent)
     end
 
     def test_EmbeddedStatementsNode
@@ -758,7 +758,7 @@ module Prism
       end
       RUBY
       assert_location(RescueNode, code, 13...50) { |node| node.rescue_clause }
-      assert_location(RescueNode, code, 30...50) { |node| node.rescue_clause.consequent }
+      assert_location(RescueNode, code, 30...50) { |node| node.rescue_clause.subsequent }
     end
 
     def test_RescueModifierNode
@@ -827,8 +827,8 @@ module Prism
       assert_location(StatementsNode, "if foo; bar; end", 8...11, &:statements)
       assert_location(StatementsNode, "foo if bar", 0...3, &:statements)
 
-      assert_location(StatementsNode, "if foo; foo; elsif bar; bar; end", 24...27) { |node| node.consequent.statements }
-      assert_location(StatementsNode, "if foo; foo; else; bar; end", 19...22) { |node| node.consequent.statements }
+      assert_location(StatementsNode, "if foo; foo; elsif bar; bar; end", 24...27) { |node| node.subsequent.statements }
+      assert_location(StatementsNode, "if foo; foo; else; bar; end", 19...22) { |node| node.subsequent.statements }
 
       assert_location(StatementsNode, "unless foo; bar; end", 12...15, &:statements)
       assert_location(StatementsNode, "foo unless bar", 0...3, &:statements)

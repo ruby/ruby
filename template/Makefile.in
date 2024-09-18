@@ -67,6 +67,9 @@ RUBY_VERSION_NAME = @RUBY_VERSION_NAME@
 UNIVERSAL_ARCHNAMES = @UNIVERSAL_ARCHNAMES@
 BUILTIN_BINARY = @X_BUILTIN_BINARY@
 
+BUILTIN_GC = default
+shared_gc_dir = @shared_gc_dir@
+
 TESTUI = console
 TESTS =
 INSTALLDOC = @INSTALLDOC@
@@ -225,7 +228,6 @@ AR            = @AR@
 ARFLAGS       = @ARFLAGS@$(empty)
 RANLIB        = @RANLIB@
 AS            = @AS@
-ASFLAGS       = @ASFLAGS@ $(ARCH_FLAG) $(INCFLAGS)
 IFCHANGE      = $(SHELL) $(tooldir)/ifchange
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
@@ -250,7 +252,6 @@ INSTALLED_LIST= .installed.list
 
 NEWLINE_C     = enc/trans/newline.c
 MINIPRELUDE_C = miniprelude.c
-GOLF_PRELUDE_C= golf_prelude.c
 RBCONFIG      = .rbconfig.time
 
 MAINSRC = $(MAINOBJ:.$(OBJEXT)=.c)
@@ -443,13 +444,17 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi
 
+gc_impl.$(OBJEXT): gc/$(BUILTIN_GC).c probes.h
+	@$(ECHO) compiling $(srcdir)/gc/$(BUILTIN_GC).c
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(srcdir)/gc/$(BUILTIN_GC).c
+
 .c.$(OBJEXT):
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
 .$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
-	$(Q) $(CC) $(ASFLAGS) -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -o $@ -c $<
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -c $<
 
 .c.$(ASMEXT):
 	@$(ECHO) translating $<
@@ -479,8 +484,9 @@ probes.stamp: $(DTRACE_REBUILD_OBJS)
 
 probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	@$(ECHO) processing probes in object files
-	$(Q) $(RM) $@
-	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
+	@# n.b. the dtrace script looks at the $CFLAGS environment variable to decide
+	@# how to assemble probes.o; so we need to actually _export_ $(CFLAGS)
+	$(Q) CC="$(CC)" CFLAGS="$(CFLAGS) $(XCFLAGS) $(CPPFLAGS)" $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
 
 # DTrace static library hacks described here:
 # https://marc.info/?l=opensolaris-dtrace-discuss&m=114761203110734&w=4
@@ -518,9 +524,9 @@ ext/realclean:: ext/realclean.sub
 .bundle/distclean:: .bundle/distclean.sub
 .bundle/realclean:: .bundle/realclean.sub
 
-ext/clean.sub:: ext/clean.mk
-ext/distclean.sub:: ext/distclean.mk
-ext/realclean.sub:: ext/realclean.mk
+.bundle/clean.sub:: ext/clean.mk
+.bundle/distclean.sub:: ext/distclean.mk
+.bundle/realclean.sub:: ext/realclean.mk
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
 .bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::

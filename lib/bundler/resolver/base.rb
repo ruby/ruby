@@ -30,6 +30,10 @@ module Bundler
         end.compact
       end
 
+      def specs_compatible_with(result)
+        @base.specs_compatible_with(result)
+      end
+
       def [](name)
         @base[name]
       end
@@ -65,6 +69,12 @@ module Bundler
       def include_prereleases(names)
         names.each do |name|
           get_package(name).consider_prereleases!
+        end
+      end
+
+      def include_remote_specs(names)
+        names.each do |name|
+          get_package(name).consider_remote_versions!
         end
       end
 

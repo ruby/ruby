@@ -1732,15 +1732,20 @@ class TestProcess < Test::Unit::TestCase
         sig_w.write('?')
       end
       pid = nil
+      th = nil
       IO.pipe do |r, w|
         pid = fork { r.read(1); exit }
-        Thread.start {
+        th = Thread.start {
           Thread.current.report_on_exception = false
           raise
         }
         w.puts
       end
       Process.wait pid
+      begin
+        th.join
+      rescue Exception
+      end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
     if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # checking -DRJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
@@ -2759,7 +2764,7 @@ EOS
     begin;
       GC.start
 
-      TIMES = 10_000
+      TIMES = 100_000
       ary = Array.new(TIMES)
       TIMES.times do |i|
         ary[i] = Object.new
@@ -2770,15 +2775,12 @@ EOS
       # Disable GC so we can make sure GC only runs in Process.warmup
       GC.disable
 
-      total_pages_before = GC.stat_heap.map { |_, v| v[:heap_eden_pages] + v[:heap_allocatable_pages] }
+      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots)
 
       Process.warmup
 
-      # Number of pages freed should cause equal increase in number of allocatable pages.
-      total_pages_before.each_with_index do |val, i|
-        assert_equal(val, GC.stat_heap(i, :heap_eden_pages) + GC.stat_heap(i, :heap_allocatable_pages), "size pool: #{i}")
-      end
-      assert_equal(0, GC.stat(:heap_tomb_pages))
+      assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots))
+      assert_equal(0, GC.stat(:heap_empty_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
     end;
   end

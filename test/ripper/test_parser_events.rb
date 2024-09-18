@@ -1743,4 +1743,69 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
     assert_equal true, thru_hshptn
   end
+
+  def test_return_out_of_compile_error_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def compile_error(msg) = @blk.call(msg)
+      end
+
+      def call_parse = MyRipper.new("/") { |msg| return msg }.parse
+
+      # Check that call_parse does return a syntax error
+      raise "call_parse should return a syntax error" unless call_parse
+    begin;
+      100_000.times do
+        call_parse
+      end
+    end;
+  end
+
+  def test_return_out_of_warn_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def warn(msg, *args) = @blk.call(msg)
+      end
+
+      def call_parse = MyRipper.new("{ a: 1, a: 2 }") { |msg| return msg }.parse
+
+      # Check that call_parse does warn
+      raise "call_parse should warn" unless call_parse
+    begin;
+      500_000.times do
+        call_parse
+      end
+    end;
+
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def warn(msg, *args) = @blk.call(msg)
+      end
+
+      $VERBOSE = true
+      def call_parse = MyRipper.new("if true\n  end\n") { |msg| return msg }.parse
+
+      # Check that call_parse does warn
+      raise "call_parse should warn" unless call_parse
+    begin;
+      1_000_000.times do
+        call_parse
+      end
+    end;
+  end
 end if ripper_test

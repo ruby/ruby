@@ -72,6 +72,7 @@ module Prism
     end
 
     callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
+    enum :pm_string_init_result_t, %i[PM_STRING_INIT_SUCCESS PM_STRING_INIT_ERROR_GENERIC PM_STRING_INIT_ERROR_DIRECTORY]
 
     load_exported_functions_from(
       "prism.h",
@@ -176,13 +177,26 @@ module Prism
       def self.with_file(filepath)
         raise TypeError unless filepath.is_a?(String)
 
+        # On Windows and Mac, it's expected that filepaths will be encoded in
+        # UTF-8. If they are not, we need to convert them to UTF-8 before
+        # passing them into pm_string_mapped_init.
+        if RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i) &&
+           (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
+          filepath = filepath.encode(Encoding::UTF_8)
+        end
+
         FFI::MemoryPointer.new(SIZEOF) do |pm_string|
-          if LibRubyParser.pm_string_mapped_init(pm_string, filepath)
+          case (result = LibRubyParser.pm_string_mapped_init(pm_string, filepath))
+          when :PM_STRING_INIT_SUCCESS
             pointer = LibRubyParser.pm_string_source(pm_string)
             length = LibRubyParser.pm_string_length(pm_string)
             return yield new(pointer, length, false)
-          else
+          when :PM_STRING_INIT_ERROR_GENERIC
             raise SystemCallError.new(filepath, FFI.errno)
+          when :PM_STRING_INIT_ERROR_DIRECTORY
+            raise Errno::EISDIR.new(filepath)
+          else
+            raise "Unknown error initializing pm_string_t: #{result.inspect}"
           end
         ensure
           LibRubyParser.pm_string_free(pm_string)
@@ -433,6 +447,9 @@ module Prism
 
       template << "C"
       values << (options[:encoding] == false ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:main_script, false) ? 1 : 0)
 
       template << "L"
       if (scopes = options[:scopes])

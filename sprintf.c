@@ -937,7 +937,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
-    if (posarg >= 0 && nextarg < argc) {
+    if (posarg >= 0 && nextarg < argc && !(argc == 2 && RB_TYPE_P(argv[1], T_HASH))) {
         const char *mesg = "too many arguments for format string";
         if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
         if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
@@ -1165,7 +1165,9 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     RBASIC_SET_CLASS_RAW(result, klass);
     p = RSTRING_PTR(result);
     long blen = (char *)f._p - p;
-    if (scanned < blen) {
+
+    coderange = ENC_CODERANGE(result);
+    if (coderange != ENC_CODERANGE_UNKNOWN && scanned < blen) {
         rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
         ENC_CODERANGE_SET(result, coderange);
     }

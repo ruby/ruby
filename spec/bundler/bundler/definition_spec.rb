@@ -53,7 +53,7 @@ RSpec.describe Bundler::Definition do
         s.add_dependency "myrack", "1.0"
       end
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
         c.checksum gem_repo1, "myrack", "1.0.0"
       end
@@ -108,7 +108,7 @@ RSpec.describe Bundler::Definition do
         s.add_development_dependency "net-ssh", "1.0"
       end
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "1.0"
         c.checksum gem_repo1, "myrack", "1.0.0"
       end
@@ -149,14 +149,14 @@ RSpec.describe Bundler::Definition do
     end
 
     it "for a locked gem for another platform" do
-      checksums = checksums_section_when_existing do |c|
-        c.no_checksum "only_java", "1.1", "java"
-      end
-
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "only_java", platform: :jruby
       G
+
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo1, "only_java", "1.1", "java"
+      end
 
       bundle "lock --add-platform java"
       bundle :check, env: { "DEBUG" => "1" }
@@ -180,7 +180,7 @@ RSpec.describe Bundler::Definition do
     end
 
     it "for a rubygems gem" do
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo1, "foo", "1.0"
       end
 

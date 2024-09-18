@@ -70,7 +70,7 @@ class RDoc::Alias < RDoc::CodeObject
   # HTML id-friendly version of +#new_name+.
 
   def html_name
-    CGI.escape(@new_name.gsub('-', '-2D')).gsub('%','-').sub(/^-/, '')
+    CGI.escape(@new_name.gsub('-', '-2D')).gsub('%', '-').sub(/^-/, '')
   end
 
   def inspect # :nodoc:

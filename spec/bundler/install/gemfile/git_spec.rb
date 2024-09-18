@@ -836,6 +836,32 @@ RSpec.describe "bundle install with git sources" do
     expect(the_bundle).to include_gems "rails 2.3.2"
   end
 
+  it "runs the gemspec in the context of its parent directory, when using local overrides" do
+    build_git "foo", path: lib_path("foo"), gemspec: false do |s|
+      s.write lib_path("foo/lib/foo/version.rb"), %(FOO_VERSION = '1.0')
+      s.write "foo.gemspec", <<-G
+        $:.unshift Dir.pwd
+        require 'lib/foo/version'
+        Gem::Specification.new do |s|
+          s.name        = 'foo'
+          s.author      = 'no one'
+          s.version     = FOO_VERSION
+          s.summary     = 'Foo'
+          s.files       = Dir["lib/**/*.rb"]
+        end
+      G
+    end
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => "https://github.com/gems/foo", branch: "main"
+    G
+
+    bundle %(config set local.foo #{lib_path("foo")})
+
+    expect(the_bundle).to include_gems "foo 1.0"
+  end
+
   it "installs from git even if a rubygems gem is present" do
     build_gem "foo", "1.0", path: lib_path("fake_foo"), to_system: true do |s|
       s.write "lib/foo.rb", "raise 'FAIL'"
@@ -1106,6 +1132,25 @@ RSpec.describe "bundle install with git sources" do
 
       run "require 'new_file'"
       expect(out).to eq("USING GIT")
+    end
+
+    it "doesn't explode when removing an explicit exact version from a git gem with dependencies" do
+      build_lib "activesupport", "7.1.4", path: lib_path("rails/activesupport")
+      build_git "rails", "7.1.4", path: lib_path("rails") do |s|
+        s.add_dependency "activesupport", "= 7.1.4"
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rails", "7.1.4", :git => "#{lib_path("rails")}"
+      G
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rails", :git => "#{lib_path("rails")}"
+      G
+
+      expect(the_bundle).to include_gem "rails 7.1.4", "activesupport 7.1.4"
     end
   end
 
@@ -1549,7 +1594,7 @@ In Gemfile:
         to include("You need to install git to be able to use gems from git repositories. For help installing git, please refer to GitHub's tutorial at https://help.github.com/articles/set-up-git")
     end
 
-    it "installs a packaged git gem successfully" do
+    it "doesn't need git in the new machine if an installed git gem is copied to another machine" do
       build_git "foo"
 
       install_gemfile <<-G
@@ -1558,8 +1603,8 @@ In Gemfile:
           gem 'foo'
         end
       G
-      bundle "config set cache_all true"
-      bundle :cache
+      bundle "config set --global path vendor/bundle"
+      bundle :install
       simulate_new_machine
 
       bundle "install", env: { "PATH" => "" }

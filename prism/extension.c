@@ -21,6 +21,7 @@ VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
 VALUE rb_cPrismResult;
 VALUE rb_cPrismParseResult;
+VALUE rb_cPrismLexResult;
 VALUE rb_cPrismParseLexResult;
 
 VALUE rb_cPrismDebugEncoding;
@@ -30,6 +31,7 @@ ID rb_id_option_encoding;
 ID rb_id_option_filepath;
 ID rb_id_option_frozen_string_literal;
 ID rb_id_option_line;
+ID rb_id_option_main_script;
 ID rb_id_option_scopes;
 ID rb_id_option_version;
 ID rb_id_source_for;
@@ -178,6 +180,8 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
 
             pm_options_command_line_set(options, command_line);
         }
+    } else if (key_id == rb_id_option_main_script) {
+        if (!NIL_P(value)) pm_options_main_script_set(options, RTEST(value));
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, key);
     }
@@ -253,27 +257,41 @@ string_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options)
  * Read options for methods that look like (filepath, **options).
  */
 static void
-file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
+file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, VALUE *encoded_filepath) {
     VALUE filepath;
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
     Check_Type(filepath, T_STRING);
+    *encoded_filepath = rb_str_encode_ospath(filepath);
+    extract_options(options, *encoded_filepath, keywords);
 
-    extract_options(options, filepath, keywords);
+    const char *source = (const char *) pm_string_source(&options->filepath);
+    pm_string_init_result_t result;
 
-    const char * string_source = (const char *) pm_string_source(&options->filepath);
-
-    if (!pm_string_file_init(input, string_source)) {
-        pm_options_free(options);
+    switch (result = pm_string_file_init(input, source)) {
+        case PM_STRING_INIT_SUCCESS:
+            break;
+        case PM_STRING_INIT_ERROR_GENERIC: {
+            pm_options_free(options);
 
 #ifdef _WIN32
-        int e = rb_w32_map_errno(GetLastError());
+            int e = rb_w32_map_errno(GetLastError());
 #else
-        int e = errno;
+            int e = errno;
 #endif
 
-        rb_syserr_fail(e, string_source);
+            rb_syserr_fail(e, source);
+            break;
+        }
+        case PM_STRING_INIT_ERROR_DIRECTORY:
+            pm_options_free(options);
+            rb_syserr_fail(EISDIR, source);
+            break;
+        default:
+            pm_options_free(options);
+            rb_raise(rb_eRuntimeError, "Unknown error (%d) initializing file: %s", result, source);
+            break;
     }
 }
 
@@ -351,7 +369,8 @@ dump_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = dump_input(&input, &options);
     pm_string_free(&input);
@@ -371,7 +390,7 @@ dump_file(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE
 parser_comments(pm_parser_t *parser, VALUE source) {
-    VALUE comments = rb_ary_new();
+    VALUE comments = rb_ary_new_capa(parser->comment_list.size);
 
     for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
         VALUE location_argv[] = {
@@ -393,7 +412,7 @@ parser_comments(pm_parser_t *parser, VALUE source) {
  */
 static VALUE
 parser_magic_comments(pm_parser_t *parser, VALUE source) {
-    VALUE magic_comments = rb_ary_new();
+    VALUE magic_comments = rb_ary_new_capa(parser->magic_comment_list.size);
 
     for (pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) parser->magic_comment_list.head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
         VALUE key_loc_argv[] = {
@@ -443,7 +462,7 @@ parser_data_loc(const pm_parser_t *parser, VALUE source) {
  */
 static VALUE
 parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
-    VALUE errors = rb_ary_new();
+    VALUE errors = rb_ary_new_capa(parser->error_list.size);
     pm_diagnostic_t *error;
 
     for (error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
@@ -486,7 +505,7 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
  */
 static VALUE
 parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
-    VALUE warnings = rb_ary_new();
+    VALUE warnings = rb_ary_new_capa(parser->warning_list.size);
     pm_diagnostic_t *warning;
 
     for (warning = (pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
@@ -563,9 +582,10 @@ static void
 parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
 
-    VALUE yields = rb_ary_new_capa(2);
-    rb_ary_push(yields, pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source));
-    rb_ary_push(yields, INT2FIX(parser->lex_state));
+    VALUE yields = rb_assoc_new(
+        pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source),
+        INT2FIX(parser->lex_state)
+    );
 
     rb_ary_push(parse_lex_data->tokens, yields);
 }
@@ -606,7 +626,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
 
     VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
-    VALUE offsets = rb_ary_new();
+    VALUE offsets = rb_ary_new_capa(parser.newline_list.size);
     VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser.start_line), offsets);
 
     parse_lex_data_t parse_lex_data = {
@@ -635,16 +655,16 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         rb_ary_push(offsets, ULONG2NUM(parser.newline_list.offsets[index]));
     }
 
-    VALUE value;
+    VALUE result;
     if (return_nodes) {
-        value = rb_ary_new_capa(2);
+        VALUE value = rb_ary_new_capa(2);
         rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source));
         rb_ary_push(value, parse_lex_data.tokens);
+        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source);
     } else {
-        value = parse_lex_data.tokens;
+        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source);
     }
 
-    VALUE result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source);
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
 
@@ -653,10 +673,10 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
 /**
  * call-seq:
- *   Prism::lex(source, **options) -> Array
+ *   Prism::lex(source, **options) -> LexResult
  *
- * Return an array of Token instances corresponding to the given string. For
- * supported options, see Prism::parse.
+ * Return a LexResult instance that contains an array of Token instances
+ * corresponding to the given string. For supported options, see Prism::parse.
  */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
@@ -673,17 +693,18 @@ lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::lex_file(filepath, **options) -> Array
+ *   Prism::lex_file(filepath, **options) -> LexResult
  *
- * Return an array of Token instances corresponding to the given file. For
- * supported options, see Prism::parse.
+ * Return a LexResult instance that contains an array of Token instances
+ * corresponding to the given file. For supported options, see Prism::parse.
  */
 static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_lex_input(&input, &options, false);
     pm_string_free(&input);
@@ -735,6 +756,11 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       has been set. This should be a boolean or nil.
  * * `line` - the line number that the parse starts on. This should be an
  *       integer or nil. Note that this is 1-indexed.
+ * * `main_script` - a boolean indicating whether or not the source being parsed
+ *       is the main script being run by the interpreter. This controls whether
+ *       or not shebangs are parsed for additional flags and whether or not the
+ *       parser will attempt to find a matching shebang if the first one does
+ *       not contain the word "ruby".
  * * `scopes` - the locals that are in scope surrounding the code that is being
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
@@ -780,7 +806,8 @@ parse_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_input(&input, &options);
     pm_string_free(&input);
@@ -836,7 +863,9 @@ profile_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
+
     profile_input(&input, &options);
     pm_string_free(&input);
     pm_options_free(&options);
@@ -856,8 +885,8 @@ parse_stream_fgets(char *string, int size, void *stream) {
         return NULL;
     }
 
-    const char *cstr = StringValueCStr(line);
-    size_t length = strlen(cstr);
+    const char *cstr = RSTRING_PTR(line);
+    long length = RSTRING_LEN(line);
 
     memcpy(string, cstr, length);
     string[length] = '\0';
@@ -950,7 +979,8 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_input_comments(&input, &options);
     pm_string_free(&input);
@@ -961,9 +991,9 @@ parse_file_comments(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_lex(source, **options) -> ParseResult
+ *   Prism::parse_lex(source, **options) -> ParseLexResult
  *
- * Parse the given string and return a ParseResult instance that contains a
+ * Parse the given string and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
@@ -988,9 +1018,9 @@ parse_lex(int argc, VALUE *argv, VALUE self) {
 
 /**
  * call-seq:
- *   Prism::parse_lex_file(filepath, **options) -> ParseResult
+ *   Prism::parse_lex_file(filepath, **options) -> ParseLexResult
  *
- * Parse the given file and return a ParseResult instance that contains a
+ * Parse the given file and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
@@ -1005,7 +1035,8 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_free(&input);
@@ -1075,7 +1106,8 @@ parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
 
-    file_options(argc, argv, &input, &options);
+    VALUE encoded_filepath;
+    file_options(argc, argv, &input, &options, &encoded_filepath);
 
     VALUE result = parse_input_success_p(&input, &options);
     pm_string_free(&input);
@@ -1131,6 +1163,7 @@ Init_prism(void) {
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
     rb_cPrismResult = rb_define_class_under(rb_cPrism, "Result", rb_cObject);
     rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cPrismResult);
+    rb_cPrismLexResult = rb_define_class_under(rb_cPrism, "LexResult", rb_cPrismResult);
     rb_cPrismParseLexResult = rb_define_class_under(rb_cPrism, "ParseLexResult", rb_cPrismResult);
 
     // Intern all of the IDs eagerly that we support so that we don't have to do
@@ -1140,6 +1173,7 @@ Init_prism(void) {
     rb_id_option_filepath = rb_intern_const("filepath");
     rb_id_option_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_id_option_line = rb_intern_const("line");
+    rb_id_option_main_script = rb_intern_const("main_script");
     rb_id_option_scopes = rb_intern_const("scopes");
     rb_id_option_version = rb_intern_const("version");
     rb_id_source_for = rb_intern("for");

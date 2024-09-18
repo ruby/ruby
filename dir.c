@@ -143,6 +143,50 @@ char *strchr(char*,char);
 # define IS_WIN32 0
 #endif
 
+#ifdef HAVE_GETATTRLIST
+struct getattrlist_args {
+    const char *path;
+    int fd;
+    struct attrlist *list;
+    void *buf;
+    size_t size;
+    unsigned int options;
+};
+
+# define GETATTRLIST_ARGS(list_, buf_, options_) (struct getattrlist_args) \
+    {.list = list_, .buf = buf_, .size = sizeof(buf_), .options = options_}
+
+static void *
+nogvl_getattrlist(void *args)
+{
+    struct getattrlist_args *arg = args;
+    return (void *)(VALUE)getattrlist(arg->path, arg->list, arg->buf, arg->size, arg->options);
+}
+
+static int
+gvl_getattrlist(struct getattrlist_args *args, const char *path)
+{
+    args->path = path;
+    return IO_WITHOUT_GVL_INT(nogvl_getattrlist, args);
+}
+
+# ifdef HAVE_FGETATTRLIST
+static void *
+nogvl_fgetattrlist(void *args)
+{
+    struct getattrlist_args *arg = args;
+    return (void *)(VALUE)fgetattrlist(arg->fd, arg->list, arg->buf, arg->size, arg->options);
+}
+
+static int
+gvl_fgetattrlist(struct getattrlist_args *args, int fd)
+{
+    args->fd = fd;
+    return IO_WITHOUT_GVL_INT(nogvl_fgetattrlist, args);
+}
+# endif
+#endif
+
 #if NORMALIZE_UTF8PATH
 # if defined HAVE_FGETATTRLIST || !defined HAVE_GETATTRLIST
 #   define need_normalization(dirp, path) need_normalization(dirp)
@@ -155,10 +199,11 @@ need_normalization(DIR *dirp, const char *path)
 # if defined HAVE_FGETATTRLIST || defined HAVE_GETATTRLIST
     u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, 0);
 #   if defined HAVE_FGETATTRLIST
-    int ret = fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), 0);
+    int ret = gvl_fgetattrlist(&args, dirfd(dirp));
 #   else
-    int ret = getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0);
+    int ret = gvl_getattrlist(&args, path);
 #   endif
     if (!ret) {
         const fsobj_tag_t *tag = (void *)(attrbuf+1);
@@ -509,7 +554,7 @@ nogvl_opendir(void *ptr)
 {
     const char *path = ptr;
 
-    return (void *)opendir(path);
+    return opendir(path);
 }
 
 static DIR *
@@ -526,6 +571,25 @@ opendir_without_gvl(const char *path)
         return opendir(path);
 }
 
+static void
+close_dir_data(struct dir_data *dp)
+{
+    if (dp->dir) {
+        if (closedir(dp->dir) < 0) {
+            dp->dir = NULL;
+            rb_sys_fail("closedir");
+        }
+        dp->dir = NULL;
+    }
+}
+
+static void
+check_closedir(DIR *dirp)
+{
+    if (closedir(dirp) < 0)
+        rb_sys_fail("closedir");
+}
+
 static VALUE
 dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
 {
@@ -540,8 +604,7 @@ dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
     dirname = rb_str_dup_frozen(dirname);
 
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dp);
-    if (dp->dir) closedir(dp->dir);
-    dp->dir = NULL;
+    close_dir_data(dp);
     RB_OBJ_WRITE(dir, &dp->path, Qnil);
     dp->enc = fsenc;
     path = RSTRING_PTR(dirname);
@@ -555,7 +618,8 @@ dir_initialize(rb_execution_context_t *ec, VALUE dir, VALUE dirname, VALUE enc)
         else if (e == EIO) {
             u_int32_t attrbuf[1];
             struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
-            if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
+            struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
+            if (gvl_getattrlist(&args, path) == 0) {
                 dp->dir = opendir_without_gvl(path);
             }
         }
@@ -588,6 +652,12 @@ dir_s_close(rb_execution_context_t *ec, VALUE klass, VALUE dir)
 }
 
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+static void *
+nogvl_fdopendir(void *fd)
+{
+    return fdopendir((int)(VALUE)fd);
+}
+
 /*
  * call-seq:
  *   Dir.for_fd(fd) -> dir
@@ -614,7 +684,7 @@ dir_s_for_fd(VALUE klass, VALUE fd)
     struct dir_data *dp;
     VALUE dir = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dp);
 
-    if (!(dp->dir = fdopendir(NUM2INT(fd)))) {
+    if (!(dp->dir = IO_WITHOUT_GVL(nogvl_fdopendir, (void *)(VALUE)NUM2INT(fd)))) {
         rb_sys_fail("fdopendir");
         UNREACHABLE_RETURN(Qnil);
     }
@@ -756,8 +826,28 @@ fundamental_encoding_p(rb_encoding *enc)
     }
 }
 # define READDIR(dir, enc) rb_w32_readdir((dir), (enc))
+# define READDIR_NOGVL READDIR
 #else
-# define READDIR(dir, enc) readdir((dir))
+NORETURN(static void *sys_failure(void *function));
+static void *
+sys_failure(void *function)
+{
+    rb_sys_fail(function);
+}
+
+static void *
+nogvl_readdir(void *dir)
+{
+    rb_errno_set(0);
+    if ((dir = readdir(dir)) == NULL) {
+        if (rb_errno())
+            rb_thread_call_with_gvl(sys_failure, (void *)"readdir");
+    }
+    return dir;
+}
+
+# define READDIR(dir, enc) IO_WITHOUT_GVL(nogvl_readdir, (void *)(dir))
+# define READDIR_NOGVL(dir, enc) nogvl_readdir((dir))
 #endif
 
 /* safe to use without GVL */
@@ -902,7 +992,8 @@ dir_tell(VALUE dir)
     long pos;
 
     GetDIR(dir, dirp);
-    pos = telldir(dirp->dir);
+    if((pos = telldir(dirp->dir)) < 0)
+        rb_sys_fail("telldir");
     return rb_int2inum(pos);
 }
 #else
@@ -1021,8 +1112,7 @@ dir_close(VALUE dir)
 
     dirp = dir_get(dir);
     if (!dirp->dir) return Qnil;
-    closedir(dirp->dir);
-    dirp->dir = NULL;
+    close_dir_data(dirp);
 
     return Qnil;
 }
@@ -1038,7 +1128,7 @@ nogvl_chdir(void *ptr)
 static void
 dir_chdir0(VALUE path)
 {
-    if (chdir(RSTRING_PTR(path)) < 0)
+    if (IO_WITHOUT_GVL_INT(nogvl_chdir, (void*)RSTRING_PTR(path)) < 0)
         rb_sys_fail_path(path);
 }
 
@@ -1240,7 +1330,7 @@ nogvl_fchdir(void *ptr)
 static void
 dir_fchdir(int fd)
 {
-    if (fchdir(fd) < 0)
+    if (IO_WITHOUT_GVL_INT(nogvl_fchdir, (void *)&fd) < 0)
         rb_sys_fail("fchdir");
 }
 
@@ -1460,6 +1550,12 @@ check_dirname(VALUE dir)
 }
 
 #if defined(HAVE_CHROOT)
+static void *
+nogvl_chroot(void *dirname)
+{
+    return (void *)(VALUE)chroot((const char *)dirname);
+}
+
 /*
  * call-seq:
  *   Dir.chroot(dirpath) -> 0
@@ -1476,7 +1572,7 @@ static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
 {
     path = check_dirname(path);
-    if (chroot(RSTRING_PTR(path)) == -1)
+    if (IO_WITHOUT_GVL_INT(nogvl_chroot, (void *)RSTRING_PTR(path)) == -1)
         rb_sys_fail_path(path);
 
     return INT2FIX(0);
@@ -1653,11 +1749,11 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(p, s)	rb_w32_ustati128((p), (s))
-#undef lstat
-#define lstat(p, s)	rb_w32_ulstati128((p), (s))
+#define STAT(args)	(int)(VALUE)nogvl_stat(&(args))
+#define LSTAT(args)	(int)(VALUE)nogvl_lstat(&(args))
 #else
-#define STAT(p, s)	stat((p), (s))
+#define STAT(args)	IO_WITHOUT_GVL_INT(nogvl_stat, (void *)&(args))
+#define LSTAT(args)	IO_WITHOUT_GVL_INT(nogvl_lstat, (void *)&(args))
 #endif
 
 typedef int ruby_glob_errfunc(const char*, VALUE, const void*, int);
@@ -1678,14 +1774,50 @@ at_subpath(int fd, size_t baselen, const char *path)
     return *path ? path : ".";
 }
 
+#if USE_OPENDIR_AT
+struct fstatat_args {
+    int fd;
+    int flag;
+    const char *path;
+    struct stat *pst;
+};
+
+static void *
+nogvl_fstatat(void *args)
+{
+    struct fstatat_args *arg = (struct fstatat_args *)args;
+    return (void *)(VALUE)fstatat(arg->fd, arg->path, arg->pst, arg->flag);
+}
+#else
+struct stat_args {
+    const char *path;
+    struct stat *pst;
+};
+
+static void *
+nogvl_stat(void *args)
+{
+    struct stat_args *arg = (struct stat_args *)args;
+    return (void *)(VALUE)stat(arg->path, arg->pst);
+}
+#endif
+
 /* System call with warning */
 static int
 do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, 0);
+    struct fstatat_args args;
+    args.fd = fd;
+    args.path = path;
+    args.pst = pst;
+    args.flag = 0;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
 #else
-    int ret = STAT(path, pst);
+    struct stat_args args;
+    args.path = path;
+    args.pst = pst;
+    int ret = STAT(args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
@@ -1694,13 +1826,30 @@ do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, r
 }
 
 #if defined HAVE_LSTAT || defined lstat || USE_OPENDIR_AT
+#if !USE_OPENDIR_AT
+static void *
+nogvl_lstat(void *args)
+{
+    struct stat_args *arg = (struct stat_args *)args;
+    return (void *)(VALUE)lstat(arg->path, arg->pst);
+}
+#endif
+
 static int
 do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, AT_SYMLINK_NOFOLLOW);
+    struct fstatat_args args;
+    args.fd = fd;
+    args.path = path;
+    args.pst = pst;
+    args.flag = AT_SYMLINK_NOFOLLOW;
+    int ret = IO_WITHOUT_GVL_INT(nogvl_fstatat, (void *)&args);
 #else
-    int ret = lstat(path, pst);
+    struct stat_args args;
+    args.path = path;
+    args.pst = pst;
+    int ret = LSTAT(args);
 #endif
     if (ret < 0 && !to_be_ignored(errno))
         sys_warning(path, enc);
@@ -2061,14 +2210,15 @@ is_case_sensitive(DIR *dirp, const char *path)
     const vol_capabilities_attr_t *const cap = attrbuf[0].cap;
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
-
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
 #   if defined HAVE_FGETATTRLIST
-    if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
-        return -1;
+    int ret = gvl_fgetattrlist(&args, dirfd(dirp));
 #   else
-    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
-        return -1;
+    int ret = gvl_getattrlist(&args, path);
 #   endif
+    if (ret)
+        return -1;
+
     if (!(cap->valid[idx] & mask))
         return -1;
     return (cap->capabilities[idx] & mask) != 0;
@@ -2091,7 +2241,8 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
     *type = path_noent;
-    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW)) {
+    struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, FSOPT_NOFOLLOW);
+    if (gvl_getattrlist(&args, path)) {
         if (!to_be_ignored(errno))
             sys_warning(path, enc);
         return path;
@@ -2464,7 +2615,7 @@ static void
 glob_dir_finish(ruby_glob_entries_t *ent, int flags)
 {
     if (flags & FNM_GLOB_NOSORT) {
-        closedir(ent->nosort.dirp);
+        check_closedir(ent->nosort.dirp);
         ent->nosort.dirp = NULL;
     }
     else if (ent->sort.entries) {
@@ -2495,7 +2646,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
 #ifdef _WIN32
         if ((capacity = dirp->nfiles) > 0) {
             if (!(newp = GLOB_ALLOC_N(rb_dirent_t, capacity))) {
-                closedir(dirp);
+                check_closedir(dirp);
                 return NULL;
             }
             ent->sort.entries = newp;
@@ -2515,7 +2666,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
             ent->sort.entries[count++] = rdp;
             ent->sort.count = count;
         }
-        closedir(dirp);
+        check_closedir(dirp);
         if (count < capacity) {
             if (!(newp = GLOB_REALLOC_N(ent->sort.entries, count))) {
                 glob_dir_finish(ent, 0);
@@ -2530,7 +2681,7 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
 
   nomem:
     glob_dir_finish(ent, 0);
-    closedir(dirp);
+    check_closedir(dirp);
     return NULL;
 }
 
@@ -2693,7 +2844,7 @@ glob_helper(
 
 # if NORMALIZE_UTF8PATH
         if (!(norm_p || magical || recursive)) {
-            closedir(dirp);
+            check_closedir(dirp);
             goto literally;
         }
 # endif
@@ -3585,13 +3736,13 @@ nogvl_dir_empty_p(void *ptr)
             return (void *)INT2FIX(e);
         }
     }
-    while ((dp = READDIR(dir, NULL)) != NULL) {
+    while ((dp = READDIR_NOGVL(dir, NULL)) != NULL) {
         if (!to_be_skipped(dp)) {
             result = Qfalse;
             break;
         }
     }
-    closedir(dir);
+    check_closedir(dir);
     return (void *)result;
 }
 
@@ -3627,12 +3778,13 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     {
         u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
         struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
-        if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) != 0)
+        struct getattrlist_args args = GETATTRLIST_ARGS(&al, attrbuf, 0);
+        if (gvl_getattrlist(&args, path) != 0)
             rb_sys_fail_path(orig);
         if (*(const fsobj_tag_t *)(attrbuf+1) == VT_HFS) {
             al.commonattr = 0;
             al.dirattr = ATTR_DIR_ENTRYCOUNT;
-            if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) == 0) {
+            if (gvl_getattrlist(&args, path) == 0) {
                 if (attrbuf[0] >= 2 * sizeof(u_int32_t))
                     return RBOOL(attrbuf[1] == 0);
                 if (false_on_notdir) return Qfalse;

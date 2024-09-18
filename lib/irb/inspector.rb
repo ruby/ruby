@@ -6,7 +6,6 @@
 
 module IRB # :nodoc:
 
-
   # Convenience method to create a new Inspector, using the given +inspect+
   # proc, and optional +init+ proc and passes them to Inspector.new
   #
@@ -43,38 +42,40 @@ module IRB # :nodoc:
     # +:marshal+::  Using Marshal.dump
     INSPECTORS = {}
 
-    # Determines the inspector to use where +inspector+ is one of the keys passed
-    # during inspector definition.
-    def self.keys_with_inspector(inspector)
-      INSPECTORS.select{|k, v| v == inspector}.collect{|k, v| k}
-    end
-
-    # Example
-    #
-    #     Inspector.def_inspector(key, init_p=nil){|v| v.inspect}
-    #     Inspector.def_inspector([key1,..], init_p=nil){|v| v.inspect}
-    #     Inspector.def_inspector(key, inspector)
-    #     Inspector.def_inspector([key1,...], inspector)
-    def self.def_inspector(key, arg=nil, &block)
-      if block_given?
-        inspector = IRB::Inspector(block, arg)
-      else
-        inspector = arg
+    class << self
+      # Determines the inspector to use where +inspector+ is one of the keys passed
+      # during inspector definition.
+      def keys_with_inspector(inspector)
+        INSPECTORS.select{|k, v| v == inspector}.collect{|k, v| k}
       end
 
-      case key
-      when Array
-        for k in key
-          def_inspector(k, inspector)
+      # Example
+      #
+      #     Inspector.def_inspector(key, init_p=nil){|v| v.inspect}
+      #     Inspector.def_inspector([key1,..], init_p=nil){|v| v.inspect}
+      #     Inspector.def_inspector(key, inspector)
+      #     Inspector.def_inspector([key1,...], inspector)
+      def def_inspector(key, arg=nil, &block)
+        if block_given?
+          inspector = IRB::Inspector(block, arg)
+        else
+          inspector = arg
         end
-      when Symbol
-        INSPECTORS[key] = inspector
-        INSPECTORS[key.to_s] = inspector
-      when String
-        INSPECTORS[key] = inspector
-        INSPECTORS[key.intern] = inspector
-      else
-        INSPECTORS[key] = inspector
+
+        case key
+        when Array
+          for k in key
+            def_inspector(k, inspector)
+          end
+        when Symbol
+          INSPECTORS[key] = inspector
+          INSPECTORS[key.to_s] = inspector
+        when String
+          INSPECTORS[key] = inspector
+          INSPECTORS[key.intern] = inspector
+        else
+          INSPECTORS[key] = inspector
+        end
       end
     end
 

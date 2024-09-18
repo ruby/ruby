@@ -861,6 +861,8 @@ rb_iseq_compile_callback(rb_iseq_t *iseq, const struct rb_iseq_new_with_callback
     return iseq_setup(iseq, ret);
 }
 
+static bool drop_unreachable_return(LINK_ANCHOR *ret);
+
 VALUE
 rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 {
@@ -960,7 +962,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
         ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
         ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0) /* continue throw */ );
     }
-    else {
+    else if (!drop_unreachable_return(ret)) {
         ADD_SYNTHETIC_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, -1, leave);
     }
 
@@ -1983,7 +1985,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->required_num = rkw;
     keyword->table = &body->local_table[keyword->bits_start - keyword->num];
 
-    {
+    if (RARRAY_LEN(default_values)) {
         VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
         for (i = 0; i < RARRAY_LEN(default_values); i++) {
@@ -3052,7 +3054,6 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 break;
             }
             else if ((lab = find_destination((INSN *)i)) != 0) {
-                if (lab->unremovable) break;
                 unref_counts[lab->label_no]++;
             }
         }
@@ -3069,8 +3070,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
             /* do nothing */
         }
         else if (IS_ADJUST(i)) {
-            LABEL *dest = ((ADJUST *)i)->label;
-            if (dest && dest->unremovable) return 0;
+            return 0;
         }
         end = i;
     } while ((i = i->next) != 0);
@@ -3235,33 +3235,7 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
     return nci;
 }
 
-static bool
-optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
-                            unsigned int set_flags, unsigned int unset_flags, unsigned int remove_flags)
-{
-    LINK_ELEMENT *iobj = (LINK_ELEMENT *)insn;
-    if ((set_flags & VM_CALL_ARGS_BLOCKARG) && (set_flags & VM_CALL_KW_SPLAT) &&
-            IS_NEXT_INSN_ID(niobj, splatkw)) {
-        niobj = niobj->next;
-    }
-    if (!IS_NEXT_INSN_ID(niobj, send) && !IS_NEXT_INSN_ID(niobj, invokesuper)) {
-        return false;
-    }
-    niobj = niobj->next;
-
-    const struct rb_callinfo *ci = (const struct rb_callinfo *)OPERAND_AT(niobj, 0);
-    unsigned int flags = vm_ci_flag(ci);
-    if ((flags & set_flags) == set_flags && !(flags & unset_flags)) {
-        RUBY_ASSERT(flags & VM_CALL_ARGS_SPLAT_MUT);
-        OPERAND_AT(iobj, 0) = Qfalse;
-        const struct rb_callinfo *nci = vm_ci_new(vm_ci_mid(ci),
-            flags & ~(VM_CALL_ARGS_SPLAT_MUT|remove_flags), vm_ci_argc(ci), vm_ci_kwarg(ci));
-        RB_OBJ_WRITTEN(iseq, ci, nci);
-        OPERAND_AT(niobj, 0) = (VALUE)nci;
-        return true;
-    }
-    return false;
-}
+#define vm_ci_simple(ci) (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)
 
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
@@ -3426,6 +3400,104 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         LINK_ELEMENT *next = iobj->link.next;
         if (IS_INSN(next) && (IS_INSN_ID(next, concatarray) || IS_INSN_ID(next, concattoarray))) {
             iobj->insn_id = BIN(putobject);
+        }
+    }
+
+    /*
+     * duparray [...]
+     * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
+     * =>
+     * opt_ary_freeze [...], <calldata!mid:freeze, argc:0, ARGS_SIMPLE>
+     */
+    if (IS_INSN_ID(iobj, duparray)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && (IS_INSN_ID(next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(next, 0);
+            const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
+                VALUE ary = iobj->operands[0];
+                rb_obj_reveal(ary, rb_cArray);
+
+                iobj->insn_id = BIN(opt_ary_freeze);
+                iobj->operand_size = 2;
+                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+                iobj->operands[0] = ary;
+                iobj->operands[1] = (VALUE)ci;
+                ELEM_REMOVE(next);
+            }
+        }
+    }
+
+    /*
+     * duphash {...}
+     * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
+     * =>
+     * opt_hash_freeze {...}, <calldata!mid:freeze, argc:0, ARGS_SIMPLE>
+     */
+    if (IS_INSN_ID(iobj, duphash)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && (IS_INSN_ID(next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(next, 0);
+            const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
+                VALUE hash = iobj->operands[0];
+                rb_obj_reveal(hash, rb_cHash);
+
+                iobj->insn_id = BIN(opt_hash_freeze);
+                iobj->operand_size = 2;
+                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+                iobj->operands[0] = hash;
+                iobj->operands[1] = (VALUE)ci;
+                ELEM_REMOVE(next);
+            }
+        }
+    }
+
+    /*
+     * newarray 0
+     * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
+     * =>
+     * opt_ary_freeze [], <calldata!mid:freeze, argc:0, ARGS_SIMPLE>
+     */
+    if (IS_INSN_ID(iobj, newarray) && iobj->operands[0] == INT2FIX(0)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && (IS_INSN_ID(next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(next, 0);
+            const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
+                iobj->insn_id = BIN(opt_ary_freeze);
+                iobj->operand_size = 2;
+                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+                iobj->operands[0] = rb_cArray_empty_frozen;
+                iobj->operands[1] = (VALUE)ci;
+                ELEM_REMOVE(next);
+            }
+        }
+    }
+
+    /*
+     * newhash 0
+     * send     <calldata!mid:freeze, argc:0, ARGS_SIMPLE>, nil
+     * =>
+     * opt_hash_freeze {}, <calldata!mid:freeze, argc:0, ARGS_SIMPLE>
+     */
+    if (IS_INSN_ID(iobj, newhash) && iobj->operands[0] == INT2FIX(0)) {
+        LINK_ELEMENT *next = iobj->link.next;
+        if (IS_INSN(next) && (IS_INSN_ID(next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(next, 0);
+            const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(next, 1);
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && blockiseq == NULL && vm_ci_mid(ci) == idFreeze) {
+                iobj->insn_id = BIN(opt_hash_freeze);
+                iobj->operand_size = 2;
+                iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
+                iobj->operands[0] = rb_cHash_empty_frozen;
+                iobj->operands[1] = (VALUE)ci;
+                ELEM_REMOVE(next);
+            }
         }
     }
 
@@ -3935,93 +4007,17 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
-    if (IS_INSN_ID(iobj, splatarray) && OPERAND_AT(iobj, 0) == Qtrue) {
+    if (IS_INSN_ID(iobj, splatarray) && OPERAND_AT(iobj, 0) == false) {
         LINK_ELEMENT *niobj = &iobj->link;
-
-        /*
-        * Eliminate array allocation for f(1, *a)
-        *
-        *  splatarray true
-        *  send ARGS_SPLAT and not KW_SPLAT|ARGS_BLOCKARG
-        * =>
-        *  splatarray false
-        *  send
-        */
-        if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-            VM_CALL_ARGS_SPLAT, VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG, 0)) goto optimized_splat;
-
-        if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+        if (IS_NEXT_INSN_ID(niobj, duphash)) {
             niobj = niobj->next;
+            LINK_ELEMENT *siobj;
+            unsigned int set_flags = 0, unset_flags = 0;
 
             /*
-            * Eliminate array allocation for f(1, *a, &lvar) and f(1, *a, &@iv)
+            * Eliminate hash allocation for f(*a, kw: 1)
             *
-            *  splatarray true
-            *  getlocal / getinstancevariable
-            *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
-            * =>
             *  splatarray false
-            *  getlocal / getinstancevariable
-            *  send
-            */
-            if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT, 0)) goto optimized_splat;
-
-            /*
-            * Eliminate array allocation for f(*a, **lvar) and f(*a, **@iv)
-            *
-            *  splatarray true
-            *  getlocal / getinstancevariable
-            *  send ARGS_SPLAT|KW_SPLAT and not ARGS_BLOCKARG
-            * =>
-            *  splatarray false
-            *  getlocal / getinstancevariable
-            *  send
-            */
-            if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT, VM_CALL_ARGS_BLOCKARG, 0)) goto optimized_splat;
-
-            if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
-                    IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
-                niobj = niobj->next;
-
-                /*
-                * Eliminate array allocation for f(*a, **lvar, &{arg,lvar,@iv})
-                *
-                *  splatarray true
-                *  getlocal / getinstancevariable
-                *  getlocal / getinstancevariable / getblockparamproxy
-                *  send ARGS_SPLAT|KW_SPLAT|ARGS_BLOCKARG
-                * =>
-                *  splatarray false
-                *  getlocal / getinstancevariable
-                *  getlocal / getinstancevariable / getblockparamproxy
-                *  send
-                */
-                optimize_args_splat_no_copy(iseq, iobj, niobj,
-                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG, 0, 0);
-            }
-        } else if (IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
-            /*
-            * Eliminate array allocation for f(1, *a, &arg)
-            *
-            *  splatarray true
-            *  getblockparamproxy
-            *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
-            * =>
-            *  splatarray false
-            *  getblockparamproxy
-            *  send
-            */
-            optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT, 0);
-        } else if (IS_NEXT_INSN_ID(niobj, duphash)) {
-            niobj = niobj->next;
-
-            /*
-            * Eliminate array and hash allocation for f(*a, kw: 1)
-            *
-            *  splatarray true
             *  duphash
             *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT and not ARGS_BLOCKARG
             * =>
@@ -4029,40 +4025,45 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             *  putobject
             *  send ARGS_SPLAT|KW_SPLAT
             */
-            if (optimize_args_splat_no_copy(iseq, iobj, niobj,
-                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT, VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT_MUT)) {
-
-                ((INSN*)niobj)->insn_id = BIN(putobject);
-                OPERAND_AT(niobj, 0) = rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0)));
-
-                goto optimized_splat;
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                siobj = niobj->next;
+                set_flags = VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT;
+                unset_flags = VM_CALL_ARGS_BLOCKARG;
+            }
+            /*
+            * Eliminate hash allocation for f(*a, kw: 1, &{arg,lvar,@iv})
+            *
+            *  splatarray false
+            *  duphash
+            *  getlocal / getinstancevariable / getblockparamproxy
+            *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT|ARGS_BLOCKARG
+            * =>
+            *  splatarray false
+            *  putobject
+            *  getlocal / getinstancevariable / getblockparamproxy
+            *  send ARGS_SPLAT|KW_SPLAT|ARGS_BLOCKARG
+            */
+            else if ((IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                        IS_NEXT_INSN_ID(niobj, getblockparamproxy)) && (IS_NEXT_INSN_ID(niobj->next, send))) {
+                siobj = niobj->next->next;
+                set_flags = VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT|VM_CALL_ARGS_BLOCKARG;
             }
 
-            if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
-                    IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
-                /*
-                * Eliminate array and hash allocation for f(*a, kw: 1, &{arg,lvar,@iv})
-                *
-                *  splatarray true
-                *  duphash
-                *  getlocal / getinstancevariable / getblockparamproxy
-                *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT|ARGS_BLOCKARG
-                * =>
-                *  splatarray false
-                *  putobject
-                *  getlocal / getinstancevariable / getblockparamproxy
-                *  send ARGS_SPLAT|KW_SPLAT|ARGS_BLOCKARG
-                */
-                if (optimize_args_splat_no_copy(iseq, iobj, niobj->next,
-                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT|VM_CALL_ARGS_BLOCKARG, 0, VM_CALL_KW_SPLAT_MUT)) {
-
+            if (set_flags) {
+                const struct rb_callinfo *ci = (const struct rb_callinfo *)OPERAND_AT(siobj, 0);
+                unsigned int flags = vm_ci_flag(ci);
+                if ((flags & set_flags) == set_flags && !(flags & unset_flags)) {
                     ((INSN*)niobj)->insn_id = BIN(putobject);
                     OPERAND_AT(niobj, 0) = rb_hash_freeze(rb_hash_resurrect(OPERAND_AT(niobj, 0)));
+
+                    const struct rb_callinfo *nci = vm_ci_new(vm_ci_mid(ci),
+                        flags & ~VM_CALL_KW_SPLAT_MUT, vm_ci_argc(ci), vm_ci_kwarg(ci));
+                    RB_OBJ_WRITTEN(iseq, ci, nci);
+                    OPERAND_AT(siobj, 0) = (VALUE)nci;
                 }
             }
         }
     }
-  optimized_splat:
 
     return COMPILE_OK;
 }
@@ -4085,35 +4086,41 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     return COMPILE_OK;
 }
 
-#define vm_ci_simple(ci) (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)
-
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (IS_INSN_ID(iobj, newarray) && iobj->link.next &&
         IS_INSN(iobj->link.next)) {
         /*
-         *   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
+         *   [a, b, ...].max/min -> a, b, c, opt_newarray_send max/min
          */
         INSN *niobj = (INSN *)iobj->link.next;
         if (IS_INSN_ID(niobj, send)) {
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(niobj, 0);
             if (vm_ci_simple(ci) && vm_ci_argc(ci) == 0) {
+                VALUE method = INT2FIX(0);
                 switch (vm_ci_mid(ci)) {
                   case idMax:
+                      method = INT2FIX(VM_OPT_NEWARRAY_SEND_MAX);
+                      break;
                   case idMin:
+                      method = INT2FIX(VM_OPT_NEWARRAY_SEND_MIN);
+                      break;
                   case idHash:
-                    {
-                        VALUE num = iobj->operands[0];
-                        int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
-                        iobj->insn_id = BIN(opt_newarray_send);
-                        iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
-                        iobj->operands[0] = num;
-                        iobj->operands[1] = rb_id2sym(vm_ci_mid(ci));
-                        iobj->operand_size = operand_len;
-                        ELEM_REMOVE(&niobj->link);
-                        return COMPILE_OK;
-                    }
+                      method = INT2FIX(VM_OPT_NEWARRAY_SEND_HASH);
+                      break;
+                }
+
+                if (method != INT2FIX(0)) {
+                    VALUE num = iobj->operands[0];
+                    int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
+                    iobj->insn_id = BIN(opt_newarray_send);
+                    iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
+                    iobj->operands[0] = num;
+                    iobj->operands[1] = method;
+                    iobj->operand_size = operand_len;
+                    ELEM_REMOVE(&niobj->link);
+                    return COMPILE_OK;
                 }
             }
         }
@@ -4127,11 +4134,37 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                 iobj->insn_id = BIN(opt_newarray_send);
                 iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
                 iobj->operands[0] = FIXNUM_INC(num, 1);
-                iobj->operands[1] = rb_id2sym(vm_ci_mid(ci));
+                iobj->operands[1] = INT2FIX(VM_OPT_NEWARRAY_SEND_PACK);
                 iobj->operand_size = operand_len;
                 ELEM_REMOVE(&iobj->link);
                 ELEM_REMOVE(niobj->link.next);
                 ELEM_INSERT_NEXT(&niobj->link, &iobj->link);
+                return COMPILE_OK;
+            }
+        }
+        // newarray n, putchilledstring "E", getlocal b, send :pack with {buffer: b}
+        // -> putchilledstring "E", getlocal b, opt_newarray_send n+2, :pack, :buffer
+        else if ((IS_INSN_ID(niobj, putstring) || IS_INSN_ID(niobj, putchilledstring) ||
+                  (IS_INSN_ID(niobj, putobject) && RB_TYPE_P(OPERAND_AT(niobj, 0), T_STRING))) &&
+                 IS_NEXT_INSN_ID(&niobj->link, getlocal) &&
+                 (niobj->link.next && IS_NEXT_INSN_ID(niobj->link.next, send))) {
+            const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT((INSN *)(niobj->link.next)->next, 0);
+            const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
+            if (vm_ci_mid(ci) == idPack && vm_ci_argc(ci) == 2 &&
+                    (kwarg && kwarg->keyword_len == 1 && kwarg->keywords[0] == rb_id2sym(idBuffer))) {
+                VALUE num = iobj->operands[0];
+                int operand_len = insn_len(BIN(opt_newarray_send)) - 1;
+                iobj->insn_id = BIN(opt_newarray_send);
+                iobj->operands = compile_data_calloc2(iseq, operand_len, sizeof(VALUE));
+                iobj->operands[0] = FIXNUM_INC(num, 2);
+                iobj->operands[1] = INT2FIX(VM_OPT_NEWARRAY_SEND_PACK_BUFFER);
+                iobj->operand_size = operand_len;
+                // Remove the "send" insn.
+                ELEM_REMOVE((niobj->link.next)->next);
+                // Remove the modified insn from its original "newarray" position...
+                ELEM_REMOVE(&iobj->link);
+                // and insert it after the buffer insn.
+                ELEM_INSERT_NEXT(niobj->link.next, &iobj->link);
                 return COMPILE_OK;
             }
         }
@@ -6251,9 +6284,24 @@ keyword_node_single_splat_p(NODE *kwnode)
            RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next == NULL;
 }
 
+static void
+compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
+                                     NODE *kwnode, unsigned int *flag_ptr)
+{
+    *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+    ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+    ADD_INSN1(args, argn, newhash, INT2FIX(0));
+    compile_hash(iseq, args, kwnode, TRUE, FALSE);
+    ADD_SEND(args, argn, id_core_hash_merge_kwd, INT2FIX(2));
+}
+
+#define SPLATARRAY_FALSE 0
+#define SPLATARRAY_TRUE 1
+#define DUP_SINGLE_KW_SPLAT 2
+
 static int
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
-                int dup_rest, unsigned int *flag_ptr, struct rb_callinfo_kwarg **kwarg_ptr)
+                unsigned int *dup_rest, unsigned int *flag_ptr, struct rb_callinfo_kwarg **kwarg_ptr)
 {
     if (!argn) return 0;
 
@@ -6270,7 +6318,12 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 len -= 1;
             }
             else {
-                compile_hash(iseq, args, kwnode, TRUE, FALSE);
+                if (keyword_node_single_splat_p(kwnode) && (*dup_rest & DUP_SINGLE_KW_SPLAT)) {
+                    compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
+                }
+                else {
+                    compile_hash(iseq, args, kwnode, TRUE, FALSE);
+                }
             }
         }
 
@@ -6279,17 +6332,15 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
       case NODE_SPLAT: {
         // f(*a)
         NO_CHECK(COMPILE(args, "args (splat)", RNODE_SPLAT(argn)->nd_head));
-        ADD_INSN1(args, argn, splatarray, RBOOL(dup_rest));
-        if (flag_ptr)  {
-            *flag_ptr |= VM_CALL_ARGS_SPLAT;
-            if (dup_rest) *flag_ptr |= VM_CALL_ARGS_SPLAT_MUT;
-        }
+        ADD_INSN1(args, argn, splatarray, RBOOL(*dup_rest & SPLATARRAY_TRUE));
+        if (*dup_rest & SPLATARRAY_TRUE) *dup_rest &= ~SPLATARRAY_TRUE;
+        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
         RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_KW_SPLAT) == 0);
         return 1;
       }
       case NODE_ARGSCAT: {
-        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT;
-        int argc = setup_args_core(iseq, args, RNODE_ARGSCAT(argn)->nd_head, 1, NULL, NULL);
+        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+        int argc = setup_args_core(iseq, args, RNODE_ARGSCAT(argn)->nd_head, dup_rest, NULL, NULL);
         bool args_pushed = false;
 
         if (nd_type_p(RNODE_ARGSCAT(argn)->nd_body, NODE_LIST)) {
@@ -6304,7 +6355,8 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         }
 
         if (nd_type_p(RNODE_ARGSCAT(argn)->nd_head, NODE_LIST)) {
-            ADD_INSN1(args, argn, splatarray, Qtrue);
+            ADD_INSN1(args, argn, splatarray, RBOOL(*dup_rest & SPLATARRAY_TRUE));
+            if (*dup_rest & SPLATARRAY_TRUE) *dup_rest &= ~SPLATARRAY_TRUE;
             argc += 1;
         }
         else if (!args_pushed) {
@@ -6315,7 +6367,6 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         if (kwnode) {
             // kwsplat
             *flag_ptr |= VM_CALL_KW_SPLAT;
-            *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
             compile_hash(iseq, args, kwnode, TRUE, FALSE);
             argc += 1;
         }
@@ -6323,8 +6374,8 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         return argc;
       }
       case NODE_ARGSPUSH: {
-        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT;
-        int argc = setup_args_core(iseq, args, RNODE_ARGSPUSH(argn)->nd_head, 1, NULL, NULL);
+        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+        int argc = setup_args_core(iseq, args, RNODE_ARGSPUSH(argn)->nd_head, dup_rest, NULL, NULL);
 
         if (nd_type_p(RNODE_ARGSPUSH(argn)->nd_body, NODE_LIST)) {
             int rest_len = compile_args(iseq, args, RNODE_ARGSPUSH(argn)->nd_body, &kwnode);
@@ -6347,8 +6398,14 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             *flag_ptr |= VM_CALL_KW_SPLAT;
             if (!keyword_node_single_splat_p(kwnode)) {
                 *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
+                compile_hash(iseq, args, kwnode, TRUE, FALSE);
             }
-            compile_hash(iseq, args, kwnode, TRUE, FALSE);
+            else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
+                compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
+            }
+            else {
+                compile_hash(iseq, args, kwnode, TRUE, FALSE);
+            }
             argc += 1;
         }
 
@@ -6360,13 +6417,110 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
     }
 }
 
+static void
+setup_args_splat_mut(unsigned int *flag, int dup_rest, int initial_dup_rest)
+{
+    if ((*flag & VM_CALL_ARGS_SPLAT) && dup_rest != initial_dup_rest) {
+        *flag |= VM_CALL_ARGS_SPLAT_MUT;
+    }
+}
+
+static bool
+setup_args_dup_rest_p(const NODE *argn)
+{
+    switch(nd_type(argn)) {
+      case NODE_LVAR:
+      case NODE_DVAR:
+      case NODE_GVAR:
+      case NODE_IVAR:
+      case NODE_CVAR:
+      case NODE_CONST:
+      case NODE_COLON3:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
+      case NODE_STR:
+      case NODE_SYM:
+      case NODE_REGX:
+      case NODE_SELF:
+      case NODE_NIL:
+      case NODE_TRUE:
+      case NODE_FALSE:
+      case NODE_LAMBDA:
+      case NODE_NTH_REF:
+      case NODE_BACK_REF:
+        return false;
+      case NODE_COLON2:
+        return setup_args_dup_rest_p(RNODE_COLON2(argn)->nd_head);
+      default:
+        return true;
+    }
+}
+
 static VALUE
 setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
            unsigned int *flag, struct rb_callinfo_kwarg **keywords)
 {
     VALUE ret;
+    unsigned int dup_rest = SPLATARRAY_TRUE, initial_dup_rest;
+
+    if (argn) {
+        const NODE *check_arg = nd_type_p(argn, NODE_BLOCK_PASS) ?
+            RNODE_BLOCK_PASS(argn)->nd_head : argn;
+
+        if (check_arg) {
+            switch(nd_type(check_arg)) {
+              case(NODE_SPLAT):
+                // avoid caller side array allocation for f(*arg)
+                dup_rest = SPLATARRAY_FALSE;
+                break;
+              case(NODE_ARGSCAT):
+                // avoid caller side array allocation for f(1, *arg)
+                dup_rest = !nd_type_p(RNODE_ARGSCAT(check_arg)->nd_head, NODE_LIST);
+                break;
+              case(NODE_ARGSPUSH):
+                // avoid caller side array allocation for f(*arg, **hash) and f(1, *arg, **hash)
+                dup_rest = !((nd_type_p(RNODE_ARGSPUSH(check_arg)->nd_head, NODE_SPLAT) ||
+                    (nd_type_p(RNODE_ARGSPUSH(check_arg)->nd_head, NODE_ARGSCAT) &&
+                     nd_type_p(RNODE_ARGSCAT(RNODE_ARGSPUSH(check_arg)->nd_head)->nd_head, NODE_LIST))) &&
+                    nd_type_p(RNODE_ARGSPUSH(check_arg)->nd_body, NODE_HASH) &&
+                    !RNODE_HASH(RNODE_ARGSPUSH(check_arg)->nd_body)->nd_brace);
+
+                if (dup_rest == SPLATARRAY_FALSE) {
+                    // require allocation for keyword key/value/splat that may modify splatted argument
+                    NODE *node = RNODE_HASH(RNODE_ARGSPUSH(check_arg)->nd_body)->nd_head;
+                    while (node) {
+                        NODE *key_node = RNODE_LIST(node)->nd_head;
+                        if (key_node && setup_args_dup_rest_p(key_node)) {
+                            dup_rest = SPLATARRAY_TRUE;
+                            break;
+                        }
+
+                        node = RNODE_LIST(node)->nd_next;
+                        NODE *value_node = RNODE_LIST(node)->nd_head;
+                        if (setup_args_dup_rest_p(value_node)) {
+                            dup_rest = SPLATARRAY_TRUE;
+                            break;
+                        }
+
+                        node = RNODE_LIST(node)->nd_next;
+                    }
+                }
+                break;
+              default:
+                break;
+            }
+        }
+
+        if (check_arg != argn && setup_args_dup_rest_p(RNODE_BLOCK_PASS(argn)->nd_body)) {
+            // for block pass that may modify splatted argument, dup rest and kwrest if given
+            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
+        }
+    }
+    initial_dup_rest = dup_rest;
+
     if (argn && nd_type_p(argn, NODE_BLOCK_PASS)) {
-        unsigned int dup_rest = 1;
         DECL_ANCHOR(arg_block);
         INIT_ANCHOR(arg_block);
 
@@ -6383,12 +6537,13 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             //   foo(x, y, ...)
             //       ^^^^
             if (nd_type_p(arg_node, NODE_ARGSCAT)) {
-                argc += setup_args_core(iseq, args, RNODE_ARGSCAT(arg_node)->nd_head, dup_rest, flag, keywords);
+                argc += setup_args_core(iseq, args, RNODE_ARGSCAT(arg_node)->nd_head, &dup_rest, flag, keywords);
             }
 
             *flag |= VM_CALL_FORWARDING;
 
             ADD_GETLOCAL(args, argn, idx, get_lvar_level(iseq));
+            setup_args_splat_mut(flag, dup_rest, initial_dup_rest);
             return INT2FIX(argc);
         }
         else {
@@ -6404,15 +6559,15 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 if (iobj->insn_id == BIN(getblockparam)) {
                     iobj->insn_id = BIN(getblockparamproxy);
                 }
-                dup_rest = 0;
             }
         }
-        ret = INT2FIX(setup_args_core(iseq, args, RNODE_BLOCK_PASS(argn)->nd_head, dup_rest, flag, keywords));
+        ret = INT2FIX(setup_args_core(iseq, args, RNODE_BLOCK_PASS(argn)->nd_head, &dup_rest, flag, keywords));
         ADD_SEQ(args, arg_block);
     }
     else {
-        ret = INT2FIX(setup_args_core(iseq, args, argn, 0, flag, keywords));
+        ret = INT2FIX(setup_args_core(iseq, args, argn, &dup_rest, flag, keywords));
     }
+    setup_args_splat_mut(flag, dup_rest, initial_dup_rest);
     return ret;
 }
 
@@ -6544,7 +6699,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label);
+    CHECK(compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label));
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
@@ -7952,13 +8107,13 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ADD_LABEL(ret, next_label);	/* next */
 
     if (type == NODE_WHILE) {
-        compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                 redo_label, end_label);
+        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                       redo_label, end_label));
     }
     else {
         /* until */
-        compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
-                                 end_label, redo_label);
+        CHECK(compile_branch_condition(iseq, ret, RNODE_WHILE(node)->nd_cond,
+                                       end_label, redo_label));
     }
 
     ADD_LABEL(ret, end_label);
@@ -8172,7 +8327,6 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         add_ensure_iseq(ret, iseq, 0);
         ADD_INSNL(ret, line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
         ADD_ADJUST_RESTORE(ret, splabel);
-        splabel->unremovable = FALSE;
 
         if (!popped) {
             ADD_INSN(ret, line_node, putnil);
@@ -8396,7 +8550,11 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         ADD_LABEL(ret, label_hit);
         ADD_TRACE(ret, RUBY_EVENT_RESCUE);
 
-        if (nd_type(RNODE_RESBODY(resq)->nd_body) == NODE_BEGIN && RNODE_BEGIN(RNODE_RESBODY(resq)->nd_body)->nd_body == NULL) {
+        if (RNODE_RESBODY(resq)->nd_exc_var) {
+            CHECK(COMPILE_POPPED(ret, "resbody exc_var", RNODE_RESBODY(resq)->nd_exc_var));
+        }
+
+        if (nd_type(RNODE_RESBODY(resq)->nd_body) == NODE_BEGIN && RNODE_BEGIN(RNODE_RESBODY(resq)->nd_body)->nd_body == NULL && !RNODE_RESBODY(resq)->nd_exc_var) {
             // empty body
             ADD_SYNTHETIC_INSN(ret, nd_line(RNODE_RESBODY(resq)->nd_body), -1, putnil);
         }
@@ -8520,6 +8678,27 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         }
     }
     return COMPILE_OK;
+}
+
+static bool
+drop_unreachable_return(LINK_ANCHOR *ret)
+{
+    LINK_ELEMENT *i = ret->last, *last;
+    if (!i) return false;
+    if (IS_TRACE(i)) i = i->prev;
+    if (!IS_INSN(i) || !IS_INSN_ID(i, putnil)) return false;
+    last = i = i->prev;
+    if (IS_ADJUST(i)) i = i->prev;
+    if (!IS_INSN(i)) return false;
+    switch (INSN_OF(i)) {
+      case BIN(leave):
+      case BIN(jump):
+        break;
+      default:
+        return false;
+    }
+    (ret->last = last->prev)->next = NULL;
+    return true;
 }
 
 static int
@@ -10933,10 +11112,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       }
       case NODE_UNDEF:{
-        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
-        CHECK(COMPILE(ret, "undef arg", RNODE_UNDEF(node)->nd_undef));
-        ADD_SEND(ret, node, id_core_undef_method, INT2FIX(2));
+        const rb_parser_ary_t *ary = RNODE_UNDEF(node)->nd_undefs;
+
+        for (long i = 0; i < ary->len; i++) {
+            ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+            CHECK(COMPILE(ret, "undef arg", ary->data[i]));
+            ADD_SEND(ret, node, id_core_undef_method, INT2FIX(2));
+
+            if (i < ary->len - 1) {
+                ADD_INSN(ret, node, pop);
+            }
+        }
 
         if (popped) {
             ADD_INSN(ret, node, pop);
@@ -11293,7 +11480,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
             }
           default:
             /* ignore */
-            rb_raise(rb_eSyntaxError, "dump_disasm_list error: %ld\n", FIX2LONG(link->type));
+            rb_raise(rb_eSyntaxError, "dump_disasm_list error: %d\n", (int)link->type);
         }
         link = link->next;
     }
@@ -12703,7 +12890,7 @@ ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_o
         struct rb_iseq_param_keyword *kw = IBF_R(param_keyword_offset, struct rb_iseq_param_keyword, 1);
         ID *ids = IBF_R(kw->table, ID, kw->num);
         int dv_num = kw->num - kw->required_num;
-        VALUE *dvs = IBF_R(kw->default_values, VALUE, dv_num);
+        VALUE *dvs = dv_num ? IBF_R(kw->default_values, VALUE, dv_num) : NULL;
         int i;
 
         for (i=0; i<kw->num; i++) {

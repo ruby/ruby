@@ -177,7 +177,7 @@ class Gem::Platform
   # they have the same version, or either one has no version
   #
   # Additionally, the platform will match if the local CPU is 'arm' and the
-  # other CPU starts with "arm" (for generic ARM family support).
+  # other CPU starts with "armv" (for generic 32-bit ARM family support).
   #
   # Of note, this method is not commutative. Indeed the OS 'linux' has a
   # special case: the version is the libc name, yet while "no version" stands
@@ -198,7 +198,7 @@ class Gem::Platform
 
     # cpu
     ([nil,"universal"].include?(@cpu) || [nil, "universal"].include?(other.cpu) || @cpu == other.cpu ||
-    (@cpu == "arm" && other.cpu.start_with?("arm"))) &&
+    (@cpu == "arm" && other.cpu.start_with?("armv"))) &&
 
       # os
       @os == other.os &&

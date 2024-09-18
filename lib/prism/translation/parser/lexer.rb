@@ -134,7 +134,7 @@ module Prism
           MINUS_GREATER: :tLAMBDA,
           NEWLINE: :tNL,
           NUMBERED_REFERENCE: :tNTH_REF,
-          PARENTHESIS_LEFT: :tLPAREN,
+          PARENTHESIS_LEFT: :tLPAREN2,
           PARENTHESIS_LEFT_PARENTHESES: :tLPAREN_ARG,
           PARENTHESIS_RIGHT: :tRPAREN,
           PERCENT: :tPERCENT,
@@ -173,7 +173,7 @@ module Prism
           UMINUS_NUM: :tUNARY_NUM,
           UPLUS: :tUPLUS,
           USTAR: :tSTAR,
-          USTAR_STAR: :tPOW,
+          USTAR_STAR: :tDSTAR,
           WORDS_SEP: :tSPACE
         }
 
@@ -187,7 +187,14 @@ module Prism
         EXPR_BEG = 0x1 # :nodoc:
         EXPR_LABEL = 0x400 # :nodoc:
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL
+        # The `PARENTHESIS_LEFT` token in Prism is classified as either `tLPAREN` or `tLPAREN2` in the Parser gem.
+        # The following token types are listed as those classified as `tLPAREN`.
+        LPAREN_CONVERSION_TOKEN_TYPES = [
+          :kBREAK, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
+          :tEQL, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
+        ]
+
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LPAREN_CONVERSION_TOKEN_TYPES
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -268,6 +275,8 @@ module Prism
               value.chomp!(":")
             when :tLCURLY
               type = :tLBRACE if state == EXPR_BEG | EXPR_LABEL
+            when :tLPAREN2
+              type = :tLPAREN if tokens.empty? || LPAREN_CONVERSION_TOKEN_TYPES.include?(tokens.dig(-1, 0))
             when :tNTH_REF
               value = parse_integer(value.delete_prefix("$"))
             when :tOP_ASGN

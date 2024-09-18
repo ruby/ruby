@@ -75,7 +75,7 @@
  * Pass keywords if current method is called with keywords, useful for argument
  * delegation
  */
-#define RB_PASS_CALLED_KEYWORDS rb_keyword_given_p()
+#define RB_PASS_CALLED_KEYWORDS !!rb_keyword_given_p()
 
 /** @} */
 

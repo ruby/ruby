@@ -38,7 +38,7 @@ describe "Marshal.dump" do
       ].should be_computed_by(:dump)
     end
 
-    platform_is wordsize: 64 do
+    platform_is c_long_size: 64 do
       it "dumps a positive Fixnum > 31 bits as a Bignum" do
         Marshal.dump(2**31 + 1).should == "\x04\bl+\a\x01\x00\x00\x80"
       end

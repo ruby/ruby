@@ -4215,50 +4215,35 @@ rb_fork_async_signal_safe(int *status,
     return result;
 }
 
-static rb_pid_t
-rb_fork_ruby2(struct rb_process_status *status)
+rb_pid_t
+rb_fork_ruby(int *status)
 {
+    struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
     int try_gc = 1, err;
     struct child_handler_disabler_state old;
 
-    if (status) status->status = 0;
-
-    while (1) {
+    do {
         prefork();
 
         before_fork_ruby();
+        rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
-        {
-            pid = rb_fork();
-            err = errno;
-            if (status) {
-                status->pid = pid;
-                status->error = err;
-            }
-        }
+
+        child.pid = pid = rb_fork();
+        child.error = err = errno;
+
         disable_child_handler_fork_parent(&old); /* yes, bad name */
+        rb_thread_release_fork_lock();
+        if (pid == 0) {
+          rb_thread_reset_fork_lock();
+        }
         after_fork_ruby(pid);
 
-        if (pid >= 0) { /* fork succeed */
-            return pid;
-        }
+        /* repeat while fork failed but retryable */
+    } while (pid < 0 && handle_fork_error(err, &child, NULL, &try_gc) == 0);
 
-        /* fork failed */
-        if (handle_fork_error(err, status, NULL, &try_gc)) {
-            return -1;
-        }
-    }
-}
-
-rb_pid_t
-rb_fork_ruby(int *status)
-{
-    struct rb_process_status process_status = {0};
-
-    rb_pid_t pid = rb_fork_ruby2(&process_status);
-
-    if (status) *status = process_status.status;
+    if (status) *status = child.status;
 
     return pid;
 }
@@ -5720,6 +5705,12 @@ check_gid_switch(void)
 
 
 #if defined(HAVE_PWD_H)
+static inline bool
+login_not_found(int err)
+{
+    return (err == ENOTTY || err == ENXIO || err == ENOENT);
+}
+
 /**
  * Best-effort attempt to obtain the name of the login user, if any,
  * associated with the process. Processes not descended from login(1) (or
@@ -5728,18 +5719,18 @@ check_gid_switch(void)
 VALUE
 rb_getlogin(void)
 {
-#if ( !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN) )
+# if !defined(USE_GETLOGIN_R) && !defined(USE_GETLOGIN)
     return Qnil;
-#else
+# else
     char MAYBE_UNUSED(*login) = NULL;
 
 # ifdef USE_GETLOGIN_R
 
-#if defined(__FreeBSD__)
+#   if defined(__FreeBSD__)
     typedef int getlogin_r_size_t;
-#else
+#   else
     typedef size_t getlogin_r_size_t;
-#endif
+#   endif
 
     long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5753,10 +5744,8 @@ rb_getlogin(void)
     rb_str_set_len(maybe_result, loginsize);
 
     int gle;
-    errno = 0;
     while ((gle = getlogin_r(login, (getlogin_r_size_t)loginsize)) != 0) {
-
-        if (gle == ENOTTY || gle == ENXIO || gle == ENOENT) {
+        if (login_not_found(gle)) {
             rb_str_resize(maybe_result, 0);
             return Qnil;
         }
@@ -5776,17 +5765,19 @@ rb_getlogin(void)
         return Qnil;
     }
 
+    rb_str_set_len(maybe_result, strlen(login));
     return maybe_result;
 
-# elif USE_GETLOGIN
+# elif defined(USE_GETLOGIN)
 
     errno = 0;
     login = getlogin();
-    if (errno) {
-        if (errno == ENOTTY || errno == ENXIO || errno == ENOENT) {
+    int err = errno;
+    if (err) {
+        if (login_not_found(err)) {
             return Qnil;
         }
-        rb_syserr_fail(errno, "getlogin");
+        rb_syserr_fail(err, "getlogin");
     }
 
     return login ? rb_str_new_cstr(login) : Qnil;
@@ -5795,10 +5786,46 @@ rb_getlogin(void)
 #endif
 }
 
+/* avoid treating as errors errno values that indicate "not found" */
+static inline bool
+pwd_not_found(int err)
+{
+    switch (err) {
+      case 0:
+      case ENOENT:
+      case ESRCH:
+      case EBADF:
+      case EPERM:
+        return true;
+      default:
+        return false;
+    }
+}
+
+# if defined(USE_GETPWNAM_R)
+struct getpwnam_r_args {
+    const char *login;
+    char *buf;
+    size_t bufsize;
+    struct passwd *result;
+    struct passwd pwstore;
+};
+
+# define GETPWNAM_R_ARGS(login_, buf_, bufsize_) (struct getpwnam_r_args) \
+    {.login = login_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getpwnam_r(void *args)
+{
+    struct getpwnam_r_args *arg = args;
+    return (void *)(VALUE)getpwnam_r(arg->login, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
+}
+# endif
+
 VALUE
 rb_getpwdirnam_for_login(VALUE login_name)
 {
-#if ( !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM) )
+#if !defined(USE_GETPWNAM_R) && !defined(USE_GETPWNAM)
     return Qnil;
 #else
 
@@ -5807,13 +5834,11 @@ rb_getpwdirnam_for_login(VALUE login_name)
         return Qnil;
     }
 
-    char *login = RSTRING_PTR(login_name);
+    const char *login = RSTRING_PTR(login_name);
 
-    struct passwd *pwptr;
 
 # ifdef USE_GETPWNAM_R
 
-    struct passwd pwdnm;
     char *bufnm;
     long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5825,57 +5850,76 @@ rb_getpwdirnam_for_login(VALUE login_name)
     bufnm = RSTRING_PTR(getpwnm_tmp);
     bufsizenm = rb_str_capacity(getpwnm_tmp);
     rb_str_set_len(getpwnm_tmp, bufsizenm);
+    struct getpwnam_r_args args = GETPWNAM_R_ARGS(login, bufnm, (size_t)bufsizenm);
 
     int enm;
-    errno = 0;
-    while ((enm = getpwnam_r(login, &pwdnm, bufnm, bufsizenm, &pwptr)) != 0) {
-
-        if (enm == ENOENT || enm== ESRCH || enm == EBADF || enm == EPERM) {
-            /* not found; non-errors */
+    while ((enm = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
+        if (pwd_not_found(enm)) {
             rb_str_resize(getpwnm_tmp, 0);
             return Qnil;
         }
 
-        if (enm != ERANGE || bufsizenm >= GETPW_R_SIZE_LIMIT) {
+        if (enm != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
             rb_str_resize(getpwnm_tmp, 0);
             rb_syserr_fail(enm, "getpwnam_r");
         }
 
-        rb_str_modify_expand(getpwnm_tmp, bufsizenm);
-        bufnm = RSTRING_PTR(getpwnm_tmp);
-        bufsizenm = rb_str_capacity(getpwnm_tmp);
+        rb_str_modify_expand(getpwnm_tmp, (long)args.bufsize);
+        args.buf = RSTRING_PTR(getpwnm_tmp);
+        args.bufsize = (size_t)rb_str_capacity(getpwnm_tmp);
     }
 
-    if (pwptr == NULL) {
+    if (args.result == NULL) {
         /* no record in the password database for the login name */
         rb_str_resize(getpwnm_tmp, 0);
         return Qnil;
     }
 
     /* found it */
-    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    VALUE result = rb_str_new_cstr(args.result->pw_dir);
     rb_str_resize(getpwnm_tmp, 0);
     return result;
 
-# elif USE_GETPWNAM
+# elif defined(USE_GETPWNAM)
 
+    struct passwd *pwptr;
     errno = 0;
-    pwptr = getpwnam(login);
-    if (pwptr) {
-        /* found it */
-        return rb_str_new_cstr(pwptr->pw_dir);
-    }
-    if (errno
-        /*   avoid treating as errors errno values that indicate "not found" */
-        && ( errno != ENOENT && errno != ESRCH && errno != EBADF && errno != EPERM)) {
-        rb_syserr_fail(errno, "getpwnam");
+    if (!(pwptr = getpwnam(login))) {
+        int err = errno;
+
+        if (pwd_not_found(err)) {
+            return Qnil;
+        }
+
+        rb_syserr_fail(err, "getpwnam");
     }
 
-    return Qnil;  /* not found */
+    /* found it */
+    return rb_str_new_cstr(pwptr->pw_dir);
 # endif
 
 #endif
 }
+
+# if defined(USE_GETPWUID_R)
+struct getpwuid_r_args {
+    uid_t uid;
+    char *buf;
+    size_t bufsize;
+    struct passwd *result;
+    struct passwd pwstore;
+};
+
+# define GETPWUID_R_ARGS(uid_, buf_, bufsize_) (struct getpwuid_r_args) \
+    {.uid = uid_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getpwuid_r(void *args)
+{
+    struct getpwuid_r_args *arg = args;
+    return (void *)(VALUE)getpwuid_r(arg->uid, &arg->pwstore, arg->buf, arg->bufsize, &arg->result);
+}
+# endif
 
 /**
  * Look up the user's dflt home dir in the password db, by uid.
@@ -5889,11 +5933,8 @@ rb_getpwdiruid(void)
 # else
     uid_t ruid = getuid();
 
-    struct passwd *pwptr;
-
 # ifdef USE_GETPWUID_R
 
-    struct passwd pwdid;
     char *bufid;
     long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
@@ -5905,53 +5946,52 @@ rb_getpwdiruid(void)
     bufid = RSTRING_PTR(getpwid_tmp);
     bufsizeid = rb_str_capacity(getpwid_tmp);
     rb_str_set_len(getpwid_tmp, bufsizeid);
+    struct getpwuid_r_args args = GETPWUID_R_ARGS(ruid, bufid, (size_t)bufsizeid);
 
     int eid;
-    errno = 0;
-    while ((eid = getpwuid_r(ruid, &pwdid, bufid, bufsizeid, &pwptr)) != 0) {
-
-        if (eid == ENOENT || eid== ESRCH || eid == EBADF || eid == EPERM) {
-            /* not found; non-errors */
+    while ((eid = IO_WITHOUT_GVL_INT(nogvl_getpwuid_r, &args)) != 0) {
+        if (pwd_not_found(eid)) {
             rb_str_resize(getpwid_tmp, 0);
             return Qnil;
         }
 
-        if (eid != ERANGE || bufsizeid >= GETPW_R_SIZE_LIMIT) {
+        if (eid != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
             rb_str_resize(getpwid_tmp, 0);
             rb_syserr_fail(eid, "getpwuid_r");
         }
 
-        rb_str_modify_expand(getpwid_tmp, bufsizeid);
-        bufid = RSTRING_PTR(getpwid_tmp);
-        bufsizeid = rb_str_capacity(getpwid_tmp);
+        rb_str_modify_expand(getpwid_tmp, (long)args.bufsize);
+        args.buf = RSTRING_PTR(getpwid_tmp);
+        args.bufsize = (size_t)rb_str_capacity(getpwid_tmp);
     }
 
-    if (pwptr == NULL) {
+    if (args.result == NULL) {
         /* no record in the password database for the uid */
         rb_str_resize(getpwid_tmp, 0);
         return Qnil;
     }
 
     /* found it */
-    VALUE result = rb_str_new_cstr(pwptr->pw_dir);
+    VALUE result = rb_str_new_cstr(args.result->pw_dir);
     rb_str_resize(getpwid_tmp, 0);
     return result;
 
 # elif defined(USE_GETPWUID)
 
+    struct passwd *pwptr;
     errno = 0;
-    pwptr = getpwuid(ruid);
-    if (pwptr) {
-        /* found it */
-        return rb_str_new_cstr(pwptr->pw_dir);
-    }
-    if (errno
-        /*   avoid treating as errors errno values that indicate "not found" */
-        && ( errno == ENOENT || errno == ESRCH || errno == EBADF || errno == EPERM)) {
-        rb_syserr_fail(errno, "getpwuid");
+    if (!(pwptr = getpwuid(ruid))) {
+        int err = errno;
+
+        if (pwd_not_found(err)) {
+            return Qnil;
+        }
+
+        rb_syserr_fail(err, "getpwuid");
     }
 
-    return Qnil;  /* not found */
+    /* found it */
+    return rb_str_new_cstr(pwptr->pw_dir);
 # endif
 
 #endif /* !defined(USE_GETPWUID_R) && !defined(USE_GETPWUID) */
@@ -5987,7 +6027,6 @@ obj2uid(VALUE id
         const char *usrname = StringValueCStr(id);
         struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
-        struct passwd pwbuf;
         char *getpw_buf;
         long getpw_buf_len;
         int e;
@@ -6000,15 +6039,18 @@ obj2uid(VALUE id
         getpw_buf_len = rb_str_capacity(*getpw_tmp);
         rb_str_set_len(*getpw_tmp, getpw_buf_len);
         errno = 0;
-        while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
-            if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+        struct getpwnam_r_args args = GETPWNAM_R_ARGS((char *)usrname, getpw_buf, (size_t)getpw_buf_len);
+
+        while ((e = IO_WITHOUT_GVL_INT(nogvl_getpwnam_r, &args)) != 0) {
+            if (e != ERANGE || args.bufsize >= GETPW_R_SIZE_LIMIT) {
                 rb_str_resize(*getpw_tmp, 0);
                 rb_syserr_fail(e, "getpwnam_r");
             }
-            rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
-            getpw_buf = RSTRING_PTR(*getpw_tmp);
-            getpw_buf_len = rb_str_capacity(*getpw_tmp);
+            rb_str_modify_expand(*getpw_tmp, (long)args.bufsize);
+            args.buf = RSTRING_PTR(*getpw_tmp);
+            args.bufsize = (size_t)rb_str_capacity(*getpw_tmp);
         }
+        pwptr = args.result;
 #else
         pwptr = getpwnam(usrname);
 #endif
@@ -6047,6 +6089,26 @@ p_uid_from_name(VALUE self, VALUE id)
 #endif
 
 #if defined(HAVE_GRP_H)
+# if defined(USE_GETGRNAM_R)
+struct getgrnam_r_args {
+    const char *name;
+    char *buf;
+    size_t bufsize;
+    struct group *result;
+    struct group grp;
+};
+
+# define GETGRNAM_R_ARGS(name_, buf_, bufsize_) (struct getgrnam_r_args) \
+    {.name  = name_, .buf = buf_, .bufsize = bufsize_, .result = NULL}
+
+static void *
+nogvl_getgrnam_r(void *args)
+{
+    struct getgrnam_r_args *arg = args;
+    return (void *)(VALUE)getgrnam_r(arg->name, &arg->grp, arg->buf, arg->bufsize, &arg->result);
+}
+# endif
+
 static rb_gid_t
 obj2gid(VALUE id
 # ifdef USE_GETGRNAM_R
@@ -6064,7 +6126,6 @@ obj2gid(VALUE id
         const char *grpname = StringValueCStr(id);
         struct group *grptr;
 #ifdef USE_GETGRNAM_R
-        struct group grbuf;
         char *getgr_buf;
         long getgr_buf_len;
         int e;
@@ -6077,15 +6138,18 @@ obj2gid(VALUE id
         getgr_buf_len = rb_str_capacity(*getgr_tmp);
         rb_str_set_len(*getgr_tmp, getgr_buf_len);
         errno = 0;
-        while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
-            if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+        struct getgrnam_r_args args = GETGRNAM_R_ARGS(grpname, getgr_buf, (size_t)getgr_buf_len);
+
+        while ((e = IO_WITHOUT_GVL_INT(nogvl_getgrnam_r, &args)) != 0) {
+            if (e != ERANGE || args.bufsize >= GETGR_R_SIZE_LIMIT) {
                 rb_str_resize(*getgr_tmp, 0);
                 rb_syserr_fail(e, "getgrnam_r");
             }
-            rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
-            getgr_buf = RSTRING_PTR(*getgr_tmp);
-            getgr_buf_len = rb_str_capacity(*getgr_tmp);
+            rb_str_modify_expand(*getgr_tmp, (long)args.bufsize);
+            args.buf = RSTRING_PTR(*getgr_tmp);
+            args.bufsize = (size_t)rb_str_capacity(*getgr_tmp);
         }
+        grptr = args.result;
 #elif defined(HAVE_GETGRNAM)
         grptr = getgrnam(grpname);
 #else

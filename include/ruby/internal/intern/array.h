@@ -144,7 +144,13 @@ void rb_ary_free(VALUE ary);
  */
 void rb_ary_modify(VALUE ary);
 
-/** @alias{rb_obj_freeze} */
+/**
+ * Freeze an array, preventing further modifications. The underlying  buffer may
+ * be shrunk before freezing to conserve memory.
+ *
+ * @param[out]  obj  Object assumed to be an array to freeze.
+ * @see         RB_OBJ_FREEZE()
+ */
 VALUE rb_ary_freeze(VALUE obj);
 
 RBIMPL_ATTR_PURE()

@@ -1698,7 +1698,12 @@ thread_io_wake_pending_closer(struct waiting_fd *wfd)
     RB_VM_LOCK_LEAVE();
 
     if (has_waiter) {
-        rb_thread_wakeup(wfd->busy->closing_thread);
+        rb_thread_t *th = rb_thread_ptr(wfd->busy->closing_thread);
+        if (th->scheduler != Qnil) {
+            rb_fiber_scheduler_unblock(th->scheduler, wfd->busy->closing_thread, wfd->busy->closing_fiber);
+        } else {
+            rb_thread_wakeup(wfd->busy->closing_thread);
+        }
         rb_mutex_unlock(wfd->busy->wakeup_mutex);
     }
 }
@@ -2215,30 +2220,6 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val, VALUE args)
  * resource allocation code. Then, the ensure block is where we can safely
  * deallocate your resources.
  *
- * ==== Guarding from Timeout::Error
- *
- * In the next example, we will guard from the Timeout::Error exception. This
- * will help prevent from leaking resources when Timeout::Error exceptions occur
- * during normal ensure clause. For this example we use the help of the
- * standard library Timeout, from lib/timeout.rb
- *
- *   require 'timeout'
- *   Thread.handle_interrupt(Timeout::Error => :never) {
- *     timeout(10){
- *       # Timeout::Error doesn't occur here
- *       Thread.handle_interrupt(Timeout::Error => :on_blocking) {
- *         # possible to be killed by Timeout::Error
- *         # while blocking operation
- *       }
- *       # Timeout::Error doesn't occur here
- *     }
- *   }
- *
- * In the first part of the +timeout+ block, we can rely on Timeout::Error being
- * ignored. Then in the <code>Timeout::Error => :on_blocking</code> block, any
- * operation that will block the calling thread is susceptible to a
- * Timeout::Error exception being raised.
- *
  * ==== Stack control settings
  *
  * It's possible to stack multiple levels of ::handle_interrupt blocks in order
@@ -2649,6 +2630,7 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
 
     has_any = !ccan_list_empty(&busy->pending_fd_users);
     busy->closing_thread = rb_thread_current();
+    busy->closing_fiber = rb_fiber_current();
     wakeup_mutex = Qnil;
     if (has_any) {
         wakeup_mutex = rb_mutex_new();
@@ -3756,12 +3738,13 @@ static VALUE
 rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
+    VALUE symbol = rb_to_symbol(key);
 
     if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
         return Qnil;
     }
     locals = rb_thread_local_storage(thread);
-    return rb_hash_aref(locals, rb_to_symbol(key));
+    return rb_hash_aref(locals, symbol);
 }
 
 /*
@@ -3912,13 +3895,14 @@ static VALUE
 rb_thread_variable_p(VALUE thread, VALUE key)
 {
     VALUE locals;
+    VALUE symbol = rb_to_symbol(key);
 
     if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
         return Qfalse;
     }
     locals = rb_thread_local_storage(thread);
 
-    return RBOOL(rb_hash_lookup(locals, rb_to_symbol(key)) != Qnil);
+    return RBOOL(rb_hash_lookup(locals, symbol) != Qnil);
 }
 
 /*
@@ -4549,7 +4533,12 @@ void
 rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wdangling-pointer")
+COMPILER_WARNING_IGNORED(-Wdangling-pointer);
+#endif
     *stack_end_p = &stack_end;
+COMPILER_WARNING_POP
 }
 #endif
 

@@ -54,7 +54,7 @@ module Bundler
       end
 
       if options[:parseable]
-        Bundler.ui.silence(&definition_resolution)
+        Bundler.ui.progress(&definition_resolution)
       else
         definition_resolution.call
       end

@@ -48,6 +48,7 @@
 #include "ruby/thread_native.h"
 #include "ruby/ractor.h"
 #include "vm_sync.h"
+#include "builtin.h"
 
 /* Flags of RHash
  *
@@ -102,6 +103,7 @@ static VALUE rb_hash_s_try_convert(VALUE, VALUE);
  *  2. Insert WBs
  */
 
+/* :nodoc: */
 VALUE
 rb_hash_freeze(VALUE hash)
 {
@@ -109,6 +111,7 @@ rb_hash_freeze(VALUE hash)
 }
 
 VALUE rb_cHash;
+VALUE rb_cHash_empty_frozen;
 
 static VALUE envtbl;
 static ID id_hash, id_flatten_bang;
@@ -1395,13 +1398,6 @@ hash_iter_lev_dec(VALUE hash)
 }
 
 static VALUE
-hash_foreach_ensure_rollback(VALUE hash)
-{
-    hash_iter_lev_inc(hash);
-    return 0;
-}
-
-static VALUE
 hash_foreach_ensure(VALUE hash)
 {
     hash_iter_lev_dec(hash);
@@ -1762,58 +1758,31 @@ set_proc_default(VALUE hash, VALUE proc)
     RHASH_SET_IFNONE(hash, proc);
 }
 
-/*
- *  call-seq:
- *     Hash.new(default_value = nil) -> new_hash
- *     Hash.new {|hash, key| ... } -> new_hash
- *
- *  Returns a new empty +Hash+ object.
- *
- *  The initial default value and initial default proc for the new hash
- *  depend on which form above was used. See {Default Values}[rdoc-ref:Hash@Default+Values].
- *
- *  If neither an argument nor a block given,
- *  initializes both the default value and the default proc to <tt>nil</tt>:
- *    h = Hash.new
- *    h.default # => nil
- *    h.default_proc # => nil
- *
- *  If argument <tt>default_value</tt> given but no block given,
- *  initializes the default value to the given <tt>default_value</tt>
- *  and the default proc to <tt>nil</tt>:
- *    h = Hash.new(false)
- *    h.default # => false
- *    h.default_proc # => nil
- *
- *  If a block given but no argument, stores the block as the default proc
- *  and sets the default value to <tt>nil</tt>:
- *    h = Hash.new {|hash, key| "Default value for #{key}" }
- *    h.default # => nil
- *    h.default_proc.class # => Proc
- *    h[:nosuch] # => "Default value for nosuch"
- */
-
 static VALUE
-rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
+rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifnone_unset, VALUE ifnone, VALUE block)
 {
     rb_hash_modify(hash);
 
-    if (rb_block_given_p()) {
-        rb_check_arity(argc, 0, 0);
-        SET_PROC_DEFAULT(hash, rb_block_proc());
+    if (capa_value != INT2FIX(0)) {
+        long capa = NUM2LONG(capa_value);
+        if (capa > 0 && RHASH_SIZE(hash) == 0 && RHASH_AR_TABLE_P(hash)) {
+            hash_st_table_init(hash, &objhash, capa);
+        }
+    }
+
+    if (!NIL_P(block)) {
+        if (ifnone_unset != Qtrue) {
+            rb_check_arity(1, 0, 0);
+        }
+        else {
+            SET_PROC_DEFAULT(hash, block);
+        }
     }
     else {
-        rb_check_arity(argc, 0, 1);
-
-        VALUE options, ifnone;
-        rb_scan_args(argc, argv, "01:", &ifnone, &options);
-        if (NIL_P(ifnone) && !NIL_P(options)) {
-            ifnone = options;
-            rb_warn_deprecated_to_remove("3.4", "Calling Hash.new with keyword arguments", "Hash.new({ key: value })");
-        }
-        RHASH_SET_IFNONE(hash, ifnone);
+        RHASH_SET_IFNONE(hash, ifnone_unset == Qtrue ? Qnil : ifnone);
     }
 
+    hash_verify(hash);
     return hash;
 }
 
@@ -7052,10 +7021,9 @@ static const rb_data_type_t env_data_type = {
  *  - #empty?: Returns whether there are no entries.
  *  - #eql?: Returns whether a given object is equal to +self+.
  *  - #hash: Returns the integer hash code.
- *  - #has_value?: Returns whether a given object is a value in +self+.
- *  - #include?, #has_key?, #member?, #key?: Returns whether a given object is a key in +self+.
- *  - #length, #size: Returns the count of entries.
- *  - #value?: Returns whether a given object is a value in +self+.
+ *  - #has_value? (aliased as #value?): Returns whether a given object is a value in +self+.
+ *  - #include? (aliased as #has_key?, #member?, #key?): Returns whether a given object is a key in +self+.
+ *  - #size (aliased as #length): Returns the count of entries.
  *
  *  ==== Methods for Comparing
  *
@@ -7082,10 +7050,10 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== Methods for Assigning
  *
- *  - #[]=, #store: Associates a given key with a given value.
+ *  - #[]= (aliased as #store): Associates a given key with a given value.
  *  - #merge: Returns the hash formed by merging each given hash into a copy of +self+.
- *  - #merge!, #update: Merges each given hash into +self+.
- *  - #replace: Replaces the entire contents of +self+ with the contents of a given hash.
+ *  - #update (aliased as #merge!): Merges each given hash into +self+.
+ *  - #replace (aliased as #initialize_copy): Replaces the entire contents of +self+ with the contents of a given hash.
  *
  *  ==== Methods for Deleting
  *
@@ -7095,7 +7063,7 @@ static const rb_data_type_t env_data_type = {
  *  - #compact!: Removes all +nil+-valued entries from +self+.
  *  - #delete: Removes the entry for a given key.
  *  - #delete_if: Removes entries selected by a given block.
- *  - #filter!, #select!: Keep only those entries selected by a given block.
+ *  - #select! (aliased as #filter!): Keep only those entries selected by a given block.
  *  - #keep_if: Keep only those entries selected by a given block.
  *  - #reject!: Removes entries selected by a given block.
  *  - #shift: Removes and returns the first entry.
@@ -7104,18 +7072,18 @@ static const rb_data_type_t env_data_type = {
  *
  *  - #compact: Returns a copy of +self+ with all +nil+-valued entries removed.
  *  - #except: Returns a copy of +self+ with entries removed for specified keys.
- *  - #filter, #select: Returns a copy of +self+ with only those entries selected by a given block.
+ *  - #select (aliased as #filter): Returns a copy of +self+ with only those entries selected by a given block.
  *  - #reject: Returns a copy of +self+ with entries removed as specified by a given block.
  *  - #slice: Returns a hash containing the entries for given keys.
  *
  *  ==== Methods for Iterating
- *  - #each, #each_pair: Calls a given block with each key-value pair.
+ *  - #each_pair (aliased as #each): Calls a given block with each key-value pair.
  *  - #each_key: Calls a given block with each key.
  *  - #each_value: Calls a given block with each value.
  *
  *  ==== Methods for Converting
  *
- *  - #inspect, #to_s: Returns a new String containing the hash entries.
+ *  - #inspect (aliased as #to_s): Returns a new String containing the hash entries.
  *  - #to_a: Returns a new array of 2-element arrays;
  *    each nested array contains a key-value pair from +self+.
  *  - #to_h: Returns +self+ if a +Hash+;
@@ -7150,9 +7118,9 @@ Init_Hash(void)
     rb_define_alloc_func(rb_cHash, empty_hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
-    rb_define_method(rb_cHash, "initialize", rb_hash_initialize, -1);
     rb_define_method(rb_cHash, "initialize_copy", rb_hash_replace, 1);
     rb_define_method(rb_cHash, "rehash", rb_hash_rehash, 0);
+    rb_define_method(rb_cHash, "freeze", rb_hash_freeze, 0);
 
     rb_define_method(rb_cHash, "to_hash", rb_hash_to_hash, 0);
     rb_define_method(rb_cHash, "to_h", rb_hash_to_h, 0);
@@ -7238,6 +7206,9 @@ Init_Hash(void)
 
     rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash?", rb_hash_s_ruby2_keywords_hash_p, 1);
     rb_define_singleton_method(rb_cHash, "ruby2_keywords_hash", rb_hash_s_ruby2_keywords_hash, 1);
+
+    rb_cHash_empty_frozen = rb_hash_freeze(rb_hash_new());
+    rb_vm_register_global_object(rb_cHash_empty_frozen);
 
     /* Document-class: ENV
      *
@@ -7472,8 +7443,7 @@ Init_Hash(void)
      */
     rb_define_global_const("ENV", envtbl);
 
-    /* for callcc */
-    ruby_register_rollback_func_for_ensure(hash_foreach_ensure, hash_foreach_ensure_rollback);
-
     HASH_ASSERT(sizeof(ar_hint_t) * RHASH_AR_TABLE_MAX_SIZE == sizeof(VALUE));
 }
+
+#include "hash.rbinc"

@@ -5215,6 +5215,88 @@ time_strftime(VALUE time, VALUE format)
     }
 }
 
+static VALUE
+time_xmlschema(int argc, VALUE *argv, VALUE time)
+{
+    long fraction_digits = 0;
+    rb_check_arity(argc, 0, 1);
+    if (argc > 0) {
+        fraction_digits = NUM2LONG(argv[0]);
+        if (fraction_digits < 0) {
+            fraction_digits = 0;
+        }
+    }
+
+    struct time_object *tobj;
+
+    GetTimeval(time, tobj);
+    MAKE_TM(time, tobj);
+
+    long year = -1;
+    if (FIXNUM_P(tobj->vtm.year)) {
+        year = FIX2LONG(tobj->vtm.year);
+    }
+    if (RB_UNLIKELY(year > 9999 || year < 0 || fraction_digits > 9)) {
+        // Slow path for uncommon dates.
+        VALUE format = rb_utf8_str_new_cstr("%FT%T");
+        if (fraction_digits > 0) {
+            rb_str_catf(format, ".%%#%ldN", fraction_digits);
+        }
+        rb_str_cat_cstr(format, TZMODE_UTC_P(tobj) ? "Z" : "%:z");
+        return rb_funcallv(time, rb_intern("strftime"), 1, &format);
+    }
+
+    long buf_size = sizeof("YYYY-MM-DDTHH:MM:SS+ZH:ZM") + fraction_digits + (fraction_digits > 0 ? 1 : 0);
+
+    VALUE str = rb_str_buf_new(buf_size);
+    rb_enc_associate_index(str, rb_utf8_encindex());
+
+    char *ptr = RSTRING_PTR(str);
+    char *start = ptr;
+    int written = snprintf(
+        ptr,
+        sizeof("YYYY-MM-DDTHH:MM:SS"),
+        "%04ld-%02d-%02dT%02d:%02d:%02d",
+        year,
+        tobj->vtm.mon,
+        tobj->vtm.mday,
+        tobj->vtm.hour,
+        tobj->vtm.min,
+        tobj->vtm.sec
+    );
+    RUBY_ASSERT(written == sizeof("YYYY-MM-DDTHH:MM:SS") - 1);
+    ptr += written;
+
+    if (fraction_digits > 0) {
+        long nsec = NUM2LONG(mulquov(tobj->vtm.subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
+        long subsec = nsec / (long)pow(10, 9 - fraction_digits);
+
+        *ptr = '.';
+        ptr++;
+
+        written = snprintf(ptr, fraction_digits + 1, "%0*ld", (int)fraction_digits, subsec); // Always allow to write \0
+        RUBY_ASSERT(written > 0);
+        ptr += written;
+    }
+
+    if (TZMODE_UTC_P(tobj)) {
+        *ptr = 'Z';
+        ptr++;
+    }
+    else {
+        long offset = NUM2LONG(rb_time_utc_offset(time));
+        *ptr++ = offset < 0 ? '-' : '+';
+        if (offset < 0) offset = -offset;
+        int offset_hours = (int)(offset / 3600);
+        int offset_minutes = (int)(offset % 3600 / 60);
+        written = snprintf(ptr, sizeof("ZH:ZM"), "%02d:%02d", offset_hours, offset_minutes);
+        RUBY_ASSERT(written == sizeof("ZH:ZM") - 1, "%d[%.*s]", written, written, ptr);
+        ptr += written;
+    }
+    rb_str_set_len(str, ptr - start); // We could skip coderange scanning as we know it's full ASCII.
+    return str;
+}
+
 int ruby_marshal_write_long(long x, char *buf);
 
 enum {base_dump_size = 8};
@@ -5842,6 +5924,8 @@ Init_Time(void)
     rb_define_method(rb_cTime, "subsec", time_subsec, 0);
 
     rb_define_method(rb_cTime, "strftime", time_strftime, 1);
+    rb_define_method(rb_cTime, "xmlschema", time_xmlschema, -1);
+    rb_define_alias(rb_cTime, "iso8601", "xmlschema");
 
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);

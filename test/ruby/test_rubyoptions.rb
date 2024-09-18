@@ -5,6 +5,7 @@ require 'timeout'
 require 'tmpdir'
 require 'tempfile'
 require_relative '../lib/jit_support'
+require_relative '../lib/parser_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
@@ -13,7 +14,12 @@ class TestRubyOptions < Test::Unit::TestCase
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
   # here so that the various tests that reference RUBY_DESCRIPTION don't have to
   # worry about it. The flag itself is tested in its own test.
-  RUBY_DESCRIPTION = ::RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+  RUBY_DESCRIPTION =
+    if ParserSupport.prism_enabled_in_subprocess?
+      ::RUBY_DESCRIPTION
+    else
+      ::RUBY_DESCRIPTION.sub(/\+PRISM /, '')
+    end
 
   NO_JIT_DESCRIPTION =
     if rjit_enabled?
@@ -163,14 +169,14 @@ class TestRubyOptions < Test::Unit::TestCase
       /^jruby #{q[RUBY_ENGINE_VERSION]} \(#{q[RUBY_VERSION]}\).*? \[#{
         q[RbConfig::CONFIG["host_os"]]}-#{q[RbConfig::CONFIG["host_cpu"]]}\]$/
     else
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? (\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
     end
   private_constant :VERSION_PATTERN
 
   VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?\[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -231,7 +237,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_kanji
     assert_in_out_err(%w(-KU), "p '\u3042'") do |r, e|
-      assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
+      assert_equal("\"\u3042\"", r.join('').force_encoding(Encoding::UTF_8))
     end
     line = '-eputs"\xc2\xa1".encoding'
     env = {'RUBYOPT' => nil}
@@ -356,12 +362,25 @@ class TestRubyOptions < Test::Unit::TestCase
 
     d = Dir.tmpdir
     assert_in_out_err(["-C", d, "-e", "puts Dir.pwd"]) do |r, e|
-      assert_file.identical?(r.join, d)
+      assert_file.identical?(r.join(''), d)
       assert_equal([], e)
+    end
+
+    Dir.mktmpdir(d) do |base|
+      # "test" in Japanese and N'Ko
+      test = base + "/\u{30c6 30b9 30c8}_\u{7e1 7ca 7dd 7cc 7df 7cd 7eb}"
+      Dir.mkdir(test)
+      assert_in_out_err(["-C", base, "-C", File.basename(test), "-e", "puts Dir.pwd"]) do |r, e|
+        assert_file.identical?(r.join(''), test)
+        assert_equal([], e)
+      end
+      Dir.rmdir(test)
     end
   end
 
   def test_yydebug
+    omit if ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(["-ye", ""]) do |r, e|
       assert_not_equal([], r)
       assert_equal([], e)
@@ -387,16 +406,16 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_syntax_check
     assert_in_out_err(%w(-cw -e a=1+1 -e !a), "", ["Syntax OK"], [])
-    assert_in_out_err(%w(-cw -e break), "", [], ["-e:1: Invalid break", :*])
-    assert_in_out_err(%w(-cw -e next), "", [], ["-e:1: Invalid next", :*])
-    assert_in_out_err(%w(-cw -e redo), "", [], ["-e:1: Invalid redo", :*])
-    assert_in_out_err(%w(-cw -e retry), "", [], ["-e:1: Invalid retry", :*])
-    assert_in_out_err(%w(-cw -e yield), "", [], ["-e:1: Invalid yield", :*])
-    assert_in_out_err(%w(-cw -e begin -e break -e end), "", [], ["-e:2: Invalid break", :*])
-    assert_in_out_err(%w(-cw -e begin -e next -e end), "", [], ["-e:2: Invalid next", :*])
-    assert_in_out_err(%w(-cw -e begin -e redo -e end), "", [], ["-e:2: Invalid redo", :*])
-    assert_in_out_err(%w(-cw -e begin -e retry -e end), "", [], ["-e:2: Invalid retry", :*])
-    assert_in_out_err(%w(-cw -e begin -e yield -e end), "", [], ["-e:2: Invalid yield", :*])
+    assert_in_out_err(%w(-cw -e break), "", [], [:*, /(-e:1:|~) Invalid break/, :*])
+    assert_in_out_err(%w(-cw -e next), "", [], [:*, /(-e:1:|~) Invalid next/, :*])
+    assert_in_out_err(%w(-cw -e redo), "", [], [:*, /(-e:1:|~) Invalid redo/, :*])
+    assert_in_out_err(%w(-cw -e retry), "", [], [:*, /(-e:1:|~) Invalid retry/, :*])
+    assert_in_out_err(%w(-cw -e yield), "", [], [:*, /(-e:1:|~) Invalid yield/, :*])
+    assert_in_out_err(%w(-cw -e begin -e break -e end), "", [], [:*, /(-e:2:|~) Invalid break/, :*])
+    assert_in_out_err(%w(-cw -e begin -e next -e end), "", [], [:*, /(-e:2:|~) Invalid next/, :*])
+    assert_in_out_err(%w(-cw -e begin -e redo -e end), "", [], [:*, /(-e:2:|~) Invalid redo/, :*])
+    assert_in_out_err(%w(-cw -e begin -e retry -e end), "", [], [:*, /(-e:2:|~) Invalid retry/, :*])
+    assert_in_out_err(%w(-cw -e begin -e yield -e end), "", [], [:*, /(-e:2:|~) Invalid yield/, :*])
     assert_in_out_err(%w(-cw -e !defined?(break)), "", ["Syntax OK"], [])
     assert_in_out_err(%w(-cw -e !defined?(next)), "", ["Syntax OK"], [])
     assert_in_out_err(%w(-cw -e !defined?(redo)), "", ["Syntax OK"], [])
@@ -857,6 +876,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
+    pend "macOS 15 beta is not working with this assertion" if macos?(15)
+
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
@@ -900,6 +921,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_crash_report(path, cmd = nil, &block)
+    pend "macOS 15 beta is not working with this assertion" if macos?(15)
+
     Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
       if cmd
@@ -1169,6 +1192,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_dump_parsetree_error_tolerant
+    omit if ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(['--dump=parse', '-e', 'begin'],
                       "", [], /unexpected end-of-input/, success: false)
     assert_in_out_err(['--dump=parse', '--dump=+error_tolerant', '-e', 'begin'],

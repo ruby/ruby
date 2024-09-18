@@ -748,7 +748,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             result.options.line = 1;
             result.node.coverage_enabled = 1;
 
-            VALUE error = pm_load_parse_file(&result, fname);
+            VALUE error = pm_load_parse_file(&result, fname, NULL);
 
             if (error == Qnil) {
                 iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL);
@@ -1451,9 +1451,9 @@ ruby_init_ext(const char *name, void (*init)(void))
  *     A.autoload(:B, "b")
  *     A::B.doit            # autoloads "b"
  *
- * If _const_ in _mod_ is defined as autoload, the file name to be
- * loaded is replaced with _filename_.  If _const_ is defined but not
- * as autoload, does nothing.
+ *  If _const_ in _mod_ is defined as autoload, the file name to be
+ *  loaded is replaced with _filename_.  If _const_ is defined but not
+ *  as autoload, does nothing.
  */
 
 static VALUE
@@ -1515,9 +1515,9 @@ rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
  *
  *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
  *
- * If _const_ is defined as autoload, the file name to be loaded is
- * replaced with _filename_.  If _const_ is defined but not as
- * autoload, does nothing.
+ *  If _const_ is defined as autoload, the file name to be loaded is
+ *  replaced with _filename_.  If _const_ is defined but not as
+ *  autoload, does nothing.
  */
 
 static VALUE

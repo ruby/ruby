@@ -1049,7 +1049,7 @@ describe :marshal_load, shared: true do
   end
 
   describe "for a Bignum" do
-    platform_is wordsize: 64 do
+    platform_is c_long_size: 64 do
       context "that is Bignum on 32-bit platforms but Fixnum on 64-bit" do
         it "dumps a Fixnum" do
           val = Marshal.send(@method, "\004\bl+\ab:wU")

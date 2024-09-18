@@ -56,7 +56,8 @@
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
 
 #if VM_CHECK_MODE > 0
-#define VM_ASSERT(/*expr, */...) RUBY_ASSERT_WHEN(VM_CHECK_MODE > 0, __VA_ARGS__)
+#define VM_ASSERT(expr, ...) \
+    RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 #define RUBY_ASSERT_CRITICAL_SECTION
 #define RUBY_DEBUG_THREAD_SCHEDULE() rb_thread_schedule()
@@ -734,9 +735,6 @@ typedef struct rb_vm_struct {
         VALUE cmd[RUBY_NSIG];
     } trap_list;
 
-    /* relation table of ensure - rollback for callcc */
-    struct st_table *ensure_rollback_table;
-
     /* postponed_job (async-signal-safe, and thread-safe) */
     struct rb_postponed_job_queue *postponed_job_queue;
 
@@ -750,7 +748,13 @@ typedef struct rb_vm_struct {
     VALUE coverages, me2counter;
     int coverage_mode;
 
-    struct rb_objspace *objspace;
+    struct {
+        struct rb_objspace *objspace;
+        struct gc_mark_func_data_struct {
+            void *data;
+            void (*mark_func)(VALUE v, void *data);
+        } *mark_func_data;
+    } gc;
 
     rb_at_exit_list *at_exit;
 
@@ -974,17 +978,6 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-typedef struct rb_ensure_entry {
-    VALUE marker;
-    VALUE (*e_proc)(VALUE);
-    VALUE data2;
-} rb_ensure_entry_t;
-
-typedef struct rb_ensure_list {
-    struct rb_ensure_list *next;
-    struct rb_ensure_entry entry;
-} rb_ensure_list_t;
-
 typedef struct rb_fiber_struct rb_fiber_t;
 
 struct rb_waiting_list {
@@ -1022,9 +1015,6 @@ struct rb_execution_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
-
-    /* ensure & callcc */
-    rb_ensure_list_t *ensure_list;
 
     /* trace information */
     struct rb_trace_arg_struct *trace_arg;
@@ -1283,6 +1273,14 @@ enum vm_check_match_type {
 
 #define VM_CHECKMATCH_TYPE_MASK   0x03
 #define VM_CHECKMATCH_ARRAY       0x04
+
+enum vm_opt_newarray_send_type {
+    VM_OPT_NEWARRAY_SEND_MAX = 1,
+    VM_OPT_NEWARRAY_SEND_MIN = 2,
+    VM_OPT_NEWARRAY_SEND_HASH = 3,
+    VM_OPT_NEWARRAY_SEND_PACK = 4,
+    VM_OPT_NEWARRAY_SEND_PACK_BUFFER = 5,
+};
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,

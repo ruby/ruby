@@ -399,10 +399,10 @@ rdoc_noinst = %w[created.rid]
 prolog_script = <<EOS
 bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
-if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+if !load_relative and libpathenv = CONFIG["LIBPATHENV"]
   pathsep = File::PATH_SEPARATOR
   prolog_script << <<EOS
-libdir="#{load_relative ? '$\{bindir%/bin\}/lib' : libdir.gsub(/\"/, '\\\\"')}"
+libdir="#{libdir.gsub(/\"/, '\\\\"')}"
 export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
 end
@@ -746,7 +746,9 @@ module RbInstall
       name = formatted_program_filename(filename)
       unless $dryrun
         super
-        File.chmod($script_mode, File.join(bindir, name))
+        script = File.join(bindir, name)
+        File.chmod($script_mode, script)
+        File.unlink("#{script}.lock") rescue nil
       end
       $installed_list.puts(File.join(without_destdir(bindir), name)) if $installed_list
     end

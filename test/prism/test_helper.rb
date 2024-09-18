@@ -209,7 +209,7 @@ module Prism
 
     private
 
-    if RUBY_ENGINE == "ruby"
+    if RUBY_ENGINE == "ruby" && RubyVM::InstructionSequence.compile("").to_a[4][:parser] != :prism
       # Check that the given source is valid syntax by compiling it with RubyVM.
       def check_syntax(source)
         ignore_warnings { RubyVM::InstructionSequence.compile(source) }

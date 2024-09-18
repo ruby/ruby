@@ -83,7 +83,7 @@ AC_ARG_WITH(baseruby,
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
 AS_IF([test "$HAVE_BASERUBY" != no], [
-    RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
+    RUBYOPT=- $BASERUBY --disable=gems -rerb -rfileutils -rtempfile "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
 ])
 AS_IF([test "${HAVE_BASERUBY:=no}" != no], [
     AS_CASE(["$build_os"], [mingw*], [
@@ -489,7 +489,6 @@ AC_CACHE_CHECK([for $AR flags], [rb_cv_arflags], [
 	[rb_cv_arflags=rcD], [rb_cv_arflags=rcu])
 ])
 AC_SUBST(ARFLAGS, ["$rb_cv_arflags "])
-AC_SUBST(ASFLAGS)
 
 AS_CASE(["$target_os"],
 [cygwin*|msys*|mingw*], [
@@ -840,19 +839,39 @@ AS_IF([test "$GCC" = yes], [
     ])
 
     # aarch64 branch protection
-    AS_CASE(["$target_cpu"], [aarch64], [
-	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
-            # Try these flags in the _prepended_ position - i.e. we want to try building a program
-            # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
-            # branch protection flags in CFLAGS, we don't want to overwrite those. We just want to
-            # find some branch protection flags which work if none were provided.
-            RUBY_TRY_CFLAGS_PREPEND(option, [branch_protection=yes], [branch_protection=no])
-            AS_IF([test "x$branch_protection" = xyes], [
-                # _prepend_ the options to CFLAGS, so that user-provided flags will overwrite them.
-                # These CFLAGS are used during the configure script to compile further test programs;
-                # however, $harden_flags is prepended separately to CFLAGS at the end of the script.
-                RUBY_PREPEND_OPTION(hardenflags, $opt)
-                break
+    AS_CASE(["$target_cpu"], [aarch64|arm64], [
+        # LLVM libunwind is not actually capable of unwinding code compiled with pointer
+        # authentication unless it's built without LIBUNWIND_ENABLE_CROSS_UNWINDING (see
+        # https://github.com/llvm/llvm-project/blob/8e35c86977ce5529a9387657321ac9fefcdae5b5/libunwind/src/DwarfInstructions.hpp#L294)
+        # It seems that macOS ships LLVM compiled this way.
+        # Detect this and disable automatic insertion of pac-ret flags in that case, since we assume
+        # that reliable backtraces are more important than hardening flags.
+        AC_MSG_CHECKING([for a broken LLVM libunwind that cannot unwind code with RA signing])
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+            @%:@include <libunwind.h>
+            int foo = UNW_ECROSSRASIGNING;
+            ]])],
+            # If compilation succeeds, that means we a) had libunwind, and b) it was NOT native only
+            [rb_cv_libunwind_broken_ra_signing=yes],
+            # if compilation fails, that means we either a) do not have libunwind, or b) have it in
+            # native only mode (which is good!)
+            [rb_cv_libunwind_broken_ra_signing=no]
+        )
+        AC_MSG_RESULT(["$rb_cv_libunwind_broken_ra_signing"])
+        AS_IF([test "x$rb_cv_libunwind_broken_ra_signing" = "xno"], [
+            AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
+                # Try these flags in the _prepended_ position - i.e. we want to try building a program
+                # with CFLAGS="-mbranch-protection=pac-ret $CFLAGS". If the builder has provided different
+                # branch protection flags in CFLAGS, we don't want to overwrite those. We just want to
+                # find some branch protection flags which work if none were provided.
+                RUBY_TRY_CFLAGS_PREPEND(option, [branch_protection=yes], [branch_protection=no])
+                AS_IF([test "x$branch_protection" = xyes], [
+                    # _prepend_ the options to CFLAGS, so that user-provided flags will overwrite them.
+                    # These CFLAGS are used during the configure script to compile further test programs;
+                    # however, $harden_flags is prepended separately to CFLAGS at the end of the script.
+                    RUBY_PREPEND_OPTION(hardenflags, $opt)
+                    break
+                ])
             ])
         ])
     ])
@@ -1007,58 +1026,6 @@ AC_SUBST(incflags, "$INCFLAGS")
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 
-# The lines above expand out the $cflags/$optflags/$debugflags/$hardenflags variables into the
-# CFLAGS variable. So, at this point, we have a $CFLAGS var with the actual compiler flags we're
-# going to use.
-# That means this is the right time to check what branch protection flags are going to be in use
-# and define appropriate macros for use in Context.S based on this
-AS_CASE(["$target_cpu"], [aarch64], [
-    AC_CACHE_CHECK([whether __ARM_FEATURE_BTI_DEFAULT is defined],
-        rb_cv_aarch64_bti_enabled,
-        AC_COMPILE_IFELSE(
-            [AC_LANG_PROGRAM([[
-                @%:@ifndef __ARM_FEATURE_BTI_DEFAULT
-                @%:@error "__ARM_FEATURE_BTI_DEFAULT not defined"
-                @%:@endif
-            ]])],
-        [rb_cv_aarch64_bti_enabled=yes],
-        [rb_cv_aarch64_bti_enabled=no])
-    )
-    AS_IF([test "$rb_cv_aarch64_bti_enabled" = yes],
-          AC_DEFINE(RUBY_AARCH64_BTI_ENABLED, 1))
-    AC_CACHE_CHECK([whether __ARM_FEATURE_PAC_DEFAULT is defined],
-        rb_cv_aarch64_pac_enabled,
-        AC_COMPILE_IFELSE(
-            [AC_LANG_PROGRAM([[
-                @%:@ifndef __ARM_FEATURE_PAC_DEFAULT
-                @%:@error "__ARM_FEATURE_PAC_DEFAULT not defined"
-                @%:@endif
-            ]])],
-        [rb_cv_aarch64_pac_enabled=yes],
-        [rb_cv_aarch64_pac_enabled=no])
-    )
-    AS_IF([test "$rb_cv_aarch64_pac_enabled" = yes],
-          AC_DEFINE(RUBY_AARCH64_PAC_ENABLED, 1))
-    # Context.S will only ever sign its return address with the A-key; it doesn't support
-    # the B-key at the moment.
-    AS_IF([test "$rb_cv_aarch64_pac_enabled" = yes], [
-        AC_CACHE_CHECK([whether __ARM_FEATURE_PAC_DEFAULT specifies the b-key bit 0x02],
-            rb_cv_aarch64_pac_b_key,
-            AC_COMPILE_IFELSE(
-                [AC_LANG_PROGRAM([[
-                    @%:@ifdef __ARM_FEATURE_PAC_DEFAULT
-                    @%:@if __ARM_FEATURE_PAC_DEFAULT & 0x02
-                    @%:@error "__ARM_FEATURE_PAC_DEFAULT specifies B key"
-                    @%:@endif
-                    @%:@endif
-                ]])],
-            [rb_cv_aarch64_pac_b_key=no],
-            [rb_cv_aarch64_pac_b_key=yes])
-        )
-        AS_IF([test "$rb_cv_aarch64_pac_b_key" = yes],
-            AC_MSG_ERROR(-mbranch-protection flag specified b-key but Ruby's Context.S does not support this yet.))
-    ])
-])
 
 AC_CACHE_CHECK([whether compiler has statement and declarations in expressions],
   rb_cv_have_stmt_and_decl_in_expr,
@@ -1125,7 +1092,6 @@ AS_CASE(["$target_os"],
 		AS_IF([test $gcc_major -eq 4 -a $gcc_minor -lt 3], [
 		    ac_cv_func___builtin_setjmp=no
 		])
-		with_setjmp_type=sigsetjmp # to hijack SIGCHLD handler
 		AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
 		    [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
@@ -1442,7 +1408,7 @@ AC_CHECK_HEADERS(sys/event.h)
 AC_CHECK_HEADERS(stdckdint.h)
 AC_CHECK_HEADERS(stdatomic.h)
 
-AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
+AS_CASE("$target_cpu", [x64|x86_64|[i[3-6]86*]], [
   AC_CHECK_HEADERS(x86intrin.h)
 ])
 RUBY_UNIVERSAL_CHECK_HEADER([x86_64, i386], x86intrin.h)
@@ -1717,7 +1683,7 @@ AS_IF([test "$rb_cv_func_weak" != x], [
    AC_DEFINE(HAVE_FUNC_WEAK)
 ])
 
-AC_CACHE_CHECK([for __attribute__((__depreacted__(msg))) in C++],
+AC_CACHE_CHECK([for __attribute__((__deprecated__(msg))) in C++],
   rb_cv_CentOS6_CXX_workaround,
   RUBY_WERROR_FLAG([
     AC_LANG_PUSH([C++])
@@ -3581,7 +3547,7 @@ AC_ARG_WITH(soname,
 	    ],
 	    [mingw*], [
 		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
-		AS_IF([test x"${target_cpu}" != xi386], [
+		AS_IF([test x"${target_cpu}" != xi386 || test x"${rb_cv_msvcrt}" != xmsvcrt], [
 		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
 		])
 	    ],
@@ -3970,17 +3936,17 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features stats,disasm'
+	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
 	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm'
+	CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm'
 	AC_DEFINE(YJIT_STATS, 1)
     ],
     [stats], [
 	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats --features stats'
+	CARGO_BUILD_ARGS='--profile stats'
 	AC_DEFINE(YJIT_STATS, 1)
     ])
 
@@ -4155,6 +4121,7 @@ enum {
 	[mingw*], [
 	    AS_IF([test x"$enable_shared" = xyes], [
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
+		LIBRUBY_SONAME=''
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
 	    ])
 	    EXPORT_PREFIX=' '
@@ -4751,7 +4718,7 @@ config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with thread"         "$THREAD_MODEL"
 config_summary "with coroutine"      "$coroutine_type"
-config_summary "with shared GC"      "$with_shared_gc"
+config_summary "with shared GC"      "$shared_gc_summary"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"

@@ -29,6 +29,17 @@ class Reline::Config
   attr_accessor :autocompletion
 
   def initialize
+    reset_variables
+  end
+
+  def reset
+    if editing_mode_is?(:vi_command)
+      @editing_mode_label = :vi_insert
+    end
+    @oneshot_key_bindings.clear
+  end
+
+  def reset_variables
     @additional_key_bindings = { # from inputrc
       emacs: Reline::KeyActor::Base.new,
       vi_insert: Reline::KeyActor::Base.new,
@@ -51,16 +62,11 @@ class Reline::Config
     @keyseq_timeout = 500
     @test_mode = false
     @autocompletion = false
-    @convert_meta = true if seven_bit_encoding?(Reline::IOGate.encoding)
+    @convert_meta = seven_bit_encoding?(Reline::IOGate.encoding)
     @loaded = false
     @enable_bracketed_paste = true
-  end
-
-  def reset
-    if editing_mode_is?(:vi_command)
-      @editing_mode_label = :vi_insert
-    end
-    @oneshot_key_bindings.clear
+    @show_mode_in_prompt = false
+    @default_inputrc_path = nil
   end
 
   def editing_mode
@@ -245,22 +251,6 @@ class Reline::Config
       rescue ArgumentError
         @history_size = 500
       end
-    when 'bell-style'
-      @bell_style =
-        case value
-        when 'none', 'off'
-          :none
-        when 'audible', 'on'
-          :audible
-        when 'visible'
-          :visible
-        else
-          :audible
-        end
-    when 'comment-begin'
-      @comment_begin = value.dup
-    when 'completion-query-items'
-      @completion_query_items = value.to_i
     when 'isearch-terminators'
       @isearch_terminators = retrieve_string(raw_value)
     when 'editing-mode'
@@ -374,6 +364,11 @@ class Reline::Config
       ret << key_notation_to_code($&)
     end
     ret
+  end
+
+  def reload
+    reset_variables
+    read
   end
 
   private def seven_bit_encoding?(encoding)

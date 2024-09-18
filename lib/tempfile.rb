@@ -221,45 +221,47 @@ class Tempfile < DelegateClass(File)
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
-    @finalizer_obj = Object.new
     tmpfile = nil
     ::Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
       opts[:perm] = 0600
       tmpfile = File.open(tmpname, @mode, **opts)
       @opts = opts.freeze
     end
-    ObjectSpace.define_finalizer(@finalizer_obj, Remover.new(tmpfile.path))
-    ObjectSpace.define_finalizer(self, Closer.new(tmpfile))
 
     super(tmpfile)
+
+    @finalizer_manager = FinalizerManager.new(__getobj__.path)
+    @finalizer_manager.register(self, __getobj__)
   end
 
   def initialize_dup(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
-    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+    @finalizer_manager.register(self, __getobj__)
   end
 
   def initialize_clone(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
-    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+    @finalizer_manager.register(self, __getobj__)
   end
 
   private def initialize_copy_iv(other) # :nodoc:
     @unlinked = other.unlinked
     @mode = other.mode
     @opts = other.opts
-    @finalizer_obj = other.finalizer_obj
+    @finalizer_manager = other.finalizer_manager
   end
 
   # Opens or reopens the file with mode "r+".
   def open
     _close
-    ObjectSpace.undefine_finalizer(self)
+
     mode = @mode & ~(File::CREAT|File::EXCL)
     __setobj__(File.open(__getobj__.path, mode, **@opts))
-    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+
+    @finalizer_manager.register(self, __getobj__)
+
     __getobj__
   end
 
@@ -327,7 +329,9 @@ class Tempfile < DelegateClass(File)
       # may not be able to unlink on Windows; just ignore
       return
     end
-    ObjectSpace.undefine_finalizer(@finalizer_obj)
+
+    @finalizer_manager.unlinked = true
+
     @unlinked = true
   end
   alias delete unlink
@@ -361,35 +365,35 @@ class Tempfile < DelegateClass(File)
 
   protected
 
-  attr_reader :unlinked, :mode, :opts, :finalizer_obj
+  attr_reader :unlinked, :mode, :opts, :finalizer_manager
 
-  class Closer # :nodoc:
-    def initialize(tmpfile)
-      @tmpfile = tmpfile
-    end
+  class FinalizerManager # :nodoc:
+    attr_accessor :unlinked
 
-    def call(*args)
-      @tmpfile.close
-    end
-  end
-
-  class Remover # :nodoc:
     def initialize(path)
-      @pid = Process.pid
+      @open_files = {}
       @path = path
+      @pid = Process.pid
+      @unlinked = false
     end
 
-    def call(*args)
-      return if @pid != Process.pid
+    def register(obj, file)
+      ObjectSpace.undefine_finalizer(obj)
+      ObjectSpace.define_finalizer(obj, self)
+      @open_files[obj.object_id] = file
+    end
 
-      $stderr.puts "removing #{@path}..." if $DEBUG
+    def call(object_id)
+      @open_files.delete(object_id).close
 
-      begin
-        File.unlink(@path)
-      rescue Errno::ENOENT
+      if @open_files.empty? && !@unlinked && Process.pid == @pid
+        $stderr.puts "removing #{@path}..." if $DEBUG
+        begin
+          File.unlink(@path)
+        rescue Errno::ENOENT
+        end
+        $stderr.puts "done" if $DEBUG
       end
-
-      $stderr.puts "done" if $DEBUG
     end
   end
 
@@ -524,18 +528,18 @@ end
 #
 # The keyword argument +anonymous+ specifies when the file is removed.
 #
-# - +anonymous=false+ (default) without a block: the file is not removed.
-# - +anonymous=false+ (default) with a block: the file is removed after the block exits.
-# - +anonymous=true+ without a block: the file is removed before returning.
-# - +anonymous=true+ with a block: the file is removed before the block is called.
+# - <tt>anonymous=false</tt> (default) without a block: the file is not removed.
+# - <tt>anonymous=false</tt> (default) with a block: the file is removed after the block exits.
+# - <tt>anonymous=true</tt> without a block: the file is removed before returning.
+# - <tt>anonymous=true</tt> with a block: the file is removed before the block is called.
 #
-# In the first case (+anonymous=false+ without a block),
+# In the first case (<tt>anonymous=false</tt> without a block),
 # the file is not removed automatically.
 # It should be explicitly closed.
 # It can be used to rename to the desired filename.
 # If the file is not needed, it should be explicitly removed.
 #
-# The +File#path+ method of the created file object returns the temporary directory with a trailing slash
+# The File#path method of the created file object returns the temporary directory with a trailing slash
 # when +anonymous+ is true.
 #
 # When a block is given, it creates the file as described above, passes it to the block,
@@ -589,6 +593,18 @@ private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
+File.open(IO::NULL) do |f|
+  File.new(f.fileno, autoclose: false, path: "").path
+rescue IOError
+  module PathAttr               # :nodoc:
+    attr_reader :path
+
+    def self.set_path(file, path)
+      file.extend(self).instance_variable_set(:@path, path)
+    end
+  end
+end
+
 private def create_anonymous(basename="", tmpdir=nil, mode: 0, **options, &block)
   tmpfile = nil
   tmpdir = Dir.tmpdir() if tmpdir.nil?
@@ -604,12 +620,14 @@ private def create_anonymous(basename="", tmpdir=nil, mode: 0, **options, &block
     mode |= File::SHARE_DELETE | File::BINARY # Windows needs them to unlink the opened file.
     tmpfile = create_with_filename(basename, tmpdir, mode: mode, **options)
     File.unlink(tmpfile.path)
+    tmppath = tmpfile.path
   end
   path = File.join(tmpdir, '')
-  if tmpfile.path != path
+  unless tmppath == path
     # clear path.
     tmpfile.autoclose = false
     tmpfile = File.new(tmpfile.fileno, mode: File::RDWR, path: path)
+    PathAttr.set_path(tmpfile, path) if defined?(PathAttr)
   end
   if block
     begin

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   module Bitmap
     def self.from_array(ary)

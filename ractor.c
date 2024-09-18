@@ -249,7 +249,12 @@ ractor_free(void *ptr)
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
 
-    RUBY_ASSERT(rb_free_at_exit || r->newobj_cache == NULL);
+    if (r->newobj_cache) {
+        RUBY_ASSERT(r == ruby_single_main_ractor);
+
+        rb_gc_ractor_cache_free(r->newobj_cache);
+        r->newobj_cache = NULL;
+    }
 
     ruby_xfree(r);
 }

@@ -1086,6 +1086,20 @@ assert_equal '333', %q{
   a + b + c + d + e + f
 }
 
+assert_equal '["instance-variable", "instance-variable", nil]', %q{
+  class C
+    @iv1 = ""
+    @iv2 = 42
+    def self.iv1 = defined?(@iv1) # "instance-variable"
+    def self.iv2 = defined?(@iv2) # "instance-variable"
+    def self.iv3 = defined?(@iv3) # nil
+  end
+
+  Ractor.new{
+    [C.iv1, C.iv2, C.iv3]
+  }.take
+}
+
 # moved objects have their shape properly set to original object's shape
 assert_equal '1234', %q{
 class Obj

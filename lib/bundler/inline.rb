@@ -46,11 +46,9 @@ def gemfile(install = false, options = {}, &gemfile)
     Bundler::Plugin.gemfile_install(&gemfile) if Bundler.feature_flag.plugins?
     builder = Bundler::Dsl.new
     builder.instance_eval(&gemfile)
-    builder.check_primary_source_safety
 
     Bundler.settings.temporary(deployment: false, frozen: false) do
       definition = builder.to_definition(nil, true)
-      def definition.lock(*); end
       definition.validate_runtime!
 
       if install || definition.missing_specs?
@@ -62,8 +60,25 @@ def gemfile(install = false, options = {}, &gemfile)
         end
       end
 
-      runtime = Bundler::Runtime.new(nil, definition)
-      runtime.setup.require
+      begin
+        runtime = Bundler::Runtime.new(nil, definition).setup
+      rescue Gem::LoadError => e
+        name = e.name
+        version = e.requirement.requirements.first[1]
+        activated_version = Gem.loaded_specs[name].version
+
+        Bundler.ui.info \
+          "The #{name} gem was resolved to #{version}, but #{activated_version} was activated by Bundler while installing it, causing a conflict. " \
+          "Bundler will now retry resolving with #{activated_version} instead."
+
+        builder.dependencies.delete_if {|d| d.name == name }
+        builder.instance_eval { gem name, activated_version }
+        definition = builder.to_definition(nil, true)
+
+        retry
+      end
+
+      runtime.require
     end
   end
 

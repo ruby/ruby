@@ -41,7 +41,7 @@ RSpec.describe "bundle install" do
       spec = Gem::Specification.new do |s|
         s.name = "myrack"
         s.version = "1.0.0"
-        s.add_runtime_dependency "activesupport", "2.3.2"
+        s.add_dependency "activesupport", "2.3.2"
       end
       f.write spec.to_ruby
     end

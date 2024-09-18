@@ -1159,6 +1159,12 @@ rb_block_pair_yield_optimizable(void)
             return min > 1;
         }
 
+      case block_handler_type_ifunc:
+        {
+            const struct vm_ifunc *ifunc = block.as.captured.code.ifunc;
+            if (ifunc->flags & IFUNC_YIELD_OPTIMIZABLE) return 1;
+        }
+
       default:
         return min > 1;
     }

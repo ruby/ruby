@@ -22,7 +22,7 @@ module TestParallel
       if @worker_pid && @worker_in
         begin
           begin
-            @worker_in.puts "quit"
+            @worker_in.puts "quit normal"
           rescue IOError, Errno::EPIPE
           end
           Timeout.timeout(2) do
@@ -136,7 +136,7 @@ module TestParallel
 
     def test_quit
       Timeout.timeout(TIMEOUT) do
-        @worker_in.puts "quit"
+        @worker_in.puts "quit normal"
         assert_match(/^bye$/m,@worker_out.read)
       end
     end

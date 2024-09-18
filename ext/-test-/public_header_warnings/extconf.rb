@@ -5,9 +5,14 @@
 #
 def check_append_cflags(flag, msg = nil)
   msg ||= "flag #{flag} is not acceptable"
-  !$CFLAGS.include?(flag) or raise("flag #{flag} already present in $CFLAGS")
+  if $CFLAGS.include?(flag)
+    raise("flag #{flag} already present in $CFLAGS")
+  end
   append_cflags(flag)
-  $CFLAGS.include?(flag) or raise(msg)
+  unless $CFLAGS.include?(flag)
+    system("cat mkmf.log")
+    raise(msg)
+  end
 end
 
 if %w[gcc clang].include?(RbConfig::CONFIG['CC'])

@@ -36,29 +36,6 @@ module IRB
       :massign,
     ]
 
-    class TerminateLineInput < StandardError
-      def initialize
-        super("Terminate Line Input")
-      end
-    end
-
-    def self.compile_with_errors_suppressed(code, line_no: 1)
-      begin
-        result = yield code, line_no
-      rescue ArgumentError
-        # Ruby can issue an error for the code if there is an
-        # incomplete magic comment for encoding in it. Force an
-        # expression with a new line before the code in this
-        # case to prevent magic comment handling.  To make sure
-        # line numbers in the lexed code remain the same,
-        # decrease the line number by one.
-        code = ";\n#{code}"
-        line_no -= 1
-        result = yield code, line_no
-      end
-      result
-    end
-
     ERROR_TOKENS = [
       :on_parse_error,
       :compile_error,
@@ -68,70 +45,102 @@ module IRB
       :on_param_error
     ]
 
-    def self.generate_local_variables_assign_code(local_variables)
-      "#{local_variables.join('=')}=nil;" unless local_variables.empty?
+    LTYPE_TOKENS = %i[
+      on_heredoc_beg on_tstring_beg
+      on_regexp_beg on_symbeg on_backtick
+      on_symbols_beg on_qsymbols_beg
+      on_words_beg on_qwords_beg
+    ]
+
+    class TerminateLineInput < StandardError
+      def initialize
+        super("Terminate Line Input")
+      end
     end
 
-    # Some part of the code is not included in Ripper's token.
-    # Example: DATA part, token after heredoc_beg when heredoc has unclosed embexpr.
-    # With interpolated tokens, tokens.map(&:tok).join will be equal to code.
-    def self.interpolate_ripper_ignored_tokens(code, tokens)
-      line_positions = [0]
-      code.lines.each do |line|
-        line_positions << line_positions.last + line.bytesize
+    class << self
+      def compile_with_errors_suppressed(code, line_no: 1)
+        begin
+          result = yield code, line_no
+        rescue ArgumentError
+          # Ruby can issue an error for the code if there is an
+          # incomplete magic comment for encoding in it. Force an
+          # expression with a new line before the code in this
+          # case to prevent magic comment handling.  To make sure
+          # line numbers in the lexed code remain the same,
+          # decrease the line number by one.
+          code = ";\n#{code}"
+          line_no -= 1
+          result = yield code, line_no
+        end
+        result
       end
-      prev_byte_pos = 0
-      interpolated = []
-      prev_line = 1
-      tokens.each do |t|
-        line, col = t.pos
-        byte_pos = line_positions[line - 1] + col
-        if prev_byte_pos < byte_pos
-          tok = code.byteslice(prev_byte_pos...byte_pos)
+
+      def generate_local_variables_assign_code(local_variables)
+        "#{local_variables.join('=')}=nil;" unless local_variables.empty?
+      end
+
+      # Some part of the code is not included in Ripper's token.
+      # Example: DATA part, token after heredoc_beg when heredoc has unclosed embexpr.
+      # With interpolated tokens, tokens.map(&:tok).join will be equal to code.
+      def interpolate_ripper_ignored_tokens(code, tokens)
+        line_positions = [0]
+        code.lines.each do |line|
+          line_positions << line_positions.last + line.bytesize
+        end
+        prev_byte_pos = 0
+        interpolated = []
+        prev_line = 1
+        tokens.each do |t|
+          line, col = t.pos
+          byte_pos = line_positions[line - 1] + col
+          if prev_byte_pos < byte_pos
+            tok = code.byteslice(prev_byte_pos...byte_pos)
+            pos = [prev_line, prev_byte_pos - line_positions[prev_line - 1]]
+            interpolated << Ripper::Lexer::Elem.new(pos, :on_ignored_by_ripper, tok, 0)
+            prev_line += tok.count("\n")
+          end
+          interpolated << t
+          prev_byte_pos = byte_pos + t.tok.bytesize
+          prev_line += t.tok.count("\n")
+        end
+        if prev_byte_pos < code.bytesize
+          tok = code.byteslice(prev_byte_pos..)
           pos = [prev_line, prev_byte_pos - line_positions[prev_line - 1]]
           interpolated << Ripper::Lexer::Elem.new(pos, :on_ignored_by_ripper, tok, 0)
-          prev_line += tok.count("\n")
         end
-        interpolated << t
-        prev_byte_pos = byte_pos + t.tok.bytesize
-        prev_line += t.tok.count("\n")
-      end
-      if prev_byte_pos < code.bytesize
-        tok = code.byteslice(prev_byte_pos..)
-        pos = [prev_line, prev_byte_pos - line_positions[prev_line - 1]]
-        interpolated << Ripper::Lexer::Elem.new(pos, :on_ignored_by_ripper, tok, 0)
-      end
-      interpolated
-    end
-
-    def self.ripper_lex_without_warning(code, local_variables: [])
-      verbose, $VERBOSE = $VERBOSE, nil
-      lvars_code = generate_local_variables_assign_code(local_variables)
-      original_code = code
-      if lvars_code
-        code = "#{lvars_code}\n#{code}"
-        line_no = 0
-      else
-        line_no = 1
+        interpolated
       end
 
-      compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
-        lexer = Ripper::Lexer.new(inner_code, '-', line_no)
-        tokens = []
-        lexer.scan.each do |t|
-          next if t.pos.first == 0
-          prev_tk = tokens.last
-          position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
-          if position_overlapped
-            tokens[-1] = t if ERROR_TOKENS.include?(prev_tk.event) && !ERROR_TOKENS.include?(t.event)
-          else
-            tokens << t
+      def ripper_lex_without_warning(code, local_variables: [])
+        verbose, $VERBOSE = $VERBOSE, nil
+        lvars_code = generate_local_variables_assign_code(local_variables)
+        original_code = code
+        if lvars_code
+          code = "#{lvars_code}\n#{code}"
+          line_no = 0
+        else
+          line_no = 1
+        end
+
+        compile_with_errors_suppressed(code, line_no: line_no) do |inner_code, line_no|
+          lexer = Ripper::Lexer.new(inner_code, '-', line_no)
+          tokens = []
+          lexer.scan.each do |t|
+            next if t.pos.first == 0
+            prev_tk = tokens.last
+            position_overlapped = prev_tk && t.pos[0] == prev_tk.pos[0] && t.pos[1] < prev_tk.pos[1] + prev_tk.tok.bytesize
+            if position_overlapped
+              tokens[-1] = t if ERROR_TOKENS.include?(prev_tk.event) && !ERROR_TOKENS.include?(t.event)
+            else
+              tokens << t
+            end
           end
+          interpolate_ripper_ignored_tokens(original_code, tokens)
         end
-        interpolate_ripper_ignored_tokens(original_code, tokens)
+      ensure
+        $VERBOSE = verbose
       end
-    ensure
-      $VERBOSE = verbose
     end
 
     def check_code_state(code, local_variables:)
@@ -390,13 +399,6 @@ module IRB
         base_indent + indent
       end
     end
-
-    LTYPE_TOKENS = %i[
-      on_heredoc_beg on_tstring_beg
-      on_regexp_beg on_symbeg on_backtick
-      on_symbols_beg on_qsymbols_beg
-      on_words_beg on_qwords_beg
-    ]
 
     def ltype_from_open_tokens(opens)
       start_token = opens.reverse_each.find do |tok|

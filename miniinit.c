@@ -54,7 +54,52 @@ Init_ext(void)
 {
 }
 
+static void builtin_loaded(const char *feature_name, VALUE iseq);
+#define BUILTIN_LOADED(feature_name, iseq) builtin_loaded(feature_name, (VALUE)(iseq))
+
 #include "mini_builtin.c"
+
+static struct st_table *loaded_builtin_table;
+
+static void
+builtin_loaded(const char *feature_name, VALUE iseq)
+{
+    st_insert(loaded_builtin_table, (st_data_t)feature_name, (st_data_t)iseq);
+    rb_vm_register_global_object(iseq);
+}
+
+static int
+each_builtin_i(st_data_t key, st_data_t val, st_data_t dmy)
+{
+    const char *feature = (const char *)key;
+    const rb_iseq_t *iseq = (const rb_iseq_t *)val;
+
+    rb_yield_values(2, rb_str_new2(feature), rb_iseqw_new(iseq));
+
+    return ST_CONTINUE;
+}
+
+/* :nodoc: */
+static VALUE
+each_builtin(VALUE self)
+{
+    st_foreach(loaded_builtin_table, each_builtin_i, 0);
+    return Qnil;
+}
+
+void
+Init_builtin(void)
+{
+    rb_define_singleton_method(rb_cRubyVM, "each_builtin", each_builtin, 0);
+    loaded_builtin_table = st_init_strtable();
+}
+
+void
+Init_builtin_features(void)
+{
+    // register for ruby
+    builtin_iseq_load("gem_prelude", NULL);
+}
 
 void
 rb_free_loaded_builtin_table(void)

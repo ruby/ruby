@@ -69,5 +69,13 @@ module Prism
       assert result.success?
       assert_equal 4, result.value.statements.body.length
     end
+
+    def test_nul_bytes
+      io = StringIO.new("1 # \0\0\0 \n2 # \0\0\0\n3")
+      result = Prism.parse_stream(io)
+
+      assert result.success?
+      assert_equal 3, result.value.statements.body.length
+    end
   end
 end

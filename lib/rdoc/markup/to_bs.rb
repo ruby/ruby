@@ -24,7 +24,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   def init_tags
     add_tag :BOLD, '+b', '-b'
     add_tag :EM,   '+_', '-_'
-    add_tag :TT,   ''  , ''   # we need in_tt information maintained
+    add_tag :TT,   '', ''   # we need in_tt information maintained
   end
 
   ##

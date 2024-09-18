@@ -237,6 +237,8 @@ RBIMPL_ATTR_NORETURN()
  */
 void rb_error_arity(int argc, int min, int max);
 
+void rb_str_modify(VALUE str);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 /**
@@ -247,7 +249,23 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define rb_check_frozen_internal rb_check_frozen
 
 /** @alias{rb_check_frozen} */
-#define rb_check_frozen_inline rb_check_frozen
+static inline void
+rb_check_frozen_inline(VALUE obj)
+{
+    if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
+        rb_error_frozen_object(obj);
+    }
+
+    /* ref: internal CHILLED_STRING_P()
+       This is an implementation detail subject to change. */
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_STRING) && FL_TEST_RAW(obj, RUBY_FL_USER3))) {
+        rb_str_modify(obj);
+    }
+}
+
+/* rb_check_frozen() is available as a symbol, but have
+ * the inline version take priority for native consumers. */
+#define rb_check_frozen rb_check_frozen_inline
 
 /**
  * Ensures that the  passed integer is in  the passed range.  When  you can use

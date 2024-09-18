@@ -34,7 +34,7 @@ module Bundler
     end
 
     def validate_options!
-      raise InvalidOption, "You can not specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
+      raise InvalidOption, "You cannot specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
 
       # raise error when no gems are specified
       raise InvalidOption, "Please specify gems to add." if gems.empty?

@@ -40,6 +40,23 @@ typedef struct pm_options_scope {
     pm_string_t *locals;
 } pm_options_scope_t;
 
+// Forward declaration needed by the callback typedef.
+struct pm_options;
+
+/**
+ * The callback called when additional switches are found in a shebang comment
+ * that need to be processed by the runtime.
+ *
+ * @param options The options struct that may be updated by this callback.
+ *   Certain fields will be checked for changes, specifically encoding,
+ *   command_line, and frozen_string_literal.
+ * @param source The source of the shebang comment.
+ * @param length The length of the source.
+ * @param shebang_callback_data Any additional data that should be passed along
+ *   to the callback.
+ */
+typedef void (*pm_options_shebang_callback_t)(struct pm_options *options, const uint8_t *source, size_t length, void *shebang_callback_data);
+
 /**
  * The version of Ruby syntax that we should be parsing with. This is used to
  * allow consumers to specify which behavior they want in case they need to
@@ -56,7 +73,19 @@ typedef enum {
 /**
  * The options that can be passed to the parser.
  */
-typedef struct {
+typedef struct pm_options {
+    /**
+     * The callback to call when additional switches are found in a shebang
+     * comment.
+     */
+    pm_options_shebang_callback_t shebang_callback;
+
+    /**
+     * Any additional data that should be passed along to the shebang callback
+     * if one was set.
+     */
+    void *shebang_callback_data;
+
     /** The name of the file that is currently being parsed. */
     pm_string_t filepath;
 
@@ -110,6 +139,13 @@ typedef struct {
      * but ignore any encoding magic comments at the top of the file.
      */
     bool encoding_locked;
+
+    /**
+     * When the file being parsed is the main script, the shebang will be
+     * considered for command-line flags (or for implicit -x). The caller needs
+     * to pass this information to the parser so that it can behave correctly.
+     */
+    bool main_script;
 } pm_options_t;
 
 /**
@@ -148,6 +184,16 @@ static const uint8_t PM_OPTIONS_COMMAND_LINE_P = 0x10;
  * searches the input file for a shebang that matches the current Ruby engine.
  */
 static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
+
+/**
+ * Set the shebang callback option on the given options struct.
+ *
+ * @param options The options struct to set the shebang callback on.
+ * @param shebang_callback The shebang callback to set.
+ * @param shebang_callback_data Any additional data that should be passed along
+ *   to the callback.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data);
 
 /**
  * Set the filepath option on the given options struct.
@@ -208,6 +254,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_command_line_set(pm_options_t *options, 
  * @return Whether or not the version was parsed successfully.
  */
 PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length);
+
+/**
+ * Set the main script option on the given options struct.
+ *
+ * @param options The options struct to set the main script value on.
+ * @param main_script The main script value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, bool main_script);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.

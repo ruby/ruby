@@ -100,7 +100,7 @@ module IRB
         Source.new(file, line)
       elsif method
         # Method defined with eval, probably in IRB session
-        source = RubyVM::AbstractSyntaxTree.of(method)&.source rescue nil
+        source = RubyVM::InstructionSequence.of(method)&.script_lines&.join rescue nil
         Source.new(file, line, source)
       end
     rescue EvaluationError

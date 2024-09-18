@@ -102,12 +102,38 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert File.exist? File.join(@gemhome, "bin", "executable")
+    assert File.exist? File.join(@gemhome, "gems", "z-1", "bin", "executable")
 
     output = @ui.output.split "\n"
 
     refute_includes output, "Removing executable"
     assert_equal "Successfully uninstalled z-1", output.shift
     assert_equal "There was both a regular copy and a default copy of z-1. The regular copy was successfully uninstalled, but the default copy was left around because default gems can't be removed.", output.shift
+  end
+
+  def test_execute_does_not_error_on_shadowed_default_gems
+    z_1_default = new_default_spec "z", "1"
+    install_default_gems z_1_default
+
+    z_1 = util_spec "z", "1" do |spec|
+      spec.date = "2024-01-01"
+    end
+    install_gem z_1
+
+    Gem::Specification.reset
+
+    @cmd.options[:args] = %w[z:1]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "Successfully uninstalled z-1", output.shift
+    assert_equal "There was both a regular copy and a default copy of z-1. The regular copy was successfully uninstalled, but the default copy was left around because default gems can't be removed.", output.shift
+
+    error = @ui.error.split "\n"
+    assert_empty error
   end
 
   def test_execute_dependency_order

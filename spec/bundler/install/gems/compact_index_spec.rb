@@ -61,7 +61,7 @@ RSpec.describe "compact index api" do
   it "should handle case sensitivity conflicts" do
     build_repo4(build_compact_index: false) do
       build_gem "myrack", "1.0" do |s|
-        s.add_runtime_dependency("Myrack", "0.1")
+        s.add_dependency("Myrack", "0.1")
       end
       build_gem "Myrack", "0.1"
     end

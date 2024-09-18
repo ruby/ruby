@@ -4,6 +4,14 @@ require_relative "../test_helper"
 
 module Prism
   class ParseTest < TestCase
+    def test_parse_result
+      result = Prism.parse("")
+      assert_kind_of ParseResult, result
+
+      result = Prism.parse_file(__FILE__)
+      assert_kind_of ParseResult, result
+    end
+
     def test_parse_empty_string
       result = Prism.parse("")
       assert_equal [], result.value.statements.body
@@ -51,6 +59,35 @@ module Prism
       assert_raise TypeError do
         Prism.parse_file(nil)
       end
+    end
+
+    def test_parse_tempfile
+      Tempfile.create(["test_parse_tempfile", ".rb"]) do |t|
+        t.puts ["begin\n", " end\n"]
+        t.flush
+        Prism.parse_file(t.path)
+      end
+    end
+
+    if RUBY_ENGINE != "truffleruby"
+      def test_parse_nonascii
+        Dir.mktmpdir do |dir|
+          path = File.join(dir, "\u{3042 3044 3046 3048 304a}.rb".encode(Encoding::Windows_31J))
+          File.write(path, "ok")
+          Prism.parse_file(path)
+        end
+      end
+    end
+
+    def test_parse_directory
+      error = nil
+
+      begin
+        Prism.parse_file(__dir__)
+      rescue SystemCallError => error
+      end
+
+      assert_kind_of Errno::EISDIR, error
     end
 
     private

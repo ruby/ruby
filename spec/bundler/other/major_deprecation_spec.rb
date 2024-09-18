@@ -454,7 +454,7 @@ RSpec.describe "major deprecations" do
 
   context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
     before do
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "myrack", "0.9.1"
       end
 

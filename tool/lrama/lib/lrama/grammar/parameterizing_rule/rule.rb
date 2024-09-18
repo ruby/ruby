@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class ParameterizingRule
@@ -11,6 +13,10 @@ module Lrama
           @tag = tag
           @is_inline = is_inline
           @required_parameters_count = parameters.count
+        end
+
+        def to_s
+          "#{@name}(#{@parameters.map(&:s_value).join(', ')})"
         end
       end
     end

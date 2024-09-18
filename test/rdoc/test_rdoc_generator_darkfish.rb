@@ -115,7 +115,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_match(%r[Klass/Inner\.html".*>Inner<], summary)
 
     klass = File.binread('Klass.html')
-    klassnav = klass[%r[<div class="nav-section">.*<div id="class-metadata">]m]
+    klassnav = klass[%r[<div class="nav-section">.*]m]
     assert_match(
       %r[<li>\s*<details open>\s*<summary>\s*<a href=\S+>Heading 1</a>\s*</summary>\s*<ul]m,
       klassnav

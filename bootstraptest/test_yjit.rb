@@ -2256,6 +2256,34 @@ assert_equal '7', %q{
   foo(5,2)
 }
 
+# regression test for argument registers with invalidation
+assert_equal '[0, 1, 2]', %q{
+  def test(n)
+    ret = n
+    binding
+    ret
+  end
+
+  [0, 1, 2].map do |n|
+    test(n)
+  end
+}
+
+# regression test for argument registers
+assert_equal 'true', %q{
+  class Foo
+    def ==(other)
+      other == nil
+    end
+  end
+
+  def test
+    [Foo.new].include?(Foo.new)
+  end
+
+  test
+}
+
 # test pattern matching
 assert_equal '[:ok, :ok]', %q{
   class C
@@ -5184,4 +5212,20 @@ def test
 end
 
 test
+RUBY
+
+assert_equal '[true, true]', <<~'RUBY'
+  def pack
+    v = 1.23
+    [v, v*2, v*3].pack("E*").unpack("E*") == [v, v*2, v*3]
+  end
+
+  def with_buffer
+    v = 4.56
+    b = +"x"
+    [v, v*2, v*3].pack("E*", buffer: b)
+    b[1..].unpack("E*") == [v, v*2, v*3]
+  end
+
+  [pack, with_buffer]
 RUBY

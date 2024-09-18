@@ -175,7 +175,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   @@attributes = @@default_value.keys.sort_by(&:to_s)
-  @@array_attributes = @@default_value.reject {|_k,v| v != [] }.keys
+  @@array_attributes = @@default_value.select {|_k,v| v.is_a?(Array) }.keys
   @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition do |k|
     @@default_value[k].nil?
   end
@@ -874,7 +874,7 @@ class Gem::Specification < Gem::BasicSpecification
   # You probably want to use one of the Enumerable methods instead.
 
   def self.all
-    warn "NOTE: Specification.all called from #{caller.first}" unless
+    warn "NOTE: Specification.all called from #{caller(1, 1).first}" unless
       Gem::Deprecate.skip
     _all
   end
@@ -1318,7 +1318,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@has_rdoc,                  array[15]
     spec.instance_variable_set :@new_platform,              array[16]
     spec.instance_variable_set :@platform,                  array[16].to_s
-    spec.instance_variable_set :@license,                   array[17]
+    spec.instance_variable_set :@licenses,                  [array[17]]
     spec.instance_variable_set :@metadata,                  array[18]
     spec.instance_variable_set :@loaded,                    false
     spec.instance_variable_set :@activated,                 false
@@ -1913,7 +1913,8 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Work around bundler removing my methods
+  # Work around old bundler versions removing my methods
+  # Can be removed once RubyGems can no longer install Bundler 2.5
 
   def gem_dir # :nodoc:
     super

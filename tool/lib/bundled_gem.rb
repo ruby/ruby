@@ -91,7 +91,10 @@ module BundledGem
     Dir.chdir(gemdir) do
       spec = Gem::Specification.new do |s|
         s.name = gemfile.chomp(".gemspec")
-        s.version = File.read("lib/#{s.name}.rb")[/VERSION = "(.+?)"/, 1]
+        s.version =
+          File.read("lib/#{s.name}.rb")[/VERSION = "(.+?)"/, 1] ||
+          begin File.read("lib/#{s.name}/version.rb")[/VERSION = "(.+?)"/, 1]; rescue; nil; end ||
+          raise("cannot find the version of #{ s.name } gem")
         s.authors = ["DUMMY"]
         s.email = ["dummy@ruby-lang.org"]
         s.files = Dir.glob("{lib,ext}/**/*").select {|f| File.file?(f)}

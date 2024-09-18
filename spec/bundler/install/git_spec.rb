@@ -14,6 +14,19 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
     end
 
+    it "displays the revision hash of the gem repository when passed a relative local path" do
+      build_git "foo", "1.0", path: lib_path("foo")
+
+      relative_path = lib_path("foo").relative_path_from(bundled_app)
+      install_gemfile <<-G, verbose: true
+        source "https://gem.repo1"
+        gem "foo", :git => "#{relative_path}"
+      G
+
+      expect(out).to include("Using foo 1.0 from #{relative_path} (at main@#{revision_for(lib_path("foo"))[0..6]})")
+      expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
+    end
+
     it "displays the correct default branch", git: ">= 2.28.0" do
       build_git "foo", "1.0", path: lib_path("foo"), default_branch: "main"
 
@@ -50,7 +63,7 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "foo 2.0", source: "git@#{lib_path("foo")}"
     end
 
-    it "should allows git repos that are missing but not being installed" do
+    it "allows git repos that are missing but not being installed" do
       revision = build_git("foo").ref_for("HEAD")
 
       gemfile <<-G

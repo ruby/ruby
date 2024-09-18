@@ -381,7 +381,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits));
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
@@ -924,9 +924,7 @@ impl Assembler
 
             match insn {
                 Insn::Comment(text) => {
-                    if cfg!(feature = "disasm") {
-                        cb.add_comment(text);
-                    }
+                    cb.add_comment(text);
                 },
                 Insn::Label(target) => {
                     cb.write_label(target.unwrap_label_idx());
@@ -1385,7 +1383,7 @@ mod tests {
     use crate::disasm::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(), CodeBlock::new_dummy(1024))
+        (Assembler::new(0), CodeBlock::new_dummy(1024))
     }
 
     #[test]
@@ -1684,7 +1682,7 @@ mod tests {
     #[test]
     fn test_bcond_straddling_code_pages() {
         const LANDING_PAGE: usize = 65;
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new(0);
         let mut cb = CodeBlock::new_dummy_with_freed_pages(vec![0, LANDING_PAGE]);
 
         // Skip to near the end of the page. Room for two instructions.

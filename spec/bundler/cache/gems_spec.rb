@@ -103,10 +103,14 @@ RSpec.describe "bundle cache" do
         end
       end
 
-      it "uses remote gems when installing to system gems" do
-        bundle "config set path.system true"
+      it "uses remote gems when installing" do
         install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true
         expect(out).to include("Installing json #{default_json_version}")
+      end
+
+      it "does not use remote gems when installing with --local flag" do
+        install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true, local: true
+        expect(out).to include("Using json #{default_json_version}")
       end
 
       it "caches remote and builtin gems" do
@@ -134,9 +138,7 @@ RSpec.describe "bundle cache" do
       end
 
       it "doesn't make remote request after caching the gem" do
-        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache") do |s|
-          s.summary = "This builtin_gem is bundled with Ruby"
-        end
+        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache"), default: true
 
         install_gemfile <<-G
           source "https://gem.repo2"
@@ -149,9 +151,10 @@ RSpec.describe "bundle cache" do
     end
 
     context "when a remote gem is not available for caching" do
-      it "uses builtin gems when installing to system gems" do
+      it "warns, but uses builtin gems when installing to system gems" do
         bundle "config set path.system true"
         install_gemfile %(source "https://gem.repo1"; gem 'json', '#{default_json_version}'), verbose: true
+        expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
         expect(out).to include("Using json #{default_json_version}")
       end
 
@@ -203,7 +206,7 @@ RSpec.describe "bundle cache" do
   end
 
   describe "when previously cached" do
-    before :each do
+    let :setup_main_repo do
       build_repo2
       install_gemfile <<-G
         source "https://gem.repo2"
@@ -217,6 +220,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "re-caches during install" do
+      setup_main_repo
       cached_gem("myrack-1.0.0").rmtree
       bundle :install
       expect(out).to include("Updating files in vendor/cache")
@@ -224,6 +228,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "adds and removes when gems are updated" do
+      setup_main_repo
       update_repo2 do
         build_gem "myrack", "1.2" do |s|
           s.executables = "myrackup"
@@ -236,6 +241,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "adds new gems and dependencies" do
+      setup_main_repo
       install_gemfile <<-G
         source "https://gem.repo2"
         gem "rails"
@@ -245,6 +251,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "removes .gems for removed gems and dependencies" do
+      setup_main_repo
       install_gemfile <<-G
         source "https://gem.repo2"
         gem "myrack"
@@ -255,6 +262,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "removes .gems when gem changes to git source" do
+      setup_main_repo
       build_git "myrack"
 
       install_gemfile <<-G
@@ -279,16 +287,20 @@ RSpec.describe "bundle cache" do
       end
 
       simulate_new_machine
-      install_gemfile <<-G
-        source "https://gem.repo1"
-        gem "platform_specific"
-      G
 
-      expect(cached_gem("platform_specific-1.0-#{Bundler.local_platform}")).to exist
-      expect(cached_gem("platform_specific-1.0-java")).to exist
+      simulate_platform "x86-darwin-100" do
+        install_gemfile <<-G
+          source "https://gem.repo1"
+          gem "platform_specific"
+        G
+
+        expect(cached_gem("platform_specific-1.0-x86-darwin-100")).to exist
+        expect(cached_gem("platform_specific-1.0-java")).to exist
+      end
     end
 
     it "doesn't remove gems cached gems that don't match their remote counterparts, but also refuses to install and prints an error" do
+      setup_main_repo
       cached_myrack = cached_gem("myrack-1.0.0")
       cached_myrack.rmtree
       build_gem "myrack", "1.0.0",
@@ -297,6 +309,7 @@ RSpec.describe "bundle cache" do
 
       simulate_new_machine
 
+      FileUtils.rm bundled_app_lock
       bundle :install, raise_on_error: false
 
       expect(err).to eq <<~E.strip
@@ -318,6 +331,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "raises an error when a cached gem is altered and produces a different checksum than the remote gem" do
+      setup_main_repo
       cached_gem("myrack-1.0.0").rmtree
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
 
@@ -347,6 +361,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "installs a modified gem with a non-matching checksum when the API implementation does not provide checksums" do
+      setup_main_repo
       cached_gem("myrack-1.0.0").rmtree
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
       simulate_new_machine
@@ -363,12 +378,14 @@ RSpec.describe "bundle cache" do
     end
 
     it "handles directories and non .gem files in the cache" do
+      setup_main_repo
       bundled_app("vendor/cache/foo").mkdir
       File.open(bundled_app("vendor/cache/bar"), "w") {|f| f.write("not a gem") }
       bundle :cache
     end
 
     it "does not say that it is removing gems when it isn't actually doing so" do
+      setup_main_repo
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -379,6 +396,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "does not warn about all if it doesn't have any git/path dependency" do
+      setup_main_repo
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"

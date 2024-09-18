@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestRubyVM < Test::Unit::TestCase
   def test_stat
@@ -32,7 +33,7 @@ class TestRubyVM < Test::Unit::TestCase
   end
 
   def test_keep_script_lines
-    omit if compiling_with_prism?
+    omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     prev_conf = RubyVM.keep_script_lines
@@ -68,13 +69,5 @@ class TestRubyVM < Test::Unit::TestCase
 
   ensure
     RubyVM.keep_script_lines = prev_conf
-  end
-
-  private
-
-  # RubyVM.keep_script_lines does not mean anything in the context of prism, so
-  # we should omit tests that are looking for that functionality.
-  def compiling_with_prism?
-    RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
   end
 end

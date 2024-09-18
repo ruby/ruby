@@ -4001,13 +4001,7 @@ rb_error_frozen_object(VALUE frozen_obj)
 void
 rb_check_frozen(VALUE obj)
 {
-    if (RB_UNLIKELY(RB_OBJ_FROZEN(obj))) {
-        rb_error_frozen_object(obj);
-    }
-
-    if (RB_UNLIKELY(CHILLED_STRING_P(obj))) {
-        rb_str_modify(obj);
-    }
+    rb_check_frozen_inline(obj);
 }
 
 void

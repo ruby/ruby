@@ -559,16 +559,26 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(IndexError) { m.byteoffset(2) }
     assert_raise(IndexError) { m.begin(2) }
     assert_raise(IndexError) { m.end(2) }
+    assert_raise(IndexError) { m.bytebegin(2) }
+    assert_raise(IndexError) { m.byteend(2) }
 
     m = /(?<x>q..)?/.match("foobarbaz")
     assert_equal([nil, nil], m.byteoffset("x"))
     assert_equal(nil, m.begin("x"))
     assert_equal(nil, m.end("x"))
+    assert_equal(nil, m.bytebegin("x"))
+    assert_equal(nil, m.byteend("x"))
 
     m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
     assert_equal([3, 6], m.byteoffset(1))
+    assert_equal(3, m.bytebegin(1))
+    assert_equal(6, m.byteend(1))
     assert_equal([nil, nil], m.byteoffset(2))
+    assert_equal(nil, m.bytebegin(2))
+    assert_equal(nil, m.byteend(2))
     assert_equal([6, 9], m.byteoffset(3))
+    assert_equal(6, m.bytebegin(3))
+    assert_equal(9, m.byteend(3))
   end
 
   def test_match_to_s
@@ -1889,6 +1899,22 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
+    end;
+  end
+
+  def test_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", timeout: 100, rss: true)
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+      str = "a" * 1_000_000 + "x"
+
+      code = proc do
+        regex =~ str
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
     end;
   end
 

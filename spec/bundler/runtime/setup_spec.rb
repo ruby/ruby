@@ -1305,7 +1305,7 @@ end
             s.files       = Dir["lib/**/*.rb"]
             s.author      = 'no one'
 
-            s.add_runtime_dependency 'digest'
+            s.add_dependency 'digest'
           end
         G
       end
@@ -1377,27 +1377,28 @@ end
     end
 
     it "activates default gems when they are part of the bundle, but not installed explicitly", :ruby_repo do
-      default_json_version = ruby "gem 'json'; require 'json'; puts JSON::VERSION"
+      default_delegate_version = ruby "gem 'delegate'; require 'delegate'; puts Delegator::VERSION"
 
       build_repo2 do
-        build_gem "json", default_json_version
+        build_gem "delegate", default_delegate_version
       end
 
-      gemfile "source \"https://gem.repo2\"; gem 'json'"
+      gemfile "source \"https://gem.repo2\"; gem 'delegate'"
 
       ruby <<-RUBY
         require "bundler/setup"
-        require "json"
-        puts defined?(::JSON) ? "JSON defined" : "JSON undefined"
+        require "delegate"
+        puts defined?(::Delegator) ? "Delegator defined" : "Delegator undefined"
       RUBY
 
+      expect(out).to eq("Delegator defined")
       expect(err).to be_empty
     end
 
     describe "default gem activation" do
       let(:exemptions) do
         exempts = %w[did_you_mean bundler uri pathname]
-        exempts << "etc" if Gem.ruby_version < Gem::Version.new("3.2") && Gem.win_platform?
+        exempts << "etc" if (Gem.ruby_version < Gem::Version.new("3.2") || Gem.ruby_version >= Gem::Version.new("3.3.2")) && Gem.win_platform?
         exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
         exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem

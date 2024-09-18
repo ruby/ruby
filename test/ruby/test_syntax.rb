@@ -208,7 +208,7 @@ class TestSyntax < Test::Unit::TestCase
     blocks = [['do end', 'do'], ['{}', 'brace']],
     *|
     [%w'. dot', %w':: colon'].product(methods, blocks) do |(c, n1), (m, n2), (b, n3)|
-      m = m.tr_s('()', ' ').strip if n2 == 'do'
+      m = m.tr_s('()', ' ').strip if n3 == 'do'
       name = "test_#{n3}_block_after_blockcall_#{n1}_#{n2}_arg"
       code = "#{blockcall}#{c}#{m} #{b}"
       define_method(name) {assert_valid_syntax(code, bug6115)}
@@ -330,7 +330,12 @@ class TestSyntax < Test::Unit::TestCase
     bug10315 = '[ruby-core:65368] [Bug #10315]'
 
     o = KW2.new
-    assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_equal([23, 2], eval("o.kw(**{k1: 22}, **{k1: 23})"), bug10315)
+    ensure
+      $VERBOSE = verbose_bak
+    end
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
@@ -1387,7 +1392,7 @@ eom
 
   def test_block_after_cmdarg_in_paren
     bug11873 = '[ruby-core:72482] [Bug #11873]'
-    def bug11873.p(*);end;
+    def bug11873.p(*, &);end;
 
     assert_raise(LocalJumpError, bug11873) do
       bug11873.instance_eval do
@@ -1609,7 +1614,7 @@ eom
   end
 
   def test_invalid_jump
-    assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+    assert_in_out_err(%w[-e redo], "", [], /^-e:1: |~ Invalid redo/)
   end
 
   def test_keyword_not_parens
@@ -1827,6 +1832,10 @@ eom
     assert_valid_syntax('p (;),(),()', bug19281)
     assert_valid_syntax('a.b (1;2),(3),(4)', bug19281)
     assert_valid_syntax('a.b (;),(),()', bug19281)
+  end
+
+  def test_command_do_block_call_with_empty_args_brace_block
+    assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }')
   end
 
   def test_numbered_parameter
@@ -2252,7 +2261,7 @@ eom
     end
   end
 
-  def caller_lineno(*)
+  def caller_lineno(*, &)
     caller_locations(1, 1)[0].lineno
   end
 end

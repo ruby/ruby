@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class ParameterizingRule
@@ -18,11 +20,15 @@ module Lrama
         end
 
         def find_inline(token)
-          @rules.select { |rule| rule.name == token.s_value && rule.is_inline }.last
+          @rules.reverse.find { |rule| rule.name == token.s_value && rule.is_inline }
         end
 
         def created_lhs(lhs_s_value)
           @created_lhs_list.reverse.find { |created_lhs| created_lhs.s_value == lhs_s_value }
+        end
+
+        def redefined_rules
+          @rules.select { |rule| @rules.count { |r| r.name == rule.name && r.required_parameters_count == rule.required_parameters_count } > 1 }
         end
 
         private

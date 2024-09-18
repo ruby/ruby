@@ -10,6 +10,7 @@ have_func("rb_io_descriptor")
 have_func("rb_io_get_write_io")
 have_func("rb_io_closed_p")
 have_func("rb_io_open_descriptor")
+have_func("rb_ractor_local_storage_value_newkey")
 
 is_wasi = /wasi/ =~ MakeMakefile::RbConfig::CONFIG["platform"]
 # `ok` can be `true`, `false`, or `nil`:

@@ -1,6 +1,0 @@
-@ ProgramNode (location: (1,0)-(1,8))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (1,0)-(1,8))
-    └── body: (length: 1)
-        └── @ SourceLineNode (location: (1,0)-(1,8))

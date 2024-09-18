@@ -434,14 +434,12 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
 void
 rb_vm_ci_free(const struct rb_callinfo *ci)
 {
+    ASSERT_vm_locking();
+
     rb_vm_t *vm = GET_VM();
 
-    RB_VM_LOCK_ENTER();
-    {
-        st_data_t key = (st_data_t)ci;
-        st_delete(vm->ci_table, &key, NULL);
-    }
-    RB_VM_LOCK_LEAVE();
+    st_data_t key = (st_data_t)ci;
+    st_delete(vm->ci_table, &key, NULL);
 }
 
 void

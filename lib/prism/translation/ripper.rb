@@ -1273,8 +1273,8 @@ module Prism
       def visit_case_node(node)
         predicate = visit(node.predicate)
         clauses =
-          node.conditions.reverse_each.inject(visit(node.consequent)) do |consequent, condition|
-            on_when(*visit(condition), consequent)
+          node.conditions.reverse_each.inject(visit(node.else_clause)) do |current, condition|
+            on_when(*visit(condition), current)
           end
 
         bounds(node.location)
@@ -1286,8 +1286,8 @@ module Prism
       def visit_case_match_node(node)
         predicate = visit(node.predicate)
         clauses =
-          node.conditions.reverse_each.inject(visit(node.consequent)) do |consequent, condition|
-            on_in(*visit(condition), consequent)
+          node.conditions.reverse_each.inject(visit(node.else_clause)) do |current, condition|
+            on_in(*visit(condition), current)
           end
 
         bounds(node.location)
@@ -1908,7 +1908,7 @@ module Prism
         if node.then_keyword == "?"
           predicate = visit(node.predicate)
           truthy = visit(node.statements.body.first)
-          falsy = visit(node.consequent.statements.body.first)
+          falsy = visit(node.subsequent.statements.body.first)
 
           bounds(node.location)
           on_ifop(predicate, truthy, falsy)
@@ -1921,13 +1921,13 @@ module Prism
             else
               visit(node.statements)
             end
-          consequent = visit(node.consequent)
+          subsequent = visit(node.subsequent)
 
           bounds(node.location)
           if node.if_keyword == "if"
-            on_if(predicate, statements, consequent)
+            on_if(predicate, statements, subsequent)
           else
-            on_elsif(predicate, statements, consequent)
+            on_elsif(predicate, statements, subsequent)
           end
         else
           statements = visit(node.statements.body.first)
@@ -1960,7 +1960,7 @@ module Prism
       # ^^^^^^^^^^^^^^^^^^^^^
       def visit_in_node(node)
         # This is a special case where we're not going to call on_in directly
-        # because we don't have access to the consequent. Instead, we'll return
+        # because we don't have access to the subsequent. Instead, we'll return
         # the component parts and let the parent node handle it.
         pattern = visit_pattern_node(node.pattern)
         statements =
@@ -2808,10 +2808,10 @@ module Prism
             visit(node.statements)
           end
 
-        consequent = visit(node.consequent)
+        subsequent = visit(node.subsequent)
 
         bounds(node.location)
-        on_rescue(exceptions, reference, statements, consequent)
+        on_rescue(exceptions, reference, statements, subsequent)
       end
 
       # def foo(*bar); end
@@ -3132,10 +3132,10 @@ module Prism
             else
               visit(node.statements)
             end
-          consequent = visit(node.consequent)
+          else_clause = visit(node.else_clause)
 
           bounds(node.location)
-          on_unless(predicate, statements, consequent)
+          on_unless(predicate, statements, else_clause)
         else
           statements = visit(node.statements.body.first)
           predicate = visit(node.predicate)
@@ -3176,7 +3176,7 @@ module Prism
       #           ^^^^^^^^^^^^^
       def visit_when_node(node)
         # This is a special case where we're not going to call on_when directly
-        # because we don't have access to the consequent. Instead, we'll return
+        # because we don't have access to the subsequent. Instead, we'll return
         # the component parts and let the parent node handle it.
         conditions = visit_arguments(node.conditions)
         statements =

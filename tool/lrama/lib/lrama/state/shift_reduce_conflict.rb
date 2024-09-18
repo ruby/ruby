@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class State
     class ShiftReduceConflict < Struct.new(:symbols, :shift, :reduce, keyword_init: true)

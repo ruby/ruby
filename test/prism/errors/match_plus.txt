@@ -1,0 +1,7 @@
+a in b + c
+       ^ unexpected '+', expecting end-of-input
+       ^ unexpected '+', ignoring it
+a => b + c
+       ^ unexpected '+', expecting end-of-input
+       ^ unexpected '+', ignoring it
+

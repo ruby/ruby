@@ -181,9 +181,15 @@ module IRB
       [:edit, NO_OVERRIDE]
     )
 
-    _register_with_aliases(:irb_break, Command::Break)
-    _register_with_aliases(:irb_catch, Command::Catch)
-    _register_with_aliases(:irb_next, Command::Next)
+    _register_with_aliases(:irb_break, Command::Break,
+      [:break, OVERRIDE_ALL]
+    )
+    _register_with_aliases(:irb_catch, Command::Catch,
+      [:catch, OVERRIDE_PRIVATE_ONLY]
+    )
+    _register_with_aliases(:irb_next, Command::Next,
+      [:next, OVERRIDE_ALL]
+    )
     _register_with_aliases(:irb_delete, Command::Delete,
       [:delete, NO_OVERRIDE]
     )
@@ -259,10 +265,12 @@ module IRB
     # Deprecated. Doesn't have any effect.
     @EXTEND_COMMANDS = []
 
-    # Drepcated. Use Command.regiser instead.
-    def self.def_extend_command(cmd_name, cmd_class, _, *aliases)
-      Command._register_with_aliases(cmd_name, cmd_class, *aliases)
-      Command.class_variable_set(:@@command_override_policies, nil)
+    class << self
+      # Drepcated. Use Command.regiser instead.
+      def def_extend_command(cmd_name, cmd_class, _, *aliases)
+        Command._register_with_aliases(cmd_name, cmd_class, *aliases)
+        Command.class_variable_set(:@@command_override_policies, nil)
+      end
     end
   end
 end

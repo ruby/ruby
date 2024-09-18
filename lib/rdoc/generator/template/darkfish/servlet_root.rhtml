@@ -1,5 +1,7 @@
 <body role="document">
-<nav role="navigation">
+<%= render '_sidebar_toggle.rhtml' %>
+
+<nav id="navigation" role="navigation">
   <div id="project-navigation">
     <div id="home-section" class="nav-section">
       <h2>
@@ -10,7 +12,8 @@
     <%= render '_sidebar_search.rhtml' %>
   </div>
 
-<%= render '_sidebar_installed.rhtml' %>
+  <%= render '_sidebar_installed.rhtml' %>
+  <%= render '_footer.rhtml' %>
 </nav>
 
 <main role="main">

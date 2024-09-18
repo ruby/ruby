@@ -58,9 +58,6 @@ module Bundler
       else
         SharedHelpers.relative_path_to(full_path, from: Bundler.root.join(bundler_path))
       end
-    rescue TypeError
-      error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
-      raise Gem::InvalidSpecificationException.new(error_message)
     end
 
     def prevent_gem_activation

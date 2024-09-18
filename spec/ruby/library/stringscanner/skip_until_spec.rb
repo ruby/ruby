@@ -16,9 +16,11 @@ describe "StringScanner#skip_until" do
     @s.skip_until(/d+/).should == nil
   end
 
-  it "raises TypeError if given a String" do
-    -> {
-      @s.skip_until('T')
-    }.should raise_error(TypeError, 'wrong argument type String (expected Regexp)')
+  ruby_version_is ""..."3.4" do
+    it "raises TypeError if given a String" do
+      -> {
+        @s.skip_until('T')
+      }.should raise_error(TypeError, 'wrong argument type String (expected Regexp)')
+    end
   end
 end

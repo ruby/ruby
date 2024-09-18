@@ -108,12 +108,12 @@ pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
         <%- nodes.each do |node| -%>
 #line <%= __LINE__ + 1 %> "prism/templates/src/<%= File.basename(__FILE__) %>"
         case <%= node.type %>: {
-            <%- if node.fields.any? { |field| ![Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::DoubleField].include?(field.class) } -%>
+            <%- if node.fields.any? { |field| ![Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::DoubleField].include?(field.class) } -%>
             pm_<%= node.human %>_t *cast = (pm_<%= node.human %>_t *) node;
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::FlagsField, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::DoubleField -%>
+            <%- when Prism::Template::LocationField, Prism::Template::OptionalLocationField, Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::ConstantField, Prism::Template::OptionalConstantField, Prism::Template::DoubleField -%>
             <%- when Prism::Template::NodeField -%>
             pm_node_destroy(parser, (pm_node_t *)cast-><%= field.name %>);
             <%- when Prism::Template::OptionalNodeField -%>
@@ -244,7 +244,7 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
 
             const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
             pm_dump_json_location(buffer, parser, &cast->base.location);
-            <%- node.fields.each_with_index do |field, index| -%>
+            <%- [*node.flags, *node.fields].each_with_index do |field, index| -%>
 
             // Dump the <%= field.name %> field
             pm_buffer_append_byte(buffer, ',');
@@ -301,12 +301,11 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
             pm_buffer_append_format(buffer, "%" PRIu8, cast-><%= field.name %>);
             <%- when Prism::Template::UInt32Field -%>
             pm_buffer_append_format(buffer, "%" PRIu32, cast-><%= field.name %>);
-            <%- when Prism::Template::FlagsField -%>
+            <%- when Prism::Template::Flags -%>
             size_t flags = 0;
             pm_buffer_append_byte(buffer, '[');
-            <%- found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>
-            <%- found.values.each_with_index do |value, index| -%>
-            if (PM_NODE_FLAG_P(cast, PM_<%= found.human.upcase %>_<%= value.name %>)) {
+            <%- node.flags.values.each_with_index do |value, index| -%>
+            if (PM_NODE_FLAG_P(cast, PM_<%= node.flags.human.upcase %>_<%= value.name %>)) {
                 if (flags != 0) pm_buffer_append_byte(buffer, ',');
                 pm_buffer_append_string(buffer, "\"<%= value.name %>\"", <%= value.name.bytesize + 2 %>);
                 flags++;

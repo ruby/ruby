@@ -183,8 +183,8 @@ class RDoc::TopLevel < RDoc::Context
     "#<%s:0x%x %p modules: %p classes: %p>" % [
       self.class, object_id,
       base_name,
-      @modules.map { |n,m| m },
-      @classes.map { |n,c| c }
+      @modules.map { |n, m| m },
+      @classes.map { |n, c| c }
     ]
   end
 
@@ -254,8 +254,8 @@ class RDoc::TopLevel < RDoc::Context
       q.text "base name: #{base_name.inspect}"
       q.breakable
 
-      items = @modules.map { |n,m| m }
-      items.concat @modules.map { |n,c| c }
+      items = @modules.map { |n, m| m }
+      items.concat @modules.map { |n, c| c }
       q.seplist items do |mod| q.pp mod end
     end
   end

@@ -193,7 +193,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     # cfunc call
     assert_equal(nil, p(**nil))
 
-    def self.a0; end
+    def self.a0(&); end
     assert_equal(nil, a0(**nil))
     assert_equal(nil, :a0.to_proc.call(self, **nil))
     assert_equal(nil, a0(**nil, &:block))
@@ -2846,6 +2846,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     end)
 
     assert_equal(1, process(:foo, bar: :baz))
+  end
+
+  def test_ruby2_keywords_bug_20679
+    c = Class.new do
+       def self.get(_, _, h, &block)
+         h[1]
+       end
+
+      ruby2_keywords def get(*args, &block)
+        self.class.get(*args, &block)
+      end
+    end
+
+    assert_equal 2, c.new.get(true, {}, 1 => 2)
   end
 
   def test_top_ruby2_keywords

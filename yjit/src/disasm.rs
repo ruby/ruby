@@ -1,14 +1,10 @@
 use crate::core::*;
 use crate::cruby::*;
 use crate::yjit::yjit_enabled_p;
-#[cfg(feature = "disasm")]
 use crate::asm::CodeBlock;
-#[cfg(feature = "disasm")]
 use crate::codegen::CodePtr;
-#[cfg(feature = "disasm")]
 use crate::options::DumpDisasm;
 
-#[cfg(feature = "disasm")]
 use std::fmt::Write;
 
 /// Primitive called in yjit.rb
@@ -23,11 +19,6 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
 
     #[cfg(feature = "disasm")]
     {
-        // TODO:
-        //if unsafe { CLASS_OF(iseqw) != rb_cISeq } {
-        //    return Qnil;
-        //}
-
         if !yjit_enabled_p() {
             return Qnil;
         }
@@ -116,7 +107,6 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
 }
 
 /// Dump dissassembly for a range in a [CodeBlock]. VM lock required.
-#[cfg(feature = "disasm")]
 pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: CodePtr, dump_disasm: &DumpDisasm) {
     for (start_addr, end_addr) in cb.writable_addrs(start_addr, end_addr) {
         let disasm = disasm_addr_range(cb, start_addr, end_addr);
@@ -192,6 +182,45 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     return out;
 }
 
+/// Fallback version without dependency on a disassembler which prints just bytes and comments.
+#[cfg(not(feature = "disasm"))]
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
+    let mut out = String::new();
+    let mut line_byte_idx = 0;
+    const MAX_BYTES_PER_LINE: usize = 16;
+
+    for addr in start_addr..end_addr {
+        if let Some(comment_list) = cb.comments_at(addr) {
+            // Start a new line if we're in the middle of one
+            if line_byte_idx != 0 {
+                writeln!(&mut out).unwrap();
+                line_byte_idx = 0;
+            }
+            for comment in comment_list {
+                writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
+            }
+        }
+        if line_byte_idx == 0 {
+            write!(&mut out, "  0x{addr:x}: ").unwrap();
+        } else {
+            write!(&mut out, " ").unwrap();
+        }
+        let byte = unsafe { (addr as *const u8).read() };
+        write!(&mut out, "{byte:02x}").unwrap();
+        line_byte_idx += 1;
+        if line_byte_idx == MAX_BYTES_PER_LINE - 1 {
+            writeln!(&mut out).unwrap();
+            line_byte_idx = 0;
+        }
+    }
+
+    if !out.is_empty() {
+        writeln!(&mut out).unwrap();
+    }
+
+    out
+}
+
 /// Assert that CodeBlock has the code specified with hex. In addition, if tested with
 /// `cargo test --all-features`, it also checks it generates the specified disasm.
 #[cfg(test)]
@@ -264,43 +293,36 @@ pub fn unindent(string: &str, trim_lines: bool) -> String {
 /// Produce a list of instructions compiled for an isew
 #[no_mangle]
 pub extern "C" fn rb_yjit_insns_compiled(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALUE) -> VALUE {
-    {
-        // TODO:
-        //if unsafe { CLASS_OF(iseqw) != rb_cISeq } {
-        //    return Qnil;
-        //}
+    if !yjit_enabled_p() {
+        return Qnil;
+    }
 
-        if !yjit_enabled_p() {
-            return Qnil;
+    // Get the iseq pointer from the wrapper
+    let iseq = unsafe { rb_iseqw_to_iseq(iseqw) };
+
+    // Get the list of instructions compiled
+    let insn_vec = insns_compiled(iseq);
+
+    unsafe {
+        let insn_ary = rb_ary_new_capa((insn_vec.len() * 2) as i64);
+
+        // For each instruction compiled
+        for idx in 0..insn_vec.len() {
+            let op_name = &insn_vec[idx].0;
+            let insn_idx = insn_vec[idx].1;
+
+            let op_sym = rust_str_to_sym(&op_name);
+
+            // Store the instruction index and opcode symbol
+            rb_ary_store(
+                insn_ary,
+                (2 * idx + 0) as i64,
+                VALUE::fixnum_from_usize(insn_idx as usize),
+            );
+            rb_ary_store(insn_ary, (2 * idx + 1) as i64, op_sym);
         }
 
-        // Get the iseq pointer from the wrapper
-        let iseq = unsafe { rb_iseqw_to_iseq(iseqw) };
-
-        // Get the list of instructions compiled
-        let insn_vec = insns_compiled(iseq);
-
-        unsafe {
-            let insn_ary = rb_ary_new_capa((insn_vec.len() * 2) as i64);
-
-            // For each instruction compiled
-            for idx in 0..insn_vec.len() {
-                let op_name = &insn_vec[idx].0;
-                let insn_idx = insn_vec[idx].1;
-
-                let op_sym = rust_str_to_sym(&op_name);
-
-                // Store the instruction index and opcode symbol
-                rb_ary_store(
-                    insn_ary,
-                    (2 * idx + 0) as i64,
-                    VALUE::fixnum_from_usize(insn_idx as usize),
-                );
-                rb_ary_store(insn_ary, (2 * idx + 1) as i64, op_sym);
-            }
-
-            insn_ary
-        }
+        insn_ary
     }
 }
 

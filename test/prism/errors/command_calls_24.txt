@@ -1,0 +1,5 @@
+->a=b c{}
+     ^ expected a `do` keyword or a `{` to open the lambda block
+         ^ unexpected end-of-input, assuming it is closing the parent top level context
+         ^ expected a lambda block beginning with `do` to end with `end`
+
