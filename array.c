@@ -4762,14 +4762,6 @@ rb_ary_clear(VALUE ary)
  *      ['a', 'b', 'c', 'd'].fill(5, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, "5", "6"]
  *      ['a', 'b', 'c', 'd'].fill(6, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, nil, "6", "7"]
  *
- *    Extends +self+ if <tt>start + count</tt> is greater than <tt>self.size</tt>:
- *
- *      ['a', 'b', 'c', 'd'].fill('-', 2, 3) # => ["a", "b", "-", "-", "-"]
- *      ['a', 'b', 'c', 'd'].fill('-', 2, 4) # => ["a", "b", "-", "-", "-", "-"]
- *
- *      ['a', 'b', 'c', 'd'].fill(2, 3) {|e| e.to_s } # => ["a", "b", "2", "3", "4"]
- *      ['a', 'b', 'c', 'd'].fill(2, 4) {|e| e.to_s } # => ["a", "b", "2", "3", "4", "5"]
- *
  *    Does nothing if +count+ is non-positive:
  *
  *      ['a', 'b', 'c', 'd'].fill('-', 2, 0)    # => ["a", "b", "c", "d"]
