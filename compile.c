@@ -11954,7 +11954,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
             rb_raise(rb_eTypeError, "keyword default has unsupported len %+"PRIsVALUE, key);
         }
         ids[i] = SYM2ID(sym);
-        dvs[j] = default_val;
+        RB_OBJ_WRITE(iseq, &dvs[j], default_val);
     }
 
     keyword->table = ids;
