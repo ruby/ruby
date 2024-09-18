@@ -6391,10 +6391,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
             for (int i = 0; i < RARRAY_LEN(default_values); i++) {
                 VALUE dv = RARRAY_AREF(default_values, i);
                 if (dv == complex_mark) dv = Qundef;
-                if (!SPECIAL_CONST_P(dv)) {
-                    RB_OBJ_WRITTEN(iseq, Qundef, dv);
-                }
-                dvs[i] = dv;
+                RB_OBJ_WRITE(iseq, &dvs[i], dv);
             }
 
             keyword->default_values = dvs;
