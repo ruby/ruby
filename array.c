@@ -4701,6 +4701,18 @@ rb_ary_clear(VALUE ary)
  *  may add elements to +self+;
  *  always returns +self+ (never a new array).
  *
+ *  In brief:
+ *
+ *    ['a', 'b', 'c', 'd'].fill('-', 1, 2)  # => ["a", "-", "-", "d"]
+ *    ['a', 'b', 'c', 'd'].fill('-', 3, 2)  # => ["a", "b", "c", "-", "-"]
+ *    ['a', 'b', 'c', 'd'].fill('-', 6, 2)  # => ["a", "b", "c", "d", nil, nil, "-", "-"]
+ *    ['a', 'b', 'c', 'd'].fill('-', -4, 3) # => ["-", "-", "-", "d"]
+ *
+ *    ['a', 'b', 'c', 'd'].fill(1, 2) {|e| e.to_s }  # => ["a", "1", "2", "d"]
+ *    ['a', 'b', 'c', 'd'].fill(3, 2) {|e| e.to_s }  # => ["a", "b", "c", "3", "4"]
+ *    ['a', 'b', 'c', 'd'].fill(6, 2) {|e| e.to_s }  # => ["a", "b", "c", "d", nil, nil, "6", "7"]
+ *    ['a', 'b', 'c', 'd'].fill(-4, 3) {|e| e.to_s } # => ["0", "1", "2", "d"]
+ *
  *  When arguments +start+ and +count+ are given,
  *  they select the elements of +self+ to be replaced;
  *  each must be an
