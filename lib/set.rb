@@ -551,7 +551,7 @@ class Set
   # Deletes every element of the set for which block evaluates to
   # false, and returns self. Returns an enumerator if no block is
   # given.
-  def keep_if
+  def keep_if(&block)
     block_given? or return enum_for(__method__) { size }
     # Instead of directly using @hash.keep_if, perform enumeration
     # using self.each that subclasses may override.
