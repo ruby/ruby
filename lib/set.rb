@@ -3,7 +3,7 @@
 #
 # set.rb - defines the Set class
 #
-# Copyright (c) 2002-2023 Akinori MUSHA <knu@iDaemons.org>
+# Copyright (c) 2002-2024 Akinori MUSHA <knu@iDaemons.org>
 #
 # Documentation by Akinori MUSHA and Gavin Sinclair.
 #
