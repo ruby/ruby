@@ -3367,7 +3367,7 @@ rb_thread_reset_fork_lock(void)
     }
 
     if ((r = pthread_rwlock_init(&rb_thread_fork_rw_lock, NULL))) {
-      rb_bug_errno("pthread_rwlock_init", r);
+        rb_bug_errno("pthread_rwlock_init", r);
     }
 }
 
