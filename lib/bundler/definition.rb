@@ -211,7 +211,7 @@ module Bundler
     end
 
     def missing_specs
-      resolve.materialize(requested_dependencies).missing_specs
+      resolve.materialize(requested_dependencies, most_specific_locked_platform).missing_specs
     end
 
     def missing_specs?
@@ -593,7 +593,7 @@ module Bundler
       incorrect_spec = nil
 
       specs = begin
-        resolve.materialize(dependencies)
+        resolve.materialize(dependencies, most_specific_locked_platform)
       rescue IncorrectLockfileDependencies => e
         spec = e.spec
         raise "Infinite loop while fixing lockfile dependencies" if incorrect_spec == spec
@@ -639,7 +639,7 @@ module Bundler
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
         sources.remote!
         reresolve_without(incomplete_specs)
-        specs = resolve.materialize(dependencies)
+        specs = resolve.materialize(dependencies, most_specific_locked_platform)
 
         still_incomplete_specs = specs.incomplete_specs
 
