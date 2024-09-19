@@ -2472,7 +2472,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     if @installed_by_version
       result << nil
-      result << "  s.installed_by_version = #{ruby_code Gem::VERSION} if s.respond_to? :installed_by_version"
+      result << "  s.installed_by_version = #{ruby_code Gem::VERSION}"
     end
 
     unless dependencies.empty?

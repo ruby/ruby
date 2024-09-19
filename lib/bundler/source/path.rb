@@ -148,7 +148,7 @@ module Bundler
 
       def load_gemspec(file)
         return unless spec = Bundler.load_gemspec(file)
-        Bundler.rubygems.set_installed_by_version(spec)
+        spec.installed_by_version = Gem::VERSION
         spec
       end
 

@@ -2368,7 +2368,7 @@ Gem::Specification.new do |s|
   s.rubygems_version = "#{Gem::VERSION}".freeze
   s.summary = "this is a summary".freeze
 
-  s.installed_by_version = "#{Gem::VERSION}".freeze if s.respond_to? :installed_by_version
+  s.installed_by_version = "#{Gem::VERSION}".freeze
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 

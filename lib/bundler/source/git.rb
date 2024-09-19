@@ -299,7 +299,7 @@ module Bundler
           # The gemspecs we cache should already be evaluated.
           spec = Bundler.load_gemspec(spec_path)
           next unless spec
-          Bundler.rubygems.set_installed_by_version(spec)
+          spec.installed_by_version = Gem::VERSION
           Bundler.rubygems.validate(spec)
           File.open(spec_path, "wb") {|file| file.write(spec.to_ruby) }
         end
