@@ -98,10 +98,10 @@ module Bundler
 
     def needs_switching?
       autoswitching_applies? &&
-        released?(lockfile_version) &&
-        !running?(lockfile_version) &&
-        !updating? &&
-        Bundler.settings[:version] != "system"
+        Bundler.settings[:version] != "system" &&
+        released?(restart_version) &&
+        !running?(restart_version) &&
+        !updating?
     end
 
     def autoswitching_applies?

@@ -176,6 +176,17 @@ RSpec.describe "Self management", rubygems: ">= 3.3.0.dev" do
       expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
     end
 
+    it "does not try to install when using bundle config version <dev-version>" do
+      lockfile_bundled_with(previous_minor)
+
+      bundle "config set version #{previous_minor}.dev"
+      bundle "install"
+      expect(out).not_to match(/restarting using that version/)
+
+      bundle "-v"
+      expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
+    end
+
     it "ignores malformed lockfile version" do
       lockfile_bundled_with("2.3.")
 
