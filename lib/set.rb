@@ -335,7 +335,7 @@ class Set
     end
   end
 
-  # Converts the set to an array.  The order of elements is uncertain.
+  # Returns an array containing all elements in the set.
   #
   #     Set[1, 2].to_a                    #=> [1, 2]
   #     Set[1, 'c', :s].to_a              #=> [1, "c", :s]
@@ -540,11 +540,11 @@ class Set
   # Deletes every element of the set for which block evaluates to
   # true, and returns self. Returns an enumerator if no block is
   # given.
-  def delete_if
+  def delete_if(&block)
     block_given? or return enum_for(__method__) { size }
-    # @hash.delete_if should be faster, but using it breaks the order
-    # of enumeration in subclasses.
-    select { |o| yield o }.each { |o| @hash.delete(o) }
+    # Instead of directly using @hash.delete_if, perform enumeration
+    # using self.each that subclasses may override.
+    select(&block).each { |o| @hash.delete(o) }
     self
   end
 
@@ -553,9 +553,9 @@ class Set
   # given.
   def keep_if
     block_given? or return enum_for(__method__) { size }
-    # @hash.keep_if should be faster, but using it breaks the order of
-    # enumeration in subclasses.
-    reject { |o| yield o }.each { |o| @hash.delete(o) }
+    # Instead of directly using @hash.keep_if, perform enumeration
+    # using self.each that subclasses may override.
+    reject(&block).each { |o| @hash.delete(o) }
     self
   end
 
