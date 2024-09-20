@@ -61,12 +61,12 @@ jobs:
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Document')
-      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
       - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@cacc9f1c0b3f4eb8a16a6bb0ed10897b43b9de49 # v1.176.0
+        uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
           ruby-version: ${{ matrix.baseruby }}
 
@@ -97,7 +97,7 @@ jobs:
           $result
         working-directory:
 
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -107,6 +107,8 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          # Set fetch-depth: 10 so that Launchable can receive commits information.
+          fetch-depth: 10
 
       - name: configure
         run: >
@@ -119,6 +121,18 @@ jobs:
 
       - name: make install
         run: make DESTDIR=../install install-nodoc
+
+      - name: Set up Launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: windows-2022
+          # If we support new test task, we need to change this test-opts.
+          test-opts: --retry --job-status=normal --show-skip --timeout-scale=1.5
+            ${{ matrix.test-all-opts }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+        continue-on-error: true
 
       - name: test
         timeout-minutes: 30
@@ -138,6 +152,7 @@ jobs:
           RUBY_TESTOPTS: >-
             --retry --job-status=normal --show-skip --timeout-scale=1.5
             ${{ matrix.test-all-opts }}
+            ${{ env.TESTS }}
           BUNDLER_VERSION:
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/') }}
 

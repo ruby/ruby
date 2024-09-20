@@ -18,7 +18,7 @@ RSpec.describe "bundle info" do
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails"
         gem "has_metadata"
         gem "thin"
@@ -127,9 +127,9 @@ RSpec.describe "bundle info" do
 
     context "when gem has a reverse dependency on any version" do
       it "prints the details" do
-        bundle "info rack"
+        bundle "info myrack"
 
-        expect(out).to include("Reverse Dependencies: \n\t\tthin (1.0) depends on rack (>= 0)")
+        expect(out).to include("Reverse Dependencies: \n\t\tthin (1.0) depends on myrack (>= 0)")
       end
     end
 
@@ -157,7 +157,7 @@ RSpec.describe "bundle info" do
 
     it "prints out git info" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
       expect(the_bundle).to include_gems "foo 1.0"
@@ -173,7 +173,7 @@ RSpec.describe "bundle info" do
       @revision = revision_for(lib_path("foo-1.0"))[0...6]
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "omg"
       G
       expect(the_bundle).to include_gems "foo 1.0.omg"
@@ -185,7 +185,7 @@ RSpec.describe "bundle info" do
     it "doesn't print the branch when tied to a ref" do
       sha = revision_for(lib_path("foo-1.0"))
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{sha}"
       G
 
@@ -196,7 +196,7 @@ RSpec.describe "bundle info" do
     it "handles when a version is a '-' prerelease" do
       @git = build_git("foo", "1.0.0-beta.1", path: lib_path("foo"))
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
       G
       expect(the_bundle).to include_gems "foo 1.0.0.pre.beta.1"
@@ -209,20 +209,20 @@ RSpec.describe "bundle info" do
   context "with a valid regexp for gem name" do
     it "presents alternatives", :readline do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-        gem "rack-obama"
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
       G
 
       bundle "info rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>.*)?\z/)
+      expect(out).to match(/\A1 : myrack\n2 : myrack-obama\n0 : - exit -(\n>|\z)/)
     end
   end
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
 
@@ -238,7 +238,7 @@ RSpec.describe "bundle info" do
       bundle "config without test"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails", group: :test
       G
 

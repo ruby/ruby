@@ -56,14 +56,26 @@ class TestYJIT < Test::Unit::TestCase
   def test_yjit_enable
     args = []
     args << "--disable=yjit" if RubyVM::YJIT.enabled?
-    assert_separately(args, <<~RUBY)
-      assert_false RubyVM::YJIT.enabled?
-      assert_false RUBY_DESCRIPTION.include?("+YJIT")
+    assert_separately(args, <<~'RUBY')
+      refute_predicate RubyVM::YJIT, :enabled?
+      refute_includes RUBY_DESCRIPTION, "+YJIT"
 
       RubyVM::YJIT.enable
 
-      assert_true RubyVM::YJIT.enabled?
-      assert_true RUBY_DESCRIPTION.include?("+YJIT")
+      assert_predicate RubyVM::YJIT, :enabled?
+      assert_includes RUBY_DESCRIPTION, "+YJIT"
+    RUBY
+  end
+
+  def test_yjit_disable
+    assert_separately(["--yjit", "--yjit-disable"], <<~'RUBY')
+      refute_predicate RubyVM::YJIT, :enabled?
+      refute_includes RUBY_DESCRIPTION, "+YJIT"
+
+      RubyVM::YJIT.enable
+
+      assert_predicate RubyVM::YJIT, :enabled?
+      assert_includes RUBY_DESCRIPTION, "+YJIT"
     RUBY
   end
 
@@ -1574,21 +1586,19 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_kw_splat_nil
-    assert_compiles(<<~'RUBY', result: %i[ok ok ok], no_send_fallbacks: true)
+    assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
       def id(x) = x
       def kw_fw(arg, **) = id(arg, **)
-      def fw(...) = id(...)
-      def use = [fw(:ok), kw_fw(:ok), :ok.itself(**nil)]
+      def use = [kw_fw(:ok), :ok.itself(**nil)]
 
       use
     RUBY
   end
 
   def test_empty_splat
-    assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
+    assert_compiles(<<~'RUBY', result: :ok, no_send_fallbacks: true)
       def foo = :ok
-      def fw(...) = foo(...)
-      def use(empty) = [foo(*empty), fw]
+      def use(empty) = foo(*empty)
 
       use([])
     RUBY
@@ -1610,6 +1620,56 @@ class TestYJIT < Test::Unit::TestCase
 
       after = RubyVM::YJIT.runtime_stats[:num_send_iseq_leaf]
       after - before
+    RUBY
+  end
+
+  def test_runtime_stats_types
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      def test = :ok
+      3.times { test }
+
+      stats = RubyVM::YJIT.runtime_stats
+      return true unless stats[:all_stats]
+
+      [
+        stats[:object_shape_count].is_a?(Integer),
+        stats[:ratio_in_yjit].is_a?(Float),
+      ].all?
+    RUBY
+  end
+
+  def test_runtime_stats_key_arg
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      def test = :ok
+      3.times { test }
+
+      # Collect single stat.
+      stat = RubyVM::YJIT.runtime_stats(:ratio_in_yjit)
+
+      # Ensure this invocation had stats.
+      return true unless RubyVM::YJIT.runtime_stats[:all_stats]
+
+      stat > 0.0
+    RUBY
+  end
+
+  def test_runtime_stats_arg_error
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      begin
+        RubyVM::YJIT.runtime_stats(Object.new)
+        :no_error
+      rescue TypeError => e
+        e.message == "non-symbol given"
+      end
+    RUBY
+  end
+
+  def test_runtime_stats_unknown_key
+    assert_compiles(<<~'RUBY', exits: :any, result: true)
+      def test = :ok
+      3.times { test }
+
+      RubyVM::YJIT.runtime_stats(:some_key_unlikely_to_exist).nil?
     RUBY
   end
 

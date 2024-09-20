@@ -4,7 +4,7 @@ RSpec.describe "bundle open" do
   context "when opening a regular gem" do
     before do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
     end
@@ -39,12 +39,12 @@ RSpec.describe "bundle open" do
       ref = git.ref_for("main", 11)
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem 'foo', :git => "#{lib_path("foo-1.0")}"
       G
 
       bundle "open foo", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
-      expect(out).to include("editor #{default_bundle_path.join("bundler", "gems", "foo-1.0-#{ref}")}")
+      expect(out).to include("editor #{default_bundle_path("bundler", "gems", "foo-1.0-#{ref}")}")
     end
 
     it "suggests alternatives for similar-sounding gems" do
@@ -134,7 +134,7 @@ RSpec.describe "bundle open" do
 
     it "performs an automatic bundle install" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
         gem "foo"
       G
@@ -163,8 +163,7 @@ RSpec.describe "bundle open" do
       skip "No default gems available on this test run" if default_gems.empty?
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "json"
+        source "https://gem.repo1"
       G
     end
 

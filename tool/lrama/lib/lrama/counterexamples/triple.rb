@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Counterexamples
     # s: state

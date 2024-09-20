@@ -451,7 +451,7 @@ struct rb_global_entry {
 };
 
 static enum rb_id_table_iterator_result
-free_global_entry_i(ID key, VALUE val, void *arg)
+free_global_entry_i(VALUE val, void *arg)
 {
     struct rb_global_entry *entry = (struct rb_global_entry *)val;
     if (entry->var->counter == 1) {
@@ -467,7 +467,7 @@ free_global_entry_i(ID key, VALUE val, void *arg)
 void
 rb_free_rb_global_tbl(void)
 {
-    rb_id_table_foreach(rb_global_tbl, free_global_entry_i, 0);
+    rb_id_table_foreach_values(rb_global_tbl, free_global_entry_i, 0);
     rb_id_table_free(rb_global_tbl);
 }
 
@@ -1761,7 +1761,7 @@ rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen_internal(obj);
+    rb_check_frozen(obj);
     rb_obj_ivar_set(obj, id, val);
     return val;
 }
@@ -1806,12 +1806,6 @@ rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
     return true;
 }
 
-/**
- * Prevents further modifications to the given object.  ::rb_eFrozenError shall
- * be raised if modification is attempted.
- *
- * @param[out]  x  Object in question.
- */
 void rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {

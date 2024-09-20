@@ -41,7 +41,7 @@ module Spec
     end
 
     def git_commit_sha
-      ruby_core_tarball? ? "unknown" : sys_exec("git rev-parse --short HEAD", dir: source_root).strip
+      ruby_core_tarball? ? "unknown" : git("rev-parse --short HEAD", source_root).strip
     end
 
     extend self

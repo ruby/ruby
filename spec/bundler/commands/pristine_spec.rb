@@ -19,7 +19,7 @@ RSpec.describe "bundle pristine" do
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
       gem "weakling"
       gem "very_simple_binary"
       gem "foo", :git => "#{lib_path("foo")}", :branch => "main"

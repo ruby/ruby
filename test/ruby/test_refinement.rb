@@ -825,7 +825,7 @@ class TestRefinement < Test::Unit::TestCase
       GC.stress = true
       10.times{
         #{PrependAfterRefine_CODE}
-        undef PrependAfterRefine
+        Object.send(:remove_const, :PrependAfterRefine)
       }
     }, timeout: 60
   end

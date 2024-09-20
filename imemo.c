@@ -179,11 +179,17 @@ rb_imemo_memsize(VALUE obj)
  * ========================================================================= */
 
 static enum rb_id_table_iterator_result
-cc_table_mark_i(ID id, VALUE ccs_ptr, void *data)
+cc_table_mark_i(VALUE ccs_ptr, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
-    VM_ASSERT(id == ccs->cme->called_id);
+#if VM_CHECK_MODE > 0
+    VALUE klass = (VALUE)data;
+
+    VALUE lookup_val;
+    VM_ASSERT(rb_id_table_lookup(RCLASS_CC_TBL(klass), ccs->cme->called_id, &lookup_val));
+    VM_ASSERT(lookup_val == ccs_ptr);
+#endif
 
     if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
         rb_vm_ccs_free(ccs);
@@ -193,7 +199,7 @@ cc_table_mark_i(ID id, VALUE ccs_ptr, void *data)
         rb_gc_mark_movable((VALUE)ccs->cme);
 
         for (int i=0; i<ccs->len; i++) {
-            VM_ASSERT((VALUE)data == ccs->entries[i].cc->klass);
+            VM_ASSERT(klass == ccs->entries[i].cc->klass);
             VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
 
             rb_gc_mark_movable((VALUE)ccs->entries[i].cc);
@@ -207,14 +213,14 @@ rb_cc_table_mark(VALUE klass)
 {
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
     if (cc_tbl) {
-        rb_id_table_foreach(cc_tbl, cc_table_mark_i, (void *)klass);
+        rb_id_table_foreach_values(cc_tbl, cc_table_mark_i, (void *)klass);
     }
 }
 
 static bool
 moved_or_living_object_strictly_p(VALUE obj)
 {
-    return obj && (rb_objspace_markable_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
+    return obj && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
 }
 
 static void
@@ -316,6 +322,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         else {
             if (vm_cc_super_p(cc) || vm_cc_refinement_p(cc)) {
                 rb_gc_mark_movable((VALUE)cc->cme_);
+                rb_gc_mark_movable((VALUE)cc->klass);
             }
         }
 
@@ -357,7 +364,9 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
                 ((VALUE *)env->ep)[VM_ENV_DATA_INDEX_ENV] = rb_gc_location(env->ep[VM_ENV_DATA_INDEX_ENV]);
             }
             else {
-                VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+                if (!VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_WB_REQUIRED)) {
+                    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+                }
                 rb_gc_mark_movable( (VALUE)rb_vm_env_prev_env(env));
             }
         }
@@ -454,7 +463,7 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
             if (!alive) {
                 void *ptr = asan_unpoison_object_temporary((VALUE)cc);
                 // ccs can be free'ed.
-                if (rb_objspace_markable_object_p((VALUE)cc) &&
+                if (!rb_objspace_garbage_object_p((VALUE)cc) &&
                     IMEMO_TYPE_P(cc, imemo_callcache) &&
                     cc->klass == klass) {
                     // OK. maybe target cc.

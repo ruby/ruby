@@ -1,4 +1,7 @@
 begin
+  # Ignore warning `Add fiddle to your Gemfile or gemspec` in Ruby 3.4.
+  # terminfo.rb and ansi.rb supports fiddle unavailable environment.
+  verbose, $VERBOSE = $VERBOSE, nil
   require 'fiddle'
   require 'fiddle/import'
 rescue LoadError
@@ -7,6 +10,8 @@ rescue LoadError
       false
     end
   end
+ensure
+  $VERBOSE = verbose
 end
 
 module Reline::Terminfo
@@ -78,7 +83,7 @@ module Reline::Terminfo
   end
 
   def self.setupterm(term, fildes)
-    errret_int = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT)
+    errret_int = Fiddle::Pointer.malloc(Fiddle::SIZEOF_INT, Fiddle::RUBY_FREE)
     ret = @setupterm.(term, fildes, errret_int)
     case ret
     when 0 # OK

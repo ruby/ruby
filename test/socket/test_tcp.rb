@@ -70,7 +70,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_connect_timeout
-    assert_raise(IO::TimeoutError, Errno::ENETUNREACH) do
+    assert_raise(IO::TimeoutError, Errno::ENETUNREACH, Errno::EACCES) do
       TCPSocket.new("192.0.2.1", 80, connect_timeout: 0)
     end
   end

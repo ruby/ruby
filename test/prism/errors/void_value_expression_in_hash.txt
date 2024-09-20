@@ -1,0 +1,9 @@
+{ return => 1 }
+  ^~~~~~ unexpected void value expression
+{ 1 => return }
+       ^~~~~~ unexpected void value expression
+{ a: return }
+     ^~~~~~ unexpected void value expression
+{ **return }
+    ^~~~~~ unexpected void value expression
+

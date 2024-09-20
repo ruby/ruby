@@ -3,7 +3,6 @@
 require 'test/unit'
 require "rbconfig/sizeof"
 require "timeout"
-require "fiddle"
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -1446,13 +1445,16 @@ q.pop
   end
 
   def test_thread_native_thread_id_across_fork_on_linux
-    rtld_default = Fiddle.dlopen(nil)
-    omit "this test is only for Linux" unless rtld_default.sym_defined?('gettid')
-
-    gettid = Fiddle::Function.new(rtld_default['gettid'], [], Fiddle::TYPE_INT)
+    begin
+      require '-test-/thread/id'
+    rescue LoadError
+      omit "this test is only for Linux"
+    else
+      extend Bug::ThreadID
+    end
 
     parent_thread_id = Thread.main.native_thread_id
-    real_parent_thread_id = gettid.call
+    real_parent_thread_id = gettid
 
     assert_equal real_parent_thread_id, parent_thread_id
 
@@ -1464,7 +1466,7 @@ q.pop
       else
         # child
         puts Thread.main.native_thread_id
-        puts gettid.call
+        puts gettid
       end
     end
     child_thread_id = child_lines[0].chomp.to_i

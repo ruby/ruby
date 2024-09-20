@@ -62,14 +62,6 @@ pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id) {
 }
 
 /**
- * Get the memory size of a list of constant ids.
- */
-size_t
-pm_constant_id_list_memsize(pm_constant_id_list_t *list) {
-    return sizeof(pm_constant_id_list_t) + (list->capacity * sizeof(pm_constant_id_t));
-}
-
-/**
  * Free the memory associated with a list of constant ids.
  */
 void

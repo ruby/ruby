@@ -78,7 +78,7 @@ class TestWeakMap < Test::Unit::TestCase
       @wm[i] = Object.new
       @wm.inspect
     end
-    assert_match(/\A\#<#{@wm.class.name}:[^:]++:(?:\s\d+\s=>\s\#<(?:Object|collected):[^:<>]*+>(?:,|>\z))+/,
+    assert_match(/\A\#<#{@wm.class.name}:0x[\da-f]+(?::(?: \d+ => \#<(?:Object|collected):0x[\da-f]+>,?)+)?>\z/,
                  @wm.inspect)
   end
 
@@ -257,5 +257,12 @@ class TestWeakMap < Test::Unit::TestCase
     GC.start
 
     assert_equal b, @wm[1]
+  end
+
+  def test_use_after_free_bug_20688
+    assert_normal_exit(<<~RUBY)
+      weakmap = ObjectSpace::WeakMap.new
+      10_000.times { weakmap[Object.new] = Object.new }
+    RUBY
   end
 end

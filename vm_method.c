@@ -434,14 +434,12 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
 void
 rb_vm_ci_free(const struct rb_callinfo *ci)
 {
+    ASSERT_vm_locking();
+
     rb_vm_t *vm = GET_VM();
 
-    RB_VM_LOCK_ENTER();
-    {
-        st_data_t key = (st_data_t)ci;
-        st_delete(vm->ci_table, &key, NULL);
-    }
-    RB_VM_LOCK_LEAVE();
+    st_data_t key = (st_data_t)ci;
+    st_delete(vm->ci_table, &key, NULL);
 }
 
 void
@@ -1187,6 +1185,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
 {
     if (UNLIKELY(cme->def->iseq_overload) &&
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
+        (!(vm_ci_flag(ci) & VM_CALL_FORWARDING)) &&
         (int)vm_ci_argc(ci) == ISEQ_BODY(method_entry_iseqptr(cme))->param.lead_num) {
         VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ); // iseq_overload is marked only on ISEQ methods
 
@@ -1250,6 +1249,7 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
                                                     me->def->type, me->def, 0, NULL);
     if (newme == me) {
         me->def->no_redef_warning = TRUE;
+        METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
     }
 
     method_added(klass, mid);

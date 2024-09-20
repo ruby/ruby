@@ -37,12 +37,8 @@
 #include "ruby/defines.h"
 
 /** @cond INTERNAL_MACRO */
-#ifdef RUBY_UNTYPED_DATA_WARNING
-# /* Take that. */
-#elif defined(RUBY_EXPORT)
-# define RUBY_UNTYPED_DATA_WARNING 1
-#else
-# define RUBY_UNTYPED_DATA_WARNING 0
+#ifndef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 1
 #endif
 
 #define RBIMPL_DATA_FUNC(f) RBIMPL_CAST((void (*)(void *))(f))
@@ -330,15 +326,6 @@ rb_data_object_get_warning(VALUE obj)
 {
     return rb_data_object_get(obj);
 }
-
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-# define rb_data_object_wrap_warning(klass, ptr, mark, free) \
-    RB_GNUC_EXTENSION(                                       \
-        __builtin_choose_expr(                               \
-            __builtin_constant_p(klass) && !(klass),         \
-            rb_data_object_wrap(klass, ptr, mark, free),     \
-            (rb_data_object_wrap_warning)(klass, ptr, mark, free)))
-#endif
 
 /**
  * This is an implementation detail  of #Data_Make_Struct.  People don't use it

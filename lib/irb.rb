@@ -880,40 +880,42 @@ module IRB
   # An exception raised by IRB.irb_abort
   class Abort < Exception;end
 
-  # The current IRB::Context of the session, see IRB.conf
-  #
-  #     irb
-  #     irb(main):001:0> IRB.CurrentContext.irb_name = "foo"
-  #     foo(main):002:0> IRB.conf[:MAIN_CONTEXT].irb_name #=> "foo"
-  def IRB.CurrentContext # :nodoc:
-    IRB.conf[:MAIN_CONTEXT]
-  end
-
-  # Initializes IRB and creates a new Irb.irb object at the `TOPLEVEL_BINDING`
-  def IRB.start(ap_path = nil)
-    STDOUT.sync = true
-    $0 = File::basename(ap_path, ".rb") if ap_path
-
-    IRB.setup(ap_path)
-
-    if @CONF[:SCRIPT]
-      irb = Irb.new(nil, @CONF[:SCRIPT])
-    else
-      irb = Irb.new
+  class << self
+    # The current IRB::Context of the session, see IRB.conf
+    #
+    #     irb
+    #     irb(main):001:0> IRB.CurrentContext.irb_name = "foo"
+    #     foo(main):002:0> IRB.conf[:MAIN_CONTEXT].irb_name #=> "foo"
+    def CurrentContext # :nodoc:
+      conf[:MAIN_CONTEXT]
     end
-    irb.run(@CONF)
-  end
 
-  # Quits irb
-  def IRB.irb_exit(*) # :nodoc:
-    throw :IRB_EXIT, false
-  end
+    # Initializes IRB and creates a new Irb.irb object at the `TOPLEVEL_BINDING`
+    def start(ap_path = nil)
+      STDOUT.sync = true
+      $0 = File::basename(ap_path, ".rb") if ap_path
 
-  # Aborts then interrupts irb.
-  #
-  # Will raise an Abort exception, or the given `exception`.
-  def IRB.irb_abort(irb, exception = Abort) # :nodoc:
-    irb.context.thread.raise exception, "abort then interrupt!"
+      setup(ap_path)
+
+      if @CONF[:SCRIPT]
+        irb = Irb.new(nil, @CONF[:SCRIPT])
+      else
+        irb = Irb.new
+      end
+      irb.run(@CONF)
+    end
+
+    # Quits irb
+    def irb_exit(*) # :nodoc:
+      throw :IRB_EXIT, false
+    end
+
+    # Aborts then interrupts irb.
+    #
+    # Will raise an Abort exception, or the given `exception`.
+    def irb_abort(irb, exception = Abort) # :nodoc:
+      irb.context.thread.raise exception, "abort then interrupt!"
+    end
   end
 
   class Irb
@@ -1129,7 +1131,7 @@ module IRB
       end
 
       code.force_encoding(@context.io.encoding)
-      if (command, arg = parse_command(code))
+      if (command, arg = @context.parse_command(code))
         command_class = Command.load_command(command)
         Statement::Command.new(code, command_class, arg)
       else
@@ -1138,27 +1140,8 @@ module IRB
       end
     end
 
-    def parse_command(code)
-      command_name, arg = code.strip.split(/\s+/, 2)
-      return unless code.lines.size == 1 && command_name
-
-      arg ||= ''
-      command = command_name.to_sym
-      # Command aliases are always command. example: $, @
-      if (alias_name = @context.command_aliases[command])
-        return [alias_name, arg]
-      end
-
-      # Check visibility
-      public_method = !!Kernel.instance_method(:public_method).bind_call(@context.main, command) rescue false
-      private_method = !public_method && !!Kernel.instance_method(:method).bind_call(@context.main, command) rescue false
-      if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
-        [command, arg]
-      end
-    end
-
     def command?(code)
-      !!parse_command(code)
+      !!@context.parse_command(code)
     end
 
     def configure_io

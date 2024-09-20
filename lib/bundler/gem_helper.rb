@@ -47,7 +47,7 @@ module Bundler
         built_gem_path = build_gem
       end
 
-      desc "Generate SHA512 checksum if #{name}-#{version}.gem into the checksums directory."
+      desc "Generate SHA512 checksum of #{name}-#{version}.gem into the checksums directory."
       task "build:checksum" => "build" do
         build_checksum(built_gem_path)
       end

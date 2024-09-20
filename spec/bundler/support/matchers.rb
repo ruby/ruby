@@ -118,6 +118,7 @@ module Spec
         opts[:raise_on_error] = false
         @errors = names.map do |full_name|
           name, version, platform = full_name.split(/\s+/)
+          platform ||= "ruby"
           require_path = name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
@@ -127,6 +128,7 @@ module Spec
 
             require '#{require_path}'
             actual_version, actual_platform = #{version_const}.split(/\s+/, 2)
+            actual_platform ||= "ruby"
             unless Gem::Version.new(actual_version) == Gem::Version.new('#{version}')
               puts actual_version
               exit 64
@@ -150,7 +152,7 @@ module Spec
           end
           if exitstatus == 65
             actual_platform = out.split("\n").last
-            next "#{name} was expected to be of platform #{platform || "ruby"} but was #{actual_platform || "ruby"}"
+            next "#{name} was expected to be of platform #{platform} but was #{actual_platform}"
           end
           if exitstatus == 66
             actual_source = out.split("\n").last

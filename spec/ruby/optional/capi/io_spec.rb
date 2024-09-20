@@ -1,4 +1,5 @@
 require_relative 'spec_helper'
+require_relative '../../fixtures/io'
 
 load_extension('io')
 
@@ -279,6 +280,22 @@ describe "C-API IO function" do
       it "raises an IOError if the IO is not initialized" do
         -> { @o.rb_io_maybe_wait_writable(0, IO.allocate, nil) }.should raise_error(IOError, "uninitialized stream")
       end
+
+      it "can be interrupted" do
+        IOSpec.exhaust_write_buffer(@w_io)
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        t = Thread.new do
+          @o.rb_io_maybe_wait_writable(0, @w_io, 10)
+        end
+
+        Thread.pass until t.stop?
+        t.kill
+        t.join
+
+        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        (finish - start).should < 9
+      end
     end
   end
 
@@ -353,6 +370,21 @@ describe "C-API IO function" do
           @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
 
           thr.join
+        end
+
+        it "can be interrupted" do
+          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+          t = Thread.new do
+            @o.rb_io_maybe_wait_readable(0, @r_io, 10, false)
+          end
+
+          Thread.pass until t.stop?
+          t.kill
+          t.join
+
+          finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          (finish - start).should < 9
         end
 
         it "raises an IOError if the IO is closed" do
@@ -437,6 +469,37 @@ describe "C-API IO function" do
 
       it "raises an IOError if the IO is not initialized" do
         -> { @o.rb_io_maybe_wait(0, IO.allocate, IO::WRITABLE, nil) }.should raise_error(IOError, "uninitialized stream")
+      end
+
+      it "can be interrupted when waiting for READABLE event" do
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        t = Thread.new do
+          @o.rb_io_maybe_wait(0, @r_io, IO::READABLE, 10)
+        end
+
+        Thread.pass until t.stop?
+        t.kill
+        t.join
+
+        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        (finish - start).should < 9
+      end
+
+      it "can be interrupted when waiting for WRITABLE event" do
+        IOSpec.exhaust_write_buffer(@w_io)
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        t = Thread.new do
+          @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, 10)
+        end
+
+        Thread.pass until t.stop?
+        t.kill
+        t.join
+
+        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        (finish - start).should < 9
       end
     end
   end

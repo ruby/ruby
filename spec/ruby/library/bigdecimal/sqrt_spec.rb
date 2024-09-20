@@ -36,7 +36,7 @@ describe "BigDecimal#sqrt" do
     BigDecimal('121').sqrt(5).should be_close(11, 0.00001)
   end
 
-  platform_is_not wordsize: 32 do # fails on i686
+  platform_is_not c_long_size: 32 do # fails on i686
     it "returns square root of 0.9E-99999 with desired precision" do
       @frac_2.sqrt(1).to_s.should =~ /\A0\.3E-49999\z/i
     end

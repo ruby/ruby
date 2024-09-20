@@ -455,4 +455,3 @@ Init_fiddle_closure(void)
      */
     rb_define_method(cFiddleClosure, "freed?", closure_freed_p, 0);
 }
-/* vim: set noet sw=4 sts=4 */

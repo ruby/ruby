@@ -44,7 +44,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gempspec_with_multiple_runtime_deps
     save_gemspec "foo", "1.0" do |s|
-      s.add_runtime_dependency "bar", ">= 1.6.0", "< 1.6.4"
+      s.add_dependency "bar", ">= 1.6.0", "< 1.6.4"
     end
     @gda.gemspec
     assert_equal %w[foo bar].sort, @set.dependencies.map(&:name).sort

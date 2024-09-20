@@ -15,7 +15,7 @@ RSpec.describe "bundle install" do
       end
 
       install_gemfile <<-G, raise_on_error: false
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails"
       G
       expect(err).to start_with("Gem::Ext::BuildError: ERROR: Failed to build gem native extension.")
@@ -40,7 +40,7 @@ In Gemfile:
 
       it "removes the downloaded .gem" do
         install_gemfile <<-G, raise_on_error: false
-          source "#{file_uri_for(gem_repo4)}"
+          source "https://gem.repo4"
           gem "a"
         G
 

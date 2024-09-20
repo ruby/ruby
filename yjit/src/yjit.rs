@@ -22,6 +22,11 @@ pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
     return parse_option(str_ptr).is_some();
 }
 
+#[no_mangle]
+pub extern "C" fn rb_yjit_option_disable() -> bool {
+    return get_option!(disable);
+}
+
 /// Like rb_yjit_enabled_p, but for Rust code.
 pub fn yjit_enabled_p() -> bool {
     unsafe { rb_yjit_enabled_p }
@@ -34,7 +39,7 @@ pub extern "C" fn rb_yjit_init(yjit_enabled: bool) {
     yjit_reg_method_codegen_fns();
 
     // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
-    if yjit_enabled && !get_option!(disable) {
+    if yjit_enabled {
         yjit_init();
     }
 }
@@ -70,12 +75,6 @@ fn yjit_init() {
         let _ = std::fs::remove_file(&perf_map);
         println!("YJIT perf map: {perf_map}");
     }
-
-    // Initialize the GC hooks. Do this at last as some code depend on Rust initialization.
-    extern "C" {
-        fn rb_yjit_init_gc_hooks();
-    }
-    unsafe { rb_yjit_init_gc_hooks() }
 }
 
 /// At the moment, we abort in all cases we panic.
@@ -109,7 +108,7 @@ fn rb_bug_panic_hook() {
 /// Called from C code to begin compiling a function
 /// NOTE: this should be wrapped in RB_VM_LOCK_ENTER(), rb_vm_barrier() on the C side
 /// If jit_exception is true, compile JIT code for handling exceptions.
-/// See [jit_compile_exception] for details.
+/// See jit_compile_exception() for details.
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> *const u8 {
     // Don't compile when there is insufficient native stack space

@@ -72,6 +72,7 @@ module Prism
     end
 
     callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
+    enum :pm_string_init_result_t, %i[PM_STRING_INIT_SUCCESS PM_STRING_INIT_ERROR_GENERIC PM_STRING_INIT_ERROR_DIRECTORY]
 
     load_exported_functions_from(
       "prism.h",
@@ -176,13 +177,26 @@ module Prism
       def self.with_file(filepath)
         raise TypeError unless filepath.is_a?(String)
 
+        # On Windows and Mac, it's expected that filepaths will be encoded in
+        # UTF-8. If they are not, we need to convert them to UTF-8 before
+        # passing them into pm_string_mapped_init.
+        if RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i) &&
+           (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
+          filepath = filepath.encode(Encoding::UTF_8)
+        end
+
         FFI::MemoryPointer.new(SIZEOF) do |pm_string|
-          if LibRubyParser.pm_string_mapped_init(pm_string, filepath)
+          case (result = LibRubyParser.pm_string_mapped_init(pm_string, filepath))
+          when :PM_STRING_INIT_SUCCESS
             pointer = LibRubyParser.pm_string_source(pm_string)
             length = LibRubyParser.pm_string_length(pm_string)
             return yield new(pointer, length, false)
-          else
+          when :PM_STRING_INIT_ERROR_GENERIC
             raise SystemCallError.new(filepath, FFI.errno)
+          when :PM_STRING_INIT_ERROR_DIRECTORY
+            raise Errno::EISDIR.new(filepath)
+          else
+            raise "Unknown error initializing pm_string_t: #{result.inspect}"
           end
         ensure
           LibRubyParser.pm_string_free(pm_string)
@@ -200,8 +214,8 @@ module Prism
 
   class << self
     # Mirror the Prism.dump API by using the serialization API.
-    def dump(code, **options)
-      LibRubyParser::PrismString.with_string(code) { |string| dump_common(string, options) }
+    def dump(source, **options)
+      LibRubyParser::PrismString.with_string(source) { |string| dump_common(string, options) }
     end
 
     # Mirror the Prism.dump_file API by using the serialization API.
@@ -302,6 +316,27 @@ module Prism
       !parse_file_success?(filepath, **options)
     end
 
+    # Mirror the Prism.profile API by using the serialization API.
+    def profile(source, **options)
+      LibRubyParser::PrismString.with_string(source) do |string|
+        LibRubyParser::PrismBuffer.with do |buffer|
+          LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
+          nil
+        end
+      end
+    end
+
+    # Mirror the Prism.profile_file API by using the serialization API.
+    def profile_file(filepath, **options)
+      LibRubyParser::PrismString.with_file(filepath) do |string|
+        LibRubyParser::PrismBuffer.with do |buffer|
+          options[:filepath] = filepath
+          LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
+          nil
+        end
+      end
+    end
+
     private
 
     def dump_common(string, options) # :nodoc:
@@ -394,7 +429,7 @@ module Prism
 
       template << "L"
       if (encoding = options[:encoding])
-        name = encoding.name
+        name = encoding.is_a?(Encoding) ? encoding.name : encoding
         values.push(name.bytesize, name.b)
         template << "A*"
       else
@@ -409,6 +444,12 @@ module Prism
 
       template << "C"
       values << { nil => 0, "3.3.0" => 1, "3.3.1" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
+
+      template << "C"
+      values << (options[:encoding] == false ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:main_script, false) ? 1 : 0)
 
       template << "L"
       if (scopes = options[:scopes])

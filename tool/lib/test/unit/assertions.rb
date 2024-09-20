@@ -522,7 +522,7 @@ module Test
       # Skips the current test. Gets listed at the end of the run but
       # doesn't cause a failure exit code.
 
-      def pend msg = nil, bt = caller
+      def pend msg = nil, bt = caller, &_
         msg ||= "Skipped, no message given"
         @skip = true
         raise Test::Unit::PendedError, msg, bt

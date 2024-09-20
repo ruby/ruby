@@ -80,7 +80,6 @@ module TestIRB
       assert_equal(nil, workspace.code_around_binding)
     end
 
-
     def test_toplevel_binding_local_variables
       bug17623 = '[ruby-core:102468]'
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []

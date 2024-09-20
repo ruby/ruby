@@ -45,6 +45,7 @@ class Gem::SpecificationPolicy
 
   def validate(strict = false)
     validate_required!
+    validate_required_metadata!
 
     validate_optional(strict) if packaging || strict
 
@@ -85,13 +86,15 @@ class Gem::SpecificationPolicy
 
     validate_authors_field
 
-    validate_metadata
-
     validate_licenses_length
 
-    validate_lazy_metadata
-
     validate_duplicate_dependencies
+  end
+
+  def validate_required_metadata!
+    validate_metadata
+
+    validate_lazy_metadata
   end
 
   def validate_optional(strict)
@@ -118,6 +121,13 @@ class Gem::SpecificationPolicy
         alert_warning help_text
       end
     end
+  end
+
+  ##
+  # Implementation for Specification#validate_for_resolution
+
+  def validate_for_resolution
+    validate_required!
   end
 
   ##
@@ -297,7 +307,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
     elsif !VALID_NAME_PATTERN.match?(name)
       error "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
     elsif SPECIAL_CHARACTERS.match?(name)
-      error "invalid value for attribute name: #{name.dump} can not begin with a period, dash, or underscore"
+      error "invalid value for attribute name: #{name.dump} cannot begin with a period, dash, or underscore"
     end
   end
 

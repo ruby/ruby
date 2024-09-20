@@ -5,26 +5,26 @@ RSpec.describe "bundle install" do
     context "when gems include post install messages" do
       it "should display the post-install messages after installing" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem 'rack'
+          source "https://gem.repo1"
+          gem 'myrack'
           gem 'thin'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         bundle :install
-        expect(out).to include("Post-install message from rack:")
-        expect(out).to include("Rack's post install message")
+        expect(out).to include("Post-install message from myrack:")
+        expect(out).to include("Myrack's post install message")
         expect(out).to include("Post-install message from thin:")
         expect(out).to include("Thin's post install message")
-        expect(out).to include("Post-install message from rack-obama:")
-        expect(out).to include("Rack-obama's post install message")
+        expect(out).to include("Post-install message from myrack-obama:")
+        expect(out).to include("Myrack-obama's post install message")
       end
     end
 
     context "when gems do not include post install messages" do
       it "should not display any post-install messages" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "activesupport"
         G
 
@@ -36,13 +36,13 @@ RSpec.describe "bundle install" do
     context "when a dependency includes a post install message" do
       it "should display the post install message" do
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem 'rack_middleware'
+          source "https://gem.repo1"
+          gem 'myrack_middleware'
         G
 
         bundle :install
-        expect(out).to include("Post-install message from rack:")
-        expect(out).to include("Rack's post install message")
+        expect(out).to include("Post-install message from myrack:")
+        expect(out).to include("Myrack's post install message")
       end
     end
   end
@@ -54,7 +54,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's post install message"
         end
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
 
@@ -68,7 +68,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's post install message"
         end
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
         bundle :install
@@ -77,7 +77,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's 1.1 post install message"
         end
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'foo', :git => '#{lib_path("foo-1.1")}'
         G
         bundle :install
@@ -91,7 +91,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = "Foo's post install message"
         end
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
 
@@ -110,7 +110,7 @@ RSpec.describe "bundle install" do
           s.post_install_message = nil
         end
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'foo', :git => '#{lib_path("foo-1.0")}'
         G
 
@@ -123,11 +123,11 @@ RSpec.describe "bundle install" do
   context "when ignore post-install messages for gem is set" do
     it "doesn't display any post-install messages" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
-      bundle "config set ignore_messages.rack true"
+      bundle "config set ignore_messages.myrack true"
 
       bundle :install
       expect(out).not_to include("Post-install message")
@@ -137,8 +137,8 @@ RSpec.describe "bundle install" do
   context "when ignore post-install messages for all gems" do
     it "doesn't display any post-install messages" do
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       bundle "config set ignore_messages true"

@@ -194,7 +194,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (body->param.keyword != NULL) {
             if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
                 ruby_xfree((void *)body->param.keyword->table);
-            ruby_xfree((void *)body->param.keyword->default_values);
+            if (body->param.keyword->default_values) {
+                ruby_xfree((void *)body->param.keyword->default_values);
+            }
             ruby_xfree((void *)body->param.keyword);
         }
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
@@ -346,7 +348,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 if (cc_is_active(cds[i].cc, reference_updating)) {
                     rb_gc_mark_and_move_ptr(&cds[i].cc);
                 }
-                else {
+                else if (cds[i].cc != rb_vm_empty_cc()) {
                     cds[i].cc = rb_vm_empty_cc();
                 }
             }
@@ -521,7 +523,7 @@ rb_iseq_pathobj_new(VALUE path, VALUE realpath)
     else {
         if (!NIL_P(realpath)) realpath = rb_fstring(realpath);
         pathobj = rb_ary_new_from_args(2, rb_fstring(path), realpath);
-        rb_obj_freeze(pathobj);
+        rb_ary_freeze(pathobj);
     }
     return pathobj;
 }
@@ -971,7 +973,7 @@ iseq_translate(rb_iseq_t *iseq)
 }
 
 rb_iseq_t *
-rb_iseq_new_with_opt(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
+rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option,
                      VALUE script_lines)
@@ -1004,6 +1006,7 @@ rb_iseq_new_with_opt(const VALUE ast_value, VALUE name, VALUE path, VALUE realpa
 
     rb_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
+    RB_GC_GUARD(ast_value);
 
     return iseq_translate(iseq);
 }
@@ -1027,9 +1030,13 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
 {
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
-    ISEQ_BODY(iseq)->param.flags.use_block = true; // unused block warning is not supported yet
 
+    rb_compile_option_t next_option;
     if (!option) option = &COMPILE_OPTION_DEFAULT;
+
+    next_option = *option;
+    next_option.coverage_enabled = node->coverage_enabled < 0 ? 0 : node->coverage_enabled > 0;
+    option = &next_option;
 
     pm_location_t *location = &node->base.location;
     int32_t start_line = node->parser->start_line;
@@ -1043,7 +1050,7 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     };
 
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, -1,
-                       parent, isolated_depth, type, Qnil, option);
+                       parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
 
     pm_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
@@ -1273,6 +1280,8 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
+    pm_options_scopes_init(&result.options, 1);
+    result.node.coverage_enabled = 1;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
@@ -1288,15 +1297,17 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         break;
     }
 
+    VALUE script_lines;
     VALUE error;
+
     if (RB_TYPE_P(src, T_FILE)) {
         VALUE filepath = rb_io_path(src);
-        error = pm_load_parse_file(&result, filepath);
+        error = pm_load_parse_file(&result, filepath, ruby_vm_keep_script_lines ? &script_lines : NULL);
         RB_GC_GUARD(filepath);
     }
     else {
         src = StringValue(src);
-        error = pm_parse_string(&result, src, file);
+        error = pm_parse_string(&result, src, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
 
     if (error == Qnil) {
@@ -1708,8 +1719,10 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parse_result_t result = { 0 };
     result.options.line = 1;
+    result.node.coverage_enabled = 1;
 
-    VALUE error = pm_load_parse_file(&result, file);
+    VALUE script_lines;
+    VALUE error = pm_load_parse_file(&result, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
 
     if (error == Qnil) {
         make_compile_option(&option, opt);
@@ -2442,6 +2455,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
                 CALL_FLAG(KWARG);
                 CALL_FLAG(KW_SPLAT);
                 CALL_FLAG(KW_SPLAT_MUT);
+                CALL_FLAG(FORWARDING);
                 CALL_FLAG(OPT_SEND); /* maybe not reachable */
                 rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
             }
@@ -2724,11 +2738,11 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
             }
 
             snprintf(argi, sizeof(argi), "%s%s%s%s%s%s",	/* arg, opts, rest, post, kwrest, block */
-                     body->param.lead_num > li ? "Arg" : "",
+                     (body->param.lead_num > li) ? (body->param.flags.ambiguous_param0 ? "AmbiguousArg" : "Arg") : "",
                      opti,
-                     (body->param.flags.has_rest && body->param.rest_start == li) ? "Rest" : "",
+                     (body->param.flags.has_rest && body->param.rest_start == li) ? (body->param.flags.anon_rest ? "AnonRest" : "Rest") : "",
                      (body->param.flags.has_post && body->param.post_start <= li && li < body->param.post_start + body->param.post_num) ? "Post" : "",
-                     (body->param.flags.has_kwrest && keyword->rest_start == li) ? "Kwrest" : "",
+                     (body->param.flags.has_kwrest && keyword->rest_start == li) ? (body->param.flags.anon_kwrest ? "AnonKwrest" : "Kwrest") : "",
                      (body->param.flags.has_block && body->param.block_start == li) ? "Block" : "");
 
             rb_str_cat(str, indent_str, indent_len);
@@ -3488,6 +3502,17 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 
     CONST_ID(req, "req");
     CONST_ID(opt, "opt");
+
+    if (body->param.flags.forwardable) {
+        // [[:rest, :*], [:keyrest, :**], [:block, :&]]
+        CONST_ID(rest, "rest");
+        CONST_ID(keyrest, "keyrest");
+        CONST_ID(block, "block");
+        rb_ary_push(args, rb_ary_new_from_args(2, ID2SYM(rest), ID2SYM(idMULT)));
+        rb_ary_push(args, rb_ary_new_from_args(2, ID2SYM(keyrest), ID2SYM(idPow)));
+        rb_ary_push(args, rb_ary_new_from_args(2, ID2SYM(block), ID2SYM(idAnd)));
+    }
+
     if (is_proc) {
         for (i = 0; i < body->param.lead_num; i++) {
             PARAM_TYPE(opt);

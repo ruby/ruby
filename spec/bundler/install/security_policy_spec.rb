@@ -9,8 +9,8 @@ RSpec.describe "policies with unsigned gems" do
   before do
     build_security_repo
     gemfile <<-G
-      source "#{file_uri_for(security_repo)}"
-      gem "rack"
+      source "https://gems.security"
+      gem "myrack"
       gem "signed_gem"
     G
   end
@@ -18,7 +18,7 @@ RSpec.describe "policies with unsigned gems" do
   it "will work after you try to deploy without a lock" do
     bundle "install --deployment", raise_on_error: false
     bundle :install
-    expect(the_bundle).to include_gems "rack 1.0", "signed_gem 1.0"
+    expect(the_bundle).to include_gems "myrack 1.0", "signed_gem 1.0"
   end
 
   it "will fail when given invalid security policy" do
@@ -45,7 +45,7 @@ RSpec.describe "policies with signed gems and no CA" do
   before do
     build_security_repo
     gemfile <<-G
-      source "#{file_uri_for(security_repo)}"
+      source "https://gems.security"
       gem "signed_gem"
     G
   end

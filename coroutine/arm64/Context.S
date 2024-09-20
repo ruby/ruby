@@ -18,6 +18,10 @@
 .align 2
 #endif
 
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT & 0x02) != 0
+# error "-mbranch-protection flag specified b-key but Context.S does not support this"
+#endif
+
 ## NOTE(PAC): Use we HINT mnemonics instead of PAC mnemonics to
 ## keep compatibility with those assemblers that don't support PAC.
 ##
@@ -85,18 +89,19 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 .section .note.GNU-stack,"",%progbits
 #endif
 
-#if __ARM_FEATURE_BTI_DEFAULT != 0 || __ARM_FEATURE_PAC_DEFAULT != 0
+#if (defined(__ARM_FEATURE_BTI_DEFAULT) && __ARM_FEATURE_BTI_DEFAULT != 0) || (defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0)
+#if defined(__ELF__)
 /*  See "ELF for the Arm 64-bit Architecture (AArch64)"
     https://github.com/ARM-software/abi-aa/blob/2023Q3/aaelf64/aaelf64.rst#program-property */
 #  define GNU_PROPERTY_AARCH64_FEATURE_1_BTI (1<<0)
 #  define GNU_PROPERTY_AARCH64_FEATURE_1_PAC (1<<1)
 
-#  if __ARM_FEATURE_BTI_DEFAULT != 0
+#  if defined(__ARM_FEATURE_BTI_DEFAULT) && __ARM_FEATURE_BTI_DEFAULT != 0
 #    define BTI_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_BTI
 #  else
 #    define BTI_FLAG 0
 #  endif
-#  if __ARM_FEATURE_PAC_DEFAULT != 0
+#  if defined(__ARM_FEATURE_PAC_DEFAULT) && __ARM_FEATURE_PAC_DEFAULT != 0
 #    define PAC_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_PAC
 #  else
 #    define PAC_FLAG 0
@@ -117,4 +122,5 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
   .long 0x0        /* 8-byte alignment padding */
   # End descriptor
   .popsection
+#endif
 #endif

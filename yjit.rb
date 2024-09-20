@@ -155,35 +155,12 @@ module RubyVM::YJIT
 
   # Return a hash for statistics generated for the `--yjit-stats` command line option.
   # Return `nil` when option is not passed or unavailable.
-  def self.runtime_stats(context: false)
-    stats = Primitive.rb_yjit_get_stats(context)
-    return stats if stats.nil?
+  # If a symbol argument is provided, return only the value for the named stat.
+  # If any other type is provided, raises TypeError.
+  def self.runtime_stats(key = nil)
+    raise TypeError, "non-symbol given" unless key.nil? || Symbol === key
 
-    stats[:object_shape_count] = Primitive.object_shape_count
-    return stats unless Primitive.rb_yjit_stats_enabled_p
-
-    side_exits = total_exit_count(stats)
-    total_exits = side_exits + stats[:leave_interp_return]
-
-    # Number of instructions that finish executing in YJIT.
-    # See :count-placement: about the subtraction.
-    retired_in_yjit = stats[:yjit_insns_count] - side_exits
-
-    # Average length of instruction sequences executed by YJIT
-    avg_len_in_yjit = total_exits > 0 ? retired_in_yjit.to_f / total_exits : 0
-
-    # Proportion of instructions that retire in YJIT
-    total_insns_count = retired_in_yjit + stats[:vm_insns_count]
-    yjit_ratio_pct = 100.0 * retired_in_yjit.to_f / total_insns_count
-    stats[:total_insns_count] = total_insns_count
-    stats[:ratio_in_yjit] = yjit_ratio_pct
-
-    # Make those stats available in RubyVM::YJIT.runtime_stats as well
-    stats[:side_exit_count]  = side_exits
-    stats[:total_exit_count] = total_exits
-    stats[:avg_len_in_yjit]  = avg_len_in_yjit
-
-    stats
+    Primitive.rb_yjit_get_stats(key)
   end
 
   # Format and print out counters as a String. This returns a non-empty
@@ -313,7 +290,7 @@ module RubyVM::YJIT
 
     # Format and print out counters
     def _print_stats(out: $stderr) # :nodoc:
-      stats = runtime_stats(context: true)
+      stats = runtime_stats()
       return unless Primitive.rb_yjit_stats_enabled_p
 
       out.puts("***YJIT: Printing YJIT statistics on exit***")
@@ -366,6 +343,7 @@ module RubyVM::YJIT
       out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
       out.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
       out.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
+      out.puts "deleted_defer_block_count:" + format_number_pct(10, stats[:deleted_defer_block_count], stats[:compiled_block_count])
       if stats[:compiled_blockid_count] != 0
         out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
@@ -388,8 +366,14 @@ module RubyVM::YJIT
 
       out.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
       out.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
-      out.puts "live_context_size:     " + format_number(13, stats[:live_context_size])
-      out.puts "live_context_count:    " + format_number(13, stats[:live_context_count])
+
+      bytes_per_context = stats[:context_data_bytes].fdiv(stats[:num_contexts_encoded])
+      out.puts "context_data_bytes:    " + format_number(13, stats[:context_data_bytes])
+      out.puts "context_cache_bytes:   " + format_number(13, stats[:context_cache_bytes])
+      out.puts "num_contexts_encoded:  " + format_number(13, stats[:num_contexts_encoded])
+      out.puts "bytes_per_context:     " + ("%13.2f" % bytes_per_context)
+      out.puts "context_cache_hit_rate:" + format_number_pct(13, stats[:context_cache_hits], stats[:num_contexts_encoded])
+
       out.puts "live_page_count:       " + format_number(13, stats[:live_page_count])
       out.puts "freed_page_count:      " + format_number(13, stats[:freed_page_count])
       out.puts "code_gc_count:         " + format_number(13, stats[:code_gc_count])
@@ -430,7 +414,7 @@ module RubyVM::YJIT
     end
 
     def print_sorted_exit_counts(stats, out:, prefix:, how_many: 20, left_pad: 4) # :nodoc:
-      total_exits = total_exit_count(stats)
+      total_exits = stats[:side_exit_count]
 
       if total_exits > 0
         exits = []
@@ -453,16 +437,8 @@ module RubyVM::YJIT
           out.puts("  #{padded_count}: #{name}")
         end
       else
-        out.puts "total_exits:           " + format_number(10, total_exits)
+        out.puts "total_exits:           " + format_number(13, total_exits)
       end
-    end
-
-    def total_exit_count(stats, prefix: "exit_") # :nodoc:
-      total = 0
-      stats.each do |k,v|
-        total += v if k.start_with?(prefix)
-      end
-      total
     end
 
     def print_counters(counters, out:, prefix:, prompt:, optional: false) # :nodoc:

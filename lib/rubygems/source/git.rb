@@ -157,12 +157,14 @@ class Gem::Source::Git < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, "[Git: ", "]" do
-      q.breakable
-      q.text @repository
+    q.object_group(self) do
+      q.group 2, "[Git: ", "]" do
+        q.breakable
+        q.text @repository
 
-      q.breakable
-      q.text @reference
+        q.breakable
+        q.text @reference
+      end
     end
   end
 

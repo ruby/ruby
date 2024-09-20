@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #if !defined(_OSSL_ASN1_H_)
 #define _OSSL_ASN1_H_
@@ -55,7 +55,7 @@ extern VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
 extern VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
 extern VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 
-ASN1_TYPE *ossl_asn1_get_asn1type(VALUE);
+extern VALUE cASN1EndOfContent;                      /* END OF CONTENT      */
 
 void Init_ossl_asn1(void);
 

@@ -1,7 +1,0 @@
-@ ProgramNode (location: (1,0)-(1,4))
-├── locals: []
-└── statements:
-    @ StatementsNode (location: (1,0)-(1,4))
-    └── body: (length: 1)
-        └── @ InstanceVariableReadNode (location: (1,0)-(1,4))
-            └── name: :@foo

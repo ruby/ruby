@@ -13,8 +13,8 @@ class Gem::Requirement
   OPS = { # :nodoc:
     "=" => lambda {|v, r| v == r },
     "!=" => lambda {|v, r| v != r },
-    ">" => lambda {|v, r| v >  r },
-    "<" => lambda {|v, r| v <  r },
+    ">" => lambda {|v, r| v > r },
+    "<" => lambda {|v, r| v < r },
     ">=" => lambda {|v, r| v >= r },
     "<=" => lambda {|v, r| v <= r },
     "~>" => lambda {|v, r| v >= r && v.release < r.bump },
@@ -212,10 +212,6 @@ class Gem::Requirement
 
   def init_with(coder) # :nodoc:
     yaml_initialize coder.tag, coder.map
-  end
-
-  def to_yaml_properties # :nodoc:
-    ["@requirements"]
   end
 
   def encode_with(coder) # :nodoc:

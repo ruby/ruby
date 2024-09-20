@@ -524,16 +524,19 @@ static inline int
 ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned int * kw_flag, VALUE * converted_keyword_hash)
 {
     if (keyword_hash == Qnil) {
-        return 1;
+        goto ignore;
     }
-
-    if (!RB_TYPE_P(keyword_hash, T_HASH)) {
+    else if (!RB_TYPE_P(keyword_hash, T_HASH)) {
         keyword_hash = rb_to_hash_type(keyword_hash);
     }
     else if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_kwrest)) {
         if (!ISEQ_BODY(iseq)->param.flags.has_kw) {
             *kw_flag |= VM_CALL_KW_SPLAT_MUT;
         }
+    }
+
+    if (RHASH_EMPTY_P(keyword_hash) && !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+        goto ignore;
     }
 
     if (!(*kw_flag & VM_CALL_KW_SPLAT_MUT) &&
@@ -543,9 +546,17 @@ ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned
         keyword_hash = rb_hash_dup(keyword_hash);
     }
     *converted_keyword_hash = keyword_hash;
-    return !(ISEQ_BODY(iseq)->param.flags.has_kw) &&
-           !(ISEQ_BODY(iseq)->param.flags.has_kwrest) &&
-           RHASH_EMPTY_P(keyword_hash);
+
+    if (!(ISEQ_BODY(iseq)->param.flags.has_kw) &&
+        !(ISEQ_BODY(iseq)->param.flags.has_kwrest) &&
+        RHASH_EMPTY_P(keyword_hash)) {
+      ignore:
+        *kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 static VALUE
@@ -558,6 +569,22 @@ check_kwrestarg(VALUE keyword_hash, unsigned int *kw_flag)
     else {
         return keyword_hash;
     }
+}
+
+static void
+flatten_rest_args(rb_execution_context_t * const ec, struct args_info *args, VALUE * const locals, unsigned int *ci_flag)
+{
+    const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+    int j, i=args->argc, rest_len = RARRAY_LENINT(args->rest)-1;
+    args->argc += rest_len;
+    if (rest_len) {
+        CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
+        for (i, j=0; rest_len > 0; rest_len--, i++, j++) {
+            locals[i] = argv[j];
+        }
+    }
+    args->rest = Qfalse;
+    *ci_flag &= ~VM_CALL_ARGS_SPLAT;
 }
 
 static int
@@ -661,9 +688,32 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
         else if (!ISEQ_BODY(iseq)->param.flags.has_kwrest && !ISEQ_BODY(iseq)->param.flags.has_kw) {
             converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
-            arg_rest_dup(args);
-            rb_ary_push(args->rest, converted_keyword_hash);
-            keyword_hash = Qnil;
+            if (ISEQ_BODY(iseq)->param.flags.has_rest) {
+                arg_rest_dup(args);
+                rb_ary_push(args->rest, converted_keyword_hash);
+                keyword_hash = Qnil;
+            }
+            else {
+                // Avoid duping rest when not necessary
+                // Copy rest elements and converted keyword hash directly to VM stack
+                const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+                int j, i=args->argc, rest_len = RARRAY_LENINT(args->rest);
+                if (rest_len) {
+                    CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
+                    given_argc += rest_len;
+                    args->argc += rest_len;
+                    for (j=0; rest_len > 0; rest_len--, i++, j++) {
+                        locals[i] = argv[j];
+                    }
+                }
+                locals[i] = converted_keyword_hash;
+                given_argc--;
+                args->argc++;
+                args->rest = Qfalse;
+                ci_flag &= ~(VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT);
+                keyword_hash = Qnil;
+                goto arg_splat_and_kw_splat_flattened;
+            }
         }
         else {
             keyword_hash = converted_keyword_hash;
@@ -684,17 +734,44 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (RB_TYPE_P(rest_last, T_HASH) && FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS)) {
                 // def f(**kw); a = [..., kw]; g(*a)
                 splat_flagged_keyword_hash = rest_last;
-                rest_last = rb_hash_dup(rest_last);
+                if (!(RHASH_EMPTY_P(rest_last) || ISEQ_BODY(iseq)->param.flags.has_kw) || (ISEQ_BODY(iseq)->param.flags.has_kwrest)) {
+                    rest_last = rb_hash_dup(rest_last);
+                }
                 kw_flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
 
                 // Unset rest_dupped set by anon_rest as we may need to modify splat in this case
                 args->rest_dupped = false;
 
                 if (ignore_keyword_hash_p(rest_last, iseq, &kw_flag, &converted_keyword_hash)) {
-                    arg_rest_dup(args);
-                    rb_ary_pop(args->rest);
+                    if (ISEQ_BODY(iseq)->param.flags.has_rest) {
+                        // Only duplicate/modify splat array if it will be used
+                        arg_rest_dup(args);
+                        rb_ary_pop(args->rest);
+                    }
+                    else if (arg_setup_type == arg_setup_block && !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                        // Avoid hash allocation for empty hashes
+                        // Copy rest elements except empty keyword hash directly to VM stack
+                        flatten_rest_args(ec, args, locals, &ci_flag);
+                        keyword_hash = Qnil;
+                        kw_flag = 0;
+                    }
                     given_argc--;
-                    kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
+                }
+                else if (!ISEQ_BODY(iseq)->param.flags.has_rest) {
+                    // Avoid duping rest when not necessary
+                    // Copy rest elements and converted keyword hash directly to VM stack
+                    flatten_rest_args(ec, args, locals, &ci_flag);
+
+                    if (ISEQ_BODY(iseq)->param.flags.has_kw || ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                        given_argc--;
+                        keyword_hash = converted_keyword_hash;
+                    }
+                    else {
+                        locals[args->argc] = converted_keyword_hash;
+                        args->argc += 1;
+                        keyword_hash = Qnil;
+                        kw_flag = 0;
+                    }
                 }
                 else {
                     if (rest_last != converted_keyword_hash) {
@@ -725,7 +802,6 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             if (ignore_keyword_hash_p(last_arg, iseq, &kw_flag, &converted_keyword_hash)) {
                 args->argc--;
                 given_argc--;
-                kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
             }
             else {
                 if (!(kw_flag & VM_CALL_KW_SPLAT_MUT) && !ISEQ_BODY(iseq)->param.flags.has_kw) {
@@ -754,6 +830,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         FL_SET_RAW(flag_keyword_hash, RHASH_PASS_AS_KEYWORDS);
     }
 
+  arg_splat_and_kw_splat_flattened:
     if (kw_flag && ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
         rb_raise(rb_eArgError, "no keywords accepted");
     }
@@ -846,7 +923,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             args_setup_kw_parameters_from_kwsplat(ec, iseq, keyword_hash, klocals, remove_hash_value);
         }
         else {
-            VM_ASSERT(args_argc(args) == 0);
+#if VM_CHECK_MODE > 0
+            if (args_argc(args) != 0) {
+                VM_ASSERT(ci_flag & VM_CALL_ARGS_SPLAT);
+                VM_ASSERT(!(ci_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT)));
+                VM_ASSERT(!kw_flag);
+                VM_ASSERT(!ISEQ_BODY(iseq)->param.flags.has_rest);
+                VM_ASSERT(RARRAY_LENINT(args->rest) > 0);
+                VM_ASSERT(RB_TYPE_P(rest_last, T_HASH));
+                VM_ASSERT(FL_TEST_RAW(rest_last, RHASH_PASS_AS_KEYWORDS));
+                VM_ASSERT(args_argc(args) == 1);
+            }
+#endif
             args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
         }
     }
@@ -1046,4 +1134,57 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
             return VM_BLOCK_HANDLER_NONE;
         }
     }
+}
+
+static void vm_adjust_stack_forwarding(const struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, int argc, VALUE splat);
+
+static VALUE
+vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                    CALL_DATA cd, const rb_iseq_t *blockiseq, const int is_super,
+                    struct rb_forwarding_call_data *adjusted_cd, struct rb_callinfo *adjusted_ci)
+{
+    CALL_INFO site_ci = cd->ci;
+    VALUE bh = Qundef;
+
+    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
+    CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
+
+    unsigned int site_argc = vm_ci_argc(site_ci);
+    unsigned int site_flag = vm_ci_flag(site_ci);
+    ID site_mid = vm_ci_mid(site_ci);
+
+    unsigned int caller_argc = vm_ci_argc(caller_ci);
+    unsigned int caller_flag = vm_ci_flag(caller_ci);
+    const struct rb_callinfo_kwarg * kw = vm_ci_kwarg(caller_ci);
+
+    VALUE splat = Qfalse;
+
+    if (site_flag & VM_CALL_ARGS_SPLAT) {
+        // If we're called with args_splat, the top 1 should be an array
+        splat = TOPN(1);
+        site_argc += (RARRAY_LEN(splat) - 1);
+    }
+
+    // Need to setup the block in case of e.g. `super { :block }`
+    if (is_super && blockiseq) {
+        bh = vm_caller_setup_arg_block(ec, GET_CFP(), site_ci, blockiseq, is_super);
+    }
+    else {
+        bh = VM_ENV_BLOCK_HANDLER(GET_LEP());
+    }
+
+    vm_adjust_stack_forwarding(ec, GET_CFP(), caller_argc, splat);
+
+    *adjusted_ci = VM_CI_ON_STACK(
+            site_mid,
+            (caller_flag | (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
+            site_argc + caller_argc,
+            kw
+            );
+
+    adjusted_cd->cd.ci = adjusted_ci;
+    adjusted_cd->cd.cc = cd->cc;
+    adjusted_cd->caller_ci = caller_ci;
+
+    return bh;
 }

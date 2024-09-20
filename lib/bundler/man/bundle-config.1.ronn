@@ -397,7 +397,7 @@ through ENV.
 
 ## CONFIGURE BUNDLER DIRECTORIES
 
-Bundler's home, config, cache and plugin directories are able to be configured
+Bundler's home, cache and plugin directories and config file can be configured
 through environment variables. The default location for Bundler's home directory is
 `~/.bundle`, which all directories inherit from by default. The following
 outlines the available environment variables and their default values

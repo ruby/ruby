@@ -39,6 +39,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_string
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     assert_instance_of String, ?a
     assert_equal "a", ?a
     assert_instance_of String, ?A
@@ -94,6 +96,9 @@ class TestRubyLiteral < Test::Unit::TestCase
 
     assert_equal "ab", eval("?a 'b'")
     assert_equal "a\nb", eval("<<A 'b'\na\nA")
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_dstring
@@ -241,8 +246,9 @@ class TestRubyLiteral < Test::Unit::TestCase
   def test_dregexp
     assert_instance_of Regexp, /re#{'ge'}xp/
     assert_equal(/regexp/, /re#{'ge'}xp/)
-    bug3903 = '[ruby-core:32682]'
-    assert_raise(SyntaxError, bug3903) {eval('/[#{"\x80"}]/')}
+
+    # [ruby-core:32682]
+    eval('/[#{"\x80"}]/')
   end
 
   def test_array
@@ -590,6 +596,8 @@ class TestRubyLiteral < Test::Unit::TestCase
   end
 
   def test_integer
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     head = ['', '0x', '0o', '0b', '0d', '-', '+']
     chars = ['0', '1', '_', '9', 'f']
     head.each {|h|
@@ -619,9 +627,14 @@ class TestRubyLiteral < Test::Unit::TestCase
         assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
     end
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_float
+    verbose_bak, $VERBOSE = $VERBOSE, nil # prevent syntax warnings
+
     head = ['', '-', '+']
     chars = ['0', '1', '_', '9', 'f', '.']
     head.each {|h|
@@ -640,15 +653,27 @@ class TestRubyLiteral < Test::Unit::TestCase
           end
           begin
             r2 = eval(s)
-          rescue NameError, SyntaxError
+          rescue ArgumentError
+            # Debug log for a random failure: ArgumentError: SyntaxError#path changed
+            $stderr.puts "TestRubyLiteral#test_float failed: %p" % s
+            raise
+          rescue SyntaxError => e
+            r2 = :err
+          rescue NameError
             r2 = :err
           end
           r2 = :err if Range === r2
-          assert_equal(r1, r2, "Float(#{s.inspect}) != eval(#{s.inspect})")
+          s = s.inspect
+          mesg = "Float(#{s}) != eval(#{s})"
+          mesg << ":" << e.message if e
+          assert_equal(r1, r2, mesg)
         }
       }
     }
     assert_equal(100.0, 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100e100)
+
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_symbol_list

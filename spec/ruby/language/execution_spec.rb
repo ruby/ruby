@@ -38,7 +38,7 @@ describe "``" do
 
     2.times do
       runner.instance_exec do
-        `test #{:command}`
+        `test #{:command}` # rubocop:disable Lint/LiteralInInterpolation
       end
     end
 
@@ -84,7 +84,7 @@ describe "%x" do
 
     2.times do
       runner.instance_exec do
-        %x{test #{:command}}
+        %x{test #{:command}} # rubocop:disable Lint/LiteralInInterpolation
       end
     end
 

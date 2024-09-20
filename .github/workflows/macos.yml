@@ -26,10 +26,14 @@ jobs:
       matrix:
         include:
           - test_task: check
+            os: macos-14
           - test_task: test-all
             test_opts: --repeat-count=2
+            os: macos-14
           - test_task: test-bundler-parallel
+            os: macos-14
           - test_task: test-bundled-gems
+            os: macos-14
           - test_task: check
             os: macos-12
           - test_task: check
@@ -39,7 +43,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
 
-    runs-on: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
+    runs-on: ${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -48,11 +52,11 @@ jobs:
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Document')
-      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -70,13 +74,39 @@ jobs:
           # Set fetch-depth: 0 so that Launchable can receive commits information.
           fetch-depth: 10
 
+      - name: make sure that kern.coredump=1
+        run: |
+          sysctl -n kern.coredump
+          sudo sysctl -w kern.coredump=1
+          sudo chmod -R +rwx /cores/
+
+      - name: Delete unused SDKs
+        # To free up disk space to not run out during the run
+        run: |
+          sudo rm -rf ~/.dotnet
+          sudo rm -rf /Library/Android
+          sudo rm -rf /Library/Developer/CoreSimulator
+        continue-on-error: true
+
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
+
+      - run: |
+          make golf
+          case "${{ matrix.configure }}" in
+          *'--enable-shared'*)
+            make runnable
+            ./bin/goruby -veh
+            ;;
+          *)
+            ./goruby -veh
+            ;;
+          esac
 
       - name: Set test options for skipped tests
         run: |
@@ -88,7 +118,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ${{ matrix.os || (github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14')}}
+          os: ${{ matrix.os }}
           test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -96,16 +126,19 @@ jobs:
         continue-on-error: true
 
       - name: Set extra test options
-        run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+        run: |
+          echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # With --repeat-count=2, flaky test by timeout occurs frequently for some reason
         if: matrix.test_opts
 
       - name: make ${{ matrix.test_task }}
         run: |
+          ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests
@@ -123,6 +156,22 @@ jobs:
           label: ${{ matrix.os }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+      - name: Resolve job ID
+        id: job_id
+        uses: actions/github-script@main
+        env:
+          matrix: ${{ toJson(matrix) }}
+        with:
+          script: |
+            const { data: workflow_run } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+            const matrix = JSON.parse(process.env.matrix);
+            const job_name = `${context.job}${matrix ? ` (${Object.values(matrix).join(", ")})` : ""}`;
+            return workflow_run.jobs.find((job) => job.name === job_name).id;
 
   result:
     if: ${{ always() }}

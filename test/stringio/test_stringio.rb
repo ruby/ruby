@@ -990,7 +990,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate(s.string, :ascii_only?)
   end
 
-  if eval(%{ "test".frozen? && !"test".equal?("test") }) # Ruby 3.4+ chilled strings
+  require "objspace"
+  if ObjectSpace.respond_to?(:dump) && ObjectSpace.dump(eval(%{"test"})).include?('"chilled":true') # Ruby 3.4+ chilled strings
     def test_chilled_string
       chilled_string = eval(%{""})
       io = StringIO.new(chilled_string)

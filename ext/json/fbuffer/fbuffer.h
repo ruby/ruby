@@ -31,12 +31,8 @@
 # define RB_OBJ_STRING(obj) StringValueCStr(obj)
 #endif
 
-#ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
 #define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
-#else
-#define FORCE_UTF8(obj)
-#endif
 
 /* We don't need to guard objects for rbx, so let's do nothing at all. */
 #ifndef RB_GC_GUARD

@@ -192,8 +192,15 @@ describe :uri_parse, shared: true do
     file.should be_kind_of(URI::Generic)
   end
 
-  it "raises errors on malformed URIs" do
-    -> { @object.parse('http://a_b:80/') }.should raise_error(URI::InvalidURIError)
-    -> { @object.parse('http://a_b/') }.should raise_error(URI::InvalidURIError)
+  if URI::DEFAULT_PARSER == URI::RFC2396_Parser
+    it "raises errors on malformed URIs" do
+      -> { @object.parse('http://a_b:80/') }.should raise_error(URI::InvalidURIError)
+      -> { @object.parse('http://a_b/') }.should raise_error(URI::InvalidURIError)
+    end
+  elsif URI::DEFAULT_PARSER == URI::RFC3986_Parser
+    it "does not raise errors on URIs contained underscore" do
+      -> { @object.parse('http://a_b:80/') }.should_not raise_error(URI::InvalidURIError)
+      -> { @object.parse('http://a_b/') }.should_not raise_error(URI::InvalidURIError)
+    end
   end
 end

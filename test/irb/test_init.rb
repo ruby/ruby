@@ -270,20 +270,18 @@ module TestIRB
 
   class ConfigValidationTest < TestCase
     def setup
-      @original_home = ENV["HOME"]
-      @original_irbrc = ENV["IRBRC"]
       # To prevent the test from using the user's .irbrc file
-      ENV["HOME"] = @home = Dir.mktmpdir
-      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
+      @home = Dir.mktmpdir
+      setup_envs(home: @home)
       super
     end
 
     def teardown
       super
-      ENV["IRBRC"] = @original_irbrc
-      ENV["HOME"] = @original_home
+      teardown_envs
       File.unlink(@irbrc)
       Dir.rmdir(@home)
+      IRB.instance_variable_set(:@existing_rc_name_generators, nil)
     end
 
     def test_irb_name_converts_non_string_values_to_string

@@ -46,6 +46,10 @@ which may in turn affect performance:
   String.new(capacity: 1)
   String.new('foo', capacity: 4096)
 
+Note that Ruby strings are null-terminated internally, so the internal
+buffer size will be one or more bytes larger than the requested capacity
+depending on the encoding.
+
 The +string+, +encoding+, and +capacity+ arguments may all be used together:
 
   String.new('hello', encoding: 'UTF-8', capacity: 25)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_net_http"
+require_relative "../vendored_net_http"
 
 class Fail < Gem::Net::HTTP
   # Gem::Net::HTTP uses a @newimpl instance variable to decide whether

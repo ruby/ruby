@@ -1050,7 +1050,7 @@ rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
     *max = ISEQ_BODY(iseq)->param.flags.has_rest == FALSE ?
       ISEQ_BODY(iseq)->param.lead_num + ISEQ_BODY(iseq)->param.opt_num + ISEQ_BODY(iseq)->param.post_num +
-      (ISEQ_BODY(iseq)->param.flags.has_kw == TRUE || ISEQ_BODY(iseq)->param.flags.has_kwrest == TRUE)
+      (ISEQ_BODY(iseq)->param.flags.has_kw == TRUE || ISEQ_BODY(iseq)->param.flags.has_kwrest == TRUE || ISEQ_BODY(iseq)->param.flags.forwardable == TRUE)
       : UNLIMITED_ARGUMENTS;
     return ISEQ_BODY(iseq)->param.lead_num + ISEQ_BODY(iseq)->param.post_num + (ISEQ_BODY(iseq)->param.flags.has_kw && ISEQ_BODY(iseq)->param.keyword->required_num > 0);
 }
@@ -1157,6 +1157,12 @@ rb_block_pair_yield_optimizable(void)
             if (proc->is_lambda) return 0;
             if (min != max) return 0;
             return min > 1;
+        }
+
+      case block_handler_type_ifunc:
+        {
+            const struct vm_ifunc *ifunc = block.as.captured.code.ifunc;
+            if (ifunc->flags & IFUNC_YIELD_OPTIMIZABLE) return 1;
         }
 
       default:

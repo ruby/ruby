@@ -6,14 +6,17 @@ module Bundler
   module UI
     class Shell
       LEVELS = %w[silent error warn confirm info debug].freeze
+      OUTPUT_STREAMS = [:stdout, :stderr].freeze
 
       attr_writer :shell
+      attr_reader :output_stream
 
       def initialize(options = {})
         Thor::Base.shell = options["no-color"] ? Thor::Shell::Basic : nil
         @shell = Thor::Base.shell.new
         @level = ENV["DEBUG"] ? "debug" : "info"
         @warning_history = []
+        @output_stream = :stdout
       end
 
       def add_color(string, *color)
@@ -84,7 +87,7 @@ module Bundler
         @shell.yes?(msg)
       end
 
-      def no?
+      def no?(msg)
         @shell.no?(msg)
       end
 
@@ -101,6 +104,11 @@ module Bundler
         index <= LEVELS.index(@level)
       end
 
+      def output_stream=(symbol)
+        raise ArgumentError unless OUTPUT_STREAMS.include?(symbol)
+        @output_stream = symbol
+      end
+
       def trace(e, newline = nil, force = false)
         return unless debug? || force
         msg = "#{e.class}: #{e.message}\n#{e.backtrace.join("\n  ")}"
@@ -111,6 +119,10 @@ module Bundler
         with_level("silent", &blk)
       end
 
+      def progress(&blk)
+        with_output_stream(:stderr, &blk)
+      end
+
       def unprinted_warnings
         []
       end
@@ -119,6 +131,8 @@ module Bundler
 
       # valimism
       def tell_me(msg, color = nil, newline = nil)
+        return tell_err(msg, color, newline) if output_stream == :stderr
+
         msg = word_wrap(msg) if newline.is_a?(Hash) && newline[:wrap]
         if newline.nil?
           @shell.say(msg, color)
@@ -130,7 +144,7 @@ module Bundler
       def tell_err(message, color = nil, newline = nil)
         return if @shell.send(:stderr).closed?
 
-        newline ||= !message.to_s.match?(/( |\t)\Z/)
+        newline = !message.to_s.match?(/( |\t)\Z/) if newline.nil?
         message = word_wrap(message) if newline.is_a?(Hash) && newline[:wrap]
 
         color = nil if color && !$stderr.tty?
@@ -159,6 +173,14 @@ module Bundler
         yield
       ensure
         @level = original
+      end
+
+      def with_output_stream(symbol)
+        original = output_stream
+        self.output_stream = symbol
+        yield
+      ensure
+        @output_stream = original
       end
     end
   end

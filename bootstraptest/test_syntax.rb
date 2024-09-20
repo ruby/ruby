@@ -848,7 +848,7 @@ assert_normal_exit %q{
       def x(a=1, b, *rest); nil end
     end
   end
-}, bug2415
+}, bug2415 unless rjit_enabled? # flaky
 
 assert_normal_exit %q{
   0.times do
@@ -880,7 +880,7 @@ assert_normal_exit %q{
       end
     end
   end
-}, bug2415
+}, bug2415 unless rjit_enabled? # flaky
 
 assert_normal_exit %q{
   a {

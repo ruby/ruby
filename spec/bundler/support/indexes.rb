@@ -77,8 +77,8 @@ module Spec
 
     def an_awesome_index
       build_index do
-        gem "rack", %w[0.8 0.9 0.9.1 0.9.2 1.0 1.1]
-        gem "rack-mount", %w[0.4 0.5 0.5.1 0.5.2 0.6]
+        gem "myrack", %w[0.8 0.9 0.9.1 0.9.2 1.0 1.1]
+        gem "myrack-mount", %w[0.4 0.5 0.5.1 0.5.2 0.6]
 
         # --- Pre-release support
         gem "RubyGems\0", ["1.3.2"]
@@ -89,10 +89,10 @@ module Spec
           gem "actionpack", version do
             dep "activesupport", version
             if version >= v("3.0.0.beta")
-              dep "rack", "~> 1.1"
-              dep "rack-mount", ">= 0.5"
-            elsif version > v("2.3")   then dep "rack", "~> 1.0.0"
-            elsif version > v("2.0.0") then dep "rack", "~> 0.9.0"
+              dep "myrack", "~> 1.1"
+              dep "myrack-mount", ">= 0.5"
+            elsif version > v("2.3")   then dep "myrack", "~> 1.0.0"
+            elsif version > v("2.0.0") then dep "myrack", "~> 0.9.0"
             end
           end
           gem "activerecord", version do
@@ -367,7 +367,7 @@ module Spec
 
     def a_circular_index
       build_index do
-        gem "rack", "1.0.1"
+        gem "myrack", "1.0.1"
         gem("foo", "0.2.6") do
           dep "bar", ">= 0"
         end

@@ -222,6 +222,29 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     }
   end
 
+  def test_sign_and_verify_ed25519
+    # See test_ed25519 in test_pkey.rb
+
+    # Ed25519 is not FIPS-approved.
+    omit_on_fips
+
+    begin
+      ed25519  = OpenSSL::PKey::generate_key("ED25519")
+    rescue OpenSSL::PKey::PKeyError => e
+      # OpenSSL < 1.1.1
+      #
+      pend "Ed25519 is not implemented" unless openssl?(1, 1, 1)
+
+      raise e
+    end
+
+    # See ASN1_item_sign_ctx in ChangeLog for 3.8.1: https://github.com/libressl/portable/blob/master/ChangeLog
+    pend 'ASN1 signing with Ed25519 not yet working' unless openssl? or libressl?(3, 8, 1)
+
+    cert = issue_cert(@ca, ed25519, 1, [], nil, nil, digest: nil)
+    assert_equal(true, cert.verify(ed25519))
+  end
+
   def test_dsa_with_sha2
     cert = issue_cert(@ca, @dsa256, 1, [], nil, nil, digest: "sha256")
     assert_equal("dsa_with_SHA256", cert.signature_algorithm)
@@ -320,6 +343,15 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     assert_raise(OpenSSL::X509::CertificateError) do
       OpenSSL::X509::Certificate.load_file(fullchain_path)
     end
+  end
+
+  def test_tbs_precert_bytes
+    pend "LibreSSL < 3.5 does not have i2d_re_X509_tbs" if libressl? && !libressl?(3, 5, 0)
+
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+    seq = OpenSSL::ASN1.decode(cert.tbs_bytes)
+
+    assert_equal 7, seq.value.size
   end
 
   private

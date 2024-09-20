@@ -6,14 +6,14 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{SSL/TLS and general-purpose cryptography for Ruby}
   spec.description   = %q{OpenSSL for Ruby provides access to SSL/TLS and general-purpose cryptography based on the OpenSSL library.}
   spec.homepage      = "https://github.com/ruby/openssl"
-  spec.license       = "Ruby"
+  spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
     spec.platform    = "java"
     spec.files       = []
     spec.add_runtime_dependency('jruby-openssl', '~> 0.14')
   else
-    spec.files         = Dir["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md", "BSDL", "LICENSE.txt"]
+    spec.files         = Dir["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md", "BSDL", "COPYING"]
     spec.require_paths = ["lib"]
     spec.extensions    = ["ext/openssl/extconf.rb"]
   end

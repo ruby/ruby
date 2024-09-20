@@ -19,14 +19,14 @@ describe "Dir.chdir" do
   end
 
   it "defaults to $HOME with no arguments" do
-    if ENV['HOME']
-      Dir.chdir
-      current_dir = Dir.pwd
+    skip "$HOME not valid directory" unless ENV['HOME'] && File.directory?(ENV['HOME'])
 
-      Dir.chdir(ENV['HOME'])
-      home = Dir.pwd
-      current_dir.should == home
-    end
+    Dir.chdir
+    current_dir = Dir.pwd
+
+    Dir.chdir(ENV['HOME'])
+    home = Dir.pwd
+    current_dir.should == home
   end
 
   it "changes to the specified directory" do
@@ -70,6 +70,8 @@ describe "Dir.chdir" do
   end
 
   it "defaults to the home directory when given a block but no argument" do
+    skip "$HOME not valid directory" unless ENV['HOME'] && File.directory?(ENV['HOME'])
+
     # Windows will return a path with forward slashes for ENV["HOME"] so we have
     # to compare the route representations returned by Dir.chdir.
     current_dir = ""

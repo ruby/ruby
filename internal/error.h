@@ -142,6 +142,8 @@ VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, 
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
+PRINTF_ARGS(void rb_enc_compile_warning(rb_encoding *enc, const char *file, int line, const char *fmt, ...), 4, 5);
+PRINTF_ARGS(void rb_enc_compile_warn(rb_encoding *enc, const char *file, int line, const char *fmt, ...), 4, 5);
 rb_warning_category_t rb_warning_category_from_name(VALUE category);
 bool rb_warning_category_enabled_p(rb_warning_category_t category);
 VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);

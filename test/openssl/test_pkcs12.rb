@@ -159,7 +159,6 @@ module OpenSSL
         DEFAULT_PBE_PKEYS,
         DEFAULT_PBE_CERTS,
         nil,
-        nil,
         2048
       )
 
@@ -174,6 +173,36 @@ module OpenSSL
           DEFAULT_PBE_CERTS,
           nil,
           "omg"
+        )
+      end
+    end
+
+    def test_create_with_keytype
+      OpenSSL::PKCS12.create(
+        "omg",
+        "hello",
+        @mykey,
+        @mycert,
+        [],
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
+        nil,
+        nil,
+        OpenSSL::PKCS12::KEY_SIG
+      )
+
+      assert_raise(ArgumentError) do
+        OpenSSL::PKCS12.create(
+          "omg",
+          "hello",
+          @mykey,
+          @mycert,
+          [],
+          DEFAULT_PBE_PKEYS,
+          DEFAULT_PBE_CERTS,
+          nil,
+          nil,
+          2048
         )
       end
     end

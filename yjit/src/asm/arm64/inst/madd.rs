@@ -28,7 +28,7 @@ pub struct MAdd {
 
 impl MAdd {
     /// MUL
-    /// https://developer.arm.com/documentation/ddi0602/2023-06/Base-Instructions/MUL--Multiply--an-alias-of-MADD-
+    /// <https://developer.arm.com/documentation/ddi0602/2023-06/Base-Instructions/MUL--Multiply--an-alias-of-MADD->
     pub fn mul(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, ra: 0b11111, rm, sf: num_bits.into() }
     }

@@ -8,7 +8,7 @@
 #
 #= Licence
 #  This program is licensed under the same licence as Ruby.
-#  (See the file 'LICENCE'.)
+#  (See the file 'COPYING'.)
 #++
 
 ##
@@ -105,6 +105,12 @@ module OpenSSL::Buffering
   # Get the next 8bit byte from `ssl`.  Returns `nil` on EOF
   def getbyte
     read(1)&.ord
+  end
+
+  # Get the next 8bit byte. Raises EOFError on EOF
+  def readbyte
+    raise EOFError if eof?
+    getbyte
   end
 
   ##

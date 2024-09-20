@@ -215,3 +215,6 @@ foo => Object[{x:}]
   a,
   b
 ) = c
+
+case (); in [_a, _a]; end
+case (); in [{a:1}, {a:2}]; end

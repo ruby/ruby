@@ -399,10 +399,10 @@ rdoc_noinst = %w[created.rid]
 prolog_script = <<EOS
 bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
-if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+if !load_relative and libpathenv = CONFIG["LIBPATHENV"]
   pathsep = File::PATH_SEPARATOR
   prolog_script << <<EOS
-libdir="#{load_relative ? '$\{bindir%/bin\}/lib' : libdir.gsub(/\"/, '\\\\"')}"
+libdir="#{libdir.gsub(/\"/, '\\\\"')}"
 export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
 end
@@ -746,7 +746,9 @@ module RbInstall
       name = formatted_program_filename(filename)
       unless $dryrun
         super
-        File.chmod($script_mode, File.join(bindir, name))
+        script = File.join(bindir, name)
+        File.chmod($script_mode, script)
+        File.unlink("#{script}.lock") rescue nil
       end
       $installed_list.puts(File.join(without_destdir(bindir), name)) if $installed_list
     end
@@ -1205,7 +1207,6 @@ installs = $install.map do |inst|
 end
 installs.flatten!
 installs -= $exclude.map {|exc| $install_procs[exc]}.flatten
-puts "Installing to #$destdir" unless installs.empty?
 installs.each do |block|
   dir = Dir.pwd
   begin
@@ -1213,6 +1214,10 @@ installs.each do |block|
   ensure
     Dir.chdir(dir)
   end
+end
+unless installs.empty? or $destdir.empty?
+  require_relative 'lib/colorize'
+  puts "Installed under #{Colorize.new.info($destdir)}"
 end
 
 # vi:set sw=2:

@@ -1,6 +1,6 @@
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -133,6 +133,10 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
         miter = NUM2INT(mac_iter);
     if (!NIL_P(keytype))
         ktype = NUM2INT(keytype);
+
+    if (ktype != 0 && ktype != KEY_SIG && ktype != KEY_EX) {
+        ossl_raise(rb_eArgError, "Unknown key usage type %"PRIsVALUE, INT2NUM(ktype));
+    }
 
     obj = NewPKCS12(cPKCS12);
     x509s = NIL_P(ca) ? NULL : ossl_x509_ary2sk(ca);
@@ -272,4 +276,8 @@ Init_ossl_pkcs12(void)
     rb_attr(cPKCS12, rb_intern("ca_certs"), 1, 0, Qfalse);
     rb_define_method(cPKCS12, "initialize", ossl_pkcs12_initialize, -1);
     rb_define_method(cPKCS12, "to_der", ossl_pkcs12_to_der, 0);
+
+    /* MSIE specific PKCS12 key usage extensions */
+    rb_define_const(cPKCS12, "KEY_EX", INT2NUM(KEY_EX));
+    rb_define_const(cPKCS12, "KEY_SIG", INT2NUM(KEY_SIG));
 }

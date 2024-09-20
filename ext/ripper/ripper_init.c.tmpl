@@ -665,8 +665,4 @@ InitVM_ripper(void)
      */
     rb_define_global_const("SCRIPT_LINES__", Qnil);
 #endif
-    rb_ripper_none = rb_obj_alloc(rb_cObject);
-    rb_obj_freeze(rb_ripper_none);
-    rb_gc_register_mark_object(rb_ripper_none);
-
 }

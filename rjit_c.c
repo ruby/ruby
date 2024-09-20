@@ -519,6 +519,7 @@ extern VALUE rb_vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_fram
 extern VALUE rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
 extern VALUE rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
 extern VALUE rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr);
+extern VALUE rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt);
 extern VALUE rb_vm_splat_array(VALUE flag, VALUE array);
 extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
 extern bool rb_vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE v);

@@ -11,8 +11,26 @@ describe :stringio_read, shared: true do
   end
 
   it "reads length bytes and writes them to the buffer String" do
-    @io.send(@method, 7, buffer = +"")
+    @io.send(@method, 7, buffer = +"").should.equal?(buffer)
     buffer.should == "example"
+  end
+
+  ruby_version_is ""..."3.4" do
+    it "does not preserve the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @io.send(@method, 7, buffer)
+
+      buffer.encoding.should_not == Encoding::ISO_8859_1
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "preserves the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @io.send(@method, 7, buffer)
+
+      buffer.encoding.should == Encoding::ISO_8859_1
+    end
   end
 
   it "tries to convert the passed buffer Object to a String using #to_str" do

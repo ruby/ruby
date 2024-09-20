@@ -90,46 +90,46 @@ class TestGemPlatform < Gem::TestCase
       "java" => [nil, "java", nil],
       "jruby" => [nil, "java", nil],
       "universal-dotnet" => ["universal", "dotnet", nil],
-      "universal-dotnet2.0" => ["universal", "dotnet",  "2.0"],
-      "universal-dotnet4.0" => ["universal", "dotnet",  "4.0"],
+      "universal-dotnet2.0" => ["universal", "dotnet", "2.0"],
+      "universal-dotnet4.0" => ["universal", "dotnet", "4.0"],
       "powerpc-aix5.3.0.0" => ["powerpc", "aix", "5"],
-      "powerpc-darwin7" => ["powerpc",   "darwin",    "7"],
-      "powerpc-darwin8" => ["powerpc",   "darwin",    "8"],
+      "powerpc-darwin7" => ["powerpc", "darwin", "7"],
+      "powerpc-darwin8" => ["powerpc", "darwin", "8"],
       "powerpc-linux" => ["powerpc", "linux", nil],
       "powerpc64-linux" => ["powerpc64", "linux", nil],
       "sparc-solaris2.10" => ["sparc", "solaris", "2.10"],
-      "sparc-solaris2.8" => ["sparc",     "solaris",   "2.8"],
-      "sparc-solaris2.9" => ["sparc",     "solaris",   "2.9"],
-      "universal-darwin8" => ["universal", "darwin",    "8"],
-      "universal-darwin9" => ["universal", "darwin",    "9"],
-      "universal-macruby" => ["universal", "macruby",   nil],
-      "i386-cygwin" => ["x86",       "cygwin",    nil],
-      "i686-darwin" => ["x86",       "darwin",    nil],
-      "i686-darwin8.4.1" => ["x86",       "darwin",    "8"],
-      "i386-freebsd4.11" => ["x86",       "freebsd",   "4"],
-      "i386-freebsd5" => ["x86",       "freebsd",   "5"],
-      "i386-freebsd6" => ["x86",       "freebsd",   "6"],
-      "i386-freebsd7" => ["x86",       "freebsd",   "7"],
+      "sparc-solaris2.8" => ["sparc", "solaris", "2.8"],
+      "sparc-solaris2.9" => ["sparc", "solaris", "2.9"],
+      "universal-darwin8" => ["universal", "darwin", "8"],
+      "universal-darwin9" => ["universal", "darwin", "9"],
+      "universal-macruby" => ["universal", "macruby", nil],
+      "i386-cygwin" => ["x86", "cygwin", nil],
+      "i686-darwin" => ["x86", "darwin", nil],
+      "i686-darwin8.4.1" => ["x86", "darwin", "8"],
+      "i386-freebsd4.11" => ["x86", "freebsd", "4"],
+      "i386-freebsd5" => ["x86", "freebsd", "5"],
+      "i386-freebsd6" => ["x86", "freebsd", "6"],
+      "i386-freebsd7" => ["x86", "freebsd", "7"],
       "i386-freebsd" => ["x86", "freebsd", nil],
       "universal-freebsd" => ["universal", "freebsd", nil],
       "i386-java1.5" => ["x86", "java", "1.5"],
       "x86-java1.6" => ["x86", "java", "1.6"],
       "i386-java1.6" => ["x86", "java", "1.6"],
-      "i686-linux" => ["x86",       "linux",     nil],
-      "i586-linux" => ["x86",       "linux",     nil],
-      "i486-linux" => ["x86",       "linux",     nil],
-      "i386-linux" => ["x86",       "linux",     nil],
-      "i586-linux-gnu" => ["x86",       "linux",     "gnu"],
-      "i386-linux-gnu" => ["x86",       "linux",     "gnu"],
+      "i686-linux" => ["x86", "linux", nil],
+      "i586-linux" => ["x86", "linux", nil],
+      "i486-linux" => ["x86", "linux", nil],
+      "i386-linux" => ["x86", "linux", nil],
+      "i586-linux-gnu" => ["x86", "linux", "gnu"],
+      "i386-linux-gnu" => ["x86", "linux", "gnu"],
       "i386-mingw32" => ["x86", "mingw32", nil],
       "x64-mingw-ucrt" => ["x64", "mingw", "ucrt"],
       "i386-mswin32" => ["x86", "mswin32", nil],
-      "i386-mswin32_80" => ["x86",       "mswin32",   "80"],
-      "i386-mswin32-80" => ["x86",       "mswin32",   "80"],
+      "i386-mswin32_80" => ["x86", "mswin32", "80"],
+      "i386-mswin32-80" => ["x86", "mswin32", "80"],
       "x86-mswin32" => ["x86", "mswin32", nil],
-      "x86-mswin32_60" => ["x86",       "mswin32",   "60"],
-      "x86-mswin32-60" => ["x86",       "mswin32",   "60"],
-      "i386-netbsdelf" => ["x86",       "netbsdelf", nil],
+      "x86-mswin32_60" => ["x86", "mswin32", "60"],
+      "x86-mswin32-60" => ["x86", "mswin32", "60"],
+      "i386-netbsdelf" => ["x86", "netbsdelf", nil],
       "i386-openbsd4.0" => ["x86", "openbsd", "4.0"],
       "i386-solaris2.10" => ["x86", "solaris", "2.10"],
       "i386-solaris2.8" => ["x86", "solaris", "2.8"],
@@ -142,8 +142,8 @@ class TestGemPlatform < Gem::TestCase
       "arm-linux-gnueabi" => ["arm", "linux", "gnueabi"],
       "arm-linux-musleabi" => ["arm", "linux", "musleabi"],
       "arm-linux-uclibceabi" => ["arm", "linux", "uclibceabi"],
-      "x86_64-openbsd3.9" => ["x86_64",    "openbsd",   "3.9"],
-      "x86_64-openbsd4.0" => ["x86_64",    "openbsd",   "4.0"],
+      "x86_64-openbsd3.9" => ["x86_64", "openbsd", "3.9"],
+      "x86_64-openbsd4.0" => ["x86_64", "openbsd", "4.0"],
       "x86_64-openbsd" => ["x86_64", "openbsd", nil],
       "wasm32-wasi" => ["wasm32", "wasi", nil],
       "wasm32-wasip1" => ["wasm32", "wasi", nil],
@@ -368,18 +368,27 @@ class TestGemPlatform < Gem::TestCase
     arm   = Gem::Platform.new "arm-linux"
     armv5 = Gem::Platform.new "armv5-linux"
     armv7 = Gem::Platform.new "armv7-linux"
+    arm64 = Gem::Platform.new "arm64-linux"
 
     util_set_arch "armv5-linux"
     assert((arm   === Gem::Platform.local), "arm   === armv5")
     assert((armv5 === Gem::Platform.local), "armv5 === armv5")
     refute((armv7 === Gem::Platform.local), "armv7 === armv5")
+    refute((arm64 === Gem::Platform.local), "arm64 === armv5")
     refute((Gem::Platform.local === arm), "armv5 === arm")
 
     util_set_arch "armv7-linux"
     assert((arm   === Gem::Platform.local), "arm   === armv7")
     refute((armv5 === Gem::Platform.local), "armv5 === armv7")
     assert((armv7 === Gem::Platform.local), "armv7 === armv7")
+    refute((arm64 === Gem::Platform.local), "arm64 === armv7")
     refute((Gem::Platform.local === arm), "armv7 === arm")
+
+    util_set_arch "arm64-linux"
+    refute((arm   === Gem::Platform.local), "arm   === arm64")
+    refute((armv5 === Gem::Platform.local), "armv5 === arm64")
+    refute((armv7 === Gem::Platform.local), "armv7 === arm64")
+    assert((arm64 === Gem::Platform.local), "arm64 === arm64")
   end
 
   def test_equals3_universal_mingw

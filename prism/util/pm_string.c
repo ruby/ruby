@@ -47,6 +47,62 @@ pm_string_constant_init(pm_string_t *string, const char *source, size_t length) 
     };
 }
 
+#ifdef _WIN32
+/**
+ * Represents a file handle on Windows, where the path will need to be freed
+ * when the file is closed.
+ */
+typedef struct {
+    /** The path to the file, which will become allocated memory. */
+    WCHAR *path;
+
+    /** The handle to the file, which will start as uninitialized memory. */
+    HANDLE file;
+} pm_string_file_handle_t;
+
+/**
+ * Open the file indicated by the filepath parameter for reading on Windows.
+ * Perform any kind of normalization that needs to happen on the filepath.
+ */
+static pm_string_init_result_t
+pm_string_file_handle_open(pm_string_file_handle_t *handle, const char *filepath) {
+    int length = MultiByteToWideChar(CP_UTF8, 0, filepath, -1, NULL, 0);
+    if (length == 0) return PM_STRING_INIT_ERROR_GENERIC;
+
+    handle->path = xmalloc(sizeof(WCHAR) * ((size_t) length));
+    if ((handle->path == NULL) || (MultiByteToWideChar(CP_UTF8, 0, filepath, -1, handle->path, length) == 0)) {
+        xfree(handle->path);
+        return PM_STRING_INIT_ERROR_GENERIC;
+    }
+
+    handle->file = CreateFileW(handle->path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, NULL);
+    if (handle->file == INVALID_HANDLE_VALUE) {
+        pm_string_init_result_t result = PM_STRING_INIT_ERROR_GENERIC;
+
+        if (GetLastError() == ERROR_ACCESS_DENIED) {
+            DWORD attributes = GetFileAttributesW(handle->path);
+            if ((attributes != INVALID_FILE_ATTRIBUTES) && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                result = PM_STRING_INIT_ERROR_DIRECTORY;
+            }
+        }
+
+        xfree(handle->path);
+        return result;
+    }
+
+    return PM_STRING_INIT_SUCCESS;
+}
+
+/**
+ * Close the file handle and free the path.
+ */
+static void
+pm_string_file_handle_close(pm_string_file_handle_t *handle) {
+    xfree(handle->path);
+    CloseHandle(handle->file);
+}
+#endif
+
 /**
  * Read the file indicated by the filepath parameter into source and load its
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
@@ -58,62 +114,66 @@ pm_string_constant_init(pm_string_t *string, const char *source, size_t length) 
  * `MapViewOfFile`, on POSIX systems that have access to `mmap` we'll use
  * `mmap`, and on other POSIX systems we'll use `read`.
  */
-PRISM_EXPORTED_FUNCTION bool
+PRISM_EXPORTED_FUNCTION pm_string_init_result_t
 pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (file == INVALID_HANDLE_VALUE) {
-        return false;
-    }
+    pm_string_file_handle_t handle;
+    pm_string_init_result_t result = pm_string_file_handle_open(&handle, filepath);
+    if (result != PM_STRING_INIT_SUCCESS) return result;
 
     // Get the file size.
-    DWORD file_size = GetFileSize(file, NULL);
+    DWORD file_size = GetFileSize(handle.file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
-        CloseHandle(file);
-        return false;
+        pm_string_file_handle_close(&handle);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // If the file is empty, then we don't need to do anything else, we'll set
     // the source to a constant empty string and return.
     if (file_size == 0) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
     // Create a mapping of the file.
-    HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+    HANDLE mapping = CreateFileMapping(handle.file, NULL, PAGE_READONLY, 0, 0, NULL);
     if (mapping == NULL) {
-        CloseHandle(file);
-        return false;
+        pm_string_file_handle_close(&handle);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Map the file into memory.
     uint8_t *source = (uint8_t *) MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0);
     CloseHandle(mapping);
-    CloseHandle(file);
+    pm_string_file_handle_close(&handle);
 
     if (source == NULL) {
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = (size_t) file_size };
-    return true;
+    return PM_STRING_INIT_SUCCESS;
 #elif defined(_POSIX_MAPPED_FILES)
     // Open the file for reading
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) {
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Stat the file to get the file size
     struct stat sb;
     if (fstat(fd, &sb) == -1) {
         close(fd);
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
+    }
+
+    // Ensure it is a file and not a directory
+    if (S_ISDIR(sb.st_mode)) {
+        close(fd);
+        return PM_STRING_INIT_ERROR_DIRECTORY;
     }
 
     // mmap the file descriptor to virtually get the contents
@@ -124,22 +184,19 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
         close(fd);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     close(fd);
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
-    return true;
+    return PM_STRING_INIT_SUCCESS;
 #else
-    (void) string;
-    (void) filepath;
-    perror("pm_string_mapped_init is not implemented for this platform");
-    return false;
+    return pm_string_file_init(string, filepath);
 #endif
 }
 
@@ -148,113 +205,106 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
  * contents and size into the given `pm_string_t`. The given `pm_string_t`
  * should be freed using `pm_string_free` when it is no longer used.
  */
-PRISM_EXPORTED_FUNCTION bool
+PRISM_EXPORTED_FUNCTION pm_string_init_result_t
 pm_string_file_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
     // Open the file for reading.
-    HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (file == INVALID_HANDLE_VALUE) {
-        return false;
-    }
+    pm_string_file_handle_t handle;
+    pm_string_init_result_t result = pm_string_file_handle_open(&handle, filepath);
+    if (result != PM_STRING_INIT_SUCCESS) return result;
 
     // Get the file size.
-    DWORD file_size = GetFileSize(file, NULL);
+    DWORD file_size = GetFileSize(handle.file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
-        CloseHandle(file);
-        return false;
+        pm_string_file_handle_close(&handle);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // If the file is empty, then we don't need to do anything else, we'll set
     // the source to a constant empty string and return.
     if (file_size == 0) {
-        CloseHandle(file);
+        pm_string_file_handle_close(&handle);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
     // Create a buffer to read the file into.
     uint8_t *source = xmalloc(file_size);
     if (source == NULL) {
-        CloseHandle(file);
-        return false;
+        pm_string_file_handle_close(&handle);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Read the contents of the file
     DWORD bytes_read;
-    if (!ReadFile(file, source, file_size, &bytes_read, NULL)) {
-        CloseHandle(file);
-        return false;
+    if (!ReadFile(handle.file, source, file_size, &bytes_read, NULL)) {
+        pm_string_file_handle_close(&handle);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     // Check the number of bytes read
     if (bytes_read != file_size) {
         xfree(source);
-        CloseHandle(file);
-        return false;
+        pm_string_file_handle_close(&handle);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
-    CloseHandle(file);
+    pm_string_file_handle_close(&handle);
     *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = (size_t) file_size };
-    return true;
-#elif defined(_POSIX_MAPPED_FILES)
-    FILE *file = fopen(filepath, "rb");
-    if (file == NULL) {
-        return false;
+    return PM_STRING_INIT_SUCCESS;
+#elif defined(PRISM_HAS_FILESYSTEM)
+    // Open the file for reading
+    int fd = open(filepath, O_RDONLY);
+    if (fd == -1) {
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-
-    if (file_size == -1) {
-        fclose(file);
-        return false;
+    // Stat the file to get the file size
+    struct stat sb;
+    if (fstat(fd, &sb) == -1) {
+        close(fd);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
-    if (file_size == 0) {
-        fclose(file);
+    // Ensure it is a file and not a directory
+    if (S_ISDIR(sb.st_mode)) {
+        close(fd);
+        return PM_STRING_INIT_ERROR_DIRECTORY;
+    }
+
+    // Check the size to see if it's empty
+    size_t size = (size_t) sb.st_size;
+    if (size == 0) {
+        close(fd);
         const uint8_t source[] = "";
         *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
-        return true;
+        return PM_STRING_INIT_SUCCESS;
     }
 
-    size_t length = (size_t) file_size;
+    size_t length = (size_t) size;
     uint8_t *source = xmalloc(length);
     if (source == NULL) {
-        fclose(file);
-        return false;
+        close(fd);
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
-    fseek(file, 0, SEEK_SET);
-    size_t bytes_read = fread(source, length, 1, file);
-    fclose(file);
+    long bytes_read = (long) read(fd, source, length);
+    close(fd);
 
-    if (bytes_read != 1) {
+    if (bytes_read == -1) {
         xfree(source);
-        return false;
+        return PM_STRING_INIT_ERROR_GENERIC;
     }
 
     *string = (pm_string_t) { .type = PM_STRING_OWNED, .source = source, .length = length };
-    return true;
+    return PM_STRING_INIT_SUCCESS;
 #else
     (void) string;
     (void) filepath;
     perror("pm_string_file_init is not implemented for this platform");
-    return false;
+    return PM_STRING_INIT_ERROR_GENERIC;
 #endif
-}
-
-/**
- * Returns the memory size associated with the string.
- */
-size_t
-pm_string_memsize(const pm_string_t *string) {
-    size_t size = sizeof(pm_string_t);
-    if (string->type == PM_STRING_OWNED) {
-        size += string->length;
-    }
-    return size;
 }
 
 /**

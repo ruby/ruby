@@ -79,7 +79,7 @@ module Bundler
       ensure_safe_gem_name(name, constant_array)
 
       templates = {
-        "#{Bundler.preferred_gemfile_name}.tt" => Bundler.preferred_gemfile_name,
+        "Gemfile.tt" => Bundler.preferred_gemfile_name,
         "lib/newgem.rb.tt" => "lib/#{namespaced_path}.rb",
         "lib/newgem/version.rb.tt" => "lib/#{namespaced_path}/version.rb",
         "sig/newgem.rbs.tt" => "sig/#{namespaced_path}.rbs",
@@ -191,7 +191,10 @@ module Bundler
         templates.merge!("standard.yml.tt" => ".standard.yml")
       end
 
-      templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
+      if config[:exe]
+        templates.merge!("exe/newgem.tt" => "exe/#{name}")
+        executables.push("exe/#{name}")
+      end
 
       if extension == "c"
         templates.merge!(
@@ -275,6 +278,7 @@ module Bundler
     end
 
     def ask_and_set_test_framework
+      return if skip?(:test)
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
@@ -300,6 +304,10 @@ module Bundler
       test_framework
     end
 
+    def skip?(option)
+      options.key?(option) && options[option].nil?
+    end
+
     def hint_text(setting)
       if Bundler.settings["gem.#{setting}"] == false
         "Your choice will only be applied to this gem."
@@ -310,6 +318,7 @@ module Bundler
     end
 
     def ask_and_set_ci
+      return if skip?(:ci)
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
@@ -341,6 +350,7 @@ module Bundler
     end
 
     def ask_and_set_linter
+      return if skip?(:linter)
       linter_template = options[:linter] || Bundler.settings["gem.linter"]
       linter_template = deprecated_rubocop_option if linter_template.nil?
 

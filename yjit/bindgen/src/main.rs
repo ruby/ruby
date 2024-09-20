@@ -100,7 +100,7 @@ fn main() {
         .allowlist_function("rb_shape_get_shape_by_id")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
-        .allowlist_function("rb_shape_get_next")
+        .allowlist_function("rb_shape_get_next_no_warnings")
         .allowlist_function("rb_shape_id")
         .allowlist_function("rb_shape_obj_too_complex")
         .allowlist_var("SHAPE_ID_NUM_BITS")
@@ -223,6 +223,7 @@ fn main() {
         .allowlist_function("rb_float_div")
 
         // From internal/string.h
+        .allowlist_type("ruby_rstring_private_flags")
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
         .allowlist_function("rb_obj_as_string_result")
@@ -263,6 +264,9 @@ fn main() {
         .blocklist_type("rb_method_definition_.*") // Large struct with a bitfield and union of many types - don't import (yet?)
         .opaque_type("rb_method_definition_.*")
 
+        // From numeric.c
+        .allowlist_function("rb_float_new")
+
         // From vm_core.h
         .allowlist_var("rb_mRubyVMFrozenCore")
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
@@ -299,9 +303,11 @@ fn main() {
         .allowlist_type("ruby_tag_type")
         .allowlist_type("ruby_vm_throw_flags")
         .allowlist_type("vm_check_match_type")
+        .allowlist_type("vm_opt_newarray_send_type")
         .allowlist_type("rb_iseq_type")
 
         // From yjit.c
+        .allowlist_function("rb_object_shape_count")
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
@@ -337,6 +343,7 @@ fn main() {
         .allowlist_function("rb_yjit_sendish_sp_pops")
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
+        .allowlist_function("rb_yjit_str_concat_codepoint")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
@@ -430,6 +437,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_flags_ambiguous_param0")
         .allowlist_function("rb_get_iseq_flags_accepts_no_kwarg")
         .allowlist_function("rb_get_iseq_flags_ruby2_keywords")
+        .allowlist_function("rb_get_iseq_flags_forwardable")
         .allowlist_function("rb_get_iseq_body_local_table_size")
         .allowlist_function("rb_get_iseq_body_param_keyword")
         .allowlist_function("rb_get_iseq_body_param_size")

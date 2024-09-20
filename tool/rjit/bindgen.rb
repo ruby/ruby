@@ -447,6 +447,7 @@ generator = BindingGenerator.new(
       VM_CALL_ARGS_BLOCKARG
       VM_CALL_ARGS_SPLAT
       VM_CALL_FCALL
+      VM_CALL_FORWARDING
       VM_CALL_KWARG
       VM_CALL_KW_SPLAT
       VM_CALL_KW_SPLAT_MUT
@@ -540,6 +541,7 @@ generator = BindingGenerator.new(
     rb_vm_opt_newarray_min
     rb_vm_opt_newarray_max
     rb_vm_opt_newarray_hash
+    rb_vm_opt_newarray_pack
     rb_vm_setinstancevariable
     rb_vm_splat_array
     rjit_full_cfunc_return

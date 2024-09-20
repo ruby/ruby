@@ -14,7 +14,7 @@ RSpec.describe "bundler plugin uninstall" do
   end
 
   it "uninstalls specified plugins" do
-    bundle "plugin install foo kung-foo --source #{file_uri_for(gem_repo2)}"
+    bundle "plugin install foo kung-foo --source https://gem.repo2"
     plugin_should_be_installed("foo")
     plugin_should_be_installed("kung-foo")
 
@@ -40,9 +40,9 @@ RSpec.describe "bundler plugin uninstall" do
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
 
     install_gemfile <<-G
-      source '#{file_uri_for(gem_repo2)}'
+      source 'https://gem.repo2'
       plugin 'path_plugin', :path => "#{path}"
-      gem 'rack', '1.0.0'
+      gem 'myrack', '1.0.0'
     G
 
     plugin_should_be_installed("path_plugin")
@@ -57,7 +57,7 @@ RSpec.describe "bundler plugin uninstall" do
 
   describe "with --all" do
     it "uninstalls all installed plugins" do
-      bundle "plugin install foo kung-foo --source #{file_uri_for(gem_repo2)}"
+      bundle "plugin install foo kung-foo --source https://gem.repo2"
       plugin_should_be_installed("foo")
       plugin_should_be_installed("kung-foo")
 

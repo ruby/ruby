@@ -145,5 +145,50 @@ module TestIRB
       assert_include(output, "No description provided.")
       assert_not_include(output, "Maybe IRB bug")
     end
+
+    def test_command_name_local_variable
+      write_ruby <<~RUBY
+        require "irb/command"
+
+        class FooBarCommand < IRB::Command::Base
+          category 'CommandTest'
+          description 'test'
+          def execute(arg)
+            puts "arg=\#{arg.inspect}"
+          end
+        end
+
+        IRB::Command.register(:foo_bar, FooBarCommand)
+
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "binding.irb"
+        type "foo_bar == 1 || 1"
+        type "foo_bar =~ /2/ || 2"
+        type "exit"
+        type "binding.irb"
+        type "foo_bar = '3'; foo_bar"
+        type "foo_bar == 4 || '4'"
+        type "foo_bar =~ /5/ || '5'"
+        type "exit"
+        type "binding.irb"
+        type "foo_bar ||= '6'; foo_bar"
+        type "foo_bar == 7 || '7'"
+        type "foo_bar =~ /8/ || '8'"
+        type "exit"
+        type "exit"
+      end
+
+      assert_include(output, 'arg="== 1 || 1"')
+      assert_include(output, 'arg="=~ /2/ || 2"')
+      assert_include(output, '=> "3"')
+      assert_include(output, '=> "4"')
+      assert_include(output, '=> "5"')
+      assert_include(output, '=> "6"')
+      assert_include(output, '=> "7"')
+      assert_include(output, '=> "8"')
+    end
   end
 end

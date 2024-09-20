@@ -14,10 +14,14 @@ module Bundler
 
       Bundler.self_manager.install_locked_bundler_and_restart_with_it_if_needed
 
-      Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
+      Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Gem.freebsd_platform?
 
       # Disable color in deployment mode
       Bundler.ui.shell = Thor::Shell::Basic.new if options[:deployment]
+
+      if target_rbconfig_path = options[:"target-rbconfig"]
+        Bundler.rubygems.set_target_rbconfig(target_rbconfig_path)
+      end
 
       check_for_options_conflicts
 
@@ -25,9 +29,10 @@ module Bundler
 
       if options[:deployment] || options[:frozen] || Bundler.frozen_bundle?
         unless Bundler.default_lockfile.exist?
-          flag   = "--deployment flag" if options[:deployment]
-          flag ||= "--frozen flag"     if options[:frozen]
-          flag ||= "deployment setting"
+          flag = "--deployment flag" if options[:deployment]
+          flag ||= "--frozen flag" if options[:frozen]
+          flag ||= "deployment setting" if Bundler.settings[:deployment]
+          flag ||= "frozen setting" if Bundler.settings[:frozen]
           raise ProductionError, "The #{flag} requires a lockfile. Please make " \
                                  "sure you have checked your #{SharedHelpers.relative_lockfile_path} into version control " \
                                  "before deploying."

@@ -77,6 +77,14 @@ module Bundler
       stub.full_require_paths
     end
 
+    def require_paths
+      stub.require_paths
+    end
+
+    def base_dir=(path)
+      stub.base_dir = path
+    end
+
     def load_paths
       full_require_paths
     end

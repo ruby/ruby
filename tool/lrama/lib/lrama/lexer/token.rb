@@ -1,8 +1,10 @@
-require 'lrama/lexer/token/char'
-require 'lrama/lexer/token/ident'
-require 'lrama/lexer/token/instantiate_rule'
-require 'lrama/lexer/token/tag'
-require 'lrama/lexer/token/user_code'
+# frozen_string_literal: true
+
+require_relative 'token/char'
+require_relative 'token/ident'
+require_relative 'token/instantiate_rule'
+require_relative 'token/tag'
+require_relative 'token/user_code'
 
 module Lrama
   class Lexer

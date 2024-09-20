@@ -95,6 +95,16 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
   end
 
+  def test_forwardable
+    iseq = compile(<<~EOF, __LINE__+1)
+      Class.new {
+        def bar(a, b); a + b; end
+        def foo(...); bar(...); end
+      }
+    EOF
+    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval.new.foo(40, 2))
+  end
+
   def test_super_with_block
     iseq = compile(<<~EOF, __LINE__+1)
       def (Object.new).touch(*) # :nodoc:
@@ -165,6 +175,14 @@ class TestISeq < Test::Unit::TestCase
     assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable '\*'/) do
       Ractor.make_shareable(obj.foo)
     end
+  end
+
+  def test_ractor_shareable_value_frozen_core
+    iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
+      # shareable_constant_value: literal
+      REGEX = /#{}/ # [Bug #20569]
+    RUBY
+    assert_includes iseq.to_binary, "REGEX".b
   end
 
   def test_disasm_encoding
@@ -347,11 +365,17 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
-    message = e1.message.each_line
-    message.with_index(1) do |line, i|
-      next if /^ / =~ line
-      assert_send([line, :start_with?, __FILE__],
-                  proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+
+    if e1.message.lines[0] == "#{__FILE__}:#{line}: syntax errors found\n"
+      # Prism lays out the error messages in line with the source, so the
+      # following assertions do not make sense in that context.
+    else
+      message = e1.message.each_line
+      message.with_index(1) do |line, i|
+        next if /^ / =~ line
+        assert_send([line, :start_with?, __FILE__],
+                    proc {message.map {|l, j| (i == j ? ">" : " ") + l}.join("")})
+      end
     end
   end
 
@@ -463,7 +487,7 @@ class TestISeq < Test::Unit::TestCase
                   ["<class:C>@1",
                     ["bar@10", ["block in bar@11",
                             ["block (2 levels) in bar@12"]]],
-                    ["foo@2", ["ensure in foo@2"],
+                    ["foo@2", ["ensure in foo@7"],
                               ["rescue in foo@4"]]],
                   ["<class:D>@17"]]
 
@@ -496,7 +520,7 @@ class TestISeq < Test::Unit::TestCase
                                   [4, :line],
                                   [7, :line],
                                   [9, :return]]],
-                       [["ensure in foo@2", [[7, :line]]]],
+                       [["ensure in foo@7", [[7, :line]]]],
                        [["rescue in foo@4", [[5, :line],
                                              [5, :rescue]]]]]],
                    [["<class:D>@17", [[17, :class],
@@ -567,7 +591,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_with_hidden_local_variables
-    assert_iseq_to_binary("for foo in bar; end")
+    assert_iseq_to_binary("for _foo in bar; end")
 
     bin = RubyVM::InstructionSequence.compile(<<-RUBY).to_binary
       Object.new.instance_eval do
@@ -789,6 +813,11 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_unreachable_pattern_matching
+    assert_in_out_err([], "true or 1 in 1")
+    assert_in_out_err([], "true or (case 1; in 1; 1; in 2; 2; end)")
+  end
+
+  def test_unreachable_pattern_matching_in_if_condition
     assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[1])
     begin;
       if true or {a: 0} in {a:}
@@ -797,6 +826,27 @@ class TestISeq < Test::Unit::TestCase
         p a
       end
     end;
+  end
+
+  def test_unreachable_next_in_block
+    bug20344 = '[ruby-core:117210] [Bug #20344]'
+    assert_nothing_raised(SyntaxError, bug20344) do
+      compile(<<~RUBY)
+        proc do
+          next
+
+          case nil
+          when "a"
+            next
+          when "b"
+          when "c"
+            proc {}
+          end
+
+          next
+        end
+      RUBY
+    end
   end
 
   def test_loading_kwargs_memory_leak
@@ -818,7 +868,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_compile_prism_with_file
     Tempfile.create(%w"test_iseq .rb") do |f|
-      f.puts "name = 'Prism'; puts 'hello'"
+      f.puts "_name = 'Prism'; puts 'hello'"
       f.close
 
       assert_nothing_raised(TypeError) do
@@ -837,8 +887,6 @@ class TestISeq < Test::Unit::TestCase
   def test_unused_param
     a = RubyVM::InstructionSequence.of(method(:block_using_method)).to_a
 
-    omit 'TODO: Prism' if a.dig(4, :parser) != :"parse.y"
-
     assert_equal true, a.dig(11, :use_block)
 
     b = RubyVM::InstructionSequence.of(method(:block_unused_method)).to_a
@@ -855,6 +903,14 @@ class TestISeq < Test::Unit::TestCase
     assert_raise(TypeError) do
       var_0 = 0
       RubyVM::InstructionSequence.load_from_binary(var_0)
+    end
+  end
+
+  def test_while_in_until_condition
+    assert_in_out_err(["--dump=i", "-e", "until while 1; end; end"]) do |stdout, stderr, status|
+      assert_include(stdout.shift, "== disasm:")
+      assert_include(stdout.pop, "leave")
+      assert_predicate(status, :success?)
     end
   end
 end

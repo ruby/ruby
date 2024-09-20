@@ -30,5 +30,6 @@ Gem::Specification.new do |spec|
   spec.files = IO.popen(%w[git ls-files -z --] + pathspecs, chdir: __dir__, err: IO::NULL, exception: false, &:read).split("\x0")
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.extensions    = "ext/win32ole/extconf.rb"
   spec.require_paths = ["lib"]
 end

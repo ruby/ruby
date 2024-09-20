@@ -227,14 +227,14 @@ RSpec.describe Bundler do
   describe "#mkdir_p" do
     it "creates a folder at the given path" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       allow(Bundler).to receive(:root).and_return(bundled_app)
 
-      Bundler.mkdir_p(bundled_app.join("foo", "bar"))
-      expect(bundled_app.join("foo", "bar")).to exist
+      Bundler.mkdir_p(bundled_app("foo", "bar"))
+      expect(bundled_app("foo", "bar")).to exist
     end
   end
 
@@ -267,6 +267,7 @@ RSpec.describe Bundler do
         it "should issue a warning and return a temporary user home" do
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return true
+          allow(File).to receive(:writable?).and_call_original
           allow(File).to receive(:writable?).with(path).and_return false
           allow(File).to receive(:directory?).with(dotbundle).and_return false
           allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))

@@ -30,9 +30,6 @@
 # define USE_GMP 0
 #endif
 #endif
-#if USE_GMP
-# include <gmp.h>
-#endif
 
 #include "id.h"
 #include "internal.h"
@@ -47,6 +44,15 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+
+#if USE_GMP
+RBIMPL_WARNING_PUSH()
+# ifdef _MSC_VER
+RBIMPL_WARNING_IGNORED(4146) /* for mpn_neg() */
+# endif
+# include <gmp.h>
+RBIMPL_WARNING_POP()
+#endif
 
 static const bool debug_integer_pack = (
 #ifdef DEBUG_INTEGER_PACK

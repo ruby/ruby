@@ -247,7 +247,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       it "returns plugin dir in app .bundle path" do
-        expect(subject.root).to eq(bundled_app.join(".bundle/plugin"))
+        expect(subject.root).to eq(bundled_app(".bundle/plugin"))
       end
     end
 
@@ -257,7 +257,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       it "returns plugin dir in global bundle path" do
-        expect(subject.root).to eq(home.join(".bundle/plugin"))
+        expect(subject.root).to eq(home(".bundle/plugin"))
       end
     end
   end

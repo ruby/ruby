@@ -1,3 +1,4 @@
+# Some tests depending on this name 'Compilations' via $GITHUB_WORKFLOW. Make sure to update such tests when renaming this workflow.
 name: Compilations
 
 on:
@@ -96,10 +97,10 @@ jobs:
           - { name: clang-8,   env: { default_cc: clang-8,   append_configure: '--disable-yjit' } }
           - { name: clang-7,   env: { default_cc: clang-7,   append_configure: '--disable-yjit' } }
           - { name: clang-6.0, env: { default_cc: clang-6.0, append_configure: '--disable-yjit' } }
-          - name: 'clang-16 LTO'
-            container: clang-16
+          - name: 'clang-18 LTO'
+            container: clang-18
             env:
-              default_cc: 'clang-16 -flto=auto'
+              default_cc: 'clang-18 -flto=auto'
               optflags: '-O2'
             shared: disable
             # check: true
@@ -136,7 +137,7 @@ jobs:
           - { name: '-O0', env: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
 #         - { name: '-O3', env: { optflags: '-O3 -march=x86-64 -mtune=generic' }, check: true }
 
-          - { name: gmp,                  env: { append_configure: '--with-gmp' } }
+          - { name: gmp,                  env: { append_configure: '--with-gmp' }, check: 'ruby/test_bignum.rb' }
           - { name: jemalloc,             env: { append_configure: '--with-jemalloc' } }
           - { name: valgrind,             env: { append_configure: '--with-valgrind' } }
           - { name: 'coroutine=ucontext', env: { append_configure: '--with-coroutine=ucontext' } }
@@ -224,7 +225,7 @@ jobs:
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Document')
-      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     env: ${{ matrix.entry.env || matrix.env }}
@@ -233,7 +234,7 @@ jobs:
       - run: id
         working-directory:
 
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -266,7 +267,7 @@ jobs:
         if: ${{ (matrix.entry.static-exts || '') != '' }}
 
       - name: Clean up ext/Setup
-        uses: gacts/run-and-post-run@7aec950f3b114c4fcf6012070c3709ecff0eb6f8 # v1.4.0
+        uses: gacts/run-and-post-run@4683764dd706df847f57b9bed39d08164bcd2690 # v1.4.1
         with:
           shell: bash
           working-directory: build
@@ -285,8 +286,10 @@ jobs:
       - run: make test-tool
         if: ${{ matrix.entry.check }}
 
-      - run: make test-all TESTS='-- ruby -ext-'
+      - run: make test-all TESTS="-- $tests"
         if: ${{ matrix.entry.check }}
+        env:
+          tests: ${{ matrix.entry.check == true && 'ruby -ext-' || matrix.entry.check }}
 
       - run: make test-spec
         env:

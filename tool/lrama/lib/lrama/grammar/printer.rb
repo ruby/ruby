@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     class Printer < Struct.new(:ident_or_tags, :token_code, :lineno, keyword_init: true)

@@ -131,8 +131,6 @@
 #define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
 #define rb_str_vcatf                      p->config->str_vcatf
-#undef StringValueCStr
-#define StringValueCStr(v)                p->config->string_value_cstr(&(v))
 #define rb_sprintf                        p->config->rb_sprintf
 #undef RSTRING_PTR
 #define RSTRING_PTR                       p->config->rstring_ptr
@@ -168,7 +166,6 @@
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
-#define rb_enc_mbclen           p->config->enc_mbclen
 #define rb_enc_find_index       p->config->enc_find_index
 #define rb_enc_from_index       p->config->enc_from_index
 #define rb_enc_isspace          p->config->enc_isspace

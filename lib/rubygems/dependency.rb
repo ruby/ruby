@@ -271,15 +271,7 @@ class Gem::Dependency
   end
 
   def matching_specs(platform_only = false)
-    env_req = Gem.env_requirement(name)
-    matches = Gem::Specification.stubs_for(name).find_all do |spec|
-      requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
-    end.map(&:to_spec)
-
-    if prioritizes_bundler?
-      require_relative "bundler_version_finder"
-      Gem::BundlerVersionFinder.prioritize!(matches)
-    end
+    matches = Gem::Specification.find_all_by_name(name, requirement)
 
     if platform_only
       matches.reject! do |spec|
@@ -295,10 +287,6 @@ class Gem::Dependency
 
   def specific?
     @requirement.specific?
-  end
-
-  def prioritizes_bundler?
-    name == "bundler" && !specific?
   end
 
   def to_specs
@@ -348,5 +336,13 @@ class Gem::Dependency
     else
       :released
     end
+  end
+
+  def encode_with(coder) # :nodoc:
+    coder.add "name", @name
+    coder.add "requirement", @requirement
+    coder.add "type", @type
+    coder.add "prerelease", @prerelease
+    coder.add "version_requirements", @version_requirements
   end
 end

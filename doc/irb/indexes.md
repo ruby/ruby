@@ -7,7 +7,7 @@ These are the \IRB command-line options, with links to explanatory text:
 - `-d`: Set `$DEBUG` and {$VERBOSE}[rdoc-ref:IRB@Verbosity]
   to `true`.
 - `-E _ex_[:_in_]`: Set initial external (ex) and internal (in)
-  {encodings}[rdoc-ref:IRB@Encodings] (same as `ruby -E>`).
+  {encodings}[rdoc-ref:IRB@Encodings] (same as `ruby -E`).
 - `-f`: Don't initialize from {configuration file}[rdoc-ref:IRB@Configuration+File].
 - `-I _dirpath_`: Specify {$LOAD_PATH directory}[rdoc-ref:IRB@Load+Modules]
   (same as `ruby -I`).
@@ -50,7 +50,7 @@ These are the \IRB command-line options, with links to explanatory text:
   {command-line argument}[rdoc-ref:IRB@Initialization+Script],
   and include it in `ARGV`.
 - `--nosingleline`: Don't use the singleline editor as the {input method}[rdoc-ref:IRB@Input+Method].
-- `--noverbose`Don't print {verbose}[rdoc-ref:IRB@Verbosity] details.
+- `--noverbose`: Don't print {verbose}[rdoc-ref:IRB@Verbosity] details.
 - `--prompt _mode_`, `--prompt-mode _mode_`:
   Set {prompt and return formats}[rdoc-ref:IRB@Prompt+and+Return+Formats];
   `mode` may be a {pre-defined prompt}[rdoc-ref:IRB@Pre-Defined+Prompts]

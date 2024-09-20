@@ -1618,25 +1618,42 @@ class TestMethod < Test::Unit::TestCase
 
   def test_kwarg_eval_memory_leak
     assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+      obj = Object.new
+      def obj.test(**kwargs) = nil
+
       100_000.times do
-        eval("Hash.new(foo: 123)")
+        eval("obj.test(foo: 123)")
       end
     RUBY
+  end
+
+  def test_super_with_splat
+    c = Class.new {
+      attr_reader :x
+
+      def initialize(*args)
+        @x, _ = args
+      end
+    }
+    b = Class.new(c) { def initialize(...) = super }
+    a = Class.new(b) { def initialize(*args) = super }
+    obj = a.new(1, 2, 3)
+    assert_equal 1, obj.x
   end
 
   def test_warn_unused_block
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
       def foo = nil
       foo{}          # warn
-      send(:foo){}   # warn
+      send(:foo){}   # don't warn because it uses send
       b = Proc.new{}
       foo(&b)        # warn
     RUBY
-      assert_equal 3, err.size
-      err = err.join
-      assert_match(/-:2: warning/, err)
-      assert_match(/-:3: warning/, err)
-      assert_match(/-:5: warning/, err)
+      errstr = err.join("\n")
+      assert_equal 2, err.size, errstr
+
+      assert_match(/-:2: warning/, errstr)
+      assert_match(/-:5: warning/, errstr)
     end
 
     assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|

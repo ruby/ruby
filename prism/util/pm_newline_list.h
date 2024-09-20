@@ -81,6 +81,17 @@ pm_newline_list_clear(pm_newline_list_t *list);
 bool pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor);
 
 /**
+ * Returns the line of the given offset. If the offset is not in the list, the
+ * line of the closest offset less than the given offset is returned.
+ *
+ * @param list The list to search.
+ * @param cursor A pointer to the offset to search for.
+ * @param start_line The line to start counting from.
+ * @return The line of the given offset.
+ */
+int32_t pm_newline_list_line(const pm_newline_list_t *list, const uint8_t *cursor, int32_t start_line);
+
+/**
  * Returns the line and column of the given offset. If the offset is not in the
  * list, the line and column of the closest offset less than the given offset
  * are returned.

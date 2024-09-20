@@ -322,16 +322,32 @@ enum_count(int argc, VALUE *argv, VALUE obj)
     return imemo_count_value(memo);
 }
 
+NORETURN(static void found(VALUE i, VALUE memop));
+static void
+found(VALUE i, VALUE memop) {
+    struct MEMO *memo = MEMO_CAST(memop);
+    MEMO_V1_SET(memo, i);
+    memo->u3.cnt = 1;
+    rb_iter_break();
+}
+
+static VALUE
+find_i_fast(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
+{
+    if (RTEST(rb_yield_values2(argc, argv))) {
+        ENUM_WANT_SVALUE();
+        found(i, memop);
+    }
+    return Qnil;
+}
+
 static VALUE
 find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     ENUM_WANT_SVALUE();
 
     if (RTEST(enum_yield(argc, i))) {
-        struct MEMO *memo = MEMO_CAST(memop);
-        MEMO_V1_SET(memo, i);
-        memo->u3.cnt = 1;
-        rb_iter_break();
+        found(i, memop);
     }
     return Qnil;
 }
@@ -366,7 +382,10 @@ enum_find(int argc, VALUE *argv, VALUE obj)
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     RETURN_ENUMERATOR(obj, argc, argv);
     memo = MEMO_NEW(Qundef, 0, 0);
-    rb_block_call(obj, id_each, 0, 0, find_i, (VALUE)memo);
+    if (rb_block_pair_yield_optimizable())
+        rb_block_call2(obj, id_each, 0, 0, find_i_fast, (VALUE)memo, RB_BLOCK_NO_USE_PACKED_ARGS);
+    else
+        rb_block_call2(obj, id_each, 0, 0, find_i, (VALUE)memo, RB_BLOCK_NO_USE_PACKED_ARGS);
     if (memo->u3.cnt) {
         return memo->v1;
     }
@@ -1216,29 +1235,47 @@ tally_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *    tally -> new_hash
- *    tally(hash) -> hash
+ *    tally(hash = {}) -> hash
  *
- *  Returns a hash containing the counts of equal elements:
- *
- *  - Each key is an element of +self+.
- *  - Each value is the number elements equal to that key.
- *
- *  With no argument:
+ *  When argument +hash+ is not given,
+ *  returns a new hash whose keys are the distinct elements in +self+;
+ *  each integer value is the count of occurrences of each element:
  *
  *    %w[a b c b c a c b].tally # => {"a"=>2, "b"=>3, "c"=>3}
  *
- *  With a hash argument, that hash is used for the tally (instead of a new hash),
- *  and is returned;
- *  this may be useful for accumulating tallies across multiple enumerables:
+ *  When argument +hash+ is given,
+ *  returns +hash+, possibly augmented; for each element +ele+ in +self+:
  *
- *    hash = {}
- *    hash = %w[a c d b c a].tally(hash)
- *    hash # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
- *    hash = %w[b a z].tally(hash)
- *    hash # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
- *    hash = %w[b a m].tally(hash)
- *    hash # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=> 1}
+ *  - Adds it as a key with a zero value if that key does not already exist:
+ *
+ *      hash[ele] = 0 unless hash.include?(ele)
+ *
+ *  - Increments the value of key +ele+:
+ *
+ *      hash[ele] += 1
+ *
+ *  This is useful for accumulating tallies across multiple enumerables:
+ *
+ *    h = {}                   # => {}
+ *    %w[a c d b c a].tally(h) # => {"a"=>2, "c"=>2, "d"=>1, "b"=>1}
+ *    %w[b a z].tally(h)       # => {"a"=>3, "c"=>2, "d"=>1, "b"=>2, "z"=>1}
+ *    %w[b a m].tally(h)       # => {"a"=>4, "c"=>2, "d"=>1, "b"=>3, "z"=>1, "m"=>1}
+ *
+ *  The key to be added or found for an element depends on the class of +self+;
+ *  see {Enumerable in Ruby Classes}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes].
+ *
+ *  Examples:
+ *
+ *  - Array (and certain array-like classes):
+ *    the key is the element (as above).
+ *  - Hash (and certain hash-like classes):
+ *    the key is the 2-element array formed from the key-value pair:
+ *
+ *      h = {}                        # => {}
+ *      {foo: 'a', bar: 'b'}.tally(h) # => {[:foo, "a"]=>1, [:bar, "b"]=>1}
+ *      {foo: 'c', bar: 'd'}.tally(h) # => {[:foo, "a"]=>1, [:bar, "b"]=>1, [:foo, "c"]=>1, [:bar, "d"]=>1}
+ *      {foo: 'a', bar: 'b'}.tally(h) # => {[:foo, "a"]=>2, [:bar, "b"]=>2, [:foo, "c"]=>1, [:bar, "d"]=>1}
+ *      {foo: 'c', bar: 'd'}.tally(h) # => {[:foo, "a"]=>2, [:bar, "b"]=>2, [:foo, "c"]=>2, [:bar, "d"]=>2}
  *
  */
 
@@ -1724,6 +1761,9 @@ enum_sort_by(VALUE obj)
 
 #define ENUMFUNC(name) argc ? name##_eqq : rb_block_given_p() ? name##_iter_i : name##_i
 
+#define ENUM_BLOCK_CALL(name) \
+    rb_block_call2(obj, id_each, 0, 0, ENUMFUNC(name), (VALUE)memo, rb_block_given_p() && rb_block_pair_yield_optimizable() ? RB_BLOCK_NO_USE_PACKED_ARGS : 0);
+
 #define MEMO_ENUM_NEW(v1) (rb_check_arity(argc, 0, 1), MEMO_NEW((v1), (argc ? *argv : 0), 0))
 
 #define DEFINE_ENUMFUNCS(name) \
@@ -1817,7 +1857,7 @@ enum_all(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(all), (VALUE)memo);
+    ENUM_BLOCK_CALL(all);
     return memo->v1;
 }
 
@@ -1879,7 +1919,7 @@ enum_any(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qfalse);
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any), (VALUE)memo);
+    ENUM_BLOCK_CALL(any);
     return memo->v1;
 }
 
@@ -2168,7 +2208,7 @@ enum_one(int argc, VALUE *argv, VALUE obj)
     VALUE result;
 
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(one), (VALUE)memo);
+    ENUM_BLOCK_CALL(one);
     result = memo->v1;
     if (UNDEF_P(result)) return Qfalse;
     return result;
@@ -2229,7 +2269,7 @@ enum_none(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
 
     WARN_UNUSED_BLOCK(argc);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(none), (VALUE)memo);
+    ENUM_BLOCK_CALL(none);
     return memo->v1;
 }
 
@@ -4915,7 +4955,7 @@ enum_compact(VALUE obj)
  *
  * These methods return information about the \Enumerable other than the elements themselves:
  *
- * - #include?, #member?: Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
+ * - #member? (aliased as #include?): Returns +true+ if <tt>self == object</tt>, +false+ otherwise.
  * - #all?: Returns +true+ if all elements meet a specified criterion; +false+ otherwise.
  * - #any?: Returns +true+ if any element meets a specified criterion; +false+ otherwise.
  * - #none?: Returns +true+ if no element meets a specified criterion; +false+ otherwise.
@@ -4930,7 +4970,7 @@ enum_compact(VALUE obj)
  *
  * <i>Leading, trailing, or all elements</i>:
  *
- * - #entries, #to_a: Returns all elements.
+ * - #to_a (aliased as #entries): Returns all elements.
  * - #first: Returns the first element or leading elements.
  * - #take: Returns a specified number of leading elements.
  * - #drop: Returns a specified number of trailing elements.
@@ -4965,8 +5005,8 @@ enum_compact(VALUE obj)
  *
  * These methods return elements that meet a specified criterion:
  *
- * - #find, #detect: Returns an element selected by the block.
- * - #find_all, #filter, #select: Returns elements selected by the block.
+ * - #find (aliased as #detect): Returns an element selected by the block.
+ * - #find_all (aliased as #filter, #select): Returns elements selected by the block.
  * - #find_index: Returns the index of an element selected by a given object or block.
  * - #reject: Returns elements not rejected by the block.
  * - #uniq: Returns elements that are not duplicates.
@@ -4991,14 +5031,14 @@ enum_compact(VALUE obj)
  *
  * === Other Methods
  *
- * - #map, #collect: Returns objects returned by the block.
+ * - #collect (aliased as #map): Returns objects returned by the block.
  * - #filter_map: Returns truthy objects returned by the block.
- * - #flat_map, #collect_concat: Returns flattened objects returned by the block.
+ * - #flat_map (aliased as #collect_concat): Returns flattened objects returned by the block.
  * - #grep: Returns elements selected by a given object
  *   or objects returned by a given block.
  * - #grep_v: Returns elements selected by a given object
  *   or objects returned by a given block.
- * - #reduce, #inject: Returns the object formed by combining all elements.
+ * - #inject (aliased as #reduce): Returns the object formed by combining all elements.
  * - #sum: Returns the sum of the elements, using method <tt>+</tt>.
  * - #zip: Combines each element with elements from other enumerables;
  *   returns the n-tuples or calls the block with each.

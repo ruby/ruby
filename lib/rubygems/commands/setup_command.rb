@@ -279,11 +279,7 @@ By default, this RubyGems will install gem as:
           File.open bin_cmd_file, "w" do |file|
             file.puts <<-TEXT
   @ECHO OFF
-  IF NOT "%~f0" == "~f0" GOTO :WinNT
-  @"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
-  GOTO :EOF
-  :WinNT
-  @"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
+  @"%~dp0#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
   TEXT
           end
 
@@ -339,6 +335,8 @@ By default, this RubyGems will install gem as:
       end
 
       require_relative "../rdoc"
+
+      return false unless defined?(Gem::RDoc)
 
       fake_spec = Gem::Specification.new "rubygems", Gem::VERSION
       def fake_spec.full_gem_path
@@ -585,6 +583,8 @@ abort "#{deprecation_message}"
 
     args = %w[--all --only-executables --silent]
     args << "--bindir=#{bindir}"
+    args << "--install-dir=#{default_dir}"
+
     if options[:env_shebang]
       args << "--env-shebang"
     end

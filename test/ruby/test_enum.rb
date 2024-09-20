@@ -1348,4 +1348,12 @@ class TestEnumerable < Test::Unit::TestCase
     klass.new.grep(/(b.)/) { svars << $1 }
     assert_equal(["ba", "ba"], svars)
   end
+
+  def test_all_fast
+    data = { "key" => { "key2" => 1 } }
+    kk = vv = nil
+    data.all? { |(k, v)| kk, vv = k, v }
+    assert_equal(kk, "key")
+    assert_equal(vv, { "key2" => 1 })
+  end
 end

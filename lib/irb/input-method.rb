@@ -171,11 +171,13 @@ module IRB
   end
 
   class ReadlineInputMethod < StdioInputMethod
-    def self.initialize_readline
-      require "readline"
-    rescue LoadError
-    else
-      include ::Readline
+    class << self
+      def initialize_readline
+        require "readline"
+      rescue LoadError
+      else
+        include ::Readline
+      end
     end
 
     include HistorySavingAbility
@@ -268,7 +270,13 @@ module IRB
           proc do |output, complete: |
             next unless IRB::Color.colorable?
             lvars = IRB.CurrentContext&.local_variables || []
-            IRB::Color.colorize_code(output, complete: complete, local_variables: lvars)
+            if IRB.CurrentContext&.parse_command(output)
+              name, sep, arg = output.split(/(\s+)/, 2)
+              arg = IRB::Color.colorize_code(arg, complete: complete, local_variables: lvars)
+              "#{IRB::Color.colorize(name, [:BOLD])}\e[m#{sep}#{arg}"
+            else
+              IRB::Color.colorize_code(output, complete: complete, local_variables: lvars)
+            end
           end
         else
           proc do |output|
@@ -328,10 +336,11 @@ module IRB
       ->() {
         dialog.trap_key = nil
         alt_d = [
-          [Reline::Key.new(nil, 0xE4, true)], # Normal Alt+d.
           [27, 100], # Normal Alt+d when convert-meta isn't used.
-          [195, 164], # The "ä" that appears when Alt+d is pressed on xterm.
-          [226, 136, 130] # The "∂" that appears when Alt+d in pressed on iTerm2.
+          # When option/alt is not configured as a meta key in terminal emulator,
+          # option/alt + d will send a unicode character depend on OS keyboard setting.
+          [195, 164], # "ä" in somewhere (FIXME: environment information is unknown).
+          [226, 136, 130] # "∂" Alt+d on Mac keyboard.
         ]
 
         if just_cursor_moving and completion_journey_data.nil?

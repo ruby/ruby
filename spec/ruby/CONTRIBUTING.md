@@ -164,7 +164,7 @@ end
 platform_is_not :linux, :darwin do # Not Linux and not Darwin
 end
 
-platform_is wordsize: 64 do
+platform_is pointer_size: 64 do
   # 64-bit platform
 end
 
@@ -277,13 +277,13 @@ describe :kernel_sprintf, shared: true do
 end
 
 describe "Kernel#sprintf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     sprintf(format, *args)
   }
 end
 
 describe "Kernel.sprintf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     Kernel.sprintf(format, *args)
   }
 end

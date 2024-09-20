@@ -123,6 +123,7 @@ assert_equal '[:ae, :ae]', %q{
 
 # regression test for GC marking stubs in invalidated code
 assert_normal_exit %q{
+  skip true unless defined?(GC.compact)
   garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement
   eval(<<~RUBY)
   def foo(n, garbage)
@@ -157,7 +158,7 @@ assert_equal '0', "0.abs(&nil)"
 
 # regression test for invokeblock iseq guard
 assert_equal 'ok', %q{
-  return :ok unless defined?(GC.compact)
+  skip :ok unless defined?(GC.compact)
   def foo = yield
   10.times do |i|
     ret = eval("foo { #{i} }")
@@ -592,6 +593,8 @@ assert_equal 'string', %q{
 
 # Check that exceptions work when getting global variable
 assert_equal 'rescued', %q{
+  Warning[:deprecated] = true
+
   module Warning
     def warn(message)
       raise
@@ -1227,6 +1230,7 @@ assert_equal 'special', %q{
 
 # Test that object references in generated code get marked and moved
 assert_equal "good", %q{
+  skip :good unless defined?(GC.compact)
   def bar
     "good"
   end
@@ -2252,6 +2256,34 @@ assert_equal '7', %q{
   foo(5,2)
 }
 
+# regression test for argument registers with invalidation
+assert_equal '[0, 1, 2]', %q{
+  def test(n)
+    ret = n
+    binding
+    ret
+  end
+
+  [0, 1, 2].map do |n|
+    test(n)
+  end
+}
+
+# regression test for argument registers
+assert_equal 'true', %q{
+  class Foo
+    def ==(other)
+      other == nil
+    end
+  end
+
+  def test
+    [Foo.new].include?(Foo.new)
+  end
+
+  test
+}
+
 # test pattern matching
 assert_equal '[:ok, :ok]', %q{
   class C
@@ -2319,6 +2351,7 @@ assert_equal '123', %q{
 
 # Test EP == BP invalidation with moving ISEQs
 assert_equal 'ok', %q{
+  skip :ok unless defined?(GC.compact)
   def entry
     ok = proc { :ok } # set #entry as an EP-escaping ISEQ
     [nil].reverse_each do # avoid exiting the JIT frame on the constant
@@ -4767,6 +4800,23 @@ assert_equal 'foo', %q{
   entry(true)
 }
 
+assert_equal 'ok', %q{
+  def ok
+    :ok
+  end
+
+  def delegator(...)
+    ok(...)
+  end
+
+  def caller
+    send(:delegator)
+  end
+
+  caller
+}
+
+# test inlining of simple iseqs
 assert_equal '[:ok, :ok, :ok]', %q{
   def identity(x) = x
   def foo(x, _) = x
@@ -4777,6 +4827,49 @@ assert_equal '[:ok, :ok, :ok]', %q{
       identity(:ok),
       foo(:ok, 2),
       bar(1, 2, 3, 4, :ok),
+    ]
+  end
+
+  tests
+}
+
+# test inlining of simple iseqs with kwargs
+assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
+  def optional_unused(x, opt: :not_ok) = x
+  def optional_used(x, opt: :ok) = opt
+  def required_unused(x, req:) = x
+  def required_used(x, req:) = req
+  def unknown(x) = x
+
+  def tests
+    [
+      optional_unused(:ok),
+      optional_used(:not_ok),
+      required_unused(:ok, req: :not_ok),
+      required_used(:not_ok, req: :ok),
+      begin unknown(:not_ok, unknown_kwarg: :not_ok) rescue ArgumentError; :ok end,
+    ]
+  end
+
+  tests
+}
+
+# test simple iseqs not eligible for inlining
+assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
+  def identity(x) = x
+  def arg_splat(x, *args) = x
+  def kwarg_splat(x, **kwargs) = x
+  def block_arg(x, &blk) = x
+  def block_iseq(x) = x
+  def call_forwarding(...) = identity(...)
+
+  def tests
+    [
+      arg_splat(:ok),
+      kwarg_splat(:ok),
+      block_arg(:ok, &proc { :not_ok }),
+      block_iseq(:ok) { :not_ok },
+      call_forwarding(:ok),
     ]
   end
 
@@ -4811,6 +4904,15 @@ assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
   end
 
   tests
+}
+
+# test integer left shift fusion followed by opt_getconstant_path
+assert_equal '33', %q{
+  def test(a)
+    (a << 5) | (Object; a)
+  end
+
+  test(1)
 }
 
 # test String#stebyte with arguments that need conversion
@@ -4980,3 +5082,150 @@ assert_equal '[[:c_call, :x=], [:c_call, :x]]', %q{
 
   events
 }
+
+# regression test for splatting empty array
+assert_equal '1', %q{
+  def callee(foo) = foo
+
+  def test_body(args) = callee(1, *args)
+
+  test_body([])
+  array = Array.new(100)
+  array.clear
+  test_body(array)
+}
+
+# regression test for splatting empty array to cfunc
+assert_normal_exit %q{
+  def test_body(args) = Array(1, *args)
+
+  test_body([])
+  0x100.times do
+    array = Array.new(100)
+    array.clear
+    test_body(array)
+  end
+}
+
+# compiling code shouldn't emit warnings as it may call into more Ruby code
+assert_equal 'ok', <<~'RUBY'
+  # [Bug #20522]
+  $VERBOSE = true
+  Warning[:performance] = true
+
+  module StrictWarnings
+    def warn(msg, **)
+      raise msg
+    end
+  end
+  Warning.singleton_class.prepend(StrictWarnings)
+
+  class A
+    def compiled_method(is_private)
+      @some_ivar = is_private
+    end
+  end
+
+  shape_max_variations = 8
+  if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS) && RubyVM::Shape::SHAPE_MAX_VARIATIONS != shape_max_variations
+    raise "Expected SHAPE_MAX_VARIATIONS to be #{shape_max_variations}, got: #{RubyVM::Shape::SHAPE_MAX_VARIATIONS}"
+  end
+
+  100.times do |i|
+    klass = Class.new(A)
+    (shape_max_variations - 1).times do |j|
+      obj = klass.new
+      obj.instance_variable_set("@base_#{i}", 42)
+      obj.instance_variable_set("@ivar_#{j}", 42)
+    end
+    obj = klass.new
+    obj.instance_variable_set("@base_#{i}", 42)
+    begin
+      obj.compiled_method(true)
+    rescue
+      # expected
+    end
+  end
+
+  :ok
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  class MyRelation
+    def callee(...)
+      :ok
+    end
+
+    def uncached(...)
+      callee(...)
+    end
+
+    def takes_block(&block)
+      # push blockhandler
+      uncached(&block) # CI1
+    end
+  end
+
+  relation = MyRelation.new
+  relation.takes_block { }
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def _exec_scope(...)
+    instance_exec(...)
+  end
+
+  def ok args, body
+    _exec_scope(*args, &body)
+  end
+
+  ok([], -> { "ok" })
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def _exec_scope(...)
+    instance_exec(...)
+  end
+
+  def ok args, body
+    _exec_scope(*args, &body)
+  end
+
+  ok(["ok"], ->(x) { x })
+RUBY
+
+assert_equal 'ok', <<~'RUBY'
+def baz(a, b)
+  a + b
+end
+
+def bar(...)
+  baz(...)
+end
+
+def foo(a, ...)
+  bar(a, ...)
+end
+
+def test
+  foo("o", "k")
+end
+
+test
+RUBY
+
+assert_equal '[true, true]', <<~'RUBY'
+  def pack
+    v = 1.23
+    [v, v*2, v*3].pack("E*").unpack("E*") == [v, v*2, v*3]
+  end
+
+  def with_buffer
+    v = 4.56
+    b = +"x"
+    [v, v*2, v*3].pack("E*", buffer: b)
+    b[1..].unpack("E*") == [v, v*2, v*3]
+  end
+
+  [pack, with_buffer]
+RUBY

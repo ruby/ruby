@@ -5,3 +5,5 @@ encoding: UTF-8
 main_page: README.md
 title: Documentation for Ruby development version
 visibility: :private
+rdoc_include:
+- doc

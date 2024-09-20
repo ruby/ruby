@@ -105,7 +105,7 @@ class TestGemCommandsRebuildCommand < Gem::TestCase
     assert_equal old_spec.name, new_spec.name
     assert_equal old_spec.summary, new_spec.summary
 
-    reproduced
+    [reproduced, original]
   end
 
   def test_build_is_reproducible
@@ -134,12 +134,21 @@ class TestGemCommandsRebuildCommand < Gem::TestCase
     # also testing that `gem rebuild` overrides the value.
     ENV["SOURCE_DATE_EPOCH"] = Time.new(2007, 8, 9, 10, 11, 12).to_s
 
-    rebuild_gem_file = util_test_rebuild_gem(@gem, [@gem_name, @gem_version], original_gem_file, gemspec_file, timestamp)
+    rebuild_gem_file, saved_gem_file =
+      util_test_rebuild_gem(@gem, [@gem_name, @gem_version], original_gem_file, gemspec_file, timestamp)
 
     rebuild_contents = File.read(rebuild_gem_file)
 
     assert_equal build_contents, rebuild_contents
   ensure
     ENV["SOURCE_DATE_EPOCH"] = epoch
+    if rebuild_gem_file
+      File.unlink(rebuild_gem_file)
+      dir = File.dirname(rebuild_gem_file)
+      Dir.rmdir(dir)
+      File.unlink(saved_gem_file)
+      Dir.rmdir(File.dirname(saved_gem_file))
+      Dir.rmdir(File.dirname(dir))
+    end
   end
 end

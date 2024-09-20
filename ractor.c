@@ -248,6 +248,14 @@ ractor_free(void *ptr)
     ractor_queue_free(&r->sync.takers_queue);
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
+
+    if (r->newobj_cache) {
+        RUBY_ASSERT(r == ruby_single_main_ractor);
+
+        rb_gc_ractor_cache_free(r->newobj_cache);
+        r->newobj_cache = NULL;
+    }
+
     ruby_xfree(r);
 }
 
@@ -1923,6 +1931,13 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
 
     ccan_list_add_tail(&vm->ractor.set, &r->vmlr_node);
     vm->ractor.cnt++;
+
+    if (r->newobj_cache) {
+        VM_ASSERT(r == ruby_single_main_ractor);
+    }
+    else {
+        r->newobj_cache = rb_gc_ractor_cache_alloc();
+    }
 }
 
 static void
@@ -1990,8 +2005,8 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         }
         vm->ractor.cnt--;
 
-        /* Clear the cached freelist to prevent a memory leak. */
-        rb_gc_ractor_newobj_cache_clear(&cr->newobj_cache);
+        rb_gc_ractor_cache_free(cr->newobj_cache);
+        cr->newobj_cache = NULL;
 
         ractor_status_set(cr, ractor_terminated);
     }
@@ -2021,6 +2036,7 @@ rb_ractor_main_alloc(void)
     r->loc = Qnil;
     r->name = Qnil;
     r->pub.self = Qnil;
+    r->newobj_cache = rb_gc_ractor_cache_alloc();
     ruby_single_main_ractor = r;
 
     return r;
@@ -2984,10 +3000,7 @@ rb_obj_traverse(VALUE obj,
 static int
 frozen_shareable_p(VALUE obj, bool *made_shareable)
 {
-    if (CHILLED_STRING_P(obj)) {
-        return false;
-    }
-    else if (!RB_TYPE_P(obj, T_DATA)) {
+    if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
     else if (RTYPEDDATA_P(obj)) {
@@ -3016,18 +3029,7 @@ make_shareable_check_shareable(VALUE obj)
     if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
     }
-    else if (CHILLED_STRING_P(obj)) {
-        rb_funcall(obj, idFreeze, 0);
-
-        if (UNLIKELY(!RB_OBJ_FROZEN_RAW(obj))) {
-            rb_raise(rb_eRactorError, "#freeze does not freeze object correctly");
-        }
-
-        if (RB_OBJ_SHAREABLE_P(obj)) {
-            return traverse_skip;
-        }
-    }
-    else if (!frozen_shareable_p(obj, &made_shareable)) {
+    if (!frozen_shareable_p(obj, &made_shareable)) {
         if (made_shareable) {
             return traverse_skip;
         }
@@ -3128,6 +3130,12 @@ rb_ractor_shareable_p_continue(VALUE obj)
 }
 
 #if RACTOR_CHECK_MODE > 0
+void
+rb_ractor_setup_belonging(VALUE obj)
+{
+    rb_ractor_setup_belonging_to(obj, rb_ractor_current_id());
+}
+
 static enum obj_traverse_iterator_result
 reset_belonging_enter(VALUE obj)
 {

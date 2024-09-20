@@ -10,6 +10,13 @@ RSpec.describe Bundler::UI::Shell do
     it "prints to stdout" do
       expect { subject.info("info") }.to output("info\n").to_stdout
     end
+
+    context "when output_stream is :stderr" do
+      before { subject.output_stream = :stderr }
+      it "prints to stderr" do
+        expect { subject.info("info") }.to output("info\n").to_stderr
+      end
+    end
   end
 
   describe "#confirm" do
@@ -17,18 +24,35 @@ RSpec.describe Bundler::UI::Shell do
     it "prints to stdout" do
       expect { subject.confirm("confirm") }.to output("confirm\n").to_stdout
     end
+
+    context "when output_stream is :stderr" do
+      before { subject.output_stream = :stderr }
+      it "prints to stderr" do
+        expect { subject.confirm("confirm") }.to output("confirm\n").to_stderr
+      end
+    end
   end
 
   describe "#warn" do
     before { subject.level = "warn" }
-    it "prints to stderr" do
+    it "prints to stderr, implicitly adding a newline" do
       expect { subject.warn("warning") }.to output("warning\n").to_stderr
+    end
+    it "can be told not to emit a newline" do
+      expect { subject.warn("warning", false) }.to output("warning").to_stderr
     end
   end
 
   describe "#debug" do
     it "prints to stdout" do
       expect { subject.debug("debug") }.to output("debug\n").to_stdout
+    end
+
+    context "when output_stream is :stderr" do
+      before { subject.output_stream = :stderr }
+      it "prints to stderr" do
+        expect { subject.debug("debug") }.to output("debug\n").to_stderr
+      end
     end
   end
 

@@ -36,7 +36,7 @@ struct direct* rb_w32_ureaddir(DIR *);
 long           rb_w32_telldir(DIR *);
 void           rb_w32_seekdir(DIR *, long);
 void           rb_w32_rewinddir(DIR *);
-void           rb_w32_closedir(DIR *);
+int            rb_w32_closedir(DIR *);
 char          *rb_w32_ugetcwd(char *, int);
 
 #define opendir(s)   rb_w32_uopendir((s))

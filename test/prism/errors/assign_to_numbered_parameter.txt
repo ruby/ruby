@@ -1,0 +1,11 @@
+a in _1
+     ^~ _1 is reserved for numbered parameters
+a => _1
+     ^~ _1 is reserved for numbered parameters
+1 => a, _1
+        ^~ _1 is reserved for numbered parameters
+1 in a, _1
+        ^~ _1 is reserved for numbered parameters
+/(?<_1>)/ =~ a
+    ^~ _1 is reserved for numbered parameters
+

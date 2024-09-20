@@ -6,7 +6,7 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-.SUFFIXES: .rbinc .rb .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
+.SUFFIXES: .rbinc .rbbin .rb .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
@@ -106,7 +106,6 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/util/pm_memchr.$(OBJEXT) \
 		prism/util/pm_newline_list.$(OBJEXT) \
 		prism/util/pm_string.$(OBJEXT) \
-		prism/util/pm_string_list.$(OBJEXT) \
 		prism/util/pm_strncasecmp.$(OBJEXT) \
 		prism/util/pm_strpbrk.$(OBJEXT) \
 		prism/prism.$(OBJEXT) \
@@ -292,7 +291,7 @@ DEFAULT_PRELUDES = $(GEM_PRELUDE)
 PRELUDE_SCRIPTS = $(DEFAULT_PRELUDES)
 GEM_PRELUDE   =
 PRELUDES      = {$(srcdir)}miniprelude.c
-GOLFPRELUDES  = {$(srcdir)}golf_prelude.c
+GOLFPRELUDES  = golf_prelude.rbbin
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
@@ -759,7 +758,7 @@ clean-rubyspec: clean-spec
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
-	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES) *.rbinc
+	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES) *.rbinc *.rbbin
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
@@ -1018,15 +1017,6 @@ yes-test-spec: yes-test-spec-precheck
 	$(ACTIONS_ENDGROUP)
 no-test-spec:
 
-test-prism-spec: $(TEST_RUNNABLE)-test-prism-spec
-yes-test-prism-spec: yes-test-spec-precheck
-	$(ACTIONS_GROUP)
-	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/lib/_tmpdir \
-		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec -B $(srcdir)/spec/prism.mspec $(MSPECOPT) $(SPECOPTS)
-	$(ACTIONS_ENDGROUP)
-no-test-prism-spec:
-
 check: $(DOT_WAIT) test-spec
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
@@ -1213,6 +1203,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
+		$(srcdir)/hash.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/symbol.rb \
@@ -1313,10 +1304,7 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE) $(BUILTIN_RB_SRCS)
 	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(BUILTIN_RB_SRCS)
 
-$(GOLF_PRELUDE_C): $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(tooldir)/generic_erb.rb -I$(srcdir) -c -o $@ \
-		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
+golf_prelude.rbbin: {$(srcdir)}golf_prelude.rb $(tooldir)/mk_rbbin.rb $(PREP)
 
 MAINCPPFLAGS = $(ENABLE_DEBUG_ENV:yes=-DRUBY_DEBUG_ENV=1)
 
@@ -1334,7 +1322,10 @@ probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
 prereq: incs srcs preludes PHONY
 
 preludes: {$(VPATH)}miniprelude.c
-preludes: {$(srcdir)}golf_prelude.c
+
+{$(srcdir)}.rb.rbbin:
+	$(ECHO) making $@
+	$(Q) $(MINIRUBY) $(tooldir)/mk_rbbin.rb $< > $@
 
 {$(srcdir)}.rb.rbinc:
 	$(ECHO) making $@
@@ -1600,7 +1591,7 @@ yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
-test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(TEST_RUNNABLE)-test-bundled-gems-spec
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
 yes-test-bundled-gems: test-bundled-gems-run
 no-test-bundled-gems:
 
@@ -1608,8 +1599,10 @@ no-test-bundled-gems:
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
 
 BUNDLED_GEMS =
-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
+test-bundled-gems-run: $(TEST_RUNNABLE)-test-bundled-gems-run
+yes-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(gnumake_recursive)$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
+no-test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 
 test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
 yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
@@ -1673,8 +1666,8 @@ no-test-bundler-parallel:
 # The annocheck supports ELF format binaries compiled for any OS and for any
 # architecture. It is designed to be independent of the host OS and the
 # architecture. The test-annocheck.sh requires docker or podman.
-test-annocheck: $(PROGRAM)
-	$(tooldir)/test-annocheck.sh $(PROGRAM)
+test-annocheck: $(PROGRAM) $(LIBRUBY_SO)
+	$(tooldir)/test-annocheck.sh $(PROGRAM) $(LIBRUBY_SO)
 
 GEM = up
 sync-default-gems:
@@ -1894,7 +1887,35 @@ ChangeLog:
 	-e 'VCS.detect(ARGV[0]).export_changelog(path: ARGV[1])' \
 	"$(srcdir)" $@
 
+# CAUTION: If using GNU make 3 which does not support `.WAIT`, this
+# recipe with multiple jobs makes build and `git reset` run
+# simultaneously, and will cause inconsistent results.  Run with `-j1`
+# or update GNU make.
+nightly: yesterday $(DOT_WAIT) install
+	$(NULLCMD)
+
+# Rewind to the last commit "yesterday".  "Yesterday" means here the
+# period where `RUBY_RELEASE_DATE` is the day before the date to be
+# generated now.  In short, the yesterday in JST-9 time zone.
+yesterday: rewindable
+
+rewindable:
+	$(GIT) -C $(srcdir) status --porcelain
+	$(GIT) -C $(srcdir) diff --quiet
+
 HELP_EXTRA_TASKS = ""
+
+shared-gc: probes.h
+	$(Q) if test -z $(shared_gc_dir); then \
+		echo "You must configure with --with-shared-gc to use shared GC"; \
+		exit 1; \
+	elif test -z $(SHARED_GC); then \
+		echo "You must specify SHARED_GC with the GC to build"; \
+		exit 1; \
+	else \
+		echo generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT); \
+		$(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) $(XDLDFLAGS) $(cflags) -DBUILDING_SHARED_GC -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c; \
+	fi
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
@@ -2260,7 +2281,6 @@ ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 ast.$(OBJEXT): {$(VPATH)}assert.h
@@ -2698,7 +2718,6 @@ builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 builtin.$(OBJEXT): {$(VPATH)}assert.h
@@ -3336,7 +3355,6 @@ compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 compile.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 compile.$(OBJEXT): $(top_srcdir)/prism_compile.c
@@ -3802,7 +3820,6 @@ cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
@@ -6787,7 +6804,6 @@ eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 eval.$(OBJEXT): {$(VPATH)}assert.h
@@ -7221,6 +7237,9 @@ gc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 gc.$(OBJEXT): $(hdrdir)/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/version.h
+gc.$(OBJEXT): $(top_srcdir)/gc/default.c
+gc.$(OBJEXT): $(top_srcdir)/gc/gc.h
+gc.$(OBJEXT): $(top_srcdir)/gc/gc_impl.h
 gc.$(OBJEXT): $(top_srcdir)/internal/array.h
 gc.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 gc.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -7269,7 +7288,6 @@ gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 gc.$(OBJEXT): {$(VPATH)}assert.h
@@ -7479,11 +7497,13 @@ gc.$(OBJEXT): {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 gc.$(OBJEXT): {$(VPATH)}thread_native.h
 gc.$(OBJEXT): {$(VPATH)}util.h
+gc.$(OBJEXT): {$(VPATH)}vm.h
 gc.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 gc.$(OBJEXT): {$(VPATH)}vm_core.h
 gc.$(OBJEXT): {$(VPATH)}vm_debug.h
 gc.$(OBJEXT): {$(VPATH)}vm_opts.h
 gc.$(OBJEXT): {$(VPATH)}vm_sync.h
+gc.$(OBJEXT): {$(VPATH)}yjit.h
 goruby.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 goruby.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 goruby.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -7527,7 +7547,6 @@ goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 goruby.$(OBJEXT): {$(VPATH)}assert.h
@@ -7546,7 +7565,7 @@ goruby.$(OBJEXT): {$(VPATH)}config.h
 goruby.$(OBJEXT): {$(VPATH)}constant.h
 goruby.$(OBJEXT): {$(VPATH)}defines.h
 goruby.$(OBJEXT): {$(VPATH)}encoding.h
-goruby.$(OBJEXT): {$(VPATH)}golf_prelude.c
+goruby.$(OBJEXT): {$(VPATH)}golf_prelude.rbbin
 goruby.$(OBJEXT): {$(VPATH)}goruby.c
 goruby.$(OBJEXT): {$(VPATH)}id.h
 goruby.$(OBJEXT): {$(VPATH)}id_table.h
@@ -7771,7 +7790,6 @@ hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 hash.$(OBJEXT): {$(VPATH)}assert.h
@@ -7785,12 +7803,14 @@ hash.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+hash.$(OBJEXT): {$(VPATH)}builtin.h
 hash.$(OBJEXT): {$(VPATH)}config.h
 hash.$(OBJEXT): {$(VPATH)}constant.h
 hash.$(OBJEXT): {$(VPATH)}debug_counter.h
 hash.$(OBJEXT): {$(VPATH)}defines.h
 hash.$(OBJEXT): {$(VPATH)}encoding.h
 hash.$(OBJEXT): {$(VPATH)}hash.c
+hash.$(OBJEXT): {$(VPATH)}hash.rbinc
 hash.$(OBJEXT): {$(VPATH)}id.h
 hash.$(OBJEXT): {$(VPATH)}id_table.h
 hash.$(OBJEXT): {$(VPATH)}intern.h
@@ -8814,7 +8834,6 @@ iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 iseq.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 iseq.$(OBJEXT): {$(VPATH)}assert.h
@@ -9071,7 +9090,6 @@ load.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-load.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 load.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 load.$(OBJEXT): {$(VPATH)}assert.h
@@ -10409,7 +10427,6 @@ miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 miniinit.$(OBJEXT): {$(VPATH)}array.rb
@@ -12004,7 +12021,6 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/api_node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/api_node.$(OBJEXT): {$(VPATH)}assert.h
@@ -12200,7 +12216,6 @@ prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/api_pack.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/api_pack.$(OBJEXT): {$(VPATH)}assert.h
@@ -12410,7 +12425,6 @@ prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/extension.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/extension.$(OBJEXT): {$(VPATH)}assert.h
@@ -12599,7 +12613,6 @@ prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_integer.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/node.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/node.$(OBJEXT): {$(VPATH)}prism/ast.h
@@ -12647,7 +12660,6 @@ prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/prism.$(OBJEXT): $(top_srcdir)/prism/version.h
@@ -12669,7 +12681,6 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/regexp.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/defines.h
@@ -12690,7 +12701,6 @@ prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/serialize.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism/serialize.$(OBJEXT): {$(VPATH)}prism/ast.h
@@ -12760,10 +12770,6 @@ prism/util/pm_newline_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/util/pm_string.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_string.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.c
 prism/util/pm_string.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.c
-prism/util/pm_string_list.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
@@ -12805,7 +12811,6 @@ prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 prism_init.$(OBJEXT): $(top_srcdir)/prism_init.c
@@ -13022,7 +13027,6 @@ proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 proc.$(OBJEXT): {$(VPATH)}assert.h
@@ -15518,7 +15522,6 @@ rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 rjit.$(OBJEXT): {$(VPATH)}assert.h
@@ -15772,7 +15775,6 @@ rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 rjit_c.$(OBJEXT): {$(VPATH)}assert.h
@@ -16052,7 +16054,6 @@ ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 ruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 ruby.$(OBJEXT): {$(VPATH)}assert.h
@@ -18506,7 +18507,6 @@ thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 thread.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
@@ -19118,8 +19118,11 @@ transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+util.$(OBJEXT): $(top_srcdir)/internal/array.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+util.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 util.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+util.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 util.$(OBJEXT): $(top_srcdir)/internal/util.h
 util.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 util.$(OBJEXT): {$(VPATH)}assert.h
@@ -19773,7 +19776,6 @@ vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm.$(OBJEXT): {$(VPATH)}assert.h
@@ -20032,7 +20034,6 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}assert.h
@@ -20263,7 +20264,6 @@ vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm_dump.$(OBJEXT): {$(VPATH)}addr2line.h
@@ -20706,7 +20706,6 @@ vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm_trace.$(OBJEXT): {$(VPATH)}assert.h
@@ -21149,7 +21148,6 @@ yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
-yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 yjit.$(OBJEXT): {$(VPATH)}assert.h

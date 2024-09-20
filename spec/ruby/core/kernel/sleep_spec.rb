@@ -21,7 +21,7 @@ describe "Kernel#sleep" do
     sleep(Rational(1, 999)).should >= 0
   end
 
-  it "accepts any Object that reponds to divmod" do
+  it "accepts any Object that responds to divmod" do
     o = Object.new
     def o.divmod(*); [0, 0.001]; end
     sleep(o).should >= 0

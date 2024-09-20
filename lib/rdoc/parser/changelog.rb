@@ -193,7 +193,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
     entries << [entry_name, entry_body] if entry_name
 
-    entries.reject! do |(entry,_)|
+    entries.reject! do |(entry, _)|
       entry == nil
     end
 
@@ -221,7 +221,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
   module Git
     ##
-    # Parses auxiliary info.  Currentry `base-url` to expand
+    # Parses auxiliary info.  Currently `base-url` to expand
     # references is effective.
 
     def parse_info(info)

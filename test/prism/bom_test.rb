@@ -2,7 +2,7 @@
 
 # Don't bother checking this on these engines, this is such a specific Ripper
 # test.
-return if RUBY_ENGINE == "jruby" || RUBY_ENGINE == "truffleruby"
+return if RUBY_ENGINE != "ruby"
 
 require_relative "test_helper"
 

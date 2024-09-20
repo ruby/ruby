@@ -2470,7 +2470,7 @@ float_arg(VALUE self)
  *
  * The rectangular coordinates of a complex number
  * are called the _real_ and _imaginary_ parts;
- * see {Complex number definition}[https://en.wikipedia.org/wiki/Complex_number#Definition].
+ * see {Complex number definition}[https://en.wikipedia.org/wiki/Complex_number#Definition_and_basic_operations].
  *
  * You can create a \Complex object from rectangular coordinates with:
  *
@@ -2495,7 +2495,7 @@ float_arg(VALUE self)
  *
  * The polar coordinates of a complex number
  * are called the _absolute_ and _argument_ parts;
- * see {Complex polar plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
+ * see {Complex polar plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_form].
  *
  * In this class, the argument part
  * in expressed {radians}[https://en.wikipedia.org/wiki/Radian]

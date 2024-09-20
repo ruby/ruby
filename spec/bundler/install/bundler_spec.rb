@@ -14,7 +14,7 @@ RSpec.describe "bundle install" do
 
     it "are forced to the current bundler version" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
       G
 
@@ -23,15 +23,15 @@ RSpec.describe "bundle install" do
 
     it "are forced to the current bundler version even if not already present" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
       expect(the_bundle).to include_gems "bundler #{Bundler::VERSION}"
     end
 
     it "causes a conflict if explicitly requesting a different version of bundler" do
       install_gemfile <<-G, raise_on_error: false
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
         gem "bundler", "0.9.1"
       G
@@ -51,7 +51,7 @@ RSpec.describe "bundle install" do
 
     it "causes a conflict if explicitly requesting a non matching requirement on bundler" do
       install_gemfile <<-G, raise_on_error: false
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
         gem "bundler", "~> 0.8"
       G
@@ -74,7 +74,7 @@ RSpec.describe "bundle install" do
 
     it "causes a conflict if explicitly requesting a version of bundler that doesn't exist" do
       install_gemfile <<-G, raise_on_error: false
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
         gem "bundler", "0.9.2"
       G
@@ -99,16 +99,16 @@ RSpec.describe "bundle install" do
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
 
         gem "multiple_versioned_deps"
       G
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
 
         gem "multiple_versioned_deps"
-        gem "rack"
+        gem "myrack"
       G
 
       expect(the_bundle).to include_gems "multiple_versioned_deps 1.0.0"
@@ -116,7 +116,7 @@ RSpec.describe "bundle install" do
 
     it "includes bundler in the bundle when it's a child dependency" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
       G
 
@@ -126,8 +126,8 @@ RSpec.describe "bundle install" do
 
     it "allows gem 'bundler' when Bundler is not in the Gemfile or its dependencies" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
-        gem "rack"
+        source "https://gem.repo2"
+        gem "myrack"
       G
 
       run "begin; gem 'bundler'; puts 'WIN'; rescue Gem::LoadError => e; puts e.backtrace; end"
@@ -144,7 +144,7 @@ RSpec.describe "bundle install" do
       end
 
       install_gemfile <<-G, raise_on_error: false
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "activemerchant"
         gem "rails_pinned_to_old_activesupport"
       G
@@ -172,7 +172,7 @@ RSpec.describe "bundle install" do
       end
 
       install_gemfile <<-G, raise_on_error: false
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails_pinned_to_old_activesupport"
         gem "activesupport", "2.3.5"
       G
@@ -197,12 +197,12 @@ RSpec.describe "bundle install" do
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem 'rails', "2.3.2"
       G
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails_pinned_to_old_activesupport"
       G
 
@@ -219,17 +219,17 @@ RSpec.describe "bundle install" do
       bundle "config set path.system true"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
         gem 'rails', "7.0.4"
       G
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
         gem 'rails', "7.0.3"
       G
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
         gem 'rails', "7.0.4"
       G
 
@@ -243,7 +243,7 @@ RSpec.describe "bundle install" do
       system_gems "bundler-99999999.99.1"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
       G
 
@@ -257,7 +257,7 @@ RSpec.describe "bundle install" do
       system_gems "bundler-99999999.99.1"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails", "3.0"
       G
 

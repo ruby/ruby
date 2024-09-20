@@ -4,8 +4,10 @@ require 'test/unit'
 return unless /darwin/ =~ RUBY_PLATFORM
 
 class TestVMDump < Test::Unit::TestCase
-  def assert_darwin_vm_dump_works(args)
-    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/)
+  def assert_darwin_vm_dump_works(args, timeout=nil)
+    pend "macOS 15 beta is not working with this assertion" if macos?(15)
+
+    assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: timeout || 300)
   end
 
   def test_darwin_invalid_call

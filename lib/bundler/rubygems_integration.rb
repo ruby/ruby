@@ -34,6 +34,10 @@ module Bundler
       Gem::Command.build_args = args
     end
 
+    def set_target_rbconfig(path)
+      Gem.set_target_rbconfig(path)
+    end
+
     def loaded_specs(name)
       Gem.loaded_specs[name]
     end
@@ -48,7 +52,7 @@ module Bundler
     end
 
     def validate(spec)
-      Bundler.ui.silence { spec.validate(false) }
+      Bundler.ui.silence { spec.validate_for_resolution }
     rescue Gem::InvalidSpecificationException => e
       error_message = "The gemspec at #{spec.loaded_from} is not valid. Please fix this gemspec.\n" \
         "The validation error was '#{e.message}'\n"
@@ -216,7 +220,7 @@ module Bundler
 
       [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
         redefine_method(kernel_class, :gem) do |dep, *reqs|
-          if executables&.include?(File.basename(caller.first.split(":").first))
+          if executables&.include?(File.basename(caller_locations(1, 1).first.path))
             break
           end
 
@@ -481,7 +485,21 @@ module Bundler
     end
 
     def all_specs
+      SharedHelpers.major_deprecation 2, "Bundler.rubygems.all_specs has been removed in favor of Bundler.rubygems.installed_specs"
+
       Gem::Specification.stubs.map do |stub|
+        StubSpecification.from_stub(stub)
+      end
+    end
+
+    def installed_specs
+      Gem::Specification.stubs.reject(&:default_gem?).map do |stub|
+        StubSpecification.from_stub(stub)
+      end
+    end
+
+    def default_specs
+      Gem::Specification.default_stubs.map do |stub|
         StubSpecification.from_stub(stub)
       end
     end

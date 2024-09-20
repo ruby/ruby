@@ -376,6 +376,21 @@ describe "IO#read" do
     buf.should == @contents[0..4]
   end
 
+  it "preserves the encoding of the given buffer" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    @io.read(10, buffer)
+
+    buffer.encoding.should == Encoding::ISO_8859_1
+  end
+
+  # https://bugs.ruby-lang.org/issues/20416
+  it "does not preserve the encoding of the given buffer when max length is not provided" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    @io.read(nil, buffer)
+
+    buffer.encoding.should_not == Encoding::ISO_8859_1
+  end
+
   it "returns the given buffer" do
     buf = +""
 

@@ -14,7 +14,8 @@ set -x
 
 DOCKER="$(command -v docker || command -v podman)"
 TAG=ruby-fedora-annocheck
-TOOL_DIR=$(dirname "${0}")
+TOOL_DIR="$(dirname "${0}")"
+TMP_DIR="tmp/annocheck"
 DOCKER_RUN_VOLUME_OPTS=
 
 if [ -z "${CI-}" ]; then
@@ -27,7 +28,13 @@ else
   # volume in container in container on GitHub Actions
   # <.github/workflows/compilers.yml>.
   TAG="${TAG}-copy"
-  "${DOCKER}" build --rm -t "${TAG}" --build-arg=FILES="${*}" -f ${TOOL_DIR}/annocheck/Dockerfile-copy .
+  rm -rf "${TMP_DIR}"
+  mkdir -p "${TMP_DIR}"
+  for file in "${@}"; do
+    cp -p "${file}" "${TMP_DIR}"
+  done
+  "${DOCKER}" build --rm -t "${TAG}" --build-arg=IN_DIR="${TMP_DIR}" -f ${TOOL_DIR}/annocheck/Dockerfile-copy .
+  rm -rf "${TMP_DIR}"
 fi
 
 "${DOCKER}" run --rm -t ${DOCKER_RUN_VOLUME_OPTS} "${TAG}" annocheck --verbose ${TEST_ANNOCHECK_OPTS-} "${@}"

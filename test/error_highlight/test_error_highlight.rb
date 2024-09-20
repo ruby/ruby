@@ -1,6 +1,7 @@
 require "test/unit"
 
 require "error_highlight"
+require "did_you_mean"
 require "tempfile"
 
 class ErrorHighlightTest < Test::Unit::TestCase
@@ -872,7 +873,7 @@ uninitialized constant ErrorHighlightTest::NotDefined
     def test_COLON2_5
       # Unfortunately, we cannot identify which `NotDefined` caused the NameError
       assert_error_message(NameError, <<~END) do
-uninitialized constant ErrorHighlightTest::NotDefined
+  uninitialized constant ErrorHighlightTest::NotDefined
       END
 
         ErrorHighlightTest::NotDefined::NotDefined
@@ -1334,6 +1335,11 @@ undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
   def test_spot_with_node
     omit unless RubyVM::AbstractSyntaxTree.respond_to?(:node_id_for_backtrace_location)
+
+    # We can't revisit instruction sequences to find node ids if the prism
+    # compiler was used instead of the parse.y compiler. In that case, we'll
+    # omit some tests.
+    omit if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
     begin
       raise_name_error

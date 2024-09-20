@@ -108,6 +108,10 @@ describe "CApiGCSpecs" do
     it "can be called with an object" do
       @f.rb_gc_register_mark_object(Object.new).should be_nil
     end
+
+    it "keeps the value alive even if the value is not referenced by any Ruby object" do
+      @f.rb_gc_register_mark_object_not_referenced_float.should == 1.61
+    end
   end
 
   describe "rb_gc_latest_gc_info" do

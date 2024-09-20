@@ -99,6 +99,20 @@ class Gem::BasicSpecification
   end
 
   ##
+  # Regular gems take precedence over default gems
+
+  def default_gem_priority
+    default_gem? ? 1 : -1
+  end
+
+  ##
+  # Gems higher up in +gem_path+ take precedence
+
+  def base_dir_priority(gem_path)
+    gem_path.index(base_dir) || gem_path.size
+  end
+
+  ##
   # Returns full path to the directory where gem's extensions are installed.
 
   def extension_dir
@@ -125,10 +139,10 @@ class Gem::BasicSpecification
   # The full path to the gem (install path + full name).
 
   def full_gem_path
-    # TODO: This is a heavily used method by gems, so we'll need
-    # to aleast just alias it to #gem_dir rather than remove it.
     @full_gem_path ||= find_full_gem_path
   end
+
+  alias_method :gem_dir, :full_gem_path
 
   ##
   # Returns the full name (name-version) of this Gem.  Platform information
@@ -140,6 +154,19 @@ class Gem::BasicSpecification
       "#{name}-#{version}"
     else
       "#{name}-#{version}-#{platform}"
+    end
+  end
+
+  ##
+  # Returns the full name of this Gem (see `Gem::BasicSpecification#full_name`).
+  # Information about where the gem is installed is also included if not
+  # installed in the default GEM_HOME.
+
+  def full_name_with_location
+    if base_dir != Gem.dir
+      "#{full_name} in #{base_dir}"
+    else
+      full_name
     end
   end
 
@@ -184,14 +211,6 @@ class Gem::BasicSpecification
       end
       @paths_map[path]
     end
-  end
-
-  ##
-  # Returns the full path to this spec's gem directory.
-  # eg: /usr/local/lib/ruby/1.8/gems/mygem-1.0
-
-  def gem_dir
-    @gem_dir ||= File.expand_path File.join(gems_dir, full_name)
   end
 
   ##

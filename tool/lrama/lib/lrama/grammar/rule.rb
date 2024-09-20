@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Lrama
   class Grammar
     # _rhs holds original RHS element. Use rhs to refer to Symbol.
@@ -16,8 +18,7 @@ module Lrama
         self.lineno == other.lineno
       end
 
-      # TODO: Change this to display_name
-      def to_s
+      def display_name
         l = lhs.id.s_value
         r = empty_rule? ? "ε" : rhs.map {|r| r.id.s_value }.join(" ")
 
@@ -33,7 +34,7 @@ module Lrama
       end
 
       def with_actions
-        "#{to_s} {#{token_code&.s_value}}"
+        "#{display_name} {#{token_code&.s_value}}"
       end
 
       # opt_nl: ε     <-- empty_rule
@@ -54,6 +55,12 @@ module Lrama
         return nil unless token_code
 
         Code::RuleAction.new(type: :rule_action, token_code: token_code, rule: self).translated_code
+      end
+
+      def contains_at_reference?
+        return false unless token_code
+
+        token_code.references.any? {|r| r.type == :at }
       end
     end
   end

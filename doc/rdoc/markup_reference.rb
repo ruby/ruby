@@ -532,7 +532,8 @@ require 'rdoc'
 #
 #   - Appears on a line by itself.
 #   - Specifies the format for the \RDoc input;
-#     parameter +type+ is one of +markdown+, +rd+, +rdoc+, +tomdoc+.
+#     parameter +type+ is one of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
+#     See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
 #
 # ===== Directives for HTML Output
 #
@@ -916,10 +917,6 @@ require 'rdoc'
 # [Protocol +https+]
 #
 #   - Linked: <tt>https://github.com</tt> links to https://github.com.
-#
-# [Protocol +www+]
-#
-#   - Linked: <tt>www.yahoo.com</tt> links to www.yahoo.com.
 #
 # [Protocol +ftp+]
 #

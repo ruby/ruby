@@ -117,6 +117,7 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
 #define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE, COMMA),
+    DEFINE_FEATURE(frozen_string_literal_set),
     feature_debug_flag_first,
 #if defined(RJIT_FORCE_ENABLE) || !USE_YJIT
     DEFINE_FEATURE(jit) = feature_rjit,
@@ -189,6 +190,7 @@ enum {
     COMPILATION_FEATURES = (
         0
         | FEATURE_BIT(frozen_string_literal)
+        | FEATURE_BIT(frozen_string_literal_set)
         | FEATURE_BIT(debug_frozen_string_literal)
         ),
     DEFAULT_FEATURES = (
@@ -197,6 +199,7 @@ enum {
         & ~FEATURE_BIT(gems)
 #endif
         & ~FEATURE_BIT(frozen_string_literal)
+        & ~FEATURE_BIT(frozen_string_literal_set)
         & ~feature_jit_mask
         )
 };
@@ -556,6 +559,8 @@ translit_char_bin(char *p, int from, int to)
 #endif
 
 #ifdef _WIN32
+# undef chdir
+# define chdir rb_w32_uchdir
 # define UTF8_PATH 1
 #endif
 
@@ -1033,6 +1038,9 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 
   found:
     FEATURE_SET_TO(*argp, mask, (mask & enable));
+    if (NAME_MATCH_P("frozen_string_literal", str, len)) {
+        FEATURE_SET_TO(*argp, FEATURE_BIT(frozen_string_literal_set), FEATURE_BIT(frozen_string_literal_set));
+    }
     return;
 }
 
@@ -1422,10 +1430,10 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     }
     else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
         if (strcmp("prism", s) == 0) {
-            (*rb_ruby_prism_ptr()) = true;
+            *rb_ruby_prism_ptr() = true;
         }
         else if (strcmp("parse.y", s) == 0) {
-            // default behavior
+            *rb_ruby_prism_ptr() = false;
         }
         else {
             rb_raise(rb_eRuntimeError, "unknown parser %s", s);
@@ -1778,11 +1786,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
                            "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
-    if (getenv("RUBY_FREE_AT_EXIT")) {
-        rb_warn("Free at exit is experimental and may be unstable");
-        rb_free_at_exit = true;
-    }
-
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
@@ -2098,24 +2101,46 @@ process_script(ruby_cmdline_options_t *opt)
     return ast_value;
 }
 
-/**
- * Call ruby_opt_init to set up the global state based on the command line
- * options, and then warn if prism is enabled and the experimental warning
- * category is enabled.
- */
-static void
-prism_opt_init(ruby_cmdline_options_t *opt)
+static uint8_t
+prism_script_command_line(ruby_cmdline_options_t *opt)
 {
-    ruby_opt_init(opt);
+    uint8_t command_line = 0;
+    if (opt->do_split) command_line |= PM_OPTIONS_COMMAND_LINE_A;
+    if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
+    if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
+    if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
+    if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
+    return command_line;
+}
 
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
-        rb_category_warn(
-            RB_WARN_CATEGORY_EXPERIMENTAL,
-            "The compiler based on the Prism parser is currently experimental "
-            "and compatibility with the compiler based on parse.y is not yet "
-            "complete. Please report any issues you find on the `ruby/prism` "
-            "issue tracker."
-        );
+static void
+prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size_t length, void *data)
+{
+    ruby_cmdline_options_t *opt = (ruby_cmdline_options_t *) data;
+    opt->warning = 0;
+
+    char *switches = malloc(length + 1);
+    memcpy(switches, source, length);
+    switches[length] = '\0';
+
+    int no_src_enc = !opt->src.enc.name;
+    int no_ext_enc = !opt->ext.enc.name;
+    int no_int_enc = !opt->intern.enc.name;
+
+    moreswitches(switches, opt, 0);
+    free(switches);
+
+    pm_options_command_line_set(options, prism_script_command_line(opt));
+
+    if (no_src_enc && opt->src.enc.name) {
+        opt->src.enc.index = opt_enc_index(opt->src.enc.name);
+        pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+    }
+    if (no_ext_enc && opt->ext.enc.name) {
+        opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
+    }
+    if (no_int_enc && opt->intern.enc.name) {
+        opt->intern.enc.index = opt_enc_index(opt->intern.enc.name);
     }
 }
 
@@ -2130,43 +2155,61 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 
     pm_options_t *options = &result->options;
     pm_options_line_set(options, 1);
+    pm_options_main_script_set(options, true);
 
-    if (opt->ext.enc.name != 0) {
-        pm_options_encoding_set(options, StringValueCStr(opt->ext.enc.name));
+    const bool read_stdin = (strcmp(opt->script, "-") == 0);
+
+    if (read_stdin) {
+        pm_options_encoding_set(options, rb_enc_name(rb_locale_encoding()));
+    }
+    if (opt->src.enc.name != 0) {
+        pm_options_encoding_set(options, StringValueCStr(opt->src.enc.name));
     }
 
-    uint8_t command_line = 0;
-    if (opt->do_split) command_line |= PM_OPTIONS_COMMAND_LINE_A;
-    if (opt->do_line) command_line |= PM_OPTIONS_COMMAND_LINE_L;
-    if (opt->do_loop) command_line |= PM_OPTIONS_COMMAND_LINE_N;
-    if (opt->do_print) command_line |= PM_OPTIONS_COMMAND_LINE_P;
-    if (opt->xflag) command_line |= PM_OPTIONS_COMMAND_LINE_X;
-
+    uint8_t command_line = prism_script_command_line(opt);
     VALUE error;
-    if (strcmp(opt->script, "-") == 0) {
+
+    if (read_stdin) {
         pm_options_command_line_set(options, command_line);
         pm_options_filepath_set(options, "-");
+        pm_options_shebang_callback_set(options, prism_script_shebang_callback, (void *) opt);
 
-        prism_opt_init(opt);
+        ruby_opt_init(opt);
         error = pm_parse_stdin(result);
+
+        // If we found an __END__ marker, then we're going to define a global
+        // DATA constant that is a file object that can be read to read the
+        // contents after the marker.
+        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+            rb_define_global_const("DATA", rb_stdin);
+        }
     }
     else if (opt->e_script) {
-        command_line |= PM_OPTIONS_COMMAND_LINE_E;
+        command_line = (uint8_t) ((command_line | PM_OPTIONS_COMMAND_LINE_E) & ~PM_OPTIONS_COMMAND_LINE_X);
         pm_options_command_line_set(options, command_line);
 
-        prism_opt_init(opt);
-        error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"));
+        ruby_opt_init(opt);
+        result->node.coverage_enabled = 0;
+        error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"), NULL);
     }
     else {
         pm_options_command_line_set(options, command_line);
+        pm_options_shebang_callback_set(options, prism_script_shebang_callback, (void *) opt);
+
         error = pm_load_file(result, opt->script_name, true);
 
         // If reading the file did not error, at that point we load the command
         // line options. We do it in this order so that if the main script fails
         // to load, it doesn't require files required by -r.
         if (NIL_P(error)) {
-            prism_opt_init(opt);
-            error = pm_parse_file(result, opt->script_name);
+            ruby_opt_init(opt);
+            error = pm_parse_file(result, opt->script_name, NULL);
+        }
+
+        // Check if (after requiring all of the files through -r flags) we have
+        // coverage enabled and need to enable coverage on the main script.
+        if (RTEST(rb_get_coverages())) {
+            result->node.coverage_enabled = 1;
         }
 
         // If we found an __END__ marker, then we're going to define a global
@@ -2301,7 +2344,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 #if USE_YJIT
     if (FEATURE_SET_P(opt->features, yjit)) {
-        opt->yjit = true; // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
+        bool rb_yjit_option_disable(void);
+        opt->yjit = !rb_yjit_option_disable(); // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
     }
 #endif
 
@@ -2446,7 +2490,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #define SET_COMPILE_OPTION(h, o, name) \
         rb_hash_aset((h), ID2SYM(rb_intern_const(#name)), \
                      RBOOL(FEATURE_SET_P(o->features, name)))
-        SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+
+        if (FEATURE_SET_P(opt->features, frozen_string_literal_set)) {
+            SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+        }
         SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
         rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
 #undef SET_COMPILE_OPTION
@@ -3087,8 +3134,6 @@ ruby_process_options(int argc, char **argv)
     VALUE iseq;
     const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
 
-    (*rb_ruby_prism_ptr()) = false;
-
     if (!origarg.argv || origarg.argc <= 0) {
         origarg.argc = argc;
         origarg.argv = argv;
@@ -3107,6 +3152,12 @@ ruby_process_options(int argc, char **argv)
         void ruby_set_crash_report(const char *template);
         ruby_set_crash_report(opt.crash_report);
     }
+
+    if (getenv("RUBY_FREE_AT_EXIT")) {
+        rb_free_at_exit = true;
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
+    }
+
     return (void*)(struct RData*)iseq;
 }
 

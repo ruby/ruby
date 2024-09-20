@@ -215,7 +215,12 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
                 *reg_cfp->sp++ = argv[i];
             }
 
-            vm_call_iseq_setup(ec, reg_cfp, calling);
+            if (ISEQ_BODY(def_iseq_ptr(vm_cc_cme(cc)->def))->param.flags.forwardable) {
+                vm_call_iseq_fwd_setup(ec, reg_cfp, calling);
+            }
+            else {
+                vm_call_iseq_setup(ec, reg_cfp, calling);
+            }
             VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
             return vm_exec(ec); // CHECK_INTS in this function
         }
@@ -719,13 +724,6 @@ rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
     stack_check(ec);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
     return rb_vm_call_kw(ec, recv, mid, argc, argv, me, kw_splat);
-}
-
-VALUE
-rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
-                           rb_check_funcall_hook *hook, VALUE arg)
-{
-    return rb_check_funcall_with_hook_kw(recv, mid, argc, argv, hook, arg, RB_NO_KEYWORDS);
 }
 
 const char *
@@ -1553,6 +1551,37 @@ rb_block_call_kw(VALUE obj, ID mid, int argc, const VALUE * argv,
     return rb_iterate_internal(iterate_method, (VALUE)&arg, bl_proc, data2);
 }
 
+/*
+ * A flexible variant of rb_block_call and rb_block_call_kw.
+ * This function accepts flags:
+ *
+ *   RB_NO_KEYWORDS, RB_PASS_KEYWORDS, RB_PASS_CALLED_KEYWORDS:
+ *   Works as the same as rb_block_call_kw.
+ *
+ *   RB_BLOCK_NO_USE_PACKED_ARGS:
+ *   The given block ("bl_proc") does not use "yielded_arg" of rb_block_call_func_t.
+ *   Instead, the block accesses the yielded arguments via "argc" and "argv".
+ *   This flag allows the called method to yield arguments without allocating an Array.
+ */
+VALUE
+rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv,
+               rb_block_call_func_t bl_proc, VALUE data2, long flags)
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    arg.kw_splat = flags & 1;
+
+    struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(bl_proc, (void *)data2);
+    if (flags & RB_BLOCK_NO_USE_PACKED_ARGS)
+        ifunc->flags |= IFUNC_YIELD_OPTIMIZABLE;
+
+    return rb_iterate0(iterate_method, (VALUE)&arg, ifunc, GET_EC());
+}
+
 VALUE
 rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
                rb_block_call_func_t bl_proc, int min_argc, int max_argc,
@@ -1629,6 +1658,10 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     const rb_iseq_t *iseq = parent;
     VALUE name = rb_fstring_lit("<compiled>");
+
+    // Conditionally enable coverage depending on the current mode:
+    int coverage_enabled = ((rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) != 0) ? 1 : 0;
+
     if (!fname) {
         fname = rb_source_location(&line);
     }
@@ -1638,10 +1671,12 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     }
     else {
         fname = get_eval_default_path();
+        coverage_enabled = 0;
     }
 
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, line);
+    result.node.coverage_enabled = coverage_enabled;
 
     // Cout scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
@@ -1684,7 +1719,9 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // Add our empty local scope at the very end of the array for our eval
     // scope's locals.
     pm_options_scope_init(&result.options.scopes[scopes_count], 0);
-    VALUE error = pm_parse_string(&result, src, fname);
+
+    VALUE script_lines;
+    VALUE error = pm_parse_string(&result, src, fname, ruby_vm_keep_script_lines ? &script_lines : NULL);
 
     // If the parse failed, clean up and raise.
     if (error != Qnil) {
@@ -1703,6 +1740,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         RUBY_ASSERT(parent_scope != NULL);
 
         pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        parent_scope->coverage_enabled = coverage_enabled;
         parent_scope->parser = &result.parser;
         parent_scope->index_lookup_table = st_init_numtable();
 

@@ -1,11 +1,10 @@
 class Array
   # call-seq:
-  #   array.each {|element| ... } -> self
-  #   array.each -> Enumerator
+  #   each {|element| ... } -> self
+  #   each -> new_enumerator
   #
-  # Iterates over array elements.
-  #
-  # When a block given, passes each successive array element to the block;
+  # With a block given, iterates over the elements of +self+,
+  # passing each element to the block;
   # returns +self+:
   #
   #   a = [:foo, 'bar', 2]
@@ -27,23 +26,12 @@ class Array
   #   foo
   #   bar
   #
-  # When no block given, returns a new Enumerator:
-  #   a = [:foo, 'bar', 2]
+  # With no block given, returns a new Enumerator.
   #
-  #   e = a.each
-  #   e # => #<Enumerator: [:foo, "bar", 2]:each>
-  #   a1 = e.each {|element|  puts "#{element.class} #{element}" }
-  #
-  # Output:
-  #
-  #   Symbol foo
-  #   String bar
-  #   Integer 2
-  #
-  # Related: #each_index, #reverse_each.
+  # Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
+
   def each
     Primitive.attr! :inline_block
-    Primitive.attr! :use_block
 
     unless defined?(yield)
       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
@@ -210,5 +198,42 @@ class Array
         Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
       end
     end
+  end
+
+  #  call-seq:
+  #    fetch_values(*indexes) -> new_array
+  #    fetch_values(*indexes) {|index| ... } -> new_array
+  #
+  #  With no block given, returns a new array containing the elements of +self+
+  #  at the offsets given by +indexes+;
+  #  each of the +indexes+ must be an
+  #  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
+  #
+  #    a = [:foo, :bar, :baz]
+  #    a.fetch_values(3, 1)   # => [:baz, :foo]
+  #    a.fetch_values(3.1, 1) # => [:baz, :foo]
+  #    a.fetch_values         # => []
+  #
+  #  For a negative index, counts backwards from the end of the array:
+  #
+  #    a.fetch_values([-2, -1]) # [:bar, :baz]
+  #
+  #  When no block is given, raises an exception if any index is out of range.
+  #
+  #  With a block given, for each index:
+  #
+  #  - If the index in in range, uses an element of +self+ (as above).
+  #  - Otherwise calls, the block with the index, and uses the block's return value.
+  #
+  #  Example:
+  #
+  #    a = [:foo, :bar, :baz]
+  #    a.fetch_values(1, 0, 42, 777) {|index| index.to_s}
+  #    # => [:bar, :foo, "42", "777"]
+  #
+  #  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
+  def fetch_values(*indexes, &block)
+    indexes.map! { |i| fetch(i, &block) }
+    indexes
   end
 end

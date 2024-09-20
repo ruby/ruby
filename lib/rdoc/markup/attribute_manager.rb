@@ -260,7 +260,7 @@ class RDoc::Markup::AttributeManager
 
   def add_word_pair(start, stop, name, exclusive = false)
     raise ArgumentError, "Word flags may not start with '<'" if
-      start[0,1] == '<'
+      start[0, 1] == '<'
 
     bitmap = @attributes.bitmap_for name
 
@@ -271,7 +271,7 @@ class RDoc::Markup::AttributeManager
       @word_pair_map[pattern] = bitmap
     end
 
-    @protectable << start[0,1]
+    @protectable << start[0, 1]
     @protectable.uniq!
 
     @exclusive_bitmap |= bitmap if exclusive

@@ -62,6 +62,12 @@ ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 !if defined(RJIT_SUPPORT)
 RJIT_SUPPORT = $(RJIT_SUPPORT)
 !endif
+!if defined(XINCFLAGS)
+CPPFLAGS = $(XINCFLAGS)
+!endif
+!if defined(XLDFLAGS)
+XLDFLAGS = $(XLDFLAGS)
+!endif
 
 # TOOLS
 <<
@@ -79,8 +85,13 @@ RJIT_SUPPORT = $(RJIT_SUPPORT)
 	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
 !endif
 
-!if "$(WITH_GMP)" == "yes"
-	@echo>>$(MAKEFILE) USE_GMP = 1
+!if "$(WITH_GMP)" != "no"
+	@($(CC) $(XINCFLAGS) <<conftest.c -link $(XLDFLAGS) gmp.lib > nul && (echo USE_GMP = yes) || exit /b 0) >>$(MAKEFILE)
+#include <gmp.h>
+mpz_t x;
+int main(void) {mpz_init(x); return 0;}
+<<
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 !endif
 
 -osname-section-:
@@ -119,7 +130,9 @@ int main(void) {FILE *volatile f = stdin; return 0;}
 
 -headers-: nul
 
+!ifdef VS2022_FP_BUG_CHECK # Fixed In: Visual Studio 2022 version 17.3
 -headers-: vs2022-fp-bug
+!endif
 
 # Check the bug reported at:
 # https://developercommunity.visualstudio.com/t/With-__assume-isnan-after-isinf/1515649
@@ -172,14 +185,26 @@ main(void)
 
 -version-: nul verconf.mk
 
+!if !(exist(revision.h) || exist($(srcdir)/revision.h))
+revision_opt = -DRUBY_REVISION=0
+!endif
+
 verconf.mk: nul
 	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include $(revision_opt) <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
 @echo off
-#define RUBY_REVISION 0
 #define STRINGIZE0(expr) #expr
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
+#ifndef RUBY_RELEASE_YEAR
+# define RUBY_RELEASE_YEAR 0000
+#endif
+#ifndef RUBY_RELEASE_MONTH
+# define RUBY_RELEASE_MONTH 00
+#endif
+#ifndef RUBY_RELEASE_DAY
+# define RUBY_RELEASE_DAY 00
+#endif
 set ruby_release_year=RUBY_RELEASE_YEAR
 set ruby_release_month=RUBY_RELEASE_MONTH
 set ruby_release_day=RUBY_RELEASE_DAY

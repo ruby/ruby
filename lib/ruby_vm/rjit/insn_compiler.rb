@@ -63,7 +63,6 @@ module RubyVM::RJIT
       when :toregexp then toregexp(jit, ctx, asm)
       when :intern then intern(jit, ctx, asm)
       when :newarray then newarray(jit, ctx, asm)
-      # newarraykwsplat
       when :duparray then duparray(jit, ctx, asm)
       # duphash
       when :expandarray then expandarray(jit, ctx, asm)
@@ -91,6 +90,8 @@ module RubyVM::RJIT
       when :opt_send_without_block then opt_send_without_block(jit, ctx, asm)
       when :objtostring then objtostring(jit, ctx, asm)
       when :opt_str_freeze then opt_str_freeze(jit, ctx, asm)
+      when :opt_ary_freeze then opt_ary_freeze(jit, ctx, asm)
+      when :opt_hash_freeze then opt_hash_freeze(jit, ctx, asm)
       when :opt_nil_p then opt_nil_p(jit, ctx, asm)
       # opt_str_uminus
       when :opt_newarray_send then opt_newarray_send(jit, ctx, asm)
@@ -504,7 +505,7 @@ module RubyVM::RJIT
           shape = C.rb_shape_get_shape_by_id(shape_id)
 
           current_capacity = shape.capacity
-          dest_shape = C.rb_shape_get_next(shape, comptime_receiver, ivar_name)
+          dest_shape = C.rb_shape_get_next_no_warnings(shape, comptime_receiver, ivar_name)
           new_shape_id = C.rb_shape_id(dest_shape)
 
           if new_shape_id == C::OBJ_TOO_COMPLEX_SHAPE_ID
@@ -943,8 +944,6 @@ module RubyVM::RJIT
 
       KeepCompiling
     end
-
-    # newarraykwsplat
 
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
@@ -1435,6 +1434,10 @@ module RubyVM::RJIT
       mid = C.vm_ci_mid(cd.ci)
       calling = build_calling(ci: cd.ci, block_handler: blockiseq)
 
+      if calling.flags & C::VM_CALL_FORWARDING != 0
+        return CantCompile
+      end
+
       # vm_sendish
       cme, comptime_recv_klass = jit_search_method(jit, ctx, asm, mid, calling)
       if cme == CantCompile
@@ -1487,6 +1490,42 @@ module RubyVM::RJIT
         cd = C.rb_call_data.new(jit.operand(0))
         opt_send_without_block(jit, ctx, asm, cd:)
       end
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_ary_freeze(jit, ctx, asm)
+      unless Invariants.assume_bop_not_redefined(jit, C::ARRAY_REDEFINED_OP_FLAG, C::BOP_FREEZE)
+        return CantCompile;
+      end
+
+      ary = jit.operand(0, ruby: true)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push(Type::CArray)
+      asm.mov(:rax, to_value(ary))
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def opt_hash_freeze(jit, ctx, asm)
+      unless Invariants.assume_bop_not_redefined(jit, C::HASH_REDEFINED_OP_FLAG, C::BOP_FREEZE)
+        return CantCompile;
+      end
+
+      hash = jit.operand(0, ruby: true)
+
+      # Push the return value onto the stack
+      stack_ret = ctx.stack_push(Type::CHash)
+      asm.mov(:rax, to_value(hash))
+      asm.mov(stack_ret, :rax)
+
+      KeepCompiling
     end
 
     # @param jit [RubyVM::RJIT::JITState]
@@ -4620,6 +4659,11 @@ module RubyVM::RJIT
           asm.incr_counter(:send_iseq_splat_arity_error)
           return CantCompile
         end
+      end
+
+      # Don't compile forwardable iseqs
+      if iseq.body.param.flags.forwardable
+        return CantCompile
       end
 
       # We will not have CantCompile from here.

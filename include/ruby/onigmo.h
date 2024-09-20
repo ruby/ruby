@@ -636,6 +636,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_PARSE_DEPTH_LIMIT_OVER                        -16
 #define ONIGERR_DEFAULT_ENCODING_IS_NOT_SET                   -21
 #define ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR  -22
+#define ONIGERR_TIMEOUT                                       -23
 /* general error */
 #define ONIGERR_INVALID_ARGUMENT                              -30
 /* syntax error */

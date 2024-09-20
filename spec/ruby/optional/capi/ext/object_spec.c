@@ -390,22 +390,22 @@ static VALUE speced_allocator(VALUE klass) {
   return instance;
 }
 
-static VALUE define_alloc_func(VALUE self, VALUE klass) {
+static VALUE object_spec_rb_define_alloc_func(VALUE self, VALUE klass) {
   rb_define_alloc_func(klass, speced_allocator);
   return Qnil;
 }
 
-static VALUE undef_alloc_func(VALUE self, VALUE klass) {
+static VALUE object_spec_rb_undef_alloc_func(VALUE self, VALUE klass) {
   rb_undef_alloc_func(klass);
   return Qnil;
 }
 
-static VALUE speced_allocator_p(VALUE self, VALUE klass) {
+static VALUE object_spec_speced_allocator_p(VALUE self, VALUE klass) {
   rb_alloc_func_t allocator = rb_get_alloc_func(klass);
   return (allocator == speced_allocator) ? Qtrue : Qfalse;
 }
 
-static VALUE custom_alloc_func_p(VALUE self, VALUE klass) {
+static VALUE object_spec_custom_alloc_func_p(VALUE self, VALUE klass) {
   rb_alloc_func_t allocator = rb_get_alloc_func(klass);
   return allocator ? Qtrue : Qfalse;
 }
@@ -485,10 +485,10 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_ivar_defined", object_spec_rb_ivar_defined, 2);
   rb_define_method(cls, "rb_copy_generic_ivar", object_spec_rb_copy_generic_ivar, 2);
   rb_define_method(cls, "rb_free_generic_ivar", object_spec_rb_free_generic_ivar, 1);
-  rb_define_method(cls, "rb_define_alloc_func", define_alloc_func, 1);
-  rb_define_method(cls, "rb_undef_alloc_func", undef_alloc_func, 1);
-  rb_define_method(cls, "speced_allocator?", speced_allocator_p, 1);
-  rb_define_method(cls, "custom_alloc_func?", custom_alloc_func_p, 1);
+  rb_define_method(cls, "rb_define_alloc_func", object_spec_rb_define_alloc_func, 1);
+  rb_define_method(cls, "rb_undef_alloc_func", object_spec_rb_undef_alloc_func, 1);
+  rb_define_method(cls, "speced_allocator?", object_spec_speced_allocator_p, 1);
+  rb_define_method(cls, "custom_alloc_func?", object_spec_custom_alloc_func_p, 1);
   rb_define_method(cls, "not_implemented_method", rb_f_notimplement, -1);
   rb_define_method(cls, "rb_ivar_foreach", object_spec_rb_ivar_foreach, 1);
 }

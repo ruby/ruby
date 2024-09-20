@@ -2,7 +2,13 @@
 # -*- mode: ruby; coding: us-ascii -*-
 # frozen_string_literal: false
 
-module Gem; end # only needs Gem::Platform
+module Gem
+  # Used by Gem::Platform.local
+  def self.target_rbconfig
+    RbConfig::CONFIG
+  end
+end
+# only needs Gem::Platform
 require 'rubygems/platform'
 
 # :stopdoc:

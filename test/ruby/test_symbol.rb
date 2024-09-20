@@ -90,12 +90,15 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_inspect_dollar
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     # 4) :$- always treats next character literally:
     assert_raise(SyntaxError) {eval ':$-'}
     assert_raise(SyntaxError) {eval ":$-\n"}
     assert_raise(SyntaxError) {eval ":$- "}
     assert_raise(SyntaxError) {eval ":$-#"}
     assert_raise(SyntaxError) {eval ':$-('}
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_inspect_number
@@ -120,8 +123,7 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_inspect_under_gc_compact_stress
     omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-    omit "very flaky on many platforms, more so with YJIT enabled" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
-    omit "very flaky on many platforms, more so with RJIT enabled" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+
     EnvUtil.under_gc_compact_stress do
       assert_inspect_evaled(':testing')
     end

@@ -81,8 +81,10 @@ errors:
   - ESCAPE_INVALID_META_REPEAT
   - ESCAPE_INVALID_UNICODE
   - ESCAPE_INVALID_UNICODE_CM_FLAGS
+  - ESCAPE_INVALID_UNICODE_LIST
   - ESCAPE_INVALID_UNICODE_LITERAL
   - ESCAPE_INVALID_UNICODE_LONG
+  - ESCAPE_INVALID_UNICODE_SHORT
   - ESCAPE_INVALID_UNICODE_TERM
   - EXPECT_ARGUMENT
   - EXPECT_EOL_AFTER_STATEMENT
@@ -114,6 +116,7 @@ errors:
   - EXPRESSION_NOT_WRITABLE_FILE
   - EXPRESSION_NOT_WRITABLE_LINE
   - EXPRESSION_NOT_WRITABLE_NIL
+  - EXPRESSION_NOT_WRITABLE_NUMBERED
   - EXPRESSION_NOT_WRITABLE_SELF
   - EXPRESSION_NOT_WRITABLE_TRUE
   - FLOAT_PARSE
@@ -153,6 +156,7 @@ errors:
   - INVALID_NUMBER_UNDERSCORE_INNER
   - INVALID_NUMBER_UNDERSCORE_TRAILING
   - INVALID_PERCENT
+  - INVALID_PERCENT_EOF
   - INVALID_PRINTABLE_CHARACTER
   - INVALID_RETRY_AFTER_ELSE
   - INVALID_RETRY_AFTER_ENSURE
@@ -184,9 +188,10 @@ errors:
   - NO_LOCAL_VARIABLE
   - NOT_EXPRESSION
   - NUMBER_LITERAL_UNDERSCORE
+  - NUMBERED_PARAMETER_INNER_BLOCK
   - NUMBERED_PARAMETER_IT
   - NUMBERED_PARAMETER_ORDINARY
-  - NUMBERED_PARAMETER_OUTER_SCOPE
+  - NUMBERED_PARAMETER_OUTER_BLOCK
   - OPERATOR_MULTI_ASSIGN
   - OPERATOR_WRITE_ARGUMENTS
   - OPERATOR_WRITE_BLOCK
@@ -203,8 +208,9 @@ errors:
   - PARAMETER_SPLAT_MULTI
   - PARAMETER_STAR
   - PARAMETER_UNEXPECTED_FWD
-  - PARAMETER_WILD_LOOSE_COMMA
   - PARAMETER_UNEXPECTED_NO_KW
+  - PARAMETER_WILD_LOOSE_COMMA
+  - PATTERN_ARRAY_MULTIPLE_RESTS
   - PATTERN_CAPTURE_DUPLICATE
   - PATTERN_EXPRESSION_AFTER_BRACKET
   - PATTERN_EXPRESSION_AFTER_COMMA
@@ -216,6 +222,7 @@ errors:
   - PATTERN_EXPRESSION_AFTER_PIPE
   - PATTERN_EXPRESSION_AFTER_RANGE
   - PATTERN_EXPRESSION_AFTER_REST
+  - PATTERN_FIND_MISSING_INNER
   - PATTERN_HASH_IMPLICIT
   - PATTERN_HASH_KEY
   - PATTERN_HASH_KEY_DUPLICATE
@@ -233,6 +240,7 @@ errors:
   - REGEXP_INCOMPAT_CHAR_ENCODING
   - REGEXP_INVALID_UNICODE_RANGE
   - REGEXP_NON_ESCAPED_MBC
+  - REGEXP_PARSE_ERROR
   - REGEXP_TERM
   - REGEXP_UNKNOWN_OPTIONS
   - REGEXP_UTF8_CHAR_NON_UTF8_REGEXP
@@ -257,11 +265,14 @@ errors:
   - TERNARY_COLON
   - TERNARY_EXPRESSION_FALSE
   - TERNARY_EXPRESSION_TRUE
+  - UNARY_DISALLOWED
   - UNARY_RECEIVER
   - UNDEF_ARGUMENT
   - UNEXPECTED_BLOCK_ARGUMENT
   - UNEXPECTED_INDEX_BLOCK
   - UNEXPECTED_INDEX_KEYWORDS
+  - UNEXPECTED_MULTI_WRITE
+  - UNEXPECTED_RANGE_OPERATOR
   - UNEXPECTED_SAFE_NAVIGATION
   - UNEXPECTED_TOKEN_CLOSE_CONTEXT
   - UNEXPECTED_TOKEN_IGNORE
@@ -273,6 +284,7 @@ errors:
   - WRITE_TARGET_UNEXPECTED
   - XSTRING_TERM
 warnings:
+  - AMBIGUOUS_BINARY_OPERATOR
   - AMBIGUOUS_FIRST_ARGUMENT_MINUS
   - AMBIGUOUS_FIRST_ARGUMENT_PLUS
   - AMBIGUOUS_PREFIX_AMPERSAND
@@ -288,10 +300,11 @@ warnings:
   - DUPLICATED_WHEN_CLAUSE
   - FLOAT_OUT_OF_RANGE
   - IGNORED_FROZEN_STRING_LITERAL
+  - INDENTATION_MISMATCH
   - INTEGER_IN_FLIP_FLOP
   - INVALID_CHARACTER
+  - INVALID_MAGIC_COMMENT_VALUE
   - INVALID_NUMBERED_REFERENCE
-  - INVALID_SHAREABLE_CONSTANT_VALUE
   - KEYWORD_EOL
   - LITERAL_IN_CONDITION_DEFAULT
   - LITERAL_IN_CONDITION_VERBOSE
@@ -634,10 +647,16 @@ tokens:
 flags:
   - name: ArgumentsNodeFlags
     values:
+      - name: CONTAINS_FORWARDING
+        comment: "if the arguments contain forwarding"
       - name: CONTAINS_KEYWORDS
-        comment: "if arguments contain keywords"
+        comment: "if the arguments contain keywords"
       - name: CONTAINS_KEYWORD_SPLAT
-        comment: "if arguments contain keyword splat"
+        comment: "if the arguments contain a keyword splat"
+      - name: CONTAINS_SPLAT
+        comment: "if the arguments contain a splat"
+      - name: CONTAINS_MULTIPLE_SPLATS
+        comment: "if the arguments contain multiple splats"
     comment: Flags for arguments nodes.
   - name: ArrayNodeFlags
     values:
@@ -725,11 +744,6 @@ flags:
       - name: FORCED_US_ASCII_ENCODING
         comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
-  - name: ReturnNodeFlags
-    values:
-      - name: REDUNDANT
-        comment: "a return statement that is redundant because it is the last statement in a method"
-    comment: Flags for return nodes.
   - name: ShareableConstantNodeFlags
     values:
       - name: LITERAL
@@ -764,15 +778,25 @@ nodes:
     fields:
       - name: new_name
         type: node
+        kind:
+          - GlobalVariableReadNode
+          - BackReferenceReadNode
+          - NumberedReferenceReadNode
         comment: |
-          Represents the new name of the global variable that can be used after aliasing. This can be either a global variable, a back reference, or a numbered reference.
+          Represents the new name of the global variable that can be used after aliasing.
 
               alias $foo $bar
                     ^^^^
       - name: old_name
         type: node
+        kind:
+          - GlobalVariableReadNode
+          - BackReferenceReadNode
+          - NumberedReferenceReadNode
+          - SymbolNode # On parsing error of `alias $a b`
+          - MissingNode # On parsing error of `alias $a 42`
         comment: |
-          Represents the old name of the global variable that could be used before aliasing. This can be either a global variable, a back reference, or a numbered reference.
+          Represents the old name of the global variable that can be used before aliasing.
 
               alias $foo $bar
                          ^^^^
@@ -792,8 +816,16 @@ nodes:
     fields:
       - name: new_name
         type: node
+        kind:
+          - SymbolNode
+          - InterpolatedSymbolNode
       - name: old_name
         type: node
+        kind:
+          - SymbolNode
+          - InterpolatedSymbolNode
+          - GlobalVariableReadNode # On parsing error of `alias a $b`
+          - MissingNode # On parsing error of `alias a 42`
       - name: keyword_loc
         type: location
     comment: |
@@ -849,10 +881,8 @@ nodes:
           left and right
           ^^^^^^^^^^^^^^
   - name: ArgumentsNode
+    flags: ArgumentsNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ArgumentsNodeFlags
       - name: arguments
         type: node[]
     comment: |
@@ -861,10 +891,8 @@ nodes:
           return foo, bar, baz
                  ^^^^^^^^^^^^^
   - name: ArrayNode
+    flags: ArrayNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ArrayNodeFlags
       - name: elements
         type: node[]
         comment: Represent the list of zero or more [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression) within the array.
@@ -1028,15 +1056,13 @@ nodes:
       - name: operator_loc
         type: location
     comment: |
-      Represents block method arguments.
+      Represents a block argument using `&`.
 
           bar(&args)
           ^^^^^^^^^^
   - name: BlockLocalVariableNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -1050,8 +1076,15 @@ nodes:
         type: constant[]
       - name: parameters
         type: node?
+        kind:
+          - BlockParametersNode
+          - NumberedParametersNode
+          - ItParametersNode
       - name: body
         type: node?
+        kind:
+          - StatementsNode
+          - BeginNode
       - name: opening_loc
         type: location
       - name: closing_loc
@@ -1062,10 +1095,8 @@ nodes:
           [1, 2, 3].each { |i| puts x }
                          ^^^^^^^^^^^^^^
   - name: BlockParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -1073,7 +1104,7 @@ nodes:
       - name: operator_loc
         type: location
     comment: |
-      Represents a block parameter to a method, block, or lambda definition.
+      Represents a block parameter of a method, block, or lambda definition.
 
           def a(&b)
                 ^^
@@ -1122,10 +1153,8 @@ nodes:
           break foo
           ^^^^^^^^^
   - name: CallAndWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1146,10 +1175,8 @@ nodes:
           foo.bar &&= value
           ^^^^^^^^^^^^^^^^^
   - name: CallNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
         comment: |
@@ -1199,10 +1226,8 @@ nodes:
           foo&.bar
           ^^^^^^^^
   - name: CallOperatorWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1225,10 +1250,8 @@ nodes:
           foo.bar += baz
           ^^^^^^^^^^^^^^
   - name: CallOrWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1249,10 +1272,8 @@ nodes:
           foo.bar ||= value
           ^^^^^^^^^^^^^^^^^
   - name: CallTargetNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node
       - name: call_operator_loc
@@ -1293,7 +1314,7 @@ nodes:
         type: node?
       - name: conditions
         type: node[]
-      - name: consequent
+      - name: else_clause
         type: node?
         kind: ElseNode
       - name: case_keyword_loc
@@ -1313,7 +1334,7 @@ nodes:
         type: node?
       - name: conditions
         type: node[]
-      - name: consequent
+      - name: else_clause
         type: node?
         kind: ElseNode
       - name: case_keyword_loc
@@ -1847,10 +1868,8 @@ nodes:
           foo in Foo(*bar, baz, *qux)
                  ^^^^^^^^^^^^^^^^^^^^
   - name: FlipFlopNode
+    flags: RangeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RangeFlags
       - name: left
         type: node?
       - name: right
@@ -1876,19 +1895,56 @@ nodes:
     fields:
       - name: index
         type: node
+        comment: |
+          The index expression for `for` loops.
+
+              for i in a end
+                  ^
       - name: collection
         type: node
+        comment: |
+          The collection to iterate over.
+
+              for i in a end
+                       ^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          Represents the body of statements to execute for each iteration of the loop.
+
+              for i in a
+                foo(i)
+                ^^^^^^
+              end
       - name: for_keyword_loc
         type: location
+        comment: |
+          The location of the `for` keyword.
+
+              for i in a end
+              ^^^
       - name: in_keyword_loc
         type: location
+        comment: |
+          The location of the `in` keyword.
+
+              for i in a end
+                    ^^
       - name: do_keyword_loc
         type: location?
+        comment: |
+          The location of the `do` keyword, if present.
+
+              for i in a do end
+                         ^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          The location of the `end` keyword.
+
+              for i in a end
+                         ^^^
     comment: |
       Represents the use of the `for` keyword.
 
@@ -2135,8 +2191,11 @@ nodes:
                 baz
                 ^^^
               end
-      - name: consequent
+      - name: subsequent
         type: node?
+        kind:
+          - ElseNode
+          - IfNode
         comment: |
           Represents an `ElseNode` or an `IfNode` when there is an `else` or an `elsif` in the `if` statement.
 
@@ -2232,10 +2291,8 @@ nodes:
           case a; in b then c end
                   ^^^^^^^^^^^
   - name: IndexAndWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -2259,10 +2316,8 @@ nodes:
           foo.bar[baz] &&= value
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOperatorWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -2288,10 +2343,8 @@ nodes:
           foo.bar[baz] += value
           ^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOrWriteNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -2315,10 +2368,8 @@ nodes:
           foo.bar[baz] ||= value
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: IndexTargetNode
+    flags: CallNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: receiver
         type: node
       - name: opening_loc
@@ -2454,10 +2505,8 @@ nodes:
           @foo = 1
           ^^^^^^^^
   - name: IntegerNode
+    flags: IntegerBaseFlags
     fields:
-      - name: flags
-        type: flags
-        kind: IntegerBaseFlags
       - name: value
         type: integer
         comment: The value of the integer literal as a number.
@@ -2467,10 +2516,8 @@ nodes:
           1
           ^
   - name: InterpolatedMatchLastLineNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
@@ -2488,10 +2535,8 @@ nodes:
           if /foo #{bar} baz/ then end
              ^^^^^^^^^^^^^^^^
   - name: InterpolatedRegularExpressionNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
@@ -2509,10 +2554,8 @@ nodes:
           /foo #{bar} baz/
           ^^^^^^^^^^^^^^^^
   - name: InterpolatedStringNode
+    flags: InterpolatedStringNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: InterpolatedStringNodeFlags
       - name: opening_loc
         type: location?
       - name: parts
@@ -2566,6 +2609,12 @@ nodes:
 
           `foo #{bar} baz`
           ^^^^^^^^^^^^^^^^
+  - name: ItLocalVariableReadNode
+    comment: |
+      Represents reading from the implicit `it` local variable.
+
+          -> { it }
+               ^^
   - name: ItParametersNode
     comment: |
       Represents an implicit set of parameters through the use of the `it` keyword within a block or lambda.
@@ -2573,10 +2622,8 @@ nodes:
           -> { it + it }
           ^^^^^^^^^^^^^^
   - name: KeywordHashNode
+    flags: KeywordHashNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
         kind:
@@ -2588,10 +2635,8 @@ nodes:
           foo(a: b)
               ^^^^
   - name: KeywordRestParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -2691,10 +2736,6 @@ nodes:
 
               _1     # name `:_1`
 
-          Finally, for the default `it` block parameter, the name is `0it`. This is to distinguish it from an `it` local variable that is explicitly declared.
-
-              it     # name `:0it`
-
       - name: depth
         type: uint32
         comment: |
@@ -2775,10 +2816,8 @@ nodes:
           foo = 1
           ^^^^^^^
   - name: MatchLastLineNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -2870,8 +2909,36 @@ nodes:
           - RequiredParameterNode
           - BackReferenceReadNode # On parsing error of `$',`
           - NumberedReferenceReadNode # On parsing error of `$1,`
+        comment: |
+          Represents the targets expressions before a splat node.
+
+              a, (b, c, *) = 1, 2, 3, 4, 5
+                  ^^^^
+
+          The splat node can be absent, in that case all target expressions are in the left field.
+
+              a, (b, c) = 1, 2, 3, 4, 5
+                  ^^^^
       - name: rest
         type: node?
+        kind:
+          - ImplicitRestNode
+          - SplatNode
+        comment: |
+          Represents a splat node in the target expression.
+
+              a, (b, *c) = 1, 2, 3, 4
+                     ^^
+
+          The variable can be empty, this results in a `SplatNode` with a `nil` expression field.
+
+              a, (b, *) = 1, 2, 3, 4
+                     ^
+
+          If the `*` is omitted, this field will contain an `ImplicitRestNode`
+
+              a, (b,) = 1, 2, 3, 4
+                   ^
       - name: rights
         type: node[]
         kind:
@@ -2886,15 +2953,35 @@ nodes:
           - MultiTargetNode
           - RequiredParameterNode
           - BackReferenceReadNode # On parsing error of `*,$'`
+        comment: |
+          Represents the targets expressions after a splat node.
+
+              a, (*, b, c) = 1, 2, 3, 4, 5
+                     ^^^^
       - name: lparen_loc
         type: location?
+        comment: |
+          The location of the opening parenthesis.
+
+              a, (b, c) = 1, 2, 3
+                 ^
       - name: rparen_loc
         type: location?
+        comment: |
+          The location of the closing parenthesis.
+
+              a, (b, c) = 1, 2, 3
+                      ^
     comment: |
       Represents a multi-target expression.
 
           a, (b, c) = 1, 2, 3
              ^^^^^^
+
+      This can be a part of `MultiWriteNode` as above, or the target of a `for` loop
+
+          for a, b in [[1, 2], [3, 4]]
+              ^^^^
   - name: MultiWriteNode
     fields:
       - name: lefts
@@ -2909,8 +2996,36 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
+        comment: |
+          Represents the targets expressions before a splat node.
+
+              a, b, * = 1, 2, 3, 4, 5
+              ^^^^
+
+          The splat node can be absent, in that case all target expressions are in the left field.
+
+              a, b, c = 1, 2, 3, 4, 5
+              ^^^^^^^
       - name: rest
         type: node?
+        kind:
+          - ImplicitRestNode
+          - SplatNode
+        comment: |
+          Represents a splat node in the target expression.
+
+              a, b, *c = 1, 2, 3, 4
+                    ^^
+
+          The variable can be empty, this results in a `SplatNode` with a `nil` expression field.
+
+              a, b, * = 1, 2, 3, 4
+                    ^
+
+          If the `*` is omitted, this field will contain an `ImplicitRestNode`
+
+              a, b, = 1, 2, 3, 4
+                  ^
       - name: rights
         type: node[]
         kind:
@@ -2923,14 +3038,39 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
+        comment: |
+          Represents the targets expressions after a splat node.
+
+              a, *, b, c = 1, 2, 3, 4, 5
+                    ^^^^
       - name: lparen_loc
         type: location?
+        comment: |
+          The location of the opening parenthesis.
+
+              (a, b, c) = 1, 2, 3
+              ^
       - name: rparen_loc
         type: location?
+        comment: |
+          The location of the closing parenthesis.
+
+              (a, b, c) = 1, 2, 3
+                      ^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the operator.
+
+              a, b, c = 1, 2, 3
+                      ^
       - name: value
         type: node
+        comment: |
+          The value to write to the targets. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              a, b, c = 1, 2, 3
+                        ^^^^^^^
     comment: |
       Represents a write to a multi-target expression.
 
@@ -2993,10 +3133,8 @@ nodes:
           $1
           ^^
   - name: OptionalKeywordParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -3010,10 +3148,8 @@ nodes:
                 ^^^^
           end
   - name: OptionalParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -3188,10 +3324,8 @@ nodes:
         kind: StatementsNode
     comment: The top level node of any parse tree.
   - name: RangeNode
+    flags: RangeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RangeFlags
       - name: left
         type: node?
         comment: |
@@ -3226,9 +3360,20 @@ nodes:
           c if a =~ /left/ ... b =~ /right/
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   - name: RationalNode
+    flags: IntegerBaseFlags
     fields:
-      - name: numeric
-        type: node
+      - name: numerator
+        type: integer
+        comment: |
+          The numerator of the rational number.
+
+              1.5r # numerator 3
+      - name: denominator
+        type: integer
+        comment: |
+          The denominator of the rational number.
+
+              1.5r # denominator 2
     comment: |
       Represents a rational number literal.
 
@@ -3241,10 +3386,8 @@ nodes:
           redo
           ^^^^
   - name: RegularExpressionNode
+    flags: RegularExpressionFlags
     fields:
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -3259,10 +3402,8 @@ nodes:
           /foo/i
           ^^^^^^
   - name: RequiredKeywordParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -3274,10 +3415,8 @@ nodes:
                 ^^
           end
   - name: RequiredParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -3313,7 +3452,7 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: consequent
+      - name: subsequent
         type: node?
         kind: RescueNode
     comment: |
@@ -3327,10 +3466,8 @@ nodes:
 
       `Foo, *splat, Bar` are in the `exceptions` field. `ex` is in the `exception` field.
   - name: RestParameterNode
+    flags: ParameterFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -3351,9 +3488,6 @@ nodes:
           ^^^^^
   - name: ReturnNode
     fields:
-      - name: flags
-        type: flags
-        kind: ReturnNodeFlags
       - name: keyword_loc
         type: location
       - name: arguments
@@ -3371,10 +3505,8 @@ nodes:
           self
           ^^^^
   - name: ShareableConstantNode
+    flags: ShareableConstantNodeFlags
     fields:
-      - name: flags
-        type: flags
-        kind: ShareableConstantNodeFlags
       - name: write
         type: node
         kind:
@@ -3419,10 +3551,8 @@ nodes:
           __ENCODING__
           ^^^^^^^^^^^^
   - name: SourceFileNode
+    flags: StringFlags
     fields:
-      - name: flags
-        type: flags
-        kind: StringFlags
       - name: filepath
         type: string
         comment: Represents the file path being parsed. This corresponds directly to the `filepath` option given to the various `Prism::parse*` APIs.
@@ -3458,10 +3588,8 @@ nodes:
           foo; bar; baz
           ^^^^^^^^^^^^^
   - name: StringNode
+    flags: StringFlags
     fields:
-      - name: flags
-        type: flags
-        kind: StringFlags
       - name: opening_loc
         type: location?
       - name: content_loc
@@ -3503,10 +3631,8 @@ nodes:
           super foo, bar
           ^^^^^^^^^^^^^^
   - name: SymbolNode
+    flags: SymbolFlags
     fields:
-      - name: flags
-        type: flags
-        kind: SymbolFlags
       - name: opening_loc
         type: location?
       - name: value_loc
@@ -3567,7 +3693,7 @@ nodes:
                          ^^^^
       - name: then_keyword_loc
         type: location?
-        comment:
+        comment: |
           The location of the `then` keyword, if present.
 
               unless cond then bar end
@@ -3581,7 +3707,7 @@ nodes:
 
               unless cond then bar end
                                ^^^
-      - name: consequent
+      - name: else_clause
         type: node?
         kind: ElseNode
         comment: |
@@ -3606,10 +3732,8 @@ nodes:
           unless foo then bar end
           ^^^^^^^^^^^^^^^^^^^^^^^
   - name: UntilNode
+    flags: LoopFlags
     fields:
-      - name: flags
-        type: flags
-        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -3647,10 +3771,8 @@ nodes:
           ^^^^^^^^^
           end
   - name: WhileNode
+    flags: LoopFlags
     fields:
-      - name: flags
-        type: flags
-        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -3670,10 +3792,8 @@ nodes:
           while foo do bar end
           ^^^^^^^^^^^^^^^^^^^^
   - name: XStringNode
+    flags: EncodingFlags
     fields:
-      - name: flags
-        type: flags
-        kind: EncodingFlags
       - name: opening_loc
         type: location
       - name: content_loc

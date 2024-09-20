@@ -121,6 +121,30 @@ describe "Warning.warn" do
     end
   end
 
+  ruby_bug '#19530', ''...'3.4' do
+    it "isn't called by Kernel.warn when category is :deprecated but Warning[:deprecated] is false" do
+      warn_deprecated = Warning[:deprecated]
+      begin
+        Warning[:deprecated] = false
+        Warning.should_not_receive(:warn)
+        Kernel.warn("foo", category: :deprecated)
+      ensure
+        Warning[:deprecated] = warn_deprecated
+      end
+    end
+
+    it "isn't called by Kernel.warn when category is :experimental but Warning[:experimental] is false" do
+      warn_experimental = Warning[:experimental]
+      begin
+        Warning[:experimental] = false
+        Warning.should_not_receive(:warn)
+        Kernel.warn("foo", category: :experimental)
+      ensure
+        Warning[:experimental] = warn_experimental
+      end
+    end
+  end
+
   it "prints the message when VERBOSE is false" do
     -> { Warning.warn("foo") }.should complain("foo")
   end

@@ -56,12 +56,27 @@ module TestIRB
       assert_include output, "=> 12"
     end
 
+    def test_commands_dont_override_stored_last_result
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "1 + 1"
+        type "ls"
+        type "_ + 10"
+        type "exit!"
+      end
+
+      assert_include output, "=> 12"
+    end
+
     def test_evaluate_with_encoding_error_without_lineno
       if RUBY_ENGINE == 'truffleruby'
         omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
       end
 
-      if RUBY_VERSION >= "3.4."
+      if RUBY_VERSION >= "3.3."
         omit "Now raises SyntaxError"
       end
 
@@ -511,9 +526,6 @@ module TestIRB
       end
 
       def test_heredoc_with_indent
-        if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.7.0')
-          pend 'This test needs Ripper::Lexer#scan to take broken tokens'
-        end
         input_with_correct_indents = [
           [%q(<<~Q+<<~R), 0, 2, 1],
           [%q(a), 2, 2, 1],
@@ -825,6 +837,13 @@ module TestIRB
   end
 
   class BacktraceFilteringTest < TestIRB::IntegrationTestCase
+    def setup
+      super
+      # These tests are sensitive to warnings, so we disable them
+      original_rubyopt = [ENV["RUBYOPT"], @envs["RUBYOPT"]].compact.join(" ")
+      @envs["RUBYOPT"] = original_rubyopt + " -W0"
+    end
+
     def test_backtrace_filtering
       write_ruby <<~'RUBY'
         def foo

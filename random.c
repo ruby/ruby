@@ -131,8 +131,9 @@ typedef struct {
 
 static VALUE rand_init(const rb_random_interface_t *, rb_random_t *, VALUE);
 static VALUE random_seed(VALUE);
-static void fill_random_seed(uint32_t *seed, size_t cnt);
+static void fill_random_seed(uint32_t *seed, size_t cnt, bool try_bytes);
 static VALUE make_seed_value(uint32_t *ptr, size_t len);
+#define fill_random_bytes ruby_fill_random_bytes
 
 RB_RANDOM_INTERFACE_DECLARE(rand_mt);
 static const rb_random_interface_t random_mt_if = {
@@ -354,7 +355,7 @@ rand_init_default(const rb_random_interface_t *rng, rb_random_t *rnd)
     size_t len = roomof(rng->default_seed_bits, 32);
     uint32_t *buf = ALLOCV_N(uint32_t, buf0, len+1);
 
-    fill_random_seed(buf, len);
+    fill_random_seed(buf, len, true);
     rng->init(rnd, buf, len);
     seed = make_seed_value(buf, len);
     explicit_bzero(buf, len * sizeof(*buf));
@@ -566,8 +567,6 @@ fill_random_bytes_syscall(void *buf, size_t size, int unused)
 #endif
 
 # if defined(CRYPT_VERIFYCONTEXT)
-STATIC_ASSERT(sizeof_HCRYPTPROV, sizeof(HCRYPTPROV) == sizeof(size_t));
-
 /* Although HCRYPTPROV is not a HANDLE, it looks like
  * INVALID_HANDLE_VALUE is not a valid value */
 static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
@@ -576,11 +575,17 @@ static void
 release_crypt(void *p)
 {
     HCRYPTPROV *ptr = p;
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_SIZE_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
     if (prov && prov != INVALID_HCRYPTPROV) {
         CryptReleaseContext(prov, 0);
     }
 }
+
+static const rb_data_type_t crypt_prov_type = {
+    "HCRYPTPROV",
+    {0, release_crypt,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+};
 
 static int
 fill_random_bytes_crypt(void *seed, size_t size)
@@ -588,15 +593,15 @@ fill_random_bytes_crypt(void *seed, size_t size)
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
+        VALUE wrapper = TypedData_Wrap_Struct(0, &crypt_prov_type, 0);
         if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
             prov = INVALID_HCRYPTPROV;
         }
-        old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+        old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
         if (LIKELY(!old_prov)) { /* no other threads acquired */
             if (prov != INVALID_HCRYPTPROV) {
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-                rb_vm_register_global_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
+                DATA_PTR(wrapper) = (void *)prov;
+                rb_vm_register_global_object(wrapper);
             }
         }
         else {			/* another thread acquired */
@@ -673,11 +678,9 @@ ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
     return fill_random_bytes_urandom(seed, size);
 }
 
-#define fill_random_bytes ruby_fill_random_bytes
-
 /* cnt must be 4 or more */
 static void
-fill_random_seed(uint32_t *seed, size_t cnt)
+fill_random_seed(uint32_t *seed, size_t cnt, bool try_bytes)
 {
     static rb_atomic_t n = 0;
 #if defined HAVE_CLOCK_GETTIME
@@ -687,10 +690,12 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 #endif
     size_t len = cnt * sizeof(*seed);
 
+    if (try_bytes) {
+        fill_random_bytes(seed, len, FALSE);
+        return;
+    }
+
     memset(seed, 0, len);
-
-    fill_random_bytes(seed, len, FALSE);
-
 #if defined HAVE_CLOCK_GETTIME
     clock_gettime(CLOCK_REALTIME, &tv);
     seed[0] ^= tv.tv_nsec;
@@ -725,8 +730,8 @@ make_seed_value(uint32_t *ptr, size_t len)
     return seed;
 }
 
-#define with_random_seed(size, add) \
-    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size)), 1); \
+#define with_random_seed(size, add, try_bytes) \
+    for (uint32_t seedbuf[(size)+(add)], loop = (fill_random_seed(seedbuf, (size), try_bytes), 1); \
          loop; explicit_bzero(seedbuf, (size)*sizeof(seedbuf[0])), loop = 0)
 
 /*
@@ -741,7 +746,7 @@ static VALUE
 random_seed(VALUE _)
 {
     VALUE v;
-    with_random_seed(DEFAULT_SEED_CNT, 1) {
+    with_random_seed(DEFAULT_SEED_CNT, 1, true) {
         v = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
     }
     return v;
@@ -1770,7 +1775,7 @@ Init_RandomSeedCore(void)
     */
     struct MT mt;
 
-    with_random_seed(DEFAULT_SEED_CNT, 0) {
+    with_random_seed(DEFAULT_SEED_CNT, 0, false) {
         init_by_array(&mt, seedbuf, DEFAULT_SEED_CNT);
     }
 

@@ -7,7 +7,7 @@ require_relative '../enumerable/shared/enumeratorized'
 # Mutating the array while it is being iterated is discouraged as it can result in confusing behavior.
 # Yet a Ruby implementation must not crash in such a case, and following the simple CRuby behavior makes sense.
 # CRuby simply reads the array storage and checks the size for every iteration;
-# like `i = 0; while i < size; yield self[i]; end`
+# like `i = 0; while i < size; yield self[i]; i += 1; end`
 
 describe "Array#each" do
   it "yields each element to the block" do

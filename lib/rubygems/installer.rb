@@ -344,7 +344,7 @@ class Gem::Installer
 
     say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
 
-    Gem::Specification.add_spec(spec)
+    Gem::Specification.add_spec(spec) unless @install_dir
 
     load_plugin
 
@@ -500,8 +500,7 @@ class Gem::Installer
       dir_mode = options[:prog_mode] || (mode | 0o111)
 
       unless dir_mode == mode
-        require "fileutils"
-        FileUtils.chmod dir_mode, bin_path
+        File.chmod dir_mode, bin_path
       end
 
       check_executable_overwrite filename
@@ -539,12 +538,14 @@ class Gem::Installer
   def generate_bin_script(filename, bindir)
     bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-    require "fileutils"
-    FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
+    Gem.open_file_with_lock(bin_script_path) do
+      require "fileutils"
+      FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, "wb", 0o755 do |file|
-      file.print app_script_text(filename)
-      file.chmod(options[:prog_mode] || 0o755)
+      File.open(bin_script_path, "wb", 0o755) do |file|
+        file.write app_script_text(filename)
+        file.chmod(options[:prog_mode] || 0o755)
+      end
     end
 
     verbose bin_script_path
@@ -847,7 +848,7 @@ TEXT
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
-    builder = Gem::Ext::Builder.new spec, build_args
+    builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig
 
     builder.build_extensions
   end
@@ -993,7 +994,7 @@ TEXT
   end
 
   def rb_config
-    RbConfig::CONFIG
+    Gem.target_rbconfig
   end
 
   def ruby_install_name

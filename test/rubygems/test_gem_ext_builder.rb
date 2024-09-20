@@ -310,6 +310,76 @@ install:
     assert_path_exist @spec.extension_dir
   end
 
+  def test_build_extensions_with_target_rbconfig
+    fake_rbconfig = File.join @tempdir, "fake_rbconfig.rb"
+    File.open fake_rbconfig, "w" do |f|
+      f.write <<~RUBY
+      module RbConfig
+        CONFIG = {}
+        MAKEFILE_CONFIG = {}
+
+        def self.fire_update!(key, value); end
+        def self.expand(val, config = CONFIG); val; end
+      end
+      RUBY
+      RbConfig::CONFIG.each do |k, v|
+        f.puts %(RbConfig::CONFIG[#{k.dump}] = #{v.dump})
+      end
+      RbConfig::MAKEFILE_CONFIG.each do |k, v|
+        f.puts %(RbConfig::MAKEFILE_CONFIG[#{k.dump}] = #{v.dump})
+      end
+      f.puts "RbConfig::CONFIG['host_os'] = 'fake_os'"
+      f.puts "RbConfig::CONFIG['arch'] = 'fake_arch'"
+      f.puts "RbConfig::CONFIG['platform'] = 'fake_platform'"
+    end
+
+    stdout, stderr = capture_subprocess_io do
+      system(Gem.ruby, "-rmkmf", "-e", "exit MakeMakefile::RbConfig::CONFIG['host_os'] == 'fake_os'",
+             "--", "--target-rbconfig=#{fake_rbconfig}")
+    end
+    unless $?.success?
+      assert_include(stderr, "uninitialized constant MakeMakefile::RbConfig")
+      pend "This version of mkmf does not support --target-rbconfig"
+    end
+    assert_empty(stdout)
+
+    @spec.extensions << "extconf.rb"
+    @builder = Gem::Ext::Builder.new @spec, "", Gem::TargetRbConfig.from_path(fake_rbconfig)
+
+    FileUtils.mkdir_p @spec.gem_dir
+    lib_dir = File.join(@spec.gem_dir, "lib")
+
+    FileUtils.mkdir lib_dir
+
+    File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        extconf_args = File.join __dir__, 'rbconfig_dump'
+        File.open extconf_args, 'w' do |f|
+          ["host_os", "arch"].each do |k|
+            f.puts "#{k}=#{MakeMakefile::RbConfig::CONFIG[k]}"
+          end
+        end
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    path = File.join @spec.gem_dir, "rbconfig_dump"
+
+    assert_equal <<~DUMP, File.read(path)
+    host_os=fake_os
+    arch=fake_arch
+    DUMP
+    assert_path_exist @spec.extension_dir
+    assert_equal [], Dir.glob(File.join(lib_dir, "*"))
+  end
+
   def test_initialize
     build_info_dir = File.join @gemhome, "build_info"
 

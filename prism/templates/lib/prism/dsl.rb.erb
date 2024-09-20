@@ -5,45 +5,129 @@ module Prism
   #     source = Prism::Source.for("[1]")
   #
   #     Prism::ArrayNode.new(
+  #       source,
+  #       0,
+  #       Prism::Location.new(source, 0, 3),
+  #       0,
   #       [
   #         Prism::IntegerNode.new(
-  #           Prism::IntegerBaseFlags::DECIMAL,
-  #           1,
+  #           source,
+  #           0,
   #           Prism::Location.new(source, 1, 1),
-  #           source
+  #           Prism::IntegerBaseFlags::DECIMAL,
+  #           1
   #         )
   #       ],
   #       Prism::Location.new(source, 0, 1),
-  #       Prism::Location.new(source, 2, 1),
-  #       source
+  #       Prism::Location.new(source, 2, 1)
   #     )
   #
   # you could instead write:
   #
-  #     source = Prism::Source.for("[1]")
+  #     class Builder
+  #       include Prism::DSL
   #
-  #     ArrayNode(
-  #       IntegerNode(Prism::IntegerBaseFlags::DECIMAL, 1, Location(source, 1, 1)), source),
-  #       Location(source, 0, 1),
-  #       Location(source, 2, 1),
-  #       source
-  #     )
+  #       attr_reader :default_source
   #
-  # This is mostly helpful in the context of writing tests, but can also be used
-  # to generate trees programmatically.
+  #       def initialize
+  #         @default_source = source("[1]")
+  #       end
+  #
+  #       def build
+  #         array_node(
+  #           location: location(start_offset: 0, length: 3),
+  #           elements: [
+  #             integer_node(
+  #               location: location(start_offset: 1, length: 1),
+  #               flags: integer_base_flag(:decimal),
+  #               value: 1
+  #             )
+  #           ],
+  #           opening_loc: location(start_offset: 0, length: 1),
+  #           closing_loc: location(start_offset: 2, length: 1)
+  #         )
+  #       end
+  #     end
+  #
+  # This is mostly helpful in the context of generating trees programmatically.
   module DSL
-    private
+    # Provide all of these methods as module methods as well, to allow for
+    # building nodes like Prism::DSL.nil_node.
+    extend self
 
-    # Create a new Location object
-    def Location(source = nil, start_offset = 0, length = 0)
-      Location.new(source, start_offset, length) # steep:ignore
+    # Create a new Source object.
+    def source(string)
+      Source.for(string)
+    end
+
+    # Create a new Location object.
+    def location(source: default_source, start_offset: 0, length: 0)
+      Location.new(source, start_offset, length)
     end
     <%- nodes.each do |node| -%>
 
-    # Create a new <%= node.name %> node
-    def <%= node.name %>(<%= (node.fields.map(&:name) + ["source = nil, location = Location()"]).join(", ") %>)
-      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
+    # Create a new <%= node.name %> node.
+    def <%= node.human %>(<%= ["source: default_source", "node_id: 0", "location: default_location", "flags: 0", *node.fields.map { |field|
+      case field
+      when Prism::Template::NodeField
+        if !field.kind?
+          "#{field.name}: default_node(source, location)"
+        else
+          kind = field.specific_kind || field.union_kind.first
+          "#{field.name}: #{kind.gsub(/(?<=.)[A-Z]/, "_\\0").downcase}(source: source)"
+        end
+      when Prism::Template::ConstantField
+        "#{field.name}: :\"\""
+      when Prism::Template::OptionalNodeField, Prism::Template::OptionalConstantField, Prism::Template::OptionalLocationField
+        "#{field.name}: nil"
+      when Prism::Template::NodeListField, Prism::Template::ConstantListField
+        "#{field.name}: []"
+      when Prism::Template::StringField
+        "#{field.name}: \"\""
+      when Prism::Template::LocationField
+        "#{field.name}: location"
+      when Prism::Template::UInt8Field, Prism::Template::UInt32Field, Prism::Template::IntegerField
+        "#{field.name}: 0"
+      when Prism::Template::DoubleField
+        "#{field.name}: 0.0"
+      else
+        raise
+      end
+    }].join(", ") %>)
+      <%= node.name %>.new(<%= ["source", "node_id", "location", "flags", *node.fields.map(&:name)].join(", ") %>)
     end
     <%- end -%>
+    <%- flags.each do |flag| -%>
+
+    # Retrieve the value of one of the <%= flag.name %> flags.
+    def <%= flag.human.chomp("s") %>(name)
+      case name
+      <%- flag.values.each do |value| -%>
+      when :<%= value.name.downcase %> then <%= flag.name %>::<%= value.name %>
+      <%- end -%>
+      else Kernel.raise ArgumentError, "invalid <%= flag.name %> flag: #{name.inspect}"
+      end
+    end
+    <%- end -%>
+
+    private
+
+    # The default source object that gets attached to nodes and locations if no
+    # source is specified.
+    def default_source
+      Source.for("")
+    end
+
+    # The default location object that gets attached to nodes if no location is
+    # specified, which uses the given source.
+    def default_location
+      Location.new(default_source, 0, 0)
+    end
+
+    # The default node that gets attached to nodes if no node is specified for a
+    # required node field.
+    def default_node(source, location)
+      MissingNode.new(source, -1, location, 0)
+    end
   end
 end

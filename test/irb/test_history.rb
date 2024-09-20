@@ -12,19 +12,14 @@ module TestIRB
     def setup
       @original_verbose, $VERBOSE = $VERBOSE, nil
       @tmpdir = Dir.mktmpdir("test_irb_history_")
-      @backup_home = ENV["HOME"]
-      @backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
-      @backup_irbrc = ENV.delete("IRBRC")
+      setup_envs(home: @tmpdir)
       @backup_default_external = Encoding.default_external
-      ENV["HOME"] = @tmpdir
       IRB.instance_variable_set(:@existing_rc_name_generators, nil)
     end
 
     def teardown
       IRB.instance_variable_set(:@existing_rc_name_generators, nil)
-      ENV["HOME"] = @backup_home
-      ENV["XDG_CONFIG_HOME"] = @backup_xdg_config_home
-      ENV["IRBRC"] = @backup_irbrc
+      teardown_envs
       Encoding.default_external = @backup_default_external
       $VERBOSE = @original_verbose
       FileUtils.rm_rf(@tmpdir)

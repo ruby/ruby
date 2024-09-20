@@ -207,18 +207,24 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_given_method
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     m = method(:m_block_given?)
     assert(!m.call, "without block")
     assert(m.call {}, "with block")
     assert(!m.call, "without block second")
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_block_given_method_to_proc
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     bug8341 = '[Bug #8341]'
     m = method(:m_block_given?).to_proc
     assert(!m.call, "#{bug8341} without block")
     assert(m.call {}, "#{bug8341} with block")
     assert(!m.call, "#{bug8341} without block second")
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_block_persist_between_calls

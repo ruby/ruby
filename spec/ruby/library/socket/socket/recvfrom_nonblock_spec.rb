@@ -52,6 +52,27 @@ describe 'Socket#recvfrom_nonblock' do
           end
         end
 
+        it "allows an output buffer as third argument" do
+          @client.write('hello')
+
+          IO.select([@server])
+          buffer = +''
+          message, = @server.recvfrom_nonblock(5, 0, buffer)
+
+          message.should.equal?(buffer)
+          buffer.should == 'hello'
+        end
+
+        it "preserves the encoding of the given buffer" do
+          @client.write('hello')
+
+          IO.select([@server])
+          buffer = ''.encode(Encoding::ISO_8859_1)
+          @server.recvfrom_nonblock(5, 0, buffer)
+
+          buffer.encoding.should == Encoding::ISO_8859_1
+        end
+
         describe 'the returned data' do
           it 'is the same as the sent data' do
             5.times do

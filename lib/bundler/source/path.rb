@@ -18,9 +18,6 @@ module Bundler
         @options = options.dup
         @glob = options["glob"] || DEFAULT_GLOB
 
-        @allow_cached = false
-        @allow_remote = false
-
         @root_path = options["root_path"] || root
 
         if options["path"]
@@ -39,16 +36,6 @@ module Bundler
         # Stores the original path. If at any point we move to the
         # cached directory, we still have the original path to copy from.
         @original_path = @path
-      end
-
-      def remote!
-        @local_specs = nil
-        @allow_remote = true
-      end
-
-      def cached!
-        @local_specs = nil
-        @allow_cached = true
       end
 
       def self.from_lock(options)

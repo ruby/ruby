@@ -463,6 +463,8 @@ class TestParse < Test::Unit::TestCase
     assert_parse_error(%q[def ((%w();1)).foo; end], msg)
     assert_parse_error(%q[def ("#{42}").foo; end], msg)
     assert_parse_error(%q[def (:"#{42}").foo; end], msg)
+    assert_parse_error(%q[def ([]).foo; end], msg)
+    assert_parse_error(%q[def ([1]).foo; end], msg)
   end
 
   def test_flip_flop
@@ -512,12 +514,12 @@ class TestParse < Test::Unit::TestCase
     def t.dummy(_)
     end
 
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index assignment/)
     begin;
       t[42, &blk] ||= 42
     end;
 
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index assignment/)
     begin;
       t[42, &blk] ||= t.dummy 42 # command_asgn test
     end;
@@ -555,34 +557,42 @@ class TestParse < Test::Unit::TestCase
     mesg = 'from the backslash through the invalid char'
 
     e = assert_syntax_error('"\xg1"', /hex escape/)
-    assert_equal(' ^~'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| ) \^~(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
-    assert_equal('        ^'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| )        \^(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
-    assert_equal('    ^'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| )    \^(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx', 'Unicode escape')
-    assert_pattern_list([
-                          /.*: invalid Unicode escape\n.*\n/,
-                          /    \^/,
-                          /\n/,
-                          /.*: unterminated Unicode escape\n.*\n/,
-                          /    \^/,
-                          /\n/,
-                          /.*: unterminated string.*\n.*\n/,
-                          /        \^\n/,
-                        ], e.message)
+    if e.message.lines.first == "#{__FILE__}:#{__LINE__ - 1}: syntax errors found\n"
+      assert_pattern_list([
+                            /\s+\| \^ unterminated string;.+\n/,
+                            /\s+\|     \^ unterminated Unicode escape\n/,
+                            /\s+\|     \^ invalid Unicode escape sequence\n/,
+                          ], e.message.lines[2..-1].join)
+    else
+      assert_pattern_list([
+                            /.*: invalid Unicode escape\n.*\n/,
+                            /    \^/,
+                            /\n/,
+                            /.*: unterminated Unicode escape\n.*\n/,
+                            /    \^/,
+                            /\n/,
+                            /.*: unterminated string.*\n.*\n/,
+                            /        \^\n/,
+                          ], e.message)
+    end
 
     e = assert_syntax_error('"\M1"', /escape character syntax/)
-    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| ) \^~~(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\C1"', /escape character syntax/)
-    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| ) \^~~(?!~)/, e.message.lines.last, mesg)
 
     src = '"\xD0\u{90'"\n""000000000000000000000000"
-    assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
+    assert_syntax_error(src, /(:#{__LINE__}:|> #{__LINE__} \|.+) unterminated/om)
 
     assert_syntax_error('"\u{100000000}"', /invalid Unicode escape/)
     assert_equal("", eval('"\u{}"'))
@@ -605,22 +615,22 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
 
     e = assert_syntax_error('"\c\u0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~(?!~)/, e.message.lines.last)
     e = assert_syntax_error('"\c\U0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~(?!~)/, e.message.lines.last)
 
     e = assert_syntax_error('"\C-\u0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
     e = assert_syntax_error('"\C-\U0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
 
     e = assert_syntax_error('"\M-\u0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
     e = assert_syntax_error('"\M-\U0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
 
     e = assert_syntax_error(%["\\C-\u3042"], 'Invalid escape character syntax')
-    assert_match(/^\s \^(?# \\ ) ~(?# C ) ~(?# - ) ~+(?# U+3042 )$/x, e.message.lines.last)
+    assert_match(/(^|\|\s)\s \^(?# \\ ) ~(?# C ) ~(?# - ) ~+(?# U+3042 )($|\s)/x, e.message.lines.last)
     assert_not_include(e.message, "invalid multibyte char")
   end
 
@@ -942,6 +952,7 @@ x = __ENCODING__
     assert_nil assert_warning(useless_use) {eval("true; nil")}
     assert_nil assert_warning(useless_use) {eval("false; nil")}
     assert_nil assert_warning(useless_use) {eval("defined?(1); nil")}
+    assert_nil assert_warning(useless_use) {eval("begin; ensure; x; end")}
     assert_equal 1, x
 
     assert_syntax_error("1; next; 2", /Invalid next/)
@@ -1345,9 +1356,13 @@ x = __ENCODING__
   end
 
   def test_truncated_source_line
-    e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789",
+    lineno = __LINE__ + 1
+    e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 123456789012345678901234567890123456789",
                             /unexpected local variable or method/)
+
     line = e.message.lines[1]
+    line.delete_prefix!("> #{lineno} | ") if line.start_with?(">")
+
     assert_operator(line, :start_with?, "...")
     assert_operator(line, :end_with?, "...\n")
   end
@@ -1559,6 +1574,21 @@ x = __ENCODING__
     assert_equal([2], a.values, bug_20339)
     assert_equal(1, b[0], bug_20341)
     assert_equal(2, b[1], bug_20341)
+  end
+
+  def test_shareable_constant_value_literal_const_refs
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      # [Bug #20668]
+      SOME_CONST = {
+        'Object' => Object,
+        'String' => String,
+        'Array' => Array,
+      }
+      SOME_CONST
+    end;
+    assert_ractor_shareable(a)
   end
 
   def test_shareable_constant_value_nested

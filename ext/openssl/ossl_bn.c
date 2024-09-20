@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"

@@ -139,6 +139,41 @@ class TestDefined < Test::Unit::TestCase
     assert_equal("assignment", eval('defined?(A::B &&= 1)'))
   end
 
+  def test_defined_splat
+    assert_nil(defined?([*a]))
+    assert_nil(defined?(itself(*a)))
+    assert_equal("expression", defined?([*itself]))
+    assert_equal("method", defined?(itself(*itself)))
+  end
+
+  def test_defined_hash
+    assert_nil(defined?({a: a}))
+    assert_nil(defined?({a => 1}))
+    assert_nil(defined?({a => a}))
+    assert_nil(defined?({**a}))
+    assert_nil(defined?(itself(a: a)))
+    assert_nil(defined?(itself(a => 1)))
+    assert_nil(defined?(itself(a => a)))
+    assert_nil(defined?(itself(**a)))
+    assert_nil(defined?(itself({a: a})))
+    assert_nil(defined?(itself({a => 1})))
+    assert_nil(defined?(itself({a => a})))
+    assert_nil(defined?(itself({**a})))
+
+    assert_equal("expression", defined?({a: itself}))
+    assert_equal("expression", defined?({itself => 1}))
+    assert_equal("expression", defined?({itself => itself}))
+    assert_equal("expression", defined?({**itself}))
+    assert_equal("method", defined?(itself(a: itself)))
+    assert_equal("method", defined?(itself(itself => 1)))
+    assert_equal("method", defined?(itself(itself => itself)))
+    assert_equal("method", defined?(itself(**itself)))
+    assert_equal("method", defined?(itself({a: itself})))
+    assert_equal("method", defined?(itself({itself => 1})))
+    assert_equal("method", defined?(itself({itself => itself})))
+    assert_equal("method", defined?(itself({**itself})))
+  end
+
   def test_defined_literal
     assert_equal("nil", defined?(nil))
     assert_equal("true", defined?(true))

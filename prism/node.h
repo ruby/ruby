@@ -57,27 +57,6 @@ void pm_node_list_free(pm_node_list_t *list);
 PRISM_EXPORTED_FUNCTION void pm_node_destroy(pm_parser_t *parser, struct pm_node *node);
 
 /**
- * This struct stores the information gathered by the pm_node_memsize function.
- * It contains both the memory footprint and additionally metadata about the
- * shape of the tree.
- */
-typedef struct {
-    /** The total memory footprint of the node and all of its children. */
-    size_t memsize;
-
-    /** The number of children the node has. */
-    size_t node_count;
-} pm_memsize_t;
-
-/**
- * Calculates the memory footprint of a given node.
- *
- * @param node The node to calculate the memory footprint of.
- * @param memsize The memory footprint of the node and all of its children.
- */
-PRISM_EXPORTED_FUNCTION void pm_node_memsize(pm_node_t *node, pm_memsize_t *memsize);
-
-/**
  * Returns a string representation of the given node type.
  *
  * @param node_type The node type to convert to a string.

@@ -13,6 +13,7 @@ class Reline::Config::Test < Reline::TestCase
     Dir.chdir(@tmpdir)
     Reline.test_mode
     @config = Reline::Config.new
+    @inputrc_backup = ENV['INPUTRC']
   end
 
   def teardown
@@ -20,14 +21,28 @@ class Reline::Config::Test < Reline::TestCase
     FileUtils.rm_rf(@tmpdir)
     Reline.test_reset
     @config.reset
+    ENV['INPUTRC'] = @inputrc_backup
+  end
+
+  def get_config_variable(variable)
+    @config.instance_variable_get(variable)
+  end
+
+  def additional_key_bindings(keymap_label)
+    get_config_variable(:@additional_key_bindings)[keymap_label].instance_variable_get(:@key_bindings)
+  end
+
+  def registered_key_bindings(keys)
+    key_bindings = @config.key_bindings
+    keys.to_h { |key| [key, key_bindings.get(key)] }
   end
 
   def test_read_lines
     @config.read_lines(<<~LINES.lines)
-      set bell-style on
+      set show-mode-in-prompt on
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal true, get_config_variable(:@show_mode_in_prompt)
   end
 
   def test_read_lines_with_variable
@@ -35,7 +50,7 @@ class Reline::Config::Test < Reline::TestCase
       set disable-completion on
     LINES
 
-    assert_equal true, @config.instance_variable_get(:@disable_completion)
+    assert_equal true, get_config_variable(:@disable_completion)
   end
 
   def test_string_value
@@ -44,7 +59,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string Emacs
     LINES
 
-    assert_equal 'Emacs', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal 'Emacs', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_brackets
@@ -53,7 +68,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string [Emacs]
     LINES
 
-    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '[Emacs]', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_brackets_and_quotes
@@ -62,7 +77,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string "[Emacs]"
     LINES
 
-    assert_equal '[Emacs]', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '[Emacs]', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_parens
@@ -71,7 +86,7 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string (Emacs)
     LINES
 
-    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '(Emacs)', get_config_variable(:@emacs_mode_string)
   end
 
   def test_string_value_with_parens_and_quotes
@@ -80,33 +95,34 @@ class Reline::Config::Test < Reline::TestCase
       set emacs-mode-string "(Emacs)"
     LINES
 
-    assert_equal '(Emacs)', @config.instance_variable_get(:@emacs_mode_string)
+    assert_equal '(Emacs)', get_config_variable(:@emacs_mode_string)
   end
 
   def test_encoding_is_ascii
     @config.reset
-    Reline.core.io_gate.reset(encoding: Encoding::US_ASCII)
+    Reline.core.io_gate.instance_variable_set(:@encoding, Encoding::US_ASCII)
     @config = Reline::Config.new
 
     assert_equal true, @config.convert_meta
   end
 
   def test_encoding_is_not_ascii
-    @config.reset
-    Reline.core.io_gate.reset(encoding: Encoding::UTF_8)
     @config = Reline::Config.new
 
-    assert_equal nil, @config.convert_meta
-  end
-
-  def test_comment_line
-    @config.read_lines([" #a: error\n"])
-    assert_not_include @config.key_bindings, nil
+    assert_equal false, @config.convert_meta
   end
 
   def test_invalid_keystroke
-    @config.read_lines(["a: error\n"])
-    assert_not_include @config.key_bindings, nil
+    @config.read_lines(<<~LINES.lines)
+      #"a": comment
+      a: error
+      "b": no-error
+    LINES
+    key_bindings = additional_key_bindings(:emacs)
+    assert_not_include key_bindings, 'a'.bytes
+    assert_not_include key_bindings, nil
+    assert_not_include key_bindings, []
+    assert_include key_bindings, 'b'.bytes
   end
 
   def test_bind_key
@@ -150,21 +166,21 @@ class Reline::Config::Test < Reline::TestCase
   def test_include
     File.open('included_partial', 'wt') do |f|
       f.write(<<~PARTIAL_LINES)
-        set bell-style on
+        set show-mode-in-prompt on
       PARTIAL_LINES
     end
     @config.read_lines(<<~LINES.lines)
       $include included_partial
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal true, get_config_variable(:@show_mode_in_prompt)
   end
 
   def test_include_expand_path
     home_backup = ENV['HOME']
     File.open('included_partial', 'wt') do |f|
       f.write(<<~PARTIAL_LINES)
-        set bell-style on
+        set show-mode-in-prompt on
       PARTIAL_LINES
     end
     ENV['HOME'] = Dir.pwd
@@ -172,7 +188,7 @@ class Reline::Config::Test < Reline::TestCase
       $include ~/included_partial
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal true, get_config_variable(:@show_mode_in_prompt)
   ensure
     ENV['HOME'] = home_backup
   end
@@ -180,39 +196,39 @@ class Reline::Config::Test < Reline::TestCase
   def test_if
     @config.read_lines(<<~LINES.lines)
       $if Ruby
-      set bell-style audible
+      set vi-cmd-mode-string (cmd)
       $else
-      set bell-style visible
+      set vi-cmd-mode-string [cmd]
       $endif
     LINES
 
-    assert_equal :audible, @config.instance_variable_get(:@bell_style)
+    assert_equal '(cmd)', get_config_variable(:@vi_cmd_mode_string)
   end
 
   def test_if_with_false
     @config.read_lines(<<~LINES.lines)
       $if Python
-      set bell-style audible
+      set vi-cmd-mode-string (cmd)
       $else
-      set bell-style visible
+      set vi-cmd-mode-string [cmd]
       $endif
     LINES
 
-    assert_equal :visible, @config.instance_variable_get(:@bell_style)
+    assert_equal '[cmd]', get_config_variable(:@vi_cmd_mode_string)
   end
 
   def test_if_with_indent
     %w[Ruby Reline].each do |cond|
       @config.read_lines(<<~LINES.lines)
-        set bell-style none
+        set vi-cmd-mode-string {cmd}
           $if #{cond}
-            set bell-style audible
+            set vi-cmd-mode-string (cmd)
           $else
-            set bell-style visible
+            set vi-cmd-mode-string [cmd]
           $endif
       LINES
 
-      assert_equal :audible, @config.instance_variable_get(:@bell_style)
+      assert_equal '(cmd)', get_config_variable(:@vi_cmd_mode_string)
     end
   end
 
@@ -244,8 +260,8 @@ class Reline::Config::Test < Reline::TestCase
       "\xC": "O"
     LINES
     keys = [0x1, 0x3, 0x4, 0x6, 0x7, 0xC]
-    key_bindings = keys.to_h { |k| [[k.ord], ['O'.ord]] }
-    assert_equal(key_bindings, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    key_bindings = keys.to_h { |k| [[k], ['O'.ord]] }
+    assert_equal(key_bindings, additional_key_bindings(:emacs))
   end
 
   def test_unclosed_if
@@ -284,9 +300,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[5] => :history_search_backward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_else
@@ -298,9 +314,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[6] => :history_search_forward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_if_with_invalid_mode
@@ -312,9 +328,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[6] => :history_search_forward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_mode_label_differs_from_keymap_label
@@ -329,9 +345,9 @@ class Reline::Config::Test < Reline::TestCase
         "\C-e": history-search-backward
       $endif
     LINES
-    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[5] => :history_search_backward}, additional_key_bindings(:emacs))
+    assert_equal({}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_if_without_else_condition
@@ -342,9 +358,9 @@ class Reline::Config::Test < Reline::TestCase
       $endif
     LINES
 
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
-    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
-    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({}, additional_key_bindings(:emacs))
+    assert_equal({[5] => :history_search_backward}, additional_key_bindings(:vi_insert))
+    assert_equal({}, additional_key_bindings(:vi_command))
   end
 
   def test_default_key_bindings
@@ -355,7 +371,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'abcd'.bytes => 'ABCD'.bytes, 'ijkl'.bytes => 'IJKL'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings
@@ -365,7 +381,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings_with_nesting_and_comment_out
@@ -377,7 +393,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings_for_other_keymap
@@ -392,7 +408,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'cd'.bytes => 'CD'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_additional_key_bindings_for_auxiliary_emacs_keymaps
@@ -414,7 +430,7 @@ class Reline::Config::Test < Reline::TestCase
       "\C-xef".bytes => 'EF'.bytes,
       "\egh".bytes => 'GH'.bytes,
     }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_key_bindings_with_reset
@@ -426,7 +442,7 @@ class Reline::Config::Test < Reline::TestCase
     LINES
     @config.reset
     expected = { 'default'.bytes => 'DEFAULT'.bytes, 'additional'.bytes => 'ADDITIONAL'.bytes }
-    assert_equal expected, @config.key_bindings
+    assert_equal expected, registered_key_bindings(expected.keys)
   end
 
   def test_history_size
@@ -434,7 +450,7 @@ class Reline::Config::Test < Reline::TestCase
       set history-size 5000
     LINES
 
-    assert_equal 5000, @config.instance_variable_get(:@history_size)
+    assert_equal 5000, get_config_variable(:@history_size)
     history = Reline::History.new(@config)
     history << "a\n"
     assert_equal 1, history.size
@@ -457,6 +473,17 @@ class Reline::Config::Test < Reline::TestCase
     assert_equal expected, @config.inputrc_path
   ensure
     ENV['INPUTRC'] = inputrc_backup
+  end
+
+  def test_inputrc_raw_value
+    @config.read_lines(<<~'LINES'.lines)
+      set editing-mode vi ignored-string
+      set vi-ins-mode-string aaa aaa
+      set vi-cmd-mode-string bbb ccc # comment
+    LINES
+    assert_equal :vi_insert, get_config_variable(:@editing_mode_label)
+    assert_equal 'aaa aaa', @config.vi_ins_mode_string
+    assert_equal 'bbb ccc # comment', @config.vi_cmd_mode_string
   end
 
   def test_inputrc_with_utf8
@@ -541,5 +568,21 @@ class Reline::Config::Test < Reline::TestCase
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
   end
-end
 
+  def test_reload
+    inputrc = "#{@tmpdir}/inputrc"
+    ENV['INPUTRC'] = inputrc
+
+    File.write(inputrc, "set emacs-mode-string !")
+    @config.read
+    assert_equal '!', @config.emacs_mode_string
+
+    File.write(inputrc, "set emacs-mode-string ?")
+    @config.reload
+    assert_equal '?', @config.emacs_mode_string
+
+    File.write(inputrc, "")
+    @config.reload
+    assert_equal '@', @config.emacs_mode_string
+  end
+end

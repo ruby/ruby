@@ -5,7 +5,7 @@ RSpec.describe "bundle lock with git gems" do
     build_git "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
   end
@@ -24,7 +24,7 @@ RSpec.describe "bundle lock with git gems" do
 
   it "prints a proper error when changing a locked Gemfile to point to a bad branch" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem 'foo', :git => "#{lib_path("foo-1.0")}", :branch => "bad"
     G
 
@@ -42,7 +42,7 @@ RSpec.describe "bundle lock with git gems" do
           foo (1.0)
 
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
 
       PLATFORMS
@@ -87,7 +87,7 @@ RSpec.describe "bundle lock with git gems" do
     git "branch -D foo ", lib_path("foo-1.0")
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -99,7 +99,7 @@ RSpec.describe "bundle lock with git gems" do
           foo (1.0)
 
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
 
       PLATFORMS
@@ -123,7 +123,7 @@ RSpec.describe "bundle lock with git gems" do
     annotated_tag = git("rev-parse v1.0", lib_path("foo-1.0"))
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem 'foo', :git => "#{lib_path("foo-1.0")}"
     G
 
@@ -135,7 +135,7 @@ RSpec.describe "bundle lock with git gems" do
           foo (1.0)
 
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
 
       PLATFORMS

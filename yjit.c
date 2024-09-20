@@ -701,6 +701,12 @@ rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
     return iseq->body->param.flags.accepts_no_kwarg;
 }
 
+bool
+rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.forwardable;
+}
+
 const rb_seq_param_keyword_struct *
 rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {
@@ -1059,7 +1065,7 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
 void
 rb_assert_cme_handle(VALUE handle)
 {
-    RUBY_ASSERT_ALWAYS(rb_objspace_markable_object_p(handle));
+    RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(handle));
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
 
@@ -1150,30 +1156,6 @@ struct yjit_root_struct {
     bool unused; // empty structs are not legal in C99
 };
 
-static void
-yjit_root_free(void *ptr)
-{
-    // Do nothing. The root lives as long as the process.
-}
-
-static size_t
-yjit_root_memsize(const void *ptr)
-{
-    // Count off-gc-heap allocation size of the dependency table
-    return 0; // TODO: more accurate accounting
-}
-
-void rb_yjit_root_mark(void *ptr); // in Rust
-void rb_yjit_root_update_references(void *ptr); // in Rust
-
-// Custom type for interacting with the GC
-// TODO: make this write barrier protected
-static const rb_data_type_t yjit_root_type = {
-    "yjit_root",
-    {rb_yjit_root_mark, yjit_root_free, yjit_root_memsize, rb_yjit_root_update_references},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
-};
-
 // For dealing with refinements
 void
 rb_yjit_invalidate_all_method_lookup_assumptions(void)
@@ -1183,8 +1165,8 @@ rb_yjit_invalidate_all_method_lookup_assumptions(void)
 }
 
 // Number of object shapes, which might be useful for investigating YJIT exit reasons.
-static VALUE
-object_shape_count(rb_execution_context_t *ec, VALUE self)
+VALUE
+rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
     return ULONG2NUM((unsigned long)GET_SHAPE_TREE()->next_shape_id);
@@ -1245,7 +1227,7 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE context);
+VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
@@ -1256,12 +1238,3 @@ VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VA
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
-
-// Initialize the GC hooks
-void
-rb_yjit_init_gc_hooks(void)
-{
-    struct yjit_root_struct *root;
-    VALUE yjit_root = TypedData_Make_Struct(0, struct yjit_root_struct, &yjit_root_type, root);
-    rb_vm_register_global_object(yjit_root);
-}

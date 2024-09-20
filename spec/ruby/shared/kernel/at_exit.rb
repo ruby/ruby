@@ -30,6 +30,12 @@ describe :kernel_at_exit, shared: true do
     result.lines.should.include?("The exception matches: true (message=foo)\n")
   end
 
+  it "gives access to an exception raised in a previous handler" do
+    code = "#{@method} { print '$!.message = ' + $!.message }; #{@method} { raise 'foo' }"
+    result = ruby_exe(code, args: "2>&1", exit_status: 1)
+    result.lines.should.include?("$!.message = foo")
+  end
+
   it "both exceptions in a handler and in the main script are printed" do
     code = "#{@method} { raise 'at_exit_error' }; raise 'main_script_error'"
     result = ruby_exe(code, args: "2>&1", exit_status: 1)

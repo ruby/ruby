@@ -1,0 +1,7 @@
+def foo(bar = module A;end);end
+              ^~~~~~ unexpected module definition in method body
+def foo;rescue;module A;end;end
+               ^~~~~~ unexpected module definition in method body
+def foo;ensure;module A;end;end
+               ^~~~~~ unexpected module definition in method body
+

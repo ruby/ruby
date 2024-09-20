@@ -100,13 +100,29 @@ describe "BasicSocket#recv" do
     socket.write("data")
 
     client = @server.accept
-    buf = +"foo"
+    buffer = +"foo"
     begin
-      client.recv(4, 0, buf)
+      client.recv(4, 0, buffer).should.equal?(buffer)
     ensure
       client.close
     end
-    buf.should == "data"
+    buffer.should == "data"
+
+    socket.close
+  end
+
+  it "preserves the encoding of the given buffer" do
+    socket = TCPSocket.new('127.0.0.1', @port)
+    socket.write("data")
+
+    client = @server.accept
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    begin
+      client.recv(4, 0, buffer)
+    ensure
+      client.close
+    end
+    buffer.encoding.should == Encoding::ISO_8859_1
 
     socket.close
   end

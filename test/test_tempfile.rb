@@ -3,6 +3,8 @@ require 'test/unit'
 require 'tempfile'
 
 class TestTempfile < Test::Unit::TestCase
+  LIB_TEMPFILE_RB_PATH = File.expand_path(__dir__ + "/../lib/tempfile.rb")
+
   def initialize(*)
     super
     @tempfile = nil
@@ -19,7 +21,7 @@ class TestTempfile < Test::Unit::TestCase
     end
   end
 
-  def test_leackchecker
+  def test_leakchecker
     assert_instance_of(Tempfile, Tempfile.allocate)
   end
 
@@ -172,8 +174,40 @@ class TestTempfile < Test::Unit::TestCase
     end
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_finalizer_removes_file
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<~RUBY) do |(filename,*), (error,*)|
+      file = Tempfile.new("foo")
+      puts file.path
+    RUBY
+      assert_file.not_exist?(filename)
+      assert_nil error
+    end
+  end
+
+  def test_finalizer_removes_file_when_dup
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<~RUBY) do |(filename,*), (error,*)|
+      file = Tempfile.new("foo")
+      file.dup
+      puts file.path
+    RUBY
+      assert_file.not_exist?(filename)
+      assert_nil error
+    end
+  end
+
+  def test_finalizer_removes_file_when_clone
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<~RUBY) do |(filename,*), (error,*)|
+      file = Tempfile.new("foo")
+      file.clone
+      puts file.path
+    RUBY
+      assert_file.not_exist?(filename)
+      assert_nil error
+    end
+  end
+
   def test_finalizer_does_not_unlink_if_already_unlinked
-    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,*), (error,*)|
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<-'EOS') do |(filename,*), (error,*)|
 file = Tempfile.new('foo')
 path = file.path
 puts path
@@ -185,7 +219,7 @@ File.open(path, "w").close
       assert_nil error
     end
 
-    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename,*), (error,*)|
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<-'EOS') do |(filename,*), (error,*)|
 file = Tempfile.new('foo')
 path = file.path
 file.unlink
@@ -215,7 +249,7 @@ File.open(path, "w").close
   end
 
   def test_tempfile_is_unlinked_when_ruby_exits
-    assert_in_out_err('-rtempfile', <<-'EOS') do |(filename), (error)|
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<-'EOS') do |(filename), (error)|
 puts Tempfile.new('foo').path
     EOS
       assert_file.for("tempfile must not be exist after GC.").not_exist?(filename)
@@ -225,7 +259,7 @@ puts Tempfile.new('foo').path
 
   def test_tempfile_finalizer_does_not_run_if_unlinked
     bug8768 = '[ruby-core:56521] [Bug #8768]'
-    assert_in_out_err(%w(-rtempfile), <<-'EOS') do |(filename), (error)|
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<-'EOS') do |(filename), (error)|
       tmp = Tempfile.new('foo')
       puts tmp.path
       tmp.close
@@ -424,5 +458,54 @@ puts Tempfile.new('foo').path
       actual = yield traversal_path
       assert_not_send([File.absolute_path(actual), :start_with?, target])
     end
+  end
+
+  def test_create_anonymous_without_block
+    t = Tempfile.create(anonymous: true)
+    assert_equal(File, t.class)
+    assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
+    t.puts "foo"
+    t.rewind
+    assert_equal("foo\n", t.read)
+    t.close
+  ensure
+    t.close if t
+  end
+
+  def test_create_anonymous_with_block
+    result = Tempfile.create(anonymous: true) {|t|
+      assert_equal(File, t.class)
+      assert_equal(0600, t.stat.mode & 0777) unless /mswin|mingw/ =~ RUBY_PLATFORM
+      t.puts "foo"
+      t.rewind
+      assert_equal("foo\n", t.read)
+      :result
+    }
+    assert_equal(:result, result)
+  end
+
+  def test_create_anonymous_removes_file
+    Dir.mktmpdir {|d|
+      t = Tempfile.create("", d, anonymous: true)
+      t.close
+      assert_equal([], Dir.children(d))
+    }
+  end
+
+  def test_create_anonymous_path
+    Dir.mktmpdir {|d|
+      begin
+        t = Tempfile.create("", d, anonymous: true)
+        assert_equal(File.join(d, ""), t.path)
+      ensure
+        t.close if t
+      end
+    }
+  end
+
+  def test_create_anonymous_autoclose
+    Tempfile.create(anonymous: true) {|t|
+      assert_equal(true, t.autoclose?)
+    }
   end
 end

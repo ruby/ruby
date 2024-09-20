@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rack/test"
-require "bundler/vendored_net_http"
+require_relative "../../vendored_net_http"
 
 module Artifice
   module Net

@@ -47,7 +47,13 @@ module Kernel
   #                be removed in the future.
   # :experimental :: Used for experimental features that may change in
   #                  future releases.
+  # :performance  :: Used for warning about APIs or pattern that have
+  #                  negative performance impact
   def warn(*msgs, uplevel: nil, category: nil)
-    Primitive.rb_warn_m(msgs, uplevel, category)
+    if Primitive.cexpr!("NIL_P(category)")
+      Primitive.rb_warn_m(msgs, uplevel, nil)
+    elsif Warning[category = Primitive.cexpr!("rb_to_symbol_type(category)")]
+      Primitive.rb_warn_m(msgs, uplevel, category)
+    end
   end
 end

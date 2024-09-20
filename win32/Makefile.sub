@@ -18,8 +18,11 @@ MFLAGS=-l
 !endif
 
 !if "$(BASERUBY)" == ""
-! if [ruby $(tooldir)/missing-baseruby.bat 2> nul]
-! else if [for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I > baseruby.mk]
+# After `nmake`, just built `ruby.exe` exists in the build directory,
+# and is searched first prior to $PATH.  Assume that no ruby
+# executable in $(tooldir).
+! if [cd $(tooldir) && ruby missing-baseruby.bat 2> nul]
+! else if [(cd $(tooldir) && for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I) > baseruby.mk]
 ! else
 !   include baseruby.mk
 ! endif
@@ -160,6 +163,9 @@ OPTFLAGS = -O2b2xg-
 OPTFLAGS = -O2sy-
 !endif
 !endif
+!if !defined(incflags)
+incflags =
+!endif
 !if !defined(PLATFORM)
 PLATFORM = mswin32
 !endif
@@ -294,9 +300,7 @@ CXXFLAGS = $(CFLAGS)
 !if !defined(LDFLAGS)
 LDFLAGS = -incremental:no -debug -opt:ref -opt:icf
 !endif
-!if !defined(XLDFLAGS)
-XLDFLAGS = -stack:$(STACK)
-!endif
+XLDFLAGS = -stack:$(STACK) $(XLDFLAGS)
 !if !defined(RFLAGS)
 RFLAGS = -r
 !endif
@@ -442,6 +446,8 @@ PREP          = miniruby$(EXEEXT)
 BUILTIN_BINARY = yes
 !endif
 
+BUILTIN_GC = default
+
 !if !defined(EXTSTATIC)
 EXTSTATIC     =
 !endif
@@ -541,11 +547,6 @@ MINIPRELUDE_C = $(srcdir)/miniprelude.c
 !else
 MINIPRELUDE_C = miniprelude.c
 !endif
-!if !exist(golf_prelude.c) && exist($(srcdir)/golf_prelude.c)
-GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
-!else
-GOLF_PRELUDE_C = golf_prelude.c
-!endif
 RBCONFIG      = ./.rbconfig.time
 
 !if "$(GITHUB_ACTIONS)" == "true"
@@ -590,6 +591,22 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
+
+!ifndef VCPKG_DEFAULT_TRIPLET
+VCPKG_DEFAULT_TRIPLET = $(MACHINE)-windows
+!endif
+TRIPLET_OPTION = --triplet $(VCPKG_DEFAULT_TRIPLET)
+
+update-vcpkg::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg x-update-baseline $(TRIPLET_OPTION)
+
+install-vcpkg::
+	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
+
+prepare-vcpkg::
+	for %%I in ($(srcdir:/=\)\vcpkg_installed\$(VCPKG_DEFAULT_TRIPLET)\bin\*.dll) do @( \
+		if not %%~nI == readline mklink %%~nxI %%I \
+	)
 
 .PHONY: reconfig
 reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
@@ -745,6 +762,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RBIMPL_ATTR_PACKED_STRUCT_END() __pragma(pack(pop))
 !endif
 #define RUBY_EXTERN extern __declspec(dllimport)
+#define RUBY_FUNC_EXPORTED extern __declspec(dllexport)
 #define RUBY_ALIGNAS(n) __declspec(align(n))
 #define RUBY_ALIGNOF __alignof
 #define HAVE_DECL_SYS_NERR 1
@@ -970,6 +988,7 @@ s,@WERRORFLAG@,$(WERRORFLAG),;t t
 s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
+s,@incflags@,$(incflags),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,$(LDFLAGS),;t t
 s,@LIBS@,user32.lib,;t t
@@ -1143,7 +1162,8 @@ miniruby: miniruby$(EXEEXT)
 miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) \
+			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) miniruby.exe -v
 		$(Q) $(LDSHARED_1)
@@ -1213,7 +1233,8 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 !endif
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) \
-			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) -Fe$@ -link $(LDFLAGS) \
+			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) \
+			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 !if defined(LDSHARED_0)
@@ -1319,6 +1340,11 @@ $(ruby_pc): $(RBCONFIG)
 .c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
+
+BUILTIN_GC_PATH = $(srcdir)/gc/$(BUILTIN_GC).c
+gc_impl.obj: $(BUILTIN_GC_PATH)
+	$(ECHO) compiling $(BUILTIN_GC_PATH:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(BUILTIN_GC_PATH:\=/)
 
 {$(srcdir)/missing}.c.asm:
 	$(ECHO) translating $(<:\=/)
@@ -1426,7 +1452,7 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)echo> $*.def EXPORTS
 	$(Q)echo>> $*.def Init_$(*F)
-	$(Q)$(LDSHARED) -Fe$(@) $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+	$(Q)$(LDSHARED) -Fe$(@) $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
 !if defined(LDSHARED_0)
 	$(Q)$(LDSHARED_0)
 	$(Q)$(LDSHARED_1)
@@ -1434,3 +1460,8 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 !endif
 
 exts: rubyspec-capiext
+
+yesterday:
+	for /f "usebackq" %H in \
+	    (`$(GIT) -C $(srcdir) log -1 "--before=00:00+0900" "--format=%H"`) do \
+	    $(GIT) -C $(srcdir) reset --hard %%H

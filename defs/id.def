@@ -59,6 +59,8 @@ firstline, predefined = __LINE__+1, %[\
   name
   nil
   path
+  pack
+  buffer
 
   _                                                     UScore
 

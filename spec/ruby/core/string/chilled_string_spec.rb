@@ -3,8 +3,8 @@ require_relative '../../spec_helper'
 describe "chilled String" do
   guard -> { ruby_version_is "3.4" and !"test".equal?("test") } do
     describe "#frozen?" do
-      it "returns true" do
-        "chilled".frozen?.should == true
+      it "returns false" do
+        "chilled".frozen?.should == false
       end
     end
 
@@ -45,7 +45,7 @@ describe "chilled String" do
         input.should == "chilled-mutated"
       end
 
-      it "emits a warning on singleton_class creaation" do
+      it "emits a warning on singleton_class creation" do
         -> {
           "chilled".singleton_class
         }.should complain(/literal string will be frozen in the future/)
@@ -57,12 +57,14 @@ describe "chilled String" do
         }.should complain(/literal string will be frozen in the future/)
       end
 
-      it "raises FrozenError after the string was explictly frozen" do
+      it "raises FrozenError after the string was explicitly frozen" do
         input = "chilled"
         input.freeze
         -> {
+          -> {
           input << "mutated"
-        }.should raise_error(FrozenError)
+          }.should raise_error(FrozenError)
+        }.should_not complain(/literal string will be frozen in the future/)
       end
     end
   end

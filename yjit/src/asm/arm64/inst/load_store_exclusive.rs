@@ -52,19 +52,19 @@ pub struct LoadStoreExclusive {
 
 impl LoadStoreExclusive {
     /// LDAXR
-    /// https://developer.arm.com/documentation/ddi0602/2021-12/Base-Instructions/LDAXR--Load-Acquire-Exclusive-Register-
+    /// <https://developer.arm.com/documentation/ddi0602/2021-12/Base-Instructions/LDAXR--Load-Acquire-Exclusive-Register->
     pub fn ldaxr(rt: u8, rn: u8, num_bits: u8) -> Self {
         Self { rt, rn, rs: 31, op: Op::Load, size: num_bits.into() }
     }
 
     /// STLXR
-    /// https://developer.arm.com/documentation/ddi0602/2021-12/Base-Instructions/STLXR--Store-Release-Exclusive-Register-
+    /// <https://developer.arm.com/documentation/ddi0602/2021-12/Base-Instructions/STLXR--Store-Release-Exclusive-Register->
     pub fn stlxr(rs: u8, rt: u8, rn: u8, num_bits: u8) -> Self {
         Self { rt, rn, rs, op: Op::Store, size: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b0100;
 
 impl From<LoadStoreExclusive> for u32 {

@@ -29,7 +29,7 @@ describe "Array#pack with format 'L'" do
     it_behaves_like :array_pack_32bit_be, 'L>'
   end
 
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_32bit_le, 'L<_'
       it_behaves_like :array_pack_32bit_le, 'L_<'
@@ -51,7 +51,7 @@ describe "Array#pack with format 'L'" do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_64bit_le, 'L<_'
       it_behaves_like :array_pack_64bit_le, 'L_<'
@@ -83,7 +83,7 @@ describe "Array#pack with format 'l'" do
     it_behaves_like :array_pack_32bit_be, 'l>'
   end
 
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_32bit_le, 'l<_'
       it_behaves_like :array_pack_32bit_le, 'l_<'
@@ -105,7 +105,7 @@ describe "Array#pack with format 'l'" do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     describe "with modifier '<' and '_'" do
       it_behaves_like :array_pack_64bit_le, 'l<_'
       it_behaves_like :array_pack_64bit_le, 'l_<'
@@ -137,7 +137,7 @@ little_endian do
     it_behaves_like :array_pack_32bit_le, 'l'
   end
 
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_32bit_le, 'L_'
     end
@@ -155,7 +155,7 @@ little_endian do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_64bit_le, 'L_'
     end
@@ -183,7 +183,7 @@ big_endian do
     it_behaves_like :array_pack_32bit_be, 'l'
   end
 
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_32bit_be, 'L_'
     end
@@ -201,7 +201,7 @@ big_endian do
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     describe "Array#pack with format 'L' with modifier '_'" do
       it_behaves_like :array_pack_64bit_be, 'L_'
     end

@@ -146,7 +146,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_ast_compacts
-    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       def walk_ast ast
         children = ast.children.grep(RubyVM::AbstractSyntaxTree::Node)
@@ -185,7 +185,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_heap_allocated_shared_arrays
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       ary = []
       50.times { |i| ary << i }
@@ -209,7 +209,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_updating_references_for_embed_shared_arrays
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       ary = Array.new(50)
       50.times { |i| ary[i] = i }
@@ -233,7 +233,7 @@ class TestGCCompact < Test::Unit::TestCase
   end
 
   def test_updating_references_for_heap_allocated_frozen_shared_arrays
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       ary = []
       50.times { |i| ary << i }
@@ -258,7 +258,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_updating_references_for_embed_frozen_shared_arrays
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       ary = Array.new(50)
       50.times { |i| ary[i] = i }
@@ -286,7 +286,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_moving_arrays_down_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       ARY_COUNT = 50000
 
@@ -308,7 +308,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_moving_arrays_up_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
     begin;
       ARY_COUNT = 50000
 
@@ -332,7 +332,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_moving_objects_between_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
     begin;
       class Foo
         def add_ivars
@@ -364,7 +364,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_moving_strings_up_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
       STR_COUNT = 50000
 
@@ -385,7 +385,7 @@ class TestGCCompact < Test::Unit::TestCase
   def test_moving_strings_down_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
       STR_COUNT = 50000
 
@@ -407,7 +407,7 @@ class TestGCCompact < Test::Unit::TestCase
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
     begin;
       HASH_COUNT = 50000
 

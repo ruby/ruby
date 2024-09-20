@@ -8,7 +8,7 @@
 
 = Licence
   This program is licensed under the same licence as Ruby.
-  (See the file 'LICENCE'.)
+  (See the file 'COPYING'.)
 =end
 
 require "mkmf"
@@ -149,6 +149,9 @@ engines.each { |name|
   have_func("ENGINE_load_#{name}()", "openssl/engine.h")
 }
 
+# missing in libressl < 3.5
+have_func("i2d_re_X509_tbs(NULL, NULL)", x509_h)
+
 # added in 1.1.0
 if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
   $defs.push("-DHAVE_OPAQUE_OPENSSL")
@@ -187,6 +190,7 @@ have_func("TS_VERIFY_CTX_add_flags(NULL, 0)", ts_h)
 have_func("TS_RESP_CTX_set_time_cb(NULL, NULL, NULL)", ts_h)
 have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
 have_func("SSL_CTX_set_post_handshake_auth(NULL, 0)", ssl_h)
+have_func("X509_STORE_get0_param(NULL)", x509_h)
 
 # added in 1.1.1
 have_func("EVP_PKEY_check(NULL)", evp_h)

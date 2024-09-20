@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "bundler/vendored_net_http"
+require_relative "../vendored_net_http"
 require_relative "../path"
 
 CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes".freeze

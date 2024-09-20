@@ -252,6 +252,25 @@ describe "Break inside a while loop" do
   end
 end
 
+describe "The break statement in a method" do
+  it "is invalid and raises a SyntaxError" do
+    -> {
+      eval("def m; break; end")
+    }.should raise_error(SyntaxError)
+  end
+end
+
+describe "The break statement in a module literal" do
+  it "is invalid and raises a SyntaxError" do
+    code = <<~RUBY
+      module BreakSpecs:ModuleWithBreak
+        break
+      end
+    RUBY
+
+    -> { eval(code) }.should raise_error(SyntaxError)
+  end
+end
 
 # TODO: Rewrite all the specs from here to the end of the file in the style
 # above.

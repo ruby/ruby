@@ -18,6 +18,7 @@ require_relative "rubygems/compatibility"
 require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
+require_relative "rubygems/target_rbconfig"
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -178,6 +179,8 @@ module Gem
   @default_source_date_epoch = nil
 
   @discover_gems_on_require = true
+
+  @target_rbconfig = nil
 
   ##
   # Try to activate a gem containing +path+. Returns true if
@@ -397,6 +400,23 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # The RbConfig object for the deployment target platform.
+  #
+  # This is usually the same as the running platform, but may be
+  # different if you are cross-compiling.
+
+  def self.target_rbconfig
+    @target_rbconfig || Gem::TargetRbConfig.for_running_ruby
+  end
+
+  def self.set_target_rbconfig(rbconfig_path)
+    @target_rbconfig = Gem::TargetRbConfig.from_path(rbconfig_path)
+    Gem::Platform.local(refresh: true)
+    Gem.platforms << Gem::Platform.local unless Gem.platforms.include? Gem::Platform.local
+    @target_rbconfig
+  end
+
+  ##
   # Quietly ensure the Gem directory +dir+ contains all the proper
   # subdirectories.  If we can't create a directory due to a permission
   # problem, then we will silently continue.
@@ -450,7 +470,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # distinction as extensions cannot be shared between the two.
 
   def self.extension_api_version # :nodoc:
-    if RbConfig::CONFIG["ENABLE_SHARED"] == "no"
+    if target_rbconfig["ENABLE_SHARED"] == "no"
       "#{ruby_api_version}-static"
     else
       ruby_api_version
@@ -753,17 +773,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+", &:read)
-  rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb", &:read)
+    File.binread(path)
   end
 
   ##
   # Safely write a file in binary mode on all platforms.
+
   def self.write_binary(path, data)
-    open_file(path, "wb") do |io|
-      io.write data
-    end
+    File.binwrite(path, data)
   rescue Errno::ENOSPC
     # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
     File.delete(path) if File.exist?(path)
@@ -771,25 +788,37 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags, and on Windows protect access with flock
+  # Open a file with given flags
 
   def self.open_file(path, flags, &block)
-    File.open(path, flags) do |io|
-      if !java_platform? && win_platform?
-        begin
-          io.flock(File::LOCK_EX)
-        rescue Errno::ENOSYS, Errno::ENOTSUP
-        end
+    File.open(path, flags, &block)
+  end
+
+  ##
+  # Open a file with given flags, and protect access with a file lock
+
+  def self.open_file_with_lock(path, &block)
+    file_lock = "#{path}.lock"
+    open_file_with_flock(file_lock, &block)
+  ensure
+    FileUtils.rm_f file_lock
+  end
+
+  ##
+  # Open a file with given flags, and protect access with flock
+
+  def self.open_file_with_flock(path, &block)
+    mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+    mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+
+    File.open(path, mode) do |io|
+      begin
+        io.flock(File::LOCK_EX)
+      rescue Errno::ENOSYS, Errno::ENOTSUP
+      rescue Errno::ENOLCK # NFS
+        raise unless Thread.main == Thread.current
       end
       yield io
-    end
-  rescue Errno::ENOLCK # NFS
-    if Thread.main != Thread.current
-      raise
-    else
-      File.open(path, flags) do |io|
-        yield io
-      end
     end
   end
 
@@ -810,7 +839,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Returns a String containing the API compatibility version of Ruby
 
   def self.ruby_api_version
-    @ruby_api_version ||= RbConfig::CONFIG["ruby_version"].dup
+    @ruby_api_version ||= target_rbconfig["ruby_version"].dup
   end
 
   def self.env_requirement(gem_name)
@@ -1010,6 +1039,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.solaris_platform?
     RUBY_PLATFORM.include?("solaris")
+  end
+
+  ##
+  # Is this platform FreeBSD
+
+  def self.freebsd_platform?
+    RbConfig::CONFIG["host_os"].to_s.include?("bsd")
   end
 
   ##

@@ -56,7 +56,7 @@ require_relative 'dsl'
 def generate_line(f, out)
   while line = f.gets
     case
-    when gen = DSL.line?(line)
+    when gen = DSL.line?(line, f.lineno)
       out << gen.generate << "\n"
     when line.start_with?("%%")
       out << "%%\n"

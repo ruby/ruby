@@ -68,7 +68,6 @@ module Gem
       installed_stubs = installed_stubs(pattern)
       installed_stubs.select! {|s| Gem::Platform.match_spec? s } if match_platform
       stubs = installed_stubs + Gem::Specification.default_stubs(pattern)
-      stubs = stubs.uniq(&:full_name)
       Gem::Specification._resort!(stubs)
       stubs
     end
@@ -109,6 +108,38 @@ module Gem
 
     def all_names
       all.map(&:full_name)
+    end
+
+    include Enumerable
+
+    ##
+    # Enumerate every known spec.
+
+    def each
+      return enum_for(:each) unless block_given?
+
+      all.each do |x|
+        yield x
+      end
+    end
+
+    ##
+    # Returns every spec in the record that matches +name+ and optional +requirements+.
+
+    def find_all_by_name(name, *requirements)
+      req = Gem::Requirement.create(*requirements)
+      env_req = Gem.env_requirement(name)
+
+      matches = stubs_for(name).find_all do |spec|
+        req.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
+      end.map(&:to_spec)
+
+      if name == "bundler" && !req.specific?
+        require_relative "bundler_version_finder"
+        Gem::BundlerVersionFinder.prioritize!(matches)
+      end
+
+      matches
     end
 
     ##

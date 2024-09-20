@@ -10,7 +10,7 @@ pub struct Nop;
 
 impl Nop {
     /// NOP
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/NOP--No-Operation-
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/NOP--No-Operation->
     pub fn nop() -> Self {
         Self {}
     }

@@ -197,15 +197,25 @@ describe "An instance method with a default argument" do
     foo(2,3,3).should == [2,3,[3]]
   end
 
-  it "raises a SyntaxError when there is an existing method with the same name as the local variable" do
-    def bar
-      1
+  ruby_version_is ""..."3.4" do
+    it "raises a SyntaxError if using the argument in its default value" do
+      -> {
+        eval "def foo(bar = bar)
+          bar
+        end"
+      }.should raise_error(SyntaxError)
     end
-    -> {
-      eval "def foo(bar = bar)
-        bar
-      end"
-    }.should raise_error(SyntaxError)
+  end
+
+  ruby_version_is "3.4" do
+    it "is nil if using the argument in its default value" do
+      -> {
+        eval "def foo(bar = bar)
+          bar
+        end
+        foo"
+      }.call.should == nil
+    end
   end
 
   it "calls a method with the same name as the local when explicitly using ()" do

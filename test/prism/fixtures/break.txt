@@ -23,3 +23,7 @@ tap { break(1) }
 foo { break 42 } == 42
 
 foo { |a| break } == 42
+
+while _ && break; end
+
+until _ && break; end

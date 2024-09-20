@@ -3,21 +3,21 @@
 RSpec.describe "Bundler.setup with multi platform stuff" do
   it "raises a friendly error when gems are missing locally" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
-          rack (1.0)
+          myrack (1.0)
 
       PLATFORMS
         #{local_tag}
 
       DEPENDENCIES
-        rack
+        myrack
     G
 
     ruby <<-R
@@ -35,7 +35,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
   it "will resolve correctly on the current platform when the lockfile was targeted for a different one" do
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           nokogiri (1.4.2-java)
             weakling (= 0.0.3)
@@ -48,13 +48,14 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
     G
 
-    simulate_platform "x86-darwin-10"
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "nokogiri"
-    G
+    simulate_platform "x86-darwin-10" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "nokogiri"
+      G
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2"
+    end
   end
 
   it "will keep both platforms when both ruby and a specific ruby platform are locked and the bundle is unlocked" do
@@ -82,7 +83,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     good_lockfile = <<~L
       GEM
-        remote: #{file_uri_for(gem_repo4)}/
+        remote: https://gem.repo4/
         specs:
           mini_portile2 (2.5.0)
           nokogiri (1.11.1)
@@ -103,7 +104,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     L
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo4)}"
+      source "https://gem.repo4"
       gem "nokogiri", "~> 1.11"
     G
 
@@ -125,13 +126,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     end
 
     gemfile <<-G
-      source "https://gems.repo4"
+      source "https://gem.repo4"
       gem "nokogiri"
     G
 
     lockfile <<~L
       GEM
-        remote: https://gems.repo4/
+        remote: https://gem.repo4/
         specs:
           nokogiri (1.11.1)
 
@@ -145,7 +146,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
          #{Bundler::VERSION}
     L
 
-    bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "install"
 
     expect(out).to include("Fetching nokogiri 1.11.1")
     expect(the_bundle).to include_gems "nokogiri 1.11.1"
@@ -154,13 +155,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
   it "will use the java platform if both generic java and generic ruby platforms are locked", :jruby_only do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri"
     G
 
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           nokogiri (1.4.2)
           nokogiri (1.4.2-java)
@@ -181,13 +182,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     bundle "install"
 
     expect(out).to include("Fetching nokogiri 1.4.2 (java)")
-    expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2 java"
   end
 
   it "will add the resolve for the current platform" do
     lockfile <<-G
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           nokogiri (1.4.2-java)
             weakling (= 0.0.3)
@@ -200,20 +201,20 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
     G
 
-    simulate_platform "x86-darwin-100"
+    simulate_platform "x86-darwin-100" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "nokogiri"
+        gem "platform_specific"
+      G
 
-    install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "nokogiri"
-      gem "platform_specific"
-    G
-
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 x86-darwin-100"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 x86-darwin-100"
+    end
   end
 
   it "allows specifying only-ruby-platform on jruby", :jruby_only do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri"
       gem "platform_specific"
     G
@@ -222,12 +223,12 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 ruby"
   end
 
   it "allows specifying only-ruby-platform" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri"
       gem "platform_specific"
     G
@@ -236,12 +237,12 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 ruby"
   end
 
   it "allows specifying only-ruby-platform even if the lockfile is locked to a specific compatible platform" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "nokogiri"
       gem "platform_specific"
     G
@@ -250,27 +251,27 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 ruby"
   end
 
   it "doesn't pull platform specific gems on truffleruby", :truffleruby_only do
     install_gemfile <<-G
-     source "#{file_uri_for(gem_repo1)}"
+     source "https://gem.repo1"
      gem "platform_specific"
     G
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
   end
 
-  it "doesn't pull platform specific gems on truffleruby (except when whitelisted) even if lockfile was generated with an older version that declared RUBY as platform", :truffleruby_only do
+  it "doesn't pull platform specific gems on truffleruby (except when whitelisted) even if lockfile was generated with an older version that declared ruby as platform", :truffleruby_only do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "platform_specific"
     G
 
     lockfile <<-L
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           platform_specific (1.0)
 
@@ -286,7 +287,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
 
     simulate_platform "x86_64-linux" do
       build_repo4 do
@@ -298,13 +299,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo4)}"
+        source "https://gem.repo4"
         gem "libv8"
       G
 
       lockfile <<-L
         GEM
-          remote: #{file_uri_for(gem_repo4)}/
+          remote: https://gem.repo4/
           specs:
             libv8 (1.0)
 
@@ -326,13 +327,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
   it "doesn't pull platform specific gems on truffleruby, even if lockfile only includes those", :truffleruby_only do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "platform_specific"
     G
 
     lockfile <<-L
       GEM
-        remote: #{file_uri_for(gem_repo1)}/
+        remote: https://gem.repo1/
         specs:
           platform_specific (1.0-x86-darwin-100)
 
@@ -348,7 +349,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     bundle "install"
 
-    expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+    expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
   end
 
   it "pulls platform specific gems correctly on musl" do
@@ -359,8 +360,8 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     end
 
     simulate_platform "aarch64-linux-musl" do
-      install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, verbose: true
-        source "https://gems.repo4"
+      install_gemfile <<-G, verbose: true
+        source "https://gem.repo4"
         gem "nokogiri"
       G
     end
@@ -371,7 +372,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
     simulate_windows do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "nokogiri", :platforms => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
         gem "platform_specific"
       G
@@ -380,18 +381,18 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
       bundle "install"
 
-      expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
+      expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
       expect(the_bundle).to not_include_gems "nokogiri"
     end
   end
 
   it "allows specifying only-ruby-platform on windows with gemspec dependency" do
     build_lib("foo", "1.0", path: bundled_app) do |s|
-      s.add_dependency "rack"
+      s.add_dependency "myrack"
     end
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gemspec
     G
     bundle :lock
@@ -400,7 +401,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       bundle "config set force_ruby_platform true"
       bundle "install"
 
-      expect(the_bundle).to include_gems "rack 1.0"
+      expect(the_bundle).to include_gems "myrack 1.0"
     end
   end
 
@@ -413,7 +414,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     simulate_windows x64_mingw32 do
       lockfile <<-L
         GEM
-          remote: #{file_uri_for(gem_repo2)}/
+          remote: https://gem.repo2/
           specs:
             platform_specific (1.0-x86-mingw32)
             requires_platform_specific (1.0)
@@ -428,7 +429,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       L
 
       install_gemfile <<-G, verbose: true
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "requires_platform_specific"
       G
 
@@ -444,7 +445,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       simulate_windows platform do
         lockfile <<-L
           GEM
-            remote: #{file_uri_for(gem_repo1)}/
+            remote: https://gem.repo1/
             specs:
               platform_specific (1.0-#{platform})
               requires_platform_specific (1.0)
@@ -458,7 +459,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         L
 
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "platform_specific", :platforms => [:windows]
         G
 

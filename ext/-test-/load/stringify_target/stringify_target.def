@@ -1,4 +1,0 @@
-LIBRARY stringify_target
-EXPORTS
-  Init_stringify_target
-  stt_any_method

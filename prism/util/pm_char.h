@@ -34,8 +34,7 @@ size_t pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length);
  * @return The number of characters at the start of the string that are
  *     whitespace.
  */
-size_t
-pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_newline_list_t *newline_list);
+size_t pm_strspn_whitespace_newlines(const uint8_t *string, ptrdiff_t length, pm_newline_list_t *newline_list);
 
 /**
  * Returns the number of characters at the start of the string that are inline

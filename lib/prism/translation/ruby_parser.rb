@@ -55,7 +55,19 @@ module Prism
         # a and b
         # ^^^^^^^
         def visit_and_node(node)
-          s(node, :and, visit(node.left), visit(node.right))
+          left = visit(node.left)
+
+          if left[0] == :and
+            # ruby_parser has the and keyword as right-associative as opposed to
+            # prism which has it as left-associative. We reverse that
+            # associativity here.
+            nest = left
+            nest = nest[2] while nest[2][0] == :and
+            nest[2] = s(node, :and, nest[2], visit(node.right))
+            left
+          else
+            s(node, :and, left, visit(node.right))
+          end
         end
 
         # []
@@ -135,7 +147,7 @@ module Prism
             end
 
             current = node.rescue_clause
-            until (current = current.consequent).nil?
+            until (current = current.subsequent).nil?
               result << visit(current)
             end
           end
@@ -251,6 +263,11 @@ module Prism
               when RegularExpressionNode, InterpolatedRegularExpressionNode
                 return s(node, :match2, visit(node.receiver), visit(node.arguments.arguments.first))
               end
+
+              case node.arguments.arguments.first
+              when RegularExpressionNode, InterpolatedRegularExpressionNode
+                return s(node, :match3, visit(node.arguments.arguments.first), visit(node.receiver))
+              end
             end
           end
 
@@ -330,13 +347,13 @@ module Prism
         # case foo; when bar; end
         # ^^^^^^^^^^^^^^^^^^^^^^^
         def visit_case_node(node)
-          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.consequent)
+          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.else_clause)
         end
 
         # case foo; in bar; end
         # ^^^^^^^^^^^^^^^^^^^^^
         def visit_case_match_node(node)
-          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.consequent)
+          s(node, :case, visit(node.predicate)).concat(visit_all(node.conditions)) << visit(node.else_clause)
         end
 
         # class Foo; end
@@ -485,9 +502,9 @@ module Prism
         def visit_constant_path_target_node(node)
           inner =
             if node.parent.nil?
-              s(node, :colon3, node.child.name)
+              s(node, :colon3, node.name)
             else
-              s(node, :colon2, visit(node.parent), node.child.name)
+              s(node, :colon2, visit(node.parent), node.name)
             end
 
           s(node, :const, inner)
@@ -683,7 +700,7 @@ module Prism
         # foo ? bar : baz
         # ^^^^^^^^^^^^^^^
         def visit_if_node(node)
-          s(node, :if, visit(node.predicate), visit(node.statements), visit(node.consequent))
+          s(node, :if, visit(node.predicate), visit(node.statements), visit(node.subsequent))
         end
 
         # 1i
@@ -875,6 +892,15 @@ module Prism
               else
                 visited << result
               end
+            elsif result[0] == :dstr
+              if !visited.empty? && part.parts[0].is_a?(StringNode)
+                # If we are in the middle of an implicitly concatenated string,
+                # we should not have a bare string as the first part. In this
+                # case we need to visit just that first part and then we can
+                # push the rest of the parts onto the visited array.
+                result[1] = visit(part.parts[0])
+              end
+              visited.concat(result[1..-1])
             else
               visited << result
             end
@@ -905,10 +931,21 @@ module Prism
                 results << result
                 state = :interpolated_content
               end
-            else
-              results << result
+            when :interpolated_content
+              if result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
+                results[-1][1] << result[1]
+                results[-1].line_max = result.line_max
+              else
+                results << result
+              end
             end
           end
+        end
+
+        # -> { it }
+        #      ^^
+        def visit_it_local_variable_read_node(node)
+          s(node, :call, nil, :it)
         end
 
         # foo(bar: baz)
@@ -1123,7 +1160,19 @@ module Prism
         # a or b
         # ^^^^^^
         def visit_or_node(node)
-          s(node, :or, visit(node.left), visit(node.right))
+          left = visit(node.left)
+
+          if left[0] == :or
+            # ruby_parser has the or keyword as right-associative as opposed to
+            # prism which has it as left-associative. We reverse that
+            # associativity here.
+            nest = left
+            nest = nest[2] while nest[2][0] == :or
+            nest[2] = s(node, :or, nest[2], visit(node.right))
+            left
+          else
+            s(node, :or, left, visit(node.right))
+          end
         end
 
         # def foo(bar, *baz); end
@@ -1379,7 +1428,13 @@ module Prism
         # "foo"
         # ^^^^^
         def visit_string_node(node)
-          s(node, :str, node.unescaped)
+          unescaped = node.unescaped
+
+          if node.forced_binary_encoding?
+            unescaped.force_encoding(Encoding::BINARY)
+          end
+
+          s(node, :str, unescaped)
         end
 
         # super(foo)
@@ -1421,7 +1476,7 @@ module Prism
         # bar unless foo
         # ^^^^^^^^^^^^^^
         def visit_unless_node(node)
-          s(node, :if, visit(node.predicate), visit(node.consequent), visit(node.statements))
+          s(node, :if, visit(node.predicate), visit(node.else_clause), visit(node.statements))
         end
 
         # until foo; bar end

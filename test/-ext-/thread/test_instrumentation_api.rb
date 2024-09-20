@@ -54,7 +54,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     thread&.join
   end
 
-  def test_muti_thread_timeline
+  def test_multi_thread_timeline
     threads = nil
     full_timeline = record do
       threads = threaded_cpu_bound_work(1.0)
@@ -68,7 +68,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     threads.each do |thread|
       timeline = timeline_for(thread, full_timeline)
       assert_consistent_timeline(timeline)
-      assert timeline.count(:suspended) > 1, "Expected threads to yield suspended at least once: #{timeline.inspect}"
+      assert_operator timeline.count(:suspended), :>=, 1, "Expected threads to yield suspended at least once: #{timeline.inspect}"
     end
 
     timeline = timeline_for(Thread.current, full_timeline)

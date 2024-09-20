@@ -43,12 +43,12 @@ big_add(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *right, uint
         length++;
     }
 
-    *destination = (pm_integer_t) { 0, length, values, false };
+    *destination = (pm_integer_t) { length, values, 0, false };
 }
 
 /**
  * Internal use for karatsuba_multiply. Calculates `a - b - c` with the given
- * base. Assume a, b, c, a - b - c all to be poitive.
+ * base. Assume a, b, c, a - b - c all to be positive.
  * Return pm_integer_t with values allocated. Not normalized.
  */
 static void
@@ -87,7 +87,7 @@ big_sub2(pm_integer_t *destination, pm_integer_t *a, pm_integer_t *b, pm_integer
     }
 
     while (a_length > 1 && values[a_length - 1] == 0) a_length--;
-    *destination = (pm_integer_t) { 0, a_length, values, false };
+    *destination = (pm_integer_t) { a_length, values, 0, false };
 }
 
 /**
@@ -130,7 +130,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
         }
 
         while (length > 1 && values[length - 1] == 0) length--;
-        *destination = (pm_integer_t) { 0, length, values, false };
+        *destination = (pm_integer_t) { length, values, 0, false };
         return;
     }
 
@@ -142,16 +142,16 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
             if (end_offset > right_length) end_offset = right_length;
 
             pm_integer_t sliced_left = {
-                .value = 0,
                 .length = left_length,
                 .values = left_values,
+                .value = 0,
                 .negative = false
             };
 
             pm_integer_t sliced_right = {
-                .value = 0,
                 .length = end_offset - start_offset,
                 .values = right_values + start_offset,
+                .value = 0,
                 .negative = false
             };
 
@@ -169,15 +169,15 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
             pm_integer_free(&product);
         }
 
-        *destination = (pm_integer_t) { 0, left_length + right_length, values, false };
+        *destination = (pm_integer_t) { left_length + right_length, values, 0, false };
         return;
     }
 
     size_t half = left_length / 2;
-    pm_integer_t x0 = { 0, half, left_values, false };
-    pm_integer_t x1 = { 0, left_length - half, left_values + half, false };
-    pm_integer_t y0 = { 0, half, right_values, false };
-    pm_integer_t y1 = { 0, right_length - half, right_values + half, false };
+    pm_integer_t x0 = { half, left_values, 0, false };
+    pm_integer_t x1 = { left_length - half, left_values + half, 0, false };
+    pm_integer_t y0 = { half, right_values, 0, false };
+    pm_integer_t y1 = { right_length - half, right_values + half, 0, false };
 
     pm_integer_t z0 = { 0 };
     karatsuba_multiply(&z0, &x0, &y0, base);
@@ -229,7 +229,7 @@ karatsuba_multiply(pm_integer_t *destination, pm_integer_t *left, pm_integer_t *
     pm_integer_free(&y01);
     pm_integer_free(&xy);
 
-    *destination = (pm_integer_t) { 0, length, values, false };
+    *destination = (pm_integer_t) { length, values, 0, false };
 }
 
 /**
@@ -323,7 +323,7 @@ pm_integer_normalize(pm_integer_t *integer) {
     bool negative = integer->negative && value != 0;
 
     pm_integer_free(integer);
-    *integer = (pm_integer_t) { .value = value, .length = 0, .values = NULL, .negative = negative };
+    *integer = (pm_integer_t) { .values = NULL, .value = value, .length = 0, .negative = negative };
 }
 
 /**
@@ -412,7 +412,7 @@ pm_integer_parse_powof2(pm_integer_t *integer, uint32_t base, const uint8_t *dig
     }
 
     while (length > 1 && values[length - 1] == 0) length--;
-    *integer = (pm_integer_t) { .value = 0, .length = length, .values = values, .negative = false };
+    *integer = (pm_integer_t) { .length = length, .values = values, .value = 0, .negative = false };
     pm_integer_normalize(integer);
 }
 
@@ -438,7 +438,7 @@ pm_integer_parse_decimal(pm_integer_t *integer, const uint8_t *digits, size_t di
     }
 
     // Convert base from 10**9 to 1<<32.
-    pm_integer_convert_base(integer, &((pm_integer_t) { .value = 0, .length = length, .values = values, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
+    pm_integer_convert_base(integer, &((pm_integer_t) { .length = length, .values = values,  .value = 0, .negative = false }), 1000000000, ((uint64_t) 1 << 32));
     xfree(values);
 }
 
@@ -471,15 +471,18 @@ pm_integer_parse_big(pm_integer_t *integer, uint32_t multiplier, const uint8_t *
  * has already been validated, as internal validation checks are not performed
  * here.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *start, const uint8_t *end) {
-    // Ignore unary +. Unary + is parsed differently and will not end up here.
+    // Ignore unary +. Unary - is parsed differently and will not end up here.
     // Instead, it will modify the parsed integer later.
     if (*start == '+') start++;
 
     // Determine the multiplier from the base, and skip past any prefixes.
     uint32_t multiplier = 10;
     switch (base) {
+        case PM_INTEGER_BASE_DEFAULT:
+            while (*start == '0') start++; // 01 -> 1
+            break;
         case PM_INTEGER_BASE_BINARY:
             start += 2; // 0b
             multiplier = 2;
@@ -534,14 +537,6 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
 }
 
 /**
- * Return the memory size of the integer.
- */
-size_t
-pm_integer_memsize(const pm_integer_t *integer) {
-    return sizeof(pm_integer_t) + integer->length * sizeof(uint32_t);
-}
-
-/**
  * Compare two integers. This function returns -1 if the left integer is less
  * than the right integer, 0 if they are equal, and 1 if the left integer is
  * greater than the right integer.
@@ -570,6 +565,39 @@ pm_integer_compare(const pm_integer_t *left, const pm_integer_t *right) {
     }
 
     return 0;
+}
+
+/**
+ * Reduce a ratio of integers to its simplest form.
+ */
+void pm_integers_reduce(pm_integer_t *numerator, pm_integer_t *denominator) {
+    // If either the numerator or denominator do not fit into a 32-bit integer,
+    // then this function is a no-op. In the future, we may consider reducing
+    // even the larger numbers, but for now we're going to keep it simple.
+    if (
+        // If the numerator doesn't fit into a 32-bit integer, return early.
+        numerator->length != 0 ||
+        // If the denominator doesn't fit into a 32-bit integer, return early.
+        denominator->length != 0 ||
+        // If the numerator is 0, then return early.
+        numerator->value == 0 ||
+        // If the denominator is 1, then return early.
+        denominator->value == 1
+    ) return;
+
+    // Find the greatest common divisor of the numerator and denominator.
+    uint32_t divisor = numerator->value;
+    uint32_t remainder = denominator->value;
+
+    while (remainder != 0) {
+        uint32_t temporary = remainder;
+        remainder = divisor % remainder;
+        divisor = temporary;
+    }
+
+    // Divide the numerator and denominator by the greatest common divisor.
+    numerator->value /= divisor;
+    denominator->value /= divisor;
 }
 
 /**

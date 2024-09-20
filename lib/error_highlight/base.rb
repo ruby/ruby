@@ -60,14 +60,14 @@ module ErrorHighlight
         rescue RuntimeError => error
           # RubyVM::AbstractSyntaxTree.of raises an error with a message that
           # includes "prism" when the ISEQ was compiled with the prism compiler.
-          # In this case, we'll set the node to `nil`. In the future, we will
-          # reparse with the prism parser and pass the parsed node to Spotter.
+          # In this case, we'll try to parse again with prism instead.
           raise unless error.message.include?("prism")
+          prism_find(loc)
         end
 
       Spotter.new(node, **opts).spot
 
-    when RubyVM::AbstractSyntaxTree::Node
+    when RubyVM::AbstractSyntaxTree::Node, Prism::Node
       Spotter.new(obj, **opts).spot
 
     else
@@ -80,6 +80,21 @@ module ErrorHighlight
 
     return nil
   end
+
+  # Accepts a Thread::Backtrace::Location object and returns a Prism::Node
+  # corresponding to the backtrace location in the source code.
+  def self.prism_find(location)
+    require "prism"
+    return nil if Prism::VERSION < "0.29.0"
+
+    absolute_path = location.absolute_path
+    return unless absolute_path
+
+    node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(location)
+    Prism.parse_file(absolute_path).value.breadth_first_search { |node| node.node_id == node_id }
+  end
+
+  private_class_method :prism_find
 
   class Spotter
     class NonAscii < Exception; end
@@ -113,31 +128,49 @@ module ErrorHighlight
     def spot
       return nil unless @node
 
-      if OPT_GETCONSTANT_PATH && @node.type == :COLON2
+      if OPT_GETCONSTANT_PATH
         # In Ruby 3.2 or later, a nested constant access (like `Foo::Bar::Baz`)
         # is compiled to one instruction (opt_getconstant_path).
         # @node points to the node of the whole `Foo::Bar::Baz` even if `Foo`
         # or `Foo::Bar` causes NameError.
         # So we try to spot the sub-node that causes the NameError by using
         # `NameError#name`.
-        subnodes = []
-        node = @node
-        while node.type == :COLON2
-          node2, const = node.children
-          subnodes << node if const == @name
-          node = node2
-        end
-        if node.type == :CONST || node.type == :COLON3
-          if node.children.first == @name
+        case @node.type
+        when :COLON2
+          subnodes = []
+          node = @node
+          while node.type == :COLON2
+            node2, const = node.children
+            subnodes << node if const == @name
+            node = node2
+          end
+          if node.type == :CONST || node.type == :COLON3
+            if node.children.first == @name
+              subnodes << node
+            end
+
+            # If we found only one sub-node whose name is equal to @name, use it
+            return nil if subnodes.size != 1
+            @node = subnodes.first
+          else
+            # Do nothing; opt_getconstant_path is used only when the const base is
+            # NODE_CONST (`Foo`) or NODE_COLON3 (`::Foo`)
+          end
+        when :constant_path_node
+          subnodes = []
+          node = @node
+
+          begin
+            subnodes << node if node.name == @name
+          end while (node = node.parent).is_a?(Prism::ConstantPathNode)
+
+          if node.is_a?(Prism::ConstantReadNode) && node.name == @name
             subnodes << node
           end
 
           # If we found only one sub-node whose name is equal to @name, use it
           return nil if subnodes.size != 1
           @node = subnodes.first
-        else
-          # Do nothing; opt_getconstant_path is used only when the const base is
-          # NODE_CONST (`Foo`) or NODE_COLON3 (`::Foo`)
         end
       end
 
@@ -205,6 +238,48 @@ module ErrorHighlight
 
       when :OP_CDECL
         spot_op_cdecl
+
+      when :call_node
+        case @point_type
+        when :name
+          prism_spot_call_for_name
+        when :args
+          prism_spot_call_for_args
+        end
+
+      when :local_variable_operator_write_node
+        case @point_type
+        when :name
+          prism_spot_local_variable_operator_write_for_name
+        when :args
+          prism_spot_local_variable_operator_write_for_args
+        end
+
+      when :call_operator_write_node
+        case @point_type
+        when :name
+          prism_spot_call_operator_write_for_name
+        when :args
+          prism_spot_call_operator_write_for_args
+        end
+
+      when :index_operator_write_node
+        case @point_type
+        when :name
+          prism_spot_index_operator_write_for_name
+        when :args
+          prism_spot_index_operator_write_for_args
+        end
+
+      when :constant_read_node
+        prism_spot_constant_read
+
+      when :constant_path_node
+        prism_spot_constant_path
+
+      when :constant_path_operator_write_node
+        prism_spot_constant_path_operator_write
+
       end
 
       if @snippet && @beg_column && @end_column && @beg_column < @end_column
@@ -547,6 +622,204 @@ module ErrorHighlight
     def fetch_line(lineno)
       @beg_lineno = @end_lineno = lineno
       @snippet = @fetch[lineno]
+    end
+
+    # Take a location from the prism parser and set the necessary instance
+    # variables.
+    def prism_location(location)
+      @beg_lineno = location.start_line
+      @beg_column = location.start_column
+      @end_lineno = location.end_line
+      @end_column = location.end_column
+      @snippet = @fetch[@beg_lineno, @end_lineno]
+    end
+
+    # Example:
+    #   x.foo
+    #    ^^^^
+    #   x.foo(42)
+    #    ^^^^
+    #   x&.foo
+    #    ^^^^^
+    #   x[42]
+    #    ^^^^
+    #   x.foo = 1
+    #    ^^^^^^
+    #   x[42] = 1
+    #    ^^^^^^
+    #   x + 1
+    #     ^
+    #   +x
+    #   ^
+    #   foo(42)
+    #   ^^^
+    #   foo 42
+    #   ^^^
+    #   foo
+    #   ^^^
+    def prism_spot_call_for_name
+      # Explicitly turn off foo.() syntax because error_highlight expects this
+      # to not work.
+      return nil if @node.name == :call && @node.message_loc.nil?
+
+      location = @node.message_loc || @node.call_operator_loc || @node.location
+      location = @node.call_operator_loc.join(location) if @node.call_operator_loc&.start_line == location.start_line
+
+      # If the method name ends with "=" but the message does not, then this is
+      # a method call using the "attribute assignment" syntax
+      # (e.g., foo.bar = 1). In this case we need to go retrieve the = sign and
+      # add it to the location.
+      if (name = @node.name).end_with?("=") && !@node.message.end_with?("=")
+        location = location.adjoin("=")
+      end
+
+      prism_location(location)
+
+      if !name.end_with?("=") && !name.match?(/[[:alpha:]_\[]/)
+        # If the method name is an operator, then error_highlight only
+        # highlights the first line.
+        fetch_line(location.start_line)
+      end
+    end
+
+    # Example:
+    #   x.foo(42)
+    #         ^^
+    #   x[42]
+    #     ^^
+    #   x.foo = 1
+    #           ^
+    #   x[42] = 1
+    #     ^^^^^^^
+    #   x[] = 1
+    #     ^^^^^
+    #   x + 1
+    #       ^
+    #   foo(42)
+    #       ^^
+    #   foo 42
+    #       ^^
+    def prism_spot_call_for_args
+      # Explicitly turn off foo.() syntax because error_highlight expects this
+      # to not work.
+      return nil if @node.name == :call && @node.message_loc.nil?
+
+      if @node.name == :[]= && @node.opening == "[" && (@node.arguments&.arguments || []).length == 1
+        prism_location(@node.opening_loc.copy(start_offset: @node.opening_loc.start_offset + 1).join(@node.arguments.location))
+      else
+        prism_location(@node.arguments.location)
+      end
+    end
+
+    # Example:
+    #   x += 1
+    #     ^
+    def prism_spot_local_variable_operator_write_for_name
+      prism_location(@node.binary_operator_loc.chop)
+    end
+
+    # Example:
+    #   x += 1
+    #        ^
+    def prism_spot_local_variable_operator_write_for_args
+      prism_location(@node.value.location)
+    end
+
+    # Example:
+    #   x.foo += 42
+    #    ^^^     (for foo)
+    #   x.foo += 42
+    #         ^  (for +)
+    #   x.foo += 42
+    #    ^^^^^^^ (for foo=)
+    def prism_spot_call_operator_write_for_name
+      if !@name.start_with?(/[[:alpha:]_]/)
+        prism_location(@node.binary_operator_loc.chop)
+      else
+        location = @node.message_loc
+        if @node.call_operator_loc.start_line == location.start_line
+          location = @node.call_operator_loc.join(location)
+        end
+
+        location = location.adjoin("=") if @name.end_with?("=")
+        prism_location(location)
+      end
+    end
+
+    # Example:
+    #   x.foo += 42
+    #            ^^
+    def prism_spot_call_operator_write_for_args
+      prism_location(@node.value.location)
+    end
+
+    # Example:
+    #   x[1] += 42
+    #    ^^^    (for [])
+    #   x[1] += 42
+    #        ^  (for +)
+    #   x[1] += 42
+    #    ^^^^^^ (for []=)
+    def prism_spot_index_operator_write_for_name
+      case @name
+      when :[]
+        prism_location(@node.opening_loc.join(@node.closing_loc))
+      when :[]=
+        prism_location(@node.opening_loc.join(@node.closing_loc).adjoin("="))
+      else
+        # Explicitly turn off foo[] += 1 syntax when the operator is not on
+        # the same line because error_highlight expects this to not work.
+        return nil if @node.binary_operator_loc.start_line != @node.opening_loc.start_line
+
+        prism_location(@node.binary_operator_loc.chop)
+      end
+    end
+
+    # Example:
+    #   x[1] += 42
+    #     ^^^^^^^^
+    def prism_spot_index_operator_write_for_args
+      opening_loc =
+        if @node.arguments.nil?
+          @node.opening_loc.copy(start_offset: @node.opening_loc.start_offset + 1)
+        else
+          @node.arguments.location
+        end
+
+      prism_location(opening_loc.join(@node.value.location))
+    end
+
+    # Example:
+    #   Foo
+    #   ^^^
+    def prism_spot_constant_read
+      prism_location(@node.location)
+    end
+
+    # Example:
+    #   Foo::Bar
+    #      ^^^^^
+    def prism_spot_constant_path
+      if @node.parent && @node.parent.location.end_line == @node.location.end_line
+        fetch_line(@node.parent.location.end_line)
+        prism_location(@node.delimiter_loc.join(@node.name_loc))
+      else
+        fetch_line(@node.location.end_line)
+        location = @node.name_loc
+        location = @node.delimiter_loc.join(location) if @node.delimiter_loc.end_line == location.start_line
+        prism_location(location)
+      end
+    end
+
+    # Example:
+    #   Foo::Bar += 1
+    #      ^^^^^^^^
+    def prism_spot_constant_path_operator_write
+      if @name == (target = @node.target).name
+        prism_location(target.delimiter_loc.join(target.name_loc))
+      else
+        prism_location(@node.binary_operator_loc.chop)
+      end
     end
   end
 

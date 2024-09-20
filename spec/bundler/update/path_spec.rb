@@ -6,7 +6,7 @@ RSpec.describe "path sources" do
       build_lib "activesupport", "2.3.5", path: lib_path("rails/activesupport")
 
       install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "activesupport", :path => "#{lib_path("rails/activesupport")}"
       G
 

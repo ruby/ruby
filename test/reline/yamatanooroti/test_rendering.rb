@@ -569,6 +569,22 @@ begin
       EOC
     end
 
+    def test_bracketed_paste_with_redo
+      omit if Reline.core.io_gate.win?
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("abc")
+      write("\e[200~def hoge\r\t3\rend\e[201~")
+      write("\C-_")
+      write("\M-\C-_")
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> abcdef hoge
+        prompt>   3
+        prompt> end
+      EOC
+    end
+
     def test_backspace_until_returns_to_initial
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("ABC")
@@ -950,6 +966,18 @@ begin
         prompt> def hoge
         prompt>
         prompt> end
+      EOC
+    end
+
+    def test_nontty
+      omit if Reline.core.io_gate.win?
+      cmd = %Q{ruby -e 'puts(%Q{ello\C-ah\C-e})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })' | ruby -e 'print STDIN.read'}
+      start_terminal(40, 50, ['bash', '-c', cmd])
+      sleep 1
+      close rescue nil
+      assert_screen(<<~'EOC')
+        > hello
+        "hello"
       EOC
     end
 
@@ -1795,6 +1823,58 @@ begin
       EOC
     end
 
+    def test_print_before_readline
+      code = <<~RUBY
+        puts 'Multiline REPL.'
+        2.times do
+          print 'a' * 10
+          Reline.readline '>'
+        end
+      RUBY
+      start_terminal(6, 30, ['ruby', "-I#{@pwd}/lib", '-rreline', '-e', code], startup_message: 'Multiline REPL.')
+      write "x\n"
+      close
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        >x
+        >
+      EOC
+    end
+
+    def test_pre_input_hook_with_redisplay
+      code = <<~'RUBY'
+        puts 'Multiline REPL.'
+        Reline.pre_input_hook = -> do
+          Reline.insert_text 'abc'
+          Reline.redisplay # Reline doesn't need this but Readline requires calling redisplay
+        end
+        Reline.readline('prompt> ')
+      RUBY
+      start_terminal(6, 30, ['ruby', "-I#{@pwd}/lib", '-rreline', '-e', code], startup_message: 'Multiline REPL.')
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> abc
+      EOC
+    end
+
+    def test_pre_input_hook_with_multiline_text_insert
+      # Frequently used pattern of pre_input_hook
+      code = <<~'RUBY'
+        puts 'Multiline REPL.'
+        Reline.pre_input_hook = -> do
+          Reline.insert_text "abc\nef"
+        end
+        Reline.readline('>')
+      RUBY
+      start_terminal(6, 30, ['ruby', "-I#{@pwd}/lib", '-rreline', '-e', code], startup_message: 'Multiline REPL.')
+      write("\C-ad")
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        >abc
+        def
+      EOC
+    end
+
     def test_thread_safe
       start_terminal(6, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write("[Thread.new{Reline.readline'>'},Thread.new{Reline.readmultiline('>'){true}}].map(&:join).size\n")
@@ -1810,6 +1890,25 @@ begin
         => 42
         prompt>
       EOC
+    end
+
+    def test_stop_continue
+      pidfile = Tempfile.create('pidfile')
+      rubyfile = Tempfile.create('rubyfile')
+      rubyfile.write <<~RUBY
+        File.write(#{pidfile.path.inspect}, Process.pid)
+        p Reline.readmultiline('>'){false}
+      RUBY
+      rubyfile.close
+      start_terminal(40, 50, ['bash'])
+      write "ruby -I#{@pwd}/lib -rreline #{rubyfile.path}\n"
+      write "abc\ndef\nhi"
+      pid = pidfile.tap(&:rewind).read.to_i
+      Process.kill(:STOP, pid) unless pid.zero?
+      write "fg\n"
+      write "\ebg"
+      close
+      assert_include result.join("\n"), ">abc\n>def\n>ghi\n"
     end
 
     def write_inputrc(content)

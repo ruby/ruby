@@ -40,7 +40,7 @@ module Path
   # Extensions to FileUtils
 
   module Mswin
-    def ln_safe(src, dest, *opt)
+    def ln_safe(src, dest, real_src, *opt)
       cmd = ["mklink", dest.tr("/", "\\"), src.tr("/", "\\")]
       cmd[1, 0] = opt
       return if system("cmd", "/c", *cmd)
@@ -48,23 +48,23 @@ module Path
       puts cmd.join(" ")
     end
 
-    def ln_dir_safe(src, dest)
+    def ln_dir_safe(src, dest, real_src)
       ln_safe(src, dest, "/d")
     end
   end
 
   module HardlinkExcutable
-    def ln_exe(src, dest)
+    def ln_exe(relative_src, dest, src)
       ln(src, dest, force: true)
     end
   end
 
-  def ln_safe(src, dest)
+  def ln_safe(src, dest, real_src)
     ln_sf(src, dest)
   rescue Errno::ENOENT
     # Windows disallows to create broken symboic links, probably because
     # it is a kind of reparse points.
-    raise if File.exist?(src)
+    raise if File.exist?(real_src)
   end
 
   alias ln_dir_safe ln_safe
@@ -75,16 +75,16 @@ module Path
     parent = File.dirname(dest)
     File.directory?(parent) or mkdir_p(parent)
     if executable
-      return (ln_exe(src, dest) if File.exist?(src))
+      return (ln_exe(relative(src, parent), dest, src) if File.exist?(src))
     end
-    clean_link(relative(src, parent), dest) {|s, d| ln_safe(s, d)}
+    clean_link(relative(src, parent), dest) {|s, d| ln_safe(s, d, src)}
   end
 
   def ln_dir_relative(src, dest)
     return if File.identical?(src, dest)
     parent = File.dirname(dest)
     File.directory?(parent) or mkdir_p(parent)
-    clean_link(relative(src, parent), dest) {|s, d| ln_dir_safe(s, d)}
+    clean_link(relative(src, parent), dest) {|s, d| ln_dir_safe(s, d, src)}
   end
 
   case (CROSS_COMPILING || RUBY_PLATFORM)

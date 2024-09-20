@@ -55,6 +55,35 @@ pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor) {
 }
 
 /**
+ * Returns the line of the given offset. If the offset is not in the list, the
+ * line of the closest offset less than the given offset is returned.
+ */
+int32_t
+pm_newline_list_line(const pm_newline_list_t *list, const uint8_t *cursor, int32_t start_line) {
+    assert(cursor >= list->start);
+    size_t offset = (size_t) (cursor - list->start);
+
+    size_t left = 0;
+    size_t right = list->size - 1;
+
+    while (left <= right) {
+        size_t mid = left + (right - left) / 2;
+
+        if (list->offsets[mid] == offset) {
+            return ((int32_t) mid) + start_line;
+        }
+
+        if (list->offsets[mid] < offset) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return ((int32_t) left) + start_line - 1;
+}
+
+/**
  * Returns the line and column of the given offset. If the offset is not in the
  * list, the line and column of the closest offset less than the given offset
  * are returned.

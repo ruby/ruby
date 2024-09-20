@@ -22,14 +22,19 @@ end
 confexts &&= File.read(confexts).scan(/^(?:ext|gem)s: (.*\.mk)/).flatten rescue nil
 confexts ||= []
 macros["old_extensions"] = []
+distclean = []
 
 contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   gem = e.start_with?(".bundle/gems/")
+  dir = File.dirname(e)
   s = File.read(e)
   s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|MESSAGE_(?:BEGIN|END)|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
-    next if v.empty?
+    if v.empty?
+      distclean << dir if n == "extensions"
+      next
+    end
     n = "old_extensions" if n == "extensions" and !confexts.include?(e)
     v = v.split
     m = macros[n] ||= []
@@ -69,6 +74,10 @@ Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   end
 end
 deps.uniq!
+macros["cleandirs"] = distclean.map {|d| "#{d}/."}
+deps.map! {|d|
+  /\A(?:dist|real)?clean(?=:)/ =~ d ? d + " $(cleandirs:/.=/#{$&})" : d
+}
 
 # NOTE: Only if extensions are configured as static and dynamic heterogeneously
 # (e.g. --with-static-linked-ext=foo or ext/Setup can mix static and dynamic
@@ -100,7 +109,6 @@ def self.column
   @erbout[/^.*\z/].scan(/\t|([^\t]+)/) {|s,| w += (s ? s.size : 8 - w % 8)}
   w
 end
-targets = %w[all static install install-so install-rb clean distclean realclean]
 objext = RbConfig::CONFIG["OBJEXT"]
 if gnumake
   submake = "$(MAKE) -C $(@D)"
@@ -145,23 +153,26 @@ ext/extinit.<%=objext%>:
 
 % exts = (macros["extensions"] + macros["old_extensions"])
 % exts.map! {|e|e.chomp("/.")}.sort
-% targets.each do |tgt|
+% %w[all static install install-so install-rb].each do |tgt|
 %   exts.each do |d|
-%     t = "#{d}/#{tgt}"
-%     if /^(dist|real)?clean$/ =~ tgt
-%       deps = exts.select {|e|e.start_with?("#{d}/")}.map {|e|"#{e}/#{tgt}"}
-%       pd = ' ' + deps.join(' ') unless deps.empty?
-%     else
-%       pext = File.dirname(d)
-%       pd = " #{pext}/#{tgt}" if exts.include?(pext)
-%     end
-<%=t%>:<%=pd%>
-%     if /^(dist|real)clean$/ =~ tgt
+%     pext = File.dirname(d)
+<%=d%>/<%=tgt%>:<% if exts.include?(pext) %> <%=pext%>/<%=tgt%><% end %>
+	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
+%   end
+% end
+% distclean = exts | distclean
+% %w[clean distclean realclean].each do |tgt|
+%   distclean.each do |d|
+%     deps = exts.select {|e|e.start_with?("#{d}/")}.map {|e|"#{e}/#{tgt}"}
+<%=d%>/<%=tgt%>:<% unless deps.empty? %> <%=deps.join(' ')%><% end %>
+%     unless tgt == "clean"
 	$(ECHO) $(@F)ing $(@D)
 %     end
+%     if exts.include?(d)
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
-%     if /^(dist|real)clean$/ =~ tgt
-	$(Q)$(RM) <%=t[%r[\A(?:\.[^/]+/)?(?:[^/]+/){2}]]%>exts.mk
+%     end
+%     unless tgt == "clean"
+	$(Q)$(RM) <%=d[%r[\A(?:\.[^/]+/)?(?:[^/]+/)?[^/]+]]%>/exts.mk
 	-$(Q)$(RMDIRS) $(@D)
 %     end
 %   end

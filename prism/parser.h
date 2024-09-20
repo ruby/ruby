@@ -364,6 +364,9 @@ typedef enum {
     /** a rescue statement within a lambda expression */
     PM_CONTEXT_LAMBDA_RESCUE,
 
+    /** the predicate clause of a loop statement */
+    PM_CONTEXT_LOOP_PREDICATE,
+
     /** the top level context */
     PM_CONTEXT_MAIN,
 
@@ -505,9 +508,9 @@ typedef struct {
 /** The type of shareable constant value that can be set. */
 typedef uint8_t pm_shareable_constant_value_t;
 static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_NONE = 0x0;
-static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_LITERAL = 0x1;
-static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING = 0x2;
-static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = 0x4;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_LITERAL = PM_SHAREABLE_CONSTANT_NODE_FLAGS_LITERAL;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_EVERYTHING = PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_EVERYTHING;
+static const pm_shareable_constant_value_t PM_SCOPE_SHAREABLE_CONSTANT_EXPERIMENTAL_COPY = PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY;
 
 /**
  * This tracks an individual local variable in a certain lexical context, as
@@ -546,6 +549,17 @@ typedef struct pm_locals {
     pm_local_t *locals;
 } pm_locals_t;
 
+/** The flags about scope parameters that can be set. */
+typedef uint8_t pm_scope_parameters_t;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_NONE = 0x0;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS = 0x1;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS = 0x2;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_BLOCK = 0x4;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_FORWARDING_ALL = 0x8;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED = 0x10;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_NUMBERED_INNER = 0x20;
+static const pm_scope_parameters_t PM_SCOPE_PARAMETERS_NUMBERED_FOUND = 0x40;
+
 /**
  * This struct represents a node in a linked list of scopes. Some scopes can see
  * into their parent scopes, while others cannot.
@@ -558,9 +572,18 @@ typedef struct pm_scope {
     pm_locals_t locals;
 
     /**
+     * This is a list of the implicit parameters contained within the block.
+     * These will be processed after the block is parsed to determine the kind
+     * of parameters node that should be used and to check if any errors need to
+     * be added.
+     */
+    pm_node_list_t implicit_parameters;
+
+    /**
      * This is a bitfield that indicates the parameters that are being used in
-     * this scope. It is a combination of the PM_SCOPE_PARAMS_* constants. There
-     * are three different kinds of parameters that can be used in a scope:
+     * this scope. It is a combination of the PM_SCOPE_PARAMETERS_* constants.
+     * There are three different kinds of parameters that can be used in a
+     * scope:
      *
      * - Ordinary parameters (e.g., def foo(bar); end)
      * - Numbered parameters (e.g., def foo; _1; end)
@@ -575,15 +598,7 @@ typedef struct pm_scope {
      * - def foo(&); end
      * - def foo(...); end
      */
-    uint8_t parameters;
-
-    /**
-     * An integer indicating the number of numbered parameters on this scope.
-     * This is necessary to determine if child blocks are allowed to use
-     * numbered parameters, and to pass information to consumers of the AST
-     * about how many numbered parameters exist.
-     */
-    int8_t numbered_parameters;
+    pm_scope_parameters_t parameters;
 
     /**
      * The current state of constant shareability for this scope. This is
@@ -598,20 +613,6 @@ typedef struct pm_scope {
     bool closed;
 } pm_scope_t;
 
-static const uint8_t PM_SCOPE_PARAMETERS_NONE = 0x0;
-static const uint8_t PM_SCOPE_PARAMETERS_ORDINARY = 0x1;
-static const uint8_t PM_SCOPE_PARAMETERS_NUMBERED = 0x2;
-static const uint8_t PM_SCOPE_PARAMETERS_IT = 0x4;
-static const uint8_t PM_SCOPE_PARAMETERS_TYPE_MASK = 0x7;
-
-static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_POSITIONALS = 0x8;
-static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_KEYWORDS = 0x10;
-static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_BLOCK = 0x20;
-static const uint8_t PM_SCOPE_PARAMETERS_FORWARDING_ALL = 0x40;
-
-static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_DISALLOWED = -1;
-static const int8_t PM_SCOPE_NUMBERED_PARAMETERS_NONE = 0;
-
 /**
  * A struct that represents a stack of boolean values.
  */
@@ -624,6 +625,13 @@ typedef uint32_t pm_state_stack_t;
  * it's considering.
  */
 struct pm_parser {
+    /**
+     * The next node identifier that will be assigned. This is a unique
+     * identifier used to track nodes such that the syntax tree can be dropped
+     * but the node can be found through another parse.
+     */
+    uint32_t node_id;
+
     /** The current state of the lexer. */
     pm_lex_state_t lex_state;
 
@@ -860,6 +868,14 @@ struct pm_parser {
     bool recovering;
 
     /**
+     * This is very specialized behavior for when you want to parse in a context
+     * that does not respect encoding comments. Its main use case is translating
+     * into the whitequark/parser AST which re-encodes source files in UTF-8
+     * before they are parsed and ignores encoding comments.
+     */
+    bool encoding_locked;
+
+    /**
      * Whether or not the encoding has been changed by a magic comment. We use
      * this to provide a fast path for the lexer instead of going through the
      * function pointer.
@@ -886,6 +902,12 @@ struct pm_parser {
      * characters.
      */
     bool current_regular_expression_ascii_only;
+
+    /**
+     * By default, Ruby always warns about mismatched indentation. This can be
+     * toggled with a magic comment.
+     */
+    bool warn_mismatched_indentation;
 };
 
 #endif

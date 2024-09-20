@@ -6,12 +6,18 @@ RSpec.describe Bundler::Settings do
   subject(:settings) { described_class.new(bundled_app) }
 
   describe "#set_local" do
-    context "when the local config file is not found" do
+    context "root is nil" do
       subject(:settings) { described_class.new(nil) }
 
-      it "raises a GemfileNotFound error with explanation" do
-        expect { subject.set_local("foo", "bar") }.
-          to raise_error(Bundler::GemfileNotFound, "Could not locate Gemfile")
+      before do
+        allow(Pathname).to receive(:new).and_call_original
+        allow(Pathname).to receive(:new).with(".bundle").and_return home(".bundle")
+      end
+
+      it "works" do
+        subject.set_local("foo", "bar")
+
+        expect(subject["foo"]).to eq("bar")
       end
     end
   end
@@ -310,8 +316,8 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     let(:settings) { described_class.new(bundled_app(".bundle")) }
 
     it "converts older keys without double underscore" do
-      config("BUNDLE_MY__PERSONAL.RACK" => "~/Work/git/rack")
-      expect(settings["my.personal.rack"]).to eq("~/Work/git/rack")
+      config("BUNDLE_MY__PERSONAL.MYRACK" => "~/Work/git/myrack")
+      expect(settings["my.personal.myrack"]).to eq("~/Work/git/myrack")
     end
 
     it "converts older keys without trailing slashes and double underscore" do

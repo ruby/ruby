@@ -194,6 +194,190 @@ describe :string_encode, shared: true do
     end
   end
 
+  describe "given the fallback option" do
+    context "given a hash" do
+      it "looks up the replacement value from the hash" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: { "\ufffd" => "bar" })
+        encoded.should == "Bbar"
+      end
+
+      it "calls to_str on the returned value" do
+        obj = Object.new
+        obj.should_receive(:to_str).and_return("bar")
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: { "\ufffd" => obj })
+        encoded.should == "Bbar"
+      end
+
+      it "does not call to_s on the returned value" do
+        obj = Object.new
+        obj.should_not_receive(:to_s)
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: { "\ufffd" => obj })
+        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      end
+
+      it "raises an error if the key is not present in the hash" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: { "foo" => "bar" })
+        }.should raise_error(Encoding::UndefinedConversionError, "U+FFFD from UTF-8 to US-ASCII")
+      end
+
+      it "raises an error if the value is itself invalid" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: { "\ufffd" => "\uffee" })
+        }.should raise_error(ArgumentError, "too big fallback string")
+      end
+
+      it "uses the hash's default value if set" do
+        hash = {}
+        hash.default = "bar"
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: hash)
+        encoded.should == "Bbar"
+      end
+
+      it "uses the result of calling default_proc if set" do
+        hash = {}
+        hash.default_proc = -> _, _ { "bar" }
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: hash)
+        encoded.should == "Bbar"
+      end
+    end
+
+    context "given an object inheriting from Hash" do
+      before do
+        klass = Class.new(Hash)
+        @hash_like = klass.new
+        @hash_like["\ufffd"] = "bar"
+      end
+
+      it "looks up the replacement value from the object" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: @hash_like)
+        encoded.should == "Bbar"
+      end
+    end
+
+    context "given an object responding to []" do
+      before do
+        klass = Class.new do
+          def [](c) = c.bytes.inspect
+        end
+        @hash_like = klass.new
+      end
+
+      it "calls [] on the object, passing the invalid character" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: @hash_like)
+        encoded.should == "B[239, 191, 189]"
+      end
+    end
+
+    context "given an object not responding to []" do
+      before do
+        @non_hash_like = Object.new
+      end
+
+      it "raises an error" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: @non_hash_like)
+        }.should raise_error(Encoding::UndefinedConversionError, "U+FFFD from UTF-8 to US-ASCII")
+      end
+    end
+
+    context "given a proc" do
+      it "calls the proc to get the replacement value, passing in the invalid character" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: proc { |c| c.bytes.inspect })
+        encoded.should == "B[239, 191, 189]"
+      end
+
+      it "calls to_str on the returned value" do
+        obj = Object.new
+        obj.should_receive(:to_str).and_return("bar")
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: proc { |c| obj })
+        encoded.should == "Bbar"
+      end
+
+      it "does not call to_s on the returned value" do
+        obj = Object.new
+        obj.should_not_receive(:to_s)
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: proc { |c| obj })
+        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      end
+
+      it "raises an error if the returned value is itself invalid" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { "\uffee" })
+        }.should raise_error(ArgumentError, "too big fallback string")
+      end
+    end
+
+    context "given a lambda" do
+      it "calls the lambda to get the replacement value, passing in the invalid character" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { c.bytes.inspect })
+        encoded.should == "B[239, 191, 189]"
+      end
+
+      it "calls to_str on the returned value" do
+        obj = Object.new
+        obj.should_receive(:to_str).and_return("bar")
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { obj })
+        encoded.should == "Bbar"
+      end
+
+      it "does not call to_s on the returned value" do
+        obj = Object.new
+        obj.should_not_receive(:to_s)
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { obj })
+        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      end
+
+      it "raises an error if the returned value is itself invalid" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { "\uffee" })
+        }.should raise_error(ArgumentError, "too big fallback string")
+      end
+    end
+
+    context "given a method" do
+      def replace(c) = c.bytes.inspect
+      def replace_bad(c) = "\uffee"
+
+      def replace_to_str(c)
+        obj = Object.new
+        obj.should_receive(:to_str).and_return("bar")
+        obj
+      end
+
+      def replace_to_s(c)
+        obj = Object.new
+        obj.should_not_receive(:to_s)
+        obj
+      end
+
+      it "calls the method to get the replacement value, passing in the invalid character" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: method(:replace))
+        encoded.should == "B[239, 191, 189]"
+      end
+
+      it "calls to_str on the returned value" do
+        encoded = "B\ufffd".encode(Encoding::US_ASCII, fallback: method(:replace_to_str))
+        encoded.should == "Bbar"
+      end
+
+      it "does not call to_s on the returned value" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: method(:replace_to_s))
+        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      end
+
+      it "raises an error if the returned value is itself invalid" do
+        -> {
+          "B\ufffd".encode(Encoding::US_ASCII, fallback: method(:replace_bad))
+        }.should raise_error(ArgumentError, "too big fallback string")
+      end
+    end
+  end
+
   describe "given the xml: :text option" do
     it "replaces all instances of '&' with '&amp;'" do
       '& and &'.send(@method, "UTF-8", xml: :text).should == '&amp; and &amp;'

@@ -88,14 +88,6 @@ void pm_constant_id_list_insert(pm_constant_id_list_t *list, size_t index, pm_co
 bool pm_constant_id_list_includes(pm_constant_id_list_t *list, pm_constant_id_t id);
 
 /**
- * Get the memory size of a list of constant ids.
- *
- * @param list The list to get the memory size of.
- * @return The memory size of the list.
- */
-size_t pm_constant_id_list_memsize(pm_constant_id_list_t *list);
-
-/**
  * Free the memory associated with a list of constant ids.
  *
  * @param list The list to free.

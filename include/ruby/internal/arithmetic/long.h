@@ -114,11 +114,11 @@ RB_INT2FIX(long i)
 
     /* :NOTE: VALUE can be wider than long.  As j being unsigned, 2j+1 is fully
      * defined. Also it can be compiled into a single LEA instruction. */
-    const unsigned long j = i;
+    const unsigned long j = RBIMPL_CAST((unsigned long)i);
     const unsigned long k = (j << 1) + RUBY_FIXNUM_FLAG;
-    const long          l = k;
+    const long          l = RBIMPL_CAST((long)k);
     const SIGNED_VALUE  m = l; /* Sign extend */
-    const VALUE         n = m;
+    const VALUE         n = RBIMPL_CAST((VALUE)m);
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(n));
     return n;
@@ -166,7 +166,7 @@ rbimpl_fix2long_by_idiv(VALUE x)
     /* :NOTE: VALUE  can be wider  than long.  (x-1)/2 never  overflows because
      * RB_FIXNUM_P(x)  holds.   Also it  has  no  portability issue  like  y>>1
      * below. */
-    const SIGNED_VALUE y = x - RUBY_FIXNUM_FLAG;
+    const SIGNED_VALUE y = RBIMPL_CAST((SIGNED_VALUE)(x - RUBY_FIXNUM_FLAG));
     const SIGNED_VALUE z = y / 2;
     const long         w = RBIMPL_CAST((long)z);
 
@@ -193,7 +193,7 @@ rbimpl_fix2long_by_shift(VALUE x)
 
     /* :NOTE: VALUE can be wider than long.  If right shift is arithmetic, this
      * is noticeably faster than above. */
-    const SIGNED_VALUE y = x;
+    const SIGNED_VALUE y = RBIMPL_CAST((SIGNED_VALUE)x);
     const SIGNED_VALUE z = y >> 1;
     const long         w = RBIMPL_CAST((long)z);
 
@@ -252,7 +252,7 @@ static inline unsigned long
 rb_fix2ulong(VALUE x)
 {
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXNUM_P(x));
-    return rb_fix2long(x);
+    return RBIMPL_CAST((unsigned long)rb_fix2long(x));
 }
 
 /**
@@ -323,7 +323,7 @@ static inline VALUE
 rb_ulong2num_inline(unsigned long v)
 {
     if (RB_POSFIXABLE(v))
-        return RB_LONG2FIX(v);
+        return RB_LONG2FIX(RBIMPL_CAST((long)v));
     else
         return rb_uint2big(v);
 }

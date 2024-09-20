@@ -358,6 +358,19 @@ class TestFile < Test::Unit::TestCase
     assert_equal(mod_time_contents, stats.mtime, bug6385)
   end
 
+  def measure_time
+    log = []
+    30.times do
+      t1 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      yield
+      t2 = Process.clock_gettime(Process::CLOCK_REALTIME)
+      log << (t2 - t1)
+      return (t1 + t2) / 2 if t2 - t1 < 1
+      sleep 1
+    end
+    omit "failed to setup; the machine is stupidly slow #{log.inspect}"
+  end
+
   def test_stat
     tb = Process.clock_gettime(Process::CLOCK_REALTIME)
     Tempfile.create("stat") {|file|
@@ -365,26 +378,39 @@ class TestFile < Test::Unit::TestCase
       file.close
       path = file.path
 
-      t0 = Process.clock_gettime(Process::CLOCK_REALTIME)
-      File.write(path, "foo")
+      measure_time do
+        File.write(path, "foo")
+      end
+
       sleep 2
-      File.write(path, "bar")
+
+      t1 = measure_time do
+        File.write(path, "bar")
+      end
+
       sleep 2
-      File.read(path)
-      File.chmod(0644, path)
+
+      t2 = measure_time do
+        File.read(path)
+        File.chmod(0644, path)
+      end
+
       sleep 2
-      File.read(path)
+
+      t3 = measure_time do
+        File.read(path)
+      end
 
       delta = 1
       stat = File.stat(path)
-      assert_in_delta tb,   stat.birthtime.to_f, delta
-      assert_in_delta t0+2, stat.mtime.to_f, delta
+      assert_in_delta tb, stat.birthtime.to_f, delta
+      assert_in_delta t1, stat.mtime.to_f, delta
       if stat.birthtime != stat.ctime
-        assert_in_delta t0+4, stat.ctime.to_f, delta
+        assert_in_delta t2, stat.ctime.to_f, delta
       end
       if /mswin|mingw/ !~ RUBY_PLATFORM && !Bug::File::Fs.noatime?(path)
         # Windows delays updating atime
-        assert_in_delta t0+6, stat.atime.to_f, delta
+        assert_in_delta t3, stat.atime.to_f, delta
       end
     }
   rescue NotImplementedError
@@ -457,6 +483,39 @@ class TestFile < Test::Unit::TestCase
       assert_nothing_raised(Errno::ENOENT, feature3399) do
         File.stat("//?/#{path}")
       end
+    end
+  end
+
+  def test_initialize
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      path = File.join(tmpdir, "foo")
+
+      assert_raise(Errno::ENOENT) {File.new(path)}
+      f = File.new(path, "w")
+      f.write("FOO\n")
+      f.close
+      f = File.new(path)
+      data = f.read
+      f.close
+      assert_equal("FOO\n", data)
+
+      f = File.new(path, File::WRONLY)
+      f.write("BAR\n")
+      f.close
+      f = File.new(path, File::RDONLY)
+      data = f.read
+      f.close
+      assert_equal("BAR\n", data)
+
+      data = File.open(path) {|file|
+        File.new(file.fileno, mode: File::RDONLY, autoclose: false).read
+      }
+      assert_equal("BAR\n", data)
+
+      data = File.open(path) {|file|
+        File.new(file.fileno, File::RDONLY, autoclose: false).read
+      }
+      assert_equal("BAR\n", data)
     end
   end
 

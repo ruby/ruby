@@ -110,10 +110,6 @@ class RDoc::RI::Driver
     options = default_options
 
     opts = OptionParser.new do |opt|
-      opt.accept File do |file,|
-        File.readable?(file) and not File.directory?(file) and file
-      end
-
       opt.program_name = File.basename $0
       opt.version = RDoc::VERSION
       opt.release = nil
@@ -345,9 +341,17 @@ or the PAGER environment variable.
 
       opt.separator nil
 
-      opt.on("--dump=CACHE", File,
+      opt.on("--dump=CACHE",
              "Dump data from an ri cache or data file.") do |value|
-        options[:dump_path] = value
+        unless File.readable?(value)
+          abort "#{value.inspect} is not readable"
+        end
+
+        if File.directory?(value)
+          abort "#{value.inspect} is a directory"
+        end
+
+        options[:dump_path] = File.new(value)
       end
     end
 

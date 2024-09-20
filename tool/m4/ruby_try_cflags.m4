@@ -22,3 +22,20 @@ AC_DEFUN([RUBY_TRY_CFLAGS], [
 	AC_MSG_RESULT(no)],
 	[$4], [$5])
 ])dnl
+
+AC_DEFUN([_RUBY_TRY_CFLAGS_PREPEND], [
+    RUBY_WERROR_FLAG([
+    CFLAGS="$1 [$]CFLAGS"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$4]], [[$5]])],
+	[$2], [$3])
+    ])dnl
+])dnl
+AC_DEFUN([RUBY_TRY_CFLAGS_PREPEND], [
+    AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])dnl
+    _RUBY_TRY_CFLAGS_PREPEND([$1],
+	[$2
+	AC_MSG_RESULT(yes)],
+	[$3
+	AC_MSG_RESULT(no)],
+	[$4], [$5])
+])dnl

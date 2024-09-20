@@ -6,18 +6,24 @@ return unless defined?(RubyVM::InstructionSequence)
 
 module Prism
   class NewlineTest < TestCase
-    base = File.expand_path("../", __FILE__)
-    filepaths = Dir["*.rb", base: base] - %w[
-      encoding_test.rb
+    skips = %w[
       errors_test.rb
-      parser_test.rb
+      locals_test.rb
       regexp_test.rb
-      static_literals_test.rb
+      test_helper.rb
       unescape_test.rb
+      encoding/regular_expression_encoding_test.rb
+      encoding/string_encoding_test.rb
+      result/breadth_first_search_test.rb
+      result/static_literals_test.rb
+      result/warnings_test.rb
+      ruby/parser_test.rb
+      ruby/ruby_parser_test.rb
     ]
 
-    filepaths.each do |relative|
-      define_method("test_newline_flags_#{relative}") do
+    base = __dir__
+    (Dir["{,api/,encoding/,result/,ruby/}*.rb", base: base] - skips).each do |relative|
+      define_method(:"test_#{relative}") do
         assert_newlines(base, relative)
       end
     end
@@ -63,14 +69,6 @@ module Prism
       assert_equal expected, actual
     end
 
-    def ignore_warnings
-      previous_verbosity = $VERBOSE
-      $VERBOSE = nil
-      yield
-    ensure
-      $VERBOSE = previous_verbosity
-    end
-
     def rubyvm_lines(source)
       queue = [ignore_warnings { RubyVM::InstructionSequence.compile(source) }]
       lines = []
@@ -91,7 +89,7 @@ module Prism
 
       while node = queue.shift
         queue.concat(node.compact_child_nodes)
-        newlines << result.source.line(node.location.start_offset) if node&.newline?
+        newlines << result.source.line(node.location.start_offset) if node&.newline_flag?
       end
 
       newlines.sort

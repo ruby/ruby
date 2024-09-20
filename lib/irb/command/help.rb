@@ -39,7 +39,7 @@ module IRB
 
         help_cmds = commands_grouped_by_categories.delete("Help")
         no_category_cmds = commands_grouped_by_categories.delete("No category")
-        aliases = irb_context.instance_variable_get(:@user_aliases).map do |alias_name, target|
+        aliases = irb_context.instance_variable_get(:@command_aliases).map do |alias_name, target|
           { display_name: alias_name, description: "Alias for `#{target}`" }
         end
 

@@ -2,13 +2,13 @@
 
 RSpec.describe "Bundler.with_env helpers" do
   def bundle_exec_ruby(args, options = {})
-    build_bundler_context options
+    build_bundler_context options.dup
     bundle "exec '#{Gem.ruby}' #{args}", options
   end
 
   def build_bundler_context(options = {})
-    bundle "config set path vendor/bundle"
-    gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    bundle "config set path vendor/bundle", options.dup
+    gemfile "source 'https://gem.repo1'"
     bundle "install", options
   end
 
@@ -65,11 +65,11 @@ RSpec.describe "Bundler.with_env helpers" do
       # Simulate bundler has not yet been loaded
       ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
-      original = ruby('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")')
+      original = ruby('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")', artifice: "fail")
       create_file("source.rb", <<-RUBY)
         puts Bundler.original_env.to_a.map {|e| e.join("=") }.sort.join("\n")
       RUBY
-      bundle_exec_ruby bundled_app("source.rb")
+      bundle_exec_ruby bundled_app("source.rb"), artifice: "fail"
       expect(out).to eq original
     end
   end

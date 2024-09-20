@@ -68,7 +68,7 @@ module IRB
       end
 
       def suppresses_echo?
-        false
+        true
       end
 
       def should_be_handled_by_debugger?

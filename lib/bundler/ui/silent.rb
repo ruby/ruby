@@ -53,6 +53,13 @@ module Bundler
         false
       end
 
+      def output_stream=(_symbol)
+      end
+
+      def output_stream
+        nil
+      end
+
       def ask(message)
       end
 
@@ -60,7 +67,7 @@ module Bundler
         raise "Cannot ask yes? with a silent shell"
       end
 
-      def no?
+      def no?(msg)
         raise "Cannot ask no? with a silent shell"
       end
 
@@ -74,6 +81,10 @@ module Bundler
       end
 
       def silence
+        yield
+      end
+
+      def progress
         yield
       end
 

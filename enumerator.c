@@ -2400,7 +2400,6 @@ lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_inde
         rb_ary_push(ary, v);
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    LAZY_MEMO_SET_PACKED(result);
     return result;
 }
 
@@ -3181,7 +3180,7 @@ enum_chain_initialize(VALUE obj, VALUE enums)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated chain");
 
-    ptr->enums = rb_obj_freeze(enums);
+    ptr->enums = rb_ary_freeze(enums);
     ptr->pos = -1;
 
     return obj;
@@ -3509,7 +3508,7 @@ enum_product_initialize(int argc, VALUE *argv, VALUE obj)
 
     if (!ptr) rb_raise(rb_eArgError, "unallocated product");
 
-    ptr->enums = rb_obj_freeze(enums);
+    ptr->enums = rb_ary_freeze(enums);
 
     return obj;
 }

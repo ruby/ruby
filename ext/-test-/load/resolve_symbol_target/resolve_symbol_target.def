@@ -1,4 +1,0 @@
-LIBRARY resolve_symbol_target
-EXPORTS
-  Init_resolve_symbol_target
-  rst_any_method

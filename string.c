@@ -89,6 +89,9 @@ VALUE rb_cSymbol;
  *            another string (the shared root).
  * 3:     STR_CHILLED (will be frozen in a future version)
  *            The string appears frozen but can be mutated with a warning.
+ * 4:     STR_PRECOMPUTED_HASH
+ *            The string is embedded and has its precomputed hascode stored
+ *            after the terminator.
  * 5:     STR_SHARED_ROOT
  *            Other strings may point to the contents of this string. When this
  *            flag is set, STR_SHARED must not be set.
@@ -116,6 +119,7 @@ VALUE rb_cSymbol;
  */
 
 #define RUBY_MAX_CHAR_LEN 16
+#define STR_PRECOMPUTED_HASH FL_USER4
 #define STR_SHARED_ROOT FL_USER5
 #define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
@@ -133,10 +137,10 @@ VALUE rb_cSymbol;
 } while (0)
 
 static inline bool
-str_enc_fastpath(VALUE str)
+str_encindex_fastpath(int encindex)
 {
     // The overwhelming majority of strings are in one of these 3 encodings.
-    switch (ENCODING_GET_INLINED(str)) {
+    switch (encindex) {
       case ENCINDEX_ASCII_8BIT:
       case ENCINDEX_UTF_8:
       case ENCINDEX_US_ASCII:
@@ -144,6 +148,12 @@ str_enc_fastpath(VALUE str)
       default:
         return false;
     }
+}
+
+static inline bool
+str_enc_fastpath(VALUE str)
+{
+    return str_encindex_fastpath(ENCODING_GET_INLINED(str));
 }
 
 #define TERM_LEN(str) (str_enc_fastpath(str) ? 1 : rb_enc_mbminlen(rb_enc_from_index(ENCODING_GET(str))))
@@ -240,6 +250,11 @@ rb_str_size_as_embedded(VALUE str)
     else {
         real_size = sizeof(struct RString);
     }
+
+    if (FL_TEST_RAW(str, STR_PRECOMPUTED_HASH)) {
+        real_size += sizeof(st_index_t);
+    }
+
     return real_size;
 }
 
@@ -257,6 +272,7 @@ static VALUE str_new(VALUE klass, const char *ptr, long len);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 static inline void str_modifiable(VALUE str);
 static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);
+static inline VALUE str_alloc_embed(VALUE klass, size_t capa);
 
 static inline void
 str_make_independent(VALUE str)
@@ -334,7 +350,7 @@ mustnot_wchar(VALUE str)
 
 static int fstring_cmp(VALUE a, VALUE b);
 
-static VALUE register_fstring(VALUE str, bool copy);
+static VALUE register_fstring(VALUE str, bool copy, bool precompute_hash);
 
 const struct st_hash_type rb_fstring_hash_type = {
     fstring_cmp,
@@ -343,9 +359,41 @@ const struct st_hash_type rb_fstring_hash_type = {
 
 #define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
 
+static inline st_index_t
+str_do_hash(VALUE str)
+{
+    st_index_t h = rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
+    int e = RSTRING_LEN(str) ? ENCODING_GET(str) : 0;
+    if (e && !is_ascii_string(str)) {
+        h = rb_hash_end(rb_hash_uint32(h, (uint32_t)e));
+    }
+    return h;
+}
+
+static VALUE
+str_precompute_hash(VALUE str)
+{
+    RUBY_ASSERT(!FL_TEST_RAW(str, STR_PRECOMPUTED_HASH));
+    RUBY_ASSERT(STR_EMBED_P(str));
+
+#if RUBY_DEBUG
+    size_t used_bytes = (RSTRING_LEN(str) + TERM_LEN(str));
+    size_t free_bytes = str_embed_capa(str) - used_bytes;
+    RUBY_ASSERT(free_bytes >= sizeof(st_index_t));
+#endif
+
+    st_index_t hash = str_do_hash(str);
+    memcpy(RSTRING_END(str) + TERM_LEN(str), &hash, sizeof(hash));
+
+    FL_SET(str, STR_PRECOMPUTED_HASH);
+
+    return str;
+}
+
 struct fstr_update_arg {
     VALUE fstr;
     bool copy;
+    bool precompute_hash;
 };
 
 static int
@@ -370,8 +418,23 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
     else {
         if (FL_TEST_RAW(str, STR_FAKESTR)) {
             if (arg->copy) {
-                VALUE new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
-                rb_enc_copy(new_str, str);
+                VALUE new_str;
+                long len = RSTRING_LEN(str);
+                long capa = len + sizeof(st_index_t);
+                int term_len = TERM_LEN(str);
+
+                if (arg->precompute_hash && STR_EMBEDDABLE_P(capa, term_len)) {
+                    new_str = str_alloc_embed(rb_cString, capa + term_len);
+                    memcpy(RSTRING_PTR(new_str), RSTRING_PTR(str), len);
+                    STR_SET_LEN(new_str, RSTRING_LEN(str));
+                    TERM_FILL(RSTRING_END(new_str), TERM_LEN(str));
+                    rb_enc_copy(new_str, str);
+                    str_precompute_hash(new_str);
+                }
+                else {
+                    new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
+                    rb_enc_copy(new_str, str);
+                }
                 str = new_str;
             }
             else {
@@ -428,7 +491,7 @@ rb_fstring(VALUE str)
     if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE | STR_CHILLED))
         rb_str_resize(str, RSTRING_LEN(str));
 
-    fstr = register_fstring(str, FALSE);
+    fstr = register_fstring(str, false, false);
 
     if (!bare) {
         str_replace_shared_without_enc(str, fstr);
@@ -439,10 +502,12 @@ rb_fstring(VALUE str)
 }
 
 static VALUE
-register_fstring(VALUE str, bool copy)
+register_fstring(VALUE str, bool copy, bool precompute_hash)
 {
-    struct fstr_update_arg args;
-    args.copy = copy;
+    struct fstr_update_arg args = {
+        .copy = copy,
+        .precompute_hash = precompute_hash
+    };
 
     RB_VM_LOCK_ENTER();
     {
@@ -500,14 +565,14 @@ VALUE
 rb_fstring_new(const char *ptr, long len)
 {
     struct RString fake_str;
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), FALSE);
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), false, false);
 }
 
 VALUE
 rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc)
 {
     struct RString fake_str;
-    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), FALSE);
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), false, false);
 }
 
 VALUE
@@ -535,22 +600,30 @@ fstring_cmp(VALUE a, VALUE b)
             memcmp(aptr, bptr, alen) != 0);
 }
 
-static inline int
+static inline bool
 single_byte_optimizable(VALUE str)
 {
-    rb_encoding *enc;
-
+    int encindex = ENCODING_GET(str);
+    switch (encindex) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_US_ASCII:
+        return true;
+      case ENCINDEX_UTF_8:
+        // For UTF-8 it's worth scanning the string coderange when unknown.
+        return rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT;
+    }
     /* Conservative.  It may be ENC_CODERANGE_UNKNOWN. */
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
-        return 1;
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+        return true;
+    }
 
-    enc = STR_ENC_GET(str);
-    if (rb_enc_mbmaxlen(enc) == 1)
-        return 1;
+    if (rb_enc_mbmaxlen(rb_enc_from_index(encindex)) == 1) {
+        return true;
+    }
 
     /* Conservative.  Possibly single byte.
      * "\xa1" in Shift_JIS for example. */
-    return 0;
+    return false;
 }
 
 VALUE rb_fs;
@@ -795,16 +868,24 @@ rb_enc_str_coderange(VALUE str)
     return cr;
 }
 
+static inline bool
+rb_enc_str_asciicompat(VALUE str)
+{
+    int encindex = ENCODING_GET_INLINED(str);
+    return str_encindex_fastpath(encindex) || rb_enc_asciicompat(rb_enc_get_from_index(encindex));
+}
+
 int
 rb_enc_str_asciionly_p(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
-
-    if (!rb_enc_asciicompat(enc))
-        return FALSE;
-    else if (is_ascii_string(str))
-        return TRUE;
-    return FALSE;
+    switch(ENC_CODERANGE(str)) {
+      case ENC_CODERANGE_UNKNOWN:
+        return rb_enc_str_asciicompat(str) && is_ascii_string(str);
+      case ENC_CODERANGE_7BIT:
+        return true;
+      default:
+        return false;
+    }
 }
 
 static inline void
@@ -821,7 +902,7 @@ str_capacity(VALUE str, const int termlen)
     if (STR_EMBED_P(str)) {
         return str_embed_capa(str) - termlen;
     }
-    else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+    else if (FL_ANY_RAW(str, STR_SHARED|STR_NOFREE)) {
         return RSTRING(str)->len;
     }
     else {
@@ -871,6 +952,7 @@ empty_str_alloc(VALUE klass)
     RUBY_DTRACE_CREATE_HOOK(STRING, 0);
     VALUE str = str_alloc_embed(klass, 0);
     memset(RSTRING(str)->as.embed.ary, 0, str_embed_capa(str));
+    ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
     return str;
 }
 
@@ -1492,6 +1574,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
             STR_SET_EMBED(str);
             memcpy(RSTRING_PTR(str), RSTRING_PTR(orig), RSTRING_LEN(orig));
             STR_SET_LEN(str, RSTRING_LEN(orig));
+            ENC_CODERANGE_SET(str, ENC_CODERANGE(orig));
             TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
         }
         else {
@@ -1836,12 +1919,6 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
     return new_str;
 }
 
-bool
-rb_str_chilled_p(VALUE str)
-{
-    return CHILLED_STRING_P(str);
-}
-
 /*
  *
  *  call-seq:
@@ -2000,12 +2077,7 @@ rb_str_s_new(int argc, VALUE *argv, VALUE klass)
         }
     }
 
-    long fake_len = capa - termlen;
-    if (fake_len < 0) {
-        fake_len = 0;
-    }
-
-    VALUE str = str_new0(klass, NULL, fake_len, termlen);
+    VALUE str = str_new0(klass, NULL, capa, termlen);
     STR_SET_LEN(str, 0);
     TERM_FILL(RSTRING_PTR(str), termlen);
 
@@ -2450,29 +2522,43 @@ rb_check_lockedtmp(VALUE str)
     }
 }
 
+// If none of these flags are set, we know we have an modifiable string.
+// If any is set, we need to do more detailed checks.
+#define STR_UNMODIFIABLE_MASK (FL_FREEZE | STR_TMPLOCK | STR_CHILLED)
 static inline void
 str_modifiable(VALUE str)
 {
-    rb_check_lockedtmp(str);
-    rb_check_frozen(str);
+    if (RB_UNLIKELY(FL_ANY_RAW(str, STR_UNMODIFIABLE_MASK))) {
+        if (CHILLED_STRING_P(str)) {
+            CHILLED_STRING_MUTATED(str);
+        }
+        rb_check_lockedtmp(str);
+        rb_check_frozen(str);
+    }
 }
 
 static inline int
 str_dependent_p(VALUE str)
 {
     if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-        return 0;
+        return FALSE;
     }
     else {
-        return 1;
+        return TRUE;
     }
 }
 
+// If none of these flags are set, we know we have an independent string.
+// If any is set, we need to do more detailed checks.
+#define STR_DEPENDANT_MASK (STR_UNMODIFIABLE_MASK | STR_SHARED | STR_NOFREE)
 static inline int
 str_independent(VALUE str)
 {
-    str_modifiable(str);
-    return !str_dependent_p(str);
+    if (RB_UNLIKELY(FL_ANY_RAW(str, STR_DEPENDANT_MASK))) {
+        str_modifiable(str);
+        return !str_dependent_p(str);
+    }
+    return TRUE;
 }
 
 static void
@@ -3053,7 +3139,7 @@ rb_str_freeze(VALUE str)
 static VALUE
 str_uplus(VALUE str)
 {
-    if (OBJ_FROZEN(str)) {
+    if (OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
         return rb_str_dup(str);
     }
     else {
@@ -3136,7 +3222,11 @@ rb_str_set_len(VALUE str, long len)
     }
 
     int cr = ENC_CODERANGE(str);
-    if (cr == ENC_CODERANGE_UNKNOWN) {
+    if (len == 0) {
+        /* Empty string does not contain non-ASCII */
+        ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+    }
+    else if (cr == ENC_CODERANGE_UNKNOWN) {
         /* Leave unknown. */
     }
     else if (len > RSTRING_LEN(str)) {
@@ -3174,14 +3264,14 @@ rb_str_resize(VALUE str, long len)
 
     int independent = str_independent(str);
     long slen = RSTRING_LEN(str);
+    const int termlen = TERM_LEN(str);
 
-    if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+    if (slen > len || (termlen != 1 && slen < len)) {
         ENC_CODERANGE_CLEAR(str);
     }
 
     {
         long capa;
-        const int termlen = TERM_LEN(str);
         if (STR_EMBED_P(str)) {
             if (len == slen) return str;
             if (str_embed_capa(str) >= len + termlen) {
@@ -3216,6 +3306,32 @@ rb_str_resize(VALUE str, long len)
         TERM_FILL(RSTRING(str)->as.heap.ptr + len, termlen); /* sentinel */
     }
     return str;
+}
+
+static void
+str_ensure_available_capa(VALUE str, long len)
+{
+    str_modify_keep_cr(str);
+
+    const int termlen = TERM_LEN(str);
+    long olen = RSTRING_LEN(str);
+
+    if (RB_UNLIKELY(olen > LONG_MAX - len)) {
+        rb_raise(rb_eArgError, "string sizes too big");
+    }
+
+    long total = olen + len;
+    long capa = str_capacity(str, termlen);
+
+    if (capa < total) {
+        if (total >= LONG_MAX / 2) {
+            capa = total;
+        }
+        while (total > capa) {
+            capa = 2 * capa + termlen; /* == 2*(capa+termlen)-termlen */
+        }
+        RESIZE_CAPA_TERM(str, capa, termlen);
+    }
 }
 
 static VALUE
@@ -3282,6 +3398,62 @@ rb_str_cat_cstr(VALUE str, const char *ptr)
 {
     must_not_null(ptr);
     return rb_str_buf_cat(str, ptr, strlen(ptr));
+}
+
+static void
+rb_str_buf_cat_byte(VALUE str, unsigned char byte)
+{
+    RUBY_ASSERT(RB_ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT || RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII);
+
+    // We can't write directly to shared strings without impacting others, so we must make the string independent.
+    if (UNLIKELY(!str_independent(str))) {
+        str_make_independent(str);
+    }
+
+    long string_length = -1;
+    const int null_terminator_length = 1;
+    char *sptr;
+    RSTRING_GETMEM(str, sptr, string_length);
+
+    // Ensure the resulting string wouldn't be too long.
+    if (UNLIKELY(string_length > LONG_MAX - 1)) {
+        rb_raise(rb_eArgError, "string sizes too big");
+    }
+
+    long string_capacity = str_capacity(str, null_terminator_length);
+
+    // Get the code range before any modifications since those might clear the code range.
+    int cr = ENC_CODERANGE(str);
+
+    // Check if the string has spare string_capacity to write the new byte.
+    if (LIKELY(string_capacity >= string_length + 1)) {
+        // In fast path we can write the new byte and note the string's new length.
+        sptr[string_length] = byte;
+        STR_SET_LEN(str, string_length + 1);
+        TERM_FILL(sptr + string_length + 1, null_terminator_length);
+    }
+    else {
+        // If there's not enough string_capacity, make a call into the general string concatenation function.
+        str_buf_cat(str, (char *)&byte, 1);
+    }
+
+    // If the code range is already known, we can derive the resulting code range cheaply by looking at the byte we
+    // just appended. If the code range is unknown, but the string was empty, then we can also derive the code range
+    // by looking at the byte we just appended. Otherwise, we'd have to scan the bytes to determine the code range so
+    // we leave it as unknown. It cannot be broken for binary strings so we don't need to handle that option.
+    if (cr == ENC_CODERANGE_7BIT || string_length == 0) {
+        if (ISASCII(byte)) {
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+        }
+        else {
+            ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+
+            // Promote a US-ASCII string to ASCII-8BIT when a non-ASCII byte is appended.
+            if (UNLIKELY(RB_ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)) {
+                rb_enc_associate_index(str, ENCINDEX_ASCII_8BIT);
+            }
+        }
+    }
 }
 
 RUBY_ALIAS_FUNCTION(rb_str_buf_cat(VALUE str, const char *ptr, long len), rb_str_cat, (str, ptr, len))
@@ -3518,6 +3690,144 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
+ *    append_as_bytes(*objects) -> string
+ *
+ *  Concatenates each object in +objects+ into +self+ without any encoding
+ *  validation or conversion and returns +self+:
+ *
+ *    s = 'foo'
+ *    s.append_as_bytes(" \xE2\x82")  # => "foo \xE2\x82"
+ *    s.valid_encoding?               # => false
+ *    s.append_as_bytes("\xAC 12")
+ *    s.valid_encoding?               # => true
+ *
+ *  For each given object +object+ that is an Integer,
+ *  the value is considered a Byte. If the Integer is bigger
+ *  than one byte, only the lower byte is considered, similar to String#setbyte:
+ *
+ *    s = ""
+ *    s.append_as_bytes(0, 257)             # =>  "\u0000\u0001"
+ *
+ *  Related: String#<<, String#concat, which do an encoding aware concatenation.
+ */
+
+VALUE
+rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
+{
+    long needed_capacity = 0;
+    volatile VALUE t0;
+    enum ruby_value_type *types = ALLOCV_N(enum ruby_value_type, t0, argc);
+
+    for (int index = 0; index < argc; index++) {
+        VALUE obj = argv[index];
+        enum ruby_value_type type = types[index] = rb_type(obj);
+        switch (type) {
+          case T_FIXNUM:
+          case T_BIGNUM:
+            needed_capacity++;
+            break;
+          case T_STRING:
+            needed_capacity += RSTRING_LEN(obj);
+            break;
+          default:
+            rb_raise(
+                rb_eTypeError,
+                "wrong argument type %"PRIsVALUE" (expected String or Integer)",
+                rb_obj_class(obj)
+            );
+            break;
+        }
+    }
+
+    str_ensure_available_capa(str, needed_capacity);
+    char *sptr = RSTRING_END(str);
+
+    for (int index = 0; index < argc; index++) {
+        VALUE obj = argv[index];
+        enum ruby_value_type type = types[index];
+        switch (type) {
+          case T_FIXNUM:
+          case T_BIGNUM: {
+            argv[index] = obj = rb_int_and(obj, INT2FIX(0xff));
+            char byte = (char)(NUM2INT(obj) & 0xFF);
+            *sptr = byte;
+            sptr++;
+            break;
+          }
+          case T_STRING: {
+            const char *ptr;
+            long len;
+            RSTRING_GETMEM(obj, ptr, len);
+            memcpy(sptr, ptr, len);
+            sptr += len;
+            break;
+          }
+          default:
+            UNREACHABLE;
+            RUBY_ASSERT("append_as_bytes arguments should have been validated");
+            break;
+        }
+    }
+
+    STR_SET_LEN(str, RSTRING_LEN(str) + needed_capacity);
+    TERM_FILL(sptr, TERM_LEN(str)); /* sentinel */
+
+    int cr = ENC_CODERANGE(str);
+    switch (cr) {
+      case ENC_CODERANGE_7BIT: {
+        for (int index = 0; index < argc; index++) {
+            VALUE obj = argv[index];
+            enum ruby_value_type type = types[index];
+            switch (type) {
+              case T_FIXNUM:
+              case T_BIGNUM: {
+                if (!ISASCII(NUM2INT(obj))) {
+                    goto clear_cr;
+                }
+                break;
+              }
+              case T_STRING: {
+                if (ENC_CODERANGE(obj) != ENC_CODERANGE_7BIT) {
+                    goto clear_cr;
+                }
+              }
+              default:
+                UNREACHABLE;
+                RUBY_ASSERT("append_as_bytes arguments should have been validated");
+                break;
+            }
+        }
+        break;
+      }
+      case ENC_CODERANGE_VALID:
+        if (ENCODING_GET_INLINED(str) == ENCINDEX_ASCII_8BIT) {
+            goto keep_cr;
+        }
+        else {
+            goto clear_cr;
+        }
+        break;
+      default:
+        goto clear_cr;
+        break;
+    }
+
+    RB_GC_GUARD(t0);
+
+  clear_cr:
+    // If no fast path was hit, we clear the coderange.
+    // append_as_bytes is predominently meant to be used in
+    // buffering situation, hence it's likely the coderange
+    // will never be scanned, so it's not worth spending time
+    // precomputing the coderange except for simple and common
+    // situations.
+    ENC_CODERANGE_CLEAR(str);
+  keep_cr:
+    return str;
+}
+
+/*
+ *  call-seq:
  *    string << object -> string
  *
  *  Concatenates +object+ to +self+ and returns +self+:
@@ -3531,6 +3841,22 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *
  *    s = 'foo'
  *    s << 33 # => "foo!"
+ *
+ *  If that codepoint is not representable in the encoding of
+ *  _string_, RangeError is raised.
+ *
+ *    s = 'foo'
+ *    s.encoding              # => <Encoding:UTF-8>
+ *    s << 0x00110000         # 1114112 out of char range (RangeError)
+ *    s = 'foo'.encode('EUC-JP')
+ *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
+ *
+ *  If the encoding is US-ASCII and the codepoint is 0..0xff, _string_
+ *  is automatically promoted to ASCII-8BIT.
+ *
+ *    s = 'foo'.encode('US-ASCII')
+ *    s << 0xff
+ *    s.encoding              # => #<Encoding:BINARY (ASCII-8BIT)>
  *
  *  Related: String#concat, which takes multiple arguments.
  */
@@ -3556,14 +3882,9 @@ rb_str_concat(VALUE str1, VALUE str2)
     }
 
     encidx = rb_ascii8bit_appendable_encoding_index(enc, code);
+
     if (encidx >= 0) {
-        char buf[1];
-        buf[0] = (char)code;
-        rb_str_cat(str1, buf, 1);
-        if (encidx != rb_enc_to_index(enc)) {
-            rb_enc_associate_index(str1, encidx);
-            ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
-        }
+        rb_str_buf_cat_byte(str1, (unsigned char)code);
     }
     else {
         long pos = RSTRING_LEN(str1);
@@ -3655,12 +3976,15 @@ rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 st_index_t
 rb_str_hash(VALUE str)
 {
-    st_index_t h = rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
-    int e = RSTRING_LEN(str) ? ENCODING_GET(str) : 0;
-    if (e && !is_ascii_string(str)) {
-        h = rb_hash_end(rb_hash_uint32(h, (uint32_t)e));
+    if (FL_TEST_RAW(str, STR_PRECOMPUTED_HASH)) {
+        st_index_t precomputed_hash;
+        memcpy(&precomputed_hash, RSTRING_END(str) + TERM_LEN(str), sizeof(precomputed_hash));
+
+        RUBY_ASSERT(precomputed_hash == str_do_hash(str));
+        return precomputed_hash;
     }
-    return h;
+
+    return str_do_hash(str);
 }
 
 int
@@ -4108,12 +4432,14 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 static void
 str_ensure_byte_pos(VALUE str, long pos)
 {
-    const char *s = RSTRING_PTR(str);
-    const char *e = RSTRING_END(str);
-    const char *p = s + pos;
-    if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
-        rb_raise(rb_eIndexError,
-                 "offset %ld does not land on character boundary", pos);
+    if (!single_byte_optimizable(str)) {
+        const char *s = RSTRING_PTR(str);
+        const char *e = RSTRING_END(str);
+        const char *p = s + pos;
+        if (!at_char_boundary(s, p, e, rb_enc_get(str))) {
+            rb_raise(rb_eIndexError,
+                     "offset %ld does not land on character boundary", pos);
+        }
     }
 }
 
@@ -4197,7 +4523,19 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-#ifdef HAVE_MEMRCHR
+#ifndef HAVE_MEMRCHR
+static void*
+memrchr(const char *search_str, int chr, long search_len)
+{
+    const char *ptr = search_str + search_len;
+    do {
+        if ((unsigned char)*(--ptr) == chr) return (void *)ptr;
+    } while (ptr >= search_str);
+
+    return ((void *)0);
+}
+#endif
+
 static long
 str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
@@ -4214,6 +4552,10 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     c = *t & 0xff;
     searchlen = s - sbeg + 1;
 
+    if (memcmp(s, t, slen) == 0) {
+        return s - sbeg;
+    }
+
     do {
         hit = memrchr(sbeg, c, searchlen);
         if (!hit) break;
@@ -4229,29 +4571,6 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 
     return -1;
 }
-#else
-static long
-str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
-{
-    long slen;
-    char *sbeg, *e, *t;
-
-    sbeg = RSTRING_PTR(str);
-    e = RSTRING_END(str);
-    t = RSTRING_PTR(sub);
-    slen = RSTRING_LEN(sub);
-
-    while (s) {
-        if (memcmp(s, t, slen) == 0) {
-            return s - sbeg;
-        }
-        if (s <= sbeg) break;
-        s = rb_enc_prev_char(sbeg, s, e, enc);
-    }
-
-    return -1;
-}
-#endif
 
 /* found index in byte */
 static long
@@ -4325,7 +4644,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *    $~ #=> #<MatchData "oo">
  *
  *  Integer argument +offset+, if given and non-negative, specifies the maximum starting position in the
- *   string to _end_ the search:
+ *  string to _end_ the search:
  *
  *    'foo'.rindex('o', 0) # => nil
  *    'foo'.rindex('o', 1) # => 1
@@ -4458,7 +4777,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    $~ #=> #<MatchData "oo">
  *
  *  Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
- *   string to _end_ the search:
+ *  string to _end_ the search:
  *
  *    'foo'.byterindex('o', 0) # => nil
  *    'foo'.byterindex('o', 1) # => 1
@@ -5084,7 +5403,9 @@ rb_str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALU
 
         if (c > e || (excl && c == e)) return beg;
         for (;;) {
-            if ((*each)(rb_enc_str_new(&c, 1, enc), arg)) break;
+            VALUE str = rb_enc_str_new(&c, 1, enc);
+            ENC_CODERANGE_SET(str, RUBY_ENC_CODERANGE_7BIT);
+            if ((*each)(str, arg)) break;
             if (!excl && c == e) break;
             c++;
             if (excl && c == e) break;
@@ -6421,7 +6742,6 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
 {
     long beg, len, vbeg, vlen;
     VALUE val;
-    rb_encoding *enc;
     int cr;
 
     rb_check_arity(argc, 2, 5);
@@ -6466,10 +6786,13 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     }
     str_check_beg_len(str, &beg, &len);
     str_check_beg_len(val, &vbeg, &vlen);
-    enc = rb_enc_check(str, val);
     str_modify_keep_cr(str);
+
+    if (RB_UNLIKELY(ENCODING_GET_INLINED(str) != ENCODING_GET_INLINED(val))) {
+        rb_enc_associate(str, rb_enc_check(str, val));
+    }
+
     rb_str_update_1(str, beg, len, val, vbeg, vlen);
-    rb_enc_associate(str, enc);
     cr = ENC_CODERANGE_AND(ENC_CODERANGE(str), ENC_CODERANGE(val));
     if (cr != ENC_CODERANGE_BROKEN)
         ENC_CODERANGE_SET(str, cr);
@@ -12075,7 +12398,7 @@ string_for_symbol(VALUE name)
     if (!RB_TYPE_P(name, T_STRING)) {
         VALUE tmp = rb_check_string_type(name);
         if (NIL_P(tmp)) {
-            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol",
+            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
                      name);
         }
         name = tmp;
@@ -12130,7 +12453,7 @@ VALUE
 rb_interned_str(const char *ptr, long len)
 {
     struct RString fake_str;
-    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), TRUE);
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII), true, false);
 }
 
 VALUE
@@ -12147,7 +12470,18 @@ rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
     }
 
     struct RString fake_str;
-    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), TRUE);
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, false);
+}
+
+VALUE
+rb_enc_literal_str(const char *ptr, long len, rb_encoding *enc)
+{
+    if (enc != NULL && UNLIKELY(rb_enc_autoload_p(enc))) {
+        rb_enc_autoload(enc);
+    }
+
+    struct RString fake_str;
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc), true, true);
 }
 
 VALUE
@@ -12155,6 +12489,23 @@ rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc)
 {
     return rb_enc_interned_str(ptr, strlen(ptr), enc);
 }
+
+#if USE_YJIT
+void
+rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
+{
+    if (RB_LIKELY(ENCODING_GET_INLINED(str) == rb_ascii8bit_encindex())) {
+        ssize_t code = RB_NUM2SSIZE(codepoint);
+
+        if (RB_LIKELY(code >= 0 && code < 0xff)) {
+            rb_str_buf_cat_byte(str, (char) code);
+            return;
+        }
+    }
+
+    rb_str_concat(str, codepoint);
+}
+#endif
 
 void
 Init_String(void)
@@ -12246,6 +12597,7 @@ Init_String(void)
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat_multi, -1);
+    rb_define_method(rb_cString, "append_as_bytes", rb_str_append_as_bytes, -1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend_multi, -1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);

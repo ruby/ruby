@@ -1,0 +1,7 @@
+def foo
+  bar do
+    module Foo;end
+    ^~~~~~ unexpected module definition in method body
+  end
+end
+

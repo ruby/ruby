@@ -116,7 +116,13 @@ extern "C" {
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
+
+    // Floats within range will be encoded without creating objects in the heap.
+    // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
+    pub fn rb_float_new(d: f64) -> VALUE;
+
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -714,6 +720,7 @@ mod manual_defs {
     pub const VM_CALL_ARGS_SIMPLE: u32 = 1 << VM_CALL_ARGS_SIMPLE_bit;
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
+    pub const VM_CALL_FORWARDING: u32 = 1 << VM_CALL_FORWARDING_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;
     pub const VM_CALL_KWARG: u32 = 1 << VM_CALL_KWARG_bit;
     pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
@@ -767,17 +774,16 @@ mod manual_defs {
 pub use manual_defs::*;
 
 /// Interned ID values for Ruby symbols and method names.
-/// See [crate::cruby::ID] and usages outside of YJIT.
+/// See [type@crate::cruby::ID] and usages outside of YJIT.
 pub(crate) mod ids {
     use std::sync::atomic::AtomicU64;
     /// Globals to cache IDs on boot. Atomic to use with relaxed ordering
-    /// so reads can happen without `unsafe`. Initialization is done
-    /// single-threaded and release-acquire on [crate::yjit::YJIT_ENABLED]
-    /// makes sure we read the cached values after initialization is done.
+    /// so reads can happen without `unsafe`. Synchronization done through
+    /// the VM lock.
     macro_rules! def_ids {
         ($(name: $ident:ident content: $str:literal)*) => {
             $(
-                #[doc = concat!("[crate::cruby::ID] for `", stringify!($str), "`")]
+                #[doc = concat!("[type@crate::cruby::ID] for `", stringify!($str), "`")]
                 pub static $ident: AtomicU64 = AtomicU64::new(0);
             )*
 
@@ -799,9 +805,6 @@ pub(crate) mod ids {
 
     def_ids! {
         name: NULL               content: b""
-        name: min                content: b"min"
-        name: max                content: b"max"
-        name: hash               content: b"hash"
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
         name: eq                 content: b"=="

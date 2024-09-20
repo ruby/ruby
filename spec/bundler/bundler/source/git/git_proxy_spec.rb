@@ -197,4 +197,18 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     expect(Pathname.new(bundled_app("canary"))).not_to exist
   end
+
+  context "URI is HTTP" do
+    let(:uri) { "http://github.com/rubygems/rubygems.git" }
+    let(:without_depth_arguments) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--single-branch"] }
+    let(:fail_clone_result) { double(Process::Status, success?: false) }
+
+    it "retries without --depth when git url is http and fails" do
+      allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+      allow(git_proxy).to receive(:capture).with([*base_clone_args, "--", uri, path.to_s], nil).and_return(["", "dumb http transport does not support shallow capabilities", fail_clone_result])
+      expect(git_proxy).to receive(:capture).with([*without_depth_arguments, "--", uri, path.to_s], nil).and_return(["", "", clone_result])
+
+      subject.checkout
+    end
+  end
 end

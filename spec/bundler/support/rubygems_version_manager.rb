@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "pathname"
-require_relative "helpers"
-require_relative "path"
+require_relative "options"
+require_relative "env"
+require_relative "subprocess"
 
 class RubygemsVersionManager
-  include Spec::Helpers
-  include Spec::Path
+  include Spec::Options
+  include Spec::Env
+  include Spec::Subprocess
 
   def initialize(source)
     @source = source
@@ -57,7 +58,7 @@ class RubygemsVersionManager
 
     cmd = [RbConfig.ruby, $0, *ARGV].compact
 
-    ENV["RUBYOPT"] = opt_add("-I#{local_copy_path.join("lib")}", opt_remove("--disable-gems", ENV["RUBYOPT"]))
+    ENV["RUBYOPT"] = opt_add("-I#{File.join(local_copy_path, "lib")}", opt_remove("--disable-gems", ENV["RUBYOPT"]))
 
     exec(ENV, *cmd)
   end
@@ -65,14 +66,14 @@ class RubygemsVersionManager
   def switch_local_copy_if_needed
     return unless local_copy_switch_needed?
 
-    sys_exec("git checkout #{target_tag}", dir: local_copy_path)
+    git("checkout #{target_tag}", local_copy_path)
 
-    ENV["RGV"] = local_copy_path.to_s
+    ENV["RGV"] = local_copy_path
   end
 
   def rubygems_unrequire_needed?
     require "rubygems"
-    !$LOADED_FEATURES.include?(local_copy_path.join("lib/rubygems.rb").to_s)
+    !$LOADED_FEATURES.include?(File.join(local_copy_path, "lib/rubygems.rb"))
   end
 
   def local_copy_switch_needed?
@@ -84,7 +85,7 @@ class RubygemsVersionManager
   end
 
   def local_copy_tag
-    sys_exec("git rev-parse --abbrev-ref HEAD", dir: local_copy_path)
+    git("rev-parse --abbrev-ref HEAD", local_copy_path)
   end
 
   def local_copy_path
@@ -94,21 +95,25 @@ class RubygemsVersionManager
   def resolve_local_copy_path
     return expanded_source if source_is_path?
 
-    rubygems_path = source_root.join("tmp/rubygems")
+    rubygems_path = File.join(source_root, "tmp/rubygems")
 
-    unless rubygems_path.directory?
-      sys_exec("git clone .. #{rubygems_path}", dir: source_root)
+    unless File.directory?(rubygems_path)
+      git("clone .. #{rubygems_path}", source_root)
     end
 
     rubygems_path
   end
 
   def source_is_path?
-    expanded_source.directory?
+    File.directory?(expanded_source)
   end
 
   def expanded_source
-    @expanded_source ||= Pathname.new(@source).expand_path(source_root)
+    @expanded_source ||= File.expand_path(@source, source_root)
+  end
+
+  def source_root
+    @source_root ||= File.expand_path(ruby_core? ? "../../.." : "../..", __dir__)
   end
 
   def resolve_target_tag

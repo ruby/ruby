@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-return if ENV["PRISM_BUILD_MINIMAL"]
-
 require_relative "test_helper"
 
 module Prism
@@ -9,7 +7,7 @@ module Prism
   # invalid memory access.
   class FuzzerTest < TestCase
     def self.snippet(name, source)
-      define_method(:"test_fuzzer_#{name}") { Prism.dump(source) }
+      define_method(:"test_fuzzer_#{name}") { Prism.profile(source) }
     end
 
     snippet "incomplete global variable", "$"
@@ -39,29 +37,31 @@ module Prism
     snippet "escaped unicode at end of file 8", '"\\u33'
     snippet "escaped unicode at end of file 9", '"\\u333'
     snippet "float suffix at end of file", "1e"
+    snippet "parameter name that is zero length", "a { |b;"
 
     snippet "statements node with multiple heredocs", <<~EOF
       for <<A + <<B
       A
       B
     EOF
+
     snippet "create a binary call node with arg before receiver", <<~EOF
       <<-A.g/{/
       A
       /, ""\\
     EOF
+
     snippet "regular expression with start and end out of order", <<~RUBY
       <<-A.g//,
       A
       /{/, ''\\
     RUBY
+
     snippet "interpolated regular expression with start and end out of order", <<~RUBY
       <<-A.g/{/,
       A
       a
       /{/, ''\\
     RUBY
-
-    snippet "parameter name that is zero length", "a { |b;"
   end
 end

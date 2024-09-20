@@ -13,6 +13,7 @@ module IRB
   # A class that wraps the current state of the irb session, including the
   # configuration of IRB.conf.
   class Context
+    ASSIGN_OPERATORS_REGEXP = Regexp.union(%w[= += -= *= /= %= **= &= |= &&= ||= ^= <<= >>=])
     # Creates a new IRB context.
     #
     # The optional +input_method+ argument:
@@ -148,25 +149,13 @@ module IRB
         @newline_before_multiline_output = true
       end
 
-      @user_aliases = IRB.conf[:COMMAND_ALIASES].dup
-      @command_aliases = @user_aliases.merge(KEYWORD_ALIASES)
+      @command_aliases = IRB.conf[:COMMAND_ALIASES].dup
     end
 
     private def term_interactive?
       return true if ENV['TEST_IRB_FORCE_INTERACTIVE']
       STDIN.tty? && ENV['TERM'] != 'dumb'
     end
-
-    # because all input will eventually be evaluated as Ruby code,
-    # command names that conflict with Ruby keywords need special workaround
-    # we can remove them once we implemented a better command system for IRB
-    KEYWORD_ALIASES = {
-      :break => :irb_break,
-      :catch => :irb_catch,
-      :next => :irb_next,
-    }.freeze
-
-    private_constant :KEYWORD_ALIASES
 
     def use_tracer=(val)
       require_relative "ext/tracer" if val
@@ -602,7 +591,6 @@ module IRB
         set_last_value(result)
       when Statement::Command
         statement.command_class.execute(self, statement.arg)
-        set_last_value(nil)
       end
 
       nil
@@ -634,6 +622,31 @@ module IRB
         result = workspace.evaluate(code, @eval_path, line_no)
       end
       result
+    end
+
+    def parse_command(code)
+      command_name, arg = code.strip.split(/\s+/, 2)
+      return unless code.lines.size == 1 && command_name
+
+      arg ||= ''
+      command = command_name.to_sym
+      # Command aliases are always command. example: $, @
+      if (alias_name = command_aliases[command])
+        return [alias_name, arg]
+      end
+
+      # Assignment-like expression is not a command
+      return if arg.start_with?(ASSIGN_OPERATORS_REGEXP) && !arg.start_with?(/==|=~/)
+
+      # Local variable have precedence over command
+      return if local_variables.include?(command)
+
+      # Check visibility
+      public_method = !!Kernel.instance_method(:public_method).bind_call(main, command) rescue false
+      private_method = !public_method && !!Kernel.instance_method(:method).bind_call(main, command) rescue false
+      if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
+        [command, arg]
+      end
     end
 
     def inspect_last_value # :nodoc:

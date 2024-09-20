@@ -52,6 +52,16 @@ describe "The rescue keyword" do
       RescueSpecs::SafeNavigationSetterCaptor.should_capture_exception
     end
 
+    it 'using a safely navigated setter method on a nil target' do
+      target = nil
+      begin
+        raise SpecificExampleException, "Raising this to be handled below"
+      rescue SpecificExampleException => target&.captured_error
+        :caught
+      end.should == :caught
+      target.should be_nil
+    end
+
     it 'using a setter method' do
       RescueSpecs::SetterCaptor.should_capture_exception
     end

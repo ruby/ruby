@@ -171,7 +171,9 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 	      ptrdiff_t n, size_t maxsize)
 {
 	size_t len = s - *start;
-	size_t nlen = len + n * 2;
+	size_t need = len + n * 2;
+	size_t nlen = rb_str_capacity(ftime);
+	while (nlen < need) nlen <<= 1;
 
 	if (nlen < len || nlen > maxsize) {
 		return 0;
@@ -930,6 +932,7 @@ rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 	    VALUE time, const struct vtm *vtm, VALUE timev, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
+	ENC_CODERANGE_CLEAR(result);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
 					 time, vtm, timev, NULL, gmt,
 					 strftime_size_limit(format_len));
@@ -940,6 +943,7 @@ rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
 		     VALUE time, const struct vtm *vtm, struct timespec *ts, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
+	ENC_CODERANGE_CLEAR(result);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
 					 time, vtm, Qnil, ts, gmt,
 					 strftime_size_limit(format_len));

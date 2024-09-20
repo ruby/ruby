@@ -2930,7 +2930,7 @@ utime_failed(struct apply_arg *aa)
 # elif defined(__APPLE__) && \
     (!defined(MAC_OS_X_VERSION_13_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_13_0))
 
-#   if defined(__has_attribute) && __has_attribute(availability)
+#   if __has_attribute(availability) && __has_warning("-Wunguarded-availability-new")
 typedef int utimensat_func(int, const char *, const struct timespec [2], int);
 
 RBIMPL_WARNING_PUSH()
@@ -2945,7 +2945,7 @@ RBIMPL_WARNING_POP()
 #   define utimensat rb_utimensat()
 #   else /* __API_AVAILABLE macro does nothing on gcc */
 __attribute__((weak)) int utimensat(int, const char *, const struct timespec [2], int);
-#   endif /* defined(__has_attribute) && __has_attribute(availability) */
+#   endif /* utimesat availability */
 # endif /* __APPLE__ && < MAC_OS_X_VERSION_13_0 */
 
 static int
@@ -3694,12 +3694,16 @@ VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
 #ifdef HAVE_PWD_H
-    struct passwd *pwPtr;
+    VALUE dirname = rb_getpwdirnam_for_login(user);
+    if (dirname == Qnil) {
+        rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
+    }
+    const char *dir = RSTRING_PTR(dirname);
 #else
     extern char *getlogin(void);
     const char *pwPtr = 0;
+    const char *login;
     # define endpwent() ((void)0)
-#endif
     const char *dir, *username = RSTRING_PTR(user);
     rb_encoding *enc = rb_enc_get(user);
 #if defined _WIN32
@@ -3711,21 +3715,13 @@ rb_home_dir_of(VALUE user, VALUE result)
         dir = username = RSTRING_PTR(rb_str_conv_enc(user, enc, fsenc));
     }
 
-#ifdef HAVE_PWD_H
-    pwPtr = getpwnam(username);
-#else
-    if (strcasecmp(username, getlogin()) == 0)
+    if ((login = getlogin()) && strcasecmp(username, login) == 0)
         dir = pwPtr = getenv("HOME");
-#endif
     if (!pwPtr) {
-        endpwent();
         rb_raise(rb_eArgError, "user %"PRIsVALUE" doesn't exist", user);
     }
-#ifdef HAVE_PWD_H
-    dir = pwPtr->pw_dir;
 #endif
     copy_home_path(result, dir);
-    endpwent();
     return result;
 }
 
@@ -5326,16 +5322,12 @@ rb_thread_flock(void *data)
  *  Returns `false` if `File::LOCK_NB` is specified and the operation would have blocked;
  *  otherwise returns `0`.
  *
- *  <br>
- *
  *  | Constant        | Lock         | Effect
- *  |-----------------|--------------|-------------------------------------------------------------------
- *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.
- *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>.
- *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.
- *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.
- *
- *  <br>
+ *  |-----------------|--------------|-----------------------------------------------------------------------------------------------------------------|
+ *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.                                               |
+ *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>. |
+ *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.                                     |
+ *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.                                                                   |
  *
  *  Example:
  *

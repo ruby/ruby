@@ -124,7 +124,7 @@ bsock_close_read(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    shutdown(fptr->fd, 0);
+    shutdown(fptr->fd, SHUT_RD);
     if (!(fptr->mode & FMODE_WRITABLE)) {
         return rb_io_close(sock);
     }
@@ -157,7 +157,7 @@ bsock_close_write(VALUE sock)
     if (!(fptr->mode & FMODE_READABLE)) {
         return rb_io_close(sock);
     }
-    shutdown(fptr->fd, 1);
+    shutdown(fptr->fd, SHUT_WR);
     fptr->mode &= ~FMODE_WRITABLE;
 
     return Qnil;

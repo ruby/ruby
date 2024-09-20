@@ -282,31 +282,31 @@ class TestInteger < Test::Unit::TestCase
 
   def test_upto
     a = []
-    1.upto(3) {|x| a << x }
+    assert_equal(1, 1.upto(3) {|x| a << x })
     assert_equal([1, 2, 3], a)
 
     a = []
-    1.upto(0) {|x| a << x }
+    assert_equal(1, 1.upto(0) {|x| a << x })
     assert_equal([], a)
 
     y = 2**30 - 1
     a = []
-    y.upto(y+2) {|x| a << x }
+    assert_equal(y, y.upto(y+2) {|x| a << x })
     assert_equal([y, y+1, y+2], a)
   end
 
   def test_downto
     a = []
-    -1.downto(-3) {|x| a << x }
+    assert_equal(-1, -1.downto(-3) {|x| a << x })
     assert_equal([-1, -2, -3], a)
 
     a = []
-    1.downto(2) {|x| a << x }
+    assert_equal(1, 1.downto(2) {|x| a << x })
     assert_equal([], a)
 
     y = -(2**30)
     a = []
-    y.downto(y-2) {|x| a << x }
+    assert_equal(y, y.downto(y-2) {|x| a << x })
     assert_equal([y, y-1, y-2], a)
   end
 
@@ -465,6 +465,10 @@ class TestInteger < Test::Unit::TestCase
 
     assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1111, 1111_1111_1111_1111_1111_1111_1111_1111.floor(1))
     assert_int_equal(10**400, (10**400).floor(1))
+
+    assert_int_equal(-10000000000, -1.floor(-10), "[Bug #20654]")
+    assert_int_equal(-100000000000000000000, -1.floor(-20), "[Bug #20654]")
+    assert_int_equal(-100000000000000000000000000000000000000000000000000, -1.floor(-50), "[Bug #20654]")
   end
 
   def test_ceil
@@ -493,6 +497,10 @@ class TestInteger < Test::Unit::TestCase
 
     assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1111, 1111_1111_1111_1111_1111_1111_1111_1111.ceil(1))
     assert_int_equal(10**400, (10**400).ceil(1))
+
+    assert_int_equal(10000000000, 1.ceil(-10), "[Bug #20654]")
+    assert_int_equal(100000000000000000000, 1.ceil(-20), "[Bug #20654]")
+    assert_int_equal(100000000000000000000000000000000000000000000000000, 1.ceil(-50), "[Bug #20654]")
   end
 
   def test_truncate

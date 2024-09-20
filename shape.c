@@ -32,11 +32,13 @@
 
 #define REDBLACK_CACHE_SIZE (SHAPE_BUFFER_SIZE * 32)
 
+/* This depends on that the allocated memory by Ruby's allocator or
+ * mmap is not located at an odd address. */
 #define SINGLE_CHILD_TAG 0x1
-#define TAG_SINGLE_CHILD(x) (struct rb_id_table *)((uintptr_t)x | SINGLE_CHILD_TAG)
+#define TAG_SINGLE_CHILD(x) (struct rb_id_table *)((uintptr_t)(x) | SINGLE_CHILD_TAG)
 #define SINGLE_CHILD_MASK (~((uintptr_t)SINGLE_CHILD_TAG))
-#define SINGLE_CHILD_P(x) (((uintptr_t)x) & SINGLE_CHILD_TAG)
-#define SINGLE_CHILD(x) (rb_shape_t *)((uintptr_t)x & SINGLE_CHILD_MASK)
+#define SINGLE_CHILD_P(x) ((uintptr_t)(x) & SINGLE_CHILD_TAG)
+#define SINGLE_CHILD(x) (rb_shape_t *)((uintptr_t)(x) & SINGLE_CHILD_MASK)
 #define ANCESTOR_CACHE_THRESHOLD 10
 #define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
@@ -98,6 +100,15 @@ redblack_find(redblack_node_t * tree, ID key)
     }
 }
 
+static inline rb_shape_t *
+redblack_value(redblack_node_t * node)
+{
+    // Color is stored in the bottom bit of the shape pointer
+    // Mask away the bit so we get the actual pointer back
+    return (rb_shape_t *)((uintptr_t)node->value & ~(uintptr_t)1);
+}
+
+#ifdef HAVE_MMAP
 static inline char
 redblack_color(redblack_node_t * node)
 {
@@ -110,15 +121,6 @@ redblack_red_p(redblack_node_t * node)
     return redblack_color(node) == RED;
 }
 
-static inline rb_shape_t *
-redblack_value(redblack_node_t * node)
-{
-    // Color is stored in the bottom bit of the shape pointer
-    // Mask away the bit so we get the actual pointer back
-    return (rb_shape_t *)((uintptr_t)node->value & (((uintptr_t)-1) - 1));
-}
-
-#ifdef HAVE_MMAP
 static redblack_id_t
 redblack_id_for(redblack_node_t * node)
 {
@@ -696,8 +698,8 @@ rb_shape_get_next_iv_shape(rb_shape_t* shape, ID id)
     return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
 }
 
-rb_shape_t *
-rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
+static inline rb_shape_t *
+shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
@@ -730,7 +732,7 @@ rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
 
         if (variation_created) {
             RCLASS_EXT(klass)->variation_count++;
-            if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
+            if (emit_warnings && rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
                 if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
                     rb_category_warn(
                         RB_WARN_CATEGORY_PERFORMANCE,
@@ -745,6 +747,18 @@ rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
     }
 
     return new_shape;
+}
+
+rb_shape_t *
+rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
+{
+    return shape_get_next(shape, obj, id, true);
+}
+
+rb_shape_t *
+rb_shape_get_next_no_warnings(rb_shape_t *shape, VALUE obj, ID id)
+{
+    return shape_get_next(shape, obj, id, false);
 }
 
 // Same as rb_shape_get_iv_index, but uses a provided valid shape id and index

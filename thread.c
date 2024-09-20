@@ -197,6 +197,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     if (blocking_region_begin(th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
         /* always return true unless fail_if_interrupted */ \
         !only_if_constant(fail_if_interrupted, TRUE)) { \
+        /* Important that this is inlined into the macro, and not part of \
+         * blocking_region_begin - see bug #20493 */ \
+        RB_VM_SAVE_MACHINE_CONTEXT(th); \
+        thread_sched_to_waiting(TH_SCHED(th), th); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -1482,9 +1486,6 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
         rb_ractor_blocking_threads_inc(th->ractor, __FILE__, __LINE__);
 
         RUBY_DEBUG_LOG("thread_id:%p", (void *)th->nt->thread_id);
-
-        RB_VM_SAVE_MACHINE_CONTEXT(th);
-        thread_sched_to_waiting(TH_SCHED(th), th);
         return TRUE;
     }
     else {
@@ -1540,10 +1541,12 @@ rb_nogvl(void *(*func)(void *), void *data1,
         }
     }
 
+    rb_vm_t *volatile saved_vm = vm;
     BLOCKING_REGION(th, {
         val = func(data1);
         saved_errno = rb_errno();
     }, ubf, data2, flags & RB_NOGVL_INTR_FAIL);
+    vm = saved_vm;
 
     if (is_main_thread) vm->ubf_async_safe = 0;
 
@@ -1695,7 +1698,12 @@ thread_io_wake_pending_closer(struct waiting_fd *wfd)
     RB_VM_LOCK_LEAVE();
 
     if (has_waiter) {
-        rb_thread_wakeup(wfd->busy->closing_thread);
+        rb_thread_t *th = rb_thread_ptr(wfd->busy->closing_thread);
+        if (th->scheduler != Qnil) {
+            rb_fiber_scheduler_unblock(th->scheduler, wfd->busy->closing_thread, wfd->busy->closing_fiber);
+        } else {
+            rb_thread_wakeup(wfd->busy->closing_thread);
+        }
         rb_mutex_unlock(wfd->busy->wakeup_mutex);
     }
 }
@@ -1767,8 +1775,8 @@ rb_thread_mn_schedulable(VALUE thval)
 VALUE
 rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events)
 {
-    rb_execution_context_t * volatile ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_execution_context_t *volatile ec = GET_EC();
+    rb_thread_t *volatile th = rb_ec_thread_ptr(ec);
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
@@ -1789,21 +1797,25 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     {
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
             BLOCKING_REGION(waiting_fd.th, {
                 val = func(data1);
                 saved_errno = errno;
             }, ubf_select, waiting_fd.th, FALSE);
 
+            th = rb_ec_thread_ptr(ec);
             if (events &&
                 blocking_call_retryable_p((int)val, saved_errno) &&
                 thread_io_wait_events(th, fd, events, NULL)) {
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
                 goto retry;
             }
+            state = saved_state;
         }
         EC_POP_TAG();
 
+        th = rb_ec_thread_ptr(ec);
         th->mn_schedulable = prev_mn_schedulable;
     }
     /*
@@ -1893,6 +1905,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     /* leave from Ruby world: You can not access Ruby values, etc. */
     int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
     RUBY_ASSERT_ALWAYS(released);
+    RB_VM_SAVE_MACHINE_CONTEXT(th);
+    thread_sched_to_waiting(TH_SCHED(th), th);
     return r;
 }
 
@@ -2205,30 +2219,6 @@ handle_interrupt_arg_check_i(VALUE key, VALUE val, VALUE args)
  * While we are ignoring the RuntimeError exception, it's safe to write our
  * resource allocation code. Then, the ensure block is where we can safely
  * deallocate your resources.
- *
- * ==== Guarding from Timeout::Error
- *
- * In the next example, we will guard from the Timeout::Error exception. This
- * will help prevent from leaking resources when Timeout::Error exceptions occur
- * during normal ensure clause. For this example we use the help of the
- * standard library Timeout, from lib/timeout.rb
- *
- *   require 'timeout'
- *   Thread.handle_interrupt(Timeout::Error => :never) {
- *     timeout(10){
- *       # Timeout::Error doesn't occur here
- *       Thread.handle_interrupt(Timeout::Error => :on_blocking) {
- *         # possible to be killed by Timeout::Error
- *         # while blocking operation
- *       }
- *       # Timeout::Error doesn't occur here
- *     }
- *   }
- *
- * In the first part of the +timeout+ block, we can rely on Timeout::Error being
- * ignored. Then in the <code>Timeout::Error => :on_blocking</code> block, any
- * operation that will block the calling thread is susceptible to a
- * Timeout::Error exception being raised.
  *
  * ==== Stack control settings
  *
@@ -2640,6 +2630,7 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
 
     has_any = !ccan_list_empty(&busy->pending_fd_users);
     busy->closing_thread = rb_thread_current();
+    busy->closing_fiber = rb_fiber_current();
     wakeup_mutex = Qnil;
     if (has_any) {
         wakeup_mutex = rb_mutex_new();
@@ -3747,12 +3738,13 @@ static VALUE
 rb_thread_variable_get(VALUE thread, VALUE key)
 {
     VALUE locals;
+    VALUE symbol = rb_to_symbol(key);
 
     if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
         return Qnil;
     }
     locals = rb_thread_local_storage(thread);
-    return rb_hash_aref(locals, rb_to_symbol(key));
+    return rb_hash_aref(locals, symbol);
 }
 
 /*
@@ -3903,13 +3895,14 @@ static VALUE
 rb_thread_variable_p(VALUE thread, VALUE key)
 {
     VALUE locals;
+    VALUE symbol = rb_to_symbol(key);
 
     if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
         return Qfalse;
     }
     locals = rb_thread_local_storage(thread);
 
-    return RBOOL(rb_hash_lookup(locals, rb_to_symbol(key)) != Qnil);
+    return RBOOL(rb_hash_lookup(locals, symbol) != Qnil);
 }
 
 /*
@@ -4205,9 +4198,10 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #endif
 
 static int
-wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
+wait_retryable(volatile int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
 {
-    if (*result < 0) {
+    int r = *result;
+    if (r < 0) {
         switch (errnum) {
           case EINTR:
 #ifdef ERESTART
@@ -4221,7 +4215,7 @@ wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
         }
         return FALSE;
     }
-    else if (*result == 0) {
+    else if (r == 0) {
         /* check for spurious wakeup */
         if (rel) {
             return !hrtime_update_expire(rel, end);
@@ -4259,11 +4253,12 @@ static VALUE
 do_select(VALUE p)
 {
     struct select_set *set = (struct select_set *)p;
-    int result = 0;
+    volatile int result = 0;
     int lerrno;
     rb_hrtime_t *to, rel, end = 0;
 
     timeout_prepare(&to, &rel, &end, set->timeout);
+    volatile rb_hrtime_t endtime = end;
 #define restore_fdset(dst, src) \
     ((dst) ? rb_fd_dup(dst, src) : (void)0)
 #define do_select_update() \
@@ -4279,15 +4274,15 @@ do_select(VALUE p)
             struct timeval tv;
 
             if (!RUBY_VM_INTERRUPTED(set->th->ec)) {
-               result = native_fd_select(set->max,
-                                         set->rset, set->wset, set->eset,
-                                         rb_hrtime2timeval(&tv, to), set->th);
+                result = native_fd_select(set->max,
+                                          set->rset, set->wset, set->eset,
+                                          rb_hrtime2timeval(&tv, to), set->th);
                 if (result < 0) lerrno = errno;
             }
         }, ubf_select, set->th, TRUE);
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
-    } while (wait_retryable(&result, lerrno, to, end) && do_select_update());
+    } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
     if (result < 0) {
         errno = lerrno;
@@ -4349,6 +4344,23 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 #  define POLLERR_SET (0)
 #endif
 
+static int
+wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t nfds,
+                                   rb_hrtime_t *const to, volatile int *lerrno)
+{
+    struct timespec ts;
+    volatile int result = 0;
+
+    *lerrno = 0;
+    BLOCKING_REGION(th, {
+        if (!RUBY_VM_INTERRUPTED(th->ec)) {
+            result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
+            if (result < 0) *lerrno = errno;
+        }
+    }, ubf_select, th, TRUE);
+    return result;
+}
+
 /*
  * returns a mask of events
  */
@@ -4360,7 +4372,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         .events = (short)events,
         .revents = 0,
     }};
-    int result = 0;
+    volatile int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
     enum ruby_tag_type state;
@@ -4384,17 +4396,8 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
             timeout_prepare(&to, &rel, &end, timeout);
             do {
-                nfds = 1;
-
-                lerrno = 0;
-                BLOCKING_REGION(wfd.th, {
-                    struct timespec ts;
-
-                    if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
-                        result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
-                        if (result < 0) lerrno = errno;
-                    }
-                }, ubf_select, wfd.th, TRUE);
+                nfds = numberof(fds);
+                result = wait_for_single_fd_blocking_region(wfd.th, fds, nfds, to, &lerrno);
 
                 RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
             } while (wait_retryable(&result, lerrno, to, end));
@@ -4530,7 +4533,12 @@ void
 rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wdangling-pointer")
+COMPILER_WARNING_IGNORED(-Wdangling-pointer);
+#endif
     *stack_end_p = &stack_end;
+COMPILER_WARNING_POP
 }
 #endif
 

@@ -257,7 +257,7 @@ pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
 /// BRK - create a breakpoint
 pub fn brk(cb: &mut CodeBlock, imm16: A64Opnd) {
     let bytes: [u8; 4] = match imm16 {
-        A64Opnd::None => Breakpoint::brk(0).into(),
+        A64Opnd::None => Breakpoint::brk(0xf000).into(),
         A64Opnd::UImm(imm16) => {
             assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
             Breakpoint::brk(imm16 as u16).into()
@@ -1335,7 +1335,7 @@ mod tests {
 
     #[test]
     fn test_brk_none() {
-        check_bytes("000020d4", |cb| brk(cb, A64Opnd::None));
+        check_bytes("00003ed4", |cb| brk(cb, A64Opnd::None));
     }
 
     #[test]

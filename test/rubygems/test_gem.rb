@@ -1562,21 +1562,20 @@ class TestGem < Gem::TestCase
     assert_equal m1.gem_dir, File.join(Gem.user_dir, "gems", "m-1")
 
     tests = [
-      [:dir0, [Gem.dir, Gem.user_dir], m0],
-      [:dir1, [Gem.user_dir, Gem.dir], m1],
+      [:dir0, [Gem.dir, Gem.user_dir]],
+      [:dir1, [Gem.user_dir, Gem.dir]],
     ]
 
-    tests.each do |name, paths, expected|
+    tests.each do |name, paths|
       Gem.use_paths paths.first, paths
-      Gem::Specification.reset
       Gem.searcher = nil
 
       assert_equal Gem::Dependency.new("m","1").to_specs,
                    Gem::Dependency.new("m","1").to_specs.sort
 
       assert_equal \
-        [expected.gem_dir],
-        Gem::Dependency.new("m","1").to_specs.map(&:gem_dir).sort,
+        [m0.gem_dir, m1.gem_dir],
+        Gem::Dependency.new("m","1").to_specs.map(&:gem_dir).uniq.sort,
         "Wrong specs for #{name}"
 
       spec = Gem::Dependency.new("m","1").to_spec
@@ -1616,9 +1615,11 @@ class TestGem < Gem::TestCase
 
     Gem.use_paths Gem.dir, [Gem.dir, Gem.user_dir]
 
+    spec = Gem::Dependency.new("m", "1").to_spec
+
     assert_equal \
       File.join(Gem.dir, "gems", "m-1"),
-      Gem::Dependency.new("m","1").to_spec.gem_dir,
+      spec.gem_dir,
       "Wrong spec selected"
   end
 

@@ -100,7 +100,12 @@ sym_type(VALUE sym)
 #define is_class_sym(sym) (sym_type(sym)==ID_CLASS)
 #define is_junk_sym(sym) (sym_type(sym)==ID_JUNK)
 
-RUBY_FUNC_EXPORTED const uint_least32_t ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
+#ifndef RIPPER
+RUBY_FUNC_EXPORTED
+#else
+RUBY_EXTERN
+#endif
+const uint_least32_t ruby_global_name_punct_bits[(0x7e - 0x20 + 31) / 32];
 
 static inline int
 is_global_name_punct(const int c)

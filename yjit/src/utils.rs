@@ -51,7 +51,7 @@ impl IntoUsize for u8 {
     }
 }
 
-/// The [Into<u64>] Rust does not provide.
+/// The `Into<u64>` Rust does not provide.
 /// Convert to u64 with assurance that the value is preserved.
 /// Currently, `usize::BITS == 64` holds for all platforms we support.
 pub(crate) trait IntoU64 {
@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_print_int() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new_without_iseq();
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_int(&mut asm, Opnd::Imm(42));
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn test_print_str() {
-        let mut asm = Assembler::new();
+        let mut asm = Assembler::new_without_iseq();
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_str(&mut asm, "Hello, world!");

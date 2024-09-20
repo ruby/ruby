@@ -2,32 +2,34 @@
 
 require_relative "command"
 require_relative "command/internal_helpers"
-require_relative "command/context"
-require_relative "command/exit"
-require_relative "command/force_exit"
-require_relative "command/chws"
-require_relative "command/pushws"
-require_relative "command/subirb"
-require_relative "command/load"
-require_relative "command/debug"
-require_relative "command/edit"
+require_relative "command/backtrace"
 require_relative "command/break"
 require_relative "command/catch"
-require_relative "command/next"
-require_relative "command/delete"
-require_relative "command/step"
+require_relative "command/cd"
+require_relative "command/chws"
+require_relative "command/context"
 require_relative "command/continue"
+require_relative "command/debug"
+require_relative "command/delete"
+require_relative "command/disable_irb"
+require_relative "command/edit"
+require_relative "command/exit"
 require_relative "command/finish"
-require_relative "command/backtrace"
-require_relative "command/info"
+require_relative "command/force_exit"
 require_relative "command/help"
-require_relative "command/show_doc"
+require_relative "command/history"
+require_relative "command/info"
 require_relative "command/irb_info"
+require_relative "command/load"
 require_relative "command/ls"
 require_relative "command/measure"
+require_relative "command/next"
+require_relative "command/pushws"
+require_relative "command/show_doc"
 require_relative "command/show_source"
+require_relative "command/step"
+require_relative "command/subirb"
 require_relative "command/whereami"
-require_relative "command/history"
 
 module IRB
   module Command
@@ -179,9 +181,15 @@ module IRB
       [:edit, NO_OVERRIDE]
     )
 
-    _register_with_aliases(:irb_break, Command::Break)
-    _register_with_aliases(:irb_catch, Command::Catch)
-    _register_with_aliases(:irb_next, Command::Next)
+    _register_with_aliases(:irb_break, Command::Break,
+      [:break, OVERRIDE_ALL]
+    )
+    _register_with_aliases(:irb_catch, Command::Catch,
+      [:catch, OVERRIDE_PRIVATE_ONLY]
+    )
+    _register_with_aliases(:irb_next, Command::Next,
+      [:next, OVERRIDE_ALL]
+    )
     _register_with_aliases(:irb_delete, Command::Delete,
       [:delete, NO_OVERRIDE]
     )
@@ -235,6 +243,12 @@ module IRB
       [:history, NO_OVERRIDE],
       [:hist, NO_OVERRIDE]
     )
+
+    _register_with_aliases(:irb_disable_irb, Command::DisableIrb,
+      [:disable_irb, NO_OVERRIDE]
+    )
+
+    register(:cd, Command::CD)
   end
 
   ExtendCommand = Command
@@ -251,10 +265,12 @@ module IRB
     # Deprecated. Doesn't have any effect.
     @EXTEND_COMMANDS = []
 
-    # Drepcated. Use Command.regiser instead.
-    def self.def_extend_command(cmd_name, cmd_class, _, *aliases)
-      Command._register_with_aliases(cmd_name, cmd_class, *aliases)
-      Command.class_variable_set(:@@command_override_policies, nil)
+    class << self
+      # Drepcated. Use Command.regiser instead.
+      def def_extend_command(cmd_name, cmd_class, _, *aliases)
+        Command._register_with_aliases(cmd_name, cmd_class, *aliases)
+        Command.class_variable_set(:@@command_override_policies, nil)
+      end
     end
   end
 end

@@ -101,6 +101,27 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_getbyte
+    ssl_pair {|s1, s2|
+      s1 << "a"
+      assert_equal(97, s2.getbyte)
+    }
+  end
+
+  def test_readbyte
+    ssl_pair {|s1, s2|
+      s1 << "b"
+      assert_equal(98, s2.readbyte)
+    }
+  end
+
+  def test_readbyte_eof
+    ssl_pair {|s1, s2|
+      s2.close
+      assert_raise(EOFError) { s1.readbyte }
+    }
+  end
+
   def test_gets
     ssl_pair {|s1, s2|
       s1 << "abc\n\n$def123ghi"

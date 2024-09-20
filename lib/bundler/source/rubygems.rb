@@ -17,11 +17,13 @@ module Bundler
         @remotes = []
         @dependency_names = []
         @allow_remote = false
-        @allow_cached = options["allow_cached"] || false
+        @allow_cached = false
         @allow_local = options["allow_local"] || false
         @checksum_store = Checksum::Store.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+
+        @lockfile_remotes = @remotes if options["from_lockfile"]
       end
 
       def caches
@@ -50,10 +52,11 @@ module Bundler
       end
 
       def cached!
+        return unless File.exist?(cache_path)
+
         return if @allow_cached
 
         @specs = nil
-        @allow_local = true
         @allow_cached = true
       end
 
@@ -90,13 +93,13 @@ module Bundler
 
       def self.from_lock(options)
         options["remotes"] = Array(options.delete("remote")).reverse
-        new(options)
+        new(options.merge("from_lockfile" => true))
       end
 
       def to_lock
         out = String.new("GEM\n")
-        remotes.reverse_each do |remote|
-          out << "  remote: #{remove_auth remote}\n"
+        lockfile_remotes.reverse_each do |remote|
+          out << "  remote: #{remote}\n"
         end
         out << "  specs:\n"
       end
@@ -135,20 +138,17 @@ module Bundler
           index = @allow_remote ? remote_specs.dup : Index.new
           index.merge!(cached_specs) if @allow_cached
           index.merge!(installed_specs) if @allow_local
+
+          # complete with default specs, only if not already available in the
+          # index through remote, cached, or installed specs
+          index.use(default_specs) if @allow_local
+
           index
         end
       end
 
       def install(spec, options = {})
-        force = options[:force]
-        ensure_builtin_gems_cached = options[:ensure_builtin_gems_cached]
-
-        if ensure_builtin_gems_cached && spec.default_gem? && !cached_path(spec)
-          cached_built_in_gem(spec) unless spec.remote
-          force = true
-        end
-
-        if installed?(spec) && !force
+        if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
           print_using_message "Using #{version_message(spec, options[:previous_spec])}"
           return nil # no post-install message
         end
@@ -206,6 +206,7 @@ module Bundler
 
         spec.full_gem_path = installed_spec.full_gem_path
         spec.loaded_from = installed_spec.loaded_from
+        spec.base_dir = installed_spec.base_dir
 
         spec.post_install_message
       end
@@ -221,12 +222,13 @@ module Bundler
         raise InstallError, e.message
       end
 
-      def cached_built_in_gem(spec)
-        cached_path = cached_path(spec)
-        if cached_path.nil?
+      def cached_built_in_gem(spec, local: false)
+        cached_path = cached_gem(spec)
+        if cached_path.nil? && !local
           remote_spec = remote_specs.search(spec).first
           if remote_spec
             cached_path = fetch_gem(remote_spec)
+            spec.remote = remote_spec.remote
           else
             Bundler.ui.warn "#{spec.full_name} is built in to Ruby, and can't be cached because your Gemfile doesn't have any sources that contain it."
           end
@@ -323,14 +325,6 @@ module Bundler
       end
 
       def cached_gem(spec)
-        if spec.default_gem?
-          cached_built_in_gem(spec)
-        else
-          cached_path(spec)
-        end
-      end
-
-      def cached_path(spec)
         global_cache_path = download_cache_path(spec)
         caches << global_cache_path if global_cache_path
 
@@ -361,12 +355,21 @@ module Bundler
 
       def installed_specs
         @installed_specs ||= Index.build do |idx|
-          Bundler.rubygems.all_specs.reverse_each do |spec|
+          Bundler.rubygems.installed_specs.reverse_each do |spec|
             spec.source = self
             if Bundler.rubygems.spec_missing_extensions?(spec, false)
               Bundler.ui.debug "Source #{self} is ignoring #{spec} because it is missing extensions"
               next
             end
+            idx << spec
+          end
+        end
+      end
+
+      def default_specs
+        @default_specs ||= Index.build do |idx|
+          Bundler.rubygems.default_specs.each do |spec|
+            spec.source = self
             idx << spec
           end
         end
@@ -455,6 +458,10 @@ module Bundler
       end
 
       private
+
+      def lockfile_remotes
+        @lockfile_remotes || credless_remotes
+      end
 
       # Checks if the requested spec exists in the global cache. If it does,
       # we copy it to the download path, and if it does not, we download it.

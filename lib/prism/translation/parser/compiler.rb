@@ -90,7 +90,11 @@ module Prism
           end
 
           if node.constant
-            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visited, nil), token(node.closing_loc))
+            if visited.empty?
+              builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(token(node.opening_loc), visited, token(node.closing_loc)), token(node.closing_loc))
+            else
+              builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visited, nil), token(node.closing_loc))
+            end
           else
             builder.array_pattern(token(node.opening_loc), visited, token(node.closing_loc))
           end
@@ -105,38 +109,46 @@ module Prism
         # { a: 1 }
         #   ^^^^
         def visit_assoc_node(node)
+          key = node.key
+
           if in_pattern
             if node.value.is_a?(ImplicitNode)
-              if node.key.is_a?(SymbolNode)
-                builder.match_hash_var([node.key.unescaped, srange(node.key.location)])
+              if key.is_a?(SymbolNode)
+                if key.opening.nil?
+                  builder.match_hash_var([key.unescaped, srange(key.location)])
+                else
+                  builder.match_hash_var_from_str(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.value_loc)])], token(key.closing_loc))
+                end
               else
-                builder.match_hash_var_from_str(token(node.key.opening_loc), visit_all(node.key.parts), token(node.key.closing_loc))
+                builder.match_hash_var_from_str(token(key.opening_loc), visit_all(key.parts), token(key.closing_loc))
               end
+            elsif key.opening.nil?
+              builder.pair_keyword([key.unescaped, srange(key.location)], visit(node.value))
             else
-              builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
+              builder.pair_quoted(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.value_loc)])], token(key.closing_loc), visit(node.value))
             end
           elsif node.value.is_a?(ImplicitNode)
             if (value = node.value.value).is_a?(LocalVariableReadNode)
               builder.pair_keyword(
-                [node.key.unescaped, srange(node.key)],
-                builder.ident([value.name, srange(node.key.value_loc)]).updated(:lvar)
+                [key.unescaped, srange(key)],
+                builder.ident([value.name, srange(key.value_loc)]).updated(:lvar)
               )
             else
-              builder.pair_label([node.key.unescaped, srange(node.key.location)])
+              builder.pair_label([key.unescaped, srange(key.location)])
             end
           elsif node.operator_loc
-            builder.pair(visit(node.key), token(node.operator_loc), visit(node.value))
-          elsif node.key.is_a?(SymbolNode) && node.key.opening_loc.nil?
-            builder.pair_keyword([node.key.unescaped, srange(node.key.location)], visit(node.value))
+            builder.pair(visit(key), token(node.operator_loc), visit(node.value))
+          elsif key.is_a?(SymbolNode) && key.opening_loc.nil?
+            builder.pair_keyword([key.unescaped, srange(key.location)], visit(node.value))
           else
             parts =
-              if node.key.is_a?(SymbolNode)
-                [builder.string_internal([node.key.unescaped, srange(node.key.value_loc)])]
+              if key.is_a?(SymbolNode)
+                [builder.string_internal([key.unescaped, srange(key.value_loc)])]
               else
-                visit_all(node.key.parts)
+                visit_all(key.parts)
               end
 
-            builder.pair_quoted(token(node.key.opening_loc), parts, token(node.key.closing_loc), visit(node.value))
+            builder.pair_quoted(token(key.opening_loc), parts, token(key.closing_loc), visit(node.value))
           end
         end
 
@@ -146,7 +158,9 @@ module Prism
         # { **foo }
         #   ^^^^^
         def visit_assoc_splat_node(node)
-          if node.value.nil? && forwarding.include?(:**)
+          if in_pattern
+            builder.match_rest(token(node.operator_loc), token(node.value&.location))
+          elsif node.value.nil? && forwarding.include?(:**)
             builder.forwarded_kwrestarg(token(node.operator_loc))
           else
             builder.kwsplat(token(node.operator_loc), visit(node.value))
@@ -167,7 +181,7 @@ module Prism
           if (rescue_clause = node.rescue_clause)
             begin
               find_start_offset = (rescue_clause.reference&.location || rescue_clause.exceptions.last&.location || rescue_clause.keyword_loc).end_offset
-              find_end_offset = (rescue_clause.statements&.location&.start_offset || rescue_clause.consequent&.location&.start_offset || (find_start_offset + 1))
+              find_end_offset = (rescue_clause.statements&.location&.start_offset || rescue_clause.subsequent&.location&.start_offset || (find_start_offset + 1))
 
               rescue_bodies << builder.rescue_body(
                 token(rescue_clause.keyword_loc),
@@ -177,7 +191,7 @@ module Prism
                 srange_find(find_start_offset, find_end_offset, [";"]),
                 visit(rescue_clause.statements)
               )
-            end until (rescue_clause = rescue_clause.consequent).nil?
+            end until (rescue_clause = rescue_clause.subsequent).nil?
           end
 
           begin_body =
@@ -396,8 +410,8 @@ module Prism
             token(node.case_keyword_loc),
             visit(node.predicate),
             visit_all(node.conditions),
-            token(node.consequent&.else_keyword_loc),
-            visit(node.consequent),
+            token(node.else_clause&.else_keyword_loc),
+            visit(node.else_clause),
             token(node.end_keyword_loc)
           )
         end
@@ -409,8 +423,8 @@ module Prism
             token(node.case_keyword_loc),
             visit(node.predicate),
             visit_all(node.conditions),
-            token(node.consequent&.else_keyword_loc),
-            visit(node.consequent),
+            token(node.else_clause&.else_keyword_loc),
+            visit(node.else_clause),
             token(node.end_keyword_loc)
           )
         end
@@ -844,8 +858,8 @@ module Prism
               visit(node.predicate),
               token(node.then_keyword_loc),
               visit(node.statements),
-              token(node.consequent.else_keyword_loc),
-              visit(node.consequent)
+              token(node.subsequent.else_keyword_loc),
+              visit(node.subsequent)
             )
           elsif node.if_keyword_loc.start_offset == node.location.start_offset
             builder.condition(
@@ -854,16 +868,16 @@ module Prism
               if node.then_keyword_loc
                 token(node.then_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.consequent&.location || node.end_keyword_loc).start_offset, [";"])
+                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.subsequent&.location || node.end_keyword_loc).start_offset, [";"])
               end,
               visit(node.statements),
-              case node.consequent
+              case node.subsequent
               when IfNode
-                token(node.consequent.if_keyword_loc)
+                token(node.subsequent.if_keyword_loc)
               when ElseNode
-                token(node.consequent.else_keyword_loc)
+                token(node.subsequent.else_keyword_loc)
               end,
-              visit(node.consequent),
+              visit(node.subsequent),
               if node.if_keyword != "elsif"
                 token(node.end_keyword_loc)
               end
@@ -871,7 +885,7 @@ module Prism
           else
             builder.condition_mod(
               visit(node.statements),
-              visit(node.consequent),
+              visit(node.subsequent),
               token(node.if_keyword_loc),
               visit(node.predicate)
             )
@@ -881,7 +895,7 @@ module Prism
         # 1i
         # ^^
         def visit_imaginary_node(node)
-          visit_numeric(node, builder.complex([imaginary_value(node), srange(node.location)]))
+          visit_numeric(node, builder.complex([Complex(0, node.numeric.value), srange(node.location)]))
         end
 
         # { foo: }
@@ -1064,36 +1078,7 @@ module Prism
         # ^^^^^^^^^^^^
         def visit_interpolated_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node)
-            opening = token(node.opening_loc)
-
-            start_offset = node.opening_loc.end_offset + 1
-            end_offset = node.parts.first.location.start_offset
-
-            # In the below case, the offsets should be the same:
-            #
-            # <<~HEREDOC
-            #   a #{b}
-            # HEREDOC
-            #
-            # But in this case, the end_offset would be greater than the start_offset:
-            #
-            # <<~HEREDOC
-            #   #{b}
-            # HEREDOC
-            #
-            # So we need to make sure the result node's heredoc range is correct, without updating the children
-            result = if start_offset < end_offset
-              # We need to add a padding string to ensure that the heredoc has correct range for its body
-              padding_string_node = builder.string_internal(["", srange_offsets(start_offset, end_offset)])
-              node_with_correct_location = builder.string_compose(opening, [padding_string_node, *children], closing)
-              # But the padding string should not be included in the final AST, so we need to update the result's children
-              node_with_correct_location.updated(:dstr, children)
-            else
-              builder.string_compose(opening, children, closing)
-            end
-
-            return result
+            return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
           parts = if node.parts.one? { |part| part.type == :string_node }
@@ -1137,8 +1122,7 @@ module Prism
         # ^^^^^^^^^^^^
         def visit_interpolated_x_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node)
-            builder.xstring_compose(token(node.opening_loc), children, closing)
+            visit_heredoc(node) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
           else
             builder.xstring_compose(
               token(node.opening_loc),
@@ -1146,6 +1130,12 @@ module Prism
               token(node.closing_loc)
             )
           end
+        end
+
+        # -> { it }
+        #      ^^
+        def visit_it_local_variable_read_node(node)
+          builder.ident([:it, srange(node.location)]).updated(:lvar)
         end
 
         # -> { it }
@@ -1201,14 +1191,7 @@ module Prism
         # foo
         # ^^^
         def visit_local_variable_read_node(node)
-          name = node.name
-
-          # This is just a guess. parser doesn't have support for the implicit
-          # `it` variable yet, so we'll probably have to visit this once it
-          # does.
-          name = :it if name == :"0it"
-
-          builder.ident([name, srange(node.location)]).updated(:lvar)
+          builder.ident([node.name, srange(node.location)]).updated(:lvar)
         end
 
         # foo = 1
@@ -1312,13 +1295,9 @@ module Prism
         # foo, bar = baz
         # ^^^^^^^^
         def visit_multi_target_node(node)
-          elements = [*node.lefts]
-          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
-          elements.concat(node.rights)
-
           builder.multi_lhs(
             token(node.lparen_loc),
-            visit_all(elements),
+            visit_all(multi_target_elements(node)),
             token(node.rparen_loc)
           )
         end
@@ -1326,9 +1305,11 @@ module Prism
         # foo, bar = baz
         # ^^^^^^^^^^^^^^
         def visit_multi_write_node(node)
-          elements = [*node.lefts]
-          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
-          elements.concat(node.rights)
+          elements = multi_target_elements(node)
+
+          if elements.length == 1 && elements.first.is_a?(MultiTargetNode)
+            elements = multi_target_elements(elements.first)
+          end
 
           builder.multi_assign(
             builder.multi_lhs(
@@ -1409,12 +1390,12 @@ module Prism
 
           if node.requireds.any?
             node.requireds.each do |required|
-              if required.is_a?(RequiredParameterNode)
-                params << visit(required)
-              else
-                compiler = copy_compiler(in_destructure: true)
-                params << required.accept(compiler)
-              end
+              params <<
+                if required.is_a?(RequiredParameterNode)
+                  visit(required)
+                else
+                  required.accept(copy_compiler(in_destructure: true))
+                end
             end
           end
 
@@ -1423,12 +1404,12 @@ module Prism
 
           if node.posts.any?
             node.posts.each do |post|
-              if post.is_a?(RequiredParameterNode)
-                params << visit(post)
-              else
-                compiler = copy_compiler(in_destructure: true)
-                params << post.accept(compiler)
-              end
+              params <<
+                if post.is_a?(RequiredParameterNode)
+                  visit(post)
+                else
+                  post.accept(copy_compiler(in_destructure: true))
+                end
             end
           end
 
@@ -1514,7 +1495,7 @@ module Prism
         # 1r
         # ^^
         def visit_rational_node(node)
-          visit_numeric(node, builder.rational([rational_value(node), srange(node.location)]))
+          visit_numeric(node, builder.rational([node.value, srange(node.location)]))
         end
 
         # redo
@@ -1526,9 +1507,20 @@ module Prism
         # /foo/
         # ^^^^^
         def visit_regular_expression_node(node)
+          content = node.content
+          parts =
+            if content.include?("\n")
+              offset = node.content_loc.start_offset
+              content.lines.map do |line|
+                builder.string_internal([line, srange_offsets(offset, offset += line.bytesize)])
+              end
+            else
+              [builder.string_internal(token(node.content_loc))]
+            end
+
           builder.regexp_compose(
             token(node.opening_loc),
-            [builder.string_internal(token(node.content_loc))],
+            parts,
             [node.closing[0], srange_offsets(node.closing_loc.start_offset, node.closing_loc.start_offset + 1)],
             builder.regexp_options([node.closing[1..], srange_offsets(node.closing_loc.start_offset + 1, node.closing_loc.end_offset)])
           )
@@ -1674,10 +1666,11 @@ module Prism
         # ^^^^^
         def visit_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node.to_interpolated)
-            builder.string_compose(token(node.opening_loc), children, closing)
+            visit_heredoc(node.to_interpolated) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           elsif node.opening == "?"
             builder.character([node.unescaped, srange(node.location)])
+          elsif node.opening&.start_with?("%") && node.unescaped.empty?
+            builder.string_compose(token(node.opening_loc), [], token(node.closing_loc))
           else
             content_lines = node.content.lines
             unescaped_lines = node.unescaped.lines
@@ -1791,16 +1784,16 @@ module Prism
               if node.then_keyword_loc
                 token(node.then_keyword_loc)
               else
-                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.consequent&.location || node.end_keyword_loc).start_offset, [";"])
+                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.else_clause&.location || node.end_keyword_loc).start_offset, [";"])
               end,
-              visit(node.consequent),
-              token(node.consequent&.else_keyword_loc),
+              visit(node.else_clause),
+              token(node.else_clause&.else_keyword_loc),
               visit(node.statements),
               token(node.end_keyword_loc)
             )
           else
             builder.condition_mod(
-              visit(node.consequent),
+              visit(node.else_clause),
               visit(node.statements),
               token(node.keyword_loc),
               visit(node.predicate)
@@ -1877,8 +1870,7 @@ module Prism
         # ^^^^^
         def visit_x_string_node(node)
           if node.heredoc?
-            children, closing = visit_heredoc(node.to_interpolated)
-            builder.xstring_compose(token(node.opening_loc), children, closing)
+            visit_heredoc(node.to_interpolated) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
           else
             parts = if node.unescaped.lines.one?
               [builder.string_internal([node.unescaped, srange(node.content_loc)])]
@@ -1940,10 +1932,12 @@ module Prism
           forwarding
         end
 
-        # Because we have mutated the AST to allow for newlines in the middle of
-        # a rational, we need to manually handle the value here.
-        def imaginary_value(node)
-          Complex(0, node.numeric.is_a?(RationalNode) ? rational_value(node.numeric) : node.numeric.value)
+        # Returns the set of targets for a MultiTargetNode or a MultiWriteNode.
+        def multi_target_elements(node)
+          elements = [*node.lefts]
+          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
+          elements.concat(node.rights)
+          elements
         end
 
         # Negate the value of a numeric node. This is a special case where you
@@ -1955,7 +1949,9 @@ module Prism
           case receiver.type
           when :integer_node, :float_node
             receiver.copy(value: -receiver.value, location: message_loc.join(receiver.location))
-          when :rational_node, :imaginary_node
+          when :rational_node
+            receiver.copy(numerator: -receiver.numerator, location: message_loc.join(receiver.location))
+          when :imaginary_node
             receiver.copy(numeric: numeric_negate(message_loc, receiver.numeric), location: message_loc.join(receiver.location))
           end
         end
@@ -1972,16 +1968,6 @@ module Prism
             parameters.keywords.empty? &&
             parameters.keyword_rest.nil? &&
             parameters.block.nil?
-        end
-
-        # Because we have mutated the AST to allow for newlines in the middle of
-        # a rational, we need to manually handle the value here.
-        def rational_value(node)
-          if node.numeric.is_a?(IntegerNode)
-            Rational(node.numeric.value)
-          else
-            Rational(node.slice.gsub(/\s/, "").chomp("r"))
-          end
         end
 
         # Locations in the parser gem AST are generated using this class. We
@@ -2006,7 +1992,7 @@ module Prism
         # Note that end_offset is allowed to be nil, in which case this will
         # search until the end of the string.
         def srange_find(start_offset, end_offset, tokens)
-          if (match = source_buffer.source.byteslice(start_offset...end_offset).match(/(\s*)(#{tokens.join("|")})/))
+          if (match = source_buffer.source.byteslice(start_offset...end_offset).match(/\A(\s*)(#{tokens.join("|")})/))
             _, whitespace, token = *match
             token_offset = start_offset + whitespace.bytesize
 
@@ -2037,7 +2023,8 @@ module Prism
                   token(parameters.opening_loc),
                   if procarg0?(parameters.parameters)
                     parameter = parameters.parameters.requireds.first
-                    [builder.procarg0(visit(parameter))].concat(visit_all(parameters.locals))
+                    visited = parameter.is_a?(RequiredParameterNode) ? visit(parameter) : parameter.accept(copy_compiler(in_destructure: true))
+                    [builder.procarg0(visited)].concat(visit_all(parameters.locals))
                   else
                     visit(parameters)
                   end,
@@ -2053,29 +2040,55 @@ module Prism
           end
         end
 
+        # The parser gem automatically converts \r\n to \n, meaning our offsets
+        # need to be adjusted to always subtract 1 from the length.
+        def chomped_bytesize(line)
+          chomped = line.chomp
+          chomped.bytesize + (chomped == line ? 0 : 1)
+        end
+
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
           children = Array.new
+          indented = false
+
+          # If this is a dedenting heredoc, then we need to insert the opening
+          # content into the children as well.
+          if node.opening.start_with?("<<~") && node.parts.length > 0 && !node.parts.first.is_a?(StringNode)
+            location = node.parts.first.location
+            location = location.copy(start_offset: location.start_offset - location.start_line_slice.bytesize)
+            children << builder.string_internal(token(location))
+            indented = true
+          end
+
           node.parts.each do |part|
             pushing =
               if part.is_a?(StringNode) && part.unescaped.include?("\n")
-                unescaped = part.unescaped.lines(chomp: true)
-                escaped = part.content.lines(chomp: true)
+                unescaped = part.unescaped.lines
+                escaped = part.content.lines
 
-                escaped_lengths =
-                  if node.opening.end_with?("'")
-                    escaped.map { |line| line.bytesize + 1 }
-                  else
-                    escaped.chunk_while { |before, after| before.match?(/(?<!\\)\\$/) }.map { |line| line.join.bytesize + line.length }
+                escaped_lengths = []
+                normalized_lengths = []
+
+                if node.opening.end_with?("'")
+                  escaped.each do |line|
+                    escaped_lengths << line.bytesize
+                    normalized_lengths << chomped_bytesize(line)
                   end
+                else
+                  escaped
+                    .chunk_while { |before, after| before.match?(/(?<!\\)\\\r?\n$/) }
+                    .each do |lines|
+                      escaped_lengths << lines.sum(&:bytesize)
+                      normalized_lengths << lines.sum { |line| chomped_bytesize(line) }
+                    end
+                end
 
                 start_offset = part.location.start_offset
-                end_offset = nil
 
-                unescaped.zip(escaped_lengths).map do |unescaped_line, escaped_length|
-                  end_offset = start_offset + (escaped_length || 0)
-                  inner_part = builder.string_internal(["#{unescaped_line}\n", srange_offsets(start_offset, end_offset)])
-                  start_offset = end_offset
+                unescaped.map.with_index do |unescaped_line, index|
+                  inner_part = builder.string_internal([unescaped_line, srange_offsets(start_offset, start_offset + normalized_lengths.fetch(index, 0))])
+                  start_offset += escaped_lengths.fetch(index, 0)
                   inner_part
                 end
               else
@@ -2086,7 +2099,12 @@ module Prism
               if child.type == :str && child.children.last == ""
                 # nothing
               elsif child.type == :str && children.last && children.last.type == :str && !children.last.children.first.end_with?("\n")
-                children.last.children.first << child.children.first
+                appendee = children[-1]
+
+                location = appendee.loc
+                location = location.with_expression(location.expression.join(child.loc.expression))
+
+                children[-1] = appendee.updated(:str, [appendee.children.first << child.children.first], location: location)
               else
                 children << child
               end
@@ -2095,8 +2113,10 @@ module Prism
 
           closing = node.closing
           closing_t = [closing.chomp, srange_offsets(node.closing_loc.start_offset, node.closing_loc.end_offset - (closing[/\s+$/]&.length || 0))]
+          composed = yield children, closing_t
 
-          [children, closing_t]
+          composed = composed.updated(nil, children[1..-1]) if indented
+          composed
         end
 
         # Visit a numeric node and account for the optional sign.

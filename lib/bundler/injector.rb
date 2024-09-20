@@ -23,10 +23,7 @@ module Bundler
     # @param [Pathname] lockfile_path The lockfile in which to inject the new dependency.
     # @return [Array]
     def inject(gemfile_path, lockfile_path)
-      if Bundler.frozen_bundle?
-        # ensure the lock and Gemfile are synced
-        Bundler.definition.ensure_equivalent_gemfile_and_lockfile(true)
-      end
+      Bundler.definition.ensure_equivalent_gemfile_and_lockfile(true)
 
       # temporarily unfreeze
       Bundler.settings.temporary(deployment: false, frozen: false) do

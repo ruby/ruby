@@ -1,6 +1,15 @@
 #include "prism/options.h"
 
 /**
+ * Set the shebang callback option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_shebang_callback_set(pm_options_t *options, pm_options_shebang_callback_t shebang_callback, void *shebang_callback_data) {
+    options->shebang_callback = shebang_callback;
+    options->shebang_callback_data = shebang_callback_data;
+}
+
+/**
  * Set the filepath option on the given options struct.
  */
 PRISM_EXPORTED_FUNCTION void
@@ -14,6 +23,14 @@ pm_options_filepath_set(pm_options_t *options, const char *filepath) {
 PRISM_EXPORTED_FUNCTION void
 pm_options_encoding_set(pm_options_t *options, const char *encoding) {
     pm_string_constant_init(&options->encoding, encoding, strlen(encoding));
+}
+
+/**
+ * Set the encoding_locked option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_encoding_locked_set(pm_options_t *options, bool encoding_locked) {
+    options->encoding_locked = encoding_locked;
 }
 
 /**
@@ -81,6 +98,14 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         default:
             return false;
     }
+}
+
+/**
+ * Set the main script option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_main_script_set(pm_options_t *options, bool main_script) {
+    options->main_script = main_script;
 }
 
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
@@ -215,6 +240,8 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->frozen_string_literal = (int8_t) *data++;
     options->command_line = (uint8_t) *data++;
     options->version = (pm_options_version_t) *data++;
+    options->encoding_locked = ((uint8_t) *data++) > 0;
+    options->main_script = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;

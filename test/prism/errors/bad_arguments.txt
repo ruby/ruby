@@ -1,0 +1,6 @@
+def foo(A, @a, $A, @@a);end
+        ^ invalid formal argument; formal argument cannot be a constant
+           ^~ invalid formal argument; formal argument cannot be an instance variable
+               ^~ invalid formal argument; formal argument cannot be a global variable
+                   ^~~ invalid formal argument; formal argument cannot be a class variable
+

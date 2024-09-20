@@ -30,19 +30,19 @@ pub struct PCRelative {
 
 impl PCRelative {
     /// ADR
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/ADR--Form-PC-relative-address-
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/ADR--Form-PC-relative-address->
     pub fn adr(rd: u8, imm: i32) -> Self {
         Self { rd, imm, op: Op::ADR }
     }
 
     /// ADRP
-    /// https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/ADRP--Form-PC-relative-address-to-4KB-page-
+    /// <https://developer.arm.com/documentation/ddi0602/2022-03/Base-Instructions/ADRP--Form-PC-relative-address-to-4KB-page->
     pub fn adrp(rd: u8, imm: i32) -> Self {
         Self { rd, imm: imm >> 12, op: Op::ADRP }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en>
 const FAMILY: u32 = 0b1000;
 
 impl From<PCRelative> for u32 {

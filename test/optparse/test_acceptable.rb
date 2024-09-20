@@ -199,5 +199,7 @@ class TestOptionParserAcceptable < TestOptionParser
   def test_array
     assert_equal(%w"", no_error {@opt.parse!(%w"--array a,b,c")})
     assert_equal(%w"a b c", @array)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--array a")})
+    assert_equal(%w"a", @array)
   end
 end

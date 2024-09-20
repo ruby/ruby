@@ -1301,7 +1301,7 @@ enc_names_i(st_data_t name, st_data_t idx, st_data_t args)
     VALUE *arg = (VALUE *)args;
 
     if ((int)idx == (int)arg[0]) {
-        VALUE str = rb_fstring_cstr((char *)name);
+        VALUE str = rb_interned_str_cstr((char *)name);
         rb_ary_push(arg[1], str);
     }
     return ST_CONTINUE;
@@ -1798,7 +1798,7 @@ static int
 rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
-    VALUE str = rb_fstring_cstr((char *)name);
+    VALUE str = rb_interned_str_cstr((char *)name);
     rb_ary_push(ary, str);
     return ST_CONTINUE;
 }
@@ -1843,7 +1843,7 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
         str = rb_fstring_cstr(rb_enc_name(enc));
         rb_ary_store(ary, idx, str);
     }
-    key = rb_fstring_cstr((char *)name);
+    key = rb_interned_str_cstr((char *)name);
     rb_hash_aset(aliases, key, str);
     return ST_CONTINUE;
 }

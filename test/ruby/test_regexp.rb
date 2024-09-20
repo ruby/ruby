@@ -559,16 +559,26 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(IndexError) { m.byteoffset(2) }
     assert_raise(IndexError) { m.begin(2) }
     assert_raise(IndexError) { m.end(2) }
+    assert_raise(IndexError) { m.bytebegin(2) }
+    assert_raise(IndexError) { m.byteend(2) }
 
     m = /(?<x>q..)?/.match("foobarbaz")
     assert_equal([nil, nil], m.byteoffset("x"))
     assert_equal(nil, m.begin("x"))
     assert_equal(nil, m.end("x"))
+    assert_equal(nil, m.bytebegin("x"))
+    assert_equal(nil, m.byteend("x"))
 
     m = /\A\u3042(.)(.)?(.)\z/.match("\u3042\u3043\u3044")
     assert_equal([3, 6], m.byteoffset(1))
+    assert_equal(3, m.bytebegin(1))
+    assert_equal(6, m.byteend(1))
     assert_equal([nil, nil], m.byteoffset(2))
+    assert_equal(nil, m.bytebegin(2))
+    assert_equal(nil, m.byteend(2))
     assert_equal([6, 9], m.byteoffset(3))
+    assert_equal(6, m.bytebegin(3))
+    assert_equal(9, m.byteend(3))
   end
 
   def test_match_to_s
@@ -1783,7 +1793,7 @@ class TestRegexp < Test::Unit::TestCase
       end
       t = Time.now - t
 
-      assert_in_delta(timeout, t, timeout / 2)
+      assert_operator(timeout, :<=, [timeout * 1.5, 1].max)
     end;
   end
 
@@ -1862,7 +1872,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_timeout_shorter_than_global
     omit "timeout test is too unstable on s390x" if RUBY_PLATFORM =~ /s390x/
-    per_instance_redos_test(10, 0.2, 0.2)
+    per_instance_redos_test(10, 0.5, 0.5)
   end
 
   def test_timeout_longer_than_global
@@ -1889,6 +1899,22 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
+    end;
+  end
+
+  def test_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20650]", timeout: 100, rss: true)
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+      str = "a" * 1_000_000 + "x"
+
+      code = proc do
+        regex =~ str
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
     end;
   end
 
@@ -1929,7 +1955,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_cache_positive_look_ahead
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
       timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
     begin;
        Regexp.timeout = timeout

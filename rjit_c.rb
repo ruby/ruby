@@ -171,9 +171,9 @@ module RubyVM::RJIT # :nodoc: all
       me_addr == 0 ? nil : rb_method_entry_t.new(me_addr)
     end
 
-    def rb_shape_get_next(shape, obj, id)
+    def rb_shape_get_next_no_warnings(shape, obj, id)
       _shape = shape.to_i
-      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'
+      shape_addr = Primitive.cexpr! 'SIZET2NUM((size_t)rb_shape_get_next_no_warnings((rb_shape_t *)NUM2SIZET(_shape), obj, (ID)NUM2SIZET(id)))'
       rb_shape_t.new(shape_addr)
     end
 
@@ -420,6 +420,7 @@ module RubyVM::RJIT # :nodoc: all
   C::VM_CALL_ARGS_BLOCKARG = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_BLOCKARG) }
   C::VM_CALL_ARGS_SPLAT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_SPLAT) }
   C::VM_CALL_FCALL = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_FCALL) }
+  C::VM_CALL_FORWARDING = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_FORWARDING) }
   C::VM_CALL_KWARG = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KWARG) }
   C::VM_CALL_KW_SPLAT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT) }
   C::VM_CALL_KW_SPLAT_MUT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_KW_SPLAT_MUT) }
@@ -689,6 +690,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_vm_opt_newarray_min
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_min) }
+  end
+
+  def C.rb_vm_opt_newarray_pack
+    Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_vm_opt_newarray_pack) }
   end
 
   def C.rb_vm_set_ivar_id
@@ -1052,7 +1057,6 @@ module RubyVM::RJIT # :nodoc: all
       storage: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), storage)")],
       root_lep: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), root_lep)")],
       root_svar: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), root_svar)")],
-      ensure_list: [CType::Pointer.new { self.rb_ensure_list_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), ensure_list)")],
       trace_arg: [CType::Pointer.new { self.rb_trace_arg_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), trace_arg)")],
       errinfo: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), errinfo)")],
       passed_block_handler: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_execution_context_struct *)NULL)), passed_block_handler)")],
@@ -1094,6 +1098,7 @@ module RubyVM::RJIT # :nodoc: all
           anon_rest: [CType::BitField.new(1, 2), 10],
           anon_kwrest: [CType::BitField.new(1, 3), 11],
           use_block: [CType::BitField.new(1, 4), 12],
+          forwardable: [CType::BitField.new(1, 5), 13],
         ), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, flags)")],
         size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, size)")],
         lead_num: [CType::Immediate.parse("int"), Primitive.cexpr!("OFFSETOF(((struct rb_iseq_constant_body *)NULL)->param, lead_num)")],
@@ -1552,10 +1557,6 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_fiber_t
     CType::Stub.new(:rb_fiber_t)
-  end
-
-  def C.rb_ensure_list_t
-    CType::Stub.new(:rb_ensure_list_t)
   end
 
   def C.rb_trace_arg_struct

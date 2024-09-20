@@ -30,19 +30,31 @@ typedef struct pm_scope_node {
     rb_encoding *encoding;
 
     /**
+     * This is a pointer to the list of script lines for the ISEQs that will be
+     * associated with this scope node. It is only set if
+     * RubyVM.keep_script_lines is true. If it is set, it will be set to a
+     * pointer to an array that is always stack allocated (so no GC marking is
+     * needed by this struct). If it is not set, it will be NULL. It is
+     * inherited by all child scopes.
+     */
+    VALUE *script_lines;
+
+    /**
      * This is the encoding of the actual filepath object that will be used when
      * a __FILE__ node is compiled or when the path has to be set on a syntax
      * error.
      */
     rb_encoding *filepath_encoding;
 
-    // The size of the local table
-    // on the iseq which includes
-    // locals and hidden variables
+    // The size of the local table on the iseq which includes locals and hidden
+    // variables.
     int local_table_for_iseq_size;
 
     ID *constants;
     st_table *index_lookup_table;
+
+    // The current coverage setting, passed down through the various scopes.
+    int coverage_enabled;
 
     /**
      * This will only be set on the top-level scope node. It will contain all of
@@ -73,9 +85,9 @@ typedef struct {
 } pm_parse_result_t;
 
 VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error);
-VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath);
-VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath);
-VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath);
+VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);
+VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);
+VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *script_lines);
 VALUE pm_parse_stdin(pm_parse_result_t *result);
 void pm_parse_result_free(pm_parse_result_t *result);
 

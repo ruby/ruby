@@ -782,6 +782,12 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     return res;
 }
 
+VALUE
+rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
+{
+    return pack_pack(ec, ary, fmt, buffer);
+}
+
 static const char uu_table[] =
 "`!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
 static const char b64_table[] =

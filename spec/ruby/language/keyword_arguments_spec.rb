@@ -395,4 +395,32 @@ describe "Keyword arguments" do
       end
     end
   end
+
+  context "in define_method(name, &proc)" do
+    # This tests that a free-standing proc used in define_method and converted to ruby2_keywords adopts that logic.
+    # See jruby/jruby#8119 for a case where aggressive JIT optimization broke later ruby2_keywords changes.
+    it "works with ruby2_keywords" do
+      m = Class.new do
+        def bar(a, foo: nil)
+          [a, foo]
+        end
+
+        # define_method and ruby2_keywords using send to avoid peephole optimizations
+        def self.setup
+          pr = make_proc
+          send :define_method, :foo, &pr
+          send :ruby2_keywords, :foo
+        end
+
+        # create proc in isolated method to force jit compilation on some implementations
+        def self.make_proc
+          proc { |a, *args| bar(a, *args) }
+        end
+      end
+
+      m.setup
+
+      m.new.foo(1, foo:2).should == [1, 2]
+    end
+  end
 end

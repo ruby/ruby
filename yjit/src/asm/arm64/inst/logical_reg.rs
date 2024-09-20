@@ -70,55 +70,55 @@ pub struct LogicalReg {
 
 impl LogicalReg {
     /// AND (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/AND--shifted-register---Bitwise-AND--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/AND--shifted-register---Bitwise-AND--shifted-register--?lang=en>
     pub fn and(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::And, sf: num_bits.into() }
     }
 
     /// ANDS (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ANDS--shifted-register---Bitwise-AND--shifted-register---setting-flags-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ANDS--shifted-register---Bitwise-AND--shifted-register---setting-flags-?lang=en>
     pub fn ands(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
     }
 
     /// EOR (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/EOR--shifted-register---Bitwise-Exclusive-OR--shifted-register--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/EOR--shifted-register---Bitwise-Exclusive-OR--shifted-register-->
     pub fn eor(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Eor, sf: num_bits.into() }
     }
 
     /// MOV (register)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/MOV--register---Move--register---an-alias-of-ORR--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/MOV--register---Move--register---an-alias-of-ORR--shifted-register--?lang=en>
     pub fn mov(rd: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn: 0b11111, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
     }
 
     /// MVN (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/MVN--Bitwise-NOT--an-alias-of-ORN--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/MVN--Bitwise-NOT--an-alias-of-ORN--shifted-register--?lang=en>
     pub fn mvn(rd: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn: 0b11111, imm6: 0, rm, n: N::Yes, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
     }
 
     /// ORN (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ORN--shifted-register---Bitwise-OR-NOT--shifted-register--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ORN--shifted-register---Bitwise-OR-NOT--shifted-register-->
     pub fn orn(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, imm6: 0, rm, n: N::Yes, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
     }
 
     /// ORR (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ORR--shifted-register---Bitwise-OR--shifted-register--
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/ORR--shifted-register---Bitwise-OR--shifted-register-->
     pub fn orr(rd: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Orr, sf: num_bits.into() }
     }
 
     /// TST (shifted register)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TST--shifted-register---Test--shifted-register---an-alias-of-ANDS--shifted-register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/TST--shifted-register---Test--shifted-register---an-alias-of-ANDS--shifted-register--?lang=en>
     pub fn tst(rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rd: 31, rn, imm6: 0, rm, n: N::No, shift: Shift::LSL, opc: Opc::Ands, sf: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en>
 const FAMILY: u32 = 0b0101;
 
 impl From<LogicalReg> for u32 {

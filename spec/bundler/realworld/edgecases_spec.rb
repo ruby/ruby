@@ -198,18 +198,7 @@ RSpec.describe "real world edgecases", realworld: true do
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  it "outputs a helpful error message when gems have invalid gemspecs", rubygems: "< 3.3.16" do
-    install_gemfile <<-G, standalone: true, raise_on_error: false, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
-      source 'https://rubygems.org'
-      gem "resque-scheduler", "2.2.0"
-      gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0
-      gem "ruby2_keywords", "0.0.5"
-    G
-    expect(err).to include("You have one or more invalid gemspecs that need to be fixed.")
-    expect(err).to include("resque-scheduler 2.2.0 has an invalid gemspec")
-  end
-
-  it "outputs a helpful warning when gems have a gemspec with invalid `require_paths`", rubygems: ">= 3.3.16" do
+  it "outputs a helpful warning when gems have a gemspec with invalid `require_paths`" do
     install_gemfile <<-G, standalone: true, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"

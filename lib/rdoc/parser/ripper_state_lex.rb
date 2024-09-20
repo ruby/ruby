@@ -7,307 +7,12 @@ require 'ripper'
 class RDoc::Parser::RipperStateLex
   # :stopdoc:
 
-  # TODO: Remove this constants after Ruby 2.4 EOL
-  RIPPER_HAS_LEX_STATE = Ripper::Filter.method_defined?(:state)
-
   Token = Struct.new(:line_no, :char_no, :kind, :text, :state)
 
-  EXPR_NONE = 0
-  EXPR_BEG = 1
-  EXPR_END = 2
-  EXPR_ENDARG = 4
-  EXPR_ENDFN = 8
-  EXPR_ARG = 16
-  EXPR_CMDARG = 32
-  EXPR_MID = 64
-  EXPR_FNAME = 128
-  EXPR_DOT = 256
-  EXPR_CLASS = 512
-  EXPR_LABEL = 1024
-  EXPR_LABELED = 2048
-  EXPR_FITEM = 4096
-  EXPR_VALUE = EXPR_BEG
-  EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_MID | EXPR_CLASS)
-  EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG)
-  EXPR_END_ANY  =  (EXPR_END | EXPR_ENDARG | EXPR_ENDFN)
-
-  class InnerStateLex < Ripper::Filter
-    attr_accessor :lex_state
-
-    def initialize(code)
-      @lex_state = EXPR_BEG
-      @in_fname = false
-      @continue = false
-      reset
-      super(code)
-    end
-
-    def reset
-      @command_start = false
-      @cmd_state = @command_start
-    end
-
-    def on_nl(tok, data)
-      case @lex_state
-      when EXPR_FNAME, EXPR_DOT
-        @continue = true
-      else
-        @continue = false
-        @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
-      end
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_ignored_nl(tok, data)
-      case @lex_state
-      when EXPR_FNAME, EXPR_DOT
-        @continue = true
-      else
-        @continue = false
-        @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
-      end
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_op(tok, data)
-      case tok
-      when '&', '|', '!', '!=', '!~'
-        case @lex_state
-        when EXPR_FNAME, EXPR_DOT
-          @lex_state = EXPR_ARG
-        else
-          @lex_state = EXPR_BEG
-        end
-      when '<<'
-        # TODO next token?
-        case @lex_state
-        when EXPR_FNAME, EXPR_DOT
-          @lex_state = EXPR_ARG
-        else
-          @lex_state = EXPR_BEG
-        end
-      when '?'
-        @lex_state = EXPR_BEG
-      when '&&', '||', '+=', '-=', '*=', '**=',
-           '&=', '|=', '^=', '<<=', '>>=', '||=', '&&='
-        @lex_state = EXPR_BEG
-      when '::'
-        case @lex_state
-        when EXPR_ARG, EXPR_CMDARG
-          @lex_state = EXPR_DOT
-        when EXPR_FNAME, EXPR_DOT
-          @lex_state = EXPR_ARG
-        else
-          @lex_state = EXPR_BEG
-        end
-      else
-        case @lex_state
-        when EXPR_FNAME, EXPR_DOT
-          @lex_state = EXPR_ARG
-        else
-          @lex_state = EXPR_BEG
-        end
-      end
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_kw(tok, data)
-      case tok
-      when 'class'
-        @lex_state = EXPR_CLASS
-        @in_fname = true
-      when 'def'
-        @lex_state = EXPR_FNAME
-        @continue = true
-        @in_fname = true
-      when 'if', 'unless', 'while', 'until'
-        if ((EXPR_MID | EXPR_END | EXPR_ENDARG | EXPR_ENDFN | EXPR_ARG | EXPR_CMDARG) & @lex_state) != 0 # postfix if
-          @lex_state = EXPR_BEG | EXPR_LABEL
-        else
-          @lex_state = EXPR_BEG
-        end
-      when 'begin', 'case', 'when'
-        @lex_state = EXPR_BEG
-      when 'return', 'break'
-        @lex_state = EXPR_MID
-      else
-        if @lex_state == EXPR_FNAME
-          @lex_state = EXPR_END
-        else
-          @lex_state = EXPR_END
-        end
-      end
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_tstring_beg(tok, data)
-      @lex_state = EXPR_BEG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_tstring_end(tok, data)
-      @lex_state = EXPR_END | EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_CHAR(tok, data)
-      @lex_state = EXPR_END
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_period(tok, data)
-      @lex_state = EXPR_DOT
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_int(tok, data)
-      @lex_state = EXPR_END | EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_float(tok, data)
-      @lex_state = EXPR_END | EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_rational(tok, data)
-      @lex_state = EXPR_END | EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_imaginary(tok, data)
-      @lex_state = EXPR_END | EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_symbeg(tok, data)
-      @lex_state = EXPR_FNAME
-      @continue = true
-      @in_fname = true
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    private def on_variables(event, tok, data)
-      if @in_fname
-        @lex_state = EXPR_ENDFN
-        @in_fname = false
-        @continue = false
-      elsif @continue
-        case @lex_state
-        when EXPR_DOT
-          @lex_state = EXPR_ARG
-        else
-          @lex_state = EXPR_ENDFN
-          @continue = false
-        end
-      else
-        @lex_state = EXPR_CMDARG
-      end
-      data << Token.new(lineno, column, event, tok, @lex_state)
-    end
-
-    def on_ident(tok, data)
-      on_variables(__method__, tok, data)
-    end
-
-    def on_ivar(tok, data)
-      @lex_state = EXPR_END
-      on_variables(__method__, tok, data)
-    end
-
-    def on_cvar(tok, data)
-      @lex_state = EXPR_END
-      on_variables(__method__, tok, data)
-    end
-
-    def on_gvar(tok, data)
-      @lex_state = EXPR_END
-      on_variables(__method__, tok, data)
-    end
-
-    def on_backref(tok, data)
-      @lex_state = EXPR_END
-      on_variables(__method__, tok, data)
-    end
-
-    def on_lparen(tok, data)
-      @lex_state = EXPR_LABEL | EXPR_BEG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_rparen(tok, data)
-      @lex_state = EXPR_ENDFN
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_lbrace(tok, data)
-      @lex_state = EXPR_LABEL | EXPR_BEG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_rbrace(tok, data)
-      @lex_state = EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_lbracket(tok, data)
-      @lex_state = EXPR_LABEL | EXPR_BEG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_rbracket(tok, data)
-      @lex_state = EXPR_ENDARG
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_const(tok, data)
-      case @lex_state
-      when EXPR_FNAME
-        @lex_state = EXPR_ENDFN
-      when EXPR_CLASS, EXPR_CMDARG, EXPR_MID
-        @lex_state = EXPR_ARG
-      else
-        @lex_state = EXPR_CMDARG
-      end
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_sp(tok, data)
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_comma(tok, data)
-      @lex_state = EXPR_BEG | EXPR_LABEL if (EXPR_ARG_ANY & @lex_state) != 0
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_comment(tok, data)
-      @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_ignored_sp(tok, data)
-      @lex_state = EXPR_BEG unless (EXPR_LABEL & @lex_state) != 0
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-    end
-
-    def on_heredoc_beg(tok, data)
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-      @lex_state = EXPR_END
-      data
-    end
-
-    def on_heredoc_end(tok, data)
-      data << Token.new(lineno, column, __method__, tok, @lex_state)
-      @lex_state = EXPR_BEG
-      data
-    end
-
-    def on_default(event, tok, data)
-      reset
-      data << Token.new(lineno, column, event, tok, @lex_state)
-    end
-  end unless RIPPER_HAS_LEX_STATE
+  EXPR_END   = Ripper::EXPR_END
+  EXPR_ENDFN = Ripper::EXPR_ENDFN
+  EXPR_ARG   = Ripper::EXPR_ARG
+  EXPR_FNAME = Ripper::EXPR_FNAME
 
   class InnerStateLex < Ripper::Filter
     def initialize(code)
@@ -317,7 +22,7 @@ class RDoc::Parser::RipperStateLex
     def on_default(event, tok, data)
       data << Token.new(lineno, column, event, tok, state)
     end
-  end if RIPPER_HAS_LEX_STATE
+  end
 
   def get_squashed_tk
     if @buf.empty?
@@ -333,9 +38,8 @@ class RDoc::Parser::RipperStateLex
       tk = get_string_tk(tk)
     when :on_backtick then
       if (tk[:state] & (EXPR_FNAME | EXPR_ENDFN)) != 0
-        @inner_lex.lex_state = EXPR_ARG unless RIPPER_HAS_LEX_STATE
         tk[:kind] = :on_ident
-        tk[:state] = Ripper::Lexer.const_defined?(:State) ? Ripper::Lexer::State.new(EXPR_ARG) : EXPR_ARG
+        tk[:state] = Ripper::Lexer::State.new(EXPR_ARG)
       else
         tk = get_string_tk(tk)
       end
@@ -345,7 +49,6 @@ class RDoc::Parser::RipperStateLex
       tk = get_embdoc_tk(tk)
     when :on_heredoc_beg then
       @heredoc_queue << retrieve_heredoc_info(tk)
-      @inner_lex.lex_state = EXPR_END unless RIPPER_HAS_LEX_STATE
     when :on_nl, :on_ignored_nl, :on_comment, :on_heredoc_end then
       if !@heredoc_queue.empty?
         get_heredoc_tk(*@heredoc_queue.shift)
@@ -549,8 +252,7 @@ class RDoc::Parser::RipperStateLex
   private def get_op_tk(tk)
     redefinable_operators = %w[! != !~ % & * ** + +@ - -@ / < << <= <=> == === =~ > >= >> [] []= ^ ` | ~]
     if redefinable_operators.include?(tk[:text]) and tk[:state] == EXPR_ARG then
-      @inner_lex.lex_state = EXPR_ARG unless RIPPER_HAS_LEX_STATE
-      tk[:state] = Ripper::Lexer.const_defined?(:State) ? Ripper::Lexer::State.new(EXPR_ARG) : EXPR_ARG
+      tk[:state] = Ripper::Lexer::State.new(EXPR_ARG)
       tk[:kind] = :on_ident
     elsif tk[:text] =~ /^[-+]$/ then
       tk_ahead = get_squashed_tk

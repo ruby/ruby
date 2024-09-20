@@ -194,7 +194,7 @@ class TestRDocRDoc < RDoc::TestCase
       File.write('.document', "a.rb\n""b.rb\n")
       expected_files << a
 
-      @rdoc.options.exclude = Regexp.new(['b.rb'].join('|'))
+      @rdoc.options.exclude = /b\.rb$/
       @rdoc.normalized_file_list [File.realpath(dir)]
     end
 

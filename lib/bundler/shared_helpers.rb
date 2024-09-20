@@ -4,14 +4,14 @@ require_relative "version"
 require_relative "rubygems_integration"
 require_relative "current_ruby"
 
+autoload :Pathname, "pathname"
+
 module Bundler
   autoload :WINDOWS, File.expand_path("constants", __dir__)
   autoload :FREEBSD, File.expand_path("constants", __dir__)
   autoload :NULL, File.expand_path("constants", __dir__)
 
   module SharedHelpers
-    autoload :Pathname, "pathname"
-
     def root
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
