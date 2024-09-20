@@ -265,24 +265,9 @@ module IRB
         @completion_params = [preposing, target, postposing, bind]
         @completor.completion_candidates(preposing, target, postposing, bind: bind)
       }
-      Reline.output_modifier_proc =
-        if IRB.conf[:USE_COLORIZE]
-          proc do |output, complete: |
-            next unless IRB::Color.colorable?
-            lvars = IRB.CurrentContext&.local_variables || []
-            if IRB.CurrentContext&.parse_command(output)
-              name, sep, arg = output.split(/(\s+)/, 2)
-              arg = IRB::Color.colorize_code(arg, complete: complete, local_variables: lvars)
-              "#{IRB::Color.colorize(name, [:BOLD])}\e[m#{sep}#{arg}"
-            else
-              IRB::Color.colorize_code(output, complete: complete, local_variables: lvars)
-            end
-          end
-        else
-          proc do |output|
-            Reline::Unicode.escape_for_print(output)
-          end
-        end
+      Reline.output_modifier_proc = proc do |input, complete:|
+        IRB.CurrentContext.colorize_input(input, complete: complete)
+      end
       Reline.dig_perfect_match_proc = ->(matched) { display_document(matched) }
       Reline.autocompletion = IRB.conf[:USE_AUTOCOMPLETE]
 

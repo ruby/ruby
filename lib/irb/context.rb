@@ -649,6 +649,21 @@ module IRB
       end
     end
 
+    def colorize_input(input, complete:)
+      if IRB.conf[:USE_COLORIZE] && IRB::Color.colorable?
+        lvars = local_variables || []
+        if parse_command(input)
+          name, sep, arg = input.split(/(\s+)/, 2)
+          arg = IRB::Color.colorize_code(arg, complete: complete, local_variables: lvars)
+          "#{IRB::Color.colorize(name, [:BOLD])}\e[m#{sep}#{arg}"
+        else
+          IRB::Color.colorize_code(input, complete: complete, local_variables: lvars)
+        end
+      else
+        Reline::Unicode.escape_for_print(input)
+      end
+    end
+
     def inspect_last_value # :nodoc:
       @inspect_method.inspect_value(@last_value)
     end
