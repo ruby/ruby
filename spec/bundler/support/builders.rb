@@ -456,6 +456,7 @@ module Spec
           s.email       = "foo@bar.baz"
           s.homepage    = "http://example.com"
           s.license     = "MIT"
+          s.required_ruby_version = ">= 3.0"
         end
         @files = {}
       end
