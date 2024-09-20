@@ -26,17 +26,34 @@ typedef struct {
 #define PUSH_INSN(seq, location, insn) \
     ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 0))
 
-#define PUSH_INSN1(seq, location, insn, op1) \
-    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 1, (VALUE)(op1)))
+#define PUSH_INSN1(seq, location, insn, op1) do { \
+    VALUE push_insn_op1 = (VALUE)(op1); \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 1, push_insn_op1)); \
+    RB_GC_GUARD(push_insn_op1); \
+} while (0)
 
-#define PUSH_INSN2(seq, location, insn, op1, op2) \
-    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 2, (VALUE)(op1), (VALUE)(op2)))
+#define PUSH_INSN2(seq, location, insn, op1, op2) do { \
+    VALUE push_insn_op1 = (VALUE)(op1); \
+    VALUE push_insn_op2 = (VALUE)(op2); \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 2, push_insn_op1, push_insn_op2)); \
+    RB_GC_GUARD(push_insn_op1); \
+    RB_GC_GUARD(push_insn_op2); \
+} while (0)
 
-#define PUSH_INSN3(seq, location, insn, op1, op2, op3) \
-    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 3, (VALUE)(op1), (VALUE)(op2), (VALUE)(op3)))
+#define PUSH_INSN3(seq, location, insn, op1, op2, op3) do { \
+    VALUE push_insn_op1 = (VALUE)(op1); \
+    VALUE push_insn_op2 = (VALUE)(op2); \
+    VALUE push_insn_op3 = (VALUE)(op3); \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).node_id, BIN(insn), 3, push_insn_op1, push_insn_op2, push_insn_op3)); \
+    RB_GC_GUARD(push_insn_op1); \
+    RB_GC_GUARD(push_insn_op2); \
+    RB_GC_GUARD(push_insn_op3); \
+} while (0)
 
-#define PUSH_INSNL(seq, location, insn, label) \
-    (PUSH_INSN1(seq, location, insn, label), LABEL_REF(label))
+#define PUSH_INSNL(seq, location, insn, label) do { \
+    PUSH_INSN1(seq, location, insn, label); \
+    LABEL_REF(label); \
+} while (0)
 
 #define PUSH_LABEL(seq, label) \
     ADD_ELEM((seq), (LINK_ELEMENT *) (label))
