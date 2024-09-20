@@ -15868,23 +15868,9 @@ rb_ruby_ripper_parse0(rb_parser_t *p)
 }
 
 int
-rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width)
+rb_ruby_ripper_dedent_string(rb_parser_t *p, rb_parser_string_t *string, int width)
 {
-    char *str;
-    long len;
-    int i;
-
-    RSTRING_GETMEM(string, str, len);
-    i = dedent_string_column(str, len, width);
-    if (!i) return 0;
-
-    rb_str_modify(string);
-    str = RSTRING_PTR(string);
-    if (RSTRING_LEN(string) != len)
-        rb_fatal("literal string changed: %+"PRIsVALUE, string);
-    MEMMOVE(str, str + i, char, len - i);
-    rb_str_set_len(string, len - i);
-    return i;
+    return dedent_string(p, string, width);
 }
 
 int
