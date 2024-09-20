@@ -32,6 +32,7 @@ ID rb_id_option_filepath;
 ID rb_id_option_frozen_string_literal;
 ID rb_id_option_line;
 ID rb_id_option_main_script;
+ID rb_id_option_partial_script;
 ID rb_id_option_scopes;
 ID rb_id_option_version;
 ID rb_id_source_for;
@@ -182,6 +183,8 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         }
     } else if (key_id == rb_id_option_main_script) {
         if (!NIL_P(value)) pm_options_main_script_set(options, RTEST(value));
+    } else if (key_id == rb_id_option_partial_script) {
+        if (!NIL_P(value)) pm_options_partial_script_set(options, RTEST(value));
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, key);
     }
@@ -761,6 +764,12 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       or not shebangs are parsed for additional flags and whether or not the
  *       parser will attempt to find a matching shebang if the first one does
  *       not contain the word "ruby".
+ * * `partial_script` - when the file being parsed is considered a "partial"
+ *       script, jumps will not be marked as errors if they are not contained
+ *       within loops/blocks. This is used in the case that you're parsing a
+ *       script that you know will be embedded inside another script later, but
+ *       you do not have that context yet. For example, when parsing an ERB
+ *       template that will be evaluated inside another script.
  * * `scopes` - the locals that are in scope surrounding the code that is being
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
@@ -1174,6 +1183,7 @@ Init_prism(void) {
     rb_id_option_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_id_option_line = rb_intern_const("line");
     rb_id_option_main_script = rb_intern_const("main_script");
+    rb_id_option_partial_script = rb_intern_const("partial_script");
     rb_id_option_scopes = rb_intern_const("scopes");
     rb_id_option_version = rb_intern_const("version");
     rb_id_source_for = rb_intern("for");

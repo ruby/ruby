@@ -451,6 +451,9 @@ module Prism
       template << "C"
       values << (options.fetch(:main_script, false) ? 1 : 0)
 
+      template << "C"
+      values << (options.fetch(:partial_script, false) ? 1 : 0)
+
       template << "L"
       if (scopes = options[:scopes])
         values << scopes.length

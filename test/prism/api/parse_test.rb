@@ -90,6 +90,20 @@ module Prism
       assert_kind_of Errno::EISDIR, error
     end
 
+    def test_partial_script
+      assert Prism.parse_failure?("break")
+      assert Prism.parse_success?("break", partial_script: true)
+
+      assert Prism.parse_failure?("next")
+      assert Prism.parse_success?("next", partial_script: true)
+
+      assert Prism.parse_failure?("redo")
+      assert Prism.parse_success?("redo", partial_script: true)
+
+      assert Prism.parse_failure?("yield")
+      assert Prism.parse_success?("yield", partial_script: true)
+    end
+
     private
 
     def find_source_file_node(program)

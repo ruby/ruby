@@ -18852,12 +18852,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             switch (keyword.type) {
                 case PM_TOKEN_KEYWORD_BREAK: {
                     pm_node_t *node = (pm_node_t *) pm_break_node_create(parser, &keyword, arguments.arguments);
-                    parse_block_exit(parser, node);
+                    if (!parser->partial_script) parse_block_exit(parser, node);
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_NEXT: {
                     pm_node_t *node = (pm_node_t *) pm_next_node_create(parser, &keyword, arguments.arguments);
-                    parse_block_exit(parser, node);
+                    if (!parser->partial_script) parse_block_exit(parser, node);
                     return node;
                 }
                 case PM_TOKEN_KEYWORD_RETURN: {
@@ -18905,7 +18905,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_node_t *node = (pm_node_t *) pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
-            if (!parser->parsing_eval) parse_yield(parser, node);
+            if (!parser->parsing_eval && !parser->partial_script) parse_yield(parser, node);
 
             return node;
         }
@@ -19574,7 +19574,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_node_t *node = (pm_node_t *) pm_redo_node_create(parser, &parser->previous);
-            parse_block_exit(parser, node);
+            if (!parser->partial_script) parse_block_exit(parser, node);
 
             return node;
         }
@@ -21899,6 +21899,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .explicit_encoding = NULL,
         .command_line = 0,
         .parsing_eval = false,
+        .partial_script = false,
         .command_start = true,
         .recovering = false,
         .encoding_locked = false,
@@ -21961,6 +21962,9 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
         // version option
         parser->version = options->version;
+
+        // partial_script
+        parser->partial_script = options->partial_script;
 
         // scopes option
         parser->parsing_eval = options->scopes_count > 0;
