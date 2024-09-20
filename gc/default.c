@@ -6130,6 +6130,13 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
     }
 
+    GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
+    GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);
+    GC_ASSERT(RB_BUILTIN_TYPE(a) != T_ZOMBIE);
+    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_NONE);
+    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_MOVED);
+    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_ZOMBIE);
+
   retry:
     if (!is_incremental_marking(objspace)) {
         if (!RVALUE_OLD_P(objspace, a) || RVALUE_OLD_P(objspace, b)) {
