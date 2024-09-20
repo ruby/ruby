@@ -66,6 +66,17 @@
     (access-label /)
     )))
 
+(c-add-style
+ "prism"
+ '("bsd"
+   (c-basic-offset . 4)
+   (tab-width . 8)
+   (indent-tabs-mode . nil)
+   (setq show-trailing-whitespace t)
+   (c-offsets-alist
+    (case-label . +)
+    )))
+
 ;;;###autoload
 (defun ruby-style-c-mode ()
   (interactive)
