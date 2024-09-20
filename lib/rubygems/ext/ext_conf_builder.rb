@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -6,7 +7,8 @@
 #++
 
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
-  def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd)
+  def self.build(extension, dest_path, results, args=[], lib_dir=nil, extension_dir=Dir.pwd,
+    target_rbconfig=Gem.target_rbconfig)
     require "fileutils"
     require "tempfile"
 
@@ -21,8 +23,8 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     destdir = ENV["DESTDIR"]
 
     begin
-      require "shellwords"
-      cmd = Gem.ruby.shellsplit << "-I" << File.expand_path("../..", __dir__) << File.basename(extension)
+      cmd = ruby << File.basename(extension)
+      cmd << "--target-rbconfig=#{target_rbconfig.path}" if target_rbconfig.path
       cmd.push(*args)
 
       run(cmd, results, class_name, extension_dir) do |s, r|
@@ -39,22 +41,26 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       ENV["DESTDIR"] = nil
 
-      make dest_path, results, extension_dir, tmp_dest_relative
+      make dest_path, results, extension_dir, tmp_dest_relative, target_rbconfig: target_rbconfig
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      # TODO remove in RubyGems 4
-      if Gem.install_extension_in_lib && lib_dir
+      is_cross_compiling = target_rbconfig["platform"] != RbConfig::CONFIG["platform"]
+      # Do not copy extension libraries by default when cross-compiling
+      # not to conflict with the one already built for the host platform.
+      if Gem.install_extension_in_lib && lib_dir && !is_cross_compiling
         FileUtils.mkdir_p lib_dir
         entries = Dir.entries(full_tmp_dest) - %w[. ..]
         entries = entries.map {|entry| File.join full_tmp_dest, entry }
-        FileUtils.cp_r entries, lib_dir, :remove_destination => true
+        FileUtils.cp_r entries, lib_dir, remove_destination: true
       end
 
       FileUtils::Entry_.new(full_tmp_dest).traverse do |ent|
         destent = ent.class.new(dest_path, ent.rel)
         destent.exist? || FileUtils.mv(ent.path, destent.path)
       end
+
+      make dest_path, results, extension_dir, tmp_dest_relative, ["clean"], target_rbconfig: target_rbconfig
     ensure
       ENV["DESTDIR"] = destdir
     end
@@ -63,8 +69,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   ensure
     FileUtils.rm_rf tmp_dest if tmp_dest
   end
-
-  private
 
   def self.get_relative_path(path, base)
     path[0..base.length - 1] = "." if path.start_with?(base)

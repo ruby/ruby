@@ -28,13 +28,13 @@ pub struct Conditional {
 
 impl Conditional {
     /// CSEL
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CSEL--Conditional-Select-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CSEL--Conditional-Select-?lang=en>
     pub fn csel(rd: u8, rn: u8, rm: u8, cond: u8, num_bits: u8) -> Self {
         Self { rd, rn, cond, rm, sf: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en#condsel
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Register?lang=en#condsel>
 const FAMILY: u32 = 0b101;
 
 impl From<Conditional> for u32 {

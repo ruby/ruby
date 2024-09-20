@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -8,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.4.0.dev".freeze
+  VERSION = "3.6.0.dev"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -17,6 +18,7 @@ require_relative "rubygems/compatibility"
 require_relative "rubygems/defaults"
 require_relative "rubygems/deprecate"
 require_relative "rubygems/errors"
+require_relative "rubygems/target_rbconfig"
 
 ##
 # RubyGems is the Ruby standard for publishing and managing third party
@@ -114,15 +116,6 @@ require_relative "rubygems/errors"
 module Gem
   RUBYGEMS_DIR = __dir__
 
-  # Taint support is deprecated in Ruby 2.7.
-  # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
-  # to avoid deprecation warnings in Ruby 2.7.
-  UNTAINT = RUBY_VERSION < "2.7" ? :untaint.to_sym : proc {}
-
-  # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
-  KERNEL_WARN_IGNORES_INTERNAL_ENTRIES = RUBY_ENGINE == "truffleruby" ||
-                                         (RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.0")
-
   ##
   # An Array of Regexps that match windows Ruby platforms.
 
@@ -185,6 +178,10 @@ module Gem
 
   @default_source_date_epoch = nil
 
+  @discover_gems_on_require = true
+
+  @target_rbconfig = nil
+
   ##
   # Try to activate a gem containing +path+. Returns true if
   # activation succeeded or wasn't needed because it was already
@@ -212,7 +209,7 @@ module Gem
       end
     end
 
-    return true
+    true
   end
 
   def self.needs
@@ -340,16 +337,6 @@ module Gem
   end
 
   ##
-  # The path to the data directory specified by the gem name.  If the
-  # package is not available as a gem, return nil.
-
-  def self.datadir(gem_name)
-    spec = @loaded_specs[gem_name]
-    return nil if spec.nil?
-    spec.datadir
-  end
-
-  ##
   # A Zlib::Deflate.deflate wrapper
 
   def self.deflate(data)
@@ -413,6 +400,23 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # The RbConfig object for the deployment target platform.
+  #
+  # This is usually the same as the running platform, but may be
+  # different if you are cross-compiling.
+
+  def self.target_rbconfig
+    @target_rbconfig || Gem::TargetRbConfig.for_running_ruby
+  end
+
+  def self.set_target_rbconfig(rbconfig_path)
+    @target_rbconfig = Gem::TargetRbConfig.from_path(rbconfig_path)
+    Gem::Platform.local(refresh: true)
+    Gem.platforms << Gem::Platform.local unless Gem.platforms.include? Gem::Platform.local
+    @target_rbconfig
+  end
+
+  ##
   # Quietly ensure the Gem directory +dir+ contains all the proper
   # subdirectories.  If we can't create a directory due to a permission
   # problem, then we will silently continue.
@@ -440,7 +444,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.ensure_subdirectories(dir, mode, subdirs) # :nodoc:
     old_umask = File.umask
-    File.umask old_umask | 002
+    File.umask old_umask | 0o002
 
     options = {}
 
@@ -466,7 +470,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # distinction as extensions cannot be shared between the two.
 
   def self.extension_api_version # :nodoc:
-    if "no" == RbConfig::CONFIG["ENABLE_SHARED"]
+    if target_rbconfig["ENABLE_SHARED"] == "no"
       "#{ruby_api_version}-static"
     else
       ruby_api_version
@@ -500,14 +504,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # the spec dirs directly, so we prune.
     files.uniq! if check_load_path
 
-    return files
+    files
   end
 
   def self.find_files_from_load_path(glob) # :nodoc:
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select {|file| File.file? file.tap(&Gem::UNTAINT) }
+    end.flatten.select {|file| File.file? file }
   end
 
   ##
@@ -535,7 +539,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # the spec dirs directly, so we prune.
     files.uniq! if check_load_path
 
-    return files
+    files
   end
 
   ##
@@ -583,7 +587,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # The number of paths in the +$LOAD_PATH+ from activated gems. Used to
-  # prioritize +-I+ and +ENV['RUBYLIB']+ entries during +require+.
+  # prioritize +-I+ and <code>ENV['RUBYLIB']</code> entries during +require+.
 
   def self.activated_gem_paths
     @activated_gem_paths ||= 0
@@ -613,6 +617,16 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require_relative "rubygems/safe_yaml"
 
     @yaml_loaded = true
+  end
+
+  @safe_marshal_loaded = false
+
+  def self.load_safe_marshal
+    return if @safe_marshal_loaded
+
+    require_relative "rubygems/safe_marshal"
+
+    @safe_marshal_loaded = true
   end
 
   ##
@@ -743,7 +757,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     if prefix != File.expand_path(RbConfig::CONFIG["sitelibdir"]) &&
        prefix != File.expand_path(RbConfig::CONFIG["libdir"]) &&
-       "lib" == File.basename(RUBYGEMS_DIR)
+       File.basename(RUBYGEMS_DIR) == "lib"
       prefix
     end
   end
@@ -759,21 +773,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+") do |io|
-      io.read
-    end
-  rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb") do |io|
-      io.read
-    end
+    File.binread(path)
   end
 
   ##
   # Safely write a file in binary mode on all platforms.
+
   def self.write_binary(path, data)
-    open_file(path, "wb") do |io|
-      io.write data
-    end
+    File.binwrite(path, data)
   rescue Errno::ENOSPC
     # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
     File.delete(path) if File.exist?(path)
@@ -781,25 +788,37 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Open a file with given flags, and on Windows protect access with flock
+  # Open a file with given flags
 
   def self.open_file(path, flags, &block)
-    File.open(path, flags) do |io|
-      if !java_platform? && win_platform?
-        begin
-          io.flock(File::LOCK_EX)
-        rescue Errno::ENOSYS, Errno::ENOTSUP
-        end
+    File.open(path, flags, &block)
+  end
+
+  ##
+  # Open a file with given flags, and protect access with a file lock
+
+  def self.open_file_with_lock(path, &block)
+    file_lock = "#{path}.lock"
+    open_file_with_flock(file_lock, &block)
+  ensure
+    FileUtils.rm_f file_lock
+  end
+
+  ##
+  # Open a file with given flags, and protect access with flock
+
+  def self.open_file_with_flock(path, &block)
+    mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+    mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+
+    File.open(path, mode) do |io|
+      begin
+        io.flock(File::LOCK_EX)
+      rescue Errno::ENOSYS, Errno::ENOTSUP
+      rescue Errno::ENOLCK # NFS
+        raise unless Thread.main == Thread.current
       end
       yield io
-    end
-  rescue Errno::ENOLCK # NFS
-    if Thread.main != Thread.current
-      raise
-    else
-      File.open(path, flags) do |io|
-        yield io
-      end
     end
   end
 
@@ -810,7 +829,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     if @ruby.nil?
       @ruby = RbConfig.ruby
 
-      @ruby = "\"#{@ruby}\"" if @ruby =~ /\s/
+      @ruby = "\"#{@ruby}\"" if /\s/.match?(@ruby)
     end
 
     @ruby
@@ -820,13 +839,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Returns a String containing the API compatibility version of Ruby
 
   def self.ruby_api_version
-    @ruby_api_version ||= RbConfig::CONFIG["ruby_version"].dup
+    @ruby_api_version ||= target_rbconfig["ruby_version"].dup
   end
 
   def self.env_requirement(gem_name)
     @env_requirements_by_name ||= {}
     @env_requirements_by_name[gem_name] ||= begin
-      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || ">= 0".freeze
+      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || ">= 0"
       Gem::Requirement.create(req)
     end
   end
@@ -857,8 +876,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Returns the version of the latest release-version of gem +name+
 
   def self.latest_version_for(name)
-    spec = latest_spec_for name
-    spec && spec.version
+    latest_spec_for(name)&.version
   end
 
   ##
@@ -868,7 +886,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return @ruby_version if defined? @ruby_version
     version = RUBY_VERSION.dup
 
-    unless defined?(RUBY_PATCHLEVEL) && RUBY_PATCHLEVEL != -1
+    if RUBY_PATCHLEVEL == -1
       if RUBY_ENGINE == "ruby"
         desc = RUBY_DESCRIPTION[/\Aruby #{Regexp.quote(RUBY_VERSION)}([^ ]+) /, 1]
       else
@@ -916,7 +934,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Glob pattern for require-able path suffixes.
 
   def self.suffix_pattern
-    @suffix_pattern ||= "{#{suffixes.join(',')}}"
+    @suffix_pattern ||= "{#{suffixes.join(",")}}"
   end
 
   ##
@@ -950,8 +968,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      val = RbConfig::CONFIG[key]
                      next unless val && !val.empty?
                      ".#{val}"
-                   end,
-                  ].compact.uniq
+                   end].compact.uniq
+  end
+
+  ##
+  # Suffixes for dynamic library require-able paths.
+
+  def self.dynamic_library_suffixes
+    @dynamic_library_suffixes ||= suffixes - [".rb"]
   end
 
   ##
@@ -965,7 +989,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     elapsed = Time.now - now
 
-    ui.say "%2$*1$s: %3$3.3fs" % [-width, msg, elapsed] if display
+    ui.say format("%2$*1$s: %3$3.3fs", -width, msg, elapsed) if display
 
     value
   end
@@ -997,7 +1021,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.win_platform?
     if @@win_platform.nil?
       ruby_platform = RbConfig::CONFIG["host_os"]
-      @@win_platform = !!WIN_PATTERNS.find {|r| ruby_platform =~ r }
+      @@win_platform = !WIN_PATTERNS.find {|r| ruby_platform =~ r }.nil?
     end
 
     @@win_platform
@@ -1018,6 +1042,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Is this platform FreeBSD
+
+  def self.freebsd_platform?
+    RbConfig::CONFIG["host_os"].to_s.include?("bsd")
+  end
+
+  ##
   # Load +plugins+ as Ruby files
 
   def self.load_plugin_files(plugins) # :nodoc:
@@ -1025,11 +1056,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       # Skip older versions of the GemCutter plugin: Its commands are in
       # RubyGems proper now.
 
-      next if plugin =~ /gemcutter-0\.[0-3]/
+      next if /gemcutter-0\.[0-3]/.match?(plugin)
 
       begin
         load plugin
-      rescue ::Exception => e
+      rescue ScriptError, StandardError => e
         details = "#{plugin.inspect}: #{e.message} (#{e.class})"
         warn "Error loading RubyGems plugin #{details}"
       end
@@ -1091,8 +1122,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     end
 
-    path.tap(&Gem::UNTAINT)
-
     unless File.file? path
       return unless raise_exception
 
@@ -1104,13 +1133,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     require "bundler"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
-        begin
-          Bundler.ui.silence do
-            @gemdeps = Bundler.setup
-          end
-        ensure
-          Gem::DefaultUserInteraction.ui.close
+        Bundler.ui.silence do
+          @gemdeps = Bundler.setup
         end
+      ensure
+        Gem::DefaultUserInteraction.ui.close
       end
     rescue Bundler::BundlerError => e
       warn e.message
@@ -1156,7 +1183,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # This is used throughout RubyGems for enabling reproducible builds.
 
   def self.source_date_epoch
-    Time.at(self.source_date_epoch_string.to_i).utc.freeze
+    Time.at(source_date_epoch_string.to_i).utc.freeze
   end
 
   # FIX: Almost everywhere else we use the `def self.` way of defining class
@@ -1167,7 +1194,15 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # RubyGems distributors (like operating system package managers) can
     # disable RubyGems update by setting this to error message printed to
     # end-users on gem update --system instead of actual update.
+
     attr_accessor :disable_system_update_message
+
+    ##
+    # Whether RubyGems should enhance builtin `require` to automatically
+    # check whether the path required is present in installed gems, and
+    # automatically activate them and add them to `$LOAD_PATH`.
+
+    attr_accessor :discover_gems_on_require
 
     ##
     # Hash of loaded Gem::Specification keyed by name
@@ -1217,9 +1252,16 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     ##
     # Find a Gem::Specification of default gem from +path+
 
+    def find_default_spec(path)
+      @path_to_default_spec_map[path]
+    end
+
+    ##
+    # Find an unresolved Gem::Specification of default gem from +path+
+
     def find_unresolved_default_spec(path)
       default_spec = @path_to_default_spec_map[path]
-      return default_spec if default_spec && loaded_specs[default_spec.name] != default_spec
+      default_spec if default_spec && loaded_specs[default_spec.name] != default_spec
     end
 
     ##
@@ -1297,8 +1339,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
-  autoload :BundlerVersionFinder, File.expand_path("rubygems/bundler_version_finder", __dir__)
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
+  autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
   autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
   autoload :Installer,          File.expand_path("rubygems/installer", __dir__)
@@ -1345,12 +1387,32 @@ begin
 rescue LoadError
 end
 
+# TruffleRuby >= 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY in defaults/truffleruby.
+# However, TruffleRuby < 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY directly in its copy
+# of lib/rubygems/platform.rb, so it is not defined if RubyGems is updated (gem update --system).
+# Instead, we define it here in that case, similar to bundler/lib/bundler/rubygems_ext.rb.
+# We must define it here and not in platform.rb because platform.rb is loaded before defaults/truffleruby.
+class Gem::Platform
+  if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
+    REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
+  end
+end
+
 ##
 # Loads the default specs.
 Gem::Specification.load_defaults
 
 require_relative "rubygems/core_ext/kernel_gem"
-require_relative "rubygems/core_ext/kernel_require"
-require_relative "rubygems/core_ext/kernel_warn"
+
+path = File.join(__dir__, "rubygems/core_ext/kernel_require.rb")
+# When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
+if RUBY_ENGINE == "truffleruby" ||
+   RUBY_ENGINE == "ruby"
+  file = "<internal:#{path}>"
+else
+  require_relative "rubygems/core_ext/kernel_warn"
+  file = path
+end
+eval File.read(path), nil, file
 
 require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)

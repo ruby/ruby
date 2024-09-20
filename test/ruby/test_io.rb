@@ -655,7 +655,7 @@ class TestIO < Test::Unit::TestCase
 
   if have_nonblock?
     def test_copy_stream_no_busy_wait
-      omit "MJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+      omit "RJIT has busy wait on GC. This sometimes fails with --jit." if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
       omit "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
@@ -1639,6 +1639,12 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_explicit_path
+    io = IO.for_fd(0, path: "Fake Path", autoclose: false)
+    assert_match %r"Fake Path", io.inspect
+    assert_equal "Fake Path", io.path
+  end
+
   def test_write_nonblock_simple_no_exceptions
     pipe(proc do |w|
       w.write_nonblock('1', exception: false)
@@ -1673,7 +1679,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
-    omit '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
+    omit '[ruby-core:90895] RJIT worker may leave fd open in a forked child' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # TODO: consider acquiring GVL from RJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
@@ -1890,6 +1896,110 @@ class TestIO < Test::Unit::TestCase
       r.gets; assert_equal(1001, $.)
       r.gets; assert_equal(1001, $.)
     end)
+  end
+
+  def test_readline_bad_param_raises
+    File.open(__FILE__) do |f|
+      assert_raise(TypeError) do
+        f.readline Object.new
+      end
+    end
+
+    File.open(__FILE__) do |f|
+      assert_raise(TypeError) do
+        f.readline 1, 2
+      end
+    end
+  end
+
+  def test_readline_raises
+    File.open(__FILE__) do |f|
+      assert_equal File.read(__FILE__), f.readline(nil)
+      assert_raise(EOFError) do
+        f.readline
+      end
+    end
+  end
+
+  def test_readline_separators
+    File.open(__FILE__) do |f|
+      line = f.readline("def")
+      assert_equal File.read(__FILE__)[/\A.*?def/m], line
+    end
+
+    File.open(__FILE__) do |f|
+      line = f.readline("def", chomp: true)
+      assert_equal File.read(__FILE__)[/\A.*?(?=def)/m], line
+    end
+  end
+
+  def test_readline_separators_limits
+    t = Tempfile.open("readline_limit")
+    str = "#" * 50
+    sep = "def"
+
+    t.write str
+    t.write sep
+    t.write str
+    t.flush
+
+    # over limit
+    File.open(t.path) do |f|
+      line = f.readline sep, str.bytesize
+      assert_equal(str, line)
+    end
+
+    # under limit
+    File.open(t.path) do |f|
+      line = f.readline(sep, str.bytesize + 5)
+      assert_equal(str + sep, line)
+    end
+
+    # under limit + chomp
+    File.open(t.path) do |f|
+      line = f.readline(sep, str.bytesize + 5, chomp: true)
+      assert_equal(str, line)
+    end
+  ensure
+    t&.close!
+  end
+
+  def test_readline_limit_without_separator
+    t = Tempfile.open("readline_limit")
+    str = "#" * 50
+    sep = "\n"
+
+    t.write str
+    t.write sep
+    t.write str
+    t.flush
+
+    # over limit
+    File.open(t.path) do |f|
+      line = f.readline str.bytesize
+      assert_equal(str, line)
+    end
+
+    # under limit
+    File.open(t.path) do |f|
+      line = f.readline(str.bytesize + 5)
+      assert_equal(str + sep, line)
+    end
+
+    # under limit + chomp
+    File.open(t.path) do |f|
+      line = f.readline(str.bytesize + 5, chomp: true)
+      assert_equal(str, line)
+    end
+  ensure
+    t&.close!
+  end
+
+  def test_readline_chomp_true
+    File.open(__FILE__) do |f|
+      line = f.readline(chomp: true)
+      assert_equal File.readlines(__FILE__).first.chomp, line
+    end
   end
 
   def test_set_lineno_readline
@@ -2341,9 +2451,9 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_autoclose_true_closed_by_finalizer
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
-    omit 'this randomly fails with MJIT' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    # http://ci.rvm.jp/results/trunk-rjit@silicon-docker/1465760
+    # http://ci.rvm.jp/results/trunk-rjit@silicon-docker/1469765
+    omit 'this randomly fails with RJIT' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
@@ -2406,15 +2516,19 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_open_pipe
-    open("|" + EnvUtil.rubybin, "r+") do |f|
-      f.puts "puts 'foo'"
-      f.close_write
-      assert_equal("foo\n", f.read)
+    assert_deprecated_warning(/Kernel#open with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+      open("|" + EnvUtil.rubybin, "r+") do |f|
+        f.puts "puts 'foo'"
+        f.close_write
+        assert_equal("foo\n", f.read)
+      end
     end
   end
 
   def test_read_command
-    assert_equal("foo\n", IO.read("|echo foo"))
+    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+      assert_equal("foo\n", IO.read("|echo foo"))
+    end
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
       File.read("|#{EnvUtil.rubybin} -e puts")
     end
@@ -2428,7 +2542,9 @@ class TestIO < Test::Unit::TestCase
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
     end
     assert_raise(Errno::ESPIPE) do
-      IO.read("|echo foo", 1, 1)
+      assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+        IO.read("|#{EnvUtil.rubybin} -e 'puts :foo'", 1, 1)
+      end
     end
   end
 
@@ -2613,11 +2729,16 @@ class TestIO < Test::Unit::TestCase
 
   def test_foreach
     a = []
-    IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
+
+    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+      IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
+    end
     assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
     a = []
-    IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :zot'", :open_args => ["r"]) {|x| a << x }
+    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+      IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :zot'", :open_args => ["r"]) {|x| a << x }
+    end
     assert_equal(["zot\n"], a)
 
     make_tempfile {|t|
@@ -2808,6 +2929,15 @@ class TestIO < Test::Unit::TestCase
       f.close
 
       assert_equal("FOO\n", File.read(t.path))
+
+      fd = IO.sysopen(t.path)
+      %w[w r+ w+ a+].each do |mode|
+        assert_raise(Errno::EINVAL, "#{mode} [ruby-dev:38571]") {IO.new(fd, mode)}
+      end
+      f = IO.new(fd, "r")
+      data = f.read
+      f.close
+      assert_equal("FOO\n", data)
     }
   end
 
@@ -2860,6 +2990,9 @@ class TestIO < Test::Unit::TestCase
       assert_equal("foo\nbar\nbaz\n", File.read(t.path))
       assert_equal("foo\nba", File.read(t.path, 6))
       assert_equal("bar\n", File.read(t.path, 4, 4))
+
+      assert_raise(ArgumentError) { File.read(t.path, -1) }
+      assert_raise(ArgumentError) { File.read(t.path, 1, -1) }
     }
   end
 
@@ -3743,8 +3876,10 @@ __END__
   end
 
   def test_open_fifo_does_not_block_other_threads
-    mkcdtmpdir {
+    mkcdtmpdir do
       File.mkfifo("fifo")
+    rescue NotImplementedError
+    else
       assert_separately([], <<-'EOS')
         t1 = Thread.new {
           open("fifo", "r") {|r|
@@ -3759,8 +3894,32 @@ __END__
         t1_value, _ = assert_join_threads([t1, t2])
         assert_equal("foo", t1_value)
       EOS
-    }
-  end if /mswin|mingw|bccwin|cygwin/ !~ RUBY_PLATFORM
+    end
+  end
+
+  def test_open_fifo_restart_at_signal_intterupt
+    mkcdtmpdir do
+      File.mkfifo("fifo")
+    rescue NotImplementedError
+    else
+      wait = EnvUtil.apply_timeout_scale(0.1)
+      data = "writing to fifo"
+
+      # Do not use assert_separately, because reading from stdin
+      # prevents to reproduce [Bug #20708]
+      assert_in_out_err(["-e", "#{<<~"begin;"}\n#{<<~'end;'}"], [], [data])
+      wait, data = #{wait}, #{data.dump}
+      ;
+      begin;
+        trap(:USR1) {}
+        Thread.new do
+          sleep wait; Process.kill(:USR1, $$)
+          sleep wait; File.write("fifo", data)
+        end
+        puts File.read("fifo")
+      end;
+    end
+  end if Signal.list[:USR1] # Pointless on platforms without signal
 
   def test_open_flag
     make_tempfile do |t|
@@ -3805,7 +3964,7 @@ __END__
   end
 
   def test_race_gets_and_close
-    opt = { signal: :ABRT, timeout: 200 }
+    opt = { signal: :ABRT, timeout: 10 }
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", **opt)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
@@ -3967,7 +4126,7 @@ __END__
         assert_raise(EOFError) { f.pread(1, f.size) }
       end
     }
-  end if IO.method_defined?(:pread)
+  end
 
   def test_pwrite
     make_tempfile { |t|
@@ -3976,7 +4135,7 @@ __END__
         assert_equal("ooo", f.pread(3, 4))
       end
     }
-  end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
+  end
 
   def test_select_exceptfds
     if Etc.uname[:sysname] == 'SunOS'

@@ -1,28 +1,6 @@
 #include "../fbuffer/fbuffer.h"
 #include "parser.h"
 
-#if defined HAVE_RUBY_ENCODING_H
-# define EXC_ENCODING rb_utf8_encoding(),
-# ifndef HAVE_RB_ENC_RAISE
-static void
-enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
-{
-    va_list args;
-    VALUE mesg;
-
-    va_start(args, fmt);
-    mesg = rb_enc_vsprintf(enc, fmt, args);
-    va_end(args);
-
-    rb_exc_raise(rb_exc_new3(exc, mesg));
-}
-#   define rb_enc_raise enc_raise
-# endif
-#else
-# define EXC_ENCODING /* nothing */
-# define rb_enc_raise rb_raise
-#endif
-
 /* unicode */
 
 static const signed char digit_values[256] = {
@@ -222,14 +200,14 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (json->allow_nan) {
             *result = CNaN;
         } else {
-            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 2);
+            rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p - 2);
         }
     }
     action parse_infinity {
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 8);
+            rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p - 7);
         }
     }
     action parse_string {
@@ -245,7 +223,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 fexec p + 10;
                 fhold; fbreak;
             } else {
-                rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p);
+                rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p);
             }
         }
         np = JSON_parse_float(json, fpc, pe, result);
@@ -447,7 +425,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     if(cs >= JSON_array_first_final) {
         return p + 1;
     } else {
-        rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p);
+        rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p);
         return NULL;
     }
 }
@@ -508,10 +486,10 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                 case 'u':
                     if (pe > stringEnd - 4) {
                       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                        free(bufferStart);
+                        ruby_xfree(bufferStart);
                       }
                       rb_enc_raise(
-                        EXC_ENCODING eParserError,
+                        rb_utf8_encoding(), eParserError,
                         "incomplete unicode character escape sequence at '%s'", p
                       );
                     } else {
@@ -521,10 +499,10 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                             pe++;
                             if (pe > stringEnd - 6) {
                               if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                                free(bufferStart);
+                                ruby_xfree(bufferStart);
                               }
                               rb_enc_raise(
-                                EXC_ENCODING eParserError,
+                                rb_utf8_encoding(), eParserError,
                                 "incomplete surrogate pair at '%s'", p
                                 );
                             }
@@ -566,13 +544,13 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
         result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
       }
       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-        free(bufferStart);
+        ruby_xfree(bufferStart);
       }
 # else
       result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
 
       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-        free(bufferStart);
+        ruby_xfree(bufferStart);
       }
 
       if (intern) {
@@ -691,8 +669,6 @@ static VALUE convert_encoding(VALUE source)
  *
  * Creates a new JSON::Ext::Parser instance for the string _source_.
  *
- * Creates a new JSON::Ext::Parser instance for the string _source_.
- *
  * It will be configured by the _opts_ hash. _opts_ can have the following
  * keys:
  *
@@ -721,98 +697,85 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (json->Vsource) {
         rb_raise(rb_eTypeError, "already initialized instance");
     }
-#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
     rb_scan_args(argc, argv, "1:", &source, &opts);
-#else
-    rb_scan_args(argc, argv, "11", &source, &opts);
-#endif
     if (!NIL_P(opts)) {
-#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
-        opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
-        if (NIL_P(opts)) {
-            rb_raise(rb_eArgError, "opts needs to be like a hash");
-        } else {
-#endif
-            VALUE tmp = ID2SYM(i_max_nesting);
-            if (option_given_p(opts, tmp)) {
-                VALUE max_nesting = rb_hash_aref(opts, tmp);
-                if (RTEST(max_nesting)) {
-                    Check_Type(max_nesting, T_FIXNUM);
-                    json->max_nesting = FIX2INT(max_nesting);
-                } else {
-                    json->max_nesting = 0;
-                }
-            } else {
-                json->max_nesting = 100;
-            }
-            tmp = ID2SYM(i_allow_nan);
-            if (option_given_p(opts, tmp)) {
-                json->allow_nan = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-            } else {
-                json->allow_nan = 0;
-            }
-            tmp = ID2SYM(i_symbolize_names);
-            if (option_given_p(opts, tmp)) {
-                json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-            } else {
-                json->symbolize_names = 0;
-            }
-            tmp = ID2SYM(i_freeze);
-            if (option_given_p(opts, tmp)) {
-                json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-            } else {
-                json->freeze = 0;
-            }
-            tmp = ID2SYM(i_create_additions);
-            if (option_given_p(opts, tmp)) {
-                json->create_additions = RTEST(rb_hash_aref(opts, tmp));
-            } else {
-                json->create_additions = 0;
-            }
-            if (json->symbolize_names && json->create_additions) {
-              rb_raise(rb_eArgError,
-                "options :symbolize_names and :create_additions cannot be "
-                " used in conjunction");
-            }
-            tmp = ID2SYM(i_create_id);
-            if (option_given_p(opts, tmp)) {
-                json->create_id = rb_hash_aref(opts, tmp);
-            } else {
-                json->create_id = rb_funcall(mJSON, i_create_id, 0);
-            }
-            tmp = ID2SYM(i_object_class);
-            if (option_given_p(opts, tmp)) {
-                json->object_class = rb_hash_aref(opts, tmp);
-            } else {
-                json->object_class = Qnil;
-            }
-            tmp = ID2SYM(i_array_class);
-            if (option_given_p(opts, tmp)) {
-                json->array_class = rb_hash_aref(opts, tmp);
-            } else {
-                json->array_class = Qnil;
-            }
-            tmp = ID2SYM(i_decimal_class);
-            if (option_given_p(opts, tmp)) {
-                json->decimal_class = rb_hash_aref(opts, tmp);
-            } else {
-                json->decimal_class = Qnil;
-            }
-            tmp = ID2SYM(i_match_string);
-            if (option_given_p(opts, tmp)) {
-                VALUE match_string = rb_hash_aref(opts, tmp);
-                json->match_string = RTEST(match_string) ? match_string : Qnil;
-            } else {
-                json->match_string = Qnil;
-            }
-#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
-        }
-#endif
+	VALUE tmp = ID2SYM(i_max_nesting);
+	if (option_given_p(opts, tmp)) {
+	    VALUE max_nesting = rb_hash_aref(opts, tmp);
+	    if (RTEST(max_nesting)) {
+		Check_Type(max_nesting, T_FIXNUM);
+		json->max_nesting = FIX2INT(max_nesting);
+	    } else {
+		json->max_nesting = 0;
+	    }
+	} else {
+	    json->max_nesting = 100;
+	}
+	tmp = ID2SYM(i_allow_nan);
+	if (option_given_p(opts, tmp)) {
+	    json->allow_nan = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+	} else {
+	    json->allow_nan = 0;
+	}
+	tmp = ID2SYM(i_symbolize_names);
+	if (option_given_p(opts, tmp)) {
+	    json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+	} else {
+	    json->symbolize_names = 0;
+	}
+	tmp = ID2SYM(i_freeze);
+	if (option_given_p(opts, tmp)) {
+	    json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+	} else {
+	    json->freeze = 0;
+	}
+	tmp = ID2SYM(i_create_additions);
+	if (option_given_p(opts, tmp)) {
+	    json->create_additions = RTEST(rb_hash_aref(opts, tmp));
+	} else {
+	    json->create_additions = 0;
+	}
+	if (json->symbolize_names && json->create_additions) {
+	    rb_raise(rb_eArgError,
+		     "options :symbolize_names and :create_additions cannot be "
+		     " used in conjunction");
+	}
+	tmp = ID2SYM(i_create_id);
+	if (option_given_p(opts, tmp)) {
+	    json->create_id = rb_hash_aref(opts, tmp);
+	} else {
+	    json->create_id = rb_funcall(mJSON, i_create_id, 0);
+	}
+	tmp = ID2SYM(i_object_class);
+	if (option_given_p(opts, tmp)) {
+	    json->object_class = rb_hash_aref(opts, tmp);
+	} else {
+	    json->object_class = Qnil;
+	}
+	tmp = ID2SYM(i_array_class);
+	if (option_given_p(opts, tmp)) {
+	    json->array_class = rb_hash_aref(opts, tmp);
+	} else {
+	    json->array_class = Qnil;
+	}
+	tmp = ID2SYM(i_decimal_class);
+	if (option_given_p(opts, tmp)) {
+	    json->decimal_class = rb_hash_aref(opts, tmp);
+	} else {
+	    json->decimal_class = Qnil;
+	}
+	tmp = ID2SYM(i_match_string);
+	if (option_given_p(opts, tmp)) {
+	    VALUE match_string = rb_hash_aref(opts, tmp);
+	    json->match_string = RTEST(match_string) ? match_string : Qnil;
+	} else {
+	    json->match_string = Qnil;
+	}
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
         json->create_additions = 0;
-        json->create_id = rb_funcall(mJSON, i_create_id, 0);
+        json->create_id = Qnil;
         json->object_class = Qnil;
         json->array_class = Qnil;
         json->decimal_class = Qnil;
@@ -847,7 +810,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
  *
  *  Parses the current JSON text _source_ and returns the complete data
  *  structure as a result.
- *  It raises JSON::ParseError if fail to parse.
+ *  It raises JSON::ParserError if fail to parse.
  */
 static VALUE cParser_parse(VALUE self)
 {
@@ -864,7 +827,7 @@ static VALUE cParser_parse(VALUE self)
   if (cs >= JSON_first_final && p == pe) {
     return result;
   } else {
-    rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p);
+    rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p);
     return Qnil;
   }
 }
@@ -872,12 +835,12 @@ static VALUE cParser_parse(VALUE self)
 static void JSON_mark(void *ptr)
 {
     JSON_Parser *json = ptr;
-    rb_gc_mark_maybe(json->Vsource);
-    rb_gc_mark_maybe(json->create_id);
-    rb_gc_mark_maybe(json->object_class);
-    rb_gc_mark_maybe(json->array_class);
-    rb_gc_mark_maybe(json->decimal_class);
-    rb_gc_mark_maybe(json->match_string);
+    rb_gc_mark(json->Vsource);
+    rb_gc_mark(json->create_id);
+    rb_gc_mark(json->object_class);
+    rb_gc_mark(json->array_class);
+    rb_gc_mark(json->decimal_class);
+    rb_gc_mark(json->match_string);
 }
 
 static void JSON_free(void *ptr)
@@ -893,16 +856,12 @@ static size_t JSON_memsize(const void *ptr)
     return sizeof(*json) + FBUFFER_CAPA(json->fbuffer);
 }
 
-#ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Parser_type = {
     "JSON/Parser",
     {JSON_mark, JSON_free, JSON_memsize,},
-#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
-#endif
 };
-#endif
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
+
 module Gem
-  DEFAULT_HOST = "https://rubygems.org".freeze
+  DEFAULT_HOST = "https://rubygems.org"
 
   @post_install_hooks ||= []
   @done_installing_hooks ||= []
@@ -23,7 +24,7 @@ module Gem
     default_spec_cache_dir = File.join Gem.user_home, ".gem", "specs"
 
     unless File.exist?(default_spec_cache_dir)
-      default_spec_cache_dir = File.join Gem.data_home, "gem", "specs"
+      default_spec_cache_dir = File.join Gem.cache_home, "gem", "specs"
     end
 
     default_spec_cache_dir
@@ -79,7 +80,7 @@ module Gem
 
   def self.find_home
     Dir.home.dup
-  rescue
+  rescue StandardError
     if Gem.win_platform?
       File.expand_path File.join(ENV["HOMEDRIVE"] || ENV["SystemDrive"], "/")
     else
@@ -93,7 +94,7 @@ module Gem
   # The home directory for the user.
 
   def self.user_home
-    @user_home ||= find_home.tap(&Gem::UNTAINT)
+    @user_home ||= find_home
   end
 
   ##
@@ -111,7 +112,7 @@ module Gem
   # The path to standard location of the user's configuration directory.
 
   def self.config_home
-    @config_home ||= (ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, ".config"))
+    @config_home ||= ENV["XDG_CONFIG_HOME"] || File.join(Gem.user_home, ".config")
   end
 
   ##
@@ -130,35 +131,35 @@ module Gem
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
-    @config_file ||= find_config_file.tap(&Gem::UNTAINT)
+    @config_file ||= find_config_file
   end
 
   ##
   # The path to standard location of the user's state file.
 
   def self.state_file
-    @state_file ||= File.join(Gem.state_home, "gem", "last_update_check").tap(&Gem::UNTAINT)
+    @state_file ||= File.join(Gem.state_home, "gem", "last_update_check")
   end
 
   ##
   # The path to standard location of the user's cache directory.
 
   def self.cache_home
-    @cache_home ||= (ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, ".cache"))
+    @cache_home ||= ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, ".cache")
   end
 
   ##
   # The path to standard location of the user's data directory.
 
   def self.data_home
-    @data_home ||= (ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, ".local", "share"))
+    @data_home ||= ENV["XDG_DATA_HOME"] || File.join(Gem.user_home, ".local", "share")
   end
 
   ##
   # The path to standard location of the user's state directory.
 
   def self.state_home
-    @data_home ||= (ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state"))
+    @state_home ||= ENV["XDG_STATE_HOME"] || File.join(Gem.user_home, ".local", "state")
   end
 
   ##
@@ -183,7 +184,11 @@ module Gem
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    exec_format = RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s") rescue "%s"
+    exec_format = begin
+                    RbConfig::CONFIG["ruby_install_name"].sub("ruby", "%s")
+                  rescue StandardError
+                    "%s"
+                  end
 
     unless exec_format.include?("%s")
       raise Gem::Exception,
@@ -231,10 +236,22 @@ module Gem
   end
 
   ##
+  # Enables automatic installation into user directory
+
+  def self.default_user_install # :nodoc:
+    if !ENV.key?("GEM_HOME") && (File.exist?(Gem.dir) && !File.writable?(Gem.dir))
+      Gem.ui.say "Defaulting to user installation because default installation directory (#{Gem.dir}) is not writable."
+      return true
+    end
+
+    false
+  end
+
+  ##
   # Install extensions into lib as well as into the extension directory.
 
   def self.install_extension_in_lib # :nodoc:
-    true
+    Gem.configuration.install_extension_in_lib
   end
 
   ##

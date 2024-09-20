@@ -28,6 +28,11 @@ typedef union rb_thread_lock_union {
     CRITICAL_SECTION crit;
 } rb_nativethread_lock_t;
 
+struct rb_thread_cond_struct {
+    struct cond_event_entry *next;
+    struct cond_event_entry *prev;
+};
+
 typedef struct rb_thread_cond_struct rb_nativethread_cond_t;
 
 #elif defined(HAVE_PTHREAD_H)

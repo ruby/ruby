@@ -58,7 +58,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RB_ST2FIX(st_data_t i)
 {
-    SIGNED_VALUE x = i;
+    SIGNED_VALUE x = RBIMPL_CAST((SIGNED_VALUE)i);
 
     if (x >= 0) {
         x &= RUBY_FIXNUM_MAX;
@@ -69,7 +69,7 @@ RB_ST2FIX(st_data_t i)
 
     RBIMPL_ASSERT_OR_ASSUME(RB_FIXABLE(x));
     unsigned long y = RBIMPL_CAST((unsigned long)x);
-    return RB_LONG2FIX(y);
+    return RB_LONG2FIX(RBIMPL_CAST((long)y));
 }
 
 #endif /* RBIMPL_ARITHMETIC_ST_DATA_T_H */

@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -65,7 +65,7 @@ const rb_data_type_t ossl_pkcs7_type = {
     {
 	0, ossl_pkcs7_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -79,7 +79,7 @@ static const rb_data_type_t ossl_pkcs7_signer_info_type = {
     {
 	0, ossl_pkcs7_signer_info_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -93,7 +93,7 @@ static const rb_data_type_t ossl_pkcs7_recip_info_type = {
     {
 	0, ossl_pkcs7_recip_info_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -165,7 +165,11 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     out = NULL;
     pkcs7 = SMIME_read_PKCS7(in, &out);
     BIO_free(in);
-    if(!pkcs7) ossl_raise(ePKCS7Error, NULL);
+    if (!pkcs7)
+        ossl_raise(ePKCS7Error, "Could not parse the PKCS7");
+    if (!pkcs7->d.ptr)
+        ossl_raise(ePKCS7Error, "No content in PKCS7");
+
     data = out ? ossl_membio2str(out) : Qnil;
     SetPKCS7(ret, pkcs7);
     ossl_pkcs7_set_data(ret, data);
@@ -346,6 +350,8 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
     if (!p7)
         ossl_raise(rb_eArgError, "Could not parse the PKCS7");
+    if (!p7->d.ptr)
+        ossl_raise(rb_eArgError, "No content in PKCS7");
 
     RTYPEDDATA_DATA(self) = p7;
     PKCS7_free(p7_orig);
@@ -842,6 +848,25 @@ ossl_pkcs7_to_der(VALUE self)
 }
 
 static VALUE
+ossl_pkcs7_to_text(VALUE self)
+{
+    PKCS7 *pkcs7;
+    BIO *out;
+    VALUE str;
+
+    GetPKCS7(self, pkcs7);
+    if(!(out = BIO_new(BIO_s_mem())))
+        ossl_raise(ePKCS7Error, NULL);
+    if(!PKCS7_print_ctx(out, pkcs7, 0, NULL)) {
+        BIO_free(out);
+        ossl_raise(ePKCS7Error, NULL);
+    }
+    str = ossl_membio2str(out);
+
+    return str;
+}
+
+static VALUE
 ossl_pkcs7_to_pem(VALUE self)
 {
     PKCS7 *pkcs7;
@@ -1050,6 +1075,7 @@ Init_ossl_pkcs7(void)
     rb_define_method(cPKCS7, "to_pem", ossl_pkcs7_to_pem, 0);
     rb_define_alias(cPKCS7,  "to_s", "to_pem");
     rb_define_method(cPKCS7, "to_der", ossl_pkcs7_to_der, 0);
+    rb_define_method(cPKCS7, "to_text", ossl_pkcs7_to_text, 0);
 
     cPKCS7Signer = rb_define_class_under(cPKCS7, "SignerInfo", rb_cObject);
     rb_define_const(cPKCS7, "Signer", cPKCS7Signer);

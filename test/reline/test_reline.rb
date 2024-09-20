@@ -8,6 +8,7 @@ class Reline::Test < Reline::TestCase
   end
 
   def setup
+    Reline.send(:test_mode)
     Reline.output_modifier_proc = nil
     Reline.completion_proc = nil
     Reline.prompt_proc = nil
@@ -44,35 +45,6 @@ class Reline::Test < Reline::TestCase
     assert_equal(nil, Reline.completion_append_character)
   ensure
     Reline.completion_append_character = completion_append_character
-  end
-
-  def test_dialog_color_configuration
-    # defaults
-    assert_equal(:cyan, Reline.dialog_default_bg_color)
-    assert_equal(:white, Reline.dialog_default_fg_color)
-    assert_equal(:magenta, Reline.dialog_highlight_bg_color)
-    assert_equal(:white, Reline.dialog_highlight_fg_color)
-
-    Reline.dialog_default_bg_color = :black
-    assert_equal(:black, Reline.dialog_default_bg_color)
-    assert_equal(40, Reline.dialog_default_bg_color_sequence)
-
-    Reline.dialog_default_fg_color = :white
-    assert_equal(:white, Reline.dialog_default_fg_color)
-    assert_equal(37, Reline.dialog_default_fg_color_sequence)
-
-    Reline.dialog_highlight_bg_color = :white
-    assert_equal(:white, Reline.dialog_highlight_bg_color)
-    assert_equal(47, Reline.dialog_highlight_bg_color_sequence)
-
-    Reline.dialog_highlight_fg_color = :black
-    assert_equal(:black, Reline.dialog_highlight_fg_color)
-    assert_equal(30, Reline.dialog_highlight_fg_color_sequence)
-
-    # test value validation
-    assert_raise(ArgumentError) do
-      Reline.dialog_highlight_fg_color = :foo
-    end
   end
 
   def test_basic_word_break_characters
@@ -313,7 +285,7 @@ class Reline::Test < Reline::TestCase
     input, to_write = IO.pipe
     to_read, output = IO.pipe
     unless Reline.__send__(:input=, input)
-      omit "Setting to input is not effective on #{Reline::IOGate}"
+      omit "Setting to input is not effective on #{Reline.core.io_gate}"
     end
     Reline.output = output
 
@@ -331,12 +303,12 @@ class Reline::Test < Reline::TestCase
 
   def test_vi_editing_mode
     Reline.vi_editing_mode
-    assert_equal(Reline::KeyActor::ViInsert, Reline.send(:core).config.editing_mode.class)
+    assert_equal(:vi_insert, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
-    assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
+    assert_equal(:emacs, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_add_dialog_proc
@@ -349,6 +321,9 @@ class Reline::Test < Reline::TestCase
     Reline.add_dialog_proc(:test_proc, dummy_proc_2)
     d = Reline.dialog_proc(:test_proc)
     assert_equal(dummy_proc_2, d.dialog_proc)
+
+    Reline.add_dialog_proc(:test_proc, nil)
+    assert_nil(Reline.dialog_proc(:test_proc))
 
     l = lambda {}
     Reline.add_dialog_proc(:test_lambda, l)
@@ -399,14 +374,68 @@ class Reline::Test < Reline::TestCase
 
   def test_dumb_terminal
     lib = File.expand_path("../../lib", __dir__)
-    out = IO.popen([{"TERM"=>"dumb"}, "ruby", "-I#{lib}", "-rreline", "-e", "p Reline::IOGate"], &:read)
-    assert_equal("Reline::GeneralIO", out.chomp)
+    out = IO.popen([{"TERM"=>"dumb"}, Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", "p Reline.core.io_gate"], &:read)
+    assert_match(/#<Reline::Dumb/, out.chomp)
+  end
+
+  def test_print_prompt_before_everything_else
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p Reline::IOGate.class; p Reline.readline 'prompt> '"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "abc\n"
+      io.close_write
+      io.read
+    end
+    assert_match(/\AReline::ANSI\nprompt> /, out)
+  end
+
+  def test_read_eof_returns_input
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-a"
+      io.close_write
+      io.read
+    end
+    assert_include(out, { result: 'a' }.inspect)
+  end
+
+  def test_read_eof_returns_nil_if_empty
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-h"
+      io.close_write
+      io.read
+    end
+    assert_include(out, { result: nil }.inspect)
+  end
+
+  def test_require_reline_should_not_trigger_winsize
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = <<~RUBY
+      require "io/console"
+      def STDIN.tty?; true; end
+      def STDOUT.tty?; true; end
+      def STDIN.winsize; raise; end
+      require("reline") && p(Reline.core.io_gate)
+    RUBY
+    out = IO.popen([{}, Reline.test_rubybin, "-I#{lib}", "-e", code], &:read)
+    assert_include(out.chomp, "Reline::ANSI")
+  end
+
+  def win?
+    /mswin|mingw/.match?(RUBY_PLATFORM)
   end
 
   def get_reline_encoding
-    if encoding = Reline::IOGate.encoding
+    if encoding = Reline.core.encoding
       encoding
-    elsif RUBY_PLATFORM =~ /mswin|mingw/
+    elsif win?
       Encoding::UTF_8
     else
       Encoding::default_external

@@ -20,6 +20,28 @@ class TestFiberThread < Test::Unit::TestCase
     assert_equal :done, thread.value
   end
 
+  def test_thread_join_timeout
+    sleeper = nil
+
+    thread = Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        sleeper = Thread.new{sleep}
+        sleeper.join(0.1)
+      end
+
+      scheduler.run
+    end
+
+    thread.join
+
+    assert_predicate sleeper, :alive?
+  ensure
+    sleeper&.kill&.join
+  end
+
   def test_thread_join_implicit
     sleeping = false
     finished = false

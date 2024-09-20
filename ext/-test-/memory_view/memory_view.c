@@ -313,8 +313,8 @@ mdview_get_memory_view(VALUE obj, rb_memory_view_t *view, int flags)
 static bool
 mdview_release_memory_view(VALUE obj, rb_memory_view_t *view)
 {
-    if (view->shape) xfree((void *)view->shape);
-    if (view->strides) xfree((void *)view->strides);
+    xfree((void *)view->shape);
+    xfree((void *)view->strides);
 
     return true;
 }

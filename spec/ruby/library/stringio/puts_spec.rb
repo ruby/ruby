@@ -145,7 +145,7 @@ end
 
 describe "StringIO#puts when in append mode" do
   before :each do
-    @io = StringIO.new("example", "a")
+    @io = StringIO.new(+"example", "a")
   end
 
   it "appends the passed argument to the end of self" do
@@ -164,10 +164,10 @@ end
 
 describe "StringIO#puts when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io.puts }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io.puts }.should raise_error(IOError)
   end
@@ -175,7 +175,7 @@ end
 
 describe "StringIO#puts when passed an encoded string" do
   it "stores the bytes unmodified" do
-    io = StringIO.new("")
+    io = StringIO.new(+"")
     io.puts "\x00\x01\x02"
     io.puts "æåø"
 

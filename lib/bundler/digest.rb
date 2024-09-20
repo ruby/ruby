@@ -26,7 +26,7 @@ module Bundler
           end
           a, b, c, d, e = *words
           (16..79).each do |i|
-            w[i] = SHA1_MASK & rotate((w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16]), 1)
+            w[i] = SHA1_MASK & rotate((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]), 1)
           end
           0.upto(79) do |i|
             case i
@@ -50,7 +50,7 @@ module Bundler
           words.map!.with_index {|word, index| SHA1_MASK & (word + mutated[index]) }
         end
 
-        words.pack("N*").unpack("H*").first
+        words.pack("N*").unpack1("H*")
       end
 
       private

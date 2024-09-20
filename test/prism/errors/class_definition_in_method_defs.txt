@@ -1,0 +1,7 @@
+def foo(bar = class A;end);end
+              ^~~~~ unexpected class definition in method body
+def foo;rescue;class A;end;end
+               ^~~~~ unexpected class definition in method body
+def foo;ensure;class A;end;end
+               ^~~~~ unexpected class definition in method body
+

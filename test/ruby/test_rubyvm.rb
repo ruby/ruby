@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestRubyVM < Test::Unit::TestCase
   def test_stat
@@ -32,6 +33,7 @@ class TestRubyVM < Test::Unit::TestCase
   end
 
   def test_keep_script_lines
+    omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     prev_conf = RubyVM.keep_script_lines

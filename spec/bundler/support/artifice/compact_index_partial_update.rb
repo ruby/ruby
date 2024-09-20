@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexPartialUpdate < CompactIndexAPI
   # Stub the server to never return 304s. This simulates the behaviour of
@@ -25,7 +23,7 @@ class CompactIndexPartialUpdate < CompactIndexAPI
     # Verify that a partial request is made, starting from the index of the
     # final byte of the cached file.
     unless env["HTTP_RANGE"] == "bytes=#{File.binread(cached_versions_path).bytesize - 1}-"
-      raise("Range header should be present, and start from the index of the final byte of the cache.")
+      raise("Range header should be present, and start from the index of the final byte of the cache. #{env["HTTP_RANGE"].inspect}")
     end
 
     etag_response do
@@ -34,5 +32,7 @@ class CompactIndexPartialUpdate < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexPartialUpdate)

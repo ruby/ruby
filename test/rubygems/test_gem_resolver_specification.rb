@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemResolverSpecification < Gem::TestCase
@@ -24,7 +25,7 @@ class TestGemResolverSpecification < Gem::TestCase
     a_spec = TestSpec.new a
     a_spec.source = Gem::Source.new @gem_repo
 
-    a_spec.install :install_dir => gemhome
+    a_spec.install install_dir: gemhome
 
     assert_path_exist File.join gemhome, "gems", a.full_name
 

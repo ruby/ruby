@@ -177,10 +177,10 @@ create_win32ole_record(IRecordInfo *pri, void *prec)
 }
 
 /*
- * Document-class: WIN32OLE_RECORD
+ * Document-class: WIN32OLE::Record
  *
- *   <code>WIN32OLE_RECORD</code> objects represents VT_RECORD OLE variant.
- *   Win32OLE returns WIN32OLE_RECORD object if the result value of invoking
+ *   +WIN32OLE::Record+ objects represents VT_RECORD OLE variant.
+ *   Win32OLE returns WIN32OLE::Record object if the result value of invoking
  *   OLE methods.
  *
  *   If COM server in VB.NET ComServer project is the following:
@@ -206,7 +206,7 @@ create_win32ole_record(IRecordInfo *pri, void *prec)
  *     require 'win32ole'
  *     obj = WIN32OLE.new('ComServer.ComClass')
  *     book = obj.getBook
- *     book.class # => WIN32OLE_RECORD
+ *     book.class # => WIN32OLE::Record
  *     book.title # => "The Ruby Book"
  *     book.cost  # => 20
  *
@@ -253,11 +253,11 @@ folerecord_s_allocate(VALUE klass) {
 
 /*
  * call-seq:
- *    WIN32OLE_RECORD.new(typename, obj) -> WIN32OLE_RECORD object
+ *    new(typename, obj) -> WIN32OLE::Record object
  *
- * Returns WIN32OLE_RECORD object. The first argument is struct name (String
+ * Returns WIN32OLE::Record object. The first argument is struct name (String
  * or Symbol).
- * The second parameter obj should be WIN32OLE object or WIN32OLE_TYPELIB object.
+ * The second parameter obj should be WIN32OLE object or WIN32OLE::TypeLib object.
  * If COM server in VB.NET ComServer project is the following:
  *
  *   Imports System.Runtime.InteropServices
@@ -269,13 +269,13 @@ folerecord_s_allocate(VALUE klass) {
  *       End Structure
  *   End Class
  *
- * then, you can create WIN32OLE_RECORD object is as following:
+ * then, you can create WIN32OLE::Record object is as following:
  *
  *   require 'win32ole'
  *   obj = WIN32OLE.new('ComServer.ComClass')
- *   book1 = WIN32OLE_RECORD.new('Book', obj) # => WIN32OLE_RECORD object
+ *   book1 = WIN32OLE::Record.new('Book', obj) # => WIN32OLE::Record object
  *   tlib = obj.ole_typelib
- *   book2 = WIN32OLE_RECORD.new('Book', tlib) # => WIN32OLE_RECORD object
+ *   book2 = WIN32OLE::Record.new('Book', tlib) # => WIN32OLE::Record object
  *
  */
 static VALUE
@@ -303,7 +303,7 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
             hr = E_FAIL;
         }
     } else {
-        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object or WIN32OLE_TYPELIB object");
+        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object or WIN32OLE::TypeLib object");
     }
 
     if (FAILED(hr)) {
@@ -323,7 +323,7 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
 
 /*
  *  call-seq:
- *     WIN32OLE_RECORD#to_h #=> Ruby Hash object.
+ *     WIN32OLE::Record#to_h #=> Ruby Hash object.
  *
  *  Returns Ruby Hash object which represents VT_RECORD variable.
  *  The keys of Hash object are member names of VT_RECORD OLE variable and
@@ -346,7 +346,7 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
  *         End Function
  *     End Class
  *
- *  then, the result of WIN32OLE_RECORD#to_h is the following:
+ *  then, the result of WIN32OLE::Record#to_h is the following:
  *
  *     require 'win32ole'
  *     obj = WIN32OLE.new('ComServer.ComClass')
@@ -362,7 +362,7 @@ folerecord_to_h(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_RECORD#typename #=> String object
+ *     typename #=> String object
  *
  *  Returns the type name of VT_RECORD OLE variable.
  *
@@ -383,7 +383,7 @@ folerecord_to_h(VALUE self)
  *         End Function
  *     End Class
  *
- *  then, the result of WIN32OLE_RECORD#typename is the following:
+ *  then, the result of WIN32OLE::Record#typename is the following:
  *
  *     require 'win32ole'
  *     obj = WIN32OLE.new('ComServer.ComClass')
@@ -423,7 +423,7 @@ olerecord_ivar_set(VALUE self, VALUE name, VALUE val)
 
 /*
  *  call-seq:
- *     WIN32OLE_RECORD#method_missing(name)
+ *     method_missing(name)
  *
  *  Returns value specified by the member name of VT_RECORD OLE variable.
  *  Or sets value specified by the member name of VT_RECORD OLE variable.
@@ -443,7 +443,7 @@ olerecord_ivar_set(VALUE self, VALUE name, VALUE val)
  *  Then getting/setting value from Ruby is as the following:
  *
  *     obj = WIN32OLE.new('ComServer.ComClass')
- *     book = WIN32OLE_RECORD.new('Book', obj)
+ *     book = WIN32OLE::Record.new('Book', obj)
  *     book.title # => nil ( book.method_missing(:title) is invoked. )
  *     book.title = "Ruby" # ( book.method_missing(:title=, "Ruby") is invoked. )
  */
@@ -473,7 +473,7 @@ folerecord_method_missing(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_RECORD#ole_instance_variable_get(name)
+ *     ole_instance_variable_get(name)
  *
  *  Returns value specified by the member name of VT_RECORD OLE object.
  *  If the member name is not correct, KeyError exception is raised.
@@ -494,7 +494,7 @@ folerecord_method_missing(int argc, VALUE *argv, VALUE self)
  *  then accessing object_id of ComObject from Ruby is as the following:
  *
  *     srver = WIN32OLE.new('ComServer.ComClass')
- *     obj = WIN32OLE_RECORD.new('ComObject', server)
+ *     obj = WIN32OLE::Record.new('ComObject', server)
  *     # obj.object_id returns Ruby Object#object_id
  *     obj.ole_instance_variable_get(:object_id) # => nil
  *
@@ -515,7 +515,7 @@ folerecord_ole_instance_variable_get(VALUE self, VALUE name)
 
 /*
  *  call-seq:
- *     WIN32OLE_RECORD#ole_instance_variable_set(name, val)
+ *     ole_instance_variable_set(name, val)
  *
  *  Sets value specified by the member name of VT_RECORD OLE object.
  *  If the member name is not correct, KeyError exception is raised.
@@ -534,7 +534,7 @@ folerecord_ole_instance_variable_get(VALUE self, VALUE name)
  *  then setting value of the `title' member is as following:
  *
  *     srver = WIN32OLE.new('ComServer.ComClass')
- *     obj = WIN32OLE_RECORD.new('Book', server)
+ *     obj = WIN32OLE::Record.new('Book', server)
  *     obj.ole_instance_variable_set(:title, "The Ruby Book")
  *
  */
@@ -554,7 +554,7 @@ folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
 
 /*
  *  call-seq:
- *     WIN32OLE_RECORD#inspect -> String
+ *     inspect -> String
  *
  *  Returns the OLE struct name and member name and the value of member
  *
@@ -570,8 +570,8 @@ folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
  *  then
  *
  *     srver = WIN32OLE.new('ComServer.ComClass')
- *     obj = WIN32OLE_RECORD.new('Book', server)
- *     obj.inspect # => <WIN32OLE_RECORD(ComClass) {"title" => nil, "cost" => nil}>
+ *     obj = WIN32OLE::Record.new('Book', server)
+ *     obj.inspect # => <WIN32OLE::Record(ComClass) {"title" => nil, "cost" => nil}>
  *
  */
 static VALUE
@@ -584,7 +584,7 @@ folerecord_inspect(VALUE self)
         tname = rb_inspect(tname);
     }
     field = rb_inspect(folerecord_to_h(self));
-    return rb_sprintf("#<WIN32OLE_RECORD(%"PRIsVALUE") %"PRIsVALUE">",
+    return rb_sprintf("#<WIN32OLE::Record(%"PRIsVALUE") %"PRIsVALUE">",
                       tname,
                       field);
 }
@@ -595,6 +595,7 @@ void
 Init_win32ole_record(void)
 {
     cWIN32OLE_RECORD = rb_define_class_under(cWIN32OLE, "Record", rb_cObject);
+    /* Alias of WIN32OLE::Record, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_RECORD", cWIN32OLE_RECORD);
     rb_define_alloc_func(cWIN32OLE_RECORD, folerecord_s_allocate);
     rb_define_method(cWIN32OLE_RECORD, "initialize", folerecord_initialize, 2);

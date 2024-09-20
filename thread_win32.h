@@ -21,18 +21,13 @@
 WINBASEAPI BOOL WINAPI
 TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
-struct rb_thread_cond_struct {
-    struct cond_event_entry *next;
-    struct cond_event_entry *prev;
-};
-
 struct rb_native_thread {
     HANDLE thread_id;
     HANDLE interrupt_event;
 };
 
 struct rb_thread_sched_item {
-    char dmy;
+    void *vm_stack;
 };
 
 struct rb_thread_sched {

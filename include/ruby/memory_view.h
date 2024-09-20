@@ -47,10 +47,10 @@ typedef struct {
     char format;
 
     /** :FIXME: what is a "native" size is unclear. */
-    unsigned native_size_p: 1;
+    bool native_size_p;
 
     /** Endian of the component */
-    unsigned little_endian_p: 1;
+    bool little_endian_p;
 
     /** The component's offset. */
     size_t offset;

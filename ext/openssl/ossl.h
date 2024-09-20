@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #if !defined(_OSSL_H_)
 #define _OSSL_H_
@@ -52,8 +52,18 @@
       (LIBRESSL_VERSION_NUMBER >= ((maj << 28) | (min << 20) | (pat << 12)))
 #endif
 
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+# define OSSL_3_const const
+#else
+# define OSSL_3_const /* const */
+#endif
+
 #if !defined(OPENSSL_NO_ENGINE) && !OSSL_OPENSSL_PREREQ(3, 0, 0)
 # define OSSL_USE_ENGINE
+#endif
+
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+# define OSSL_USE_PROVIDER
 #endif
 
 /*
@@ -151,7 +161,6 @@ VALUE ossl_to_der_if_possible(VALUE);
  */
 extern VALUE dOSSL;
 
-#if defined(HAVE_VA_ARGS_MACRO)
 #define OSSL_Debug(...) do { \
   if (dOSSL == Qtrue) { \
     fprintf(stderr, "OSSL_DEBUG: "); \
@@ -159,11 +168,6 @@ extern VALUE dOSSL;
     fprintf(stderr, " [%s:%d]\n", __FILE__, __LINE__); \
   } \
 } while (0)
-
-#else
-void ossl_debug(const char *, ...);
-#define OSSL_Debug ossl_debug
-#endif
 
 /*
  * Include all parts
@@ -188,6 +192,7 @@ void ossl_debug(const char *, ...);
 #endif
 #include "ossl_x509.h"
 #include "ossl_engine.h"
+#include "ossl_provider.h"
 #include "ossl_kdf.h"
 
 void Init_openssl(void);

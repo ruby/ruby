@@ -27,6 +27,9 @@ describe "File.atime" do
         else
           File.atime(__FILE__).usec.should == 0
         end
+      rescue Errno::ENOENT => e
+        # Native Windows don't have stat command.
+        skip e.message
       end
     end
   end

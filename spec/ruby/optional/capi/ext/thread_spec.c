@@ -8,7 +8,10 @@
 #include <unistd.h>
 #endif
 #if defined(_WIN32)
-#define pipe(p) rb_w32_pipe(p)
+#include "ruby/win32.h"
+#define read rb_w32_read
+#define write rb_w32_write
+#define pipe rb_w32_pipe
 #endif
 
 #ifndef _WIN32
@@ -22,10 +25,6 @@ extern "C" {
 static VALUE thread_spec_rb_thread_alone(VALUE self) {
   return rb_thread_alone() ? Qtrue : Qfalse;
 }
-
-#if defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
 
 /* This is unblocked by unblock_func(). */
 static void* blocking_gvl_func(void* data) {
@@ -68,7 +67,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl(VALUE self) {
 }
 
 /* This is unblocked by a signal. */
-static void* blocking_gvl_func_for_udf_io(void *data) {
+static void* blocking_gvl_func_for_ubf_io(void *data) {
   int rfd = (int)(size_t)data;
   char dummy;
 
@@ -88,7 +87,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
     rb_raise(rb_eRuntimeError, "could not create pipe");
   }
 
-  ret = rb_thread_call_without_gvl(blocking_gvl_func_for_udf_io,
+  ret = rb_thread_call_without_gvl(blocking_gvl_func_for_ubf_io,
                                   (void*)(size_t)fds[0], RUBY_UBF_IO, 0);
   close(fds[0]);
   close(fds[1]);

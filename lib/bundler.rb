@@ -17,7 +17,7 @@ require_relative "bundler/build_metadata"
 # Bundler provides a consistent environment for Ruby projects by
 # tracking and installing the exact gems and versions that are needed.
 #
-# Since Ruby 2.6, Bundler is a part of Ruby's standard library.
+# Bundler is a part of Ruby's standard library.
 #
 # Bundler is used by creating _gemfiles_ listing all the project dependencies
 # and (optionally) their versions and then using
@@ -39,6 +39,10 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
+  autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
+  autoload :CLI,                    File.expand_path("bundler/cli", __dir__)
+  autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
+  autoload :CompactIndexClient,     File.expand_path("bundler/compact_index_client", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
@@ -75,10 +79,12 @@ module Bundler
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
+  autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
+  autoload :SafeMarshal,            File.expand_path("bundler/safe_marshal", __dir__)
 
   class << self
     def configure
-      @configured ||= configure_gem_home_and_path
+      @configure ||= configure_gem_home_and_path
     end
 
     def ui
@@ -96,9 +102,7 @@ module Bundler
     end
 
     def create_bundle_path
-      SharedHelpers.filesystem_access(bundle_path.to_s) do |p|
-        mkdir_p(p)
-      end unless bundle_path.exist?
+      mkdir_p(bundle_path) unless bundle_path.exist?
 
       @bundle_path = bundle_path.realpath
     rescue Errno::EEXIST
@@ -115,7 +119,7 @@ module Bundler
       @bin_path ||= begin
         path = settings[:bin] || "bin"
         path = Pathname.new(path).expand_path(root).expand_path
-        SharedHelpers.filesystem_access(path) {|p| FileUtils.mkdir_p(p) }
+        mkdir_p(path)
         path
       end
     end
@@ -163,6 +167,29 @@ module Bundler
       end
     end
 
+    def auto_switch
+      self_manager.restart_with_locked_bundler_if_needed
+    end
+
+    # Automatically install dependencies if Bundler.settings[:auto_install] exists.
+    # This is set through config cmd `bundle config set --global auto_install 1`.
+    #
+    # Note that this method `nil`s out the global Definition object, so it
+    # should be called first, before you instantiate anything like an
+    # `Installer` that'll keep a reference to the old one instead.
+    def auto_install
+      return unless settings[:auto_install]
+
+      begin
+        definition.specs
+      rescue GemNotFound, GitError
+        ui.info "Automatically installing missing gems."
+        reset!
+        CLI::Install.new({}).run
+        reset!
+      end
+    end
+
     # Setups Bundler environment (see Bundler.setup) if it is not already set,
     # and loads all gems from groups specified. Unlike ::setup, can be called
     # multiple times with different groups (if they were allowed by setup).
@@ -182,6 +209,7 @@ module Bundler
     #    Bundler.require(:test)   # requires second_gem
     #
     def require(*groups)
+      load_plugins
       setup(*groups).require(*groups)
     end
 
@@ -190,7 +218,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", :print_caller_location => true
+      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", print_caller_location: true
       load
     end
 
@@ -198,19 +226,21 @@ module Bundler
     #
     # @param unlock [Hash, Boolean, nil] Gems that have been requested
     #   to be updated or true if all gems should be updated
+    # @param lockfile [Pathname] Path to Gemfile.lock
     # @return [Bundler::Definition]
-    def definition(unlock = nil)
+    def definition(unlock = nil, lockfile = default_lockfile)
       @definition = nil if unlock
       @definition ||= begin
         configure
-        Definition.build(default_gemfile, default_lockfile, unlock)
+        Definition.build(default_gemfile, lockfile, unlock)
       end
     end
 
     def frozen_bundle?
-      frozen = settings[:deployment]
-      frozen ||= settings[:frozen]
-      frozen
+      frozen = settings[:frozen]
+      return frozen unless frozen.nil?
+
+      settings[:deployment]
     end
 
     def locked_gems
@@ -327,20 +357,12 @@ module Bundler
 
     def rm_rf(path)
       FileUtils.remove_entry_secure(path) if path && File.exist?(path)
-    rescue ArgumentError
-      message = <<EOF
-It is a security vulnerability to allow your home directory to be world-writable, and bundler cannot continue.
-You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to https://ruby-doc.org/stdlib-3.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
-EOF
-      File.world_writable?(path) ? Bundler.ui.warn(message) : raise
-      raise PathError, "Please fix the world-writable issue with your #{path} directory"
     end
 
     def settings
       @settings ||= Settings.new(app_config_path)
     rescue GemfileNotFound
-      @settings = Settings.new(Pathname.new(".bundle").expand_path)
+      @settings = Settings.new
     end
 
     # @return [Hash] Environment present before Bundler was activated
@@ -350,13 +372,13 @@ EOF
 
     # @deprecated Use `unbundled_env` instead
     def clean_env
-      Bundler::SharedHelpers.major_deprecation(
-        2,
+      message =
         "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`",
-        :print_caller_location => true
-      )
-
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
+      removed_message =
+        "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       unbundled_env
     end
 
@@ -393,13 +415,13 @@ EOF
 
     # @deprecated Use `with_unbundled_env` instead
     def with_clean_env
-      Bundler::SharedHelpers.major_deprecation(
-        2,
+      message =
         "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`",
-        :print_caller_location => true
-      )
-
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
+      removed_message =
+        "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
+        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       with_env(unbundled_env) { yield }
     end
 
@@ -415,13 +437,13 @@ EOF
 
     # @deprecated Use `unbundled_system` instead
     def clean_system(*args)
-      Bundler::SharedHelpers.major_deprecation(
-        2,
+      message =
         "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`",
-        :print_caller_location => true
-      )
-
+        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
+      removed_message =
+        "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
+        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       with_env(unbundled_env) { Kernel.system(*args) }
     end
 
@@ -437,13 +459,13 @@ EOF
 
     # @deprecated Use `unbundled_exec` instead
     def clean_exec(*args)
-      Bundler::SharedHelpers.major_deprecation(
-        2,
+      message =
         "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`",
-        :print_caller_location => true
-      )
-
+        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
+      removed_message =
+        "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
+        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       with_env(unbundled_env) { Kernel.exec(*args) }
     end
 
@@ -453,7 +475,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform]
       Gem::Platform.local
     end
 
@@ -486,7 +508,7 @@ EOF
       configured_bundle_path.use_system_gems?
     end
 
-    def mkdir_p(path, options = {})
+    def mkdir_p(path)
       SharedHelpers.filesystem_access(path, :write) do |p|
         FileUtils.mkdir_p(p)
       end
@@ -496,7 +518,7 @@ EOF
       if File.file?(executable) && File.executable?(executable)
         executable
       elsif paths = ENV["PATH"]
-        quote = '"'.freeze
+        quote = '"'
         paths.split(File::PATH_SEPARATOR).find do |path|
           path = path[1..-2] if path.start_with?(quote) && path.end_with?(quote)
           executable_path = File.expand_path(executable, path)
@@ -511,10 +533,17 @@ EOF
       end
     end
 
-    def load_marshal(data)
-      Marshal.load(data)
-    rescue TypeError => e
-      raise MarshalError, "#{e.class}: #{e.message}"
+    def safe_load_marshal(data)
+      if Gem.respond_to?(:load_safe_marshal)
+        Gem.load_safe_marshal
+        begin
+          Gem::SafeMarshal.safe_load(data)
+        rescue Gem::SafeMarshal::Reader::Error, Gem::SafeMarshal::Visitors::ToRuby::Error => e
+          raise MarshalError, "#{e.class}: #{e.message}"
+        end
+      else
+        load_marshal(data, marshal_proc: SafeMarshal.proc)
+      end
     end
 
     def load_gemspec(file, validate = false)
@@ -523,7 +552,7 @@ EOF
       @gemspec_cache[key] ||= load_gemspec_uncached(file, validate)
       # Protect against caching side-effected gemspecs by returning a
       # new instance each time.
-      @gemspec_cache[key].dup if @gemspec_cache[key]
+      @gemspec_cache[key]&.dup
     end
 
     def load_gemspec_uncached(file, validate = false)
@@ -550,11 +579,28 @@ EOF
 
     def git_present?
       return @git_present if defined?(@git_present)
-      @git_present = Bundler.which("git") || Bundler.which("git.exe")
+      @git_present = Bundler.which("git#{RbConfig::CONFIG["EXEEXT"]}")
     end
 
     def feature_flag
       @feature_flag ||= FeatureFlag.new(VERSION)
+    end
+
+    def load_plugins(definition = Bundler.definition)
+      return if defined?(@load_plugins_ran)
+
+      Bundler.rubygems.load_plugins
+
+      requested_path_gems = definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
+      path_plugin_files = requested_path_gems.map do |spec|
+        Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+      rescue TypeError
+        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
+        raise Gem::InvalidSpecificationException, error_message
+      end.flatten
+      Bundler.rubygems.load_plugin_files(path_plugin_files)
+      Bundler.rubygems.load_env_plugins
+      @load_plugins_ran = true
     end
 
     def reset!
@@ -572,7 +618,7 @@ EOF
       @bin_path = nil
       @bundler_major_version = nil
       @bundle_path = nil
-      @configured = nil
+      @configure = nil
       @configured_bundle_path = nil
       @definition = nil
       @load = nil
@@ -605,6 +651,12 @@ EOF
 
     private
 
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
+    rescue TypeError => e
+      raise MarshalError, "#{e.class}: #{e.message}"
+    end
+
     def eval_yaml_gemspec(path, contents)
       Kernel.require "psych"
 
@@ -618,7 +670,7 @@ EOF
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
-      raise GemspecError, Dsl::DSLError.new(msg, path, e.backtrace, contents)
+      raise GemspecError, Dsl::DSLError.new(msg, path.to_s, e.backtrace, contents)
     end
 
     def configure_gem_path

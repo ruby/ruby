@@ -5,8 +5,27 @@ require_relative "version"
 require "tmpdir"
 require "stringio"
 require "pathname"
-require "ripper"
 require "timeout"
+
+# We need Ripper loaded for `Prism.lex_compat` even if we're using Prism
+# for lexing and parsing
+require "ripper"
+
+# Prism is the new parser, replacing Ripper
+#
+# We need to "dual boot" both for now because syntax_suggest
+# supports older rubies that do not ship with syntax suggest.
+#
+# We also need the ability to control loading of this library
+# so we can test that both modes work correctly in CI.
+if (value = ENV["SYNTAX_SUGGEST_DISABLE_PRISM"])
+  warn "Skipping loading prism due to SYNTAX_SUGGEST_DISABLE_PRISM=#{value}"
+else
+  begin
+    require "prism"
+  rescue LoadError
+  end
+end
 
 module SyntaxSuggest
   # Used to indicate a default value that cannot
@@ -15,6 +34,14 @@ module SyntaxSuggest
 
   class Error < StandardError; end
   TIMEOUT_DEFAULT = ENV.fetch("SYNTAX_SUGGEST_TIMEOUT", 1).to_i
+
+  # SyntaxSuggest.use_prism_parser? [Private]
+  #
+  # Tells us if the prism parser is available for use
+  # or if we should fallback to `Ripper`
+  def self.use_prism_parser?
+    defined?(Prism)
+  end
 
   # SyntaxSuggest.handle_error [Public]
   #
@@ -78,7 +105,7 @@ module SyntaxSuggest
       code_lines: search.code_lines
     ).call
   rescue Timeout::Error => e
-    io.puts "Search timed out SYNTAX_SUGGEST_TIMEOUT=#{timeout}, run with DEBUG=1 for more info"
+    io.puts "Search timed out SYNTAX_SUGGEST_TIMEOUT=#{timeout}, run with SYNTAX_SUGGEST_DEBUG=1 for more info"
     io.puts e.backtrace.first(3).join($/)
   end
 
@@ -91,7 +118,9 @@ module SyntaxSuggest
     dir = Pathname(dir)
     dir.join(time).tap { |path|
       path.mkpath
-      FileUtils.ln_sf(time, dir.join("last"))
+      alias_dir = dir.join("last")
+      FileUtils.rm_rf(alias_dir) if alias_dir.exist?
+      FileUtils.ln_sf(time, alias_dir)
     }
   end
 
@@ -127,11 +156,20 @@ module SyntaxSuggest
   # SyntaxSuggest.invalid? [Private]
   #
   # Opposite of `SyntaxSuggest.valid?`
-  def self.invalid?(source)
-    source = source.join if source.is_a?(Array)
-    source = source.to_s
+  if defined?(Prism)
+    def self.invalid?(source)
+      source = source.join if source.is_a?(Array)
+      source = source.to_s
 
-    Ripper.new(source).tap(&:parse).error?
+      Prism.parse(source).failure?
+    end
+  else
+    def self.invalid?(source)
+      source = source.join if source.is_a?(Array)
+      source = source.to_s
+
+      Ripper.new(source).tap(&:parse).error?
+    end
   end
 
   # SyntaxSuggest.valid? [Private]
@@ -189,7 +227,6 @@ require_relative "lex_all"
 require_relative "code_line"
 require_relative "code_block"
 require_relative "block_expand"
-require_relative "ripper_errors"
 require_relative "priority_queue"
 require_relative "unvisited_lines"
 require_relative "around_block_scan"

@@ -4,8 +4,34 @@ require_relative "../spec_helper"
 
 module SyntaxSuggest
   RSpec.describe CaptureCodeContext do
+    it "capture_before_after_kws two" do
+      source = <<~EOM
+        class OH
+
+          def hello
+
+          def hai
+          end
+        end
+      EOM
+
+      code_lines = CleanDocument.new(source: source).call.lines
+      block = CodeBlock.new(lines: code_lines[2])
+
+      display = CaptureCodeContext.new(
+        blocks: [block],
+        code_lines: code_lines
+      )
+      display.capture_before_after_kws(block)
+      expect(display.sorted_lines.join).to eq(<<~EOM.indent(2))
+        def hello
+        def hai
+        end
+      EOM
+    end
+
     it "capture_before_after_kws" do
-      source = <<~'EOM'
+      source = <<~EOM
         def sit
         end
 
@@ -16,14 +42,15 @@ module SyntaxSuggest
       EOM
 
       code_lines = CleanDocument.new(source: source).call.lines
-      block = CodeBlock.new(lines: code_lines[0])
+      block = CodeBlock.new(lines: code_lines[3])
 
       display = CaptureCodeContext.new(
         blocks: [block],
         code_lines: code_lines
       )
-      lines = display.call
-      expect(lines.join).to eq(<<~'EOM')
+
+      lines = display.capture_before_after_kws(block).sort
+      expect(lines.join).to eq(<<~EOM)
         def sit
         end
         def bark
@@ -33,7 +60,7 @@ module SyntaxSuggest
     end
 
     it "handles ambiguous end" do
-      source = <<~'EOM'
+      source = <<~EOM
         def call          # 0
             print "lol"   # 1
           end # one       # 2
@@ -52,7 +79,7 @@ module SyntaxSuggest
 
       lines = lines.sort.map(&:original)
 
-      expect(lines.join).to eq(<<~'EOM')
+      expect(lines.join).to eq(<<~EOM)
         def call          # 0
           end # one       # 2
         end # two         # 3
@@ -67,7 +94,7 @@ module SyntaxSuggest
       code_lines = CleanDocument.new(source: source).call.lines
 
       code_lines[0..75].each(&:mark_invisible)
-      code_lines[77..-1].each(&:mark_invisible)
+      code_lines[77..].each(&:mark_invisible)
       expect(code_lines.join.strip).to eq("class Lookups")
 
       block = CodeBlock.new(lines: code_lines[76..149])
@@ -79,7 +106,7 @@ module SyntaxSuggest
       lines = display.call
 
       lines = lines.sort.map(&:original)
-      expect(lines.join).to include(<<~'EOM'.indent(2))
+      expect(lines.join).to include(<<~EOM.indent(2))
         class Lookups
           def format_requires
         end
@@ -87,7 +114,7 @@ module SyntaxSuggest
     end
 
     it "shows ends of captured block" do
-      source = <<~'EOM'
+      source = <<~EOM
         class Dog
           def bark
             puts "woof"
@@ -96,7 +123,7 @@ module SyntaxSuggest
 
       code_lines = CleanDocument.new(source: source).call.lines
       block = CodeBlock.new(lines: code_lines)
-      code_lines[1..-1].each(&:mark_invisible)
+      code_lines[1..].each(&:mark_invisible)
 
       expect(block.to_s.strip).to eq("class Dog")
 
@@ -105,7 +132,7 @@ module SyntaxSuggest
         code_lines: code_lines
       )
       lines = display.call.sort.map(&:original)
-      expect(lines.join).to eq(<<~'EOM')
+      expect(lines.join).to eq(<<~EOM)
         class Dog
           def bark
         end
@@ -113,7 +140,7 @@ module SyntaxSuggest
     end
 
     it "captures surrounding context on falling indent" do
-      source = <<~'EOM'
+      source = <<~EOM
         class Blerg
         end
 
@@ -137,7 +164,7 @@ module SyntaxSuggest
         code_lines: code_lines
       )
       lines = display.call.sort.map(&:original)
-      expect(lines.join).to eq(<<~'EOM')
+      expect(lines.join).to eq(<<~EOM)
         class OH
           def hello
             it "foo" do
@@ -147,7 +174,7 @@ module SyntaxSuggest
     end
 
     it "captures surrounding context on same indent" do
-      source = <<~'EOM'
+      source = <<~EOM
         class Blerg
         end
         class OH
@@ -173,7 +200,7 @@ module SyntaxSuggest
 
       code_lines = CleanDocument.new(source: source).call.lines
       block = CodeBlock.new(lines: code_lines[7..10])
-      expect(block.to_s).to eq(<<~'EOM'.indent(2))
+      expect(block.to_s).to eq(<<~EOM.indent(2))
         def lol
         end
 
@@ -190,7 +217,7 @@ module SyntaxSuggest
         lines: lines
       ).call
 
-      expect(out).to eq(<<~'EOM'.indent(2))
+      expect(out).to eq(<<~EOM.indent(2))
          3  class OH
          8    def lol
          9    end

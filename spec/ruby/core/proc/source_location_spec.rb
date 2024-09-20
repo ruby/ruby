@@ -19,19 +19,19 @@ describe "Proc#source_location" do
   it "sets the first value to the path of the file in which the proc was defined" do
     file = @proc.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
+    file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
     file = @proc_new.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
+    file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
     file = @lambda.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
+    file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
     file = @method.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
+    file.should == File.realpath('fixtures/source_location.rb', __dir__)
   end
 
   it "sets the last value to an Integer representing the line on which the proc was defined" do
@@ -82,5 +82,10 @@ describe "Proc#source_location" do
     proc = method.to_proc
 
     proc.source_location.should == nil
+  end
+
+  it "works for eval with a given line" do
+    proc = eval('-> {}', nil, "foo", 100)
+    proc.source_location.should == ["foo", 100]
   end
 end

@@ -125,9 +125,11 @@ class RDoc::Parser
     return parser if ext_name.empty?
 
     if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/ then
-      case check_modeline file_name
+      case mode = check_modeline(file_name)
       when nil, 'rdoc' then # continue
-      else return nil
+      else
+        RDoc::Parser.parsers.find { |_, p| return p if mode.casecmp?(p.name[/\w+\z/]) }
+        return nil
       end
     end
 
@@ -164,7 +166,8 @@ class RDoc::Parser
   # Finds and instantiates the correct parser for the given +file_name+ and
   # +content+.
 
-  def self.for top_level, file_name, content, options, stats
+  def self.for top_level, content, options, stats
+    file_name = top_level.absolute_name
     return if binary? file_name
 
     parser = use_markup content

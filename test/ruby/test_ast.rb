@@ -2,6 +2,7 @@
 require 'test/unit'
 require 'tempfile'
 require 'pp'
+require_relative '../lib/parser_support'
 
 class RubyVM
   module AbstractSyntaxTree
@@ -214,7 +215,131 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def assert_parse(code, warning: '')
+    node = assert_warning(warning) {RubyVM::AbstractSyntaxTree.parse(code)}
+    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, node, code)
+  end
+
+  def assert_invalid_parse(msg, code)
+    assert_raise_with_message(SyntaxError, msg, code) do
+      RubyVM::AbstractSyntaxTree.parse(code)
+    end
+  end
+
+  def test_invalid_exit
+    [
+      "break",
+      "break true",
+      "next",
+      "next true",
+      "redo",
+    ].each do |code, *args|
+      msg = /Invalid #{code[/\A\w+/]}/
+      assert_parse("while false; #{code}; end")
+      assert_parse("until true; #{code}; end")
+      assert_parse("begin #{code}; end while false")
+      assert_parse("begin #{code}; end until true")
+      assert_parse("->{#{code}}")
+      assert_parse("->{class X; #{code}; end}")
+      assert_invalid_parse(msg, "#{code}")
+      assert_invalid_parse(msg, "def m; #{code}; end")
+      assert_invalid_parse(msg, "begin; #{code}; end")
+      assert_parse("END {#{code}}")
+
+      assert_parse("!defined?(#{code})")
+      assert_parse("def m; defined?(#{code}); end")
+      assert_parse("!begin; defined?(#{code}); end")
+
+      next if code.include?(" ")
+      assert_parse("!defined? #{code}")
+      assert_parse("def m; defined? #{code}; end")
+      assert_parse("!begin; defined? #{code}; end")
+    end
+  end
+
+  def test_invalid_retry
+    msg = /Invalid retry/
+    assert_invalid_parse(msg, "retry")
+    assert_invalid_parse(msg, "def m; retry; end")
+    assert_invalid_parse(msg, "begin retry; end")
+    assert_parse("begin rescue; retry; end")
+    assert_invalid_parse(msg, "begin rescue; else; retry; end")
+    assert_invalid_parse(msg, "begin rescue; ensure; retry; end")
+    assert_parse("nil rescue retry")
+    assert_invalid_parse(msg, "END {retry}")
+    assert_invalid_parse(msg, "begin rescue; END {retry}; end")
+
+    assert_parse("!defined?(retry)")
+    assert_parse("def m; defined?(retry); end")
+    assert_parse("!begin defined?(retry); end")
+    assert_parse("begin rescue; else; defined?(retry); end")
+    assert_parse("begin rescue; ensure; p defined?(retry); end")
+    assert_parse("END {defined?(retry)}")
+    assert_parse("begin rescue; END {defined?(retry)}; end")
+    assert_parse("!defined? retry")
+
+    assert_parse("def m; defined? retry; end")
+    assert_parse("!begin defined? retry; end")
+    assert_parse("begin rescue; else; defined? retry; end")
+    assert_parse("begin rescue; ensure; p defined? retry; end")
+    assert_parse("END {defined? retry}")
+    assert_parse("begin rescue; END {defined? retry}; end")
+
+    assert_parse("#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      def foo
+        begin
+          yield
+        rescue StandardError => e
+          begin
+            puts "hi"
+            retry
+          rescue
+            retry unless e
+            raise e
+          else
+            retry
+          ensure
+            retry
+          end
+        end
+      end
+    end;
+  end
+
+  def test_invalid_yield
+    msg = /Invalid yield/
+    assert_invalid_parse(msg, "yield")
+    assert_invalid_parse(msg, "class C; yield; end")
+    assert_invalid_parse(msg, "BEGIN {yield}")
+    assert_invalid_parse(msg, "END {yield}")
+    assert_invalid_parse(msg, "-> {yield}")
+
+    assert_invalid_parse(msg, "yield true")
+    assert_invalid_parse(msg, "class C; yield true; end")
+    assert_invalid_parse(msg, "BEGIN {yield true}")
+    assert_invalid_parse(msg, "END {yield true}")
+    assert_invalid_parse(msg, "-> {yield true}")
+
+    assert_parse("!defined?(yield)")
+    assert_parse("class C; defined?(yield); end")
+    assert_parse("BEGIN {defined?(yield)}")
+    assert_parse("END {defined?(yield)}")
+
+    assert_parse("!defined?(yield true)")
+    assert_parse("class C; defined?(yield true); end")
+    assert_parse("BEGIN {defined?(yield true)}")
+    assert_parse("END {defined?(yield true)}")
+
+    assert_parse("!defined? yield")
+    assert_parse("class C; defined? yield; end")
+    assert_parse("BEGIN {defined? yield}")
+    assert_parse("END {defined? yield}")
+  end
+
   def test_node_id_for_location
+    omit if ParserSupport.prism_enabled?
+
     exception = begin
                   raise
                 rescue => e
@@ -227,7 +352,15 @@ class TestAst < Test::Unit::TestCase
     assert_equal node.node_id, node_id
   end
 
+  def test_node_id_for_backtrace_location_raises_argument_error
+    bug19262 = '[ruby-core:111435]'
+
+    assert_raise(TypeError, bug19262) { RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(1) }
+  end
+
   def test_of_proc_and_method
+    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
+
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
 
@@ -257,6 +390,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location
+    omit if ParserSupport.prism_enabled?
+
     backtrace_location, lineno = sample_backtrace_location
     node = RubyVM::AbstractSyntaxTree.of(backtrace_location)
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node)
@@ -268,6 +403,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval
+    omit if ParserSupport.prism_enabled?
+
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
 
@@ -297,6 +434,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_proc_and_method_under_eval_with_keep_script_lines
+    omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     keep_script_lines_back = RubyVM.keep_script_lines
@@ -328,6 +466,8 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval
+    omit if ParserSupport.prism_enabled?
+
     keep_script_lines_back = RubyVM.keep_script_lines
     RubyVM.keep_script_lines = false
 
@@ -346,6 +486,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_of_backtrace_location_under_eval_with_keep_script_lines
+    omit if ParserSupport.prism_enabled?
     pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
 
     keep_script_lines_back = RubyVM.keep_script_lines
@@ -461,7 +602,7 @@ class TestAst < Test::Unit::TestCase
     assert_equal("foo", head)
     assert_equal(:EVSTR, body.type)
     body, = body.children
-    assert_equal(:LIT, body.type)
+    assert_equal(:INTEGER, body.type)
     assert_equal([1], body.children)
   end
 
@@ -530,7 +671,7 @@ class TestAst < Test::Unit::TestCase
     forwarding = lambda do |arg_str|
       node = RubyVM::AbstractSyntaxTree.parse("def a(#{arg_str}) end")
       node = node.children.last.children.last.children[1]
-      node ? [node.children[-4], node.children[-2].children, node.children[-1]] : []
+      node ? [node.children[-4], node.children[-2]&.children, node.children[-1]] : []
     end
 
     assert_equal([:*, [:**], :&], forwarding.call('...'))
@@ -566,6 +707,37 @@ class TestAst < Test::Unit::TestCase
     node = RubyVM::AbstractSyntaxTree.parse("proc { |*a| }")
     _, args = *node.children.last.children[1].children
     assert_equal(:a, args.children[rest])
+  end
+
+  def test_return
+    assert_ast_eqaul(<<~STR, <<~EXP)
+      def m(a)
+        return a
+      end
+    STR
+      (SCOPE@1:0-3:3
+       tbl: []
+       args: nil
+       body:
+         (DEFN@1:0-3:3
+          mid: :m
+          body:
+            (SCOPE@1:0-3:3
+             tbl: [:a]
+             args:
+               (ARGS@1:6-1:7
+                pre_num: 1
+                pre_init: nil
+                opt: nil
+                first_post: nil
+                post_num: 0
+                post_init: nil
+                rest: nil
+                kw: nil
+                kwrest: nil
+                block: nil)
+             body: (RETURN@2:2-2:10 (LVAR@2:9-2:10 :a)))))
+    EXP
   end
 
   def test_keep_script_lines_for_parse
@@ -608,6 +780,8 @@ dummy
   end
 
   def test_keep_script_lines_for_of
+    omit if ParserSupport.prism_enabled?
+
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
 
@@ -616,6 +790,56 @@ dummy
 
     assert_equal("{ 1 + 2 }", node_proc.source)
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
+  end
+
+  def test_keep_script_lines_for_of_with_existing_SCRIPT_LINES__that_has__FILE__as_a_key
+    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
+
+    # This test confirms that the bug that previously occurred because of
+    # `AbstractSyntaxTree.of`s unnecessary dependence on SCRIPT_LINES__ does not reproduce.
+    # The bug occurred only if SCRIPT_LINES__ included __FILE__ as a key.
+    lines = [
+      "SCRIPT_LINES__ = {__FILE__ => []}",
+      "puts RubyVM::AbstractSyntaxTree.of(->{ 1 + 2 }, keep_script_lines: true).script_lines",
+      "p SCRIPT_LINES__"
+    ]
+    test_stdout = lines + ['{"-e"=>[]}']
+    assert_in_out_err(["-e", lines.join("\n")], "", test_stdout, [])
+  end
+
+  def test_source_with_multibyte_characters
+    ast = RubyVM::AbstractSyntaxTree.parse(%{a("\u00a7");b("\u00a9")}, keep_script_lines: true)
+    a_fcall, b_fcall = ast.children[2].children
+
+    assert_equal(%{a("\u00a7")}, a_fcall.source)
+    assert_equal(%{b("\u00a9")}, b_fcall.source)
+  end
+
+  def test_keep_tokens_for_parse
+    node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_tokens: true)
+    1.times do
+    end
+    __END__
+    dummy
+    END
+
+    expected = [
+      [:tINTEGER, "1"],
+      [:".", "."],
+      [:tIDENTIFIER, "times"],
+      [:tSP, " "],
+      [:keyword_do, "do"],
+      [:tIGNORED_NL, "\n"],
+      [:keyword_end, "end"],
+      [:nl, "\n"],
+    ]
+    assert_equal(expected, node.all_tokens.map { [_2, _3]})
+  end
+
+  def test_keep_tokens_unexpected_backslash
+    assert_raise_with_message(SyntaxError, /unexpected backslash/) do
+      RubyVM::AbstractSyntaxTree.parse("\\", keep_tokens: true)
+    end
   end
 
   def test_encoding_with_keep_script_lines
@@ -638,6 +862,8 @@ dummy
   end
 
   def test_e_option
+    omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
+
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
                       "", [":SCOPE"], [])
   end
@@ -722,7 +948,7 @@ dummy
       begin
         a = 1
     STR
-      (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)))
+      (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1)))
     EXP
   end
 
@@ -735,7 +961,8 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)) nil))
+         (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
+            nil))
     EXP
 
     assert_error_tolerant(<<~STR, <<~EXP)
@@ -747,7 +974,7 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (IF@1:0-3:4 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (IF@1:0-3:4 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
             (BEGIN@3:4-3:4 nil)))
     EXP
   end
@@ -761,7 +988,7 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (UNLESS@1:0-2:7 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (UNLESS@1:0-2:7 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
             nil))
     EXP
 
@@ -774,7 +1001,7 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (UNLESS@1:0-3:4 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (UNLESS@1:0-3:4 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
             (BEGIN@3:4-3:4 nil)))
     EXP
   end
@@ -813,7 +1040,7 @@ dummy
        args: nil
        body:
          (CASE@1:0-2:6 (VCALL@1:5-1:6 :a)
-            (WHEN@2:0-2:6 (LIST@2:5-2:6 (LIT@2:5-2:6 1) nil) (BEGIN@2:6-2:6 nil)
+            (WHEN@2:0-2:6 (LIST@2:5-2:6 (INTEGER@2:5-2:6 1) nil) (BEGIN@2:6-2:6 nil)
                nil)))
     EXP
 
@@ -830,7 +1057,7 @@ dummy
             (WHEN@2:0-2:11
                (LIST@2:5-2:11
                   (OPCALL@2:5-2:11 (VCALL@2:5-2:6 :a) :==
-                     (LIST@2:10-2:11 (LIT@2:10-2:11 1) nil)) nil)
+                     (LIST@2:10-2:11 (INTEGER@2:10-2:11 1) nil)) nil)
                (BEGIN@2:11-2:11 nil) nil)))
     EXP
 
@@ -849,7 +1076,7 @@ dummy
                 const: nil
                 kw:
                   (HASH@2:4-2:13
-                     (LIST@2:4-2:13 (LIT@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
+                     (LIST@2:4-2:13 (SYM@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
                 kwrest: nil) (BEGIN@2:14-2:14 nil) nil)))
     EXP
   end
@@ -931,7 +1158,7 @@ dummy
        tbl: []
        args: nil
        body:
-         (ITER@1:0-2:3 (FCALL@1:0-1:3 :m (LIST@1:2-1:3 (LIT@1:2-1:3 1) nil))
+         (ITER@1:0-2:3 (FCALL@1:0-1:3 :m (LIST@1:2-1:3 (INTEGER@1:2-1:3 1) nil))
             (SCOPE@1:4-2:3 tbl: [] args: nil body: (VCALL@2:2-2:3 :a))))
     EXP
   end
@@ -1042,10 +1269,56 @@ dummy
     EXP
   end
 
-  def assert_error_tolerant(src, expected)
+  def test_error_tolerant_unexpected_backslash
+    node = assert_error_tolerant("\\", <<~EXP, keep_tokens: true)
+      (SCOPE@1:0-1:1 tbl: [] args: nil body: (ERROR@1:0-1:1))
+    EXP
+    assert_equal([[0, :backslash, "\\", [1, 0, 1, 1]]], node.children.last.tokens)
+  end
+
+  def test_with_bom
+    assert_error_tolerant("\u{feff}nil", <<~EXP)
+      (SCOPE@1:0-1:3 tbl: [] args: nil body: (NIL@1:0-1:3))
+    EXP
+  end
+
+  def test_unused_block_local_variable
+    assert_warning('') do
+      RubyVM::AbstractSyntaxTree.parse(%{->(; foo) {}})
+    end
+  end
+
+  def test_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "\n#{<<~'end;'}", rss: true)
+    begin;
+      1_000_000.times do
+        eval("")
+      end
+    end;
+  end
+
+  def test_locations
     begin
       verbose_bak, $VERBOSE = $VERBOSE, false
-      node = RubyVM::AbstractSyntaxTree.parse(src, error_tolerant: true)
+      node = RubyVM::AbstractSyntaxTree.parse("1 + 2")
+    ensure
+      $VERBOSE = verbose_bak
+    end
+    locations = node.locations
+
+    assert_equal(RubyVM::AbstractSyntaxTree::Location, locations[0].class)
+  end
+
+  private
+
+  def assert_error_tolerant(src, expected, keep_tokens: false)
+    assert_ast_eqaul(src, expected, error_tolerant: true, keep_tokens: keep_tokens)
+  end
+
+  def assert_ast_eqaul(src, expected, **options)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, false
+      node = RubyVM::AbstractSyntaxTree.parse(src, **options)
     ensure
       $VERBOSE = verbose_bak
     end
@@ -1053,5 +1326,110 @@ dummy
     str = ""
     PP.pp(node, str, 80)
     assert_equal(expected, str)
+    node
+  end
+
+  class TestLocation < Test::Unit::TestCase
+    def test_lineno_and_column
+      node = ast_parse("1 + 2")
+      assert_locations(node.locations, [[1, 0, 1, 5]])
+    end
+
+    def test_alias_locations
+      node = ast_parse("alias foo bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+    end
+
+    def test_and_locations
+      node = ast_parse("1 and 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 2, 1, 5]])
+
+      node = ast_parse("1 && 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+    end
+
+    def test_break_locations
+      node = ast_parse("loop { break 1 }")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 14], [1, 7, 1, 12]])
+    end
+
+    def test_next_locations
+      node = ast_parse("loop { next 1 }")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
+    end
+
+    def test_or_locations
+      node = ast_parse("1 or 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+
+      node = ast_parse("1 || 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4]])
+    end
+
+    def test_redo_locations
+      node = ast_parse("loop { redo }")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 11], [1, 7, 1, 11]])
+    end
+
+    def test_unless_locations
+      node = ast_parse("unless cond then 1 else 2 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
+
+      node = ast_parse("1 unless 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 2, 1, 8], nil, nil])
+    end
+
+    def test_undef_locations
+      node = ast_parse("undef foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 0, 1, 5]])
+
+      node = ast_parse("undef foo, bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 14], [1, 0, 1, 5]])
+    end
+
+    def test_valias_locations
+      node = ast_parse("alias $foo $bar")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $&")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+    end
+
+    def test_when_locations
+      node = ast_parse("case a; when 1 then 2; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 22], [1, 8, 1, 12], [1, 15, 1, 19]])
+    end
+
+    def test_while_locations
+      node = ast_parse("while cond do 1 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 5], [1, 16, 1, 19]])
+
+      node = ast_parse("1 while 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
+    end
+
+    def test_until_locations
+      node = ast_parse("until cond do 1 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 5], [1, 16, 1, 19]])
+
+      node = ast_parse("1 until 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
+    end
+
+    private
+    def ast_parse(src, **options)
+      begin
+        verbose_bak, $VERBOSE = $VERBOSE, false
+        RubyVM::AbstractSyntaxTree.parse(src, **options)
+      ensure
+        $VERBOSE = verbose_bak
+      end
+    end
+
+    def assert_locations(locations, expected)
+      ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
+
+      assert_equal(ary, expected)
+    end
   end
 end

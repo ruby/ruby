@@ -1,4 +1,5 @@
 # encoding: utf-8
+# frozen_string_literal: false
 require_relative 'spec_helper'
 require_relative '../../shared/string/times'
 
@@ -47,7 +48,7 @@ describe "C-API String function" do
   [Encoding::BINARY, Encoding::UTF_8].each do |enc|
     describe "rb_str_set_len on a #{enc.name} String" do
       before :each do
-        @str = "abcdefghij".force_encoding(enc)
+        @str = "abcdefghij".dup.force_encoding(enc)
         # Make sure to unshare the string
         @s.rb_str_modify(@str)
       end
@@ -99,7 +100,7 @@ describe "C-API String function" do
 
   describe "rb_str_set_len on a UTF-16 String" do
     before :each do
-      @str = "abcdefghij".force_encoding(Encoding::UTF_16BE)
+      @str = "abcdefghij".dup.force_encoding(Encoding::UTF_16BE)
       # Make sure to unshare the string
       @s.rb_str_modify(@str)
     end
@@ -112,7 +113,7 @@ describe "C-API String function" do
 
   describe "rb_str_set_len on a UTF-32 String" do
     before :each do
-      @str = "abcdefghijkl".force_encoding(Encoding::UTF_32BE)
+      @str = "abcdefghijkl".dup.force_encoding(Encoding::UTF_32BE)
       # Make sure to unshare the string
       @s.rb_str_modify(@str)
     end
@@ -231,7 +232,7 @@ describe "C-API String function" do
 
   describe "rb_usascii_str_new" do
     it "creates a new String with US-ASCII Encoding from a char buffer of len characters" do
-      str = "abc".force_encoding("us-ascii")
+      str = "abc".dup.force_encoding("us-ascii")
       result = @s.rb_usascii_str_new("abcdef", 3)
       result.should == str
       result.encoding.should == Encoding::US_ASCII
@@ -247,14 +248,14 @@ describe "C-API String function" do
 
     it "returns US-ASCII string for non-US-ASCII string literal" do
       str = @s.rb_usascii_str_new_lit_non_ascii
-      str.should == "r\xC3\xA9sum\xC3\xA9".force_encoding(Encoding::US_ASCII)
+      str.should == "r\xC3\xA9sum\xC3\xA9".dup.force_encoding(Encoding::US_ASCII)
       str.encoding.should == Encoding::US_ASCII
     end
   end
 
   describe "rb_usascii_str_new_cstr" do
     it "creates a new String with US-ASCII Encoding" do
-      str = "abc".force_encoding("us-ascii")
+      str = "abc".dup.force_encoding("us-ascii")
       result = @s.rb_usascii_str_new_cstr("abc")
       result.should == str
       result.encoding.should == Encoding::US_ASCII
@@ -418,7 +419,7 @@ describe "C-API String function" do
 
   describe "rb_enc_str_buf_cat" do
     it "concatenates a C string literal to a ruby string with the given encoding" do
-      input = "hello ".force_encoding(Encoding::US_ASCII)
+      input = "hello ".dup.force_encoding(Encoding::US_ASCII)
       result = @s.rb_enc_str_buf_cat(input, "résumé", Encoding::UTF_8)
       result.should == "hello résumé"
       result.encoding.should == Encoding::UTF_8
@@ -498,29 +499,10 @@ describe "C-API String function" do
     end
   end
 
-  describe "rb_fstring" do
-    it 'returns self if the String is frozen' do
-      input  = 'foo'.freeze
-      output = @s.rb_fstring(input)
-
-      output.should equal(input)
-      output.should.frozen?
-    end
-
-    it 'returns a frozen copy if the String is not frozen' do
-      input  = 'foo'
-      output = @s.rb_fstring(input)
-
-      output.should.frozen?
-      output.should_not equal(input)
-      output.should == 'foo'
-    end
-  end
-
   describe "rb_str_subseq" do
     it "returns a byte-indexed substring" do
-      str = "\x00\x01\x02\x03\x04".force_encoding("binary")
-      @s.rb_str_subseq(str, 1, 2).should == "\x01\x02".force_encoding("binary")
+      str = "\x00\x01\x02\x03\x04".dup.force_encoding("binary")
+      @s.rb_str_subseq(str, 1, 2).should == "\x01\x02".dup.force_encoding("binary")
     end
   end
 
@@ -731,7 +713,7 @@ describe "C-API String function" do
     end
 
     it "increases the size of the string" do
-      expected = "test".force_encoding("US-ASCII")
+      expected = "test".dup.force_encoding("US-ASCII")
       str = @s.rb_str_resize(expected.dup, 12)
       str.size.should == 12
       str.bytesize.should == 12
@@ -862,11 +844,11 @@ describe "C-API String function" do
 #     it "transcodes a String to Encoding.default_internal if it is set" do
 #       Encoding.default_internal = Encoding::EUC_JP
 #
-#  -      a = "\xE3\x81\x82\xe3\x82\x8c".force_encoding("utf-8")
+#  -      a = "\xE3\x81\x82\xe3\x82\x8c".dup.force_encoding("utf-8")
 #  +      a = [0xE3, 0x81, 0x82, 0xe3, 0x82, 0x8c].pack('C6').force_encoding("utf-8")
 #         s = @s.rb_external_str_new_with_enc(a, a.bytesize, Encoding::UTF_8)
 #  -
-#  -      s.should == "\xA4\xA2\xA4\xEC".force_encoding("euc-jp")
+#  -      s.should == "\xA4\xA2\xA4\xEC".dup.force_encoding("euc-jp")
 #  +      x = [0xA4, 0xA2, 0xA4, 0xEC].pack('C4')#.force_encoding('binary')
 #  +      s.should == x
 #         s.encoding.should equal(Encoding::EUC_JP)
@@ -886,7 +868,7 @@ describe "C-API String function" do
   describe "rb_locale_str_new" do
     it "returns a String with 'locale' encoding" do
       s = @s.rb_locale_str_new("abc", 3)
-      s.should == "abc".force_encoding(Encoding.find("locale"))
+      s.should == "abc".dup.force_encoding(Encoding.find("locale"))
       s.encoding.should equal(Encoding.find("locale"))
     end
   end
@@ -894,14 +876,14 @@ describe "C-API String function" do
   describe "rb_locale_str_new_cstr" do
     it "returns a String with 'locale' encoding" do
       s = @s.rb_locale_str_new_cstr("abc")
-      s.should == "abc".force_encoding(Encoding.find("locale"))
+      s.should == "abc".dup.force_encoding(Encoding.find("locale"))
       s.encoding.should equal(Encoding.find("locale"))
     end
   end
 
   describe "rb_str_conv_enc" do
     it "returns the original String when to encoding is not specified" do
-      a = "abc".force_encoding("us-ascii")
+      a = "abc".dup.force_encoding("us-ascii")
       @s.rb_str_conv_enc(a, Encoding::US_ASCII, nil).should equal(a)
     end
 
@@ -911,7 +893,7 @@ describe "C-API String function" do
     end
 
     it "returns a transcoded String" do
-      a = "\xE3\x81\x82\xE3\x82\x8C".force_encoding("utf-8")
+      a = "\xE3\x81\x82\xE3\x82\x8C".dup.force_encoding("utf-8")
       result = @s.rb_str_conv_enc(a, Encoding::UTF_8, Encoding::EUC_JP)
       x = [0xA4, 0xA2, 0xA4, 0xEC].pack('C4').force_encoding('utf-8')
       result.should == x.force_encoding("euc-jp")
@@ -920,7 +902,7 @@ describe "C-API String function" do
 
     describe "when the String encoding is equal to the destination encoding" do
       it "returns the original String" do
-        a = "abc".force_encoding("us-ascii")
+        a = "abc".dup.force_encoding("us-ascii")
         @s.rb_str_conv_enc(a, Encoding::US_ASCII, Encoding::US_ASCII).should equal(a)
       end
 
@@ -930,7 +912,7 @@ describe "C-API String function" do
       end
 
       it "returns the origin String if the destination encoding is BINARY" do
-        a = "abc".force_encoding("binary")
+        a = "abc".dup.force_encoding("binary")
         @s.rb_str_conv_enc(a, Encoding::US_ASCII, Encoding::BINARY).should equal(a)
       end
     end
@@ -938,7 +920,7 @@ describe "C-API String function" do
 
   describe "rb_str_conv_enc_opts" do
     it "returns the original String when to encoding is not specified" do
-      a = "abc".force_encoding("us-ascii")
+      a = "abc".dup.force_encoding("us-ascii")
       @s.rb_str_conv_enc_opts(a, Encoding::US_ASCII, nil, 0, nil).should equal(a)
     end
 
@@ -949,7 +931,7 @@ describe "C-API String function" do
     end
 
     it "returns a transcoded String" do
-      a = "\xE3\x81\x82\xE3\x82\x8C".force_encoding("utf-8")
+      a = "\xE3\x81\x82\xE3\x82\x8C".dup.force_encoding("utf-8")
       result = @s.rb_str_conv_enc_opts(a, Encoding::UTF_8, Encoding::EUC_JP, 0, nil)
       x = [0xA4, 0xA2, 0xA4, 0xEC].pack('C4').force_encoding('utf-8')
       result.should == x.force_encoding("euc-jp")
@@ -958,7 +940,7 @@ describe "C-API String function" do
 
     describe "when the String encoding is equal to the destination encoding" do
       it "returns the original String" do
-        a = "abc".force_encoding("us-ascii")
+        a = "abc".dup.force_encoding("us-ascii")
         @s.rb_str_conv_enc_opts(a, Encoding::US_ASCII,
                                 Encoding::US_ASCII, 0, nil).should equal(a)
       end
@@ -970,7 +952,7 @@ describe "C-API String function" do
       end
 
       it "returns the origin String if the destination encoding is BINARY" do
-        a = "abc".force_encoding("binary")
+        a = "abc".dup.force_encoding("binary")
         @s.rb_str_conv_enc_opts(a, Encoding::US_ASCII,
                                 Encoding::BINARY, 0, nil).should equal(a)
       end
@@ -988,7 +970,7 @@ describe "C-API String function" do
   describe "rb_str_export_locale" do
     it "returns the original String with the locale encoding" do
       s = @s.rb_str_export_locale("abc")
-      s.should == "abc".force_encoding(Encoding.find("locale"))
+      s.should == "abc".dup.force_encoding(Encoding.find("locale"))
       s.encoding.should equal(Encoding.find("locale"))
     end
   end
@@ -1040,9 +1022,11 @@ end
       @s.rb_sprintf3(true.class).should == s
     end
 
-    it "formats a TrueClass VALUE as 'true' if sign specified in format" do
-      s = 'Result: true.'
-      @s.rb_sprintf4(true.class).should == s
+    ruby_bug "#19167", ""..."3.2" do
+      it "formats a TrueClass VALUE as 'true' if sign specified in format" do
+        s = 'Result: TrueClass.'
+        @s.rb_sprintf4(true.class).should == s
+      end
     end
 
     it "truncates a string to a supplied precision if that is shorter than the string" do
@@ -1223,6 +1207,69 @@ end
 
     it "raises an error when trying to unlock an already unlocked string" do
       -> { @s.rb_str_unlocktmp("test") }.should raise_error(RuntimeError, 'temporal unlocking already unlocked string')
+    end
+  end
+
+  describe "rb_enc_interned_str_cstr" do
+    it "returns a frozen string" do
+      str = "hello"
+      val = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+
+      val.should.is_a?(String)
+      val.encoding.should == Encoding::US_ASCII
+      val.should.frozen?
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+      result1.should.equal?(result2)
+    end
+
+    it "returns different frozen strings for different encodings" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str_cstr(str, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str_cstr(str, Encoding::UTF_8)
+      result1.should_not.equal?(result2)
+    end
+
+    it "returns the same string as String#-@" do
+      @s.rb_enc_interned_str_cstr("hello", Encoding::UTF_8).should.equal?(-"hello")
+    end
+
+    ruby_bug "#20322", ""..."3.4" do
+      it "uses the default encoding if encoding is null" do
+        str = "hello"
+        val = @s.rb_enc_interned_str_cstr(str, nil)
+        val.encoding.should == Encoding::ASCII_8BIT
+      end
+    end
+  end
+
+  describe "rb_str_to_interned_str" do
+    it "returns a frozen string" do
+      str = "hello"
+      result = @s.rb_str_to_interned_str(str)
+      result.should.is_a?(String)
+      result.should.frozen?
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_str_to_interned_str(str)
+      result2 = @s.rb_str_to_interned_str(str)
+      result1.should.equal?(result2)
+    end
+
+    it "returns different frozen strings for different encodings" do
+      result1 = @s.rb_str_to_interned_str("hello".dup.force_encoding(Encoding::US_ASCII))
+      result2 = @s.rb_str_to_interned_str("hello".dup.force_encoding(Encoding::UTF_8))
+      result1.should_not.equal?(result2)
+    end
+
+    it "returns the same string as String#-@" do
+      @s.rb_str_to_interned_str("hello").should.equal?(-"hello")
     end
   end
 end

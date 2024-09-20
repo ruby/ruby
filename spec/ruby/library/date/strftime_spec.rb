@@ -1,5 +1,7 @@
+require_relative "../../spec_helper"
 require 'date'
 require_relative '../../shared/time/strftime_for_date'
+date_version = defined?(Date::VERSION) ? Date::VERSION : '3.1.0'
 
 describe "Date#strftime" do
   before :all do
@@ -22,14 +24,14 @@ describe "Date#strftime" do
   end
 
   # %v is %e-%b-%Y for Date/DateTime
-  ruby_version_is ""..."3.1" do
+  version_is date_version, ""..."3.2" do #ruby_version_is ""..."3.1" do
     it "should be able to show the commercial week" do
       @date.strftime("%v").should == " 9-Apr-2000"
       @date.strftime("%v").should == @date.strftime('%e-%b-%Y')
     end
   end
 
-  ruby_version_is "3.1" do
+  version_is date_version, "3.2" do #ruby_version_is "3.1" do
     it "should be able to show the commercial week" do
       @date.strftime("%v").should == " 9-APR-2000"
       @date.strftime("%v").should != @date.strftime('%e-%b-%Y')

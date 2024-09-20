@@ -86,6 +86,7 @@ VALUE rb_int_equal(VALUE x, VALUE y);
 VALUE rb_int_divmod(VALUE x, VALUE y);
 VALUE rb_int_and(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
+VALUE rb_int_rshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
@@ -111,7 +112,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* numeric.c (export) */
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_flo_div_flo(VALUE x, VALUE y);
 double ruby_float_mod(double x, double y);
 VALUE rb_float_equal(VALUE x, VALUE y);
@@ -125,7 +125,6 @@ VALUE rb_int_abs(VALUE num);
 VALUE rb_int_bit_length(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_int_comp(VALUE num);
-MJIT_SYMBOL_EXPORT_END
 
 static inline bool
 INT_POSITIVE_P(VALUE num)
@@ -160,7 +159,7 @@ rb_num_compare_with_zero(VALUE num, ID mid)
 {
     VALUE zero = INT2FIX(0);
     VALUE r = rb_check_funcall(num, mid, 1, &zero);
-    if (r == Qundef) {
+    if (RB_UNDEF_P(r)) {
         rb_cmperr(num, zero);
     }
     return r;

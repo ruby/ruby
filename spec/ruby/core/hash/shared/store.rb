@@ -9,7 +9,7 @@ describe :hash_store, shared: true do
 
   it "duplicates string keys using dup semantics" do
     # dup doesn't copy singleton methods
-    key = "foo"
+    key = +"foo"
     def key.reverse() "bar" end
     h = {}
     h.send(@method, key, 0)
@@ -44,7 +44,7 @@ describe :hash_store, shared: true do
   end
 
   it "duplicates and freezes string keys" do
-    key = "foo"
+    key = +"foo"
     h = {}
     h.send(@method, key, 0)
     key << "bar"
@@ -75,8 +75,8 @@ describe :hash_store, shared: true do
 
   it "keeps the existing String key in the hash if there is a matching one" do
     h = { "a" => 1, "b" => 2, "c" => 3, "d" => 4 }
-    key1 = "foo"
-    key2 = "foo"
+    key1 = "foo".dup
+    key2 = "foo".dup
     key1.should_not equal(key2)
     h[key1] = 41
     frozen_key = h.keys.last

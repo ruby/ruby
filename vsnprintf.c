@@ -552,7 +552,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 #endif
 	u_long MAYBE_UNUSED(ulval) = 0; /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t MAYBE_UNUSED(uqval); /* %q integers */
+	u_quad_t MAYBE_UNUSED(uqval) = 0; /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
@@ -1255,8 +1255,8 @@ cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *l
 	}
 	buf[0] = 0; /* rve - digits may be 0 */
 	memcpy(buf, digits, rve - digits);
-	xfree(digits);
 	rve = buf + (rve - digits);
+	free(digits);
 	digits = buf;
 	if (flags & ALT) {	/* Print trailing zeros */
 		bp = digits + ndigits;

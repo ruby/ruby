@@ -340,7 +340,7 @@ module Psych
   # provided, the object contained in the first document will be returned.
   # +filename+ will be used in the exception message if any exception
   # is raised while parsing.  If +yaml+ is empty, it returns
-  # the specified +fallback+ return value, which defaults to +false+.
+  # the specified +fallback+ return value, which defaults to +nil+.
   #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
   #
@@ -479,6 +479,7 @@ module Psych
   #
   #                           Default: <tt>2</tt>.
   # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #                           For unlimited line width use <tt>-1</tt>.
   #
   #                           Default: <tt>0</tt> (meaning "wrap at 81").
   # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
@@ -488,6 +489,10 @@ module Psych
   # [<tt>:header</tt>]        Write <tt>%YAML [version]</tt> at the beginning of document.
   #
   #                           Default: <tt>false</tt>.
+  #
+  # [<tt>:stringify_names</tt>] Dump symbol keys in Hash objects as string.
+  #
+  #                             Default: <tt>false</tt>.
   #
   # Example:
   #
@@ -502,6 +507,9 @@ module Psych
   #
   #   # Dump an array to an IO with indentation set
   #   Psych.dump(['a', ['b']], StringIO.new, indentation: 3)
+  #
+  #   # Dump hash with symbol keys as string
+  #   Psych.dump({a: "b"}, stringify_names: true) # => "---\na: b\n"
   def self.dump o, io = nil, options = {}
     if Hash === io
       options = io
@@ -552,6 +560,7 @@ module Psych
   #
   #                           Default: <tt>2</tt>.
   # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #                           For unlimited line width use <tt>-1</tt>.
   #
   #                           Default: <tt>0</tt> (meaning "wrap at 81").
   # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
@@ -561,6 +570,10 @@ module Psych
   # [<tt>:header</tt>]        Write <tt>%YAML [version]</tt> at the beginning of document.
   #
   #                           Default: <tt>false</tt>.
+  #
+  # [<tt>:stringify_names</tt>] Dump symbol keys in Hash objects as string.
+  #
+  #                             Default: <tt>false</tt>.
   #
   # Example:
   #
@@ -575,6 +588,9 @@ module Psych
   #
   #   # Dump an array to an IO with indentation set
   #   Psych.safe_dump(['a', ['b']], StringIO.new, indentation: 3)
+  #
+  #   # Dump hash with symbol keys as string
+  #   Psych.dump({a: "b"}, stringify_names: true) # => "---\na: b\n"
   def self.safe_dump o, io = nil, options = {}
     if Hash === io
       options = io
@@ -653,7 +669,7 @@ module Psych
   ###
   # Safely loads the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
-  # the specified +fallback+ return value, which defaults to +false+.
+  # the specified +fallback+ return value, which defaults to +nil+.
   # See safe_load for options.
   def self.safe_load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
@@ -664,7 +680,7 @@ module Psych
   ###
   # Loads the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
-  # the specified +fallback+ return value, which defaults to +false+.
+  # the specified +fallback+ return value, which defaults to +nil+.
   # See load for options.
   def self.load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
@@ -694,26 +710,8 @@ module Psych
     dump_tags[klass] = tag
   end
 
-  # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
-  def self.warn_with_uplevel(message, uplevel: 1)
-    at = parse_caller(caller[uplevel]).join(':')
-    warn "#{at}: #{message}"
-  end
-
-  def self.parse_caller(at)
-    if /^(.+?):(\d+)(?::in `.*')?/ =~ at
-      file = $1
-      line = $2.to_i
-      [file, line]
-    end
-  end
-  private_class_method :warn_with_uplevel, :parse_caller
-
   class << self
     if defined?(Ractor)
-      require 'forwardable'
-      extend Forwardable
-
       class Config
         attr_accessor :load_tags, :dump_tags, :domain_types
         def initialize
@@ -727,7 +725,29 @@ module Psych
         Ractor.current[:PsychConfig] ||= Config.new
       end
 
-      def_delegators :config, :load_tags, :dump_tags, :domain_types, :load_tags=, :dump_tags=, :domain_types=
+      def load_tags
+        config.load_tags
+      end
+
+      def dump_tags
+        config.dump_tags
+      end
+
+      def domain_types
+        config.domain_types
+      end
+
+      def load_tags=(value)
+        config.load_tags = value
+      end
+
+      def dump_tags=(value)
+        config.dump_tags = value
+      end
+
+      def domain_types=(value)
+        config.domain_types = value
+      end
     else
       attr_accessor :load_tags
       attr_accessor :dump_tags

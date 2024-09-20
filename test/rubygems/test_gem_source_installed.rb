@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/source"
 
@@ -11,10 +12,10 @@ class TestGemSourceInstalled < Gem::TestCase
     specific  = Gem::Source::SpecificFile.new a1.cache_file
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
-    git       = Gem::Source::Git.new "a", "a", "master"
+    git       = Gem::Source::Git.new "a", "a", nil
     vendor    = Gem::Source::Vendor.new "a"
 
-    assert_equal(0, installed.<=>(installed), "installed <=> installed")
+    assert_equal(0, installed.<=>(installed), "installed <=> installed") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(-1, remote.<=>(installed), "remote <=> installed")
     assert_equal(1, installed.<=>(remote),    "installed <=> remote")
@@ -30,5 +31,10 @@ class TestGemSourceInstalled < Gem::TestCase
 
     assert_equal(1, vendor.<=>(installed), "vendor <=> installed")
     assert_equal(-1, installed.<=>(vendor), "installed <=> vendor")
+  end
+
+  def test_pretty_print
+    local = Gem::Source::Installed.new
+    assert_equal "#<Gem::Source::Installed[Installed]>\n", local.pretty_inspect
   end
 end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # IO wrapper that creates digests of contents written to the IO it wraps.
 
@@ -35,7 +36,7 @@ class Gem::Package::DigestIO
 
     yield digest_io
 
-    return digests
+    digests
   end
 
   ##

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
@@ -45,10 +46,10 @@ class Gem::Dependency
     end
 
     type         = Symbol === requirements.last ? requirements.pop : :runtime
-    requirements = requirements.first if 1 == requirements.length # unpack
+    requirements = requirements.first if requirements.length == 1 # unpack
 
     unless TYPES.include? type
-      raise ArgumentError, "Valid types are #{TYPES.inspect}, " +
+      raise ArgumentError, "Valid types are #{TYPES.inspect}, " \
                            "not #{type.inspect}"
     end
 
@@ -73,11 +74,9 @@ class Gem::Dependency
 
   def inspect # :nodoc:
     if prerelease?
-      "<%s type=%p name=%p requirements=%p prerelease=ok>" %
-        [self.class, self.type, self.name, requirement.to_s]
+      format("<%s type=%p name=%p requirements=%p prerelease=ok>", self.class, type, name, requirement.to_s)
     else
-      "<%s type=%p name=%p requirements=%p>" %
-        [self.class, self.type, self.name, requirement.to_s]
+      format("<%s type=%p name=%p requirements=%p>", self.class, type, name, requirement.to_s)
     end
   end
 
@@ -168,16 +167,16 @@ class Gem::Dependency
 
   def ==(other) # :nodoc:
     Gem::Dependency === other &&
-      self.name        == other.name &&
-      self.type        == other.type &&
-      self.requirement == other.requirement
+      name        == other.name &&
+      type        == other.type &&
+      requirement == other.requirement
   end
 
   ##
   # Dependencies are ordered by name.
 
   def <=>(other)
-    self.name <=> other.name
+    name <=> other.name
   end
 
   ##
@@ -204,7 +203,7 @@ class Gem::Dependency
     requirement.satisfied_by? version
   end
 
-  alias === =~
+  alias_method :===, :=~
 
   ##
   # :call-seq:
@@ -262,7 +261,7 @@ class Gem::Dependency
     end
 
     default = Gem::Requirement.default
-    self_req = self.requirement
+    self_req = requirement
     other_req = other.requirement
 
     return self.class.new name, self_req  if other_req == default
@@ -272,12 +271,7 @@ class Gem::Dependency
   end
 
   def matching_specs(platform_only = false)
-    env_req = Gem.env_requirement(name)
-    matches = Gem::Specification.stubs_for(name).find_all do |spec|
-      requirement.satisfied_by?(spec.version) && env_req.satisfied_by?(spec.version)
-    end.map(&:to_spec)
-
-    Gem::BundlerVersionFinder.prioritize!(matches) if prioritizes_bundler?
+    matches = Gem::Specification.find_all_by_name(name, requirement)
 
     if platform_only
       matches.reject! do |spec|
@@ -293,10 +287,6 @@ class Gem::Dependency
 
   def specific?
     @requirement.specific?
-  end
-
-  def prioritizes_bundler?
-    name == "bundler".freeze && !specific?
   end
 
   def to_specs
@@ -320,15 +310,15 @@ class Gem::Dependency
   end
 
   def to_spec
-    matches = self.to_specs.compact
+    matches = to_specs.compact
 
-    active = matches.find {|spec| spec.activated? }
+    active = matches.find(&:activated?)
     return active if active
 
     unless prerelease?
-      # Move prereleases to the end of the list for >= 0 requirements
+      # Consider prereleases only as a fallback
       pre, matches = matches.partition {|spec| spec.version.prerelease? }
-      matches += pre if requirement == Gem::Requirement.default
+      matches = pre if matches.empty?
     end
 
     matches.first
@@ -346,5 +336,13 @@ class Gem::Dependency
     else
       :released
     end
+  end
+
+  def encode_with(coder) # :nodoc:
+    coder.add "name", @name
+    coder.add "requirement", @requirement
+    coder.add "type", @type
+    coder.add "prerelease", @prerelease
+    coder.add "version_requirements", @version_requirements
   end
 end

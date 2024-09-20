@@ -9,6 +9,15 @@ class File
   end
 end
 
+[[libpathenv, "."], [preloadenv, libruby_so]].each do |env, path|
+  env or next
+  e = ENV[env] or next
+  e = e.split(File::PATH_SEPARATOR)
+  path = File.realpath(path, builddir) rescue next
+  e.delete(path) or next
+  ENV[env] = (e.join(File::PATH_SEPARATOR) unless e.empty?)
+end
+
 static = !!(defined?($static) && $static)
 $:.unshift(builddir)
 posthook = proc do

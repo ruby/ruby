@@ -1,0 +1,9 @@
+begin
+  1
+rescue
+  2
+else
+  3
+ensure
+  4
+end

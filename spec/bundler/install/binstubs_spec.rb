@@ -6,14 +6,14 @@ RSpec.describe "bundle install" do
       expect(Pathname.new("/usr/bin")).not_to be_writable
       gemfile <<-G
         def Gem.bindir; "/usr/bin"; end
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       config "BUNDLE_SYSTEM_BINDIR" => system_gem_path("altbin").to_s
       bundle :install
-      expect(the_bundle).to include_gems "rack 1.0.0"
-      expect(system_gem_path("altbin/rackup")).to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+      expect(system_gem_path("altbin/myrackup")).to exist
     end
   end
 
@@ -21,26 +21,26 @@ RSpec.describe "bundle install" do
     before do
       build_repo2 do
         build_gem "fake", "14" do |s|
-          s.executables = "rackup"
+          s.executables = "myrackup"
         end
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "fake"
-        gem "rack"
+        gem "myrack"
       G
     end
 
     it "warns about the situation" do
-      bundle "exec rackup"
+      bundle "exec myrackup"
 
       expect(last_command.stderr).to include(
-        "The `rackup` executable in the `fake` gem is being loaded, but it's also present in other gems (rack).\n" \
+        "The `myrackup` executable in the `fake` gem is being loaded, but it's also present in other gems (myrack).\n" \
         "If you meant to run the executable for another gem, make sure you use a project specific binstub (`bundle binstub <gem_name>`).\n" \
         "If you plan to use multiple conflicting executables, generate binstubs for them and disambiguate their names."
       ).or include(
-        "The `rackup` executable in the `rack` gem is being loaded, but it's also present in other gems (fake).\n" \
+        "The `myrackup` executable in the `myrack` gem is being loaded, but it's also present in other gems (fake).\n" \
         "If you meant to run the executable for another gem, make sure you use a project specific binstub (`bundle binstub <gem_name>`).\n" \
         "If you plan to use multiple conflicting executables, generate binstubs for them and disambiguate their names."
       )

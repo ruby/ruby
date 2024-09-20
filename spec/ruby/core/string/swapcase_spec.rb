@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -7,6 +8,10 @@ describe "String#swapcase" do
    "Hello".swapcase.should == "hELLO"
    "cYbEr_PuNk11".swapcase.should == "CyBeR_pUnK11"
    "+++---111222???".swapcase.should == "+++---111222???"
+  end
+
+  it "returns a String in the same encoding as self" do
+    "Hello".encode("US-ASCII").swapcase.encoding.should == Encoding::US_ASCII
   end
 
   describe "full Unicode case mapping" do
@@ -70,18 +75,9 @@ describe "String#swapcase" do
     -> { "abc".swapcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("").swapcase.should be_an_instance_of(String)
-      StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(String)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("").swapcase.should be_an_instance_of(String)
+    StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(String)
   end
 end
 

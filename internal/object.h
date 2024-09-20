@@ -11,10 +11,14 @@
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* object.c */
+size_t rb_obj_embedded_size(uint32_t numiv);
+VALUE rb_class_allocate_instance(VALUE klass);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));
 double rb_num_to_dbl(VALUE val);
 VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
+VALUE rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze);
+VALUE rb_obj_dup_setup(VALUE obj, VALUE dup);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 VALUE rb_check_convert_type_with_id(VALUE,int,const char*,ID);
 int rb_bool_expected(VALUE, const char *, int raise);
@@ -27,7 +31,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
 int rb_opts_exception_p(VALUE opts, int default_value);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 CONSTFUNC(VALUE rb_obj_equal(VALUE obj1, VALUE obj2));
 CONSTFUNC(VALUE rb_obj_not(VALUE obj));
 VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
@@ -36,7 +39,6 @@ VALUE rb_false(VALUE obj);
 VALUE rb_convert_type_with_id(VALUE v, int t, const char* nam, ID mid);
 VALUE rb_obj_size(VALUE self, VALUE args, VALUE obj);
 VALUE rb_get_freeze_opt(int argc, VALUE *argv);
-MJIT_SYMBOL_EXPORT_END
 
 static inline void
 RBASIC_SET_CLASS_RAW(VALUE obj, VALUE klass)

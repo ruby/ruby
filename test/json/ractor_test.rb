@@ -1,7 +1,11 @@
-# encoding: utf-8
 # frozen_string_literal: false
 
-require 'test_helper'
+require_relative 'test_helper'
+
+begin
+  require_relative './lib/helper'
+rescue LoadError
+end
 
 class JSONInRactorTest < Test::Unit::TestCase
   def test_generate

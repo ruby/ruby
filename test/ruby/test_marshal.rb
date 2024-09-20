@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'tempfile'
 require_relative 'marshaltestlib'
 
 class TestMarshal < Test::Unit::TestCase
@@ -314,11 +313,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(c, Marshal.load(Marshal.dump(c)), bug2109)
 
     assert_nothing_raised(ArgumentError, '[ruby-dev:40386]') do
-      re = Tempfile.create("marshal_regexp") do |f|
-        f.binmode.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
-        f.rewind
-        re2 = Marshal.load(f)
-        re2
+      re = IO.pipe do |r, w|
+        w.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
+        # Marshal.load would not overread and block
+        Marshal.load(r)
       end
       assert_equal(//, re)
     end
@@ -572,13 +570,19 @@ class TestMarshal < Test::Unit::TestCase
   def test_class_ivar
     assert_raise(TypeError) {Marshal.load("\x04\x08Ic\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
     assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
-    assert_not_operator(TestClass, :instance_variable_defined?, :@bug)
+    assert_not_operator(TestClass, :instance_variable_defined?, :@ivar_bug)
+
+    assert_raise(TypeError) {Marshal.load("\x04\x08[\x07c\x1bTestMarshal::TestClassI@\x06\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_not_operator(TestClass, :instance_variable_defined?, :@ivar_bug)
   end
 
   def test_module_ivar
     assert_raise(TypeError) {Marshal.load("\x04\x08Im\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
     assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
-    assert_not_operator(TestModule, :instance_variable_defined?, :@bug)
+    assert_not_operator(TestModule, :instance_variable_defined?, :@ivar_bug)
+
+    assert_raise(TypeError) {Marshal.load("\x04\x08[\x07m\x1cTestMarshal::TestModuleI@\x06\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_not_operator(TestModule, :instance_variable_defined?, :@ivar_bug)
   end
 
   class TestForRespondToFalse
@@ -611,6 +615,8 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_continuation
     EnvUtil.suppress_warning {require "continuation"}
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)

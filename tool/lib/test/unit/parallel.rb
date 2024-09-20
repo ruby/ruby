@@ -1,12 +1,6 @@
 # frozen_string_literal: true
-$LOAD_PATH.unshift "#{__dir__}/../.."
-require_relative '../../test/unit'
 
-require_relative '../../profile_test_all' if ENV.key?('RUBY_TEST_ALL_PROFILE')
-require_relative '../../tracepointchecker'
-require_relative '../../zombie_hunter'
-require_relative '../../iseq_loader_checker'
-require_relative '../../gc_checker'
+require_relative "../../../test/init"
 
 module Test
   module Unit
@@ -133,7 +127,18 @@ module Test
               else
                 _report "ready"
               end
-            when /^quit$/
+            when /^quit (.+?)$/, "quit"
+              if $1 == "timeout"
+                err = ["", "!!! worker #{$$} killed due to timeout:"]
+                Thread.list.each do |th|
+                  err << "#{ th.inspect }:"
+                  th.backtrace.each do |s|
+                    err << "  #{ s }"
+                  end
+                end
+                err << ""
+                STDERR.puts err.join("\n")
+              end
               _report "bye"
               exit
             end
@@ -186,7 +191,7 @@ module Test
         else
           error = ProxyError.new(error)
         end
-        _report "record", Marshal.dump([suite.name, method, assertions, time, error])
+        _report "record", Marshal.dump([suite.name, method, assertions, time, error, suite.instance_method(method).source_location])
         super
       end
     end
@@ -208,5 +213,9 @@ if $0 == __FILE__
     end
   end
   require 'rubygems'
+  begin
+    require 'rake'
+  rescue LoadError
+  end
   Test::Unit::Worker.new.run(ARGV)
 end

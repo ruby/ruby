@@ -1,12 +1,13 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/enumeratorize'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 require_relative '../enumerable/shared/enumeratorized'
 
 # Mutating the array while it is being iterated is discouraged as it can result in confusing behavior.
 # Yet a Ruby implementation must not crash in such a case, and following the simple CRuby behavior makes sense.
 # CRuby simply reads the array storage and checks the size for every iteration;
-# like `i = 0; while i < size; yield self[i]; end`
+# like `i = 0; while i < size; yield self[i]; i += 1; end`
 
 describe "Array#each" do
   it "yields each element to the block" do
@@ -74,4 +75,8 @@ describe "Array#each" do
 
   it_behaves_like :enumeratorize, :each
   it_behaves_like :enumeratorized_with_origin_size, :each, [1,2,3]
+end
+
+describe "Array#each" do
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :each
 end

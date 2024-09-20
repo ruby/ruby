@@ -1,0 +1,5 @@
+1.. * 2
+    ^ unexpected *, expecting end-of-input
+      ^ unexpected write target
+    ^~~ unexpected write target
+

@@ -14,7 +14,7 @@ describe "Numeric#clone" do
     1.clone.frozen?.should == true
   end
 
-  it "accepts optonal keyword argument :freeze" do
+  it "accepts optional keyword argument :freeze" do
     value = 1
     value.clone(freeze: true).should equal(value)
   end
@@ -23,10 +23,8 @@ describe "Numeric#clone" do
     -> { 1.clone(freeze: false) }.should raise_error(ArgumentError, /can't unfreeze/)
   end
 
-  ruby_version_is "3.0" do
-    it "does not change frozen status if passed freeze: nil" do
-      value = 1
-      value.clone(freeze: nil).should equal(value)
-    end
+  it "does not change frozen status if passed freeze: nil" do
+    value = 1
+    value.clone(freeze: nil).should equal(value)
   end
 end

@@ -96,11 +96,13 @@ describe "A Symbol literal" do
     %I{a b #{"c"}}.should == [:a, :b, :c]
   end
 
-  it "with invalid bytes raises an EncodingError at parse time" do
-    ScratchPad.record []
-    -> {
-      eval 'ScratchPad << 1; :"\xC3"'
-    }.should raise_error(EncodingError, /invalid/)
-    ScratchPad.recorded.should == []
+  ruby_bug "#20280", ""..."3.4" do
+    it "raises an SyntaxError at parse time when Symbol with invalid bytes" do
+      ScratchPad.record []
+      -> {
+        eval 'ScratchPad << 1; :"\xC3"'
+      }.should raise_error(SyntaxError, /invalid symbol/)
+      ScratchPad.recorded.should == []
+    end
   end
 end

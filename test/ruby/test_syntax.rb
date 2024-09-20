@@ -13,8 +13,7 @@ class TestSyntax < Test::Unit::TestCase
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
-    assert_separately(%W[--disable-gem - #{srcdir}],
-                      __FILE__, __LINE__, <<-'eom', timeout: Float::INFINITY)
+    assert_separately(%W[- #{srcdir}], __FILE__, __LINE__, <<-'eom', timeout: Float::INFINITY)
       dir = ARGV.shift
       for script in Dir["#{dir}/**/*.rb"].sort
         assert_valid_syntax(IO::read(script), script)
@@ -77,128 +76,121 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_anonymous_block_forwarding
     assert_syntax_error("def b; c(&); end", /no anonymous block parameter/)
+    assert_syntax_error("def b(&) ->(&) {c(&)} end", /anonymous block parameter is also used/)
+    assert_valid_syntax("def b(&) ->() {c(&)} end")
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
-        def b(&); c(&) end
-        def c(&); yield 1 end
-        a = nil
-        b{|c| a = c}
-        assert_equal(1, a)
+      def b(&); c(&) end
+      def c(&); yield 1 end
+      a = nil
+      b{|c| a = c}
+      assert_equal(1, a)
 
-        def inner
-          yield
-        end
+      def inner
+        yield
+      end
 
-        def block_only(&)
-          inner(&)
-        end
-        assert_equal(1, block_only{1})
+      def block_only(&)
+        inner(&)
+      end
+      assert_equal(1, block_only{1})
 
-        def pos(arg1, &)
-          inner(&)
-        end
-        assert_equal(2, pos(nil){2})
+      def pos(arg1, &)
+        inner(&)
+      end
+      assert_equal(2, pos(nil){2})
 
-        def pos_kwrest(arg1, **kw, &)
-          inner(&)
-        end
-        assert_equal(3, pos_kwrest(nil){3})
+      def pos_kwrest(arg1, **kw, &)
+        inner(&)
+      end
+      assert_equal(3, pos_kwrest(nil){3})
 
-        def no_kw(arg1, **nil, &)
-          inner(&)
-        end
-        assert_equal(4, no_kw(nil){4})
+      def no_kw(arg1, **nil, &)
+        inner(&)
+      end
+      assert_equal(4, no_kw(nil){4})
 
-        def rest_kw(*a, kwarg: 1, &)
-          inner(&)
-        end
-        assert_equal(5, rest_kw{5})
+      def rest_kw(*a, kwarg: 1, &)
+        inner(&)
+      end
+      assert_equal(5, rest_kw{5})
 
-        def kw(kwarg:1, &)
-          inner(&)
-        end
-        assert_equal(6, kw{6})
+      def kw(kwarg:1, &)
+        inner(&)
+      end
+      assert_equal(6, kw{6})
 
-        def pos_kw_kwrest(arg1, kwarg:1, **kw, &)
-          inner(&)
-        end
-        assert_equal(7, pos_kw_kwrest(nil){7})
+      def pos_kw_kwrest(arg1, kwarg:1, **kw, &)
+        inner(&)
+      end
+      assert_equal(7, pos_kw_kwrest(nil){7})
 
-        def pos_rkw(arg1, kwarg1:, &)
-          inner(&)
-        end
-        assert_equal(8, pos_rkw(nil, kwarg1: nil){8})
+      def pos_rkw(arg1, kwarg1:, &)
+        inner(&)
+      end
+      assert_equal(8, pos_rkw(nil, kwarg1: nil){8})
 
-        def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &)
-          inner(&)
-        end
-        assert_equal(9, all(nil, nil, nil, nil, okw1: nil, okw2: nil){9})
+      def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &)
+        inner(&)
+      end
+      assert_equal(9, all(nil, nil, nil, nil, okw1: nil, okw2: nil){9})
 
-        def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &)
-          inner(&)
-        end
-        assert_equal(10, all_kwrest(nil, nil, nil, nil, okw1: nil, okw2: nil){10})
+      def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &)
+        inner(&)
+      end
+      assert_equal(10, all_kwrest(nil, nil, nil, nil, okw1: nil, okw2: nil){10})
     end;
   end
 
   def test_anonymous_rest_forwarding
     assert_syntax_error("def b; c(*); end", /no anonymous rest parameter/)
     assert_syntax_error("def b; c(1, *); end", /no anonymous rest parameter/)
+    assert_syntax_error("def b(*) ->(*) {c(*)} end", /anonymous rest parameter is also used/)
+    assert_syntax_error("def b(a, *) ->(*) {c(1, *)} end", /anonymous rest parameter is also used/)
+    assert_syntax_error("def b(*) ->(a, *) {c(*)} end", /anonymous rest parameter is also used/)
+    assert_valid_syntax("def b(*) ->() {c(*)} end")
+    assert_valid_syntax("def b(a, *) ->() {c(1, *)} end")
+    assert_valid_syntax("def b(*) ->(a) {c(*)} end")
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
-        def b(*); c(*) end
-        def c(*a); a end
-        def d(*); b(*, *) end
-        assert_equal([1, 2], b(1, 2))
-        assert_equal([1, 2, 1, 2], d(1, 2))
+      def b(*); c(*) end
+      def c(*a); a end
+      def d(*); b(*, *) end
+      assert_equal([1, 2], b(1, 2))
+      assert_equal([1, 2, 1, 2], d(1, 2))
     end;
   end
 
   def test_anonymous_keyword_rest_forwarding
     assert_syntax_error("def b; c(**); end", /no anonymous keyword rest parameter/)
     assert_syntax_error("def b; c(k: 1, **); end", /no anonymous keyword rest parameter/)
+    assert_syntax_error("def b(**) ->(**) {c(**)} end", /anonymous keyword rest parameter is also used/)
+    assert_syntax_error("def b(k:, **) ->(**) {c(k: 1, **)} end", /anonymous keyword rest parameter is also used/)
+    assert_syntax_error("def b(**) ->(k:, **) {c(**)} end", /anonymous keyword rest parameter is also used/)
+    assert_valid_syntax("def b(**) ->() {c(**)} end")
+    assert_valid_syntax("def b(k:, **) ->() {c(k: 1, **)} end")
+    assert_valid_syntax("def b(**) ->(k:) {c(**)} end")
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
-        def b(**); c(**) end
-        def c(**kw); kw end
-        def d(**); b(k: 1, **) end
-        def e(**); b(**, k: 1) end
-        def f(a: nil, **); b(**) end
-        assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
-        assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
-        assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
-        assert_equal({k: 3}, f(a: 1, k: 3))
+      def b(**); c(**) end
+      def c(**kw); kw end
+      def d(**); b(k: 1, **) end
+      def e(**); b(**, k: 1) end
+      def f(a: nil, **); b(**) end
+      assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
+      assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
+      assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
+      assert_equal({k: 3}, f(a: 1, k: 3))
     end;
   end
 
   def test_argument_forwarding_with_anon_rest_kwrest_and_block
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
-    begin;
-        def args(*args); args end
-        def kw(**kw); kw end
-        def block(&block); block end
-        def deconstruct(...); [args(*), kw(**), block(&)&.call] end
-        assert_equal([[], {}, nil], deconstruct)
-        assert_equal([[1], {}, nil], deconstruct(1))
-        assert_equal([[1, 2], {}, nil], deconstruct(1, 2))
-        assert_equal([[], {x: 1}, nil], deconstruct(x: 1))
-        assert_equal([[], {x: 1, y: 2}, nil], deconstruct(x: 1, y: 2))
-        assert_equal([[], {}, 1], deconstruct { 1 })
-        assert_equal([[1, 2], {x: 3, y: 4}, 5], deconstruct(1, 2, x: 3, y: 4) { 5 })
-    end;
-
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
-    begin;
-        def deconstruct(*args, **kw, &block); [args, kw, block&.call] end
-        def deconstruct2(*, **, &); deconstruct(...); end
-        assert_equal([[], {}, nil], deconstruct2)
-        assert_equal([[1], {}, nil], deconstruct2(1))
-        assert_equal([[1, 2], {}, nil], deconstruct2(1, 2))
-        assert_equal([[], {x: 1}, nil], deconstruct2(x: 1))
-        assert_equal([[], {x: 1, y: 2}, nil], deconstruct2(x: 1, y: 2))
-        assert_equal([[], {}, 1], deconstruct2 { 1 })
-        assert_equal([[1, 2], {x: 3, y: 4}, 5], deconstruct2(1, 2, x: 3, y: 4) { 5 })
-    end;
+    assert_syntax_error("def f(*, **, &); g(...); end", /unexpected \.\.\./)
+    assert_syntax_error("def f(...); g(*); end", /no anonymous rest parameter/)
+    assert_syntax_error("def f(...); g(0, *); end", /no anonymous rest parameter/)
+    assert_syntax_error("def f(...); g(**); end", /no anonymous keyword rest parameter/)
+    assert_syntax_error("def f(...); g(x: 1, **); end", /no anonymous keyword rest parameter/)
+    assert_syntax_error("def f(...); g(&); end", /no anonymous block parameter/)
   end
 
   def test_newline_in_block_parameters
@@ -216,7 +208,7 @@ class TestSyntax < Test::Unit::TestCase
     blocks = [['do end', 'do'], ['{}', 'brace']],
     *|
     [%w'. dot', %w':: colon'].product(methods, blocks) do |(c, n1), (m, n2), (b, n3)|
-      m = m.tr_s('()', ' ').strip if n2 == 'do'
+      m = m.tr_s('()', ' ').strip if n3 == 'do'
       name = "test_#{n3}_block_after_blockcall_#{n1}_#{n2}_arg"
       code = "#{blockcall}#{c}#{m} #{b}"
       define_method(name) {assert_valid_syntax(code, bug6115)}
@@ -242,6 +234,7 @@ class TestSyntax < Test::Unit::TestCase
   def test_array_kwsplat_hash
     kw = {}
     h = {a: 1}
+    a = []
     assert_equal([], [**{}])
     assert_equal([], [**kw])
     assert_equal([h], [**h])
@@ -255,6 +248,20 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([1, {}], [1, {}])
     assert_equal([1, kw], [1, kw])
     assert_equal([1, h], [1, h])
+
+    assert_equal([], [*a, **{}])
+    assert_equal([], [*a, **kw])
+    assert_equal([h], [*a, **h])
+    assert_equal([{}], [*a, {}])
+    assert_equal([kw], [*a, kw])
+    assert_equal([h], [*a, h])
+
+    assert_equal([1], [1, *a, **{}])
+    assert_equal([1], [1, *a, **kw])
+    assert_equal([1, h], [1, *a, **h])
+    assert_equal([1, {}], [1, *a, {}])
+    assert_equal([1, kw], [1, *a, kw])
+    assert_equal([1, h], [1, *a, h])
 
     assert_equal([], [**kw, **kw])
     assert_equal([], [**kw, **{}, **kw])
@@ -323,7 +330,12 @@ class TestSyntax < Test::Unit::TestCase
     bug10315 = '[ruby-core:65368] [Bug #10315]'
 
     o = KW2.new
-    assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      assert_equal([23, 2], eval("o.kw(**{k1: 22}, **{k1: 23})"), bug10315)
+    ensure
+      $VERBOSE = verbose_bak
+    end
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
@@ -358,6 +370,12 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn(/duplicated/) {r = eval("a.f(**{k: a.add(1), j: a.add(2), k: a.add(3), k: a.add(4)})")}
     assert_equal(4, r)
     assert_equal([1, 2, 3, 4], a)
+    a.clear
+    r = nil
+    _z = {}
+    assert_warn(/duplicated/) {r = eval("a.f(k: a.add(1), **_z, k: a.add(2))")}
+    assert_equal(2, r)
+    assert_equal([1, 2], a)
   end
 
   def test_keyword_empty_splat
@@ -379,11 +397,11 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_keyword_self_reference
-    message = /circular argument reference - var/
-    assert_syntax_error("def foo(var: defined?(var)) var end", message)
-    assert_syntax_error("def foo(var: var) var end", message)
-    assert_syntax_error("def foo(var: bar(var)) var end", message)
-    assert_syntax_error("def foo(var: bar {var}) var end", message)
+    assert_valid_syntax("def foo(var: defined?(var)) var end")
+    assert_valid_syntax("def foo(var: var) var end")
+    assert_valid_syntax("def foo(var: bar(var)) var end")
+    assert_valid_syntax("def foo(var: bar {var}) var end")
+    assert_valid_syntax("def foo(var: (1 in ^var)); end")
 
     o = Object.new
     assert_warn("") do
@@ -409,6 +427,9 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn("") do
       o.instance_eval("proc {|var: 1| var}")
     end
+
+    o = Object.new
+    assert_nil(o.instance_eval("def foo(bar: bar) = bar; foo"))
   end
 
   def test_keyword_invalid_name
@@ -442,13 +463,13 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_optional_self_reference
-    message = /circular argument reference - var/
-    assert_syntax_error("def foo(var = defined?(var)) var end", message)
-    assert_syntax_error("def foo(var = var) var end", message)
-    assert_syntax_error("def foo(var = bar(var)) var end", message)
-    assert_syntax_error("def foo(var = bar {var}) var end", message)
-    assert_syntax_error("def foo(var = (def bar;end; var)) var end", message)
-    assert_syntax_error("def foo(var = (def self.bar;end; var)) var end", message)
+    assert_valid_syntax("def foo(var = defined?(var)) var end")
+    assert_valid_syntax("def foo(var = var) var end")
+    assert_valid_syntax("def foo(var = bar(var)) var end")
+    assert_valid_syntax("def foo(var = bar {var}) var end")
+    assert_valid_syntax("def foo(var = (def bar;end; var)) var end")
+    assert_valid_syntax("def foo(var = (def self.bar;end; var)) var end")
+    assert_valid_syntax("def foo(var = (1 in ^var)); end")
 
     o = Object.new
     assert_warn("") do
@@ -474,6 +495,9 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn("") do
       o.instance_eval("proc {|var = 1| var}")
     end
+
+    o = Object.new
+    assert_nil(o.instance_eval("def foo(bar: bar) = bar; foo"))
   end
 
   def test_warn_grouped_expression
@@ -491,10 +515,6 @@ class TestSyntax < Test::Unit::TestCase
   end
 
   def test_warn_balanced
-    warning = <<WARN
-test:1: warning: `%s' after local variable or literal is interpreted as binary operator
-test:1: warning: even though it seems like %s
-WARN
     [
      [:**, "argument prefix"],
      [:*, "argument prefix"],
@@ -508,7 +528,9 @@ WARN
       all_assertions do |a|
         ["puts 1 #{op}0", "puts :a #{op}0", "m = 1; puts m #{op}0"].each do |src|
           a.for(src) do
-            assert_warning(warning % [op, syn], src) do
+            warning = /'#{Regexp.escape(op)}' after local variable or literal is interpreted as binary operator.+?even though it seems like #{syn}/m
+
+            assert_warning(warning, src) do
               assert_valid_syntax(src, "test", verbose: true)
             end
           end
@@ -659,6 +681,8 @@ WARN
     assert_equal(42, obj.foo(42))
     assert_equal(42, obj.foo(2, _: 0))
     assert_equal(2, obj.foo(x: 2, _: 0))
+  ensure
+    self.class.remove_method(:foo)
   end
 
   def test_duplicated_opt_kw
@@ -698,8 +722,8 @@ WARN
   end
 
   def test_duplicated_when
-    w = 'warning: duplicated `when\' clause with line 3 is ignored'
-    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+    w = ->(line) { "warning: 'when' clause on line #{line} duplicates 'when' clause on line 3 and is ignored" }
+    assert_warning(/#{w[3]}.+#{w[4]}.+#{w[4]}.+#{w[5]}.+#{w[5]}/m) {
       eval %q{
         case 1
         when 1, 1
@@ -708,7 +732,7 @@ WARN
         end
       }
     }
-    assert_warning(/#{w}/) {#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
+    assert_warning(/#{w[3]}.+#{w[4]}.+#{w[5]}.+#{w[5]}/m) {
       a = a = 1
       eval %q{
         case 1
@@ -718,10 +742,28 @@ WARN
         end
       }
     }
+    assert_warning(/#{w[3]}/) {
+      eval %q{
+        case 1
+        when __LINE__, __LINE__
+        when 3, 3
+        when 3, 3
+        end
+      }
+    }
+    assert_warning(/#{w[3]}/) {
+      eval %q{
+        case 1
+        when __FILE__, __FILE__
+        when "filename", "filename"
+        when "filename", "filename"
+        end
+      }, binding, "filename"
+    }
   end
 
   def test_duplicated_when_check_option
-    w = /duplicated `when\' clause with line 3 is ignored/
+    w = /'when' clause on line 4 duplicates 'when' clause on line 3 and is ignored/
     assert_in_out_err(%[-wc], "#{<<~"begin;"}\n#{<<~'end;'}", ["Syntax OK"], w)
     begin;
       case 1
@@ -854,6 +896,16 @@ e"
     assert_dedented_heredoc(expect, result)
   end
 
+  def test_dedented_heredoc_with_leading_blank_line
+    # the blank line has six leading spaces
+    result = "      \n" \
+             "    b\n"
+    expect = "  \n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+
   def test_dedented_heredoc_with_blank_more_indented_line_escaped
     result = "    a\n" \
              "\\ \\ \\ \\ \\ \\ \n" \
@@ -961,7 +1013,7 @@ eom
   end
 
   def test_dedented_heredoc_concatenation
-    assert_equal("\n0\n1", eval("<<~0 '1'\n \n0\#{}\n0"))
+    assert_equal(" \n0\n1", eval("<<~0 '1'\n \n0\#{}\n0"))
   end
 
   def test_heredoc_mixed_encoding
@@ -1000,6 +1052,14 @@ eom
     assert_not_match(/end-of-input/, e.message)
   end
 
+  def test_invalid_regexp
+    bug20295 = '[ruby-core:116913] [Bug #20295]'
+
+    assert_syntax_error("/[/=~s", /premature end of char-class/, bug20295)
+    assert_syntax_error("/(?<>)/=~s", /group name is empty/, bug20295)
+    assert_syntax_error("/(?<a>[)/=~s", /premature end of char-class/, bug20295)
+  end
+
   def test_lineno_operation_brace_block
     expected = __LINE__ + 1
     actual = caller_lineno\
@@ -1012,7 +1072,7 @@ eom
      ["p ", ""],                # no-pop
      ["", "p Foo::Bar"],        # pop
     ].each do |p1, p2|
-      src = <<-EOM.gsub(/^\s*\n/, '')
+      src = <<~EOM
       class Foo
         #{"Bar = " + preset if preset}
       end
@@ -1044,7 +1104,7 @@ eom
      ["p ", ""],                # no-pop
      ["", "p ::Bar"],           # pop
     ].each do |p1, p2|
-      src = <<-EOM.gsub(/^\s*\n/, '')
+      src = <<~EOM
       #{"Bar = " + preset if preset}
       class Foo
         #{p1}::Bar #{op}= 42
@@ -1195,6 +1255,20 @@ eom
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)
   end
 
+  def test_safe_call_in_for_variable
+    assert_valid_syntax("for x&.bar in []; end")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      foo = nil
+      for foo&.bar in [1]; end
+      assert_nil(foo)
+
+      foo = Struct.new(:bar).new
+      for foo&.bar in [1]; end
+      assert_equal(1, foo.bar)
+    end;
+  end
+
   def test_no_warning_logop_literal
     assert_warning("") do
       eval("true||raise;nil")
@@ -1211,11 +1285,17 @@ eom
     assert_warn(/string literal in condition/) do
       eval('1 if ""')
     end
+    assert_warning(/string literal in condition/) do
+      eval('1 if __FILE__')
+    end
     assert_warn(/regex literal in condition/) do
       eval('1 if //')
     end
     assert_warning(/literal in condition/) do
       eval('1 if 1')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if __LINE__')
     end
     assert_warning(/symbol literal in condition/) do
       eval('1 if :foo')
@@ -1290,7 +1370,7 @@ eom
   end
 
   def test_parenthesised_statement_argument
-    assert_syntax_error("foo(bar rescue nil)", /unexpected `rescue' modifier/)
+    assert_syntax_error("foo(bar rescue nil)", /unexpected 'rescue' modifier/)
     assert_valid_syntax("foo (bar rescue nil)")
   end
 
@@ -1312,7 +1392,7 @@ eom
 
   def test_block_after_cmdarg_in_paren
     bug11873 = '[ruby-core:72482] [Bug #11873]'
-    def bug11873.p(*);end;
+    def bug11873.p(*, &);end;
 
     assert_raise(LocalJumpError, bug11873) do
       bug11873.instance_eval do
@@ -1338,6 +1418,25 @@ eom
     assert_valid_syntax 'p :foo, {"a": proc do end, b: proc do end}', bug13073
     assert_valid_syntax 'p :foo, {** proc do end, b: proc do end}', bug13073
     assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
+  end
+
+  def test_invalid_encoding_symbol
+    assert_syntax_error('{"\xC3": 1}', "invalid symbol")
+  end
+
+  def test_invalid_symbol_in_hash_memory_leak
+    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true)
+      str = '{"\xC3": 1}'.force_encoding("UTF-8")
+      code = proc do
+        eval(str)
+        raise "unreachable"
+      rescue SyntaxError
+      end
+
+      1_000.times(&code)
+    begin;
+      1_000_000.times(&code)
+    end;
   end
 
   def test_do_after_local_variable
@@ -1388,9 +1487,10 @@ eom
       "#{return}"
       raise((return; "should not raise"))
       begin raise; ensure return; end; self
-      begin raise; ensure return; end and self
       nil&defined?0--begin e=no_method_error(); return; 0;end
       return puts('ignored') #=> ignored
+      BEGIN {return}
+      END {return if false}
     end;
       .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
     failed = proc do |n, s|
@@ -1420,12 +1520,74 @@ eom
     end
   end
 
+  def test_eval_return_toplevel
+    feature4840 = '[ruby-core:36785] [Feature #4840]'
+    line = __LINE__+2
+    code = "#{<<~"begin;"}#{<<~'end;'}"
+    begin;
+      eval "return"; raise
+      begin eval "return"; rescue SystemExit; exit false; end
+      begin eval "return"; ensure puts "ensured"; end #=> ensured
+      begin ensure eval "return"; end
+      begin raise; ensure; eval "return"; end
+      begin raise; rescue; eval "return"; end
+      eval "return false"; raise
+      eval "return 1"; raise
+      "#{eval "return"}"
+      raise((eval "return"; "should not raise"))
+      begin raise; ensure eval "return"; end; self
+      begin raise; ensure eval "return"; end and self
+      eval "return puts('ignored')" #=> ignored
+      BEGIN {eval "return"}
+    end;
+      .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
+    failed = proc do |n, s|
+      RubyVM::InstructionSequence.compile(s, __FILE__, nil, n).disasm
+    end
+    Tempfile.create(%w"test_return_ .rb") do |lib|
+      lib.close
+      args = %W[-W0 -r#{lib.path}]
+      all_assertions_foreach(feature4840, *[:main, :lib].product([:class, :top], code)) do |main, klass, (n, s, *ex)|
+        if klass == :class
+          s = "class X; #{s}; end"
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, /return/, proc {failed[n, s]}, success: false)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, /return/, proc {failed[n, s]}, success: false)
+          end
+        else
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+          end
+        end
+      end
+    end
+  end
+
   def test_return_toplevel_with_argument
     assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
   end
 
   def test_return_in_proc_in_class
     assert_in_out_err(['-e', 'class TestSyntax; proc{ return }.call; end'], "", [], /^-e:1:.*unexpected return \(LocalJumpError\)/)
+  end
+
+  def test_return_in_END
+    assert_normal_exit('END {return}')
+  end
+
+  def test_return_in_BEGIN_in_eval
+    # `BEGIN` in `eval` is allowed, even inside a method, and `return`
+    # from that block exits from that method without `LocalJumpError`.
+    obj = Object.new
+    def obj.ok
+      eval("BEGIN {return :ok}")
+    end
+    assert_equal :ok, assert_nothing_raised(LocalJumpError) {obj.ok}
   end
 
   def test_syntax_error_in_rescue
@@ -1446,13 +1608,13 @@ eom
   end
 
   def test_syntax_error_at_newline
-    expected = "\n        ^"
+    expected = /(\n|\| )        \^/
     assert_syntax_error("%[abcdef", expected)
     assert_syntax_error("%[abcdef\n", expected)
   end
 
   def test_invalid_jump
-    assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+    assert_in_out_err(%w[-e redo], "", [], /^-e:1: |~ Invalid redo/)
   end
 
   def test_keyword_not_parens
@@ -1624,8 +1786,8 @@ eom
     assert_equal("instance ok", k.new.rescued("ok"))
 
     # Current technical limitation: cannot prepend "private" or something for command endless def
-    error = /syntax error, unexpected string literal/
-    error2 = /syntax error, unexpected local variable or method/
+    error = /(syntax error,|\^~*) unexpected string literal/
+    error2 = /(syntax error,|\^~*) unexpected local variable or method/
     assert_syntax_error('private def foo = puts "Hello"', error)
     assert_syntax_error('private def foo() = puts "Hello"', error)
     assert_syntax_error('private def foo(x) = puts x', error2)
@@ -1647,6 +1809,33 @@ eom
   def test_command_with_cmd_brace_block
     assert_valid_syntax('obj.foo (1) {}')
     assert_valid_syntax('obj::foo (1) {}')
+    assert_valid_syntax('bar {}')
+    assert_valid_syntax('Bar {}')
+    assert_valid_syntax('bar() {}')
+    assert_valid_syntax('Bar() {}')
+    assert_valid_syntax('Foo::bar {}')
+    assert_valid_syntax('Foo::Bar {}')
+    assert_valid_syntax('Foo::bar() {}')
+    assert_valid_syntax('Foo::Bar() {}')
+  end
+
+  def test_command_newline_in_tlparen_args
+    assert_valid_syntax("p (1\n2\n),(3),(4)")
+    assert_valid_syntax("p (\n),(),()")
+    assert_valid_syntax("a.b (1\n2\n),(3),(4)")
+    assert_valid_syntax("a.b (\n),(),()")
+  end
+
+  def test_command_semicolon_in_tlparen_at_the_first_arg
+    bug19281 = '[ruby-core:111499] [Bug #19281]'
+    assert_valid_syntax('p (1;2),(3),(4)', bug19281)
+    assert_valid_syntax('p (;),(),()', bug19281)
+    assert_valid_syntax('a.b (1;2),(3),(4)', bug19281)
+    assert_valid_syntax('a.b (;),(),()', bug19281)
+  end
+
+  def test_command_do_block_call_with_empty_args_brace_block
+    assert_valid_syntax('cmd 1, 2 do end.m() { blk_body }')
   end
 
   def test_numbered_parameter
@@ -1677,7 +1866,7 @@ eom
     assert_syntax_error('def x(_4) end', /_4 is reserved for numbered parameter/)
     assert_syntax_error('def _5; end', /_5 is reserved for numbered parameter/)
     assert_syntax_error('def self._6; end', /_6 is reserved for numbered parameter/)
-    assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
+    assert_raise_with_message(NameError, /undefined local variable or method '_1'/) {
       eval('_1')
     }
     ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
@@ -1692,6 +1881,61 @@ eom
         assert_raise(NameError) {eval("_1")},
       ]
     }
+
+    assert_valid_syntax("proc {def foo(_);end;_1}")
+    assert_valid_syntax("p { [_1 **2] }")
+    assert_valid_syntax("proc {_1;def foo();end;_1}")
+  end
+
+  def test_it
+    assert_valid_syntax('proc {it}')
+    assert_syntax_error('[1,2].then {it+_2}', /'it' is already used/)
+    assert_syntax_error('[1,2].then {_2+it}', /numbered parameter is already used/)
+    assert_equal([1, 2], eval('[1,2].then {it}'))
+    assert_syntax_error('[1,2].then {"#{it}#{_2}"}', /'it' is already used/)
+    assert_syntax_error('[1,2].then {"#{_2}#{it}"}', /numbered parameter is already used/)
+    assert_syntax_error('->{it+_2}.call(1,2)', /'it' is already used/)
+    assert_syntax_error('->{_2+it}.call(1,2)', /numbered parameter is already used/)
+    assert_equal(4, eval('->(a=->{it}){a}.call.call(4)'))
+    assert_equal(5, eval('-> a: ->{it} {a}.call.call(5)'))
+    assert_syntax_error('proc {|| it}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|;a| it}', /ordinary parameter is defined/)
+    assert_syntax_error("proc {|\n| it}", /ordinary parameter is defined/)
+    assert_syntax_error('proc {|x| it}', /ordinary parameter is defined/)
+    assert_equal([1, 2], eval('1.then {[it, 2.then {_1}]}'))
+    assert_equal([2, 1], eval('1.then {[2.then {_1}, it]}'))
+    assert_syntax_error('->(){it}', /ordinary parameter is defined/)
+    assert_syntax_error('->(x){it}', /ordinary parameter is defined/)
+    assert_syntax_error('->x{it}', /ordinary parameter is defined/)
+    assert_syntax_error('->x:_1{}', /ordinary parameter is defined/)
+    assert_syntax_error('->x=it{}', /ordinary parameter is defined/)
+    assert_valid_syntax('-> {it; -> {_2}}')
+    assert_valid_syntax('-> {-> {it}; _2}')
+    assert_equal([1, nil], eval('proc {that=it; it=nil; [that, it]}.call(1)'))
+    assert_equal(1, eval('proc {it = 1}.call'))
+    assert_warning(/1: warning: assigned but unused variable - it/) {
+      assert_equal(2, eval('a=Object.new; def a.foo; it = 2; end; a.foo'))
+    }
+    assert_equal(3, eval('proc {|it| it}.call(3)'))
+    assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
+    assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
+    assert_equal(6, eval('a=Class.new; a.class_eval{ def it; 6; end }; a.new.it'))
+    assert_raise_with_message(NameError, /undefined local variable or method 'it'/) do
+      eval('it')
+    end
+    ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
+      assert_valid_syntax("->{#{c};->{it};end;it}\n")
+      assert_valid_syntax("->{it;#{c};->{it};end}\n")
+    end
+    1.times do
+      [
+        assert_equal(0, it),
+        assert_equal([:a], eval('[:a].map{it}')),
+        assert_raise(NameError) {eval('it')},
+      ]
+    end
+    assert_valid_syntax('proc {def foo(_);end;it}')
+    assert_syntax_error('p { [it **2] }', /unexpected \*\*/)
   end
 
   def test_value_expr_in_condition
@@ -1700,6 +1944,11 @@ eom
     assert_valid_syntax("tap {a = (true ? true : break)}")
     assert_valid_syntax("tap {a = (break if false)}")
     assert_valid_syntax("tap {a = (break unless true)}")
+  end
+
+  def test_value_expr_in_singleton
+    mesg = /void value expression/
+    assert_syntax_error("class << (return); end", mesg)
   end
 
   def test_tautological_condition
@@ -1941,6 +2190,13 @@ eom
     assert_equal 0...1, exp.call(a: 0)
   end
 
+  def test_argument_forwarding_with_super
+    assert_valid_syntax('def foo(...) super {}; end')
+    assert_valid_syntax('def foo(...) super() {}; end')
+    assert_syntax_error('def foo(...) super(...) {}; end', /both block arg and actual block/)
+    assert_syntax_error('def foo(...) super(1, ...) {}; end', /both block arg and actual block/)
+  end
+
   def test_class_module_Object_ancestors
     assert_separately([], <<-RUBY)
       m = Module.new
@@ -2005,7 +2261,7 @@ eom
     end
   end
 
-  def caller_lineno(*)
+  def caller_lineno(*, &)
     caller_locations(1, 1)[0].lineno
   end
 end

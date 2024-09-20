@@ -412,7 +412,7 @@ VALUE rb_utf8_str_new_static(const char *ptr, long len);
 
 /**
  * Identical to rb_interned_str(),  except it takes a Ruby's  string instead of
- * C's.  It can also be seen  as a routine identical to to rb_str_new_shared(),
+ * C's.  It can also be seen  as a routine identical to rb_str_new_shared(),
  * except it returns an infamous "f"string.
  *
  * @param[in]  str  An object of ::RString.
@@ -454,7 +454,7 @@ VALUE rb_interned_str(const char *ptr, long len);
 RBIMPL_ATTR_NONNULL(())
 /**
  * Identical to  rb_interned_str(), except it  assumes the passed pointer  is a
- * pointer to a C's  string.  It can also be seen as a  routine identical to to
+ * pointer to a C's  string.  It can also be seen as a  routine identical to
  * rb_str_to_interned_str(), except  it takes a  C's string instead  of Ruby's.
  * Or it can  also be seen as a routine  identical to rb_str_new_cstr(), except
  * it returns an infamous "f"string.

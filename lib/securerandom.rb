@@ -39,28 +39,28 @@ require 'random/formatter'
 # +NotImplementedError+ is raised.
 
 module SecureRandom
+
+  # The version
+  VERSION = "0.3.1"
+
   class << self
+    # Returns a random binary string containing +size+ bytes.
+    #
+    # See Random.bytes
     def bytes(n)
       return gen_random(n)
     end
 
     private
 
+    # :stopdoc:
+
+    # Implementation using OpenSSL
     def gen_random_openssl(n)
-      @pid = 0 unless defined?(@pid)
-      pid = $$
-      unless @pid == pid
-        now = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
-        OpenSSL::Random.random_add([now, @pid, pid].join(""), 0.0)
-        seed = Random.urandom(16)
-        if (seed)
-          OpenSSL::Random.random_add(seed, 16)
-        end
-        @pid = pid
-      end
       return OpenSSL::Random.random_bytes(n)
     end
 
+    # Implementation using system random device
     def gen_random_urandom(n)
       ret = Random.urandom(n)
       unless ret
@@ -86,6 +86,9 @@ module SecureRandom
       end
     end
 
+    # :startdoc:
+
+    # Generate random data bytes for Random::Formatter
     public :gen_random
   end
 end

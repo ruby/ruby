@@ -55,6 +55,7 @@ md5.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 md5.o: $(hdrdir)/ruby/internal/attr/noinline.h
 md5.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 md5.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+md5.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 md5.o: $(hdrdir)/ruby/internal/attr/pure.h
 md5.o: $(hdrdir)/ruby/internal/attr/restrict.h
 md5.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -114,7 +115,6 @@ md5.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 md5.o: $(hdrdir)/ruby/internal/intern/error.h
 md5.o: $(hdrdir)/ruby/internal/intern/eval.h
 md5.o: $(hdrdir)/ruby/internal/intern/file.h
-md5.o: $(hdrdir)/ruby/internal/intern/gc.h
 md5.o: $(hdrdir)/ruby/internal/intern/hash.h
 md5.o: $(hdrdir)/ruby/internal/intern/io.h
 md5.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -145,12 +145,12 @@ md5.o: $(hdrdir)/ruby/internal/memory.h
 md5.o: $(hdrdir)/ruby/internal/method.h
 md5.o: $(hdrdir)/ruby/internal/module.h
 md5.o: $(hdrdir)/ruby/internal/newobj.h
-md5.o: $(hdrdir)/ruby/internal/rgengc.h
 md5.o: $(hdrdir)/ruby/internal/scan_args.h
 md5.o: $(hdrdir)/ruby/internal/special_consts.h
 md5.o: $(hdrdir)/ruby/internal/static_assert.h
 md5.o: $(hdrdir)/ruby/internal/stdalign.h
 md5.o: $(hdrdir)/ruby/internal/stdbool.h
+md5.o: $(hdrdir)/ruby/internal/stdckdint.h
 md5.o: $(hdrdir)/ruby/internal/symbol.h
 md5.o: $(hdrdir)/ruby/internal/value.h
 md5.o: $(hdrdir)/ruby/internal/value_type.h
@@ -217,6 +217,7 @@ md5init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 md5init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 md5init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 md5init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+md5init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 md5init.o: $(hdrdir)/ruby/internal/attr/pure.h
 md5init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 md5init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -276,7 +277,6 @@ md5init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 md5init.o: $(hdrdir)/ruby/internal/intern/error.h
 md5init.o: $(hdrdir)/ruby/internal/intern/eval.h
 md5init.o: $(hdrdir)/ruby/internal/intern/file.h
-md5init.o: $(hdrdir)/ruby/internal/intern/gc.h
 md5init.o: $(hdrdir)/ruby/internal/intern/hash.h
 md5init.o: $(hdrdir)/ruby/internal/intern/io.h
 md5init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -307,12 +307,12 @@ md5init.o: $(hdrdir)/ruby/internal/memory.h
 md5init.o: $(hdrdir)/ruby/internal/method.h
 md5init.o: $(hdrdir)/ruby/internal/module.h
 md5init.o: $(hdrdir)/ruby/internal/newobj.h
-md5init.o: $(hdrdir)/ruby/internal/rgengc.h
 md5init.o: $(hdrdir)/ruby/internal/scan_args.h
 md5init.o: $(hdrdir)/ruby/internal/special_consts.h
 md5init.o: $(hdrdir)/ruby/internal/static_assert.h
 md5init.o: $(hdrdir)/ruby/internal/stdalign.h
 md5init.o: $(hdrdir)/ruby/internal/stdbool.h
+md5init.o: $(hdrdir)/ruby/internal/stdckdint.h
 md5init.o: $(hdrdir)/ruby/internal/symbol.h
 md5init.o: $(hdrdir)/ruby/internal/value.h
 md5init.o: $(hdrdir)/ruby/internal/value_type.h

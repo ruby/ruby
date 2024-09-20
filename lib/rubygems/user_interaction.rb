@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -13,7 +14,6 @@ require_relative "text"
 # module will have access to the +ui+ method that returns the default UI.
 
 module Gem::DefaultUserInteraction
-
   include Gem::Text
 
   ##
@@ -68,7 +68,6 @@ module Gem::DefaultUserInteraction
   def use_ui(new_ui, &block)
     Gem::DefaultUserInteraction.use_ui(new_ui, &block)
   end
-
 end
 
 ##
@@ -91,7 +90,6 @@ end
 #   end
 
 module Gem::UserInteraction
-
   include Gem::DefaultUserInteraction
 
   ##
@@ -195,7 +193,7 @@ class Gem::StreamUI
   # then special operations (like asking for passwords) will use the TTY
   # commands to disable character echo.
 
-  def initialize(in_stream, out_stream, err_stream=STDERR, usetty=true)
+  def initialize(in_stream, out_stream, err_stream=$stderr, usetty=true)
     @ins = in_stream
     @outs = out_stream
     @errs = err_stream
@@ -239,7 +237,8 @@ class Gem::StreamUI
     return nil, nil unless result
 
     result = result.strip.to_i - 1
-    return list[result], result
+    return nil, nil unless (0...list.size) === result
+    [list[result], result]
   end
 
   ##
@@ -258,39 +257,38 @@ class Gem::StreamUI
     end
 
     default_answer = case default
-    when nil
-      "yn"
-    when true
-      "Yn"
-    else
-      "yN"
+                     when nil
+                       "yn"
+                     when true
+                       "Yn"
+                     else
+                       "yN"
     end
 
     result = nil
 
     while result.nil? do
       result = case ask "#{question} [#{default_answer}]"
-      when /^y/i then true
-      when /^n/i then false
-      when /^$/  then default
-      else            nil
+               when /^y/i then true
+               when /^n/i then false
+               when /^$/  then default
       end
     end
 
-    return result
+    result
   end
 
   ##
   # Ask a question.  Returns an answer if connected to a tty, nil otherwise.
 
   def ask(question)
-    return nil if !tty?
+    return nil unless tty?
 
     @outs.print(question + "  ")
     @outs.flush
 
     result = @ins.gets
-    result.chomp! if result
+    result&.chomp!
     result
   end
 
@@ -298,14 +296,14 @@ class Gem::StreamUI
   # Ask for a password. Does not echo response to terminal.
 
   def ask_for_password(question)
-    return nil if !tty?
+    return nil unless tty?
 
     @outs.print(question, "  ")
     @outs.flush
 
     password = _gets_noecho
     @outs.puts
-    password.chomp! if password
+    password&.chomp!
     password
   end
 
@@ -428,8 +426,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -471,8 +468,7 @@ class Gem::StreamUI
     # +size+ items.  Shows the given +initial_message+ when progress starts
     # and the +terminal_message+ when it is complete.
 
-    def initialize(out_stream, size, initial_message,
-                   terminal_message = "complete")
+    def initialize(out_stream, size, initial_message, terminal_message = "complete")
       @out = out_stream
       @total = size
       @count = 0
@@ -595,8 +591,8 @@ class Gem::StreamUI
 end
 
 ##
-# Subclass of StreamUI that instantiates the user interaction using STDIN,
-# STDOUT, and STDERR.
+# Subclass of StreamUI that instantiates the user interaction using $stdin,
+# $stdout, and $stderr.
 
 class Gem::ConsoleUI < Gem::StreamUI
   ##
@@ -604,7 +600,7 @@ class Gem::ConsoleUI < Gem::StreamUI
   # stdin, output to stdout and warnings or errors to stderr.
 
   def initialize
-    super STDIN, STDOUT, STDERR, true
+    super $stdin, $stdout, $stderr, true
   end
 end
 

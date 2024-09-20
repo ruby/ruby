@@ -10,6 +10,7 @@
 #
 # A simple system for logging messages.  See Logger for more documentation.
 
+require 'fiber'
 require 'monitor'
 require 'rbconfig'
 
@@ -264,8 +265,7 @@ require_relative 'logger/errors'
 #   logger.error! # => 3
 #   logger.fatal! # => 4
 #
-# You can retrieve the log level with method
-# {level}[Logger.html#attribute-i-level]:
+# You can retrieve the log level with method #level.
 #
 #   logger.level = Logger::ERROR
 #   logger.level # => 3
@@ -380,7 +380,9 @@ class Logger
   include Severity
 
   # Logging severity threshold (e.g. <tt>Logger::INFO</tt>).
-  attr_reader :level
+  def level
+    level_override[Fiber.current] || @level
+  end
 
   # Sets the log level; returns +severity+.
   # See {Log Level}[rdoc-ref:Logger@Log+Level].
@@ -395,24 +397,23 @@ class Logger
   # Logger#sev_threshold= is an alias for Logger#level=.
   #
   def level=(severity)
-    if severity.is_a?(Integer)
-      @level = severity
-    else
-      case severity.to_s.downcase
-      when 'debug'
-        @level = DEBUG
-      when 'info'
-        @level = INFO
-      when 'warn'
-        @level = WARN
-      when 'error'
-        @level = ERROR
-      when 'fatal'
-        @level = FATAL
-      when 'unknown'
-        @level = UNKNOWN
+    @level = Severity.coerce(severity)
+  end
+
+  # Adjust the log level during the block execution for the current Fiber only
+  #
+  #   logger.with_level(:debug) do
+  #     logger.debug { "Hello" }
+  #   end
+  def with_level(severity)
+    prev, level_override[Fiber.current] = level, Severity.coerce(severity)
+    begin
+      yield
+    ensure
+      if prev
+        level_override[Fiber.current] = prev
       else
-        raise ArgumentError, "invalid log level: #{severity}"
+        level_override.delete(Fiber.current)
       end
     end
   end
@@ -573,21 +574,27 @@ class Logger
   # - +shift_period_suffix+: sets the format for the filename suffix
   #   for periodic log file rotation; default is <tt>'%Y%m%d'</tt>.
   #   See {Periodic Rotation}[rdoc-ref:Logger@Periodic+Rotation].
+  # - +reraise_write_errors+: An array of exception classes, which will
+  #   be reraised if there is an error when writing to the log device.
+  #   The default is to swallow all exceptions raised.
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576, level: DEBUG,
                  progname: nil, formatter: nil, datetime_format: nil,
-                 binmode: false, shift_period_suffix: '%Y%m%d')
+                 binmode: false, shift_period_suffix: '%Y%m%d',
+                 reraise_write_errors: [])
     self.level = level
     self.progname = progname
     @default_formatter = Formatter.new
     self.datetime_format = datetime_format
     self.formatter = formatter
     @logdev = nil
+    @level_override = {}
     if logdev && logdev != File::NULL
       @logdev = LogDevice.new(logdev, shift_age: shift_age,
         shift_size: shift_size,
         shift_period_suffix: shift_period_suffix,
-        binmode: binmode)
+        binmode: binmode,
+        reraise_write_errors: reraise_write_errors)
     end
   end
 
@@ -737,6 +744,11 @@ private
 
   def format_severity(severity)
     SEV_LABEL[severity] || 'ANY'
+  end
+
+  # Guarantee the existence of this ivar even when subclasses don't call the superclass constructor.
+  def level_override
+    @level_override ||= {}
   end
 
   def format_message(severity, datetime, progname, msg)

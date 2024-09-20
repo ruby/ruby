@@ -186,7 +186,7 @@ pub fn asr(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, shift: A64Opnd) {
 
             SBFM::asr(rd.reg_no, rn.reg_no, shift.try_into().unwrap(), rd.num_bits).into()
         },
-        _ => panic!("Invalid operand combination to asr instruction."),
+        _ => panic!("Invalid operand combination to asr instruction: asr {:?}, {:?}, {:?}", rd, rn, shift),
     };
 
     cb.write_bytes(&bytes);
@@ -214,6 +214,9 @@ pub fn b(cb: &mut CodeBlock, offset: InstructionOffset) {
 pub const fn bcond_offset_fits_bits(offset: i64) -> bool {
     imm_fits_bits(offset, 19)
 }
+
+/// CBZ and CBNZ also have a limit of 19 bits for the branch offset.
+pub use bcond_offset_fits_bits as cmp_branch_offset_fits_bits;
 
 /// B.cond - branch to target if condition is true
 pub fn bcond(cb: &mut CodeBlock, cond: u8, offset: InstructionOffset) {
@@ -254,7 +257,7 @@ pub fn br(cb: &mut CodeBlock, rn: A64Opnd) {
 /// BRK - create a breakpoint
 pub fn brk(cb: &mut CodeBlock, imm16: A64Opnd) {
     let bytes: [u8; 4] = match imm16 {
-        A64Opnd::None => Breakpoint::brk(0).into(),
+        A64Opnd::None => Breakpoint::brk(0xf000).into(),
         A64Opnd::UImm(imm16) => {
             assert!(uimm_fits_bits(imm16, 16), "The immediate operand must be 16 bits or less.");
             Breakpoint::brk(imm16 as u16).into()
@@ -275,6 +278,9 @@ pub fn cmp(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
             );
 
             DataReg::cmp(rn.reg_no, rm.reg_no, rn.num_bits).into()
+        },
+        (A64Opnd::Reg(rn), A64Opnd::Imm(imm12)) => {
+            DataImm::cmp(rn.reg_no, (imm12 as u64).try_into().unwrap(), rn.num_bits).into()
         },
         (A64Opnd::Reg(rn), A64Opnd::UImm(imm12)) => {
             DataImm::cmp(rn.reg_no, imm12.try_into().unwrap(), rn.num_bits).into()
@@ -699,6 +705,35 @@ pub fn msr(cb: &mut CodeBlock, systemregister: SystemRegister, rt: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// MUL - multiply two registers, put the result in a third register
+pub fn mul(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
+
+            MAdd::mul(rd.reg_no, rn.reg_no, rm.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to mul instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// SMULH - multiply two 64-bit registers to produce a 128-bit result, put the high 64-bits of the result into rd
+pub fn smulh(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn, rm) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn), A64Opnd::Reg(rm)) => {
+            assert!(rd.num_bits == rn.num_bits && rn.num_bits == rm.num_bits, "Expected registers to be the same size");
+            assert!(rd.num_bits == 64, "smulh only applicable to 64-bit registers");
+
+            SMulH::smulh(rd.reg_no, rn.reg_no, rm.reg_no).into()
+        },
+        _ => panic!("Invalid operand combination to mul instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// MVN - move a value in a register to another register, negating it
 pub fn mvn(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rm) {
@@ -1064,6 +1099,48 @@ pub fn tst(cb: &mut CodeBlock, rn: A64Opnd, rm: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// CBZ - branch if a register is zero
+pub fn cbz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
+    assert!(imm_fits_bits(offset.into(), 19), "jump offset for cbz must fit in 19 bits");
+    let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
+        cbz_cbnz(rt.num_bits, false, offset, rt.reg_no)
+    } else {
+        panic!("Invalid operand combination to cbz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// CBNZ - branch if a register is non-zero
+pub fn cbnz(cb: &mut CodeBlock, rt: A64Opnd, offset: InstructionOffset) {
+    assert!(imm_fits_bits(offset.into(), 19), "jump offset for cbz must fit in 19 bits");
+    let bytes: [u8; 4] = if let A64Opnd::Reg(rt) = rt {
+        cbz_cbnz(rt.num_bits, true, offset, rt.reg_no)
+    } else {
+        panic!("Invalid operand combination to cbnz instruction.")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// Encode Compare and Branch on Zero (CBZ) with `op=0` or Compare and Branch on Nonzero (CBNZ)
+/// with `op=1`.
+///
+/// <https://developer.arm.com/documentation/ddi0602/2024-03/Base-Instructions/CBZ--Compare-and-Branch-on-Zero->
+///
+/// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
+/// | 31 30 29 28 | 27 26 25 24 | 23 22 21 20 | 19 18 17 16 | 15 14 13 12 | 11 10 09 08 | 07 06 05 04 | 03 02 01 00 |
+/// | sf  0  1  1    0  1  0 op                                                                                     |
+/// |                             imm19........................................................... Rt.............. |
+/// +-------------+-------------+-------------+-------------+-------------+-------------+-------------+-------------+
+fn cbz_cbnz(num_bits: u8, op: bool, offset: InstructionOffset, rt: u8) -> [u8; 4] {
+    ((Sf::from(num_bits) as u32) << 31 |
+          0b11010 << 25 |
+          u32::from(op) << 24 |
+          truncate_imm::<_, 19>(offset) << 5 |
+          rt as u32).to_le_bytes()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1134,7 +1211,7 @@ mod tests {
     }
 
     #[test]
-    fn test_adds_imm_negatve() {
+    fn test_adds_imm_negative() {
         check_bytes("201c00f1", |cb| adds(cb, X0, X1, A64Opnd::new_imm(-7)));
     }
 
@@ -1159,7 +1236,7 @@ mod tests {
     }
 
     #[test]
-    fn test_and_32b_immedaite() {
+    fn test_and_32b_immediate() {
         check_bytes("404c0012", |cb| and(cb, W0, W2, A64Opnd::new_uimm(0xfffff)));
     }
 
@@ -1239,8 +1316,26 @@ mod tests {
     }
 
     #[test]
+    fn test_cbz() {
+        let offset = InstructionOffset::from_insns(-1);
+        check_bytes("e0ffffb4e0ffff34", |cb| {
+            cbz(cb, X0, offset);
+            cbz(cb, W0, offset);
+        });
+    }
+
+    #[test]
+    fn test_cbnz() {
+        let offset = InstructionOffset::from_insns(2);
+        check_bytes("540000b554000035", |cb| {
+            cbnz(cb, X20, offset);
+            cbnz(cb, W20, offset);
+        });
+    }
+
+    #[test]
     fn test_brk_none() {
-        check_bytes("000020d4", |cb| brk(cb, A64Opnd::None));
+        check_bytes("00003ed4", |cb| brk(cb, A64Opnd::None));
     }
 
     #[test]
@@ -1411,6 +1506,11 @@ mod tests {
     #[test]
     fn test_msr() {
         check_bytes("0a421bd5", |cb| msr(cb, SystemRegister::NZCV, X10));
+    }
+
+    #[test]
+    fn test_mul() {
+        check_bytes("6a7d0c9b", |cb| mul(cb, X10, X11, X12));
     }
 
     #[test]

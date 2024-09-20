@@ -1,0 +1,25 @@
+prelude: |
+  C = Struct.new(:x) do
+    class_eval <<-END
+      def r
+        #{'x;'*256}
+      end
+      def w
+        #{'self.x = nil;'*256}
+      end
+      def rm
+        m = method(:x)
+        #{'m.call;'*256}
+      end
+      def wm
+        m = method(:x=)
+        #{'m.call(nil);'*256}
+      end
+    END
+  end
+  obj = C.new(nil)
+benchmark:
+  member_reader: "obj.r"
+  member_writer: "obj.w"
+  member_reader_method: "obj.rm"
+  member_writer_method: "obj.wm"

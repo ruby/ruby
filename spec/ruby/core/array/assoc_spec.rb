@@ -6,7 +6,7 @@ describe "Array#assoc" do
     s1 = ["colors", "red", "blue", "green"]
     s2 = [:letters, "a", "b", "c"]
     s3 = [4]
-    s4 = ["colors", "cyan", "yellow", "magenda"]
+    s4 = ["colors", "cyan", "yellow", "magenta"]
     s5 = [:letters, "a", "i", "u"]
     s_nil = [nil, nil]
     a = [s1, s2, s3, s4, s5, s_nil]
@@ -36,5 +36,17 @@ describe "Array#assoc" do
     a = ["foo", [], s1, s2, nil, []]
     a.assoc(s1.first).should equal(s1)
     a.assoc(s2.first).should equal(s2)
+  end
+
+  it "calls to_ary on non-array elements" do
+    s1 = [1, 2]
+    s2 = ArraySpecs::ArrayConvertible.new(2, 3)
+    a = [s1, s2]
+
+    s1.should_not_receive(:to_ary)
+    a.assoc(s1.first).should equal(s1)
+
+    a.assoc(2).should == [2, 3]
+    s2.called.should equal(:to_ary)
   end
 end

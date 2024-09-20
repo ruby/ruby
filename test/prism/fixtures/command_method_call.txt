@@ -1,0 +1,41 @@
+foo 1
+
+foo bar 1
+
+foo 1 if bar 2
+
+foo 1 unless bar 2
+
+foo 1 while bar 2
+
+foo 1 until bar 2
+
+foo 1 rescue bar 2
+
+foo[bar 1]
+
+foo 1 and bar 2
+
+foo 1 or bar 2
+
+not foo 1
+
+foo = bar = baz 1
+
+def foo = bar 1
+
+1.foo 2
+
+1.foo.bar 2
+
+1.foo[2].bar 3
+
+1.foo(2).bar 3
+
+1.foo(&2).bar 3
+
+!foo 1 and !bar 2
+
+!foo 1 or !bar 2
+
+not !foo 1

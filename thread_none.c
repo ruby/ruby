@@ -30,9 +30,11 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
 }
+
+#define thread_sched_to_dead thread_sched_to_waiting
 
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -40,7 +42,7 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 void
-rb_thread_sched_init(struct rb_thread_sched *sched)
+rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
@@ -134,18 +136,13 @@ Init_native_thread(rb_thread_t *main_th)
     ruby_thread_set_native(main_th);
 }
 
-static void
-native_thread_destroy(rb_thread_t *th)
-{
-}
-
 void
-ruby_init_stack(volatile VALUE *addr)
+ruby_mn_threads_params(void)
 {
 }
 
 static int
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
     th->ec->machine.stack_start = (VALUE *)rb_wasm_stack_get_base();
@@ -276,9 +273,63 @@ native_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *e
     return rb_fd_select(n, readfds, writefds, exceptfds, timeout);
 }
 
-static VALUE
-rb_thread_start_unblock_thread(void)
+static bool
+th_has_dedicated_nt(const rb_thread_t *th)
 {
-    return Qfalse;
+    return true;
 }
+
+void
+rb_add_running_thread(rb_thread_t *th){
+    // do nothing
+}
+
+void
+rb_del_running_thread(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_threadptr_sched_free(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
+void
+rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
+void
+rb_threadptr_remove(rb_thread_t *th)
+{
+    // do nothing
+}
+
+void
+rb_thread_sched_mark_zombies(rb_vm_t *vm)
+{
+    // do nothing
+}
+
+bool
+rb_thread_lock_native_thread(void)
+{
+    return false;
+}
+
+void *
+rb_thread_prevent_fork(void *(*func)(void *), void *data)
+{
+    return func(data);
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

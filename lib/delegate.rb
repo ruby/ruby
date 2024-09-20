@@ -39,7 +39,7 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
-  VERSION = "0.2.0"
+  VERSION = "0.3.1"
 
   kernel = ::Kernel.dup
   kernel.class_eval do
@@ -186,7 +186,7 @@ class Delegator < BasicObject
   # method calls are being delegated to.
   #
   def __getobj__
-    __raise__ ::NotImplementedError, "need to define `__getobj__'"
+    __raise__ ::NotImplementedError, "need to define '__getobj__'"
   end
 
   #
@@ -194,7 +194,7 @@ class Delegator < BasicObject
   # to _obj_.
   #
   def __setobj__(obj)
-    __raise__ ::NotImplementedError, "need to define `__setobj__'"
+    __raise__ ::NotImplementedError, "need to define '__setobj__'"
   end
 
   #

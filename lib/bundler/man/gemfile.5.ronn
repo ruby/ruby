@@ -69,6 +69,16 @@ should be the Ruby version that the engine is compatible with.
 
     ruby "3.1.2"
 
+If you wish to derive your Ruby version from a version file (ie .ruby-version),
+you can use the `file` option instead.
+
+    ruby file: ".ruby-version"
+
+The version file should conform to any of the following formats:
+
+  - `3.1.2` (.ruby-version)
+  - `ruby 3.1.2` (.tool-versions, read: https://asdf-vm.com/manage/configuration.html#tool-versions)
+
 ### ENGINE
 
 Each application _may_ specify a Ruby engine. If an engine is specified, an
@@ -86,7 +96,7 @@ What exactly is an Engine?
 
   - [Other implementations](https://www.ruby-lang.org/en/about/) of Ruby exist.
     Some of the more well-known implementations include
-    [JRuby](http://jruby.org/) and [TruffleRuby](https://www.graalvm.org/ruby/).
+    [JRuby](https://www.jruby.org/) and [TruffleRuby](https://www.graalvm.org/ruby/).
     Rubinius is an alternative implementation of Ruby written in Ruby.
     JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine.
     TruffleRuby is a Ruby implementation on the GraalVM, a language toolkit built on the JVM.
@@ -227,6 +237,16 @@ As with groups (above), you may specify one or more platforms:
 All operations involving groups ([`bundle install`](bundle-install.1.html), `Bundler.setup`,
 `Bundler.require`) behave exactly the same as if any groups not
 matching the current platform were explicitly excluded.
+
+The following platform values are deprecated and should be replaced with `windows`:
+
+  * `mswin`, `mswin64`, `mingw32`, `x64_mingw`
+
+Note that, while unfortunately using the same terminology, the values of this
+option are different from the values that `bundle lock --add-platform` can take.
+The values of this option are more closer to "Ruby Implementation" while the
+values that `bundle lock --add-platform` understands are more related to OS and
+architecture of the different systems where your lockfile will be used.
 
 ### FORCE_RUBY_PLATFORM
 
@@ -495,7 +515,7 @@ software is installed or some other conditions are met.
 
 ## GEMSPEC
 
-The [`.gemspec`](http://guides.rubygems.org/specification-reference/) file is where
+The [`.gemspec`](https://guides.rubygems.org/specification-reference/) file is where
  you provide metadata about your gem to Rubygems. Some required Gemspec
  attributes include the name, description, and homepage of your gem. This is
  also where you specify the dependencies your gem needs to run.
@@ -514,7 +534,7 @@ paths.
 
 The `gemspec` method supports optional `:path`, `:glob`, `:name`, and `:development_group`
 options, which control where bundler looks for the `.gemspec`, the glob it uses to look
-for the gemspec (defaults to: "{,*,*/*}.gemspec"), what named `.gemspec` it uses
+for the gemspec (defaults to: `{,*,*/*}.gemspec`), what named `.gemspec` it uses
 (if more than one is present), and which group development dependencies are included in.
 
 When a `gemspec` dependency encounters version conflicts during resolution, the

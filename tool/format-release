@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
-# https://rubygems.org/gems/diffy
-require "diffy"
+
+require "bundler/inline"
+
+gemfile do
+  source "https://rubygems.org"
+  gem "diffy"
+end
+
 require "open-uri"
 require "yaml"
 
@@ -235,11 +241,11 @@ eom
     diff.each_with_index do |line, index|
       case index
       when 0
-        line.sub!(/\A--- (.*)\t(\d+-\d+-\d+ [0-9:.]+ [\-+]\d+)\Z/) do
+        line.sub!(/\A--- (.*)\t(\d+-\d+-\d+ [0-9:.]+(?: [\-+]\d+)?)\Z/) do
           "--- a/#{filename}\t#{$2}"
         end
       when 1
-        line.sub!(/\A\+\+\+ (.*)\t(\d+-\d+-\d+ [0-9:.]+ [\-+]\d+)\Z/) do
+        line.sub!(/\A\+\+\+ (.*)\t(\d+-\d+-\d+ [0-9:.]+(?: [\-+]\d+)?)\Z/) do
           "+++ b/#{filename}\t#{$2}"
         end
       end

@@ -1,6 +1,13 @@
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1, "..").join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
 Gem::Specification.new do |spec|
-  spec.name          = "set"
-  spec.version       = "1.0.3"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 
@@ -8,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{Provides a class to deal with collections of unordered, unique values}
   spec.homepage      = "https://github.com/ruby/set"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage

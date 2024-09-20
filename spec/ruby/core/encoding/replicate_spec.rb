@@ -18,8 +18,8 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      "a".force_encoding(e).valid_encoding?.should be_true
-      "\x80".force_encoding(e).valid_encoding?.should be_false
+      "a".dup.force_encoding(e).valid_encoding?.should be_true
+      "\x80".dup.force_encoding(e).valid_encoding?.should be_false
     end
 
     it "returns a replica of UTF-8" do
@@ -28,9 +28,9 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      "a".force_encoding(e).valid_encoding?.should be_true
-      "\u3042".force_encoding(e).valid_encoding?.should be_true
-      "\x80".force_encoding(e).valid_encoding?.should be_false
+      "a".dup.force_encoding(e).valid_encoding?.should be_true
+      "\u3042".dup.force_encoding(e).valid_encoding?.should be_true
+      "\x80".dup.force_encoding(e).valid_encoding?.should be_false
     end
 
     it "returns a replica of UTF-16BE" do
@@ -39,9 +39,9 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      "a".force_encoding(e).valid_encoding?.should be_false
-      "\x30\x42".force_encoding(e).valid_encoding?.should be_true
-      "\x80".force_encoding(e).valid_encoding?.should be_false
+      "a".dup.force_encoding(e).valid_encoding?.should be_false
+      "\x30\x42".dup.force_encoding(e).valid_encoding?.should be_true
+      "\x80".dup.force_encoding(e).valid_encoding?.should be_false
     end
 
     it "returns a replica of ISO-2022-JP" do
@@ -61,9 +61,22 @@ describe "Encoding#replicate" do
       e.name.should == name
       Encoding.find(name).should == e
 
-      s = "abc".force_encoding(e)
+      s = "abc".dup.force_encoding(e)
       s.encoding.should == e
       s.encoding.name.should == name
+    end
+  end
+
+  ruby_version_is "3.2"..."3.3" do
+    it "warns about deprecation" do
+      -> {
+        Encoding::US_ASCII.replicate('MY-US-ASCII')
+      }.should complain(/warning: Encoding#replicate is deprecated and will be removed in Ruby 3.3; use the original encoding instead/)
+    end
+
+    it "raises EncodingError if too many encodings" do
+      code = '1_000.times {|i| Encoding::US_ASCII.replicate("R_#{i}") }'
+      ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
     end
   end
 

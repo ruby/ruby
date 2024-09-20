@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Resolver sets are used to look up specifications (and their
 # dependencies) used in resolution.  This set is abstract.

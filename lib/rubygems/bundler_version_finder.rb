@@ -21,7 +21,7 @@ module Gem::BundlerVersionFinder
   end
 
   def self.bundle_update_bundler_version
-    return unless File.basename($0) == "bundle".freeze
+    return unless ["bundle", "bundler"].include? File.basename($0)
     return unless "update".start_with?(ARGV.first || " ")
     bundler_version = nil
     update_index = nil
@@ -47,12 +47,12 @@ module Gem::BundlerVersionFinder
 
   def self.lockfile_contents
     gemfile = ENV["BUNDLE_GEMFILE"]
-    gemfile = nil if gemfile && gemfile.empty?
+    gemfile = nil if gemfile&.empty?
 
     unless gemfile
       begin
         Gem::Util.traverse_parents(Dir.pwd) do |directory|
-          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f.tap(&Gem::UNTAINT)) }
+          next unless gemfile = Gem::GEM_DEP_FILES.find {|f| File.file?(f) }
 
           gemfile = File.join directory, gemfile
           break
@@ -65,9 +65,9 @@ module Gem::BundlerVersionFinder
     return unless gemfile
 
     lockfile = case gemfile
-    when "gems.rb" then "gems.locked"
-    else "#{gemfile}.lock"
-    end.dup.tap(&Gem::UNTAINT)
+               when "gems.rb" then "gems.locked"
+               else "#{gemfile}.lock"
+    end
 
     return unless File.file?(lockfile)
 

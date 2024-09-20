@@ -1,7 +1,6 @@
 require_relative '../../spec_helper'
 require_relative '../../fixtures/code_loading'
 require_relative 'fixtures/classes'
-require 'thread'
 
 describe "Module#autoload?" do
   it "returns the name of the file that will be autoloaded" do
@@ -343,6 +342,29 @@ describe "Module#autoload" do
     end
   end
 
+  def check_before_during_thread_after(const, &check)
+    before = check.call
+    to_autoload_thread, from_autoload_thread = Queue.new, Queue.new
+    ScratchPad.record -> {
+      from_autoload_thread.push check.call
+      to_autoload_thread.pop
+    }
+    t = Thread.new {
+      in_loading_thread = from_autoload_thread.pop
+      in_other_thread = check.call
+      to_autoload_thread.push :done
+      [in_loading_thread, in_other_thread]
+    }
+    in_loading_thread, in_other_thread = nil
+    begin
+      ModuleSpecs::Autoload.const_get(const)
+    ensure
+      in_loading_thread, in_other_thread = t.value
+    end
+    after = check.call
+    [before, in_loading_thread, in_other_thread, after]
+  end
+
   describe "during the autoload before the constant is assigned" do
     before :each do
       @path = fixture(__FILE__, "autoload_during_autoload.rb")
@@ -351,55 +373,80 @@ describe "Module#autoload" do
       raise unless ModuleSpecs::Autoload.autoload?(:DuringAutoload) == @path
     end
 
-    def check_before_during_thread_after(&check)
-      before = check.call
-      to_autoload_thread, from_autoload_thread = Queue.new, Queue.new
-      ScratchPad.record -> {
-        from_autoload_thread.push check.call
-        to_autoload_thread.pop
-      }
-      t = Thread.new {
-        in_loading_thread = from_autoload_thread.pop
-        in_other_thread = check.call
-        to_autoload_thread.push :done
-        [in_loading_thread, in_other_thread]
-      }
-      in_loading_thread, in_other_thread = nil
-      begin
-        ModuleSpecs::Autoload::DuringAutoload
-      ensure
-        in_loading_thread, in_other_thread = t.value
-      end
-      after = check.call
-      [before, in_loading_thread, in_other_thread, after]
-    end
-
     it "returns nil in autoload thread and 'constant' otherwise for defined?" do
-      results = check_before_during_thread_after {
+      results = check_before_during_thread_after(:DuringAutoload) {
         defined?(ModuleSpecs::Autoload::DuringAutoload)
       }
       results.should == ['constant', nil, 'constant', 'constant']
     end
 
     it "keeps the constant in Module#constants" do
-      results = check_before_during_thread_after {
+      results = check_before_during_thread_after(:DuringAutoload) {
         ModuleSpecs::Autoload.constants(false).include?(:DuringAutoload)
       }
       results.should == [true, true, true, true]
     end
 
     it "returns false in autoload thread and true otherwise for Module#const_defined?" do
-      results = check_before_during_thread_after {
+      results = check_before_during_thread_after(:DuringAutoload) {
         ModuleSpecs::Autoload.const_defined?(:DuringAutoload, false)
       }
       results.should == [true, false, true, true]
     end
 
     it "returns nil in autoload thread and returns the path in other threads for Module#autoload?" do
-      results = check_before_during_thread_after {
+      results = check_before_during_thread_after(:DuringAutoload) {
         ModuleSpecs::Autoload.autoload?(:DuringAutoload)
       }
       results.should == [@path, nil, @path, nil]
+    end
+  end
+
+  describe "during the autoload after the constant is assigned" do
+    before :each do
+      @path = fixture(__FILE__, "autoload_during_autoload_after_define.rb")
+      ModuleSpecs::Autoload.autoload :DuringAutoloadAfterDefine, @path
+      @autoload_location = [__FILE__, __LINE__ - 1]
+      @const_location = [@path, 2]
+      @remove << :DuringAutoloadAfterDefine
+      raise unless ModuleSpecs::Autoload.autoload?(:DuringAutoloadAfterDefine) == @path
+    end
+
+    it "returns 'constant' in both threads" do
+      results = check_before_during_thread_after(:DuringAutoloadAfterDefine) {
+        defined?(ModuleSpecs::Autoload::DuringAutoloadAfterDefine)
+      }
+      results.should == ['constant', 'constant', 'constant', 'constant']
+    end
+
+    it "Module#constants include the autoloaded in both threads" do
+      results = check_before_during_thread_after(:DuringAutoloadAfterDefine) {
+        ModuleSpecs::Autoload.constants(false).include?(:DuringAutoloadAfterDefine)
+      }
+      results.should == [true, true, true, true]
+    end
+
+    it "Module#const_defined? returns true in both threads" do
+      results = check_before_during_thread_after(:DuringAutoloadAfterDefine) {
+        ModuleSpecs::Autoload.const_defined?(:DuringAutoloadAfterDefine, false)
+      }
+      results.should == [true, true, true, true]
+    end
+
+    it "returns nil in autoload thread and returns the path in other threads for Module#autoload?" do
+      results = check_before_during_thread_after(:DuringAutoloadAfterDefine) {
+        ModuleSpecs::Autoload.autoload?(:DuringAutoloadAfterDefine)
+      }
+      results.should == [@path, nil, @path, nil]
+    end
+
+    ruby_bug("#20188", ""..."3.4") do
+      it "returns the real constant location in autoload thread and returns the autoload location in other threads for Module#const_source_location" do
+        results = check_before_during_thread_after(:DuringAutoloadAfterDefine) {
+          ModuleSpecs::Autoload.const_source_location(:DuringAutoloadAfterDefine)
+        }
+        results.should == [@autoload_location, @const_location, @autoload_location, @const_location]
+      end
     end
   end
 

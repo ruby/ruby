@@ -7,28 +7,37 @@ RSpec.describe Bundler::RubyDsl do
     include Bundler::RubyDsl
 
     attr_reader :ruby_version
+    attr_accessor :gemfile
   end
 
   let(:dsl) { MockDSL.new }
   let(:ruby_version) { "2.0.0" }
+  let(:ruby_version_arg) { ruby_version }
   let(:version) { "2.0.0" }
   let(:engine) { "jruby" }
   let(:engine_version) { "9000" }
   let(:patchlevel) { "100" }
   let(:options) do
-    { :patchlevel => patchlevel,
-      :engine => engine,
-      :engine_version => engine_version }
+    { patchlevel: patchlevel,
+      engine: engine,
+      engine_version: engine_version }
   end
+  let(:project_root) { Pathname.new("/path/to/project") }
+  let(:gemfile) { project_root.join("Gemfile") }
+  before { allow(Bundler).to receive(:root).and_return(project_root) }
 
   let(:invoke) do
     proc do
-      args = Array(ruby_version) + [options]
+      args = []
+      args << ruby_version_arg if ruby_version_arg
+      args << options
+
       dsl.ruby(*args)
     end
   end
 
   subject do
+    dsl.gemfile = gemfile
     invoke.call
     dsl.ruby_version
   end
@@ -59,10 +68,19 @@ RSpec.describe Bundler::RubyDsl do
       it_behaves_like "it stores the ruby version"
     end
 
+    context "with a preview version" do
+      let(:ruby_version) { "3.3.0-preview2" }
+
+      it "stores the version" do
+        expect(subject.versions).to eq(Array("3.3.0.preview2"))
+        expect(subject.gem_version.version).to eq("3.3.0.preview2")
+      end
+    end
+
     context "with two requirements in the same string" do
       let(:ruby_version) { ">= 2.0.0, < 3.0" }
       it "raises an error" do
-        expect { subject }.to raise_error(ArgumentError)
+        expect { subject }.to raise_error(Bundler::InvalidArgumentError)
       end
     end
 
@@ -89,6 +107,95 @@ RSpec.describe Bundler::RubyDsl do
         let(:ruby_version) { ["~> 2.0.0", "> 2.0.1"] }
         let(:engine_version) { ruby_version }
         it_behaves_like "it stores the ruby version"
+      end
+    end
+
+    context "with a file option" do
+      let(:file) { ".ruby-version" }
+      let(:ruby_version_file_path) { gemfile.dirname.join(file) }
+      let(:options) do
+        { file: file,
+          patchlevel: patchlevel,
+          engine: engine,
+          engine_version: engine_version }
+      end
+      let(:ruby_version_arg) { nil }
+      let(:file_content) { "#{version}\n" }
+
+      before do
+        allow(Bundler).to receive(:read_file) do |path|
+          raise Errno::ENOENT, <<~ERROR unless path == ruby_version_file_path
+            #{file} not found in specs:
+              expected: #{ruby_version_file_path}
+              received: #{path}
+          ERROR
+          file_content
+        end
+      end
+
+      it_behaves_like "it stores the ruby version"
+
+      context "with the Gemfile ruby file: path is relative to the Gemfile in a subdir" do
+        let(:gemfile) { project_root.join("subdir", "Gemfile") }
+        let(:file) { "../.ruby-version" }
+        let(:ruby_version_file_path) { gemfile.dirname.join(file) }
+
+        it_behaves_like "it stores the ruby version"
+      end
+
+      context "with bundler root in a subdir of the project" do
+        let(:project_root) { Pathname.new("/path/to/project/subdir") }
+        let(:gemfile) { project_root.parent.join("Gemfile") }
+
+        it_behaves_like "it stores the ruby version"
+      end
+
+      context "with the ruby- prefix in the file" do
+        let(:file_content) { "ruby-#{version}\n" }
+
+        it_behaves_like "it stores the ruby version"
+      end
+
+      context "and a version" do
+        let(:ruby_version_arg) { version }
+
+        it "raises an error" do
+          expect { subject }.to raise_error(Bundler::GemfileError, "Do not pass version argument when using :file option")
+        end
+      end
+
+      context "with a @gemset" do
+        let(:file_content) { "ruby-#{version}@gemset\n" }
+
+        it "raises an error" do
+          expect { subject }.to raise_error(Bundler::InvalidArgumentError, "2.0.0@gemset is not a valid requirement on the Ruby version")
+        end
+      end
+
+      context "with a .tool-versions file format" do
+        let(:file) { ".tool-versions" }
+        let(:ruby_version_arg) { nil }
+        let(:file_content) do
+          <<~TOOLS
+            nodejs 18.16.0
+            ruby #{version} # This is a comment
+            pnpm 8.6.12
+          TOOLS
+        end
+
+        it_behaves_like "it stores the ruby version"
+
+        context "with extra spaces and a very cozy comment" do
+          let(:file_content) do
+            <<~TOOLS
+              nodejs 18.16.0
+              ruby   #{version}# This is a cozy comment
+              pnpm   8.6.12
+            TOOLS
+          end
+
+          it_behaves_like "it stores the ruby version"
+        end
       end
     end
   end

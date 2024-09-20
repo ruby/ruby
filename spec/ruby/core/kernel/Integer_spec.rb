@@ -145,7 +145,7 @@ describe :kernel_integer, shared: true do
   end
 end
 
-describe "Integer() given a String", shared: true do
+describe :kernel_integer_string, shared: true do
   it "raises an ArgumentError if the String is a null byte" do
     -> { Integer("\0") }.should raise_error(ArgumentError)
   end
@@ -348,7 +348,7 @@ describe "Integer() given a String", shared: true do
   end
 end
 
-describe "Integer() given a String and base", shared: true do
+describe :kernel_integer_string_base, shared: true do
   it "raises an ArgumentError if the String is a null byte" do
     -> { Integer("\0", 2) }.should raise_error(ArgumentError)
   end
@@ -573,9 +573,31 @@ describe "Integer() given a String and base", shared: true do
         -> { Integer("0#{d}1", base) }.should raise_error(ArgumentError)
       end
     end
+  end
 
-    it "raises an ArgumentError if a base is given for a non-String value" do
-      -> { Integer(98, 15) }.should raise_error(ArgumentError)
+  it "raises an ArgumentError if a base is given for a non-String value" do
+    -> { Integer(98, 15) }.should raise_error(ArgumentError)
+  end
+
+  it "tries to convert the base to an integer using to_int" do
+    obj = mock('8')
+    obj.should_receive(:to_int).and_return(8)
+
+    Integer("777", obj).should == 0777
+  end
+
+  # https://bugs.ruby-lang.org/issues/19349
+  ruby_version_is ''...'3.3' do
+    it "ignores the base if it is not an integer and does not respond to #to_i" do
+      Integer("777", "8").should == 777
+    end
+  end
+
+  ruby_version_is '3.3' do
+    it "raises a TypeError if it is not an integer and does not respond to #to_i" do
+      -> {
+        Integer("777", "8")
+      }.should raise_error(TypeError, "no implicit conversion of String into Integer")
     end
   end
 
@@ -777,9 +799,9 @@ describe "Kernel.Integer" do
 
   # TODO: fix these specs
   it_behaves_like :kernel_integer, :Integer, Kernel
-  it_behaves_like "Integer() given a String", :Integer
+  it_behaves_like :kernel_integer_string, :Integer
 
-  it_behaves_like "Integer() given a String and base", :Integer
+  it_behaves_like :kernel_integer_string_base, :Integer
 
   it "is a public method" do
     Kernel.Integer(10).should == 10
@@ -791,9 +813,9 @@ describe "Kernel#Integer" do
 
   # TODO: fix these specs
   it_behaves_like :kernel_integer, :Integer, Object.new
-  it_behaves_like "Integer() given a String", :Integer
+  it_behaves_like :kernel_integer_string, :Integer
 
-  it_behaves_like "Integer() given a String and base", :Integer
+  it_behaves_like :kernel_integer_string_base, :Integer
 
   it "is a private method" do
     Kernel.should have_private_instance_method(:Integer)

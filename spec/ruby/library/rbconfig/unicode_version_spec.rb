@@ -16,8 +16,8 @@ describe "RbConfig::CONFIG['UNICODE_VERSION']" do
 
   # Caution: ruby_version_is means is_or_later
   ruby_version_is "3.2" do
-    it "is 14.0.0" do
-      RbConfig::CONFIG['UNICODE_VERSION'].should == "14.0.0"
+    it "is 15.0.0" do
+      RbConfig::CONFIG['UNICODE_VERSION'].should == "15.0.0"
     end
   end
 end

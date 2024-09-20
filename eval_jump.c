@@ -112,21 +112,21 @@ rb_ec_exec_end_proc(rb_execution_context_t * ec)
 {
     enum ruby_tag_type state;
     volatile VALUE errinfo = ec->errinfo;
+    volatile bool finished = false;
 
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-      again:
-        exec_end_procs_chain(&ephemeral_end_procs, &ec->errinfo);
-        exec_end_procs_chain(&end_procs, &ec->errinfo);
+    while (!finished) {
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            exec_end_procs_chain(&ephemeral_end_procs, &ec->errinfo);
+            exec_end_procs_chain(&end_procs, &ec->errinfo);
+            finished = true;
+        }
+        EC_POP_TAG();
+        if (state != TAG_NONE) {
+            error_handle(ec, ec->errinfo, state);
+            if (!NIL_P(ec->errinfo)) errinfo = ec->errinfo;
+        }
     }
-    else {
-        EC_TMPPOP_TAG();
-        error_handle(ec, ec->errinfo, state);
-        if (!NIL_P(ec->errinfo)) errinfo = ec->errinfo;
-        EC_REPUSH_TAG();
-        goto again;
-    }
-    EC_POP_TAG();
 
     ec->errinfo = errinfo;
 }

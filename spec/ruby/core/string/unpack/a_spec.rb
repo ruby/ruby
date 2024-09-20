@@ -31,7 +31,7 @@ describe "String#unpack with format 'A'" do
   end
 
   it "decodes into raw (ascii) string values" do
-    str = "str".force_encoding('UTF-8').unpack("A*")[0]
+    str = "str".dup.force_encoding('UTF-8').unpack("A*")[0]
     str.encoding.should == Encoding::BINARY
   end
 

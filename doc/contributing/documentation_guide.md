@@ -20,14 +20,16 @@ build directory:
 make html
 ```
 
+If you don't have a build directory, follow the [quick start
+guide](building_ruby.md#label-Quick+start+guide) up to step 4.
+
 Then you can preview your changes by opening
 `{build folder}/.ext/html/index.html` file in your browser.
-
 
 ## Goal
 
 The goal of Ruby documentation is to impart the most important
-and relevant in the shortest time.
+and relevant information in the shortest time.
 The reader should be able to quickly understand the usefulness
 of the subject code and how to use it.
 
@@ -41,16 +43,17 @@ Use your judgment about what the user needs to know.
 - Write short declarative or imperative sentences.
 - Group sentences into (ideally short) paragraphs,
   each covering a single topic.
-- Organize material with [headers](rdoc-ref:RDoc::Markup@Headers).
+- Organize material with
+  [headings](rdoc-ref:RDoc::MarkupReference@Headings).
 - Refer to authoritative and relevant sources using
-  [links](rdoc-ref:RDoc::Markup@Links).
+  [links](rdoc-ref:RDoc::MarkupReference@Links).
 - Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
     - Excessive comma-separated phrases;
-      consider a [list](rdoc-ref:RDoc::Markup@Simple+Lists).
+      consider a [list](rdoc-ref:RDoc::MarkupReference@Lists).
     - Idioms and culture-specific references.
-    - Overuse of headers.
+    - Overuse of headings.
     - Using US-ASCII-incompatible characters in C source files;
       see [Characters](#label-Characters) below.
 
@@ -124,16 +127,23 @@ a.shuffle!    #=> [2, 3, 1]
 a             #=> [2, 3, 1]
 ```
 
-### Headers
+### Headings
 
-Organize a long discussion with [headers](rdoc-ref:RDoc::Markup@Headers).
+Organize a long discussion for a class or module with [headings](rdoc-ref:RDoc::MarkupReference@Headings).
+
+Do not use formal headings in the documentation for a method or constant.
+
+In the rare case where heading-like structures are needed
+within the documentation for a method or constant, use
+[bold text](rdoc-ref:RDoc::MarkupReference@Bold)
+as pseudo-headings.
 
 ### Blank Lines
 
 A blank line begins a new paragraph.
 
-A [code block](rdoc-ref:RDoc::Markup@Paragraphs+and+Verbatim)
-or [list](rdoc-ref:RDoc::Markup@Simple+Lists)
+A [code block](rdoc-ref:RDoc::MarkupReference@Code+Blocks)
+or [list](rdoc-ref:RDoc::MarkupReference@Lists)
 should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
@@ -150,19 +160,145 @@ For a method name in text:
   or a hash mark for an instance method:
   <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
 
+### Embedded Code and Commands
+
+Code or commands embedded in running text (i.e., not in a code block)
+should marked up as
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+Code that is a simple string should include the quote marks.
+
 ### Auto-Linking
 
+Most often, the name of a class, module, or method
+is auto-linked:
+
+```
+- Float.
+- Enumerable.
+- File.new
+- File#read.
+```
+renders as:
+
+> - Float.
+> - Enumerable.
+> - File.new
+> - File#read.
+
 In general, \RDoc's auto-linking should not be suppressed.
-For example, we should write `Array`, not `\Array`.
+For example, we should write just plain _Float_ (which is auto-linked):
 
-We might consider whether to suppress when:
+```
+Returns a Float.
+```
 
-- The word in question does not refer to a Ruby entity
-  (e.g., some uses of _Class_ or _English_).
-- The reference is to the current class document
-  (e.g., _Array_ in the documentation for class `Array`).
-- The same reference is repeated many times
-  (e.g., _RDoc_ on this page).
+which renders as:
+
+> Returns a Float.
+
+However, _do_ suppress auto-linking when the word in question
+does not refer to a Ruby entity (e.g., some uses of _Class_ or _English_):
+
+```
+\Class variables can be tricky.
+```
+
+renders as:
+
+> \\Class variables can be tricky.
+
+Also, _do_ suppress auto-linking when the word in question
+refers to the current document
+(e.g., _Float_ in the documentation for class Float).
+
+In this case you may consider forcing the name to
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont),
+which suppresses auto-linking, and also emphasizes that the word is a class name:
+
+```
+A +Float+ object represents ....
+```
+
+renders as:
+
+> A `Float` object represents ....
+
+For a _very_ few, _very_ often-discussed classes,
+you might consider avoiding the capitalized class name altogether.
+For example, for some mentions of arrays,
+you might write simply the lowercase _array_.
+
+Instead of:
+
+```
+For an empty Array, ....
+```
+
+which renders as:
+
+> For an empty Array, ....
+
+you might write:
+
+```
+For an empty array, ....
+```
+
+which renders as:
+
+> For an empty array, ....
+
+This more casual usage avoids both auto-linking and distracting font changes,
+and is unlikely to cause confusion.
+
+This principle may be usefully applied, in particular, for:
+
+- An array.
+- An integer.
+- A hash.
+- A string.
+
+However, it should be applied _only_ when referring to an _instance_ of the class,
+and _never_ when referring to the class itself.
+
+### Explicit Links
+
+When writing an explicit link, follow these guidelines.
+
+#### +rdoc-ref+ Scheme
+
+Use the +rdoc-ref+ scheme for:
+
+- A link in core documentation to other core documentation.
+- A link in core documentation to documentation in a standard library package.
+- A link in a standard library package to other documentation in that same
+  standard library package.
+
+See section "+rdoc-ref+ Scheme" in {Links}[rdoc-ref:RDoc::MarkupReference@Links].
+
+#### URL-Based Link
+
+Use a full URL-based link for:
+
+- A link in standard library documentation to documentation in the core.
+- A link in standard library documentation to documentation in a different
+  standard library package.
+
+Doing so ensures that the link will valid even when the package documentation
+is built independently (separately from the core documentation).
+
+The link should lead to a target in https://docs.ruby-lang.org/en/master/.
+
+Also use a full URL-based link for a link to an off-site document.
+
+### Variable Names
+
+The name of a variable (as specified in its call-seq) should be marked up as
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+Also, use monofont text for the name of a transient variable
+(i.e., one defined and used only in the discussion, such as +n+).
 
 ### HTML Tags
 
@@ -175,16 +311,21 @@ may not render them properly.
 In particular, avoid building tables with HTML tags
 (<tt><table></tt>, etc.).
 
-Alternatives are:
-
-- The GFM (GitHub Flavored Markdown) table extension,
-  which is enabled by default. See
-  {GFM tables extension}[https://github.github.com/gfm/#tables-extension-].
+Alternatives:
 
 - A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
-  using spaces and punctuation to format the text.
-  Note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
-  will not be honored.
+  using spaces and punctuation to format the text;
+  note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
+  will not be honored:
+
+    - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
+    - Corresponding {output}[rdoc-ref:File@Read-2FWrite+Mode].
+
+- (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
+  using special formatting for the text:
+
+    - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
+    - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
 
 ## Documenting Classes and Modules
 
@@ -214,9 +355,12 @@ Guidelines:
 
 - The section title is `What's Here`.
 - Consider listing the parent class and any included modules; consider
-  [links](rdoc-ref:RDoc::Markup@Links)
+  [links](rdoc-ref:RDoc::MarkupReference@Links)
   to their "What's Here" sections if those exist.
-- List methods as a bullet list:
+- All methods mentioned in the left-pane table of contents
+  should be listed (including any methods extended from another class).
+- Attributes (which are not included in the TOC) may also be listed.
+- Display methods as items in one or more bullet lists:
 
     - Begin each item with the method name, followed by a colon
       and a short description.
@@ -224,9 +368,9 @@ Guidelines:
       (and do not list the aliases separately).
     - Check the rendered documentation to determine whether \RDoc has recognized
       the method and linked to it;  if not, manually insert a
-      [link](rdoc-ref:RDoc::Markup@Links).
+      [link](rdoc-ref:RDoc::MarkupReference@Links).
 
-- If there are numerous entries, consider grouping them into subsections with headers.
+- If there are numerous entries, consider grouping them into subsections with headings.
 - If there are more than a few such subsections,
   consider adding a table of contents just below the main section title.
 
@@ -238,10 +382,10 @@ The general structure of the method documentation should be:
 
 - Calling sequence (for methods written in C).
 - Synopsis (short description).
+- In-brief examples (optional)
 - Details and examples.
 - Argument description (if necessary).
 - Corner cases and exceptions.
-- Aliases.
 - Related methods (optional).
 
 ### Calling Sequence (for methods written in C)
@@ -250,7 +394,7 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-[`call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
+[`call-seq:`](rdoc-ref:RDoc::MarkupReference@Directives+for+Method+Documentation).
 
 For a singleton method, use the form:
 
@@ -282,8 +426,16 @@ For example, in Array, use:
 ```
 
 ```
-* call-seq:
+*  call-seq:
 *    <=> other -> -1, 0, 1, or nil
+```
+
+For a binary-operator style method (e.g., Array#&),
+cite `self` in the call-seq (not, e.g., `array` or `receiver`):
+
+```
+*  call-seq:
+*    self & other_array -> new_array
 ```
 
 Arguments:
@@ -298,7 +450,8 @@ Arguments:
       For example, use:
 
         ```
-        respond_to?(symbol, include_all = false) -> true or false
+        *  call-seq:
+        *    respond_to?(symbol, include_all = false) -> true or false
         ```
 
     - If the behavior is different with an omitted or an explicit argument,
@@ -306,6 +459,7 @@ Arguments:
       For example, in Enumerable, use:
 
         ```
+        *  call-seq:
         *    max    -> element
         *    max(n) -> array
         ```
@@ -315,6 +469,14 @@ Block:
 - If the method does not accept a block, omit the block.
 - If the method accepts a block, the `call-seq` should have `{|args| ... }`,
   not `{|args| block }` or `{|args| code }`.
+- If the method accepts a block, but returns an Enumerator when the block is omitted,
+  the `call-seq` should show both forms:
+
+    ```
+    *  call-seq:
+    *    array.select {|element| ... } -> new_array
+    *    array.select -> new_enumerator
+    ```
 
 Return types:
 
@@ -328,7 +490,11 @@ Return types:
 
 Aliases:
 
-- Omit aliases from the `call-seq`, but mention them near the end (see below).
+- Omit aliases from the `call-seq`, unless the alias is an
+  operator method. If listing both a regular method and an
+  operator method in the `call-seq`, explain in the details and
+  examples section when it is recommended to use the regular method
+  and when it is recommended to use the operator method.
 
 ### Synopsis
 
@@ -346,6 +512,16 @@ Returns a count of specified elements.
 This is great as it is short and descriptive.  Avoid documenting
 too much in the synopsis, stick to the most important information
 for the benefit of the reader.
+
+### In-Brief Examples
+
+For a method whose documentation is lengthy,
+consider adding an "in-brief" passage,
+showing examples that summarize the method's uses.
+
+The passage may answer some users' questions
+(without their having to read long documentation);
+see Array#[] and Array#[]=.
 
 ### Details and Examples
 
@@ -369,6 +545,15 @@ do not add an example if it provides the same information given
 in the synopsis or details.  The purpose of examples is not to prove
 what the details are stating.
 
+Many methods that can take an optional block call the block if it is given,
+but return a new Enumerator if the block is not given;
+in that case, do not provide an example,
+but do state the fact (with the auto-linking uppercase Enumerator):
+
+```
+*  With no block given, returns a new Enumerator.
+```
+
 ### Argument Description (if necessary)
 
 For methods that require arguments, if not obvious and not explicitly
@@ -385,7 +570,7 @@ argument passed if it is not obvious, not explicitly mentioned in the
 details, and not implicitly shown in the examples.
 
 If there is more than one argument or block argument, use a
-[labeled list](rdoc-ref:RDoc::Markup@Labeled+Lists).
+[labeled list](rdoc-ref:RDoc::MarkupReference@Labeled+Lists).
 
 ### Corner Cases and Exceptions
 
@@ -397,14 +582,6 @@ if you have stated earlier than an argument type must be an integer,
 you do not need to document that a `TypeError` is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
 that is a common case, such as `Hash#fetch` raising a `KeyError`.
-
-### Aliases
-
-Mention aliases in the form
-
-```
-// Array#find_index is an alias for Array#index.
-```
 
 ### Related Methods (optional)
 

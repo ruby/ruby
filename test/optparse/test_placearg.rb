@@ -13,6 +13,8 @@ class TestOptionParserPlaceArg < TestOptionParser
     @reopt = nil
     @opt.def_option "--with_underscore=VAL" do |x| @flag = x end
     @opt.def_option "--with-hyphen=VAL" do |x| @flag = x end
+    @opt.def_option("--fallback [VAL]") do |x = "fallback"| @flag = x end
+    @opt.def_option("--lambda [VAL]", &->(x) {@flag = x})
   end
 
   def test_short
@@ -72,5 +74,23 @@ class TestOptionParserPlaceArg < TestOptionParser
     assert_nil(@topt)
     assert_equal(%w"te.rb", no_error('[ruby-dev:38333]') {@opt.parse!(%w"-T1 te.rb")})
     assert_equal(1, @topt)
+  end
+
+  def test_default_argument
+    assert_equal(%w"", no_error {@opt.parse!(%w"--fallback=val1")})
+    assert_equal("val1", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--fallback val2")})
+    assert_equal("val2", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--fallback")})
+    assert_equal("fallback", @flag)
+  end
+
+  def test_lambda
+    assert_equal(%w"", no_error {@opt.parse!(%w"--lambda=lambda1")})
+    assert_equal("lambda1", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--lambda lambda2")})
+    assert_equal("lambda2", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--lambda")})
+    assert_equal(nil, @flag)
   end
 end

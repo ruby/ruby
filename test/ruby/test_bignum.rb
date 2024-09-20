@@ -207,7 +207,7 @@ class TestBignum < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       digits = [["3", 700], ["0", 2700], ["1", 1], ["0", 26599]]
-      num = digits.inject("") {|s,(c,n)|s << c*n}.to_i
+      num = digits.inject(+"") {|s,(c,n)|s << c*n}.to_i
       assert_equal digits.sum {|c,n|n}, num.to_s.size
     end;
   end
@@ -821,5 +821,11 @@ class TestBignum < Test::Unit::TestCase
     assert_nil(T1024P.infinite?)
     assert_nil((-T1024P).infinite?)
   end
+
+  def test_gmp_version
+    if RbConfig::CONFIG.fetch('configure_args').include?("'--with-gmp'")
+      assert_kind_of(String, Integer::GMP_VERSION)
+    end
+  end if ENV['GITHUB_WORKFLOW'] == 'Compilations'
 end
 end

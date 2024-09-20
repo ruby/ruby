@@ -78,4 +78,5 @@ end
 
 describe "IO#syswrite" do
   it_behaves_like :io_write, :syswrite
+  it_behaves_like :io_write_no_transcode, :syswrite
 end

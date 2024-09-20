@@ -1,4 +1,7 @@
 # frozen_string_literal: false
 require 'mkmf'
-have_func("rb_io_extract_modeenc", "ruby/io.h")
-create_makefile('stringio')
+if RUBY_ENGINE == 'ruby'
+  create_makefile('stringio')
+else
+  File.write('Makefile', dummy_makefile("").join)
+end

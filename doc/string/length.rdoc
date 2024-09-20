@@ -10,4 +10,3 @@ Contrast with String#bytesize:
   'тест'.bytesize       # => 8
   'こんにちは'.bytesize   # => 15
 
-String#size is an alias for String#length.

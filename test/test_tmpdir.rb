@@ -104,6 +104,12 @@ class TestTmpdir < Test::Unit::TestCase
     end
   end
 
+  def test_mktmpdir_not_empty_parent
+    assert_raise(ArgumentError) do
+      Dir.mktmpdir("foo", "")
+    end
+  end
+
   def assert_mktmpdir_traversal
     Dir.mktmpdir do |target|
       target = target.chomp('/') + '/'
@@ -114,5 +120,21 @@ class TestTmpdir < Test::Unit::TestCase
         assert_not_send([File.absolute_path(actual), :start_with?, target])
       end
     end
+  end
+
+  def test_ractor
+    assert_ractor(<<~'end;', require: "tmpdir")
+      r = Ractor.new do
+        Dir.mktmpdir() do |d|
+          Ractor.yield d
+          Ractor.receive
+        end
+      end
+      dir = r.take
+      assert_file.directory? dir
+      r.send true
+      r.take
+      assert_file.not_exist? dir
+    end;
   end
 end

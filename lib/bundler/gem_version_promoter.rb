@@ -8,11 +8,12 @@ module Bundler
   # to the resolution engine to select the best version.
   class GemVersionPromoter
     attr_reader :level
+    attr_accessor :pre
 
     # By default, strict is false, meaning every available version of a gem
     # is returned from sort_versions. The order gives preference to the
     # requested level (:patch, :minor, :major) but in complicated requirement
-    # cases some gems will by necessity by promoted past the requested level,
+    # cases some gems will by necessity be promoted past the requested level,
     # or even reverted to older versions.
     #
     # If strict is set to true, the results from sort_versions will be
@@ -28,6 +29,7 @@ module Bundler
     def initialize
       @level = :major
       @strict = false
+      @pre = false
     end
 
     # @param value [Symbol] One of three Symbols: :major, :minor or :patch.
@@ -43,17 +45,37 @@ module Bundler
 
     # Given a Resolver::Package and an Array of Specifications of available
     # versions for a gem, this method will return the Array of Specifications
-    # sorted (and possibly truncated if strict is true) in an order to give
-    # preference to the current level (:major, :minor or :patch) when resolution
-    # is deciding what versions best resolve all dependencies in the bundle.
+    # sorted in an order to give preference to the current level (:major, :minor
+    # or :patch) when resolution is deciding what versions best resolve all
+    # dependencies in the bundle.
     # @param package [Resolver::Package] The package being resolved.
     # @param specs [Specification] An array of Specifications for the package.
-    # @return [Specification] A new instance of the Specification Array sorted and
-    #    possibly filtered.
+    # @return [Specification] A new instance of the Specification Array sorted.
     def sort_versions(package, specs)
-      specs = filter_dep_specs(specs, package) if strict
+      locked_version = package.locked_version
 
-      sort_dep_specs(specs, package)
+      result = specs.sort do |a, b|
+        unless package.prerelease_specified? || pre?
+          a_pre = a.prerelease?
+          b_pre = b.prerelease?
+
+          next 1 if a_pre && !b_pre
+          next -1 if b_pre && !a_pre
+        end
+
+        if major? || locked_version.nil?
+          b <=> a
+        elsif either_version_older_than_locked?(a, b, locked_version)
+          b <=> a
+        elsif segments_do_not_match?(a, b, :major)
+          a <=> b
+        elsif !minor? && segments_do_not_match?(a, b, :minor)
+          a <=> b
+        else
+          b <=> a
+        end
+      end
+      post_sort(result, package.unlock?, locked_version)
     end
 
     # @return [bool] Convenience method for testing value of level variable.
@@ -66,58 +88,43 @@ module Bundler
       level == :minor
     end
 
-    private
+    # @return [bool] Convenience method for testing value of pre variable.
+    def pre?
+      pre == true
+    end
 
-    def filter_dep_specs(specs, package)
+    # Given a Resolver::Package and an Array of Specifications of available
+    # versions for a gem, this method will truncate the Array if strict
+    # is true. That means filtering out downgrades from the version currently
+    # locked, and filtering out upgrades that go past the selected level (major,
+    # minor, or patch).
+    # @param package [Resolver::Package] The package being resolved.
+    # @param specs [Specification] An array of Specifications for the package.
+    # @return [Specification] A new instance of the Specification Array
+    #   truncated.
+    def filter_versions(package, specs)
+      return specs unless strict
+
       locked_version = package.locked_version
+      return specs if locked_version.nil? || major?
 
       specs.select do |spec|
-        if locked_version && !major?
-          gsv = spec.version
-          lsv = locked_version
+        gsv = spec.version
 
-          must_match = minor? ? [0] : [0, 1]
+        must_match = minor? ? [0] : [0, 1]
 
-          matches = must_match.map {|idx| gsv.segments[idx] == lsv.segments[idx] }
-          matches.uniq == [true] ? (gsv >= lsv) : false
-        else
-          true
-        end
+        all_match = must_match.all? {|idx| gsv.segments[idx] == locked_version.segments[idx] }
+        all_match && gsv >= locked_version
       end
     end
 
-    def sort_dep_specs(specs, package)
-      locked_version = package.locked_version
+    private
 
-      result = specs.sort do |a, b|
-        unless locked_version && package.prerelease_specified?
-          a_pre = a.prerelease?
-          b_pre = b.prerelease?
-
-          next -1 if a_pre && !b_pre
-          next  1 if b_pre && !a_pre
-        end
-
-        if major?
-          a <=> b
-        elsif either_version_older_than_locked(a, b, locked_version)
-          a <=> b
-        elsif segments_do_not_match(a, b, :major)
-          b <=> a
-        elsif !minor? && segments_do_not_match(a, b, :minor)
-          b <=> a
-        else
-          a <=> b
-        end
-      end
-      post_sort(result, package.unlock?, locked_version)
+    def either_version_older_than_locked?(a, b, locked_version)
+      a.version < locked_version || b.version < locked_version
     end
 
-    def either_version_older_than_locked(a, b, locked_version)
-      locked_version && (a.version < locked_version || b.version < locked_version)
-    end
-
-    def segments_do_not_match(a, b, level)
+    def segments_do_not_match?(a, b, level)
       index = [:major, :minor].index(level)
       a.segments[index] != b.segments[index]
     end
@@ -130,13 +137,13 @@ module Bundler
       if unlock || locked_version.nil?
         result
       else
-        move_version_to_end(result, locked_version)
+        move_version_to_beginning(result, locked_version)
       end
     end
 
-    def move_version_to_end(result, version)
+    def move_version_to_beginning(result, version)
       move, keep = result.partition {|s| s.version.to_s == version.to_s }
-      keep.concat(move)
+      move.concat(keep)
     end
   end
 end

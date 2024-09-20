@@ -32,13 +32,6 @@ describe "Time.at" do
       t2.nsec.should == t.nsec
     end
 
-    describe "passed BigDecimal" do
-      it "doesn't round input value" do
-        require 'bigdecimal'
-        Time.at(BigDecimal('1.1')).to_f.should == 1.1
-      end
-    end
-
     describe "passed Rational" do
       it "returns Time with correct microseconds" do
         t = Time.at(Rational(1_486_570_508_539_759, 1_000_000))
@@ -203,7 +196,7 @@ describe "Time.at" do
       end
 
       it "does not try to convert format to Symbol with #to_sym" do
-        format = "usec"
+        format = +"usec"
         format.should_not_receive(:to_sym)
         -> { Time.at(0, 123456, format) }.should raise_error(ArgumentError)
       end
@@ -247,6 +240,22 @@ describe "Time.at" do
       time = Time.at(@epoch_time, in: -9*60*60)
 
       time.utc_offset.should == -9*60*60
+      time.zone.should == nil
+      time.to_i.should == @epoch_time
+    end
+
+    it "could be UTC offset as a 'UTC' String" do
+      time = Time.at(@epoch_time, in: "UTC")
+
+      time.utc_offset.should == 0
+      time.zone.should == "UTC"
+      time.to_i.should == @epoch_time
+    end
+
+    it "could be UTC offset as a military zone A-Z" do
+      time = Time.at(@epoch_time, in: "B")
+
+      time.utc_offset.should == 3600 * 2
       time.zone.should == nil
       time.to_i.should == @epoch_time
     end

@@ -16,5 +16,6 @@ struct rb_thread_sched_item {};
 struct rb_thread_sched {};
 
 RUBY_EXTERN struct rb_execution_context_struct *ruby_current_ec;
+NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void)); // for assertions
 
 #endif /* RUBY_THREAD_NONE_H */

@@ -316,7 +316,7 @@ describe "Module#using" do
         using refinement
 
         def initialize
-          @a = "1703"
+          @a = +"1703"
 
           @a.instance_eval do
             def abc

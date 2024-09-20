@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 require_relative 'shared/pos'
 
 describe "IO#sysseek" do
-  it_behaves_like :io_set_pos, :seek
+  it_behaves_like :io_set_pos, :sysseek
 end
 
 describe "IO#sysseek" do

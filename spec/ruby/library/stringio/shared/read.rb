@@ -5,19 +5,37 @@ describe :stringio_read, shared: true do
 
   it "returns the passed buffer String" do
     # Note: Rubinius bug:
-    # @io.send(@method, 7, buffer = "").should equal(buffer)
-    ret = @io.send(@method, 7, buffer = "")
+    # @io.send(@method, 7, buffer = +"").should equal(buffer)
+    ret = @io.send(@method, 7, buffer = +"")
     ret.should equal(buffer)
   end
 
   it "reads length bytes and writes them to the buffer String" do
-    @io.send(@method, 7, buffer = "")
+    @io.send(@method, 7, buffer = +"").should.equal?(buffer)
     buffer.should == "example"
+  end
+
+  ruby_version_is ""..."3.4" do
+    it "does not preserve the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @io.send(@method, 7, buffer)
+
+      buffer.encoding.should_not == Encoding::ISO_8859_1
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "preserves the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @io.send(@method, 7, buffer)
+
+      buffer.encoding.should == Encoding::ISO_8859_1
+    end
   end
 
   it "tries to convert the passed buffer Object to a String using #to_str" do
     obj = mock("to_str")
-    obj.should_receive(:to_str).and_return(buffer = "")
+    obj.should_receive(:to_str).and_return(buffer = +"")
 
     @io.send(@method, 7, obj)
     buffer.should == "example"
@@ -75,7 +93,7 @@ end
 
 describe :stringio_read_no_arguments, shared: true do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "reads the whole content starting from the current position" do
@@ -117,7 +135,7 @@ end
 
 describe :stringio_read_not_readable, shared: true do
   it "raises an IOError" do
-    io = StringIO.new("test", "w")
+    io = StringIO.new(+"test", "w")
     -> { io.send(@method) }.should raise_error(IOError)
 
     io = StringIO.new("test")

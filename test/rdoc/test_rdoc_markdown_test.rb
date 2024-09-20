@@ -1401,7 +1401,7 @@ foo
         para("Link definitions are only used for creating links during Markdown\n" +
              "processing, and are stripped from your document in the HTML output."),
 
-        para("Link definition names may constist of letters, numbers, spaces, and punctuation -- but they are _not_ case sensitive. E.g. these two links:"),
+        para("Link definition names may consist of letters, numbers, spaces, and punctuation -- but they are _not_ case sensitive. E.g. these two links:"),
 
         verb("[link text][a]\n",
              "[link text][A]\n"),
@@ -1863,8 +1863,8 @@ foo
     assert_equal expected, doc
   end
 
-  def test_tidyness
-    input = File.read "#{MARKDOWN_TEST_PATH}/Tidyness.text"
+  def test_tidiness
+    input = File.read "#{MARKDOWN_TEST_PATH}/Tidiness.text"
 
     doc = @parser.parse input
 

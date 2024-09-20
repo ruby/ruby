@@ -207,18 +207,24 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_given_method
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     m = method(:m_block_given?)
     assert(!m.call, "without block")
     assert(m.call {}, "with block")
     assert(!m.call, "without block second")
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_block_given_method_to_proc
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     bug8341 = '[Bug #8341]'
     m = method(:m_block_given?).to_proc
     assert(!m.call, "#{bug8341} without block")
     assert(m.call {}, "#{bug8341} with block")
     assert(!m.call, "#{bug8341} without block second")
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_block_persist_between_calls
@@ -289,7 +295,6 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
     assert_equal(false, proc(&l).lambda?)
-    assert_equal(false, assert_deprecated_warning {lambda(&l)}.lambda?)
     assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
@@ -299,47 +304,21 @@ class TestProc < Test::Unit::TestCase
     assert_equal(true, Proc.new(&l).lambda?)
   end
 
-  def self.helper_test_warn_lamda_with_passed_block &b
+  def helper_test_warn_lambda_with_passed_block &b
     lambda(&b)
   end
 
-  def self.def_lambda_warning name, warn
-    define_method(name, proc do
-      prev = Warning[:deprecated]
-      assert_warn warn do
-        Warning[:deprecated] = true
-        yield
-      end
-    ensure
-      Warning[:deprecated] = prev
-    end)
+  def test_lambda_warning_pass_proc
+    assert_raise(ArgumentError) do
+      b = proc{}
+      lambda(&b)
+    end
   end
 
-  def_lambda_warning 'test_lambda_warning_normal', '' do
-    lambda{}
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_lambda', '' do
-    b = lambda{}
-    lambda(&b)
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_symbol_proc', '' do
-    lambda(&:to_s)
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_proc', /deprecated/ do
-    b = proc{}
-    lambda(&b)
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_block', /deprecated/ do
-    helper_test_warn_lamda_with_passed_block{}
-  end
-
-  def_lambda_warning 'test_lambda_warning_pass_block_symbol_proc', '' do
-    # Symbol#to_proc returns lambda
-    helper_test_warn_lamda_with_passed_block(&:to_s)
+  def test_lambda_warning_pass_block
+    assert_raise(ArgumentError) do
+      helper_test_warn_lambda_with_passed_block{}
+    end
   end
 
   def test_curry_ski_fib
@@ -415,6 +394,15 @@ class TestProc < Test::Unit::TestCase
   def test_dup_subclass
     c1 = Class.new(Proc)
     assert_equal c1, c1.new{}.dup.class, '[Bug #17545]'
+    c1 = Class.new(Proc) {def initialize_dup(*) throw :initialize_dup; end}
+    assert_throw(:initialize_dup) {c1.new{}.dup}
+  end
+
+  def test_clone_subclass
+    c1 = Class.new(Proc)
+    assert_equal c1, c1.new{}.clone.class, '[Bug #17545]'
+    c1 = Class.new(Proc) {def initialize_clone(*) throw :initialize_clone; end}
+    assert_throw(:initialize_clone) {c1.new{}.clone}
   end
 
   def test_binding
@@ -1321,6 +1309,32 @@ class TestProc < Test::Unit::TestCase
     assert_empty(pr.parameters.map{|_,n|n}.compact)
   end
 
+  def test_proc_autosplat_with_multiple_args_with_ruby2_keywords_splat_bug_19759
+    def self.yielder_ab(splat)
+      yield([:a, :b], *splat)
+    end
+
+    res = yielder_ab([[:aa, :bb], Hash.ruby2_keywords_hash({k: :k})]) do |a, b, k:|
+      [a, b, k]
+    end
+    assert_equal([[:a, :b], [:aa, :bb], :k], res)
+
+    def self.yielder(splat)
+      yield(*splat)
+    end
+    res = yielder([ [:a, :b] ]){|a, b, **| [a, b]}
+    assert_equal([:a, :b], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({}) ]){|a, b, **| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({c: 1}) ]){|a, b, **| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+
+    res = yielder([ [:a, :b], Hash.ruby2_keywords_hash({}) ]){|a, b, **nil| [a, b]}
+    assert_equal([[:a, :b], nil], res)
+  end
+
   def test_parameters_lambda
     assert_equal([], proc {}.parameters(lambda: true))
     assert_equal([], proc {||}.parameters(lambda: true))
@@ -1838,4 +1852,3 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_raise(ArgumentError) { (f >> g).call(**{})[:a] }
   end
 end
-

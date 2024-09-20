@@ -5,6 +5,13 @@ rescue LoadError
 end
 
 class TestFiddle < Fiddle::TestCase
+  def test_nil_true_etc
+    assert_equal Fiddle::Qtrue, Fiddle.dlwrap(true)
+    assert_equal Fiddle::Qfalse, Fiddle.dlwrap(false)
+    assert_equal Fiddle::Qnil, Fiddle.dlwrap(nil)
+    assert Fiddle::Qundef
+  end
+
   def test_windows_constant
     require 'rbconfig'
     if RbConfig::CONFIG['host_os'] =~ /mswin|mingw/

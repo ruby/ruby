@@ -81,31 +81,18 @@ describe "String#center with length, padding" do
     -> { "hello".center(0, "")  }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on subclasses" do
-      StringSpecs::MyString.new("").center(10).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").center(10).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
+  it "returns String instances when called on subclasses" do
+    StringSpecs::MyString.new("").center(10).should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").center(10).should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
 
-      "".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-      "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on subclasses" do
-      StringSpecs::MyString.new("").center(10).should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").center(10).should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-
-      "".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-      "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    end
+    "".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
   end
 
   describe "with width" do
     it "returns a String in the same encoding as the original" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.center 6
       result.should == " abc  "
       result.encoding.should equal(Encoding::IBM437)
@@ -114,7 +101,7 @@ describe "String#center with length, padding" do
 
   describe "with width, pattern" do
     it "returns a String in the compatible encoding" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.center 6, "あ"
       result.should == "あabcああ"
       result.encoding.should equal(Encoding::UTF_8)

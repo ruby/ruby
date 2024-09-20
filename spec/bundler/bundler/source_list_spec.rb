@@ -85,7 +85,7 @@ RSpec.describe Bundler::SourceList do
         end
 
         it "ignores git protocols on request" do
-          Bundler.settings.temporary(:"git.allow_insecure" => true)
+          Bundler.settings.temporary("git.allow_insecure": true)
           expect(Bundler.ui).to_not receive(:warn).with(msg)
           source_list.add_git_source("uri" => "git://existing-git.org/path.git")
         end
@@ -125,8 +125,8 @@ RSpec.describe Bundler::SourceList do
       it "adds the provided remote to the beginning of the aggregate source" do
         source_list.add_global_rubygems_remote("https://othersource.org")
         expect(returned_source.remotes).to eq [
-          Bundler::URI("https://othersource.org/"),
-          Bundler::URI("https://rubygems.org/"),
+          Gem::URI("https://othersource.org/"),
+          Gem::URI("https://rubygems.org/"),
         ]
       end
     end

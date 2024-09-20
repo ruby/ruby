@@ -269,4 +269,8 @@ describe "Kernel.Complex()" do
       end
     end
   end
+
+  it "freezes its result" do
+    Complex(1).frozen?.should == true
+  end
 end

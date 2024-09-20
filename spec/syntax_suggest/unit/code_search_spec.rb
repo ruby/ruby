@@ -12,13 +12,13 @@ module SyntaxSuggest
       search = CodeSearch.new(source)
       search.call
 
-      expect(search.invalid_blocks.join.strip).to eq(<<~'EOM'.strip)
+      expect(search.invalid_blocks.join.strip).to eq(<<~EOM.strip)
         class Lookups
       EOM
     end
 
     it "squished do regression" do
-      source = <<~'EOM'
+      source = <<~EOM
         def call
           trydo
 
@@ -47,14 +47,14 @@ module SyntaxSuggest
       search = CodeSearch.new(source)
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         trydo
         end # one
       EOM
     end
 
     it "regression test ambiguous end" do
-      source = <<~'EOM'
+      source = <<~EOM
         def call          # 0
             print "lol"   # 1
           end # one       # 2
@@ -64,13 +64,13 @@ module SyntaxSuggest
       search = CodeSearch.new(source)
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM')
+      expect(search.invalid_blocks.join).to eq(<<~EOM)
         end # two         # 3
       EOM
     end
 
     it "regression dog test" do
-      source = <<~'EOM'
+      source = <<~EOM
         class Dog
           def bark
             puts "woof"
@@ -79,7 +79,7 @@ module SyntaxSuggest
       search = CodeSearch.new(source)
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM')
+      expect(search.invalid_blocks.join).to eq(<<~EOM)
         class Dog
       EOM
       expect(search.invalid_blocks.first.lines.length).to eq(4)
@@ -99,7 +99,7 @@ module SyntaxSuggest
       search = CodeSearch.new(source)
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         Foo.call do |a
         end # one
       EOM
@@ -118,7 +118,7 @@ module SyntaxSuggest
       search = CodeSearch.new(source)
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         Foo.call do {
       EOM
     end
@@ -152,7 +152,7 @@ module SyntaxSuggest
     end
 
     it "handles no spaces between blocks" do
-      source = <<~'EOM'
+      source = <<~EOM
         context "foo bar" do
           it "bars the foo" do
             travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
@@ -172,7 +172,7 @@ module SyntaxSuggest
     it "records debugging steps to a directory" do
       Dir.mktmpdir do |dir|
         dir = Pathname(dir)
-        search = CodeSearch.new(<<~'EOM', record_dir: dir)
+        search = CodeSearch.new(<<~EOM, record_dir: dir)
           class OH
             def hello
             def hai
@@ -193,7 +193,7 @@ module SyntaxSuggest
     end
 
     it "def with missing end" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         class OH
           def hello
 
@@ -206,7 +206,7 @@ module SyntaxSuggest
 
       expect(search.invalid_blocks.join.strip).to eq("def hello")
 
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         class OH
           def hello
 
@@ -218,7 +218,7 @@ module SyntaxSuggest
 
       expect(search.invalid_blocks.join.strip).to eq("def hello")
 
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         class OH
           def hello
           def hai
@@ -227,7 +227,7 @@ module SyntaxSuggest
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         def hello
       EOM
     end
@@ -244,13 +244,13 @@ module SyntaxSuggest
           highlight_lines: search.invalid_blocks.flat_map(&:lines)
         ).call
 
-        expect(document).to include(<<~'EOM')
+        expect(document).to include(<<~EOM)
           > 36      def filename
         EOM
       end
 
       it "Format Code blocks real world example" do
-        search = CodeSearch.new(<<~'EOM')
+        search = CodeSearch.new(<<~EOM)
           require 'rails_helper'
 
           RSpec.describe AclassNameHere, type: :worker do
@@ -291,7 +291,7 @@ module SyntaxSuggest
           highlight_lines: search.invalid_blocks.flat_map(&:lines)
         ).call
 
-        expect(document).to include(<<~'EOM')
+        expect(document).to include(<<~EOM)
              1  require 'rails_helper'
              2
              3  RSpec.describe AclassNameHere, type: :worker do
@@ -308,7 +308,7 @@ module SyntaxSuggest
     describe "needs improvement" do
       describe "mis-matched-indentation" do
         it "extra space before end" do
-          search = CodeSearch.new(<<~'EOM')
+          search = CodeSearch.new(<<~EOM)
             Foo.call
               def foo
                 puts "lol"
@@ -318,14 +318,14 @@ module SyntaxSuggest
           EOM
           search.call
 
-          expect(search.invalid_blocks.join).to eq(<<~'EOM')
+          expect(search.invalid_blocks.join).to eq(<<~EOM)
             Foo.call
             end # two
           EOM
         end
 
         it "stacked ends 2" do
-          search = CodeSearch.new(<<~'EOM')
+          search = CodeSearch.new(<<~EOM)
             def cat
               blerg
             end
@@ -339,7 +339,7 @@ module SyntaxSuggest
           EOM
           search.call
 
-          expect(search.invalid_blocks.join).to eq(<<~'EOM')
+          expect(search.invalid_blocks.join).to eq(<<~EOM)
             Foo.call do
             end # one
             end # two
@@ -348,7 +348,7 @@ module SyntaxSuggest
         end
 
         it "stacked ends " do
-          search = CodeSearch.new(<<~'EOM')
+          search = CodeSearch.new(<<~EOM)
             Foo.call
               def foo
                 puts "lol"
@@ -358,14 +358,14 @@ module SyntaxSuggest
           EOM
           search.call
 
-          expect(search.invalid_blocks.join).to eq(<<~'EOM')
+          expect(search.invalid_blocks.join).to eq(<<~EOM)
             Foo.call
             end
           EOM
         end
 
         it "missing space before end" do
-          search = CodeSearch.new(<<~'EOM')
+          search = CodeSearch.new(<<~EOM)
             Foo.call
 
               def foo
@@ -377,7 +377,7 @@ module SyntaxSuggest
           search.call
 
           # expand-1 and expand-2 seem to be broken?
-          expect(search.invalid_blocks.join).to eq(<<~'EOM')
+          expect(search.invalid_blocks.join).to eq(<<~EOM)
             Foo.call
             end
           EOM
@@ -386,7 +386,7 @@ module SyntaxSuggest
     end
 
     it "returns syntax error in outer block without inner block" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         Foo.call
           def foo
             puts "lol"
@@ -396,27 +396,27 @@ module SyntaxSuggest
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM')
+      expect(search.invalid_blocks.join).to eq(<<~EOM)
         Foo.call
         end # two
       EOM
     end
 
     it "doesn't just return an empty `end`" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         Foo.call
         end
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM')
+      expect(search.invalid_blocks.join).to eq(<<~EOM)
         Foo.call
         end
       EOM
     end
 
     it "finds multiple syntax errors" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         describe "hi" do
           Foo.call
           end
@@ -429,7 +429,7 @@ module SyntaxSuggest
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         Foo.call
         end
         Bar.call
@@ -438,47 +438,47 @@ module SyntaxSuggest
     end
 
     it "finds a typo def" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         defzfoo
           puts "lol"
         end
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM')
+      expect(search.invalid_blocks.join).to eq(<<~EOM)
         defzfoo
         end
       EOM
     end
 
     it "finds a mis-matched def" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         def foo
           def blerg
         end
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         def blerg
       EOM
     end
 
     it "finds a naked end" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         def foo
           end # one
         end # two
       EOM
       search.call
 
-      expect(search.invalid_blocks.join).to eq(<<~'EOM'.indent(2))
+      expect(search.invalid_blocks.join).to eq(<<~EOM.indent(2))
         end # one
       EOM
     end
 
     it "returns when no invalid blocks are found" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         def foo
           puts 'lol'
         end
@@ -489,14 +489,14 @@ module SyntaxSuggest
     end
 
     it "expands frontier by eliminating valid lines" do
-      search = CodeSearch.new(<<~'EOM')
+      search = CodeSearch.new(<<~EOM)
         def foo
           puts 'lol'
         end
       EOM
       search.create_blocks_from_untracked_lines
 
-      expect(search.code_lines.join).to eq(<<~'EOM')
+      expect(search.code_lines.join).to eq(<<~EOM)
         def foo
         end
       EOM

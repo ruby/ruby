@@ -119,23 +119,21 @@ describe "C-API Class function" do
     end
   end
 
-  ruby_version_is "3.0" do
-    describe "rb_class_new_instance_kw" do
-      it "passes arguments and keywords to the #initialize method" do
-        obj = @s.rb_class_new_instance_kw([{pos: 1}, {kw: 2}], CApiClassSpecs::KeywordAlloc)
-        obj.args.should == [{pos: 1}]
-        obj.kwargs.should == {kw: 2}
+  describe "rb_class_new_instance_kw" do
+    it "passes arguments and keywords to the #initialize method" do
+      obj = @s.rb_class_new_instance_kw([{pos: 1}, {kw: 2}], CApiClassSpecs::KeywordAlloc)
+      obj.args.should == [{pos: 1}]
+      obj.kwargs.should == {kw: 2}
 
-        obj = @s.rb_class_new_instance_kw([{}], CApiClassSpecs::KeywordAlloc)
-        obj.args.should == []
-        obj.kwargs.should == {}
-      end
+      obj = @s.rb_class_new_instance_kw([{}], CApiClassSpecs::KeywordAlloc)
+      obj.args.should == []
+      obj.kwargs.should == {}
+    end
 
-      it "raises TypeError if the last argument is not a Hash" do
-        -> {
-          @s.rb_class_new_instance_kw([42], CApiClassSpecs::KeywordAlloc)
-        }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
-      end
+    it "raises TypeError if the last argument is not a Hash" do
+      -> {
+        @s.rb_class_new_instance_kw([42], CApiClassSpecs::KeywordAlloc)
+      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
     end
   end
 
@@ -487,6 +485,18 @@ describe "C-API Class function" do
 
     it "returns 0 if passed 0" do
       @s.rb_class_real(0).should == 0
+    end
+  end
+
+  describe "rb_class_get_superclass" do
+    it "returns parent class for a provided class" do
+      a = Class.new
+      @s.rb_class_get_superclass(Class.new(a)).should == a
+    end
+
+    it "returns false when there is no parent class" do
+      @s.rb_class_get_superclass(BasicObject).should == false
+      @s.rb_class_get_superclass(Module.new).should == false
     end
   end
 end

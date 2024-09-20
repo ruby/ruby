@@ -22,9 +22,6 @@
 # define USE_GMP 0
 #endif
 #endif
-#if USE_GMP
-#include <gmp.h>
-#endif
 
 #include "id.h"
 #include "internal.h"
@@ -35,6 +32,15 @@
 #include "internal/object.h"
 #include "internal/rational.h"
 #include "ruby_assert.h"
+
+#if USE_GMP
+RBIMPL_WARNING_PUSH()
+# ifdef _MSC_VER
+RBIMPL_WARNING_IGNORED(4146) /* for mpn_neg() */
+# endif
+# include <gmp.h>
+RBIMPL_WARNING_POP()
+#endif
 
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
@@ -389,8 +395,8 @@ f_gcd(VALUE x, VALUE y)
 {
     VALUE r = f_gcd_orig(x, y);
     if (f_nonzero_p(r)) {
-        assert(f_zero_p(f_mod(x, r)));
-        assert(f_zero_p(f_mod(y, r)));
+        RUBY_ASSERT(f_zero_p(f_mod(x, r)));
+        RUBY_ASSERT(f_zero_p(f_mod(y, r)));
     }
     return r;
 }
@@ -413,11 +419,12 @@ f_lcm(VALUE x, VALUE y)
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
-    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0));
+    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0),
+            sizeof(struct RRational), 0);
 
     RATIONAL_SET_NUM((VALUE)obj, num);
     RATIONAL_SET_DEN((VALUE)obj, den);
-    OBJ_FREEZE_RAW((VALUE)obj);
+    OBJ_FREEZE((VALUE)obj);
 
     return (VALUE)obj;
 }
@@ -455,8 +462,8 @@ nurat_int_value(VALUE num)
 static void
 nurat_canonicalize(VALUE *num, VALUE *den)
 {
-    assert(num); assert(RB_INTEGER_TYPE_P(*num));
-    assert(den); assert(RB_INTEGER_TYPE_P(*den));
+    RUBY_ASSERT(num); RUBY_ASSERT(RB_INTEGER_TYPE_P(*num));
+    RUBY_ASSERT(den); RUBY_ASSERT(RB_INTEGER_TYPE_P(*den));
     if (INT_NEGATIVE_P(*den)) {
         *num = rb_int_uminus(*num);
         *den = rb_int_uminus(*den);
@@ -496,16 +503,16 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 inline static VALUE
 f_rational_new2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!k_rational_p(x));
-    assert(!k_rational_p(y));
+    RUBY_ASSERT(!k_rational_p(x));
+    RUBY_ASSERT(!k_rational_p(y));
     return nurat_s_canonicalize_internal(klass, x, y);
 }
 
 inline static VALUE
 f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!k_rational_p(x));
-    assert(!k_rational_p(y));
+    RUBY_ASSERT(!k_rational_p(x));
+    RUBY_ASSERT(!k_rational_p(y));
     return nurat_s_canonicalize_internal_no_reduce(klass, x, y);
 }
 
@@ -609,7 +616,7 @@ nurat_denominator(VALUE self)
 VALUE
 rb_rational_uminus(VALUE self)
 {
-    const int unused = (assert(RB_TYPE_P(self, T_RATIONAL)), 0);
+    const int unused = (RUBY_ASSERT(RB_TYPE_P(self, T_RATIONAL)), 0);
     get_dat1(self);
     (void)unused;
     return f_rational_new2(CLASS_OF(self), rb_int_uminus(dat->num), dat->den);
@@ -645,7 +652,7 @@ inline static VALUE
 f_imul(long x, long y)
 {
     VALUE r = f_imul_orig(x, y);
-    assert(f_eqeq_p(r, f_mul(LONG2NUM(x), LONG2NUM(y))));
+    RUBY_ASSERT(f_eqeq_p(r, f_mul(LONG2NUM(x), LONG2NUM(y))));
     return r;
 }
 #endif
@@ -794,7 +801,7 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 {
     VALUE num, den;
 
-    assert(RB_TYPE_P(self, T_RATIONAL));
+    RUBY_ASSERT(RB_TYPE_P(self, T_RATIONAL));
 
     /* Integer#** can return Rational with Float right now */
     if (RB_FLOAT_TYPE_P(anum) || RB_FLOAT_TYPE_P(aden) ||
@@ -805,10 +812,10 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
         return DBL2NUM(x);
     }
 
-    assert(RB_INTEGER_TYPE_P(anum));
-    assert(RB_INTEGER_TYPE_P(aden));
-    assert(RB_INTEGER_TYPE_P(bnum));
-    assert(RB_INTEGER_TYPE_P(bden));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(anum));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(aden));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(bnum));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(bden));
 
     if (k == '/') {
         VALUE t;
@@ -1232,7 +1239,6 @@ nurat_negative_p(VALUE self)
  *     (1/2r).abs    #=> (1/2)
  *     (-1/2r).abs   #=> (1/2)
  *
- *  Rational#magnitude is an alias for Rational#abs.
  */
 
 VALUE
@@ -1847,7 +1853,7 @@ nurat_loader(VALUE self, VALUE a)
     nurat_canonicalize(&num, &den);
     RATIONAL_SET_NUM((VALUE)dat, num);
     RATIONAL_SET_DEN((VALUE)dat, den);
-    OBJ_FREEZE_RAW(self);
+    OBJ_FREEZE(self);
 
     return self;
 }
@@ -2104,9 +2110,12 @@ rb_float_denominator(VALUE self)
 
 /*
  * call-seq:
- *    nil.to_r  ->  (0/1)
+ *   to_r  ->  (0/1)
  *
- * Returns zero as a rational.
+ * Returns zero as a Rational:
+ *
+ *   nil.to_r # => (0/1)
+ *
  */
 static VALUE
 nilclass_to_r(VALUE self)
@@ -2116,10 +2125,14 @@ nilclass_to_r(VALUE self)
 
 /*
  * call-seq:
- *    nil.rationalize([eps])  ->  (0/1)
+ *   rationalize(eps = nil)  ->  (0/1)
  *
- * Returns zero as a rational.  The optional argument +eps+ is always
- * ignored.
+ * Returns zero as a Rational:
+ *
+ *   nil.rationalize # => (0/1)
+ *
+ * Argument +eps+ is ignored.
+ *
  */
 static VALUE
 nilclass_rationalize(int argc, VALUE *argv, VALUE self)
@@ -2552,7 +2565,7 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     VALUE a1 = numv, a2 = denv;
     int state;
 
-    assert(!UNDEF_P(a1));
+    RUBY_ASSERT(!UNDEF_P(a1));
 
     if (NIL_P(a1) || NIL_P(a2)) {
         if (!raise) return Qnil;

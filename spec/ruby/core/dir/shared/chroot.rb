@@ -2,7 +2,7 @@ describe :dir_chroot_as_root, shared: true do
   before :all do
     DirSpecs.create_mock_dirs
 
-    @real_root = "../" * (File.dirname(__FILE__).count('/') - 1)
+    @real_root = "../" * (__dir__.count('/') - 1)
     @ref_dir = File.join("/", File.basename(Dir["/*"].first))
   end
 
@@ -18,7 +18,7 @@ describe :dir_chroot_as_root, shared: true do
   compilations_ci = ENV["GITHUB_WORKFLOW"] == "Compilations"
 
   it "can be used to change the process' root directory" do
-    -> { Dir.send(@method, File.dirname(__FILE__)) }.should_not raise_error
+    -> { Dir.send(@method, __dir__) }.should_not raise_error
     File.should.exist?("/#{File.basename(__FILE__)}")
   end unless compilations_ci
 

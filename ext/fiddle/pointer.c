@@ -88,8 +88,13 @@ fiddle_ptr_memsize(const void *ptr)
 }
 
 static const rb_data_type_t fiddle_ptr_data_type = {
-    "fiddle/pointer",
-    {fiddle_ptr_mark, fiddle_ptr_free, fiddle_ptr_memsize,},
+    .wrap_struct_name = "fiddle/pointer",
+    .function = {
+        .dmark = fiddle_ptr_mark,
+        .dfree = fiddle_ptr_free,
+        .dsize = fiddle_ptr_memsize,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
@@ -135,8 +140,8 @@ rb_fiddle_ptr_new2(VALUE klass, void *ptr, long size, freefunc_t func, VALUE wra
     data->free = func;
     data->freed = false;
     data->size = size;
-    data->wrap[0] = wrap0;
-    data->wrap[1] = wrap1;
+    RB_OBJ_WRITE(val, &data->wrap[0], wrap0);
+    RB_OBJ_WRITE(val, &data->wrap[1], wrap1);
 
     return val;
 }
@@ -235,8 +240,8 @@ rb_fiddle_ptr_initialize(int argc, VALUE argv[], VALUE self)
 	    /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
 	    (*(data->free))(data->ptr);
 	}
-	data->wrap[0] = wrap;
-	data->wrap[1] = funcwrap;
+	RB_OBJ_WRITE(self, &data->wrap[0], wrap);
+	RB_OBJ_WRITE(self, &data->wrap[1], funcwrap);
 	data->ptr  = p;
 	data->size = s;
 	data->free = f;
@@ -314,7 +319,7 @@ rb_fiddle_ptr_s_malloc(int argc, VALUE argv[], VALUE klass)
     }
 
     obj = rb_fiddle_ptr_malloc(klass, s,f);
-    if (wrap) RPTR_DATA(obj)->wrap[1] = wrap;
+    if (wrap) RB_OBJ_WRITE(obj, &RPTR_DATA(obj)->wrap[1], wrap);
 
     if (rb_block_given_p()) {
         if (!f) {
@@ -795,8 +800,35 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 	if (num == val) wrap = 0;
 	ptr = rb_fiddle_ptr_new(NUM2PTR(num), 0, NULL);
     }
-    if (wrap) RPTR_DATA(ptr)->wrap[0] = wrap;
+    if (wrap) RB_OBJ_WRITE(ptr, &RPTR_DATA(ptr)->wrap[0], wrap);
     return ptr;
+}
+
+/*
+ * call-seq:
+ *    Fiddle::Pointer.read(address, len)     => string
+ *
+ * Or read the memory at address +address+ with length +len+ and return a
+ * string with that memory
+ */
+
+static VALUE
+rb_fiddle_ptr_read_mem(VALUE klass, VALUE address, VALUE len)
+{
+    return rb_str_new((char *)NUM2PTR(address), NUM2ULONG(len));
+}
+
+/*
+ * call-seq:
+ *    Fiddle::Pointer.write(address, str)
+ *
+ * Write bytes in +str+ to the location pointed to by +address+.
+ */
+static VALUE
+rb_fiddle_ptr_write_mem(VALUE klass, VALUE addr, VALUE str)
+{
+    memcpy(NUM2PTR(addr), StringValuePtr(str), RSTRING_LEN(str));
+    return str;
 }
 
 void
@@ -815,6 +847,8 @@ Init_fiddle_pointer(void)
     rb_define_singleton_method(rb_cPointer, "malloc", rb_fiddle_ptr_s_malloc, -1);
     rb_define_singleton_method(rb_cPointer, "to_ptr", rb_fiddle_ptr_s_to_ptr, 1);
     rb_define_singleton_method(rb_cPointer, "[]", rb_fiddle_ptr_s_to_ptr, 1);
+    rb_define_singleton_method(rb_cPointer, "read", rb_fiddle_ptr_read_mem, 2);
+    rb_define_singleton_method(rb_cPointer, "write", rb_fiddle_ptr_write_mem, 2);
     rb_define_method(rb_cPointer, "initialize", rb_fiddle_ptr_initialize, -1);
     rb_define_method(rb_cPointer, "free=", rb_fiddle_ptr_free_set, 1);
     rb_define_method(rb_cPointer, "free",  rb_fiddle_ptr_free_get, 0);

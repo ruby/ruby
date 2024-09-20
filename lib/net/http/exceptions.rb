@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Net
   # Net::HTTP exception class.
   # You cannot use Net::HTTPExceptions directly; instead, you must use

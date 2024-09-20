@@ -19,13 +19,13 @@ pub struct BranchCond {
 
 impl BranchCond {
     /// B.cond
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/B-cond--Branch-conditionally-
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/B-cond--Branch-conditionally->
     pub fn bcond(cond: u8, offset: InstructionOffset) -> Self {
         Self { cond, offset }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en>
 const FAMILY: u32 = 0b101;
 
 impl From<BranchCond> for u32 {

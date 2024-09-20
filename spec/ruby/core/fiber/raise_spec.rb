@@ -91,29 +91,49 @@ describe "Fiber#raise" do
 
     fiber_two.resume.should == [:yield_one, :rescued]
   end
-end
 
+  ruby_version_is "3.4" do
+    it "raises on the resumed fiber" do
+      root_fiber = Fiber.current
+      f1 = Fiber.new { root_fiber.transfer }
+      f2 = Fiber.new { f1.resume }
+      f2.transfer
 
-ruby_version_is ""..."3.0" do
-  describe "Fiber#raise" do
-    it "raises a FiberError if invoked on a transferring Fiber" do
-      require "fiber"
-      root = Fiber.current
-      fiber = Fiber.new { root.transfer }
-      fiber.transfer
-      -> { fiber.raise }.should raise_error(FiberError, "cannot resume transferred Fiber")
+      -> do
+        f2.raise(RuntimeError, "Expected error")
+      end.should raise_error(RuntimeError, "Expected error")
+    end
+
+    it "raises on itself" do
+      -> do
+        Fiber.current.raise(RuntimeError, "Expected error")
+      end.should raise_error(RuntimeError, "Expected error")
+    end
+
+    it "should raise on parent fiber" do
+      f2 = nil
+      f1 = Fiber.new do
+        # This is equivalent to Kernel#raise:
+        f2.raise(RuntimeError, "Expected error")
+      end
+      f2 = Fiber.new do
+        f1.resume
+      end
+
+      -> do
+        f2.resume
+      end.should raise_error(RuntimeError, "Expected error")
     end
   end
 end
 
-ruby_version_is "3.0" do
-  describe "Fiber#raise" do
-    it "transfers and raises on a transferring fiber" do
-      require "fiber"
-      root = Fiber.current
-      fiber = Fiber.new { root.transfer }
-      fiber.transfer
-      -> { fiber.raise "msg" }.should raise_error(RuntimeError, "msg")
-    end
+
+describe "Fiber#raise" do
+  it "transfers and raises on a transferring fiber" do
+    require "fiber"
+    root = Fiber.current
+    fiber = Fiber.new { root.transfer }
+    fiber.transfer
+    -> { fiber.raise "msg" }.should raise_error(RuntimeError, "msg")
   end
 end

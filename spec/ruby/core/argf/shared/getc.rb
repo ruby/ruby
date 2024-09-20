@@ -9,7 +9,7 @@ describe :argf_getc, shared: true do
 
   it "reads each char of files" do
     argf [@file1, @file2] do
-      chars = ""
+      chars = +""
       @chars.size.times { chars << @argf.send(@method) }
       chars.should == @chars
     end

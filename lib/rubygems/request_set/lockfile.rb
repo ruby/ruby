@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Parses a gem.deps.rb.lock file and constructs a LockSet containing the
 # dependencies found inside.  If the lock file is missing no LockSet is
@@ -75,18 +76,13 @@ class Gem::RequestSet::Lockfile
     @dependencies  = dependencies
     @gem_deps_file = File.expand_path(gem_deps_file)
     @gem_deps_dir  = File.dirname(@gem_deps_file)
-
-    if RUBY_VERSION < "2.7"
-      @gem_deps_file.untaint unless gem_deps_file.tainted?
-    end
-
     @platforms = []
   end
 
   def add_DEPENDENCIES(out) # :nodoc:
     out << "DEPENDENCIES"
 
-    out.concat @dependencies.sort_by {|name,| name }.map {|name, requirement|
+    out.concat @dependencies.sort.map {|name, requirement|
       "  #{name}#{requirement.for_lockfile}"
     }
 
@@ -105,10 +101,10 @@ class Gem::RequestSet::Lockfile
       out << "  remote: #{group}"
       out << "  specs:"
 
-      requests.sort_by {|request| request.name }.each do |request|
+      requests.sort_by(&:name).each do |request|
         next if request.spec.name == "bundler"
         platform = "-#{request.spec.platform}" unless
-          Gem::Platform::RUBY == request.spec.platform
+          request.spec.platform == Gem::Platform::RUBY
 
         out << "    #{request.name} (#{request.version}#{platform})"
 
@@ -137,10 +133,10 @@ class Gem::RequestSet::Lockfile
       out << "  revision: #{revision}"
       out << "  specs:"
 
-      requests.sort_by {|request| request.name }.each do |request|
+      requests.sort_by(&:name).each do |request|
         out << "    #{request.name} (#{request.version})"
 
-        dependencies = request.spec.dependencies.sort_by {|dep| dep.name }
+        dependencies = request.spec.dependencies.sort_by(&:name)
         dependencies.each do |dep|
           out << "      #{dep.name}#{dep.requirement.for_lockfile}"
         end
@@ -184,7 +180,7 @@ class Gem::RequestSet::Lockfile
 
     platforms = requests.map {|request| request.spec.platform }.uniq
 
-    platforms = platforms.sort_by {|platform| platform.to_s }
+    platforms = platforms.sort_by(&:to_s)
 
     platforms.each do |platform|
       out << "  #{platform}"

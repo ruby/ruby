@@ -2,10 +2,7 @@
 require 'test/unit'
 require 'uri/ftp'
 
-module URI
-
-
-class TestFTP < Test::Unit::TestCase
+class URI::TestFTP < Test::Unit::TestCase
   def setup
   end
 
@@ -29,7 +26,7 @@ class TestFTP < Test::Unit::TestCase
   end
 
   def test_parse_invalid
-    assert_raise(InvalidURIError){URI.parse('ftp:example')}
+    assert_raise(URI::InvalidURIError) {URI.parse('ftp:example')}
   end
 
   def test_paths
@@ -61,7 +58,4 @@ class TestFTP < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
-end
-
-
 end

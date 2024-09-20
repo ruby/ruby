@@ -43,7 +43,6 @@
 #include "ruby/internal/method.h"
 #include "ruby/internal/module.h"
 #include "ruby/internal/newobj.h"
-#include "ruby/internal/rgengc.h"
 #include "ruby/internal/scan_args.h"
 #include "ruby/internal/special_consts.h"
 #include "ruby/internal/symbol.h"
@@ -98,8 +97,10 @@ VALUE rb_get_path(VALUE obj);
 VALUE rb_get_path_no_checksafe(VALUE);
 
 /**
- * @deprecated  This macro is an alias of #FilePathValue now.  The part that did
- *              "String" was deleted.  It remains here because of no harm.
+ * This macro actually does the same  thing as #FilePathValue now.  The "String"
+ * part indicates  that this is  for when a string  is treated like  a pathname,
+ * rather  than  the  actual  pathname  on  the  file  systems.   For  examples:
+ * `Dir.fnmatch?`, `File.join`, `File.basename`, etc.
  */
 #define FilePathStringValue(v) ((v) = rb_get_path(v))
 
@@ -270,6 +271,124 @@ RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 3, 0)
  *              terminating NUL character.)
  */
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
+
+#include <errno.h>
+
+/**
+ * @name  Errno handling routines for userland threads
+ * @note  POSIX chapter 2 section 3 states  that for each thread  of a process,
+ *        the  value of  `errno` shall  not be  affected by  function calls  or
+ *        assignments to `errno` by other threads.
+ *
+ * Soooo this `#define  errno` below seems like a noob  mistake at first sight.
+ * If you look at its actual  implementation, the functions are just adding one
+ * level of indirection.  It doesn't make any sense sorry?  But yes!  @ko1 told
+ * @shyouhei that this is inevitable.
+ *
+ * The  ultimate  reason is  because  Ruby  now  has N:M  threads  implemented.
+ * Threads of that sort  change their context in user land.   A function can be
+ * "transferred" between  threads in  middle of their  executions.  Let  us for
+ * instance consider:
+ *
+ * ```cxx
+ * void foo()
+ * {
+ *     auto i = errno;
+ *     close(0);
+ *     errno = i;
+ * }
+ * ```
+ *
+ * This function (if  ran under our Ractor) could change  its running thread at
+ * the `close` function.  But the  two `errno` invocations are different!  Look
+ * how the source code above is compiled by clang 17 with `-O3` flag @ Linux:
+ *
+ * ```
+ * foo(int):                                # @foo(int)
+ *         push    rbp
+ *         push    r14
+ *         push    rbx
+ *         mov     ebx, edi
+ *         call    __errno_location@PLT
+ *         mov     r14, rax
+ *         mov     ebp, dword ptr [rax]
+ *         mov     edi, ebx
+ *         call    close@PLT
+ *         mov     dword ptr [r14], ebp
+ *         pop     rbx
+ *         pop     r14
+ *         pop     rbp
+ *         ret
+ * ```
+ *
+ * Notice  how `__errno_location@PLT`  is  `call`-ed only  once.  The  compiler
+ * assumes that the location of `errno` does not change during a function call.
+ * Sadly this is  no longer true for us.  The  `close@PLT` now changes threads,
+ * which should also change where `errno` is stored.
+ *
+ * With the `#define errno` below the compilation result changes to this:
+ *
+ * ```
+ * foo(int):                                # @foo(int)
+ *         push    rbp
+ *         push    rbx
+ *         push    rax
+ *         mov     ebx, edi
+ *         call    rb_errno_ptr()@PLT
+ *         mov     ebp, dword ptr [rax]
+ *         mov     edi, ebx
+ *         call    close@PLT
+ *         call    rb_errno_ptr()@PLT
+ *         mov     dword ptr [rax], ebp
+ *         add     rsp, 8
+ *         pop     rbx
+ *         pop     rbp
+ *         ret
+ * ```
+ *
+ * Which fixes the problem.
+ */
+
+/**
+ * Identical to system `errno`.
+ *
+ * @return The last set `errno` number.
+ */
+int rb_errno(void);
+
+/**
+ * Set the errno.
+ *
+ * @param  err  New `errno`.
+ * @post   `errno` is now set to `err`.
+ */
+void rb_errno_set(int err);
+
+/**
+ * The location of `errno`
+ *
+ * @return The (thread-specific) location of `errno`.
+ */
+int *rb_errno_ptr(void);
+
+/**
+ * Not sure if  it is necessary for  extension libraries but this  is where the
+ * "bare" errno is located.
+ *
+ * @return The location of `errno`.
+ */
+static inline int *
+rb_orig_errno_ptr(void)
+{
+    return &errno;
+}
+
+#define rb_orig_errno errno /**< System-provided original `errno`. */
+#undef errno
+#define errno (*rb_errno_ptr()) /**< Ractor-aware version of `errno`. */
+
+/** @} */
+
 
 /** @cond INTERNAL_MACRO */
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")

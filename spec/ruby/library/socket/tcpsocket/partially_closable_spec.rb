@@ -16,6 +16,6 @@ describe "TCPSocket partial closability" do
     @s2.close
   end
 
-  it_should_behave_like "partially closable sockets"
+  it_should_behave_like :partially_closable_sockets
 
 end

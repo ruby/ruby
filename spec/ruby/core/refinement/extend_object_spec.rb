@@ -11,8 +11,10 @@ describe "Refinement#extend_object" do
       Module.new do
         refine c do
           called = false
-          define_method(:extend_object){called = true}
-          proc{c.extend(self)}.should raise_error(TypeError)
+          define_method(:extend_object) { called = true }
+          -> {
+            c.extend(self)
+          }.should raise_error(TypeError)
           called.should == false
         end
       end

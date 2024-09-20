@@ -5,16 +5,18 @@ VALUE mWIN32OLE_VARIANT;
 void Init_win32ole_variant_m(void)
 {
     /*
-     * Document-module: WIN32OLE::VARIANT
+     * Document-module: WIN32OLE::VariantType
      *
-     * The WIN32OLE::VARIANT module includes constants of VARIANT type constants.
-     * The constants is used when creating WIN32OLE_VARIANT object.
+     * The +WIN32OLE::VariantType+ module includes constants of VARIANT type constants.
+     * The constants is used when creating WIN32OLE::Variant object.
      *
-     *   obj = WIN32OLE_VARIANT.new("2e3", WIN32OLE::VARIANT::VT_R4)
+     *   obj = WIN32OLE::Variant.new("2e3", WIN32OLE::VARIANT::VT_R4)
      *   obj.value # => 2000.0
      *
      */
-    mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VARIANT");
+    mWIN32OLE_VARIANT = rb_define_module_under(cWIN32OLE, "VariantType");
+    /* Alias of WIN32OLE::VariantType, for the backward compatibility */
+    rb_define_const(cWIN32OLE, "VARIANT", mWIN32OLE_VARIANT);
 
     /*
      * represents VT_EMPTY type constant.

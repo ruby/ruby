@@ -8,8 +8,7 @@ module DidYouMean
 
       m          = 0.0
       t          = 0.0
-      range      = (length2 / 2).floor - 1
-      range      = 0 if range < 0
+      range      = length2 > 3 ? length2 / 2 - 1 : 0
       flags1     = 0
       flags2     = 0
 
@@ -72,10 +71,8 @@ module DidYouMean
         codepoints2  = str2.codepoints
         prefix_bonus = 0
 
-        i = 0
         str1.each_codepoint do |char1|
-          char1 == codepoints2[i] && i < 4 ? prefix_bonus += 1 : break
-          i += 1
+          char1 == codepoints2[prefix_bonus] && prefix_bonus < 4 ? prefix_bonus += 1 : break
         end
 
         jaro_distance + (prefix_bonus * WEIGHT * (1 - jaro_distance))

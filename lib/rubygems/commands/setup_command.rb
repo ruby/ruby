@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 ##
@@ -6,19 +7,19 @@ require_relative "../command"
 # RubyGems checkout or tarball.
 
 class Gem::Commands::SetupCommand < Gem::Command
-  HISTORY_HEADER = /^#\s*[\d.a-zA-Z]+\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/.freeze
-  VERSION_MATCHER = /^#\s*([\d.a-zA-Z]+)\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/.freeze
+  HISTORY_HEADER = %r{^#\s*[\d.a-zA-Z]+\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
+  VERSION_MATCHER = %r{^#\s*([\d.a-zA-Z]+)\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
 
   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   def initialize
     super "setup", "Install RubyGems",
-          :format_executable => false, :document => %w[ri],
-          :force => true,
-          :site_or_vendor => "sitelibdir",
-          :destdir => "", :prefix => "", :previous_version => "",
-          :regenerate_binstubs => true,
-          :regenerate_plugins => true
+          format_executable: false, document: %w[ri],
+          force: true,
+          site_or_vendor: "sitelibdir",
+          destdir: "", prefix: "", previous_version: "",
+          regenerate_binstubs: true,
+          regenerate_plugins: true
 
     add_option "--previous-version=VERSION",
                "Previous version of RubyGems",
@@ -54,9 +55,9 @@ class Gem::Commands::SetupCommand < Gem::Command
                "List the documentation types you wish to",
                "generate.  For example: rdoc,ri" do |value, options|
       options[:document] = case value
-      when nil   then %w[rdoc ri]
-      when false then []
-      else            value
+                           when nil   then %w[rdoc ri]
+                           when false then []
+                           else value
       end
     end
 
@@ -107,7 +108,7 @@ class Gem::Commands::SetupCommand < Gem::Command
   end
 
   def check_ruby_version
-    required_version = Gem::Requirement.new ">= 2.3.0"
+    required_version = Gem::Requirement.new ">= 2.6.0"
 
     unless required_version.satisfied_by? Gem.ruby_version
       alert_error "Expected Ruby version #{required_version}, is #{Gem.ruby_version}"
@@ -133,7 +134,7 @@ prefix and suffix.  If ruby was installed as `ruby18`, gem will be
 installed as `gem18`.
 
 By default, this RubyGems will install gem as:
-  #{Gem.default_exec_format % 'gem'}
+  #{Gem.default_exec_format % "gem"}
     EOF
   end
 
@@ -242,9 +243,9 @@ By default, this RubyGems will install gem as:
   end
 
   def install_executables(bin_dir)
-    prog_mode = options[:prog_mode] || 0755
+    prog_mode = options[:prog_mode] || 0o755
 
-    executables = { "gem" => "bin" }
+    executables = { "gem" => "exe" }
     executables.each do |tool, path|
       say "Installing #{tool} executable" if @verbose
 
@@ -264,7 +265,7 @@ By default, this RubyGems will install gem as:
             fp.puts bin.join
           end
 
-          install bin_tmp_file, dest_file, :mode => prog_mode
+          install bin_tmp_file, dest_file, mode: prog_mode
           bin_file_names << dest_file
         ensure
           rm bin_tmp_file
@@ -278,15 +279,11 @@ By default, this RubyGems will install gem as:
           File.open bin_cmd_file, "w" do |file|
             file.puts <<-TEXT
   @ECHO OFF
-  IF NOT "%~f0" == "~f0" GOTO :WinNT
-  @"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
-  GOTO :EOF
-  :WinNT
-  @"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
+  @"%~dp0#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
   TEXT
           end
 
-          install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
+          install bin_cmd_file, "#{dest_file}.bat", mode: prog_mode
         ensure
           rm bin_cmd_file
         end
@@ -339,6 +336,8 @@ By default, this RubyGems will install gem as:
 
       require_relative "../rdoc"
 
+      return false unless defined?(Gem::RDoc)
+
       fake_spec = Gem::Specification.new "rubygems", Gem::VERSION
       def fake_spec.full_gem_path
         File.expand_path "../../..", __dir__
@@ -356,7 +355,7 @@ By default, this RubyGems will install gem as:
       say "Set the GEM_HOME environment variable if you want RDoc generated"
     end
 
-    return false
+    false
   end
 
   def install_default_bundler_gem(bin_dir)
@@ -368,18 +367,21 @@ By default, this RubyGems will install gem as:
       File.dirname(loaded_from)
     else
       target_specs_dir = File.join(default_dir, "specifications", "default")
-      mkdir_p target_specs_dir, :mode => 0755
+      mkdir_p target_specs_dir, mode: 0o755
       target_specs_dir
     end
 
-    bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
-    default_spec_path = File.join(specs_dir, "#{bundler_spec.full_name}.gemspec")
-    Gem.write_binary(default_spec_path, bundler_spec.to_ruby)
+    new_bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
+    full_name = new_bundler_spec.full_name
+    gemspec_path = "#{full_name}.gemspec"
+
+    default_spec_path = File.join(specs_dir, gemspec_path)
+    Gem.write_binary(default_spec_path, new_bundler_spec.to_ruby)
 
     bundler_spec = Gem::Specification.load(default_spec_path)
 
     # Remove gemspec that was same version of vendored bundler.
-    normal_gemspec = File.join(default_dir, "specifications", "bundler-#{bundler_spec.version}.gemspec")
+    normal_gemspec = File.join(default_dir, "specifications", gemspec_path)
     if File.file? normal_gemspec
       File.delete normal_gemspec
     end
@@ -387,20 +389,14 @@ By default, this RubyGems will install gem as:
     # Remove gem files that were same version of vendored bundler.
     if File.directory? bundler_spec.gems_dir
       Dir.entries(bundler_spec.gems_dir).
-        select {|default_gem| File.basename(default_gem) == "bundler-#{bundler_spec.version}" }.
+        select {|default_gem| File.basename(default_gem) == full_name }.
         each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
-    end
-
-    bundler_bin_dir = bundler_spec.bin_dir
-    mkdir_p bundler_bin_dir, :mode => 0755
-    bundler_spec.executables.each do |e|
-      cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
 
     require_relative "../installer"
 
     Dir.chdir("bundler") do
-      built_gem = Gem::Package.build(bundler_spec)
+      built_gem = Gem::Package.build(new_bundler_spec)
       begin
         Gem::Installer.at(
           built_gem,
@@ -417,9 +413,9 @@ By default, this RubyGems will install gem as:
       end
     end
 
-    bundler_spec.executables.each {|executable| bin_file_names << target_bin_path(bin_dir, executable) }
+    new_bundler_spec.executables.each {|executable| bin_file_names << target_bin_path(bin_dir, executable) }
 
-    say "Bundler #{bundler_spec.version} installed"
+    say "Bundler #{new_bundler_spec.version} installed"
   end
 
   def make_destination_dirs
@@ -429,10 +425,10 @@ By default, this RubyGems will install gem as:
       lib_dir, bin_dir = generate_default_dirs
     end
 
-    mkdir_p lib_dir, :mode => 0755
-    mkdir_p bin_dir, :mode => 0755
+    mkdir_p lib_dir, mode: 0o755
+    mkdir_p bin_dir, mode: 0o755
 
-    return lib_dir, bin_dir
+    [lib_dir, bin_dir]
   end
 
   def generate_default_man_dir
@@ -575,8 +571,8 @@ abort "#{deprecation_message}"
   def uninstall_old_gemcutter
     require_relative "../uninstaller"
 
-    ui = Gem::Uninstaller.new("gemcutter", :all => true, :ignore => true,
-                                           :version => "< 0.4")
+    ui = Gem::Uninstaller.new("gemcutter", all: true, ignore: true,
+                                           version: "< 0.4")
     ui.uninstall
   rescue Gem::InstallError
   end
@@ -587,6 +583,8 @@ abort "#{deprecation_message}"
 
     args = %w[--all --only-executables --silent]
     args << "--bindir=#{bindir}"
+    args << "--install-dir=#{default_dir}"
+
     if options[:env_shebang]
       args << "--env-shebang"
     end
@@ -638,10 +636,10 @@ abort "#{deprecation_message}"
     dest_file = File.join dest_dir, file
     dest_dir = File.dirname dest_file
     unless File.directory? dest_dir
-      mkdir_p dest_dir, :mode => 0755
+      mkdir_p dest_dir, mode: 0o755
     end
 
-    install file, dest_file, :mode => options[:data_mode] || 0644
+    install file, dest_file, mode: options[:data_mode] || 0o644
   end
 
   def remove_file_list(files, dir)

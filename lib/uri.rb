@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 # URI is a module providing classes to handle Uniform Resource Identifiers
-# (RFC2396[http://tools.ietf.org/html/rfc2396]).
+# (RFC2396[https://www.rfc-editor.org/rfc/rfc2396]).
 #
 # == Features
 #
@@ -47,14 +47,14 @@
 # A good place to view an RFC spec is http://www.ietf.org/rfc.html.
 #
 # Here is a list of all related RFC's:
-# - RFC822[http://tools.ietf.org/html/rfc822]
-# - RFC1738[http://tools.ietf.org/html/rfc1738]
-# - RFC2255[http://tools.ietf.org/html/rfc2255]
-# - RFC2368[http://tools.ietf.org/html/rfc2368]
-# - RFC2373[http://tools.ietf.org/html/rfc2373]
-# - RFC2396[http://tools.ietf.org/html/rfc2396]
-# - RFC2732[http://tools.ietf.org/html/rfc2732]
-# - RFC3986[http://tools.ietf.org/html/rfc3986]
+# - RFC822[https://www.rfc-editor.org/rfc/rfc822]
+# - RFC1738[https://www.rfc-editor.org/rfc/rfc1738]
+# - RFC2255[https://www.rfc-editor.org/rfc/rfc2255]
+# - RFC2368[https://www.rfc-editor.org/rfc/rfc2368]
+# - RFC2373[https://www.rfc-editor.org/rfc/rfc2373]
+# - RFC2396[https://www.rfc-editor.org/rfc/rfc2396]
+# - RFC2732[https://www.rfc-editor.org/rfc/rfc2732]
+# - RFC3986[https://www.rfc-editor.org/rfc/rfc3986]
 #
 # == Class tree
 #

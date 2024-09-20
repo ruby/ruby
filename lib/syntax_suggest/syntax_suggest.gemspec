@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.description = 'When you get an "unexpected end" in your syntax this gem helps you find it'
   spec.homepage = "https://github.com/ruby/syntax_suggest.git"
   spec.license = "MIT"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 3.0.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/ruby/syntax_suggest.git"
@@ -27,6 +27,6 @@ Gem::Specification.new do |spec|
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features|assets)/}) }
   end
   spec.bindir = "exe"
-  spec.executables = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables = ["syntax_suggest"]
   spec.require_paths = ["lib"]
 end

@@ -52,6 +52,49 @@ module Bundler
   class GemfileEvalError < GemfileError; end
   class MarshalError < StandardError; end
 
+  class ChecksumMismatchError < SecurityError
+    def initialize(lock_name, existing, checksum)
+      @lock_name = lock_name
+      @existing = existing
+      @checksum = checksum
+    end
+
+    def message
+      <<~MESSAGE
+        Bundler found mismatched checksums. This is a potential security risk.
+          #{@lock_name} #{@existing.to_lock}
+            from #{@existing.sources.join("\n    and ")}
+          #{@lock_name} #{@checksum.to_lock}
+            from #{@checksum.sources.join("\n    and ")}
+
+        #{mismatch_resolution_instructions}
+        To ignore checksum security warnings, disable checksum validation with
+          `bundle config set --local disable_checksum_validation true`
+      MESSAGE
+    end
+
+    def mismatch_resolution_instructions
+      removable, remote = [@existing, @checksum].partition(&:removable?)
+      case removable.size
+      when 0
+        msg = +"Mismatched checksums each have an authoritative source:\n"
+        msg << "  1. #{@existing.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
+        msg << "  2. #{@checksum.sources.reject(&:removable?).map(&:to_s).join(" and ")}\n"
+        msg << "You may need to alter your Gemfile sources to resolve this issue.\n"
+      when 1
+        msg = +"If you trust #{remote.first.sources.first}, to resolve this issue you can:\n"
+        msg << removable.first.removal_instructions
+      when 2
+        msg = +"To resolve this issue you can either:\n"
+        msg << @checksum.removal_instructions
+        msg << "or if you are sure that the new checksum from #{@checksum.sources.first} is correct:\n"
+        msg << @existing.removal_instructions
+      end
+    end
+
+    status_code(37)
+  end
+
   class PermissionError < BundlerError
     def initialize(path, permission_type = :write)
       @path = path
@@ -172,4 +215,35 @@ module Bundler
 
     status_code(36)
   end
+
+  class InsecureInstallPathError < BundlerError
+    def initialize(name, path)
+      @name = name
+      @path = path
+    end
+
+    def message
+      "Bundler cannot reinstall #{@name} because there's a previous installation of it at #{@path} that is unsafe to remove.\n" \
+      "The parent of #{@path} is world-writable and does not have the sticky bit set, making it insecure to remove due to potential vulnerabilities.\n" \
+      "Please change the permissions of #{File.dirname(@path)} or choose a different install path."
+    end
+
+    status_code(38)
+  end
+
+  class CorruptBundlerInstallError < BundlerError
+    def initialize(loaded_spec)
+      @loaded_spec = loaded_spec
+    end
+
+    def message
+      "The running version of Bundler (#{Bundler::VERSION}) does not match the version of the specification installed for it (#{@loaded_spec.version}). " \
+      "This can be caused by reinstalling Ruby without removing previous installation, leaving around an upgraded default version of Bundler. " \
+      "Reinstalling Ruby from scratch should fix the problem."
+    end
+
+    status_code(39)
+  end
+
+  class InvalidArgumentError < BundlerError; status_code(40); end
 end

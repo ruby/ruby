@@ -327,6 +327,8 @@ end
   net/if_dl.h
   arpa/nameser.h
   resolv.h
+  pthread.h
+  sched.h
 ].each {|h|
   if have_header(h, headers)
     headers << h
@@ -347,10 +349,22 @@ have_type("struct sockaddr_storage", headers)
 
 have_type("struct addrinfo", headers)
 
-if have_type("socklen_t", headers)
-  if try_static_assert("sizeof(socklen_t) >= sizeof(long)", headers)
-    $defs << "-DRSTRING_SOCKLEN=(socklen_t)RSTRING_LEN"
+def check_socklen(headers)
+  def (fmt = "none").%(x)
+    x || self
   end
+  s = checking_for("RSTRING_SOCKLEN", fmt) do
+    if try_static_assert("sizeof(socklen_t) >= sizeof(long)", headers)
+      "RSTRING_LEN"
+    else
+      "RSTRING_LENINT"
+    end
+  end
+  $defs << "-DRSTRING_SOCKLEN=(socklen_t)"+s
+end
+
+if have_type("socklen_t", headers)
+  check_socklen(headers)
 end
 
 have_type("struct in_pktinfo", headers) {|src|
@@ -687,5 +701,10 @@ SRC
       "not needed"
     end
   end
+
+  have_func("pthread_create")
+  have_func("pthread_detach")
+
+  $VPATH << '$(topdir)' << '$(top_srcdir)'
   create_makefile("socket")
 end

@@ -21,7 +21,7 @@ class RubyVM::Attribute
     @key = opts[:name]
     @expr = RubyVM::CExpr.new location: opts[:location], expr: opts[:expr]
     @type = opts[:type]
-    @ope_decls = @insn.opes.map do |operand|
+    @ope_decls = @insn.operands.map do |operand|
       decl = operand[:decl]
       if @key == 'comptime_sp_inc' && operand[:type] == 'CALL_DATA'
         decl = decl.gsub('CALL_DATA', 'CALL_INFO').gsub('cd', 'ci')

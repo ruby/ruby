@@ -1,8 +1,11 @@
 # frozen_string_literal: true
-#--
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#++
+
+# rubocop:enable Style/AsciiComments
 
 ##
 # Allows writing of tar files
@@ -113,9 +116,9 @@ class Gem::Package::TarWriter
     final_pos = @io.pos
     @io.pos = init_pos
 
-    header = Gem::Package::TarHeader.new :name => name, :mode => mode,
-                                         :size => size, :prefix => prefix,
-                                         :mtime => Gem.source_date_epoch
+    header = Gem::Package::TarHeader.new name: name, mode: mode,
+                                         size: size, prefix: prefix,
+                                         mtime: Gem.source_date_epoch
 
     @io.write header
     @io.pos = final_pos
@@ -189,7 +192,7 @@ class Gem::Package::TarWriter
     if signer.key
       signature = signer.sign signature_digest.digest
 
-      add_file_simple "#{name}.sig", 0444, signature.length do |io|
+      add_file_simple "#{name}.sig", 0o444, signature.length do |io|
         io.write signature
       end
     end
@@ -206,9 +209,9 @@ class Gem::Package::TarWriter
 
     name, prefix = split_name name
 
-    header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
-                                         :size => size, :prefix => prefix,
-                                         :mtime => Gem.source_date_epoch).to_s
+    header = Gem::Package::TarHeader.new(name: name, mode: mode,
+                                         size: size, prefix: prefix,
+                                         mtime: Gem.source_date_epoch).to_s
 
     @io.write header
     os = BoundedStream.new @io, size
@@ -232,11 +235,11 @@ class Gem::Package::TarWriter
 
     name, prefix = split_name name
 
-    header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
-                                         :size => 0, :typeflag => "2",
-                                         :linkname => target,
-                                         :prefix => prefix,
-                                         :mtime => Gem.source_date_epoch).to_s
+    header = Gem::Package::TarHeader.new(name: name, mode: mode,
+                                         size: 0, typeflag: "2",
+                                         linkname: target,
+                                         prefix: prefix,
+                                         mtime: Gem.source_date_epoch).to_s
 
     @io.write header
 
@@ -286,10 +289,10 @@ class Gem::Package::TarWriter
 
     name, prefix = split_name(name)
 
-    header = Gem::Package::TarHeader.new :name => name, :mode => mode,
-                                         :typeflag => "5", :size => 0,
-                                         :prefix => prefix,
-                                         :mtime => Gem.source_date_epoch
+    header = Gem::Package::TarHeader.new name: name, mode: mode,
+                                         typeflag: "5", size: 0,
+                                         prefix: prefix,
+                                         mtime: Gem.source_date_epoch
 
     @io.write header
 
@@ -323,6 +326,6 @@ class Gem::Package::TarWriter
       end
     end
 
-    return name, prefix
+    [name, prefix]
   end
 end

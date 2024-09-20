@@ -74,6 +74,10 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93'.ascii_only?, CGI.escapeURIComponent(@str1).ascii_only?) if defined?(::Encoding)
   end
 
+  def test_cgi_escape_uri_component
+    assert_equal('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93', CGI.escape_uri_component(@str1))
+  end
+
   def test_cgi_escapeURIComponent_with_unreserved_characters
     assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
                  CGI.escapeURIComponent("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
@@ -99,6 +103,11 @@ class CGIUtilTest < Test::Unit::TestCase
 
     assert_equal(@str1.encoding, str.encoding)
     assert_equal("\u{30E1 30E2 30EA 691C 7D22}", CGI.unescapeURIComponent("\u{30E1 30E2 30EA}%E6%A4%9C%E7%B4%A2"))
+  end
+
+  def test_cgi_unescape_uri_component
+    str = CGI.unescape_uri_component('%26%3C%3E%22%20%E3%82%86%E3%82%93%E3%82%86%E3%82%93')
+    assert_equal(@str1, str)
   end
 
   def test_cgi_unescapeURIComponent_preserve_encoding
@@ -176,6 +185,22 @@ class CGIUtilTest < Test::Unit::TestCase
   def test_cgi_unescapeHTML_invalid
     assert_equal('&<&amp>&quot&abcdefghijklmn', CGI.unescapeHTML('&&lt;&amp&gt;&quot&abcdefghijklmn'))
   end
+
+  module UnescapeHTMLTests
+    def test_cgi_unescapeHTML_following_known_first_letter
+      assert_equal('&a>&q>&l>&g>', CGI.unescapeHTML('&a&gt;&q&gt;&l&gt;&g&gt;'))
+    end
+
+    def test_cgi_unescapeHTML_following_number_sign
+      assert_equal('&#>&#x>', CGI.unescapeHTML('&#&gt;&#x&gt;'))
+    end
+
+    def test_cgi_unescapeHTML_following_invalid_numeric
+      assert_equal('&#1114112>&#x110000>', CGI.unescapeHTML('&#1114112&gt;&#x110000&gt;'))
+    end
+  end
+
+  include UnescapeHTMLTests
 
   Encoding.list.each do |enc|
     begin
@@ -262,7 +287,7 @@ class CGIUtilPureRubyTest < Test::Unit::TestCase
       remove_method :escapeHTML
       alias _unescapeHTML unescapeHTML
       remove_method :unescapeHTML
-    end
+    end if defined?(CGI::Escape)
   end
 
   def teardown
@@ -271,8 +296,10 @@ class CGIUtilPureRubyTest < Test::Unit::TestCase
       remove_method :_escapeHTML
       alias unescapeHTML _unescapeHTML
       remove_method :_unescapeHTML
-    end
+    end if defined?(CGI::Escape)
   end
+
+  include CGIUtilTest::UnescapeHTMLTests
 
   def test_cgi_escapeHTML_with_invalid_byte_sequence
     assert_equal("&lt;\xA4??&gt;", CGI.escapeHTML(%[<\xA4??>]))

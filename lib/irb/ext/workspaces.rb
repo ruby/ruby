@@ -1,32 +1,11 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   push-ws.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:
   class Context
-
-    # Size of the current WorkSpace stack
-    def irb_level
-      workspace_stack.size
-    end
-
-    # WorkSpaces in the current stack
-    def workspaces
-      if defined? @workspaces
-        @workspaces
-      else
-        @workspaces = []
-      end
-    end
-
     # Creates a new workspace with the given object or binding, and appends it
     # onto the current #workspaces stack.
     #
@@ -34,20 +13,15 @@ module IRB # :nodoc:
     # information.
     def push_workspace(*_main)
       if _main.empty?
-        if workspaces.empty?
-          print "No other workspace\n"
-          return nil
+        if @workspace_stack.size > 1
+          # swap the top two workspaces
+          previous_workspace, current_workspace = @workspace_stack.pop(2)
+          @workspace_stack.push current_workspace, previous_workspace
         end
-        ws = workspaces.pop
-        workspaces.push @workspace
-        @workspace = ws
-        return workspaces
-      end
-
-      workspaces.push @workspace
-      @workspace = WorkSpace.new(@workspace.binding, _main[0])
-      if !(class<<main;ancestors;end).include?(ExtendCommandBundle)
-        main.extend ExtendCommandBundle
+      else
+        new_workspace = WorkSpace.new(workspace.binding, _main[0])
+        @workspace_stack.push new_workspace
+        new_workspace.load_helper_methods_to_main
       end
     end
 
@@ -56,11 +30,7 @@ module IRB # :nodoc:
     #
     # Also, see #push_workspace.
     def pop_workspace
-      if workspaces.empty?
-        print "workspace stack empty\n"
-        return
-      end
-      @workspace = workspaces.pop
+      @workspace_stack.pop if @workspace_stack.size > 1
     end
   end
 end

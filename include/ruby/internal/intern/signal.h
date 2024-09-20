@@ -97,7 +97,7 @@ RBIMPL_ATTR_NONNULL(())
  *   - Case #11: When  signo and PID  are both negative, the  behaviour of this
  *     function  depends on  how `killpg(3)`  works.  On  Linux, it  seems such
  *     attempt is  strictly prohibited and  `Errno::EINVAL` is raised.   But on
- *     macOS, it seems it  tries to to send the signal  actually to the process
+ *     macOS, it seems it  tries to send the signal  actually to the process
  *     group.
  *
  * @note       Above description is in fact different from how `kill(2)` works.
@@ -112,12 +112,6 @@ RBIMPL_ATTR_NONNULL(())
  *             other cases remain mysterious.
  */
 VALUE rb_f_kill(int argc, const VALUE *argv);
-
-/* This must be private, @shyouhei guesses. */
-#ifdef POSIX_SIGNAL
-#define posix_signal ruby_posix_signal
-void (*posix_signal(int, void (*)(int)))(int);
-#endif
 
 RBIMPL_ATTR_PURE()
 /**

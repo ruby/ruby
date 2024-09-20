@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 unless Gem.java_platform? # jruby can't require the simple_gem file
@@ -38,9 +39,9 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
       extracted = File.join @destination, "lib/foo.rb"
       assert_path_exist extracted
 
-      mask = 0100644 & (~File.umask)
+      mask = 0o100644 & (~File.umask)
 
-      assert_equal mask, File.stat(extracted).mode unless win_platform?
+      assert_equal mask, File.stat(extracted).mode unless Gem.win_platform?
     end
 
     def test_extract_files_security_policy
@@ -82,7 +83,7 @@ unless Gem.java_platform? # jruby can't require the simple_gem file
         @package.verify
       end
 
-      assert_equal "old format gems do not contain signatures " +
+      assert_equal "old format gems do not contain signatures " \
                    "and cannot be verified",
                    e.message
     end

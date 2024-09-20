@@ -133,7 +133,7 @@ describe "Predefined global $&" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $&.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -146,12 +146,12 @@ describe "Predefined global $`" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $`.encoding.should equal(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
-    "abc".force_encoding(Encoding::ISO_8859_1) =~ /a/
+    "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /a/
     $`.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
@@ -164,12 +164,12 @@ describe "Predefined global $'" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /b/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /b/
     $'.encoding.should equal(Encoding::EUC_JP)
   end
 
   it "sets an empty result to the encoding of the source String" do
-    "abc".force_encoding(Encoding::ISO_8859_1) =~ /c/
+    "abc".dup.force_encoding(Encoding::ISO_8859_1) =~ /c/
     $'.encoding.should equal(Encoding::ISO_8859_1)
   end
 end
@@ -187,7 +187,7 @@ describe "Predefined global $+" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $+.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -214,7 +214,7 @@ describe "Predefined globals $1..N" do
   end
 
   it "sets the encoding to the encoding of the source String" do
-    "abc".force_encoding(Encoding::EUC_JP) =~ /(b)/
+    "abc".dup.force_encoding(Encoding::EUC_JP) =~ /(b)/
     $1.encoding.should equal(Encoding::EUC_JP)
   end
 end
@@ -687,7 +687,7 @@ describe "Predefined global $," do
   end
 
   it "warns if assigned non-nil" do
-    -> { $, = "_" }.should complain(/warning: `\$,' is deprecated/)
+    -> { $, = "_" }.should complain(/warning: [`']\$,' is deprecated/)
   end
 end
 
@@ -724,7 +724,7 @@ describe "Predefined global $;" do
   end
 
   it "warns if assigned non-nil" do
-    -> { $; = "_" }.should complain(/warning: `\$;' is deprecated/)
+    -> { $; = "_" }.should complain(/warning: [`']\$;' is deprecated/)
   end
 end
 
@@ -979,6 +979,10 @@ describe "Global variable $VERBOSE" do
     $VERBOSE = @verbose
   end
 
+  it "is false by default" do
+    $VERBOSE.should be_false
+  end
+
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value
@@ -1033,7 +1037,7 @@ describe "Global variable $0" do
 
   it "is the path given as the main script and the same as __FILE__" do
     script = "fixtures/dollar_zero.rb"
-    Dir.chdir(File.dirname(__FILE__)) do
+    Dir.chdir(__dir__) do
       ruby_exe(script).should == "#{script}\n#{script}\nOK"
     end
   end
@@ -1157,47 +1161,20 @@ end
 
 describe "The predefined global constants" do
   describe "TRUE" do
-    ruby_version_is "3.0" do
-      it "is no longer defined" do
-        Object.const_defined?(:TRUE).should == false
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "includes TRUE" do
-        Object.const_defined?(:TRUE).should == true
-        -> { TRUE }.should complain(/constant ::TRUE is deprecated/)
-      end
+    it "is no longer defined" do
+      Object.const_defined?(:TRUE).should == false
     end
   end
 
   describe "FALSE" do
-    ruby_version_is "3.0" do
-      it "is no longer defined" do
-        Object.const_defined?(:FALSE).should == false
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "includes FALSE" do
-        Object.const_defined?(:FALSE).should == true
-        -> { FALSE }.should complain(/constant ::FALSE is deprecated/)
-      end
+    it "is no longer defined" do
+      Object.const_defined?(:FALSE).should == false
     end
   end
 
   describe "NIL" do
-    ruby_version_is "3.0" do
-      it "is no longer defined" do
-        Object.const_defined?(:NIL).should == false
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "includes NIL" do
-        Object.const_defined?(:NIL).should == true
-        -> { NIL }.should complain(/constant ::NIL is deprecated/)
-      end
+    it "is no longer defined" do
+      Object.const_defined?(:NIL).should == false
     end
   end
 

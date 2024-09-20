@@ -2,6 +2,8 @@
 
 require_relative 'helper'
 
+return if ENV['RDOC_USE_PRISM_PARSER']
+
 class TestRDocParserRuby < RDoc::TestCase
 
   def setup
@@ -3065,6 +3067,28 @@ RUBY
     assert_nil m.params, 'Module parameter not removed'
   end
 
+  def test_parse_statements_nodoc_identifier_alias
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "\nalias :old :new # :nodoc:"
+
+    @parser.parse_statements klass, RDoc::Parser::Ruby::NORMAL, nil
+
+    assert_empty klass.aliases
+    assert_empty klass.unmatched_alias_lists
+  end
+
+  def test_parse_statements_nodoc_identifier_alias_method
+    klass = @top_level.add_class RDoc::NormalClass, 'Foo'
+
+    util_parser "\nalias_method :old :new # :nodoc:"
+
+    @parser.parse_statements klass, RDoc::Parser::Ruby::NORMAL, nil
+
+    assert_empty klass.aliases
+    assert_empty klass.unmatched_alias_lists
+  end
+
   def test_parse_statements_stopdoc_alias
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
 
@@ -3203,6 +3227,14 @@ RUBY
     @parser.skip_tkspace
 
     assert_nil @parser.parse_symbol_in_arg
+  end
+
+  def test_parse_percent_symbol
+    content = '%s[foo bar]'
+    util_parser content
+    tk = @parser.get_tk
+    assert_equal :on_symbol, tk[:kind]
+    assert_equal content, tk[:text]
   end
 
   def test_parse_statements_alias_method
@@ -3348,6 +3380,13 @@ end
     assert_equal 'test', value
 
     assert_equal :on_const, parser.get_tk[:kind]
+  end
+
+  def test_read_directive_linear_performance
+    pre = ->(i) {util_parser '# ' + '0'*i + '=000:'}
+    assert_linear_performance((1..5).map{|i|10**i}, pre: pre) do |parser|
+      assert_nil parser.read_directive []
+    end
   end
 
   def test_read_documentation_modifiers

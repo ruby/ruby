@@ -196,6 +196,14 @@ static VALUE copy_ary(RB_BLOCK_CALL_FUNC_ARGLIST(el, new_ary)) {
   return rb_ary_push(new_ary, el);
 }
 
+static VALUE array_spec_rb_iterate(VALUE self, VALUE ary) {
+  VALUE new_ary = rb_ary_new();
+
+  rb_iterate(rb_each, ary, copy_ary, new_ary);
+
+  return new_ary;
+}
+
 static VALUE array_spec_rb_block_call(VALUE self, VALUE ary) {
   VALUE new_ary = rb_ary_new();
 
@@ -208,6 +216,18 @@ static VALUE sub_pair(RB_BLOCK_CALL_FUNC_ARGLIST(el, holder)) {
   return rb_ary_push(holder, rb_ary_entry(el, 1));
 }
 
+static VALUE each_pair(VALUE obj) {
+  return rb_funcall(obj, rb_intern("each_pair"), 0);
+}
+
+static VALUE array_spec_rb_iterate_each_pair(VALUE self, VALUE obj) {
+  VALUE new_ary = rb_ary_new();
+
+  rb_iterate(each_pair, obj, sub_pair, new_ary);
+
+  return new_ary;
+}
+
 static VALUE array_spec_rb_block_call_each_pair(VALUE self, VALUE obj) {
   VALUE new_ary = rb_ary_new();
 
@@ -218,6 +238,11 @@ static VALUE array_spec_rb_block_call_each_pair(VALUE self, VALUE obj) {
 
 static VALUE iter_yield(RB_BLOCK_CALL_FUNC_ARGLIST(el, ary)) {
   rb_yield(el);
+  return Qnil;
+}
+
+static VALUE array_spec_rb_iterate_then_yield(VALUE self, VALUE obj) {
+  rb_iterate(rb_each, obj, iter_yield, obj);
   return Qnil;
 }
 
@@ -283,6 +308,9 @@ void Init_array_spec(void) {
   rb_define_method(cls, "rb_ary_plus", array_spec_rb_ary_plus, 2);
   rb_define_method(cls, "rb_ary_unshift", array_spec_rb_ary_unshift, 2);
   rb_define_method(cls, "rb_assoc_new", array_spec_rb_assoc_new, 2);
+  rb_define_method(cls, "rb_iterate", array_spec_rb_iterate, 1);
+  rb_define_method(cls, "rb_iterate_each_pair", array_spec_rb_iterate_each_pair, 1);
+  rb_define_method(cls, "rb_iterate_then_yield", array_spec_rb_iterate_then_yield, 1);
   rb_define_method(cls, "rb_block_call", array_spec_rb_block_call, 1);
   rb_define_method(cls, "rb_block_call_each_pair", array_spec_rb_block_call_each_pair, 1);
   rb_define_method(cls, "rb_block_call_then_yield", array_spec_rb_block_call_then_yield, 1);

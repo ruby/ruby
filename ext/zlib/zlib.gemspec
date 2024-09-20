@@ -22,10 +22,10 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/zlib"
   spec.licenses       = ["Ruby", "BSD-2-Clause"]
 
-  spec.files         = ["LICENSE.txt", "README.md", "ext/zlib/extconf.rb", "ext/zlib/zlib.c", "zlib.gemspec"]
+  spec.files         = ["COPYING", "BSDL", "README.md", "ext/zlib/extconf.rb", "ext/zlib/zlib.c", "zlib.gemspec"]
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]
   spec.extensions    = "ext/zlib/extconf.rb"
-  spec.required_ruby_version = ">= 2.3.0"
+  spec.required_ruby_version = ">= 2.5.0"
 end

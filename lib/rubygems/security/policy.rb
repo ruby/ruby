@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../user_interaction"
 
 ##
@@ -134,7 +135,7 @@ class Gem::Security::Policy
     raise Gem::Security::Exception, "missing root certificate" unless root
 
     raise Gem::Security::Exception,
-          "root certificate #{root.subject} is not self-signed " +
+          "root certificate #{root.subject} is not self-signed " \
           "(issuer #{root.issuer})" if
       root.issuer != root.subject
 
@@ -170,7 +171,7 @@ class Gem::Security::Policy
     cert_dgst = digester.digest pkey_str
 
     raise Gem::Security::Exception,
-          "trusted root certificate #{root.subject} checksum " +
+          "trusted root certificate #{root.subject} checksum " \
           "does not match signing root certificate checksum" unless
       save_dgst == cert_dgst
 
@@ -191,11 +192,8 @@ class Gem::Security::Policy
   end
 
   def inspect # :nodoc:
-    ("[Policy: %s - data: %p signer: %p chain: %p root: %p " +
-     "signed-only: %p trusted-only: %p]") % [
-       @name, @verify_chain, @verify_data, @verify_root, @verify_signer,
-       @only_signed, @only_trusted
-     ]
+    format("[Policy: %s - data: %p signer: %p chain: %p root: %p " \
+     "signed-only: %p trusted-only: %p]", @name, @verify_chain, @verify_data, @verify_root, @verify_signer, @only_signed, @only_trusted)
   end
 
   ##
@@ -205,8 +203,7 @@ class Gem::Security::Policy
   #
   # If +key+ is given it is used to validate the signing certificate.
 
-  def verify(chain, key = nil, digests = {}, signatures = {},
-             full_name = "(unknown)")
+  def verify(chain, key = nil, digests = {}, signatures = {}, full_name = "(unknown)")
     if signatures.empty?
       if @only_signed
         raise Gem::Security::Exception,
@@ -225,7 +222,7 @@ class Gem::Security::Policy
     trust_dir = opt[:trust_dir]
     time      = Time.now
 
-    _, signer_digests = digests.find do |algorithm, file_digests|
+    _, signer_digests = digests.find do |_algorithm, file_digests|
       file_digests.values.first.name == Gem::Security::DIGEST_NAME
     end
 
@@ -287,5 +284,5 @@ class Gem::Security::Policy
     true
   end
 
-  alias to_s name # :nodoc:
+  alias_method :to_s, :name # :nodoc:
 end

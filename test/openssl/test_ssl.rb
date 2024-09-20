@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_bad_socket
@@ -117,6 +117,30 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_socket_close_write
+    server_proc = proc do |ctx, ssl|
+      message = ssl.read
+      ssl.write(message)
+      ssl.close_write
+    ensure
+      ssl.close
+    end
+
+    start_server(server_proc: server_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ssl = OpenSSL::SSL::SSLSocket.open("127.0.0.1", port, context: ctx)
+      ssl.sync_close = true
+      ssl.connect
+
+      message = "abc"*1024
+      ssl.write message
+      ssl.close_write
+      assert_equal message, ssl.read
+    ensure
+      ssl&.close
+    end
+  end
+
   def test_add_certificate
     ctx_proc = -> ctx {
       # Unset values set by start_server
@@ -193,6 +217,24 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_read_with_timeout
+    omit "does not support timeout" unless IO.method_defined?(:timeout)
+
+    start_server do |port|
+      server_connect(port) do |ssl|
+        str = +("x" * 100 + "\n")
+        ssl.syswrite(str)
+        assert_equal(str, ssl.sysread(str.bytesize))
+
+        ssl.timeout = 1
+        assert_raise(IO::TimeoutError) {ssl.read(1)}
+
+        ssl.syswrite(str)
+        assert_equal(str, ssl.sysread(str.bytesize))
+      end
+    end
+  end
+
   def test_getbyte
     start_server { |port|
       server_connect(port) { |ssl|
@@ -200,6 +242,19 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.syswrite(str)
         newstr = str.bytesize.times.map { |i|
           ssl.getbyte
+        }.pack("C*")
+        assert_equal(str, newstr)
+      }
+    }
+  end
+
+  def test_readbyte
+    start_server { |port|
+      server_connect(port) { |ssl|
+        str = +("x" * 100 + "\n")
+        ssl.syswrite(str)
+        newstr = str.bytesize.times.map { |i|
+          ssl.readbyte
         }.pack("C*")
         assert_equal(str, newstr)
       }
@@ -481,6 +536,40 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_ca_file
+    start_server(ignore_listener_error: true) { |port|
+      # X509_STORE is shared; setting ca_file to SSLContext affects store
+      store = OpenSSL::X509::Store.new
+      assert_equal false, store.verify(@svr_cert)
+
+      ctx = Tempfile.create("ca_cert.pem") { |f|
+        f.puts(@ca_cert.to_pem)
+        f.close
+
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        ctx.cert_store = store
+        ctx.ca_file = f.path
+        ctx.setup
+        ctx
+      }
+      assert_nothing_raised {
+        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+      assert_equal true, store.verify(@svr_cert)
+    }
+  end
+
+  def test_ca_file_not_found
+    path = Tempfile.create("ca_cert.pem") { |f| f.path }
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ca_file = path
+    # OpenSSL >= 1.1.0: /no certificate or crl found/
+    assert_raise(OpenSSL::SSL::SSLError) {
+      ctx.setup
+    }
+  end
+
   def test_finished_messages
     server_finished = nil
     server_peer_finished = nil
@@ -639,7 +728,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal(true,  OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "xn--qdk4b9b"))
   end
 
-  # Comments in this test is excerpted from http://tools.ietf.org/html/rfc6125#page-27
+  # Comments in this test is excerpted from https://www.rfc-editor.org/rfc/rfc6125#page-27
   def test_post_connection_check_wildcard_san
     # case-insensitive ASCII comparison
     # RFC 6125, section 6.4.1
@@ -1379,9 +1468,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_ary
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     advertised = ["http/1.1", "spdy/2"]
     ctx_proc = proc { |ctx| ctx.npn_protocols = advertised }
@@ -1399,9 +1486,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_enum
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     advertised = Object.new
     def advertised.each
@@ -1423,9 +1508,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_cancel
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|
@@ -1436,9 +1519,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_advertised_protocol_too_long
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["a" * 256] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|
@@ -1449,9 +1530,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_selected_protocol_too_long
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|

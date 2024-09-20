@@ -1,19 +1,18 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexConcurrentDownload < CompactIndexAPI
   get "/versions" do
     versions = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions")
 
-    # Verify the original (empty) content hasn't been deleted, e.g. on a retry
-    File.binread(versions) == "" || raise("Original file should be present and empty")
+    # Verify the original content hasn't been deleted, e.g. on a retry
+    data = File.binread(versions)
+    data == "created_at" || raise("Original file should be present with expected content")
 
     # Verify this is only requested once for a partial download
-    env["HTTP_RANGE"] || raise("Missing Range header for expected partial download")
+    env["HTTP_RANGE"] == "bytes=#{data.bytesize - 1}-" || raise("Missing Range header for expected partial download")
 
     # Overwrite the file in parallel, which should be then overwritten
     # after a successful download to prevent corruption
@@ -28,5 +27,7 @@ class CompactIndexConcurrentDownload < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexConcurrentDownload)

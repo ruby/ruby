@@ -67,24 +67,33 @@ enum ruby_method_ids {
     id<%=token%>,
 % end
     tPRESERVED_ID_END,
+
 % prev = 'tPRESERVED_ID_END'
 % types.each do |type|
 %   tokens = ids[type]
+    /* <%= type %> tokens {{{ */
     tTOKEN_<%=type%>_BEGIN = <%=prev%>-1,
 %   tokens.each do |token|
     t<%=token%>,
 %   end
 %   prev = "tTOKEN_#{type}_END"
     <%=prev%>,
+    /* <%= type %> tokens }}} */
+
 % end
     tNEXT_ID = <%=prev%>,
+
 % types.each do |type|
 %   tokens = ids[type]
+    /* <%= type %> IDs {{{ */
 #define DEFINE_<%=type%>ID_FROM_TOKEN(n) id##n = TOKEN2<%=type%>ID(t##n)
 %   tokens or next
 %   tokens.each do |token|
     DEFINE_<%=type%>ID_FROM_TOKEN(<%=token%>),
 %   end
+#undef DEFINE_<%=type%>ID_FROM_TOKEN
+    /* <%= type %> IDs }}} */
+
 % end
     tLAST_OP_ID = tPRESERVED_ID_END-1,
     idLAST_OP_ID = tLAST_OP_ID >> ID_SCOPE_SHIFT

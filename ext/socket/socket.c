@@ -1313,7 +1313,7 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
     saved_errno = errno;
     if (res) rb_freeaddrinfo(res);
     errno = saved_errno;
-    rsock_raise_socket_error("getnameinfo", error);
+    rsock_raise_resolution_error("getnameinfo", error);
 
     UNREACHABLE_RETURN(Qnil);
 }
@@ -1654,8 +1654,7 @@ socket_s_ip_address_list(VALUE self)
 
   finish:
     save_errno = errno;
-    if (lc.lifc_buf != NULL)
-        xfree(lc.lifc_req);
+    xfree(lc.lifc_req);
     if (fd != -1)
         close(fd);
     errno = save_errno;

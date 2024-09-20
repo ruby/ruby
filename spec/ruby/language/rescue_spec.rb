@@ -52,12 +52,94 @@ describe "The rescue keyword" do
       RescueSpecs::SafeNavigationSetterCaptor.should_capture_exception
     end
 
+    it 'using a safely navigated setter method on a nil target' do
+      target = nil
+      begin
+        raise SpecificExampleException, "Raising this to be handled below"
+      rescue SpecificExampleException => target&.captured_error
+        :caught
+      end.should == :caught
+      target.should be_nil
+    end
+
     it 'using a setter method' do
       RescueSpecs::SetterCaptor.should_capture_exception
     end
 
     it 'using a square brackets setter' do
       RescueSpecs::SquareBracketsCaptor.should_capture_exception
+    end
+  end
+
+  describe 'capturing in a local variable (that defines it)' do
+    it 'captures successfully in a method' do
+      ScratchPad.record []
+
+      def a
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      a
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a block' do
+      ScratchPad.record []
+
+      p = proc do
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      p.call
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a class' do
+      ScratchPad.record []
+
+      class RescueSpecs::C
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully in a module' do
+      ScratchPad.record []
+
+      module RescueSpecs::M
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures sucpcessfully in a singleton class' do
+      ScratchPad.record []
+
+      class << Object.new
+        raise "message"
+      rescue => e
+        ScratchPad << e.message
+      end
+
+      ScratchPad.recorded.should == ["message"]
+    end
+
+    it 'captures successfully at the top-level' do
+      ScratchPad.record []
+
+      require_relative 'fixtures/rescue/top_level'
+
+      ScratchPad.recorded.should == ["message"]
     end
   end
 
@@ -191,7 +273,7 @@ describe "The rescue keyword" do
       rescue ArgumentError
       end
     rescue StandardError => e
-      e.backtrace.first.should include ":in `raise_standard_error'"
+      e.backtrace.first.should =~ /:in [`'](?:RescueSpecs\.)?raise_standard_error'/
     else
       fail("exception wasn't handled by the correct rescue block")
     end
@@ -479,6 +561,23 @@ describe "The rescue keyword" do
   it "requires the 'rescue' in method arguments to be wrapped in parens" do
     -> { eval '1.+(1 rescue 1)' }.should raise_error(SyntaxError)
     eval('1.+((1 rescue 1))').should == 2
+  end
+
+  ruby_version_is "3.4" do
+    it "does not introduce extra backtrace entries" do
+      def foo
+        begin
+          raise "oops"
+        rescue
+          return caller(0, 2)
+        end
+      end
+      line = __LINE__
+      foo.should == [
+        "#{__FILE__}:#{line-3}:in 'foo'",
+        "#{__FILE__}:#{line+1}:in 'block (3 levels) in <top (required)>'"
+      ]
+    end
   end
 
   describe "inline form" do

@@ -29,23 +29,11 @@
 #include "ruby/internal/core/rbasic.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/fl_type.h"
-#include "ruby/internal/rgengc.h"
+#include "ruby/internal/gc.h"
 #include "ruby/internal/stdbool.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
 #include "ruby/assert.h"
-
-/**
- * @private
- * @warning  Do not touch this macro.
- * @warning  It is an implementation detail.
- * @warning  The  value of  this  macro  must match  for  ruby  itself and  all
- *           extension  libraries, otherwise  serious  memory corruption  shall
- *           occur.
- */
-#ifndef USE_TRANSIENT_HEAP
-# define USE_TRANSIENT_HEAP 1
-#endif
 
 /**
  * Convenient casting macro.
@@ -59,15 +47,9 @@
 #define RARRAY_EMBED_LEN_MASK  RARRAY_EMBED_LEN_MASK
 #define RARRAY_EMBED_LEN_MAX   RARRAY_EMBED_LEN_MAX
 #define RARRAY_EMBED_LEN_SHIFT RARRAY_EMBED_LEN_SHIFT
-#if USE_TRANSIENT_HEAP
-# define RARRAY_TRANSIENT_FLAG RARRAY_TRANSIENT_FLAG
-#else
-# define RARRAY_TRANSIENT_FLAG 0
-#endif
 /** @endcond */
 #define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
 #define RARRAY_CONST_PTR           rb_array_const_ptr           /**< @alias{rb_array_const_ptr} */
-#define RARRAY_CONST_PTR_TRANSIENT rb_array_const_ptr_transient /**< @alias{rb_array_const_ptr_transient} */
 
 /** @cond INTERNAL_MACRO */
 #if defined(__fcc__) || defined(__fcc_version) || \
@@ -80,7 +62,6 @@
 
 #define RARRAY_EMBED_LEN   RARRAY_EMBED_LEN
 #define RARRAY_LENINT      RARRAY_LENINT
-#define RARRAY_TRANSIENT_P RARRAY_TRANSIENT_P
 #define RARRAY_ASET        RARRAY_ASET
 #define RARRAY_PTR         RARRAY_PTR
 /** @endcond */
@@ -130,30 +111,8 @@ enum ruby_rarray_flags {
      * 3rd parties must  not be aware that  there even is more than  one way to
      * store array elements.  It was a bad idea to expose this to them.
      */
-#if USE_RVARGC
     RARRAY_EMBED_LEN_MASK  = RUBY_FL_USER9 | RUBY_FL_USER8 | RUBY_FL_USER7 | RUBY_FL_USER6 |
                                  RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3
-#else
-    RARRAY_EMBED_LEN_MASK  = RUBY_FL_USER4 | RUBY_FL_USER3
-#endif
-
-#if USE_TRANSIENT_HEAP
-    ,
-
-    /**
-     * This flag has something to do with an array's "transiency".  A transient
-     * array is an  array of young generation (of generational  GC), who stores
-     * its elements inside  of dedicated memory pages called  a transient heap.
-     * Not  every  young  generation  share  that  storage  scheme,  but  elder
-     * generations must no join.
-     *
-     * @internal
-     *
-     * 3rd parties must  not be aware that  there even is more than  one way to
-     * store array elements.  It was a bad idea to expose this to them.
-     */
-    RARRAY_TRANSIENT_FLAG  = RUBY_FL_USER13
-#endif
 };
 
 /**
@@ -163,13 +122,6 @@ enum ruby_rarray_flags {
 enum ruby_rarray_consts {
     /** Where ::RARRAY_EMBED_LEN_MASK resides. */
     RARRAY_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 3
-
-#if !USE_RVARGC
-    ,
-
-    /** Max possible number elements that can be embedded. */
-    RARRAY_EMBED_LEN_MAX   = RBIMPL_EMBED_LEN_MAX_OF(VALUE)
-#endif
 };
 
 /** Ruby's array. */
@@ -228,16 +180,12 @@ struct RArray {
          * to store its elements.  In this  case the length is encoded into the
          * flags.
          */
-#if USE_RVARGC
         /* This is a length 1 array because:
          *   1. GCC has a bug that does not optimize C flexible array members
          *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
          *   2. Zero length arrays are not supported by all compilers
          */
         const VALUE ary[1];
-#else
-        const VALUE ary[RARRAY_EMBED_LEN_MAX];
-#endif
     } as;
 };
 
@@ -264,16 +212,6 @@ VALUE *rb_ary_ptr_use_start(VALUE ary);
  */
 void rb_ary_ptr_use_end(VALUE a);
 
-#if USE_TRANSIENT_HEAP
-/**
- * Destructively converts an array of transient backend into ordinal one.
- *
- * @param[out]  a  An object of ::RArray.
- * @pre         `a` must be a transient array.
- * @post        `a` gets out of transient heap, destructively.
- */
-void rb_ary_detransient(VALUE a);
-#endif
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -346,33 +284,6 @@ RARRAY_LENINT(VALUE ary)
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Queries if the array is a transient array.
- *
- * @param[in]  ary    Array in question.
- * @retval     true   Yes it is.
- * @retval     false  No it isn't.
- * @pre        `ary` must be an instance of ::RArray.
- *
- * @internal
- *
- * @shyouhei  doesn't  understand the  benefit  of  this function  called  from
- * extension libraries.
- */
-static inline bool
-RARRAY_TRANSIENT_P(VALUE ary)
-{
-    RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
-
-#if USE_TRANSIENT_HEAP
-    return RB_FL_ANY_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 /**
  * @private
  *
@@ -383,7 +294,7 @@ RBIMPL_ATTR_PURE_UNLESS_DEBUG()
  * @return     Its backend storage.
  */
 static inline const VALUE *
-rb_array_const_ptr_transient(VALUE a)
+rb_array_const_ptr(VALUE a)
 {
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
 
@@ -395,100 +306,19 @@ rb_array_const_ptr_transient(VALUE a)
     }
 }
 
-#if ! USE_TRANSIENT_HEAP
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-#endif
-/**
- * @private
- *
- * This is  an implementation  detail of  RARRAY_PTR().  People  do not  use it
- * directly.
- *
- * @param[in]  a  An object of ::RArray.
- * @return     Its backend storage.
- * @post       `a` is not a transient array.
- */
-static inline const VALUE *
-rb_array_const_ptr(VALUE a)
-{
-    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-
-#if USE_TRANSIENT_HEAP
-    if (RARRAY_TRANSIENT_P(a)) {
-        rb_ary_detransient(a);
-    }
-#endif
-    return rb_array_const_ptr_transient(a);
-}
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- *
- * @param[in]  a                An object of ::RArray.
- * @param[in]  allow_transient  Whether `a` can be transient or not.
- * @return     Its backend storage.
- * @post       `a` is not a transient array unless `allow_transient`.
- */
-static inline VALUE *
-rb_array_ptr_use_start(VALUE a,
-                       RBIMPL_ATTR_MAYBE_UNUSED()
-                       int allow_transient)
-{
-    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-
-#if USE_TRANSIENT_HEAP
-    if (!allow_transient) {
-        if (RARRAY_TRANSIENT_P(a)) {
-            rb_ary_detransient(a);
-        }
-    }
-#endif
-
-    return rb_ary_ptr_use_start(a);
-}
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- *
- * @param[in]  a                An object of ::RArray.
- * @param[in]  allow_transient  Whether `a` can be transient or not.
- */
-static inline void
-rb_array_ptr_use_end(VALUE a,
-                     RBIMPL_ATTR_MAYBE_UNUSED()
-                     int allow_transient)
-{
-    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
-    rb_ary_ptr_use_end(a);
-}
-
 /**
  * @private
  *
  * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
  * directly.
  */
-#define RBIMPL_RARRAY_STMT(flag, ary, var, expr) do {        \
+#define RBIMPL_RARRAY_STMT(ary, var, expr) do {        \
     RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);                 \
     const VALUE rbimpl_ary = (ary);                          \
-    VALUE *var = rb_array_ptr_use_start(rbimpl_ary, (flag)); \
+    VALUE *var = rb_ary_ptr_use_start(rbimpl_ary); \
     expr;                                                   \
-    rb_array_ptr_use_end(rbimpl_ary, (flag));                \
+    rb_ary_ptr_use_end(rbimpl_ary);                \
 } while (0)
-
-/**
- * @private
- *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
- */
-#define RARRAY_PTR_USE_END(a) rb_array_ptr_use_end(a, 0)
 
 /**
  * Declares a section of code where raw pointers are used.  In case you need to
@@ -516,21 +346,11 @@ rb_array_ptr_use_end(VALUE a,
  * them use it...  Maybe some transition path can be implemented later.
  */
 #define RARRAY_PTR_USE(ary, ptr_name, expr)     \
-    RBIMPL_RARRAY_STMT(0, ary, ptr_name, expr)
-
-/**
- * Identical to #RARRAY_PTR_USE, except the pointer can be a transient one.
- *
- * @param  ary       An object of ::RArray.
- * @param  ptr_name  A variable name which points the C array in `expr`.
- * @param  expr      The expression that touches `ptr_name`.
- */
-#define RARRAY_PTR_USE_TRANSIENT(ary, ptr_name, expr)   \
-    RBIMPL_RARRAY_STMT(1, ary, ptr_name, expr)
+    RBIMPL_RARRAY_STMT(ary, ptr_name, expr)
 
 /**
  * Wild  use of  a  C  pointer.  This  function  accesses  the backend  storage
- * directly.   This is  slower  than  #RARRAY_PTR_USE_TRANSIENT.  It  exercises
+ * directly.   This is  slower  than  #RARRAY_PTR_USE.  It  exercises
  * extra manoeuvres  to protect our generational  GC.  Use of this  function is
  * considered archaic.  Use a modern way instead.
  *
@@ -565,7 +385,7 @@ RARRAY_PTR(VALUE ary)
 static inline void
 RARRAY_ASET(VALUE ary, long i, VALUE v)
 {
-    RARRAY_PTR_USE_TRANSIENT(ary, ptr,
+    RARRAY_PTR_USE(ary, ptr,
         RB_OBJ_WRITE(ary, &ptr[i], v));
 }
 
@@ -580,6 +400,6 @@ RARRAY_ASET(VALUE ary, long i, VALUE v)
  * remains as  it is due to  that.  If we could  warn such usages we  can set a
  * transition path, but currently no way is found to do so.
  */
-#define RARRAY_AREF(a, i) RARRAY_CONST_PTR_TRANSIENT(a)[i]
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
 
 #endif /* RBIMPL_RARRAY_H */

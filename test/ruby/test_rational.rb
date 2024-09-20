@@ -823,6 +823,8 @@ class Rational_Test < Test::Unit::TestCase
     ng[5, 1, '5/_3']
     ng[5, 3, '5/3_']
     ng[5, 3, '5/3x']
+
+    ng[5, 1, '5/-3']
   end
 
   def test_parse_zero_denominator

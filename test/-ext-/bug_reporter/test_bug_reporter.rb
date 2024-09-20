@@ -2,17 +2,16 @@
 require 'test/unit'
 require 'tmpdir'
 require_relative '../../lib/jit_support'
+require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
-  def yjit_enabled?
-    defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
-  end
-
   def test_bug_reporter_add
-    omit if ENV['RUBY_ON_BUG']
+    pend "macOS 15 beta is not working with this test" if macos?(15)
 
+    omit "flaky with RJIT" if JITSupport.rjit_enabled?
     description = RUBY_DESCRIPTION
-    description = description.sub(/\+MJIT /, '') unless JITSupport.mjit_force_enabled?
+    description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
+    description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,
@@ -24,9 +23,9 @@ class TestBugReporter < Test::Unit::TestCase
     tmpdir = Dir.mktmpdir
 
     no_core = "Process.setrlimit(Process::RLIMIT_CORE, 0); " if defined?(Process.setrlimit) && defined?(Process::RLIMIT_CORE)
-    args = ["--disable-gems", "-r-test-/bug_reporter",
-            "-C", tmpdir]
-    args.push("--yjit") if yjit_enabled? # We want the printed description to match this process's RUBY_DESCRIPTION
+    args = ["-r-test-/bug_reporter", "-C", tmpdir]
+    args.push("--yjit") if JITSupport.yjit_enabled? # We want the printed description to match this process's RUBY_DESCRIPTION
+    args.unshift({"RUBY_ON_BUG" => nil})
     stdin = "#{no_core}register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
     assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")
   ensure

@@ -16,6 +16,12 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  if config.color_mode == :automatic
+    if config.color_enabled? && ((ENV["TERM"] == "dumb") || ENV["NO_COLOR"]&.slice(0))
+      config.color_mode = :off
+    end
+  end
 end
 
 # Used for debugging modifications to
@@ -32,7 +38,11 @@ def spec_dir
 end
 
 def lib_dir
-  root_dir.join("lib")
+  if ruby_core?
+    root_dir.join("../lib")
+  else
+    root_dir.join("lib")
+  end
 end
 
 def root_dir

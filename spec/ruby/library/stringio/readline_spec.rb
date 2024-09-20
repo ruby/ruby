@@ -113,7 +113,7 @@ end
 
 describe "StringIO#readline when in write-only mode" do
   it "raises an IOError" do
-    io = StringIO.new("xyz", "w")
+    io = StringIO.new(+"xyz", "w")
     -> { io.readline }.should raise_error(IOError)
 
     io = StringIO.new("xyz")

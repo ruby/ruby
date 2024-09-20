@@ -1,19 +1,19 @@
 # frozen_string_literal: true
+
 ##
 # Manages changes of attributes in a block of text
 
-unless MatchData.method_defined?(:match_length)
-  using Module.new {
-    refine(MatchData) {
-      def match_length(nth)
-        b, e = offset(nth)
-        e - b if b
-      end
-    }
-  }
-end
-
 class RDoc::Markup::AttributeManager
+  unless ::MatchData.method_defined?(:match_length)
+    using ::Module.new {
+      refine(::MatchData) {
+        def match_length(nth) # :nodoc:
+          b, e = offset(nth)
+          e - b if b
+        end
+      }
+    }
+  end
 
   ##
   # The NUL character
@@ -138,6 +138,7 @@ class RDoc::Markup::AttributeManager
     res
   end
 
+  # :nodoc:
   def exclusive?(attr)
     (attr & @exclusive_bitmap) != 0
   end
@@ -155,6 +156,7 @@ class RDoc::Markup::AttributeManager
     convert_attrs_word_pair_map(str, attrs, exclusive)
   end
 
+  # :nodoc:
   def convert_attrs_matching_word_pairs(str, attrs, exclusive)
     # first do matching ones
     tags = @matching_word_pairs.select { |start, bitmap|
@@ -179,6 +181,7 @@ class RDoc::Markup::AttributeManager
     str.delete!(NON_PRINTING_START + NON_PRINTING_END)
   end
 
+  # :nodoc:
   def convert_attrs_word_pair_map(str, attrs, exclusive)
     # then non-matching
     unless @word_pair_map.empty? then
@@ -257,7 +260,7 @@ class RDoc::Markup::AttributeManager
 
   def add_word_pair(start, stop, name, exclusive = false)
     raise ArgumentError, "Word flags may not start with '<'" if
-      start[0,1] == '<'
+      start[0, 1] == '<'
 
     bitmap = @attributes.bitmap_for name
 
@@ -268,7 +271,7 @@ class RDoc::Markup::AttributeManager
       @word_pair_map[pattern] = bitmap
     end
 
-    @protectable << start[0,1]
+    @protectable << start[0, 1]
     @protectable.uniq!
 
     @exclusive_bitmap |= bitmap if exclusive
@@ -400,4 +403,3 @@ class RDoc::Markup::AttributeManager
   end
 
 end
-

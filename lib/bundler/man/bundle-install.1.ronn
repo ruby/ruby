@@ -14,6 +14,7 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--no-cache]
                  [--no-prune]
                  [--path PATH]
+                 [--prefer-local]
                  [--quiet]
                  [--redownload]
                  [--retry=NUMBER]
@@ -378,5 +379,5 @@ does not work, run [bundle update(1)](bundle-update.1.html).
 
 ## SEE ALSO
 
-* [Gem install docs](http://guides.rubygems.org/rubygems-basics/#installing-gems)
-* [Rubygems signing docs](http://guides.rubygems.org/security/)
+* [Gem install docs](https://guides.rubygems.org/rubygems-basics/#installing-gems)
+* [Rubygems signing docs](https://guides.rubygems.org/security/)

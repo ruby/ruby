@@ -1,0 +1,105 @@
+%%abc%
+
+%^abc^
+
+%&abc&
+
+%*abc*
+
+%_abc_
+
+%+abc+
+
+%-abc-
+
+%:abc:
+
+%;abc;
+
+%'abc'
+
+%~abc~
+
+%?abc?
+
+%w{    }
+
+%/abc/
+
+%`abc`
+
+"#@@foo"
+
+%\abc\
+
+%{aaa #{bbb} ccc}
+
+%[foo[]]
+
+"foo" +
+#
+"bar"
+
+%q{abc}
+
+%s[abc]
+
+%{abc}
+
+''
+
+"abc"
+
+"#@---"
+
+"aaa #{bbb} ccc"
+
+'abc'
+
+%w[a b c]
+
+%w[a[] b[[]] c[]]
+
+%w[foo\ bar \#{1}]
+
+%w[foo\ bar baz]
+
+%W[a b#{c}d e]
+
+%W[a b c]
+
+%w[
+  a
+  b
+  c
+]
+
+'\' foo \' bar'
+
+'\\ foo \\ bar'
+
+"#$foo"
+
+"#@foo"
+
+"\x7 \x23 \x61"
+
+"\7 \43 \141"
+
+%[abc]
+
+%(abc)
+
+%@abc@
+
+%$abc$
+
+?a
+
+?a "a"
+
+%Q{abc}
+
+%^#$^#
+
+%@#@#

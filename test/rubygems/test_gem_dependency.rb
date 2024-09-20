@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/dependency"
 
@@ -105,8 +106,13 @@ class TestGemDependency < Gem::TestCase
 
   def test_equals_tilde_object
     o = Object.new
-    def o.name    ; "a" end
-    def o.version ; "0" end
+    def o.name
+      "a"
+    end
+
+    def o.version
+      "0"
+    end
 
     assert_match dep("a"), o
   end
@@ -358,6 +364,8 @@ class TestGemDependency < Gem::TestCase
 
     assert_equal [b, b_1], dep.to_specs
 
+    require "rubygems/bundler_version_finder"
+
     Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
       assert_equal [b_1, b], dep.to_specs
     end
@@ -384,6 +392,16 @@ class TestGemDependency < Gem::TestCase
     end
 
     assert_match "Could not find 'b' (= 2.0) among 1 total gem(s)", e.message
+  end
+
+  def test_to_spec_with_only_prereleases
+    a_2_a_1 = util_spec "a", "2.a1"
+    a_2_a_2 = util_spec "a", "2.a2"
+    install_specs a_2_a_1, a_2_a_2
+
+    a_dep = dep "a", ">= 1"
+
+    assert_equal a_2_a_2, a_dep.to_spec
   end
 
   def test_identity

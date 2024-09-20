@@ -86,7 +86,7 @@ To always run some code whether an exception was raised or not, use +ensure+:
   rescue
     # ...
   ensure
-    # this always runs
+    # this always runs BUT does not implicitly return the last evaluated statement.
   end
 
 You may also run some code when an exception is not raised:
@@ -96,7 +96,11 @@ You may also run some code when an exception is not raised:
   rescue
     # ...
   else
-    # this runs only when no exception was raised
+    # this runs only when no exception was raised AND return the last evaluated statement
   ensure
-    # ...
+    # this always runs.
+    # It is evaluated after the evaluation of either the `rescue` or the `else` block.
+    # It will not return implicitly.
   end
+
+NB : Without explicit +return+ in the +ensure+ block, +begin+/+end+ block will return the last evaluated statement before entering in the `ensure` block.

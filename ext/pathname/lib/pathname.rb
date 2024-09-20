@@ -14,6 +14,8 @@ require 'pathname.so'
 
 class Pathname
 
+  VERSION = "0.3.0"
+
   # :stopdoc:
 
   # to_path is implemented so Pathname objects are usable with File.open, etc.
@@ -570,7 +572,7 @@ class Pathname    # * Find *
     return to_enum(__method__, ignore_error: ignore_error) unless block_given?
     require 'find'
     if @path == '.'
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
+      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.delete_prefix('./')) }
     else
       Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f) }
     end
@@ -578,14 +580,13 @@ class Pathname    # * Find *
 end
 
 
-autoload(:FileUtils, 'fileutils')
-
 class Pathname    # * FileUtils *
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
   def mkpath(mode: nil)
+    require 'fileutils'
     FileUtils.mkpath(@path, mode: mode)
     nil
   end

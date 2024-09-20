@@ -131,32 +131,6 @@ path_freeze(VALUE self)
 }
 
 /*
- * call-seq:
- *   pathname.taint -> obj
- *
- * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
- */
-static VALUE
-path_taint(VALUE self)
-{
-    rb_warn("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
-    return self;
-}
-
-/*
- * call-seq:
- *   pathname.untaint -> obj
- *
- * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
- */
-static VALUE
-path_untaint(VALUE self)
-{
-    rb_warn("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
-    return self;
-}
-
-/*
  *  Compare this pathname with +other+.  The comparison is string-based.
  *  Be aware that two different paths (<tt>foo.txt</tt> and <tt>./foo.txt</tt>)
  *  can refer to the same file.
@@ -505,7 +479,6 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
-#if defined(HAVE_RB_FILE_S_BIRTHTIME)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -520,10 +493,6 @@ path_birthtime(VALUE self)
 {
     return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
-#else
-/* check at compilation time for `respond_to?` */
-# define path_birthtime rb_f_notimplement
-#endif
 
 /*
  * call-seq:
@@ -1537,8 +1506,6 @@ Init_pathname(void)
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "initialize", path_initialize, 1);
     rb_define_method(rb_cPathname, "freeze", path_freeze, 0);
-    rb_define_method(rb_cPathname, "taint", path_taint, 0);
-    rb_define_method(rb_cPathname, "untaint", path_untaint, 0);
     rb_define_method(rb_cPathname, "==", path_eq, 1);
     rb_define_method(rb_cPathname, "===", path_eq, 1);
     rb_define_method(rb_cPathname, "eql?", path_eq, 1);

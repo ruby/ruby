@@ -450,6 +450,18 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:bar, m.clone.bar)
   end
 
+  def test_clone_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress do
+      o = Object.new
+      def o.foo; :foo; end
+      m = o.method(:foo)
+      def m.bar; :bar; end
+      assert_equal(:foo, m.clone.call)
+      assert_equal(:bar, m.clone.bar)
+    end
+  end
+
   def test_inspect
     o = Object.new
     def o.foo; end; line_no = __LINE__
@@ -770,6 +782,14 @@ class TestMethod < Test::Unit::TestCase
     assert_nothing_raised { self.mv2 }
     assert_raise(NoMethodError) { (self).mv2 }
     assert_nothing_raised { self.mv3 }
+
+    class << (obj = Object.new)
+      private def [](x) x end
+      def mv1(x) self[x] end
+      def mv2(x) (self)[x] end
+    end
+    assert_nothing_raised { obj.mv1(0) }
+    assert_raise(NoMethodError) { obj.mv2(0) }
 
     v = Visibility.new
 
@@ -1423,25 +1443,25 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_argument_error_location
-    body = <<-'END_OF_BODY'
-    eval <<-'EOS'
-    $line_lambda = __LINE__; $f = lambda do
-      _x = 1
-    end
-    $line_method = __LINE__; def foo
-      _x = 1
-    end
-    begin
-      $f.call(1)
-    rescue ArgumentError => e
-      assert_equal "(eval):#{$line_lambda.to_s}:in `block in <main>'", e.backtrace.first
-    end
-    begin
-      foo(1)
-    rescue ArgumentError => e
-      assert_equal "(eval):#{$line_method}:in `foo'", e.backtrace.first
-    end
-    EOS
+    body = <<~'END_OF_BODY'
+      eval <<~'EOS', nil, "main.rb"
+        $line_lambda = __LINE__; $f = lambda do
+          _x = 1
+        end
+        $line_method = __LINE__; def foo
+          _x = 1
+        end
+        begin
+          $f.call(1)
+        rescue ArgumentError => e
+          assert_equal "main.rb:#{$line_lambda}:in 'block in <main>'", e.backtrace.first
+        end
+        begin
+          foo(1)
+        rescue ArgumentError => e
+          assert_equal "main.rb:#{$line_method}:in 'foo'", e.backtrace.first
+        end
+      EOS
     END_OF_BODY
 
     assert_separately [], body
@@ -1450,7 +1470,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_zsuper_private_override_instance_method
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       # Bug #16942 [ruby-core:98691]
       module M
         def x
@@ -1471,7 +1491,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_override_optimized_method_on_class_using_prepend
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       # Bug #17725 [ruby-core:102884]
       $VERBOSE = nil
       String.prepend(Module.new)
@@ -1594,5 +1614,114 @@ class TestMethod < Test::Unit::TestCase
 
   def test_invalidating_CC_ASAN
     assert_ruby_status(['-e', 'using Module.new'])
+  end
+
+  def test_kwarg_eval_memory_leak
+    assert_no_memory_leak([], "", <<~RUBY, rss: true, limit: 1.2)
+      obj = Object.new
+      def obj.test(**kwargs) = nil
+
+      100_000.times do
+        eval("obj.test(foo: 123)")
+      end
+    RUBY
+  end
+
+  def test_super_with_splat
+    c = Class.new {
+      attr_reader :x
+
+      def initialize(*args)
+        @x, _ = args
+      end
+    }
+    b = Class.new(c) { def initialize(...) = super }
+    a = Class.new(b) { def initialize(*args) = super }
+    obj = a.new(1, 2, 3)
+    assert_equal 1, obj.x
+  end
+
+  def test_warn_unused_block
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil
+      foo{}          # warn
+      send(:foo){}   # don't warn because it uses send
+      b = Proc.new{}
+      foo(&b)        # warn
+    RUBY
+      errstr = err.join("\n")
+      assert_equal 2, err.size, errstr
+
+      assert_match(/-:2: warning/, errstr)
+      assert_match(/-:5: warning/, errstr)
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil
+      10.times{foo{}} # warn once
+    RUBY
+      assert_equal 1, err.size
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo = nil; b = nil
+      foo(&b)       # no warning
+      1.object_id{} # no warning because it is written in C
+
+      class C
+        def initialize
+        end
+      end
+      C.new{} # no warning
+
+    RUBY
+      assert_equal 0, err.size
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      class C0
+        def f1 = nil
+        def f2 = nil
+        def f3 = nil
+        def f4 = nil
+        def f5 = nil
+        def f6 = nil
+      end
+
+      class C1 < C0
+        def f1 = super         # zsuper / use
+        def f2 = super()       # super  / use
+        def f3(&_) = super(&_) # super  / use
+        def f4 = super(&nil)   # super  / unuse
+        def f5 = super(){}     # super  / unuse
+        def f6 = super{}       # zsuper / unuse
+      end
+
+      C1.new.f1{} # no warning
+      C1.new.f2{} # no warning
+      C1.new.f3{} # no warning
+      C1.new.f4{} # warning
+      C1.new.f5{} # warning
+      C1.new.f6{} # warning
+    RUBY
+      assert_equal 3, err.size, err.join("\n")
+      assert_match(/-:22: warning.+f4/, err.join)
+      assert_match(/-:23: warning.+f5/, err.join)
+      assert_match(/-:24: warning.+f6/, err.join)
+    end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      class C0
+        def f = yield
+      end
+
+      class C1 < C0
+        def f = nil
+      end
+
+      C1.new.f{} # do not warn on duck typing
+    RUBY
+      assert_equal 0, err.size, err.join("\n")
+    end
   end
 end

@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require 'thread'
 
 describe "ConditionVariable#broadcast" do
   it "releases all threads waiting in line for this resource" do

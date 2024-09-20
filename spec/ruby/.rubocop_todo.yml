@@ -63,7 +63,6 @@ Lint/LiteralInInterpolation:
     - 'language/string_spec.rb'
     - 'language/symbol_spec.rb'
     - 'language/undef_spec.rb'
-    - 'library/net/ftp/connect_spec.rb'
 
 # Offense count: 8
 # Cop supports --auto-correct.
@@ -98,6 +97,7 @@ Lint/RescueException:
     - 'core/dir/fileno_spec.rb'
     - 'core/exception/cause_spec.rb'
     - 'core/exception/no_method_error_spec.rb'
+    - 'core/fiber/kill_spec.rb'
     - 'core/kernel/fixtures/autoload_frozen.rb'
     - 'core/kernel/raise_spec.rb'
     - 'core/module/autoload_spec.rb'

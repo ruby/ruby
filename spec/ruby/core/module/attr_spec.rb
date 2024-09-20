@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr" do
   before :each do
@@ -146,23 +147,13 @@ describe "Module#attr" do
     Module.should have_public_instance_method(:attr, false)
   end
 
-  ruby_version_is ""..."3.0" do
-    it "returns nil" do
-      Class.new do
-        (attr :foo, 'bar').should == nil
-        (attr :baz, false).should == nil
-        (attr :qux, true).should == nil
-      end
+  it "returns an array of defined method names as symbols" do
+    Class.new do
+      (attr :foo, 'bar').should == [:foo, :bar]
+      (attr :baz, false).should == [:baz]
+      (attr :qux, true).should == [:qux, :qux=]
     end
   end
 
-  ruby_version_is "3.0" do
-    it "returns an array of defined method names as symbols" do
-      Class.new do
-        (attr :foo, 'bar').should == [:foo, :bar]
-        (attr :baz, false).should == [:baz]
-        (attr :qux, true).should == [:qux, :qux=]
-      end
-    end
-  end
+  it_behaves_like :module_attr_added, :attr
 end

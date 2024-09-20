@@ -7,7 +7,7 @@ class IOStub
   end
 
   def write(*str)
-    self << str.join
+    self << str.join('')
   end
 
   def << str
@@ -16,7 +16,7 @@ class IOStub
   end
 
   def print(*str)
-    write(str.join + $\.to_s)
+    write(str.join('') + $\.to_s)
   end
 
   def method_missing(name, *args, &block)

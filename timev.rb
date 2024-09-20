@@ -1,4 +1,4 @@
-# A \Time object represents a date and time:
+# A +Time+ object represents a date and time:
 #
 #   Time.new(2000, 1, 1, 0, 0, 0) # => 2000-01-01 00:00:00 -0600
 #
@@ -41,15 +41,55 @@
 #
 # == \Time Resolution
 #
-# A \Time object derived from the system clock
+# A +Time+ object derived from the system clock
 # (for example, by method Time.now)
 # has the resolution supported by the system.
+#
+# == \Time Internal Representation
+#
+# Time implementation uses a signed 63 bit integer, Integer(T_BIGNUM), or
+# Rational.
+# It is a number of nanoseconds since the _Epoch_.
+# The signed 63 bit integer can represent 1823-11-12 to 2116-02-20.
+# When Integer or Rational is used (before 1823, after 2116, under
+# nanosecond), Time works slower than when the signed 63 bit integer is used.
+#
+# Ruby uses the C function "localtime" and "gmtime" to map between the number
+# and 6-tuple (year,month,day,hour,minute,second).
+# "localtime" is used for local time and "gmtime" is used for UTC.
+#
+# Integer(T_BIGNUM) and Rational has no range limit,
+# but the localtime and gmtime has range limits
+# due to the C types "time_t" and "struct tm".
+# If that limit is exceeded, Ruby extrapolates the localtime function.
+#
+# The Time class always uses the Gregorian calendar.
+# I.e. the proleptic Gregorian calendar is used.
+# Other calendars, such as Julian calendar, are not supported.
+#
+# "time_t" can represent 1901-12-14 to 2038-01-19 if it is 32 bit signed integer,
+# -292277022657-01-27 to 292277026596-12-05 if it is 64 bit signed integer.
+# However "localtime" on some platforms doesn't supports negative time_t (before 1970).
+#
+# "struct tm" has tm_year member to represent years.
+# (tm_year = 0 means the year 1900.)
+# It is defined as int in the C standard.
+# tm_year can represent between -2147481748 to 2147485547 if int is 32 bit.
+#
+# Ruby supports leap seconds as far as if the C function "localtime" and
+# "gmtime" supports it.
+# They use the tz database in most Unix systems.
+# The tz database has timezones which supports leap seconds.
+# For example, "Asia/Tokyo" doesn't support leap seconds but
+# "right/Asia/Tokyo" supports leap seconds.
+# So, Ruby supports leap seconds if the TZ environment variable is
+# set to "right/Asia/Tokyo" in most Unix systems.
 #
 # == Examples
 #
 # All of these examples were done using the EST timezone which is GMT-5.
 #
-# === Creating a New \Time Instance
+# === Creating a New +Time+ Instance
 #
 # You can create a new instance of Time with Time.new. This will use the
 # current system time. Time.now is an alias for this. You can also
@@ -66,7 +106,7 @@
 #
 #   Time.new(2002, 10, 31, 2, 2, 2, "+02:00") #=> 2002-10-31 02:02:02 +0200
 #
-# Or a timezone object:
+# Or {a timezone object}[rdoc-ref:Time@Timezone+Objects]:
 #
 #   zone = timezone("Europe/Athens")      # Eastern European Time, UTC+2
 #   Time.new(2002, 10, 31, 2, 2, 2, zone) #=> 2002-10-31 02:02:02 +0200
@@ -81,7 +121,7 @@
 #
 #   Time.at(628232400) #=> 1989-11-28 00:00:00 -0500
 #
-# === Working with an Instance of \Time
+# === Working with an Instance of +Time+
 #
 # Once you have an instance of Time there is a multitude of things you can
 # do with it. Below are some examples. For all of the following examples, we
@@ -123,19 +163,19 @@
 #
 # == What's Here
 #
-# First, what's elsewhere. \Class \Time:
+# First, what's elsewhere. \Class +Time+:
 #
 # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 # - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
 #
-# Here, class \Time provides methods that are useful for:
+# Here, class +Time+ provides methods that are useful for:
 #
-# - {Creating \Time objects}[rdoc-ref:Time@Methods+for+Creating].
-# - {Fetching \Time values}[rdoc-ref:Time@Methods+for+Fetching].
-# - {Querying a \Time object}[rdoc-ref:Time@Methods+for+Querying].
-# - {Comparing \Time objects}[rdoc-ref:Time@Methods+for+Comparing].
-# - {Converting a \Time object}[rdoc-ref:Time@Methods+for+Converting].
-# - {Rounding a \Time}[rdoc-ref:Time@Methods+for+Rounding].
+# - {Creating +Time+ objects}[rdoc-ref:Time@Methods+for+Creating].
+# - {Fetching +Time+ values}[rdoc-ref:Time@Methods+for+Fetching].
+# - {Querying a +Time+ object}[rdoc-ref:Time@Methods+for+Querying].
+# - {Comparing +Time+ objects}[rdoc-ref:Time@Methods+for+Comparing].
+# - {Converting a +Time+ object}[rdoc-ref:Time@Methods+for+Converting].
+# - {Rounding a +Time+}[rdoc-ref:Time@Methods+for+Rounding].
 #
 # === Methods for Creating
 #
@@ -210,25 +250,27 @@
 # - #floor: Returns a new time with subseconds lowered to a floor.
 #
 # For the forms of argument +zone+, see
-# {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+# {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
+#
+# :include: doc/_timezones.rdoc
 class Time
-  # Creates a new \Time object from the current system time.
+  # Creates a new +Time+ object from the current system time.
   # This is the same as Time.new without arguments.
   #
   #    Time.now               # => 2009-06-24 12:39:54 +0900
   #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
   # For forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
   def self.now(in: nil)
     Primitive.time_s_now(Primitive.arg!(:in))
   end
 
-  # Returns a new \Time object based on the given arguments.
+  # Returns a new +Time+ object based on the given arguments.
   #
   # Required argument +time+ may be either of:
   #
-  # - A \Time object, whose value is the basis for the returned time;
+  # - A +Time+ object, whose value is the basis for the returned time;
   #   also influenced by optional keyword argument +in:+ (see below).
   # - A numeric number of
   #   {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds]
@@ -270,14 +312,14 @@ class Time
   #     Time.at(secs, -1000000000, :nanosecond) # => 2000-12-31 23:59:58 -0600
   #
   #
-  # Optional keyword argument <tt>+in: zone</tt> specifies the timezone
+  # Optional keyword argument <tt>in: zone</tt> specifies the timezone
   # for the returned time:
   #
   #   Time.at(secs, in: '+12:00') # => 2001-01-01 17:59:59 +1200
   #   Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
   #
   # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
@@ -287,14 +329,26 @@ class Time
     end
   end
 
-  # Returns a new \Time object based on the given arguments,
+  # call-seq:
+  #   Time.new(year = nil, mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, precision: 9)
+  #
+  # Returns a new +Time+ object based on the given arguments,
   # by default in the local timezone.
   #
   # With no positional arguments, returns the value of Time.now:
   #
   #   Time.new # => 2021-04-24 17:27:46.0512465 -0500
   #
-  # With one to six arguments, returns a new \Time object
+  # With one string argument that represents a time, returns a new
+  # +Time+ object based on the given argument, in the local timezone.
+  #
+  #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
+  #   Time.new('2000-12-31 23:59:59.5 +0900')        # => 2000-12-31 23:59:59.5 +0900
+  #   Time.new('2000-12-31 23:59:59.5', in: '+0900') # => 2000-12-31 23:59:59.5 +0900
+  #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
+  #   Time.new('2000-12-31 23:59:59.56789', precision: 3) # => 2000-12-31 23:59:59.567 -0600
+  #
+  # With one to six arguments, returns a new +Time+ object
   # based on the given arguments, in the local timezone.
   #
   #   Time.new(2000, 1, 2, 3, 4, 5) # => 2000-01-02 03:04:05 -0600
@@ -350,16 +404,16 @@ class Time
   #     Time.new(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0)
   #     # => 0000-01-01 00:00:00 -0600
   #
-  # - \String integers:
+  # - String integers:
   #
   #     a = %w[0 1 1 0 0 0]
   #     # => ["0", "1", "1", "0", "0", "0"]
   #     Time.new(*a) # => 0000-01-01 00:00:00 -0600
   #
   # When positional argument +zone+ or keyword argument +in:+ is given,
-  # the new \Time object is in the specified timezone.
+  # the new +Time+ object is in the specified timezone.
   # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc]:
+  # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers]:
   #
   #   Time.new(2000, 1, 1, 0, 0, 0, '+12:00')
   #   # => 2000-01-01 00:00:00 +1200
@@ -368,7 +422,18 @@ class Time
   #   Time.new(in: '-12:00')
   #   # => 2022-08-23 08:49:26.1941467 -1200
   #
-  def initialize(year = (now = true), mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil)
+  # Since +in:+ keyword argument just provides the default, so if the
+  # first argument in single string form contains time zone information,
+  # this keyword argument will be silently ignored.
+  #
+  #   Time.new('2000-01-01 00:00:00 +0100', in: '-0500').utc_offset  # => 3600
+  #
+  # - +precision+: maximum effective digits in sub-second part, default is 9.
+  #   More digits will be truncated, as other operations of +Time+.
+  #   Ignored unless the first argument is a string.
+  #
+  def initialize(year = (now = true), mon = (str = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil,
+                 in: nil, precision: 9)
     if zone
       if Primitive.arg!(:in)
         raise ArgumentError, "timezone argument given as positional and keyword arguments"
@@ -379,6 +444,10 @@ class Time
 
     if now
       return Primitive.time_init_now(zone)
+    end
+
+    if str and Primitive.time_init_parse(str, zone, precision)
+      return self
     end
 
     Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)

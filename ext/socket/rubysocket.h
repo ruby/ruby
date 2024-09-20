@@ -35,6 +35,7 @@
 #ifdef _WIN32
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
+#  include <mswsock.h>
 #  include <iphlpapi.h>
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
@@ -285,6 +286,7 @@ extern VALUE rb_cAddrinfo;
 extern VALUE rb_cSockOpt;
 
 extern VALUE rb_eSocket;
+extern VALUE rb_eResolution;
 
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
@@ -307,7 +309,7 @@ VALUE rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *ai_ret
 
 VALUE rb_check_sockaddr_string_type(VALUE);
 
-NORETURN(void rsock_raise_socket_error(const char *, int));
+NORETURN(void rsock_raise_resolution_error(const char *, int));
 
 int rsock_family_arg(VALUE domain);
 int rsock_socktype_arg(VALUE type);
@@ -458,6 +460,8 @@ VALUE rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex);
 VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
 
 void rsock_make_fd_nonblock(int fd);
+
+int rsock_is_dgram(rb_io_t *fptr);
 
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);

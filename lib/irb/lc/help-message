@@ -22,14 +22,18 @@ Usage:  irb.rb [options] [programfile] [arguments]
                     Show truncated result on assignment (default).
   --inspect         Use 'inspect' for output.
   --noinspect       Don't use 'inspect' for output.
-  --multiline       Use multiline editor module.
-  --nomultiline     Don't use multiline editor module (default).
+  --no-pager        Don't use pager.
+  --multiline       Use multiline editor module (default).
+  --nomultiline     Don't use multiline editor module.
   --singleline      Use single line editor module.
   --nosingleline    Don't use single line editor module (default).
   --colorize        Use color-highlighting (default).
   --nocolorize      Don't use color-highlighting.
   --autocomplete    Use auto-completion (default).
   --noautocomplete  Don't use auto-completion.
+  --regexp-completor
+                    Use regexp based completion (default).
+  --type-completor  Use type based completion.
   --prompt prompt-mode, --prompt-mode prompt-mode
                     Set prompt mode. Pre-defined prompt modes are:
                     'default', 'classic', 'simple', 'inf-ruby', 'xmp', 'null'.

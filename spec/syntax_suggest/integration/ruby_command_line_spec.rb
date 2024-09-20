@@ -3,12 +3,13 @@
 require_relative "../spec_helper"
 
 module SyntaxSuggest
+  ruby = ENV.fetch("RUBY", "ruby")
   RSpec.describe "Requires with ruby cli" do
     it "namespaces all monkeypatched methods" do
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           puts Kernel.private_methods
         EOM
 
@@ -16,9 +17,9 @@ module SyntaxSuggest
         api_only_methods_file = tmpdir.join("api_only_methods.txt")
         kernel_methods_file = tmpdir.join("kernel_methods.txt")
 
-        d_pid = Process.spawn("ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1 > #{syntax_suggest_methods_file}")
-        k_pid = Process.spawn("ruby #{script} 2>&1 >> #{kernel_methods_file}")
-        r_pid = Process.spawn("ruby -I#{lib_dir} -rsyntax_suggest/api #{script} 2>&1 > #{api_only_methods_file}")
+        d_pid = Process.spawn("#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1 > #{syntax_suggest_methods_file}")
+        k_pid = Process.spawn("#{ruby} #{script} 2>&1 >> #{kernel_methods_file}")
+        r_pid = Process.spawn("#{ruby} -I#{lib_dir} -rsyntax_suggest/api #{script} 2>&1 > #{api_only_methods_file}")
 
         Process.wait(k_pid)
         Process.wait(d_pid)
@@ -45,9 +46,25 @@ module SyntaxSuggest
       end
     end
 
-    it "detects require error and adds a message with auto mode" do
-      skip if ruby_core?
+    # Since Ruby 3.2 includes syntax_suggest as a default gem, we might accidentally
+    # be requiring the default gem instead of this library under test. Assert that's
+    # not the case
+    it "tests current version of syntax_suggest" do
+      Dir.mktmpdir do |dir|
+        tmpdir = Pathname(dir)
+        script = tmpdir.join("script.rb")
+        contents = <<~'EOM'
+          puts "suggest_version is #{SyntaxSuggest::VERSION}"
+        EOM
+        script.write(contents)
 
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest/version #{script} 2>&1`
+
+        expect(out).to include("suggest_version is #{SyntaxSuggest::VERSION}").once
+      end
+    end
+
+    it "detects require error and adds a message with auto mode" do
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
@@ -69,17 +86,23 @@ module SyntaxSuggest
           load "#{script.expand_path}"
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out).to include('>  5    it "flerg"').once
       end
     end
 
-    it "annotates a syntax error in Ruby 3.2+ when require is not used" do
-      pending("Support for SyntaxError#detailed_message monkeypatch needed https://gist.github.com/schneems/09f45cc23b9a8c46e9af6acbb6e6840d?permalink_comment_id=4172585#gistcomment-4172585")
+    it "gem can be tested when executing on Ruby with default gem included" do
+      skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
-      skip if ruby_core?
+      out = `#{ruby} -I#{lib_dir} -rsyntax_suggest -e "puts SyntaxError.instance_method(:detailed_message).source_location" 2>&1`
+
+      expect($?.success?).to be_truthy
+      expect(out).to include(lib_dir.join("syntax_suggest").join("core_ext.rb").to_s).once
+    end
+
+    it "annotates a syntax error in Ruby 3.2+ when require is not used" do
       skip if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
 
       Dir.mktmpdir do |dir|
@@ -98,7 +121,7 @@ module SyntaxSuggest
           end
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out).to include('>  5    it "flerg"').once
@@ -125,7 +148,7 @@ module SyntaxSuggest
           load "#{script.expand_path}"
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{require_rb} 2>&1`
 
         expect($?.success?).to be_truthy
         expect(out).to include("SyntaxSuggest is NOT loaded").once
@@ -136,15 +159,15 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           $stderr = STDOUT
           eval("def lol")
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest #{script} 2>&1`
 
         expect($?.success?).to be_falsey
-        expect(out).to include("(eval):1")
+        expect(out).to match(/\(eval.*\):1/)
 
         expect(out).to_not include("SyntaxSuggest")
         expect(out).to_not include("Could not find filename")
@@ -155,15 +178,15 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           break
         EOM
 
-        out = `ruby -I#{lib_dir} -rsyntax_suggest -e "require_relative '#{script}'" 2>&1`
+        out = `#{ruby} -I#{lib_dir} -rsyntax_suggest -e "require_relative '#{script}'" 2>&1`
 
         expect($?.success?).to be_falsey
         expect(out.downcase).to_not include("syntax ok")
-        puts out
+        expect(out).to include("Invalid break")
       end
     end
   end

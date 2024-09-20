@@ -219,7 +219,7 @@ describe "CApiObject" do
     end
 
     it "requires a ruby file" do
-      $:.unshift File.dirname(__FILE__)
+      $:.unshift __dir__
       @o.rb_require()
       $foo.should == 7
     end
@@ -686,7 +686,7 @@ describe "CApiObject" do
     end
 
     it "returns false if object passed to it is not frozen" do
-      obj = ""
+      obj = +""
       @o.rb_obj_frozen_p(obj).should == false
     end
   end
@@ -700,7 +700,7 @@ describe "CApiObject" do
     end
 
     it "does nothing when object isn't frozen" do
-      obj = ""
+      obj = +""
       -> { @o.rb_check_frozen(obj) }.should_not raise_error(TypeError)
     end
   end
@@ -894,9 +894,9 @@ describe "CApiObject" do
 
     describe "rb_copy_generic_ivar for objects which do not store ivars directly" do
       it "copies the instance variables from one object to another" do
-        original = "abc"
+        original = +"abc"
         original.instance_variable_set(:@foo, :bar)
-        clone = "def"
+        clone = +"def"
         @o.rb_copy_generic_ivar(clone, original)
         clone.instance_variable_get(:@foo).should == :bar
       end
@@ -904,7 +904,7 @@ describe "CApiObject" do
 
     describe "rb_free_generic_ivar for objects which do not store ivars directly" do
       it "removes the instance variables from an object" do
-        o = "abc"
+        o = +"abc"
         o.instance_variable_set(:@baz, :flibble)
         @o.rb_free_generic_ivar(o)
         o.instance_variables.should == []
@@ -993,13 +993,19 @@ describe "CApiObject" do
       end
 
       it "calls the callback function for each cvar and ivar on a class" do
+        exp = [:@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+        exp.unshift(:__classpath__, 'CApiObjectSpecs::CVars') if RUBY_VERSION < "3.3"
+
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::CVars)
-        ary.should == [:__classpath__, 'CApiObjectSpecs::CVars', :@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+        ary.should == exp
       end
 
       it "calls the callback function for each cvar and ivar on a module" do
+        exp = [:@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+        exp.unshift(:__classpath__, 'CApiObjectSpecs::MVars') if RUBY_VERSION < "3.3"
+
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::MVars)
-        ary.should == [:__classpath__, 'CApiObjectSpecs::MVars', :@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+        ary.should == exp
       end
 
     end

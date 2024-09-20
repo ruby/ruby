@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint_marshal_fail"
-
-Artifice.deactivate
+require_relative "helpers/endpoint_marshal_fail"
 
 class EndpointMarshalFailBasicAuthentication < EndpointMarshalFail
   before do
@@ -11,5 +9,7 @@ class EndpointMarshalFailBasicAuthentication < EndpointMarshalFail
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointMarshalFailBasicAuthentication)

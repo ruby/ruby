@@ -1,16 +1,12 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/workspace-binding.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require "delegate"
+
+require_relative "helper_method"
 
 IRB::TOPLEVEL_BINDING = binding
 module IRB # :nodoc:
@@ -96,11 +92,11 @@ EOF
         IRB.conf[:__MAIN__] = @main
         @main.singleton_class.class_eval do
           private
-          define_method(:exit) do |*a, &b|
-            # Do nothing, will be overridden
-          end
           define_method(:binding, Kernel.instance_method(:binding))
           define_method(:local_variables, Kernel.instance_method(:local_variables))
+          # Define empty method to avoid delegator warning, will be overridden.
+          define_method(:exit) {|*a, &b| }
+          define_method(:exit!) {|*a, &b| }
         end
         @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, *@binding.source_location)
       end
@@ -114,8 +110,14 @@ EOF
     # <code>IRB.conf[:__MAIN__]</code>
     attr_reader :main
 
+    def load_helper_methods_to_main
+      ancestors = class<<main;ancestors;end
+      main.extend ExtendCommandBundle if !ancestors.include?(ExtendCommandBundle)
+      main.extend HelpersContainer if !ancestors.include?(HelpersContainer)
+    end
+
     # Evaluate the given +statements+ within the  context of this workspace.
-    def evaluate(context, statements, file = __FILE__, line = __LINE__)
+    def evaluate(statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)
     end
 
@@ -128,6 +130,8 @@ EOF
     end
 
     # error message manipulator
+    # WARN: Rails patches this method to filter its own backtrace. Be cautious when changing it.
+    # See: https://github.com/rails/rails/blob/main/railties/lib/rails/commands/console/console_command.rb#L8:~:text=def,filter_backtrace
     def filter_backtrace(bt)
       return nil if bt =~ /\/irb\/.*\.rb/
       return nil if bt =~ /\/irb\.rb/
@@ -142,11 +146,7 @@ EOF
     end
 
     def code_around_binding
-      if @binding.respond_to?(:source_location)
-        file, pos = @binding.source_location
-      else
-        file, pos = @binding.eval('[__FILE__, __LINE__]')
-      end
+      file, pos = @binding.source_location
 
       if defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
         code = ::SCRIPT_LINES__[file].join('')
@@ -173,8 +173,19 @@ EOF
 
       "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
     end
+  end
 
-    def IRB.delete_caller
+  module HelpersContainer
+    class << self
+      def install_helper_methods
+        HelperMethod.helper_methods.each do |name, helper_method_class|
+          define_method name do |*args, **opts, &block|
+            helper_method_class.instance.execute(*args, **opts, &block)
+          end unless method_defined?(name)
+        end
+      end
     end
+
+    install_helper_methods
   end
 end

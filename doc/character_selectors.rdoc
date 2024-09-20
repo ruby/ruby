@@ -1,6 +1,6 @@
-== Character Selectors
+= Character Selectors
 
-=== Character Selector
+== Character Selector
 
 A _character_ _selector_ is a string argument accepted by certain Ruby methods.
 Each of these instance methods accepts one or more character selectors:
@@ -70,7 +70,7 @@ In a character selector, these three characters get special treatment:
     "hello\r\nworld".delete("\\r")  # => "hello\r\nwold"
     "hello\r\nworld".delete("\\\r") # => "hello\nworld"
 
-=== Multiple Character Selectors
+== Multiple Character Selectors
 
 These instance methods accept multiple character selectors:
 

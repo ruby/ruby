@@ -1,4 +1,4 @@
-== Binary Searching
+= Binary Searching
 
 A few Ruby methods support binary searching in a collection:
 

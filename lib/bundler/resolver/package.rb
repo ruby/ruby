@@ -13,14 +13,21 @@ module Bundler
     # * The dependency explicit set in the Gemfile for this gem (if any).
     #
     class Package
-      attr_reader :name, :platforms, :dependency
+      attr_reader :name, :platforms, :dependency, :locked_version
 
-      def initialize(name, platforms, locked_specs, unlock, dependency: nil)
+      def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, prefer_local: false, dependency: nil)
         @name = name
         @platforms = platforms
-        @locked_specs = locked_specs
+        @locked_version = locked_specs[name].first&.version
         @unlock = unlock
-        @dependency = dependency
+        @dependency = dependency || Dependency.new(name, @locked_version)
+        @top_level = !dependency.nil?
+        @prerelease = @dependency.prerelease? || @locked_version&.prerelease? || prerelease ? :consider_first : :ignore
+        @prefer_local = prefer_local
+      end
+
+      def platform_specs(specs)
+        platforms.map {|platform| GemHelpers.select_best_platform_match(specs, platform, prefer_locked: !unlock?) }
       end
 
       def to_s
@@ -29,6 +36,10 @@ module Bundler
 
       def root?
         false
+      end
+
+      def top_level?
+        @top_level
       end
 
       def meta?
@@ -43,24 +54,36 @@ module Bundler
         @name.hash
       end
 
-      def locked_version
-        @locked_specs[name].first&.version
-      end
-
       def unlock?
         @unlock.empty? || @unlock.include?(name)
       end
 
+      def ignores_prereleases?
+        @prerelease == :ignore
+      end
+
       def prerelease_specified?
-        @dependency&.prerelease?
+        @prerelease == :consider_first
+      end
+
+      def consider_prereleases!
+        @prerelease = :consider_last
+      end
+
+      def prefer_local?
+        @prefer_local
+      end
+
+      def consider_remote_versions!
+        @prefer_local = false
       end
 
       def force_ruby_platform?
-        @dependency&.force_ruby_platform
+        @dependency.force_ruby_platform
       end
 
       def current_platform?
-        @dependency&.current_platform?
+        @dependency.current_platform?
       end
     end
   end

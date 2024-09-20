@@ -5,7 +5,7 @@ require_relative "../spec_helper"
 module SyntaxSuggest
   RSpec.describe AroundBlockScan do
     it "continues scan from last location even if scan is false" do
-      source = <<~'EOM'
+      source = <<~EOM
         print 'omg'
         print 'lol'
         print 'haha'
@@ -13,7 +13,7 @@ module SyntaxSuggest
       code_lines = CodeLine.from_source(source)
       block = CodeBlock.new(lines: code_lines[1])
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
-        .scan_neighbors
+        .scan_neighbors_not_empty
 
       expect(expand.code_block.to_s).to eq(source)
       expand.scan_while { |line| false }
@@ -104,8 +104,8 @@ module SyntaxSuggest
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
       expand.scan_while { true }
 
-      expect(expand.before_index).to eq(0)
-      expect(expand.after_index).to eq(6)
+      expect(expand.lines.first.index).to eq(0)
+      expect(expand.lines.last.index).to eq(6)
       expect(expand.code_block.to_s).to eq(source_string)
     end
 
@@ -149,9 +149,9 @@ module SyntaxSuggest
 
       block = CodeBlock.new(lines: code_lines[3])
       expand = AroundBlockScan.new(code_lines: code_lines, block: block)
-      expand.skip(:empty?)
-      expand.skip(:hidden?)
-      expand.scan_neighbors
+      expand.force_add_empty
+      expand.force_add_hidden
+      expand.scan_neighbors_not_empty
 
       expect(expand.code_block.to_s).to eq(<<~EOM.indent(4))
 

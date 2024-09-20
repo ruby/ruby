@@ -10,7 +10,7 @@ module Bundler
     end
 
     def setup(*groups)
-      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen_bundle?
+      @definition.ensure_equivalent_gemfile_and_lockfile
 
       # Has to happen first
       clean_load_path
@@ -28,11 +28,11 @@ module Bundler
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
 
-      Bundler.rubygems.add_to_load_path(load_paths)
+      Gem.add_to_load_path(*load_paths)
 
       setup_manpath
 
-      lock(:preserve_unknown_sections => true)
+      lock(preserve_unknown_sections: true)
 
       self
     end
@@ -41,12 +41,17 @@ module Bundler
       groups.map!(&:to_sym)
       groups = [:default] if groups.empty?
 
-      @definition.dependencies.each do |dep|
-        # Skip the dependency if it is not in any of the requested groups, or
-        # not for the current platform, or doesn't match the gem constraints.
-        next unless (dep.groups & groups).any? && dep.should_include?
+      dependencies = @definition.dependencies.select do |dep|
+        # Select the dependency if it is in any of the requested groups, and
+        # for the current platform, and matches the gem constraints.
+        (dep.groups & groups).any? && dep.should_include?
+      end
 
+      Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE_ALL, dependencies)
+
+      dependencies.each do |dep|
         required_file = nil
+        Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE, dep)
 
         begin
           # Loop through all the specified autorequires for the
@@ -76,7 +81,13 @@ module Bundler
             end
           end
         end
+
+        Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE, dep)
       end
+
+      Plugin.hook(Plugin::Events::GEM_AFTER_REQUIRE_ALL, dependencies)
+
+      dependencies
     end
 
     def self.definition_method(meth)
@@ -94,8 +105,8 @@ module Bundler
     definition_method :requires
 
     def lock(opts = {})
-      return if @definition.nothing_changed? && !@definition.unlocking?
-      @definition.lock(Bundler.default_lockfile, opts[:preserve_unknown_sections])
+      return if @definition.no_resolve_needed?
+      @definition.lock(opts[:preserve_unknown_sections])
     end
 
     alias_method :gems, :specs
@@ -126,11 +137,6 @@ module Bundler
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
         spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
-      end
-
-      Dir[cache_path.join("*/.git")].each do |git_dir|
-        FileUtils.rm_rf(git_dir)
-        FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 
       prune_cache(cache_path) unless Bundler.settings[:no_prune]

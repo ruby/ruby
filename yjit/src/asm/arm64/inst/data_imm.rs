@@ -44,37 +44,37 @@ pub struct DataImm {
 
 impl DataImm {
     /// ADD (immediate)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--immediate---Add--immediate--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADD--immediate---Add--immediate--?lang=en>
     pub fn add(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
         Self { rd, rn, imm, s: S::LeaveFlags, op: Op::Add, sf: num_bits.into() }
     }
 
     /// ADDS (immediate, set flags)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--immediate---Add--immediate---setting-flags-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/ADDS--immediate---Add--immediate---setting-flags-?lang=en>
     pub fn adds(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
         Self { rd, rn, imm, s: S::UpdateFlags, op: Op::Add, sf: num_bits.into() }
     }
 
     /// CMP (immediate)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--immediate---Compare--immediate---an-alias-of-SUBS--immediate--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/CMP--immediate---Compare--immediate---an-alias-of-SUBS--immediate--?lang=en>
     pub fn cmp(rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
         Self::subs(31, rn, imm, num_bits)
     }
 
     /// SUB (immediate)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--immediate---Subtract--immediate--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUB--immediate---Subtract--immediate--?lang=en>
     pub fn sub(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
         Self { rd, rn, imm, s: S::LeaveFlags, op: Op::Sub, sf: num_bits.into() }
     }
 
     /// SUBS (immediate, set flags)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--immediate---Subtract--immediate---setting-flags-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/SUBS--immediate---Subtract--immediate---setting-flags-?lang=en>
     pub fn subs(rd: u8, rn: u8, imm: ShiftedImmediate, num_bits: u8) -> Self {
         Self { rd, rn, imm, s: S::UpdateFlags, op: Op::Sub, sf: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en>
 const FAMILY: u32 = 0b1000;
 
 impl From<DataImm> for u32 {

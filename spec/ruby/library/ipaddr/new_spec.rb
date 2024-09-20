@@ -77,7 +77,13 @@ describe "IPAddr#new" do
     a.family.should == Socket::AF_INET6
   end
 
-  ruby_version_is ""..."3.1" do
+  ipaddr_version = if defined?(IPAddr::VERSION) #ruby_version_is ""..."3.1" do
+    IPAddr::VERSION
+  else
+    "1.2.2"
+  end
+
+  version_is ipaddr_version, ""..."1.2.3" do #ruby_version_is ""..."3.1" do
     it "raises on incorrect IPAddr strings" do
       [
         ["fe80::1%fxp0"],
@@ -93,7 +99,7 @@ describe "IPAddr#new" do
     end
   end
 
-  ruby_version_is "3.1" do
+  version_is ipaddr_version, "1.2.3" do #ruby_version_is "3.1" do
     it "raises on incorrect IPAddr strings" do
       [
         ["::1/255.255.255.0"],

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'rbconfig'
-require 'io/wait'
 
 class TestIOWaitInRactor < Test::Unit::TestCase
   def test_ractor

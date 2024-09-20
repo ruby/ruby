@@ -1,13 +1,7 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   frame.rb -
-#   	$Release Version: 0.9$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
-#
-# --
-#
-#
 #
 
 module IRB

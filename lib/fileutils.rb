@@ -3,7 +3,7 @@
 begin
   require 'rbconfig'
 rescue LoadError
-  # for make mjit-headers
+  # for make rjit-headers
 end
 
 # Namespace for file utility methods for copying, moving, removing, etc.
@@ -180,7 +180,8 @@ end
 # - {CVE-2004-0452}[https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452].
 #
 module FileUtils
-  VERSION = "1.6.0"
+  # The version number.
+  VERSION = "1.7.2"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -191,8 +192,6 @@ module FileUtils
   # Returns a string containing the path to the current directory:
   #
   #   FileUtils.pwd # => "/rdoc/fileutils"
-  #
-  # FileUtils.getwd is an alias for FileUtils.pwd.
   #
   # Related: FileUtils.cd.
   #
@@ -234,8 +233,6 @@ module FileUtils
   #
   #     cd ..
   #     cd fileutils
-  #
-  # FileUtils.chdir is an alias for FileUtils.cd.
   #
   # Related: FileUtils.pwd.
   #
@@ -515,8 +512,6 @@ module FileUtils
   # Raises an exception if +dest+ is the path to an existing file
   # and keyword argument +force+ is not +true+.
   #
-  # FileUtils#link is an alias for FileUtils#ln.
-  #
   # Related: FileUtils.link_entry (has different options).
   #
   def ln(src, dest, force: nil, noop: nil, verbose: nil)
@@ -707,8 +702,6 @@ module FileUtils
   #     ln -sf src2.txt dest2.txt
   #     ln -s srcdir3/src0.txt srcdir3/src1.txt destdir3
   #
-  # FileUtils.symlink is an alias for FileUtils.ln_s.
-  #
   # Related: FileUtils.ln_sf.
   #
   def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
@@ -875,8 +868,6 @@ module FileUtils
   #     cp src2.txt src2.dat dest2
   #
   # Raises an exception if +src+ is a directory.
-  #
-  # FileUtils.copy is an alias for FileUtils.cp.
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
@@ -1164,8 +1155,6 @@ module FileUtils
   #     mv src0 dest0
   #     mv src1.txt src1 dest1
   #
-  # FileUtils.move is an alias for FileUtils.mv.
-  #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
     fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
@@ -1223,8 +1212,6 @@ module FileUtils
   #
   #     rm src0.dat src0.txt
   #
-  # FileUtils.remove is an alias for FileUtils.rm.
-  #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def rm(list, force: nil, noop: nil, verbose: nil)
@@ -1249,8 +1236,6 @@ module FileUtils
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # See FileUtils.rm for keyword arguments.
-  #
-  # FileUtils.safe_unlink is an alias for FileUtils.rm_f.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1338,8 +1323,6 @@ module FileUtils
   # see {Avoiding the TOCTTOU Vulnerability}[rdoc-ref:FileUtils@Avoiding+the+TOCTTOU+Vulnerability].
   #
   # See FileUtils.rm_r for keyword arguments.
-  #
-  # FileUtils.rmtree is an alias for FileUtils.rm_rf.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1642,7 +1625,13 @@ module FileUtils
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
-        copy_file s, d
+        if d.end_with?('/')
+          mkdir_p d
+          copy_file s, d + File.basename(s)
+        else
+          mkdir_p File.expand_path('..', d)
+          copy_file s, d
+        end
         File.utime st.atime, st.mtime, d if preserve
         File.chmod fu_mode(mode, st), d if mode
         File.chown uid, gid, d if uid or gid
@@ -1663,7 +1652,7 @@ module FileUtils
       when "a"
         mask | 07777
       else
-        raise ArgumentError, "invalid `who' symbol in file mode: #{chr}"
+        raise ArgumentError, "invalid 'who' symbol in file mode: #{chr}"
       end
     end
   end
@@ -1717,7 +1706,7 @@ module FileUtils
             copy_mask = user_mask(chr)
             (current_mode & copy_mask) / (copy_mask & 0111) * (user_mask & 0111)
           else
-            raise ArgumentError, "invalid `perm' symbol in file mode: #{chr}"
+            raise ArgumentError, "invalid 'perm' symbol in file mode: #{chr}"
           end
         end
 
@@ -2040,21 +2029,22 @@ module FileUtils
 
   private
 
-  module StreamUtils_
+  module StreamUtils_ # :nodoc:
+
     private
 
     case (defined?(::RbConfig) ? ::RbConfig::CONFIG['host_os'] : ::RUBY_PLATFORM)
     when /mswin|mingw/
-      def fu_windows?; true end
+      def fu_windows?; true end #:nodoc:
     else
-      def fu_windows?; false end
+      def fu_windows?; false end #:nodoc:
     end
 
     def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
       IO.copy_stream(src, dest)
     end
 
-    def fu_stream_blksize(*streams)
+    def fu_stream_blksize(*streams) #:nodoc:
       streams.each do |s|
         next unless s.respond_to?(:stat)
         size = fu_blksize(s.stat)
@@ -2063,14 +2053,14 @@ module FileUtils
       fu_default_blksize()
     end
 
-    def fu_blksize(st)
+    def fu_blksize(st) #:nodoc:
       s = st.blksize
       return nil unless s
       return nil if s == 0
       s
     end
 
-    def fu_default_blksize
+    def fu_default_blksize #:nodoc:
       1024
     end
   end
@@ -2515,7 +2505,7 @@ module FileUtils
   end
   private_module_function :fu_output_message
 
-  def fu_split_path(path)
+  def fu_split_path(path) #:nodoc:
     path = File.path(path)
     list = []
     until (parent, base = File.split(path); parent == path or parent == ".")
@@ -2536,7 +2526,7 @@ module FileUtils
   end
   private_module_function :fu_relative_components_from
 
-  def fu_clean_components(*comp)
+  def fu_clean_components(*comp) #:nodoc:
     comp.shift while comp.first == "."
     return comp if comp.empty?
     clean = [comp.shift]
@@ -2555,11 +2545,11 @@ module FileUtils
   private_module_function :fu_clean_components
 
   if fu_windows?
-    def fu_starting_path?(path)
+    def fu_starting_path?(path) #:nodoc:
       path&.start_with?(%r(\w:|/))
     end
   else
-    def fu_starting_path?(path)
+    def fu_starting_path?(path) #:nodoc:
       path&.start_with?("/")
     end
   end

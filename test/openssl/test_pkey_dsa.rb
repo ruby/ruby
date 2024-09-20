@@ -4,6 +4,11 @@ require_relative 'utils'
 if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
 
 class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
+  def setup
+    # May not be available in FIPS mode as DSA has been deprecated in FIPS 186-5
+    omit_on_fips
+  end
+
   def test_private
     key = Fixtures.pkey("dsa1024")
     assert_equal true, key.private?
@@ -48,27 +53,29 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   end
 
   def test_sign_verify
-    dsa512 = Fixtures.pkey("dsa512")
+    # The DSA valid size is 2048 or 3072 on FIPS.
+    # https://github.com/openssl/openssl/blob/7649b5548e5c0352b91d9d3ed695e42a2ac1e99c/providers/common/securitycheck.c#L185-L188
+    dsa = Fixtures.pkey("dsa2048")
     data = "Sign me!"
     if defined?(OpenSSL::Digest::DSS1)
-      signature = dsa512.sign(OpenSSL::Digest.new('DSS1'), data)
-      assert_equal true, dsa512.verify(OpenSSL::Digest.new('DSS1'), signature, data)
+      signature = dsa.sign(OpenSSL::Digest.new('DSS1'), data)
+      assert_equal true, dsa.verify(OpenSSL::Digest.new('DSS1'), signature, data)
     end
 
-    signature = dsa512.sign("SHA1", data)
-    assert_equal true, dsa512.verify("SHA1", signature, data)
+    signature = dsa.sign("SHA256", data)
+    assert_equal true, dsa.verify("SHA256", signature, data)
 
-    signature0 = (<<~'end;').unpack("m")[0]
-      MCwCFH5h40plgU5Fh0Z4wvEEpz0eE9SnAhRPbkRB8ggsN/vsSEYMXvJwjGg/
-      6g==
+    signature0 = (<<~'end;').unpack1("m")
+      MD4CHQC0zmRkVOAHJTm28fS5PVUv+4LtBeNaKqr/yfmVAh0AsTcLqofWHoW8X5oWu8AOvngOcFVZ
+      cLTvhY3XNw==
     end;
-    assert_equal true, dsa512.verify("SHA256", signature0, data)
+    assert_equal true, dsa.verify("SHA256", signature0, data)
     signature1 = signature0.succ
-    assert_equal false, dsa512.verify("SHA256", signature1, data)
+    assert_equal false, dsa.verify("SHA256", signature1, data)
   end
 
   def test_sign_verify_raw
-    key = Fixtures.pkey("dsa512")
+    key = Fixtures.pkey("dsa2048")
     data = 'Sign me!'
     digest = OpenSSL::Digest.digest('SHA1', data)
 

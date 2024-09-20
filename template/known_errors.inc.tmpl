@@ -4,8 +4,12 @@
  * template/known_errors.inc.tmpl and defs/known_errors.def.
  */
 
-% error_names = ARGF.read.split(/\s+/)
-% error_names.each do |name|
+% error_names = ARGF.readlines.map {|line| [$1, $2] if /\A([A-Z]\S+)(?:\s+(\S.*))?/ =~ line}.compact
+% error_names.each do |name, doc|
+#if 0
+        /* <% if doc %>"<%= doc %>"<% else %>\<%= name %><% end %> error */
+        rb_define_const(rb_mErrno, "<%=name%>", e<%=name%>);
+#endif
 #ifdef <%=name%>
         defined_error("<%=name%>", <%=name%>)
 #else

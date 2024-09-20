@@ -20,7 +20,7 @@ module Bundler
       strict_rm_rf spec.extension_dir
 
       SharedHelpers.filesystem_access(gem_dir, :create) do
-        FileUtils.mkdir_p gem_dir, :mode => 0o755
+        FileUtils.mkdir_p gem_dir, mode: 0o755
       end
 
       extract_files
@@ -29,7 +29,10 @@ module Bundler
       write_build_info_file
       run_post_build_hooks
 
-      generate_bin
+      SharedHelpers.filesystem_access(bin_dir, :write) do
+        generate_bin
+      end
+
       generate_plugins
 
       write_spec
@@ -43,6 +46,24 @@ module Bundler
       run_post_install_hooks
 
       spec
+    end
+
+    if Bundler.rubygems.provides?("< 3.5")
+      def pre_install_checks
+        super
+      rescue Gem::FilePermissionError
+        # Ignore permission checks in RubyGems. Instead, go on, and try to write
+        # for real. We properly handle permission errors when they happen.
+        nil
+      end
+    end
+
+    def ensure_writable_dir(dir)
+      super
+    rescue Gem::FilePermissionError
+      # Ignore permission checks in RubyGems. Instead, go on, and try to write
+      # for real. We properly handle permission errors when they happen.
+      nil
     end
 
     def generate_plugins
@@ -60,8 +81,24 @@ module Bundler
       end
     end
 
-    def pre_install_checks
-      super && validate_bundler_checksum(options[:bundler_expected_checksum])
+    if Bundler.rubygems.provides?("< 3.5.19")
+      def generate_bin_script(filename, bindir)
+        bin_script_path = File.join bindir, formatted_program_filename(filename)
+
+        Gem.open_file_with_lock(bin_script_path) do
+          require "fileutils"
+          FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
+
+          File.open(bin_script_path, "wb", 0o755) do |file|
+            file.write app_script_text(filename)
+            file.chmod(options[:prog_mode] || 0o755)
+          end
+        end
+
+        verbose bin_script_path
+
+        generate_windows_script filename, bindir
+      end
     end
 
     def build_extensions
@@ -98,6 +135,10 @@ module Bundler
       end
     end
 
+    def gem_checksum
+      Checksum.from_gem_package(@package)
+    end
+
     private
 
     def prepare_extension_build(extension_dir)
@@ -108,62 +149,22 @@ module Bundler
     end
 
     def strict_rm_rf(dir)
-      Bundler.rm_rf dir
-    rescue Errno::ENOTEMPTY => e
-      raise DirectoryRemovalError.new(e.cause, "Could not delete previous installation of `#{dir}`")
-    end
+      return unless File.exist?(dir)
+      return if Dir.empty?(dir)
 
-    def validate_bundler_checksum(checksum)
-      return true if Bundler.settings[:disable_checksum_validation]
-      return true unless checksum
-      return true unless source = @package.instance_variable_get(:@gem)
-      return true unless source.respond_to?(:with_read_io)
-      digest = source.with_read_io do |io|
-        digest = SharedHelpers.digest(:SHA256).new
-        digest << io.read(16_384) until io.eof?
-        io.rewind
-        send(checksum_type(checksum), digest)
+      parent = File.dirname(dir)
+      parent_st = File.stat(parent)
+
+      if parent_st.world_writable? && !parent_st.sticky?
+        raise InsecureInstallPathError.new(spec.full_name, dir)
       end
-      unless digest == checksum
-        raise SecurityError, <<-MESSAGE
-          Bundler cannot continue installing #{spec.name} (#{spec.version}).
-          The checksum for the downloaded `#{spec.full_name}.gem` does not match \
-          the checksum given by the server. This means the contents of the downloaded \
-          gem is different from what was uploaded to the server, and could be a potential security issue.
 
-          To resolve this issue:
-          1. delete the downloaded gem located at: `#{spec.gem_dir}/#{spec.full_name}.gem`
-          2. run `bundle install`
+      begin
+        FileUtils.remove_entry_secure(dir)
+      rescue StandardError => e
+        raise unless File.exist?(dir)
 
-          If you wish to continue installing the downloaded gem, and are certain it does not pose a \
-          security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
-          2. run `bundle install`
-
-          (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \
-          checksum for the downloaded gem was #{digest.inspect}.)
-          MESSAGE
-      end
-      true
-    end
-
-    def checksum_type(checksum)
-      case checksum.length
-      when 64 then :hexdigest!
-      when 44 then :base64digest!
-      else raise InstallError, "The given checksum for #{spec.full_name} (#{checksum.inspect}) is not a valid SHA256 hexdigest nor base64digest"
-      end
-    end
-
-    def hexdigest!(digest)
-      digest.hexdigest!
-    end
-
-    def base64digest!(digest)
-      if digest.respond_to?(:base64digest!)
-        digest.base64digest!
-      else
-        [digest.digest!].pack("m0")
+        raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
       end
     end
   end

@@ -1,0 +1,13 @@
+prelude: |
+  def f(x=0, y: 0) end
+  a = [1]
+  ea = []
+  kw = {y: 1}
+  b = lambda{}
+benchmark:
+  arg_splat: "f(1, *ea)"
+  arg_splat_block: "f(1, *ea, &b)"
+  splat_kw_splat: "f(*a, **kw)"
+  splat_kw_splat_block: "f(*a, **kw, &b)"
+  splat_kw: "f(*a, y: 1)"
+  splat_kw_block: "f(*a, y: 1, &b)"

@@ -1,19 +1,19 @@
 #![cfg(test)]
-use crate::asm::{CodeBlock};
+use crate::asm::CodeBlock;
 use crate::backend::ir::*;
 use crate::cruby::*;
 use crate::utils::c_callable;
 
 #[test]
 fn test_add() {
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(0);
     let out = asm.add(SP, Opnd::UImm(1));
     let _ = asm.add(out, Opnd::UImm(2));
 }
 
 #[test]
 fn test_alloc_regs() {
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(0);
 
     // Get the first output that we're going to reuse later.
     let out1 = asm.add(EC, Opnd::UImm(1));
@@ -62,7 +62,7 @@ fn test_alloc_regs() {
 
 fn setup_asm() -> (Assembler, CodeBlock) {
     return (
-        Assembler::new(),
+        Assembler::new(0),
         CodeBlock::new_dummy(1024)
     );
 }
@@ -87,7 +87,7 @@ fn test_mov_mem2mem()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    asm.comment("check that comments work too");
+    asm_comment!(asm, "check that comments work too");
     asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
 
     asm.compile_with_num_regs(&mut cb, 1);
@@ -194,12 +194,12 @@ fn test_c_call()
 
 #[test]
 fn test_alloc_ccall_regs() {
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(0);
     let out1 = asm.ccall(0 as *const u8, vec![]);
     let out2 = asm.ccall(0 as *const u8, vec![out1]);
     asm.mov(EC, out2);
     let mut cb = CodeBlock::new_dummy(1024);
-    asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs());
+    asm.compile_with_regs(&mut cb, None, Assembler::get_alloc_regs());
 }
 
 #[test]
@@ -231,7 +231,7 @@ fn test_jcc_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let side_exit = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
+    let side_exit = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
     let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
     asm.test(
         Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
@@ -248,7 +248,7 @@ fn test_jmp_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let stub = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
+    let stub = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
     asm.jmp(stub);
 
     asm.compile_with_num_regs(&mut cb, 0);
@@ -259,7 +259,7 @@ fn test_jo()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let side_exit = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
+    let side_exit = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
 
     let arg1 = Opnd::mem(64, SP, 0);
     let arg0 = Opnd::mem(64, SP, 8);
@@ -283,8 +283,7 @@ fn test_bake_string() {
 
 #[test]
 fn test_draining_iterator() {
-
-    let mut asm = Assembler::new();
+    let mut asm = Assembler::new(0);
 
     let _ = asm.load(Opnd::None);
     asm.store(Opnd::None, Opnd::None);
@@ -303,29 +302,28 @@ fn test_draining_iterator() {
 }
 
 #[test]
-fn test_lookback_iterator() {
-    let mut asm = Assembler::new();
-
-    let _ = asm.load(Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-
-    let iter = asm.into_lookback_iter();
-
-    while let Some((index, insn)) = iter.next_unmapped() {
-        if index > 0 {
-            let opnd_iter = iter.get_previous().unwrap().opnd_iter();
-            assert_eq!(opnd_iter.take(1).next(), Some(&Opnd::None));
-            assert!(matches!(insn, Insn::Store { .. }));
-        }
-    }
-}
-
-#[test]
 fn test_cmp_8_bit() {
     let (mut asm, mut cb) = setup_asm();
     let reg = Assembler::get_alloc_regs()[0];
     asm.cmp(Opnd::Reg(reg).with_num_bits(8).unwrap(), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
 
     asm.compile_with_num_regs(&mut cb, 1);
+}
+
+#[test]
+fn test_no_pos_marker_callback_when_compile_fails() {
+    // When compilation fails (e.g. when out of memory), the code written out is malformed.
+    // We don't want to invoke the pos_marker callbacks with positions of malformed code.
+    let mut asm = Assembler::new(0);
+
+    // Markers around code to exhaust memory limit
+    let fail_if_called = |_code_ptr, _cb: &_| panic!("pos_marker callback should not be called");
+    asm.pos_marker(fail_if_called);
+    let zero = asm.load(0.into());
+    let sum = asm.add(zero, 500.into());
+    asm.store(Opnd::mem(64, SP, 8), sum);
+    asm.pos_marker(fail_if_called);
+
+    let cb = &mut CodeBlock::new_dummy(8);
+    assert!(asm.compile(cb, None).is_none(), "should fail due to tiny size limit");
 }

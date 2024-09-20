@@ -15,9 +15,11 @@ array.rb
 ast.rb
 dir.rb
 gc.rb
+hash.rb
 io.rb
 kernel.rb
 marshal.rb
+rjit.rb
 numeric.rb
 nilclass.rb
 pack.rb
@@ -28,6 +30,10 @@ timev.rb
 thread_sync.rb
 trace_point.rb
 warning.rb
+yjit.rb
+
+# Errno::*
+known_errors.inc
 
 # the lib/ directory (which has its own .document file)
 lib
@@ -45,8 +51,5 @@ COPYING
 COPYING.ja
 
 LEGAL
-
-# win32/README.win32 linked from README.md
-win32
 
 doc

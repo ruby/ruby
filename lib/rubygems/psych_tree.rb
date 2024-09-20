@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Gem
   if defined? ::Psych::Visitors
     class NoAliasYAMLTree < Psych::Visitors::YAMLTree
@@ -11,6 +12,10 @@ module Gem
 
         quote = Psych::Nodes::Scalar::SINGLE_QUOTED
         @emitter.scalar str, nil, nil, false, true, quote
+      end
+
+      def visit_Hash(o)
+        super(o.compact)
       end
 
       # Noop this out so there are no anchors

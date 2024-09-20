@@ -28,6 +28,10 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.homepage = "https://ruby.github.io/rdoc"
   s.licenses = ["Ruby"]
 
+  s.metadata["homepage_uri"] = s.homepage
+  s.metadata["source_code_uri"] = "https://github.com/ruby/rdoc"
+  s.metadata["changelog_uri"] = "#{s.metadata["source_code_uri"]}/releases"
+
   s.bindir = "exe"
   s.executables = ["rdoc", "ri"]
   s.require_paths = ["lib"]
@@ -42,27 +46,27 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "LEGAL.rdoc",
     "LICENSE.rdoc",
     "README.rdoc",
-    "RI.rdoc",
+    "RI.md",
     "TODO.rdoc",
     "exe/rdoc",
     "exe/ri",
     "lib/rdoc.rb",
-    "lib/rdoc/alias.rb",
-    "lib/rdoc/anon_class.rb",
-    "lib/rdoc/any_method.rb",
-    "lib/rdoc/attr.rb",
-    "lib/rdoc/class_module.rb",
+    "lib/rdoc/code_object/alias.rb",
+    "lib/rdoc/code_object/anon_class.rb",
+    "lib/rdoc/code_object/any_method.rb",
+    "lib/rdoc/code_object/attr.rb",
+    "lib/rdoc/code_object/class_module.rb",
     "lib/rdoc/code_object.rb",
     "lib/rdoc/code_objects.rb",
     "lib/rdoc/comment.rb",
-    "lib/rdoc/constant.rb",
-    "lib/rdoc/context.rb",
-    "lib/rdoc/context/section.rb",
+    "lib/rdoc/code_object/constant.rb",
+    "lib/rdoc/code_object/context.rb",
+    "lib/rdoc/code_object/context/section.rb",
     "lib/rdoc/cross_reference.rb",
     "lib/rdoc/encoding.rb",
     "lib/rdoc/erb_partial.rb",
     "lib/rdoc/erbio.rb",
-    "lib/rdoc/extend.rb",
+    "lib/rdoc/code_object/extend.rb",
     "lib/rdoc/generator.rb",
     "lib/rdoc/generator/darkfish.rb",
     "lib/rdoc/generator/json_index.rb",
@@ -132,11 +136,11 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/generator/template/json_index/.document",
     "lib/rdoc/generator/template/json_index/js/navigation.js",
     "lib/rdoc/generator/template/json_index/js/searcher.js",
-    "lib/rdoc/ghost_method.rb",
+    "lib/rdoc/code_object/ghost_method.rb",
     "lib/rdoc/i18n.rb",
     "lib/rdoc/i18n/locale.rb",
     "lib/rdoc/i18n/text.rb",
-    "lib/rdoc/include.rb",
+    "lib/rdoc/code_object/include.rb",
     "lib/rdoc/known_classes.rb",
     "lib/rdoc/markdown.kpeg",
     "lib/rdoc/markdown/entities.rb",
@@ -176,11 +180,11 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/markup/to_test.rb",
     "lib/rdoc/markup/to_tt_only.rb",
     "lib/rdoc/markup/verbatim.rb",
-    "lib/rdoc/meta_method.rb",
-    "lib/rdoc/method_attr.rb",
-    "lib/rdoc/mixin.rb",
-    "lib/rdoc/normal_class.rb",
-    "lib/rdoc/normal_module.rb",
+    "lib/rdoc/code_object/meta_method.rb",
+    "lib/rdoc/code_object/method_attr.rb",
+    "lib/rdoc/code_object/mixin.rb",
+    "lib/rdoc/code_object/normal_class.rb",
+    "lib/rdoc/code_object/normal_module.rb",
     "lib/rdoc/options.rb",
     "lib/rdoc/parser.rb",
     "lib/rdoc/parser/c.rb",
@@ -197,7 +201,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/rd/inline.rb",
     "lib/rdoc/rd/inline_parser.ry",
     "lib/rdoc/rdoc.rb",
-    "lib/rdoc/require.rb",
+    "lib/rdoc/code_object/require.rb",
     "lib/rdoc/ri.rb",
     "lib/rdoc/ri/driver.rb",
     "lib/rdoc/ri/formatter.rb",
@@ -206,7 +210,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/ri/task.rb",
     "lib/rdoc/rubygems_hook.rb",
     "lib/rdoc/servlet.rb",
-    "lib/rdoc/single_class.rb",
+    "lib/rdoc/code_object/single_class.rb",
     "lib/rdoc/stats.rb",
     "lib/rdoc/stats/normal.rb",
     "lib/rdoc/stats/quiet.rb",
@@ -216,7 +220,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/text.rb",
     "lib/rdoc/token_stream.rb",
     "lib/rdoc/tom_doc.rb",
-    "lib/rdoc/top_level.rb",
+    "lib/rdoc/code_object/top_level.rb",
     "lib/rdoc/version.rb",
     "man/ri.1",
   ]
@@ -226,7 +230,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.rdoc_options = ["--main", "README.rdoc"]
   s.extra_rdoc_files += s.files.grep(%r[\A[^\/]+\.(?:rdoc|md)\z])
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 
   s.add_dependency 'psych', '>= 4.0.0'

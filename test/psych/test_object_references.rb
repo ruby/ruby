@@ -39,7 +39,7 @@ module Psych
       rescue Psych::DisallowedClass
         data = Psych.unsafe_load yml
       end
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
 
     def test_float_references
@@ -49,7 +49,7 @@ module Psych
 - *name
       eoyml
       assert_equal data.first, data.last
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
 
     def test_binary_references
@@ -60,7 +60,7 @@ module Psych
 - *name
       eoyml
       assert_equal data.first, data.last
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
 
     def test_regexp_references
@@ -70,7 +70,7 @@ module Psych
 - *name
       eoyml
       assert_equal data.first, data.last
-      assert_equal data.first.object_id, data.last.object_id
+      assert_same data.first, data.last
     end
   end
 end

@@ -190,5 +190,11 @@ describe "Enumerable#any?" do
       multi.any?(pattern).should == false
       pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
     end
+
+    it "ignores the block if there is an argument" do
+      -> {
+        EnumerableSpecs::Numerous.new(1, 2, 3, 4, 5).any?(String) { true }.should == false
+      }.should complain(/given block not used/)
+    end
   end
 end

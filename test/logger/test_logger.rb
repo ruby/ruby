@@ -113,6 +113,15 @@ class TestLogger < Test::Unit::TestCase
     assert_raise(ArgumentError) { @logger.level = 'something_wrong' }
   end
 
+  def test_reraise_write_errors
+    c = Object.new
+    e = Class.new(StandardError)
+    c.define_singleton_method(:write){|*| raise e}
+    c.define_singleton_method(:close){}
+    logger = Logger.new(c, :reraise_write_errors=>[e])
+    assert_raise(e) { logger.warn('foo') }
+  end
+
   def test_progname
     assert_nil(@logger.progname)
     @logger.progname = "name"

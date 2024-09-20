@@ -144,31 +144,37 @@ round_half_down(double x, double s)
 static double
 round_half_even(double x, double s)
 {
-    double f, d, xs = x * s;
+    double u, v, us, vs, f, d, uf;
+
+    v = modf(x, &u);
+    us = u * s;
+    vs = v * s;
 
     if (x > 0.0) {
-        f = floor(xs);
-        d = xs - f;
+        f = floor(vs);
+        uf = us + f;
+        d = vs - f;
         if (d > 0.5)
             d = 1.0;
-        else if (d == 0.5 || ((double)((f + 0.5) / s) <= x))
-            d = fmod(f, 2.0);
+        else if (d == 0.5 || ((double)((uf + 0.5) / s) <= x))
+            d = fmod(uf, 2.0);
         else
             d = 0.0;
         x = f + d;
     }
     else if (x < 0.0) {
-        f = ceil(xs);
-        d = f - xs;
+        f = ceil(vs);
+        uf = us + f;
+        d = f - vs;
         if (d > 0.5)
             d = 1.0;
-        else if (d == 0.5 || ((double)((f - 0.5) / s) >= x))
-            d = fmod(-f, 2.0);
+        else if (d == 0.5 || ((double)((uf - 0.5) / s) >= x))
+            d = fmod(-uf, 2.0);
         else
             d = 0.0;
         x = f - d;
     }
-    return x;
+    return us + x;
 }
 
 static VALUE fix_lshift(long, unsigned long);
@@ -665,7 +671,7 @@ num_div(VALUE x, VALUE y)
  *  Of the Core and Standard Library classes,
  *  only Rational uses this implementation.
  *
- *  For \Rational +r+ and real number +n+, these expressions are equivalent:
+ *  For Rational +r+ and real number +n+, these expressions are equivalent:
  *
  *    r % n
  *    r-n*(r/n).floor
@@ -687,8 +693,6 @@ num_div(VALUE x, VALUE y)
  *    r % -r2               # => (-119/100)
  *    (-r) % r2             # => (119/100)
  *    (-r) %-r2             # => (-21/100)
- *
- *  Numeric#modulo is an alias for Numeric#%.
  *
  */
 
@@ -734,6 +738,9 @@ num_modulo(VALUE x, VALUE y)
 static VALUE
 num_remainder(VALUE x, VALUE y)
 {
+    if (!rb_obj_is_kind_of(y, rb_cNumeric)) {
+        do_coerce(&x, &y, TRUE);
+    }
     VALUE z = num_funcall1(x, '%', y);
 
     if ((!rb_equal(z, INT2FIX(0))) &&
@@ -795,8 +802,6 @@ num_divmod(VALUE x, VALUE y)
  *    (-34.56).abs  #=> 34.56
  *    -34.56.abs    #=> 34.56
  *
- *  Numeric#magnitude is an alias for Numeric#abs.
- *
  */
 
 static VALUE
@@ -831,7 +836,7 @@ int_zero_p(VALUE num)
     if (FIXNUM_P(num)) {
         return FIXNUM_ZERO_P(num);
     }
-    assert(RB_BIGNUM_TYPE_P(num));
+    RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
     return rb_bigzero_p(num);
 }
 
@@ -856,6 +861,8 @@ rb_int_zero_p(VALUE num)
  *
  *  Of the Core and Standard Library classes,
  *  Integer, Float, Rational, and Complex use this implementation.
+ *
+ * Related: #zero?
  *
  */
 
@@ -943,7 +950,7 @@ num_negative_p(VALUE num)
  *  So you should know its esoteric system. See following:
  *
  *  - https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
- *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#floats_imprecise
+ *  - https://github.com/rdp/ruby_tutorials_core/wiki/Ruby-Talk-FAQ#-why-are-rubys-floats-imprecise
  *  - https://en.wikipedia.org/wiki/Floating_point#Accuracy_problems
  *
  *  You can create a \Float object explicitly with:
@@ -958,7 +965,10 @@ num_negative_p(VALUE num)
  *
  *  First, what's elsewhere. \Class \Float:
  *
- *  - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
+ *  - Inherits from
+ *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
+ *    and {class Object}[rdoc-ref:Object@What-27s+Here].
+ *  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  *  Here, class \Float provides methods for:
  *
@@ -994,10 +1004,10 @@ num_negative_p(VALUE num)
  *  - #/: Returns the quotient of +self+ and the given value.
  *  - #ceil: Returns the smallest number greater than or equal to +self+.
  *  - #coerce: Returns a 2-element array containing the given value converted to a \Float
-      and +self+
+ *    and +self+
  *  - #divmod: Returns a 2-element array containing the quotient and remainder
  *    results of dividing +self+ by the given value.
- *  - #fdiv: Returns the Float result of dividing +self+ by the given value.
+ *  - #fdiv: Returns the \Float result of dividing +self+ by the given value.
  *  - #floor: Returns the greatest number smaller than or equal to +self+.
  *  - #next_float: Returns the next-larger representable \Float.
  *  - #prev_float: Returns the next-smaller representable \Float.
@@ -1013,7 +1023,7 @@ num_negative_p(VALUE num)
 VALUE
 rb_float_new_in_heap(double d)
 {
-    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0));
+    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0), sizeof(struct RFloat), 0);
 
 #if SIZEOF_DOUBLE <= SIZEOF_VALUE
     flt->float_value = d;
@@ -1073,7 +1083,7 @@ flo_to_s(VALUE flt)
     s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
     if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
     memcpy(buf, p, digs);
-    xfree(p);
+    free(p);
     if (decpt > 0) {
         if (decpt < digs) {
             memmove(buf + decpt + 1, buf + decpt, digs - decpt);
@@ -1147,7 +1157,7 @@ flo_coerce(VALUE x, VALUE y)
     return rb_assoc_new(rb_Float(y), x);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_uminus(VALUE flt)
 {
     return DBL2NUM(-RFLOAT_VALUE(flt));
@@ -1260,7 +1270,7 @@ double_div_double(double x, double y)
     }
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_flo_div_flo(VALUE x, VALUE y)
 {
     double num = RFLOAT_VALUE(x);
@@ -1319,8 +1329,6 @@ rb_float_div(VALUE x, VALUE y)
  *    f.quo(Rational(2, 1)) # => 1.57
  *    f.quo(Complex(2, 0))  # => (1.57+0.0i)
  *
- *  Float#fdiv is an alias for Float#quo.
- *
  */
 
 static VALUE
@@ -1372,7 +1380,7 @@ flodivmod(double x, double y, double *divp, double *modp)
  * An error will be raised if y == 0.
  */
 
-MJIT_FUNC_EXPORTED double
+double
 ruby_float_mod(double x, double y)
 {
     double mod;
@@ -1406,8 +1414,6 @@ ruby_float_mod(double x, double y)
  *
  *    10.0 % 4.0            # => 2.0
  *    10.0 % Rational(4, 1) # => 2.0
- *
- *  Float#modulo is an alias for Float#%.
  *
  */
 
@@ -1549,8 +1555,8 @@ rb_float_pow(VALUE x, VALUE y)
  *    1.eql?(Rational(1, 1)) # => false
  *    1.eql?(Complex(1, 0))  # => false
  *
- *  \Method +eql?+ is different from +==+ in that +eql?+ requires matching types,
- *  while +==+ does not.
+ *  \Method +eql?+ is different from <tt>==</tt> in that +eql?+ requires matching types,
+ *  while <tt>==</tt> does not.
  *
  */
 
@@ -1609,7 +1615,7 @@ num_equal(VALUE x, VALUE y)
  *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_equal(VALUE x, VALUE y)
 {
     volatile double a, b;
@@ -1682,12 +1688,12 @@ rb_dbl_cmp(double a, double b)
  *  Examples:
  *
  *    2.0 <=> 2              # => 0
-      2.0 <=> 2.0            # => 0
-      2.0 <=> Rational(2, 1) # => 0
-      2.0 <=> Complex(2, 0)  # => 0
-      2.0 <=> 1.9            # => 1
-      2.0 <=> 2.1            # => -1
-      2.0 <=> 'foo'          # => nil
+ *    2.0 <=> 2.0            # => 0
+ *    2.0 <=> Rational(2, 1) # => 0
+ *    2.0 <=> Complex(2, 0)  # => 0
+ *    2.0 <=> 1.9            # => 1
+ *    2.0 <=> 2.1            # => -1
+ *    2.0 <=> 'foo'          # => nil
  *
  *  This is the basis for the tests in the Comparable module.
  *
@@ -1727,7 +1733,7 @@ flo_cmp(VALUE x, VALUE y)
     return rb_dbl_cmp(a, b);
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_float_cmp(VALUE x, VALUE y)
 {
     return NUM2INT(ensure_cmp(flo_cmp(x, y), x, y));
@@ -1921,7 +1927,7 @@ flo_le(VALUE x, VALUE y)
  *  Related: Float#== (performs type conversions).
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_eql(VALUE x, VALUE y)
 {
     if (RB_FLOAT_TYPE_P(y)) {
@@ -1937,7 +1943,7 @@ rb_float_eql(VALUE x, VALUE y)
 
 #define flo_eql rb_float_eql
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_float_abs(VALUE flt)
 {
     double val = fabs(RFLOAT_VALUE(flt));
@@ -2164,36 +2170,78 @@ flo_ndigits(int argc, VALUE *argv)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    floor(ndigits = 0) -> float or integer
  *
- *  Returns the largest number less than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns a float or integer that is a "floor" value for `self`,
+ *  as specified by `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is positive, returns a float with +ndigits+
+ *  When `self` is zero,
+ *  returns a zero value:
+ *  a float if `ndigits` is positive,
+ *  an integer otherwise:
+ *
+ *  ```
+ *  f = 0.0      # => 0.0
+ *  f.floor(20)  # => 0.0
+ *  f.floor(0)   # => 0
+ *  f.floor(-20) # => 0
+ *  ```
+ *
+ *  When `self` is non-zero and `ndigits` is positive, returns a float with `ndigits`
  *  digits after the decimal point (as available):
  *
- *    f = 12345.6789
- *    f.floor(1) # => 12345.6
- *    f.floor(3) # => 12345.678
- *    f = -12345.6789
- *    f.floor(1) # => -12345.7
- *    f.floor(3) # => -12345.679
+ *  ```
+ *  f = 12345.6789
+ *  f.floor(1)  # => 12345.6
+ *  f.floor(3)  # => 12345.678
+ *  f.floor(30) # => 12345.6789
+ *  f = -12345.6789
+ *  f.floor(1)  # => -12345.7
+ *  f.floor(3)  # => -12345.679
+ *  f.floor(30) # => -12345.6789
+ *  ```
  *
- *  When +ndigits+ is non-positive, returns an integer with at least
- *  <code>ndigits.abs</code> trailing zeros:
+ *  When `self` is non-zero and `ndigits` is non-positive,
+ *  returns an integer value based on a computed granularity:
  *
- *    f = 12345.6789
- *    f.floor(0)  # => 12345
- *    f.floor(-3) # => 12000
- *    f = -12345.6789
- *    f.floor(0)  # => -12346
- *    f.floor(-3) # => -13000
+ *  - The granularity is `10 ** ndigits.abs`.
+ *  - The returned value is the largest multiple of the granularity
+ *    that is less than or equal to `self`.
+ *
+ *  Examples with positive `self`:
+ *
+ *  | ndigits | Granularity | 12345.6789.floor(ndigits) |
+ *  |--------:|------------:|--------------------------:|
+ *  |       0 |           1 |                     12345 |
+ *  |      -1 |          10 |                     12340 |
+ *  |      -2 |         100 |                     12300 |
+ *  |      -3 |        1000 |                     12000 |
+ *  |      -4 |       10000 |                     10000 |
+ *  |      -5 |      100000 |                         0 |
+ *
+ *  Examples with negative `self`:
+ *
+ *  | ndigits | Granularity | -12345.6789.floor(ndigits) |
+ *  |--------:|------------:|---------------------------:|
+ *  |       0 |           1 |                     -12346 |
+ *  |      -1 |          10 |                     -12350 |
+ *  |      -2 |         100 |                     -12400 |
+ *  |      -3 |        1000 |                     -13000 |
+ *  |      -4 |       10000 |                     -20000 |
+ *  |      -5 |      100000 |                    -100000 |
+ *  |      -6 |     1000000 |                   -1000000 |
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
  *
- *     (0.3 / 0.1).floor  #=> 2 (!)
+ *  ```
+ *  (0.3 / 0.1).floor  # => 2 # Not 3, (because (0.3 / 0.1) # => 2.9999999999999996, not 3.0)
+ *  ```
  *
  *  Related: Float#ceil.
  *
@@ -2207,36 +2255,78 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number greater than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns a numeric that is a "ceiling" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is positive, returns a float with +ndigits+
- *  digits after the decimal point (as available):
+ *  When `ndigits` is positive, returns a Float with `ndigits`
+ *  decimal digits after the decimal point
+ *  (as available, but no fewer than 1):
  *
- *    f = 12345.6789
- *    f.ceil(1) # => 12345.7
- *    f.ceil(3) # => 12345.679
- *    f = -12345.6789
- *    f.ceil(1) # => -12345.6
- *    f.ceil(3) # => -12345.678
+ *  ```
+ *  f = 12345.6789
+ *  f.ceil(1) # => 12345.7
+ *  f.ceil(3) # => 12345.679
+ *  f.ceil(30) # => 12345.6789
+ *  f = -12345.6789
+ *  f.ceil(1) # => -12345.6
+ *  f.ceil(3) # => -12345.678
+ *  f.ceil(30) # => -12345.6789
+ *  f = 0.0
+ *  f.ceil(1)   # => 0.0
+ *  f.ceil(100) # => 0.0
+ *  ```
  *
- *  When +ndigits+ is non-positive, returns an integer with at least
- *  <code>ndigits.abs</code> trailing zeros:
+ *  When `ndigits` is non-positive,
+ *  returns an Integer based on a computed granularity:
  *
- *    f = 12345.6789
- *    f.ceil(0)  # => 12346
- *    f.ceil(-3) # => 13000
- *    f = -12345.6789
- *    f.ceil(0)  # => -12345
- *    f.ceil(-3) # => -12000
+ *  - The granularity is `10 ** ndigits.abs`.
+ *  - The returned value is the largest multiple of the granularity
+ *    that is less than or equal to `self`.
+ *
+ *  Examples with positive `self`:
+ *
+ *  | ndigits | Granularity | 12345.6789.ceil(ndigits) |
+ *  |--------:|------------:|-------------------------:|
+ *  | 0       | 1           | 12346                    |
+ *  | -1      | 10          | 12350                    |
+ *  | -2      | 100         | 12400                    |
+ *  | -3      | 1000        | 13000                    |
+ *  | -4      | 10000       | 20000                    |
+ *  | -5      | 100000      | 100000                   |
+ *
+ *  Examples with negative `self`:
+ *
+ *  | ndigits | Granularity | -12345.6789.ceil(ndigits) |
+ *  |--------:|------------:|--------------------------:|
+ *  | 0       | 1           | -12345                    |
+ *  | -1      | 10          | -12340                    |
+ *  | -2      | 100         | -12300                    |
+ *  | -3      | 1000        | -12000                    |
+ *  | -4      | 10000       | -10000                    |
+ *  | -5      | 100000      | 0                         |
+ *
+ *  When `self` is zero and `ndigits` is non-positive,
+ *  returns Integer zero:
+ *
+ *  ```
+ *  0.0.ceil(0)  # => 0
+ *  0.0.ceil(-1) # => 0
+ *  0.0.ceil(-2) # => 0
+ *  ```
  *
  *  Note that the limited precision of floating-point arithmetic
  *  may lead to surprising results:
  *
- *     (2.1 / 0.7).ceil  #=> 4 (!)
+ *  ```
+ *  (2.1 / 0.7).ceil  #=> 4 # Not 3 (because 2.1 / 0.7 # => 3.0000000000000004, not 3.0)
+ *  ```
  *
  *  Related: Float#floor.
  *
@@ -2334,7 +2424,7 @@ int_half_p_half_down(VALUE num, VALUE n, VALUE f)
 }
 
 /*
- * Assumes num is an Integer, ndigits <= 0
+ * Assumes num is an \Integer, ndigits <= 0
  */
 static VALUE
 rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
@@ -2372,11 +2462,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 static VALUE
 rb_int_floor(VALUE num, int ndigits)
 {
-    VALUE f;
-
-    if (int_round_zero_p(num, ndigits))
-        return INT2FIX(0);
-    f = int_pow(10, -ndigits);
+    VALUE f = int_pow(10, -ndigits);
     if (FIXNUM_P(num) && FIXNUM_P(f)) {
         SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
         int neg = x < 0;
@@ -2385,21 +2471,19 @@ rb_int_floor(VALUE num, int ndigits)
         if (neg) x = -x;
         return LONG2NUM(x);
     }
-    if (RB_FLOAT_TYPE_P(f)) {
-        /* then int_pow overflow */
-        return INT2FIX(0);
+    else {
+        bool neg = int_neg_p(num);
+        if (neg) num = rb_int_minus(rb_int_plus(rb_int_uminus(num), f), INT2FIX(1));
+        num = rb_int_mul(rb_int_div(num, f), f);
+        if (neg) num = rb_int_uminus(num);
+        return num;
     }
-    return rb_int_minus(num, rb_int_modulo(num, f));
 }
 
 static VALUE
 rb_int_ceil(VALUE num, int ndigits)
 {
-    VALUE f;
-
-    if (int_round_zero_p(num, ndigits))
-        return INT2FIX(0);
-    f = int_pow(10, -ndigits);
+    VALUE f = int_pow(10, -ndigits);
     if (FIXNUM_P(num) && FIXNUM_P(f)) {
         SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
         int neg = x < 0;
@@ -2409,11 +2493,16 @@ rb_int_ceil(VALUE num, int ndigits)
         if (neg) x = -x;
         return LONG2NUM(x);
     }
-    if (RB_FLOAT_TYPE_P(f)) {
-        /* then int_pow overflow */
-        return INT2FIX(0);
+    else {
+        bool neg = int_neg_p(num);
+        if (neg)
+            num = rb_int_uminus(num);
+        else
+            num = rb_int_plus(num, rb_int_minus(f, INT2FIX(1)));
+        num = rb_int_mul(rb_int_div(num, f), f);
+        if (neg) num = rb_int_uminus(num);
+        return num;
     }
-    return rb_int_plus(num, rb_int_minus(f, rb_int_modulo(num, f)));
 }
 
 VALUE
@@ -2448,7 +2537,7 @@ rb_int_truncate(VALUE num, int ndigits)
 
 /*
  *  call-seq:
- *    round(ndigits = 0, half: :up]) -> integer or float
+ *    round(ndigits = 0, half: :up) -> integer or float
  *
  *  Returns +self+ rounded to the nearest value with
  *  a precision of +ndigits+ decimal digits.
@@ -2591,7 +2680,6 @@ float_round_underflow(int ndigits, int binexp)
  *
  *    (0.3 / 0.1).to_i  # => 2 (!)
  *
- *  Float#to_int is an alias for Float#to_i.
  */
 
 static VALUE
@@ -2651,13 +2739,16 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *    floor(digits = 0) -> integer or float
+ *    floor(ndigits = 0) -> float or integer
  *
- *  Returns the largest number that is less than or equal to +self+ with
- *  a precision of +digits+ decimal digits.
+ *  Returns the largest float or integer that is less than or equal to +self+,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
- *  \Numeric implements this by converting +self+ to a Float and
- *  invoking Float#floor.
+ *  Equivalent to <tt>self.to_f.floor(ndigits)</tt>.
+ *
+ *  Related: #ceil, Float#floor.
  */
 
 static VALUE
@@ -2668,13 +2759,16 @@ num_floor(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *    ceil(digits = 0) -> integer or float
+ *    ceil(ndigits = 0) -> float or integer
  *
- *  Returns the smallest number that is greater than or equal to +self+ with
- *  a precision of +digits+ decimal digits.
+ *  Returns the smallest float or integer that is greater than or equal to +self+,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
- *  \Numeric implements this by converting +self+ to a Float and
- *  invoking Float#ceil.
+ *  Equivalent to <tt>self.to_f.ceil(ndigits)</tt>.
+ *
+ *  Related: #floor, Float#ceil.
  */
 
 static VALUE
@@ -2834,7 +2928,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
         }
         if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
         result = rb_funcall(rb_funcall(to, '-', 1, from), id_div, 1, step);
-        if (!excl || RTEST(rb_funcall(rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step)), cmp, 1, to))) {
+        if (!excl || RTEST(rb_funcall(to, cmp, 1, rb_funcall(from, '+', 1, rb_funcall(result, '*', 1, step))))) {
             result = rb_funcall(result, '+', 1, INT2FIX(1));
         }
         return result;
@@ -2946,88 +3040,88 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *    step(by: , to: nil) {|n| ... }    ->  self
  *    step(by: , to: nil)               ->  enumerator
  *
- *  Generates a sequence of numbers; with a block given, traverses the sequence.
+ * Generates a sequence of numbers; with a block given, traverses the sequence.
  *
- *  Of the Core and Standard Library classes,
- *  Integer, Float, and Rational use this implementation.
+ * Of the Core and Standard Library classes,
+ * Integer, Float, and Rational use this implementation.
  *
- *  A quick example:
+ * A quick example:
  *
- *    squares = []
- *    1.step(by: 2, to: 10) {|i| squares.push(i*i) }
- *    squares # => [1, 9, 25, 49, 81]
+ *   squares = []
+ *   1.step(by: 2, to: 10) {|i| squares.push(i*i) }
+ *   squares # => [1, 9, 25, 49, 81]
  *
- *  The generated sequence:
+ * The generated sequence:
  *
- *  - Begins with +self+.
- *  - Continues at intervals of +step+ (which may not be zero).
- *  - Ends with the last number that is within or equal to +limit+;
- *    that is, less than or equal to +limit+ if +step+ is positive,
- *    greater than or equal to +limit+ if +step+ is negative.
- *    If +limit+ is not given, the sequence is of infinite length.
+ * - Begins with +self+.
+ * - Continues at intervals of +by+ (which may not be zero).
+ * - Ends with the last number that is within or equal to +to+;
+ *   that is, less than or equal to +to+ if +by+ is positive,
+ *   greater than or equal to +to+ if +by+ is negative.
+ *   If +to+ is +nil+, the sequence is of infinite length.
  *
- *  If a block is given, calls the block with each number in the sequence;
- *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
+ * If a block is given, calls the block with each number in the sequence;
+ * returns +self+. If no block is given, returns an Enumerator::ArithmeticSequence.
  *
- *  <b>Keyword Arguments</b>
+ * <b>Keyword Arguments</b>
  *
- *  With keyword arguments +by+ and +to+,
- *  their values (or defaults) determine the step and limit:
+ * With keyword arguments +by+ and +to+,
+ * their values (or defaults) determine the step and limit:
  *
- *    # Both keywords given.
- *    squares = []
- *    4.step(by: 2, to: 10) {|i| squares.push(i*i) }    # => 4
- *    squares # => [16, 36, 64, 100]
- *    cubes = []
- *    3.step(by: -1.5, to: -3) {|i| cubes.push(i*i*i) } # => 3
- *    cubes   # => [27.0, 3.375, 0.0, -3.375, -27.0]
- *    squares = []
- *    1.2.step(by: 0.2, to: 2.0) {|f| squares.push(f*f) }
- *    squares # => [1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *   # Both keywords given.
+ *   squares = []
+ *   4.step(by: 2, to: 10) {|i| squares.push(i*i) }    # => 4
+ *   squares # => [16, 36, 64, 100]
+ *   cubes = []
+ *   3.step(by: -1.5, to: -3) {|i| cubes.push(i*i*i) } # => 3
+ *   cubes   # => [27.0, 3.375, 0.0, -3.375, -27.0]
+ *   squares = []
+ *   1.2.step(by: 0.2, to: 2.0) {|f| squares.push(f*f) }
+ *   squares # => [1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
  *
- *    squares = []
- *    Rational(6/5).step(by: 0.2, to: 2.0) {|r| squares.push(r*r) }
- *    squares # => [1.0, 1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *   squares = []
+ *   Rational(6/5).step(by: 0.2, to: 2.0) {|r| squares.push(r*r) }
+ *   squares # => [1.0, 1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
  *
- *    # Only keyword to given.
- *    squares = []
- *    4.step(to: 10) {|i| squares.push(i*i) }           # => 4
- *    squares # => [16, 25, 36, 49, 64, 81, 100]
- *    # Only by given.
+ *   # Only keyword to given.
+ *   squares = []
+ *   4.step(to: 10) {|i| squares.push(i*i) }           # => 4
+ *   squares # => [16, 25, 36, 49, 64, 81, 100]
+ *   # Only by given.
  *
- *    # Only keyword by given
- *    squares = []
- *    4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
- *    squares # => [16, 36, 64, 100, 144]
+ *   # Only keyword by given
+ *   squares = []
+ *   4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
+ *   squares # => [16, 36, 64, 100, 144]
  *
- *    # No block given.
- *    e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
- *    e.class                      # => Enumerator::ArithmeticSequence
+ *   # No block given.
+ *   e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
+ *   e.class                      # => Enumerator::ArithmeticSequence
  *
- *  <b>Positional Arguments</b>
+ * <b>Positional Arguments</b>
  *
- *  With optional positional arguments +limit+ and +step+,
- *  their values (or defaults) determine the step and limit:
+ * With optional positional arguments +to+ and +by+,
+ * their values (or defaults) determine the step and limit:
  *
- *    squares = []
- *    4.step(10, 2) {|i| squares.push(i*i) }    # => 4
- *    squares # => [16, 36, 64, 100]
- *    squares = []
- *    4.step(10) {|i| squares.push(i*i) }
- *    squares # => [16, 25, 36, 49, 64, 81, 100]
- *    squares = []
- *    4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
- *    squares # => [16, 25, 36, 49, 64, 81, 100, 121]
+ *   squares = []
+ *   4.step(10, 2) {|i| squares.push(i*i) }    # => 4
+ *   squares # => [16, 36, 64, 100]
+ *   squares = []
+ *   4.step(10) {|i| squares.push(i*i) }
+ *   squares # => [16, 25, 36, 49, 64, 81, 100]
+ *   squares = []
+ *   4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
+ *   squares # => [16, 25, 36, 49, 64, 81, 100, 121]
  *
  * <b>Implementation Notes</b>
  *
- *  If all the arguments are integers, the loop operates using an integer
- *  counter.
+ * If all the arguments are integers, the loop operates using an integer
+ * counter.
  *
- *  If any of the arguments are floating point numbers, all are converted
- *  to floats, and the loop is executed
- *  <i>floor(n + n*Float::EPSILON) + 1</i> times,
- *  where <i>n = (limit - self)/step</i>.
+ * If any of the arguments are floating point numbers, all are converted
+ * to floats, and the loop is executed
+ * <i>floor(n + n*Float::EPSILON) + 1</i> times,
+ * where <i>n = (limit - self)/step</i>.
  *
  */
 
@@ -3056,7 +3150,7 @@ num_step(int argc, VALUE *argv, VALUE from)
                                     num_step_size, from, to, step, FALSE);
         }
 
-        return SIZED_ENUMERATOR(from, 2, ((VALUE [2]){to, step}), num_step_size);
+        return SIZED_ENUMERATOR_KW(from, 2, ((VALUE [2]){to, step}), num_step_size, FALSE);
     }
 
     desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
@@ -3165,7 +3259,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
 {
   again:
     if (NIL_P(val)) {
-       rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
+       rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
     }
 
     if (FIXNUM_P(val)) {
@@ -3210,7 +3304,7 @@ rb_num2ulong(VALUE val)
 void
 rb_out_of_int(SIGNED_VALUE num)
 {
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `int'",
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'int'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3229,12 +3323,12 @@ check_uint(unsigned long num, int sign)
     if (sign) {
         /* minus */
         if (num < (unsigned long)INT_MIN)
-            rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned int'", (long)num);
+            rb_raise(rb_eRangeError, "integer %ld too small to convert to 'unsigned int'", (long)num);
     }
     else {
         /* plus */
         if (UINT_MAX < num)
-            rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
+            rb_raise(rb_eRangeError, "integer %lu too big to convert to 'unsigned int'", num);
     }
 }
 
@@ -3309,7 +3403,7 @@ NORETURN(static void rb_out_of_short(SIGNED_VALUE num));
 static void
 rb_out_of_short(SIGNED_VALUE num)
 {
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `short'",
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'short'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3327,12 +3421,12 @@ check_ushort(unsigned long num, int sign)
     if (sign) {
         /* minus */
         if (num < (unsigned long)SHRT_MIN)
-            rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned short'", (long)num);
+            rb_raise(rb_eRangeError, "integer %ld too small to convert to 'unsigned short'", (long)num);
     }
     else {
         /* plus */
         if (USHRT_MAX < num)
-            rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned short'", num);
+            rb_raise(rb_eRangeError, "integer %lu too big to convert to 'unsigned short'", num);
     }
 }
 
@@ -3440,7 +3534,7 @@ unsigned LONG_LONG
 rb_num2ull(VALUE val)
 {
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from nil");
+        rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
     }
     else if (FIXNUM_P(val)) {
         return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
@@ -3459,15 +3553,10 @@ rb_num2ull(VALUE val)
     else if (RB_BIGNUM_TYPE_P(val)) {
         return rb_big2ull(val);
     }
-    else if (RB_TYPE_P(val, T_STRING)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from string");
+    else {
+        val = rb_to_int(val);
+        return NUM2ULL(val);
     }
-    else if (RB_TYPE_P(val, T_TRUE) || RB_TYPE_P(val, T_FALSE)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from boolean");
-    }
-
-    val = rb_to_int(val);
-    return NUM2ULL(val);
 }
 
 #endif  /* HAVE_LONG_LONG */
@@ -3493,7 +3582,10 @@ rb_num2ull(VALUE val)
  *
  * First, what's elsewhere. \Class \Integer:
  *
- * - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
+ * - Inherits from
+ *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
+ *   and {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -3573,7 +3665,7 @@ rb_int_odd_p(VALUE num)
         return RBOOL(num & 2);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_odd_p(num);
     }
 }
@@ -3585,7 +3677,7 @@ int_even_p(VALUE num)
         return RBOOL((num & 2) == 0);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_even_p(num);
     }
 }
@@ -3694,8 +3786,6 @@ int_nobits_p(VALUE num, VALUE mask)
  *
  *    1.succ  #=> 2
  *    -1.succ #=> 0
- *
- *  Integer#next is an alias for Integer#succ.
  *
  *  Related: Integer#pred (predecessor value).
  */
@@ -3844,7 +3934,7 @@ rb_int_uminus(VALUE num)
         return fix_uminus(num);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_uminus(num);
     }
 }
@@ -3893,7 +3983,7 @@ rb_fix2str(VALUE x, int base)
 
 static VALUE rb_fix_to_s_static[10];
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_fix_to_s(VALUE x)
 {
     long i = FIX2LONG(x);
@@ -3919,12 +4009,9 @@ rb_fix_to_s(VALUE x)
  *    78546939656932.to_s(36)  # => "rubyrules"
  *
  *  Raises an exception if +base+ is out of range.
- *
- *  Integer#inspect is an alias for Integer#to_s.
- *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_int_to_s(int argc, VALUE *argv, VALUE x)
 {
     int base;
@@ -4106,7 +4193,13 @@ static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-        return double_div_double(FIX2LONG(x), FIX2LONG(y));
+        long iy = FIX2LONG(y);
+#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
+        if ((iy < 0 ? -iy : iy) >= (1L << DBL_MANT_DIG)) {
+            return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), rb_int2big(iy));
+        }
+#endif
+        return double_div_double(FIX2LONG(x), iy);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
         return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
@@ -4124,7 +4217,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
 {
     if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
         VALUE gcd = rb_gcd(x, y);
-        if (!FIXNUM_ZERO_P(gcd)) {
+        if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
             x = rb_int_idiv(x, gcd);
             y = rb_int_idiv(y, gcd);
         }
@@ -4246,14 +4339,14 @@ fix_idiv(VALUE x, VALUE y)
  * Performs integer division; returns the integer result of dividing +self+
  * by +numeric+:
  *
- *    4.div(3)      # => 1
- *    4.div(-3)      # => -2
- *    -4.div(3)      # => -2
- *    -4.div(-3)      # => 1
- *    4.div(3.0)      # => 1
- *    4.div(Rational(3, 1))      # => 1
+ *    4.div(3)              # => 1
+ *    4.div(-3)             # => -2
+ *    -4.div(3)             # => -2
+ *    -4.div(-3)            # => 1
+ *    4.div(3.0)            # => 1
+ *    4.div(Rational(3, 1)) # => 1
  *
- *  Raises an exception if +numeric+ does not have method +div+.
+ * Raises an exception if +numeric+ does not have method +div+.
  *
  */
 
@@ -4315,8 +4408,6 @@ fix_mod(VALUE x, VALUE y)
  *    10 % 3.0            # => 1.0
  *    10 % Rational(3, 1) # => (1/1)
  *
- *  Integer#modulo is an alias for Integer#%.
- *
  */
 VALUE
 rb_int_modulo(VALUE x, VALUE y)
@@ -4357,12 +4448,22 @@ static VALUE
 int_remainder(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
-        return num_remainder(x, y);
+        if (FIXNUM_P(y)) {
+            VALUE z = fix_mod(x, y);
+            RUBY_ASSERT(FIXNUM_P(z));
+            if (z != INT2FIX(0) && (SIGNED_VALUE)(x ^ y) < 0)
+                z = fix_minus(z, y);
+            return z;
+        }
+        else if (!RB_BIGNUM_TYPE_P(y)) {
+            return num_remainder(x, y);
+        }
+        x = rb_int2big(FIX2LONG(x));
     }
-    else if (RB_BIGNUM_TYPE_P(x)) {
-        return rb_big_remainder(x, y);
+    else if (!RB_BIGNUM_TYPE_P(x)) {
+        return Qnil;
     }
-    return Qnil;
+    return rb_big_remainder(x, y);
 }
 
 static VALUE
@@ -4625,9 +4726,6 @@ fix_equal(VALUE x, VALUE y)
  *    1 == 1.0   #=> true
  *
  *  Related: Integer#eql? (requires +other+ to be an \Integer).
- *
- *  Integer#=== is an alias for Integer#==.
- *
  */
 
 VALUE
@@ -4702,7 +4800,7 @@ rb_int_cmp(VALUE x, VALUE y)
         return rb_big_cmp(x, y);
     }
     else {
-        rb_raise(rb_eNotImpError, "need to define `<=>' in %s", rb_obj_classname(x));
+        rb_raise(rb_eNotImpError, "need to define '<=>' in %s", rb_obj_classname(x));
     }
 }
 
@@ -5162,7 +5260,7 @@ fix_rshift(long val, unsigned long i)
  *
  */
 
-static VALUE
+VALUE
 rb_int_rshift(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
@@ -5174,7 +5272,7 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_fix_aref(VALUE fix, VALUE idx)
 {
     long val = FIX2LONG(fix);
@@ -5344,7 +5442,7 @@ int_aref(int const argc, VALUE * const argv, VALUE const num)
  *    1.to_f  # => 1.0
  *    -1.to_f # => -1.0
  *
- *  If the value of +self+ does not fit in a \Float,
+ *  If the value of +self+ does not fit in a Float,
  *  the result is infinity:
  *
  *    (10**400).to_f  # => Infinity
@@ -5398,7 +5496,7 @@ fix_size(VALUE fix)
     return INT2FIX(sizeof(long));
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_int_size(VALUE num)
 {
     if (FIXNUM_P(num)) {
@@ -5437,7 +5535,7 @@ rb_fix_digits(VALUE fix, long base)
     VALUE digits;
     long x = FIX2LONG(fix);
 
-    assert(x >= 0);
+    RUBY_ASSERT(x >= 0);
 
     if (base < 2)
         rb_raise(rb_eArgError, "invalid radix %ld", base);
@@ -5446,11 +5544,12 @@ rb_fix_digits(VALUE fix, long base)
         return rb_ary_new_from_args(1, INT2FIX(0));
 
     digits = rb_ary_new();
-    while (x > 0) {
+    while (x >= base) {
         long q = x % base;
         rb_ary_push(digits, LONG2NUM(q));
         x /= base;
     }
+    rb_ary_push(digits, LONG2NUM(x));
 
     return digits;
 }
@@ -5460,7 +5559,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 {
     VALUE digits, bases;
 
-    assert(!rb_num_negative_p(num));
+    RUBY_ASSERT(!rb_num_negative_p(num));
 
     if (RB_BIGNUM_TYPE_P(base))
         base = rb_big_norm(base);
@@ -5660,53 +5759,7 @@ int_downto(VALUE from, VALUE to)
 static VALUE
 int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
 {
-    if (FIXNUM_P(num)) {
-        if (NUM2LONG(num) <= 0) return INT2FIX(0);
-    }
-    else {
-        if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
-    }
-    return num;
-}
-
-/*
- *  call-seq:
- *    times {|i| ... } -> self
- *    times            -> enumerator
- *
- *  Calls the given block +self+ times with each integer in <tt>(0..self-1)</tt>:
- *
- *    a = []
- *    5.times {|i| a.push(i) } # => 5
- *    a                        # => [0, 1, 2, 3, 4]
- *
- *  With no block given, returns an Enumerator.
- *
- */
-
-static VALUE
-int_dotimes(VALUE num)
-{
-    RETURN_SIZED_ENUMERATOR(num, 0, 0, int_dotimes_size);
-
-    if (FIXNUM_P(num)) {
-        long i, end;
-
-        end = FIX2LONG(num);
-        for (i=0; i<end; i++) {
-            rb_yield_1(LONG2FIX(i));
-        }
-    }
-    else {
-        VALUE i = INT2FIX(0);
-
-        for (;;) {
-            if (!RTEST(int_le(i, num))) break;
-            rb_yield(i);
-            i = rb_int_plus(i, INT2FIX(1));
-        }
-    }
-    return num;
+    return int_neg_p(num) ? INT2FIX(0) : num;
 }
 
 /*
@@ -5775,24 +5828,56 @@ int_round(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    floor(ndigits = 0) -> integer
  *
- *  Returns the largest number less than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns an integer that is a "floor" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When +ndigits+ is negative, the returned value
- *  has at least <tt>ndigits.abs</tt> trailing zeros:
+ *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *
- *    555.floor(-1)  # => 550
- *    555.floor(-2)  # => 500
- *    -555.floor(-2) # => -600
- *    555.floor(-3)  # => 0
+ *      ```
+ *      0.floor(2)  # => 0
+ *      0.floor(-2) # => 0
+ *      ```
  *
- *  Returns +self+ when +ndigits+ is zero or positive.
+ *  - When `self` is non-zero and `ndigits` is non-negative, returns `self`:
  *
- *    555.floor     # => 555
- *    555.floor(50) # => 555
+ *      ```
+ *      555.floor     # => 555
+ *      555.floor(50) # => 555
+ *      ```
+ *
+ *  - When `self` is non-zero and `ndigits` is negative,
+ *    returns a value based on a computed granularity:
+ *
+ *      - The granularity is `10 ** ndigits.abs`.
+ *      - The returned value is the largest multiple of the granularity
+ *        that is less than or equal to `self`.
+ *
+ *      Examples with positive `self`:
+ *
+ *      | ndigits | Granularity | 1234.floor(ndigits) |
+ *      |--------:|------------:|--------------------:|
+ *      | -1      | 10          | 1230                |
+ *      | -2      | 100         | 1200                |
+ *      | -3      | 1000        | 1000                |
+ *      | -4      | 10000       | 0                   |
+ *      | -5      | 100000      | 0                   |
+ *
+ *      Examples with negative `self`:
+ *
+ *      | ndigits | Granularity | -1234.floor(ndigits) |
+ *      |--------:|------------:|---------------------:|
+ *      | -1      | 10          | -1240                |
+ *      | -2      | 100         | -1300                |
+ *      | -3      | 1000        | -2000                |
+ *      | -4      | 10000       | -10000               |
+ *      | -5      | 100000      | -100000              |
  *
  *  Related: Integer#ceil.
  *
@@ -5812,27 +5897,58 @@ int_floor(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    ceil(ndigits = 0) -> integer
  *
- *  Returns the smallest number greater than or equal to +self+ with
- *  a precision of +ndigits+ decimal digits.
+ *  Returns an integer that is a "ceiling" value for `self`,
+ *  as specified by the given `ndigits`,
+ *  which must be an
+ *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
- *  When the precision is negative, the returned value is an integer
- *  with at least <code>ndigits.abs</code> trailing zeros:
+ *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *
- *    555.ceil(-1)  # => 560
- *    555.ceil(-2)  # => 600
- *    -555.ceil(-2) # => -500
- *    555.ceil(-3)  # => 1000
+ *      ```
+ *      0.ceil(2)  # => 0
+ *      0.ceil(-2) # => 0
+ *      ```
  *
- *  Returns +self+ when +ndigits+ is zero or positive.
+ *  - When `self` is non-zero and `ndigits` is non-negative, returns `self`:
  *
- *     555.ceil     # => 555
- *     555.ceil(50) # => 555
+ *      ```
+ *      555.ceil     # => 555
+ *      555.ceil(50) # => 555
+ *      ```
+ *
+ *  - When `self` is non-zero and `ndigits` is negative,
+ *    returns a value based on a computed granularity:
+ *
+ *      - The granularity is `10 ** ndigits.abs`.
+ *      - The returned value is the smallest multiple of the granularity
+ *        that is greater than or equal to `self`.
+ *
+ *      Examples with positive `self`:
+ *
+ *      | ndigits | Granularity | 1234.ceil(ndigits) |
+ *      |--------:|------------:|-------------------:|
+ *      | -1      | 10          | 1240               |
+ *      | -2      | 100         | 1300               |
+ *      | -3      | 1000        | 2000               |
+ *      | -4      | 10000       | 10000              |
+ *      | -5      | 100000      | 100000             |
+ *
+ *      Examples with negative `self`:
+ *
+ *      | ndigits | Granularity | -1234.ceil(ndigits) |
+ *      |--------:|------------:|--------------------:|
+ *      | -1      | 10          | -1230               |
+ *      | -2      | 100         | -1200               |
+ *      | -3      | 1000        | -1000               |
+ *      | -4      | 10000       | 0                   |
+ *      | -5      | 100000      | 0                   |
  *
  *  Related: Integer#floor.
- *
  */
 
 static VALUE
@@ -5989,7 +6105,22 @@ rb_int_s_isqrt(VALUE self, VALUE num)
     }
 }
 
-/* :nodoc: */
+/*
+ * call-seq:
+ *   Integer.try_convert(object) -> object, integer, or nil
+ *
+ * If +object+ is an \Integer object, returns +object+.
+ *   Integer.try_convert(1) # => 1
+ *
+ * Otherwise if +object+ responds to <tt>:to_int</tt>,
+ * calls <tt>object.to_int</tt> and returns the result.
+ *   Integer.try_convert(1.25) # => 1
+ *
+ * Returns +nil+ if +object+ does not respond to <tt>:to_int</tt>
+ *   Integer.try_convert([]) # => nil
+ *
+ * Raises an exception unless <tt>object.to_int</tt> returns an \Integer object.
+ */
 static VALUE
 int_s_try_convert(VALUE self, VALUE num)
 {
@@ -6022,9 +6153,9 @@ int_s_try_convert(VALUE self, VALUE num)
 /*
  * Document-class: Numeric
  *
- * Numeric is the class from which all higher-level numeric classes should inherit.
+ * \Numeric is the class from which all higher-level numeric classes should inherit.
  *
- * Numeric allows instantiation of heap-allocated objects. Other core numeric classes such as
+ * \Numeric allows instantiation of heap-allocated objects. Other core numeric classes such as
  * Integer are implemented as immediates, which means that each Integer is a single immutable
  * object which is always passed by value.
  *
@@ -6038,9 +6169,9 @@ int_s_try_convert(VALUE self, VALUE num)
  *   1.dup                            #=> 1
  *   1.object_id == 1.dup.object_id   #=> true
  *
- * For this reason, Numeric should be used when defining other numeric classes.
+ * For this reason, \Numeric should be used when defining other numeric classes.
  *
- * Classes which inherit from Numeric must implement +coerce+, which returns a two-member
+ * Classes which inherit from \Numeric must implement +coerce+, which returns a two-member
  * Array containing an object that has been coerced into an instance of the new class
  * and +self+ (see #coerce).
  *
@@ -6233,7 +6364,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
-    rb_define_method(rb_cInteger, "times", int_dotimes, 0);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);
@@ -6276,19 +6406,25 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
-    rb_fix_to_s_static[0] = rb_fstring_literal("0");
-    rb_fix_to_s_static[1] = rb_fstring_literal("1");
-    rb_fix_to_s_static[2] = rb_fstring_literal("2");
-    rb_fix_to_s_static[3] = rb_fstring_literal("3");
-    rb_fix_to_s_static[4] = rb_fstring_literal("4");
-    rb_fix_to_s_static[5] = rb_fstring_literal("5");
-    rb_fix_to_s_static[6] = rb_fstring_literal("6");
-    rb_fix_to_s_static[7] = rb_fstring_literal("7");
-    rb_fix_to_s_static[8] = rb_fstring_literal("8");
-    rb_fix_to_s_static[9] = rb_fstring_literal("9");
-    for(int i = 0; i < 10; i++) {
-        rb_gc_register_mark_object(rb_fix_to_s_static[i]);
-    }
+#define fix_to_s_static(n) do { \
+        VALUE lit = rb_fstring_literal(#n); \
+        rb_fix_to_s_static[n] = lit; \
+        rb_vm_register_global_object(lit); \
+        RB_GC_GUARD(lit); \
+    } while (0)
+
+    fix_to_s_static(0);
+    fix_to_s_static(1);
+    fix_to_s_static(2);
+    fix_to_s_static(3);
+    fix_to_s_static(4);
+    fix_to_s_static(5);
+    fix_to_s_static(6);
+    fix_to_s_static(7);
+    fix_to_s_static(8);
+    fix_to_s_static(9);
+
+#undef fix_to_s_static
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 

@@ -11,10 +11,9 @@ require 'rbconfig'
 dir_config 'zlib'
 
 libs = $libs
-if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')} and
-    have_header('zlib.h') then
-  have_zlib = true
-else
+have_zlib = %w'z libz zlib1 zlib zdll zlibwapi'.any? {|z| have_library(z, 'deflateReset(NULL)', 'zlib.h')}
+
+unless have_zlib
   $libs = libs
   unless File.directory?(zsrc = "#{$srcdir}/zlib")
     dirs = Dir.open($srcdir) {|z| z.grep(/\Azlib-\d+[.\d]*\z/) {|x|"#{$srcdir}/#{x}"}}
@@ -121,12 +120,18 @@ if have_zlib
     $defs << "-DHAVE_CRC32_COMBINE"
     $defs << "-DHAVE_ADLER32_COMBINE"
     $defs << "-DHAVE_TYPE_Z_CRC_T"
-    $defs << "-DHAVE_TYPE_Z_SIZE_T"
+    $defs << "-DHAVE_CRC32_Z"
+    $defs << "-DHAVE_ADLER32_Z"
+    $defs << "-DHAVE_ZLIB_SIZE_T_FUNCS"
   else
     have_func('crc32_combine', 'zlib.h')
     have_func('adler32_combine', 'zlib.h')
     have_type('z_crc_t', 'zlib.h')
-    have_type('z_size_t', 'zlib.h')
+    if (have_type('z_size_t', 'zlib.h') &&
+        have_func('crc32_z', 'zlib.h') &&
+        have_func('adler32_z', 'zlib.h'))
+      $defs << "-DHAVE_ZLIB_SIZE_T_FUNCS"
+    end
   end
 
   create_makefile('zlib') {|conf|

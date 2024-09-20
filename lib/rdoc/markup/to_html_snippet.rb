@@ -66,6 +66,9 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
 
   alias accept_rule ignore
 
+  ##
+  # Adds +paragraph+ to the output
+
   def accept_paragraph paragraph
     para = @in_list_entry.last || "<p>"
 
@@ -282,4 +285,3 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
   end
 
 end
-

@@ -7,6 +7,8 @@
     (NIL_P(str) ? warn_print(x) : (void)rb_str_cat_cstr(str, x))
 #define write_warn2(str, x, l) \
     (NIL_P(str) ? warn_print2(x, l) : (void)rb_str_cat(str, x, l))
+#define write_warn_enc(str, x, l, enc) \
+    (NIL_P(str) ? warn_print2(x, l) : (void)rb_enc_str_buf_cat(str, x, l, enc))
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define warn_print(x) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(x)) ? 		\
@@ -45,7 +47,7 @@ error_pos_str(void)
             return rb_sprintf("%"PRIsVALUE": ", sourcefile);
         }
         else if ((caller_name = rb_frame_callee()) != 0) {
-            return rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"': ",
+            return rb_sprintf("%"PRIsVALUE":%d:in '%"PRIsVALUE"': ",
                               sourcefile, sourceline,
                               rb_id2str(caller_name));
         }
@@ -103,7 +105,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
         if (highlight) write_warn(str, underline);
         write_warn(str, "unhandled exception");
         if (highlight) write_warn(str, reset);
-        write_warn2(str, "\n", 1);
+        write_warn(str, "\n");
     }
     else {
         VALUE epath;
@@ -123,16 +125,20 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 }
 
 VALUE
-rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
+rb_decorate_message(const VALUE eclass, VALUE emesg, int highlight)
 {
     const char *einfo = "";
     long elen = 0;
+    rb_encoding *eenc;
 
-    VALUE str = rb_str_new2("");
+    VALUE str = rb_usascii_str_new_cstr("");
 
-    if (!NIL_P(emesg)) {
+    if (!NIL_P(emesg) && rb_enc_asciicompat(eenc = rb_enc_get(emesg))) {
         einfo = RSTRING_PTR(emesg);
         elen = RSTRING_LEN(emesg);
+    }
+    else {
+        eenc = NULL;
     }
     if (eclass == rb_eRuntimeError && elen == 0) {
         if (highlight) write_warn(str, underline);
@@ -156,7 +162,7 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
             if (RSTRING_PTR(epath)[0] == '#')
                 epath = 0;
             if ((tail = memchr(einfo, '\n', elen)) != 0) {
-                write_warn2(str, einfo, tail - einfo);
+                write_warn_enc(str, einfo, tail - einfo, eenc);
                 tail++;		/* skip newline */
             }
             else {
@@ -170,23 +176,23 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
                     write_warn(str, reset);
                     write_warn(str, bold);
                 }
-                write_warn2(str, ")", 1);
+                write_warn(str, ")");
                 if (highlight) write_warn(str, reset);
             }
             if (tail && einfo+elen > tail) {
                 if (!highlight) {
-                    write_warn2(str, "\n", 1);
-                    write_warn2(str, tail, einfo+elen-tail);
+                    write_warn(str, "\n");
+                    write_warn_enc(str, tail, einfo+elen-tail, eenc);
                 }
                 else {
                     elen -= tail - einfo;
                     einfo = tail;
-                    write_warn2(str, "\n", 1);
+                    write_warn(str, "\n");
                     while (elen > 0) {
                         tail = memchr(einfo, '\n', elen);
                         if (!tail || tail > einfo) {
                             write_warn(str, bold);
-                            write_warn2(str, einfo, tail ? tail-einfo : elen);
+                            write_warn_enc(str, einfo, tail ? tail-einfo : elen, eenc);
                             write_warn(str, reset);
                             if (!tail) {
                                 break;
@@ -195,7 +201,7 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
                         elen -= tail - einfo;
                         einfo = tail;
                         do ++tail; while (tail < einfo+elen && *tail == '\n');
-                        write_warn2(str, einfo, tail-einfo);
+                        write_warn_enc(str, einfo, tail-einfo, eenc);
                         elen -= tail - einfo;
                         einfo = tail;
                     }
@@ -203,6 +209,8 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
             }
         }
     }
+
+    RB_GC_GUARD(emesg);
 
     return str;
 }
@@ -291,6 +299,17 @@ show_cause(VALUE errinfo, VALUE str, VALUE opt, VALUE highlight, VALUE reverse, 
 }
 
 void
+rb_exc_check_circular_cause(VALUE exc)
+{
+    VALUE cause = exc, shown_causes = 0;
+    do {
+        if (shown_cause_p(cause, &shown_causes)) {
+            rb_raise(rb_eArgError, "circular causes");
+        }
+    } while (!NIL_P(cause = rb_attr_get(cause, id_cause)));
+}
+
+void
 rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse)
 {
     volatile VALUE eclass;
@@ -373,7 +392,7 @@ rb_ec_error_print(rb_execution_context_t *volatile ec, volatile VALUE errinfo)
     rb_ec_error_print_detailed(ec, errinfo, Qnil, Qundef);
 }
 
-#define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method `%1$s' for "k" `%2$s'")
+#define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method '%1$s' for "k" '%2$s'")
 #define undef_mesg(v) ( \
         is_mod ? \
         undef_mesg_for(v, "module") : \
@@ -401,7 +420,7 @@ rb_print_undef_str(VALUE klass, VALUE name)
     rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
 
-#define inaccessible_mesg_for(v, k) rb_fstring_lit("method `%1$s' for "k" `%2$s' is "v)
+#define inaccessible_mesg_for(v, k) rb_fstring_lit("method '%1$s' for "k" '%2$s' is "v)
 #define inaccessible_mesg(v) ( \
         is_mod ? \
         inaccessible_mesg_for(v, "module") : \
@@ -444,7 +463,12 @@ exiting_split(VALUE errinfo, volatile int *exitcode, volatile int *sigstatus)
 
     if (NIL_P(errinfo)) return 0;
 
-    if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+    if (THROW_DATA_P(errinfo)) {
+        int throw_state = ((const struct vm_throw_data *)errinfo)->throw_state;
+        ex = throw_state & VM_THROW_STATE_MASK;
+        result |= EXITING_WITH_STATUS;
+    }
+    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
         ex = sysexit_status(errinfo);
         result |= EXITING_WITH_STATUS;
     }

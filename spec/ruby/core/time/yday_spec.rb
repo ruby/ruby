@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../shared/time/yday'
 
 describe "Time#yday" do
   it "returns an integer representing the day of the year, 1..366" do
@@ -7,15 +8,5 @@ describe "Time#yday" do
     end
   end
 
-  it 'returns the correct value for each day of each month' do
-    mdays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-
-    yday = 1
-    mdays.each_with_index do |days, month|
-      days.times do |day|
-        Time.new(2014, month+1, day+1).yday.should == yday
-        yday += 1
-      end
-    end
-  end
+  it_behaves_like :time_yday, -> year, month, day { Time.new(year, month, day).yday }
 end

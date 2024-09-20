@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../package"
 require_relative "../installer"
@@ -10,10 +11,10 @@ class Gem::Commands::PristineCommand < Gem::Command
   def initialize
     super "pristine",
           "Restores installed gems to pristine condition from files located in the gem cache",
-          :version => Gem::Requirement.default,
-          :extensions => true,
-          :extensions_set => false,
-          :all => false
+          version: Gem::Requirement.default,
+          extensions: true,
+          extensions_set: false,
+          all: false
 
     add_option("--all",
                "Restore all installed gems to pristine",
@@ -34,6 +35,11 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:extensions]     = value
     end
 
+    add_option("--only-missing-extensions",
+               "Only restore gems with missing extensions") do |value, options|
+      options[:only_missing_extensions] = value
+    end
+
     add_option("--only-executables",
                "Only restore executables") do |value, options|
       options[:only_executables] = value
@@ -51,7 +57,7 @@ class Gem::Commands::PristineCommand < Gem::Command
     end
 
     add_option("-i", "--install-dir DIR",
-               "Gem repository to get binstubs and plugins installed") do |value, options|
+               "Gem repository to get gems restored") do |value, options|
       options[:install_dir] = File.expand_path(value)
     end
 
@@ -97,23 +103,29 @@ extensions will be restored.
   end
 
   def execute
+    install_dir = options[:install_dir]
+
+    specification_record = install_dir ? Gem::SpecificationRecord.from_path(install_dir) : Gem::Specification.specification_record
+
     specs = if options[:all]
-      Gem::Specification.map
+      specification_record.map
 
     # `--extensions` must be explicitly given to pristine only gems
     # with extensions.
     elsif options[:extensions_set] &&
           options[:extensions] && options[:args].empty?
-      Gem::Specification.select do |spec|
+      specification_record.select do |spec|
         spec.extensions && !spec.extensions.empty?
       end
+    elsif options[:only_missing_extensions]
+      specification_record.select(&:missing_extensions?)
     else
       get_all_gem_names.sort.map do |gem_name|
-        Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
+        specification_record.find_all_by_name(gem_name, options[:version]).reverse
       end.flatten
     end
 
-    specs = specs.select {|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
+    specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
       raise Gem::Exception,
@@ -128,7 +140,7 @@ extensions will be restored.
         next
       end
 
-      if options.has_key? :skip
+      if options.key? :skip
         if options[:skip].include? spec.name
           say "Skipped #{spec.full_name}, it was given through options"
           next
@@ -136,7 +148,7 @@ extensions will be restored.
       end
 
       unless spec.extensions.empty? || options[:extensions] || options[:only_executables] || options[:only_plugins]
-        say "Skipped #{spec.full_name}, it needs to compile an extension"
+        say "Skipped #{spec.full_name_with_location}, it needs to compile an extension"
         next
       end
 
@@ -145,7 +157,7 @@ extensions will be restored.
       unless File.exist?(gem) || options[:only_executables] || options[:only_plugins]
         require_relative "../remote_fetcher"
 
-        say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
+        say "Cached gem for #{spec.full_name_with_location} not found, attempting to fetch..."
 
         dep = Gem::Dependency.new spec.name, spec.version
         found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dep
@@ -168,15 +180,14 @@ extensions will be restored.
         end
 
       bin_dir = options[:bin_dir] if options[:bin_dir]
-      install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
-        :wrappers => true,
-        :force => true,
-        :install_dir => install_dir || spec.base_dir,
-        :env_shebang => env_shebang,
-        :build_args => spec.build_args,
-        :bin_dir => bin_dir,
+        wrappers: true,
+        force: true,
+        install_dir: install_dir || spec.base_dir,
+        env_shebang: env_shebang,
+        build_args: spec.build_args,
+        bin_dir: bin_dir,
       }
 
       if options[:only_executables]
@@ -190,7 +201,7 @@ extensions will be restored.
         installer.install
       end
 
-      say "Restored #{spec.full_name}"
+      say "Restored #{spec.full_name_with_location}"
     end
   end
 end

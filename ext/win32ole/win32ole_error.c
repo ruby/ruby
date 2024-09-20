@@ -67,7 +67,7 @@ void
 Init_win32ole_error(void)
 {
     /*
-     * Document-class: WIN32OLERuntimeError
+     * Document-class: WIN32OLE::RuntimeError
      *
      * Raised when OLE processing failed.
      *
@@ -77,11 +77,20 @@ Init_win32ole_error(void)
      *
      * raises the exception:
      *
-     *   WIN32OLERuntimeError: unknown OLE server: `NonExistProgID'
+     *   WIN32OLE::RuntimeError: unknown OLE server: `NonExistProgID'
      *       HRESULT error code:0x800401f3
      *         Invalid class string
      *
      */
-    eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
-    eWIN32OLEQueryInterfaceError = rb_define_class("WIN32OLEQueryInterfaceError", eWIN32OLERuntimeError);
+    eWIN32OLERuntimeError = rb_define_class_under(cWIN32OLE, "RuntimeError", rb_eRuntimeError);
+    /* Alias of WIN32OLE::RuntimeError, for the backward compatibility */
+    rb_define_const(rb_cObject, "WIN32OLERuntimeError", eWIN32OLERuntimeError);
+    /*
+     * Document-class: WIN32OLE::QueryInterfaceError
+     *
+     * Raised when OLE query failed.
+     */
+    eWIN32OLEQueryInterfaceError = rb_define_class_under(cWIN32OLE, "QueryInterfaceError", eWIN32OLERuntimeError);
+    /* Alias of WIN32OLE::QueryInterfaceError, for the backward compatibility */
+    rb_define_const(rb_cObject, "WIN32OLEQueryInterfaceError", eWIN32OLEQueryInterfaceError);
 }

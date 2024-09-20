@@ -1,0 +1,4 @@
+prelude: |
+  arr = [nil] * 30_000_000
+benchmark:
+  loop_each: arr.each{|e|}

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../local_remote_options"
 require_relative "../version_option"
@@ -9,8 +10,8 @@ class Gem::Commands::FetchCommand < Gem::Command
 
   def initialize
     defaults = {
-      :suggest_alternate => true,
-      :version => Gem::Requirement.default,
+      suggest_alternate: true,
+      version: Gem::Requirement.default,
     }
 
     super "fetch", "Download a gem and place it in the current directory", defaults
@@ -62,6 +63,17 @@ then repackaging it.
 
   def execute
     check_version
+
+    exit_code = fetch_gems
+
+    terminate_interaction exit_code
+  end
+
+  private
+
+  def fetch_gems
+    exit_code = 0
+
     version = options[:version]
 
     platform  = Gem.platforms.last
@@ -85,10 +97,13 @@ then repackaging it.
 
       if spec.nil?
         show_lookup_failure gem_name, gem_version, errors, suppress_suggestions, options[:domain]
+        exit_code |= 2
         next
       end
       source.download spec
       say "Downloaded #{spec.full_name}"
     end
+
+    exit_code
   end
 end

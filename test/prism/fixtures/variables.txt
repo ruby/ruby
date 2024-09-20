@@ -1,0 +1,47 @@
+@@abc
+
+@@abc = 1
+
+@@foo, @@bar = 1
+
+@@foo = 1, 2
+
+$abc = 1
+
+$abc
+
+@abc
+
+@abc = 1
+
+a
+
+abc = 1
+
+$foo, $bar = 1
+
+$foo = 1, 2
+
+@foo, @bar = 1
+
+@foo = 1, 2
+
+foo = 1; foo = 1, 2
+
+foo = 1, 2
+
+foo, * = 1, 2
+
+foo, = 1, 2
+
+foo, *bar = 1, 2
+
+foo, (bar, baz) = 1, [2, 3]
+
+foo = *bar
+
+Foo = 1, 2
+
+(a; b; c)
+
+a, (b, c), d = []

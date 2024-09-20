@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems"
 
@@ -6,10 +7,6 @@ begin
   require "rubygems/package_task"
 rescue LoadError => e
   raise unless e.path == "rake/packagetask"
-end
-
-unless defined?(Rake::PackageTask)
-  warn "Skipping Gem::PackageTask tests.  rake not found."
 end
 
 class TestGemPackageTask < Gem::TestCase

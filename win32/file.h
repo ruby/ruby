@@ -47,4 +47,7 @@ int fchmod(int fd, int mode);
 UINT rb_w32_filecp(void);
 WCHAR *rb_w32_home_dir(void);
 
+rb_pid_t rb_w32_uspawn_process(int mode, const char *prog, char *const *argv,
+                               int in_fd, int out_fd, int err_fd, DWORD flags);
+
 #endif	/* RUBY_WIN32_FILE_H */

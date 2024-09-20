@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../version_option"
 require_relative "../rdoc"
@@ -9,8 +10,8 @@ class Gem::Commands::RdocCommand < Gem::Command
 
   def initialize
     super "rdoc", "Generates RDoc for pre-installed gems",
-          :version => Gem::Requirement.default,
-          :include_rdoc => false, :include_ri => true, :overwrite => false
+          version: Gem::Requirement.default,
+          include_rdoc: false, include_ri: true, overwrite: false
 
     add_option("--all",
                "Generate RDoc/RI documentation for all",
@@ -83,14 +84,7 @@ Use --overwrite to force rebuilding of documentation.
         FileUtils.rm_rf File.join(spec.doc_dir, "rdoc")
       end
 
-      begin
-        doc.generate
-      rescue Errno::ENOENT => e
-        match = / - /.match(e.message)
-        alert_error "Unable to document #{spec.full_name}, " \
-                    " #{match.post_match} is missing, skipping"
-        terminate_interaction 1 if specs.length == 1
-      end
+      doc.generate
     end
   end
 end

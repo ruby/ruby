@@ -6,20 +6,10 @@ describe "Module#name" do
     Module.new.name.should be_nil
   end
 
-  ruby_version_is ""..."3.0" do
-    it "is nil when assigned to a constant in an anonymous module" do
-      m = Module.new
-      m::N = Module.new
-      m::N.name.should be_nil
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "is not nil when assigned to a constant in an anonymous module" do
-      m = Module.new
-      m::N = Module.new
-      m::N.name.should.end_with? '::N'
-    end
+  it "is not nil when assigned to a constant in an anonymous module" do
+    m = Module.new
+    m::N = Module.new
+    m::N.name.should.end_with? '::N'
   end
 
   it "is not nil for a nested module created with the module keyword" do
@@ -40,6 +30,19 @@ describe "Module#name" do
     m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
     ModuleSpecs::Anonymous::WasAnnon = m::N
     m::N.name.should == "ModuleSpecs::Anonymous::WasAnnon"
+  end
+
+  it "may be the repeated in different module objects" do
+    m = Module.new
+    n = Module.new
+
+    suppress_warning do
+      ModuleSpecs::Anonymous::SameName = m
+      ModuleSpecs::Anonymous::SameName = n
+    end
+
+    m.name.should == "ModuleSpecs::Anonymous::SameName"
+    n.name.should == "ModuleSpecs::Anonymous::SameName"
   end
 
   it "is set after it is removed from a constant" do
@@ -69,10 +72,16 @@ describe "Module#name" do
     ModuleSpecs::Anonymous.name.should == "ModuleSpecs::Anonymous"
   end
 
-  it "is set when assigning to a constant" do
+  it "is set when assigning to a constant (constant path matches outer module name)" do
     m = Module.new
     ModuleSpecs::Anonymous::A = m
     m.name.should == "ModuleSpecs::Anonymous::A"
+  end
+
+  it "is set when assigning to a constant (constant path does not match outer module name)" do
+    m = Module.new
+    ModuleSpecs::Anonymous::SameChild::A = m
+    m.name.should == "ModuleSpecs::Anonymous::Child::A"
   end
 
   it "is not modified when assigning to a new constant after it has been accessed" do
@@ -111,11 +120,24 @@ describe "Module#name" do
     ModuleSpecs::NameEncoding.new.name.encoding.should == Encoding::UTF_8
   end
 
-  it "is set when the anonymous outer module name is set" do
+  it "is set when the anonymous outer module name is set (module in one single constant)" do
     m = Module.new
     m::N = Module.new
     ModuleSpecs::Anonymous::E = m
     m::N.name.should == "ModuleSpecs::Anonymous::E::N"
+  end
+
+  # https://bugs.ruby-lang.org/issues/19681
+  it "is set when the anonymous outer module name is set (module in several constants)" do
+    m = Module.new
+    m::N = Module.new
+    m::O = m::N
+    ModuleSpecs::Anonymous::StoredInMultiplePlaces = m
+    valid_names = [
+      "ModuleSpecs::Anonymous::StoredInMultiplePlaces::N",
+      "ModuleSpecs::Anonymous::StoredInMultiplePlaces::O"
+    ]
+    valid_names.should include(m::N.name) # You get one of the two, but you don't know which one.
   end
 
   it "returns a frozen String" do

@@ -48,6 +48,10 @@ class OpenSSL::TestX509Attribute < OpenSSL::TestCase
     assert_raise(TypeError) {
       attr.value = "1234"
     }
+    assert_raise(OpenSSL::X509::AttributeError) {
+      v = OpenSSL::ASN1::Set([OpenSSL::ASN1::UTF8String("1234")], 17, :EXPLICIT)
+      attr.value = v
+    }
     assert_equal(test_der, attr.to_der)
     assert_raise(OpenSSL::X509::AttributeError) {
       attr.oid = "abc123"

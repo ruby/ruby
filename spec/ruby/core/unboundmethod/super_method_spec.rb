@@ -40,12 +40,10 @@ describe "UnboundMethod#super_method" do
     end
   end
 
-  ruby_version_is "2.7.3" do
-    context "after aliasing an inherited method" do
-      it "returns the expected super_method" do
-        method = MethodSpecs::InheritedMethods::C.instance_method(:meow)
-        method.super_method.owner.should == MethodSpecs::InheritedMethods::A
-      end
+  context "after aliasing an inherited method" do
+    it "returns the expected super_method" do
+      method = MethodSpecs::InheritedMethods::C.instance_method(:meow)
+      method.super_method.owner.should == MethodSpecs::InheritedMethods::A
     end
   end
 end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/available_set"
 
@@ -9,7 +10,8 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     version = Gem::Version.new "3.0.3"
 
     spec = Gem::Resolver::IndexSpecification.new(
-      set, "rails", version, source, Gem::Platform::RUBY)
+      set, "rails", version, source, Gem::Platform::RUBY
+    )
 
     assert_equal "rails",             spec.name
     assert_equal version,             spec.version
@@ -24,7 +26,8 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     version = Gem::Version.new "3.0.3"
 
     spec = Gem::Resolver::IndexSpecification.new(
-      set, "rails", version, source, Gem::Platform.local)
+      set, "rails", version, source, Gem::Platform.local
+    )
 
     assert_equal Gem::Platform.local, spec.platform
   end
@@ -38,7 +41,8 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     source = Gem::Source.new @gem_repo
 
     spec = Gem::Resolver::IndexSpecification.new(
-      set, "a", v(2), source, Gem::Platform::RUBY)
+      set, "a", v(2), source, Gem::Platform::RUBY
+    )
 
     called = false
 

@@ -3,14 +3,41 @@ require 'test/unit'
 require 'envutil'
 require 'uri'
 
-module URI
-
-
-class TestCommon < Test::Unit::TestCase
+class URI::TestCommon < Test::Unit::TestCase
   def setup
   end
 
   def teardown
+  end
+
+  def test_fallback_constants
+    orig_verbose = $VERBOSE
+    $VERBOSE = nil
+    assert URI::ABS_URI
+    assert_raise(NameError) { URI::FOO }
+  ensure
+    $VERBOSE = orig_verbose
+  end
+
+  def test_parser_switch
+    assert_equal(URI::Parser, URI::RFC3986_Parser)
+    refute defined?(URI::REGEXP)
+    refute defined?(URI::PATTERN)
+
+    URI.parser = URI::RFC2396_PARSER
+
+    assert_equal(URI::Parser, URI::RFC2396_Parser)
+    assert defined?(URI::REGEXP)
+    assert defined?(URI::PATTERN)
+    assert defined?(URI::PATTERN::ESCAPED)
+
+    URI.parser = URI::RFC3986_PARSER
+
+    assert_equal(URI::Parser, URI::RFC3986_Parser)
+    refute defined?(URI::REGEXP)
+    refute defined?(URI::PATTERN)
+  ensure
+    URI.parser = URI::RFC3986_PARSER
   end
 
   def test_extract
@@ -110,6 +137,17 @@ class TestCommon < Test::Unit::TestCase
     assert_equal(expected, URI("http://www.ruby-lang.org/"))
     assert_equal(expected, Kernel::URI("http://www.ruby-lang.org/"))
     assert_raise(NoMethodError) { Object.new.URI("http://www.ruby-lang.org/") }
+  end
+
+  def test_parse_timeout
+    pre = ->(n) {
+      'https://example.com/dir/' + 'a' * (n * 100) + '/##.jpg'
+    }
+    assert_linear_performance((1..3).map {|i| 10**i}, rehearsal: 1000, pre: pre) do |uri|
+      assert_raise(URI::InvalidURIError) do
+        URI.parse(uri)
+      end
+    end
   end
 
   def test_encode_www_form_component
@@ -280,7 +318,4 @@ class TestCommon < Test::Unit::TestCase
 
   private
   def s(str) str.force_encoding(Encoding::Windows_31J); end
-end
-
-
 end

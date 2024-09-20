@@ -1,10 +1,11 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 class Gem::Commands::WhichCommand < Gem::Command
   def initialize
     super "which", "Find the location of a library file you can require",
-          :search_gems_first => false, :show_all => false
+          search_gems_first: false, show_all: false
 
     add_option "-a", "--[no-]all", "show all matching files" do |show_all, options|
       options[:show_all] = show_all

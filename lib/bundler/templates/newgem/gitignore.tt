@@ -12,6 +12,9 @@
 *.o
 *.a
 mkmf.log
+<%- if config[:ext] == 'rust' -%>
+target/
+<%- end -%>
 <%- end -%>
 <%- if config[:test] == "rspec" -%>
 

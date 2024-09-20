@@ -327,7 +327,7 @@ describe "String#inspect" do
   end
 
   it "works for broken US-ASCII strings" do
-    s = "©".force_encoding("US-ASCII")
+    s = "©".dup.force_encoding("US-ASCII")
     s.inspect.should == '"\xC2\xA9"'
   end
 

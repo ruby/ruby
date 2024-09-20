@@ -6,8 +6,8 @@ require "fiddle"
 
 module Bundler
   class CLI::Doctor
-    DARWIN_REGEX = /\s+(.+) \(compatibility /.freeze
-    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/.freeze
+    DARWIN_REGEX = /\s+(.+) \(compatibility /
+    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/
 
     attr_reader :options
 
@@ -73,12 +73,10 @@ module Bundler
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
           bad_paths = dylibs(bundle).select do |f|
-            begin
-              Fiddle.dlopen(f)
-              false
-            rescue Fiddle::DLError
-              true
-            end
+            Fiddle.dlopen(f)
+            false
+          rescue Fiddle::DLError
+            true
           end
           if bad_paths.any?
             broken_links[spec] ||= []

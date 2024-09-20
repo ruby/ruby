@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -116,6 +116,9 @@ static void
 ossl_x509store_mark(void *ptr)
 {
     X509_STORE *store = ptr;
+    // Note: this reference is stored as @verify_callback so we don't need to mark it.
+    // However we do need to ensure GC compaction won't move it, hence why
+    // we call rb_gc_mark here.
     rb_gc_mark((VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx));
 }
 
@@ -130,7 +133,7 @@ static const rb_data_type_t ossl_x509store_type = {
     {
         ossl_x509store_mark, ossl_x509store_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -187,8 +190,9 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
     rb_iv_set(self, "@verify_callback", cb);
+    // We don't need to trigger a write barrier because `rb_iv_set` did it.
+    X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
 
     return cb;
 }
@@ -219,7 +223,6 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     rb_iv_set(self, "@error", Qnil);
     rb_iv_set(self, "@error_string", Qnil);
     rb_iv_set(self, "@chain", Qnil);
-    rb_iv_set(self, "@time", Qnil);
 
     return self;
 }
@@ -325,7 +328,16 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
 static VALUE
 ossl_x509store_set_time(VALUE self, VALUE time)
 {
-    rb_iv_set(self, "@time", time);
+    X509_STORE *store;
+    X509_VERIFY_PARAM *param;
+
+    GetX509Store(self, store);
+#ifdef HAVE_X509_STORE_GET0_PARAM
+    param = X509_STORE_get0_param(store);
+#else
+    param = store->param;
+#endif
+    X509_VERIFY_PARAM_set_time(param, NUM2LONG(rb_Integer(time)));
     return time;
 }
 
@@ -507,6 +519,9 @@ static void
 ossl_x509stctx_mark(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
+    // Note: this reference is stored as @verify_callback so we don't need to mark it.
+    // However we do need to ensure GC compaction won't move it, hence why
+    // we call rb_gc_mark here.
     rb_gc_mark((VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx));
 }
 
@@ -526,7 +541,7 @@ static const rb_data_type_t ossl_x509stctx_type = {
     {
         ossl_x509stctx_mark, ossl_x509stctx_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -557,7 +572,6 @@ ossl_x509stctx_new(X509_STORE_CTX *ctx)
 static VALUE ossl_x509stctx_set_flags(VALUE, VALUE);
 static VALUE ossl_x509stctx_set_purpose(VALUE, VALUE);
 static VALUE ossl_x509stctx_set_trust(VALUE, VALUE);
-static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
 
 /*
  * call-seq:
@@ -568,7 +582,7 @@ static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE store, cert, chain, t;
+    VALUE store, cert, chain;
     X509_STORE_CTX *ctx;
     X509_STORE *x509st;
     X509 *x509 = NULL;
@@ -592,8 +606,6 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
         sk_X509_pop_free(x509s, X509_free);
         ossl_raise(eX509StoreError, "X509_STORE_CTX_init");
     }
-    if (!NIL_P(t = rb_iv_get(store, "@time")))
-	ossl_x509stctx_set_time(self, t);
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);
 
@@ -614,8 +626,8 @@ ossl_x509stctx_verify(VALUE self)
     X509_STORE_CTX *ctx;
 
     GetX509StCtx(self, ctx);
-    X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx,
-			       (void *)rb_iv_get(self, "@verify_callback"));
+    VALUE cb = rb_iv_get(self, "@verify_callback");
+    X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx, (void *)cb);
 
     switch (X509_verify_cert(ctx)) {
       case 1:

@@ -34,7 +34,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    omit 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    omit 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     max = 1000
     assert_equal(max, max.times{
       Fiber.new{}
@@ -82,12 +82,14 @@ class TestFiber < Test::Unit::TestCase
       f.resume
       f.resume
     }
-    assert_raise(RuntimeError){
-      Fiber.new{
-        @c = callcc{|c| @c = c}
-      }.resume
-      @c.call # cross fiber callcc
-    }
+    if respond_to?(:callcc)
+      assert_raise(RuntimeError){
+        Fiber.new{
+          @c = callcc{|c| @c = c}
+        }.resume
+        @c.call # cross fiber callcc
+      }
+    end
     assert_raise(RuntimeError){
       Fiber.new{
         raise
@@ -422,7 +424,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_fatal_in_fiber
-    assert_in_out_err(["-r-test-/fatal/rb_fatal", "-e", <<-EOS], "", [], /ok/)
+    assert_in_out_err(["-r-test-/fatal", "-e", <<-EOS], "", [], /ok/)
       Fiber.new{
         Bug.rb_fatal "ok"
       }.resume

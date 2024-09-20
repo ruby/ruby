@@ -85,15 +85,70 @@ describe :io_write, shared: true do
       @r.read.should == "foo"
     end
 
-    # [ruby-core:90895] MJIT worker may leave fd open in a forked child.
-    # For instance, MJIT creates a worker before @r.close with fork(), @r.close happens,
-    # and the MJIT worker keeps the pipe open until the worker execve().
-    # TODO: consider acquiring GVL from MJIT worker.
-    guard_not -> { defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? } do
+    # [ruby-core:90895] RJIT worker may leave fd open in a forked child.
+    # For instance, RJIT creates a worker before @r.close with fork(), @r.close happens,
+    # and the RJIT worker keeps the pipe open until the worker execve().
+    # TODO: consider acquiring GVL from RJIT worker.
+    guard_not -> { defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? } do
       it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
         @r.close
         -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)
       end
     end
+  end
+end
+
+describe :io_write_transcode, shared: true do
+  before :each do
+    @transcode_filename = tmp("io_write_transcode")
+  end
+
+  after :each do
+    rm_r @transcode_filename
+  end
+
+  it "transcodes the given string when the external encoding is set and neither is BINARY" do
+    utf8_str = "hello"
+
+    File.open(@transcode_filename, "w", external_encoding: Encoding::UTF_16BE) do |file|
+      file.external_encoding.should == Encoding::UTF_16BE
+      file.send(@method, utf8_str)
+    end
+
+    result = File.binread(@transcode_filename)
+    expected = [0, 104, 0, 101, 0, 108, 0, 108, 0, 111] # UTF-16BE bytes for "hello"
+
+    result.bytes.should == expected
+  end
+
+  it "transcodes the given string when the external encoding is set and the string encoding is BINARY" do
+    str = "été".b
+
+    File.open(@transcode_filename, "w", external_encoding: Encoding::UTF_16BE) do |file|
+      file.external_encoding.should == Encoding::UTF_16BE
+      -> { file.send(@method, str) }.should raise_error(Encoding::UndefinedConversionError)
+    end
+  end
+end
+
+describe :io_write_no_transcode, shared: true do
+  before :each do
+    @transcode_filename = tmp("io_write_no_transcode")
+  end
+
+  after :each do
+    rm_r @transcode_filename
+  end
+
+  it "does not transcode the given string even when the external encoding is set" do
+    utf8_str = "hello"
+
+    File.open(@transcode_filename, "w", external_encoding: Encoding::UTF_16BE) do |file|
+      file.external_encoding.should == Encoding::UTF_16BE
+      file.send(@method, utf8_str)
+    end
+
+    result = File.binread(@transcode_filename)
+    result.bytes.should == utf8_str.bytes
   end
 end

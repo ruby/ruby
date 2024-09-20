@@ -17,6 +17,7 @@ require "rspec/support/differ"
 
 require_relative "support/builders"
 require_relative "support/build_metadata"
+require_relative "support/checksums"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
@@ -34,6 +35,7 @@ end
 
 RSpec.configure do |config|
   config.include Spec::Builders
+  config.include Spec::Checksums
   config.include Spec::Helpers
   config.include Spec::Indexes
   config.include Spec::Matchers
@@ -45,6 +47,9 @@ RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
 
   config.silence_filter_announcements = !ENV["TEST_ENV_NUMBER"].nil?
+
+  config.backtrace_exclusion_patterns <<
+    %r{./spec/(spec_helper\.rb|support/.+)}
 
   config.disable_monkey_patching!
 
@@ -72,7 +77,6 @@ RSpec.configure do |config|
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
     ENV["BUNDLER_SPEC_RUN"] = "true"
-    ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["BUNDLE_APP_CONFIG"] = nil
     ENV["BUNDLE_SILENCE_ROOT_WARNING"] = nil
@@ -83,11 +87,10 @@ RSpec.configure do |config|
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    extend(Spec::Helpers)
-    system_gems :bundler, :path => pristine_system_gem_path
-  end
+    Spec::Helpers.install_dev_bundler unless ENV["CI"]
 
-  config.before :all do
+    extend(Spec::Builders)
+
     check_test_gems!
 
     build_repo1
@@ -96,26 +99,24 @@ RSpec.configure do |config|
   end
 
   config.around :each do |example|
-    begin
-      FileUtils.cp_r pristine_system_gem_path, system_gem_path
+    FileUtils.cp_r pristine_system_gem_path, system_gem_path
 
-      with_gem_path_as(system_gem_path) do
-        Bundler.ui.silence { example.run }
+    with_gem_path_as(system_gem_path) do
+      Bundler.ui.silence { example.run }
 
-        all_output = all_commands_output
-        if example.exception && !all_output.empty?
-          message = all_output + "\n" + example.exception.message
-          (class << example.exception; self; end).send(:define_method, :message) do
-            message
-          end
+      all_output = all_commands_output
+      if example.exception && !all_output.empty?
+        message = all_output + "\n" + example.exception.message
+        (class << example.exception; self; end).send(:define_method, :message) do
+          message
         end
       end
-    ensure
-      reset!
     end
+  ensure
+    reset!
   end
 
   config.after :suite do
-    FileUtils.rm_r Spec::Path.pristine_system_gem_path
+    FileUtils.rm_rf Spec::Path.pristine_system_gem_path
   end
 end

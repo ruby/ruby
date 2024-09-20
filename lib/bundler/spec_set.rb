@@ -24,6 +24,7 @@ module Bundler
 
         name = dep[0].name
         platform = dep[1]
+        incomplete = false
 
         key = [name, platform]
         next if handled.key?(key)
@@ -36,31 +37,66 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
+            incomplete = true if d.name != "bundler" && lookup[d.name].nil?
             deps << [d, dep[1]]
           end
-        elsif check
-          @incomplete_specs += lookup[name]
+        else
+          incomplete = true
+        end
+
+        if incomplete && check
+          @incomplete_specs += lookup[name] || [LazySpecification.new(name, nil, nil)]
         end
       end
 
-      specs
+      specs.uniq
+    end
+
+    def add_extra_platforms!(platforms)
+      return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
+
+      new_platforms = all_platforms.select do |platform|
+        next if platforms.include?(platform)
+        next unless GemHelpers.generic(platform) == Gem::Platform::RUBY
+
+        complete_platform(platform)
+      end
+      return platforms if new_platforms.empty?
+
+      platforms.concat(new_platforms)
+
+      less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && Bundler.local_platform === platform && platform === Bundler.local_platform }
+      platforms.delete(Bundler.local_platform) if less_specific_platform
+
+      platforms
+    end
+
+    def validate_deps(s)
+      s.runtime_dependencies.each do |dep|
+        next if dep.name == "bundler"
+
+        return :missing unless names.include?(dep.name)
+        return :invalid if none? {|spec| dep.matches_spec?(spec) }
+      end
+
+      :valid
     end
 
     def [](key)
       key = key.name if key.respond_to?(:name)
-      lookup[key].reverse
+      lookup[key]&.reverse || []
     end
 
     def []=(key, value)
       @specs << value
-      @lookup = nil
-      @sorted = nil
+
+      reset!
     end
 
-    def delete(spec)
-      @specs.delete(spec)
-      @lookup = nil
-      @sorted = nil
+    def delete(specs)
+      Array(specs).each {|spec| @specs.delete(spec) }
+
+      reset!
     end
 
     def sort!
@@ -94,24 +130,18 @@ module Bundler
       end
     end
 
-    def incomplete_ruby_specs?(deps)
-      self.for(deps, true, [Gem::Platform::RUBY])
+    def incomplete_for_platform?(deps, platform)
+      return false if @specs.empty?
+
+      @incomplete_specs = []
+
+      self.for(deps, true, [platform])
 
       @incomplete_specs.any?
     end
 
     def missing_specs
       @specs.select {|s| s.is_a?(LazySpecification) }
-    end
-
-    def merge(set)
-      arr = sorted.dup
-      set.each do |set_spec|
-        full_name = set_spec.full_name
-        next if arr.any? {|spec| spec.full_name == full_name }
-        arr << set_spec
-      end
-      SpecSet.new(arr)
     end
 
     def -(other)
@@ -122,14 +152,20 @@ module Bundler
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
     end
 
+    def specs_compatible_with(other)
+      select do |spec|
+        other.valid?(spec)
+      end
+    end
+
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
-      @lookup = nil
-      @sorted = nil
+
+      reset!
     end
 
     def what_required(spec)
-      unless req = find {|s| s.dependencies.any? {|d| d.type == :runtime && d.name == spec.name } }
+      unless req = find {|s| s.runtime_dependencies.any? {|d| d.name == spec.name } }
         return [spec]
       end
       what_required(req) << spec
@@ -155,7 +191,55 @@ module Bundler
       sorted.each(&b)
     end
 
+    def names
+      lookup.keys
+    end
+
+    def valid?(s)
+      s.matches_current_metadata? && valid_dependencies?(s)
+    end
+
     private
+
+    def reset!
+      @sorted = nil
+      @lookup = nil
+    end
+
+    def complete_platform(platform)
+      new_specs = []
+
+      valid_platform = lookup.all? do |_, specs|
+        spec = specs.first
+        matching_specs = spec.source.specs.search([spec.name, spec.version])
+        platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).find do |s|
+          valid?(s)
+        end
+
+        if platform_spec
+          new_specs << LazySpecification.from_spec(platform_spec) unless specs.include?(platform_spec)
+          true
+        else
+          false
+        end
+      end
+
+      if valid_platform && new_specs.any?
+        @specs.concat(new_specs)
+
+        reset!
+      end
+
+      valid_platform
+    end
+
+    def all_platforms
+      @specs.flat_map {|spec| spec.source.specs.search([spec.name, spec.version]).map(&:platform) }.uniq
+    end
+
+    def valid_dependencies?(s)
+      validate_deps(s) == :valid
+    end
 
     def sorted
       rake = @specs.find {|s| s.name == "rake" }
@@ -175,8 +259,9 @@ module Bundler
 
     def lookup
       @lookup ||= begin
-        lookup = Hash.new {|h, k| h[k] = [] }
+        lookup = {}
         @specs.each do |s|
+          lookup[s.name] ||= []
           lookup[s.name] << s
         end
         lookup
@@ -190,18 +275,23 @@ module Bundler
 
     def specs_for_dependency(dep, platform)
       specs_for_name = lookup[dep.name]
-      if platform.nil?
-        matching_specs = specs_for_name.map {|s| s.materialize_for_installation if Gem::Platform.match_spec?(s) }.compact
-        GemHelpers.sort_best_platform_match(matching_specs, Bundler.local_platform)
+      return [] unless specs_for_name
+
+      if platform
+        GemHelpers.select_best_platform_match(specs_for_name, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_platform_match(specs_for_name, dep.force_ruby_platform ? Gem::Platform::RUBY : platform)
+        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
       end
     end
 
     def tsort_each_child(s)
       s.dependencies.sort_by(&:name).each do |d|
         next if d.type == :development
-        lookup[d.name].each {|s2| yield s2 }
+
+        specs_for_name = lookup[d.name]
+        next unless specs_for_name
+
+        specs_for_name.each {|s2| yield s2 }
       end
     end
   end

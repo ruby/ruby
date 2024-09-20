@@ -8,7 +8,7 @@ module SyntaxSuggest
       source = fixtures_dir.join("this_project_extra_def.rb.txt").read
       code_lines = CleanDocument.new(source: source).call.lines
 
-      expect(code_lines[18 - 1].to_s).to eq(<<-'EOL')
+      expect(code_lines[18 - 1].to_s).to eq(<<-EOL)
       @io.puts <<~EOM
 
         SyntaxSuggest: A syntax error was detected
@@ -54,7 +54,7 @@ module SyntaxSuggest
         DisplayCodeWithLineNumbers.new(
           lines: lines
         ).call
-      ).to eq(<<~'EOM'.indent(2))
+      ).to eq(<<~EOM.indent(2))
         1  User
         2    .where(name: 'schneems')
         3    .first
@@ -65,11 +65,29 @@ module SyntaxSuggest
           lines: lines,
           highlight_lines: lines[0]
         ).call
-      ).to eq(<<~'EOM')
+      ).to eq(<<~EOM)
         > 1  User
         > 2    .where(name: 'schneems')
         > 3    .first
       EOM
+    end
+
+    it "joins multi-line chained methods when separated by comments" do
+      source = <<~EOM
+        User.
+          # comment
+          where(name: 'schneems').
+          # another comment
+          first
+      EOM
+
+      doc = CleanDocument.new(source: source).join_consecutive!
+      code_lines = doc.lines
+
+      expect(code_lines[0].to_s.count($/)).to eq(5)
+      code_lines[1..].each do |line|
+        expect(line.to_s.strip.length).to eq(0)
+      end
     end
 
     it "helper method: take_while_including" do
@@ -92,27 +110,10 @@ module SyntaxSuggest
           # yolo
       EOM
 
-      out = CleanDocument.new(source: source).lines.join
-      expect(out.to_s).to eq(<<~EOM)
-
-        puts "what"
-
-      EOM
-    end
-
-    it "whitespace: removes whitespace" do
-      source = "  \n" + <<~EOM
-        puts "what"
-      EOM
-
-      out = CleanDocument.new(source: source).lines.join
-      expect(out.to_s).to eq(<<~EOM)
-
-        puts "what"
-      EOM
-
-      expect(source.lines.first.to_s).to_not eq("\n")
-      expect(out.lines.first.to_s).to eq("\n")
+      lines = CleanDocument.new(source: source).lines
+      expect(lines[0].to_s).to eq($/)
+      expect(lines[1].to_s).to eq('puts "what"' + $/)
+      expect(lines[2].to_s).to eq($/)
     end
 
     it "trailing slash: does not join trailing do" do
@@ -138,7 +139,7 @@ module SyntaxSuggest
       source = <<~'EOM'
         context "timezones workaround" do
           it "should receive a time in UTC format and return the time with the"\
-            "office's UTC offset substracted from it" do
+            "office's UTC offset subtracted from it" do
             travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
               office = build(:office)
             end
@@ -154,7 +155,7 @@ module SyntaxSuggest
       ).to eq(<<~'EOM'.indent(2))
         1  context "timezones workaround" do
         2    it "should receive a time in UTC format and return the time with the"\
-        3      "office's UTC offset substracted from it" do
+        3      "office's UTC offset subtracted from it" do
         4      travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
         5        office = build(:office)
         6      end
@@ -170,7 +171,7 @@ module SyntaxSuggest
       ).to eq(<<~'EOM')
           1  context "timezones workaround" do
         > 2    it "should receive a time in UTC format and return the time with the"\
-        > 3      "office's UTC offset substracted from it" do
+        > 3      "office's UTC offset subtracted from it" do
           4      travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
           5        office = build(:office)
           6      end

@@ -182,6 +182,52 @@ class TestKeywordArguments < Test::Unit::TestCase
                   [:keyrest, :kw], [:block, :b]], method(:f9).parameters)
   end
 
+  def test_keyword_with_anonymous_keyword_splat
+    def self.a(b: 1, **) [b, **] end
+    kw = {b: 2, c: 3}
+    assert_equal([2, {c: 3}], a(**kw))
+    assert_equal({b: 2, c: 3}, kw)
+  end
+
+  def test_keyword_splat_nil
+    # cfunc call
+    assert_equal(nil, p(**nil))
+
+    def self.a0(&); end
+    assert_equal(nil, a0(**nil))
+    assert_equal(nil, :a0.to_proc.call(self, **nil))
+    assert_equal(nil, a0(**nil, &:block))
+
+    def self.o(x=1); x end
+    assert_equal(1, o(**nil))
+    assert_equal(2, o(2, **nil))
+    assert_equal(1, o(*nil, **nil))
+    assert_equal(1, o(**nil, **nil))
+    assert_equal({a: 1}, o(a: 1, **nil))
+    assert_equal({a: 1}, o(**nil, a: 1))
+
+    # symproc call
+    assert_equal(1, :o.to_proc.call(self, **nil))
+
+    def self.s(*a); a end
+    assert_equal([], s(**nil))
+    assert_equal([1], s(1, **nil))
+    assert_equal([], s(*nil, **nil))
+
+    def self.kws(**a); a end
+    assert_equal({}, kws(**nil))
+    assert_equal({}, kws(*nil, **nil))
+
+    def self.skws(*a, **kw); [a, kw] end
+    assert_equal([[], {}], skws(**nil))
+    assert_equal([[1], {}], skws(1, **nil))
+    assert_equal([[], {}], skws(*nil, **nil))
+
+    assert_equal({}, {**nil})
+    assert_equal({a: 1}, {a: 1, **nil})
+    assert_equal({a: 1}, {**nil, a: 1})
+  end
+
   def test_lambda
     f = ->(str: "foo", num: 424242) { [str, num] }
     assert_equal(["foo", 424242], f[])
@@ -237,15 +283,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(true, Hash.ruby2_keywords_hash?(marked))
   end
 
+  def assert_equal_not_same(kw, res)
+    assert_instance_of(Hash, res)
+    assert_equal(kw, res)
+    assert_not_same(kw, res)
+  end
+
   def test_keyword_splat_new
     kw = {}
     h = {a: 1}
-
-    def self.assert_equal_not_same(kw, res)
-      assert_instance_of(Hash, res)
-      assert_equal(kw, res)
-      assert_not_same(kw, res)
-    end
 
     def self.yo(**kw) kw end
     m = method(:yo)
@@ -447,6 +493,30 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(false, public_send(:yo, **{}).frozen?)
     assert_equal_not_same(kw, public_send(:yo, **kw))
     assert_equal_not_same(h, public_send(:yo, **h))
+
+    def self.yo(*a, **kw) = kw
+    assert_equal_not_same kw, yo(**kw)
+    assert_equal_not_same kw, yo(**kw, **kw)
+
+    singleton_class.send(:remove_method, :yo)
+    def self.yo(opts) = opts
+    assert_equal_not_same h, yo(*[], **h)
+    a = []
+    assert_equal_not_same h, yo(*a, **h)
+  end
+
+  def test_keyword_splat_to_non_keyword_method
+    h = {a: 1}.freeze
+
+    def self.yo(kw) kw end
+    assert_equal_not_same(h, yo(**h))
+    assert_equal_not_same(h, method(:yo).(**h))
+    assert_equal_not_same(h, :yo.to_proc.(self, **h))
+
+    def self.yoa(*kw) kw[0] end
+    assert_equal_not_same(h, yoa(**h))
+    assert_equal_not_same(h, method(:yoa).(**h))
+    assert_equal_not_same(h, :yoa.to_proc.(self, **h))
   end
 
   def test_regular_kwsplat
@@ -2747,6 +2817,51 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(FrozenError) { c.send(:ruby2_keywords, :baz) }
   end
 
+  def test_anon_splat_ruby2_keywords
+    singleton_class.class_exec do
+      def bar(*a, **kw)
+        [a, kw]
+      end
+
+      ruby2_keywords def bar_anon(*)
+        bar(*)
+      end
+    end
+
+    a = [1, 2]
+    kw = {a: 1}
+    assert_equal([[1, 2], {a: 1}], bar_anon(*a, **kw))
+    assert_equal([1, 2], a)
+    assert_equal({a: 1}, kw)
+  end
+
+  def test_anon_splat_ruby2_keywords_bug_20388
+    extend(Module.new{def process(action, ...) 1 end})
+    extend(Module.new do
+      def process(action, *args)
+        args.freeze
+        super
+      end
+      ruby2_keywords :process
+    end)
+
+    assert_equal(1, process(:foo, bar: :baz))
+  end
+
+  def test_ruby2_keywords_bug_20679
+    c = Class.new do
+       def self.get(_, _, h, &block)
+         h[1]
+       end
+
+      ruby2_keywords def get(*args, &block)
+        self.class.get(*args, &block)
+      end
+    end
+
+    assert_equal 2, c.new.get(true, {}, 1 => 2)
+  end
+
   def test_top_ruby2_keywords
     assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
       def bar(*a, **kw)
@@ -3922,6 +4037,20 @@ class TestKeywordArguments < Test::Unit::TestCase
     }, bug8964
   end
 
+  def test_large_kwsplat_to_method_taking_kw_and_kwsplat
+    assert_separately(['-'], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      n = 100000
+      x = Fiber.new do
+        h = {kw: 2}
+        n.times{|i| h[i.to_s.to_sym] = i}
+        def self.f(kw: 1, **kws) kws.size end
+        f(**h)
+      end.resume
+      assert_equal(n, x)
+    end;
+  end
+
   def test_dynamic_symbol_keyword
     bug10266 = '[ruby-dev:48564] [Bug #10266]'
     assert_separately(['-', bug10266], "#{<<~"begin;"}\n#{<<~'end;'}")
@@ -4406,6 +4535,24 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal({x: 1, y: 2}, f.call(x:, y:))
     assert_equal({x: 1, y: 2, z: 3}, f.call(x:, y:, z: 3))
     assert_equal({one: 1, two: 2}, f.call(one:, two:))
+  end
+
+  def m_bug20570(*a, **nil)
+    a
+  end
+
+  def test_splat_arg_with_prohibited_keyword
+    assert_equal([], m_bug20570(*[]))
+    assert_equal([1], m_bug20570(*[1]))
+    assert_equal([1, 2], m_bug20570(*[1, 2]))
+    h = nil
+    assert_equal([], m_bug20570(*[], **h))
+    assert_equal([1], m_bug20570(*[1], **h))
+    assert_equal([1, 2], m_bug20570(*[1, 2], **h))
+
+    assert_equal([], m_bug20570(*[], **nil))
+    assert_equal([1], m_bug20570(*[1], **nil))
+    assert_equal([1, 2], m_bug20570(*[1, 2], **nil))
   end
 
   private def one

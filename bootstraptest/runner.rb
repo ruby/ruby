@@ -6,7 +6,6 @@
 # Never use optparse in this file.
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
-# Maintain Ruby 1.8 compatibility for now
 
 $start_time = Time.now
 
@@ -77,6 +76,9 @@ bt = Struct.new(:ruby,
                 :width,
                 :indent,
                 :platform,
+                :timeout,
+                :timeout_scale,
+                :launchable_test_reports
                 )
 BT = Class.new(bt) do
   def indent=(n)
@@ -118,7 +120,7 @@ BT = Class.new(bt) do
             r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
             w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
           end
-        rescue => e
+        rescue
           r.close if r
         else
           r.close_on_exec = true
@@ -144,6 +146,10 @@ BT = Class.new(bt) do
     end
     super wn
   end
+
+  def apply_timeout_scale(timeout)
+    timeout&.*(timeout_scale)
+  end
 end.new
 
 BT_STATE = Struct.new(:count, :error).new
@@ -156,6 +162,12 @@ def main
   BT.color = nil
   BT.tty = nil
   BT.quiet = false
+  BT.timeout = 180
+  BT.timeout_scale = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 3 : 1) # for --jit-wait
+  if (ts = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_i) > 1
+    BT.timeout_scale *= ts
+  end
+
   # BT.wn = 1
   dir = nil
   quiet = false
@@ -186,14 +198,18 @@ def main
       warn "unknown --tty argument: #$3" if $3
       BT.tty = !$1 || !$2
       true
-    when /\A(-q|--q(uiet))\z/
+    when /\A(-q|--q(uiet)?)\z/
       quiet = true
       BT.quiet = true
       true
     when /\A-j(\d+)?/
       BT.wn = $1.to_i
       true
-    when /\A(-v|--v(erbose))\z/
+    when /\A--timeout=(\d+(?:_\d+)*(?:\.\d+(?:_\d+)*)?)(?::(\d+(?:_\d+)*(?:\.\d+(?:_\d+)*)?))?/
+      BT.timeout = $1.to_f
+      BT.timeout_scale = $2.to_f if defined?($2)
+      true
+    when /\A(-v|--v(erbose)?)\z/
       BT.verbose = true
       BT.quiet = false
       true
@@ -205,6 +221,7 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
                                     default: /tmp/bootstraptestXXXXX.tmpwd
         --color[=WHEN]              Colorize the output.  WHEN defaults to 'always'
                                     or can be 'never' or 'auto'.
+        --timeout=TIMEOUT           Default timeout in seconds.
     -s, --stress                    stress test.
     -v, --verbose                   Output test name before exec.
     -q, --quiet                     Don\'t print header message.
@@ -212,6 +229,19 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
 End
       exit true
     when /\A-j/
+      true
+    when /--launchable-test-reports=(.*)/
+      if File.exist?($1)
+        # To protect files from overwritten, do nothing when the file exists.
+        return true
+      end
+
+      require_relative '../tool/lib/launchable'
+      BT.launchable_test_reports = writer = Launchable::JsonStreamWriter.new($1)
+      writer.write_array('testCases')
+      at_exit {
+        writer.close
+      }
       true
     else
       false
@@ -222,7 +252,7 @@ End
   end
   tests ||= ARGV
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?
-  pathes = tests.map {|path| File.expand_path(path) }
+  paths = tests.map {|path| File.expand_path(path) }
 
   BT.progress = %w[- \\ | /]
   BT.progress_bs = "\b" * BT.progress[0].size
@@ -266,7 +296,7 @@ End
   end
 
   in_temporary_working_directory(dir) do
-    exec_test pathes
+    exec_test paths
   end
 end
 
@@ -278,8 +308,8 @@ def erase(e = true)
   end
 end
 
-def load_test pathes
-  pathes.each do |path|
+def load_test paths
+  paths.each do |path|
     load File.expand_path(path)
   end
 end
@@ -329,13 +359,66 @@ def concurrent_exec_test
   end
 end
 
-def exec_test(pathes)
+##
+# Module for writing a test file for uploading test results into Launchable.
+# In bootstraptest, we aggregate the test results based on file level.
+module Launchable
+  @@last_test_name = nil
+  @@failure_log = ''
+  @@duration = 0
+
+  def show_progress(message = '')
+    faildesc, t = super
+
+    if writer = BT.launchable_test_reports
+      if faildesc
+        @@failure_log += faildesc
+      end
+      repo_path = File.expand_path("#{__dir__}/../")
+      relative_path = File.join(__dir__, self.path).delete_prefix("#{repo_path}/")
+      if @@last_test_name != nil && @@last_test_name != relative_path
+        # The test path is a URL-encoded representation.
+        # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
+        test_path = "#{encode_test_path_component("file")}=#{encode_test_path_component(@@last_test_name)}"
+        if @@failure_log.size > 0
+          status = 'TEST_FAILED'
+        else
+          status = 'TEST_PASSED'
+        end
+        writer.write_object(
+          {
+            testPath: test_path,
+            status: status,
+            duration: t,
+            createdAt: Time.now.to_s,
+            stderr: @@failure_log,
+            stdout: nil,
+            data: {
+              lineNumber: self.lineno
+            }
+          }
+        )
+        @@duration = 0
+        @@failure_log.clear
+      end
+      @@last_test_name = relative_path
+      @@duration += t
+    end
+  end
+
+  private
+  def encode_test_path_component component
+    component.to_s.gsub('%', '%25').gsub('=', '%3D').gsub('#', '%23').gsub('&', '%26')
+  end
+end
+
+def exec_test(paths)
   # setup
-  load_test pathes
+  load_test paths
   BT_STATE.count = 0
   BT_STATE.error = 0
   BT.columns = 0
-  BT.width = pathes.map {|path| File.basename(path).size}.max + 2
+  BT.width = paths.map {|path| File.basename(path).size}.max + 2
 
   # execute tests
   if BT.wn > 1
@@ -405,6 +488,7 @@ def target_platform
 end
 
 class Assertion < Struct.new(:src, :path, :lineno, :proc)
+  prepend Launchable
   @count = 0
   @all = Hash.new{|h, k| h[k] = []}
   @errbuf = []
@@ -428,7 +512,7 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   def initialize(*args)
     super
     self.class.add self
-    @category = self.path.match(/test_(.+)\.rb/)[1]
+    @category = self.path[/\Atest_(.+)\.rb\z/, 1]
   end
 
   def call
@@ -479,9 +563,9 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
       $stderr.print "#{BT.progress_bs}#{BT.progress[BT_STATE.count % BT.progress.size]}"
     end
 
-    t = Time.now if BT.verbose
+    t = Time.now if BT.verbose || BT.launchable_test_reports
     faildesc, errout = with_stderr {yield}
-    t = Time.now - t if BT.verbose
+    t = Time.now - t if BT.verbose || BT.launchable_test_reports
 
     if !faildesc
       # success
@@ -508,6 +592,8 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
         $stderr.printf("%-*s%s", BT.width, path, BT.progress[BT_STATE.count % BT.progress.size])
       end
     end
+
+    [faildesc, t]
   rescue Interrupt
     $stderr.puts "\##{@id} #{path}:#{lineno}"
     raise
@@ -526,14 +612,16 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     end
   end
 
-  def get_result_string(opt = '', **argh)
+  def get_result_string(opt = '', timeout: BT.timeout, **argh)
     if BT.ruby
+      timeout = BT.apply_timeout_scale(timeout)
       filename = make_srcfile(**argh)
       begin
         kw = self.err ? {err: self.err} : {}
         out = IO.popen("#{BT.ruby} -W0 #{opt} #{filename}", **kw)
         pid = out.pid
-        out.read.tap{ Process.waitpid(pid); out.close }
+        th = Thread.new {out.read.tap {Process.waitpid(pid); out.close}}
+        th.value if th.join(timeout)
       ensure
         raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
 
@@ -551,9 +639,14 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
   def make_srcfile(frozen_string_literal: nil)
     filename = "bootstraptest.#{self.path}_#{self.lineno}_#{self.id}.rb"
     File.open(filename, 'w') {|f|
-      f.puts "#frozen_string_literal:true" if frozen_string_literal
-      f.puts "GC.stress = true" if $stress
-      f.puts "print(begin; #{self.src}; end)"
+      f.puts "#frozen_string_literal:#{frozen_string_literal}" unless frozen_string_literal.nil?
+      if $stress
+        f.puts "GC.stress = true" if $stress
+      else
+        f.puts ""
+      end
+      f.puts "class BT_Skip < Exception; end; def skip(msg) = raise(BT_Skip, msg.to_s)"
+      f.puts "print(begin; #{self.src}; rescue BT_Skip; $!.message; end)"
     }
     filename
   end
@@ -567,9 +660,9 @@ def add_assertion src, pr
   Assertion.new(src, path, lineno, pr)
 end
 
-def assert_equal(expected, testsrc, message = '', opt = '', **argh)
+def assert_equal(expected, testsrc, message = '', opt = '', **kwargs)
   add_assertion testsrc, -> as do
-    as.assert_check(message, opt, **argh) {|result|
+    as.assert_check(message, opt, **kwargs) {|result|
       if expected == result
         nil
       else
@@ -580,9 +673,9 @@ def assert_equal(expected, testsrc, message = '', opt = '', **argh)
   end
 end
 
-def assert_match(expected_pattern, testsrc, message = '')
+def assert_match(expected_pattern, testsrc, message = '', **argh)
   add_assertion testsrc, -> as do
-    as.assert_check(message) {|result|
+    as.assert_check(message, **argh) {|result|
       if expected_pattern =~ result
         nil
       else
@@ -614,8 +707,9 @@ def assert_valid_syntax(testsrc, message = '')
   end
 end
 
-def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
+def assert_normal_exit(testsrc, *rest, timeout: BT.timeout, **opt)
   add_assertion testsrc, -> as do
+    timeout = BT.apply_timeout_scale(timeout)
     message, ignore_signals = rest
     message ||= ''
     as.show_progress(message) {
@@ -624,23 +718,19 @@ def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
       timeout_signaled = false
       logfile = "assert_normal_exit.#{as.path}.#{as.lineno}.log"
 
-      begin
-        err = open(logfile, "w")
-        io = IO.popen("#{BT.ruby} -W0 #{filename}", err: err)
-        pid = io.pid
-        th = Thread.new {
-          io.read
-          io.close
-          $?
-        }
-        if !th.join(timeout)
-          Process.kill :KILL, pid
-          timeout_signaled = true
-        end
-        status = th.value
-      ensure
-        err.close
+      io = IO.popen("#{BT.ruby} -W0 #{filename}", err: logfile)
+      pid = io.pid
+      th = Thread.new {
+        io.read
+        io.close
+        $?
+      }
+      if !th.join(timeout)
+        Process.kill :KILL, pid
+        timeout_signaled = true
       end
+      status = th.value
+
       if status && status.signaled?
         signo = status.termsig
         signame = Signal.list.invert[signo]
@@ -669,9 +759,7 @@ end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
   add_assertion testsrc, -> as do
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # for --jit-wait
-      timeout_seconds *= 3
-    end
+    timeout_seconds = BT.apply_timeout_scale(timeout_seconds)
 
     as.show_progress(message) {
       faildesc = nil
@@ -727,6 +815,8 @@ end
 
 def pretty(src, desc, result)
   src = src.sub(/\A\s*\n/, '')
+  lines = src.lines
+  src = lines[0..20].join + "(...snip)\n" if lines.size > 20
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 
@@ -782,6 +872,15 @@ def check_coredump
       (BT.ruby and File.exist?(BT.ruby+'.stackdump'))
     raise CoreDumpError, "core dumped"
   end
+end
+
+def yjit_enabled?
+  ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
+end
+
+def rjit_enabled?
+  # Don't check `RubyVM::RJIT.enabled?`. On btest-bruby, target Ruby != runner Ruby.
+  ENV.fetch('RUN_OPTS', '').include?('rjit')
 end
 
 exit main

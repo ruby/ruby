@@ -48,7 +48,7 @@ socks_s_close(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    shutdown(fptr->fd, 2);
+    shutdown(fptr->fd, SHUT_RDWR);
     return rb_io_close(sock);
 }
 #endif

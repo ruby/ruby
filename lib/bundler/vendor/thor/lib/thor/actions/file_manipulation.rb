@@ -66,11 +66,14 @@ class Bundler::Thor
     # ==== Parameters
     # source<String>:: the address of the given content.
     # destination<String>:: the relative path to the destination root.
-    # config<Hash>:: give :verbose => false to not log the status.
+    # config<Hash>:: give :verbose => false to not log the status, and
+    #                :http_headers => <Hash> to add headers to an http request.
     #
     # ==== Examples
     #
     #   get "http://gist.github.com/103208", "doc/README"
+    #
+    #   get "http://gist.github.com/103208", "doc/README", :http_headers => {"Content-Type" => "application/json"}
     #
     #   get "http://gist.github.com/103208" do |content|
     #     content.split("\n").first
@@ -82,10 +85,10 @@ class Bundler::Thor
 
       render = if source =~ %r{^https?\://}
         require "open-uri"
-        URI.send(:open, source) { |input| input.binmode.read }
+        URI.send(:open, source, config.fetch(:http_headers, {})) { |input| input.binmode.read }
       else
         source = File.expand_path(find_in_source_paths(source.to_s))
-        open(source) { |input| input.binmode.read }
+        File.open(source) { |input| input.binmode.read }
       end
 
       destination ||= if block_given?
@@ -120,12 +123,7 @@ class Bundler::Thor
       context = config.delete(:context) || instance_eval("binding")
 
       create_file destination, nil, config do
-        match = ERB.version.match(/(\d+\.\d+\.\d+)/)
-        capturable_erb = if match && match[1] >= "2.2.0" # Ruby 2.6+
-          CapturableERB.new(::File.binread(source), :trim_mode => "-", :eoutvar => "@output_buffer")
-        else
-          CapturableERB.new(::File.binread(source), nil, "-", "@output_buffer")
-        end
+        capturable_erb = CapturableERB.new(::File.binread(source), trim_mode: "-", eoutvar: "@output_buffer")
         content = capturable_erb.tap do |erb|
           erb.filename = source
         end.result(context)
@@ -252,7 +250,7 @@ class Bundler::Thor
     # flag<Regexp|String>:: the regexp or string to be replaced
     # replacement<String>:: the replacement, can be also given as a block
     # config<Hash>:: give :verbose => false to not log the status, and
-    #                :force => true, to force the replacement regardles of runner behavior.
+    #                :force => true, to force the replacement regardless of runner behavior.
     #
     # ==== Example
     #

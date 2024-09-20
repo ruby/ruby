@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
 
 describe "Kernel#sleep" do
   it "is a private method" do
@@ -22,7 +21,7 @@ describe "Kernel#sleep" do
     sleep(Rational(1, 999)).should >= 0
   end
 
-  it "accepts any Object that reponds to divmod" do
+  it "accepts any Object that responds to divmod" do
     o = Object.new
     def o.divmod(*); [0, 0.001]; end
     sleep(o).should >= 0
@@ -31,10 +30,6 @@ describe "Kernel#sleep" do
   it "raises an ArgumentError when passed a negative duration" do
     -> { sleep(-0.1) }.should raise_error(ArgumentError)
     -> { sleep(-1) }.should raise_error(ArgumentError)
-  end
-
-  it "raises a TypeError when passed nil" do
-    -> { sleep(nil)   }.should raise_error(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
@@ -54,6 +49,29 @@ describe "Kernel#sleep" do
 
     t.wakeup
     t.value.should == 5
+  end
+
+  ruby_version_is ""..."3.3" do
+    it "raises a TypeError when passed nil" do
+      -> { sleep(nil)   }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "accepts a nil duration" do
+      running = false
+      t = Thread.new do
+        running = true
+        sleep(nil)
+        5
+      end
+
+      Thread.pass until running
+      Thread.pass while t.status and t.status != "sleep"
+
+      t.wakeup
+      t.value.should == 5
+    end
   end
 end
 

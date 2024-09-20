@@ -53,7 +53,9 @@ describe "Array#initialize with no arguments" do
   end
 
   it "does not use the given block" do
-    ->{ [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
+    -> {
+      -> { [1, 2, 3].send(:initialize) { raise } }.should_not raise_error
+    }.should complain(/#{__FILE__}:#{__LINE__-1}: warning: given block not used/, verbose: true)
   end
 end
 

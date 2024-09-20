@@ -49,7 +49,7 @@ class Exports
   end
 
   def read_substitution(header, syms, winapis)
-    IO.foreach(header) do |line|
+    File.foreach(header) do |line|
       if /^#define (\w+)\((.*?)\)\s+(?:\(void\))?(rb_w32_\w+)\((.*?)\)\s*$/ =~ line and
           $2.delete(" ") == $4.delete(" ")
         export, internal = $1, $3
@@ -151,7 +151,7 @@ class Exports::Cygwin < Exports
   end
 
   def each_line(objs, &block)
-    IO.foreach("|#{self.class.nm} --extern --defined #{objs.join(' ')}", &block)
+    IO.foreach("|#{self.class.nm} --extern-only --defined-only #{objs.join(' ')}", &block)
   end
 
   def each_export(objs)

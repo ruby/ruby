@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -322,10 +323,9 @@ require_relative "openssl"
 # == Original author
 #
 # Paul Duncan <pabs@pablotron.org>
-# http://pablotron.org/
+# https://pablotron.org/
 
 module Gem::Security
-
   ##
   # Gem::Security default exception type
 
@@ -360,7 +360,7 @@ module Gem::Security
   ##
   # One day in seconds
 
-  ONE_DAY = 86400
+  ONE_DAY = 86_400
 
   ##
   # One year in seconds
@@ -398,8 +398,7 @@ module Gem::Security
   #
   # The +extensions+ restrict the key to the indicated uses.
 
-  def self.create_cert(subject, key, age = ONE_YEAR, extensions = EXTENSIONS,
-                       serial = 1)
+  def self.create_cert(subject, key, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     cert = OpenSSL::X509::Certificate.new
 
     cert.public_key = get_public_key(key)
@@ -434,13 +433,6 @@ module Gem::Security
   end
 
   ##
-  # In Ruby 2.3 EC doesn't implement the private_key? but not the private? method
-
-  if defined?(OpenSSL::PKey::EC) && Gem::Version.new(String.new(RUBY_VERSION)) < Gem::Version.new("2.4.0")
-    OpenSSL::PKey::EC.send(:alias_method, :private?, :private_key?)
-  end
-
-  ##
   # Creates a self-signed certificate with an issuer and subject from +email+,
   # a subject alternative name of +email+ and the given +extensions+ for the
   # +key+.
@@ -457,8 +449,7 @@ module Gem::Security
   # Creates a self-signed certificate with an issuer and subject of +subject+
   # and the given +extensions+ for the +key+.
 
-  def self.create_cert_self_signed(subject, key, age = ONE_YEAR,
-                                   extensions = EXTENSIONS, serial = 1)
+  def self.create_cert_self_signed(subject, key, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     certificate = create_cert subject, key, age, extensions
 
     sign certificate, key, certificate, age, extensions, serial
@@ -468,16 +459,8 @@ module Gem::Security
   # Creates a new digest instance using the specified +algorithm+. The default
   # is SHA256.
 
-  if defined?(OpenSSL::Digest)
-    def self.create_digest(algorithm = DIGEST_NAME)
-      OpenSSL::Digest.new(algorithm)
-    end
-  else
-    require "digest"
-
-    def self.create_digest(algorithm = DIGEST_NAME)
-      Digest.const_get(algorithm).new
-    end
+  def self.create_digest(algorithm = DIGEST_NAME)
+    OpenSSL::Digest.new(algorithm)
   end
 
   ##
@@ -492,13 +475,7 @@ module Gem::Security
       when "rsa"
         OpenSSL::PKey::RSA.new(RSA_DSA_KEY_LENGTH)
       when "ec"
-        if RUBY_VERSION >= "2.4.0"
-          OpenSSL::PKey::EC.generate(EC_NAME)
-        else
-          domain_key = OpenSSL::PKey::EC.new(EC_NAME)
-          domain_key.generate_key
-          domain_key
-        end
+        OpenSSL::PKey::EC.generate(EC_NAME)
       else
         raise Gem::Security::Exception,
         "#{algorithm} algorithm not found. RSA, DSA, and EC algorithms are supported."
@@ -528,11 +505,10 @@ module Gem::Security
   #--
   # TODO increment serial
 
-  def self.re_sign(expired_certificate, private_key, age = ONE_YEAR,
-                   extensions = EXTENSIONS)
+  def self.re_sign(expired_certificate, private_key, age = ONE_YEAR, extensions = EXTENSIONS)
     raise Gem::Security::Exception,
           "incorrect signing key for re-signing " +
-          "#{expired_certificate.subject}" unless
+          expired_certificate.subject.to_s unless
       expired_certificate.check_private_key(private_key)
 
     unless expired_certificate.subject.to_s ==
@@ -541,7 +517,7 @@ module Gem::Security
       issuer  = alt_name_or_x509_entry expired_certificate, :issuer
 
       raise Gem::Security::Exception,
-            "#{subject} is not self-signed, contact #{issuer} " +
+            "#{subject} is not self-signed, contact #{issuer} " \
             "to obtain a valid certificate"
     end
 
@@ -565,8 +541,7 @@ module Gem::Security
   #
   # Returns the newly signed certificate.
 
-  def self.sign(certificate, signing_key, signing_cert,
-                age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
+  def self.sign(certificate, signing_key, signing_cert, age = ONE_YEAR, extensions = EXTENSIONS, serial = 1)
     signee_subject = certificate.subject
     signee_key     = certificate.public_key
 
@@ -614,7 +589,7 @@ module Gem::Security
   # +permissions+. If passed +cipher+ and +passphrase+ those arguments will be
   # passed to +to_pem+.
 
-  def self.write(pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER)
+  def self.write(pemmable, path, permissions = 0o600, passphrase = nil, cipher = KEY_CIPHER)
     path = File.expand_path path
 
     File.open path, "wb", permissions do |io|
@@ -629,7 +604,6 @@ module Gem::Security
   end
 
   reset
-
 end
 
 if Gem::HAVE_OPENSSL

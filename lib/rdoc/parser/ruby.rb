@@ -8,6 +8,18 @@
 #       by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
+if ENV['RDOC_USE_PRISM_PARSER']
+  require 'rdoc/parser/prism_ruby'
+  RDoc::Parser.const_set(:Ruby, RDoc::Parser::PrismRuby)
+  puts "========================================================================="
+  puts "RDoc is using the experimental Prism parser to generate the documentation"
+  puts "========================================================================="
+  return
+end
+
+require 'ripper'
+require_relative 'ripper_state_lex'
+
 ##
 # Extracts code elements from a source file returning a TopLevel object
 # containing the constituent file elements.
@@ -138,9 +150,6 @@
 # Note that by default, the :method: directive will be ignored if there is a
 # standard rdocable item following it.
 
-require 'ripper'
-require_relative 'ripper_state_lex'
-
 class RDoc::Parser::Ruby < RDoc::Parser
 
   parse_files_matching(/\.rbw?$/)
@@ -179,6 +188,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     reset
   end
+
+  ##
+  # Return +true+ if +tk+ is a newline.
 
   def tk_nl?(tk)
     :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]
@@ -510,7 +522,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when :on_comment, :on_embdoc then
         @read.pop
         if :on_nl == end_token[:kind] and "\n" == tk[:text][-1] and
-          (!continue or (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0) then
+          (!continue or (tk[:state] & Ripper::EXPR_LABEL) != 0) then
           break if !continue and nest <= 0
         end
       when :on_comma then
@@ -523,7 +535,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           nest += 1
         when 'if', 'unless', 'while', 'until', 'rescue'
           # postfix if/unless/while/until/rescue must be EXPR_LABEL
-          nest += 1 unless (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0
+          nest += 1 unless (tk[:state] & Ripper::EXPR_LABEL) != 0
         when 'end'
           nest -= 1
           break if nest == 0
@@ -786,8 +798,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     al.line   = line_no
 
     read_documentation_modifiers al, RDoc::ATTR_MODIFIERS
-    context.add_alias al
-    @stats.add_alias al
+    if al.document_self or not @track_visibility
+      context.add_alias al
+      @stats.add_alias al
+    end
 
     al
   end
@@ -1036,7 +1050,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       elsif (:on_kw == tk[:kind] && 'def' == tk[:text]) then
         nest += 1
       elsif (:on_kw == tk[:kind] && %w{do if unless case begin}.include?(tk[:text])) then
-        if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
+        if (tk[:state] & Ripper::EXPR_LABEL) == 0
           nest += 1
         end
       elsif [:on_rparen, :on_rbrace, :on_rbracket].include?(tk[:kind]) ||
@@ -1450,6 +1464,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth = RDoc::AnyMethod.new get_tkread, name
     look_for_directives_in meth, comment
     meth.singleton = single == SINGLE ? true : singleton
+    if singleton
+      # `current_line_visibility' is useless because it works against
+      # the normal method named as same as the singleton method, after
+      # the latter was defined.  Of course these are different things.
+      container.current_line_visibility = :public
+    end
 
     record_location meth
     meth.line   = line_no
@@ -1651,7 +1671,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when :on_comment, :on_embdoc then
         @read.pop
         if :on_nl == end_token[:kind] and "\n" == tk[:text][-1] and
-          (!continue or (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0) then
+          (!continue or (tk[:state] & Ripper::EXPR_LABEL) != 0) then
           if method && method.block_params.nil? then
             unget_tk tk
             read_documentation_modifiers method, modifiers
@@ -1773,6 +1793,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     nest = 1
     save_visibility = container.visibility
+    container.visibility = :public unless current_method
 
     non_comment_seen = true
 
@@ -1870,7 +1891,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           end
 
         when 'until', 'while' then
-          if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
+          if (tk[:state] & Ripper::EXPR_LABEL) == 0
             nest += 1
             skip_optional_do_after_expression
           end
@@ -1886,7 +1907,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           skip_optional_do_after_expression
 
         when 'case', 'do', 'if', 'unless', 'begin' then
-          if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
+          if (tk[:state] & Ripper::EXPR_LABEL) == 0
             nest += 1
           end
 
@@ -2134,7 +2155,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       if :on_nl == tk[:kind] or (:on_kw == tk[:kind] && 'def' == tk[:text]) then
         return
       elsif :on_comment == tk[:kind] or :on_embdoc == tk[:kind] then
-        return unless tk[:text] =~ /\s*:?([\w-]+):\s*(.*)/
+        return unless tk[:text] =~ /:?\b([\w-]+):\s*(.*)/
 
         directive = $1.downcase
 

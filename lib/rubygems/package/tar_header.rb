@@ -1,8 +1,11 @@
 # frozen_string_literal: true
-#--
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#++
+
+# rubocop:enable Style/AsciiComments
 
 ##
 #--
@@ -92,39 +95,40 @@ class Gem::Package::TarHeader
 
   attr_reader(*FIELDS)
 
-  EMPTY_HEADER = ("\0" * 512).freeze # :nodoc:
+  EMPTY_HEADER = ("\0" * 512).b.freeze # :nodoc:
 
   ##
   # Creates a tar header from IO +stream+
 
   def self.from(stream)
     header = stream.read 512
-    empty = (EMPTY_HEADER == header)
+    return EMPTY if header == EMPTY_HEADER
 
     fields = header.unpack UNPACK_FORMAT
 
-    new :name => fields.shift,
-        :mode => strict_oct(fields.shift),
-        :uid => oct_or_256based(fields.shift),
-        :gid => oct_or_256based(fields.shift),
-        :size => strict_oct(fields.shift),
-        :mtime => strict_oct(fields.shift),
-        :checksum => strict_oct(fields.shift),
-        :typeflag => fields.shift,
-        :linkname => fields.shift,
-        :magic => fields.shift,
-        :version => strict_oct(fields.shift),
-        :uname => fields.shift,
-        :gname => fields.shift,
-        :devmajor => strict_oct(fields.shift),
-        :devminor => strict_oct(fields.shift),
-        :prefix => fields.shift,
+    new name: fields.shift,
+        mode: strict_oct(fields.shift),
+        uid: oct_or_256based(fields.shift),
+        gid: oct_or_256based(fields.shift),
+        size: strict_oct(fields.shift),
+        mtime: strict_oct(fields.shift),
+        checksum: strict_oct(fields.shift),
+        typeflag: fields.shift,
+        linkname: fields.shift,
+        magic: fields.shift,
+        version: strict_oct(fields.shift),
+        uname: fields.shift,
+        gname: fields.shift,
+        devmajor: strict_oct(fields.shift),
+        devminor: strict_oct(fields.shift),
+        prefix: fields.shift,
 
-        :empty => empty
+        empty: false
   end
 
   def self.strict_oct(str)
-    return str.strip.oct if str.strip =~ /\A[0-7]*\z/
+    str.strip!
+    return str.oct if /\A[0-7]*\z/.match?(str)
 
     raise ArgumentError, "#{str.inspect} is not an octal string"
   end
@@ -134,7 +138,8 @@ class Gem::Package::TarHeader
     # \ff flags a negative 256-based number
     # In case we have a match, parse it as a signed binary value
     # in big-endian order, except that the high-order bit is ignored.
-    return str.unpack("N2").last if str =~ /\A[\x80\xff]/n
+
+    return str.unpack1("@4N") if /\A[\x80\xff]/n.match?(str)
     strict_oct(str)
   end
 
@@ -146,24 +151,42 @@ class Gem::Package::TarHeader
       raise ArgumentError, ":name, :size, :prefix and :mode required"
     end
 
-    vals[:uid] ||= 0
-    vals[:gid] ||= 0
-    vals[:mtime] ||= 0
-    vals[:checksum] ||= ""
-    vals[:typeflag] = "0" if vals[:typeflag].nil? || vals[:typeflag].empty?
-    vals[:magic] ||= "ustar"
-    vals[:version] ||= "00"
-    vals[:uname] ||= "wheel"
-    vals[:gname] ||= "wheel"
-    vals[:devmajor] ||= 0
-    vals[:devminor] ||= 0
-
-    FIELDS.each do |name|
-      instance_variable_set "@#{name}", vals[name]
-    end
+    @checksum = vals[:checksum] || ""
+    @devmajor = vals[:devmajor] || 0
+    @devminor = vals[:devminor] || 0
+    @gid = vals[:gid] || 0
+    @gname = vals[:gname] || "wheel"
+    @linkname = vals[:linkname]
+    @magic = vals[:magic] || "ustar"
+    @mode = vals[:mode]
+    @mtime = vals[:mtime] || 0
+    @name = vals[:name]
+    @prefix = vals[:prefix]
+    @size = vals[:size]
+    @typeflag = vals[:typeflag]
+    @typeflag = "0" if @typeflag.nil? || @typeflag.empty?
+    @uid = vals[:uid] || 0
+    @uname = vals[:uname] || "wheel"
+    @version = vals[:version] || "00"
 
     @empty = vals[:empty]
   end
+
+  EMPTY = new({ # :nodoc:
+    checksum: 0,
+    gname: "",
+    linkname: "",
+    magic: "",
+    mode: 0,
+    name: "",
+    prefix: "",
+    size: 0,
+    uname: "",
+    version: 0,
+
+    empty: true,
+  }).freeze
+  private_constant :EMPTY
 
   ##
   # Is the tar entry empty?
@@ -208,7 +231,7 @@ class Gem::Package::TarHeader
   private
 
   def calculate_checksum(header)
-    header.unpack("C*").inject {|a, b| a + b }
+    header.sum(0)
   end
 
   def header(checksum = @checksum)
@@ -234,10 +257,10 @@ class Gem::Package::TarHeader
 
     header = header.pack PACK_FORMAT
 
-    header << ("\0" * ((512 - header.size) % 512))
+    header.ljust 512, "\0"
   end
 
   def oct(num, len)
-    "%0#{len}o" % num
+    format("%0#{len}o", num)
   end
 end

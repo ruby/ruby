@@ -17,12 +17,12 @@ describe "BasicSocket#send" do
   end
 
    it "sends a message to another socket and returns the number of bytes sent" do
-     data = ""
+     data = +""
      t = Thread.new do
        client = @server.accept
        loop do
          got = client.recv(5)
-         break if got.empty?
+         break if got.nil? || got.empty?
          data << got
        end
        client.close
@@ -62,12 +62,12 @@ describe "BasicSocket#send" do
   end
 
   it "accepts a sockaddr as recipient address" do
-     data = ""
+     data = +""
      t = Thread.new do
        client = @server.accept
        loop do
          got = client.recv(5)
-         break if got.empty?
+         break if got.nil? || got.empty?
          data << got
        end
        client.close

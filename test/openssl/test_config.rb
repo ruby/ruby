@@ -91,22 +91,19 @@ __EOC__
     assert_equal('123baz456bar798', c['dollar']['qux'])
     assert_equal('123baz456bar798.123baz456bar798', c['dollar']['quxx'])
 
-    excn = assert_raise(OpenSSL::ConfigError) do
+    assert_raise_with_message(OpenSSL::ConfigError, /error in line 1: variable has no value/) do
       OpenSSL::Config.parse("foo = $bar")
     end
-    assert_equal("error in line 1: variable has no value", excn.message)
 
-    excn = assert_raise(OpenSSL::ConfigError) do
+    assert_raise_with_message(OpenSSL::ConfigError, /error in line 1: no close brace/) do
       OpenSSL::Config.parse("foo = $(bar")
     end
-    assert_equal("error in line 1: no close brace", excn.message)
 
-    excn = assert_raise(OpenSSL::ConfigError) do
+    assert_raise_with_message(OpenSSL::ConfigError, /error in line 1: missing equal sign/) do
       OpenSSL::Config.parse("f o =b  ar      # no space in key")
     end
-    assert_equal("error in line 1: missing equal sign", excn.message)
 
-    excn = assert_raise(OpenSSL::ConfigError) do
+    assert_raise_with_message(OpenSSL::ConfigError, /error in line 7: missing close square bracket/) do
       OpenSSL::Config.parse(<<__EOC__)
 # comment 1               # comments
 
@@ -117,7 +114,6 @@ __EOC__
 [third                    # section not terminated
 __EOC__
     end
-    assert_equal("error in line 7: missing close square bracket", excn.message)
   end
 
   def test_s_parse_include

@@ -1,23 +1,33 @@
 #!/usr/bin/ruby
 require_relative 'lib/colorize'
+require 'shellwords'
 
 until ARGV.empty?
   case ARGV[0]
-  when /\ASYMBOL_PREFIX=(.*)/
+  when /\A SYMBOL_PREFIX=(.*)/x
     SYMBOL_PREFIX = $1
-  when /\ANM=(.*)/              # may be multiple words
-    NM = $1
-  when /\APLATFORM=(.+)?/
+  when /\A NM=(.*)/x            # may be multiple words
+    NM = $1.shellsplit
+  when /\A PLATFORM=(.+)?/x
     platform = $1
+  when /\A SOEXT=(.+)?/x
+    soext = $1
+  when /\A SYMBOLS_IN_EMPTYLIB=(.*)/x
+    SYMBOLS_IN_EMPTYLIB = $1.split(" ")
+  when /\A EXTSTATIC=(.+)?/x
+    EXTSTATIC = true
   else
     break
   end
   ARGV.shift
 end
+SYMBOLS_IN_EMPTYLIB ||= nil
+EXTSTATIC ||= false
 
 config = ARGV.shift
 count = 0
 col = Colorize.new
+
 config_code = File.read(config)
 REPLACE = config_code.scan(/\bAC_(?:REPLACE|CHECK)_FUNCS?\((\w+)/).flatten
 # REPLACE << 'memcmp' if /\bAC_FUNC_MEMCMP\b/ =~ config_code
@@ -29,27 +39,67 @@ if platform and !platform.empty?
   else
     REPLACE.concat(
       h .gsub(%r[/\*.*?\*/]m, " ") # delete block comments
-        .gsub(%r[//.*], ' ')       # delete oneline comments
+        .gsub(%r[//.*], " ")       # delete oneline comments
         .gsub(/^\s*#.*(?:\\\n.*)*/, "") # delete preprocessor directives
+        .gsub(/(?:\A|;)\K\s*typedef\s.*?;/m, "")
         .scan(/\b((?!rb_|DEPRECATED|_)\w+)\s*\(.*\);/)
         .flatten)
   end
 end
 missing = File.dirname(config) + "/missing/"
 ARGV.reject! do |n|
-  unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
-    puts "Ignore #{n} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
+  base = File.basename(n, ".*")
+  next true if REPLACE.include?(base)
+  unless (src = Dir.glob(missing + base + ".[cS]")).empty?
+    puts "Ignore #{col.skip(n)} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
     true
   end
 end
+
+# darwin's ld64 seems to require exception handling personality functions to be
+# extern, so we allow the Rust one.
+REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
+
 print "Checking leaked global symbols..."
 STDOUT.flush
-IO.foreach("|#{NM} -Pgp #{ARGV.join(' ')}") do |line|
+if soext
+  soext = /\.#{soext}(?:$|\.)/
+  if EXTSTATIC
+    ARGV.delete_if {|n| soext =~ n}
+  elsif ARGV.size == 1
+    so = soext =~ ARGV.first
+  end
+end
+
+Pipe = Struct.new(:command) do
+  def open(&block) IO.popen(command, &block) end
+  def each(&block) open {|f| f.each(&block)} end
+end
+
+Pipe.new(NM + ARGV).each do |line|
+  line.chomp!
+  next so = nil if line.empty?
+  if so.nil? and line.chomp!(":")
+    so = soext =~ line || false
+    next
+  end
   n, t, = line.split
   next unless /[A-TV-Z]/ =~ t
   next unless n.sub!(/^#{SYMBOL_PREFIX}/o, "")
   next if n.include?(".")
-  next if /\A(?:Init_|InitVM_|RUBY_|ruby_|rb_|[Oo]nig|dln_|mjit_|coroutine_)/ =~ n
+  next if !so and n.start_with?("___asan_")
+  next if !so and n.start_with?("__odr_asan_")
+  next if !so and n.start_with?("__retguard_")
+  case n
+  when /\A(?:Init_|InitVM_|pm_|[Oo]nig|dln_|coroutine_)/
+    next
+  when /\Aruby_static_id_/
+    next unless so
+  when /\A(?:RUBY_|ruby_|rb_)/
+    next unless so and /_(threadptr|ec)_/ =~ n
+  when *SYMBOLS_IN_EMPTYLIB
+    next
+  end
   next if REPLACE.include?(n)
   puts col.fail("leaked") if count.zero?
   count += 1

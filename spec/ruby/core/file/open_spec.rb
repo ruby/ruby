@@ -314,7 +314,7 @@ describe "File.open" do
     end
   end
 
-  it "raises an IOError when read in a block opened with File::RDONLY|File::APPEND mode" do
+  it "raises an IOError when write in a block opened with File::RDONLY|File::APPEND mode" do
     -> {
       File.open(@file, File::RDONLY|File::APPEND ) do |f|
         f.puts("writing")
@@ -354,7 +354,7 @@ describe "File.open" do
     end
   end
 
-  it "raises an Errorno::EEXIST if the file exists when open with File::CREAT|File::EXCL" do
+  it "raises an Errno::EEXIST if the file exists when open with File::CREAT|File::EXCL" do
     -> {
       File.open(@file, File::CREAT|File::EXCL) do |f|
         f.puts("writing")
@@ -423,7 +423,7 @@ describe "File.open" do
       }.should raise_error(IOError)
     end
 
-    it "raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
+    it "raises an Errno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
       -> {
         File.open(@file, File::RDONLY|File::TRUNC) do |f|
           f.puts("writing").should == nil
@@ -441,7 +441,7 @@ describe "File.open" do
       }.should raise_error(Errno::EINVAL)
     end
 
-    it "raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
+    it "raises an Errno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
       -> {
         File.open(@file, File::RDONLY|File::TRUNC) do |f|
           f.puts("writing").should == nil
@@ -563,6 +563,15 @@ describe "File.open" do
   it "defaults external_encoding to BINARY for binary modes" do
     File.open(@file, 'rb') {|f| f.external_encoding.should == Encoding::BINARY}
     File.open(@file, 'wb+') {|f| f.external_encoding.should == Encoding::BINARY}
+  end
+
+  it "accepts options as a keyword argument" do
+    @fh = File.open(@file, 'w', 0755, flags: File::CREAT)
+    @fh.should be_an_instance_of(File)
+
+    -> {
+      File.open(@file, 'w', 0755, {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   it "uses the second argument as an options Hash" do

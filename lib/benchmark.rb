@@ -121,6 +121,8 @@
 
 module Benchmark
 
+  VERSION = "0.3.0"
+
   BENCHMARK_VERSION = "2002-04-25" # :nodoc:
 
   # Invokes the block with a Benchmark::Report object, which

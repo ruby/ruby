@@ -5,6 +5,7 @@ class TestMath < Test::Unit::TestCase
   def assert_infinity(a, *rest)
     rest = ["not infinity: #{a.inspect}"] if rest.empty?
     assert_predicate(a, :infinite?, *rest)
+    assert_predicate(a, :positive?, *rest)
   end
 
   def assert_nan(a, *rest)
@@ -165,6 +166,9 @@ class TestMath < Test::Unit::TestCase
     assert_nothing_raised { assert_nan(Math.log(0.0, 0.0)) }
     assert_nothing_raised { assert_nan(Math.log(Float::NAN)) }
     assert_nothing_raised { assert_nan(Math.log(1.0, Float::NAN)) }
+    assert_nothing_raised { assert_infinity(-Math.log(0)) }
+    assert_nothing_raised { assert_infinity(-Math.log(0, 2)) }
+    check(307.95368556425274, Math.log(2**1023, 10))
   end
 
   def test_log2
@@ -179,6 +183,7 @@ class TestMath < Test::Unit::TestCase
     assert_raise_with_message(Math::DomainError, /\blog2\b/) { Math.log2(-1.0) }
     assert_raise_with_message(Math::DomainError, /\blog2\b/) { Math.log2(-Float::EPSILON) }
     assert_nothing_raised { assert_nan(Math.log2(Float::NAN)) }
+    assert_nothing_raised { assert_infinity(-Math.log2(0)) }
   end
 
   def test_log10
@@ -193,6 +198,7 @@ class TestMath < Test::Unit::TestCase
     assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-1.0) }
     assert_raise_with_message(Math::DomainError, /\blog10\b/) { Math.log10(-Float::EPSILON) }
     assert_nothing_raised { assert_nan(Math.log10(Float::NAN)) }
+    assert_nothing_raised { assert_infinity(-Math.log10(0)) }
   end
 
   def test_sqrt
@@ -277,8 +283,7 @@ class TestMath < Test::Unit::TestCase
     assert_raise_with_message(Math::DomainError, /\bgamma\b/) { Math.gamma(-1.0) }
     x = Math.gamma(-0.0)
     mesg = "Math.gamma(-0.0) should be -INF"
-    assert_infinity(x, mesg)
-    assert_predicate(x, :negative?, mesg)
+    assert_infinity(-x, mesg)
     assert_nan(Math.gamma(Float::NAN))
   end
 
@@ -299,7 +304,6 @@ class TestMath < Test::Unit::TestCase
     x, sign = Math.lgamma(-0.0)
     mesg = "Math.lgamma(-0.0) should be [INF, -1]"
     assert_infinity(x, mesg)
-    assert_predicate(x, :positive?, mesg)
     assert_equal(-1, sign, mesg)
     x, sign = Math.lgamma(Float::NAN)
     assert_nan(x)

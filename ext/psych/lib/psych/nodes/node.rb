@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'stringio'
 require_relative '../class_loader'
 require_relative '../scalar_scanner'
 
@@ -56,6 +55,7 @@ module Psych
       #
       # See also Psych::Visitors::Emitter
       def yaml io = nil, options = {}
+        require "stringio"
         real_io = io || StringIO.new(''.encode('utf-8'))
 
         Visitors::Emitter.new(real_io, options).accept self

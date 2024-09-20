@@ -131,6 +131,9 @@ class RDoc::CrossReference
     @seen = {}
   end
 
+  ##
+  # Returns a method reference to +name+.
+
   def resolve_method name
     ref = nil
 
@@ -223,4 +226,3 @@ class RDoc::CrossReference
   end
 
 end
-

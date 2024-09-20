@@ -1,11 +1,12 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
 
-require_relative "tsort"
+require_relative "vendored_tsort"
 require_relative "deprecate"
 
 ##
@@ -104,7 +105,7 @@ class Gem::DependencyList
   end
 
   def inspect # :nodoc:
-    "%s %p>" % [super[0..-2], map {|s| s.full_name }]
+    format("%s %p>", super[0..-2], map(&:full_name))
   end
 
   ##

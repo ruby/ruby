@@ -220,6 +220,8 @@ module Psych
     end
 
     def test_coder_style_map_any
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
       foo = Psych.dump CustomEncode.new \
         map: {a: 1, b: 2},
         style: Psych::Nodes::Mapping::ANY,
@@ -228,6 +230,8 @@ module Psych
     end
 
     def test_coder_style_map_block
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
       foo = Psych.dump CustomEncode.new \
         map: {a: 1, b: 2},
         style: Psych::Nodes::Mapping::BLOCK,
@@ -236,6 +240,8 @@ module Psych
     end
 
     def test_coder_style_map_flow
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
       foo = Psych.dump CustomEncode.new \
         map: { a: 1, b: 2 },
         style: Psych::Nodes::Mapping::FLOW,

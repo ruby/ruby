@@ -1,11 +1,11 @@
-#  A \String object has an arbitrary sequence of bytes,
+#  A +String+ object has an arbitrary sequence of bytes,
 #  typically representing text or binary data.
-#  A \String object may be created using String::new or as literals.
+#  A +String+ object may be created using String::new or as literals.
 #
 #  String objects differ from Symbol objects in that Symbol objects are
 #  designed to be used as identifiers, instead of text or data.
 #
-#  You can create a \String object explicitly with:
+#  You can create a +String+ object explicitly with:
 #
 #  - A {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals].
 #  - A {heredoc literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals].
@@ -14,7 +14,7 @@
 #
 #  - \Method #String.
 #
-#  Some \String methods modify +self+.
+#  Some +String+ methods modify +self+.
 #  Typically, a method whose name ends with <tt>!</tt> modifies +self+
 #  and returns +self+;
 #  often a similarly named method (without the <tt>!</tt>)
@@ -64,19 +64,19 @@
 #
 #    'THX1138'.gsub('\d+', '00') # => "THX1138"
 #
-#  <b>\String +replacement+</b>
+#  <b>+String+ +replacement+</b>
 #
 #  If +replacement+ is a string, that string will determine
 #  the replacing string that is to be substituted for the matched text.
 #
 #  Each of the examples above uses a simple string as the replacing string.
 #
-#  \String +replacement+ may contain back-references to the pattern's captures:
+#  +String+ +replacement+ may contain back-references to the pattern's captures:
 #
 #  - <tt>\n</tt> (_n_ a non-negative integer) refers to <tt>$n</tt>.
 #  - <tt>\k<name></tt> refers to the named capture +name+.
 #
-#  See rdoc-ref:regexp.rdoc for details.
+#  See Regexp for details.
 #
 #  Note that within the string +replacement+, a character combination
 #  such as <tt>$&</tt> is treated as ordinary text, and not as
@@ -90,10 +90,10 @@
 #    which contains string after match.
 #  - <tt>\`</tt> corresponds to <tt>$`</tt>,
 #    which contains string before match.
-#  - <tt>\+</tt> corresponds to <tt>$+</tt>,
+#  - <tt>\\+</tt> corresponds to <tt>$+</tt>,
 #    which contains last capture group.
 #
-#  See rdoc-ref:regexp.rdoc for details.
+#  See Regexp for details.
 #
 #  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
 #
@@ -139,7 +139,7 @@
 #
 #  == Whitespace in Strings
 #
-#  In class \String, _whitespace_ is defined as a contiguous sequence of characters
+#  In class +String+, _whitespace_ is defined as a contiguous sequence of characters
 #  consisting of any mixture of the following:
 #
 #  - NL (null): <tt>"\x00"</tt>, <tt>"\u0000"</tt>.
@@ -157,15 +157,15 @@
 #  - #rstrip, #rstrip!: strip trailing whitespace.
 #  - #strip, #strip!: strip leading and trailing whitespace.
 #
-#  == \String Slices
+#  == +String+ Slices
 #
 #  A _slice_ of a string is a substring that is selected by certain criteria.
 #
 #  These instance methods make use of slicing:
 #
-#  - String#[] (also aliased as String#slice) returns a slice copied from +self+.
-#  - String#[]= returns a copy of +self+ with a slice replaced.
-#  - String#slice! returns +self+ with a slice removed.
+#  - String#[] (aliased as String#slice): returns a slice copied from +self+.
+#  - String#[]=: returns a copy of +self+ with a slice replaced.
+#  - String#slice!: returns +self+ with a slice removed.
 #
 #  Each of the above methods takes arguments that determine the slice
 #  to be copied or replaced.
@@ -265,7 +265,7 @@
 #
 #  <b><tt>string[regexp, capture = 0]</tt></b>
 #
-#  When the \Regexp argument +regexp+ is given,
+#  When the Regexp argument +regexp+ is given,
 #  and the +capture+ argument is <tt>0</tt>,
 #  the slice is the first matching substring found in +self+:
 #
@@ -278,7 +278,7 @@
 #  If argument +capture+ is given and not <tt>0</tt>,
 #  it should be either an capture group index (integer)
 #  or a capture group name (string or symbol);
-#  the slice is the specified capture (see Regexp@Capturing):
+#  the slice is the specified capture (see Regexp@Groups+and+Captures):
 #
 #    s = 'hello there'
 #    s[/[aeiou](.)\1/, 1] # => "l"
@@ -290,7 +290,7 @@
 #
 #  <b><tt>string[substring]</tt></b>
 #
-#  When the single \String argument +substring+ is given,
+#  When the single +String+ argument +substring+ is given,
 #  returns the substring from +self+ if found, otherwise +nil+:
 #
 #    'foo'['oo'] # => "oo"
@@ -298,12 +298,12 @@
 #
 #  == What's Here
 #
-#  First, what's elsewhere. \Class \String:
+#  First, what's elsewhere. \Class +String+:
 #
 #  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 #  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
 #
-#  Here, class \String provides methods that are useful for:
+#  Here, class +String+ provides methods that are useful for:
 #
 #  - {Creating a String}[rdoc-ref:String@Methods+for+Creating+a+String]
 #  - {Frozen/Unfrozen Strings}[rdoc-ref:String@Methods+for+a+Frozen-2FUnfrozen+String]
@@ -311,10 +311,10 @@
 #  - {Comparing}[rdoc-ref:String@Methods+for+Comparing]
 #  - {Modifying a String}[rdoc-ref:String@Methods+for+Modifying+a+String]
 #  - {Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String]
-#  - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non--5CString]
+#  - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non-String]
 #  - {Iterating}[rdoc-ref:String@Methods+for+Iterating]
 #
-#  === Methods for Creating a \String
+#  === Methods for Creating a +String+
 #
 #  - ::new: Returns a new string.
 #  - ::try_convert: Returns a new string created from a given object.
@@ -323,7 +323,7 @@
 #
 #  - #+@: Returns a string that is not frozen: +self+, if not frozen;
 #    +self.dup+ otherwise.
-#  - #-@: Returns a string that is frozen: +self+, if already frozen;
+#  - #-@ (aliased as #dedup): Returns a string that is frozen: +self+, if already frozen;
 #    +self.freeze+ otherwise.
 #  - #freeze: Freezes +self+, if not already frozen; returns +self+.
 #
@@ -331,7 +331,7 @@
 #
 #  _Counts_
 #
-#  - #length, #size: Returns the count of characters (not bytes).
+#  - #length (aliased as #size): Returns the count of characters (not bytes).
 #  - #empty?: Returns +true+ if +self.length+ is zero; +false+ otherwise.
 #  - #bytesize: Returns the count of bytes.
 #  - #count: Returns the count of substrings matching given strings.
@@ -365,7 +365,7 @@
 #
 #  === Methods for Comparing
 #
-#  - #==, #===: Returns +true+ if a given other string has the same content as +self+.
+#  - #== (aliased as #===): Returns +true+ if a given other string has the same content as +self+.
 #  - #eql?: Returns +true+ if the content is the same as the given other string.
 #  - #<=>: Returns -1, 0, or 1 as a given other string is smaller than,
 #    equal to, or larger than +self+.
@@ -374,7 +374,7 @@
 #  - #casecmp?: Returns +true+ if the string is equal to a given string after Unicode case folding;
 #    +false+ otherwise.
 #
-#  === Methods for Modifying a \String
+#  === Methods for Modifying a +String+
 #
 #  Each of these methods modifies +self+.
 #
@@ -382,6 +382,8 @@
 #
 #  - #insert: Returns +self+ with a given string inserted at a given offset.
 #  - #<<: Returns +self+ concatenated with a given string or integer.
+#  - #append_as_bytes: Returns +self+ concatenated with strings without performing any
+#    encoding validation or conversion.
 #
 #  _Substitution_
 #
@@ -389,8 +391,8 @@
 #    returns +self+ if any changes, +nil+ otherwise.
 #  - #gsub!: Replaces each substring that matches a given pattern with a given replacement string;
 #    returns +self+ if any changes, +nil+ otherwise.
-#  - #succ!, #next!: Returns +self+ modified to become its own successor.
-#  - #replace: Returns +self+ with its entire content replaced by a given string.
+#  - #succ! (aliased as #next!): Returns +self+ modified to become its own successor.
+#  - #initialize_copy (aliased as #replace): Returns +self+ with its entire content replaced by a given string.
 #  - #reverse!: Returns +self+ with its characters in reverse order.
 #  - #setbyte: Sets the byte at a given integer offset to a given value; returns the argument.
 #  - #tr!: Replaces specified characters in +self+ with specified replacement characters;
@@ -428,9 +430,9 @@
 #  - #chop!: Removes trailing newline characters if found; otherwise removes the last character;
 #    returns +self+ if any changes, +nil+ otherwise.
 #
-#  === Methods for Converting to New \String
+#  === Methods for Converting to New +String+
 #
-#  Each of these methods returns a new \String based on +self+,
+#  Each of these methods returns a new +String+ based on +self+,
 #  often just a modified copy of +self+.
 #
 #  _Extension_
@@ -460,7 +462,7 @@
 #    replaced with a given replacement string;.
 #  - #gsub: Returns a copy of +self+ with each substring that matches a given pattern
 #    replaced with a given replacement string.
-#  - #succ, #next: Returns the string that is the successor to +self+.
+#  - #succ (aliased as #next): Returns the string that is the successor to +self+.
 #  - #reverse: Returns a copy of +self+ with its characters in reverse order.
 #  - #tr: Returns a copy of +self+ with specified characters replaced with specified      replacement characters.
 #  - #tr_s: Returns a copy of +self+ with specified characters replaced with
@@ -488,18 +490,18 @@
 #  - #chomp: Returns a copy of +self+ with a trailing record separator removed, if found.
 #  - #chop: Returns a copy of +self+ with trailing newline characters or the last character removed.
 #  - #squeeze: Returns a copy of +self+ with contiguous duplicate characters removed.
-#  - #[], #slice: Returns a substring determined by a given index, start/length, or range, or string.
+#  - #[] (aliased as #slice): Returns a substring determined by a given index, start/length, or range, or string.
 #  - #byteslice: Returns a substring determined by a given index, start/length, or range.
 #  - #chr: Returns the first character.
 #
 #  _Duplication_
 #
-#  - #to_s, $to_str: If +self+ is a subclass of \String, returns +self+ copied into a \String;
+#  - #to_s (aliased as #to_str): If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
 #    otherwise, returns +self+.
 #
-#  === Methods for Converting to Non-\String
+#  === Methods for Converting to Non-+String+
 #
-#  Each of these methods converts the contents of +self+ to a non-\String.
+#  Each of these methods converts the contents of +self+ to a non-+String+.
 #
 #  <em>Characters, Bytes, and Clusters</em>
 #
@@ -537,7 +539,7 @@
 #  <em>Strings and Symbols</em>
 #
 #  - #inspect: Returns copy of +self+, enclosed in double-quotes, with special characters escaped.
-#  - #to_sym, #intern: Returns the symbol corresponding to +self+.
+#  - #intern (aliased as #to_sym): Returns the symbol corresponding to +self+.
 #
 #  === Methods for Iterating
 #

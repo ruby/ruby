@@ -33,7 +33,7 @@ class TestGemSecurityPolicy < Gem::TestCase
     end
 
     @digest = OpenSSL::Digest.new Gem::Security::DIGEST_NAME
-    @trust_dir = Gem::Security.trust_dir.dir # HACK use the object
+    @trust_dir = Gem::Security.trust_dir.dir # HACK: use the object
 
     @no        = Gem::Security::NoSecurity
     @almost_no = Gem::Security::AlmostNoSecurity
@@ -43,22 +43,22 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @chain = Gem::Security::Policy.new(
       "Chain",
-      :verify_data => true,
-      :verify_signer => true,
-      :verify_chain => true,
-      :verify_root => false,
-      :only_trusted => false,
-      :only_signed => false
+      verify_data: true,
+      verify_signer: true,
+      verify_chain: true,
+      verify_root: false,
+      only_trusted: false,
+      only_signed: false
     )
 
     @root = Gem::Security::Policy.new(
       "Root",
-      :verify_data => true,
-      :verify_signer => true,
-      :verify_chain => true,
-      :verify_root => true,
-      :only_trusted => false,
-      :only_signed => false
+      verify_data: true,
+      verify_signer: true,
+      verify_chain: true,
+      verify_root: true,
+      only_trusted: false,
+      only_signed: false
     )
   end
 
@@ -105,8 +105,8 @@ class TestGemSecurityPolicy < Gem::TestCase
       @chain.check_chain chain, Time.now
     end
 
-    assert_equal "invalid signing chain: " +
-                 "certificate #{INVALIDCHILD_CERT.subject} " +
+    assert_equal "invalid signing chain: " \
+                 "certificate #{INVALIDCHILD_CERT.subject} " \
                  "was not issued by #{CHILD_CERT.subject}", e.message
   end
 
@@ -127,7 +127,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @low.check_cert EXPIRED_CERT, nil, Time.now
     end
 
-    assert_equal "certificate #{EXPIRED_CERT.subject} " +
+    assert_equal "certificate #{EXPIRED_CERT.subject} " \
                  "not valid after #{EXPIRED_CERT.not_after}",
                  e.message
   end
@@ -137,7 +137,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @low.check_cert FUTURE_CERT, nil, Time.now
     end
 
-    assert_equal "certificate #{FUTURE_CERT.subject} " +
+    assert_equal "certificate #{FUTURE_CERT.subject} " \
                  "not valid before #{FUTURE_CERT.not_before}",
                  e.message
   end
@@ -147,7 +147,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @low.check_cert INVALID_ISSUER_CERT, PUBLIC_CERT, Time.now
     end
 
-    assert_equal "certificate #{INVALID_ISSUER_CERT.subject} " +
+    assert_equal "certificate #{INVALID_ISSUER_CERT.subject} " \
                  "was not issued by #{PUBLIC_CERT.subject}",
                  e.message
   end
@@ -183,7 +183,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @almost_no.check_key(PUBLIC_CERT, ALTERNATE_KEY)
     end
 
-    assert_equal "certificate #{PUBLIC_CERT.subject} " +
+    assert_equal "certificate #{PUBLIC_CERT.subject} " \
                  "does not match the signing key", e.message
   end
 
@@ -208,7 +208,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @chain.check_root chain, Time.now
     end
 
-    assert_equal "certificate #{INVALID_SIGNER_CERT.subject} " +
+    assert_equal "certificate #{INVALID_SIGNER_CERT.subject} " \
                  "was not issued by #{INVALID_SIGNER_CERT.issuer}",
                  e.message
   end
@@ -220,7 +220,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @chain.check_root chain, Time.now
     end
 
-    assert_equal "root certificate #{INVALID_ISSUER_CERT.subject} " +
+    assert_equal "root certificate #{INVALID_ISSUER_CERT.subject} " \
                  "is not self-signed (issuer #{INVALID_ISSUER_CERT.issuer})",
                  e.message
   end
@@ -260,7 +260,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @high.check_trust [WRONG_KEY_CERT], @digest, @trust_dir
     end
 
-    assert_equal "trusted root certificate #{PUBLIC_CERT.subject} checksum " +
+    assert_equal "trusted root certificate #{PUBLIC_CERT.subject} checksum " \
                  "does not match signing root certificate checksum", e.message
   end
 
@@ -285,7 +285,7 @@ class TestGemSecurityPolicy < Gem::TestCase
       @high.check_trust [PUBLIC_CERT, CHILD_CERT], @digest, @trust_dir
     end
 
-    assert_equal "root cert #{PUBLIC_CERT.subject} is not trusted " +
+    assert_equal "root cert #{PUBLIC_CERT.subject} is not trusted " \
                  "(root of signing cert #{CHILD_CERT.subject})", e.message
   end
 
@@ -452,7 +452,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name
+      "metadata.gz"
+    end
 
     digests = package.digest s
     metadata_gz_digest = digests[Gem::Security::DIGEST_NAME]["metadata.gz"]
@@ -475,7 +477,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name
+      "metadata.gz"
+    end
 
     digests = package.digest s
     digests[Gem::Security::DIGEST_NAME]["data.tar.gz"] = @digest.hexdigest "hello"
@@ -504,7 +508,9 @@ class TestGemSecurityPolicy < Gem::TestCase
     package.checksums[Gem::Security::DIGEST_NAME] = {}
 
     s = StringIO.new metadata_gz
-    def s.full_name() "metadata.gz" end
+    def s.full_name
+      "metadata.gz"
+    end
 
     digests = package.digest s
     digests[Gem::Security::DIGEST_NAME]["data.tar.gz"] = @digest.hexdigest "hello"
@@ -530,6 +536,6 @@ class TestGemSecurityPolicy < Gem::TestCase
     digests    = { Gem::Security::DIGEST_NAME => { 0 => data } }
     signatures = { 0 => sign(data, key) }
 
-    return digests, signatures
+    [digests, signatures]
   end
 end if Gem::HAVE_OPENSSL

@@ -1,0 +1,3 @@
+%w[
+^~~ unterminated list; expected a closing delimiter for the `%w`
+

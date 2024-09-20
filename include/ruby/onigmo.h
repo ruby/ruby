@@ -636,6 +636,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_PARSE_DEPTH_LIMIT_OVER                        -16
 #define ONIGERR_DEFAULT_ENCODING_IS_NOT_SET                   -21
 #define ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR  -22
+#define ONIGERR_TIMEOUT                                       -23
 /* general error */
 #define ONIGERR_INVALID_ARGUMENT                              -30
 /* syntax error */
@@ -744,8 +745,6 @@ typedef struct {
 typedef struct {
   int lower;
   int upper;
-  long base_num;
-  long inner_num;
 } OnigRepeatRange;
 
 typedef void (*OnigWarnFunc)(const char* s);
@@ -846,6 +845,8 @@ void onig_free(OnigRegex);
 ONIG_EXTERN
 void onig_free_body(OnigRegex);
 ONIG_EXTERN
+int onig_reg_copy(OnigRegex* reg, OnigRegex orig_reg);
+ONIG_EXTERN
 OnigPosition onig_scan(OnigRegex reg, const OnigUChar* str, const OnigUChar* end, OnigRegion* region, OnigOptionType option, int (*scan_callback)(OnigPosition, OnigPosition, OnigRegion*, void*), void* callback_arg);
 ONIG_EXTERN
 OnigPosition onig_search(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* start, const OnigUChar* range, OnigRegion* region, OnigOptionType option);
@@ -853,6 +854,8 @@ ONIG_EXTERN
 OnigPosition onig_search_gpos(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* global_pos, const OnigUChar* start, const OnigUChar* range, OnigRegion* region, OnigOptionType option);
 ONIG_EXTERN
 OnigPosition onig_match(OnigRegex, const OnigUChar* str, const OnigUChar* end, const OnigUChar* at, OnigRegion* region, OnigOptionType option);
+ONIG_EXTERN
+int onig_check_linear_time(OnigRegex reg);
 ONIG_EXTERN
 OnigRegion* onig_region_new(void);
 ONIG_EXTERN

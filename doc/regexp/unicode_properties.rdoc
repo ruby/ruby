@@ -1,0 +1,678 @@
+== \Regexps Based on Unicode Properties
+
+The properties shown here are those currently supported in Ruby.
+Older versions may not support all of these.
+
+=== POSIX brackets
+
+- <tt>\p{ASCII}</tt>
+- <tt>\p{Alnum}</tt>
+- <tt>\p{Alphabetic}</tt>, <tt>\p{Alpha}</tt>
+- <tt>\p{Blank}</tt>
+- <tt>\p{Cntrl}</tt>
+- <tt>\p{Digit}</tt>
+- <tt>\p{Graph}</tt>
+- <tt>\p{Lowercase}</tt>, <tt>\p{Lower}</tt>
+- <tt>\p{Print}</tt>
+- <tt>\p{Punct}</tt>
+- <tt>\p{Space}</tt>
+- <tt>\p{Uppercase}</tt>, <tt>\p{Upper}</tt>
+- <tt>\p{Word}</tt>
+- <tt>\p{XDigit}</tt>
+- <tt>\p{XPosixPunct}</tt>
+
+=== Special
+
+- <tt>\p{Any}</tt>
+- <tt>\p{Assigned}</tt>
+
+=== Major and General Categories
+
+- <tt>\p{Cased_Letter}</tt>, <tt>\p{LC}</tt>
+- <tt>\p{Close_Punctuation}</tt>, <tt>\p{Pe}</tt>
+- <tt>\p{Connector_Punctuation}</tt>, <tt>\p{Pc}</tt>
+- <tt>\p{Control}</tt>, <tt>\p{Cc}</tt>
+- <tt>\p{Currency_Symbol}</tt>, <tt>\p{Sc}</tt>
+- <tt>\p{Dash_Punctuation}</tt>, <tt>\p{Pd}</tt>
+- <tt>\p{Decimal_Number}</tt>, <tt>\p{Nd}</tt>
+- <tt>\p{Enclosing_Mark}</tt>, <tt>\p{Me}</tt>
+- <tt>\p{Final_Punctuation}</tt>, <tt>\p{Pf}</tt>
+- <tt>\p{Format}</tt>, <tt>\p{Cf}</tt>
+- <tt>\p{Initial_Punctuation}</tt>, <tt>\p{Pi}</tt>
+- <tt>\p{Letter}</tt>, <tt>\p{L}</tt>
+- <tt>\p{Letter_Number}</tt>, <tt>\p{Nl}</tt>
+- <tt>\p{Line_Separator}</tt>, <tt>\p{Zl}</tt>
+- <tt>\p{Lowercase_Letter}</tt>, <tt>\p{Ll}</tt>
+- <tt>\p{Mark}</tt>, <tt>\p{M}</tt>
+- <tt>\p{Math_Symbol}</tt>, <tt>\p{Sm}</tt>
+- <tt>\p{Modifier_Letter}</tt>, <tt>\p{Lm}</tt>
+- <tt>\p{Modifier_Symbol}</tt>, <tt>\p{Sk}</tt>
+- <tt>\p{Nonspacing_Mark}</tt>, <tt>\p{Mn}</tt>
+- <tt>\p{Number}</tt>, <tt>\p{N}</tt>
+- <tt>\p{Open_Punctuation}</tt>, <tt>\p{Ps}</tt>
+- <tt>\p{Other}</tt>, <tt>\p{C}</tt>
+- <tt>\p{Other_Letter}</tt>, <tt>\p{Lo}</tt>
+- <tt>\p{Other_Number}</tt>, <tt>\p{No}</tt>
+- <tt>\p{Other_Punctuation}</tt>, <tt>\p{Po}</tt>
+- <tt>\p{Other_Symbol}</tt>, <tt>\p{So}</tt>
+- <tt>\p{Paragraph_Separator}</tt>, <tt>\p{Zp}</tt>
+- <tt>\p{Private_Use}</tt>, <tt>\p{Co}</tt>
+- <tt>\p{Punctuation}</tt>, <tt>\p{P}</tt>
+- <tt>\p{Separator}</tt>, <tt>\p{Z}</tt>
+- <tt>\p{Space_Separator}</tt>, <tt>\p{Zs}</tt>
+- <tt>\p{Spacing_Mark}</tt>, <tt>\p{Mc}</tt>
+- <tt>\p{Surrogate}</tt>, <tt>\p{Cs}</tt>
+- <tt>\p{Symbol}</tt>, <tt>\p{S}</tt>
+- <tt>\p{Titlecase_Letter}</tt>, <tt>\p{Lt}</tt>
+- <tt>\p{Unassigned}</tt>, <tt>\p{Cn}</tt>
+- <tt>\p{Uppercase_Letter}</tt>, <tt>\p{Lu}</tt>
+
+=== Prop List
+
+- <tt>\p{ASCII_Hex_Digit}</tt>, <tt>\p{AHex}</tt>
+- <tt>\p{Bidi_Control}</tt>, <tt>\p{Bidi_C}</tt>
+- <tt>\p{Dash}</tt>
+- <tt>\p{Deprecated}</tt>, <tt>\p{Dep}</tt>
+- <tt>\p{Diacritic}</tt>, <tt>\p{Dia}</tt>
+- <tt>\p{Extender}</tt>, <tt>\p{Ext}</tt>
+- <tt>\p{Hex_Digit}</tt>, <tt>\p{Hex}</tt>
+- <tt>\p{Hyphen}</tt>
+- <tt>\p{IDS_Binary_Operator}</tt>, <tt>\p{IDSB}</tt>
+- <tt>\p{IDS_Trinary_Operator}</tt>, <tt>\p{IDST}</tt>
+- <tt>\p{Ideographic}</tt>, <tt>\p{Ideo}</tt>
+- <tt>\p{Join_Control}</tt>, <tt>\p{Join_C}</tt>
+- <tt>\p{Logical_Order_Exception}</tt>, <tt>\p{LOE}</tt>
+- <tt>\p{Noncharacter_Code_Point}</tt>, <tt>\p{NChar}</tt>
+- <tt>\p{Other_Alphabetic}</tt>, <tt>\p{OAlpha}</tt>
+- <tt>\p{Other_Default_Ignorable_Code_Point}</tt>, <tt>\p{ODI}</tt>
+- <tt>\p{Other_Grapheme_Extend}</tt>, <tt>\p{OGr_Ext}</tt>
+- <tt>\p{Other_ID_Continue}</tt>, <tt>\p{OIDC}</tt>
+- <tt>\p{Other_ID_Start}</tt>, <tt>\p{OIDS}</tt>
+- <tt>\p{Other_Lowercase}</tt>, <tt>\p{OLower}</tt>
+- <tt>\p{Other_Math}</tt>, <tt>\p{OMath}</tt>
+- <tt>\p{Other_Uppercase}</tt>, <tt>\p{OUpper}</tt>
+- <tt>\p{Pattern_Syntax}</tt>, <tt>\p{Pat_Syn}</tt>
+- <tt>\p{Pattern_White_Space}</tt>, <tt>\p{Pat_WS}</tt>
+- <tt>\p{Prepended_Concatenation_Mark}</tt>, <tt>\p{PCM}</tt>
+- <tt>\p{Quotation_Mark}</tt>, <tt>\p{QMark}</tt>
+- <tt>\p{Radical}</tt>
+- <tt>\p{Regional_Indicator}</tt>, <tt>\p{RI}</tt>
+- <tt>\p{Sentence_Terminal}</tt>, <tt>\p{STerm}</tt>
+- <tt>\p{Soft_Dotted}</tt>, <tt>\p{SD}</tt>
+- <tt>\p{Terminal_Punctuation}</tt>, <tt>\p{Term}</tt>
+- <tt>\p{Unified_Ideograph}</tt>, <tt>\p{UIdeo}</tt>
+- <tt>\p{Variation_Selector}</tt>, <tt>\p{VS}</tt>
+- <tt>\p{White_Space}</tt>, <tt>\p{WSpace}</tt>
+
+=== Derived Core Properties
+
+- <tt>\p{Alphabetic}</tt>, <tt>\p{Alpha}</tt>
+- <tt>\p{Case_Ignorable}</tt>, <tt>\p{CI}</tt>
+- <tt>\p{Cased}</tt>
+- <tt>\p{Changes_When_Casefolded}</tt>, <tt>\p{CWCF}</tt>
+- <tt>\p{Changes_When_Casemapped}</tt>, <tt>\p{CWCM}</tt>
+- <tt>\p{Changes_When_Lowercased}</tt>, <tt>\p{CWL}</tt>
+- <tt>\p{Changes_When_Titlecased}</tt>, <tt>\p{CWT}</tt>
+- <tt>\p{Changes_When_Uppercased}</tt>, <tt>\p{CWU}</tt>
+- <tt>\p{Default_Ignorable_Code_Point}</tt>, <tt>\p{DI}</tt>
+- <tt>\p{Grapheme_Base}</tt>, <tt>\p{Gr_Base}</tt>
+- <tt>\p{Grapheme_Extend}</tt>, <tt>\p{Gr_Ext}</tt>
+- <tt>\p{Grapheme_Link}</tt>, <tt>\p{Gr_Link}</tt>
+- <tt>\p{ID_Continue}</tt>, <tt>\p{IDC}</tt>
+- <tt>\p{ID_Start}</tt>, <tt>\p{IDS}</tt>
+- <tt>\p{Lowercase}</tt>, <tt>\p{Lower}</tt>
+- <tt>\p{Math}</tt>
+- <tt>\p{Uppercase}</tt>, <tt>\p{Upper}</tt>
+- <tt>\p{XID_Continue}</tt>, <tt>\p{XIDC}</tt>
+- <tt>\p{XID_Start}</tt>, <tt>\p{XIDS}</tt>
+
+=== Scripts
+
+- <tt>\p{Adlam}</tt>, <tt>\p{Adlm}</tt>
+- <tt>\p{Ahom}</tt>
+- <tt>\p{Anatolian_Hieroglyphs}</tt>, <tt>\p{Hluw}</tt>
+- <tt>\p{Arabic}</tt>, <tt>\p{Arab}</tt>
+- <tt>\p{Armenian}</tt>, <tt>\p{Armn}</tt>
+- <tt>\p{Avestan}</tt>, <tt>\p{Avst}</tt>
+- <tt>\p{Balinese}</tt>, <tt>\p{Bali}</tt>
+- <tt>\p{Bamum}</tt>, <tt>\p{Bamu}</tt>
+- <tt>\p{Bassa_Vah}</tt>, <tt>\p{Bass}</tt>
+- <tt>\p{Batak}</tt>, <tt>\p{Batk}</tt>
+- <tt>\p{Bengali}</tt>, <tt>\p{Beng}</tt>
+- <tt>\p{Bhaiksuki}</tt>, <tt>\p{Bhks}</tt>
+- <tt>\p{Bopomofo}</tt>, <tt>\p{Bopo}</tt>
+- <tt>\p{Brahmi}</tt>, <tt>\p{Brah}</tt>
+- <tt>\p{Braille}</tt>, <tt>\p{Brai}</tt>
+- <tt>\p{Buginese}</tt>, <tt>\p{Bugi}</tt>
+- <tt>\p{Buhid}</tt>, <tt>\p{Buhd}</tt>
+- <tt>\p{Canadian_Aboriginal}</tt>, <tt>\p{Cans}</tt>
+- <tt>\p{Carian}</tt>, <tt>\p{Cari}</tt>
+- <tt>\p{Caucasian_Albanian}</tt>, <tt>\p{Aghb}</tt>
+- <tt>\p{Chakma}</tt>, <tt>\p{Cakm}</tt>
+- <tt>\p{Cham}</tt>
+- <tt>\p{Cherokee}</tt>, <tt>\p{Cher}</tt>
+- <tt>\p{Chorasmian}</tt>, <tt>\p{Chrs}</tt>
+- <tt>\p{Common}</tt>, <tt>\p{Zyyy}</tt>
+- <tt>\p{Coptic}</tt>, <tt>\p{Copt}</tt>
+- <tt>\p{Cuneiform}</tt>, <tt>\p{Xsux}</tt>
+- <tt>\p{Cypriot}</tt>, <tt>\p{Cprt}</tt>
+- <tt>\p{Cypro_Minoan}</tt>, <tt>\p{Cpmn}</tt>
+- <tt>\p{Cyrillic}</tt>, <tt>\p{Cyrl}</tt>
+- <tt>\p{Deseret}</tt>, <tt>\p{Dsrt}</tt>
+- <tt>\p{Devanagari}</tt>, <tt>\p{Deva}</tt>
+- <tt>\p{Dives_Akuru}</tt>, <tt>\p{Diak}</tt>
+- <tt>\p{Dogra}</tt>, <tt>\p{Dogr}</tt>
+- <tt>\p{Duployan}</tt>, <tt>\p{Dupl}</tt>
+- <tt>\p{Egyptian_Hieroglyphs}</tt>, <tt>\p{Egyp}</tt>
+- <tt>\p{Elbasan}</tt>, <tt>\p{Elba}</tt>
+- <tt>\p{Elymaic}</tt>, <tt>\p{Elym}</tt>
+- <tt>\p{Ethiopic}</tt>, <tt>\p{Ethi}</tt>
+- <tt>\p{Georgian}</tt>, <tt>\p{Geor}</tt>
+- <tt>\p{Glagolitic}</tt>, <tt>\p{Glag}</tt>
+- <tt>\p{Gothic}</tt>, <tt>\p{Goth}</tt>
+- <tt>\p{Grantha}</tt>, <tt>\p{Gran}</tt>
+- <tt>\p{Greek}</tt>, <tt>\p{Grek}</tt>
+- <tt>\p{Gujarati}</tt>, <tt>\p{Gujr}</tt>
+- <tt>\p{Gunjala_Gondi}</tt>, <tt>\p{Gong}</tt>
+- <tt>\p{Gurmukhi}</tt>, <tt>\p{Guru}</tt>
+- <tt>\p{Han}</tt>, <tt>\p{Hani}</tt>
+- <tt>\p{Hangul}</tt>, <tt>\p{Hang}</tt>
+- <tt>\p{Hanifi_Rohingya}</tt>, <tt>\p{Rohg}</tt>
+- <tt>\p{Hanunoo}</tt>, <tt>\p{Hano}</tt>
+- <tt>\p{Hatran}</tt>, <tt>\p{Hatr}</tt>
+- <tt>\p{Hebrew}</tt>, <tt>\p{Hebr}</tt>
+- <tt>\p{Hiragana}</tt>, <tt>\p{Hira}</tt>
+- <tt>\p{Imperial_Aramaic}</tt>, <tt>\p{Armi}</tt>
+- <tt>\p{Inherited}</tt>, <tt>\p{Zinh}</tt>
+- <tt>\p{Inscriptional_Pahlavi}</tt>, <tt>\p{Phli}</tt>
+- <tt>\p{Inscriptional_Parthian}</tt>, <tt>\p{Prti}</tt>
+- <tt>\p{Javanese}</tt>, <tt>\p{Java}</tt>
+- <tt>\p{Kaithi}</tt>, <tt>\p{Kthi}</tt>
+- <tt>\p{Kannada}</tt>, <tt>\p{Knda}</tt>
+- <tt>\p{Katakana}</tt>, <tt>\p{Kana}</tt>
+- <tt>\p{Kawi}</tt>
+- <tt>\p{Kayah_Li}</tt>, <tt>\p{Kali}</tt>
+- <tt>\p{Kharoshthi}</tt>, <tt>\p{Khar}</tt>
+- <tt>\p{Khitan_Small_Script}</tt>, <tt>\p{Kits}</tt>
+- <tt>\p{Khmer}</tt>, <tt>\p{Khmr}</tt>
+- <tt>\p{Khojki}</tt>, <tt>\p{Khoj}</tt>
+- <tt>\p{Khudawadi}</tt>, <tt>\p{Sind}</tt>
+- <tt>\p{Lao}</tt>, <tt>\p{Laoo}</tt>
+- <tt>\p{Latin}</tt>, <tt>\p{Latn}</tt>
+- <tt>\p{Lepcha}</tt>, <tt>\p{Lepc}</tt>
+- <tt>\p{Limbu}</tt>, <tt>\p{Limb}</tt>
+- <tt>\p{Linear_A}</tt>, <tt>\p{Lina}</tt>
+- <tt>\p{Linear_B}</tt>, <tt>\p{Linb}</tt>
+- <tt>\p{Lisu}</tt>
+- <tt>\p{Lycian}</tt>, <tt>\p{Lyci}</tt>
+- <tt>\p{Lydian}</tt>, <tt>\p{Lydi}</tt>
+- <tt>\p{Mahajani}</tt>, <tt>\p{Mahj}</tt>
+- <tt>\p{Makasar}</tt>, <tt>\p{Maka}</tt>
+- <tt>\p{Malayalam}</tt>, <tt>\p{Mlym}</tt>
+- <tt>\p{Mandaic}</tt>, <tt>\p{Mand}</tt>
+- <tt>\p{Manichaean}</tt>, <tt>\p{Mani}</tt>
+- <tt>\p{Marchen}</tt>, <tt>\p{Marc}</tt>
+- <tt>\p{Masaram_Gondi}</tt>, <tt>\p{Gonm}</tt>
+- <tt>\p{Medefaidrin}</tt>, <tt>\p{Medf}</tt>
+- <tt>\p{Meetei_Mayek}</tt>, <tt>\p{Mtei}</tt>
+- <tt>\p{Mende_Kikakui}</tt>, <tt>\p{Mend}</tt>
+- <tt>\p{Meroitic_Cursive}</tt>, <tt>\p{Merc}</tt>
+- <tt>\p{Meroitic_Hieroglyphs}</tt>, <tt>\p{Mero}</tt>
+- <tt>\p{Miao}</tt>, <tt>\p{Plrd}</tt>
+- <tt>\p{Modi}</tt>
+- <tt>\p{Mongolian}</tt>, <tt>\p{Mong}</tt>
+- <tt>\p{Mro}</tt>, <tt>\p{Mroo}</tt>
+- <tt>\p{Multani}</tt>, <tt>\p{Mult}</tt>
+- <tt>\p{Myanmar}</tt>, <tt>\p{Mymr}</tt>
+- <tt>\p{Nabataean}</tt>, <tt>\p{Nbat}</tt>
+- <tt>\p{Nag_Mundari}</tt>, <tt>\p{Nagm}</tt>
+- <tt>\p{Nandinagari}</tt>, <tt>\p{Nand}</tt>
+- <tt>\p{New_Tai_Lue}</tt>, <tt>\p{Talu}</tt>
+- <tt>\p{Newa}</tt>
+- <tt>\p{Nko}</tt>, <tt>\p{Nkoo}</tt>
+- <tt>\p{Nushu}</tt>, <tt>\p{Nshu}</tt>
+- <tt>\p{Nyiakeng_Puachue_Hmong}</tt>, <tt>\p{Hmnp}</tt>
+- <tt>\p{Ogham}</tt>, <tt>\p{Ogam}</tt>
+- <tt>\p{Ol_Chiki}</tt>, <tt>\p{Olck}</tt>
+- <tt>\p{Old_Hungarian}</tt>, <tt>\p{Hung}</tt>
+- <tt>\p{Old_Italic}</tt>, <tt>\p{Ital}</tt>
+- <tt>\p{Old_North_Arabian}</tt>, <tt>\p{Narb}</tt>
+- <tt>\p{Old_Permic}</tt>, <tt>\p{Perm}</tt>
+- <tt>\p{Old_Persian}</tt>, <tt>\p{Xpeo}</tt>
+- <tt>\p{Old_Sogdian}</tt>, <tt>\p{Sogo}</tt>
+- <tt>\p{Old_South_Arabian}</tt>, <tt>\p{Sarb}</tt>
+- <tt>\p{Old_Turkic}</tt>, <tt>\p{Orkh}</tt>
+- <tt>\p{Old_Uyghur}</tt>, <tt>\p{Ougr}</tt>
+- <tt>\p{Oriya}</tt>, <tt>\p{Orya}</tt>
+- <tt>\p{Osage}</tt>, <tt>\p{Osge}</tt>
+- <tt>\p{Osmanya}</tt>, <tt>\p{Osma}</tt>
+- <tt>\p{Pahawh_Hmong}</tt>, <tt>\p{Hmng}</tt>
+- <tt>\p{Palmyrene}</tt>, <tt>\p{Palm}</tt>
+- <tt>\p{Pau_Cin_Hau}</tt>, <tt>\p{Pauc}</tt>
+- <tt>\p{Phags_Pa}</tt>, <tt>\p{Phag}</tt>
+- <tt>\p{Phoenician}</tt>, <tt>\p{Phnx}</tt>
+- <tt>\p{Psalter_Pahlavi}</tt>, <tt>\p{Phlp}</tt>
+- <tt>\p{Rejang}</tt>, <tt>\p{Rjng}</tt>
+- <tt>\p{Runic}</tt>, <tt>\p{Runr}</tt>
+- <tt>\p{Samaritan}</tt>, <tt>\p{Samr}</tt>
+- <tt>\p{Saurashtra}</tt>, <tt>\p{Saur}</tt>
+- <tt>\p{Sharada}</tt>, <tt>\p{Shrd}</tt>
+- <tt>\p{Shavian}</tt>, <tt>\p{Shaw}</tt>
+- <tt>\p{Siddham}</tt>, <tt>\p{Sidd}</tt>
+- <tt>\p{SignWriting}</tt>, <tt>\p{Sgnw}</tt>
+- <tt>\p{Sinhala}</tt>, <tt>\p{Sinh}</tt>
+- <tt>\p{Sogdian}</tt>, <tt>\p{Sogd}</tt>
+- <tt>\p{Sora_Sompeng}</tt>, <tt>\p{Sora}</tt>
+- <tt>\p{Soyombo}</tt>, <tt>\p{Soyo}</tt>
+- <tt>\p{Sundanese}</tt>, <tt>\p{Sund}</tt>
+- <tt>\p{Syloti_Nagri}</tt>, <tt>\p{Sylo}</tt>
+- <tt>\p{Syriac}</tt>, <tt>\p{Syrc}</tt>
+- <tt>\p{Tagalog}</tt>, <tt>\p{Tglg}</tt>
+- <tt>\p{Tagbanwa}</tt>, <tt>\p{Tagb}</tt>
+- <tt>\p{Tai_Le}</tt>, <tt>\p{Tale}</tt>
+- <tt>\p{Tai_Tham}</tt>, <tt>\p{Lana}</tt>
+- <tt>\p{Tai_Viet}</tt>, <tt>\p{Tavt}</tt>
+- <tt>\p{Takri}</tt>, <tt>\p{Takr}</tt>
+- <tt>\p{Tamil}</tt>, <tt>\p{Taml}</tt>
+- <tt>\p{Tangsa}</tt>, <tt>\p{Tnsa}</tt>
+- <tt>\p{Tangut}</tt>, <tt>\p{Tang}</tt>
+- <tt>\p{Telugu}</tt>, <tt>\p{Telu}</tt>
+- <tt>\p{Thaana}</tt>, <tt>\p{Thaa}</tt>
+- <tt>\p{Thai}</tt>
+- <tt>\p{Tibetan}</tt>, <tt>\p{Tibt}</tt>
+- <tt>\p{Tifinagh}</tt>, <tt>\p{Tfng}</tt>
+- <tt>\p{Tirhuta}</tt>, <tt>\p{Tirh}</tt>
+- <tt>\p{Toto}</tt>
+- <tt>\p{Ugaritic}</tt>, <tt>\p{Ugar}</tt>
+- <tt>\p{Unknown}</tt>, <tt>\p{Zzzz}</tt>
+- <tt>\p{Vai}</tt>, <tt>\p{Vaii}</tt>
+- <tt>\p{Vithkuqi}</tt>, <tt>\p{Vith}</tt>
+- <tt>\p{Wancho}</tt>, <tt>\p{Wcho}</tt>
+- <tt>\p{Warang_Citi}</tt>, <tt>\p{Wara}</tt>
+- <tt>\p{Yezidi}</tt>, <tt>\p{Yezi}</tt>
+- <tt>\p{Yi}</tt>, <tt>\p{Yiii}</tt>
+- <tt>\p{Zanabazar_Square}</tt>, <tt>\p{Zanb}</tt>
+
+=== Blocks
+
+- <tt>\p{In_Adlam}</tt>
+- <tt>\p{In_Aegean_Numbers}</tt>
+- <tt>\p{In_Ahom}</tt>
+- <tt>\p{In_Alchemical_Symbols}</tt>
+- <tt>\p{In_Alphabetic_Presentation_Forms}</tt>
+- <tt>\p{In_Anatolian_Hieroglyphs}</tt>
+- <tt>\p{In_Ancient_Greek_Musical_Notation}</tt>
+- <tt>\p{In_Ancient_Greek_Numbers}</tt>
+- <tt>\p{In_Ancient_Symbols}</tt>
+- <tt>\p{In_Arabic}</tt>
+- <tt>\p{In_Arabic_Extended_A}</tt>
+- <tt>\p{In_Arabic_Extended_B}</tt>
+- <tt>\p{In_Arabic_Extended_C}</tt>
+- <tt>\p{In_Arabic_Mathematical_Alphabetic_Symbols}</tt>
+- <tt>\p{In_Arabic_Presentation_Forms_A}</tt>
+- <tt>\p{In_Arabic_Presentation_Forms_B}</tt>
+- <tt>\p{In_Arabic_Supplement}</tt>
+- <tt>\p{In_Armenian}</tt>
+- <tt>\p{In_Arrows}</tt>
+- <tt>\p{In_Avestan}</tt>
+- <tt>\p{In_Balinese}</tt>
+- <tt>\p{In_Bamum}</tt>
+- <tt>\p{In_Bamum_Supplement}</tt>
+- <tt>\p{In_Basic_Latin}</tt>
+- <tt>\p{In_Bassa_Vah}</tt>
+- <tt>\p{In_Batak}</tt>
+- <tt>\p{In_Bengali}</tt>
+- <tt>\p{In_Bhaiksuki}</tt>
+- <tt>\p{In_Block_Elements}</tt>
+- <tt>\p{In_Bopomofo}</tt>
+- <tt>\p{In_Bopomofo_Extended}</tt>
+- <tt>\p{In_Box_Drawing}</tt>
+- <tt>\p{In_Brahmi}</tt>
+- <tt>\p{In_Braille_Patterns}</tt>
+- <tt>\p{In_Buginese}</tt>
+- <tt>\p{In_Buhid}</tt>
+- <tt>\p{In_Byzantine_Musical_Symbols}</tt>
+- <tt>\p{In_CJK_Compatibility}</tt>
+- <tt>\p{In_CJK_Compatibility_Forms}</tt>
+- <tt>\p{In_CJK_Compatibility_Ideographs}</tt>
+- <tt>\p{In_CJK_Compatibility_Ideographs_Supplement}</tt>
+- <tt>\p{In_CJK_Radicals_Supplement}</tt>
+- <tt>\p{In_CJK_Strokes}</tt>
+- <tt>\p{In_CJK_Symbols_and_Punctuation}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_A}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_B}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_C}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_D}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_E}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_F}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_G}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_H}</tt>
+- <tt>\p{In_Carian}</tt>
+- <tt>\p{In_Caucasian_Albanian}</tt>
+- <tt>\p{In_Chakma}</tt>
+- <tt>\p{In_Cham}</tt>
+- <tt>\p{In_Cherokee}</tt>
+- <tt>\p{In_Cherokee_Supplement}</tt>
+- <tt>\p{In_Chess_Symbols}</tt>
+- <tt>\p{In_Chorasmian}</tt>
+- <tt>\p{In_Combining_Diacritical_Marks}</tt>
+- <tt>\p{In_Combining_Diacritical_Marks_Extended}</tt>
+- <tt>\p{In_Combining_Diacritical_Marks_Supplement}</tt>
+- <tt>\p{In_Combining_Diacritical_Marks_for_Symbols}</tt>
+- <tt>\p{In_Combining_Half_Marks}</tt>
+- <tt>\p{In_Common_Indic_Number_Forms}</tt>
+- <tt>\p{In_Control_Pictures}</tt>
+- <tt>\p{In_Coptic}</tt>
+- <tt>\p{In_Coptic_Epact_Numbers}</tt>
+- <tt>\p{In_Counting_Rod_Numerals}</tt>
+- <tt>\p{In_Cuneiform}</tt>
+- <tt>\p{In_Cuneiform_Numbers_and_Punctuation}</tt>
+- <tt>\p{In_Currency_Symbols}</tt>
+- <tt>\p{In_Cypriot_Syllabary}</tt>
+- <tt>\p{In_Cypro_Minoan}</tt>
+- <tt>\p{In_Cyrillic}</tt>
+- <tt>\p{In_Cyrillic_Extended_A}</tt>
+- <tt>\p{In_Cyrillic_Extended_B}</tt>
+- <tt>\p{In_Cyrillic_Extended_C}</tt>
+- <tt>\p{In_Cyrillic_Extended_D}</tt>
+- <tt>\p{In_Cyrillic_Supplement}</tt>
+- <tt>\p{In_Deseret}</tt>
+- <tt>\p{In_Devanagari}</tt>
+- <tt>\p{In_Devanagari_Extended}</tt>
+- <tt>\p{In_Devanagari_Extended_A}</tt>
+- <tt>\p{In_Dingbats}</tt>
+- <tt>\p{In_Dives_Akuru}</tt>
+- <tt>\p{In_Dogra}</tt>
+- <tt>\p{In_Domino_Tiles}</tt>
+- <tt>\p{In_Duployan}</tt>
+- <tt>\p{In_Early_Dynastic_Cuneiform}</tt>
+- <tt>\p{In_Egyptian_Hieroglyph_Format_Controls}</tt>
+- <tt>\p{In_Egyptian_Hieroglyphs}</tt>
+- <tt>\p{In_Elbasan}</tt>
+- <tt>\p{In_Elymaic}</tt>
+- <tt>\p{In_Emoticons}</tt>
+- <tt>\p{In_Enclosed_Alphanumeric_Supplement}</tt>
+- <tt>\p{In_Enclosed_Alphanumerics}</tt>
+- <tt>\p{In_Enclosed_CJK_Letters_and_Months}</tt>
+- <tt>\p{In_Enclosed_Ideographic_Supplement}</tt>
+- <tt>\p{In_Ethiopic}</tt>
+- <tt>\p{In_Ethiopic_Extended}</tt>
+- <tt>\p{In_Ethiopic_Extended_A}</tt>
+- <tt>\p{In_Ethiopic_Extended_B}</tt>
+- <tt>\p{In_Ethiopic_Supplement}</tt>
+- <tt>\p{In_General_Punctuation}</tt>
+- <tt>\p{In_Geometric_Shapes}</tt>
+- <tt>\p{In_Geometric_Shapes_Extended}</tt>
+- <tt>\p{In_Georgian}</tt>
+- <tt>\p{In_Georgian_Extended}</tt>
+- <tt>\p{In_Georgian_Supplement}</tt>
+- <tt>\p{In_Glagolitic}</tt>
+- <tt>\p{In_Glagolitic_Supplement}</tt>
+- <tt>\p{In_Gothic}</tt>
+- <tt>\p{In_Grantha}</tt>
+- <tt>\p{In_Greek_Extended}</tt>
+- <tt>\p{In_Greek_and_Coptic}</tt>
+- <tt>\p{In_Gujarati}</tt>
+- <tt>\p{In_Gunjala_Gondi}</tt>
+- <tt>\p{In_Gurmukhi}</tt>
+- <tt>\p{In_Halfwidth_and_Fullwidth_Forms}</tt>
+- <tt>\p{In_Hangul_Compatibility_Jamo}</tt>
+- <tt>\p{In_Hangul_Jamo}</tt>
+- <tt>\p{In_Hangul_Jamo_Extended_A}</tt>
+- <tt>\p{In_Hangul_Jamo_Extended_B}</tt>
+- <tt>\p{In_Hangul_Syllables}</tt>
+- <tt>\p{In_Hanifi_Rohingya}</tt>
+- <tt>\p{In_Hanunoo}</tt>
+- <tt>\p{In_Hatran}</tt>
+- <tt>\p{In_Hebrew}</tt>
+- <tt>\p{In_High_Private_Use_Surrogates}</tt>
+- <tt>\p{In_High_Surrogates}</tt>
+- <tt>\p{In_Hiragana}</tt>
+- <tt>\p{In_IPA_Extensions}</tt>
+- <tt>\p{In_Ideographic_Description_Characters}</tt>
+- <tt>\p{In_Ideographic_Symbols_and_Punctuation}</tt>
+- <tt>\p{In_Imperial_Aramaic}</tt>
+- <tt>\p{In_Indic_Siyaq_Numbers}</tt>
+- <tt>\p{In_Inscriptional_Pahlavi}</tt>
+- <tt>\p{In_Inscriptional_Parthian}</tt>
+- <tt>\p{In_Javanese}</tt>
+- <tt>\p{In_Kaithi}</tt>
+- <tt>\p{In_Kaktovik_Numerals}</tt>
+- <tt>\p{In_Kana_Extended_A}</tt>
+- <tt>\p{In_Kana_Extended_B}</tt>
+- <tt>\p{In_Kana_Supplement}</tt>
+- <tt>\p{In_Kanbun}</tt>
+- <tt>\p{In_Kangxi_Radicals}</tt>
+- <tt>\p{In_Kannada}</tt>
+- <tt>\p{In_Katakana}</tt>
+- <tt>\p{In_Katakana_Phonetic_Extensions}</tt>
+- <tt>\p{In_Kawi}</tt>
+- <tt>\p{In_Kayah_Li}</tt>
+- <tt>\p{In_Kharoshthi}</tt>
+- <tt>\p{In_Khitan_Small_Script}</tt>
+- <tt>\p{In_Khmer}</tt>
+- <tt>\p{In_Khmer_Symbols}</tt>
+- <tt>\p{In_Khojki}</tt>
+- <tt>\p{In_Khudawadi}</tt>
+- <tt>\p{In_Lao}</tt>
+- <tt>\p{In_Latin_1_Supplement}</tt>
+- <tt>\p{In_Latin_Extended_A}</tt>
+- <tt>\p{In_Latin_Extended_Additional}</tt>
+- <tt>\p{In_Latin_Extended_B}</tt>
+- <tt>\p{In_Latin_Extended_C}</tt>
+- <tt>\p{In_Latin_Extended_D}</tt>
+- <tt>\p{In_Latin_Extended_E}</tt>
+- <tt>\p{In_Latin_Extended_F}</tt>
+- <tt>\p{In_Latin_Extended_G}</tt>
+- <tt>\p{In_Lepcha}</tt>
+- <tt>\p{In_Letterlike_Symbols}</tt>
+- <tt>\p{In_Limbu}</tt>
+- <tt>\p{In_Linear_A}</tt>
+- <tt>\p{In_Linear_B_Ideograms}</tt>
+- <tt>\p{In_Linear_B_Syllabary}</tt>
+- <tt>\p{In_Lisu}</tt>
+- <tt>\p{In_Lisu_Supplement}</tt>
+- <tt>\p{In_Low_Surrogates}</tt>
+- <tt>\p{In_Lycian}</tt>
+- <tt>\p{In_Lydian}</tt>
+- <tt>\p{In_Mahajani}</tt>
+- <tt>\p{In_Mahjong_Tiles}</tt>
+- <tt>\p{In_Makasar}</tt>
+- <tt>\p{In_Malayalam}</tt>
+- <tt>\p{In_Mandaic}</tt>
+- <tt>\p{In_Manichaean}</tt>
+- <tt>\p{In_Marchen}</tt>
+- <tt>\p{In_Masaram_Gondi}</tt>
+- <tt>\p{In_Mathematical_Alphanumeric_Symbols}</tt>
+- <tt>\p{In_Mathematical_Operators}</tt>
+- <tt>\p{In_Mayan_Numerals}</tt>
+- <tt>\p{In_Medefaidrin}</tt>
+- <tt>\p{In_Meetei_Mayek}</tt>
+- <tt>\p{In_Meetei_Mayek_Extensions}</tt>
+- <tt>\p{In_Mende_Kikakui}</tt>
+- <tt>\p{In_Meroitic_Cursive}</tt>
+- <tt>\p{In_Meroitic_Hieroglyphs}</tt>
+- <tt>\p{In_Miao}</tt>
+- <tt>\p{In_Miscellaneous_Mathematical_Symbols_A}</tt>
+- <tt>\p{In_Miscellaneous_Mathematical_Symbols_B}</tt>
+- <tt>\p{In_Miscellaneous_Symbols}</tt>
+- <tt>\p{In_Miscellaneous_Symbols_and_Arrows}</tt>
+- <tt>\p{In_Miscellaneous_Symbols_and_Pictographs}</tt>
+- <tt>\p{In_Miscellaneous_Technical}</tt>
+- <tt>\p{In_Modi}</tt>
+- <tt>\p{In_Modifier_Tone_Letters}</tt>
+- <tt>\p{In_Mongolian}</tt>
+- <tt>\p{In_Mongolian_Supplement}</tt>
+- <tt>\p{In_Mro}</tt>
+- <tt>\p{In_Multani}</tt>
+- <tt>\p{In_Musical_Symbols}</tt>
+- <tt>\p{In_Myanmar}</tt>
+- <tt>\p{In_Myanmar_Extended_A}</tt>
+- <tt>\p{In_Myanmar_Extended_B}</tt>
+- <tt>\p{In_NKo}</tt>
+- <tt>\p{In_Nabataean}</tt>
+- <tt>\p{In_Nag_Mundari}</tt>
+- <tt>\p{In_Nandinagari}</tt>
+- <tt>\p{In_New_Tai_Lue}</tt>
+- <tt>\p{In_Newa}</tt>
+- <tt>\p{In_No_Block}</tt>
+- <tt>\p{In_Number_Forms}</tt>
+- <tt>\p{In_Nushu}</tt>
+- <tt>\p{In_Nyiakeng_Puachue_Hmong}</tt>
+- <tt>\p{In_Ogham}</tt>
+- <tt>\p{In_Ol_Chiki}</tt>
+- <tt>\p{In_Old_Hungarian}</tt>
+- <tt>\p{In_Old_Italic}</tt>
+- <tt>\p{In_Old_North_Arabian}</tt>
+- <tt>\p{In_Old_Permic}</tt>
+- <tt>\p{In_Old_Persian}</tt>
+- <tt>\p{In_Old_Sogdian}</tt>
+- <tt>\p{In_Old_South_Arabian}</tt>
+- <tt>\p{In_Old_Turkic}</tt>
+- <tt>\p{In_Old_Uyghur}</tt>
+- <tt>\p{In_Optical_Character_Recognition}</tt>
+- <tt>\p{In_Oriya}</tt>
+- <tt>\p{In_Ornamental_Dingbats}</tt>
+- <tt>\p{In_Osage}</tt>
+- <tt>\p{In_Osmanya}</tt>
+- <tt>\p{In_Ottoman_Siyaq_Numbers}</tt>
+- <tt>\p{In_Pahawh_Hmong}</tt>
+- <tt>\p{In_Palmyrene}</tt>
+- <tt>\p{In_Pau_Cin_Hau}</tt>
+- <tt>\p{In_Phags_pa}</tt>
+- <tt>\p{In_Phaistos_Disc}</tt>
+- <tt>\p{In_Phoenician}</tt>
+- <tt>\p{In_Phonetic_Extensions}</tt>
+- <tt>\p{In_Phonetic_Extensions_Supplement}</tt>
+- <tt>\p{In_Playing_Cards}</tt>
+- <tt>\p{In_Private_Use_Area}</tt>
+- <tt>\p{In_Psalter_Pahlavi}</tt>
+- <tt>\p{In_Rejang}</tt>
+- <tt>\p{In_Rumi_Numeral_Symbols}</tt>
+- <tt>\p{In_Runic}</tt>
+- <tt>\p{In_Samaritan}</tt>
+- <tt>\p{In_Saurashtra}</tt>
+- <tt>\p{In_Sharada}</tt>
+- <tt>\p{In_Shavian}</tt>
+- <tt>\p{In_Shorthand_Format_Controls}</tt>
+- <tt>\p{In_Siddham}</tt>
+- <tt>\p{In_Sinhala}</tt>
+- <tt>\p{In_Sinhala_Archaic_Numbers}</tt>
+- <tt>\p{In_Small_Form_Variants}</tt>
+- <tt>\p{In_Small_Kana_Extension}</tt>
+- <tt>\p{In_Sogdian}</tt>
+- <tt>\p{In_Sora_Sompeng}</tt>
+- <tt>\p{In_Soyombo}</tt>
+- <tt>\p{In_Spacing_Modifier_Letters}</tt>
+- <tt>\p{In_Specials}</tt>
+- <tt>\p{In_Sundanese}</tt>
+- <tt>\p{In_Sundanese_Supplement}</tt>
+- <tt>\p{In_Superscripts_and_Subscripts}</tt>
+- <tt>\p{In_Supplemental_Arrows_A}</tt>
+- <tt>\p{In_Supplemental_Arrows_B}</tt>
+- <tt>\p{In_Supplemental_Arrows_C}</tt>
+- <tt>\p{In_Supplemental_Mathematical_Operators}</tt>
+- <tt>\p{In_Supplemental_Punctuation}</tt>
+- <tt>\p{In_Supplemental_Symbols_and_Pictographs}</tt>
+- <tt>\p{In_Supplementary_Private_Use_Area_A}</tt>
+- <tt>\p{In_Supplementary_Private_Use_Area_B}</tt>
+- <tt>\p{In_Sutton_SignWriting}</tt>
+- <tt>\p{In_Syloti_Nagri}</tt>
+- <tt>\p{In_Symbols_and_Pictographs_Extended_A}</tt>
+- <tt>\p{In_Symbols_for_Legacy_Computing}</tt>
+- <tt>\p{In_Syriac}</tt>
+- <tt>\p{In_Syriac_Supplement}</tt>
+- <tt>\p{In_Tagalog}</tt>
+- <tt>\p{In_Tagbanwa}</tt>
+- <tt>\p{In_Tags}</tt>
+- <tt>\p{In_Tai_Le}</tt>
+- <tt>\p{In_Tai_Tham}</tt>
+- <tt>\p{In_Tai_Viet}</tt>
+- <tt>\p{In_Tai_Xuan_Jing_Symbols}</tt>
+- <tt>\p{In_Takri}</tt>
+- <tt>\p{In_Tamil}</tt>
+- <tt>\p{In_Tamil_Supplement}</tt>
+- <tt>\p{In_Tangsa}</tt>
+- <tt>\p{In_Tangut}</tt>
+- <tt>\p{In_Tangut_Components}</tt>
+- <tt>\p{In_Tangut_Supplement}</tt>
+- <tt>\p{In_Telugu}</tt>
+- <tt>\p{In_Thaana}</tt>
+- <tt>\p{In_Thai}</tt>
+- <tt>\p{In_Tibetan}</tt>
+- <tt>\p{In_Tifinagh}</tt>
+- <tt>\p{In_Tirhuta}</tt>
+- <tt>\p{In_Toto}</tt>
+- <tt>\p{In_Transport_and_Map_Symbols}</tt>
+- <tt>\p{In_Ugaritic}</tt>
+- <tt>\p{In_Unified_Canadian_Aboriginal_Syllabics}</tt>
+- <tt>\p{In_Unified_Canadian_Aboriginal_Syllabics_Extended}</tt>
+- <tt>\p{In_Unified_Canadian_Aboriginal_Syllabics_Extended_A}</tt>
+- <tt>\p{In_Vai}</tt>
+- <tt>\p{In_Variation_Selectors}</tt>
+- <tt>\p{In_Variation_Selectors_Supplement}</tt>
+- <tt>\p{In_Vedic_Extensions}</tt>
+- <tt>\p{In_Vertical_Forms}</tt>
+- <tt>\p{In_Vithkuqi}</tt>
+- <tt>\p{In_Wancho}</tt>
+- <tt>\p{In_Warang_Citi}</tt>
+- <tt>\p{In_Yezidi}</tt>
+- <tt>\p{In_Yi_Radicals}</tt>
+- <tt>\p{In_Yi_Syllables}</tt>
+- <tt>\p{In_Yijing_Hexagram_Symbols}</tt>
+- <tt>\p{In_Zanabazar_Square}</tt>
+- <tt>\p{In_Znamenny_Musical_Notation}</tt>
+
+=== Emoji
+
+- <tt>\p{Emoji}</tt>
+- <tt>\p{Emoji_Component}</tt>, <tt>\p{EComp}</tt>
+- <tt>\p{Emoji_Modifier}</tt>, <tt>\p{EMod}</tt>
+- <tt>\p{Emoji_Modifier_Base}</tt>, <tt>\p{EBase}</tt>
+- <tt>\p{Emoji_Presentation}</tt>, <tt>\p{EPres}</tt>
+- <tt>\p{Extended_Pictographic}</tt>, <tt>\p{ExtPict}</tt>
+
+=== Graphemes
+
+- <tt>\p{Grapheme_Cluster_Break_CR}</tt>
+- <tt>\p{Grapheme_Cluster_Break_Control}</tt>
+- <tt>\p{Grapheme_Cluster_Break_Extend}</tt>
+- <tt>\p{Grapheme_Cluster_Break_L}</tt>
+- <tt>\p{Grapheme_Cluster_Break_LF}</tt>
+- <tt>\p{Grapheme_Cluster_Break_LV}</tt>
+- <tt>\p{Grapheme_Cluster_Break_LVT}</tt>
+- <tt>\p{Grapheme_Cluster_Break_Prepend}</tt>
+- <tt>\p{Grapheme_Cluster_Break_Regional_Indicator}</tt>
+- <tt>\p{Grapheme_Cluster_Break_SpacingMark}</tt>
+- <tt>\p{Grapheme_Cluster_Break_T}</tt>
+- <tt>\p{Grapheme_Cluster_Break_V}</tt>
+- <tt>\p{Grapheme_Cluster_Break_ZWJ}</tt>
+
+=== Derived Ages
+
+- <tt>\p{Age_10_0}</tt>
+- <tt>\p{Age_11_0}</tt>
+- <tt>\p{Age_12_0}</tt>
+- <tt>\p{Age_12_1}</tt>
+- <tt>\p{Age_13_0}</tt>
+- <tt>\p{Age_14_0}</tt>
+- <tt>\p{Age_15_0}</tt>
+- <tt>\p{Age_1_1}</tt>
+- <tt>\p{Age_2_0}</tt>
+- <tt>\p{Age_2_1}</tt>
+- <tt>\p{Age_3_0}</tt>
+- <tt>\p{Age_3_1}</tt>
+- <tt>\p{Age_3_2}</tt>
+- <tt>\p{Age_4_0}</tt>
+- <tt>\p{Age_4_1}</tt>
+- <tt>\p{Age_5_0}</tt>
+- <tt>\p{Age_5_1}</tt>
+- <tt>\p{Age_5_2}</tt>
+- <tt>\p{Age_6_0}</tt>
+- <tt>\p{Age_6_1}</tt>
+- <tt>\p{Age_6_2}</tt>
+- <tt>\p{Age_6_3}</tt>
+- <tt>\p{Age_7_0}</tt>
+- <tt>\p{Age_8_0}</tt>
+- <tt>\p{Age_9_0}</tt>

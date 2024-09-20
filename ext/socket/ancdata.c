@@ -1555,6 +1555,10 @@ bsock_recvmsg_internal(VALUE sock,
 
     ss = rb_recvmsg(fptr->fd, &mh, flags);
 
+    if (ss == 0 && !rsock_is_dgram(fptr)) {
+        return Qnil;
+    }
+
     if (ss == -1) {
         int e;
         if (!nonblock && rb_io_maybe_wait_readable(errno, fptr->self, RUBY_IO_TIMEOUT_DEFAULT)) {

@@ -14,7 +14,7 @@ ms = "a".."k"
     o.send(meth)
   end
 end
-}, '[ruby-dev:39453]'
+}, '[ruby-dev:39453]' unless rjit_enabled? # speed up RJIT CI
 
 assert_normal_exit %q{
 a = []

@@ -3,7 +3,7 @@ require "stringio"
 
 describe "StringIO#truncate when passed [length]" do
   before :each do
-    @io = StringIO.new('123456789')
+    @io = StringIO.new(+'123456789')
   end
 
   it "returns an Integer" do
@@ -16,7 +16,7 @@ describe "StringIO#truncate when passed [length]" do
   end
 
   it "does not create a copy of the underlying string" do
-    io = StringIO.new(str = "123456789")
+    io = StringIO.new(str = +"123456789")
     io.truncate(4)
     io.string.should equal(str)
   end
@@ -52,10 +52,10 @@ end
 
 describe "StringIO#truncate when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io.truncate(2) }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io.truncate(2) }.should raise_error(IOError)
   end

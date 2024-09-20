@@ -40,9 +40,9 @@ impl TryFrom<u64> for BitmaskImmediate {
     type Error = ();
 
     /// Attempt to convert a u64 into a BitmaskImmediate.
-    /// 
+    ///
     /// The implementation here is largely based on this blog post:
-    /// https://dougallj.wordpress.com/2021/10/30/bit-twiddling-optimising-aarch64-logical-immediate-encoding-and-decoding/
+    /// <https://dougallj.wordpress.com/2021/10/30/bit-twiddling-optimising-aarch64-logical-immediate-encoding-and-decoding/>
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         if value == 0 || value == u64::MAX {
             return Err(());
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_failures() {
-        vec![5, 9, 10, 11, 13, 17, 18, 19].iter().for_each(|&imm| {
+        [5, 9, 10, 11, 13, 17, 18, 19].iter().for_each(|&imm| {
             assert!(BitmaskImmediate::try_from(imm).is_err());
         });
     }

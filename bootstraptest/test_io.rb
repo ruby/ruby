@@ -91,7 +91,7 @@ assert_normal_exit %q{
     at_exit { p :foo }
 
     megacontent = "abc" * 12345678
-    #File.open("megasrc", "w") {|f| f << megacontent }
+    #File.write("megasrc", megacontent)
 
     t0 = Thread.main
     Thread.new { sleep 0.001 until t0.stop?; Process.kill(:INT, $$) }

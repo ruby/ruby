@@ -1,12 +1,14 @@
 # frozen_string_literal: true
+
 require_relative "helper"
+require "rubygems/bundler_version_finder"
 
 class TestGemBundlerVersionFinder < Gem::TestCase
   def setup
-    super
-
     @argv = ARGV.dup
     @dollar_0 = $0
+    super
+
     without_any_upwards_gemfiles
   end
 
@@ -43,6 +45,8 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     assert_equal v("1.1.1.1"), bvf.bundler_version
     ARGV.replace %w[update --bundler\ 1.1.1.2 --bundler --bundler 1.1.1.1 gem_name]
     assert_equal v("1.1.1.1"), bvf.bundler_version
+    $0 = "/foo/bar/bundler"
+    assert_equal v("1.1.1.1"), bvf.bundler_version
     $0 = "other"
     assert_nil bvf.bundler_version
   end
@@ -77,7 +81,7 @@ class TestGemBundlerVersionFinder < Gem::TestCase
   end
 
   def test_deleted_directory
-    pend "Cannot perform this test on windows" if win_platform?
+    pend "Cannot perform this test on windows" if Gem.win_platform?
     pend "Cannot perform this test on Solaris" if RUBY_PLATFORM.include?("solaris")
     require "tmpdir"
 

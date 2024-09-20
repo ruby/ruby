@@ -52,9 +52,19 @@ describe "Socket::BasicSocket#recv_nonblock" do
       @s2.send("data", 0, @s1.getsockname)
       IO.select([@s1], nil, nil, 2)
 
-      buf = "foo"
-      @s1.recv_nonblock(5, 0, buf)
-      buf.should == "data"
+      buffer = +"foo"
+      @s1.recv_nonblock(5, 0, buffer).should.equal?(buffer)
+      buffer.should == "data"
+    end
+
+    it "preserves the encoding of the given buffer" do
+      @s1.bind(Socket.pack_sockaddr_in(0, ip_address))
+      @s2.send("data", 0, @s1.getsockname)
+      IO.select([@s1], nil, nil, 2)
+
+      buffer = ''.encode(Encoding::ISO_8859_1)
+      @s1.recv_nonblock(5, 0, buffer)
+      buffer.encoding.should == Encoding::ISO_8859_1
     end
 
     it "does not block if there's no data available" do

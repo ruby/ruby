@@ -9,11 +9,11 @@ RSpec.describe Bundler::Plugin do
   let(:spec2) { double(:spec2) }
 
   before do
-    build_lib "new-plugin", :path => lib_path("new-plugin") do |s|
+    build_lib "new-plugin", path: lib_path("new-plugin") do |s|
       s.write "plugins.rb"
     end
 
-    build_lib "another-plugin", :path => lib_path("another-plugin") do |s|
+    build_lib "another-plugin", path: lib_path("another-plugin") do |s|
       s.write "plugins.rb"
     end
 
@@ -225,7 +225,7 @@ RSpec.describe Bundler::Plugin do
     end
   end
 
-  describe "#source_from_lock" do
+  describe "#from_lock" do
     it "returns instance of registered class initialized with locked opts" do
       opts = { "type" => "l_source", "remote" => "xyz", "other" => "random" }
       allow(index).to receive(:source_plugin).with("l_source") { "plugin_name" }
@@ -236,7 +236,7 @@ RSpec.describe Bundler::Plugin do
 
       expect(SClass).to receive(:new).
         with(hash_including("type" => "l_source", "uri" => "xyz", "other" => "random")) { s_instance }
-      expect(subject.source_from_lock(opts)).to be(s_instance)
+      expect(subject.from_lock(opts)).to be(s_instance)
     end
   end
 
@@ -247,7 +247,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       it "returns plugin dir in app .bundle path" do
-        expect(subject.root).to eq(bundled_app.join(".bundle/plugin"))
+        expect(subject.root).to eq(bundled_app(".bundle/plugin"))
       end
     end
 
@@ -257,7 +257,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       it "returns plugin dir in global bundle path" do
-        expect(subject.root).to eq(home.join(".bundle/plugin"))
+        expect(subject.root).to eq(home(".bundle/plugin"))
       end
     end
   end
@@ -275,7 +275,7 @@ RSpec.describe Bundler::Plugin do
   describe "#hook" do
     before do
       path = lib_path("foo-plugin")
-      build_lib "foo-plugin", :path => path do |s|
+      build_lib "foo-plugin", path: path do |s|
         s.write "plugins.rb", code
       end
 

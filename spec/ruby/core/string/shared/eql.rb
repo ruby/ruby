@@ -13,15 +13,15 @@ describe :string_eql_value, shared: true do
   end
 
   it "ignores encoding difference of compatible string" do
-    "hello".force_encoding("utf-8").send(@method, "hello".force_encoding("iso-8859-1")).should be_true
+    "hello".dup.force_encoding("utf-8").send(@method, "hello".dup.force_encoding("iso-8859-1")).should be_true
   end
 
   it "considers encoding difference of incompatible string" do
-    "\xff".force_encoding("utf-8").send(@method, "\xff".force_encoding("iso-8859-1")).should be_false
+    "\xff".dup.force_encoding("utf-8").send(@method, "\xff".dup.force_encoding("iso-8859-1")).should be_false
   end
 
   it "considers encoding compatibility" do
-    "abcd".force_encoding("utf-8").send(@method, "abcd".force_encoding("utf-32le")).should be_false
+    "abcd".dup.force_encoding("utf-8").send(@method, "abcd".dup.force_encoding("utf-32le")).should be_false
   end
 
   it "ignores subclass differences" do
@@ -33,6 +33,6 @@ describe :string_eql_value, shared: true do
   end
 
   it "returns true when comparing 2 empty strings but one is not ASCII-compatible" do
-    "".send(@method, "".force_encoding('iso-2022-jp')).should == true
+    "".send(@method, "".dup.force_encoding('iso-2022-jp')).should == true
   end
 end

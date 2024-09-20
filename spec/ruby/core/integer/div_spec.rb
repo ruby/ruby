@@ -143,4 +143,12 @@ describe "Integer#div" do
       -> { @bignum.div(-0) }.should raise_error(ZeroDivisionError)
     end
   end
+
+  context "rational" do
+    it "returns self divided by the given argument as an Integer" do
+      2.div(6/5r).should == 1
+      1.div(6/5r).should == 0
+      5.div(6/5r).should == 4
+    end
+  end
 end

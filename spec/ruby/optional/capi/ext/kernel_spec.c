@@ -220,8 +220,8 @@ static VALUE kernel_spec_rb_eval_string_protect(VALUE self, VALUE str, VALUE ary
 
 VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
   errno = 1;
-  if(msg == Qnil) {
-    rb_sys_fail(0);
+  if (msg == Qnil) {
+    rb_sys_fail(NULL);
   } else if (self != Qundef) {
     rb_sys_fail(StringValuePtr(msg));
   }
@@ -229,7 +229,7 @@ VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
 }
 
 VALUE kernel_spec_rb_syserr_fail(VALUE self, VALUE err, VALUE msg) {
-  if(msg == Qnil) {
+  if (msg == Qnil) {
     rb_syserr_fail(NUM2INT(err), NULL);
   } else if (self != Qundef) {
     rb_syserr_fail(NUM2INT(err), StringValuePtr(msg));
@@ -292,9 +292,9 @@ static VALUE kernel_spec_rb_yield_values2(VALUE self, VALUE ary) {
 }
 
 static VALUE do_rec(VALUE obj, VALUE arg, int is_rec) {
-  if(is_rec) {
+  if (is_rec) {
     return obj;
-  } else if(arg == Qtrue) {
+  } else if (arg == Qtrue) {
     return rb_exec_recursive(do_rec, obj, Qnil);
   } else {
     return Qnil;
@@ -340,8 +340,12 @@ static VALUE kernel_spec_rb_funcallv_public(VALUE self, VALUE obj, VALUE method)
   return rb_funcallv_public(obj, SYM2ID(method), 0, NULL);
 }
 
-static VALUE kernel_spec_rb_funcall_with_block(VALUE self, VALUE obj, VALUE method, VALUE block) {
-  return rb_funcall_with_block(obj, SYM2ID(method), 0, NULL, block);
+static VALUE kernel_spec_rb_funcall_with_block(VALUE self, VALUE obj, VALUE method, VALUE args, VALUE block) {
+  return rb_funcall_with_block(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args), block);
+}
+
+static VALUE kernel_spec_rb_funcall_with_block_kw(VALUE self, VALUE obj, VALUE method, VALUE args, VALUE block) {
+  return rb_funcall_with_block_kw(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args), block, RB_PASS_KEYWORDS);
 }
 
 static VALUE kernel_spec_rb_funcall_many_args(VALUE self, VALUE obj, VALUE method) {
@@ -349,6 +353,15 @@ static VALUE kernel_spec_rb_funcall_many_args(VALUE self, VALUE obj, VALUE metho
                     INT2FIX(15), INT2FIX(14), INT2FIX(13), INT2FIX(12), INT2FIX(11),
                     INT2FIX(10), INT2FIX(9), INT2FIX(8), INT2FIX(7), INT2FIX(6),
                     INT2FIX(5), INT2FIX(4), INT2FIX(3), INT2FIX(2), INT2FIX(1));
+}
+
+static VALUE kernel_spec_rb_check_funcall(VALUE self, VALUE receiver, VALUE method, VALUE args) {
+  VALUE ret = rb_check_funcall(receiver, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args));
+  if (ret == Qundef) {
+    return ID2SYM(rb_intern("Qundef"));
+  } else {
+    return ret;
+  }
 }
 
 void Init_kernel_spec(void) {
@@ -397,7 +410,9 @@ void Init_kernel_spec(void) {
 #endif
   rb_define_method(cls, "rb_funcallv_public", kernel_spec_rb_funcallv_public, 2);
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
-  rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 3);
+  rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 4);
+  rb_define_method(cls, "rb_funcall_with_block_kw", kernel_spec_rb_funcall_with_block_kw, 4);
+  rb_define_method(cls, "rb_check_funcall", kernel_spec_rb_check_funcall, 3);
 }
 
 #ifdef __cplusplus

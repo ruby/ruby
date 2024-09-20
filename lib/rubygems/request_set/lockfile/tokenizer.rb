@@ -1,4 +1,6 @@
-#) frozen_string_literal: true
+# frozen_string_literal: true
+
+# ) frozen_string_literal: true
 require_relative "parser"
 
 class Gem::RequestSet::Lockfile::Tokenizer
@@ -48,7 +50,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   def next_token
     @tokens.shift
   end
-  alias :shift :next_token
+  alias_method :shift, :next_token
 
   def peek
     @tokens.first || EOF
@@ -73,13 +75,14 @@ class Gem::RequestSet::Lockfile::Tokenizer
       end
 
       @tokens <<
-        case
-        when s.scan(/\r?\n/) then
+        if s.scan(/\r?\n/)
+
           token = Token.new(:newline, nil, *token_pos(pos))
           @line_pos = s.pos
           @line += 1
           token
-        when s.scan(/[A-Z]+/) then
+        elsif s.scan(/[A-Z]+/)
+
           if leading_whitespace
             text = s.matched
             text += s.scan(/[^\s)]*/).to_s # in case of no match
@@ -87,20 +90,27 @@ class Gem::RequestSet::Lockfile::Tokenizer
           else
             Token.new(:section, s.matched, *token_pos(pos))
           end
-        when s.scan(/([a-z]+):\s/) then
+        elsif s.scan(/([a-z]+):\s/)
+
           s.pos -= 1 # rewind for possible newline
           Token.new(:entry, s[1], *token_pos(pos))
-        when s.scan(/\(/) then
+        elsif s.scan(/\(/)
+
           Token.new(:l_paren, nil, *token_pos(pos))
-        when s.scan(/\)/) then
+        elsif s.scan(/\)/)
+
           Token.new(:r_paren, nil, *token_pos(pos))
-        when s.scan(/<=|>=|=|~>|<|>|!=/) then
+        elsif s.scan(/<=|>=|=|~>|<|>|!=/)
+
           Token.new(:requirement, s.matched, *token_pos(pos))
-        when s.scan(/,/) then
+        elsif s.scan(/,/)
+
           Token.new(:comma, nil, *token_pos(pos))
-        when s.scan(/!/) then
+        elsif s.scan(/!/)
+
           Token.new(:bang, nil, *token_pos(pos))
-        when s.scan(/[^\s),!]*/) then
+        elsif s.scan(/[^\s),!]*/)
+
           Token.new(:text, s.matched, *token_pos(pos))
         else
           raise "BUG: can't create token for: #{s.string[s.pos..-1].inspect}"

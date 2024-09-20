@@ -19,7 +19,7 @@ module Bundler::PubGrub
         true
       end
 
-      def eql?
+      def eql?(other)
         other.empty?
       end
 
@@ -65,6 +65,7 @@ module Bundler::PubGrub
     end
 
     EMPTY = Empty.new
+    Empty.singleton_class.undef_method(:new)
 
     def self.empty
       EMPTY
@@ -88,7 +89,8 @@ module Bundler::PubGrub
 
     def eql?(other)
       if other.is_a?(VersionRange)
-        min.eql?(other.min) &&
+        !other.empty? &&
+          min.eql?(other.min) &&
           max.eql?(other.max) &&
           include_min.eql?(other.include_min) &&
           include_max.eql?(other.include_max)
@@ -397,7 +399,7 @@ module Bundler::PubGrub
 
     def constraints
       return ["any"] if any?
-      return ["= #{min}"] if min == max
+      return ["= #{min}"] if min.to_s == max.to_s
 
       c = []
       c << "#{include_min ? ">=" : ">"} #{min}" if min

@@ -9,17 +9,23 @@ module Bundler
     def restart_with_locked_bundler_if_needed
       return unless needs_switching? && installed?
 
-      restart_with(lockfile_version)
+      restart_with(restart_version)
     end
 
     def install_locked_bundler_and_restart_with_it_if_needed
       return unless needs_switching?
 
-      Bundler.ui.info \
-        "Bundler #{current_version} is running, but your lockfile was generated with #{lockfile_version}. " \
-        "Installing Bundler #{lockfile_version} and restarting using that version."
+      if restart_version == lockfile_version
+        Bundler.ui.info \
+          "Bundler #{current_version} is running, but your lockfile was generated with #{lockfile_version}. " \
+          "Installing Bundler #{lockfile_version} and restarting using that version."
+      else
+        Bundler.ui.info \
+          "Bundler #{current_version} is running, but your configuration was #{restart_version}. " \
+          "Installing Bundler #{restart_version} and restarting using that version."
+      end
 
-      install_and_restart_with(lockfile_version)
+      install_and_restart_with(restart_version)
     end
 
     def update_bundler_and_restart_with_it_if_needed(target)
@@ -64,8 +70,23 @@ module Bundler
       configured_gem_home = ENV["GEM_HOME"]
       configured_gem_path = ENV["GEM_PATH"]
 
-      cmd = [$PROGRAM_NAME, *ARGV]
-      cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
+      # Bundler specs need some stuff to be required before Bundler starts
+      # running, for example, for faking the compact index API. However, these
+      # flags are lost when we reexec to a different version of Bundler. In the
+      # future, we may be able to properly reconstruct the original Ruby
+      # invocation (see https://bugs.ruby-lang.org/issues/6648), but for now
+      # there's no way to do it, so we need to be explicit about how to re-exec.
+      # This may be a feature end users request at some point, but maybe by that
+      # time, we have builtin tools to do. So for now, we use an undocumented
+      # ENV variable only for our specs.
+      bundler_spec_original_cmd = ENV["BUNDLER_SPEC_ORIGINAL_CMD"]
+      if bundler_spec_original_cmd
+        require "shellwords"
+        cmd = [*Shellwords.shellsplit(bundler_spec_original_cmd), *ARGV]
+      else
+        cmd = [$PROGRAM_NAME, *ARGV]
+        cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
+      end
 
       Bundler.with_original_env do
         Kernel.exec(
@@ -79,12 +100,14 @@ module Bundler
       autoswitching_applies? &&
         released?(lockfile_version) &&
         !running?(lockfile_version) &&
-        !updating?
+        !updating? &&
+        Bundler.settings[:version] != "system"
     end
 
     def autoswitching_applies?
       ENV["BUNDLER_VERSION"].nil? &&
         Bundler.rubygems.supports_bundler_trampolining? &&
+        ruby_can_restart_with_same_arguments? &&
         SharedHelpers.in_bundle? &&
         lockfile_version
     end
@@ -114,7 +137,7 @@ module Bundler
         source = Bundler::Source::Rubygems.new("remotes" => "https://rubygems.org")
         source.remote!
         source.add_dependency_names("bundler")
-        source.specs
+        source.specs.select(&:matches_current_metadata?)
       end
     end
 
@@ -144,6 +167,10 @@ module Bundler
       !version.to_s.end_with?(".dev")
     end
 
+    def ruby_can_restart_with_same_arguments?
+      $PROGRAM_NAME != "-e"
+    end
+
     def updating?
       "update".start_with?(ARGV.first || " ") && ARGV[1..-1].any? {|a| a.start_with?("--bundler") }
     end
@@ -151,7 +178,7 @@ module Bundler
     def installed?
       Bundler.configure
 
-      Bundler.rubygems.find_bundler(lockfile_version.to_s)
+      Bundler.rubygems.find_bundler(restart_version.to_s)
     end
 
     def current_version
@@ -163,6 +190,17 @@ module Bundler
 
       parsed_version = Bundler::LockfileParser.bundled_with
       @lockfile_version = parsed_version ? Gem::Version.new(parsed_version) : nil
+    rescue ArgumentError
+      @lockfile_version = nil
+    end
+
+    def restart_version
+      return @restart_version if defined?(@restart_version)
+      # BUNDLE_VERSION=x.y.z
+      @restart_version = Gem::Version.new(Bundler.settings[:version])
+    rescue ArgumentError
+      # BUNDLE_VERSION=lockfile
+      @restart_version = lockfile_version
     end
   end
 end

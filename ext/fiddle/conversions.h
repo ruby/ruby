@@ -50,4 +50,6 @@ VALUE generic_to_value(VALUE rettype, fiddle_generic retval);
 # define NUM2PTR(x)   ((void*)(NUM2ULL(x)))
 #endif
 
+#define CBOOL2RBBOOL(cbool) ((cbool) ? RUBY_Qtrue : RUBY_Qfalse)
+
 #endif

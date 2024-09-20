@@ -19,7 +19,7 @@ Bundler loads configuration settings in this order:
 3. Global config (`~/.bundle/config`)
 4. Bundler default config
 
-Executing `bundle config list` with will print a list of all bundler
+Executing `bundle config list` will print a list of all bundler
 configuration for the current bundle, and where that configuration
 was set.
 
@@ -137,9 +137,6 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
-* `allow_deployment_source_credential_changes` (`BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES`):
-   When in deployment mode, allow changing the credentials to a gem's source.
-   Ex: `https://some.host.com/gems/path/` -> `https://user_name:password@some.host.com/gems/path`
 * `allow_offline_install` (`BUNDLE_ALLOW_OFFLINE_INSTALL`):
    Allow Bundler to use cached data when installing without network access.
 * `auto_clean_without_path` (`BUNDLE_AUTO_CLEAN_WITHOUT_PATH`):
@@ -265,9 +262,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `ssl_verify_mode` (`BUNDLE_SSL_VERIFY_MODE`):
    The SSL verification mode Bundler uses when making HTTPS requests.
    Defaults to verify peer.
-* `suppress_install_using_messages` (`BUNDLE_SUPPRESS_INSTALL_USING_MESSAGES`):
-   Avoid printing `Using ...` messages during installation when the version of
-   a gem has not changed.
 * `system_bindir` (`BUNDLE_SYSTEM_BINDIR`):
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
@@ -277,6 +271,12 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    and disallow passing no options to `bundle update`.
 * `user_agent` (`BUNDLE_USER_AGENT`):
    The custom user agent fragment Bundler includes in API requests.
+* `version` (`BUNDLE_VERSION`):
+   The version of Bundler to use when running under Bundler environment.
+   Defaults to `lockfile`. You can also specify `system` or `x.y.z`.
+   `lockfile` will use the Bundler version specified in the `Gemfile.lock`,
+   `system` will use the system version of Bundler, and `x.y.z` will use
+   the specified version of Bundler.
 * `with` (`BUNDLE_WITH`):
    A `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
@@ -385,10 +385,10 @@ copy-pasting bundler output.
 Also note that to guarantee a sane mapping between valid environment variable
 names and valid host names, bundler makes the following transformations:
 
-* Any `-` characters in a host name are mapped to a triple dash (`___`) in the
+* Any `-` characters in a host name are mapped to a triple underscore (`___`) in the
   corresponding environment variable.
 
-* Any `.` characters in a host name are mapped to a double dash (`__`) in the
+* Any `.` characters in a host name are mapped to a double underscore (`__`) in the
   corresponding environment variable.
 
 This means that if you have a gem server named `my.gem-host.com`, you'll need to
@@ -397,7 +397,7 @@ through ENV.
 
 ## CONFIGURE BUNDLER DIRECTORIES
 
-Bundler's home, config, cache and plugin directories are able to be configured
+Bundler's home, cache and plugin directories and config file can be configured
 through environment variables. The default location for Bundler's home directory is
 `~/.bundle`, which all directories inherit from by default. The following
 outlines the available environment variables and their default values

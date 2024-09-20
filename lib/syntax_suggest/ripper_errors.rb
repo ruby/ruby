@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 module SyntaxSuggest
-  # Capture parse errors from ripper
+  # Capture parse errors from Ripper
+  #
+  # Prism returns the errors with their messages, but Ripper
+  # does not. To get them we must make a custom subclass.
   #
   # Example:
   #

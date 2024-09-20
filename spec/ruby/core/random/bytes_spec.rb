@@ -9,7 +9,6 @@ describe "Random#bytes" do
     Random.new(33).bytes(2).should == Random.new(33).bytes(2)
   end
 
-  # Should double check this is official spec
   it "returns the same numeric output for a given seed across all implementations and platforms" do
     rnd = Random.new(33)
     rnd.bytes(2).should == "\x14\\"

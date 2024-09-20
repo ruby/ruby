@@ -64,31 +64,18 @@ describe "String#rjust with length, padding" do
     -> { "hello".rjust(10, '') }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on subclasses" do
-      StringSpecs::MyString.new("").rjust(10).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").rjust(10).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
+  it "returns String instances when called on subclasses" do
+    StringSpecs::MyString.new("").rjust(10).should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").rjust(10).should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
 
-      "".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-      "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on subclasses" do
-      StringSpecs::MyString.new("").rjust(10).should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").rjust(10).should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-
-      "".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-      "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    end
+    "".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    "foo".rjust(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
   end
 
   describe "with width" do
     it "returns a String in the same encoding as the original" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.rjust 5
       result.should == "  abc"
       result.encoding.should equal(Encoding::IBM437)
@@ -97,7 +84,7 @@ describe "String#rjust with length, padding" do
 
   describe "with width, pattern" do
     it "returns a String in the compatible encoding" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.rjust 5, "あ"
       result.should == "ああabc"
       result.encoding.should equal(Encoding::UTF_8)

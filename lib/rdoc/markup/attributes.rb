@@ -68,4 +68,3 @@ class RDoc::Markup::Attributes
   end
 
 end
-

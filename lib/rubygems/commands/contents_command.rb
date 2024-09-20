@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../version_option"
 
@@ -7,8 +8,8 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
   def initialize
     super "contents", "Display the contents of the installed gems",
-          :specdirs => [], :lib_only => false, :prefix => true,
-          :show_install_dir => false
+          specdirs: [], lib_only: false, prefix: true,
+          show_install_dir: false
 
     add_version_option
 
@@ -91,9 +92,9 @@ prefix or only the files that are requireable.
 
   def files_in_gem(spec)
     gem_path  = spec.full_gem_path
-    extra     = "/{#{spec.require_paths.join ','}}" if options[:lib_only]
+    extra     = "/{#{spec.require_paths.join ","}}" if options[:lib_only]
     glob      = "#{gem_path}#{extra}/**/*"
-    prefix_re = /#{Regexp.escape(gem_path)}\//
+    prefix_re = %r{#{Regexp.escape(gem_path)}/}
 
     Dir[glob].map do |file|
       [gem_path, file.sub(prefix_re, "")]
@@ -103,7 +104,7 @@ prefix or only the files that are requireable.
   def files_in_default_gem(spec)
     spec.files.map do |file|
       case file
-      when /\A#{spec.bindir}\//
+      when %r{\A#{spec.bindir}/}
         # $' is POSTMATCH
         [RbConfig::CONFIG["bindir"], $']
       when /\.so\z/
@@ -177,7 +178,7 @@ prefix or only the files that are requireable.
       @spec_dirs.sort.each {|dir| say dir }
     end
 
-    return nil
+    nil
   end
 
   def specification_directories # :nodoc:

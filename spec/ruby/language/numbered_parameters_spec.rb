@@ -22,7 +22,7 @@ describe "Numbered parameters" do
   it "does not support more than 9 parameters" do
     -> {
       proc { [_10] }.call(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-    }.should raise_error(NameError, /undefined local variable or method `_10'/)
+    }.should raise_error(NameError, /undefined local variable or method [`']_10'/)
   end
 
   it "can not be used in both outer and nested blocks at the same time" do
@@ -31,38 +31,19 @@ describe "Numbered parameters" do
     }.should raise_error(SyntaxError, /numbered parameter is already used in/m)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "can be overwritten with local variable" do
-      suppress_warning do
-        eval <<~CODE
-          _1 = 0
-          proc { _1 }.call("a").should == 0
-        CODE
-      end
-    end
-
-    it "warns when numbered parameter is overwritten with local variable" do
-      -> {
-        eval("_1 = 0")
-      }.should complain(/warning: `_1' is reserved for numbered parameter; consider another name/)
-    end
+  it "cannot be overwritten with local variable" do
+    -> {
+      eval <<~CODE
+        _1 = 0
+        proc { _1 }.call("a").should == 0
+      CODE
+    }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
   end
 
-  ruby_version_is '3.0' do
-    it "cannot be overwritten with local variable" do
-      -> {
-        eval <<~CODE
-          _1 = 0
-          proc { _1 }.call("a").should == 0
-        CODE
-      }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
-    end
-
-    it "errors when numbered parameter is overwritten with local variable" do
-      -> {
-        eval("_1 = 0")
-      }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
-    end
+  it "errors when numbered parameter is overwritten with local variable" do
+    -> {
+      eval("_1 = 0")
+    }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
   end
 
   it "raises SyntaxError when block parameters are specified explicitly" do
@@ -80,16 +61,8 @@ describe "Numbered parameters" do
   end
 
   describe "assigning to a numbered parameter" do
-    ruby_version_is ''...'3.0' do
-      it "warns" do
-        -> { eval("proc { _1 = 0 }") }.should complain(/warning: `_1' is reserved for numbered parameter; consider another name/)
-      end
-    end
-
-    ruby_version_is '3.0' do
-      it "raises SyntaxError" do
-        -> { eval("proc { _1 = 0 }") }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
-      end
+    it "raises SyntaxError" do
+      -> { eval("proc { _1 = 0 }") }.should raise_error(SyntaxError, /_1 is reserved for numbered parameter/)
     end
   end
 
@@ -107,6 +80,19 @@ describe "Numbered parameters" do
     ->     { _9 }.arity.should == 9
     proc   { _9 }.arity.should == 9
     lambda { _9 }.arity.should == 9
+  end
+
+  it "affects block parameters" do
+    -> { _1 }.parameters.should == [[:req, :_1]]
+    -> { _2 }.parameters.should == [[:req, :_1], [:req, :_2]]
+
+    proc { _1 }.parameters.should == [[:opt, :_1]]
+    proc { _2 }.parameters.should == [[:opt, :_1], [:opt, :_2]]
+  end
+
+  it "affects binding local variables" do
+    -> { _1; binding.local_variables }.call("a").should == [:_1]
+    -> { _2; binding.local_variables }.call("a", "b").should == [:_1, :_2]
   end
 
   it "does not work in methods" do

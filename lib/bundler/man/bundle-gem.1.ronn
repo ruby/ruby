@@ -41,12 +41,12 @@ configuration file using the following names:
   Do not create a `CODE_OF_CONDUCT.md` (overrides `--coc` specified in the
   global config).
 
-* `--ext`:
-  Add boilerplate for C extension code to the generated project. This behavior
+* `--ext=c`, `--ext=rust`
+  Add boilerplate for C or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
   is disabled by default.
 
 * `--no-ext`:
-  Do not add C extension code (overrides `--ext` specified in the global
+  Do not add extension code (overrides `--ext` specified in the global
   config).
 
 * `--mit`:
@@ -76,9 +76,13 @@ configuration file using the following names:
   the answer will be saved in Bundler's global config for future `bundle gem`
   use.
 
-* `--ci`, `--ci=github`, `--ci=travis`, `--ci=gitlab`, `--ci=circle`:
+* `--no-test`:
+  Do not use a test framework (overrides `--test` specified in the global
+  config).
+
+* `--ci`, `--ci=github`, `--ci=gitlab`, `--ci=circle`:
   Specify the continuous integration service that Bundler should use when
-  generating the project. Acceptable values are `github`, `travis`, `gitlab`
+  generating the project. Acceptable values are `github`, `gitlab`
   and `circle`. A configuration file will be generated in the project directory.
   Given no option is specified:
 
@@ -91,6 +95,10 @@ configuration file using the following names:
   When Bundler is unconfigured, an interactive prompt will be displayed and
   the answer will be saved in Bundler's global config for future `bundle gem`
   use.
+
+* `--no-ci`:
+  Do not use a continuous integration service (overrides `--ci` specified in
+  the global config).
 
 * `--linter`, `--linter=rubocop`, `--linter=standard`:
   Specify the linter and code formatter that Bundler should add to the
@@ -107,6 +115,9 @@ configuration file using the following names:
   When Bundler is unconfigured, an interactive prompt will be displayed and
   the answer will be saved in Bundler's global config for future `bundle gem`
   use.
+
+* `--no-linter`:
+  Do not add a linter (overrides `--linter` specified in the global config).
 
 * `-e`, `--edit[=EDITOR]`:
   Open the resulting GEM_NAME.gemspec in EDITOR, or the default editor if not

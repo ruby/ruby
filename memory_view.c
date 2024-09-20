@@ -845,9 +845,7 @@ rb_memory_view_release(rb_memory_view_t* view)
         if (rv) {
             unregister_exported_object(view->obj);
             view->obj = Qnil;
-            if (view->item_desc.components) {
-                xfree((void *)view->item_desc.components);
-            }
+            xfree((void *)view->item_desc.components);
         }
         return rv;
     }
@@ -865,7 +863,7 @@ Init_MemoryView(void)
     VALUE obj = TypedData_Wrap_Struct(
         0, &rb_memory_view_exported_object_registry_data_type,
         exported_object_table);
-    rb_gc_register_mark_object(obj);
+    rb_vm_register_global_object(obj);
     rb_memory_view_exported_object_registry = obj;
 
     id_memory_view = rb_intern_const("__memory_view__");

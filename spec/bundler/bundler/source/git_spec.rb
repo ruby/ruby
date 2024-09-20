@@ -38,7 +38,7 @@ RSpec.describe Bundler::Source::Git do
 
     context "when the source has a reference" do
       let(:git_proxy_stub) do
-        instance_double(Bundler::Source::Git::GitProxy, :revision => "123abc", :branch => "v1.0.0")
+        instance_double(Bundler::Source::Git::GitProxy, revision: "123abc", branch: "v1.0.0")
       end
       let(:options) do
         { "uri" => uri, "ref" => "v1.0.0" }
@@ -55,7 +55,7 @@ RSpec.describe Bundler::Source::Git do
 
     context "when the source has both reference and glob specifiers" do
       let(:git_proxy_stub) do
-        instance_double(Bundler::Source::Git::GitProxy, :revision => "123abc", :branch => "v1.0.0")
+        instance_double(Bundler::Source::Git::GitProxy, revision: "123abc", branch: "v1.0.0")
       end
       let(:options) do
         { "uri" => uri, "ref" => "v1.0.0", "glob" => "gems/foo/*.gemspec" }

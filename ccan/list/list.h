@@ -635,14 +635,16 @@ static inline void ccan_list_prepend_list_(struct ccan_list_head *to,
 
 /* internal macros, do not use directly */
 #define ccan_list_for_each_off_dir_(h, i, off, dir)				\
-	for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir,	\
+	for (i = 0, \
+	     i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir, \
 				   (off));				\
 	ccan_list_node_from_off_((void *)i, (off)) != &(h)->n;		\
 	i = ccan_list_node_to_off_(ccan_list_node_from_off_((void *)i, (off))->dir, \
 			      (off)))
 
 #define ccan_list_for_each_safe_off_dir_(h, i, nxt, off, dir)		\
-	for (i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir,	\
+	for (i = 0, \
+	     i = ccan_list_node_to_off_(ccan_list_debug(h, CCAN_LIST_LOC)->n.dir, \
 				   (off)),				\
 	nxt = ccan_list_node_to_off_(ccan_list_node_from_off_(i, (off))->dir,	\
 				(off));					\

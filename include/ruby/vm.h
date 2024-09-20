@@ -49,6 +49,13 @@ int ruby_vm_destruct(ruby_vm_t *vm);
  */
 void ruby_vm_at_exit(void(*func)(ruby_vm_t *));
 
+/**
+ * Returns whether the Ruby VM will free all memory at shutdown.
+ *
+ * @return true if free-at-exit is enabled, false otherwise.
+ */
+bool ruby_free_at_exit_p(void);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_VM_H */

@@ -186,6 +186,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     @blockdev
   end
 
+  def root_without_capabilities?
+    return false unless Process.uid == 0
+    return false unless system('command', '-v', 'capsh', out: File::NULL)
+    !system('capsh', '--has-p=CAP_DAC_OVERRIDE', out: File::NULL, err: File::NULL)
+  end
+
   def test_path
     [regular_file, utf8_file].each do |file|
       assert_equal(file, File.open(file) {|f| f.path})
@@ -1409,7 +1415,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_flock_exclusive
     omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
-    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
+    timeout = EnvUtil.apply_timeout_scale(1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_EX)
       assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
@@ -1440,7 +1446,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_flock_shared
     omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
 
-    timeout = EnvUtil.apply_timeout_scale(0.1).to_s
+    timeout = EnvUtil.apply_timeout_scale(1).to_s
     File.open(regular_file, "r+") do |f|
       f.flock(File::LOCK_SH)
       assert_separately(["-rtimeout", "-", regular_file, timeout], "#{<<-"begin;"}\n#{<<-'end;'}")
@@ -1517,9 +1523,12 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(File.zero?(f), test(?z, f), f)
 
       stat = File.stat(f)
-      assert_equal(stat.atime, File.atime(f), f)
-      assert_equal(stat.ctime, File.ctime(f), f)
-      assert_equal(stat.mtime, File.mtime(f), f)
+      unless stat.chardev?
+        # null device may be accessed by other processes
+        assert_equal(stat.atime, File.atime(f), f)
+        assert_equal(stat.ctime, File.ctime(f), f)
+        assert_equal(stat.mtime, File.mtime(f), f)
+      end
       assert_bool_equal(stat.blockdev?, File.blockdev?(f), f)
       assert_bool_equal(stat.chardev?, File.chardev?(f), f)
       assert_bool_equal(stat.directory?, File.directory?(f), f)
@@ -1535,8 +1544,17 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_equal(stat.size?, File.size?(f), f)
       assert_bool_equal(stat.socket?, File.socket?(f), f)
       assert_bool_equal(stat.setuid?, File.setuid?(f), f)
-      assert_bool_equal(stat.writable?, File.writable?(f), f)
-      assert_bool_equal(stat.writable_real?, File.writable_real?(f), f)
+      # It's possible in Linux to be uid 0, but not to have the CAP_DAC_OVERRIDE
+      # capability that allows skipping file permissions checks (e.g. some kinds
+      # of "rootless" container setups). In these cases, stat.writable? will be
+      # true (because it always returns true if Process.uid == 0), but
+      # File.writeable? will be false (because it actually asks the kernel to do
+      # an access check).
+      # Skip these two assertions in that case.
+      unless root_without_capabilities?
+        assert_bool_equal(stat.writable?, File.writable?(f), f)
+        assert_bool_equal(stat.writable_real?, File.writable_real?(f), f)
+      end
       assert_bool_equal(stat.executable?, File.executable?(f), f)
       assert_bool_equal(stat.executable_real?, File.executable_real?(f), f)
       assert_bool_equal(stat.zero?, File.zero?(f), f)

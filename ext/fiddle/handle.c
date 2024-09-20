@@ -50,8 +50,13 @@ fiddle_handle_memsize(const void *ptr)
 }
 
 static const rb_data_type_t fiddle_handle_data_type = {
-    "fiddle/handle",
-    {0, fiddle_handle_free, fiddle_handle_memsize,},
+    .wrap_struct_name = "fiddle/handle",
+    .function = {
+        .dmark = 0,
+        .dfree = fiddle_handle_free,
+        .dsize = fiddle_handle_memsize
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -582,5 +587,3 @@ Init_fiddle_handle(void)
     rb_define_method(rb_cHandle, "enable_close", rb_fiddle_handle_enable_close, 0);
     rb_define_method(rb_cHandle, "close_enabled?", rb_fiddle_handle_close_enabled_p, 0);
 }
-
-/* vim: set noet sws=4 sw=4: */

@@ -282,6 +282,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(3, a.current)
   end
 
+  def test_zip_map_lambda_bug_19569
+    ary = [1, 2, 3].to_enum.lazy.zip([:a, :b, :c]).map(&:last).to_a
+    assert_equal([:a, :b, :c], ary)
+  end
+
   def test_take
     a = Step.new(1..10)
     assert_equal(1, a.take(5).first)
@@ -482,6 +487,10 @@ EOS
     assert_equal Enumerator, enum.class
     assert_equal 3, enum.size
     assert_equal [1, 2, 3], enum.map { |x| x / 2 }
+  end
+
+  def test_lazy_zip_map_yield_arity_bug_20623
+    assert_equal([[1, 2]], [1].lazy.zip([2].lazy).map { |x| x }.force)
   end
 
   def test_lazy_to_enum

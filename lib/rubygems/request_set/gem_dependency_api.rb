@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A semi-compatible DSL for the Bundler Gemfile and Isolate gem dependencies
 # files.
@@ -32,22 +33,22 @@
 
 class Gem::RequestSet::GemDependencyAPI
   ENGINE_MAP = { # :nodoc:
-    :jruby => %w[jruby],
-    :jruby_18 => %w[jruby],
-    :jruby_19 => %w[jruby],
-    :maglev => %w[maglev],
-    :mri => %w[ruby],
-    :mri_18 => %w[ruby],
-    :mri_19 => %w[ruby],
-    :mri_20 => %w[ruby],
-    :mri_21 => %w[ruby],
-    :rbx => %w[rbx],
-    :truffleruby => %w[truffleruby],
-    :ruby => %w[ruby rbx maglev truffleruby],
-    :ruby_18 => %w[ruby rbx maglev truffleruby],
-    :ruby_19 => %w[ruby rbx maglev truffleruby],
-    :ruby_20 => %w[ruby rbx maglev truffleruby],
-    :ruby_21 => %w[ruby rbx maglev truffleruby],
+    jruby: %w[jruby],
+    jruby_18: %w[jruby],
+    jruby_19: %w[jruby],
+    maglev: %w[maglev],
+    mri: %w[ruby],
+    mri_18: %w[ruby],
+    mri_19: %w[ruby],
+    mri_20: %w[ruby],
+    mri_21: %w[ruby],
+    rbx: %w[rbx],
+    truffleruby: %w[truffleruby],
+    ruby: %w[ruby rbx maglev truffleruby],
+    ruby_18: %w[ruby rbx maglev truffleruby],
+    ruby_19: %w[ruby rbx maglev truffleruby],
+    ruby_20: %w[ruby rbx maglev truffleruby],
+    ruby_21: %w[ruby rbx maglev truffleruby],
   }.freeze
 
   mswin     = Gem::Platform.new "x86-mswin32"
@@ -56,39 +57,39 @@ class Gem::RequestSet::GemDependencyAPI
   x64_mingw = Gem::Platform.new "x64-mingw32"
 
   PLATFORM_MAP = { # :nodoc:
-    :jruby => Gem::Platform::RUBY,
-    :jruby_18 => Gem::Platform::RUBY,
-    :jruby_19 => Gem::Platform::RUBY,
-    :maglev => Gem::Platform::RUBY,
-    :mingw => x86_mingw,
-    :mingw_18 => x86_mingw,
-    :mingw_19 => x86_mingw,
-    :mingw_20 => x86_mingw,
-    :mingw_21 => x86_mingw,
-    :mri => Gem::Platform::RUBY,
-    :mri_18 => Gem::Platform::RUBY,
-    :mri_19 => Gem::Platform::RUBY,
-    :mri_20 => Gem::Platform::RUBY,
-    :mri_21 => Gem::Platform::RUBY,
-    :mswin => mswin,
-    :mswin_18 => mswin,
-    :mswin_19 => mswin,
-    :mswin_20 => mswin,
-    :mswin_21 => mswin,
-    :mswin64 => mswin64,
-    :mswin64_19 => mswin64,
-    :mswin64_20 => mswin64,
-    :mswin64_21 => mswin64,
-    :rbx => Gem::Platform::RUBY,
-    :ruby => Gem::Platform::RUBY,
-    :ruby_18 => Gem::Platform::RUBY,
-    :ruby_19 => Gem::Platform::RUBY,
-    :ruby_20 => Gem::Platform::RUBY,
-    :ruby_21 => Gem::Platform::RUBY,
-    :truffleruby => Gem::Platform::RUBY,
-    :x64_mingw => x64_mingw,
-    :x64_mingw_20 => x64_mingw,
-    :x64_mingw_21 => x64_mingw,
+    jruby: Gem::Platform::RUBY,
+    jruby_18: Gem::Platform::RUBY,
+    jruby_19: Gem::Platform::RUBY,
+    maglev: Gem::Platform::RUBY,
+    mingw: x86_mingw,
+    mingw_18: x86_mingw,
+    mingw_19: x86_mingw,
+    mingw_20: x86_mingw,
+    mingw_21: x86_mingw,
+    mri: Gem::Platform::RUBY,
+    mri_18: Gem::Platform::RUBY,
+    mri_19: Gem::Platform::RUBY,
+    mri_20: Gem::Platform::RUBY,
+    mri_21: Gem::Platform::RUBY,
+    mswin: mswin,
+    mswin_18: mswin,
+    mswin_19: mswin,
+    mswin_20: mswin,
+    mswin_21: mswin,
+    mswin64: mswin64,
+    mswin64_19: mswin64,
+    mswin64_20: mswin64,
+    mswin64_21: mswin64,
+    rbx: Gem::Platform::RUBY,
+    ruby: Gem::Platform::RUBY,
+    ruby_18: Gem::Platform::RUBY,
+    ruby_19: Gem::Platform::RUBY,
+    ruby_20: Gem::Platform::RUBY,
+    ruby_21: Gem::Platform::RUBY,
+    truffleruby: Gem::Platform::RUBY,
+    x64_mingw: x64_mingw,
+    x64_mingw_20: x64_mingw,
+    x64_mingw_21: x64_mingw,
   }.freeze
 
   gt_eq_0        = Gem::Requirement.new ">= 0"
@@ -98,70 +99,70 @@ class Gem::RequestSet::GemDependencyAPI
   tilde_gt_2_1_0 = Gem::Requirement.new "~> 2.1.0"
 
   VERSION_MAP = { # :nodoc:
-    :jruby => gt_eq_0,
-    :jruby_18 => tilde_gt_1_8_0,
-    :jruby_19 => tilde_gt_1_9_0,
-    :maglev => gt_eq_0,
-    :mingw => gt_eq_0,
-    :mingw_18 => tilde_gt_1_8_0,
-    :mingw_19 => tilde_gt_1_9_0,
-    :mingw_20 => tilde_gt_2_0_0,
-    :mingw_21 => tilde_gt_2_1_0,
-    :mri => gt_eq_0,
-    :mri_18 => tilde_gt_1_8_0,
-    :mri_19 => tilde_gt_1_9_0,
-    :mri_20 => tilde_gt_2_0_0,
-    :mri_21 => tilde_gt_2_1_0,
-    :mswin => gt_eq_0,
-    :mswin_18 => tilde_gt_1_8_0,
-    :mswin_19 => tilde_gt_1_9_0,
-    :mswin_20 => tilde_gt_2_0_0,
-    :mswin_21 => tilde_gt_2_1_0,
-    :mswin64 => gt_eq_0,
-    :mswin64_19 => tilde_gt_1_9_0,
-    :mswin64_20 => tilde_gt_2_0_0,
-    :mswin64_21 => tilde_gt_2_1_0,
-    :rbx => gt_eq_0,
-    :ruby => gt_eq_0,
-    :ruby_18 => tilde_gt_1_8_0,
-    :ruby_19 => tilde_gt_1_9_0,
-    :ruby_20 => tilde_gt_2_0_0,
-    :ruby_21 => tilde_gt_2_1_0,
-    :truffleruby => gt_eq_0,
-    :x64_mingw => gt_eq_0,
-    :x64_mingw_20 => tilde_gt_2_0_0,
-    :x64_mingw_21 => tilde_gt_2_1_0,
+    jruby: gt_eq_0,
+    jruby_18: tilde_gt_1_8_0,
+    jruby_19: tilde_gt_1_9_0,
+    maglev: gt_eq_0,
+    mingw: gt_eq_0,
+    mingw_18: tilde_gt_1_8_0,
+    mingw_19: tilde_gt_1_9_0,
+    mingw_20: tilde_gt_2_0_0,
+    mingw_21: tilde_gt_2_1_0,
+    mri: gt_eq_0,
+    mri_18: tilde_gt_1_8_0,
+    mri_19: tilde_gt_1_9_0,
+    mri_20: tilde_gt_2_0_0,
+    mri_21: tilde_gt_2_1_0,
+    mswin: gt_eq_0,
+    mswin_18: tilde_gt_1_8_0,
+    mswin_19: tilde_gt_1_9_0,
+    mswin_20: tilde_gt_2_0_0,
+    mswin_21: tilde_gt_2_1_0,
+    mswin64: gt_eq_0,
+    mswin64_19: tilde_gt_1_9_0,
+    mswin64_20: tilde_gt_2_0_0,
+    mswin64_21: tilde_gt_2_1_0,
+    rbx: gt_eq_0,
+    ruby: gt_eq_0,
+    ruby_18: tilde_gt_1_8_0,
+    ruby_19: tilde_gt_1_9_0,
+    ruby_20: tilde_gt_2_0_0,
+    ruby_21: tilde_gt_2_1_0,
+    truffleruby: gt_eq_0,
+    x64_mingw: gt_eq_0,
+    x64_mingw_20: tilde_gt_2_0_0,
+    x64_mingw_21: tilde_gt_2_1_0,
   }.freeze
 
   WINDOWS = { # :nodoc:
-    :mingw => :only,
-    :mingw_18 => :only,
-    :mingw_19 => :only,
-    :mingw_20 => :only,
-    :mingw_21 => :only,
-    :mri => :never,
-    :mri_18 => :never,
-    :mri_19 => :never,
-    :mri_20 => :never,
-    :mri_21 => :never,
-    :mswin => :only,
-    :mswin_18 => :only,
-    :mswin_19 => :only,
-    :mswin_20 => :only,
-    :mswin_21 => :only,
-    :mswin64 => :only,
-    :mswin64_19 => :only,
-    :mswin64_20 => :only,
-    :mswin64_21 => :only,
-    :rbx => :never,
-    :ruby => :never,
-    :ruby_18 => :never,
-    :ruby_19 => :never,
-    :ruby_20 => :never,
-    :ruby_21 => :never,
-    :x64_mingw => :only,
-    :x64_mingw_20 => :only,
-    :x64_mingw_21 => :only,
+    mingw: :only,
+    mingw_18: :only,
+    mingw_19: :only,
+    mingw_20: :only,
+    mingw_21: :only,
+    mri: :never,
+    mri_18: :never,
+    mri_19: :never,
+    mri_20: :never,
+    mri_21: :never,
+    mswin: :only,
+    mswin_18: :only,
+    mswin_19: :only,
+    mswin_20: :only,
+    mswin_21: :only,
+    mswin64: :only,
+    mswin64_19: :only,
+    mswin64_20: :only,
+    mswin64_21: :only,
+    rbx: :never,
+    ruby: :never,
+    ruby_18: :never,
+    ruby_19: :never,
+    ruby_20: :never,
+    ruby_21: :never,
+    x64_mingw: :only,
+    x64_mingw_20: :only,
+    x64_mingw_21: :only,
   }.freeze
 
   ##
@@ -261,7 +262,7 @@ class Gem::RequestSet::GemDependencyAPI
       raise ArgumentError, "no gemspecs found at #{Dir.pwd}"
     else
       raise ArgumentError,
-        "found multiple gemspecs at #{Dir.pwd}, " +
+        "found multiple gemspecs at #{Dir.pwd}, " \
         "use the name: option to specify the one you want"
     end
   end
@@ -279,7 +280,7 @@ class Gem::RequestSet::GemDependencyAPI
   # Loads the gem dependency file and returns self.
 
   def load
-    instance_eval File.read(@path).tap(&Gem::UNTAINT), @path, 1
+    instance_eval File.read(@path), @path, 1
 
     self
   end
@@ -356,7 +357,7 @@ class Gem::RequestSet::GemDependencyAPI
   #   Use the given tag for git:, gist: and github: dependencies.
 
   def gem(name, *requirements)
-    options = requirements.pop if requirements.last.kind_of?(Hash)
+    options = requirements.pop if requirements.last.is_a?(Hash)
     options ||= {}
 
     options[:git] = @current_repository if @current_repository
@@ -435,7 +436,6 @@ Gem dependencies file #{@path} requires #{name} more than once.
     reference ||= ref
     reference ||= branch
     reference ||= tag
-    reference ||= "master"
 
     if ref && branch
       warn <<-WARNING
@@ -533,8 +533,8 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # platform matches the current platform.
 
   def gem_platforms(name, options) # :nodoc:
-    platform_names = Array(options.delete :platform)
-    platform_names.concat Array(options.delete :platforms)
+    platform_names = Array(options.delete(:platform))
+    platform_names.concat Array(options.delete(:platforms))
     platform_names.concat @current_platforms if @current_platforms
 
     return true if platform_names.empty?
@@ -593,7 +593,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_repository = repository
 
     yield
-
   ensure
     @current_repository = nil
   end
@@ -685,7 +684,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_groups = groups
 
     yield
-
   ensure
     @current_groups = nil
   end
@@ -760,7 +758,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_platforms = platforms
 
     yield
-
   ensure
     @current_platforms = nil
   end
@@ -771,7 +768,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # Block form for restricting gems to a particular set of platforms.  See
   # #platform.
 
-  alias :platforms :platform
+  alias_method :platforms, :platform
 
   ##
   # :category: Gem Dependencies DSL
@@ -793,15 +790,15 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     return true if @installing
 
-    unless RUBY_VERSION == version
-      message = "Your Ruby version is #{RUBY_VERSION}, " +
+    unless version == RUBY_VERSION
+      message = "Your Ruby version is #{RUBY_VERSION}, " \
                 "but your #{gem_deps_file} requires #{version}"
 
       raise Gem::RubyVersionMismatch, message
     end
 
     if engine && engine != Gem.ruby_engine
-      message = "Your Ruby engine is #{Gem.ruby_engine}, " +
+      message = "Your Ruby engine is #{Gem.ruby_engine}, " \
                 "but your #{gem_deps_file} requires #{engine}"
 
       raise Gem::RubyVersionMismatch, message
@@ -810,14 +807,14 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     if engine_version
       if engine_version != RUBY_ENGINE_VERSION
         message =
-          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " \
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message
       end
     end
 
-    return true
+    true
   end
 
   ##

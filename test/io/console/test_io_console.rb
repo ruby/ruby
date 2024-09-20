@@ -15,6 +15,7 @@ class TestIO_Console < Test::Unit::TestCase
     raise
   end
   PATHS.uniq!
+  INCLUDE_OPTS = "-I#{PATHS.join(File::PATH_SEPARATOR)}"
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
@@ -36,22 +37,22 @@ class TestIO_Console < Test::Unit::TestCase
     trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
 
+  exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
+    Errno.const_get(e) if Errno.const_defined?(e)
+  }
+  exceptions.compact!
+  FailedPathExceptions = (exceptions unless exceptions.empty?)
+
   def test_failed_path
-    exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
-      Errno.const_get(e) if Errno.const_defined?(e)
-    }
-    exceptions.compact!
-    omit if exceptions.empty?
     File.open(IO::NULL) do |f|
-      e = assert_raise(*exceptions) do
+      e = assert_raise(*FailedPathExceptions) do
         f.echo?
       end
       assert_include(e.message, IO::NULL)
     end
-  end
+  end if FailedPathExceptions
 
   def test_bad_keyword
-    omit if RUBY_ENGINE == 'jruby'
     assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
       File.open(IO::NULL) do |f|
         f.raw(bad: 0)
@@ -241,7 +242,6 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_getpass
-    omit unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -255,6 +255,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
       w.print "asdf\C-D\C-D"
+      sleep 0.1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+
+    run_pty("$VERBOSE, $/ = nil, '.'; p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      sleep 0.1
+      w.print "asdf\n"
       sleep 0.1
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
@@ -449,7 +458,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def run_pty(src, n = 1)
     pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
 
-    args = ["-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src]
+    args = [TestIO_Console::INCLUDE_OPTS, "-rio/console", "-e", src]
     args.shift if args.first == "-I" # statically linked
     r, w, pid = PTY.spawn(EnvUtil.rubybin, *args)
   rescue RuntimeError
@@ -543,6 +552,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
       t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
+        TestIO_Console::INCLUDE_OPTS,
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',

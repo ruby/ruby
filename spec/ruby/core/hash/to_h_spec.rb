@@ -37,6 +37,16 @@ describe "Hash#to_h" do
       { a: 1, b: 2 }.to_h { |k, v| [k.to_s, v*v]}.should == { "a" => 1, "b" => 4 }
     end
 
+    it "passes to a block each pair's key and value as separate arguments" do
+      ScratchPad.record []
+      { a: 1, b: 2 }.to_h { |k, v| ScratchPad << [k, v]; [k, v] }
+      ScratchPad.recorded.sort.should == [[:a, 1], [:b, 2]]
+
+      ScratchPad.record []
+      { a: 1, b: 2 }.to_h { |*args| ScratchPad << args; [args[0], args[1]] }
+      ScratchPad.recorded.sort.should == [[:a, 1], [:b, 2]]
+    end
+
     it "raises ArgumentError if block returns longer or shorter array" do
       -> do
         { a: 1, b: 2 }.to_h { |k, v| [k.to_s, v*v, 1] }

@@ -145,5 +145,22 @@ module Fiddle
       assert_equal("string: He, const string: World, uint: 29\n",
                    output_buffer[0, written])
     end
+
+    def test_rb_memory_view_available_p
+      omit "MemoryView is unavailable" unless defined? Fiddle::MemoryView
+      libruby = Fiddle.dlopen(nil)
+      case Fiddle::SIZEOF_VOIDP
+      when Fiddle::SIZEOF_LONG_LONG
+        value_type = -Fiddle::TYPE_LONG_LONG
+      else
+        value_type = -Fiddle::TYPE_LONG
+      end
+      rb_memory_view_available_p =
+        Function.new(libruby["rb_memory_view_available_p"],
+                     [value_type],
+                     :bool,
+                     need_gvl: true)
+      assert_equal(false, rb_memory_view_available_p.call(Fiddle::Qnil))
+    end
   end
 end if defined?(Fiddle)

@@ -15,16 +15,16 @@ describe "String#include? with String" do
 
   it "returns true if both strings are empty" do
     "".should.include?("")
-    "".force_encoding("EUC-JP").should.include?("")
-    "".should.include?("".force_encoding("EUC-JP"))
-    "".force_encoding("EUC-JP").should.include?("".force_encoding("EUC-JP"))
+    "".dup.force_encoding("EUC-JP").should.include?("")
+    "".should.include?("".dup.force_encoding("EUC-JP"))
+    "".dup.force_encoding("EUC-JP").should.include?("".dup.force_encoding("EUC-JP"))
   end
 
   it "returns true if the RHS is empty" do
     "a".should.include?("")
-    "a".force_encoding("EUC-JP").should.include?("")
-    "a".should.include?("".force_encoding("EUC-JP"))
-    "a".force_encoding("EUC-JP").should.include?("".force_encoding("EUC-JP"))
+    "a".dup.force_encoding("EUC-JP").should.include?("")
+    "a".should.include?("".dup.force_encoding("EUC-JP"))
+    "a".dup.force_encoding("EUC-JP").should.include?("".dup.force_encoding("EUC-JP"))
   end
 
   it "tries to convert other to string using to_str" do

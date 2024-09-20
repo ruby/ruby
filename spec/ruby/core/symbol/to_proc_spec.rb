@@ -12,38 +12,19 @@ describe "Symbol#to_proc" do
     :to_s.to_proc.call(obj).should == "Received #to_s"
   end
 
-  ruby_version_is ""..."3.0" do
-    it "returns a Proc with #lambda? false" do
-      pr = :to_s.to_proc
-      pr.should_not.lambda?
-    end
-
-    it "produces a Proc with arity -1" do
-      pr = :to_s.to_proc
-      pr.arity.should == -1
-    end
-
-    it "produces a Proc that always returns [[:rest]] for #parameters" do
-      pr = :to_s.to_proc
-      pr.parameters.should == [[:rest]]
-    end
+  it "returns a Proc with #lambda? true" do
+    pr = :to_s.to_proc
+    pr.should.lambda?
   end
 
-  ruby_version_is "3.0" do
-    it "returns a Proc with #lambda? true" do
-      pr = :to_s.to_proc
-      pr.should.lambda?
-    end
+  it "produces a Proc with arity -2" do
+    pr = :to_s.to_proc
+    pr.arity.should == -2
+  end
 
-    it "produces a Proc with arity -2" do
-      pr = :to_s.to_proc
-      pr.arity.should == -2
-    end
-
-    it "produces a Proc that always returns [[:req], [:rest]] for #parameters" do
-      pr = :to_s.to_proc
-      pr.parameters.should == [[:req], [:rest]]
-    end
+  it "produces a Proc that always returns [[:req], [:rest]] for #parameters" do
+    pr = :to_s.to_proc
+    pr.parameters.should == [[:req], [:rest]]
   end
 
   ruby_version_is "3.2" do
@@ -58,8 +39,8 @@ describe "Symbol#to_proc" do
       @a = []
       singleton_class.class_eval(&body)
       tap(&:pub)
-      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method `pro' called/)
-      proc{tap(&:pri)}.should raise_error(NoMethodError, /private method `pri' called/)
+      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method [`']pro' called/)
+      proc{tap(&:pri)}.should raise_error(NoMethodError, /private method [`']pri' called/)
       @a.should == [:pub]
 
       @a = []
@@ -67,8 +48,8 @@ describe "Symbol#to_proc" do
       o = c.new
       o.instance_variable_set(:@a, [])
       o.tap(&:pub)
-      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method `pro' called/)
-      proc{o.tap(&:pri)}.should raise_error(NoMethodError, /private method `pri' called/)
+      proc{tap(&:pro)}.should raise_error(NoMethodError, /protected method [`']pro' called/)
+      proc{o.tap(&:pri)}.should raise_error(NoMethodError, /private method [`']pri' called/)
       o.a.should == [:pub]
     end
   end

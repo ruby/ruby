@@ -140,6 +140,23 @@ describe "CApiIntegerSpecs" do
               result.should == -1
               @words.should == "\x11\x32\x54\x76\x98\xBA\xDC\xFE"
             end
+
+            it "converts numbers near the fixnum limit successfully" do
+              result = @s.rb_integer_pack(0x7123_4567_89ab_cdef, @words, 1, 8, 0,
+                CApiIntegerSpecs::NATIVE|CApiIntegerSpecs::PACK_2COMP)
+              result.should == 1
+              @words.should == "\xEF\xCD\xAB\x89\x67\x45\x23\x71"
+
+              result = @s.rb_integer_pack(2**62-1, @words, 1, 8, 0,
+                CApiIntegerSpecs::NATIVE|CApiIntegerSpecs::PACK_2COMP)
+              result.should == 1
+              @words.should == "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x3F"
+
+              result = @s.rb_integer_pack(2**63-1, @words, 1, 8, 0,
+                CApiIntegerSpecs::NATIVE|CApiIntegerSpecs::PACK_2COMP)
+              result.should == 1
+              @words.should == "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x7F"
+            end
           end
         end
       end

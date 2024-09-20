@@ -17,7 +17,11 @@ module Bundler
         if v.is_a?(Hash)
           yaml << dump_hash(v).gsub(/^(?!$)/, "  ") # indent all non-empty lines
         elsif v.is_a?(Array) # Expected to be array of strings
-          yaml << "\n- " << v.map {|s| s.to_s.gsub(/\s+/, " ").inspect }.join("\n- ") << "\n"
+          if v.empty?
+            yaml << " []\n"
+          else
+            yaml << "\n- " << v.map {|s| s.to_s.gsub(/\s+/, " ").inspect }.join("\n- ") << "\n"
+          end
         else
           yaml << " " << v.to_s.gsub(/\s+/, " ").inspect << "\n"
         end
@@ -32,30 +36,31 @@ module Bundler
       (.*) # value
       \1 # matching closing quote
       $
-    /xo.freeze
+    /xo
 
     HASH_REGEX = /
       ^
       ([ ]*) # indentations
-      (.+) # key
+      ([^#]+) # key excludes comment char '#'
       (?::(?=(?:\s|$))) # :  (without the lookahead the #key includes this when : is present in value)
       [ ]?
       (['"]?) # optional opening quote
       (.*) # value
       \3 # matching closing quote
       $
-    /xo.freeze
+    /xo
 
     def load(str)
       res = {}
       stack = [res]
       last_hash = nil
       last_empty_key = nil
-      str.split(/\r?\n/).each do |line|
+      str.split(/\r?\n/) do |line|
         if match = HASH_REGEX.match(line)
           indent, key, quote, val = match.captures
-          key = convert_to_backward_compatible_key(key)
-          depth = indent.scan(/  /).length
+          val = strip_comment(val)
+
+          depth = indent.size / 2
           if quote.empty? && val.empty?
             new_hash = {}
             stack[depth][key] = new_hash
@@ -63,10 +68,13 @@ module Bundler
             last_empty_key = key
             last_hash = stack[depth]
           else
+            val = [] if val == "[]" # empty array
             stack[depth][key] = val
           end
         elsif match = ARRAY_REGEX.match(line)
           _, val = match.captures
+          val = strip_comment(val)
+
           last_hash[last_empty_key] = [] unless last_hash[last_empty_key].is_a?(Array)
 
           last_hash[last_empty_key].push(val)
@@ -75,15 +83,16 @@ module Bundler
       res
     end
 
-    # for settings' keys
-    def convert_to_backward_compatible_key(key)
-      key = "#{key}/" if key =~ /https?:/i && key !~ %r{/\Z}
-      key = key.gsub(".", "__") if key.include?(".")
-      key
+    def strip_comment(val)
+      if val.include?("#") && !val.start_with?("#")
+        val.split("#", 2).first.strip
+      else
+        val
+      end
     end
 
     class << self
-      private :dump_hash, :convert_to_backward_compatible_key
+      private :dump_hash
     end
   end
 end

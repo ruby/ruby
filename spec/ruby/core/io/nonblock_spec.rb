@@ -12,43 +12,21 @@ platform_is_not :windows do
       end
     end
 
-    ruby_version_is ""..."3.0" do
-      it "returns false for pipe by default" do
-        r, w = IO.pipe
-        begin
-          r.nonblock?.should == false
-          w.nonblock?.should == false
-        ensure
-          r.close
-          w.close
-        end
-      end
-
-      it "returns false for socket by default" do
-        require 'socket'
-        TCPServer.open(0) do |socket|
-          socket.nonblock?.should == false
-        end
+    it "returns true for pipe by default" do
+      r, w = IO.pipe
+      begin
+        r.nonblock?.should == true
+        w.nonblock?.should == true
+      ensure
+        r.close
+        w.close
       end
     end
 
-    ruby_version_is "3.0" do
-      it "returns true for pipe by default" do
-        r, w = IO.pipe
-        begin
-          r.nonblock?.should == true
-          w.nonblock?.should == true
-        ensure
-          r.close
-          w.close
-        end
-      end
-
-      it "returns true for socket by default" do
-        require 'socket'
-        TCPServer.open(0) do |socket|
-          socket.nonblock?.should == true
-        end
+    it "returns true for socket by default" do
+      require 'socket'
+      TCPServer.open(0) do |socket|
+        socket.nonblock?.should == true
       end
     end
   end

@@ -38,13 +38,13 @@ pub struct ShiftImm {
 
 impl ShiftImm {
     /// LSL (immediate)
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LSL--immediate---Logical-Shift-Left--immediate---an-alias-of-UBFM-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/LSL--immediate---Logical-Shift-Left--immediate---an-alias-of-UBFM-?lang=en>
     pub fn lsl(rd: u8, rn: u8, shift: u8, num_bits: u8) -> Self {
         ShiftImm { rd, rn, shift, opc: Opc::LSL, sf: num_bits.into() }
     }
 
     /// LSR (immediate)
-    /// https://developer.arm.com/documentation/ddi0602/2021-12/Base-Instructions/LSR--immediate---Logical-Shift-Right--immediate---an-alias-of-UBFM-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0602/2021-12/Base-Instructions/LSR--immediate---Logical-Shift-Right--immediate---an-alias-of-UBFM-?lang=en>
     pub fn lsr(rd: u8, rn: u8, shift: u8, num_bits: u8) -> Self {
         ShiftImm { rd, rn, shift, opc: Opc::LSR, sf: num_bits.into() }
     }
@@ -85,7 +85,7 @@ impl ShiftImm {
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en#bitfield
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Data-Processing----Immediate?lang=en#bitfield>
 const FAMILY: u32 = 0b10011;
 
 impl From<ShiftImm> for u32 {

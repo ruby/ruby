@@ -53,7 +53,7 @@ class Gem::Source::Git < Gem::Source
     @uri = Gem::Uri.parse(repository)
     @name            = name
     @repository      = repository
-    @reference       = reference
+    @reference       = reference || "HEAD"
     @need_submodules = submodules
 
     @remote   = true
@@ -70,8 +70,6 @@ class Gem::Source::Git < Gem::Source
       -1
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 
@@ -159,12 +157,14 @@ class Gem::Source::Git < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, "[Git: ", "]" do
-      q.breakable
-      q.text @repository
+    q.object_group(self) do
+      q.group 2, "[Git: ", "]" do
+        q.breakable
+        q.text @repository
 
-      q.breakable
-      q.text @reference
+        q.breakable
+        q.text @reference
+      end
     end
   end
 
@@ -223,14 +223,14 @@ class Gem::Source::Git < Gem::Source
   end
 
   ##
-  # A hash for the git gem based on the git repository URI.
+  # A hash for the git gem based on the git repository Gem::URI.
 
   def uri_hash # :nodoc:
     require_relative "../openssl"
 
     normalized =
-      if @repository =~ %r{^\w+://(\w+@)?}
-        uri = URI(@repository).normalize.to_s.sub %r{/$},""
+      if @repository.match?(%r{^\w+://(\w+@)?})
+        uri = Gem::URI(@repository).normalize.to_s.sub %r{/$},""
         uri.sub(/\A(\w+)/) { $1.downcase }
       else
         @repository

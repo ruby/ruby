@@ -11,7 +11,7 @@ module Bug::Marshal
       assert_equal("hello", v.normal)
       assert_equal("world", v.internal)
       assert_equal("bye", v.encoding_short)
-      dump = assert_warn(/instance variable `E' on class \S+ is not dumped/) {
+      dump = assert_warn(/instance variable 'E' on class \S+ is not dumped/) {
         ::Marshal.dump(v)
       }
       v = assert_nothing_raised {break ::Marshal.load(dump)}

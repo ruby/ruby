@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/command"
 
@@ -15,7 +16,7 @@ class TestGemCommand < Gem::TestCase
     @common_options = Gem::Command.common_options.dup
     Gem::Command.common_options.clear
     Gem::Command.common_options << [
-      ["-x", "--exe", "Execute"], lambda do |*a|
+      ["-x", "--exe", "Execute"], lambda do |*_a|
         @xopt = true
       end
     ]
@@ -55,7 +56,9 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_self_extra_args
-    verbose, $VERBOSE, separator = $VERBOSE, nil, $;
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    separator = $;
     extra_args = Gem::Command.extra_args
 
     Gem::Command.extra_args = %w[--all]
@@ -68,7 +71,6 @@ class TestGemCommand < Gem::TestCase
 
     Gem::Command.extra_args = "--awesome=true --verbose"
     assert_equal %w[--awesome=true --verbose], Gem::Command.extra_args
-
   ensure
     Gem::Command.extra_args = extra_args
     $; = separator
@@ -90,7 +92,7 @@ class TestGemCommand < Gem::TestCase
       options[:help] = value
     end
 
-    @cmd.defaults = { :help => true }
+    @cmd.defaults = { help: true }
 
     @cmd.when_invoked do |options|
       assert options[:help], "Help options should default true"
@@ -100,7 +102,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke
     end
 
-    assert_match %r{Usage: gem doit}, @ui.output
+    assert_match(/Usage: gem doit/, @ui.output)
   end
 
   def test_invoke
@@ -151,7 +153,7 @@ class TestGemCommand < Gem::TestCase
     done = false
 
     use_ui @ui do
-      @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |value, options|
+      @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |_value, options|
         options[:help] = true
         done = true
       end
@@ -174,7 +176,7 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_invoke_with_options
-    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |value, options|
+    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |_value, options|
       options[:help] = true
     end
 
@@ -186,7 +188,7 @@ class TestGemCommand < Gem::TestCase
       @cmd.invoke "-h"
     end
 
-    assert_match %r{Usage: gem doit}, @ui.output
+    assert_match(/Usage: gem doit/, @ui.output)
   end
 
   def test_add_option
@@ -202,13 +204,13 @@ class TestGemCommand < Gem::TestCase
   end
 
   def test_option_recognition
-    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |value, options|
+    @cmd.add_option("-h", "--help [COMMAND]", "Get help on COMMAND") do |_value, options|
       options[:help] = true
     end
-    @cmd.add_option("-f", "--file FILE", "File option") do |value, options|
+    @cmd.add_option("-f", "--file FILE", "File option") do |_value, options|
       options[:help] = true
     end
-    @cmd.add_option("--silent", "Silence RubyGems output") do |value, options|
+    @cmd.add_option("--silent", "Silence RubyGems output") do |_value, options|
       options[:silent] = true
     end
     assert @cmd.handles?(["-x"])
@@ -232,11 +234,11 @@ class TestGemCommand < Gem::TestCase
 WARNING:  The \"--test\" option has been deprecated and will be removed in Rubygems 3.1.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -248,7 +250,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")
@@ -261,11 +263,11 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
 WARNING:  The \"--test\" option has been deprecated and will be removed in future versions of Rubygems.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -277,7 +279,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")
@@ -290,11 +292,11 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
 WARNING:  The \"--test\" option has been deprecated and will be removed in Rubygems 3.1. Whether you set `--test` mode or not, this dummy app always runs in test mode.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -306,7 +308,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")
@@ -319,11 +321,11 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in Rubyg
 WARNING:  The \"--test\" option has been deprecated and will be removed in future versions of Rubygems. Whether you set `--test` mode or not, this dummy app always runs in test mode.
     EXPECTED
 
-    testCommand = Class.new(Gem::Command) do
+    test_command = Class.new(Gem::Command) do
       def initialize
         super("test", "Gem::Command instance for testing")
 
-        add_option("-t", "--test", "Test command") do |value, options|
+        add_option("-t", "--test", "Test command") do |_value, options|
           options[:test] = true
         end
 
@@ -335,7 +337,7 @@ WARNING:  The \"--test\" option has been deprecated and will be removed in futur
       end
     end
 
-    cmd = testCommand.new
+    cmd = test_command.new
 
     use_ui @ui do
       cmd.invoke("--test")

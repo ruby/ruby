@@ -1,21 +1,14 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
-class TestKernel < Gem::TestCase
+class TestGemKernel < Gem::TestCase
   def setup
     super
-
-    @old_path = $:.dup
 
     util_make_gems
 
     without_any_upwards_gemfiles
-  end
-
-  def teardown
-    super
-
-    $:.replace @old_path
   end
 
   def test_gem
@@ -50,19 +43,29 @@ class TestKernel < Gem::TestCase
   def test_gem_redundant
     assert gem("a", "= 1"), "Should load"
     refute gem("a", "= 1"), "Should not load"
-    assert_equal 1, $:.select {|p| p.include?("a-1/lib") }.size
+    assert_equal 1, $:.count {|p| p.include?("a-1/lib") }
   end
 
   def test_gem_overlapping
     assert gem("a", "= 1"), "Should load"
     refute gem("a", ">= 1"), "Should not load"
-    assert_equal 1, $:.select {|p| p.include?("a-1/lib") }.size
+    assert_equal 1, $:.count {|p| p.include?("a-1/lib") }
   end
 
-  def test_gem_prerelease
+  def test_gem_prerelease_is_the_only_available
     quick_gem "d", "1.1.a"
-    refute gem("d", ">= 1"),   "release requirement must not load prerelease"
-    assert gem("d", ">= 1.a"), "prerelease requirement may load prerelease"
+
+    assert gem("d", ">= 1"), "release requirement may load prerelease when sole option"
+    assert $:.one? {|p| p.include?("/d-1.1.a/lib") }
+  end
+
+  def test_release_favored_over_prerelease
+    quick_gem "d", "1.1.a"
+    quick_gem "d", "1.2"
+    gem("d", ">= 1")
+
+    refute $:.any? {|p| p.include?("/d-1.1.a/lib") }
+    assert $:.one? {|p| p.include?("/d-1.2/lib") }
   end
 
   def test_gem_env_req
@@ -118,6 +121,8 @@ class TestKernel < Gem::TestCase
   end
 
   def test_gem_bundler_inferred_bundler_version
+    require "rubygems/bundler_version_finder"
+
     Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
       quick_gem "bundler", "1"
       quick_gem "bundler", "2.a"

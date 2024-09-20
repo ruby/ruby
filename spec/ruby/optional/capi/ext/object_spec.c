@@ -154,28 +154,10 @@ static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
   return rb_obj_method(obj, method);
 }
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(__clang__) && defined(__has_warning)
-# if __has_warning("-Wdeprecated-declarations")
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
-# endif
-#endif
-
 #ifndef RUBY_VERSION_IS_3_2
 static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
   return rb_obj_taint(obj);
 }
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-# pragma GCC diagnostic pop
-#elif defined(__clang__) && defined(__has_warning)
-# if __has_warning("-Wdeprecated-declarations")
-#  pragma clang diagnostic pop
-# endif
 #endif
 
 static VALUE so_require(VALUE self) {
@@ -197,11 +179,7 @@ static VALUE object_spec_rb_method_boundp(VALUE self, VALUE obj, VALUE method, V
 }
 
 static VALUE object_spec_rb_special_const_p(VALUE self, VALUE value) {
-  if (rb_special_const_p(value)) {
-    return Qtrue;
-  } else {
-    return Qfalse;
-  }
+  return rb_special_const_p(value);
 }
 
 static VALUE so_to_id(VALUE self, VALUE obj) {
@@ -218,126 +196,126 @@ static VALUE so_check_type(VALUE self, VALUE obj, VALUE other) {
 }
 
 static VALUE so_is_type_nil(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_NIL) {
+  if (TYPE(obj) == T_NIL) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_object(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_OBJECT) {
+  if (TYPE(obj) == T_OBJECT) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_array(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_ARRAY) {
+  if (TYPE(obj) == T_ARRAY) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_module(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_MODULE) {
+  if (TYPE(obj) == T_MODULE) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_class(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_CLASS) {
+  if (TYPE(obj) == T_CLASS) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_type_data(VALUE self, VALUE obj) {
-  if(TYPE(obj) == T_DATA) {
+  if (TYPE(obj) == T_DATA) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_nil(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_NIL)) {
+  if (rb_type_p(obj, T_NIL)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_object(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_OBJECT)) {
+  if (rb_type_p(obj, T_OBJECT)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_array(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_ARRAY)) {
+  if (rb_type_p(obj, T_ARRAY)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_module(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_MODULE)) {
+  if (rb_type_p(obj, T_MODULE)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_class(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_CLASS)) {
+  if (rb_type_p(obj, T_CLASS)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_data(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_DATA)) {
+  if (rb_type_p(obj, T_DATA)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_rb_type_p_file(VALUE self, VALUE obj) {
-  if(rb_type_p(obj, T_FILE)) {
+  if (rb_type_p(obj, T_FILE)) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_object(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_OBJECT) {
+  if (BUILTIN_TYPE(obj) == T_OBJECT) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_array(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_ARRAY) {
+  if (BUILTIN_TYPE(obj) == T_ARRAY) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_module(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_MODULE) {
+  if (BUILTIN_TYPE(obj) == T_MODULE) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_class(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_CLASS) {
+  if (BUILTIN_TYPE(obj) == T_CLASS) {
     return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE so_is_builtin_type_data(VALUE self, VALUE obj) {
-  if(BUILTIN_TYPE(obj) == T_DATA) {
+  if (BUILTIN_TYPE(obj) == T_DATA) {
     return Qtrue;
   }
   return Qfalse;
@@ -406,36 +384,28 @@ static VALUE object_spec_rb_ivar_foreach(VALUE self, VALUE obj) {
 }
 
 static VALUE speced_allocator(VALUE klass) {
-  VALUE flags = 0;
-  VALUE instance;
-  if (RTEST(rb_class_inherited_p(klass, rb_cString))) {
-    flags = T_STRING;
-  } else if (RTEST(rb_class_inherited_p(klass, rb_cArray))) {
-    flags = T_ARRAY;
-  } else {
-    flags = T_OBJECT;
-  }
-  instance = rb_newobj_of(klass, flags);
+  VALUE super = rb_class_get_superclass(klass);
+  VALUE instance = rb_get_alloc_func(super)(klass);
   rb_iv_set(instance, "@from_custom_allocator", Qtrue);
   return instance;
 }
 
-static VALUE define_alloc_func(VALUE self, VALUE klass) {
+static VALUE object_spec_rb_define_alloc_func(VALUE self, VALUE klass) {
   rb_define_alloc_func(klass, speced_allocator);
   return Qnil;
 }
 
-static VALUE undef_alloc_func(VALUE self, VALUE klass) {
+static VALUE object_spec_rb_undef_alloc_func(VALUE self, VALUE klass) {
   rb_undef_alloc_func(klass);
   return Qnil;
 }
 
-static VALUE speced_allocator_p(VALUE self, VALUE klass) {
+static VALUE object_spec_speced_allocator_p(VALUE self, VALUE klass) {
   rb_alloc_func_t allocator = rb_get_alloc_func(klass);
   return (allocator == speced_allocator) ? Qtrue : Qfalse;
 }
 
-static VALUE custom_alloc_func_p(VALUE self, VALUE klass) {
+static VALUE object_spec_custom_alloc_func_p(VALUE self, VALUE klass) {
   rb_alloc_func_t allocator = rb_get_alloc_func(klass);
   return allocator ? Qtrue : Qfalse;
 }
@@ -515,10 +485,10 @@ void Init_object_spec(void) {
   rb_define_method(cls, "rb_ivar_defined", object_spec_rb_ivar_defined, 2);
   rb_define_method(cls, "rb_copy_generic_ivar", object_spec_rb_copy_generic_ivar, 2);
   rb_define_method(cls, "rb_free_generic_ivar", object_spec_rb_free_generic_ivar, 1);
-  rb_define_method(cls, "rb_define_alloc_func", define_alloc_func, 1);
-  rb_define_method(cls, "rb_undef_alloc_func", undef_alloc_func, 1);
-  rb_define_method(cls, "speced_allocator?", speced_allocator_p, 1);
-  rb_define_method(cls, "custom_alloc_func?", custom_alloc_func_p, 1);
+  rb_define_method(cls, "rb_define_alloc_func", object_spec_rb_define_alloc_func, 1);
+  rb_define_method(cls, "rb_undef_alloc_func", object_spec_rb_undef_alloc_func, 1);
+  rb_define_method(cls, "speced_allocator?", object_spec_speced_allocator_p, 1);
+  rb_define_method(cls, "custom_alloc_func?", object_spec_custom_alloc_func_p, 1);
   rb_define_method(cls, "not_implemented_method", rb_f_notimplement, -1);
   rb_define_method(cls, "rb_ivar_foreach", object_spec_rb_ivar_foreach, 1);
 }

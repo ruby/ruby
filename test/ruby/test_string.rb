@@ -9,9 +9,6 @@ class TestString < Test::Unit::TestCase
 
   def initialize(*args)
     @cls = String
-    @aref_re_nth = true
-    @aref_re_silent = false
-    @aref_slicebang_silent = true
     super
   end
 
@@ -80,6 +77,13 @@ class TestString < Test::Unit::TestCase
     assert_equal("mystring", str.__send__(:initialize, "mystring", capacity: 1000))
     str = S("mystring")
     assert_equal("mystring", str.__send__(:initialize, str, capacity: 1000))
+
+    if @cls == String
+      100.times {
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".
+          __send__(:initialize, capacity: -1)
+      }
+    end
   end
 
   def test_initialize_shared
@@ -100,7 +104,7 @@ class TestString < Test::Unit::TestCase
     return unless @cls == String
 
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {('x'*100000).__send__(:initialize, '')}
+code = proc {('x'*100_000).__send__(:initialize, '')}
 1_000.times(&code)
 PREP
 100_000.times(&code)
@@ -112,7 +116,7 @@ CODE
     return unless @cls == String
 
     assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
-code = proc {0.to_s.__send__(:initialize, capacity: 10000)}
+code = proc {0.to_s.__send__(:initialize, capacity: 100_000)}
 1_000.times(&code)
 PREP
 100_000.times(&code)
@@ -146,14 +150,12 @@ CODE
     assert_equal(nil,      S("FooBar")[S("xyzzy")])
     assert_equal(nil,      S("FooBar")[S("plugh")])
 
-    if @aref_re_nth
-      assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 1])
-      assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 2])
-      assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, 3])
-      assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -1])
-      assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -2])
-      assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, -3])
-    end
+    assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 1])
+    assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, 2])
+    assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, 3])
+    assert_equal(S("Bar"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -1])
+    assert_equal(S("Foo"), S("FooBar")[/([A-Z]..)([A-Z]..)/, -2])
+    assert_equal(nil,      S("FooBar")[/([A-Z]..)([A-Z]..)/, -3])
 
     o = Object.new
     def o.to_int; 2; end
@@ -199,24 +201,18 @@ CODE
     assert_equal(S("BarBar"), s)
     s[/..r$/] = S("Foo")
     assert_equal(S("BarFoo"), s)
-    if @aref_re_silent
-      s[/xyzzy/] = S("None")
-      assert_equal(S("BarFoo"), s)
-    else
-      assert_raise(IndexError) { s[/xyzzy/] = S("None") }
-    end
-    if @aref_re_nth
-      s[/([A-Z]..)([A-Z]..)/, 1] = S("Foo")
-      assert_equal(S("FooFoo"), s)
-      s[/([A-Z]..)([A-Z]..)/, 2] = S("Bar")
-      assert_equal(S("FooBar"), s)
-      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, 3] = "None" }
-      s[/([A-Z]..)([A-Z]..)/, -1] = S("Foo")
-      assert_equal(S("FooFoo"), s)
-      s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
-      assert_equal(S("BarFoo"), s)
-      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
-    end
+    assert_raise(IndexError) { s[/xyzzy/] = S("None") }
+
+    s[/([A-Z]..)([A-Z]..)/, 1] = S("Foo")
+    assert_equal(S("FooFoo"), s)
+    s[/([A-Z]..)([A-Z]..)/, 2] = S("Bar")
+    assert_equal(S("FooBar"), s)
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, 3] = "None" }
+    s[/([A-Z]..)([A-Z]..)/, -1] = S("Foo")
+    assert_equal(S("FooFoo"), s)
+    s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
+    assert_equal(S("BarFoo"), s)
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
 
     s = S("FooBar")
     s[S("Foo")] = S("Bar")
@@ -301,6 +297,9 @@ CODE
     assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << -1}
     assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << 0x81308130}
     assert_nothing_raised {S("a".force_encoding(Encoding::GB18030)) << 0x81308130}
+
+    s = "\x95".force_encoding(Encoding::SJIS).tap(&:valid_encoding?)
+    assert_predicate(s << 0x5c, :valid_encoding?)
   end
 
   def test_MATCH # '=~'
@@ -587,6 +586,8 @@ CODE
     assert_equal("foo", s.chomp!("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp!("\n"))
+
+    assert_raise(ArgumentError) {String.new.chomp!("", "")}
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -659,6 +660,27 @@ CODE
   def test_concat_literals
     s=S("." * 50)
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
+  end
+
+  def test_string_interpolations_across_size_pools_get_embedded
+    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+
+    require 'objspace'
+    base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    small_obj_size = (base_slot_size / 2)
+    large_obj_size = base_slot_size * 2
+
+    a = "a" * small_obj_size
+    b = "a" * large_obj_size
+
+    res = "#{a}, #{b}"
+    dump_res = ObjectSpace.dump(res)
+    dump_orig = ObjectSpace.dump(a)
+    new_slot_size = Integer(dump_res.match(/"slot_size":(\d+)/)[1])
+    orig_slot_size = Integer(dump_orig.match(/"slot_size":(\d+)/)[1])
+
+    assert_match(/"embedded":true/, dump_res)
+    assert_operator(new_slot_size, :>, orig_slot_size)
   end
 
   def test_count
@@ -875,6 +897,18 @@ CODE
     }
   end
 
+  def test_undump_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    end
+
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
+    end
+  end
+
   def test_dup
     for frozen in [ false, true ]
       a = S("hello")
@@ -1074,6 +1108,22 @@ CODE
     assert_equal("C", res[2])
   end
 
+  def test_grapheme_clusters_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #todo]", rss: true)
+    begin;
+      str = "hello world".encode(Encoding::UTF_32LE)
+
+      10_000.times do
+        str.grapheme_clusters
+      end
+    end;
+  end
+
+  def test_byteslice_grapheme_clusters
+    string = "안녕"
+    assert_equal(["안"], string.byteslice(0,4).grapheme_clusters)
+  end
+
   def test_each_line
     verbose, $VERBOSE = $VERBOSE, nil
 
@@ -1228,6 +1278,11 @@ CODE
     assert_raise(ArgumentError) { S("foo").gsub }
   end
 
+  def test_gsub_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
+  end
+
   def test_gsub_encoding
     a = S("hello world")
     a.force_encoding Encoding::UTF_8
@@ -1271,6 +1326,15 @@ CODE
     assert_nil(a.sub!(S('X'), S('Y')))
   end
 
+  def test_gsub_bang_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress do
+      a = S("hello")
+      a.gsub!(/([aeiou])/, S('<\1>'))
+      assert_equal(S("h<e>ll<o>"), a)
+    end
+  end
+
   def test_sub_hash
     assert_equal('azc', S('abc').sub(/b/, "b" => "z"))
     assert_equal('ac', S('abc').sub(/b/, {}))
@@ -1298,6 +1362,9 @@ CODE
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
     bug9172 = '[ruby-core:58658] [Bug #9172]'
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
+    assert_equal(S("").hash, S("".encode(Encoding::UTF_32BE)).hash)
+    h1, h2 = ["\x80", "\x81"].map {|c| c.b.hash ^ c.hash}
+    assert_not_equal(h1, h2)
   end
 
   def test_hex
@@ -1318,54 +1385,54 @@ CODE
   end
 
   def test_index
-    assert_equal(0, S("hello").index(?h))
-    assert_equal(1, S("hello").index(S("ell")))
-    assert_equal(2, S("hello").index(/ll./))
+    assert_index(0, S("hello"), ?h)
+    assert_index(1, S("hello"), S("ell"))
+    assert_index(2, S("hello"), /ll./)
 
-    assert_equal(3, S("hello").index(?l, 3))
-    assert_equal(3, S("hello").index(S("l"), 3))
-    assert_equal(3, S("hello").index(/l./, 3))
+    assert_index(3, S("hello"), ?l, 3)
+    assert_index(3, S("hello"), S("l"), 3)
+    assert_index(3, S("hello"), /l./, 3)
 
-    assert_nil(S("hello").index(?z, 3))
-    assert_nil(S("hello").index(S("z"), 3))
-    assert_nil(S("hello").index(/z./, 3))
+    assert_index(nil, S("hello"), ?z, 3)
+    assert_index(nil, S("hello"), S("z"), 3)
+    assert_index(nil, S("hello"), /z./, 3)
 
-    assert_nil(S("hello").index(?z))
-    assert_nil(S("hello").index(S("z")))
-    assert_nil(S("hello").index(/z./))
+    assert_index(nil, S("hello"), ?z)
+    assert_index(nil, S("hello"), S("z"))
+    assert_index(nil, S("hello"), /z./)
 
-    assert_equal(0, S("").index(S("")))
-    assert_equal(0, S("").index(//))
-    assert_nil(S("").index(S("hello")))
-    assert_nil(S("").index(/hello/))
-    assert_equal(0, S("hello").index(S("")))
-    assert_equal(0, S("hello").index(//))
+    assert_index(0, S(""), S(""))
+    assert_index(0, S(""), //)
+    assert_index(nil, S(""), S("hello"))
+    assert_index(nil, S(""), /hello/)
+    assert_index(0, S("hello"), S(""))
+    assert_index(0, S("hello"), //)
 
     s = S("long") * 1000 << "x"
-    assert_nil(s.index(S("y")))
-    assert_equal(4 * 1000, s.index(S("x")))
+    assert_index(nil, s, S("y"))
+    assert_index(4 * 1000, s, S("x"))
     s << "yx"
-    assert_equal(4 * 1000, s.index(S("x")))
-    assert_equal(4 * 1000, s.index(S("xyx")))
+    assert_index(4 * 1000, s, S("x"))
+    assert_index(4 * 1000, s, S("xyx"))
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(3, S("foobarbarbaz").index(o))
+    assert_index(3, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").index(Object.new) }
 
-    assert_nil(S("foo").index(//, -100))
-    assert_nil($~)
+    assert_index(nil, S("foo"), //, -100)
+    assert_index(nil, S("foo"), //, 4)
 
-    assert_equal(2, S("abcdbce").index(/b\Kc/))
+    assert_index(2, S("abcdbce"), /b\Kc/)
 
-    assert_equal(0, S("こんにちは").index(?こ))
-    assert_equal(1, S("こんにちは").index(S("んにち")))
-    assert_equal(2, S("こんにちは").index(/にち./))
+    assert_index(0, S("こんにちは"), ?こ)
+    assert_index(1, S("こんにちは"), S("んにち"))
+    assert_index(2, S("こんにちは"), /にち./)
 
-    assert_equal(0, S("にんにちは").index(?に, 0))
-    assert_equal(2, S("にんにちは").index(?に, 1))
-    assert_equal(2, S("にんにちは").index(?に, 2))
-    assert_nil(S("にんにちは").index(?に, 3))
+    assert_index(0, S("にんにちは"), ?に, 0)
+    assert_index(2, S("にんにちは"), ?に, 1)
+    assert_index(2, S("にんにちは"), ?に, 2)
+    assert_index(nil, S("にんにちは"), ?に, 3)
   end
 
   def test_insert
@@ -1512,57 +1579,57 @@ CODE
   end
 
   def test_rindex
-    assert_equal(3, S("hello").rindex(?l))
-    assert_equal(6, S("ell, hello").rindex(S("ell")))
-    assert_equal(7, S("ell, hello").rindex(/ll./))
+    assert_rindex(3, S("hello"), ?l)
+    assert_rindex(6, S("ell, hello"), S("ell"))
+    assert_rindex(7, S("ell, hello"), /ll./)
 
-    assert_equal(3, S("hello,lo").rindex(?l, 3))
-    assert_equal(3, S("hello,lo").rindex(S("l"), 3))
-    assert_equal(3, S("hello,lo").rindex(/l./, 3))
+    assert_rindex(3, S("hello,lo"), ?l, 3)
+    assert_rindex(3, S("hello,lo"), S("l"), 3)
+    assert_rindex(3, S("hello,lo"), /l./, 3)
 
-    assert_nil(S("hello").rindex(?z,     3))
-    assert_nil(S("hello").rindex(S("z"), 3))
-    assert_nil(S("hello").rindex(/z./,   3))
+    assert_rindex(nil, S("hello"), ?z,     3)
+    assert_rindex(nil, S("hello"), S("z"), 3)
+    assert_rindex(nil, S("hello"), /z./,   3)
 
-    assert_nil(S("hello").rindex(?z))
-    assert_nil(S("hello").rindex(S("z")))
-    assert_nil(S("hello").rindex(/z./))
+    assert_rindex(nil, S("hello"), ?z)
+    assert_rindex(nil, S("hello"), S("z"))
+    assert_rindex(nil, S("hello"), /z./)
 
-    assert_equal(5, S("hello").rindex(S("")))
-    assert_equal(5, S("hello").rindex(S(""), 5))
-    assert_equal(4, S("hello").rindex(S(""), 4))
-    assert_equal(0, S("hello").rindex(S(""), 0))
+    assert_rindex(5, S("hello"), S(""))
+    assert_rindex(5, S("hello"), S(""), 5)
+    assert_rindex(4, S("hello"), S(""), 4)
+    assert_rindex(0, S("hello"), S(""), 0)
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(6, S("foobarbarbaz").rindex(o))
+    assert_rindex(6, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").rindex(Object.new) }
 
-    assert_nil(S("foo").rindex(//, -100))
-    assert_nil($~)
+    assert_rindex(nil, S("foo"), //, -100)
 
-    assert_equal(3, S("foo").rindex(//))
-    assert_equal([3, 3], $~.offset(0))
+    m = assert_rindex(3, S("foo"), //)
+    assert_equal([3, 3], m.offset(0))
+    assert_rindex(3, S("foo"), //, 4)
 
-    assert_equal(5, S("abcdbce").rindex(/b\Kc/))
+    assert_rindex(5, S("abcdbce"), /b\Kc/)
 
-    assert_equal(2, S("こんにちは").rindex(?に))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは")))
-    assert_equal(6, S("にちは、こんにちは").rindex(/にち./))
+    assert_rindex(2, S("こんにちは"), ?に)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"))
+    assert_rindex(6, S("にちは、こんにちは"), /にち./)
 
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), 7))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), -2))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), 6))
-    assert_equal(6, S("にちは、こんにちは").rindex(S("にちは"), -3))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), 5))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), -4))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), 1))
-    assert_equal(0, S("にちは、こんにちは").rindex(S("にちは"), 0))
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), 7)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), -2)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), 6)
+    assert_rindex(6, S("にちは、こんにちは"), S("にちは"), -3)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), 5)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), -4)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), 1)
+    assert_rindex(0, S("にちは、こんにちは"), S("にちは"), 0)
 
-    assert_equal(0, S("こんにちは").rindex(S("こんにちは")))
-    assert_nil(S("こんにち").rindex(S("こんにちは")))
-    assert_nil(S("こ").rindex(S("こんにちは")))
-    assert_nil(S("").rindex(S("こんにちは")))
+    assert_rindex(0, S("こんにちは"), S("こんにちは"))
+    assert_rindex(nil, S("こんにち"), S("こんにちは"))
+    assert_rindex(nil, S("こ"), S("こんにちは"))
+    assert_rindex(nil, S(""), S("こんにちは"))
   end
 
   def test_rjust
@@ -1599,6 +1666,11 @@ CODE
     assert_nil($~)
 
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
+  end
+
+  def test_scan_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
   def test_scan_segv
@@ -1661,20 +1733,11 @@ CODE
     assert_equal(S("FooBa"), a)
 
     a = S("FooBar")
-    if @aref_slicebang_silent
-      assert_nil( a.slice!(6) )
-      assert_nil( a.slice!(6r) )
-    else
-      assert_raise(IndexError) { a.slice!(6) }
-      assert_raise(IndexError) { a.slice!(6r) }
-    end
+    assert_nil( a.slice!(6) )
+    assert_nil( a.slice!(6r) )
     assert_equal(S("FooBar"), a)
 
-    if @aref_slicebang_silent
-      assert_nil( a.slice!(-7) )
-    else
-      assert_raise(IndexError) { a.slice!(-7) }
-    end
+    assert_nil( a.slice!(-7) )
     assert_equal(S("FooBar"), a)
 
     a = S("FooBar")
@@ -1686,17 +1749,9 @@ CODE
     assert_equal(S("Foo"), a)
 
     a=S("FooBar")
-    if @aref_slicebang_silent
     assert_nil(a.slice!(7,2))      # Maybe should be six?
-    else
-    assert_raise(IndexError) {a.slice!(7,2)}     # Maybe should be six?
-    end
     assert_equal(S("FooBar"), a)
-    if @aref_slicebang_silent
     assert_nil(a.slice!(-7,10))
-    else
-    assert_raise(IndexError) {a.slice!(-7,10)}
-    end
     assert_equal(S("FooBar"), a)
 
     a=S("FooBar")
@@ -1708,17 +1763,9 @@ CODE
     assert_equal(S("Foo"), a)
 
     a=S("FooBar")
-    if @aref_slicebang_silent
     assert_equal(S(""), a.slice!(6..2))
-    else
-    assert_raise(RangeError) {a.slice!(6..2)}
-    end
     assert_equal(S("FooBar"), a)
-    if @aref_slicebang_silent
     assert_nil(a.slice!(-10..-7))
-    else
-    assert_raise(RangeError) {a.slice!(-10..-7)}
-    end
     assert_equal(S("FooBar"), a)
 
     a=S("FooBar")
@@ -1730,17 +1777,9 @@ CODE
     assert_equal(S("Foo"), a)
 
     a=S("FooBar")
-    if @aref_slicebang_silent
-      assert_nil(a.slice!(/xyzzy/))
-    else
-      assert_raise(IndexError) {a.slice!(/xyzzy/)}
-    end
+    assert_nil(a.slice!(/xyzzy/))
     assert_equal(S("FooBar"), a)
-    if @aref_slicebang_silent
-      assert_nil(a.slice!(/plugh/))
-    else
-      assert_raise(IndexError) {a.slice!(/plugh/)}
-    end
+    assert_nil(a.slice!(/plugh/))
     assert_equal(S("FooBar"), a)
 
     a=S("FooBar")
@@ -1917,14 +1956,35 @@ CODE
     assert_send([S("hello"), :start_with?, S("hel")])
     assert_not_send([S("hello"), :start_with?, S("el")])
     assert_send([S("hello"), :start_with?, S("el"), S("he")])
+    assert_send([S("\xFF\xFE"), :start_with?, S("\xFF")])
+    assert_send([S("hello\xBE"), :start_with?, S("hello")])
+    assert_not_send([S("\u{c4}"), :start_with?, S("\xC3")])
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").start_with? :not_convertible_to_string}
+  end
 
+  def test_start_with_regexp
     assert_equal(true, S("hello").start_with?(/hel/))
     assert_equal("hel", $&)
     assert_equal(false, S("hello").start_with?(/el/))
     assert_nil($&)
+  end
+
+  def test_start_with_timeout_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", "[Bug #20653]", rss: true)
+      regex = Regexp.new("^#{"(a*)" * 10_000}x$", timeout: 0.000001)
+      str = "a" * 1_000_000 + "x"
+
+      code = proc do
+        str.start_with?(regex)
+      rescue
+      end
+
+      10.times(&code)
+    begin;
+      1_000.times(&code)
+    end;
   end
 
   def test_strip
@@ -2021,6 +2081,16 @@ CODE
     assert_raise_with_message(IndexError, /oops/, bug) {
       S('hello').gsub('hello', '\k<oops>')
     }
+  end
+
+  def test_sub_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+    EnvUtil.under_gc_compact_stress do
+      m = /&(?<foo>.*?);/.match(S("aaa &amp; yyy"))
+      assert_equal("amp", m["foo"])
+
+      assert_equal("aaa [amp] yyy", S("aaa &amp; yyy").sub(/&(?<foo>.*?);/, S('[\k<foo>]')))
+    end
   end
 
   def test_sub!
@@ -2280,6 +2350,8 @@ CODE
     assert_not_predicate(str, :ascii_only?)
     assert_not_predicate(star, :ascii_only?)
     assert_not_predicate(result, :ascii_only?, bug13950)
+
+    assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
   end
 
   def test_tr!
@@ -2304,6 +2376,8 @@ CODE
     a = S("abc".force_encoding(Encoding::US_ASCII))
     assert_nil(a.tr!(S("z"), S("\u0101")), '[ruby-core:22326]')
     assert_equal(Encoding::US_ASCII, a.encoding, '[ruby-core:22326]')
+
+    assert_equal(S("XYC"), S("ABC").tr!("A-AB", "XY"))
   end
 
   def test_tr_s
@@ -2311,6 +2385,8 @@ CODE
     assert_equal(S("h*o"),  S("hello").tr_s(S("el"), S("*")))
     assert_equal("a".hash, S("\u0101\u0101").tr_s("\u0101", "a").hash)
     assert_equal(true, S("\u3041\u3041").tr("\u3041", "a").ascii_only?)
+
+    assert_equal(S("XYC"), S("ABC").tr_s("A-AB", "XY"))
   end
 
   def test_tr_s!
@@ -2323,6 +2399,8 @@ CODE
     a = S("hello")
     assert_equal(S("h*o"), a.tr_s!(S("el"), S("*")))
     assert_equal(S("h*o"), a)
+
+    assert_equal(S("XYC"), S("ABC").tr_s!("A-AB", "XY"))
   end
 
   def test_unpack
@@ -2862,11 +2940,13 @@ CODE
 
   end
 
-  def test_delete_prefix
+  def test_delete_prefix_type_error
     assert_raise(TypeError) { S('hello').delete_prefix(nil) }
     assert_raise(TypeError) { S('hello').delete_prefix(1) }
     assert_raise(TypeError) { S('hello').delete_prefix(/hel/) }
+  end
 
+  def test_delete_prefix
     s = S("hello")
     assert_equal("lo", s.delete_prefix('hel'))
     assert_equal("hello", s)
@@ -2886,8 +2966,9 @@ CODE
     s = S("hello")
     assert_equal("hello", s.delete_prefix("\u{3053 3093}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_prefix_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal("\xe3\x81\x82", s.delete_prefix("\xe3"))
     assert_equal("\xe3\x81\x82", s)
@@ -2896,23 +2977,31 @@ CODE
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s.delete_prefix("\x95"))
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
 
-    # clear coderange
+    assert_equal("\xFE", S("\xFF\xFE").delete_prefix("\xFF"))
+    assert_equal("\xBE", S("hello\xBE").delete_prefix("hello"))
+    assert_equal("\xBE", S("\xFFhello\xBE").delete_prefix("\xFFhello"))
+  end
+
+  def test_delete_prefix_clear_coderange
     s = S("\u{3053 3093}hello")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_prefix("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_prefix_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("bba", s.delete_prefix(klass.new))
     assert_equal("abba", s)
   end
 
-  def test_delete_prefix_bang
+  def test_delete_prefix_bang_type_error
     assert_raise(TypeError) { S('hello').delete_prefix!(nil) }
     assert_raise(TypeError) { S('hello').delete_prefix!(1) }
     assert_raise(TypeError) { S('hello').delete_prefix!(/hel/) }
+  end
 
+  def test_delete_prefix_bang
     s = S("hello")
     assert_equal("lo", s.delete_prefix!('hel'))
     assert_equal("lo", s)
@@ -2932,23 +3021,32 @@ CODE
     s = S("hello")
     assert_equal(nil, s.delete_prefix!("\u{3053 3093}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_prefix_bang_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal(nil, s.delete_prefix!("\xe3"))
     assert_equal("\xe3\x81\x82", s)
 
-    # clear coderange
+    s = S("\xFF\xFE")
+    assert_equal("\xFE", s.delete_prefix!("\xFF"))
+    assert_equal("\xFE", s)
+  end
+
+  def test_delete_prefix_bang_clear_coderange
     s = S("\u{3053 3093}hello")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_prefix!("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_prefix_bang_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("bba", s.delete_prefix!(klass.new))
     assert_equal("bba", s)
+  end
 
+  def test_delete_prefix_bang_frozen_error
     s = S("ax").freeze
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_prefix!("a")}
 
@@ -2961,11 +3059,13 @@ CODE
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_prefix!(o)}
   end
 
-  def test_delete_suffix
+  def test_delete_suffix_type_error
     assert_raise(TypeError) { S('hello').delete_suffix(nil) }
     assert_raise(TypeError) { S('hello').delete_suffix(1) }
     assert_raise(TypeError) { S('hello').delete_suffix(/hel/) }
+  end
 
+  def test_delete_suffix
     s = S("hello")
     assert_equal("hel", s.delete_suffix('lo'))
     assert_equal("hello", s)
@@ -2985,23 +3085,28 @@ CODE
     s = S("hello")
     assert_equal("hello", s.delete_suffix("\u{3061 306f}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_suffix_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal("\xe3\x81\x82", s.delete_suffix("\x82"))
     assert_equal("\xe3\x81\x82", s)
+  end
 
-    # clear coderange
+  def test_delete_suffix_clear_coderange
     s = S("hello\u{3053 3093}")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_suffix("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_suffix_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.delete_suffix(klass.new))
     assert_equal("abba", s)
+  end
 
+  def test_delete_suffix_newline
     # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified,
     # but delete_suffix does not
     s = "foo\n"
@@ -3012,11 +3117,13 @@ CODE
     assert_equal("foo\r", s.delete_suffix("\n"))
   end
 
-  def test_delete_suffix_bang
+  def test_delete_suffix_bang_type_error
     assert_raise(TypeError) { S('hello').delete_suffix!(nil) }
     assert_raise(TypeError) { S('hello').delete_suffix!(1) }
     assert_raise(TypeError) { S('hello').delete_suffix!(/hel/) }
+  end
 
+  def test_delete_suffix_bang_frozen_error
     s = S("hello").freeze
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_suffix!('lo')}
 
@@ -3027,7 +3134,9 @@ CODE
       "x"
     end
     assert_raise_with_message(FrozenError, /frozen/) {s.delete_suffix!(o)}
+  end
 
+  def test_delete_suffix_bang
     s = S("hello")
     assert_equal("hel", s.delete_suffix!('lo'))
     assert_equal("hel", s)
@@ -3047,8 +3156,9 @@ CODE
     s = S("hello")
     assert_equal(nil, s.delete_suffix!("\u{3061 306f}"))
     assert_equal("hello", s)
+  end
 
-    # skip if argument is a broken string
+  def test_delete_suffix_bang_broken_encoding
     s = S("\xe3\x81\x82")
     assert_equal(nil, s.delete_suffix!("\x82"))
     assert_equal("\xe3\x81\x82", s)
@@ -3056,18 +3166,22 @@ CODE
     s = S("\x95\x5c").force_encoding("Shift_JIS")
     assert_equal(nil, s.delete_suffix!("\x5c"))
     assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
+  end
 
-    # clear coderange
+  def test_delete_suffix_bang_clear_coderange
     s = S("hello\u{3053 3093}")
     assert_not_predicate(s, :ascii_only?)
     assert_predicate(s.delete_suffix!("\u{3053 3093}"), :ascii_only?)
+  end
 
-    # argument should be converted to String
+  def test_delete_suffix_bang_argument_conversion
     klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.delete_suffix!(klass.new))
     assert_equal("abb", s)
+  end
 
+  def test_delete_suffix_bang_newline
     # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified,
     # but delete_suffix does not
     s = "foo\n"
@@ -3258,7 +3372,11 @@ CODE
     assert_same(str, +str)
     assert_not_same(str, -str)
 
-    str = "bar".freeze
+    require 'objspace'
+
+    str = "test_uplus_minus_str".freeze
+    assert_includes ObjectSpace.dump(str), '"fstring":true'
+
     assert_predicate(str, :frozen?)
     assert_not_predicate(+str, :frozen?)
     assert_predicate(-str, :frozen?)
@@ -3266,8 +3384,8 @@ CODE
     assert_not_same(str, +str)
     assert_same(str, -str)
 
-    bar = %w(b a r).join('')
-    assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+    bar = -%w(test uplus minus str).join('_')
+    assert_same(str, bar, "uminus deduplicates [Feature #13077] str: #{ObjectSpace.dump(str)} bar: #{ObjectSpace.dump(bar)}")
   end
 
   def test_uminus_frozen
@@ -3325,155 +3443,336 @@ CODE
   end
 
   def test_byteindex
-    assert_equal(0, S("hello").byteindex(?h))
-    assert_equal(1, S("hello").byteindex(S("ell")))
-    assert_equal(2, S("hello").byteindex(/ll./))
+    assert_byteindex(0, S("hello"), ?h)
+    assert_byteindex(1, S("hello"), S("ell"))
+    assert_byteindex(2, S("hello"), /ll./)
 
-    assert_equal(3, S("hello").byteindex(?l, 3))
-    assert_equal(3, S("hello").byteindex(S("l"), 3))
-    assert_equal(3, S("hello").byteindex(/l./, 3))
+    assert_byteindex(3, S("hello"), ?l, 3)
+    assert_byteindex(3, S("hello"), S("l"), 3)
+    assert_byteindex(3, S("hello"), /l./, 3)
 
-    assert_nil(S("hello").byteindex(?z, 3))
-    assert_nil(S("hello").byteindex(S("z"), 3))
-    assert_nil(S("hello").byteindex(/z./, 3))
+    assert_byteindex(nil, S("hello"), ?z, 3)
+    assert_byteindex(nil, S("hello"), S("z"), 3)
+    assert_byteindex(nil, S("hello"), /z./, 3)
 
-    assert_nil(S("hello").byteindex(?z))
-    assert_nil(S("hello").byteindex(S("z")))
-    assert_nil(S("hello").byteindex(/z./))
+    assert_byteindex(nil, S("hello"), ?z)
+    assert_byteindex(nil, S("hello"), S("z"))
+    assert_byteindex(nil, S("hello"), /z./)
 
-    assert_equal(0, S("").byteindex(S("")))
-    assert_equal(0, S("").byteindex(//))
-    assert_nil(S("").byteindex(S("hello")))
-    assert_nil(S("").byteindex(/hello/))
-    assert_equal(0, S("hello").byteindex(S("")))
-    assert_equal(0, S("hello").byteindex(//))
+    assert_byteindex(0, S(""), S(""))
+    assert_byteindex(0, S(""), //)
+    assert_byteindex(nil, S(""), S("hello"))
+    assert_byteindex(nil, S(""), /hello/)
+    assert_byteindex(0, S("hello"), S(""))
+    assert_byteindex(0, S("hello"), //)
 
     s = S("long") * 1000 << "x"
-    assert_nil(s.byteindex(S("y")))
-    assert_equal(4 * 1000, s.byteindex(S("x")))
+    assert_byteindex(nil, s, S("y"))
+    assert_byteindex(4 * 1000, s, S("x"))
     s << "yx"
-    assert_equal(4 * 1000, s.byteindex(S("x")))
-    assert_equal(4 * 1000, s.byteindex(S("xyx")))
+    assert_byteindex(4 * 1000, s, S("x"))
+    assert_byteindex(4 * 1000, s, S("xyx"))
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(3, S("foobarbarbaz").byteindex(o))
+    assert_byteindex(3, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").byteindex(Object.new) }
 
-    assert_nil(S("foo").byteindex(//, -100))
-    assert_nil($~)
+    assert_byteindex(nil, S("foo"), //, -100)
+    assert_byteindex(nil, S("foo"), //, -4)
 
-    assert_equal(2, S("abcdbce").byteindex(/b\Kc/))
+    assert_byteindex(2, S("abcdbce"), /b\Kc/)
 
-    assert_equal(0, S("こんにちは").byteindex(?こ))
-    assert_equal(3, S("こんにちは").byteindex(S("んにち")))
-    assert_equal(6, S("こんにちは").byteindex(/にち./))
+    assert_byteindex(0, S("こんにちは"), ?こ)
+    assert_byteindex(3, S("こんにちは"), S("んにち"))
+    assert_byteindex(6, S("こんにちは"), /にち./)
 
-    assert_equal(0, S("にんにちは").byteindex(?に, 0))
+    assert_byteindex(0, S("にんにちは"), ?に, 0)
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 1) }
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 5) }
-    assert_equal(6, S("にんにちは").byteindex(?に, 6))
-    assert_equal(6, S("にんにちは").byteindex(S("に"), 6))
-    assert_equal(6, S("にんにちは").byteindex(/に./, 6))
+    assert_byteindex(6, S("にんにちは"), ?に, 6)
+    assert_byteindex(6, S("にんにちは"), S("に"), 6)
+    assert_byteindex(6, S("にんにちは"), /に./, 6)
     assert_raise(IndexError) { S("にんにちは").byteindex(?に, 7) }
+
+    s = S("foobarbarbaz")
+    assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
   def test_byterindex
-    assert_equal(3, S("hello").byterindex(?l))
-    assert_equal(6, S("ell, hello").byterindex(S("ell")))
-    assert_equal(7, S("ell, hello").byterindex(/ll./))
+    assert_byterindex(3, S("hello"), ?l)
+    assert_byterindex(6, S("ell, hello"), S("ell"))
+    assert_byterindex(7, S("ell, hello"), /ll./)
 
-    assert_equal(3, S("hello,lo").byterindex(?l, 3))
-    assert_equal(3, S("hello,lo").byterindex(S("l"), 3))
-    assert_equal(3, S("hello,lo").byterindex(/l./, 3))
+    assert_byterindex(3, S("hello,lo"), ?l, 3)
+    assert_byterindex(3, S("hello,lo"), S("l"), 3)
+    assert_byterindex(3, S("hello,lo"), /l./, 3)
 
-    assert_nil(S("hello").byterindex(?z,     3))
-    assert_nil(S("hello").byterindex(S("z"), 3))
-    assert_nil(S("hello").byterindex(/z./,   3))
+    assert_byterindex(nil, S("hello"), ?z,     3)
+    assert_byterindex(nil, S("hello"), S("z"), 3)
+    assert_byterindex(nil, S("hello"), /z./,   3)
 
-    assert_nil(S("hello").byterindex(?z))
-    assert_nil(S("hello").byterindex(S("z")))
-    assert_nil(S("hello").byterindex(/z./))
+    assert_byterindex(nil, S("hello"), ?z)
+    assert_byterindex(nil, S("hello"), S("z"))
+    assert_byterindex(nil, S("hello"), /z./)
 
-    assert_equal(5, S("hello").byterindex(S("")))
-    assert_equal(5, S("hello").byterindex(S(""), 5))
-    assert_equal(4, S("hello").byterindex(S(""), 4))
-    assert_equal(0, S("hello").byterindex(S(""), 0))
+    assert_byterindex(5, S("hello"), S(""))
+    assert_byterindex(5, S("hello"), S(""), 5)
+    assert_byterindex(4, S("hello"), S(""), 4)
+    assert_byterindex(0, S("hello"), S(""), 0)
 
     o = Object.new
     def o.to_str; "bar"; end
-    assert_equal(6, S("foobarbarbaz").byterindex(o))
+    assert_byterindex(6, S("foobarbarbaz"), o)
     assert_raise(TypeError) { S("foo").byterindex(Object.new) }
 
-    assert_nil(S("foo").byterindex(//, -100))
-    assert_nil($~)
+    assert_byterindex(nil, S("foo"), //, -100)
 
-    assert_equal(3, S("foo").byterindex(//))
-    assert_equal([3, 3], $~.offset(0))
+    m = assert_byterindex(3, S("foo"), //)
+    assert_equal([3, 3], m.offset(0))
+    assert_byterindex(3, S("foo"), //, 4)
 
-    assert_equal(5, S("abcdbce").byterindex(/b\Kc/))
+    assert_byterindex(5, S("abcdbce"), /b\Kc/)
 
-    assert_equal(6, S("こんにちは").byterindex(?に))
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは")))
-    assert_equal(18, S("にちは、こんにちは").byterindex(/にち./))
+    assert_byterindex(6, S("こんにちは"), ?に)
+    assert_byterindex(18, S("にちは、こんにちは"), S("にちは"))
+    assert_byterindex(18, S("にちは、こんにちは"), /にち./)
 
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 19) }
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), -2) }
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), 18))
-    assert_equal(18, S("にちは、こんにちは").byterindex(S("にちは"), -3))
+    assert_byterindex(18, S("にちは、こんにちは"), S("にちは"), 18)
+    assert_byterindex(18, S("にちは、こんにちは"), S("にちは"), -3)
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 17) }
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), -4) }
     assert_raise(IndexError) { S("にちは、こんにちは").byterindex(S("にちは"), 1) }
-    assert_equal(0, S("にちは、こんにちは").byterindex(S("にちは"), 0))
+    assert_byterindex(0, S("にちは、こんにちは"), S("にちは"), 0)
 
-    assert_equal(0, S("こんにちは").byterindex(S("こんにちは")))
-    assert_nil(S("こんにち").byterindex(S("こんにちは")))
-    assert_nil(S("こ").byterindex(S("こんにちは")))
-    assert_nil(S("").byterindex(S("こんにちは")))
+    assert_byterindex(0, S("こんにちは"), S("こんにちは"))
+    assert_byterindex(nil, S("こんにち"), S("こんにちは"))
+    assert_byterindex(nil, S("こ"), S("こんにちは"))
+    assert_byterindex(nil, S(""), S("こんにちは"))
   end
 
   def test_bytesplice
-    assert_bytesplice_raise(IndexError, S("hello"), -6, 0, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), -5, 0, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), 0, 0, "xxx")
-    assert_bytesplice_result("xxxello", S("hello"), 0, 1, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0, 5, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0, 6, "xxx")
+    assert_bytesplice_raise(IndexError, S("hello"), -6, 0, "bye")
+    assert_bytesplice_result("byehello", S("hello"), -5, 0, "bye")
+    assert_bytesplice_result("byehello", S("hello"), 0, 0, "bye")
+    assert_bytesplice_result("byeello", S("hello"), 0, 1, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0, 5, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0, 6, "bye")
 
-    assert_bytesplice_raise(RangeError, S("hello"), -6...-6, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), -5...-5, "xxx")
-    assert_bytesplice_result("xxxhello", S("hello"), 0...0, "xxx")
-    assert_bytesplice_result("xxxello", S("hello"), 0..0, "xxx")
-    assert_bytesplice_result("xxxello", S("hello"), 0...1, "xxx")
-    assert_bytesplice_result("xxxllo", S("hello"), 0..1, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0..-1, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0...5, "xxx")
-    assert_bytesplice_result("xxx", S("hello"), 0...6, "xxx")
+    assert_bytesplice_raise(IndexError, S("hello"), -5, 0, "bye", -4, 0)
+    assert_bytesplice_result("byehello", S("hello"), 0, 0, "bye", 0, 3)
+    assert_bytesplice_result("yehello", S("hello"), 0, 0, "bye", 1, 3)
+    assert_bytesplice_result("yehello", S("hello"), 0, 0, "bye", 1, 2)
+    assert_bytesplice_result("ehello", S("hello"), 0, 0, "bye", 2, 1)
+    assert_bytesplice_result("hello", S("hello"), 0, 0, "bye", 3, 0)
+    assert_bytesplice_result("hello", s = S("hello"), 0, 5, s, 0, 5)
+    assert_bytesplice_result("elloo", s = S("hello"), 0, 4, s, 1, 4)
+    assert_bytesplice_result("llolo", s = S("hello"), 0, 3, s, 2, 3)
+    assert_bytesplice_result("lollo", s = S("hello"), 0, 2, s, 3, 2)
+    assert_bytesplice_result("oello", s = S("hello"), 0, 1, s, 4, 1)
+    assert_bytesplice_result("hhell", s = S("hello"), 1, 4, s, 0, 4)
+    assert_bytesplice_result("hehel", s = S("hello"), 2, 3, s, 0, 3)
+    assert_bytesplice_result("helhe", s = S("hello"), 3, 2, s, 0, 2)
+    assert_bytesplice_result("hellh", s = S("hello"), 4, 1, s, 0, 1)
 
-    assert_bytesplice_raise(TypeError, S("hello"), 0, "xxx")
+    assert_bytesplice_raise(RangeError, S("hello"), -6...-6, "bye")
+    assert_bytesplice_result("byehello", S("hello"), -5...-5, "bye")
+    assert_bytesplice_result("byehello", S("hello"), 0...0, "bye")
+    assert_bytesplice_result("byeello", S("hello"), 0..0, "bye")
+    assert_bytesplice_result("byeello", S("hello"), 0...1, "bye")
+    assert_bytesplice_result("byello", S("hello"), 0..1, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0..-1, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0...5, "bye")
+    assert_bytesplice_result("bye", S("hello"), 0...6, "bye")
+    assert_bytesplice_result("llolo", s = S("hello"), 0..2, s, 2..4)
 
-    assert_bytesplice_raise(IndexError, S("こんにちは"), -16, 0, "xxx")
-    assert_bytesplice_result("xxxこんにちは", S("こんにちは"), -15, 0, "xxx")
-    assert_bytesplice_result("xxxこんにちは", S("こんにちは"), 0, 0, "xxx")
-    assert_bytesplice_raise(IndexError, S("こんにちは"), 1, 0, "xxx")
-    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 1, "xxx")
-    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 2, "xxx")
-    assert_bytesplice_result("xxxんにちは", S("こんにちは"), 0, 3, "xxx")
-    assert_bytesplice_result("こんにちはxxx", S("こんにちは"), 15, 0, "xxx")
+    assert_bytesplice_raise(RangeError, S("hello"), -5...-5, "bye", -6...-6)
+    assert_bytesplice_result("byehello", S("hello"), -5...-5, "bye", 0..-1)
+    assert_bytesplice_result("byehello", S("hello"), 0...0, "bye", 0..-1)
+    assert_bytesplice_result("bhello", S("hello"), 0...0, "bye", 0..0)
+    assert_bytesplice_result("byhello", S("hello"), 0...0, "bye", 0..1)
+    assert_bytesplice_result("byehello", S("hello"), 0...0, "bye", 0..2)
+    assert_bytesplice_result("yehello", S("hello"), 0...0, "bye", 1..2)
+
+    assert_bytesplice_raise(TypeError, S("hello"), 0, "bye")
+
+    assert_bytesplice_raise(IndexError, S("こんにちは"), -16, 0, "bye")
+    assert_bytesplice_result("byeこんにちは", S("こんにちは"), -15, 0, "bye")
+    assert_bytesplice_result("byeこんにちは", S("こんにちは"), 0, 0, "bye")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 1, 0, "bye")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 1, "bye")
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 2, "bye")
+    assert_bytesplice_result("byeんにちは", S("こんにちは"), 0, 3, "bye")
+    assert_bytesplice_result("こんにちはbye", S("こんにちは"), 15, 0, "bye")
+
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 0, "さようなら", -16, 0)
+    assert_bytesplice_result("こんにちはさようなら", S("こんにちは"), 15, 0, "さようなら", 0, 15)
+    assert_bytesplice_result("さようなら", S("こんにちは"), 0, 15, "さようなら", 0, 15)
+    assert_bytesplice_result("さんにちは", S("こんにちは"), 0, 3, "さようなら", 0, 3)
+    assert_bytesplice_result("さようちは", S("こんにちは"), 0, 9, "さようなら", 0, 9)
+    assert_bytesplice_result("ようなちは", S("こんにちは"), 0, 9, "さようなら", 3, 9)
+    assert_bytesplice_result("ようちは", S("こんにちは"), 0, 9, "さようなら", 3, 6)
+    assert_bytesplice_result("ようならちは", S("こんにちは"), 0, 9, "さようなら", 3, 12)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", -16, 0)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 1, 0)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 2, 0)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 0, 1)
+    assert_bytesplice_raise(IndexError, S("こんにちは"), 0, 15, "さようなら", 0, 2)
+    assert_bytesplice_result("にちはちは", s = S("こんにちは"), 0, 9, s, 6, 9)
 
     assert_bytesplice_result("", S(""), 0, 0, "")
     assert_bytesplice_result("xxx", S(""), 0, 0, "xxx")
+
+    assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0)
+    assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0..-1)
+    assert_bytesplice_raise(ArgumentError, S("hello"), 0..-1, "bye", 0, 3)
+  end
+
+  def test_append_bytes_into_binary
+    buf = S("".b)
+    assert_equal Encoding::BINARY, buf.encoding
+
+    buf.append_as_bytes(S("hello"))
+    assert_equal "hello".b, buf
+    assert_equal Encoding::BINARY, buf.encoding
+
+    buf.append_as_bytes(S("こんにちは"))
+    assert_equal S("helloこんにちは".b), buf
+    assert_equal Encoding::BINARY, buf.encoding
+  end
+
+  def test_append_bytes_into_utf8
+    buf = S("")
+    assert_equal Encoding::UTF_8, buf.encoding
+
+    buf.append_as_bytes(S("hello"))
+    assert_equal S("hello"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    assert_predicate buf, :ascii_only?
+    assert_predicate buf, :valid_encoding?
+
+    buf.append_as_bytes(S("こんにちは"))
+    assert_equal S("helloこんにちは"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    refute_predicate buf, :ascii_only?
+    assert_predicate buf, :valid_encoding?
+
+    buf.append_as_bytes(S("\xE2\x82".b))
+    assert_equal S("helloこんにちは\xE2\x82"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    refute_predicate buf, :valid_encoding?
+
+    buf.append_as_bytes(S("\xAC".b))
+    assert_equal S("helloこんにちは€"), buf
+    assert_equal Encoding::UTF_8, buf.encoding
+    assert_predicate buf, :valid_encoding?
+  end
+
+  def test_append_bytes_into_utf32
+    buf = S("abc".encode(Encoding::UTF_32LE))
+    assert_equal Encoding::UTF_32LE, buf.encoding
+
+    buf.append_as_bytes("def")
+    assert_equal Encoding::UTF_32LE, buf.encoding
+    refute_predicate buf, :valid_encoding?
+  end
+
+  def test_chilled_string
+    chilled_string = eval('"chilled"')
+
+    assert_not_predicate chilled_string, :frozen?
+
+    assert_not_predicate chilled_string.dup, :frozen?
+    assert_not_predicate chilled_string.clone, :frozen?
+
+    # @+ treat the original string as frozen
+    assert_not_predicate(+chilled_string, :frozen?)
+    assert_not_same chilled_string, +chilled_string
+
+    # @- treat the original string as mutable
+    assert_predicate(-chilled_string, :frozen?)
+    assert_not_same chilled_string, -chilled_string
+  end
+
+  def test_chilled_string_setivar
+    deprecated = Warning[:deprecated]
+    Warning[:deprecated] = false
+
+    String.class_eval <<~RUBY, __FILE__, __LINE__ + 1
+      def setivar!
+        @ivar = 42
+        @ivar
+      end
+    RUBY
+    chilled_string = eval('"chilled"')
+    begin
+      assert_equal 42, chilled_string.setivar!
+    ensure
+      String.undef_method(:setivar!)
+    end
+  ensure
+    Warning[:deprecated] = deprecated
+  end
+
+  def test_chilled_string_substring
+    deprecated = Warning[:deprecated]
+    Warning[:deprecated] = false
+    chilled_string = eval('"a chilled string."')
+    substring = chilled_string[0..-1]
+    assert_equal("a chilled string.", substring)
+    chilled_string[0..-1] = "This string is defrosted."
+    assert_equal("a chilled string.", substring)
+  ensure
+    Warning[:deprecated] = deprecated
   end
 
   private
 
   def assert_bytesplice_result(expected, s, *args)
-    assert_equal(args.last, s.send(:bytesplice, *args))
+    assert_equal(expected, s.send(:bytesplice, *args))
     assert_equal(expected, s)
   end
 
   def assert_bytesplice_raise(e, s, *args)
     assert_raise(e) { s.send(:bytesplice, *args) }
+  end
+
+  def assert_index_like(method, expected, string, match, *rest)
+    message = "#{method} with string does not affect $~"
+    /.*/ =~ message
+    md_before = $~
+    assert_equal(expected, string.__send__(method, match, *rest))
+    md_after = $~
+    case match
+    when Regexp
+      if expected
+        assert_not_nil(md_after)
+        assert_not_same(md_before, md_after)
+      else
+        assert_nil(md_after)
+      end
+    else
+      assert_same(md_before, md_after)
+    end
+    md_after
+  end
+
+  def assert_index(expected, string, match, *rest)
+    assert_index_like(:index, expected, string, match, *rest)
+  end
+
+  def assert_rindex(expected, string, match, *rest)
+    assert_index_like(:rindex, expected, string, match, *rest)
+  end
+
+  def assert_byteindex(expected, string, match, *rest)
+    assert_index_like(:byteindex, expected, string, match, *rest)
+  end
+
+  def assert_byterindex(expected, string, match, *rest)
+    assert_index_like(:byterindex, expected, string, match, *rest)
   end
 end
 

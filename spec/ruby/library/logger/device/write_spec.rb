@@ -35,17 +35,8 @@ describe "Logger::LogDevice#write" do
     rm_r path
   end
 
-  version_is Logger::VERSION, ""..."1.4.0" do
-    it "fails if the device is already closed" do
-      @device.close
-      -> { @device.write "foo" }.should complain(/\Alog writing failed\./)
-    end
-  end
-
-  version_is Logger::VERSION, "1.4.0" do
-    it "fails if the device is already closed" do
-      @device.close
-      -> { @device.write "foo" }.should complain(/\Alog shifting failed\./)
-    end
+  it "fails if the device is already closed" do
+    @device.close
+    -> { @device.write "foo" }.should complain(/\Alog shifting failed\./)
   end
 end

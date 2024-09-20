@@ -429,10 +429,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
             GETNUM(prec, precision);
             goto retry;
 
-          case '\n':
-          case '\0':
-            p--;
-            /* fall through */
           case '%':
             if (flags != FNONE) {
                 rb_raise(rb_eArgError, "invalid format character - %%");
@@ -941,7 +937,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
-    if (posarg >= 0 && nextarg < argc) {
+    if (posarg >= 0 && nextarg < argc && !(argc == 2 && RB_TYPE_P(argv[1], T_HASH))) {
         const char *mesg = "too many arguments for format string";
         if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
         if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
@@ -1106,26 +1102,16 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
         rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
-        if (RB_TYPE_P(value, T_CLASS)) {
 # define LITERAL(str) (*sz = rb_strlen_lit(str), str)
-
-            if (value == rb_cNilClass) {
-                return LITERAL("nil");
-            }
-            else if (value == rb_cInteger) {
-                return LITERAL("Integer");
-            }
-            else if (value == rb_cSymbol) {
-                return LITERAL("Symbol");
-            }
-            else if (value == rb_cTrueClass) {
-                return LITERAL("true");
-            }
-            else if (value == rb_cFalseClass) {
-                return LITERAL("false");
-            }
-# undef LITERAL
+        /* optimize special const cases */
+        switch (value) {
+# define LITERAL_CASE(x) case Q##x: return LITERAL(#x)
+          LITERAL_CASE(nil);
+          LITERAL_CASE(true);
+          LITERAL_CASE(false);
+# undef LITERAL_CASE
         }
+# undef LITERAL
         value = rb_inspect(value);
     }
     else if (SYMBOL_P(value)) {
@@ -1179,7 +1165,9 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     RBASIC_SET_CLASS_RAW(result, klass);
     p = RSTRING_PTR(result);
     long blen = (char *)f._p - p;
-    if (scanned < blen) {
+
+    coderange = ENC_CODERANGE(result);
+    if (coderange != ENC_CODERANGE_UNKNOWN && scanned < blen) {
         rb_str_coderange_scan_restartable(p + scanned, p + blen, rb_enc_get(result), &coderange);
         ENC_CODERANGE_SET(result, coderange);
     }

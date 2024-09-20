@@ -61,13 +61,13 @@ pub struct LoadRegister {
 
 impl LoadRegister {
     /// LDR
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDR--register---Load-Register--register--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDR--register---Load-Register--register--?lang=en>
     pub fn ldr(rt: u8, rn: u8, rm: u8, num_bits: u8) -> Self {
         Self { rt, rn, s: S::NoShift, option: Option::LSL, rm, size: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b0100;
 
 impl From<LoadRegister> for u32 {

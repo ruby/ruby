@@ -48,12 +48,10 @@ module SyntaxSuggest
       strip_line = line.dup
       strip_line.lstrip!
 
-      if strip_line.empty?
-        @empty = true
-        @indent = 0
+      @indent = if (@empty = strip_line.empty?)
+        line.length - 1 # Newline removed from strip_line is not "whitespace"
       else
-        @empty = false
-        @indent = line.length - strip_line.length
+        line.length - strip_line.length
       end
 
       set_kw_end
@@ -182,12 +180,19 @@ module SyntaxSuggest
     #     EOM
     #     expect(lines.first.trailing_slash?).to eq(true)
     #
-    def trailing_slash?
-      last = @lex.last
-      return false unless last
-      return false unless last.type == :on_sp
+    if SyntaxSuggest.use_prism_parser?
+      def trailing_slash?
+        last = @lex.last
+        last&.type == :on_tstring_end
+      end
+    else
+      def trailing_slash?
+        last = @lex.last
+        return false unless last
+        return false unless last.type == :on_sp
 
-      last.token == TRAILING_SLASH
+        last.token == TRAILING_SLASH
+      end
     end
 
     # Endless method detection

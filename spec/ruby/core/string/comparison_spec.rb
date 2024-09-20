@@ -61,12 +61,12 @@ describe "String#<=> with String" do
   end
 
   it "ignores encoding difference" do
-    ("ÄÖÛ".force_encoding("utf-8") <=> "ÄÖÜ".force_encoding("iso-8859-1")).should == -1
-    ("ÄÖÜ".force_encoding("utf-8") <=> "ÄÖÛ".force_encoding("iso-8859-1")).should == 1
+    ("ÄÖÛ".dup.force_encoding("utf-8") <=> "ÄÖÜ".dup.force_encoding("iso-8859-1")).should == -1
+    ("ÄÖÜ".dup.force_encoding("utf-8") <=> "ÄÖÛ".dup.force_encoding("iso-8859-1")).should == 1
   end
 
   it "returns 0 with identical ASCII-compatible bytes of different encodings" do
-    ("abc".force_encoding("utf-8") <=> "abc".force_encoding("iso-8859-1")).should == 0
+    ("abc".dup.force_encoding("utf-8") <=> "abc".dup.force_encoding("iso-8859-1")).should == 0
   end
 
   it "compares the indices of the encodings when the strings have identical non-ASCII-compatible bytes" do
@@ -77,7 +77,7 @@ describe "String#<=> with String" do
   end
 
   it "returns 0 when comparing 2 empty strings but one is not ASCII-compatible" do
-    ("" <=> "".force_encoding('iso-2022-jp')).should == 0
+    ("" <=> "".dup.force_encoding('iso-2022-jp')).should == 0
   end
 end
 

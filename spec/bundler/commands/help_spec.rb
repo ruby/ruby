@@ -15,6 +15,13 @@ RSpec.describe "bundle help" do
     expect(out).to eq(%(["#{man_dir}/bundle-install.1"]))
   end
 
+  it "prexifes bundle commands with bundle- and resolves aliases when finding the man files" do
+    with_fake_man do
+      bundle "help package"
+    end
+    expect(out).to eq(%(["#{man_dir}/bundle-cache.1"]))
+  end
+
   it "simply outputs the human readable file when there is no man on the path" do
     with_path_as("") do
       bundle "help install"
@@ -71,7 +78,7 @@ RSpec.describe "bundle help" do
 
   it "has helpful output when using --help flag for a non-existent command" do
     with_fake_man do
-      bundle "instill -h", :raise_on_error => false
+      bundle "instill -h", raise_on_error: false
     end
     expect(err).to include('Could not find command "instill".')
   end

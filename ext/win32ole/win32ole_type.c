@@ -54,9 +54,9 @@ static const rb_data_type_t oletype_datatype = {
 };
 
 /*
- * Document-class: WIN32OLE_TYPE
+ * Document-class: WIN32OLE::Type
  *
- *   <code>WIN32OLE_TYPE</code> objects represent OLE type library information.
+ *   +WIN32OLE::Type+ objects represent OLE type library information.
  */
 
 static void
@@ -106,10 +106,12 @@ ole_type_from_itypeinfo(ITypeInfo *pTypeInfo)
 
 /*
  *   call-seq:
- *      WIN32OLE_TYPE.ole_classes(typelib)
+ *      ole_classes(typelib)
  *
- *   Returns array of WIN32OLE_TYPE objects defined by the <i>typelib</i> type library.
- *   This method will be OBSOLETE. Use WIN32OLE_TYPELIB.new(typelib).ole_classes instead.
+ *   Returns array of WIN32OLE::Type objects defined by the <i>typelib</i> type library.
+ *
+ *   This method will be OBSOLETE.
+ *   Use <code>WIN32OLE::TypeLib.new(typelib).ole_classes</code> instead.
  */
 static VALUE
 foletype_s_ole_classes(VALUE self, VALUE typelib)
@@ -118,8 +120,8 @@ foletype_s_ole_classes(VALUE self, VALUE typelib)
 
     /*
     rb_warn("%s is obsolete; use %s instead.",
-            "WIN32OLE_TYPE.ole_classes",
-            "WIN32OLE_TYPELIB.new(typelib).ole_types");
+            "WIN32OLE::Type.ole_classes",
+            "WIN32OLE::TypeLib.new(typelib).ole_types");
     */
     obj = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("new"), 1, typelib);
     return rb_funcall(obj, rb_intern("ole_types"), 0);
@@ -127,10 +129,12 @@ foletype_s_ole_classes(VALUE self, VALUE typelib)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE.typelibs
+ *     typelibs
  *
  *  Returns array of type libraries.
- *  This method will be OBSOLETE. Use WIN32OLE_TYPELIB.typelibs.collect{|t| t.name} instead.
+ *
+ *  This method will be OBSOLETE.
+ *  Use <code>WIN32OLE::TypeLib.typelibs.collect{|t| t.name}</code> instead.
  *
  */
 static VALUE
@@ -138,15 +142,15 @@ foletype_s_typelibs(VALUE self)
 {
     /*
     rb_warn("%s is obsolete. use %s instead.",
-            "WIN32OLE_TYPE.typelibs",
-            "WIN32OLE_TYPELIB.typelibs.collect{t|t.name}");
+            "WIN32OLE::Type.typelibs",
+            "WIN32OLE::TypeLib.typelibs.collect{t|t.name}");
     */
-    return rb_eval_string("WIN32OLE_TYPELIB.typelibs.collect{|t|t.name}");
+    return rb_eval_string("WIN32OLE::TypeLib.typelibs.collect{|t|t.name}");
 }
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE.progids
+ *     progids
  *
  *  Returns array of ProgID.
  */
@@ -214,7 +218,6 @@ create_win32ole_type(ITypeInfo *pTypeInfo, VALUE name)
 static VALUE
 oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass)
 {
-
     long count;
     int i;
     HRESULT hr;
@@ -245,14 +248,14 @@ oleclass_from_typelib(VALUE self, ITypeLib *pTypeLib, VALUE oleclass)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE.new(typelib, ole_class) -> WIN32OLE_TYPE object
+ *     new(typelib, ole_class) -> WIN32OLE::Type object
  *
- *  Returns a new WIN32OLE_TYPE object.
+ *  Returns a new WIN32OLE::Type object.
  *  The first argument <i>typelib</i> specifies OLE type library name.
  *  The second argument specifies OLE class name.
  *
- *      WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
- *          # => WIN32OLE_TYPE object of Application class of Excel.
+ *      WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *          # => WIN32OLE::Type object of Application class of Excel.
  */
 static VALUE
 foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
@@ -284,10 +287,10 @@ foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
 
 /*
  * call-seq:
- *    WIN32OLE_TYPE#name #=> OLE type name
+ *    name #=> OLE type name
  *
  * Returns OLE type name.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Application')
  *    puts tobj.name  # => Application
  */
 static VALUE
@@ -344,10 +347,10 @@ ole_ole_type(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#ole_type #=> OLE type string.
+ *     ole_type #=> OLE type string.
  *
  *  returns type of OLE class.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Application')
  *    puts tobj.ole_type  # => Class
  */
 static VALUE
@@ -378,10 +381,10 @@ ole_type_guid(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#guid  #=> GUID
+ *     guid  #=> GUID
  *
  *  Returns GUID.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Application')
  *    puts tobj.guid  # => {00024500-0000-0000-C000-000000000046}
  */
 static VALUE
@@ -412,10 +415,10 @@ ole_type_progid(ITypeInfo *pTypeInfo)
 
 /*
  * call-seq:
- *    WIN32OLE_TYPE#progid  #=> ProgID
+ *    progid  #=> ProgID
  *
  * Returns ProgID if it exists. If not found, then returns nil.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Application')
  *    puts tobj.progid  # =>   Excel.Application.9
  */
 static VALUE
@@ -446,10 +449,10 @@ ole_type_visible(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *    WIN32OLE_TYPE#visible?  #=> true or false
+ *    visible?  #=> true or false
  *
  *  Returns true if the OLE class is public.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Application')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Application')
  *    puts tobj.visible  # => true
  */
 static VALUE
@@ -475,10 +478,10 @@ ole_type_major_version(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#major_version
+ *     major_version
  *
  *  Returns major version.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')
+ *     tobj = WIN32OLE::Type.new('Microsoft Word 10.0 Object Library', 'Documents')
  *     puts tobj.major_version # => 8
  */
 static VALUE
@@ -504,10 +507,10 @@ ole_type_minor_version(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *    WIN32OLE_TYPE#minor_version #=> OLE minor version
+ *    minor_version #=> OLE minor version
  *
  *  Returns minor version.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')
+ *     tobj = WIN32OLE::Type.new('Microsoft Word 10.0 Object Library', 'Documents')
  *     puts tobj.minor_version # => 2
  */
 static VALUE
@@ -533,10 +536,10 @@ ole_type_typekind(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *    WIN32OLE_TYPE#typekind #=> number of type.
+ *    typekind #=> number of type.
  *
  *  Returns number which represents type.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Word 10.0 Object Library', 'Documents')
+ *    tobj = WIN32OLE::Type.new('Microsoft Word 10.0 Object Library', 'Documents')
  *    puts tobj.typekind # => 4
  *
  */
@@ -561,10 +564,10 @@ ole_type_helpstring(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *    WIN32OLE_TYPE#helpstring #=> help string.
+ *    helpstring #=> help string.
  *
  *  Returns help string.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'IWebBrowser')
+ *    tobj = WIN32OLE::Type.new('Microsoft Internet Controls', 'IWebBrowser')
  *    puts tobj.helpstring # => Web Browser interface
  */
 static VALUE
@@ -594,10 +597,10 @@ ole_type_src_type(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#src_type #=> OLE source class
+ *     src_type #=> OLE source class
  *
  *  Returns source class when the OLE class is 'Alias'.
- *     tobj =  WIN32OLE_TYPE.new('Microsoft Office 9.0 Object Library', 'MsoRGBType')
+ *     tobj =  WIN32OLE::Type.new('Microsoft Office 9.0 Object Library', 'MsoRGBType')
  *     puts tobj.src_type # => I4
  *
  */
@@ -622,10 +625,10 @@ ole_type_helpfile(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#helpfile
+ *     helpfile
  *
  *  Returns helpfile path. If helpfile is not found, then returns nil.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
  *     puts tobj.helpfile # => C:\...\VBAXL9.CHM
  *
  */
@@ -650,10 +653,10 @@ ole_type_helpcontext(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#helpcontext
+ *     helpcontext
  *
  *  Returns helpcontext. If helpcontext is not found, then returns nil.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
  *     puts tobj.helpfile # => 131185
  */
 static VALUE
@@ -701,11 +704,11 @@ ole_variables(ITypeInfo *pTypeInfo)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#variables
+ *     variables
  *
- *  Returns array of WIN32OLE_VARIABLE objects which represent variables
+ *  Returns array of WIN32OLE::Variable objects which represent variables
  *  defined in OLE class.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'XlSheetType')
  *     vars = tobj.variables
  *     vars.each do |v|
  *       puts "#{v.name} = #{v.value}"
@@ -728,11 +731,11 @@ foletype_variables(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#ole_methods # the array of WIN32OLE_METHOD objects.
+ *     ole_methods # the array of WIN32OLE::Method objects.
  *
- *  Returns array of WIN32OLE_METHOD objects which represent OLE method defined in
+ *  Returns array of WIN32OLE::Method objects which represent OLE method defined in
  *  OLE type library.
- *    tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *    tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
  *    methods = tobj.ole_methods.collect{|m|
  *      m.name
  *    }
@@ -747,11 +750,11 @@ foletype_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#ole_typelib
+ *     ole_typelib
  *
- *  Returns the WIN32OLE_TYPELIB object which is including the WIN32OLE_TYPE
+ *  Returns the WIN32OLE::TypeLib object which is including the WIN32OLE::Type
  *  object. If it is not found, then returns nil.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
  *     puts tobj.ole_typelib # => 'Microsoft Excel 9.0 Object Library'
  */
 static VALUE
@@ -804,11 +807,11 @@ ole_type_impl_ole_types(ITypeInfo *pTypeInfo, int implflags)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#implemented_ole_types
+ *     implemented_ole_types
  *
- *  Returns the array of WIN32OLE_TYPE object which is implemented by the WIN32OLE_TYPE
+ *  Returns the array of WIN32OLE::Type object which is implemented by the WIN32OLE::Type
  *  object.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
  *     p tobj.implemented_ole_types # => [_Worksheet, DocEvents]
  */
 static VALUE
@@ -820,13 +823,13 @@ foletype_impl_ole_types(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#source_ole_types
+ *     source_ole_types
  *
- *  Returns the array of WIN32OLE_TYPE object which is implemented by the WIN32OLE_TYPE
+ *  Returns the array of WIN32OLE::Type object which is implemented by the WIN32OLE::Type
  *  object and having IMPLTYPEFLAG_FSOURCE.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', "InternetExplorer")
+ *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', "InternetExplorer")
  *     p tobj.source_ole_types
- *     # => [#<WIN32OLE_TYPE:DWebBrowserEvents2>, #<WIN32OLE_TYPE:DWebBrowserEvents>]
+ *     # => [#<WIN32OLE::Type:DWebBrowserEvents2>, #<WIN32OLE::Type:DWebBrowserEvents>]
  */
 static VALUE
 foletype_source_ole_types(VALUE self)
@@ -837,12 +840,12 @@ foletype_source_ole_types(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#default_event_sources
+ *     default_event_sources
  *
- *  Returns the array of WIN32OLE_TYPE object which is implemented by the WIN32OLE_TYPE
+ *  Returns the array of WIN32OLE::Type object which is implemented by the WIN32OLE::Type
  *  object and having IMPLTYPEFLAG_FSOURCE and IMPLTYPEFLAG_FDEFAULT.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', "InternetExplorer")
- *     p tobj.default_event_sources  # => [#<WIN32OLE_TYPE:DWebBrowserEvents2>]
+ *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', "InternetExplorer")
+ *     p tobj.default_event_sources  # => [#<WIN32OLE::Type:DWebBrowserEvents2>]
  */
 static VALUE
 foletype_default_event_sources(VALUE self)
@@ -853,13 +856,13 @@ foletype_default_event_sources(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#default_ole_types
+ *     default_ole_types
  *
- *  Returns the array of WIN32OLE_TYPE object which is implemented by the WIN32OLE_TYPE
+ *  Returns the array of WIN32OLE::Type object which is implemented by the WIN32OLE::Type
  *  object and having IMPLTYPEFLAG_FDEFAULT.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', "InternetExplorer")
+ *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', "InternetExplorer")
  *     p tobj.default_ole_types
- *     # => [#<WIN32OLE_TYPE:IWebBrowser2>, #<WIN32OLE_TYPE:DWebBrowserEvents2>]
+ *     # => [#<WIN32OLE::Type:IWebBrowser2>, #<WIN32OLE::Type:DWebBrowserEvents2>]
  */
 static VALUE
 foletype_default_ole_types(VALUE self)
@@ -870,17 +873,17 @@ foletype_default_ole_types(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPE#inspect -> String
+ *     inspect -> String
  *
  *  Returns the type name with class name.
  *
  *     ie = WIN32OLE.new('InternetExplorer.Application')
- *     ie.ole_type.inspect => #<WIN32OLE_TYPE:IWebBrowser2>
+ *     ie.ole_type.inspect => #<WIN32OLE::Type:IWebBrowser2>
  */
 static VALUE
 foletype_inspect(VALUE self)
 {
-    return default_inspect(self, "WIN32OLE_TYPE");
+    return default_inspect(self, "WIN32OLE::Type");
 }
 
 VALUE cWIN32OLE_TYPE;
@@ -888,6 +891,7 @@ VALUE cWIN32OLE_TYPE;
 void Init_win32ole_type(void)
 {
     cWIN32OLE_TYPE = rb_define_class_under(cWIN32OLE, "Type", rb_cObject);
+    /* Alias of WIN32OLE::Type, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_TYPE", cWIN32OLE_TYPE);
     rb_define_singleton_method(cWIN32OLE_TYPE, "ole_classes", foletype_s_ole_classes, 1);
     rb_define_singleton_method(cWIN32OLE_TYPE, "typelibs", foletype_s_typelibs, 0);

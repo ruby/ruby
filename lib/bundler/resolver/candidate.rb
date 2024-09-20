@@ -15,7 +15,7 @@ module Bundler
     # considered separately.
     #
     # Some candidates may also keep some information explicitly about the
-    # package the refer to. These candidates are referred to as "canonical" and
+    # package they refer to. These candidates are referred to as "canonical" and
     # are used when materializing resolution results back into RubyGems
     # specifications that can be installed, written to lock files, and so on.
     #
@@ -24,11 +24,10 @@ module Bundler
 
       attr_reader :version
 
-      def initialize(version, specs: [])
-        @spec_group = Resolver::SpecGroup.new(specs)
-        @platforms = specs.map(&:platform).sort_by(&:to_s).uniq
+      def initialize(version, group: nil, priority: -1)
+        @spec_group = group || SpecGroup.new([])
         @version = Gem::Version.new(version)
-        @ruby_only = @platforms == [Gem::Platform::RUBY]
+        @priority = priority
       end
 
       def dependencies
@@ -50,30 +49,23 @@ module Bundler
       end
 
       def sort_obj
-        [@version, @ruby_only ? -1 : 1]
-      end
-
-      def canonical?
-        !@spec_group.empty?
+        [@version, @priority]
       end
 
       def <=>(other)
         return unless other.is_a?(self.class)
-        return @version <=> other.version unless canonical? && other.canonical?
 
         sort_obj <=> other.sort_obj
       end
 
       def ==(other)
         return unless other.is_a?(self.class)
-        return @version == other.version unless canonical? && other.canonical?
 
         sort_obj == other.sort_obj
       end
 
       def eql?(other)
         return unless other.is_a?(self.class)
-        return @version.eql?(other.version) unless canonical? || other.canonical?
 
         sort_obj.eql?(other.sort_obj)
       end
@@ -83,9 +75,7 @@ module Bundler
       end
 
       def to_s
-        return @version.to_s if @platforms.empty? || @ruby_only
-
-        "#{@version} (#{@platforms.join(", ")})"
+        @version.to_s
       end
     end
   end

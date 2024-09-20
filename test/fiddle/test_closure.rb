@@ -81,6 +81,18 @@ module Fiddle
       end
     end
 
+    def test_bool
+      closure_class = Class.new(Closure) do
+        def call(bool)
+          not bool
+        end
+      end
+      closure_class.create(:bool, [:bool]) do |closure|
+        func = Function.new(closure, [:bool], :bool)
+        assert_equal(false, func.call(true))
+      end
+    end
+
     def test_free
       Closure.create(:int, [:void]) do |closure|
         assert(!closure.freed?)

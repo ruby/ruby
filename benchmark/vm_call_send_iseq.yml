@@ -1,0 +1,77 @@
+prelude: |
+  def a0; end
+  def a1(a) a; end
+  def s(*a) a; end
+  def b(kw: 1) kw end
+  def sb(*a, kw: 1) kw end
+
+  t0 = 0.times.to_a
+  t1 = 1.times.to_a
+  t10 = 10.times.to_a
+  t200 = 200.times.to_a
+
+  a0_t0 = [:a0, *t0]
+  a1_t1 = [:a1, *t1]
+  s_t0 = [:s, *t0]
+  s_t1 = [:s, *t1]
+  s_t10 = [:s, *t10]
+  s_t200 = [:s, *t200]
+  sb_t0 = [:sb, *t0]
+  sb_t1 = [:sb, *t1]
+  sb_t10 = [:sb, *t10]
+  sb_t200 = [:sb, *t200]
+  kw = {kw: 2}
+benchmark:
+  send_simple_0: |
+    send(:a0)
+  send_simple_1: |
+    send(:a1, 1)
+  send_simple_0_splat: |
+    send(:a0, *t0)
+  send_simple_1_splat: |
+    send(:a1, *t1)
+  send_simple_0_splat_comb: |
+    send(*a0_t0)
+  send_simple_1_splat_comb: |
+    send(*a1_t1)
+  send_no_splat: |
+    send(:s)
+  send_0_splat: |
+    send(:s, *t0)
+  send_1_splat: |
+    send(:s, *t1)
+  send_10_splat: |
+    send(:s, *t10)
+  send_200_splat: |
+    send(:s, *t200)
+  send_0_splat_comb: |
+    send(*s_t0)
+  send_1_splat_comb: |
+    send(*s_t1)
+  send_10_splat_comb: |
+    send(*s_t10)
+  send_200_splat_comb: |
+    send(*s_t200)
+  send_kw: |
+    send(:b, kw: 1)
+  send_no_kw: |
+    send(:b)
+  send_kw_splat: |
+    send(:b, **kw)
+  send_0_splat_kw: |
+    send(:sb, *t0, **kw)
+  send_1_splat_kw: |
+    send(:sb, *t1, **kw)
+  send_10_splat_kw: |
+    send(:sb, *t10, **kw)
+  send_200_splat_kw: |
+    send(:sb, *t200, **kw)
+  send_0_splat_comb_kw: |
+    send(*sb_t0, **kw)
+  send_1_splat_comb_kw: |
+    send(*sb_t1, **kw)
+  send_10_splat_comb_kw: |
+    send(*sb_t10, **kw)
+  send_200_splat_comb_kw: |
+    send(*sb_t200, **kw)
+loop_count: 3000000

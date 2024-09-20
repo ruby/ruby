@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "endpoint"
-
-Artifice.deactivate
+require_relative "helpers/endpoint"
 
 class EndpointCredsDiffHost < Endpoint
   helpers do
@@ -35,5 +33,7 @@ class EndpointCredsDiffHost < Endpoint
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(EndpointCredsDiffHost)

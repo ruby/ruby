@@ -1,0 +1,27 @@
+prelude: |
+  def named_arg_splat(*a) end
+  def named_arg_kw_splat(*a, **kw) end
+  def anon_arg_splat(*) end
+  def anon_kw_splat(**) end
+  def anon_arg_kw_splat(*, **) end
+  def anon_fw_to_named(*, **) named_arg_kw_splat(*, **) end
+  def fw_to_named(...) named_arg_kw_splat(...) end
+  def fw_to_anon_to_named(...) anon_fw_to_named(...) end
+  def fw_no_kw(...) named_arg_splat(...) end
+  a = [1]
+  kw = {y: 1}
+benchmark:
+  named_multi_arg_splat: "named_arg_splat(*a, *a)"
+  named_post_splat: "named_arg_splat(*a, a)"
+  anon_arg_splat: "anon_arg_splat(*a)"
+  anon_arg_kw_splat: "anon_arg_kw_splat(*a, **kw)"
+  anon_multi_arg_splat: "anon_arg_splat(*a, *a)"
+  anon_post_splat: "anon_arg_splat(*a, a)"
+  anon_kw_splat: "anon_kw_splat(**kw)"
+  anon_fw_to_named_splat: "anon_fw_to_named(*a, **kw)"
+  anon_fw_to_named_no_splat: "anon_fw_to_named(1, y: 1)"
+  fw_to_named_splat: "fw_to_named(*a, **kw)"
+  fw_to_named_no_splat: "fw_to_named(1, y: 1)"
+  fw_to_anon_to_named_splat: "fw_to_anon_to_named(*a, **kw)"
+  fw_to_anon_to_named_no_splat: "fw_to_anon_to_named(1, y: 1)"
+  fw_no_kw: "fw_no_kw(1, 2)"

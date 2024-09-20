@@ -80,10 +80,43 @@ static char **argv1_addr = NULL;
 
 #endif /* HAVE_SETPROCTITLE */
 
+#if defined(SPT_TYPE) && SPT_TYPE == SPT_REUSEARGV
+# define ALLOCATE_ENVIRON 1
+#else
+# define ALLOCATE_ENVIRON 0
+#endif
+
+#if ALLOCATE_ENVIRON
+/* system_environ is the value of environ before we allocate a custom buffer.
+ *
+ * We use this to restore environ in ruby_free_proctitle.
+ */
+static char **system_environ = NULL;
+/* orig_environ is the buffer we allocate for environ.
+ *
+ * We use this to free this buffer in ruby_free_proctitle. When we add new
+ * environment variables using setenv, the system may change environ to a
+ * different buffer and will not free the original buffer, so we need to hold
+ * onto this so we can free it in ruby_free_proctitle.
+ *
+ * We must not free any of the contents because it may change if the system
+ * updates existing environment variables.
+ */
+static char **orig_environ = NULL;
+/* alloc_environ is a copy of orig_environ.
+ *
+ * We use this to free all the original string copies that were in orig_environ.
+ * Since environ could be changed to point to strings allocated by the system
+ * if environment variables are updated, so we need this to point to the
+ * original strings.
+ */
+static char **alloc_environ = NULL;
+#endif
+
 void
 compat_init_setproctitle(int argc, char *argv[])
 {
-#if defined(SPT_TYPE) && SPT_TYPE == SPT_REUSEARGV
+#if ALLOCATE_ENVIRON
 	extern char **environ;
 	char *lastargv = NULL;
 	char *lastenvp = NULL;
@@ -100,9 +133,13 @@ compat_init_setproctitle(int argc, char *argv[])
 		return;
 
 	/* Fail if we can't allocate room for the new environment */
-	for (i = 0; envp[i] != NULL; i++)
-		;
-	if ((environ = calloc(i + 1, sizeof(*environ))) == NULL) {
+	for (i = 0; envp[i] != NULL; i++);
+
+	system_environ = environ;
+
+	alloc_environ = xcalloc(i + 1, sizeof(*environ));
+	orig_environ = environ = xcalloc(i + 1, sizeof(*environ));
+	if (environ == NULL) {
 		environ = envp;	/* put it back */
 		return;
 	}
@@ -129,12 +166,31 @@ compat_init_setproctitle(int argc, char *argv[])
 	argv_env_len = lastenvp - argv[0];
 
 	for (i = 0; envp[i] != NULL; i++)
-		environ[i] = ruby_strdup(envp[i]);
-	environ[i] = NULL;
+		alloc_environ[i] = environ[i] = ruby_strdup(envp[i]);
+	alloc_environ[i] = environ[i] = NULL;
 #endif /* SPT_REUSEARGV */
 }
 
+void
+ruby_free_proctitle(void)
+{
+#if ALLOCATE_ENVIRON
+	extern char **environ;
+
+	if (!orig_environ) return; /* environ is allocated by OS */
+
+	for (int i = 0; alloc_environ[i] != NULL; i++) {
+		xfree(alloc_environ[i]);
+	}
+	xfree(alloc_environ);
+	xfree(orig_environ);
+
+	environ = system_environ;
+#endif
+}
+
 #ifndef HAVE_SETPROCTITLE
+
 void
 setproctitle(const char *fmt, ...)
 {

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 unless Gem::HAVE_OPENSSL
@@ -36,8 +37,8 @@ class TestGemSecuritySigner < Gem::TestCase
   def test_initialize_cert_chain_mixed
     signer = Gem::Security::Signer.new nil, [@cert_file, CHILD_CERT]
 
-    assert_equal [PUBLIC_CERT, CHILD_CERT].map {|c| c.to_pem },
-                 signer.cert_chain.map {|c| c.to_pem }
+    assert_equal [PUBLIC_CERT, CHILD_CERT].map(&:to_pem),
+                 signer.cert_chain.map(&:to_pem)
   end
 
   def test_initialize_cert_chain_invalid
@@ -49,8 +50,8 @@ class TestGemSecuritySigner < Gem::TestCase
   def test_initialize_cert_chain_path
     signer = Gem::Security::Signer.new nil, [@cert_file]
 
-    assert_equal [PUBLIC_CERT].map {|c| c.to_pem },
-                 signer.cert_chain.map {|c| c.to_pem }
+    assert_equal [PUBLIC_CERT].map(&:to_pem),
+                 signer.cert_chain.map(&:to_pem)
   end
 
   def test_initialize_default
@@ -65,7 +66,7 @@ class TestGemSecuritySigner < Gem::TestCase
     signer = Gem::Security::Signer.new nil, nil
 
     assert_equal PRIVATE_KEY.to_pem, signer.key.to_pem
-    assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map {|c| c.to_pem }
+    assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map(&:to_pem)
   end
 
   def test_initialize_key_path
@@ -99,7 +100,7 @@ class TestGemSecuritySigner < Gem::TestCase
     signer.load_cert_chain
 
     assert_equal [PUBLIC_CERT.to_pem, CHILD_CERT.to_pem],
-                 signer.cert_chain.map {|c| c.to_pem }
+                 signer.cert_chain.map(&:to_pem)
   end
 
   def test_load_cert_chain_broken
@@ -111,7 +112,7 @@ class TestGemSecuritySigner < Gem::TestCase
     signer.load_cert_chain
 
     assert_equal [CHILD_CERT.to_pem, GRANDCHILD_CERT.to_pem],
-                 signer.cert_chain.map {|c| c.to_pem }
+                 signer.cert_chain.map(&:to_pem)
   end
 
   def test_sign
@@ -143,7 +144,7 @@ B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
 
   def test_sign_expired_auto_update
     pend if Gem.java_platform?
-    FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), mode: 0o700
 
     private_key_path = File.join(Gem.user_home, ".gem", "gem-private_key.pem")
     Gem::Security.write PRIVATE_KEY, private_key_path
@@ -170,7 +171,7 @@ B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
   end
 
   def test_sign_expired_auto_update_exists
-    FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), mode: 0o700
 
     expiry = EXPIRED_CERT.not_after.strftime "%Y%m%d%H%M%S"
     expired_path =

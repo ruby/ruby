@@ -3,9 +3,14 @@ gnumake = yes
 include Makefile
 
 DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
-windres-cpp := $(CPP) -xc
-windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
-	$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
+ifeq (@USE_LLVM_WINDRES@,yes) # USE_LLVM_WINDRES
+	# llvm-windres fails when preprocessor options are added
+	windres-cpp :=
+else
+	windres-cpp := $(CPP) -xc
+	windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
+		$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
+endif
 WINDRES = @WINDRES@ $(windres-cpp) -DRC_INVOKED
 STRIP = @STRIP@
 
@@ -41,6 +46,7 @@ SOLIBS := $(DLL_BASE_NAME).res.$(OBJEXT) $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
 RUBYDEF = $(DLL_BASE_NAME).def
+override LIBRUBY_FOR_LEAKED_GLOBALS := # DLL shows symbols from import library
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)

@@ -75,7 +75,7 @@ class Bundler::Thor
     # Allow shell to be shared between invocations.
     #
     def _shared_configuration #:nodoc:
-      super.merge!(:shell => shell)
+      super.merge!(shell: shell)
     end
   end
 end

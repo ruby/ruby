@@ -43,13 +43,13 @@ pub struct Atomic {
 
 impl Atomic {
     /// LDADDAL
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDADD--LDADDA--LDADDAL--LDADDL--Atomic-add-on-word-or-doubleword-in-memory-?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDADD--LDADDA--LDADDAL--LDADDL--Atomic-add-on-word-or-doubleword-in-memory-?lang=en>
     pub fn ldaddal(rs: u8, rt: u8, rn: u8, num_bits: u8) -> Self {
         Self { rt, rn, rs, size: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b0100;
 
 impl From<Atomic> for u32 {

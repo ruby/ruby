@@ -2,10 +2,10 @@
 
 RSpec.describe "bundle cache with path" do
   it "is no-op when the path is within the bundle" do
-    build_lib "foo", :path => bundled_app("lib/foo")
+    build_lib "foo", path: bundled_app("lib/foo")
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{bundled_app("lib/foo")}'
     G
 
@@ -19,7 +19,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -35,10 +35,10 @@ RSpec.describe "bundle cache with path" do
     libname = File.basename(bundled_app) + "_gem"
     libpath = File.join(File.dirname(bundled_app), libname)
 
-    build_lib libname, :path => libpath
+    build_lib libname, path: libpath
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "#{libname}", :path => '#{libpath}'
     G
 
@@ -54,7 +54,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -77,7 +77,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -89,7 +89,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "bar"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "bar", :path => '#{lib_path("bar-1.0")}'
     G
 
@@ -97,11 +97,11 @@ RSpec.describe "bundle cache with path" do
     expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
   end
 
-  it "does not cache path gems by default", :bundler => "< 3" do
+  it "does not cache path gems by default", bundler: "< 3" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -110,11 +110,11 @@ RSpec.describe "bundle cache with path" do
     expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
   end
 
-  it "caches path gems by default", :bundler => "3" do
+  it "caches path gems by default", bundler: "3" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -127,7 +127,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -136,7 +136,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "bar"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
       gem "bar", :path => '#{lib_path("bar-1.0")}'
     G
@@ -149,7 +149,7 @@ RSpec.describe "bundle cache with path" do
     build_lib "foo"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
     G
 
@@ -158,12 +158,12 @@ RSpec.describe "bundle cache with path" do
     build_lib "baz"
 
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo", :path => '#{lib_path("foo-1.0")}'
       gem "baz", :path => '#{lib_path("baz-1.0")}'
     G
 
-    bundle "cache --no-all", :raise_on_error => false
+    bundle "cache --no-all", raise_on_error: false
     expect(bundled_app("vendor/cache/baz-1.0")).not_to exist
   end
 end

@@ -1,3 +1,93 @@
+Version 3.2.0
+=============
+
+Compatibility
+-------------
+
+* Ruby >= 2.7
+  - Support for Ruby 2.6 has been removed. Note that Ruby 2.6 reached the
+    end-of-life in 2022-04.
+    [[GitHub #639]](https://github.com/ruby/openssl/pull/639)
+* OpenSSL >= 1.0.2 or LibreSSL >= 3.1
+
+Notable changes
+---------------
+
+* Add a stub gemspec for JRuby, which depends on the `jruby-openssl` gem.
+  [[GitHub #598]](https://github.com/ruby/openssl/pull/598)
+* Add support for the FIPS module in OpenSSL 3.0/3.1.
+  [[GitHub #608]](https://github.com/ruby/openssl/pull/608)
+* Rework `OpenSSL::PKey` routines for loading DER or PEM encoded keys for better
+  compatibility with OpenSSL 3.0/3.1 with the FIPS module.
+  [[GitHub #615]](https://github.com/ruby/openssl/pull/615)
+  [[GitHub #669]](https://github.com/ruby/openssl/pull/669)
+* Add `OpenSSL::Provider` module for loading and unloading OpenSSL 3 providers.
+  [[GitHub #635]](https://github.com/ruby/openssl/pull/635)
+* Add `OpenSSL::PKey.new_raw_private_key`, `.new_raw_public_key`,
+  `OpenSSL::PKey::PKey#raw_private_key`, and `#raw_public_key` for public key
+  algorithms that use "raw private/public key", such as X25519 and Ed25519.
+  [[GitHub #646]](https://github.com/ruby/openssl/pull/646)
+* Improve OpenSSL error messages to include additional information when
+  it is available in OpenSSL's error queue.
+  [[GitHub #648]](https://github.com/ruby/openssl/pull/648)
+* Change `OpenSSL::SSL::SSLContext#ca_file=` and `#ca_path=` to raise
+  `OpenSSL::SSL::SSLError` instead of printing a warning message.
+  [[GitHub #659]](https://github.com/ruby/openssl/pull/659)
+* Allow `OpenSSL::X509::ExtensionFactory#create_extension` to take OIDs in the
+  dotted-decimal notation.
+  [[GitHub #141]](https://github.com/ruby/openssl/pull/141)
+
+
+Version 3.1.0
+=============
+
+Ruby/OpenSSL 3.1 will be maintained for the lifetime of Ruby 3.2.
+
+Merged bug fixes in 2.2.3 and 3.0.2. Among the new features and changes are:
+
+Notable changes
+---------------
+
+* Add `OpenSSL::SSL::SSLContext#ciphersuites=` to allow setting TLS 1.3 cipher
+  suites.
+  [[GitHub #493]](https://github.com/ruby/openssl/pull/493)
+* Add `OpenSSL::SSL::SSLSocket#export_keying_material` for exporting keying
+  material of the session, as defined in RFC 5705.
+  [[GitHub #530]](https://github.com/ruby/openssl/pull/530)
+* Add `OpenSSL::SSL::SSLContext#keylog_cb=` for setting the TLS key logging
+  callback, which is useful for supporting NSS's SSLKEYLOGFILE debugging output.
+  [[GitHub #536]](https://github.com/ruby/openssl/pull/536)
+* Remove the default digest algorithm from `OpenSSL::OCSP::BasicResponse#sign`
+  and `OpenSSL::OCSP::Request#sign`. Omitting the 5th parameter of these
+  methods used to be equivalent of specifying SHA-1. This default value is now
+  removed and we will let the underlying OpenSSL library decide instead.
+  [[GitHub #507]](https://github.com/ruby/openssl/pull/507)
+* Add `OpenSSL::BN#mod_sqrt`.
+  [[GitHub #553]](https://github.com/ruby/openssl/pull/553)
+* Allow calling `OpenSSL::Cipher#update` with an empty string. This was
+  prohibited to workaround an ancient bug in OpenSSL.
+  [[GitHub #568]](https://github.com/ruby/openssl/pull/568)
+* Fix build on platforms without socket support, such as WASI. `OpenSSL::SSL`
+  will not be defined if OpenSSL is compiled with `OPENSSL_NO_SOCK`.
+  [[GitHub #558]](https://github.com/ruby/openssl/pull/558)
+* Improve support for recent LibreSSL versions. This includes HKDF support in
+  LibreSSL 3.6 and Ed25519 support in LibreSSL 3.7.
+
+
+Version 3.0.2
+=============
+
+Merged changes in 2.2.3. Additionally, the following issues are fixed by this
+release.
+
+Bug fixes
+---------
+
+* Fix OpenSSL::PKey::EC#check_key not working correctly on OpenSSL 3.0.
+  [[GitHub #563]](https://github.com/ruby/openssl/issues/563)
+  [[GitHub #580]](https://github.com/ruby/openssl/pull/580)
+
+
 Version 3.0.1
 =============
 
@@ -122,6 +212,21 @@ Notable changes
     [[GitHub #371]](https://github.com/ruby/openssl/issues/371)
   - `OpenSSL::Config` uses native OpenSSL API to parse config files.
     [[GitHub #342]](https://github.com/ruby/openssl/issues/342)
+
+
+Version 2.2.3
+=============
+
+Bug fixes
+---------
+
+* Fix serveral methods in OpenSSL::PKey::EC::Point attempting to raise an error
+  with an incorrect class, which would end up with a TypeError.
+  [[GitHub #570]](https://github.com/ruby/openssl/pull/570)
+* Fix OpenSSL::PKey::EC::Point#eql? and OpenSSL::PKey::EC::Group#eql?
+  incorrectly treated OpenSSL's internal errors as "not equal".
+  [[GitHub #564]](https://github.com/ruby/openssl/pull/564)
+* Fix build with LibreSSL 3.5 or later.
 
 
 Version 2.2.2
@@ -352,7 +457,7 @@ Security fixes
 Bug fixes
 ---------
 
-* Fixed OpenSSL::PKey::*.{new,generate} immediately aborting if the thread is
+* Fixed OpenSSL::PKey::\*.{new,generate} immediately aborting if the thread is
   interrupted.
   [[Bug #14882]](https://bugs.ruby-lang.org/issues/14882)
   [[GitHub #205]](https://github.com/ruby/openssl/pull/205)

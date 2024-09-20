@@ -46,4 +46,4 @@ match the running Ruby VM, it tells you what part does not.
 
 ## SEE ALSO
 
-* [bundle-lock(1)](bundle-lock.1.ronn)
+* [bundle-lock(1)](bundle-lock.1.html)

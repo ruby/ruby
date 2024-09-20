@@ -77,7 +77,7 @@ module Bundler::PubGrub
           return true
         end
 
-        if !my_range.max || (other_range.max && other_range.max < my_range.max)
+        if !my_range.max || other_range.empty? || (other_range.max && other_range.max < my_range.max)
           other_range = other_ranges.shift
         else
           my_range = my_ranges.shift
@@ -119,7 +119,7 @@ module Bundler::PubGrub
       while my_range && other_range
         new_ranges << my_range.intersect(other_range)
 
-        if !my_range.max || (other_range.max && other_range.max < my_range.max)
+        if !my_range.max || other_range.empty? || (other_range.max && other_range.max < my_range.max)
           other_range = other_ranges.shift
         else
           my_range = my_ranges.shift
@@ -148,7 +148,7 @@ module Bundler::PubGrub
       while !ranges.empty?
         ne = []
         range = ranges.shift
-        while !ranges.empty? && ranges[0].min == range.max
+        while !ranges.empty? && ranges[0].min.to_s == range.max.to_s
           ne << range.max
           range = range.span(ranges.shift)
         end

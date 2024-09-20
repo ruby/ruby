@@ -38,92 +38,44 @@ class Reline::Unicode
   NON_PRINTING_START = "\1"
   NON_PRINTING_END = "\2"
   CSI_REGEXP = /\e\[[\d;]*[ABCDEFGHJKSTfminsuhl]/
-  OSC_REGEXP = /\e\]\d+(?:;[^;]+)*\a/
+  OSC_REGEXP = /\e\]\d+(?:;[^;\a\e]+)*(?:\a|\e\\)/
   WIDTH_SCANNER = /\G(?:(#{NON_PRINTING_START})|(#{NON_PRINTING_END})|(#{CSI_REGEXP})|(#{OSC_REGEXP})|(\X))/o
-  NON_PRINTING_START_INDEX = 0
-  NON_PRINTING_END_INDEX = 1
-  CSI_REGEXP_INDEX = 2
-  OSC_REGEXP_INDEX = 3
-  GRAPHEME_CLUSTER_INDEX = 4
-
-  def self.get_mbchar_byte_size_by_first_char(c)
-    # Checks UTF-8 character byte size
-    case c.ord
-    # 0b0xxxxxxx
-    when ->(code) { (code ^ 0b10000000).allbits?(0b10000000) } then 1
-    # 0b110xxxxx
-    when ->(code) { (code ^ 0b00100000).allbits?(0b11100000) } then 2
-    # 0b1110xxxx
-    when ->(code) { (code ^ 0b00010000).allbits?(0b11110000) } then 3
-    # 0b11110xxx
-    when ->(code) { (code ^ 0b00001000).allbits?(0b11111000) } then 4
-    # 0b111110xx
-    when ->(code) { (code ^ 0b00000100).allbits?(0b11111100) } then 5
-    # 0b1111110x
-    when ->(code) { (code ^ 0b00000010).allbits?(0b11111110) } then 6
-    # successor of mbchar
-    else 0
-    end
-  end
 
   def self.escape_for_print(str)
     str.chars.map! { |gr|
-      escaped = EscapedPairs[gr.ord]
-      if escaped && gr != -"\n" && gr != -"\t"
-        escaped
-      else
+      case gr
+      when -"\n"
         gr
+      when -"\t"
+        -'  '
+      else
+        EscapedPairs[gr.ord] || gr
       end
     }.join
   end
 
   require 'reline/unicode/east_asian_width'
 
-  HalfwidthDakutenHandakuten = /[\u{FF9E}\u{FF9F}]/
-
-  MBCharWidthRE = /
-    (?<width_2_1>
-      [#{ EscapedChars.map {|c| "\\x%02x" % c.ord }.join }] (?# ^ + char, such as ^M, ^H, ^[, ...)
-    )
-  | (?<width_3>^\u{2E3B}) (?# THREE-EM DASH)
-  | (?<width_0>^\p{M})
-  | (?<width_2_2>
-      #{ EastAsianWidth::TYPE_F }
-    | #{ EastAsianWidth::TYPE_W }
-    )
-  | (?<width_1>
-      #{ EastAsianWidth::TYPE_H }
-    | #{ EastAsianWidth::TYPE_NA }
-    | #{ EastAsianWidth::TYPE_N }
-    )(?!#{ HalfwidthDakutenHandakuten })
-  | (?<width_2_3>
-      (?: #{ EastAsianWidth::TYPE_H }
-        | #{ EastAsianWidth::TYPE_NA }
-        | #{ EastAsianWidth::TYPE_N })
-      #{ HalfwidthDakutenHandakuten }
-    )
-  | (?<ambiguous_width>
-      #{EastAsianWidth::TYPE_A}
-    )
-  /x
-
   def self.get_mbchar_width(mbchar)
     ord = mbchar.ord
-    if (0x00 <= ord and ord <= 0x1F) # in EscapedPairs
+    if ord <= 0x1F # in EscapedPairs
       return 2
-    elsif (0x20 <= ord and ord <= 0x7E) # printable ASCII chars
+    elsif ord <= 0x7E # printable ASCII chars
       return 1
     end
-    m = mbchar.encode(Encoding::UTF_8).match(MBCharWidthRE)
-    case
-    when m.nil? then 1 # TODO should be U+FFFD � REPLACEMENT CHARACTER
-    when m[:width_2_1], m[:width_2_2], m[:width_2_3] then 2
-    when m[:width_3] then 3
-    when m[:width_0] then 0
-    when m[:width_1] then 1
-    when m[:ambiguous_width] then Reline.ambiguous_width
+    utf8_mbchar = mbchar.encode(Encoding::UTF_8)
+    ord = utf8_mbchar.ord
+    chunk_index = EastAsianWidth::CHUNK_LAST.bsearch_index { |o| ord <= o }
+    size = EastAsianWidth::CHUNK_WIDTH[chunk_index]
+    if size == -1
+      Reline.ambiguous_width
+    elsif size == 1 && utf8_mbchar.size >= 2
+      second_char_ord = utf8_mbchar[1].ord
+      # Halfwidth Dakuten Handakuten
+      # Only these two character has Letter Modifier category and can be combined in a single grapheme cluster
+      (second_char_ord == 0xFF9E || second_char_ord == 0xFF9F) ? 2 : 1
     else
-      nil
+      size
     end
   end
 
@@ -132,15 +84,14 @@ class Reline::Unicode
       width = 0
       rest = str.encode(Encoding::UTF_8)
       in_zero_width = false
-      rest.scan(WIDTH_SCANNER) do |gc|
+      rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
         case
-        when gc[NON_PRINTING_START_INDEX]
+        when non_printing_start
           in_zero_width = true
-        when gc[NON_PRINTING_END_INDEX]
+        when non_printing_end
           in_zero_width = false
-        when gc[CSI_REGEXP_INDEX], gc[OSC_REGEXP_INDEX]
-        when gc[GRAPHEME_CLUSTER_INDEX]
-          gc = gc[GRAPHEME_CLUSTER_INDEX]
+        when csi, osc
+        when gc
           unless in_zero_width
             width += get_mbchar_width(gc)
           end
@@ -154,30 +105,40 @@ class Reline::Unicode
     end
   end
 
-  def self.split_by_width(str, max_width, encoding = str.encoding)
+  def self.split_by_width(str, max_width, encoding = str.encoding, offset: 0)
     lines = [String.new(encoding: encoding)]
     height = 1
-    width = 0
+    width = offset
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
-    rest.scan(WIDTH_SCANNER) do |gc|
+    seq = String.new(encoding: encoding)
+    rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
       case
-      when gc[NON_PRINTING_START_INDEX]
+      when non_printing_start
         in_zero_width = true
-      when gc[NON_PRINTING_END_INDEX]
+        lines.last << NON_PRINTING_START
+      when non_printing_end
         in_zero_width = false
-      when gc[CSI_REGEXP_INDEX]
-        lines.last << gc[CSI_REGEXP_INDEX]
-      when gc[OSC_REGEXP_INDEX]
-        lines.last << gc[OSC_REGEXP_INDEX]
-      when gc[GRAPHEME_CLUSTER_INDEX]
-        gc = gc[GRAPHEME_CLUSTER_INDEX]
+        lines.last << NON_PRINTING_END
+      when csi
+        lines.last << csi
+        unless in_zero_width
+          if csi == -"\e[m" || csi == -"\e[0m"
+            seq.clear
+          else
+            seq << csi
+          end
+        end
+      when osc
+        lines.last << osc
+        seq << osc
+      when gc
         unless in_zero_width
           mbchar_width = get_mbchar_width(gc)
           if (width += mbchar_width) > max_width
             width = mbchar_width
             lines << nil
-            lines << String.new(encoding: encoding)
+            lines << seq.dup
             height += 1
           end
         end
@@ -194,34 +155,79 @@ class Reline::Unicode
   end
 
   # Take a chunk of a String cut by width with escape sequences.
-  def self.take_range(str, start_col, max_width, encoding = str.encoding)
-    chunk = String.new(encoding: encoding)
+  def self.take_range(str, start_col, max_width)
+    take_mbchar_range(str, start_col, max_width).first
+  end
+
+  def self.take_mbchar_range(str, start_col, width, cover_begin: false, cover_end: false, padding: false)
+    chunk = String.new(encoding: str.encoding)
+
+    end_col = start_col + width
     total_width = 0
     rest = str.encode(Encoding::UTF_8)
     in_zero_width = false
-    rest.scan(WIDTH_SCANNER) do |gc|
+    chunk_start_col = nil
+    chunk_end_col = nil
+    has_csi = false
+    rest.scan(WIDTH_SCANNER) do |non_printing_start, non_printing_end, csi, osc, gc|
       case
-      when gc[NON_PRINTING_START_INDEX]
+      when non_printing_start
         in_zero_width = true
-      when gc[NON_PRINTING_END_INDEX]
+        chunk << NON_PRINTING_START
+      when non_printing_end
         in_zero_width = false
-      when gc[CSI_REGEXP_INDEX]
-        chunk << gc[CSI_REGEXP_INDEX]
-      when gc[OSC_REGEXP_INDEX]
-        chunk << gc[OSC_REGEXP_INDEX]
-      when gc[GRAPHEME_CLUSTER_INDEX]
-        gc = gc[GRAPHEME_CLUSTER_INDEX]
+        chunk << NON_PRINTING_END
+      when csi
+        has_csi = true
+        chunk << csi
+      when osc
+        chunk << osc
+      when gc
         if in_zero_width
           chunk << gc
+          next
+        end
+
+        mbchar_width = get_mbchar_width(gc)
+        prev_width = total_width
+        total_width += mbchar_width
+
+        if (cover_begin || padding ? total_width <= start_col : prev_width < start_col)
+          # Current character haven't reached start_col yet
+          next
+        elsif padding && !cover_begin && prev_width < start_col && start_col < total_width
+          # Add preceding padding. This padding might have background color.
+          chunk << ' '
+          chunk_start_col ||= start_col
+          chunk_end_col = total_width
+          next
+        elsif (cover_end ? prev_width < end_col : total_width <= end_col)
+          # Current character is in the range
+          chunk << gc
+          chunk_start_col ||= prev_width
+          chunk_end_col = total_width
+          break if total_width >= end_col
         else
-          mbchar_width = get_mbchar_width(gc)
-          total_width += mbchar_width
-          break if (start_col + max_width) < total_width
-          chunk << gc if start_col < total_width
+          # Current character exceeds end_col
+          if padding && end_col < total_width
+            # Add succeeding padding. This padding might have background color.
+            chunk << ' '
+            chunk_start_col ||= prev_width
+            chunk_end_col = end_col
+          end
+          break
         end
       end
     end
-    chunk
+    chunk_start_col ||= start_col
+    chunk_end_col ||= start_col
+    if padding && chunk_end_col < end_col
+      # Append padding. This padding should not include background color.
+      chunk << "\e[0m" if has_csi
+      chunk << ' ' * (end_col - chunk_end_col)
+      chunk_end_col = end_col
+    end
+    [chunk, chunk_start_col, chunk_end_col - chunk_start_col]
   end
 
   def self.get_next_mbchar_size(line, byte_pointer)

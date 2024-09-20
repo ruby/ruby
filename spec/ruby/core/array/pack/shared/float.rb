@@ -25,8 +25,20 @@ describe :array_pack_float_le, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "\x9a\x999@33\xb3?33\x03A"
   end
 
-  it "ignores NULL bytes between directives" do
-    [5.3, 9.2].pack(pack_format("\000", 2)).should == "\x9a\x99\xa9@33\x13A"
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "\x9a\x99\xa9@33\x13A"
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        [5.3, 9.2].pack(pack_format("\000", 2))
+      }.should raise_error(ArgumentError, /unknown pack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
@@ -74,6 +86,11 @@ describe :array_pack_float_be, shared: true do
 
   it "converts an Integer to a Float" do
     [8].pack(pack_format).should == "A\x00\x00\x00"
+    [bignum_value].pack(pack_format).should == "_\x80\x00\x00"
+  end
+
+  it "converts a Rational to a Float" do
+    [Rational(8)].pack(pack_format).should == "A\x00\x00\x00"
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
@@ -88,8 +105,20 @@ describe :array_pack_float_be, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "@9\x99\x9a?\xb333A\x0333"
   end
 
-  it "ignores NULL bytes between directives" do
-    [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\xa9\x99\x9aA\x1333"
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\xa9\x99\x9aA\x1333"
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        [5.3, 9.2].pack(pack_format("\000", 2))
+      }.should raise_error(ArgumentError, /unknown pack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
@@ -129,6 +158,11 @@ describe :array_pack_double_le, shared: true do
 
   it "converts an Integer to a Float" do
     [8].pack(pack_format).should == "\x00\x00\x00\x00\x00\x00\x20@"
+    [bignum_value].pack(pack_format).should == "\x00\x00\x00\x00\x00\x00\xF0C"
+  end
+
+  it "converts a Rational to a Float" do
+    [Rational(8)].pack(pack_format).should == "\x00\x00\x00\x00\x00\x00 @"
   end
 
   it "raises a TypeError if passed a String representation of a floating point number" do
@@ -143,8 +177,20 @@ describe :array_pack_double_le, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "333333\x07@ffffff\xf6?ffffff\x20@"
   end
 
-  it "ignores NULL bytes between directives" do
-    [5.3, 9.2].pack(pack_format("\000", 2)).should == "333333\x15@ffffff\x22@"
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "333333\x15@ffffff\x22@"
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        [5.3, 9.2].pack(pack_format("\000", 2))
+      }.should raise_error(ArgumentError, /unknown pack directive/)
+    end
   end
 
   it "ignores spaces between directives" do
@@ -202,8 +248,20 @@ describe :array_pack_double_be, shared: true do
     [2.9, 1.4, 8.2].pack(pack_format("*")).should == "@\x07333333?\xf6ffffff@\x20ffffff"
   end
 
-  it "ignores NULL bytes between directives" do
-    [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\x15333333@\x22ffffff"
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\x15333333@\x22ffffff"
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        [5.3, 9.2].pack(pack_format("\000", 2))
+      }.should raise_error(ArgumentError, /unknown pack directive/)
+    end
   end
 
   it "ignores spaces between directives" do

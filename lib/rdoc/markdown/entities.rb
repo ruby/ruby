@@ -2129,4 +2129,3 @@ RDoc::Markdown::HTML_ENTITIES = {
   "zwj" => [0x0200D],
   "zwnj" => [0x0200C],
 }
-

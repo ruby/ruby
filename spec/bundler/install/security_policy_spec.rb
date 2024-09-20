@@ -9,30 +9,30 @@ RSpec.describe "policies with unsigned gems" do
   before do
     build_security_repo
     gemfile <<-G
-      source "#{file_uri_for(security_repo)}"
-      gem "rack"
+      source "https://gems.security"
+      gem "myrack"
       gem "signed_gem"
     G
   end
 
   it "will work after you try to deploy without a lock" do
-    bundle "install --deployment", :raise_on_error => false
+    bundle "install --deployment", raise_on_error: false
     bundle :install
-    expect(the_bundle).to include_gems "rack 1.0", "signed_gem 1.0"
+    expect(the_bundle).to include_gems "myrack 1.0", "signed_gem 1.0"
   end
 
   it "will fail when given invalid security policy" do
-    bundle "install --trust-policy=InvalidPolicyName", :raise_on_error => false
+    bundle "install --trust-policy=InvalidPolicyName", raise_on_error: false
     expect(err).to include("RubyGems doesn't know about trust policy")
   end
 
   it "will fail with High Security setting due to presence of unsigned gem" do
-    bundle "install --trust-policy=HighSecurity", :raise_on_error => false
+    bundle "install --trust-policy=HighSecurity", raise_on_error: false
     expect(err).to include("security policy didn't allow")
   end
 
   it "will fail with Medium Security setting due to presence of unsigned gem" do
-    bundle "install --trust-policy=MediumSecurity", :raise_on_error => false
+    bundle "install --trust-policy=MediumSecurity", raise_on_error: false
     expect(err).to include("security policy didn't allow")
   end
 
@@ -45,18 +45,18 @@ RSpec.describe "policies with signed gems and no CA" do
   before do
     build_security_repo
     gemfile <<-G
-      source "#{file_uri_for(security_repo)}"
+      source "https://gems.security"
       gem "signed_gem"
     G
   end
 
   it "will fail with High Security setting, gem is self-signed" do
-    bundle "install --trust-policy=HighSecurity", :raise_on_error => false
+    bundle "install --trust-policy=HighSecurity", raise_on_error: false
     expect(err).to include("security policy didn't allow")
   end
 
   it "will fail with Medium Security setting, gem is self-signed" do
-    bundle "install --trust-policy=MediumSecurity", :raise_on_error => false
+    bundle "install --trust-policy=MediumSecurity", raise_on_error: false
     expect(err).to include("security policy didn't allow")
   end
 

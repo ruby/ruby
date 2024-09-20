@@ -34,4 +34,51 @@ class Test_StrSetLen < Test::Unit::TestCase
     assert_equal 128, Bug::String.capacity(str)
     assert_equal 127, str.set_len(127).bytesize, bug12757
   end
+
+  def test_coderange_after_append
+    u = -"\u3042"
+    str = Bug::String.new(encoding: Encoding::UTF_8)
+    bsize = u.bytesize
+    str.append(u)
+    assert_equal 0, str.bytesize
+    str.set_len(bsize)
+    assert_equal bsize, str.bytesize
+    assert_predicate str, :valid_encoding?
+    assert_not_predicate str, :ascii_only?
+    assert_equal u, str
+  end
+
+  def test_coderange_after_trunc
+    u = -"\u3042"
+    bsize = u.bytesize
+    str = Bug::String.new(u)
+    str.set_len(bsize - 1)
+    assert_equal bsize - 1, str.bytesize
+    assert_not_predicate str, :valid_encoding?
+    assert_not_predicate str, :ascii_only?
+    str.append(u.byteslice(-1))
+    str.set_len(bsize)
+    assert_equal bsize, str.bytesize
+    assert_predicate str, :valid_encoding?
+    assert_not_predicate str, :ascii_only?
+    assert_equal u, str
+  end
+
+  def test_valid_encoding_after_resized
+    s = "\0\0".force_encoding(Encoding::UTF_16BE)
+    str = Bug::String.new(s)
+    assert_predicate str, :valid_encoding?
+    str.resize(1)
+    assert_not_predicate str, :valid_encoding?
+    str.resize(2)
+    assert_predicate str, :valid_encoding?
+    str.resize(3)
+    assert_not_predicate str, :valid_encoding?
+
+    s = "\xDB\x00\xDC\x00".force_encoding(Encoding::UTF_16BE)
+    str = Bug::String.new(s)
+    assert_predicate str, :valid_encoding?
+    str.resize(2)
+    assert_not_predicate str, :valid_encoding?
+  end
 end

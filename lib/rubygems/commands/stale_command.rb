@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 class Gem::Commands::StaleCommand < Gem::Command
@@ -17,7 +18,7 @@ longer using.
   end
 
   def usage # :nodoc:
-    "#{program_name}"
+    program_name.to_s
   end
 
   def execute
@@ -33,7 +34,7 @@ longer using.
     end
 
     gem_to_atime.sort_by {|_, atime| atime }.each do |name, atime|
-      say "#{name} at #{atime.strftime '%c'}"
+      say "#{name} at #{atime.strftime "%c"}"
     end
   end
 end

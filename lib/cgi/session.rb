@@ -279,7 +279,7 @@ class CGI
     # fields are surrounded by a <fieldset> tag in HTML 4 generation, which
     # is _not_ invisible on many browsers; you may wish to disable the
     # use of fieldsets with code similar to the following
-    # (see http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-list/37805)
+    # (see https://blade.ruby-lang.org/ruby-list/37805)
     #
     #   cgi = CGI.new("html4")
     #   class << cgi

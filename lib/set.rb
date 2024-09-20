@@ -3,7 +3,7 @@
 #
 # set.rb - defines the Set class
 #
-# Copyright (c) 2002-2020 Akinori MUSHA <knu@iDaemons.org>
+# Copyright (c) 2002-2024 Akinori MUSHA <knu@iDaemons.org>
 #
 # Documentation by Akinori MUSHA and Gavin Sinclair.
 #
@@ -12,15 +12,11 @@
 
 
 ##
-# This library provides the Set class, which deals with a collection
-# of unordered values with no duplicates.  It is a hybrid of Array's
+# This library provides the Set class, which implements a collection
+# of unordered values with no duplicates. It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.
 #
 # The method `to_set` is added to Enumerable for convenience.
-#
-# Set implements a collection of unordered values with no duplicates.
-# This is a hybrid of Array's intuitive inter-operation facilities and
-# Hash's fast lookup.
 #
 # Set is easy to use with Enumerable objects (implementing `each`).
 # Most of the initializer methods and binary operators accept generic
@@ -156,7 +152,7 @@
 #   If the given object is not an element in the set,
 #   adds it and returns +self+; otherwise, returns +nil+.
 # - \#merge:
-#   Adds each given object to the set; returns +self+.
+#   Merges the elements of each given enumerable object to the set; returns +self+.
 # - \#replace:
 #   Replaces the contents of the set with the contents
 #   of a given enumerable.
@@ -220,6 +216,8 @@
 #   has been modified while an element in the set.
 #
 class Set
+  VERSION = "1.1.0"
+
   include Enumerable
 
   # Creates a new set containing the given objects.
@@ -288,18 +286,10 @@ class Set
     @hash = orig.instance_variable_get(:@hash).dup
   end
 
-  if Kernel.instance_method(:initialize_clone).arity != 1
-    # Clone internal hash.
-    def initialize_clone(orig, **options)
-      super
-      @hash = orig.instance_variable_get(:@hash).clone(**options)
-    end
-  else
-    # Clone internal hash.
-    def initialize_clone(orig)
-      super
-      @hash = orig.instance_variable_get(:@hash).clone
-    end
+  # Clone internal hash.
+  def initialize_clone(orig, **options)
+    super
+    @hash = orig.instance_variable_get(:@hash).clone(**options)
   end
 
   def freeze    # :nodoc:
@@ -345,7 +335,7 @@ class Set
     end
   end
 
-  # Converts the set to an array.  The order of elements is uncertain.
+  # Returns an array containing all elements in the set.
   #
   #     Set[1, 2].to_a                    #=> [1, 2]
   #     Set[1, 'c', :s].to_a              #=> [1, "c", :s]
@@ -391,7 +381,7 @@ class Set
   # Equivalent to Set#flatten, but replaces the receiver with the
   # result in place.  Returns nil if no modifications were made.
   def flatten!
-    replace(flatten()) if any? { |e| e.is_a?(Set) }
+    replace(flatten()) if any?(Set)
   end
 
   # Returns true if the set contains the given object.
@@ -411,7 +401,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:>=)
       @hash >= set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size >= set.size && set.all? { |o| include?(o) }
+      size >= set.size && set.all?(self)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -424,7 +414,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:>)
       @hash > set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size > set.size && set.all? { |o| include?(o) }
+      size > set.size && set.all?(self)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -437,7 +427,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:<=)
       @hash <= set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size <= set.size && all? { |o| set.include?(o) }
+      size <= set.size && all?(set)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -450,7 +440,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:<)
       @hash < set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size < set.size && all? { |o| set.include?(o) }
+      size < set.size && all?(set)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -481,12 +471,12 @@ class Set
     case set
     when Set
       if size < set.size
-        any? { |o| set.include?(o) }
+        any?(set)
       else
-        set.any? { |o| include?(o) }
+        set.any?(self)
       end
     when Enumerable
-      set.any? { |o| include?(o) }
+      set.any?(self)
     else
       raise ArgumentError, "value must be enumerable"
     end
@@ -507,7 +497,7 @@ class Set
   # the element as parameter.  Returns an enumerator if no block is
   # given.
   def each(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     @hash.each_key(&block)
     self
   end
@@ -550,22 +540,22 @@ class Set
   # Deletes every element of the set for which block evaluates to
   # true, and returns self. Returns an enumerator if no block is
   # given.
-  def delete_if
+  def delete_if(&block)
     block_given? or return enum_for(__method__) { size }
-    # @hash.delete_if should be faster, but using it breaks the order
-    # of enumeration in subclasses.
-    select { |o| yield o }.each { |o| @hash.delete(o) }
+    # Instead of directly using @hash.delete_if, perform enumeration
+    # using self.each that subclasses may override.
+    select(&block).each { |o| @hash.delete(o) }
     self
   end
 
   # Deletes every element of the set for which block evaluates to
   # false, and returns self. Returns an enumerator if no block is
   # given.
-  def keep_if
+  def keep_if(&block)
     block_given? or return enum_for(__method__) { size }
-    # @hash.keep_if should be faster, but using it breaks the order of
-    # enumeration in subclasses.
-    reject { |o| yield o }.each { |o| @hash.delete(o) }
+    # Instead of directly using @hash.keep_if, perform enumeration
+    # using self.each that subclasses may override.
+    reject(&block).each { |o| @hash.delete(o) }
     self
   end
 
@@ -582,7 +572,7 @@ class Set
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def reject!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     delete_if(&block)
     self if size != n
@@ -591,7 +581,7 @@ class Set
   # Equivalent to Set#keep_if, but returns nil if no changes were
   # made. Returns an enumerator if no block is given.
   def select!(&block)
-    block or return enum_for(__method__) { size }
+    block_given? or return enum_for(__method__) { size }
     n = size
     keep_if(&block)
     self if size != n
@@ -600,13 +590,15 @@ class Set
   # Equivalent to Set#select!
   alias filter! select!
 
-  # Merges the elements of the given enumerable object to the set and
+  # Merges the elements of the given enumerable objects to the set and
   # returns self.
-  def merge(enum)
-    if enum.instance_of?(self.class)
-      @hash.update(enum.instance_variable_get(:@hash))
-    else
-      do_with_enum(enum) { |o| add(o) }
+  def merge(*enums, **nil)
+    enums.each do |enum|
+      if enum.instance_of?(self.class)
+        @hash.update(enum.instance_variable_get(:@hash))
+      else
+        do_with_enum(enum) { |o| add(o) }
+      end
     end
 
     self

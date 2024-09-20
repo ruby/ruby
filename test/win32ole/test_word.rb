@@ -41,7 +41,7 @@ if defined?(WIN32OLE)
       def setup
         begin
           @obj = WIN32OLE.new('Word.Application')
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
           @obj = nil
         end
       end

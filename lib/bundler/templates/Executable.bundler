@@ -27,7 +27,7 @@ m = Module.new do
     bundler_version = nil
     update_index = nil
     ARGV.each_with_index do |a, i|
-      if update_index && update_index.succ == i && a =~ Gem::Version::ANCHORED_VERSION_PATTERN
+      if update_index && update_index.succ == i && a.match?(Gem::Version::ANCHORED_VERSION_PATTERN)
         bundler_version = a
       end
       next unless a =~ /\A--bundler(?:[= ](#{Gem::Version::VERSION_PATTERN}))?\z/
@@ -47,7 +47,7 @@ m = Module.new do
   def lockfile
     lockfile =
       case File.basename(gemfile)
-      when "gems.rb" then gemfile.sub(/\.rb$/, gemfile)
+      when "gems.rb" then gemfile.sub(/\.rb$/, ".locked")
       else "#{gemfile}.lock"
       end
     File.expand_path(lockfile)
@@ -72,13 +72,7 @@ m = Module.new do
 
     bundler_gem_version = Gem::Version.new(version)
 
-    requirement = bundler_gem_version.approximate_recommendation
-
-    return requirement unless Gem.rubygems_version < Gem::Version.new("2.7.0")
-
-    requirement += ".a" if bundler_gem_version.prerelease?
-
-    requirement
+    bundler_gem_version.approximate_recommendation
   end
 
   def load_bundler!

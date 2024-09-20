@@ -21,7 +21,7 @@ module Bundler
 
       def gemspec(&block)
         gemspec = instance.gemspec
-        block.call(gemspec) if block
+        block&.call(gemspec)
         gemspec
       end
     end
@@ -47,7 +47,7 @@ module Bundler
         built_gem_path = build_gem
       end
 
-      desc "Generate SHA512 checksum if #{name}-#{version}.gem into the checksums directory."
+      desc "Generate SHA512 checksum of #{name}-#{version}.gem into the checksums directory."
       task "build:checksum" => "build" do
         build_checksum(built_gem_path)
       end
@@ -152,8 +152,7 @@ module Bundler
 
     def gem_push_host
       env_rubygems_host = ENV["RUBYGEMS_HOST"]
-      env_rubygems_host = nil if
-        env_rubygems_host && env_rubygems_host.empty?
+      env_rubygems_host = nil if env_rubygems_host&.empty?
 
       allowed_push_host || env_rubygems_host || "rubygems.org"
     end
@@ -216,9 +215,9 @@ module Bundler
     def sh_with_status(cmd, &block)
       Bundler.ui.debug(cmd)
       SharedHelpers.chdir(base) do
-        outbuf = IO.popen(cmd, :err => [:child, :out], &:read)
+        outbuf = IO.popen(cmd, err: [:child, :out], &:read)
         status = $?
-        block.call(outbuf) if status.success? && block
+        block&.call(outbuf) if status.success?
         [outbuf, status]
       end
     end

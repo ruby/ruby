@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/ext"
 
@@ -42,11 +43,11 @@ install (FILES test.txt DESTINATION bin)
 
     output = output.join "\n"
 
-    assert_match %r{^cmake \. -DCMAKE_INSTALL_PREFIX\\=#{Regexp.escape @dest_path}}, output
-    assert_match %r{#{Regexp.escape @ext}}, output
+    assert_match(/^cmake \. -DCMAKE_INSTALL_PREFIX\\=#{Regexp.escape @dest_path}/, output)
+    assert_match(/#{Regexp.escape @ext}/, output)
     assert_contains_make_command "", output
     assert_contains_make_command "install", output
-    assert_match %r{test\.txt}, output
+    assert_match(/test\.txt/, output)
   end
 
   def test_self_build_fail
@@ -58,12 +59,12 @@ install (FILES test.txt DESTINATION bin)
 
     output = output.join "\n"
 
-    shell_error_msg = %r{(CMake Error: .*)}
+    shell_error_msg = /(CMake Error: .*)/
 
     assert_match "cmake failed", error.message
 
-    assert_match %r{^cmake . -DCMAKE_INSTALL_PREFIX\\=#{Regexp.escape @dest_path}}, output
-    assert_match %r{#{shell_error_msg}}, output
+    assert_match(/^cmake . -DCMAKE_INSTALL_PREFIX\\=#{Regexp.escape @dest_path}/, output)
+    assert_match(/#{shell_error_msg}/, output)
   end
 
   def test_self_build_has_makefile

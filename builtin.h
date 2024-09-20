@@ -11,17 +11,13 @@ struct rb_builtin_function {
     // for load
     const int index;
     const char * const name;
-
-    // for jit
-    void (*compiler)(VALUE, long, unsigned, bool);
 };
 
-#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity, _compiler) {\
+#define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) {\
   .name = _i < 0 ? NULL : #_name, \
   .func_ptr = (void *)_fname, \
   .argc = _arity, \
   .index = _i, \
-  .compiler = _compiler, \
 }
 
 void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
@@ -109,6 +105,8 @@ rb_vm_lvar(rb_execution_context_t *ec, int index)
     return rb_vm_lvar_exposed(ec, index);
 #endif
 }
+
+#define LOCAL_PTR(local) local ## __ptr
 
 // dump/load
 

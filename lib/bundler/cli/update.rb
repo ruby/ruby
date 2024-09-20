@@ -35,7 +35,7 @@ module Bundler
 
       if full_update
         if conservative
-          Bundler.definition(:conservative => conservative)
+          Bundler.definition(conservative: conservative)
         else
           Bundler.definition(true)
         end
@@ -51,9 +51,9 @@ module Bundler
           gems.concat(deps.map(&:name))
         end
 
-        Bundler.definition(:gems => gems, :sources => sources, :ruby => options[:ruby],
-                           :conservative => conservative,
-                           :bundler => update_bundler)
+        Bundler.definition(gems: gems, sources: sources, ruby: options[:ruby],
+                           conservative: conservative,
+                           bundler: update_bundler)
       end
 
       Bundler::CLI::Common.configure_gem_version_promoter(Bundler.definition, options)
@@ -63,6 +63,7 @@ module Bundler
       opts = options.dup
       opts["update"] = true
       opts["local"] = options[:local]
+      opts["force"] = options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
 
@@ -70,7 +71,7 @@ module Bundler
 
       if locked_gems = Bundler.definition.locked_gems
         previous_locked_info = locked_gems.specs.reduce({}) do |h, s|
-          h[s.name] = { :spec => s, :version => s.version, :source => s.source.identifier }
+          h[s.name] = { spec: s, version: s.version, source: s.source.identifier }
           h
         end
       end

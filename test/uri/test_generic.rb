@@ -26,6 +26,17 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal "postgres:///foo", URI("postgres:///foo").to_s
     assert_equal "http:///foo", URI("http:///foo").to_s
     assert_equal "http:/foo", URI("http:/foo").to_s
+
+    uri = URI('rel_path')
+    assert_equal "rel_path", uri.to_s
+    uri.scheme = 'http'
+    assert_equal "http:rel_path", uri.to_s
+    uri.host = 'h'
+    assert_equal "http://h/rel_path", uri.to_s
+    uri.port = 8080
+    assert_equal "http://h:8080/rel_path", uri.to_s
+    uri.host = nil
+    assert_equal "http::8080/rel_path", uri.to_s
   end
 
   def test_parse
@@ -975,6 +986,10 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_equal expected, URI::Generic.use_proxy?(hostname, addr, port, no_proxy),
         "use_proxy?('#{hostname}', '#{addr}', #{port}, '#{no_proxy}')"
     end
+  end
+
+  def test_split
+    assert_equal [nil, nil, nil, nil, nil, "", nil, nil, nil], URI.split("//")
   end
 
   class CaseInsensitiveEnv

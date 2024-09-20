@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
@@ -16,7 +17,7 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
           platform        display the supported gem platforms
           <omitted>       display everything
     EOF
-    return args.gsub(/^\s+/, "")
+    args.gsub(/^\s+/, "")
   end
 
   def description # :nodoc:
@@ -107,9 +108,7 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - RUBYGEMS VERSION: #{Gem::VERSION}\n"
 
-    out << "  - RUBY VERSION: #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}"
-    out << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-    out << ") [#{RUBY_PLATFORM}]\n"
+    out << "  - RUBY VERSION: #{RUBY_VERSION} (#{RUBY_RELEASE_DATE} patchlevel #{RUBY_PATCHLEVEL}) [#{RUBY_PLATFORM}]\n"
 
     out << "  - INSTALLATION DIRECTORY: #{Gem.dir}\n"
 
@@ -172,6 +171,6 @@ lib/rubygems/defaults/operating_system.rb
       end
     end
 
-    return nil
+    nil
   end
 end

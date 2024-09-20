@@ -11,6 +11,8 @@ when ENV['RUNRUBY_USE_GDB'] == 'true'
   debugger = :gdb
 when ENV['RUNRUBY_USE_LLDB'] == 'true'
   debugger = :lldb
+when ENV['RUNRUBY_USE_RR'] == 'true'
+  debugger = :rr
 when ENV['RUNRUBY_YJIT_STATS']
   use_yjit_stat = true
 end
@@ -133,22 +135,16 @@ if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  unless runner
-    if e = config['PRELOADENV']
-      e = nil if e.empty?
-      e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
-    end
-    if e
-      env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
-    end
-  end
 end
+# Work around a bug in FreeBSD 13.2 which can cause fork(2) to hang
+# See: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=271490
+env['LD_BIND_NOW'] = 'yes' if /freebsd/ =~ RUBY_PLATFORM
 
 ENV.update env
 
 if debugger
   case debugger
-  when :gdb, nil
+  when :gdb
     debugger = %W'gdb -x #{srcdir}/.gdbinit'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
@@ -162,6 +158,8 @@ if debugger
       debugger.push('-s', lldb)
     end
     debugger << '--'
+  when :rr
+    debugger = ['rr', 'record']
   end
 
   if idx = precommand.index(:debugger)

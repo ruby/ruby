@@ -1,0 +1,53 @@
+name: Setup ubuntu environment
+description: >-
+  At the beginning there was no way but to copy & paste `apt-get`
+  everywhere.  But now that we have composite actions, it seems better
+  merge them into one.
+
+inputs:
+  arch:
+    required: false
+    default: ''
+    description: >-
+      Architecture.  Because we run this on a GitHub-hosted runner
+      acceptable value for this input is very limited.
+
+outputs:
+  arch:
+    value: ${{ steps.uname.outputs.uname }}
+    description: >-
+      Actual architecture.  This could be different from the one
+      passed to the `inputs.arch`.  For instance giving `i386` to this
+      action yields `i686`.
+
+runs:
+  using: composite
+
+  steps:
+    - name: set SETARCH
+      shell: bash
+      run: echo "SETARCH=${setarch}" >> "$GITHUB_ENV"
+      env:
+        setarch: ${{ inputs.arch && format('setarch {0} --', inputs.arch) }}
+
+    - id: uname
+      name: uname
+      shell: bash
+      run: |
+        echo uname=`${SETARCH} uname -m` >> "$GITHUB_OUTPUT"
+        echo dpkg=`${SETARCH} uname -m | sed s/686/386/` >> "$GITHUB_OUTPUT"
+
+    - name: apt-get
+      shell: bash
+      env:
+        arch: ${{ inputs.arch && format(':{0}', steps.uname.outputs.dpkg) || '' }}
+      run: |
+        set -x
+        ${arch:+sudo dpkg --add-architecture ${arch#:}}
+        sudo apt-get update -qq || :
+        sudo apt-get install --no-install-recommends -qq -y -o=Dpkg::Use-Pty=0 \
+        ${arch:+cross}build-essential${arch/:/-} \
+        libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
+        zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
+        autoconf ruby
+        sudo apt-get install -qq -y pkg-config${arch} || :

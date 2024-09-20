@@ -9,14 +9,12 @@
  * @brief      Internal header for Struct.
  */
 #include "ruby/internal/stdbool.h"     /* for bool */
-#include "internal/gc.h"        /* for RB_OBJ_WRITE */
 #include "ruby/ruby.h"          /* for struct RBasic */
 
 enum {
-    RSTRUCT_EMBED_LEN_MAX = RVALUE_EMBED_LEN_MAX,
-    RSTRUCT_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER1),
+    RSTRUCT_EMBED_LEN_MASK = RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 |
+                                 RUBY_FL_USER3 | RUBY_FL_USER2 | RUBY_FL_USER1,
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
-    RSTRUCT_TRANSIENT_FLAG = FL_USER3,
 };
 
 struct RStruct {
@@ -26,7 +24,12 @@ struct RStruct {
             long len;
             const VALUE *ptr;
         } heap;
-        const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
+        /* This is a length 1 array because:
+         *   1. GCC has a bug that does not optimize C flexible array members
+         *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
+         *   2. Zero length arrays are not supported by all compilers
+         */
+        const VALUE ary[1];
     } as;
 };
 
@@ -57,41 +60,12 @@ VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
 static inline const VALUE *rb_struct_const_heap_ptr(VALUE st);
-static inline bool RSTRUCT_TRANSIENT_P(VALUE st);
-static inline void RSTRUCT_TRANSIENT_SET(VALUE st);
-static inline void RSTRUCT_TRANSIENT_UNSET(VALUE st);
 static inline long RSTRUCT_EMBED_LEN(VALUE st);
 static inline long RSTRUCT_LEN(VALUE st);
 static inline int RSTRUCT_LENINT(VALUE st);
 static inline const VALUE *RSTRUCT_CONST_PTR(VALUE st);
 static inline void RSTRUCT_SET(VALUE st, long k, VALUE v);
 static inline VALUE RSTRUCT_GET(VALUE st, long k);
-
-static inline bool
-RSTRUCT_TRANSIENT_P(VALUE st)
-{
-#if USE_TRANSIENT_HEAP
-    return FL_TEST_RAW(st, RSTRUCT_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-static inline void
-RSTRUCT_TRANSIENT_SET(VALUE st)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RSTRUCT_TRANSIENT_UNSET(VALUE st)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
-#endif
-}
 
 static inline long
 RSTRUCT_EMBED_LEN(VALUE st)
@@ -146,7 +120,7 @@ RSTRUCT_GET(VALUE st, long k)
 static inline const VALUE *
 rb_struct_const_heap_ptr(VALUE st)
 {
-    /* TODO: check embed on debug mode */
+    assert(!FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK));
     return RSTRUCT(st)->as.heap.ptr;
 }
 

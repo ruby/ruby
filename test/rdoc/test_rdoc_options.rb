@@ -68,7 +68,6 @@ class TestRDocOptions < RDoc::TestCase
       'exclude'              => %w[~\z \.orig\z \.rej\z \.bak\z \.gemspec\z],
       'hyperlink_all'        => false,
       'line_numbers'         => false,
-      'locale'               => nil,
       'locale_dir'           => 'locale',
       'locale_name'          => nil,
       'main_page'            => nil,
@@ -209,6 +208,13 @@ rdoc_include:
     assert @options.force_update
   end
 
+  def test_parse_coverage_C
+    @options.parse %w[-C]
+
+    assert @options.coverage_report
+    assert @options.force_update
+  end
+
   def test_parse_coverage_no
     @options.parse %w[--no-dcov]
 
@@ -219,6 +225,19 @@ rdoc_include:
     @options.parse %w[--dcov=1]
 
     assert_equal 1, @options.coverage_report
+  end
+
+  def test_parse_coverage_C_level_1
+    @options.parse %w[-C1]
+
+    assert_equal 1, @options.coverage_report
+  end
+
+  def test_parse_coverage_C_level_0
+    @options.parse %w[-C0]
+
+    assert_equal 0, @options.coverage_report
+    assert @options.force_update
   end
 
   def test_parse_dash_p
@@ -698,6 +717,28 @@ rdoc_include:
 
     assert_empty out
     assert_empty err
+  end
+
+  def test_parse_locale_name_default
+    temp_dir do
+      @options.parse %w[]
+      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
+      assert_nil @options.instance_variable_get(:@locale_name)
+      assert_nil @options.locale
+      @options.finish
+      assert_nil @options.locale
+    end
+  end
+
+  def test_parse_locale_name
+    temp_dir do
+      @options.parse %w[--locale fr]
+      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
+      assert_equal 'fr', @options.instance_variable_get(:@locale_name)
+      assert_nil @options.locale
+      @options.finish
+      assert_equal 'fr', @options.locale.name
+    end
   end
 
   def test_setup_generator

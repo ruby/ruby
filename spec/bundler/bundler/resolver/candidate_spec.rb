@@ -2,9 +2,19 @@
 
 RSpec.describe Bundler::Resolver::Candidate do
   it "compares fine" do
-    version1 = described_class.new("1.12.5", :specs => [Gem::Specification.new("foo", "1.12.5") {|s| s.platform = Gem::Platform::RUBY }])
+    version1 = described_class.new("1.12.5", priority: -1)
+    version2 = described_class.new("1.12.5", priority: 1)
+
+    expect(version2 > version1).to be true
+
+    version1 = described_class.new("1.12.5")
     version2 = described_class.new("1.12.5")
 
-    expect(version1 >= version2).to be true
+    expect(version2 == version1).to be true
+
+    version1 = described_class.new("1.12.5", priority: 1)
+    version2 = described_class.new("1.12.5", priority: -1)
+
+    expect(version2 < version1).to be true
   end
 end

@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/attr_added'
 
 describe "Module#attr_writer" do
   it "creates a setter for each given attribute name" do
@@ -72,19 +73,11 @@ describe "Module#attr_writer" do
     Module.should have_public_instance_method(:attr_writer, false)
   end
 
-  ruby_version_is ""..."3.0" do
-    it "returns nil" do
-      Class.new do
-        (attr_writer :foo, 'bar').should == nil
-      end
+  it "returns an array of defined method names as symbols" do
+    Class.new do
+      (attr_writer :foo, 'bar').should == [:foo=, :bar=]
     end
   end
 
-  ruby_version_is "3.0" do
-    it "returns an array of defined method names as symbols" do
-      Class.new do
-        (attr_writer :foo, 'bar').should == [:foo=, :bar=]
-      end
-    end
-  end
+  it_behaves_like :module_attr_added, :attr_writer
 end

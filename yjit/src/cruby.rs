@@ -83,7 +83,7 @@
 #![allow(non_upper_case_globals)]
 
 use std::convert::From;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
@@ -96,7 +96,7 @@ pub type size_t = u64;
 pub type RedefinitionFlag = u32;
 
 #[allow(dead_code)]
-#[allow(clippy::useless_transmute)]
+#[allow(clippy::all)]
 mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
@@ -107,13 +107,26 @@ pub use autogened::*;
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
 
-// These are functions we expose from vm_insnhelper.c, not in any header.
+// These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    pub fn rb_check_overloaded_cme(
+        me: *const rb_callable_method_entry_t,
+        ci: *const rb_callinfo,
+    ) -> *const rb_callable_method_entry_t;
+
+    // Floats within range will be encoded without creating objects in the heap.
+    // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
+    pub fn rb_float_new(d: f64) -> VALUE;
+
+    pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
+    pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
+    pub fn rb_vm_concat_to_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
         ec: EcPtr,
         reg_cfp: CfpPtr,
@@ -135,19 +148,20 @@ extern "C" {
         ic: ICVARC,
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
-    pub fn rb_str_bytesize(str: VALUE) -> VALUE;
+    pub fn rb_vm_stack_canary() -> VALUE;
+    pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
 }
 
 // Renames
 pub use rb_insn_name as raw_insn_name;
-pub use rb_insn_len as raw_insn_len;
-pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
+pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
 pub use rb_get_cfp_self as get_cfp_self;
 pub use rb_get_cfp_ep as get_cfp_ep;
 pub use rb_get_cfp_ep_level as get_cfp_ep_level;
+pub use rb_vm_base_ptr as get_cfp_bp;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -162,11 +176,11 @@ pub use rb_iseq_encoded_size as get_iseq_encoded_size;
 pub use rb_get_iseq_body_local_iseq as get_iseq_body_local_iseq;
 pub use rb_get_iseq_body_iseq_encoded as get_iseq_body_iseq_encoded;
 pub use rb_get_iseq_body_stack_max as get_iseq_body_stack_max;
+pub use rb_get_iseq_body_type as get_iseq_body_type;
 pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
 pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
 pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
 pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
-pub use rb_get_iseq_flags_ruby2_keywords as get_iseq_flags_ruby2_keywords;
 pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
 pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
 pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
@@ -183,7 +197,8 @@ pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
 pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
 pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
-pub use rb_yarv_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_yjit_fix_div_fix as rb_fix_div_fix;
+pub use rb_yjit_fix_mod_fix as rb_fix_mod_fix;
 pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
@@ -199,8 +214,6 @@ pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
 
 /// Helper so we can get a Rust string for insn_name()
 pub fn insn_name(opcode: usize) -> String {
-    use std::ffi::CStr;
-
     unsafe {
         // Look up Ruby's NULL-terminated insn name string
         let op_name = raw_insn_name(VALUE(opcode));
@@ -220,7 +233,7 @@ pub fn insn_len(opcode: usize) -> u32 {
 
     #[cfg(not(test))]
     unsafe {
-        raw_insn_len(VALUE(opcode)).try_into().unwrap()
+        rb_insn_len(VALUE(opcode)).try_into().unwrap()
     }
 }
 
@@ -242,6 +255,30 @@ pub struct VALUE(pub usize);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+// Given an ISEQ pointer, convert PC to insn_idx
+pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
+    let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    unsafe { pc.offset_from(pc_zero) }.try_into().ok()
+}
+
+/// Given an ISEQ pointer and an instruction index, return an opcode.
+pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
+    let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+    unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
+}
+
+/// Return a poison value to be set above the stack top to verify leafness.
+#[cfg(not(test))]
+pub fn vm_stack_canary() -> u64 {
+    unsafe { rb_vm_stack_canary() }.as_u64()
+}
+
+/// Avoid linking the C function in `cargo test`
+#[cfg(test)]
+pub fn vm_stack_canary() -> u64 {
+    0
+}
 
 /// Opaque execution-context type from vm_core.h
 #[repr(C)]
@@ -273,13 +310,6 @@ pub struct rb_method_cfunc_t {
 /// Opaque call-cache type from vm_callinfo.h
 #[repr(C)]
 pub struct rb_callcache {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
-/// Opaque call-info type from vm_callinfo.h
-#[repr(C)]
-pub struct rb_callinfo_kwarg {
     _data: [u8; 0],
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
@@ -367,6 +397,11 @@ impl VALUE {
         }
     }
 
+    /// Returns true if the value is T_HASH
+    pub fn hash_p(self) -> bool {
+        !self.special_const_p() && self.builtin_type() == RUBY_T_HASH
+    }
+
     /// Returns true or false depending on whether the value is nil
     pub fn nil_p(self) -> bool {
         self == Qnil
@@ -391,11 +426,21 @@ impl VALUE {
     }
 
     pub fn class_of(self) -> VALUE {
-        unsafe { CLASS_OF(self) }
+        if !self.special_const_p() {
+            let builtin_type = self.builtin_type();
+            assert_ne!(builtin_type, RUBY_T_NONE, "YJIT should only see live objects");
+            assert_ne!(builtin_type, RUBY_T_MOVED, "YJIT should only see live objects");
+        }
+
+        unsafe { rb_yarv_class_of(self) }
     }
 
     pub fn is_frozen(self) -> bool {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
+    }
+
+    pub fn shape_too_complex(self) -> bool {
+        unsafe { rb_shape_obj_too_complex(self) }
     }
 
     pub fn shape_id_of(self) -> u32 {
@@ -446,7 +491,7 @@ impl VALUE {
 
     pub fn as_usize(self) -> usize {
         let VALUE(us) = self;
-        us as usize
+        us
     }
 
     pub fn as_ptr<T>(self) -> *const T {
@@ -459,7 +504,7 @@ impl VALUE {
         us as *mut T
     }
 
-    /// For working with opague pointers and encoding null check.
+    /// For working with opaque pointers and encoding null check.
     /// Similar to [std::ptr::NonNull], but for `*const T`. `NonNull<T>`
     /// is for `*mut T` while our C functions are setup to use `*const T`.
     /// Casting from `NonNull<T>` to `*const T` is too noisy.
@@ -560,24 +605,38 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
 pub fn rust_str_to_sym(str: &str) -> VALUE {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-
     unsafe { rb_id2sym(rb_intern(c_ptr)) }
+}
+
+/// Produce an owned Rust String from a C char pointer
+pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
+    assert!(c_char_ptr != std::ptr::null());
+
+    let c_str: &CStr = unsafe { CStr::from_ptr(c_char_ptr) };
+
+    match c_str.to_str() {
+        Ok(rust_str) => Some(rust_str.to_string()),
+        Err(_) => None
+    }
 }
 
 /// A location in Rust code for integrating with debugging facilities defined in C.
 /// Use the [src_loc!] macro to crate an instance.
 pub struct SourceLocation {
-    pub file: CString,
+    pub file: &'static CStr,
     pub line: c_int,
 }
 
 /// Make a [SourceLocation] at the current spot.
 macro_rules! src_loc {
     () => {
-        // NOTE(alan): `CString::new` allocates so we might want to limit this to debug builds.
-        $crate::cruby::SourceLocation {
-            file: std::ffi::CString::new(file!()).unwrap(), // ASCII source file paths
-            line: line!().try_into().unwrap(),              // not that many lines
+        {
+            // Nul-terminated string with static lifetime, make a CStr out of it safely.
+            let file: &'static str = concat!(file!(), '\0');
+            $crate::cruby::SourceLocation {
+                file: unsafe { std::ffi::CStr::from_ptr(file.as_ptr().cast()) },
+                line: line!().try_into().unwrap(),
+            }
         }
     };
 }
@@ -615,17 +674,16 @@ where
         Err(_) => {
             // Theoretically we can recover from some of these panics,
             // but it's too late if the unwind reaches here.
-            use std::{process, str};
 
             let _ = catch_unwind(|| {
                 // IO functions can panic too.
                 eprintln!(
                     "YJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
-                    str::from_utf8(loc.file.as_bytes()).unwrap_or("<not utf8>"),
+                    loc.file.to_string_lossy(),
                     line,
                 );
             });
-            process::abort();
+            std::process::abort();
         }
     };
 
@@ -650,6 +708,7 @@ mod manual_defs {
 
     pub const SIZEOF_VALUE: usize = 8;
     pub const SIZEOF_VALUE_I32: i32 = SIZEOF_VALUE as i32;
+    pub const VALUE_BITS: u8 = 8 * SIZEOF_VALUE as u8;
 
     pub const RUBY_LONG_MIN: isize = std::os::raw::c_long::MIN as isize;
     pub const RUBY_LONG_MAX: isize = std::os::raw::c_long::MAX as isize;
@@ -658,8 +717,10 @@ mod manual_defs {
     pub const RUBY_FIXNUM_MAX: isize = RUBY_LONG_MAX / 2;
 
     // From vm_callinfo.h - uses calculation that seems to confuse bindgen
+    pub const VM_CALL_ARGS_SIMPLE: u32 = 1 << VM_CALL_ARGS_SIMPLE_bit;
     pub const VM_CALL_ARGS_SPLAT: u32 = 1 << VM_CALL_ARGS_SPLAT_bit;
     pub const VM_CALL_ARGS_BLOCKARG: u32 = 1 << VM_CALL_ARGS_BLOCKARG_bit;
+    pub const VM_CALL_FORWARDING: u32 = 1 << VM_CALL_FORWARDING_bit;
     pub const VM_CALL_FCALL: u32 = 1 << VM_CALL_FCALL_bit;
     pub const VM_CALL_KWARG: u32 = 1 << VM_CALL_KWARG_bit;
     pub const VM_CALL_KW_SPLAT: u32 = 1 << VM_CALL_KW_SPLAT_bit;
@@ -668,7 +729,7 @@ mod manual_defs {
     pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
 
     // From internal/struct.h - in anonymous enum, so we can't easily import it
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
+    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3 |RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
 
     // From iseq.h - via a different constant, which seems to confuse bindgen
     pub const ISEQ_TRANSLATED: usize = RUBY_FL_USER7 as usize;
@@ -684,6 +745,9 @@ mod manual_defs {
     pub const RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR: i32 = 24; // struct RStruct, subfield "as.heap.ptr"
     pub const RUBY_OFFSET_RSTRUCT_AS_ARY: i32 = 16; // struct RStruct, subfield "as.ary"
 
+    pub const RUBY_OFFSET_RSTRING_AS_HEAP_PTR: i32 = 24; // struct RString, subfield "as.heap.ptr"
+    pub const RUBY_OFFSET_RSTRING_AS_ARY: i32 = 24; // struct RString, subfield "as.embed.ary"
+
     // Constants from rb_control_frame_t vm_core.h
     pub const RUBY_OFFSET_CFP_PC: i32 = 0;
     pub const RUBY_OFFSET_CFP_SP: i32 = 8;
@@ -691,9 +755,8 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_SELF: i32 = 24;
     pub const RUBY_OFFSET_CFP_EP: i32 = 32;
     pub const RUBY_OFFSET_CFP_BLOCK_CODE: i32 = 40;
-    pub const RUBY_OFFSET_CFP_BP: i32 = 48; // field __bp__
-    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 56;
-    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 64;
+    pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
+    pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
 
     // Constants from rb_execution_context_t vm_core.h
     pub const RUBY_OFFSET_EC_CFP: i32 = 16;
@@ -709,3 +772,49 @@ mod manual_defs {
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
 }
 pub use manual_defs::*;
+
+/// Interned ID values for Ruby symbols and method names.
+/// See [type@crate::cruby::ID] and usages outside of YJIT.
+pub(crate) mod ids {
+    use std::sync::atomic::AtomicU64;
+    /// Globals to cache IDs on boot. Atomic to use with relaxed ordering
+    /// so reads can happen without `unsafe`. Synchronization done through
+    /// the VM lock.
+    macro_rules! def_ids {
+        ($(name: $ident:ident content: $str:literal)*) => {
+            $(
+                #[doc = concat!("[type@crate::cruby::ID] for `", stringify!($str), "`")]
+                pub static $ident: AtomicU64 = AtomicU64::new(0);
+            )*
+
+            pub(crate) fn init() {
+                $(
+                    let content = &$str;
+                    let ptr: *const u8 = content.as_ptr();
+
+                    // Lookup and cache each ID
+                    $ident.store(
+                        unsafe { $crate::cruby::rb_intern2(ptr.cast(), content.len() as _) },
+                        std::sync::atomic::Ordering::Relaxed
+                    );
+                )*
+
+            }
+        }
+    }
+
+    def_ids! {
+        name: NULL               content: b""
+        name: respond_to_missing content: b"respond_to_missing?"
+        name: to_ary             content: b"to_ary"
+        name: eq                 content: b"=="
+    }
+}
+
+/// Get an CRuby `ID` to an interned string, e.g. a particular method name.
+macro_rules! ID {
+    ($id_name:ident) => {
+        $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+pub(crate) use ID;

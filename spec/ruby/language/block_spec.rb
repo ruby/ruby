@@ -40,9 +40,41 @@ describe "A block yielded a single" do
       m([1, 2]) { |a=5, b, c, d| [a, b, c, d] }.should == [5, 1, 2, nil]
     end
 
+    it "assigns elements to pre arguments" do
+      m([1, 2]) { |a, b, c, d=5| [a, b, c, d] }.should == [1, 2, nil, 5]
+    end
+
+    it "assigns elements to pre and post arguments" do
+      m([1               ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 5, 6, nil, nil]
+      m([1, 2            ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 5, 6, 2, nil]
+      m([1, 2, 3         ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 5, 6, 2, 3]
+      m([1, 2, 3, 4      ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 2, 6, 3, 4]
+      m([1, 2, 3, 4, 5   ]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 2, 3, 4, 5]
+      m([1, 2, 3, 4, 5, 6]) { |a, b=5, c=6, d, e| [a, b, c, d, e] }.should == [1, 2, 3, 4, 5]
+    end
+
+    it "assigns elements to pre and post arguments when *rest is present" do
+      m([1               ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 5, 6, [], nil, nil]
+      m([1, 2            ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 5, 6, [], 2, nil]
+      m([1, 2, 3         ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 5, 6, [], 2, 3]
+      m([1, 2, 3, 4      ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 6, [], 3, 4]
+      m([1, 2, 3, 4, 5   ]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 3, [], 4, 5]
+      m([1, 2, 3, 4, 5, 6]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 3, [4], 5, 6]
+    end
+
     ruby_version_is "3.2" do
       it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
         m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
+      end
+
+      it "does not autosplat single argument to required arguments when keyword arguments are present" do
+        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [[1, 2], :b, :c]
+      end
+
+      it "raises error when required keyword arguments are present" do
+        -> {
+          m([1, 2]) { |a, b:, c:| [a, b, c] }
+        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
       end
     end
 
@@ -51,68 +83,30 @@ describe "A block yielded a single" do
       it "autosplats single argument to required arguments when a keyword rest argument is present" do
         m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
       end
-    end
 
-    ruby_version_is ''..."3.0" do
-      it "assigns elements to mixed argument types" do
-        suppress_keyword_warning do
-          result = m([1, 2, 3, {x: 9}]) { |a, b=5, *c, d, e: 2, **k| [a, b, c, d, e, k] }
-          result.should == [1, 2, [], 3, 2, {x: 9}]
-        end
+      it "autosplats single argument to required arguments when optional keyword arguments are present" do
+        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [1, :b, :c]
       end
 
-      it "assigns symbol keys from a Hash to keyword arguments" do
-        suppress_keyword_warning do
-          result = m(["a" => 1, a: 10]) { |a=nil, **b| [a, b] }
-          result.should == [{"a" => 1}, a: 10]
-        end
-      end
-
-      it "assigns symbol keys from a Hash returned by #to_hash to keyword arguments" do
-        suppress_keyword_warning do
-          obj = mock("coerce block keyword arguments")
-          obj.should_receive(:to_hash).and_return({"a" => 1, b: 2})
-
-          result = m([obj]) { |a=nil, **b| [a, b] }
-          result.should == [{"a" => 1}, b: 2]
-        end
+      it "raises error when required keyword arguments are present" do
+        -> {
+          m([1, 2]) { |a, b:, c:| [a, b, c] }
+        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
       end
     end
 
-    ruby_version_is "3.0" do
-      it "assigns elements to mixed argument types" do
-        result = m([1, 2, 3, {x: 9}]) { |a, b=5, *c, d, e: 2, **k| [a, b, c, d, e, k] }
-        result.should == [1, 2, [3], {x: 9}, 2, {}]
-      end
-
-      it "does not treat final Hash as keyword arguments and does not autosplat" do
-        result = m(["a" => 1, a: 10]) { |a=nil, **b| [a, b] }
-        result.should == [[{"a" => 1, a: 10}], {}]
-      end
-
-      it "does not call #to_hash on final argument to get keyword arguments and does not autosplat" do
-        suppress_keyword_warning do
-          obj = mock("coerce block keyword arguments")
-          obj.should_not_receive(:to_hash)
-
-          result = m([obj]) { |a=nil, **b| [a, b] }
-          result.should == [[obj], {}]
-        end
-      end
+    it "assigns elements to mixed argument types" do
+      result = m([1, 2, 3, {x: 9}]) { |a, b=5, *c, d, e: 2, **k| [a, b, c, d, e, k] }
+      result.should == [1, 2, [3], {x: 9}, 2, {}]
     end
 
-    ruby_version_is ""...'3.0' do
-      it "calls #to_hash on the argument but ignores result when optional argument and keyword argument accepted" do
-        obj = mock("coerce block keyword arguments")
-        obj.should_receive(:to_hash).and_return({"a" => 1, "b" => 2})
-
-        result = m([obj]) { |a=nil, **b| [a, b] }
-        result.should == [obj, {}]
-      end
+    it "does not treat final Hash as keyword arguments and does not autosplat" do
+      result = m(["a" => 1, a: 10]) { |a=nil, **b| [a, b] }
+      result.should == [[{"a" => 1, a: 10}], {}]
     end
 
-    ruby_version_is "3.0" do
-      it "does not call #to_hash on the argument when optional argument and keyword argument accepted and does not autosplat" do
+    it "does not call #to_hash on final argument to get keyword arguments and does not autosplat" do
+      suppress_keyword_warning do
         obj = mock("coerce block keyword arguments")
         obj.should_not_receive(:to_hash)
 
@@ -121,102 +115,42 @@ describe "A block yielded a single" do
       end
     end
 
+    it "does not call #to_hash on the argument when optional argument and keyword argument accepted and does not autosplat" do
+      obj = mock("coerce block keyword arguments")
+      obj.should_not_receive(:to_hash)
+
+      result = m([obj]) { |a=nil, **b| [a, b] }
+      result.should == [[obj], {}]
+    end
+
     describe "when non-symbol keys are in a keyword arguments Hash" do
-      ruby_version_is ""..."3.0" do
-        it "separates non-symbol keys and symbol keys" do
-          suppress_keyword_warning do
-            result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
-            result.should == [{"a" => 10}, {b: 2}]
-          end
-        end
-      end
-      ruby_version_is "3.0" do
-        it "does not separate non-symbol keys and symbol keys and does not autosplat" do
-          suppress_keyword_warning do
-            result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
-            result.should == [[{"a" => 10, b: 2}], {}]
-          end
-        end
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "does not treat hashes with string keys as keyword arguments" do
-        result = m(["a" => 10]) { |a = nil, **b| [a, b] }
-        result.should == [{"a" => 10}, {}]
-      end
-    end
-
-    ruby_version_is "3.0" do
-      it "does not treat hashes with string keys as keyword arguments and does not autosplat" do
-        result = m(["a" => 10]) { |a = nil, **b| [a, b] }
-        result.should == [[{"a" => 10}], {}]
-      end
-    end
-
-    ruby_version_is ''...'3.0' do
-      it "calls #to_hash on the last element if keyword arguments are present" do
+      it "does not separate non-symbol keys and symbol keys and does not autosplat" do
         suppress_keyword_warning do
-          obj = mock("destructure block keyword arguments")
-          obj.should_receive(:to_hash).and_return({x: 9})
-
-          result = m([1, 2, 3, obj]) { |a, *b, c, **k| [a, b, c, k] }
-          result.should == [1, [2], 3, {x: 9}]
+          result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
+          result.should == [[{"a" => 10, b: 2}], {}]
         end
-      end
-
-      it "assigns the last element to a non-keyword argument if #to_hash returns nil" do
-        suppress_keyword_warning do
-          obj = mock("destructure block keyword arguments")
-          obj.should_receive(:to_hash).and_return(nil)
-
-          result = m([1, 2, 3, obj]) { |a, *b, c, **k| [a, b, c, k] }
-          result.should == [1, [2, 3], obj, {}]
-        end
-      end
-
-      it "calls #to_hash on the last element when there are more arguments than parameters" do
-        suppress_keyword_warning do
-          x = mock("destructure matching block keyword argument")
-          x.should_receive(:to_hash).and_return({x: 9})
-
-          result = m([1, 2, 3, {y: 9}, 4, 5, x]) { |a, b=5, c, **k| [a, b, c, k] }
-          result.should == [1, 2, 3, {x: 9}]
-        end
-      end
-
-      it "raises a TypeError if #to_hash does not return a Hash" do
-        obj = mock("destructure block keyword arguments")
-        obj.should_receive(:to_hash).and_return(1)
-
-        -> { m([1, 2, 3, obj]) { |a, *b, c, **k| } }.should raise_error(TypeError)
-      end
-
-      it "raises the error raised inside #to_hash" do
-        obj = mock("destructure block keyword arguments")
-        error = RuntimeError.new("error while converting to a hash")
-        obj.should_receive(:to_hash).and_raise(error)
-
-        -> { m([1, 2, 3, obj]) { |a, *b, c, **k| } }.should raise_error(error)
       end
     end
 
-    ruby_version_is '3.0' do
-      it "does not call #to_hash on the last element if keyword arguments are present" do
-        obj = mock("destructure block keyword arguments")
-        obj.should_not_receive(:to_hash)
+    it "does not treat hashes with string keys as keyword arguments and does not autosplat" do
+      result = m(["a" => 10]) { |a = nil, **b| [a, b] }
+      result.should == [[{"a" => 10}], {}]
+    end
 
-        result = m([1, 2, 3, obj]) { |a, *b, c, **k| [a, b, c, k] }
-        result.should == [1, [2, 3], obj, {}]
-      end
+    it "does not call #to_hash on the last element if keyword arguments are present" do
+      obj = mock("destructure block keyword arguments")
+      obj.should_not_receive(:to_hash)
 
-      it "does not call #to_hash on the last element when there are more arguments than parameters" do
-        x = mock("destructure matching block keyword argument")
-        x.should_not_receive(:to_hash)
+      result = m([1, 2, 3, obj]) { |a, *b, c, **k| [a, b, c, k] }
+      result.should == [1, [2, 3], obj, {}]
+    end
 
-        result = m([1, 2, 3, {y: 9}, 4, 5, x]) { |a, b=5, c, **k| [a, b, c, k] }
-        result.should == [1, 2, 3, {}]
-      end
+    it "does not call #to_hash on the last element when there are more arguments than parameters" do
+      x = mock("destructure matching block keyword argument")
+      x.should_not_receive(:to_hash)
+
+      result = m([1, 2, 3, {y: 9}, 4, 5, x]) { |a, b=5, c, **k| [a, b, c, k] }
+      result.should == [1, 2, 3, {}]
     end
 
     it "does not call #to_ary on the Array" do
@@ -476,7 +410,6 @@ describe "A block" do
 
       -> { @y.s(obj) { |a, b| } }.should raise_error(ZeroDivisionError)
     end
-
   end
 
   describe "taking |a, *b| arguments" do
@@ -809,6 +742,42 @@ describe "A block" do
       eval("Proc.new { |_,_| }").should be_an_instance_of(Proc)
     end
   end
+
+  describe 'pre and post parameters' do
+    it "assigns nil to unassigned required arguments" do
+      proc { |a, *b, c, d| [a, b, c, d] }.call(1, 2).should == [1, [], 2, nil]
+    end
+
+    it "assigns elements to optional arguments" do
+      proc { |a=5, b=4, c=3| [a, b, c] }.call(1, 2).should == [1, 2, 3]
+    end
+
+    it "assigns elements to post arguments" do
+      proc { |a=5, b, c, d| [a, b, c, d] }.call(1, 2).should == [5, 1, 2, nil]
+    end
+
+    it "assigns elements to pre arguments" do
+      proc { |a, b, c, d=5| [a, b, c, d] }.call(1, 2).should == [1, 2, nil, 5]
+    end
+
+    it "assigns elements to pre and post arguments" do
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1               ).should == [1, 5, 6, nil, nil]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2            ).should == [1, 5, 6, 2, nil]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3         ).should == [1, 5, 6, 2, 3]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3, 4      ).should == [1, 2, 6, 3, 4]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3, 4, 5   ).should == [1, 2, 3, 4, 5]
+      proc { |a, b=5, c=6, d, e| [a, b, c, d, e] }.call(1, 2, 3, 4, 5, 6).should == [1, 2, 3, 4, 5]
+    end
+
+    it "assigns elements to pre and post arguments when *rest is present" do
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1               ).should == [1, 5, 6, [], nil, nil]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2            ).should == [1, 5, 6, [], 2, nil]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3         ).should == [1, 5, 6, [], 2, 3]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3, 4      ).should == [1, 2, 6, [], 3, 4]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3, 4, 5   ).should == [1, 2, 3, [], 4, 5]
+      proc { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.call(1, 2, 3, 4, 5, 6).should == [1, 2, 3, [4], 5, 6]
+    end
+  end
 end
 
 describe "Block-local variables" do
@@ -991,24 +960,27 @@ describe "Post-args" do
     end
 
     describe "with a circular argument reference" do
-      it "raises a SyntaxError if using an existing local with the same name as the argument" do
-        a = 1
-        -> {
-          @proc = eval "proc { |a=a| a }"
-        }.should raise_error(SyntaxError)
+      ruby_version_is ""..."3.4" do
+        it "raises a SyntaxError if using the argument in its default value" do
+          a = 1
+          -> {
+            eval "proc { |a=a| a }"
+          }.should raise_error(SyntaxError)
+        end
       end
 
-      it "raises a SyntaxError if there is an existing method with the same name as the argument" do
-        def a; 1; end
-        -> {
-          @proc = eval "proc { |a=a| a }"
-        }.should raise_error(SyntaxError)
+      ruby_version_is "3.4" do
+        it "is nil if using the argument in its default value" do
+          -> {
+            eval "proc { |a=a| a }.call"
+          }.call.should == nil
+        end
       end
+    end
 
-      it "calls an existing method with the same name as the argument if explicitly using ()" do
-        def a; 1; end
-        proc { |a=a()| a }.call.should == 1
-      end
+    it "calls an existing method with the same name as the argument if explicitly using ()" do
+      def a; 1; end
+      proc { |a=a()| a }.call.should == 1
     end
   end
 
@@ -1029,7 +1001,7 @@ end
 
 describe "Anonymous block forwarding" do
   ruby_version_is "3.1" do
-    it "forwards blocks to other functions that formally declare anonymous blocks" do
+    it "forwards blocks to other method that formally declares anonymous block" do
       eval <<-EOF
           def b(&); c(&) end
           def c(&); yield :non_null end

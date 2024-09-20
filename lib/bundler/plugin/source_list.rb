@@ -9,16 +9,16 @@ module Bundler
         add_source_to_list Plugin::Installer::Git.new(options), git_sources
       end
 
+      def add_path_source(options = {})
+        add_source_to_list Plugin::Installer::Path.new(options), path_sources
+      end
+
       def add_rubygems_source(options = {})
         add_source_to_list Plugin::Installer::Rubygems.new(options), @rubygems_sources
       end
 
       def all_sources
         path_sources + git_sources + rubygems_sources + [metadata_source]
-      end
-
-      def default_source
-        git_sources.first || global_rubygems_source
       end
 
       private

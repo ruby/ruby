@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../query_utils"
 require_relative "../deprecate"
@@ -9,7 +10,7 @@ class Gem::Commands::QueryCommand < Gem::Command
 
   include Gem::QueryUtils
 
-  alias warning_without_suggested_alternatives deprecation_warning
+  alias_method :warning_without_suggested_alternatives, :deprecation_warning
   def deprecation_warning
     warning_without_suggested_alternatives
 
@@ -17,11 +18,10 @@ class Gem::Commands::QueryCommand < Gem::Command
     alert_warning message unless Gem::Deprecate.skip
   end
 
-  def initialize(name = "query",
-                 summary = "Query gem information in local or remote repositories")
+  def initialize(name = "query", summary = "Query gem information in local or remote repositories")
     super name, summary,
-         :domain => :local, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+         domain: :local, details: false, versions: true,
+         installed: nil, version: Gem::Requirement.default
 
     add_option("-n", "--name-matches REGEXP",
                "Name of gem(s) to query on matches the",

@@ -40,13 +40,13 @@ pub struct LoadLiteral {
 
 impl LoadLiteral {
     /// LDR (load literal)
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDR--literal---Load-Register--literal--?lang=en
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDR--literal---Load-Register--literal--?lang=en>
     pub fn ldr_literal(rt: u8, offset: InstructionOffset, num_bits: u8) -> Self {
         Self { rt, offset, opc: num_bits.into() }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b0100;
 
 impl From<LoadLiteral> for u32 {

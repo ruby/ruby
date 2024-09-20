@@ -3,10 +3,9 @@
 require 'test/unit'
 require 'timeout'
 require 'socket'
-begin
-  require 'io/wait'
-rescue LoadError
-end
+
+# For `IO#ready?` and `IO#nread`:
+require 'io/wait'
 
 class TestIOWait < Test::Unit::TestCase
 
@@ -37,6 +36,7 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_ready?
+    omit 'unstable on MinGW' if /mingw/ =~ RUBY_PLATFORM
     assert_not_predicate @r, :ready?, "shouldn't ready, but ready"
     @w.syswrite "."
     sleep 0.1

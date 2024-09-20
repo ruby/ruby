@@ -144,6 +144,7 @@ module SyntaxSuggest
       expect(io.string).to include([
         "  1  class OH",
         "> 2    def hello",
+        "  3    def hai",
         "  4    end",
         "  5  end",
         ""
@@ -162,6 +163,7 @@ module SyntaxSuggest
         [
           "  1  class OH",
           ["> 2  ", DisplayCodeWithLineNumbers::TERMINAL_HIGHLIGHT, "  def hello"].join,
+          "  3    def hai",
           "  4    end",
           "  5  end",
           ""

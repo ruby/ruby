@@ -183,9 +183,12 @@ module Fiddle
       # it calls _nss_cache_cycle_prevention_function with dlsym(3).
       # So our Fiddle::Handle#sym must call dlerror(3) before call dlsym.
       # In general uses of dlerror(3) should call it before use it.
+      verbose, $VERBOSE = $VERBOSE, nil
       require 'socket'
       Socket.gethostbyname("localhost")
       Fiddle.dlopen("/lib/libc.so.7").sym('strcpy')
+    ensure
+      $VERBOSE = verbose
     end if /freebsd/=~ RUBY_PLATFORM
 
     def test_no_memory_leak

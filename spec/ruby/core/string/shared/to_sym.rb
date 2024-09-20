@@ -56,9 +56,9 @@ describe :string_to_sym, shared: true do
   it "ignores existing symbols with different encoding" do
     source = "fée"
 
-    iso_symbol = source.force_encoding(Encoding::ISO_8859_1).send(@method)
+    iso_symbol = source.dup.force_encoding(Encoding::ISO_8859_1).send(@method)
     iso_symbol.encoding.should == Encoding::ISO_8859_1
-    binary_symbol = source.force_encoding(Encoding::BINARY).send(@method)
+    binary_symbol = source.dup.force_encoding(Encoding::BINARY).send(@method)
     binary_symbol.encoding.should == Encoding::BINARY
   end
 
@@ -67,6 +67,6 @@ describe :string_to_sym, shared: true do
     invalid_utf8.should_not.valid_encoding?
     -> {
       invalid_utf8.send(@method)
-    }.should raise_error(EncodingError, /invalid/)
+    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xC3"')
   end
 end

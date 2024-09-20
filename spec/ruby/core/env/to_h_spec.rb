@@ -18,6 +18,18 @@ describe "ENV.to_h" do
       ENV.to_h { |k, v| [k, v.upcase] }.should == { 'a' => "B", 'c' => "D" }
     end
 
+    it "passes to a block each pair's key and value as separate arguments" do
+      ENV.replace("a" => "b", "c" => "d")
+
+      ScratchPad.record []
+      ENV.to_h { |k, v| ScratchPad << [k, v]; [k, v] }
+      ScratchPad.recorded.sort.should == [["a", "b"], ["c", "d"]]
+
+      ScratchPad.record []
+      ENV.to_h { |*args| ScratchPad << args; [args[0], args[1]] }
+      ScratchPad.recorded.sort.should == [["a", "b"], ["c", "d"]]
+    end
+
     it "does not require the array elements to be strings" do
       ENV.replace("a" => "b", "c" => "d")
       ENV.to_h { |k, v| [k.to_sym, v.to_sym] }.should == { :a => :b, :c => :d }

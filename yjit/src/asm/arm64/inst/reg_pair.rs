@@ -68,49 +68,49 @@ impl RegisterPair {
     }
 
     /// LDP (signed offset)
-    /// LDP <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en
+    /// `LDP <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]`
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en>
     pub fn ldp(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
         Self::new(rt1, rt2, rn, disp, Index::LoadSignedOffset, num_bits)
     }
 
     /// LDP (pre-index)
-    /// LDP <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en
+    /// `LDP <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!`
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en>
     pub fn ldp_pre(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
         Self::new(rt1, rt2, rn, disp, Index::LoadPreIndex, num_bits)
     }
 
     /// LDP (post-index)
-    /// LDP <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en
+    /// `LDP <Xt1>, <Xt2>, [<Xn|SP>], #<imm>`
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/LDP--Load-Pair-of-Registers-?lang=en>
     pub fn ldp_post(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
         Self::new(rt1, rt2, rn, disp, Index::LoadPostIndex, num_bits)
     }
 
     /// STP (signed offset)
-    /// STP <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en
+    /// `STP <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]`
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en>
     pub fn stp(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
         Self::new(rt1, rt2, rn, disp, Index::StoreSignedOffset, num_bits)
     }
 
     /// STP (pre-index)
-    /// STP <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en
+    /// `STP <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!`
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en>
     pub fn stp_pre(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
         Self::new(rt1, rt2, rn, disp, Index::StorePreIndex, num_bits)
     }
 
     /// STP (post-index)
-    /// STP <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
-    /// https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en
+    /// `STP <Xt1>, <Xt2>, [<Xn|SP>], #<imm>`
+    /// <https://developer.arm.com/documentation/ddi0596/2021-12/Base-Instructions/STP--Store-Pair-of-Registers-?lang=en>
     pub fn stp_post(rt1: u8, rt2: u8, rn: u8, disp: i16, num_bits: u8) -> Self {
         Self::new(rt1, rt2, rn, disp, Index::StorePostIndex, num_bits)
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Loads-and-Stores?lang=en>
 const FAMILY: u32 = 0b0100;
 
 impl From<RegisterPair> for u32 {

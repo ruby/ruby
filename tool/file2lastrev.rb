@@ -25,6 +25,7 @@ end
 
 time_format = '%Y-%m-%dT%H:%M:%S%z'
 vcs = nil
+create_only = false
 OptionParser.new {|opts|
   opts.banner << " paths..."
   vcs_options = VCS.define_options(opts)
@@ -62,6 +63,9 @@ OptionParser.new {|opts|
     abort "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
     opts.remove
     (vcs = VCS::Null.new(nil)).set_options(vcs_options)
+    if @format == :revision_h
+      create_only = true # don't overwrite existing revision.h when .git doesn't exist
+    end
   end
 }
 
@@ -92,7 +96,7 @@ ok = true
   begin
     data = formatter[*vcs.get_revisions(arg)]
     data.sub!(/(?<!\A|\n)\z/, "\n")
-    @output.write(data, overwrite: true)
+    @output.write(data, overwrite: true, create_only: create_only)
   rescue => e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false

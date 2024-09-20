@@ -17,7 +17,7 @@ static ID id_canonical;
 static void emit(yaml_emitter_t * emitter, yaml_event_t * event)
 {
     if(!yaml_emitter_emit(emitter, event))
-	rb_raise(rb_eRuntimeError, "%s", emitter->problem);
+        rb_raise(rb_eRuntimeError, "%s", emitter->problem);
 }
 
 static int writer(void *ctx, unsigned char *buffer, size_t size)
@@ -82,13 +82,13 @@ static VALUE initialize(int argc, VALUE *argv, VALUE self)
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     if (rb_scan_args(argc, argv, "11", &io, &options) == 2) {
-	line_width = rb_funcall(options, id_line_width, 0);
-	indent     = rb_funcall(options, id_indentation, 0);
-	canonical  = rb_funcall(options, id_canonical, 0);
+        line_width = rb_funcall(options, id_line_width, 0);
+        indent     = rb_funcall(options, id_indentation, 0);
+        canonical  = rb_funcall(options, id_canonical, 0);
 
-	yaml_emitter_set_width(emitter, NUM2INT(line_width));
-	yaml_emitter_set_indent(emitter, NUM2INT(indent));
-	yaml_emitter_set_canonical(emitter, Qtrue == canonical ? 1 : 0);
+        yaml_emitter_set_width(emitter, NUM2INT(line_width));
+        yaml_emitter_set_indent(emitter, NUM2INT(indent));
+        yaml_emitter_set_canonical(emitter, Qtrue == canonical ? 1 : 0);
     }
 
     rb_ivar_set(self, id_io, io);
@@ -136,6 +136,97 @@ static VALUE end_stream(VALUE self)
     return self;
 }
 
+struct start_document_data {
+    VALUE self;
+    VALUE version;
+    VALUE tags;
+    VALUE imp;
+
+    yaml_tag_directive_t * head;
+};
+
+static VALUE start_document_try(VALUE d)
+{
+    struct start_document_data * data = (struct start_document_data *)d;
+    VALUE self = data->self;
+    VALUE version = data->version;
+    VALUE tags = data->tags;
+    VALUE imp = data->imp;
+
+    yaml_emitter_t * emitter;
+    yaml_tag_directive_t * tail = NULL;
+    yaml_event_t event;
+    yaml_version_directive_t version_directive;
+    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
+
+    Check_Type(version, T_ARRAY);
+
+    if(RARRAY_LEN(version) > 0) {
+        VALUE major = rb_ary_entry(version, (long)0);
+        VALUE minor = rb_ary_entry(version, (long)1);
+
+        version_directive.major = NUM2INT(major);
+        version_directive.minor = NUM2INT(minor);
+    }
+
+    if(RTEST(tags)) {
+        long i = 0;
+        long len;
+        rb_encoding * encoding = rb_utf8_encoding();
+
+        Check_Type(tags, T_ARRAY);
+
+        len = RARRAY_LEN(tags);
+        data->head = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
+        tail = data->head;
+
+        for(i = 0; i < len && i < RARRAY_LEN(tags); i++) {
+            VALUE tuple = RARRAY_AREF(tags, i);
+            VALUE name;
+            VALUE value;
+
+            Check_Type(tuple, T_ARRAY);
+
+            if(RARRAY_LEN(tuple) < 2) {
+                rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
+            }
+
+            name  = RARRAY_AREF(tuple, 0);
+            value = RARRAY_AREF(tuple, 1);
+            StringValue(name);
+            StringValue(value);
+            name = rb_str_export_to_enc(name, encoding);
+            value = rb_str_export_to_enc(value, encoding);
+
+            tail->handle = (yaml_char_t *)StringValueCStr(name);
+            tail->prefix = (yaml_char_t *)StringValueCStr(value);
+
+            tail++;
+        }
+    }
+
+    yaml_document_start_event_initialize(
+            &event,
+            (RARRAY_LEN(version) > 0) ? &version_directive : NULL,
+            data->head,
+            tail,
+            imp ? 1 : 0
+            );
+
+    emit(emitter, &event);
+
+    return self;
+}
+
+static VALUE start_document_ensure(VALUE d)
+{
+    struct start_document_data * data = (struct start_document_data *)d;
+
+    xfree(data->head);
+
+    return Qnil;
+}
+
 /* call-seq: emitter.start_document(version, tags, implicit)
  *
  * Start a document emission with YAML +version+, +tags+, and an +implicit+
@@ -145,73 +236,16 @@ static VALUE end_stream(VALUE self)
  */
 static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 {
-    yaml_emitter_t * emitter;
-    yaml_tag_directive_t * head = NULL;
-    yaml_tag_directive_t * tail = NULL;
-    yaml_event_t event;
-    yaml_version_directive_t version_directive;
-    TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
+    struct start_document_data data = {
+        .self = self,
+        .version = version,
+        .tags = tags,
+        .imp = imp,
 
+        .head = NULL,
+    };
 
-    Check_Type(version, T_ARRAY);
-
-    if(RARRAY_LEN(version) > 0) {
-	VALUE major = rb_ary_entry(version, (long)0);
-	VALUE minor = rb_ary_entry(version, (long)1);
-
-	version_directive.major = NUM2INT(major);
-	version_directive.minor = NUM2INT(minor);
-    }
-
-    if(RTEST(tags)) {
-	long i = 0;
-	long len;
-	rb_encoding * encoding = rb_utf8_encoding();
-
-	Check_Type(tags, T_ARRAY);
-
-	len = RARRAY_LEN(tags);
-	head  = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
-	tail  = head;
-
-	for(i = 0; i < len && i < RARRAY_LEN(tags); i++) {
-	    VALUE tuple = RARRAY_AREF(tags, i);
-	    VALUE name;
-	    VALUE value;
-
-	    Check_Type(tuple, T_ARRAY);
-
-	    if(RARRAY_LEN(tuple) < 2) {
-		xfree(head);
-		rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
-	    }
-	    name  = RARRAY_AREF(tuple, 0);
-	    value = RARRAY_AREF(tuple, 1);
-	    StringValue(name);
-	    StringValue(value);
-	    name = rb_str_export_to_enc(name, encoding);
-	    value = rb_str_export_to_enc(value, encoding);
-
-	    tail->handle = (yaml_char_t *)StringValueCStr(name);
-	    tail->prefix = (yaml_char_t *)StringValueCStr(value);
-
-	    tail++;
-	}
-    }
-
-    yaml_document_start_event_initialize(
-	    &event,
-	    (RARRAY_LEN(version) > 0) ? &version_directive : NULL,
-	    head,
-	    tail,
-	    imp ? 1 : 0
-	    );
-
-    emit(emitter, &event);
-
-    if(head) xfree(head);
-
-    return self;
+    return rb_ensure(start_document_try, (VALUE)&data, start_document_ensure, (VALUE)&data);
 }
 
 /* call-seq: emitter.end_document(implicit)
@@ -241,14 +275,14 @@ static VALUE end_document(VALUE self, VALUE imp)
  * See Psych::Handler#scalar
  */
 static VALUE scalar(
-	VALUE self,
-	VALUE value,
-	VALUE anchor,
-	VALUE tag,
-	VALUE plain,
-	VALUE quoted,
-	VALUE style
-	) {
+        VALUE self,
+        VALUE value,
+        VALUE anchor,
+        VALUE tag,
+        VALUE plain,
+        VALUE quoted,
+        VALUE style
+        ) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
     rb_encoding *encoding;
@@ -261,25 +295,25 @@ static VALUE scalar(
     value = rb_str_export_to_enc(value, encoding);
 
     if(!NIL_P(anchor)) {
-	Check_Type(anchor, T_STRING);
-	anchor = rb_str_export_to_enc(anchor, encoding);
+        Check_Type(anchor, T_STRING);
+        anchor = rb_str_export_to_enc(anchor, encoding);
     }
 
     if(!NIL_P(tag)) {
-	Check_Type(tag, T_STRING);
-	tag = rb_str_export_to_enc(tag, encoding);
+        Check_Type(tag, T_STRING);
+        tag = rb_str_export_to_enc(tag, encoding);
     }
 
     yaml_scalar_event_initialize(
-	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
-	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
-	    (yaml_char_t*)StringValuePtr(value),
-	    (int)RSTRING_LEN(value),
-	    plain ? 1 : 0,
-	    quoted ? 1 : 0,
-	    (yaml_scalar_style_t)NUM2INT(style)
-	    );
+            &event,
+            (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
+            (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
+            (yaml_char_t*)StringValuePtr(value),
+            (int)RSTRING_LEN(value),
+            plain ? 1 : 0,
+            quoted ? 1 : 0,
+            (yaml_scalar_style_t)NUM2INT(style)
+            );
 
     emit(emitter, &event);
 
@@ -294,36 +328,36 @@ static VALUE scalar(
  * See Psych::Handler#start_sequence
  */
 static VALUE start_sequence(
-	VALUE self,
-	VALUE anchor,
-	VALUE tag,
-	VALUE implicit,
-	VALUE style
-	) {
+        VALUE self,
+        VALUE anchor,
+        VALUE tag,
+        VALUE implicit,
+        VALUE style
+        ) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
 
     rb_encoding * encoding = rb_utf8_encoding();
 
     if(!NIL_P(anchor)) {
-	Check_Type(anchor, T_STRING);
-	anchor = rb_str_export_to_enc(anchor, encoding);
+        Check_Type(anchor, T_STRING);
+        anchor = rb_str_export_to_enc(anchor, encoding);
     }
 
     if(!NIL_P(tag)) {
-	Check_Type(tag, T_STRING);
-	tag = rb_str_export_to_enc(tag, encoding);
+        Check_Type(tag, T_STRING);
+        tag = rb_str_export_to_enc(tag, encoding);
     }
 
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_sequence_start_event_initialize(
-	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
-	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
-	    implicit ? 1 : 0,
-	    (yaml_sequence_style_t)NUM2INT(style)
-	    );
+            &event,
+            (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
+            (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
+            implicit ? 1 : 0,
+            (yaml_sequence_style_t)NUM2INT(style)
+            );
 
     emit(emitter, &event);
 
@@ -357,12 +391,12 @@ static VALUE end_sequence(VALUE self)
  * See Psych::Handler#start_mapping
  */
 static VALUE start_mapping(
-	VALUE self,
-	VALUE anchor,
-	VALUE tag,
-	VALUE implicit,
-	VALUE style
-	) {
+        VALUE self,
+        VALUE anchor,
+        VALUE tag,
+        VALUE implicit,
+        VALUE style
+        ) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
     rb_encoding *encoding;
@@ -372,22 +406,22 @@ static VALUE start_mapping(
     encoding = rb_utf8_encoding();
 
     if(!NIL_P(anchor)) {
-	Check_Type(anchor, T_STRING);
-	anchor = rb_str_export_to_enc(anchor, encoding);
+        Check_Type(anchor, T_STRING);
+        anchor = rb_str_export_to_enc(anchor, encoding);
     }
 
     if(!NIL_P(tag)) {
-	Check_Type(tag, T_STRING);
-	tag = rb_str_export_to_enc(tag, encoding);
+        Check_Type(tag, T_STRING);
+        tag = rb_str_export_to_enc(tag, encoding);
     }
 
     yaml_mapping_start_event_initialize(
-	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
-	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
-	    implicit ? 1 : 0,
-	    (yaml_mapping_style_t)NUM2INT(style)
-	    );
+            &event,
+            (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
+            (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
+            implicit ? 1 : 0,
+            (yaml_mapping_style_t)NUM2INT(style)
+            );
 
     emit(emitter, &event);
 
@@ -426,14 +460,14 @@ static VALUE alias(VALUE self, VALUE anchor)
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     if(!NIL_P(anchor)) {
-	Check_Type(anchor, T_STRING);
-	anchor = rb_str_export_to_enc(anchor, rb_utf8_encoding());
+        Check_Type(anchor, T_STRING);
+        anchor = rb_str_export_to_enc(anchor, rb_utf8_encoding());
     }
 
     yaml_alias_event_initialize(
-	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor))
-	    );
+            &event,
+            (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor))
+            );
 
     emit(emitter, &event);
 

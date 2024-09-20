@@ -52,6 +52,7 @@ memory_status.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/noinline.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+memory_status.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/pure.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/restrict.h
 memory_status.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ memory_status.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 memory_status.o: $(hdrdir)/ruby/internal/intern/error.h
 memory_status.o: $(hdrdir)/ruby/internal/intern/eval.h
 memory_status.o: $(hdrdir)/ruby/internal/intern/file.h
-memory_status.o: $(hdrdir)/ruby/internal/intern/gc.h
 memory_status.o: $(hdrdir)/ruby/internal/intern/hash.h
 memory_status.o: $(hdrdir)/ruby/internal/intern/io.h
 memory_status.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ memory_status.o: $(hdrdir)/ruby/internal/memory.h
 memory_status.o: $(hdrdir)/ruby/internal/method.h
 memory_status.o: $(hdrdir)/ruby/internal/module.h
 memory_status.o: $(hdrdir)/ruby/internal/newobj.h
-memory_status.o: $(hdrdir)/ruby/internal/rgengc.h
 memory_status.o: $(hdrdir)/ruby/internal/scan_args.h
 memory_status.o: $(hdrdir)/ruby/internal/special_consts.h
 memory_status.o: $(hdrdir)/ruby/internal/static_assert.h

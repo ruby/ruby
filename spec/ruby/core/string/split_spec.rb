@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 
 describe "String#split with String" do
   it "throws an ArgumentError if the string  is not a valid" do
-    s = "\xDF".force_encoding(Encoding::UTF_8)
+    s = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
     -> { s.split }.should raise_error(ArgumentError)
     -> { s.split(':') }.should raise_error(ArgumentError)
@@ -12,7 +12,7 @@ describe "String#split with String" do
 
   it "throws an ArgumentError if the pattern is not a valid string" do
     str = 'проверка'
-    broken_str = "\xDF".force_encoding(Encoding::UTF_8)
+    broken_str = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
     -> { str.split(broken_str) }.should raise_error(ArgumentError)
   end
@@ -192,44 +192,16 @@ describe "String#split with String" do
     "foo".split("bar", 3).should == ["foo"]
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances based on self" do
-      ["", "x.y.z.", "  x  y  "].each do |str|
-        ["", ".", " "].each do |pat|
-          [-1, 0, 1, 2].each do |limit|
-            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-              x.should be_an_instance_of(StringSpecs::MyString)
-            end
-
-            str.split(StringSpecs::MyString.new(pat), limit).each do |x|
-              x.should be_an_instance_of(String)
-            end
+  it "returns String instances based on self" do
+    ["", "x.y.z.", "  x  y  "].each do |str|
+      ["", ".", " "].each do |pat|
+        [-1, 0, 1, 2].each do |limit|
+          StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+            x.should be_an_instance_of(String)
           end
-        end
-      end
-    end
 
-    it "does not call constructor on created subclass instances" do
-      # can't call should_not_receive on an object that doesn't yet exist
-      # so failure here is signalled by exception, not expectation failure
-
-      s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
-      s.split(':').first.should == 'silly'
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances based on self" do
-      ["", "x.y.z.", "  x  y  "].each do |str|
-        ["", ".", " "].each do |pat|
-          [-1, 0, 1, 2].each do |limit|
-            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-              x.should be_an_instance_of(String)
-            end
-
-            str.split(StringSpecs::MyString.new(pat), limit).each do |x|
-              x.should be_an_instance_of(String)
-            end
+          str.split(StringSpecs::MyString.new(pat), limit).each do |x|
+            x.should be_an_instance_of(String)
           end
         end
       end
@@ -246,11 +218,18 @@ describe "String#split with String" do
   it "doesn't split on non-ascii whitespace" do
     "a\u{2008}b".split(" ").should == ["a\u{2008}b"]
   end
+
+  it "returns Strings in the same encoding as self" do
+    strings = "hello world".encode("US-ASCII").split(" ")
+
+    strings[0].encoding.should == Encoding::US_ASCII
+    strings[1].encoding.should == Encoding::US_ASCII
+  end
 end
 
 describe "String#split with Regexp" do
   it "throws an ArgumentError if the string  is not a valid" do
-    s = "\xDF".force_encoding(Encoding::UTF_8)
+    s = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
     -> { s.split(/./) }.should raise_error(ArgumentError)
   end
@@ -407,55 +386,30 @@ describe "String#split with Regexp" do
     "foo".split(/bar/, 3).should == ["foo"]
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances based on self" do
-      ["", "x:y:z:", "  x  y  "].each do |str|
-        [//, /:/, /\s+/].each do |pat|
-          [-1, 0, 1, 2].each do |limit|
-            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-              x.should be_an_instance_of(StringSpecs::MyString)
-            end
-          end
-        end
-      end
-    end
-
-    it "does not call constructor on created subclass instances" do
-      # can't call should_not_receive on an object that doesn't yet exist
-      # so failure here is signalled by exception, not expectation failure
-
-      s = StringSpecs::StringWithRaisingConstructor.new('silly:string')
-      s.split(/:/).first.should == 'silly'
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances based on self" do
-      ["", "x:y:z:", "  x  y  "].each do |str|
-        [//, /:/, /\s+/].each do |pat|
-          [-1, 0, 1, 2].each do |limit|
-            StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-              x.should be_an_instance_of(String)
-            end
+  it "returns String instances based on self" do
+    ["", "x:y:z:", "  x  y  "].each do |str|
+      [//, /:/, /\s+/].each do |pat|
+        [-1, 0, 1, 2].each do |limit|
+          StringSpecs::MyString.new(str).split(pat, limit).each do |x|
+            x.should be_an_instance_of(String)
           end
         end
       end
     end
   end
 
-  it "retains the encoding of the source string" do
+  it "returns Strings in the same encoding as self" do
     ary = "а б в".split
     encodings = ary.map { |s| s.encoding }
     encodings.should == [Encoding::UTF_8, Encoding::UTF_8, Encoding::UTF_8]
   end
-
 
   it "splits a string on each character for a multibyte encoding and empty split" do
     "That's why eﬃciency could not be helped".split("").size.should == 39
   end
 
   it "returns an ArgumentError if an invalid UTF-8 string is supplied" do
-    broken_str = 'проверка' # in russian, means "test"
+    broken_str = +'проверка' # in russian, means "test"
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
@@ -563,32 +517,16 @@ describe "String#split with Regexp" do
   end
 
   describe "for a String subclass" do
-    ruby_version_is ''...'3.0' do
-      it "yields instances of the same subclass" do
-        a = []
-        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-        first, last = a
+    it "yields instances of String" do
+      a = []
+      StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+      first, last = a
 
-        first.should be_an_instance_of(StringSpecs::MyString)
-        first.should == "a"
+      first.should be_an_instance_of(String)
+      first.should == "a"
 
-        last.should be_an_instance_of(StringSpecs::MyString)
-        last.should == "b"
-      end
-    end
-
-    ruby_version_is '3.0' do
-      it "yields instances of String" do
-        a = []
-        StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
-        first, last = a
-
-        first.should be_an_instance_of(String)
-        first.should == "a"
-
-        last.should be_an_instance_of(String)
-        last.should == "b"
-      end
+      last.should be_an_instance_of(String)
+      last.should == "b"
     end
   end
 
@@ -597,5 +535,12 @@ describe "String#split with Regexp" do
     -> { "hello".split(:ll) }.should raise_error(TypeError)
     -> { "hello".split(false) }.should raise_error(TypeError)
     -> { "hello".split(Object.new) }.should raise_error(TypeError)
+  end
+
+  it "returns Strings in the same encoding as self" do
+    strings = "hello world".encode("US-ASCII").split(/ /)
+
+    strings[0].encoding.should == Encoding::US_ASCII
+    strings[1].encoding.should == Encoding::US_ASCII
   end
 end

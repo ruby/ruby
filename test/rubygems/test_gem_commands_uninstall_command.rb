@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "installer_test_case"
 require "rubygems/commands/uninstall_command"
 
@@ -20,14 +21,9 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     gemhome2 = "#{@gemhome}2"
 
     a_4, = util_gem "a", 4
-    install_gem a_4, :install_dir => gemhome2
+    install_gem a_4, install_dir: gemhome2
 
-    Gem::Specification.dirs = [@gemhome, gemhome2]
-
-    assert_includes Gem::Specification.all_names, "a-1"
-    assert_includes Gem::Specification.all_names, "a-4"
-    assert_includes Gem::Specification.all_names, "b-2"
-    assert_includes Gem::Specification.all_names, "default-1"
+    assert_gems_presence "a-1", "a-4", "b-2", "default-1", dirs: [@gemhome, gemhome2]
 
     @cmd.options[:all] = true
     @cmd.options[:args] = %w[a]
@@ -36,7 +32,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       @cmd.execute
     end
 
-    assert_equal %w[a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
+    assert_equal %w[a-4 a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
                  Gem::Specification.all_names.sort
   end
 
@@ -85,6 +81,61 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_equal "Successfully uninstalled z-2", output.shift
   end
 
+  def test_execute_does_not_remove_default_gem_executables
+    z_1_default = new_default_spec "z", "1", executable: true
+    install_default_gems z_1_default
+
+    z_1, = util_gem "z", "1" do |spec|
+      util_make_exec spec
+    end
+    install_gem z_1, force: true
+
+    Gem::Specification.reset
+
+    @cmd.options[:all] = true
+    @cmd.options[:force] = true
+    @cmd.options[:executables] = true
+    @cmd.options[:args] = %w[z]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert File.exist? File.join(@gemhome, "bin", "executable")
+    assert File.exist? File.join(@gemhome, "gems", "z-1", "bin", "executable")
+
+    output = @ui.output.split "\n"
+
+    refute_includes output, "Removing executable"
+    assert_equal "Successfully uninstalled z-1", output.shift
+    assert_equal "There was both a regular copy and a default copy of z-1. The regular copy was successfully uninstalled, but the default copy was left around because default gems can't be removed.", output.shift
+  end
+
+  def test_execute_does_not_error_on_shadowed_default_gems
+    z_1_default = new_default_spec "z", "1"
+    install_default_gems z_1_default
+
+    z_1 = util_spec "z", "1" do |spec|
+      spec.date = "2024-01-01"
+    end
+    install_gem z_1
+
+    Gem::Specification.reset
+
+    @cmd.options[:args] = %w[z:1]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "Successfully uninstalled z-1", output.shift
+    assert_equal "There was both a regular copy and a default copy of z-1. The regular copy was successfully uninstalled, but the default copy was left around because default gems can't be removed.", output.shift
+
+    error = @ui.error.split "\n"
+    assert_empty error
+  end
+
   def test_execute_dependency_order
     initial_install
 
@@ -118,7 +169,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
   def test_execute_removes_executable
     initial_install
 
-    if win_platform?
+    if Gem.win_platform?
       assert File.exist?(@executable)
     else
       assert File.symlink?(@executable)
@@ -162,7 +213,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @cmd.execute
 
     assert_equal false, File.exist?(formatted_executable)
-  rescue
+  rescue StandardError
     Gem::Installer.exec_format = nil
   end
 
@@ -231,6 +282,26 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_equal 2, Gem::Specification.find_all_by_name("a").length
 
     assert File.exist? File.join(@gemhome, "bin", "executable")
+  end
+
+  def test_execute_with_multiple_version_specified_as_colon
+    initial_install
+
+    ui = Gem::MockGemUi.new "y\n"
+
+    util_make_gems
+
+    assert_equal 3, Gem::Specification.find_all_by_name("a").length
+
+    @cmd.options[:force] = true
+    @cmd.options[:args] = ["a:1", "a:2"]
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    assert_equal 1, Gem::Specification.find_all_by_name("a").length
+    assert_equal Gem::Version.new("3.a"), Gem::Specification.find_by_name("a").version
   end
 
   def test_uninstall_selection
@@ -346,11 +417,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     a_4, = util_gem "a", 4
     install_gem a_4
 
-    Gem::Specification.dirs = [@gemhome, gemhome2]
-
-    assert_includes Gem::Specification.all_names, "a-1"
-    assert_includes Gem::Specification.all_names, "a-4"
-    assert_includes Gem::Specification.all_names, "default-1"
+    assert_gems_presence "a-1", "a-4", "default-1", dirs: [@gemhome, gemhome2]
 
     @cmd.options[:all] = true
     @cmd.options[:args] = []
@@ -369,11 +436,9 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     gemhome2 = "#{@gemhome}2"
 
     a_4, = util_gem "a", 4
-    install_gem a_4 , :install_dir => gemhome2
+    install_gem a_4, install_dir: gemhome2
 
-    Gem::Specification.dirs = [@gemhome, gemhome2]
-
-    assert_includes Gem::Specification.all_names, "a-4"
+    assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
 
     @cmd.options[:args] = ["a:4"]
 
@@ -384,6 +449,26 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     end
 
     assert_includes e.message, "a is not installed in GEM_HOME"
+  end
+
+  def test_execute_outside_gem_home_when_install_dir_given
+    gemhome2 = "#{@gemhome}2"
+
+    a_4, = util_gem "a", 4
+    install_gem a_4, install_dir: gemhome2
+
+    assert_gems_presence "a-4", dirs: [@gemhome, gemhome2]
+
+    Gem::Specification.dirs = [@gemhome]
+
+    @cmd.options[:install_dir] = gemhome2
+    @cmd.options[:args] = ["a:4"]
+
+    @cmd.execute
+
+    Gem::Specification.dirs = [gemhome2]
+
+    refute_includes Gem::Specification.all_names.sort, "a-4"
   end
 
   def test_handle_options
@@ -486,7 +571,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     assert_empty @ui.output
-    assert_match %r{Error: unable to successfully uninstall '#{@spec.name}'}, @ui.error
+    assert_match(/Error: unable to successfully uninstall '#{@spec.name}'/, @ui.error)
   end
 
   private
@@ -499,6 +584,14 @@ WARNING:  Use your OS package manager to uninstall vendor gems
       use_ui @ui do
         installer.install
       end
+    end
+  end
+
+  def assert_gems_presence(*gems, dirs:)
+    Gem::Specification.dirs = dirs
+
+    gems.each do |full_name|
+      assert_includes Gem::Specification.all_names, full_name
     end
   end
 end

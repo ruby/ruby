@@ -18,9 +18,10 @@ module Bundler
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
                     platform platforms type source install_if gemfile force_ruby_platform].freeze
 
-    GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}.freeze
+    GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
+    GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
 
-    attr_reader :gemspecs
+    attr_reader :gemspecs, :gemfile
     attr_accessor :dependencies
 
     def initialize
@@ -41,20 +42,20 @@ module Bundler
     end
 
     def eval_gemfile(gemfile, contents = nil)
-      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile && @gemfile.parent)
-      original_gemfile = @gemfile
-      @gemfile = expanded_gemfile_path
-      @gemfiles << expanded_gemfile_path
-      contents ||= Bundler.read_file(@gemfile.to_s)
-      instance_eval(contents.dup.tap {|x| x.untaint if RUBY_VERSION < "2.7" }, gemfile.to_s, 1)
-    rescue Exception => e # rubocop:disable Lint/RescueException
-      message = "There was an error " \
-        "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
-        "`#{File.basename gemfile.to_s}`: #{e.message}"
-
-      raise DSLError.new(message, gemfile, e.backtrace, contents)
-    ensure
-      @gemfile = original_gemfile
+      with_gemfile(gemfile) do |current_gemfile|
+        contents ||= Bundler.read_file(current_gemfile)
+        instance_eval(contents, current_gemfile, 1)
+      rescue GemfileEvalError => e
+        message = "There was an error evaluating `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      rescue GemfileError, InvalidArgumentError, InvalidOption, DeprecatedError, ScriptError => e
+        message = "There was an error parsing `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      rescue StandardError => e
+        raise unless e.backtrace_locations.first.path == current_gemfile
+        message = "There was an error parsing `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      end
     end
 
     def gemspec(opts = nil)
@@ -76,11 +77,11 @@ module Bundler
 
         @gemspecs << spec
 
-        gem spec.name, :name => spec.name, :path => path, :glob => glob
+        gem spec.name, name: spec.name, path: path, glob: glob
 
         group(development_group) do
           spec.development_dependencies.each do |dep|
-            gem dep.name, *(dep.requirement.as_list + [:type => :development])
+            gem dep.name, *(dep.requirement.as_list + [type: :development])
           end
         end
       when 0
@@ -102,38 +103,50 @@ module Bundler
 
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
-        deleted_dep = @dependencies.delete(current) if current.type == :development
+        if current.requirement != dep.requirement
+          current_requirement_open = current.requirements_list.include?(">= 0")
 
-        unless deleted_dep
-          if current.requirement != dep.requirement
-            return if dep.type == :development
+          gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
+          if gemspec_dep
+            gemfile_dep = [dep, current].find(&:runtime?)
 
+            unless current_requirement_open
+              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
+                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
+            end
+          else
             update_prompt = ""
 
             if File.basename(@gemfile) == Injector::INJECTED_GEMS
-              if dep.requirements_list.include?(">= 0") && !current.requirements_list.include?(">= 0")
+              if dep.requirements_list.include?(">= 0") && !current_requirement_open
                 update_prompt = ". Gem already added"
               else
                 update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
 
-                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current.requirements_list.include?(">= 0")
+                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
               end
             end
 
             raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
-                             "#{update_prompt}"
-          elsif current.source != dep.source
-            return if dep.type == :development
-            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
-          else
-            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                            "You should probably keep only one of them.\n" \
-                            "Remove any duplicate entries and specify the gem only once.\n" \
-                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
+                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
+                           "#{update_prompt}"
           end
+        end
+
+        # Always prefer the dependency from the Gemfile
+        if current.gemspec_dev_dep?
+          @dependencies.delete(current)
+        elsif dep.gemspec_dev_dep?
+          return
+        elsif current.source != dep.source
+          raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                          "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                          "#{current.source || "an unspecified source"} and #{dep.source}\n"
+        else
+          Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+                          "You should probably keep only one of them.\n" \
+                          "Remove any duplicate entries and specify the gem only once.\n" \
+                          "While it's not a problem now, it could cause errors if you change the version of one of them later."
         end
       end
 
@@ -206,7 +219,7 @@ module Bundler
     end
 
     def github(repo, options = {})
-      raise ArgumentError, "GitHub sources require a block" unless block_given?
+      raise InvalidArgumentError, "GitHub sources require a block" unless block_given?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)
@@ -272,13 +285,23 @@ module Bundler
 
     private
 
+    def with_gemfile(gemfile)
+      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
+      original_gemfile = @gemfile
+      @gemfile = expanded_gemfile_path
+      @gemfiles << expanded_gemfile_path
+      yield @gemfile.to_s
+    ensure
+      @gemfile = original_gemfile
+    end
+
     def add_git_sources
       git_source(:github) do |repo_name|
         if repo_name =~ GITHUB_PULL_REQUEST_URL
           {
             "git" => "https://github.com/#{$1}.git",
-            "branch" => "refs/pull/#{$2}/head",
-            "ref" => nil,
+            "branch" => nil,
+            "ref" => "refs/pull/#{$2}/head",
             "tag" => nil,
           }
         else
@@ -295,6 +318,20 @@ module Bundler
         user_name, repo_name = repo_name.split("/")
         repo_name ||= user_name
         "https://#{user_name}@bitbucket.org/#{user_name}/#{repo_name}.git"
+      end
+
+      git_source(:gitlab) do |repo_name|
+        if repo_name =~ GITLAB_MERGE_REQUEST_URL
+          {
+            "git" => "https://gitlab.com/#{$1}.git",
+            "branch" => nil,
+            "ref" => "refs/merge-requests/#{$2}/head",
+            "tag" => nil,
+          }
+        else
+          repo_name = "#{repo_name}/#{repo_name}" unless repo_name.include?("/")
+          "https://gitlab.com/#{repo_name}.git"
+        end
       end
     end
 
@@ -324,7 +361,7 @@ module Bundler
       if name.is_a?(Symbol)
         raise GemfileError, %(You need to specify gem names as Strings. Use 'gem "#{name}"' instead)
       end
-      if name =~ /\s/
+      if /\s/.match?(name)
         raise GemfileError, %('#{name}' is not a valid gem name because it contains whitespace)
       end
       raise GemfileError, %(an empty gem name is not valid) if name.empty?
@@ -397,13 +434,11 @@ module Bundler
     end
 
     def validate_keys(command, opts, valid_keys)
-      invalid_keys = opts.keys - valid_keys
-
-      git_source = opts.keys & @git_sources.keys.map(&:to_s)
-      if opts["branch"] && !(opts["git"] || opts["github"] || git_source.any?)
+      if opts["branch"] && !(opts["git"] || opts["github"] || (opts.keys & @git_sources.keys.map(&:to_s)).any?)
         raise GemfileError, %(The `branch` option for `#{command}` is not allowed. Only gems with a git source can specify a branch)
       end
 
+      invalid_keys = opts.keys - valid_keys
       return true unless invalid_keys.any?
 
       message = String.new
@@ -422,9 +457,13 @@ module Bundler
     def normalize_source(source)
       case source
       when :gemcutter, :rubygems, :rubyforge
-        Bundler::SharedHelpers.major_deprecation 2, "The source :#{source} is deprecated because HTTP " \
-          "requests are insecure.\nPlease change your source to 'https://" \
-          "rubygems.org' if possible, or 'http://rubygems.org' if not."
+        message =
+          "The source :#{source} is deprecated because HTTP requests are insecure.\n" \
+          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
+        removed_message =
+          "The source :#{source} is disallowed because HTTP requests are insecure.\n" \
+          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
+        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
         "http://rubygems.org"
       when String
         source
@@ -469,10 +508,17 @@ module Bundler
           "should come from that source"
         raise GemfileEvalError, msg
       else
-        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple global sources. " \
+        message =
+          "Your Gemfile contains multiple global sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source."
+        removed_message =
+          "Your Gemfile contains multiple global sources. " \
+          "Using `source` more than once without a block is a security risk, and " \
+          "may result in installing unexpected gems. To resolve this error, use " \
+          "a block to indicate which gems should come from the secondary source."
+        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
       end
     end
 
@@ -541,7 +587,7 @@ module Bundler
 
           return m unless backtrace && dsl_path && contents
 
-          trace_line = backtrace.find {|l| l.include?(dsl_path.to_s) } || trace_line
+          trace_line = backtrace.find {|l| l.include?(dsl_path) } || trace_line
           return m unless trace_line
           line_numer = trace_line.split(":")[1].to_i - 1
           return m unless line_numer
@@ -567,7 +613,7 @@ module Bundler
 
       def parse_line_number_from_description
         description = self.description
-        if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path.to_s}):\d+)/
+        if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path}):\d+)/
           trace_line = Regexp.last_match[1]
           description = description.sub(/\n.*\n(\.\.\.)? *\^~+$/, "").sub(/#{Regexp.quote trace_line}:\s*/, "").sub("\n", " - ")
         end

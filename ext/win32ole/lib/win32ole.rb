@@ -5,7 +5,6 @@ rescue LoadError
 end
 
 if defined?(WIN32OLE)
-  # WIN32OLE
   class WIN32OLE
 
     #
@@ -26,7 +25,7 @@ if defined?(WIN32OLE)
 
     def ole_methods_safely
       ole_methods
-    rescue WIN32OLEQueryInterfaceError
+    rescue WIN32OLE::QueryInterfaceError
       []
     end
   end

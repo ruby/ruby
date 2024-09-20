@@ -65,6 +65,5 @@ class TestArity < Test::Unit::TestCase
     assert_arity(%w[1 2])     { "".sub!(//) }
     assert_arity(%w[0 1..2])  { "".sub!{} }
     assert_arity(%w[0 1+])    { exec }
-    assert_arity(%w[0 1+])    { Struct.new }
   end
 end

@@ -37,7 +37,7 @@ describe :sizedqueue_enq, shared: true do
     q << 1
 
     t = Thread.new {
-      -> { q.send(@method, 2) }.should raise_error(ClosedQueueError)
+      -> { q.send(@method, 2) }.should raise_error(ClosedQueueError, "queue closed")
     }
 
     Thread.pass until q.num_waiting == 1
@@ -55,7 +55,7 @@ describe :sizedqueue_enq, shared: true do
         q << 1
 
         t = Thread.new {
-          q.send(@method, 2, timeout: 1).should == q
+          q.send(@method, 2, timeout: TIME_TOLERANCE).should == q
         }
         Thread.pass until t.status == "sleep" && q.num_waiting == 1
         q.pop
@@ -73,7 +73,7 @@ describe :sizedqueue_enq, shared: true do
         t.join
       end
 
-      it "returns nil if no space is avialable and timeout is 0" do
+      it "returns nil if no space is available and timeout is 0" do
         q = @object.call(1)
         q.send(@method, 1, timeout: 0).should == q
         q.send(@method, 2, timeout: 0).should == nil
@@ -82,31 +82,49 @@ describe :sizedqueue_enq, shared: true do
       it "returns nil if no space is available in time" do
         q = @object.call(1)
         q << 1
-        t = Thread.new {
-          q.send(@method, 2, timeout: 0.1).should == nil
-        }
-        t.join
+        Thread.new {
+          q.send(@method, 2, timeout: 0.001).should == nil
+        }.join
       end
 
       it "raise TypeError if timeout is not a valid numeric" do
         q = @object.call(1)
-        -> { q.send(@method, 2, timeout: "1") }.should raise_error(
-          TypeError,
-          "no implicit conversion to float from string",
-        )
+        -> {
+          q.send(@method, 2, timeout: "1")
+        }.should raise_error(TypeError, "no implicit conversion to float from string")
 
-        -> { q.send(@method, 2, timeout: false) }.should raise_error(
-          TypeError,
-          "no implicit conversion to float from false",
-        )
+        -> {
+          q.send(@method, 2, timeout: false)
+        }.should raise_error(TypeError, "no implicit conversion to float from false")
       end
 
       it "raise ArgumentError if non_block = true is passed too" do
         q = @object.call(1)
-        -> { q.send(@method, 2, true, timeout: 1) }.should raise_error(
-          ArgumentError,
-          "can't set a timeout if non_block is enabled",
-        )
+        -> {
+          q.send(@method, 2, true, timeout: 1)
+        }.should raise_error(ArgumentError, "can't set a timeout if non_block is enabled")
+      end
+
+      it "raise ClosedQueueError when closed before enqueued" do
+        q = @object.call(1)
+        q.close
+        -> { q.send(@method, 2, timeout: 1) }.should raise_error(ClosedQueueError, "queue closed")
+      end
+
+      it "interrupts enqueuing threads with ClosedQueueError when the queue is closed" do
+        q = @object.call(1)
+        q << 1
+
+        t = Thread.new {
+          -> { q.send(@method, 1, timeout: TIME_TOLERANCE) }.should raise_error(ClosedQueueError, "queue closed")
+        }
+
+        Thread.pass until q.num_waiting == 1
+
+        q.close
+
+        t.join
+        q.pop.should == 1
       end
     end
   end

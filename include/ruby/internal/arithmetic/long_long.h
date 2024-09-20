@@ -127,7 +127,7 @@ static inline unsigned LONG_LONG
 rb_num2ull_inline(VALUE x)
 {
     if (RB_FIXNUM_P(x))
-        return RB_FIX2LONG(x);
+        return RBIMPL_CAST((unsigned LONG_LONG)RB_FIX2LONG(x));
     else
         return rb_num2ull(x);
 }

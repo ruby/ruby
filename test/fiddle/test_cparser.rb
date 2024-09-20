@@ -24,14 +24,32 @@ module Fiddle
       assert_equal(TYPE_SHORT, parse_ctype('const short'))
       assert_equal(TYPE_SHORT, parse_ctype('short int'))
       assert_equal(TYPE_SHORT, parse_ctype('const short int'))
+      assert_equal(TYPE_SHORT, parse_ctype('int short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const int short'))
       assert_equal(TYPE_SHORT, parse_ctype('signed short'))
       assert_equal(TYPE_SHORT, parse_ctype('const signed short'))
+      assert_equal(TYPE_SHORT, parse_ctype('short signed'))
+      assert_equal(TYPE_SHORT, parse_ctype('const short signed'))
       assert_equal(TYPE_SHORT, parse_ctype('signed short int'))
       assert_equal(TYPE_SHORT, parse_ctype('const signed short int'))
+      assert_equal(TYPE_SHORT, parse_ctype('signed int short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const signed int short'))
+      assert_equal(TYPE_SHORT, parse_ctype('int signed short'))
+      assert_equal(TYPE_SHORT, parse_ctype('const int signed short'))
+      assert_equal(TYPE_SHORT, parse_ctype('int short signed'))
+      assert_equal(TYPE_SHORT, parse_ctype('const int short signed'))
       assert_equal(-TYPE_SHORT, parse_ctype('unsigned short'))
       assert_equal(-TYPE_SHORT, parse_ctype('const unsigned short'))
       assert_equal(-TYPE_SHORT, parse_ctype('unsigned short int'))
       assert_equal(-TYPE_SHORT, parse_ctype('const unsigned short int'))
+      assert_equal(-TYPE_SHORT, parse_ctype('unsigned int short'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const unsigned int short'))
+      assert_equal(-TYPE_SHORT, parse_ctype('short int unsigned'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const short int unsigned'))
+      assert_equal(-TYPE_SHORT, parse_ctype('int unsigned short'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const int unsigned short'))
+      assert_equal(-TYPE_SHORT, parse_ctype('int short unsigned'))
+      assert_equal(-TYPE_SHORT, parse_ctype('const int short unsigned'))
     end
 
     def test_int_ctype
@@ -50,14 +68,32 @@ module Fiddle
       assert_equal(TYPE_LONG, parse_ctype('const long'))
       assert_equal(TYPE_LONG, parse_ctype('long int'))
       assert_equal(TYPE_LONG, parse_ctype('const long int'))
+      assert_equal(TYPE_LONG, parse_ctype('int long'))
+      assert_equal(TYPE_LONG, parse_ctype('const int long'))
       assert_equal(TYPE_LONG, parse_ctype('signed long'))
       assert_equal(TYPE_LONG, parse_ctype('const signed long'))
       assert_equal(TYPE_LONG, parse_ctype('signed long int'))
       assert_equal(TYPE_LONG, parse_ctype('const signed long int'))
+      assert_equal(TYPE_LONG, parse_ctype('signed int long'))
+      assert_equal(TYPE_LONG, parse_ctype('const signed int long'))
+      assert_equal(TYPE_LONG, parse_ctype('long signed'))
+      assert_equal(TYPE_LONG, parse_ctype('const long signed'))
+      assert_equal(TYPE_LONG, parse_ctype('long int signed'))
+      assert_equal(TYPE_LONG, parse_ctype('const long int signed'))
+      assert_equal(TYPE_LONG, parse_ctype('int long signed'))
+      assert_equal(TYPE_LONG, parse_ctype('const int long signed'))
       assert_equal(-TYPE_LONG, parse_ctype('unsigned long'))
       assert_equal(-TYPE_LONG, parse_ctype('const unsigned long'))
       assert_equal(-TYPE_LONG, parse_ctype('unsigned long int'))
       assert_equal(-TYPE_LONG, parse_ctype('const unsigned long int'))
+      assert_equal(-TYPE_LONG, parse_ctype('long int unsigned'))
+      assert_equal(-TYPE_LONG, parse_ctype('const long int unsigned'))
+      assert_equal(-TYPE_LONG, parse_ctype('unsigned int long'))
+      assert_equal(-TYPE_LONG, parse_ctype('const unsigned int long'))
+      assert_equal(-TYPE_LONG, parse_ctype('int unsigned long'))
+      assert_equal(-TYPE_LONG, parse_ctype('const int unsigned long'))
+      assert_equal(-TYPE_LONG, parse_ctype('int long unsigned'))
+      assert_equal(-TYPE_LONG, parse_ctype('const int long unsigned'))
     end
 
     def test_size_t_ctype
@@ -83,6 +119,10 @@ module Fiddle
     def test_uintptr_t_ctype
       assert_equal(TYPE_UINTPTR_T, parse_ctype("uintptr_t"))
       assert_equal(TYPE_UINTPTR_T, parse_ctype("const uintptr_t"))
+    end
+
+    def test_bool_ctype
+      assert_equal(TYPE_BOOL, parse_ctype('bool'))
     end
 
     def test_undefined_ctype

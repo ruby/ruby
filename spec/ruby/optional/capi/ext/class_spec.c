@@ -72,11 +72,15 @@ static VALUE class_spec_rb_class_new_instance_kw(VALUE self, VALUE args, VALUE k
 #endif
 
 static VALUE class_spec_rb_class_real(VALUE self, VALUE object) {
-  if(rb_type_p(object, T_FIXNUM)) {
+  if (rb_type_p(object, T_FIXNUM)) {
     return INT2FIX(rb_class_real(FIX2INT(object)));
   } else {
     return rb_class_real(CLASS_OF(object));
   }
+}
+
+static VALUE class_spec_rb_class_get_superclass(VALUE self, VALUE klass) {
+  return rb_class_get_superclass(klass);
 }
 
 static VALUE class_spec_rb_class_superclass(VALUE self, VALUE klass) {
@@ -116,19 +120,19 @@ VALUE class_spec_define_attr(VALUE self, VALUE klass, VALUE sym, VALUE read, VAL
 }
 
 static VALUE class_spec_rb_define_class(VALUE self, VALUE name, VALUE super) {
-  if(NIL_P(super)) super = 0;
+  if (NIL_P(super)) super = 0;
   return rb_define_class(RSTRING_PTR(name), super);
 }
 
 static VALUE class_spec_rb_define_class_under(VALUE self, VALUE outer,
                                                  VALUE name, VALUE super) {
-  if(NIL_P(super)) super = 0;
+  if (NIL_P(super)) super = 0;
   return rb_define_class_under(outer, RSTRING_PTR(name), super);
 }
 
 static VALUE class_spec_rb_define_class_id_under(VALUE self, VALUE outer,
                                                  VALUE name, VALUE super) {
-  if(NIL_P(super)) super = 0;
+  if (NIL_P(super)) super = 0;
   return rb_define_class_id_under(outer, SYM2ID(name), super);
 }
 
@@ -160,6 +164,7 @@ void Init_class_spec(void) {
   rb_define_method(cls, "rb_class_new_instance_kw", class_spec_rb_class_new_instance_kw, 2);
 #endif
   rb_define_method(cls, "rb_class_real", class_spec_rb_class_real, 1);
+  rb_define_method(cls, "rb_class_get_superclass", class_spec_rb_class_get_superclass, 1);
   rb_define_method(cls, "rb_class_superclass", class_spec_rb_class_superclass, 1);
   rb_define_method(cls, "rb_cvar_defined", class_spec_cvar_defined, 2);
   rb_define_method(cls, "rb_cvar_get", class_spec_cvar_get, 2);

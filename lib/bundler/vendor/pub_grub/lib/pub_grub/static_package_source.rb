@@ -1,4 +1,5 @@
 require_relative 'package'
+require_relative 'rubygems'
 require_relative 'version_constraint'
 require_relative 'incompatibility'
 require_relative 'basic_package_source'
@@ -19,7 +20,14 @@ module Bundler::PubGrub
         version = Gem::Version.new(version)
         @packages[name] ||= {}
         raise ArgumentError, "#{name} #{version} declared twice" if @packages[name].key?(version)
-        @packages[name][version] = deps
+        @packages[name][version] = clean_deps(name, version, deps)
+      end
+
+      private
+
+      # Exclude redundant self-referencing dependencies
+      def clean_deps(name, version, deps)
+        deps.reject {|dep_name, req| name == dep_name && Bundler::PubGrub::RubyGems.parse_range(req).include?(version) }
       end
     end
 

@@ -11,13 +11,7 @@ describe "Fiber#transfer" do
   it "transfers control from one Fiber to another when called from a Fiber" do
     fiber1 = Fiber.new { :fiber1 }
     fiber2 = Fiber.new { fiber1.transfer; :fiber2 }
-
-    ruby_version_is '' ... '3.0' do
-      fiber2.resume.should == :fiber1
-    end
-    ruby_version_is '3.0' do
-      fiber2.resume.should == :fiber2
-    end
+    fiber2.resume.should == :fiber2
   end
 
   it "returns to the root Fiber when finished" do
@@ -40,24 +34,12 @@ describe "Fiber#transfer" do
     states.should == [:start, :end]
   end
 
-  ruby_version_is '' ... '3.0' do
-    it "can transfer control to a Fiber that has transferred to another Fiber" do
-      states = []
-      fiber1 = Fiber.new { states << :fiber1 }
-      fiber2 = Fiber.new { states << :fiber2_start; fiber1.transfer; states << :fiber2_end}
-      fiber2.resume.should == [:fiber2_start, :fiber1]
-      fiber2.transfer.should == [:fiber2_start, :fiber1, :fiber2_end]
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "can not transfer control to a Fiber that has suspended by Fiber.yield" do
-      states = []
-      fiber1 = Fiber.new { states << :fiber1 }
-      fiber2 = Fiber.new { states << :fiber2_start; Fiber.yield fiber1.transfer; states << :fiber2_end}
-      fiber2.resume.should == [:fiber2_start, :fiber1]
-      -> { fiber2.transfer }.should raise_error(FiberError)
-    end
+  it "can not transfer control to a Fiber that has suspended by Fiber.yield" do
+    states = []
+    fiber1 = Fiber.new { states << :fiber1 }
+    fiber2 = Fiber.new { states << :fiber2_start; Fiber.yield fiber1.transfer; states << :fiber2_end}
+    fiber2.resume.should == [:fiber2_start, :fiber1]
+    -> { fiber2.transfer }.should raise_error(FiberError)
   end
 
   it "raises a FiberError when transferring to a Fiber which resumes itself" do
@@ -100,29 +82,5 @@ describe "Fiber#transfer" do
     end
     thread.join
     states.should == [0, 1, 2, 3]
-  end
-
-  ruby_version_is "" ... "3.0" do
-    it "runs until Fiber.yield" do
-      obj = mock('obj')
-      obj.should_not_receive(:do)
-      fiber = Fiber.new { 1 + 2; Fiber.yield; obj.do }
-      fiber.transfer
-    end
-
-    it "resumes from the last call to Fiber.yield on subsequent invocations" do
-      fiber = Fiber.new { Fiber.yield :first; :second }
-      fiber.transfer.should == :first
-      fiber.transfer.should == :second
-    end
-
-    it "sets the block parameters to its arguments on the first invocation" do
-      first = mock('first')
-      first.should_receive(:arg).with(:first).twice
-
-      fiber = Fiber.new { |arg| first.arg arg; Fiber.yield; first.arg arg; }
-      fiber.transfer :first
-      fiber.transfer :second
-    end
   end
 end

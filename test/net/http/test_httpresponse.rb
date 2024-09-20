@@ -312,8 +312,8 @@ EOS
   end
 
   def test_read_body_block_mod
-    # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/3019353
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    # http://ci.rvm.jp/results/trunk-rjit-wait@silicon-docker/3019353
+    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
       omit 'too unstable with --jit-wait, and extending read_timeout did not help it'
     end
     IO.pipe do |r, w|
@@ -587,6 +587,41 @@ EOS
     end
 
     assert_equal 'hello', body
+  end
+
+  def test_read_body_receiving_no_body
+    io = dummy_io(<<EOS)
+HTTP/1.1 204 OK
+Connection: close
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.body_encoding = 'utf-8'
+
+    body = 'something to override'
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal nil, body
+    assert_equal nil, res.body
+  end
+
+  def test_read_body_outside_of_reading_body
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    assert_raise IOError do
+      res.read_body
+    end
   end
 
   def test_uri_equals

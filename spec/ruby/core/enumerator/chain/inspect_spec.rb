@@ -11,4 +11,8 @@ describe "Enumerator::Chain#inspect" do
     obj.should_receive(:inspect).and_return('some desc')
     Enumerator::Chain.new(obj).inspect.should == "#<Enumerator::Chain: [some desc]>"
   end
+
+  it "returns a not initialized representation if #initialized is not called yet" do
+    Enumerator::Chain.allocate.inspect.should == "#<Enumerator::Chain: uninitialized>"
+  end
 end

@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = 'readline'
-  spec.version       = '0.0.3'
+  spec.version       = '0.0.4'
   spec.authors       = ['aycabta']
   spec.email         = ['aycabta@gmail.com']
 

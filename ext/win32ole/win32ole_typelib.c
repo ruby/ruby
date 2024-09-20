@@ -127,19 +127,19 @@ ole_typelib_from_itypeinfo(ITypeInfo *pTypeInfo)
 }
 
 /*
- * Document-class: WIN32OLE_TYPELIB
+ * Document-class: WIN32OLE::TypeLib
  *
- *   <code>WIN32OLE_TYPELIB</code> objects represent OLE tyblib information.
+ *   +WIN32OLE::TypeLib+ objects represent OLE tyblib information.
  */
 
 /*
  *  call-seq:
  *
- *     WIN32OLE_TYPELIB.typelibs
+ *     typelibs
  *
- *  Returns the array of WIN32OLE_TYPELIB object.
+ *  Returns the array of WIN32OLE::TypeLib object.
  *
- *     tlibs = WIN32OLE_TYPELIB.typelibs
+ *     tlibs = WIN32OLE::TypeLib.typelibs
  *
  */
 static VALUE
@@ -364,9 +364,9 @@ oletypelib_search_registry2(VALUE self, VALUE args)
 
 /*
  * call-seq:
- *    WIN32OLE_TYPELIB.new(typelib [, version1, version2]) -> WIN32OLE_TYPELIB object
+ *    new(typelib [, version1, version2]) -> WIN32OLE::TypeLib object
  *
- * Returns a new WIN32OLE_TYPELIB object.
+ * Returns a new WIN32OLE::TypeLib object.
  *
  * The first argument <i>typelib</i>  specifies OLE type library name or GUID or
  * OLE library file.
@@ -376,11 +376,11 @@ oletypelib_search_registry2(VALUE self, VALUE args)
  * If the first argument is type library name, then the second and third argument
  * are ignored.
  *
- *     tlib1 = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
- *     tlib2 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}')
- *     tlib3 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}', 1.3)
- *     tlib4 = WIN32OLE_TYPELIB.new('{00020813-0000-0000-C000-000000000046}', 1, 3)
- *     tlib5 = WIN32OLE_TYPELIB.new("C:\\WINNT\\SYSTEM32\\SHELL32.DLL")
+ *     tlib1 = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
+ *     tlib2 = WIN32OLE::TypeLib.new('{00020813-0000-0000-C000-000000000046}')
+ *     tlib3 = WIN32OLE::TypeLib.new('{00020813-0000-0000-C000-000000000046}', 1.3)
+ *     tlib4 = WIN32OLE::TypeLib.new('{00020813-0000-0000-C000-000000000046}', 1, 3)
+ *     tlib5 = WIN32OLE::TypeLib.new("C:\\WINNT\\SYSTEM32\\SHELL32.DLL")
  *     puts tlib1.name  # -> 'Microsoft Excel 9.0 Object Library'
  *     puts tlib2.name  # -> 'Microsoft Excel 9.0 Object Library'
  *     puts tlib3.name  # -> 'Microsoft Excel 9.0 Object Library'
@@ -428,11 +428,11 @@ foletypelib_initialize(VALUE self, VALUE args)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#guid -> The guid string.
+ *     guid -> The guid string.
  *
  *  Returns guid string which specifies type library.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     guid = tlib.guid # -> '{00020813-0000-0000-C000-000000000046}'
  */
 static VALUE
@@ -456,11 +456,11 @@ foletypelib_guid(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#name -> The type library name
+ *     name -> The type library name
  *
  *  Returns the type library name.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     name = tlib.name # -> 'Microsoft Excel 9.0 Object Library'
  */
 static VALUE
@@ -500,11 +500,11 @@ make_version_str(VALUE major, VALUE minor)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#version -> The type library version String object.
+ *     version -> The type library version String object.
  *
  *  Returns the type library version.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     puts tlib.version #-> "1.3"
  */
 static VALUE
@@ -523,11 +523,11 @@ foletypelib_version(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#major_version -> The type library major version.
+ *     major_version -> The type library major version.
  *
  *  Returns the type library major version.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     puts tlib.major_version # -> 1
  */
 static VALUE
@@ -546,11 +546,11 @@ foletypelib_major_version(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#minor_version -> The type library minor version.
+ *     minor_version -> The type library minor version.
  *
  *  Returns the type library minor version.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     puts tlib.minor_version # -> 3
  */
 static VALUE
@@ -568,11 +568,11 @@ foletypelib_minor_version(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#path -> The type library file path.
+ *     path -> The type library file path.
  *
  *  Returns the type library file path.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     puts tlib.path #-> 'C:\...\EXCEL9.OLB'
  */
 static VALUE
@@ -604,15 +604,15 @@ foletypelib_path(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#visible?
+ *     visible?
  *
  *  Returns true if the type library information is not hidden.
  *  If wLibFlags of TLIBATTR is 0 or LIBFLAG_FRESTRICTED or LIBFLAG_FHIDDEN,
  *  the method returns false, otherwise, returns true.
  *  If the method fails to access the TLIBATTR information, then
- *  WIN32OLERuntimeError is raised.
+ *  WIN32OLE::RuntimeError is raised.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     tlib.visible? # => true
  */
 static VALUE
@@ -636,12 +636,12 @@ foletypelib_visible(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#library_name
+ *     library_name
  *
  *  Returns library name.
- *  If the method fails to access library name, WIN32OLERuntimeError is raised.
+ *  If the method fails to access library name, WIN32OLE::RuntimeError is raised.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     tlib.library_name # => Excel
  */
 static VALUE
@@ -790,11 +790,11 @@ typelib_file(VALUE ole)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#ole_types -> The array of WIN32OLE_TYPE object included the type library.
+ *     ole_types -> The array of WIN32OLE::Type object included the type library.
  *
  *  Returns the type library file path.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
  *     classes = tlib.ole_types.collect{|k| k.name} # -> ['AddIn', 'AddIns' ...]
  */
 static VALUE
@@ -809,17 +809,17 @@ foletypelib_ole_types(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_TYPELIB#inspect -> String
+ *     inspect -> String
  *
  *  Returns the type library name with class name.
  *
- *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
- *     tlib.inspect # => "<#WIN32OLE_TYPELIB:Microsoft Excel 9.0 Object Library>"
+ *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
+ *     tlib.inspect # => "<#WIN32OLE::TypeLib:Microsoft Excel 9.0 Object Library>"
  */
 static VALUE
 foletypelib_inspect(VALUE self)
 {
-    return default_inspect(self, "WIN32OLE_TYPELIB");
+    return default_inspect(self, "WIN32OLE::TypeLib");
 }
 
 VALUE cWIN32OLE_TYPELIB;
@@ -827,7 +827,8 @@ VALUE cWIN32OLE_TYPELIB;
 void
 Init_win32ole_typelib(void)
 {
-    cWIN32OLE_TYPELIB = rb_define_class_under(cWIN32OLE, "Typelib", rb_cObject);
+    cWIN32OLE_TYPELIB = rb_define_class_under(cWIN32OLE, "TypeLib", rb_cObject);
+    /* Alias of WIN32OLE::TypeLib, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_TYPELIB", cWIN32OLE_TYPELIB);
     rb_define_singleton_method(cWIN32OLE_TYPELIB, "typelibs", foletypelib_s_typelibs, 0);
     rb_define_alloc_func(cWIN32OLE_TYPELIB, foletypelib_s_allocate);

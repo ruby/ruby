@@ -41,7 +41,7 @@ RSpec.describe "La biblioteca si misma" do
     included = /ronn/
     error_messages = []
     man_tracked_files.each do |filename|
-      next unless filename =~ included
+      next unless filename&.match?(included)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -52,7 +52,7 @@ RSpec.describe "La biblioteca si misma" do
     error_messages = []
     exempt = /vendor/
     lib_tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end

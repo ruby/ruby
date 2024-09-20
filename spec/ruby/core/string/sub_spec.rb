@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -170,22 +171,11 @@ describe "String#sub with pattern, replacement" do
     -> { "hello".sub(/[aeiou]/, 99) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("").sub(//, "").should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("").sub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").sub(/foo/, "").should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").sub("foo", "").should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("").sub(//, "").should be_an_instance_of(String)
-      StringSpecs::MyString.new("").sub(/foo/, "").should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").sub(/foo/, "").should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").sub("foo", "").should be_an_instance_of(String)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("").sub(//, "").should be_an_instance_of(String)
+    StringSpecs::MyString.new("").sub(/foo/, "").should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").sub(/foo/, "").should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").sub("foo", "").should be_an_instance_of(String)
   end
 
   it "sets $~ to MatchData of match and nil when there's none" do

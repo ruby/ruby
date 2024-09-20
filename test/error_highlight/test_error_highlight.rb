@@ -1,6 +1,7 @@
 require "test/unit"
 
 require "error_highlight"
+require "did_you_mean"
 require "tempfile"
 
 class ErrorHighlightTest < Test::Unit::TestCase
@@ -23,23 +24,48 @@ class ErrorHighlightTest < Test::Unit::TestCase
     end
   end
 
+  begin
+    method_not_exist
+  rescue NameError
+    if $!.message.include?("`")
+      def preprocess(msg)
+        msg
+      end
+    else
+      def preprocess(msg)
+        msg.sub("`", "'")
+      end
+    end
+  end
+
   if Exception.method_defined?(:detailed_message)
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      assert_equal(expected_msg.chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
+      assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
   else
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      assert_equal(expected_msg.chomp, err.message)
+      assert_equal(preprocess(expected_msg).chomp, err.message)
     end
+  end
+
+  if begin; 1.time; rescue; $!.message.end_with?("an instance of Integer"); end
+    # new message format
+    NEW_MESSAGE_FORMAT = true
+    NIL_RECV_MESSAGE = "nil"
+    ONE_RECV_MESSAGE = "an instance of Integer"
+  else
+    NEW_MESSAGE_FORMAT = false
+    NIL_RECV_MESSAGE = "nil:NilClass"
+    ONE_RECV_MESSAGE = "1:Integer"
   end
 
   def test_CALL_noarg_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.foo + 1
          ^^^^
@@ -51,7 +77,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_noarg_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
         .foo + 1
         ^^^^
@@ -64,7 +90,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_noarg_3
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
         foo + 1
         ^^^
@@ -77,7 +103,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_noarg_4
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       (nil).foo + 1
            ^^^^
@@ -89,7 +115,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_arg_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.foo (42)
          ^^^^
@@ -101,7 +127,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_arg_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
         .foo (
         ^^^^
@@ -116,7 +142,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_arg_3
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
         foo (
         ^^^
@@ -131,7 +157,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_arg_4
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.foo(42)
          ^^^^
@@ -143,7 +169,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_arg_5
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
         .foo(
         ^^^^
@@ -158,7 +184,7 @@ undefined method `foo' for nil:NilClass
 
   def test_CALL_arg_6
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
         foo(
         ^^^
@@ -173,7 +199,7 @@ undefined method `foo' for nil:NilClass
 
   def test_QCALL_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for 1:Integer
+undefined method `foo' for #{ ONE_RECV_MESSAGE }
 
       1&.foo
        ^^^^^
@@ -185,7 +211,7 @@ undefined method `foo' for 1:Integer
 
   def test_QCALL_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for 1:Integer
+undefined method `foo' for #{ ONE_RECV_MESSAGE }
 
       1&.foo(42)
        ^^^^^
@@ -197,7 +223,7 @@ undefined method `foo' for 1:Integer
 
   def test_CALL_aref_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
 
       nil [ ]
           ^^^
@@ -209,7 +235,7 @@ undefined method `[]' for nil:NilClass
 
   def test_CALL_aref_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
 
       nil [0]
           ^^^
@@ -221,7 +247,7 @@ undefined method `[]' for nil:NilClass
 
   def test_CALL_aref_3
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
     END
 
       nil [
@@ -232,8 +258,9 @@ undefined method `[]' for nil:NilClass
 
   def test_CALL_aref_4
     v = Object.new
+    recv = NEW_MESSAGE_FORMAT ? "an instance of Object" : v.inspect
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for #{ v.inspect }
+undefined method `[]' for #{ recv }
 
       v &.[](0)
         ^^^^
@@ -245,7 +272,7 @@ undefined method `[]' for #{ v.inspect }
 
   def test_CALL_aref_5
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
 
       (nil)[ ]
            ^^^
@@ -257,7 +284,7 @@ undefined method `[]' for nil:NilClass
 
   def test_CALL_aset
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]=' for nil:NilClass
+undefined method `[]=' for #{ NIL_RECV_MESSAGE }
 
       nil.[]=
          ^^^^
@@ -270,7 +297,7 @@ undefined method `[]=' for nil:NilClass
   def test_CALL_op_asgn
     v = nil
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       v += 42
         ^
@@ -282,7 +309,7 @@ undefined method `+' for nil:NilClass
 
   def test_CALL_special_call_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `call' for nil:NilClass
+undefined method `call' for #{ NIL_RECV_MESSAGE }
     END
 
       nil.()
@@ -291,7 +318,7 @@ undefined method `call' for nil:NilClass
 
   def test_CALL_special_call_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `call' for nil:NilClass
+undefined method `call' for #{ NIL_RECV_MESSAGE }
     END
 
       nil.(42)
@@ -300,7 +327,7 @@ undefined method `call' for nil:NilClass
 
   def test_CALL_send
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.send(:foo, 42)
          ^^^^^
@@ -312,7 +339,7 @@ undefined method `foo' for nil:NilClass
 
   def test_ATTRASGN_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]=' for nil:NilClass
+undefined method `[]=' for #{ NIL_RECV_MESSAGE }
 
       nil [ ] = 42
           ^^^^^
@@ -324,7 +351,7 @@ undefined method `[]=' for nil:NilClass
 
   def test_ATTRASGN_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]=' for nil:NilClass
+undefined method `[]=' for #{ NIL_RECV_MESSAGE }
 
       nil [0] = 42
           ^^^^^
@@ -336,7 +363,7 @@ undefined method `[]=' for nil:NilClass
 
   def test_ATTRASGN_3
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo=' for nil:NilClass
+undefined method `foo=' for #{ NIL_RECV_MESSAGE }
 
       nil.foo = 42
          ^^^^^^
@@ -348,7 +375,7 @@ undefined method `foo=' for nil:NilClass
 
   def test_ATTRASGN_4
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]=' for nil:NilClass
+undefined method `[]=' for #{ NIL_RECV_MESSAGE }
 
       (nil)[0] = 42
            ^^^^^
@@ -360,7 +387,7 @@ undefined method `[]=' for nil:NilClass
 
   def test_ATTRASGN_5
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo=' for nil:NilClass
+undefined method `foo=' for #{ NIL_RECV_MESSAGE }
 
       (nil).foo = 42
            ^^^^^^
@@ -372,7 +399,7 @@ undefined method `foo=' for nil:NilClass
 
   def test_OPCALL_binary_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       nil + 42
           ^
@@ -384,7 +411,7 @@ undefined method `+' for nil:NilClass
 
   def test_OPCALL_binary_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       nil + # comment
           ^
@@ -397,7 +424,7 @@ undefined method `+' for nil:NilClass
 
   def test_OPCALL_binary_3
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       (nil) + 42
             ^
@@ -409,7 +436,7 @@ undefined method `+' for nil:NilClass
 
   def test_OPCALL_unary_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+@' for nil:NilClass
+undefined method `+@' for #{ NIL_RECV_MESSAGE }
 
       + nil
       ^
@@ -421,7 +448,7 @@ undefined method `+@' for nil:NilClass
 
   def test_OPCALL_unary_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+@' for nil:NilClass
+undefined method `+@' for #{ NIL_RECV_MESSAGE }
 
       +(nil)
       ^
@@ -433,7 +460,7 @@ undefined method `+@' for nil:NilClass
 
   def test_FCALL_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.instance_eval { foo() }
                           ^^^
@@ -445,7 +472,7 @@ undefined method `foo' for nil:NilClass
 
   def test_FCALL_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.instance_eval { foo(42) }
                           ^^^
@@ -457,7 +484,7 @@ undefined method `foo' for nil:NilClass
 
   def test_VCALL_2
     assert_error_message(NameError, <<~END) do
-undefined local variable or method `foo' for nil:NilClass
+undefined local variable or method `foo' for #{ NIL_RECV_MESSAGE }
 
       nil.instance_eval { foo }
                           ^^^
@@ -471,7 +498,7 @@ undefined local variable or method `foo' for nil:NilClass
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
 
       v [0] += 42
         ^^^
@@ -485,7 +512,7 @@ undefined method `[]' for nil:NilClass
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
 
       v [0] += # comment
         ^^^
@@ -500,7 +527,7 @@ undefined method `[]' for nil:NilClass
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
     END
 
       v [
@@ -514,7 +541,7 @@ undefined method `[]' for nil:NilClass
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `[]' for nil:NilClass
+undefined method `[]' for #{ NIL_RECV_MESSAGE }
 
       (v)[0] += 42
          ^^^
@@ -529,7 +556,7 @@ undefined method `[]' for nil:NilClass
     def v.[](x); nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       v [0] += 42
             ^
@@ -544,7 +571,7 @@ undefined method `+' for nil:NilClass
     def v.[](x); nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       v [0 ] += # comment
              ^
@@ -560,7 +587,7 @@ undefined method `+' for nil:NilClass
     def v.[](x); nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
     END
 
       v [
@@ -575,7 +602,7 @@ undefined method `+' for nil:NilClass
     def v.[](x); nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       (v)[0] += 42
              ^
@@ -650,7 +677,7 @@ undefined method `[]=' for #{ v.inspect }
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       v.foo += 42
        ^^^^
@@ -664,7 +691,7 @@ undefined method `foo' for nil:NilClass
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       v.foo += # comment
        ^^^^
@@ -679,7 +706,7 @@ undefined method `foo' for nil:NilClass
     v = nil
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
 
       (v).foo += 42
          ^^^^
@@ -694,7 +721,7 @@ undefined method `foo' for nil:NilClass
     def v.foo; nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       v.foo += 42
             ^
@@ -709,7 +736,7 @@ undefined method `+' for nil:NilClass
     def v.foo; nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       v.foo += # comment
             ^
@@ -725,7 +752,7 @@ undefined method `+' for nil:NilClass
     def v.foo; nil; end
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       (v).foo += 42
               ^
@@ -818,6 +845,54 @@ uninitialized constant ErrorHighlightTest::NotDefined
     end
   end
 
+  def test_COLON2_3
+    assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+      ErrorHighlightTest::NotDefined::Foo
+                        ^^^^^^^^^^^^
+    END
+
+      ErrorHighlightTest::NotDefined::Foo
+    end
+  end
+
+  def test_COLON2_4
+    assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+      ::ErrorHighlightTest::NotDefined::Foo
+                          ^^^^^^^^^^^^
+    END
+
+      ::ErrorHighlightTest::NotDefined::Foo
+    end
+  end
+
+  if ErrorHighlight.const_get(:Spotter).const_get(:OPT_GETCONSTANT_PATH)
+    def test_COLON2_5
+      # Unfortunately, we cannot identify which `NotDefined` caused the NameError
+      assert_error_message(NameError, <<~END) do
+  uninitialized constant ErrorHighlightTest::NotDefined
+      END
+
+        ErrorHighlightTest::NotDefined::NotDefined
+      end
+    end
+  else
+    def test_COLON2_5
+      assert_error_message(NameError, <<~END) do
+uninitialized constant ErrorHighlightTest::NotDefined
+
+        ErrorHighlightTest::NotDefined::NotDefined
+                          ^^^^^^^^^^^^
+      END
+
+        ErrorHighlightTest::NotDefined::NotDefined
+      end
+    end
+  end
+
   def test_COLON3
     assert_error_message(NameError, <<~END) do
 uninitialized constant NotDefined
@@ -871,7 +946,7 @@ uninitialized constant ErrorHighlightTest::OP_CDECL_TEST::NotDefined
 
   def test_OP_CDECL_op_1
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       OP_CDECL_TEST::Nil += 1
                          ^
@@ -883,7 +958,7 @@ undefined method `+' for nil:NilClass
 
   def test_OP_CDECL_op_2
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
       OP_CDECL_TEST::Nil += # comment
                          ^
@@ -896,7 +971,7 @@ undefined method `+' for nil:NilClass
 
   def test_OP_CDECL_op_3
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for nil:NilClass
+undefined method `+' for #{ NIL_RECV_MESSAGE }
 
         Nil += 1
             ^
@@ -920,8 +995,9 @@ uninitialized constant NotDefined
   end
 
   def test_OP_CDECL_toplevel_2
+    recv = NEW_MESSAGE_FORMAT ? "class ErrorHighlightTest" : "ErrorHighlightTest:Class"
     assert_error_message(NoMethodError, <<~END) do
-undefined method `+' for ErrorHighlightTest:Class
+undefined method `+' for #{ recv }
 
       ::ErrorHighlightTest += 1
                            ^
@@ -982,7 +1058,7 @@ local variable `foo' is not defined for #{ b.inspect }
 
   def test_multibyte
     assert_error_message(NoMethodError, <<~END) do
-undefined method `あいうえお' for nil:NilClass
+undefined method `あいうえお' for #{ NIL_RECV_MESSAGE }
     END
 
       nil.あいうえお
@@ -1154,7 +1230,7 @@ nil can't be coerced into Integer (TypeError)
     original_formatter, ErrorHighlight.formatter = ErrorHighlight.formatter, custom_formatter
 
     assert_error_message(NoMethodError, <<~END) do
-undefined method `time' for 1:Integer
+undefined method `time' for #{ ONE_RECV_MESSAGE }
 
 {:first_lineno=>#{ __LINE__ + 3 }, :first_column=>7, :last_lineno=>#{ __LINE__ + 3 }, :last_column=>12, :snippet=>"      1.time {}\\n"}
     END
@@ -1172,7 +1248,7 @@ undefined method `time' for 1:Integer
       tmp.close
 
       assert_error_message(NoMethodError, <<~END.gsub("_", "\t")) do
-undefined method `time' for 1:Integer
+undefined method `time' for #{ ONE_RECV_MESSAGE }
 
 _ _1.time {}
 _ _ ^^^^^
@@ -1189,7 +1265,7 @@ _ _ ^^^^^
       tmp.close
 
       assert_error_message(NoMethodError, <<~END) do
-undefined method `time' for 1:Integer
+undefined method `time' for #{ ONE_RECV_MESSAGE }
 
 1.time {}
  ^^^^^
@@ -1202,7 +1278,7 @@ undefined method `time' for 1:Integer
 
   def test_simulate_funcallv_from_embedded_ruby
     assert_error_message(NoMethodError, <<~END) do
-undefined method `foo' for nil:NilClass
+undefined method `foo' for #{ NIL_RECV_MESSAGE }
     END
 
       nil.foo + 1
@@ -1217,8 +1293,9 @@ undefined method `foo' for nil:NilClass
       tmp << "module Dummy\nend\n"
       tmp.close
 
+      recv = NEW_MESSAGE_FORMAT ? "an instance of String" : '"dummy":String'
       assert_error_message(NameError, <<~END) do
-        undefined local variable or method `foo' for "dummy":String
+        undefined local variable or method `foo' for #{ recv }
       END
 
         "dummy".instance_eval do
@@ -1258,6 +1335,11 @@ undefined method `foo' for nil:NilClass
 
   def test_spot_with_node
     omit unless RubyVM::AbstractSyntaxTree.respond_to?(:node_id_for_backtrace_location)
+
+    # We can't revisit instruction sequences to find node ids if the prism
+    # compiler was used instead of the parse.y compiler. In that case, we'll
+    # omit some tests.
+    omit if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
     begin
       raise_name_error

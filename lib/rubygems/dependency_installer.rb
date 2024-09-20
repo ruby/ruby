@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../rubygems"
 require_relative "dependency_list"
 require_relative "package"
@@ -16,18 +17,18 @@ class Gem::DependencyInstaller
   extend Gem::Deprecate
 
   DEFAULT_OPTIONS = { # :nodoc:
-    :env_shebang => false,
-    :document => %w[ri],
-    :domain => :both, # HACK dup
-    :force => false,
-    :format_executable => false, # HACK dup
-    :ignore_dependencies => false,
-    :prerelease => false,
-    :security_policy => nil, # HACK NoSecurity requires OpenSSL. AlmostNo? Low?
-    :wrappers => true,
-    :build_args => nil,
-    :build_docs_in_background => false,
-    :install_as_default => false,
+    env_shebang: false,
+    document: %w[ri],
+    domain: :both, # HACK: dup
+    force: false,
+    format_executable: false, # HACK: dup
+    ignore_dependencies: false,
+    prerelease: false,
+    security_policy: nil, # HACK: NoSecurity requires OpenSSL. AlmostNo? Low?
+    wrappers: true,
+    build_args: nil,
+    build_docs_in_background: false,
+    install_as_default: false,
   }.freeze
 
   ##
@@ -65,7 +66,7 @@ class Gem::DependencyInstaller
   # :build_args:: See Gem::Installer::new
 
   def initialize(options = {})
-    @only_install_dir = !!options[:install_dir]
+    @only_install_dir = !options[:install_dir].nil?
     @install_dir = options[:install_dir] || Gem.dir
     @build_root = options[:build_root]
 
@@ -162,13 +163,11 @@ class Gem::DependencyInstaller
 
         specs = []
         tuples.each do |tup, source|
-          begin
-            spec = source.fetch_spec(tup)
-          rescue Gem::RemoteFetcher::FetchError => e
-            errors << Gem::SourceFetchProblem.new(source, e)
-          else
-            specs << [spec, source]
-          end
+          spec = source.fetch_spec(tup)
+        rescue Gem::RemoteFetcher::FetchError => e
+          errors << Gem::SourceFetchProblem.new(source, e)
+        else
+          specs << [spec, source]
         end
 
         if @errors
@@ -178,7 +177,6 @@ class Gem::DependencyInstaller
         end
 
         set << specs
-
       rescue Gem::RemoteFetcher::FetchError => e
         # FIX if there is a problem talking to the network, we either need to always tell
         # the user (no really_verbose) or fail hard, not silently tell them that we just
@@ -230,22 +228,22 @@ class Gem::DependencyInstaller
     @installed_gems = []
 
     options = {
-      :bin_dir => @bin_dir,
-      :build_args => @build_args,
-      :document => @document,
-      :env_shebang => @env_shebang,
-      :force => @force,
-      :format_executable => @format_executable,
-      :ignore_dependencies => @ignore_dependencies,
-      :prerelease => @prerelease,
-      :security_policy => @security_policy,
-      :user_install => @user_install,
-      :wrappers => @wrappers,
-      :build_root => @build_root,
-      :install_as_default => @install_as_default,
-      :dir_mode => @dir_mode,
-      :data_mode => @data_mode,
-      :prog_mode => @prog_mode,
+      bin_dir: @bin_dir,
+      build_args: @build_args,
+      document: @document,
+      env_shebang: @env_shebang,
+      force: @force,
+      format_executable: @format_executable,
+      ignore_dependencies: @ignore_dependencies,
+      prerelease: @prerelease,
+      security_policy: @security_policy,
+      user_install: @user_install,
+      wrappers: @wrappers,
+      build_root: @build_root,
+      install_as_default: @install_as_default,
+      dir_mode: @dir_mode,
+      data_mode: @data_mode,
+      prog_mode: @prog_mode,
     }
     options[:install_dir] = @install_dir if @only_install_dir
 
@@ -293,13 +291,11 @@ class Gem::DependencyInstaller
         src = Gem::Source::SpecificFile.new dep_or_name
         installer_set.add_local dep_or_name, src.spec, src
         version = src.spec.version if version == Gem::Requirement.default
-      elsif dep_or_name =~ /\.gem$/
+      elsif dep_or_name =~ /\.gem$/ # rubocop:disable Performance/RegexpMatch
         Dir[dep_or_name].each do |name|
-          begin
-            src = Gem::Source::SpecificFile.new name
-            installer_set.add_local dep_or_name, src.spec, src
-          rescue Gem::Package::FormatError
-          end
+          src = Gem::Source::SpecificFile.new name
+          installer_set.add_local dep_or_name, src.spec, src
+        rescue Gem::Package::FormatError
         end
         # else This is a dependency. InstallerSet handles this case
       end

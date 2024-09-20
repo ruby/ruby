@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "deprecate"
 
 ##
@@ -11,14 +12,22 @@ class Gem::Platform
 
   attr_accessor :cpu, :os, :version
 
-  def self.local
-    arch = RbConfig::CONFIG["arch"]
-    arch = "#{arch}_60" if arch =~ /mswin(?:32|64)$/
-    @local ||= new(arch)
+  def self.local(refresh: false)
+    return @local if @local && !refresh
+    @local = begin
+      arch = Gem.target_rbconfig["arch"]
+      arch = "#{arch}_60" if /mswin(?:32|64)$/.match?(arch)
+      new(arch)
+    end
   end
 
   def self.match(platform)
     match_platforms?(platform, Gem.platforms)
+  end
+
+  class << self
+    extend Gem::Deprecate
+    rubygems_deprecate :match, "Gem::Platform.match_spec? or match_gem?"
   end
 
   def self.match_platforms?(platform, platforms)
@@ -35,10 +44,20 @@ class Gem::Platform
     match_gem?(spec.platform, spec.name)
   end
 
-  def self.match_gem?(platform, gem_name)
-    # Note: this method might be redefined by Ruby implementations to
-    # customize behavior per RUBY_ENGINE, gem_name or other criteria.
-    match_platforms?(platform, Gem.platforms)
+  if RUBY_ENGINE == "truffleruby"
+    def self.match_gem?(platform, gem_name)
+      raise "Not a string: #{gem_name.inspect}" unless String === gem_name
+
+      if REUSE_AS_BINARY_ON_TRUFFLERUBY.include?(gem_name)
+        match_platforms?(platform, [Gem::Platform::RUBY, Gem::Platform.local])
+      else
+        match_platforms?(platform, Gem.platforms)
+      end
+    end
+  else
+    def self.match_gem?(platform, gem_name)
+      match_platforms?(platform, Gem.platforms)
+    end
   end
 
   def self.sort_priority(platform)
@@ -71,7 +90,7 @@ class Gem::Platform
     when String then
       arch = arch.split "-"
 
-      if arch.length > 2 && arch.last !~ /\d+(\.\d+)?$/ # reassemble x86-linux-{libc}
+      if arch.length > 2 && !arch.last.match?(/\d+(\.\d+)?$/) # reassemble x86-linux-{libc}
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -79,42 +98,47 @@ class Gem::Platform
       cpu = arch.shift
 
       @cpu = case cpu
-      when /i\d86/ then "x86"
-      else cpu
+             when /i\d86/ then "x86"
+             else cpu
       end
 
-      if arch.length == 2 && arch.last =~ /^\d+(\.\d+)?$/ # for command-line
+      if arch.length == 2 && arch.last.match?(/^\d+(\.\d+)?$/) # for command-line
         @os, @version = arch
         return
       end
 
       os, = arch
-      @cpu, os = nil, cpu if os.nil? # legacy jruby
+      if os.nil?
+        @cpu = nil
+        os = cpu
+      end # legacy jruby
 
       @os, @version = case os
-      when /aix(\d+)?/ then             [ "aix",       $1  ]
-      when /cygwin/ then                [ "cygwin",    nil ]
-      when /darwin(\d+)?/ then          [ "darwin",    $1  ]
-      when /^macruby$/ then             [ "macruby",   nil ]
-      when /freebsd(\d+)?/ then         [ "freebsd",   $1  ]
-      when /^java$/, /^jruby$/ then     [ "java",      nil ]
-      when /^java([\d.]*)/ then         [ "java",      $1  ]
-      when /^dalvik(\d+)?$/ then        [ "dalvik",    $1  ]
-      when /^dotnet$/ then              [ "dotnet",    nil ]
-      when /^dotnet([\d.]*)/ then       [ "dotnet",    $1  ]
-      when /linux-?(\w+)?/ then         [ "linux",     $1  ]
-      when /mingw32/ then               [ "mingw32",   nil ]
-      when /mingw-?(\w+)?/ then         [ "mingw",     $1  ]
-      when /(mswin\d+)(\_(\d+))?/ then
-        os, version = $1, $3
-        @cpu = "x86" if @cpu.nil? && os =~ /32$/
-        [os, version]
-      when /netbsdelf/ then             [ "netbsdelf", nil ]
-      when /openbsd(\d+\.\d+)?/ then    [ "openbsd",   $1  ]
-      when /solaris(\d+\.\d+)?/ then    [ "solaris",   $1  ]
-      # test
-      when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]
-      else                              [ "unknown",   nil ]
+                      when /aix(\d+)?/ then             ["aix",       $1]
+                      when /cygwin/ then                ["cygwin",    nil]
+                      when /darwin(\d+)?/ then          ["darwin",    $1]
+                      when /^macruby$/ then             ["macruby",   nil]
+                      when /freebsd(\d+)?/ then         ["freebsd",   $1]
+                      when /^java$/, /^jruby$/ then     ["java",      nil]
+                      when /^java([\d.]*)/ then         ["java",      $1]
+                      when /^dalvik(\d+)?$/ then        ["dalvik",    $1]
+                      when /^dotnet$/ then              ["dotnet",    nil]
+                      when /^dotnet([\d.]*)/ then       ["dotnet",    $1]
+                      when /linux-?(\w+)?/ then         ["linux",     $1]
+                      when /mingw32/ then               ["mingw32",   nil]
+                      when /mingw-?(\w+)?/ then         ["mingw",     $1]
+                      when /(mswin\d+)(\_(\d+))?/ then
+                        os = $1
+                        version = $3
+                        @cpu = "x86" if @cpu.nil? && os =~ /32$/
+                        [os, version]
+                      when /netbsdelf/ then             ["netbsdelf", nil]
+                      when /openbsd(\d+\.\d+)?/ then    ["openbsd",   $1]
+                      when /solaris(\d+\.\d+)?/ then    ["solaris",   $1]
+                      when /wasi/ then                  ["wasi",      nil]
+                      # test
+                      when /^(\w+_platform)(\d+)?/ then [$1,          $2]
+                      else ["unknown", nil]
       end
     when Gem::Platform then
       @cpu = arch.cpu
@@ -141,7 +165,7 @@ class Gem::Platform
     self.class === other && to_a == other.to_a
   end
 
-  alias :eql? :==
+  alias_method :eql?, :==
 
   def hash # :nodoc:
     to_a.hash
@@ -153,12 +177,12 @@ class Gem::Platform
   # they have the same version, or either one has no version
   #
   # Additionally, the platform will match if the local CPU is 'arm' and the
-  # other CPU starts with "arm" (for generic ARM family support).
+  # other CPU starts with "armv" (for generic 32-bit ARM family support).
   #
   # Of note, this method is not commutative. Indeed the OS 'linux' has a
   # special case: the version is the libc name, yet while "no version" stands
   # as a wildcard for a binary gem platform (as for other OSes), for the
-  # runtime platform "no version" stands for 'gnu'. To be able to disinguish
+  # runtime platform "no version" stands for 'gnu'. To be able to distinguish
   # these, the method receiver is the gem platform, while the argument is
   # the runtime platform.
   #
@@ -174,7 +198,7 @@ class Gem::Platform
 
     # cpu
     ([nil,"universal"].include?(@cpu) || [nil, "universal"].include?(other.cpu) || @cpu == other.cpu ||
-    (@cpu == "arm" && other.cpu.start_with?("arm"))) &&
+    (@cpu == "arm" && other.cpu.start_with?("armv"))) &&
 
       # os
       @os == other.os &&
@@ -209,18 +233,18 @@ class Gem::Platform
     when String then
       # This data is from http://gems.rubyforge.org/gems/yaml on 19 Aug 2007
       other = case other
-      when /^i686-darwin(\d)/     then ["x86",       "darwin",  $1    ]
-      when /^i\d86-linux/         then ["x86",       "linux",   nil   ]
-      when "java", "jruby"        then [nil,         "java",    nil   ]
-      when /^dalvik(\d+)?$/       then [nil,         "dalvik",  $1    ]
-      when /dotnet(\-(\d+\.\d+))?/ then ["universal","dotnet",  $2    ]
-      when /mswin32(\_(\d+))?/    then ["x86",       "mswin32", $2    ]
-      when /mswin64(\_(\d+))?/    then ["x64",       "mswin64", $2    ]
-      when "powerpc-darwin"       then ["powerpc",   "darwin",  nil   ]
-      when /powerpc-darwin(\d)/   then ["powerpc",   "darwin",  $1    ]
-      when /sparc-solaris2.8/     then ["sparc",     "solaris", "2.8" ]
-      when /universal-darwin(\d)/ then ["universal", "darwin",  $1    ]
-      else                             other
+              when /^i686-darwin(\d)/     then ["x86",       "darwin",  $1]
+              when /^i\d86-linux/         then ["x86",       "linux",   nil]
+              when "java", "jruby"        then [nil,         "java",    nil]
+              when /^dalvik(\d+)?$/       then [nil,         "dalvik",  $1]
+              when /dotnet(\-(\d+\.\d+))?/ then ["universal","dotnet",  $2]
+              when /mswin32(\_(\d+))?/    then ["x86",       "mswin32", $2]
+              when /mswin64(\_(\d+))?/    then ["x64",       "mswin64", $2]
+              when "powerpc-darwin"       then ["powerpc",   "darwin",  nil]
+              when /powerpc-darwin(\d)/   then ["powerpc",   "darwin",  $1]
+              when /sparc-solaris2.8/     then ["sparc",     "solaris", "2.8"]
+              when /universal-darwin(\d)/ then ["universal", "darwin",  $1]
+              else other
       end
 
       other = Gem::Platform.new other
@@ -235,11 +259,11 @@ class Gem::Platform
   # A pure-Ruby gem that may use Gem::Specification#extensions to build
   # binary files.
 
-  RUBY = "ruby".freeze
+  RUBY = "ruby"
 
   ##
   # A platform-specific gem that is built for the packaging Ruby's platform.
   # This will be replaced with Gem::Platform::local.
 
-  CURRENT = "current".freeze
+  CURRENT = "current"
 end

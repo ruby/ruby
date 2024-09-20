@@ -1,0 +1,4 @@
+1..2..3
+    ^~ unexpected .., expecting end-of-input
+    ^~ unexpected .., ignoring it
+

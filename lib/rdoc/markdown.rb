@@ -6,7 +6,7 @@
 # RDoc::Markdown as described by the [markdown syntax][syntax].
 #
 # To choose Markdown as your only default format see
-# RDoc::Options@Saved+Options for instructions on setting up a `.doc_options`
+# RDoc::Options@Saved+Options for instructions on setting up a `.rdoc_options`
 # file to store your project default.
 #
 # ## Usage
@@ -175,7 +175,7 @@
 # [dingus]: http://daringfireball.net/projects/markdown/dingus
 # [GFM]: https://github.github.com/gfm/
 # [pegmarkdown]: https://github.com/jgm/peg-markdown
-# [PHPE]: http://michelf.com/projects/php-markdown/extra/#def-list
+# [PHPE]: https://michelf.ca/projects/php-markdown/extra/#def-list
 # [syntax]: http://daringfireball.net/projects/markdown/syntax
 #--
 # Last updated to jgm/peg-markdown commit 8f8fc22ef0
@@ -209,45 +209,75 @@ class RDoc::Markdown
     attr_accessor :result, :pos
 
     def current_column(target=pos)
-      if c = string.rindex("\n", target-1)
-        return target - c - 1
+      if string[target] == "\n" && (c = string.rindex("\n", target-1) || -1)
+        return target - c
+      elsif c = string.rindex("\n", target)
+        return target - c
       end
 
       target + 1
     end
 
+    def position_line_offsets
+      unless @position_line_offsets
+        @position_line_offsets = []
+        total = 0
+        string.each_line do |line|
+          total += line.size
+          @position_line_offsets << total
+        end
+      end
+      @position_line_offsets
+    end
+
     if [].respond_to? :bsearch_index
       def current_line(target=pos)
-        unless @line_offsets
-          @line_offsets = []
-          total = 0
-          string.each_line do |line|
-            total += line.size
-            @line_offsets << total
-          end
+        if line = position_line_offsets.bsearch_index {|x| x > target }
+          return line + 1
         end
-
-        @line_offsets.bsearch_index {|x| x >= target } + 1 || -1
+        raise "Target position #{target} is outside of string"
       end
     else
       def current_line(target=pos)
-        cur_offset = 0
-        cur_line = 0
-
-        string.each_line do |line|
-          cur_line += 1
-          cur_offset += line.size
-          return cur_line if cur_offset >= target
+        if line = position_line_offsets.index {|x| x > target }
+          return line + 1
         end
 
-        -1
+        raise "Target position #{target} is outside of string"
       end
     end
 
+    def current_character(target=pos)
+      if target < 0 || target >= string.size
+        raise "Target position #{target} is outside of string"
+      end
+      string[target, 1]
+    end
+
+    KpegPosInfo = Struct.new(:pos, :lno, :col, :line, :char)
+
+    def current_pos_info(target=pos)
+      l = current_line target
+      c = current_column target
+      ln = get_line(l-1)
+      chr = string[target,1]
+      KpegPosInfo.new(target, l, c, ln, chr)
+    end
+
     def lines
-      lines = []
-      string.each_line { |l| lines << l }
-      lines
+      string.lines
+    end
+
+    def get_line(no)
+      loff = position_line_offsets
+      if no < 0
+        raise "Line No is out of range: #{no} < 0"
+      elsif no >= loff.size
+        raise "Line No is out of range: #{no} >= #{loff.size}"
+      end
+      lend = loff[no]-1
+      lstart = no > 0 ? loff[no-1] : 0
+      string[lstart..lend]
     end
 
 
@@ -261,6 +291,7 @@ class RDoc::Markdown
       @string = string
       @string_size = string ? string.size : 0
       @pos = pos
+      @position_line_offsets = nil
     end
 
     def show_pos
@@ -285,30 +316,22 @@ class RDoc::Markdown
     end
 
     def failure_caret
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-
-      line = lines[l-1]
-      "#{line}\n#{' ' * (c - 1)}^"
+      p = current_pos_info @failing_rule_offset
+      "#{p.line.chomp}\n#{' ' * (p.col - 1)}^"
     end
 
     def failure_character
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-      lines[l-1][c-1, 1]
+      current_character @failing_rule_offset
     end
 
     def failure_oneline
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-
-      char = lines[l-1][c-1, 1]
+      p = current_pos_info @failing_rule_offset
 
       if @failed_rule.kind_of? Symbol
         info = self.class::Rules[@failed_rule]
-        "@#{l}:#{c} failed rule '#{info.name}', got '#{char}'"
+        "@#{p.lno}:#{p.col} failed rule '#{info.name}', got '#{p.char}'"
       else
-        "@#{l}:#{c} failed rule '#{@failed_rule}', got '#{char}'"
+        "@#{p.lno}:#{p.col} failed rule '#{@failed_rule}', got '#{p.char}'"
       end
     end
 
@@ -321,10 +344,9 @@ class RDoc::Markdown
 
     def show_error(io=STDOUT)
       error_pos = @failing_rule_offset
-      line_no = current_line(error_pos)
-      col_no = current_column(error_pos)
+      p = current_pos_info(error_pos)
 
-      io.puts "On line #{line_no}, column #{col_no}:"
+      io.puts "On line #{p.lno}, column #{p.col}:"
 
       if @failed_rule.kind_of? Symbol
         info = self.class::Rules[@failed_rule]
@@ -333,10 +355,9 @@ class RDoc::Markdown
         io.puts "Failed to match rule '#{@failed_rule}'"
       end
 
-      io.puts "Got: #{string[error_pos,1].inspect}"
-      line = lines[line_no-1]
-      io.puts "=> #{line}"
-      io.print(" " * (col_no + 3))
+      io.puts "Got: #{p.char.inspect}"
+      io.puts "=> #{p.line}"
+      io.print(" " * (p.col + 2))
       io.puts "^"
     end
 
@@ -445,6 +466,7 @@ class RDoc::Markdown
     end
 
     def apply_with_args(rule, *args)
+      @result = nil
       memo_key = [rule, args]
       if m = @memoizations[memo_key][@pos]
         @pos = m.pos
@@ -478,6 +500,7 @@ class RDoc::Markdown
     end
 
     def apply(rule)
+      @result = nil
       if m = @memoizations[rule][@pos]
         @pos = m.pos
         if !m.set
@@ -1135,7 +1158,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxHeading = AtxStart:s @Sp AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
+  # AtxHeading = AtxStart:s @Spacechar+ AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
   def _AtxHeading
 
     _save = self.pos
@@ -1146,12 +1169,22 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = _Sp()
+      _save1 = self.pos
+      _tmp = _Spacechar()
+      if _tmp
+        while true
+          _tmp = _Spacechar()
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
       unless _tmp
         self.pos = _save
         break
       end
-      _save1 = self.pos
+      _save2 = self.pos
       _ary = []
       _tmp = apply(:_AtxInline)
       if _tmp
@@ -1164,37 +1197,37 @@ class RDoc::Markdown
         _tmp = true
         @result = _ary
       else
-        self.pos = _save1
+        self.pos = _save2
       end
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
-      _save2 = self.pos
-
       _save3 = self.pos
+
+      _save4 = self.pos
       while true # sequence
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = scan(/\G(?-mix:#*)/)
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
         end
         break
       end # end sequence
 
       unless _tmp
         _tmp = true
-        self.pos = _save2
+        self.pos = _save3
       end
       unless _tmp
         self.pos = _save
@@ -16422,12 +16455,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListLabel = StrChunk:label @Sp @Newline { label }
+  # DefinitionListLabel = Inline:label @Sp @Newline { label }
   def _DefinitionListLabel
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StrChunk)
+      _tmp = apply(:_Inline)
       label = @result
       unless _tmp
         self.pos = _save
@@ -16516,7 +16549,7 @@ class RDoc::Markdown
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
   Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp /\#*/ @Sp @Newline) Inline")
   Rules[:_AtxStart] = rule_info("AtxStart", "< /\\\#{1,6}/ > { text.length }")
-  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
+  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Spacechar+ AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
   Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={1,}/ @Newline")
   Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{1,}/ @Newline")
@@ -16754,7 +16787,7 @@ class RDoc::Markdown
   Rules[:_TableAlign] = rule_info("TableAlign", "< /:?-+:?/ > @Sp {                 text.start_with?(\":\") ?                 (text.end_with?(\":\") ? :center : :left) :                 (text.end_with?(\":\") ? :right : nil)               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
-  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
+  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "Inline:label @Sp @Newline { label }")
   Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "@NonindentSpace \":\" @Space Inlines:a @BlankLine+ { paragraph a }")
   # :startdoc:
 end

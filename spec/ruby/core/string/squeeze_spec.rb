@@ -1,4 +1,5 @@
 # -*- encoding: binary -*-
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -64,22 +65,19 @@ describe "String#squeeze" do
     "hello room".squeeze(other_string, other_string2).should == "hello rom"
   end
 
+  it "returns a String in the same encoding as self" do
+    "yellow moon".encode("US-ASCII").squeeze.encoding.should == Encoding::US_ASCII
+    "yellow moon".encode("US-ASCII").squeeze("a").encoding.should == Encoding::US_ASCII
+  end
+
   it "raises a TypeError when one set arg can't be converted to a string" do
     -> { "hello world".squeeze([])        }.should raise_error(TypeError)
     -> { "hello world".squeeze(Object.new)}.should raise_error(TypeError)
     -> { "hello world".squeeze(mock('x')) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(String)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("oh no!!!").squeeze("!").should be_an_instance_of(String)
   end
 end
 

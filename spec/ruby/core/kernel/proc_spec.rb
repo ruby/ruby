@@ -40,19 +40,9 @@ describe "Kernel#proc" do
     proc
   end
 
-  ruby_version_is ""..."3.0" do
-    it "can be created when called with no block" do
-      -> {
-        some_method { "hello" }
-      }.should complain(/Capturing the given block using Kernel#proc is deprecated/)
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "raises an ArgumentError when passed no block" do
-      -> {
-        some_method { "hello" }
-      }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
-    end
+  it "raises an ArgumentError when passed no block" do
+    -> {
+      some_method { "hello" }
+    }.should raise_error(ArgumentError, 'tried to create Proc object without a block')
   end
 end

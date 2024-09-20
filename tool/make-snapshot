@@ -38,8 +38,6 @@ options:
   -packages=PKG[,...]   make PKG packages (#{PACKAGES.keys.join(", ")})
   -digests=ALG[,...]    show ALG digests (#{DIGESTS.join(", ")})
   -unicode_version=VER  Unicode version to generate encodings
-  -svn[=URL]            make snapshot from SVN repository
-                        (#{SVNURL})
   -help, --help         show this message
 version:
   master, trunk, stable, branches/*, tags/*, X.Y, X.Y.Z, X.Y.Z-pL
@@ -69,13 +67,12 @@ if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
   ENV["GNUMAKEFLAGS"] = (mflags unless mflags.empty?)
 end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
-SVNURL = URI.parse("https://svn.ruby-lang.org/repos/ruby/")
 # https git clone is disabled at git.ruby-lang.org/ruby.git.
 GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
-YACC = ENV["YACC"] ||= "bison"
+YACC = ENV["YACC"] ||= "#{$tooldir}/lrama/exe/lrama"
 ENV["BASERUBY"] ||= "ruby"
 ENV["RUBY"] ||= "ruby"
 ENV["MV"] ||= "mv"
@@ -367,7 +364,7 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   elsif prerelease
     versionhdr ||= IO.read("#{v}/version.h")
-    versionhdr.sub!(/^\#define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag)
+    versionhdr.sub!(/^\#\s*define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag) or raise "no match of RUBY_PATCHLEVEL_STR to replace"
     IO.write("#{v}/version.h", versionhdr)
   else
     tag ||= vcs.revision_name(revision)
@@ -387,8 +384,21 @@ def package(vcs, rev, destdir, tmp = nil)
     puts $colorize.fail("patching failed")
     return
   end
-  def (clean = []).add(n) push(n); n end
-  def clean.create(file, content = "") File.binwrite(add(file), content) end
+
+  class << (clean = [])
+    def add(n) push(n)
+      n
+    end
+    def create(file, content = "", &block)
+      add(file)
+      if block
+        File.open(file, "wb", &block)
+      else
+        File.binwrite(file, content)
+      end
+    end
+  end
+
   Dir.chdir(v) do
     unless File.exist?("ChangeLog")
       vcs.export_changelog(url, nil, revision, "ChangeLog")
@@ -409,7 +419,7 @@ def package(vcs, rev, destdir, tmp = nil)
       puts
     end
 
-    File.open(clean.add("cross.rb"), "w") do |f|
+    clean.create("cross.rb") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
       f.puts "Object.__send__(:remove_const, :RUBY_PLATFORM)"
@@ -508,8 +518,7 @@ touch-unicode-files:
     end
     vcs.after_export(".") if exported
     clean.concat(Dir.glob("ext/**/autom4te.cache"))
-    FileUtils.rm_rf(clean) unless $keep_temp
-    FileUtils.rm_rf(".downloaded-cache")
+    clean.add(".downloaded-cache")
     if File.exist?("gems/bundled_gems")
       gems = Dir.glob("gems/*.gem")
       gems -= File.readlines("gems/bundled_gems").map {|line|
@@ -517,10 +526,11 @@ touch-unicode-files:
         name, version, _ = line.split(' ')
         "gems/#{name}-#{version}.gem"
       }
-      FileUtils.rm_f(gems)
+      clean.concat(gems)
     else
-      FileUtils.rm_rf("gems")
+      clean.add("gems")
     end
+    FileUtils.rm_rf(clean)
     if modified
       touch_all(modified, "**/*/", 0) do |name, stat|
         stat.mtime > modified
@@ -589,20 +599,18 @@ ensure
   Dir.chdir(pwd)
 end
 
-if [$srcdir, ($svn||=nil), ($git||=nil)].compact.size > 1
-  abort "#{File.basename $0}: -srcdir, -svn, and -git are exclusive"
+if [$srcdir, ($git||=nil)].compact.size > 1
+  abort "#{File.basename $0}: -srcdir and -git are exclusive"
 end
 if $srcdir
   vcs = VCS.detect($srcdir)
-elsif $svn
-  vcs = VCS::SVN.new($svn == true ? SVNURL : URI.parse($svn))
 elsif $git
   abort "#{File.basename $0}: use -srcdir with cloned local repository"
 else
   begin
     vcs = VCS.detect(File.expand_path("../..", __FILE__))
   rescue VCS::NotFoundError
-    vcs = VCS::SVN.new(SVNURL)
+    abort "#{File.expand_path("../..", __FILE__)}: cannot find git repository"
   end
 end
 

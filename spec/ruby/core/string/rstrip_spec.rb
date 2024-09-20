@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/strip'
@@ -51,12 +52,10 @@ describe "String#rstrip!" do
     "  ".rstrip.should == ""
   end
 
-  ruby_version_is '3.0' do
-    it "removes trailing NULL bytes and whitespace" do
-      a = "\000 goodbye \000"
-      a.rstrip!
-      a.should == "\000 goodbye"
-    end
+  it "removes trailing NULL bytes and whitespace" do
+    a = "\000 goodbye \000"
+    a.rstrip!
+    a.should == "\000 goodbye"
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do

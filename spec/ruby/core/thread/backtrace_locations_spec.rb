@@ -70,7 +70,7 @@ describe "Thread#backtrace_locations" do
   end
 
   it "the first location reports the call to #backtrace_locations" do
-    Thread.current.backtrace_locations(0..0)[0].to_s.should == "#{__FILE__ }:#{__LINE__ }:in `backtrace_locations'"
+    Thread.current.backtrace_locations(0..0)[0].to_s.should =~ /\A#{__FILE__ }:#{__LINE__ }:in [`'](?:Thread#)?backtrace_locations'\z/
   end
 
   it "[1..-1] is the same as #caller_locations(0..-1) for Thread.current" do

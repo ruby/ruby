@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 describe :string_dedup, shared: true do
   it 'returns self if the String is frozen' do
     input  = 'foo'.freeze
@@ -48,10 +49,8 @@ describe :string_dedup, shared: true do
     dynamic.send(@method).should equal(dynamic)
   end
 
-  ruby_version_is "3.0" do
-    it "interns the provided string if it is frozen" do
-      dynamic = "this string is unique and frozen #{rand}".freeze
-      dynamic.send(@method).should equal(dynamic)
-    end
+  it "interns the provided string if it is frozen" do
+    dynamic = "this string is unique and frozen #{rand}".freeze
+    dynamic.send(@method).should equal(dynamic)
   end
 end

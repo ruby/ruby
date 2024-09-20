@@ -1,9 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXServer#accept_nonblock" do
-
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXServer#accept_nonblock" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -33,9 +32,7 @@ describe "UNIXServer#accept_nonblock" do
       @server.accept_nonblock(exception: false).should == :wait_readable
     end
   end
-end
 
-with_feature :unix_socket do
   describe 'UNIXServer#accept_nonblock' do
     before do
       @path   = SocketSpecs.socket_path

@@ -15,16 +15,22 @@ describe "String#unpack1" do
       "ZA".unpack1("B*", offset: 1).should == "01000001"
     end
 
+    it "traits offset as a bytes offset" do
+      "؈".unpack("CC").should == [216, 136]
+      "؈".unpack1("C").should == 216
+      "؈".unpack1("C", offset: 1).should == 136
+    end
+
     it "raises an ArgumentError when the offset is negative" do
-      -> { "a".unpack1("C", offset: -1) }.should raise_error(ArgumentError)
+      -> { "a".unpack1("C", offset: -1) }.should raise_error(ArgumentError, "offset can't be negative")
     end
 
     it "returns nil if the offset is at the end of the string" do
       "a".unpack1("C", offset: 1).should == nil
     end
 
-    it "raises an ArgumentError when the offset is larget than the string" do
-      -> { "a".unpack1("C", offset: 2) }.should raise_error(ArgumentError)
+    it "raises an ArgumentError when the offset is larger than the string bytesize" do
+      -> { "a".unpack1("C", offset: 2) }.should raise_error(ArgumentError, "offset outside of string")
     end
   end
 end

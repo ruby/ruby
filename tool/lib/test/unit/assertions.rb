@@ -522,7 +522,7 @@ module Test
       # Skips the current test. Gets listed at the end of the run but
       # doesn't cause a failure exit code.
 
-      def pend msg = nil, bt = caller
+      def pend msg = nil, bt = caller, &_
         msg ||= "Skipped, no message given"
         @skip = true
         raise Test::Unit::PendedError, msg, bt
@@ -768,7 +768,14 @@ EOT
           e = assert_raise(SyntaxError, mesg) do
             syntax_check(src, fname, line)
           end
-          assert_match(error, e.message, mesg)
+
+          # Prism adds ANSI escape sequences to syntax error messages to
+          # colorize and format them. We strip them out here to make them easier
+          # to match against in tests.
+          message = e.message
+          message.gsub!(/\e\[.*?m/, "")
+
+          assert_match(error, message, mesg)
           e
         end
       end

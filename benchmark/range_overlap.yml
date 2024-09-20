@@ -1,0 +1,19 @@
+prelude: |
+  class Range
+    unless method_defined?(:overlap?)
+      def overlap?(other)
+        other.begin == self.begin || cover?(other.begin) || other.cover?(self.begin)
+      end
+    end
+  end
+
+benchmark:
+  - (2..3).overlap?(1..1)
+  - (2..3).overlap?(2..4)
+  - (2..3).overlap?(4..5)
+  - (2..3).overlap?(2..1)
+  - (2..3).overlap?(0..1)
+  - (2..3).overlap?(...1)
+  - (2...3).overlap?(..2)
+  - (2...3).overlap?(3...)
+  - (2..3).overlap?('a'..'d')

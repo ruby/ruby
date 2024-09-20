@@ -146,6 +146,19 @@ class TestSystem < Test::Unit::TestCase
     end
   end
 
+  def test_system_closed
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      ios = []
+      ObjectSpace.each_object(IO) {|io| ios << io}
+      `echo`
+      ObjectSpace.each_object(IO) do |io|
+        next if ios.include?(io)
+        assert_nothing_raised {io.close}
+      end
+    end;
+  end
+
   def test_empty_evstr
     assert_equal("", eval('"#{}"', nil, __FILE__, __LINE__), "[ruby-dev:25113]")
   end

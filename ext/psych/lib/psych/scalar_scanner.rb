@@ -4,6 +4,8 @@ module Psych
   ###
   # Scan scalars for built in types
   class ScalarScanner
+    autoload :Date, "date"
+
     # Taken from http://yaml.org/type/timestamp.html
     TIME = /^-?\d{4}-\d{1,2}-\d{1,2}(?:[Tt]|\s+)\d{1,2}:\d\d:\d\d(?:\.\d*)?(?:\s*(?:Z|[-+]\d{1,2}:?(?:\d\d)?))?$/
 
@@ -11,18 +13,18 @@ module Psych
     # Base 60, [-+]inf and NaN are handled separately
     FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10))$/x
 
-    # Taken from http://yaml.org/type/int.html
-    INTEGER_STRICT = /^(?:[-+]?0b[0-1_]+                  (?# base 2)
-                         |[-+]?0[0-7_]+                   (?# base 8)
-                         |[-+]?(0|[1-9][0-9_]*)           (?# base 10)
-                         |[-+]?0x[0-9a-fA-F_]+            (?# base 16))$/x
+    # Taken from http://yaml.org/type/int.html and modified to ensure at least one numerical symbol exists
+    INTEGER_STRICT = /^(?:[-+]?0b[_]*[0-1][0-1_]*             (?# base 2)
+                         |[-+]?0[_]*[0-7][0-7_]*              (?# base 8)
+                         |[-+]?(0|[1-9][0-9_]*)               (?# base 10)
+                         |[-+]?0x[_]*[0-9a-fA-F][0-9a-fA-F_]* (?# base 16))$/x
 
     # Same as above, but allows commas.
     # Not to YML spec, but kept for backwards compatibility
-    INTEGER_LEGACY = /^(?:[-+]?0b[0-1_,]+                        (?# base 2)
-                         |[-+]?0[0-7_,]+                         (?# base 8)
+    INTEGER_LEGACY = /^(?:[-+]?0b[_,]*[0-1][0-1_,]*                (?# base 2)
+                         |[-+]?0[_,]*[0-7][0-7_,]*                 (?# base 8)
                          |[-+]?(?:0|[1-9](?:[0-9]|,[0-9]|_[0-9])*) (?# base 10)
-                         |[-+]?0x[0-9a-fA-F_,]+                  (?# base 16))$/x
+                         |[-+]?0x[_,]*[0-9a-fA-F][0-9a-fA-F_,]*    (?# base 16))$/x
 
     attr_reader :class_loader
 
@@ -61,7 +63,6 @@ module Psych
           string
         end
       elsif string.match?(/^\d{4}-(?:1[012]|0\d|\d)-(?:[12]\d|3[01]|0\d|\d)$/)
-        require 'date'
         begin
           class_loader.date.strptime(string, '%F', Date::GREGORIAN)
         rescue ArgumentError

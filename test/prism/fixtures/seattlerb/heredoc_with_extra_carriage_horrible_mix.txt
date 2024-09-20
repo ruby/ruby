@@ -1,0 +1,4 @@
+<<'eot'
+body
+eot
+

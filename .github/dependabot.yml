@@ -3,4 +3,16 @@ updates:
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'daily'
+  - package-ecosystem: 'github-actions'
+    directory: '/.github/actions/slack'
+    schedule:
+      interval: 'daily'
+  - package-ecosystem: 'github-actions'
+    directory: '/.github/actions/setup/directories'
+    schedule:
+      interval: 'daily'
+  - package-ecosystem: 'cargo'
+    directory: '/yjit'
+    schedule:
+      interval: 'daily'

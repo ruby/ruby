@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/dependency_list"
 
@@ -52,7 +53,7 @@ class TestGemDependencyList < Gem::TestCase
 
     order = @deplist.dependency_order
 
-    assert_equal %w[d-1 c-1 b-1 a-1], order.map {|s| s.full_name }
+    assert_equal %w[d-1 c-1 b-1 a-1], order.map(&:full_name)
   end
 
   def test_dependency_order_circle
@@ -61,7 +62,7 @@ class TestGemDependencyList < Gem::TestCase
 
     order = @deplist.dependency_order
 
-    assert_equal %w[b-1 c-1 a-1], order.map {|s| s.full_name }
+    assert_equal %w[b-1 c-1 a-1], order.map(&:full_name)
   end
 
   def test_dependency_order_development
@@ -79,7 +80,7 @@ class TestGemDependencyList < Gem::TestCase
 
     order = deplist.dependency_order
 
-    assert_equal %w[g-1 a-1 f-1 e-1], order.map {|s| s.full_name },
+    assert_equal %w[g-1 a-1 f-1 e-1], order.map(&:full_name),
                  "development on"
 
     deplist2 = Gem::DependencyList.new
@@ -87,7 +88,7 @@ class TestGemDependencyList < Gem::TestCase
 
     order = deplist2.dependency_order
 
-    assert_equal %w[a-1 g-1 f-1 e-1], order.map {|s| s.full_name },
+    assert_equal %w[a-1 g-1 f-1 e-1], order.map(&:full_name),
                  "development off"
   end
 
@@ -99,7 +100,7 @@ class TestGemDependencyList < Gem::TestCase
 
     order = @deplist.dependency_order
 
-    assert_equal %w[d-1 c-2 b-1 a-2 e-1], order.map {|s| s.full_name },
+    assert_equal %w[d-1 c-2 b-1 a-2 e-1], order.map(&:full_name),
                  "deps of trimmed specs not included"
   end
 
@@ -108,7 +109,7 @@ class TestGemDependencyList < Gem::TestCase
 
     order = @deplist.dependency_order
 
-    assert_equal %w[c-2 a-1], order.map {|s| s.full_name }
+    assert_equal %w[c-2 a-1], order.map(&:full_name)
   end
 
   def test_find_name

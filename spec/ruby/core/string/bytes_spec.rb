@@ -50,6 +50,6 @@ describe "String#bytes" do
   end
 
   it "is unaffected by #force_encoding" do
-    @utf8.force_encoding('ASCII').bytes.to_a.should == @utf8.bytes.to_a
+    @utf8.dup.force_encoding('ASCII').bytes.to_a.should == @utf8.bytes.to_a
   end
 end

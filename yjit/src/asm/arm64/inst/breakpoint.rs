@@ -13,13 +13,13 @@ pub struct Breakpoint {
 
 impl Breakpoint {
     /// BRK
-    /// https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/BRK--Breakpoint-instruction-
+    /// <https://developer.arm.com/documentation/ddi0596/2020-12/Base-Instructions/BRK--Breakpoint-instruction->
     pub fn brk(imm16: u16) -> Self {
         Self { imm16 }
     }
 }
 
-/// https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en#control
+/// <https://developer.arm.com/documentation/ddi0602/2022-03/Index-by-Encoding/Branches--Exception-Generating-and-System-instructions?lang=en#control>
 const FAMILY: u32 = 0b101;
 
 impl From<Breakpoint> for u32 {

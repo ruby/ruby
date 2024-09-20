@@ -9,7 +9,7 @@ When +field_sep+ is <tt>$;</tt>:
   (see below).
 
 - If <tt>$;</tt> is a string,
-  the split ocurs just as if +field_sep+ were given as that string
+  the split occurs just as if +field_sep+ were given as that string
   (see below).
 
 When +field_sep+ is <tt>' '</tt> and +limit+ is +nil+,

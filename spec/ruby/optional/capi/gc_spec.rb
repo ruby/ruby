@@ -27,9 +27,36 @@ describe "CApiGCSpecs" do
   end
 
   describe "rb_global_variable" do
-    it "keeps the value alive even if the value is assigned after rb_global_variable() is called" do
+    before :all do
       GC.start
-      @f.registered_before_rb_global_variable.should == "registered before rb_global_variable()"
+    end
+
+    describe "keeps the value alive even if the value is assigned after rb_global_variable() is called" do
+      it "for a string" do
+        @f.registered_before_rb_global_variable_string.should == "registered before rb_global_variable()"
+      end
+
+      it "for a bignum" do
+        @f.registered_before_rb_global_variable_bignum.should == 2**63 - 1
+      end
+
+      it "for a Float" do
+        @f.registered_before_rb_global_variable_float.should == 3.14
+      end
+    end
+
+    describe "keeps the value alive when the value is assigned before rb_global_variable() is called" do
+      it "for a string" do
+        @f.registered_after_rb_global_variable_string.should == "registered after rb_global_variable()"
+      end
+
+      it "for a bignum" do
+        @f.registered_after_rb_global_variable_bignum.should == 2**63 - 1
+      end
+
+      it "for a Float" do
+        @f.registered_after_rb_global_variable_float.should == 6.28
+      end
     end
   end
 
@@ -80,6 +107,10 @@ describe "CApiGCSpecs" do
   describe "rb_gc_register_mark_object" do
     it "can be called with an object" do
       @f.rb_gc_register_mark_object(Object.new).should be_nil
+    end
+
+    it "keeps the value alive even if the value is not referenced by any Ruby object" do
+      @f.rb_gc_register_mark_object_not_referenced_float.should == 1.61
     end
   end
 

@@ -10,19 +10,19 @@ static const unsigned char <%= feature %>_bin[] = {
 %     iseq                   \
 %     . to_binary            \
 %     . each_byte            \
-%     . map(&:ord)           \
-%     . map{ '0x%02x' % _1 } \
 %     . each_slice(12) {|a|
-    <%= a.join(', ') %>,
+    <%= a.map{ '0x%02x,' % _1 }.join(' ') %>
 %     }
 };
 %   }
 
+#define BUILTIN_BIN(feature) \
+    { #feature, feature ## _bin, sizeof(feature ## _bin), }
 static const struct builtin_binary builtin_binary[] = {
 %   ary.each{|feature, |
-    { <%= feature.dump %>, <%= feature %>_bin, sizeof(<%= feature %>_bin), },
+    BUILTIN_BIN(<%= feature %>),
 %   }
-    { NULL, },<%# dummy entry %>
+    { NULL, },/* sentinel */
 };
 
 #define BUILTIN_BINARY_SIZE <%= ary.size %>

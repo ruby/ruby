@@ -1,10 +1,16 @@
 # encoding: utf-8
 # frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
-require 'ostruct'
-require 'bigdecimal'
+begin
+  require 'ostruct'
+rescue LoadError
+end
+begin
+  require 'bigdecimal'
+rescue LoadError
+end
 
 class JSONParserTest < Test::Unit::TestCase
   include JSON
@@ -21,6 +27,9 @@ class JSONParserTest < Test::Unit::TestCase
   end if defined?(Encoding::UTF_16)
 
   def test_error_message_encoding
+    # https://github.com/flori/json/actions/runs/6478148162/job/17589572890
+    pend if RUBY_ENGINE == 'truffleruby'
+
     bug10705 = '[ruby-core:67386] [Bug #10705]'
     json = ".\"\xE2\x88\x9A\"".force_encoding(Encoding::UTF_8)
     e = assert_raise(JSON::ParserError) {
@@ -113,7 +122,7 @@ class JSONParserTest < Test::Unit::TestCase
   def test_parse_bigdecimals
     assert_equal(BigDecimal,                             JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"].class)
     assert_equal(BigDecimal("0.901234567890123456789E1"),JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"]      )
-  end
+  end if defined?(::BigDecimal)
 
   def test_parse_string_mixed_unicode
     assert_equal(["éé"], JSON.parse("[\"\\u00e9é\"]"))
@@ -406,21 +415,6 @@ EOT
     end
   end
 
-  class SubOpenStruct < OpenStruct
-    def [](k)
-      __send__(k)
-    end
-
-    def []=(k, v)
-      @item_set = true
-      __send__("#{k}=", v)
-    end
-
-    def item_set?
-      @item_set
-    end
-  end
-
   def test_parse_object_custom_hash_derived_class
     res = parse('{"foo":"bar"}', :object_class => SubHash)
     assert_equal({"foo" => "bar"}, res)
@@ -428,24 +422,41 @@ EOT
     assert res.item_set?
   end
 
-  def test_parse_object_custom_non_hash_derived_class
-    res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
-    assert_equal "bar", res.foo
-    assert_equal(SubOpenStruct, res.class)
-    assert res.item_set?
-  end
+  if defined?(::OpenStruct)
+    class SubOpenStruct < OpenStruct
+      def [](k)
+        __send__(k)
+      end
 
-  def test_parse_generic_object
-    res = parse(
-      '{"foo":"bar", "baz":{}}',
-      :object_class => JSON::GenericObject
-    )
-    assert_equal(JSON::GenericObject, res.class)
-    assert_equal "bar", res.foo
-    assert_equal "bar", res["foo"]
-    assert_equal "bar", res[:foo]
-    assert_equal "bar", res.to_hash[:foo]
-    assert_equal(JSON::GenericObject, res.baz.class)
+      def []=(k, v)
+        @item_set = true
+        __send__("#{k}=", v)
+      end
+
+      def item_set?
+        @item_set
+      end
+    end
+
+    def test_parse_object_custom_non_hash_derived_class
+      res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
+      assert_equal "bar", res.foo
+      assert_equal(SubOpenStruct, res.class)
+      assert res.item_set?
+    end
+
+    def test_parse_generic_object
+      res = parse(
+        '{"foo":"bar", "baz":{}}',
+        :object_class => JSON::GenericObject
+      )
+      assert_equal(JSON::GenericObject, res.class)
+      assert_equal "bar", res.foo
+      assert_equal "bar", res["foo"]
+      assert_equal "bar", res[:foo]
+      assert_equal "bar", res.to_hash[:foo]
+      assert_equal(JSON::GenericObject, res.baz.class)
+    end
   end
 
   def test_generate_core_subclasses_with_new_to_json

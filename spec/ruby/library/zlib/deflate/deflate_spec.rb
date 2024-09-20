@@ -23,7 +23,7 @@ describe "Zlib::Deflate.deflate" do
 
   it "deflates chunked data" do
     random_generator = Random.new(0)
-    deflated         = ''
+    deflated         = +''
 
     Zlib::Deflate.deflate(random_generator.bytes(20000)) do |chunk|
       deflated << chunk
@@ -70,7 +70,7 @@ describe "Zlib::Deflate#deflate" do
   before :each do
     @deflator         = Zlib::Deflate.new
     @random_generator = Random.new(0)
-    @original         = ''
+    @original         = +''
     @chunks           = []
   end
 

@@ -64,6 +64,23 @@ describe :kernel_system, shared: true do
     end
   end
 
+  platform_is_not :windows do
+    before :each do
+      require 'tmpdir'
+      @shell_command = File.join(Dir.mktmpdir, "noshebang.cmd")
+      File.write(@shell_command, %[echo "$PATH"\n], perm: 0o700)
+    end
+
+    after :each do
+      File.unlink(@shell_command)
+      Dir.rmdir(File.dirname(@shell_command))
+    end
+
+    it "executes with `sh` if the command is executable but not binary and there is no shebang" do
+      -> { @object.system(@shell_command) }.should output_to_fd(ENV['PATH'] + "\n")
+    end
+  end
+
   before :each do
     ENV['TEST_SH_EXPANSION'] = 'foo'
     @shell_var = '$TEST_SH_EXPANSION'

@@ -10,6 +10,7 @@
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
  */
+#include "ruby/internal/attr/deprecated.h"
 #include "ruby/internal/attr/nonnull.h"
 #include "ruby/internal/attr/returns_nonnull.h"
 #include "ruby/internal/dllexport.h"
@@ -49,6 +50,25 @@ RBIMPL_ATTR_NONNULL((3))
  * `const struct rb_callable_method_entry_struct *`.
  */
 int rb_profile_frames(int start, int limit, VALUE *buff, int *lines);
+
+/**
+ * Queries mysterious "frame"s of the given range.
+ *
+ * A per-thread version of rb_profile_frames().
+ * Arguments and return values are the same with rb_profile_frames() with the
+ * exception of the first argument _thread_, which accepts the Thread to be
+ * profiled/queried.
+ *
+ * @param[in]   thread The Ruby Thread to be profiled.
+ * @param[in]   start  Start position (0 means the topmost).
+ * @param[in]   limit  Number objects of `buff`.
+ * @param[out]  buff   Return buffer.
+ * @param[out]  lines  Return buffer.
+ * @return      Number of objects filled into `buff`.
+ * @post        `buff` is filled with backtrace pointers.
+ * @post        `lines` is filled with `__LINE__` of each backtraces.
+ */
+int rb_profile_thread_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines);
 
 /**
  * Queries the path of the passed backtrace.
@@ -596,48 +616,157 @@ VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
 
 /*
  * Postponed Job API
- * rb_postponed_job_register and rb_postponed_job_register_one are
- * async-signal-safe and used via SIGPROF by the "stackprof" RubyGem
+ *
+ * This API is designed to be called from contexts where it is not safe to run Ruby
+ * code (e.g. because they do not hold the GVL or because GC is in progress), and
+ * defer a callback to run in a context where it _is_ safe. The primary intended
+ * users of this API is for sampling profilers like the "stackprof" gem; these work
+ * by scheduling the periodic delivery of a SIGPROF signal, and inside the C-level
+ * signal handler, deferring a job to collect a Ruby backtrace when it is next safe
+ * to do so.
+ *
+ * Ruby maintains a small, fixed-size postponed job table. An extension using this
+ * API should first call `rb_postponed_job_preregister` to register a callback
+ * function in this table and obtain a handle of type `rb_postponed_job_handle_t`
+ * to it. Subsequently, the callback can be triggered  by calling
+ * `rb_postponed_job_trigger` with that handle, or the `data` associated with the
+ * callback function can be changed by calling `rb_postponed_job_preregister` again.
+ *
+ * Because the postponed job table is quite small (it only has 32 entries on most
+ * common systems), extensions should generally only preregister one or two `func`
+ * values.
+ *
+ * Historically, this API provided two functions `rb_postponed_job_register` and
+ * `rb_postponed_job_register_one`, which claimed to be fully async-signal-safe and
+ * would call back the provided `func` and `data` at an appropriate time. However,
+ * these functions were subject to race conditions which could cause crashes when
+ * racing with Ruby's internal use of them. These two functions are still present,
+ * but are marked as deprecated and have slightly changed semantics:
+ *
+ * * rb_postponed_job_register now works like rb_postponed_job_register_one i.e.
+ *   `func` will only be executed at most one time each time Ruby checks for
+ *   interrupts, no matter how many times it is registered
+ * * They are also called with the last `data` to be registered, not the first
+ *   (which is how rb_postponed_job_register_one previously worked)
  */
+
 
 /**
  * Type of postponed jobs.
  *
- * @param[in,out]  arg What was passed to rb_postponed_job_register().
+ * @param[in,out]  arg What was passed to `rb_postponed_job_preregister`
  */
 typedef void (*rb_postponed_job_func_t)(void *arg);
 
 /**
- * Registers a postponed job.
+ * The type of a handle returned from `rb_postponed_job_preregister` and
+ * passed to `rb_postponed_job_trigger`
+ */
+typedef unsigned int rb_postponed_job_handle_t;
+#define POSTPONED_JOB_HANDLE_INVALID ((rb_postponed_job_handle_t)UINT_MAX)
+
+/**
+ * Pre-registers a func in Ruby's postponed job preregistration table,
+ * returning an opaque handle which can be used to trigger the job later. Generally,
+ * this function will be called during the initialization routine of an extension.
  *
- * There  are situations  when running  a ruby  program is  not possible.   For
- * instance when  a program is in  a signal handler; for  another instance when
- * the GC  is busy.   On such situations  however, there might  be needs  to do
- * something.  We cannot but defer such operations until we are 100% sure it is
- * safe  to execute  them.   This  mechanism is  called  postponed jobs.   This
- * function  registers a  new one.   The registered  job would  eventually gets
- * executed.
+ * The returned handle can be used later to call `rb_postponed_job_trigger`. This will
+ * cause Ruby to call back into the registered `func` with `data` at a later time, in
+ * a context where the GVL is held and it is safe to perform Ruby allocations.
  *
- * @param[in]      flags      (Unused) reserved for future extensions.
+ * If the given `func` was already pre-registered, this function will overwrite the
+ * stored data with the newly passed data, and return the same handle instance as
+ * was previously returned.
+ *
+ * If this function is called concurrently with the same `func`, then the stored data
+ * could be the value from either call (but will definitely be one of them).
+ *
+ * If this function is called to update the data concurrently with a call to
+ * `rb_postponed_job_trigger` on the same handle, it's undefined whether `func` will
+ * be called with the old data or the new data.
+ *
+ * Although the current implementation of this function is in fact async-signal-safe and
+ * has defined semantics when called concurrently on the same `func`, a future Ruby
+ * version might require that this method be called under the GVL; thus, programs which
+ * aim to be forward-compatible should call this method whilst holding the GVL.
+ *
+ * @param[in]   flags       Unused and ignored
+ * @param[in]   func        The function to be pre-registered
+ * @param[in]   data        The data to be pre-registered
+ * @retval      POSTPONED_JOB_HANDLE_INVALID    The job table is full; this registration
+ *                          did not succeed and no further registration will do so for
+ *                          the lifetime of the program.
+ * @retval      otherwise   A handle which can be passed to `rb_postponed_job_trigger`
+ */
+rb_postponed_job_handle_t rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, void *data);
+
+/**
+ * Triggers a pre-registered job registered with rb_postponed_job_preregister,
+ * scheduling it for execution the next time the Ruby VM checks for interrupts.
+ * The context in which the job is called in holds the GVL and is safe to perform
+ * Ruby allocations within (i.e. it is not during GC).
+ *
+ * This method is async-signal-safe and can be called from any thread, at any
+ * time, including in signal handlers.
+ *
+ * If this method is called multiple times, Ruby will coalesce this into only
+ * one call to the job the next time it checks for interrupts.
+ *
+ * @params[in]  h   A handle returned from rb_postponed_job_preregister
+ */
+void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
+
+/**
+ * Schedules the given `func` to be called with `data` when Ruby next checks for
+ * interrupts. If this function is called multiple times in between Ruby checking
+ * for interrupts, then `func` will be called only once with the `data` value from
+ * the first call to this function.
+ *
+ * Like `rb_postponed_job_trigger`, the context in which the job is called
+ * holds the GVL and can allocate Ruby objects.
+ *
+ * This method essentially has the same semantics as:
+ *
+ * ```
+ *   rb_postponed_job_trigger(rb_postponed_job_preregister(func, data));
+ * ```
+ *
+ * @note    Previous versions of Ruby promised that the (`func`, `data`) pairs would
+ *          be executed as many times as they were registered with this function; in
+ *          reality this was always subject to race conditions and this function no
+ *          longer provides this guarantee. Instead, multiple calls to this function
+ *          can be coalesced into a single execution of the passed `func`, with the
+ *          most recent `data` registered at that time passed in.
+ *
+ * @deprecated  This interface implies that arbitrarily many `func`'s can be enqueued
+ *              over the lifetime of the program, whilst in reality the registration
+ *              slots for postponed jobs are a finite resource. This is made clearer
+ *              by the `rb_postponed_job_preregister` and `rb_postponed_job_trigger`
+ *              functions, and a future version of Ruby might delete this function.
+ *
+ * @param[in]      flags      Unused and ignored.
  * @param[in]      func       Job body.
  * @param[in,out]  data       Passed as-is to `func`.
- * @retval         0          Postponed job buffer is full.  Failed.
- * @retval         otherwise  Opaque return value.
- * @post           The passed job is postponed.
+ * @retval         0          Postponed job registration table is full. Failed.
+ * @retval         1          Registration succeeded.
+ * @post           The passed job will run on the next interrupt check.
  */
+ RBIMPL_ATTR_DEPRECATED(("use rb_postponed_job_preregister and rb_postponed_job_trigger"))
 int rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data);
 
 /**
- * Identical to rb_postponed_job_register_one(),  except it additionally checks
- * for  duplicated registration.   In case  the passed  job is  already in  the
- * postponed job buffer this function does nothing.
+ * Identical to `rb_postponed_job_register`
  *
- * @param[in]      flags      (Unused) reserved for future extensions.
+ * @deprecated  This is deprecated for the same reason as `rb_postponed_job_register`
+ *
+ * @param[in]      flags      Unused and ignored.
  * @param[in]      func       Job body.
  * @param[in,out]  data       Passed as-is to `func`.
- * @retval         0          Postponed job buffer is full.  Failed.
- * @retval         otherwise  Opaque return value.
+ * @retval         0          Postponed job registration table is full. Failed.
+ * @retval         1          Registration succeeded.
+ * @post           The passed job will run on the next interrupt check.
  */
+ RBIMPL_ATTR_DEPRECATED(("use rb_postponed_job_preregister and rb_postponed_job_trigger"))
 int rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data);
 
 /** @} */

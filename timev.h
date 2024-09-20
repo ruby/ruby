@@ -2,10 +2,7 @@
 #define RUBY_TIMEV_H
 #include "ruby/ruby.h"
 
-#if 0
-struct vtm {/* dummy for TAGS */};
-#endif
-PACKED_STRUCT_UNALIGNED(struct vtm {
+struct vtm {
     VALUE year; /* 2000 for example.  Integer. */
     VALUE subsecx; /* 0 <= subsecx < TIME_SCALE.  possibly Rational. */
     VALUE utc_offset; /* -3600 as -01:00 for example.  possibly Rational. */
@@ -18,7 +15,11 @@ PACKED_STRUCT_UNALIGNED(struct vtm {
     unsigned int sec:6; /* 0..60 */
     unsigned int wday:3; /* 0:Sunday, 1:Monday, ..., 6:Saturday 7:init */
     unsigned int isdst:2; /* 0:StandardTime 1:DayLightSavingTime 3:init */
-});
+
+    /* Flags for struct time_object */
+    unsigned int tzmode:3; /* 0:localtime 1:utc 2:fixoff 3:uninitialized */
+    unsigned int tm_got:1;
+};
 
 #define TIME_SCALE 1000000000
 

@@ -27,6 +27,10 @@ static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
+// used by deconstruct_keys
+static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
+static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
+
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
 #define f_abs(x) rb_funcall(x, rb_intern("abs"), 0)
@@ -53,14 +57,15 @@ static double positive_inf, negative_inf;
 #define f_add3(x,y,z) f_add(f_add(x, y), z)
 #define f_sub3(x,y,z) f_sub(f_sub(x, y), z)
 
-#define f_frozen_ary(...) rb_obj_freeze(rb_ary_new3(__VA_ARGS__))
+#define f_frozen_ary(...) rb_ary_freeze(rb_ary_new3(__VA_ARGS__))
 
 static VALUE date_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE datetime_initialize(int argc, VALUE *argv, VALUE self);
 
 #define RETURN_FALSE_UNLESS_NUMERIC(obj) if(!RTEST(rb_obj_is_kind_of((obj), rb_cNumeric))) return Qfalse
 inline static void
-check_numeric(VALUE obj, const char* field) {
+check_numeric(VALUE obj, const char* field)
+{
     if(!RTEST(rb_obj_is_kind_of(obj, rb_cNumeric))) {
         rb_raise(rb_eTypeError, "invalid %s (not numeric)", field);
     }
@@ -2584,8 +2589,6 @@ date_s__valid_civil_p(int argc, VALUE *argv, VALUE klass)
  *
  * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  *
- * Date.valid_date? is an alias for Date.valid_civil?.
- *
  * Related: Date.jd, Date.new.
  */
 static VALUE
@@ -2980,8 +2983,6 @@ date_s_julian_leap_p(VALUE klass, VALUE y)
  *
  *   Date.gregorian_leap?(2000) # => true
  *   Date.gregorian_leap?(2001) # => false
- *
- * Date.leap? is an alias for Date.gregorian_leap?.
  *
  * Related: Date.julian_leap?.
  */
@@ -3487,8 +3488,6 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
  * when the argument is negative, counts backward from the end of the month.
  *
  * See argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
- *
- * Date.civil is an alias for Date.new.
  *
  * Related: Date.jd.
  */
@@ -4465,12 +4464,6 @@ check_limit(VALUE str, VALUE opt)
 {
     size_t slen, limit;
     if (NIL_P(str)) return;
-    if (SYMBOL_P(str)) {
-	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
-			 "The ability to parse Symbol is an unintentional bug and is deprecated");
-	str = rb_sym2str(str);
-    }
-
     StringValue(str);
     slen = RSTRING_LEN(str);
     limit = get_limit(opt);
@@ -4827,8 +4820,6 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  *
  * See argument {limit}[rdoc-ref:Date@Argument+limit].
  *
- * Date._rfc822 is an alias for Date._rfc2822.
- *
  * Related: Date.rfc2822 (returns a \Date object).
  */
 static VALUE
@@ -4858,8 +4849,6 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  *
  * - Argument {start}[rdoc-ref:calendars.rdoc@Argument+start].
  * - Argument {limit}[rdoc-ref:Date@Argument+limit].
- *
- * Date.rfc822 is an alias for Date.rfc2822.
  *
  * Related: Date._rfc2822 (returns a hash).
  */
@@ -5341,7 +5330,6 @@ d_lite_yday(VALUE self)
  *
  *   Date.new(2001, 2, 3).mon # => 2
  *
- * Date#month is an alias for Date#mon.
  */
 static VALUE
 d_lite_mon(VALUE self)
@@ -5358,7 +5346,6 @@ d_lite_mon(VALUE self)
  *
  *   Date.new(2001, 2, 3).mday # => 3
  *
- * Date#day is an alias for Date#mday.
  */
 static VALUE
 d_lite_mday(VALUE self)
@@ -5608,7 +5595,6 @@ d_lite_hour(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6).min # => 5
  *
- * Date#minute is an alias for Date#min.
  */
 static VALUE
 d_lite_min(VALUE self)
@@ -5625,7 +5611,6 @@ d_lite_min(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6).sec # => 6
  *
- * Date#second is an alias for Date#sec.
  */
 static VALUE
 d_lite_sec(VALUE self)
@@ -5643,7 +5628,6 @@ d_lite_sec(VALUE self)
  *
  *   DateTime.new(2001, 2, 3, 4, 5, 6.5).sec_fraction # => (1/2)
  *
- * Date#second_fraction is an alias for Date#sec_fraction.
  */
 static VALUE
 d_lite_sec_fraction(VALUE self)
@@ -6342,9 +6326,11 @@ minus_dd(VALUE self, VALUE other)
  * call-seq:
  *    d - other  ->  date or rational
  *
- * Returns the difference between the two dates if the other is a date
- * object.  If the other is a numeric value, returns a date object
- * pointing +other+ days before self.  If the other is a fractional number,
+ * If the other is a date object, returns a Rational
+ * whose value is the difference between the two dates in days.
+ * If the other is a numeric value, returns a date object
+ * pointing +other+ days before self.
+ * If the other is a fractional number,
  * assumes its precision is at most nanosecond.
  *
  *     Date.new(2001,2,3) - 1	#=> #<Date: 2001-02-02 ...>
@@ -6419,7 +6405,6 @@ d_lite_prev_day(int argc, VALUE *argv, VALUE self)
  *   d.to_s      # => "2001-02-03"
  *   d.next.to_s # => "2001-02-04"
  *
- * Date#succ is an alias for Date#next.
  */
 static VALUE
 d_lite_next(VALUE self)
@@ -7293,7 +7278,6 @@ strftimev(const char *fmt, VALUE self,
  *
  * See {asctime}[https://linux.die.net/man/3/asctime].
  *
- * Date#ctime is an alias for Date#asctime.
  */
 static VALUE
 d_lite_asctime(VALUE self)
@@ -7311,7 +7295,6 @@ d_lite_asctime(VALUE self)
  *
  *   Date.new(2001, 2, 3).iso8601 # => "2001-02-03"
  *
- * Date#xmlschema is an alias for Date#iso8601.
  */
 static VALUE
 d_lite_iso8601(VALUE self)
@@ -7344,7 +7327,6 @@ d_lite_rfc3339(VALUE self)
  *
  *   Date.new(2001, 2, 3).rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
  *
- * Date#rfc822 is an alias for Date#rfc2822.
  */
 static VALUE
 d_lite_rfc2822(VALUE self)
@@ -7430,6 +7412,96 @@ d_lite_jisx0301(VALUE self)
 			       m_real_local_jd(dat),
 			       m_real_year(dat));
     return strftimev(fmt, self, set_tmx);
+}
+
+static VALUE
+deconstruct_keys(VALUE self, VALUE keys, int is_datetime)
+{
+    VALUE h = rb_hash_new();
+    long i;
+
+    get_d1(self);
+
+    if (NIL_P(keys)) {
+        rb_hash_aset(h, sym_year, m_real_year(dat));
+        rb_hash_aset(h, sym_month, INT2FIX(m_mon(dat)));
+        rb_hash_aset(h, sym_day, INT2FIX(m_mday(dat)));
+        rb_hash_aset(h, sym_yday, INT2FIX(m_yday(dat)));
+        rb_hash_aset(h, sym_wday, INT2FIX(m_wday(dat)));
+        if (is_datetime) {
+            rb_hash_aset(h, sym_hour, INT2FIX(m_hour(dat)));
+            rb_hash_aset(h, sym_min, INT2FIX(m_min(dat)));
+            rb_hash_aset(h, sym_sec, INT2FIX(m_sec(dat)));
+            rb_hash_aset(h, sym_sec_fraction, m_sf_in_sec(dat));
+            rb_hash_aset(h, sym_zone, m_zone(dat));
+        }
+
+        return h;
+    }
+    if (!RB_TYPE_P(keys, T_ARRAY)) {
+        rb_raise(rb_eTypeError,
+                 "wrong argument type %"PRIsVALUE" (expected Array or nil)",
+                 rb_obj_class(keys));
+
+    }
+
+    for (i=0; i<RARRAY_LEN(keys); i++) {
+        VALUE key = RARRAY_AREF(keys, i);
+
+        if (sym_year == key) rb_hash_aset(h, key, m_real_year(dat));
+        if (sym_month == key) rb_hash_aset(h, key, INT2FIX(m_mon(dat)));
+        if (sym_day == key) rb_hash_aset(h, key, INT2FIX(m_mday(dat)));
+        if (sym_yday == key) rb_hash_aset(h, key, INT2FIX(m_yday(dat)));
+        if (sym_wday == key) rb_hash_aset(h, key, INT2FIX(m_wday(dat)));
+        if (is_datetime) {
+            if (sym_hour == key) rb_hash_aset(h, key, INT2FIX(m_hour(dat)));
+            if (sym_min == key) rb_hash_aset(h, key, INT2FIX(m_min(dat)));
+            if (sym_sec == key) rb_hash_aset(h, key, INT2FIX(m_sec(dat)));
+            if (sym_sec_fraction == key) rb_hash_aset(h, key, m_sf_in_sec(dat));
+            if (sym_zone == key) rb_hash_aset(h, key, m_zone(dat));
+        }
+    }
+    return h;
+}
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:wday</tt>, <tt>:yday</tt>.
+ *
+ *  Possible usages:
+ *
+ *    d = Date.new(2022, 10, 5)
+ *
+ *    if d in wday: 3, day: ..7  # uses deconstruct_keys underneath
+ *      puts "first Wednesday of the month"
+ *    end
+ *    #=> prints "first Wednesday of the month"
+ *
+ *    case d
+ *    in year: ...2022
+ *      puts "too old"
+ *    in month: ..9
+ *      puts "quarter 1-3"
+ *    in wday: 1..5, month:
+ *      puts "working day in month #{month}"
+ *    end
+ *    #=> prints "working day in month 10"
+ *
+ *  Note that deconstruction by pattern can also be combined with class check:
+ *
+ *    if d in Date(wday: 3, day: ..7)
+ *      puts "first Wednesday of the month"
+ *    end
+ *
+ */
+static VALUE
+d_lite_deconstruct_keys(VALUE self, VALUE keys)
+{
+    return deconstruct_keys(self, keys, /* is_datetime=false */ 0);
 }
 
 #ifndef NDEBUG
@@ -8650,8 +8722,8 @@ dt_lite_to_s(VALUE self)
  *
  *   DateTime.now.strftime # => "2022-07-01T11:03:19-05:00"
  *
- * For other formats, see
- * {Formats for Dates and Times}[doc/strftime_formatting.rdoc].
+ * For other formats,
+ * see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
  *
  */
 static VALUE
@@ -8738,6 +8810,47 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 
     return rb_str_append(d_lite_jisx0301(self),
 			 iso8601_timediv(self, n));
+}
+
+/*
+ *  call-seq:
+ *    deconstruct_keys(array_of_names_or_nil) -> hash
+ *
+ *  Returns a hash of the name/value pairs, to use in pattern matching.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:wday</tt>, <tt>:yday</tt>, <tt>:hour</tt>, <tt>:min</tt>,
+ *  <tt>:sec</tt>, <tt>:sec_fraction</tt>, <tt>:zone</tt>.
+ *
+ *  Possible usages:
+ *
+ *    dt = DateTime.new(2022, 10, 5, 13, 30)
+ *
+ *    if d in wday: 1..5, hour: 10..18  # uses deconstruct_keys underneath
+ *      puts "Working time"
+ *    end
+ *    #=> prints "Working time"
+ *
+ *    case dt
+ *    in year: ...2022
+ *      puts "too old"
+ *    in month: ..9
+ *      puts "quarter 1-3"
+ *    in wday: 1..5, month:
+ *      puts "working day in month #{month}"
+ *    end
+ *    #=> prints "working day in month 10"
+ *
+ *  Note that deconstruction by pattern can also be combined with class check:
+ *
+ *    if d in DateTime(wday: 1..5, hour: 10..18, day: ..7)
+ *      puts "Working time, first week of the month"
+ *    end
+ *
+ */
+static VALUE
+dt_lite_deconstruct_keys(VALUE self, VALUE keys)
+{
+    return deconstruct_keys(self, keys, /* is_datetime=true */ 1);
 }
 
 /* conversions */
@@ -8844,18 +8957,22 @@ time_to_datetime(VALUE self)
 static VALUE
 date_to_time(VALUE self)
 {
+    VALUE t;
+
     get_d1a(self);
 
     if (m_julian_p(adat)) {
-        VALUE tmp = d_lite_gregorian(self);
-        get_d1b(tmp);
+        self = d_lite_gregorian(self);
+        get_d1b(self);
         adat = bdat;
     }
 
-    return f_local3(rb_cTime,
+    t = f_local3(rb_cTime,
         m_real_year(adat),
         INT2FIX(m_mon(adat)),
         INT2FIX(m_mday(adat)));
+    RB_GC_GUARD(self); /* may be the converted gregorian */
+    return t;
 }
 
 /*
@@ -8944,6 +9061,7 @@ datetime_to_time(VALUE self)
 		   f_add(INT2FIX(m_sec(dat)),
 			 m_sf_in_sec(dat)),
 		   INT2FIX(m_of(dat)));
+	RB_GC_GUARD(self); /* may be the converted gregorian */
 	return t;
     }
 }
@@ -9348,7 +9466,7 @@ mk_ary_of_str(long len, const char *a[])
 	}
 	rb_ary_push(o, e);
     }
-    rb_obj_freeze(o);
+    rb_ary_freeze(o);
     return o;
 }
 
@@ -9369,6 +9487,17 @@ Init_date_core(void)
     id_le_p = rb_intern_const("<=");
     id_ge_p = rb_intern_const(">=");
     id_eqeq_p = rb_intern_const("==");
+
+    sym_year = ID2SYM(rb_intern_const("year"));
+    sym_month = ID2SYM(rb_intern_const("month"));
+    sym_yday = ID2SYM(rb_intern_const("yday"));
+    sym_wday = ID2SYM(rb_intern_const("wday"));
+    sym_day = ID2SYM(rb_intern_const("day"));
+    sym_hour = ID2SYM(rb_intern_const("hour"));
+    sym_min = ID2SYM(rb_intern_const("min"));
+    sym_sec = ID2SYM(rb_intern_const("sec"));
+    sym_sec_fraction = ID2SYM(rb_intern_const("sec_fraction"));
+    sym_zone = ID2SYM(rb_intern_const("zone"));
 
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
 
@@ -9691,6 +9820,8 @@ Init_date_core(void)
     rb_define_method(cDate, "httpdate", d_lite_httpdate, 0);
     rb_define_method(cDate, "jisx0301", d_lite_jisx0301, 0);
 
+    rb_define_method(cDate, "deconstruct_keys", d_lite_deconstruct_keys, 1);
+
 #ifndef NDEBUG
     rb_define_method(cDate, "marshal_dump_old", d_lite_marshal_dump_old, 0);
 #endif
@@ -9900,6 +10031,8 @@ Init_date_core(void)
     rb_define_method(cDateTime, "xmlschema", dt_lite_iso8601, -1);
     rb_define_method(cDateTime, "rfc3339", dt_lite_rfc3339, -1);
     rb_define_method(cDateTime, "jisx0301", dt_lite_jisx0301, -1);
+
+    rb_define_method(cDateTime, "deconstruct_keys", dt_lite_deconstruct_keys, 1);
 
     /* conversions */
 

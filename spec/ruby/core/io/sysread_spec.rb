@@ -21,25 +21,25 @@ describe "IO#sysread on a file" do
   end
 
   it "reads the specified number of bytes from the file to the buffer" do
-    buf = "" # empty buffer
+    buf = +"" # empty buffer
     @file.sysread(15, buf).should == buf
     buf.should == "012345678901234"
 
     @file.rewind
 
-    buf = "ABCDE" # small buffer
+    buf = +"ABCDE" # small buffer
     @file.sysread(15, buf).should == buf
     buf.should == "012345678901234"
 
     @file.rewind
 
-    buf = "ABCDE" * 5 # large buffer
+    buf = +"ABCDE" * 5 # large buffer
     @file.sysread(15, buf).should == buf
     buf.should == "012345678901234"
   end
 
   it "coerces the second argument to string and uses it as a buffer" do
-    buf = "ABCDE"
+    buf = +"ABCDE"
     (obj = mock("buff")).should_receive(:to_str).any_number_of_times.and_return(buf)
     @file.sysread(15, obj).should == buf
     buf.should == "012345678901234"
@@ -90,22 +90,29 @@ describe "IO#sysread on a file" do
   end
 
   it "immediately returns the given buffer if the length argument is 0" do
-    buffer = "existing content"
+    buffer = +"existing content"
     @file.sysread(0, buffer).should == buffer
     buffer.should == "existing content"
   end
 
   it "discards the existing buffer content upon successful read" do
-    buffer = "existing content"
-    @file.sysread(11, buffer)
+    buffer = +"existing content"
+    @file.sysread(11, buffer).should.equal?(buffer)
     buffer.should == "01234567890"
   end
 
   it "discards the existing buffer content upon error" do
-    buffer = "existing content"
+    buffer = +"existing content"
     @file.seek(0, :END)
     -> { @file.sysread(1, buffer) }.should raise_error(EOFError)
     buffer.should be_empty
+  end
+
+  it "preserves the encoding of the given buffer" do
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    string = @file.sysread(10, buffer)
+
+    buffer.encoding.should == Encoding::ISO_8859_1
   end
 end
 

@@ -93,12 +93,24 @@ class TestFileUtils < Test::Unit::TestCase
       @@no_broken_symlink
     end
 
+    def has_capsh?
+      !!system('capsh', '--print', out: File::NULL, err: File::NULL)
+    end
+
+    def has_root_file_capabilities?
+      !!system(
+        'capsh', '--has-p=CAP_DAC_OVERRIDE', '--has-p=CAP_CHOWN', '--has-p=CAP_FOWNER',
+        out: File::NULL, err: File::NULL
+      )
+    end
+
     def root_in_posix?
       if /cygwin/ =~ RUBY_PLATFORM
         # FIXME: privilege if groups include root user?
         return Process.groups.include?(0)
-      end
-      if Process.respond_to?('uid')
+      elsif has_capsh?
+        return has_root_file_capabilities?
+      elsif Process.respond_to?('uid')
         return Process.uid == 0
       else
         return false
@@ -1237,6 +1249,14 @@ class TestFileUtils < Test::Unit::TestCase
       install Pathname.new('tmp/a'), 'tmp/b'
       rm_f 'tmp/a'; touch 'tmp/a'
       install Pathname.new('tmp/a'), Pathname.new('tmp/b')
+      my_rm_rf 'tmp/new_dir_end_with_slash'
+      install Pathname.new('tmp/a'), 'tmp/new_dir_end_with_slash/'
+      my_rm_rf 'tmp/new_dir_end_with_slash'
+      my_rm_rf 'tmp/new_dir'
+      install Pathname.new('tmp/a'), 'tmp/new_dir/a'
+      my_rm_rf 'tmp/new_dir'
+      install Pathname.new('tmp/a'), 'tmp/new_dir/new_dir_end_with_slash/'
+      my_rm_rf 'tmp/new_dir'
       rm_f 'tmp/a'
       touch 'tmp/a'
       touch 'tmp/b'

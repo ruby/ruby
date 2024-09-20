@@ -292,7 +292,7 @@ assert_equal "true", %q{
       end
     end
   end
-  s = "foo"
+  s = +"foo"
   s.return_eigenclass == class << s; self; end
 }, '[ruby-core:21379]'
 

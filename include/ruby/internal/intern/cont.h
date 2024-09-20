@@ -45,11 +45,7 @@ VALUE rb_fiber_new(rb_block_call_func_t func, VALUE callback_obj);
  * If the given storage is Qundef or Qtrue, this function is equivalent to
  * rb_fiber_new() which inherits storage from the current fiber.
  *
- * If the given storage is Qfalse, this function uses the current fiber's
- * storage by reference.
- *
- * Specifying either Qtrue or Qfalse is experimental and may be changed in the
- * future.
+ * Specifying Qtrue is experimental and may be changed in the future.
  *
  * If the given storage is Qnil, this function will lazy initialize the
  * internal storage which starts of empty (without any inheritance).

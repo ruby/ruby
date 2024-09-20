@@ -10,19 +10,24 @@
 # RDoc::Markup and other markup formats do no output formatting, this is
 # handled by the RDoc::Markup::Formatter subclasses.
 #
-# = Supported Formats
+# = Markup Formats
 #
-# Besides the RDoc::Markup format, the following formats are built in to RDoc:
+# +RDoc+ supports these markup formats:
 #
-# markdown::
-#   The markdown format as described by
-#   http://daringfireball.net/projects/markdown/.  See RDoc::Markdown for
-#   details on the parser and supported extensions.
-# rd::
-#   The rdtool format.  See RDoc::RD for details on the parser and format.
-# tomdoc::
-#   The TomDoc format as described by http://tomdoc.org/.  See RDoc::TomDoc
-#   for details on the parser and supported extensions.
+# - +rdoc+:
+#   the +RDoc+ markup format;
+#   see RDoc::MarkupReference.
+# - +markdown+:
+#   The +markdown+ markup format as described in
+#   the {Markdown Guide}[https://www.markdownguide.org];
+#   see RDoc::Markdown.
+# - +rd+:
+#   the +rd+ markup format format;
+#   see RDoc::RD.
+# - +tomdoc+:
+#   the TomDoc format as described in
+#   {TomDoc for Ruby}[http://tomdoc.org];
+#   see RDoc::TomDoc.
 #
 # You can choose a markup format using the following methods:
 #

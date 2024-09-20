@@ -16,7 +16,7 @@ module Bundler
       deps = if groups.any?
         Bundler.definition.dependencies_for(groups)
       else
-        Bundler.definition.current_dependencies
+        Bundler.definition.requested_dependencies
       end
 
       fund_info = deps.each_with_object([]) do |dep, arr|

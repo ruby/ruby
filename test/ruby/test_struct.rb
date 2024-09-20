@@ -41,6 +41,14 @@ module TestStruct
     end
   end
 
+  def test_larger_than_largest_pool
+    count = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] / RbConfig::SIZEOF["void*"]) + 1
+    list = Array(0..count)
+    klass = @Struct.new(*list.map { |i| :"a_#{i}"})
+    struct = klass.new(*list)
+    assert_equal 0, struct.a_0
+  end
+
   def test_small_structs
     names = [:a, :b, :c, :d]
     1.upto(4) {|n|
@@ -524,6 +532,20 @@ module TestStruct
 
     assert_equal [[:req, :_]], klass.instance_method(:b=).parameters
     assert_equal [[:req, :_]], klass.instance_method(:c=).parameters
+  end
+
+  def test_named_structs_are_not_rooted
+    # [Bug #20311]
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+      code = proc do
+        Struct.new("A")
+        Struct.send(:remove_const, :A)
+      end
+
+      1_000.times(&code)
+    PREP
+      50_000.times(&code)
+    CODE
   end
 
   class TopStruct < Test::Unit::TestCase

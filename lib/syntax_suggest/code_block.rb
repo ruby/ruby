@@ -81,7 +81,7 @@ module SyntaxSuggest
         # lines then the result cannot be invalid
         #
         # That means there's no reason to re-check all
-        # lines with ripper (which is expensive).
+        # lines with the parser (which is expensive).
         # Benchmark in commit message
         @valid = if lines.all? { |l| l.hidden? || l.empty? }
           true

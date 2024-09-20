@@ -203,6 +203,25 @@ describe "The super keyword" do
     -> { klass.new.a(:a_called) }.should raise_error(RuntimeError)
   end
 
+  it "is able to navigate to super, when a method is defined dynamically on the singleton class" do
+    foo_class = Class.new do
+      def bar
+        "bar"
+      end
+    end
+
+    mixin_module = Module.new do
+      def bar
+        "super_" + super
+      end
+    end
+
+    foo = foo_class.new
+    foo.singleton_class.define_method(:bar, mixin_module.instance_method(:bar))
+
+    foo.bar.should == "super_bar"
+  end
+
   # Rubinius ticket github#157
   it "calls method_missing when a superclass method is not found" do
     SuperSpecs::MM_B.new.is_a?(Hash).should == false
@@ -316,10 +335,21 @@ describe "The super keyword" do
 
   it "without explicit arguments that are '_'" do
     SuperSpecs::ZSuperWithUnderscores::B.new.m(1, 2).should == [1, 2]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m3(1, 2, 3).should == [1, 2, 3]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m4(1, 2, 3, 4).should == [1, 2, 3, 4]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_default(1).should == [1]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_default.should == [0]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_pre_default_rest_post(1, 2, 3, 4, 5, 6, 7).should == [1, 2, 3, 4, 5, 6, 7]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_rest(1, 2).should == [1, 2]
+    SuperSpecs::ZSuperWithUnderscores::B.new.m_kwrest(a: 1).should == {a: 1}
   end
 
   it "without explicit arguments that are '_' including any modifications" do
     SuperSpecs::ZSuperWithUnderscores::B.new.m_modified(1, 2).should == [14, 2]
+  end
+
+  it "should pass method arguments when called within a closure" do
+    SuperSpecs::ZSuperInBlock::B.new.m(arg: 1).should == 1
   end
 
   describe 'when using keyword arguments' do

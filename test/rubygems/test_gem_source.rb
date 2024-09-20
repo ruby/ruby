@@ -1,7 +1,7 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/source"
-require "rubygems/indexer"
 
 class TestGemSource < Gem::TestCase
   def tuple(*args)
@@ -22,7 +22,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_initialize_invalid_uri
-    assert_raise URI::InvalidURIError do
+    assert_raise Gem::URI::InvalidURIError do
       Gem::Source.new "git@example:a.git"
     end
   end
@@ -30,23 +30,23 @@ class TestGemSource < Gem::TestCase
   def test_initialize_git
     repository = "git@example:a.git"
 
-    source = Gem::Source::Git.new "a", repository, "master", false
+    source = Gem::Source::Git.new "a", repository, nil, false
 
     assert_equal repository, source.uri
   end
 
   def test_cache_dir_escapes_windows_paths
-    uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
+    uri = Gem::URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
     root = Gem.spec_cache_dir
     cache_dir = @source.cache_dir(uri).gsub(root, "")
-    assert cache_dir !~ /:/, "#{cache_dir} should not contain a :"
+    assert !cache_dir.include?(":"), "#{cache_dir} should not contain a :"
   end
 
   def test_dependency_resolver_set_bundler_api
-    response = Net::HTTPResponse.new "1.1", 200, "OK"
-    response.uri = URI("http://example")
+    response = Gem::Net::HTTPResponse.new "1.1", 200, "OK"
+    response.uri = Gem::URI("http://example")
 
-    @fetcher.data[@gem_repo] = response
+    @fetcher.data["#{@gem_repo}versions"] = response
 
     set = @source.dependency_resolver_set
 
@@ -54,7 +54,9 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_dependency_resolver_set_file_uri
-    Gem::Indexer.new(@tempdir).generate_index
+    empty_dump = Gem::Util.gzip("\x04\x08[\x05".b)
+    File.binwrite(File.join(@tempdir, "prerelease_specs.4.8.gz"), empty_dump)
+    File.binwrite(File.join(@tempdir, "specs.4.8.gz"), empty_dump)
 
     source = Gem::Source.new "file://#{@tempdir}/"
 
@@ -77,7 +79,7 @@ class TestGemSource < Gem::TestCase
     spec = @source.fetch_spec tuple("a", Gem::Version.new(1), "ruby")
     assert_equal a1.full_name, spec.full_name
 
-    cache_dir = @source.cache_dir URI.parse(spec_uri)
+    cache_dir = @source.cache_dir Gem::URI.parse(spec_uri)
 
     cache_file = File.join cache_dir, a1.spec_name
 
@@ -90,7 +92,7 @@ class TestGemSource < Gem::TestCase
     spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = nil
 
-    cache_dir = @source.cache_dir URI.parse(spec_uri)
+    cache_dir = @source.cache_dir Gem::URI.parse(spec_uri)
     FileUtils.mkdir_p cache_dir
 
     cache_file = File.join cache_dir, a1.spec_name
@@ -104,9 +106,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_fetch_spec_platform
-    specs = spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
+    specs = spec_fetcher(&:legacy_platform)
 
     spec = @source.fetch_spec tuple("pl", Gem::Version.new(1), "i386-linux")
 
@@ -122,7 +122,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_load_specs
-    released = @source.load_specs(:released).map {|spec| spec.full_name }
+    released = @source.load_specs(:released).map(&:full_name)
     assert_equal %W[a-2 a-1 b-2], released
 
     cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
@@ -164,7 +164,7 @@ class TestGemSource < Gem::TestCase
     latest_specs << Gem::NameTuple.new("fixed", Gem::Version.new("1.0.0"), "ruby")
     # Setup valid data on the 'remote'
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] =
-          util_gzip(Marshal.dump(latest_specs))
+      util_gzip(Marshal.dump(latest_specs))
 
     cache_dir = File.join Gem.spec_cache_dir, "gems.example.com%80"
 
@@ -196,7 +196,7 @@ class TestGemSource < Gem::TestCase
     installed = Gem::Source::Installed.new
     local     = Gem::Source::Local.new
 
-    assert_equal(0, remote.<=>(remote), "remote <=> remote")
+    assert_equal(0, remote.<=>(remote), "remote <=> remote") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
 
     assert_equal(-1, remote.<=>(specific), "remote <=> specific")
     assert_equal(1, specific.<=>(remote), "specific <=> remote")
@@ -214,12 +214,12 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_spaceship_order_is_preserved_when_uri_differs
-    sourceA = Gem::Source.new "http://example.com/a"
-    sourceB = Gem::Source.new "http://example.com/b"
+    source_a = Gem::Source.new "http://example.com/a"
+    source_b = Gem::Source.new "http://example.com/b"
 
-    assert_equal(0, sourceA.<=>(sourceA), "sourceA <=> sourceA")
-    assert_equal(1, sourceA.<=>(sourceB), "sourceA <=> sourceB")
-    assert_equal(1, sourceB.<=>(sourceA), "sourceB <=> sourceA")
+    assert_equal(0, source_a.<=>(source_a), "source_a <=> source_a") # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
+    assert_equal(1, source_a.<=>(source_b), "source_a <=> source_b")
+    assert_equal(1, source_b.<=>(source_a), "source_b <=> source_a")
   end
 
   def test_update_cache_eh

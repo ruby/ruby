@@ -26,42 +26,44 @@ describe "Kernel.lambda" do
     l.lambda?.should be_true
   end
 
-  it "creates a lambda-style Proc if given a literal block via Kernel.public_send" do
-    suppress_warning do
-      l = Kernel.public_send(:lambda) { 42 }
-      l.lambda?.should be_true
+  ruby_version_is ""..."3.3" do
+    it "creates a lambda-style Proc if given a literal block via Kernel.public_send" do
+      suppress_warning do
+        l = Kernel.public_send(:lambda) { 42 }
+        l.lambda?.should be_true
+      end
     end
-  end
 
-  it "returns the passed Proc if given an existing Proc" do
-    some_proc = proc {}
-    l = suppress_warning {lambda(&some_proc)}
-    l.should equal(some_proc)
-    l.lambda?.should be_false
-  end
-
-  it "creates a lambda-style Proc when called with zsuper" do
-    suppress_warning do
-      l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
-      l.lambda?.should be_true
-      l.call.should == 42
-
-      lambda { l.call(:extra) }.should raise_error(ArgumentError)
+    it "returns the passed Proc if given an existing Proc" do
+      some_proc = proc {}
+      l = suppress_warning {lambda(&some_proc)}
+      l.should equal(some_proc)
+      l.lambda?.should be_false
     end
-  end
 
-  it "returns the passed Proc if given an existing Proc through super" do
-    some_proc = proc { }
-    l = KernelSpecs::LambdaSpecs::SuperAmpersand.new.lambda(&some_proc)
-    l.should equal(some_proc)
-    l.lambda?.should be_false
-  end
+    it "creates a lambda-style Proc when called with zsuper" do
+      suppress_warning do
+        l = KernelSpecs::LambdaSpecs::ForwardBlockWithZSuper.new.lambda { 42 }
+        l.lambda?.should be_true
+        l.call.should == 42
 
-  it "does not create lambda-style Procs when captured with #method" do
-    kernel_lambda = method(:lambda)
-    l = suppress_warning {kernel_lambda.call { 42 }}
-    l.lambda?.should be_false
-    l.call(:extra).should == 42
+        lambda { l.call(:extra) }.should raise_error(ArgumentError)
+      end
+    end
+
+    it "returns the passed Proc if given an existing Proc through super" do
+      some_proc = proc { }
+      l = KernelSpecs::LambdaSpecs::SuperAmpersand.new.lambda(&some_proc)
+      l.should equal(some_proc)
+      l.lambda?.should be_false
+    end
+
+    it "does not create lambda-style Procs when captured with #method" do
+      kernel_lambda = method(:lambda)
+      l = suppress_warning {kernel_lambda.call { 42 }}
+      l.lambda?.should be_false
+      l.call(:extra).should == 42
+    end
   end
 
   it "checks the arity of the call when no args are specified" do
@@ -136,15 +138,21 @@ describe "Kernel.lambda" do
     klass.new.ret.should == 1
   end
 
-  ruby_version_is "3.0" do
-    context "when called without a literal block" do
+  context "when called without a literal block" do
+    ruby_version_is ""..."3.3" do
       it "warns when proc isn't a lambda" do
         -> { lambda(&proc{}) }.should complain("#{__FILE__}:#{__LINE__}: warning: lambda without a literal block is deprecated; use the proc without lambda instead\n")
       end
+    end
 
-      it "doesn't warn when proc is lambda" do
-        -> { lambda(&lambda{}) }.should_not complain(verbose: true)
+    ruby_version_is "3.3" do
+      it "raises when proc isn't a lambda" do
+        -> { lambda(&proc{}) }.should raise_error(ArgumentError, /the lambda method requires a literal block/)
       end
+    end
+
+    it "doesn't warn when proc is lambda" do
+      -> { lambda(&lambda{}) }.should_not complain(verbose: true)
     end
   end
 end

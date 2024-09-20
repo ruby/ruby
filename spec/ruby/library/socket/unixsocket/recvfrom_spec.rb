@@ -1,8 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#recvfrom" do
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#recvfrom" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -31,6 +31,29 @@ describe "UNIXSocket#recvfrom" do
       sock.close
     end
 
+    it "allows an output buffer as third argument" do
+      buffer = +''
+
+      @client.send("foobar", 0)
+      sock = @server.accept
+      message, = sock.recvfrom(6, 0, buffer)
+      sock.close
+
+      message.should.equal?(buffer)
+      buffer.should == "foobar"
+    end
+
+    it "preserves the encoding of the given buffer" do
+      buffer = ''.encode(Encoding::ISO_8859_1)
+
+      @client.send("foobar", 0)
+      sock = @server.accept
+      sock.recvfrom(6, 0, buffer)
+      sock.close
+
+      buffer.encoding.should == Encoding::ISO_8859_1
+    end
+
     it "uses different message options" do
       @client.send("foobar", Socket::MSG_PEEK)
       sock = @server.accept
@@ -42,10 +65,7 @@ describe "UNIXSocket#recvfrom" do
       sock.close
     end
   end
-end
 
-
-with_feature :unix_socket do
   describe 'UNIXSocket#recvfrom' do
     describe 'using a socket pair' do
       before do

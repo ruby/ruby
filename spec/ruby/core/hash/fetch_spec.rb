@@ -4,7 +4,7 @@ require_relative '../../shared/hash/key_error'
 
 describe "Hash#fetch" do
   context "when the key is not found" do
-    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new(a: 5)
+    it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new({ a: 5 })
     it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, {}
     it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new { 5 }
     it_behaves_like :key_error, -> obj, key { obj.fetch(key) }, Hash.new(5)

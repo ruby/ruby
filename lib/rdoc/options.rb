@@ -105,6 +105,7 @@ class RDoc::Options
     generator_name
     generator_options
     generators
+    locale
     op_dir
     page_dir
     option_parser
@@ -232,9 +233,9 @@ class RDoc::Options
   attr_accessor :main_page
 
   ##
-  # The default markup format.  The default is 'rdoc'.  'markdown', 'tomdoc'
-  # and 'rd' are also built-in.
-
+  # The markup format.
+  # One of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
+  # See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
   attr_accessor :markup
 
   ##
@@ -565,9 +566,10 @@ class RDoc::Options
 
     @op_dir ||= 'doc'
 
-    @rdoc_include << "." if @rdoc_include.empty?
     root = @root.to_s
-    @rdoc_include << root unless @rdoc_include.include?(root)
+    if @rdoc_include.empty? || !@rdoc_include.include?(root)
+      @rdoc_include << root
+    end
 
     @exclude = self.exclude
 
@@ -681,7 +683,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       EOF
 
-      parsers = Hash.new { |h,parser| h[parser] = [] }
+      parsers = Hash.new { |h, parser| h[parser] = [] }
 
       RDoc::Parser.parsers.each do |regexp, parser|
         parsers[parser.name.sub('RDoc::Parser::', '')] << regexp.source

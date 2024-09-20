@@ -13,6 +13,10 @@
 # define MINGW_HAS_SECURE_API 1
 #endif
 
+#ifndef __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1 /* for qsort_s() */
+#endif
+
 #include "ruby/internal/config.h"
 
 #include <ctype.h>
@@ -27,6 +31,7 @@
 
 #include "internal.h"
 #include "internal/sanitizers.h"
+#include "internal/imemo.h"
 #include "internal/util.h"
 #include "ruby/util.h"
 #include "ruby_atomic.h"
@@ -203,22 +208,15 @@ ruby_strtoul(const char *str, char **endptr, int base)
     }
 }
 
+#if !defined HAVE_GNU_QSORT_R
 #include <sys/types.h>
-#include <sys/stat.h>
+#include <stdint.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#if defined(HAVE_FCNTL_H)
-#include <fcntl.h>
-#endif
-
-#ifndef S_ISDIR
-#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
-#if !defined HAVE_GNU_QSORT_R
 #if defined HAVE_QSORT_S && defined RUBY_MSVCRT_VERSION
 /* In contrast to its name, Visual Studio qsort_s is incompatible with
  * C11 in the order of the comparison function's arguments, and same
@@ -546,41 +544,63 @@ ruby_strdup(const char *str)
     return tmp;
 }
 
+#if defined HAVE_GETCWD
+# if defined NO_GETCWD_MALLOC
+
 char *
 ruby_getcwd(void)
 {
-#if defined HAVE_GETCWD
-# undef RUBY_UNTYPED_DATA_WARNING
-# define RUBY_UNTYPED_DATA_WARNING 0
-# if defined NO_GETCWD_MALLOC
-    VALUE guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
+    VALUE guard = rb_imemo_tmpbuf_auto_free_pointer();
     int size = 200;
     char *buf = xmalloc(size);
 
     while (!getcwd(buf, size)) {
         int e = errno;
         if (e != ERANGE) {
-            xfree(buf);
-            DATA_PTR(guard) = NULL;
+            rb_free_tmp_buffer(&guard);
             rb_syserr_fail(e, "getcwd");
         }
         size *= 2;
-        DATA_PTR(guard) = buf;
+        rb_imemo_tmpbuf_set_ptr(guard, buf);
         buf = xrealloc(buf, size);
     }
+    rb_imemo_tmpbuf_set_ptr(guard, NULL);
+    return buf;
+}
+
 # else
-    VALUE guard = Data_Wrap_Struct((VALUE)0, NULL, free, NULL);
+
+static const rb_data_type_t getcwd_buffer_guard_type = {
+    .wrap_struct_name = "ruby_getcwd_guard",
+    .function = {
+        .dfree = free // not xfree.
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+};
+
+char *
+ruby_getcwd(void)
+{
+    VALUE guard = TypedData_Wrap_Struct((VALUE)0, &getcwd_buffer_guard_type, NULL);
     char *buf, *cwd = getcwd(NULL, 0);
-    DATA_PTR(guard) = cwd;
+    RTYPEDDATA_DATA(guard) = cwd;
     if (!cwd) rb_sys_fail("getcwd");
     buf = ruby_strdup(cwd);	/* allocate by xmalloc */
     free(cwd);
+    RTYPEDDATA_DATA(RB_GC_GUARD(guard)) = NULL;
+    return buf;
+}
+
 # endif
-    DATA_PTR(RB_GC_GUARD(guard)) = NULL;
 #else
+
 # ifndef PATH_MAX
 #  define PATH_MAX 8192
 # endif
+
+char *
+ruby_getcwd(void)
+{
     char *buf = xmalloc(PATH_MAX+1);
 
     if (!getwd(buf)) {
@@ -588,9 +608,10 @@ ruby_getcwd(void)
         xfree(buf);
         rb_syserr_fail(e, "getwd");
     }
-#endif
     return buf;
 }
+
+#endif
 
 void
 ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *arg)

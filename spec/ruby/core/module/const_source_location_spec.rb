@@ -67,6 +67,11 @@ describe "Module#const_source_location" do
   end
 
   describe "with statically assigned constants" do
+    it "works for the module and class keywords" do
+      ConstantSpecs.const_source_location(:ModuleB).should == [@constants_fixture_path, ConstantSpecs::ModuleB::LINE]
+      ConstantSpecs.const_source_location(:ClassA).should == [@constants_fixture_path, ConstantSpecs::ClassA::LINE]
+    end
+
     it "searches location path the immediate class or module first" do
       ConstantSpecs::ClassA.const_source_location(:CS_CONST10).should == [@constants_fixture_path, ConstantSpecs::ClassA::CS_CONST10_LINE]
       ConstantSpecs::ModuleA.const_source_location(:CS_CONST10).should == [@constants_fixture_path, ConstantSpecs::ModuleA::CS_CONST10_LINE]
@@ -133,7 +138,7 @@ describe "Module#const_source_location" do
   it "calls #to_str to convert the given name to a String" do
     name = mock("ClassA")
     name.should_receive(:to_str).and_return("ClassA")
-    ConstantSpecs.const_source_location(name).should == [@constants_fixture_path, ConstantSpecs::ClassA::CS_CLASS_A_LINE]
+    ConstantSpecs.const_source_location(name).should == [@constants_fixture_path, ConstantSpecs::ClassA::LINE]
   end
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
@@ -205,6 +210,13 @@ describe "Module#const_source_location" do
      ConstantSpecs.const_source_location(:CS_PRIVATE).should == [@constants_fixture_path, ConstantSpecs::CS_PRIVATE_LINE]
   end
 
+  it "works for eval with a given line" do
+    c = Class.new do
+      eval('self::C = 1', nil, "foo", 100)
+    end
+    c.const_source_location(:C).should == ["foo", 100]
+  end
+
   context 'autoload' do
     before :all do
       ConstantSpecs.autoload :CSL_CONST1, "#{__dir__}/notexisting.rb"
@@ -220,6 +232,18 @@ describe "Module#const_source_location" do
       ConstantSpecs.autoload :CONST_LOCATION, file
       line = ConstantSpecs::CONST_LOCATION
       ConstantSpecs.const_source_location('CONST_LOCATION').should == [file, line]
+    end
+
+    ruby_bug("#20188", ""..."3.4") do
+      it 'returns the real constant location as soon as it is defined' do
+        file = fixture(__FILE__, 'autoload_const_source_location.rb')
+        ConstantSpecs.autoload :ConstSource, file
+        autoload_location = [__FILE__, __LINE__ - 1]
+
+        ConstantSpecs.const_source_location(:ConstSource).should == autoload_location
+        ConstantSpecs::ConstSource::LOCATION.should == ConstantSpecs.const_source_location(:ConstSource)
+        ConstantSpecs::BEFORE_DEFINE_LOCATION.should == autoload_location
+      end
     end
   end
 end

@@ -69,6 +69,20 @@ each_line(foo)
     assert_equal 'C1::m', @c1.method_list.first.full_name
   end
 
+  def test_has_call_seq?
+    m = RDoc::AnyMethod.new nil, "each_line"
+    m2 = RDoc::AnyMethod.new nil, "each"
+    assert_equal false, m.has_call_seq?
+    m.call_seq = "each_line()"
+    assert_equal true, m.has_call_seq?
+
+    m = RDoc::AnyMethod.new nil, "each_line"
+    m.is_alias_for = m2
+    assert_equal false, m.has_call_seq?
+    m2.call_seq = "each_line()"
+    assert_equal true, m.has_call_seq?
+  end
+
   def test_is_alias_for
     assert_equal @c2_b, @c2_a.is_alias_for
 
@@ -513,6 +527,30 @@ method(a, b) { |c, d| ... }
   def test_parent_name
     assert_equal 'C1', @c1.method_list.first.parent_name
     assert_equal 'C1', @c1.method_list.last.parent_name
+  end
+
+  def test_skip_description?
+    m = RDoc::AnyMethod.new nil, "each_line"
+    m2 = RDoc::AnyMethod.new nil, "each"
+    assert_equal false, m.skip_description?
+    assert_equal false, m2.skip_description?
+
+    m.is_alias_for = m2
+    m2.aliases << m
+    assert_equal false, m.skip_description?
+    assert_equal false, m2.skip_description?
+
+    m2.call_seq = "each()"
+    assert_equal true, m.skip_description?
+    assert_equal false, m2.skip_description?
+
+    m2.call_seq = "each_line()"
+    assert_equal false, m.skip_description?
+    assert_equal true, m2.skip_description?
+
+    m2.call_seq = "each()\neach_line()"
+    assert_equal false, m.skip_description?
+    assert_equal false, m2.skip_description?
   end
 
   def test_store_equals

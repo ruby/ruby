@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/commands/cleanup_command"
 require "rubygems/installer"
@@ -165,10 +166,10 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
   end
 
   def test_execute_all_user_no_sudo
-    FileUtils.chmod 0555, @gemhome
+    FileUtils.chmod 0o555, @gemhome
 
     @a_1_1, = util_gem "a", "1.1"
-    @a_1_1 = install_gem @a_1_1, :user_install => true # pick up user install path
+    @a_1_1 = install_gem @a_1_1, user_install: true # pick up user install path
 
     Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
 
@@ -182,8 +183,8 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exist @a_1.gem_dir
     assert_path_exist @a_1_1.gem_dir
   ensure
-    FileUtils.chmod 0755, @gemhome
-  end unless win_platform? || Process.uid.zero?
+    FileUtils.chmod 0o755, @gemhome
+  end unless Gem.win_platform? || Process.uid.zero?
 
   def test_execute_dry_run
     @cmd.options[:args] = %w[a]
@@ -230,7 +231,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{^Skipped default gems: b-2}, @ui.output
+    assert_match(/^Skipped default gems: b-2/, @ui.output)
     assert_empty @ui.error
   end
 
@@ -242,11 +243,11 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     e_1, = util_gem "e", "1"
     e_2, = util_gem "e", "2"
 
-    c_1 = install_gem c_1, :user_install => true # pick up user install path
+    c_1 = install_gem c_1, user_install: true # pick up user install path
     c_2 = install_gem c_2
 
     d_1 = install_gem d_1
-    d_2 = install_gem d_2, :user_install => true # pick up user install path
+    d_2 = install_gem d_2, user_install: true # pick up user install path
 
     e_1 = install_gem e_1
     e_2 = install_gem e_2
@@ -269,8 +270,8 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     d_1, = util_gem "d", "1.0"
     d_2, = util_gem "d", "1.1"
 
-    c_1 = install_gem c_1, :user_install => true # pick up user install path
-    c_2 = install_gem c_2, :user_install => true # pick up user install path
+    c_1 = install_gem c_1, user_install: true # pick up user install path
+    c_2 = install_gem c_2, user_install: true # pick up user install path
 
     d_1 = install_gem d_1
     d_2 = install_gem d_2

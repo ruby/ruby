@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #if !defined(OSSL_PKEY_H)
 #define OSSL_PKEY_H
@@ -92,7 +92,7 @@ void Init_ossl_ec(void);
  */									\
 static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
 {									\
-	_type *obj;							\
+	const _type *obj;						\
 	const BIGNUM *bn;						\
 									\
 	Get##_type(self, obj);						\

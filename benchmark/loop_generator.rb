@@ -1,4 +1,4 @@
-max = 600000
+max = 6000000
 
 if defined? Fiber
   gen = (1..max).each
