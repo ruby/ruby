@@ -741,6 +741,17 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal('(1+2i)', c.inspect)
   end
 
+  def test_inspect_to_s_frozen_bug_20337
+    assert_separately([], <<~'RUBY')
+      class Numeric
+        def inspect = super.freeze
+      end
+      c = Complex(Numeric.new, 1)
+      assert_match(/\A\(#<Numeric:/, c.inspect)
+      assert_match(/\A#<Numeric:/, c.to_s)
+    RUBY
+  end
+
   def test_marshal
     c = Complex(1,2)
 
