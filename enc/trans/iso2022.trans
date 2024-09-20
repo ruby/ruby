@@ -436,15 +436,24 @@ rb_cp50221_encoder = {
 
 /* JIS0201 to JIS0208 conversion table */
 enum {tbl0208_num = 0xDF - 0xA1 + 1};
-static const char tbl0208[2 * tbl0208_num] =
-    "\x21\x23\x21\x56\x21\x57\x21\x22\x21\x26\x25\x72\x25\x21\x25\x23" \
-    "\x25\x25\x25\x27\x25\x29\x25\x63\x25\x65\x25\x67\x25\x43\x21\x3C" \
-    "\x25\x22\x25\x24\x25\x26\x25\x28\x25\x2A\x25\x2B\x25\x2D\x25\x2F" \
-    "\x25\x31\x25\x33\x25\x35\x25\x37\x25\x39\x25\x3B\x25\x3D\x25\x3F" \
-    "\x25\x41\x25\x44\x25\x46\x25\x48\x25\x4A\x25\x4B\x25\x4C\x25\x4D" \
-    "\x25\x4E\x25\x4F\x25\x52\x25\x55\x25\x58\x25\x5B\x25\x5E\x25\x5F" \
-    "\x25\x60\x25\x61\x25\x62\x25\x64\x25\x66\x25\x68\x25\x69\x25\x6A" \
-    "\x25\x6B\x25\x6C\x25\x6D\x25\x6F\x25\x73\x21\x2B\x21\x2C";
+static const char tbl0208[tbl0208_num][2] = {
+    "\x21\x23", "\x21\x56", "\x21\x57", "\x21\x22",
+    "\x21\x26", "\x25\x72", "\x25\x21", "\x25\x23",
+    "\x25\x25", "\x25\x27", "\x25\x29", "\x25\x63",
+    "\x25\x65", "\x25\x67", "\x25\x43", "\x21\x3C",
+    "\x25\x22", "\x25\x24", "\x25\x26", "\x25\x28",
+    "\x25\x2A", "\x25\x2B", "\x25\x2D", "\x25\x2F",
+    "\x25\x31", "\x25\x33", "\x25\x35", "\x25\x37",
+    "\x25\x39", "\x25\x3B", "\x25\x3D", "\x25\x3F",
+    "\x25\x41", "\x25\x44", "\x25\x46", "\x25\x48",
+    "\x25\x4A", "\x25\x4B", "\x25\x4C", "\x25\x4D",
+    "\x25\x4E", "\x25\x4F", "\x25\x52", "\x25\x55",
+    "\x25\x58", "\x25\x5B", "\x25\x5E", "\x25\x5F",
+    "\x25\x60", "\x25\x61", "\x25\x62", "\x25\x64",
+    "\x25\x66", "\x25\x68", "\x25\x69", "\x25\x6A",
+    "\x25\x6B", "\x25\x6C", "\x25\x6D", "\x25\x6F",
+    "\x25\x73", "\x21\x2B", "\x21\x2C"
+};
 
 static ssize_t
 fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
@@ -455,17 +464,19 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
 
     if (sp[0] == G0_JISX0201_KATAKANA && sp[2]) {
         int c = sp[2] & 0x7F;
-        const char *p = tbl0208 + (c - 0x21) * 2;
+        const char *p = tbl0208[c - 0x21];
         sp[2] = 0;
         o = iso2022jp_put_state(sp, o, sp[1], G0_JISX0208_1983);
         sp[0] = G0_JISX0208_1983;
         *o++ = *p++;
         if (l == 2 && s[0] == 0x8E) {
             if (s[1] == 0xDE) {
+                /* VOICED SOUND MARK */
                 *o++ = *p + 1;
                 return o - output0;
             }
             else if (s[1] == 0xDF && (0x4A <= c && c <= 0x4E)) {
+                /* SEMI-VOICED SOUND MARK */
                 *o++ = *p + 2;
                 return o - output0;
             }
@@ -477,7 +488,8 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
         if ((0xA1 <= s[1] && s[1] <= 0xB5) ||
             (0xC5 <= s[1] && s[1] <= 0xC9) ||
             (0xCF <= s[1] && s[1] <= 0xDF)) {
-            const char *p = tbl0208 + (s[1] - 0xA1) * 2;
+            /* May not be followed by a sound mark */
+            const char *p = tbl0208[s[1] - 0xA1];
             o = iso2022jp_put_state(sp, o, *sp, G0_JISX0208_1983);
             *o++ = *p++;
             *o++ = *p;
@@ -491,6 +503,7 @@ fun_so_cp50220_encoder(void *statep, const unsigned char *s, size_t l,
             return o - output0;
         }
 
+        /* Katakana that may be followed by a sound mark */
         sp[2] = s[1];
         sp[1] = sp[0];
         sp[0] = G0_JISX0201_KATAKANA;
@@ -512,7 +525,7 @@ finish_cp50220_encoder(void *statep, unsigned char *o, size_t osize)
 
     if (sp[0] == G0_JISX0201_KATAKANA && sp[2]) {
         int c = sp[2] & 0x7F;
-        const char *p = tbl0208 + (c - 0x21) * 2;
+        const char *p = tbl0208[c - 0x21];
         o = iso2022jp_put_state(sp, o, sp[1], G0_JISX0208_1983);
         sp[0] = G0_JISX0208_1983;
         *o++ = *p++;
@@ -549,4 +562,3 @@ TRANS_INIT(iso2022)
     rb_register_transcoder(&rb_cp50220_encoder);
     rb_register_transcoder(&rb_cp50221_encoder);
 }
-
