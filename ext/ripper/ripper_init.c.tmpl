@@ -252,6 +252,17 @@ ripper_parser_set_debug_output(VALUE self, VALUE output)
     return output;
 }
 
+static int
+ripper_parser_dedent_string(struct parser_params *p, VALUE string, int width)
+{
+    int col;
+    rb_parser_string_t *str;
+    str = rb_str_to_parser_string(p, string);
+    col = rb_ruby_ripper_dedent_string(p, str, width);
+    rb_str_replace(string, rb_str_new_parser_string(str));
+    return col;
+}
+
 #ifdef UNIVERSAL_PARSER
 struct dedent_string_arg {
     struct parser_params *p;
@@ -267,7 +278,7 @@ parser_dedent_string0(VALUE a)
 
     StringValue(arg->input);
     wid = NUM2UINT(arg->width);
-    col = rb_ruby_ripper_dedent_string(arg->p, arg->input, wid);
+    col = ripper_parser_dedent_string(arg->p, arg->input, wid);
     return INT2NUM(col);
 }
 
@@ -312,7 +323,7 @@ parser_dedent_string(VALUE self, VALUE input, VALUE width)
 
     StringValue(input);
     wid = NUM2UINT(width);
-    col = rb_ruby_ripper_dedent_string(0, input, wid);
+    col = ripper_parser_dedent_string(0, input, wid);
     return INT2NUM(col);
 }
 #endif

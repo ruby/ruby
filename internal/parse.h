@@ -104,7 +104,7 @@ VALUE rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p);
 int rb_ruby_parser_ruby_sourceline(rb_parser_t *p);
 int rb_ruby_parser_lex_state(rb_parser_t *p);
 void rb_ruby_ripper_parse0(rb_parser_t *p);
-int rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width);
+int rb_ruby_ripper_dedent_string(rb_parser_t *p, rb_parser_string_t *string, int width);
 int rb_ruby_ripper_initialized_p(rb_parser_t *p);
 void rb_ruby_ripper_parser_initialize(rb_parser_t *p);
 long rb_ruby_ripper_column(rb_parser_t *p);
