@@ -42,17 +42,11 @@ ID rb_id_source_for;
 /******************************************************************************/
 
 /**
- * Check if the given VALUE is a string. If it's nil, then return NULL. If it's
- * not a string, then raise a type error. Otherwise return the VALUE as a C
- * string.
+ * Check if the given VALUE is a string. If it's not a string, then raise a
+ * TypeError. Otherwise return the VALUE as a C string.
  */
 static const char *
 check_string(VALUE value) {
-    // If the value is nil, then we don't need to do anything.
-    if (NIL_P(value)) {
-        return NULL;
-    }
-
     // Check if the value is a string. If it's not, then raise a type error.
     if (!RB_TYPE_P(value, T_STRING)) {
         rb_raise(rb_eTypeError, "wrong argument type %" PRIsVALUE " (expected String)", rb_obj_class(value));
