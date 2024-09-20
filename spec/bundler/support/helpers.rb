@@ -186,7 +186,10 @@ module Spec
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
-      sys_exec("#{Path.gem_bin} #{command}", options)
+      output = sys_exec("#{Path.gem_bin} #{command}", options)
+      stderr = last_command.stderr
+      raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr)
+      output
     end
 
     def rake
@@ -541,6 +544,10 @@ module Spec
     end
 
     private
+
+    def allowed_rubygems_warning?(text)
+      text.include?("open-ended") || text.include?("is a symlink") || text.include?("rake based") || text.include?("expected RubyGems version")
+    end
 
     def match_source(contents)
       match = /source ["']?(?<source>http[^"']+)["']?/.match(contents)
