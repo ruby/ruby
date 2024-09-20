@@ -15,30 +15,25 @@ module Psych
     class YAMLTree < Psych::Visitors::Visitor
       class Registrar # :nodoc:
         def initialize
-          @obj_to_id   = {}
-          @obj_to_node = {}
-          @targets     = []
+          @obj_to_id   = {}.compare_by_identity
+          @obj_to_node = {}.compare_by_identity
           @counter     = 0
         end
 
         def register target, node
-          return unless target.respond_to? :object_id
-          @targets << target
-          @obj_to_node[target.object_id] = node
+          @obj_to_node[target] = node
         end
 
         def key? target
-          @obj_to_node.key? target.object_id
-        rescue NoMethodError
-          false
+          @obj_to_node.key? target
         end
 
         def id_for target
-          @obj_to_id[target.object_id] ||= (@counter += 1)
+          @obj_to_id[target] ||= (@counter += 1)
         end
 
         def node_for target
-          @obj_to_node[target.object_id]
+          @obj_to_node[target]
         end
       end
 
@@ -70,6 +65,7 @@ module Psych
             fail(ArgumentError, "Invalid line_width #{@line_width}, must be non-negative or -1 for unlimited.")
           end
         end
+        @stringify_names = options[:stringify_names]
         @coders     = []
 
         @dispatch_cache = Hash.new do |h,klass|
@@ -192,12 +188,13 @@ module Psych
         register o, @emitter.scalar(o.inspect, nil, '!ruby/regexp', false, false, Nodes::Scalar::ANY)
       end
 
+      def visit_Date o
+        register o, visit_Integer(o.gregorian)
+      end
+
       def visit_DateTime o
-        formatted = if o.offset.zero?
-                      o.strftime("%Y-%m-%d %H:%M:%S.%9N Z".freeze)
-                    else
-                      o.strftime("%Y-%m-%d %H:%M:%S.%9N %:z".freeze)
-                    end
+        t = o.italy
+        formatted = format_time t, t.offset.zero?
         tag = '!ruby/object:DateTime'
         register o, @emitter.scalar(formatted, nil, tag, false, false, Nodes::Scalar::ANY)
       end
@@ -235,7 +232,6 @@ module Psych
       end
       alias :visit_TrueClass :visit_Integer
       alias :visit_FalseClass :visit_Integer
-      alias :visit_Date :visit_Integer
 
       def visit_Float o
         if o.nan?
@@ -272,7 +268,7 @@ module Psych
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
-        elsif o == 'y' || o == 'n'
+        elsif o == 'y' || o == 'Y' || o == 'n' || o == 'N'
           style = Nodes::Scalar::DOUBLE_QUOTED
         elsif @line_width && o.length > @line_width
           style = Nodes::Scalar::FOLDED
@@ -328,7 +324,7 @@ module Psych
         if o.class == ::Hash
           register(o, @emitter.start_mapping(nil, nil, true, Psych::Nodes::Mapping::BLOCK))
           o.each do |k,v|
-            accept k
+            accept(@stringify_names && Symbol === k ? k.to_s : k)
             accept v
           end
           @emitter.end_mapping
@@ -341,7 +337,7 @@ module Psych
         register(o, @emitter.start_mapping(nil, '!set', false, Psych::Nodes::Mapping::BLOCK))
 
         o.each do |k,v|
-          accept k
+          accept(@stringify_names && Symbol === k ? k.to_s : k)
           accept v
         end
 
@@ -482,8 +478,8 @@ module Psych
         @emitter.end_mapping
       end
 
-      def format_time time
-        if time.utc?
+      def format_time time, utc = time.utc?
+        if utc
           time.strftime("%Y-%m-%d %H:%M:%S.%9N Z")
         else
           time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
@@ -568,7 +564,7 @@ module Psych
           raise BadAlias, "Tried to dump an aliased object"
         end
 
-        unless @permitted_classes[target.class]
+        unless Symbol === target || @permitted_classes[target.class]
           raise DisallowedClass.new('dump', target.class.name || target.class.inspect)
         end
 
@@ -576,7 +572,7 @@ module Psych
       end
 
       def visit_Symbol sym
-        unless @permitted_symbols[sym]
+        unless @permitted_classes[Symbol] || @permitted_symbols[sym]
           raise DisallowedClass.new('dump', "Symbol(#{sym.inspect})")
         end
 

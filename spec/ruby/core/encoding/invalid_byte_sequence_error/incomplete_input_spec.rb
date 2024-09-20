@@ -8,7 +8,7 @@ describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
 
   it "returns true if #primitive_convert returned :incomplete_input for the same data" do
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
-    ec.primitive_convert("\xA1",'').should == :incomplete_input
+    ec.primitive_convert(+"\xA1", +'').should == :incomplete_input
     begin
       ec.convert("\xA1")
     rescue Encoding::InvalidByteSequenceError => e
@@ -18,7 +18,7 @@ describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
 
   it "returns false if #primitive_convert returned :invalid_byte_sequence for the same data" do
     ec = Encoding::Converter.new("ascii", "utf-8")
-    ec.primitive_convert("\xfffffffff",'').should == :invalid_byte_sequence
+    ec.primitive_convert(+"\xfffffffff", +'').should == :invalid_byte_sequence
     begin
       ec.convert("\xfffffffff")
     rescue Encoding::InvalidByteSequenceError => e

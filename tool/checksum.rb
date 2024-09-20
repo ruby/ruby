@@ -36,9 +36,7 @@ class Checksum
   end
 
   def update!
-    open(@checksum, "wb") {|f|
-      f.puts("src=\"#{@source}\", len=#{@len}, checksum=#{@sum}")
-    }
+    File.binwrite(@checksum, "src=\"#{@source}\", len=#{@len}, checksum=#{@sum}")
   end
 
   def update

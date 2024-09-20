@@ -22,10 +22,21 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z 2>/dev/null`.split("\x0").reject { |f| f.match(%r{\A(?:(?:test|spec|features)/|\.git)}) }
-  end
-  spec.extensions    = ["ext/cgi/escape/extconf.rb"]
   spec.executables   = []
+
+  spec.files = [
+    "LICENSE.txt",
+    "README.md",
+    *Dir["lib{.rb,/**/*.rb}", "bin/*"]  ]
+
   spec.require_paths = ["lib"]
+
+  if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
+    spec.platform = 'java'
+    spec.require_paths << "ext/java/org/jruby/ext/cgi/escape/lib"
+    spec.files += Dir["ext/java/**/*.{rb}", "lib/cgi/escape.jar"]
+  else
+    spec.files += Dir["ext/cgi/**/*.{rb,c,h,sh}", "ext/cgi/escape/depend", "lib/cgi/escape.so"]
+    spec.extensions    = ["ext/cgi/escape/extconf.rb"]
+  end
 end

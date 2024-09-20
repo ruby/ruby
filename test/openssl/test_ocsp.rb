@@ -99,7 +99,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     request.sign(@cert, @cert_key, [@ca_cert], 0)
     asn1 = OpenSSL::ASN1.decode(request.to_der)
     assert_equal cid.to_der, asn1.value[0].value.find { |a| a.tag_class == :UNIVERSAL }.value[0].value[0].to_der
-    assert_equal OpenSSL::ASN1.ObjectId("sha1WithRSAEncryption").to_der, asn1.value[1].value[0].value[0].value[0].to_der
+    assert_equal OpenSSL::ASN1.ObjectId("sha256WithRSAEncryption").to_der, asn1.value[1].value[0].value[0].value[0].to_der
     assert_equal @cert.to_der, asn1.value[1].value[0].value[2].value[0].value[0].to_der
     assert_equal @ca_cert.to_der, asn1.value[1].value[0].value[2].value[0].value[1].to_der
     assert_equal asn1.to_der, OpenSSL::OCSP::Request.new(asn1.to_der).to_der
@@ -228,7 +228,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal OpenSSL::OCSP::V_CERTSTATUS_REVOKED, single.cert_status
     assert_equal OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, single.revocation_reason
     assert_equal now - 400, single.revocation_time
-    assert_in_delta (now - 301), single.this_update, 1
+    assert_in_delta (now - 300), single.this_update, 1
     assert_equal nil, single.next_update
     assert_equal [], single.extensions
 

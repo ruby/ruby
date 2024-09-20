@@ -15,7 +15,7 @@ module Bundler
     class UnknownSourceError < PluginError; end
     class PluginInstallError < PluginError; end
 
-    PLUGIN_FILE_NAME = "plugins.rb".freeze
+    PLUGIN_FILE_NAME = "plugins.rb"
 
     module_function
 
@@ -36,6 +36,8 @@ module Bundler
     # @param [Hash] options various parameters as described in description.
     #               Refer to cli/plugin for available options
     def install(names, options)
+      raise InvalidOption, "You cannot specify `--branch` and `--ref` at the same time." if options["branch"] && options["ref"]
+
       specs = Installer.new.install(names, options)
 
       save_plugins names, specs
@@ -60,7 +62,8 @@ module Bundler
       if names.any?
         names.each do |name|
           if index.installed?(name)
-            Bundler.rm_rf(index.plugin_path(name))
+            path = index.plugin_path(name).to_s
+            Bundler.rm_rf(path) if index.installed_in_plugin_root?(name)
             index.unregister_plugin(name)
             Bundler.ui.info "Uninstalled plugin #{name}"
           else
@@ -98,7 +101,7 @@ module Bundler
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
     def gemfile_install(gemfile = nil, &inline)
-      Bundler.settings.temporary(:frozen => false, :deployment => false) do
+      Bundler.settings.temporary(frozen: false, deployment: false) do
         builder = DSL.new
         if block_given?
           builder.instance_eval(&inline)
@@ -195,7 +198,7 @@ module Bundler
     # @param [Hash] The options that are present in the lock file
     # @return [API::Source] the instance of the class that handles the source
     #                       type passed in locked_opts
-    def source_from_lock(locked_opts)
+    def from_lock(locked_opts)
       src = source(locked_opts["type"])
 
       src.new(locked_opts.merge("uri" => locked_opts["remote"]))
@@ -225,7 +228,7 @@ module Bundler
       plugins = index.hook_plugins(event)
       return unless plugins.any?
 
-      (plugins - @loaded_plugin_names).each {|name| load_plugin(name) }
+      plugins.each {|name| load_plugin(name) }
 
       @hooks_by_event[event].each {|blk| blk.call(*args, &arg_blk) }
     end
@@ -235,6 +238,11 @@ module Bundler
     # @return [String, nil] installed path
     def installed?(plugin)
       Index.new.installed?(plugin)
+    end
+
+    # @return [true, false] whether the plugin is loaded
+    def loaded?(plugin)
+      @loaded_plugin_names.include?(plugin)
     end
 
     # Post installation processing and registering with index
@@ -299,7 +307,7 @@ module Bundler
       @hooks_by_event = Hash.new {|h, k| h[k] = [] }
 
       load_paths = spec.load_paths
-      Bundler.rubygems.add_to_load_path(load_paths)
+      Gem.add_to_load_path(*load_paths)
       path = Pathname.new spec.full_gem_path
 
       begin
@@ -327,13 +335,14 @@ module Bundler
     # @param [String] name of the plugin
     def load_plugin(name)
       return unless name && !name.empty?
+      return if loaded?(name)
 
       # Need to ensure before this that plugin root where the rest of gems
       # are installed to be on load path to support plugin deps. Currently not
       # done to avoid conflicts
       path = index.plugin_path(name)
 
-      Bundler.rubygems.add_to_load_path(index.load_paths(name))
+      Gem.add_to_load_path(*index.load_paths(name))
 
       load path.join(PLUGIN_FILE_NAME)
 

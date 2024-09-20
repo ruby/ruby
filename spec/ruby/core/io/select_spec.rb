@@ -55,13 +55,24 @@ describe "IO.select" do
     end
   end
 
-  it "returns supplied objects correctly even when monitoring the same object in different arrays" do
-    filename = tmp("IO_select_pipe_file") + $$.to_s
+  it "returns supplied objects correctly when monitoring the same object in different arrays" do
+    filename = tmp("IO_select_pipe_file")
     io = File.open(filename, 'w+')
     result = IO.select [io], [io], nil, 0
     result.should == [[io], [io], []]
     io.close
     rm_r filename
+  end
+
+  it "returns the pipe read end in read set if the pipe write end is closed concurrently" do
+    main = Thread.current
+    t = Thread.new {
+      Thread.pass until main.stop?
+      @wr.close
+    }
+    IO.select([@rd]).should == [[@rd], [], []]
+  ensure
+    t.join
   end
 
   it "invokes to_io on supplied objects that are not IO and returns the supplied objects" do
@@ -102,6 +113,39 @@ describe "IO.select" do
 
   it "raises an ArgumentError when passed a negative timeout" do
     -> { IO.select(nil, nil, nil, -5)}.should raise_error(ArgumentError)
+  end
+
+  describe "returns the available descriptors when the file descriptor" do
+    it "is in both read and error arrays" do
+      @wr.write("foobar")
+      result = IO.select([@rd], nil, [@rd])
+      result.should == [[@rd], [], []]
+    end
+
+    it "is in both write and error arrays" do
+      result = IO.select(nil, [@wr], [@wr])
+      result.should == [[], [@wr], []]
+    end
+
+    it "is in both read and write arrays" do
+      filename = tmp("IO_select_read_write_file")
+      w = File.open(filename, 'w+')
+      begin
+        IO.select([w], [w], []).should == [[w], [w], []]
+      ensure
+        w.close
+        rm_r filename
+      end
+
+      IO.select([@wr], [@wr], []).should == [[], [@wr], []]
+
+      @wr.write("foobar")
+      # CRuby on macOS returns [[@rd], [@rd], []], weird but we accept it here, probably only for pipe read-end
+      [
+        [[@rd], [], []],
+        [[@rd], [@rd], []]
+      ].should.include? IO.select([@rd], [@rd], [])
+    end
   end
 end
 

@@ -15,13 +15,6 @@ describe "Dir.each_child" do
     dirs.each {|dir| dir.encoding.should == Encoding::UTF_8}
   end
 
-  ruby_version_is ""..."2.7" do
-    it "accepts nil options" do
-      dirs = Dir.each_child("#{DirSpecs.mock_dir}/deeply/nested", nil).to_a.sort
-      dirs.each {|dir| dir.encoding.should == Encoding.find("filesystem")}
-    end
-  end
-
   it "yields all names in an existing directory to the provided block" do
     a, b = [], []
 
@@ -91,6 +84,19 @@ describe "Dir#each_child" do
   it "returns self when successful" do
     @dir = Dir.new(DirSpecs.mock_dir)
     @dir.each_child { |f| f }.should == @dir
+  end
+
+  it "returns the same result when called repeatedly" do
+    @dir = Dir.open DirSpecs.mock_dir
+
+    a = []
+    @dir.each {|dir| a << dir}
+
+    b = []
+    @dir.each {|dir| b << dir}
+
+    a.sort.should == b.sort
+    a.sort.should == DirSpecs.expected_paths
   end
 
   describe "when no block is given" do

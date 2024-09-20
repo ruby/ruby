@@ -193,6 +193,22 @@ module Test
       end
 
       ##
+      # Fails unless +obj+ is true
+
+      def assert_true obj, msg = nil
+        msg = message(msg) { "Expected #{mu_pp(obj)} to be true" }
+        assert obj == true, msg
+      end
+
+      ##
+      # Fails unless +obj+ is false
+
+      def assert_false obj, msg = nil
+        msg = message(msg) { "Expected #{mu_pp(obj)} to be false" }
+        assert obj == false, msg
+      end
+
+      ##
       # For testing with binary operators.
       #
       #   assert_operator 5, :<=, 4
@@ -506,18 +522,16 @@ module Test
       # Skips the current test. Gets listed at the end of the run but
       # doesn't cause a failure exit code.
 
-      def pend msg = nil, bt = caller
+      def pend msg = nil, bt = caller, &_
         msg ||= "Skipped, no message given"
         @skip = true
         raise Test::Unit::PendedError, msg, bt
       end
       alias omit pend
 
-      # TODO: Removed this and enabled to raise NoMethodError with skip
-      alias skip pend
-      # def skip(msg = nil, bt = caller)
-      #   raise NoMethodError, "use omit or pend", caller
-      # end
+      def skip(msg = nil, bt = caller)
+        raise NoMethodError, "use omit or pend", caller
+      end
 
       ##
       # Was this testcase skipped? Meant for #teardown.
@@ -547,10 +561,6 @@ module Test
       #    end
       def assert_block(*msgs)
         assert yield, *msgs
-      end
-
-      def assert_raises(*exp, &b)
-        raise NoMethodError, "use assert_raise", caller
       end
 
       # :call-seq:
@@ -758,7 +768,14 @@ EOT
           e = assert_raise(SyntaxError, mesg) do
             syntax_check(src, fname, line)
           end
-          assert_match(error, e.message, mesg)
+
+          # Prism adds ANSI escape sequences to syntax error messages to
+          # colorize and format them. We strip them out here to make them easier
+          # to match against in tests.
+          message = e.message
+          message.gsub!(/\e\[.*?m/, "")
+
+          assert_match(error, message, mesg)
           e
         end
       end

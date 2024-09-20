@@ -4,6 +4,10 @@ EnvUtil.suppress_warning {require 'continuation'}
 require 'fiber'
 
 class TestContinuation < Test::Unit::TestCase
+  def setup
+    omit 'requires callcc support' unless respond_to?(:callcc)
+  end
+
   def test_create
     assert_equal(:ok, callcc{:ok})
     assert_equal(:ok, callcc{|c| c.call :ok})

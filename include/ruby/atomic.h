@@ -139,6 +139,15 @@ typedef unsigned int rb_atomic_t;
     rbimpl_atomic_cas(&(var), (oldval), (newval))
 
 /**
+ * Atomic load. This loads `var` with an atomic intrinsic and returns
+ * its value.
+ *
+ * @param var  A variable of ::rb_atomic_t
+ * @return     What was stored in `var`j
+ */
+#define RUBY_ATOMIC_LOAD(var) rbimpl_atomic_load(&(var))
+
+/**
  * Identical to #RUBY_ATOMIC_EXCHANGE, except for the return type.
  *
  * @param   var   A variable of ::rb_atomic_t.
@@ -280,6 +289,17 @@ typedef unsigned int rb_atomic_t;
     RBIMPL_CAST(rbimpl_atomic_ptr_exchange((void **)&(var), (void *)val))
 
 /**
+ * Identical to #RUBY_ATOMIC_LOAD, except it expects its arguments are `void*`.
+ * There are cases where ::rb_atomic_t is 32bit while `void*` is 64bit.  This
+ * should be used for size related operations to support such platforms.
+ *
+ * @param   var        A variable of `void*`
+ * @return             The value of `var` (without tearing)
+ */
+#define RUBY_ATOMIC_PTR_LOAD(var) \
+    RBIMPL_CAST(rbimpl_atomic_ptr_load((void **)&var))
+
+/**
  * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are `void*`.
  * There are cases where ::rb_atomic_t is 32bit while `void*` is 64bit.  This
  * should be used for size related operations to support such platforms.
@@ -291,7 +311,7 @@ typedef unsigned int rb_atomic_t;
  * @retval  otherwise  Something else is at `var`; not updated.
  */
 #define RUBY_ATOMIC_PTR_CAS(var, oldval, newval) \
-    RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (oldval), (newval)))
+    RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (void *)(oldval), (void *)(newval)))
 
 /**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
@@ -404,7 +424,7 @@ rbimpl_atomic_size_add(volatile size_t *ptr, size_t val)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_add_and_fetch(ptr, val);
 
-#elif defined(_WIN32) && defined(_M_AMD64)
+#elif defined(_WIN64)
     /* Ditto for `InterlockeExchangedAdd`. */
     InterlockedExchangeAdd64(ptr, val);
 
@@ -456,13 +476,15 @@ rbimpl_atomic_size_inc(volatile size_t *ptr)
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
     rbimpl_atomic_size_add(ptr, 1);
 
-#elif defined(_WIN32) && defined(_M_AMD64)
+#elif defined(_WIN64)
     InterlockedIncrement64(ptr);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_inc_ulong(ptr);
 
 #else
+    RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
+
     rbimpl_atomic_size_add(ptr, 1);
 
 #endif
@@ -538,7 +560,7 @@ rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_sub_and_fetch(ptr, val);
 
-#elif defined(_WIN32) && defined(_M_AMD64)
+#elif defined(_WIN64)
     const ssize_t neg = -1;
     InterlockedExchangeAdd64(ptr, neg * val);
 
@@ -590,13 +612,15 @@ rbimpl_atomic_size_dec(volatile size_t *ptr)
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS) || defined(HAVE_GCC_SYNC_BUILTINS)
     rbimpl_atomic_size_sub(ptr, 1);
 
-#elif defined(_WIN32) && defined(_M_AMD64)
+#elif defined(_WIN64)
     InterlockedDecrement64(ptr);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_dec_ulong(ptr);
 
 #else
+    RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
+
     rbimpl_atomic_size_sub(ptr, 1);
 
 #endif
@@ -688,7 +712,7 @@ rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_lock_test_and_set(ptr, val);
 
-#elif defined(_WIN32) && defined(_M_AMD64)
+#elif defined(_WIN64)
     return InterlockedExchange64(ptr, val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
@@ -744,6 +768,21 @@ rbimpl_atomic_value_exchange(volatile VALUE *ptr, VALUE val)
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
     const size_t sret = rbimpl_atomic_size_exchange(sptr, sval);
     return RBIMPL_CAST((VALUE)sret);
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline rb_atomic_t
+rbimpl_atomic_load(volatile rb_atomic_t *ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+#else
+    return rbimpl_atomic_fetch_add(ptr, 0);
+#endif
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -823,7 +862,7 @@ rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_val_compare_and_swap(ptr, oldval, newval);
 
-#elif defined(_WIN32) && defined(_M_AMD64)
+#elif defined(_WIN64)
     return InterlockedCompareExchange64(ptr, newval, oldval);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
@@ -869,6 +908,22 @@ rbimpl_atomic_ptr_cas(void **ptr, const void *oldval, const void *newval)
     const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew);
     return RBIMPL_CAST((void *)sret);
 
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline void *
+rbimpl_atomic_ptr_load(void **ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+#else
+    void *val = *ptr;
+    return rbimpl_atomic_ptr_cas(ptr, val, val);
 #endif
 }
 

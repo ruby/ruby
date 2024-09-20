@@ -68,9 +68,9 @@ describe "Integer#to_s" do
 
     describe "when given no base" do
       it "returns self converted to a String using base 10" do
-        bignum_value(9).to_s.should == "9223372036854775817"
-        bignum_value.to_s.should == "9223372036854775808"
-        (-bignum_value(675)).to_s.should == "-9223372036854776483"
+        bignum_value(9).to_s.should == "18446744073709551625"
+        bignum_value.to_s.should == "18446744073709551616"
+        (-bignum_value(675)).to_s.should == "-18446744073709552291"
       end
     end
 

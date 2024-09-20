@@ -1,5 +1,20 @@
 # frozen_string_literal: true
 
+# Enable deprecation warnings for test-all, so deprecated methods/constants/functions are dealt with early.
+Warning[:deprecated] = true
+
+if ENV['BACKTRACE_FOR_DEPRECATION_WARNINGS']
+  Warning.extend Module.new {
+    def warn(message, category: nil, **kwargs)
+      if category == :deprecated and $stderr.respond_to?(:puts)
+        $stderr.puts nil, message, caller, nil
+      else
+        super
+      end
+    end
+  }
+end
+
 require_relative '../envutil'
 require_relative '../colorize'
 require_relative '../leakchecker'
@@ -8,42 +23,6 @@ require 'optparse'
 
 # See Test::Unit
 module Test
-
-  class << self
-    ##
-    # Filter object for backtraces.
-
-    attr_accessor :backtrace_filter
-  end
-
-  class BacktraceFilter # :nodoc:
-    def filter bt
-      return ["No backtrace"] unless bt
-
-      new_bt = []
-      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
-
-      unless $DEBUG then
-        bt.each do |line|
-          break if pattern.match?(line)
-          new_bt << line
-        end
-
-        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
-        new_bt = bt.dup if new_bt.empty?
-      else
-        new_bt = bt.dup
-      end
-
-      new_bt
-    end
-  end
-
-  self.backtrace_filter = BacktraceFilter.new
-
-  def self.filter_backtrace bt # :nodoc:
-    backtrace_filter.filter bt
-  end
 
   ##
   # Test::Unit is an implementation of the xUnit testing framework for Ruby.
@@ -57,6 +36,26 @@ module Test
     # Assertion raised when skipping a test
 
     class PendedError < AssertionFailedError; end
+
+    class << self
+      ##
+      # Extract the location where the last assertion method was
+      # called.  Returns "<empty>" if _e_ does not have backtrace, or
+      # an empty string if no assertion method location was found.
+
+      def location e
+        last_before_assertion = nil
+
+        return '<empty>' unless e&.backtrace # SystemStackError can return nil.
+
+        e.backtrace.reverse_each do |s|
+          break if s =~ /:in \W(?:.*\#)?(?:assert|refute|flunk|pass|fail|raise|must|wont)/
+          last_before_assertion = s
+        end
+        return "" unless last_before_assertion
+        /:in / =~ last_before_assertion ? $` : last_before_assertion
+      end
+    end
 
     module Order
       class NoSort
@@ -74,17 +73,7 @@ module Test
         end
       end
 
-      module JITFirst
-        def group(list)
-          # JIT first
-          jit, others = list.partition {|e| /test_jit/ =~ e}
-          jit + others
-        end
-      end
-
       class Alpha < NoSort
-        include JITFirst
-
         def sort_by_name(list)
           list.sort_by(&:name)
         end
@@ -97,8 +86,6 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
-        include JITFirst
-
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|
             (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
@@ -114,6 +101,10 @@ module Test
 
         def sort_by_string(list)
           list.sort_by {|e| randomize_key(e)}
+        end
+
+        def group(list)
+          list
         end
 
         private
@@ -199,6 +190,7 @@ module Test
         @help = "\n" + orig_args.map { |s|
           "  " + (s =~ /[\s|&<>$()]/ ? s.inspect : s)
         }.join("\n")
+
         @options = options
       end
 
@@ -270,10 +262,16 @@ module Test
         @jobserver = nil
         makeflags = ENV.delete("MAKEFLAGS")
         if !options[:parallel] and
-          /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ makeflags
+          /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ makeflags
           begin
-            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+            if fifo = $3
+              fifo.gsub!(/\\(?=.)/, '')
+              r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
+              w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
+            else
+              r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+              w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+            end
           rescue
             r.close if r
             nil
@@ -281,10 +279,10 @@ module Test
             r.close_on_exec = true
             w.close_on_exec = true
             @jobserver = [r, w]
-            options[:parallel] ||= 1
+            options[:parallel] ||= 256 # number of tokens to acquire first
           end
         end
-        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 180)
+        @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 1200)
         super
       end
 
@@ -324,7 +322,8 @@ module Test
           options[:retry] = false
         end
 
-        opts.on '--ruby VAL', "Path to ruby which is used at -j option" do |a|
+        opts.on '--ruby VAL', "Path to ruby which is used at -j option",
+                "Also used as EnvUtil.rubybin by some assertion methods" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
 
@@ -407,16 +406,18 @@ module Test
         rescue IOError
         end
 
-        def quit
+        def quit(reason = :normal)
           return if @io.closed?
           @quit_called = true
-          @io.puts "quit"
+          @io.puts "quit #{reason}"
         rescue Errno::EPIPE => e
           warn "#{@pid}:#{@status.to_s.ljust(7)}:#{@file}: #{e.message}"
         end
 
         def kill
-          Process.kill(:KILL, @pid)
+          signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
+          Process.kill(signal, @pid)
+          warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
         end
 
@@ -470,8 +471,8 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "Some worker was crashed. It seems ruby interpreter's bug"
-        warn "or, a bug of test/unit/parallel.rb. try again without -j"
+        warn "A test worker crashed. It might be an interpreter bug or"
+        warn "a bug in test/unit/parallel.rb. Try again without the -j"
         warn "option."
         warn ""
         if File.exist?('core')
@@ -534,15 +535,15 @@ module Test
         @workers.reject! do |worker|
           next unless cond&.call(worker)
           begin
-            Timeout.timeout(1) do
-              worker.quit
+            Timeout.timeout(5) do
+              worker.quit(cond ? :timeout : :normal)
             end
           rescue Errno::EPIPE
           rescue Timeout::Error
           end
           closed&.push worker
           begin
-            Timeout.timeout(0.2) do
+            Timeout.timeout(1) do
               worker.close
             end
           rescue Timeout::Error
@@ -555,7 +556,7 @@ module Test
         return if (closed ||= @workers).empty?
         pids = closed.map(&:pid)
         begin
-          Timeout.timeout(0.2 * closed.size) do
+          Timeout.timeout(1 * closed.size) do
             Process.waitall
           end
         rescue Timeout::Error
@@ -674,14 +675,22 @@ module Test
         @ios          = [] # Array of worker IOs
         @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
-          [@tasks.size, @options[:parallel]].min.times {launch_worker}
-
           while true
-            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0) + @worker_timeout, 1].max
+            newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
+            if newjobs > 0
+              if @jobserver
+                t = @jobserver[0].read_nonblock(newjobs, exception: false)
+                @job_tokens << t if String === t
+                newjobs = @job_tokens.size + 1 - @workers.size
+              end
+              newjobs.times {launch_worker}
+            end
+
+            timeout = [(@workers.filter_map {|w| w.response_at}.min&.-(Time.now) || 0), 0].max + @worker_timeout
 
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
-              quit_workers {|w| w.response_at < timeout}&.map {|w|
+              quit_workers {|w| w.response_at&.<(timeout) }&.map {|w|
                 rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
               }
             elsif _io.first.any? {|io|
@@ -691,15 +700,9 @@ module Test
             }
               break
             end
-            break if @tasks.empty? and @workers.empty?
-            if @jobserver and @job_tokens and !@tasks.empty? and
-               ((newjobs = [@tasks.size, @options[:parallel]].min) > @workers.size or
-                !@workers.any? {|x| x.status == :ready})
-              t = @jobserver[0].read_nonblock(newjobs, exception: false)
-              if String === t
-                @job_tokens << t
-                t.size.times {launch_worker}
-              end
+            if @tasks.empty?
+              break if @workers.empty?
+              next # wait for all workers to finish
             end
           end
         rescue Interrupt => ex
@@ -707,7 +710,7 @@ module Test
           return result
         ensure
           if file = @options[:timetable_data]
-            open(file, 'w'){|f|
+            File.open(file, 'w'){|f|
               @records.each{|(worker, suite), (st, ed)|
                 f.puts '[' + [worker.dump, suite.dump, st.to_f * 1_000, ed.to_f * 1_000].join(", ") + '],'
               }
@@ -735,14 +738,34 @@ module Test
             del_status_line or puts
             error, suites = suites.partition {|r| r[:error]}
             unless suites.empty?
-              puts "\n""Retrying..."
+              puts "\n"
+              @failed_output.puts "Failed tests:"
+              suites.each {|r|
+                r[:report].each {|c, m, e|
+                  @failed_output.puts "#{c}##{m}: #{e&.class}: #{e&.message&.slice(/\A.*/)}"
+                }
+              }
+              @failed_output.puts "\n"
+              puts "Retrying..."
               @verbose = options[:verbose]
               suites.map! {|r| ::Object.const_get(r[:testcase])}
               _run_suites(suites, type)
             end
             unless error.empty?
               puts "\n""Retrying hung up testcases..."
-              error.map! {|r| ::Object.const_get(r[:testcase])}
+              error = error.map do |r|
+                begin
+                  ::Object.const_get(r[:testcase])
+                rescue NameError
+                  # testcase doesn't specify the correct case, so show `r` for information
+                  require 'pp'
+
+                  $stderr.puts "Retrying is failed because the file and testcase is not consistent:"
+                  PP.pp r, $stderr
+                  @errors += 1
+                  nil
+                end
+              end.compact
               verbose = @verbose
               job_status = options[:job_status]
               options[:verbose] = @verbose = true
@@ -759,7 +782,7 @@ module Test
           unless rep.empty?
             rep.each do |r|
               if r[:error]
-                puke(*r[:error], Timeout::Error)
+                puke(*r[:error], Timeout::Error.new)
                 next
               end
               r[:report]&.each do |f|
@@ -779,6 +802,7 @@ module Test
             warn ""
             @warnings.uniq! {|w| w[1].message}
             @warnings.each do |w|
+              @errors += 1
               warn "#{w[0]}: #{w[1].message} (#{w[1].class})"
             end
             warn ""
@@ -848,7 +872,7 @@ module Test
         end
       end
 
-      def record(suite, method, assertions, time, error)
+      def record(suite, method, assertions, time, error, source_location = nil)
         if @options.values_at(:longest, :most_asserted).any?
           @tops ||= {}
           rec = [suite.name, method, assertions, time, error]
@@ -946,7 +970,7 @@ module Test
       end
 
       def _prepare_run(suites, type)
-        options[:job_status] ||= :replace if @tty && !@verbose
+        options[:job_status] ||= @tty ? :replace : :normal unless @verbose
         case options[:color]
         when :always
           color = true
@@ -962,11 +986,14 @@ module Test
         @output = Output.new(self) unless @options[:testing]
         filter = options[:filter]
         type = "#{type}_methods"
-        total = if filter
-                  suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}
-                else
-                  suites.inject(0) {|n, suite| n + suite.send(type).size}
-                end
+        total = suites.sum {|suite|
+          methods = suite.send(type)
+          if filter
+            methods.count {|method| filter === "#{suite}##{method}"}
+          else
+            methods.size
+          end
+        }
         @test_count = 0
         @total_tests = total.to_s(10)
       end
@@ -1004,7 +1031,7 @@ module Test
           end
           first, msg = msg.split(/$/, 2)
           first = sprintf("%3d) %s", @report_count += 1, first)
-          $stdout.print(sep, @colorize.decorate(first, color), msg, "\n")
+          @failed_output.print(sep, @colorize.decorate(first, color), msg, "\n")
           sep = nil
         end
         report.clear
@@ -1060,7 +1087,7 @@ module Test
             runner.add_status(" = #$1")
           when /\A\.+\z/
             runner.succeed
-          when /\A\.*[EFS][EFS.]*\z/
+          when /\A\.*[EFST][EFST.]*\z/
             runner.failed(s)
           else
             $stdout.print(s)
@@ -1165,6 +1192,28 @@ module Test
       end
     end
 
+    module OutputOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        parser.separator "output options:"
+
+        options[:failed_output] = $stdout
+        parser.on '--stderr-on-failure', 'Use stderr to print failure messages' do
+          options[:failed_output] = $stderr
+        end
+        parser.on '--stdout-on-failure', 'Use stdout to print failure messages', '(default)' do
+          options[:failed_output] = $stdout
+        end
+      end
+
+      def process_args(args = [])
+        return @options if @options
+        options = super
+        @failed_output = options[:failed_output]
+        options
+      end
+    end
+
     module GCOption # :nodoc: all
       def setup_options(parser, options)
         super
@@ -1226,7 +1275,12 @@ module Test
             puts "#{f}: #{$!}"
           end
         }
+        @load_failed = errors.size.nonzero?
         result
+      end
+
+      def run(*)
+        super or @load_failed
       end
     end
 
@@ -1326,6 +1380,95 @@ module Test
           EnvUtil.timeout_scale = scale
         end
         super
+      end
+    end
+
+    module LaunchableOption
+      module Nothing
+        private
+        def setup_options(opts, options)
+          super
+          opts.define_tail 'Launchable options:'
+          # This is expected to be called by Test::Unit::Worker.
+          opts.on_tail '--launchable-test-reports=PATH', String, 'Do nothing'
+        end
+      end
+
+      def record(suite, method, assertions, time, error, source_location = nil)
+        if writer = @options[:launchable_test_reports]
+          if loc = (source_location || suite.instance_method(method).source_location)
+            path, lineno = loc
+            # Launchable JSON schema is defined at
+            # https://github.com/search?q=repo%3Alaunchableinc%2Fcli+https%3A%2F%2Flaunchableinc.com%2Fschema%2FRecordTestInput&type=code.
+            e = case error
+                when nil
+                  status = 'TEST_PASSED'
+                  nil
+                when Test::Unit::PendedError
+                  status = 'TEST_SKIPPED'
+                  "Skipped:\n#{suite.name}##{method} [#{location error}]:\n#{error.message}\n"
+                when Test::Unit::AssertionFailedError
+                  status = 'TEST_FAILED'
+                  "Failure:\n#{suite.name}##{method} [#{location error}]:\n#{error.message}\n"
+                when Timeout::Error
+                  status = 'TEST_FAILED'
+                  "Timeout:\n#{suite.name}##{method}\n"
+                else
+                  status = 'TEST_FAILED'
+                  bt = Test::filter_backtrace(error.backtrace).join "\n    "
+                  "Error:\n#{suite.name}##{method}:\n#{error.class}: #{error.message.b}\n    #{bt}\n"
+                end
+            repo_path = File.expand_path("#{__dir__}/../../../")
+            relative_path = path.delete_prefix("#{repo_path}/")
+            # The test path is a URL-encoded representation.
+            # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
+            test_path = {file: relative_path, class: suite.name, testcase: method}.map{|key, val|
+              "#{encode_test_path_component(key)}=#{encode_test_path_component(val)}"
+            }.join('#')
+          end
+        end
+        super
+      ensure
+        if writer && test_path && status
+          # Occasionally, the file writing operation may be paused, especially when `--repeat-count` is specified.
+          # In such cases, we proceed to execute the operation here.
+          writer.write_object(
+            {
+              testPath: test_path,
+              status: status,
+              duration: time,
+              createdAt: Time.now.to_s,
+              stderr: e,
+              stdout: nil,
+              data: {
+                lineNumber: lineno
+              }
+            }
+          )
+        end
+      end
+
+      private
+      def setup_options(opts, options)
+        super
+        opts.on_tail '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
+          require_relative '../launchable'
+          options[:launchable_test_reports] = writer = Launchable::JsonStreamWriter.new(path)
+          writer.write_array('testCases')
+          main_pid = Process.pid
+          at_exit {
+            # This block is executed when the fork block in a test is completed.
+            # Therefore, we need to verify whether all tests have been completed.
+            stack = caller
+            if stack.size == 0 && main_pid == Process.pid && $!.is_a?(SystemExit)
+              writer.close
+            end
+          }
+        end
+
+        def encode_test_path_component component
+          component.to_s.gsub('%', '%25').gsub('=', '%3D').gsub('#', '%23').gsub('&', '%26')
+        end
       end
     end
 
@@ -1518,7 +1661,7 @@ module Test
           _start_method(inst)
           inst._assertions = 0
 
-          print "#{suite}##{method} = " if @verbose
+          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if @verbose
 
           start_time = Time.now if @verbose
           result =
@@ -1533,9 +1676,7 @@ module Test
           puts if @verbose
           $stdout.flush
 
-          unless defined?(RubyVM::JIT) && RubyVM::JIT.enabled? # compiler process is wrongly considered as leak
-            leakchecker.check("#{inst.class}\##{inst.__name__}")
-          end
+          leakchecker.check("#{inst.class}\##{inst.__name__}")
 
           _end_method(inst)
 
@@ -1566,19 +1707,11 @@ module Test
       # failure or error in teardown, it will be sent again with the
       # error or failure.
 
-      def record suite, method, assertions, time, error
+      def record suite, method, assertions, time, error, source_location = nil
       end
 
       def location e # :nodoc:
-        last_before_assertion = ""
-
-        return '<empty>' unless e.backtrace # SystemStackError can return nil.
-
-        e.backtrace.reverse_each do |s|
-          break if s =~ /in .(assert|refute|flunk|pass|fail|raise|must|wont)/
-          last_before_assertion = s
-        end
-        last_before_assertion.sub(/:in .*$/, '')
+        Test::Unit.location e
       end
 
       ##
@@ -1624,7 +1757,7 @@ module Test
           break unless report.empty?
         end
 
-        return failures + errors if self.test_count > 0 # or return nil...
+        return (failures + errors).nonzero? # or return nil...
       rescue Interrupt
         abort 'Interrupted'
       end
@@ -1650,12 +1783,14 @@ module Test
       prepend Test::Unit::Statistics
       prepend Test::Unit::Skipping
       prepend Test::Unit::GlobOption
+      prepend Test::Unit::OutputOption
       prepend Test::Unit::RepeatOption
       prepend Test::Unit::LoadPathOption
       prepend Test::Unit::GCOption
       prepend Test::Unit::ExcludesOption
       prepend Test::Unit::TimeoutOption
       prepend Test::Unit::RunCount
+      prepend Test::Unit::LaunchableOption::Nothing
 
       ##
       # Begins the full test run. Delegates to +runner+'s #_run method.
@@ -1691,6 +1826,9 @@ module Test
             when Test::Unit::AssertionFailedError then
               @failures += 1
               "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+            when Timeout::Error
+              @errors += 1
+              "Timeout:\n#{klass}##{meth}\n"
             else
               @errors += 1
               bt = Test::filter_backtrace(e.backtrace).join "\n    "
@@ -1709,6 +1847,7 @@ module Test
     class AutoRunner # :nodoc: all
       class Runner < Test::Unit::Runner
         include Test::Unit::RequireFiles
+        include Test::Unit::LaunchableOption
       end
 
       attr_accessor :to_run, :options

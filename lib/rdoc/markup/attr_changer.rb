@@ -20,4 +20,3 @@ class RDoc::Markup::AttrChanger
   end
 
 end
-

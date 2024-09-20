@@ -6,7 +6,7 @@
 # define KVME_TYPE_MGTDEVICE     8
 # endif
 void
-procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
+procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp, FILE *errout)
 {
 	struct kinfo_vmentry *freep, *kve;
 	int ptrwidth;
@@ -17,7 +17,7 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 #else
 	ptrwidth = 2*sizeof(void *) + 2;
 #endif
-	fprintf(stderr, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
+	fprintf(errout, "%*s %*s %3s %4s %4s %3s %3s %4s %-2s %-s\n",
 		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
 		"P""RES", "REF", "SHD", "FL", "TP", "PATH");
 
@@ -30,20 +30,20 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 		return;
 	for (i = 0; i < cnt; i++) {
 		kve = &freep[i];
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_start);
-		fprintf(stderr, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_end);
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_READ ? "r" : "-");
-		fprintf(stderr, "%s", kve->kve_protection & KVME_PROT_WRITE ? "w" : "-");
-		fprintf(stderr, "%s ", kve->kve_protection & KVME_PROT_EXEC ? "x" : "-");
-		fprintf(stderr, "%4d ", kve->kve_resident);
-		fprintf(stderr, "%4d ", kve->kve_private_resident);
-		fprintf(stderr, "%3d ", kve->kve_ref_count);
-		fprintf(stderr, "%3d ", kve->kve_shadow_count);
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_COW ? "C" : "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_NEEDS_COPY ? "N" :
+		fprintf(errout, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_start);
+		fprintf(errout, "%#*jx ", ptrwidth, (uintmax_t)kve->kve_end);
+		fprintf(errout, "%s", kve->kve_protection & KVME_PROT_READ ? "r" : "-");
+		fprintf(errout, "%s", kve->kve_protection & KVME_PROT_WRITE ? "w" : "-");
+		fprintf(errout, "%s ", kve->kve_protection & KVME_PROT_EXEC ? "x" : "-");
+		fprintf(errout, "%4d ", kve->kve_resident);
+		fprintf(errout, "%4d ", kve->kve_private_resident);
+		fprintf(errout, "%3d ", kve->kve_ref_count);
+		fprintf(errout, "%3d ", kve->kve_shadow_count);
+		fprintf(errout, "%-1s", kve->kve_flags & KVME_FLAG_COW ? "C" : "-");
+		fprintf(errout, "%-1s", kve->kve_flags & KVME_FLAG_NEEDS_COPY ? "N" :
 		    "-");
-		fprintf(stderr, "%-1s", kve->kve_flags & KVME_FLAG_SUPER ? "S" : "-");
-		fprintf(stderr, "%-1s ", kve->kve_flags & KVME_FLAG_GROWS_UP ? "U" :
+		fprintf(errout, "%-1s", kve->kve_flags & KVME_FLAG_SUPER ? "S" : "-");
+		fprintf(errout, "%-1s ", kve->kve_flags & KVME_FLAG_GROWS_UP ? "U" :
 		    kve->kve_flags & KVME_FLAG_GROWS_DOWN ? "D" : "-");
 		switch (kve->kve_type) {
 		case KVME_TYPE_NONE:
@@ -78,8 +78,8 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 			str = "??";
 			break;
 		}
-		fprintf(stderr, "%-2s ", str);
-		fprintf(stderr, "%-s\n", kve->kve_path);
+		fprintf(errout, "%-2s ", str);
+		fprintf(errout, "%-s\n", kve->kve_path);
 	}
 	free(freep);
 }

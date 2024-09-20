@@ -29,7 +29,7 @@ describe "ARGF.readpartial" do
 
   it "clears output buffer even if EOFError is raised because @argf is at end" do
     begin
-      output = "to be cleared"
+      output = +"to be cleared"
 
       argf [@file1_name] do
         @argf.read
@@ -69,7 +69,7 @@ describe "ARGF.readpartial" do
       print ARGF.readpartial(#{@stdin.size})
       ARGF.readpartial(1) rescue print $!.class
     STR
-    stdin = ruby_exe(ruby_str, args: "< #{@stdin_name}", escape: true)
+    stdin = ruby_exe(ruby_str, args: "< #{@stdin_name}")
     stdin.should == @stdin + "EOFError"
   end
 end

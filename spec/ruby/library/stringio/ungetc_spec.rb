@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#ungetc when passed [char]" do
   before :each do
-    @io = StringIO.new('1234')
+    @io = StringIO.new(+'1234')
   end
 
   it "writes the passed char before the current position" do
@@ -45,11 +45,11 @@ end
 
 describe "StringIO#ungetc when self is not readable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "w")
+    io = StringIO.new(+"test", "w")
     io.pos = 1
     -> { io.ungetc(?A) }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.pos = 1
     io.close_read
     -> { io.ungetc(?A) }.should raise_error(IOError)
@@ -60,11 +60,11 @@ end
 #
 # describe "StringIO#ungetc when self is not writable" do
 #   it "raises an IOError" do
-#     io = StringIO.new("test", "r")
+#     io = StringIO.new(+"test", "r")
 #     io.pos = 1
 #     lambda { io.ungetc(?A) }.should raise_error(IOError)
 #
-#     io = StringIO.new("test")
+#     io = StringIO.new(+"test")
 #     io.pos = 1
 #     io.close_write
 #     lambda { io.ungetc(?A) }.should raise_error(IOError)

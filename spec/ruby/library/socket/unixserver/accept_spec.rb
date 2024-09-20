@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-platform_is_not :windows do
+with_feature :unix_socket do
   describe "UNIXServer#accept" do
     before :each do
       @path = SocketSpecs.socket_path
@@ -109,6 +109,17 @@ with_feature :unix_socket do
           it 'can read the data written' do
             @socket = @server.accept
             @socket.recv(5).should == 'hello'
+          end
+
+          it "is set to nonblocking" do
+            require 'io/nonblock'
+            @socket = @server.accept
+            @socket.should.nonblock?
+          end
+
+          it "is set to close on exec" do
+            @socket = @server.accept
+            @socket.should.close_on_exec?
           end
         end
       end

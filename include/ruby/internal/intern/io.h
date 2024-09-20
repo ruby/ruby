@@ -385,7 +385,7 @@ VALUE rb_io_puts(int argc, const VALUE *argv, VALUE io);
  * @param[in]  fd     Target file descriptor.
  * @param[in]  flags  Flags, e.g. `O_CREAT|O_EXCL`
  * @param[in]  path   The path of the file that backs `fd`, for diagnostics.
- * @return     An allocated instance of ::rb_cIO.
+ * @return     An allocated instance of ::rb_cIO with the autoclose flag set.
  * @note       Leave `path` NULL if you don't know.
  */
 VALUE rb_io_fdopen(int fd, int flags, const char *path);

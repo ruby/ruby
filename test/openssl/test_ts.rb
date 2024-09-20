@@ -323,6 +323,8 @@ _end_of_pem_
     resp = fac.create_timestamp(ee_key, ts_cert_ee, req)
     assert_equal(OpenSSL::Timestamp::Response::GRANTED, resp.status)
     assert_equal("1.2.3.4.6", resp.token_info.policy_id)
+
+    assert_match(/1\.2\.3\.4\.6/, resp.to_text)
   end
 
   def test_response_bad_purpose

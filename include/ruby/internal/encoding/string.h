@@ -30,7 +30,7 @@
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 /**
- * Identical to rb_enc_str_new(), except it additionally takes an encoding.
+ * Identical to rb_str_new(), except it additionally takes an encoding.
  *
  * @param[in]  ptr             A memory region of `len` bytes length.
  * @param[in]  len             Length  of `ptr`,  in bytes,  not including  the

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require_relative 'helper'
+
+require_relative "helper"
 require "rubygems/version"
 
 class TestGemVersion < Gem::TestCase
@@ -32,12 +33,19 @@ class TestGemVersion < Gem::TestCase
   def test_class_create
     real = Gem::Version.new(1.0)
 
-    assert_same  real, Gem::Version.create(real)
-    assert_nil   Gem::Version.create(nil)
+    assert_same real, Gem::Version.create(real)
+
+    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
+    actual_stdout, actual_stderr = capture_output do
+      assert_nil Gem::Version.create(nil)
+    end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
+
     assert_equal v("5.1"), Gem::Version.create("5.1")
 
-    ver = '1.1'.freeze
-    assert_equal v('1.1'), Gem::Version.create(ver)
+    ver = "1.1"
+    assert_equal v("1.1"), Gem::Version.create(ver)
   end
 
   def test_class_correct
@@ -53,8 +61,8 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_class_new_subclass
-    v1 = Gem::Version.new '1'
-    v2 = V.new '1'
+    v1 = Gem::Version.new "1"
+    v2 = V.new "1"
 
     refute_same v1, v2
   end
@@ -81,7 +89,7 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_initialize
-    ["1.0", "1.0 ", " 1.0 ", "1.0\n", "\n1.0\n", "1.0".freeze].each do |good|
+    ["1.0", "1.0 ", " 1.0 ", "1.0\n", "\n1.0\n", "1.0"].each do |good|
       assert_version_equal "1.0", good
     end
 
@@ -120,10 +128,10 @@ class TestGemVersion < Gem::TestCase
     assert_prerelease "22.1.50.0.d"
     assert_prerelease "1.2.d.42"
 
-    assert_prerelease '1.A'
+    assert_prerelease "1.A"
 
-    assert_prerelease '1-1'
-    assert_prerelease '1-a'
+    assert_prerelease "1-1"
+    assert_prerelease "1-a"
 
     refute_prerelease "1.2.0"
     refute_prerelease "2.9"
@@ -153,6 +161,10 @@ class TestGemVersion < Gem::TestCase
 
     assert_equal(-1, v("5.a") <=> v("5.0.0.rc2"))
     assert_equal(1, v("5.x") <=> v("5.0.0.rc2"))
+
+    assert_equal(0, v("1.9.3")  <=> "1.9.3")
+    assert_equal(1, v("1.9.3")  <=> "1.9.2.99")
+    assert_equal(-1, v("1.9.3") <=> "1.9.3.1")
 
     assert_nil v("1.0") <=> "whatever"
   end
@@ -195,7 +207,7 @@ class TestGemVersion < Gem::TestCase
 
   # modifying the segments of a version should not affect the segments of the cached version object
   def test_segments
-    v('9.8.7').segments[2] += 1
+    v("9.8.7").segments[2] += 1
 
     refute_version_equal "9.8.8", "9.8.7"
     assert_equal         [9,8,7], v("9.8.7").segments
@@ -208,10 +220,10 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_frozen_version
-    v = v('1.freeze.test').freeze
-    assert_less_than v, v('1')
-    assert_version_equal v('1'), v.release
-    assert_version_equal v('2'), v.bump
+    v = v("1.freeze.test").freeze
+    assert_less_than v, v("1")
+    assert_version_equal v("1"), v.release
+    assert_version_equal v("2"), v.bump
   end
 
   # Asserts that +version+ is a prerelease.
@@ -257,7 +269,8 @@ class TestGemVersion < Gem::TestCase
   # Assert that two versions are eql?. Checks both directions.
 
   def assert_version_eql(first, second)
-    first, second = v(first), v(second)
+    first = v(first)
+    second = v(second)
     assert first.eql?(second), "#{first} is eql? #{second}"
     assert second.eql?(first), "#{second} is eql? #{first}"
   end
@@ -278,7 +291,8 @@ class TestGemVersion < Gem::TestCase
   # directions.
 
   def refute_version_eql(first, second)
-    first, second = v(first), v(second)
+    first = v(first)
+    second = v(second)
     refute first.eql?(second), "#{first} is NOT eql? #{second}"
     refute second.eql?(first), "#{second} is NOT eql? #{first}"
   end

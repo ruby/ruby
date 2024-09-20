@@ -5,9 +5,10 @@ RSpec.describe Bundler::EndpointSpecification do
   let(:version)      { "1.0.0" }
   let(:platform)     { Gem::Platform::RUBY }
   let(:dependencies) { [] }
+  let(:spec_fetcher) { double(:spec_fetcher) }
   let(:metadata)     { nil }
 
-  subject(:spec) { described_class.new(name, version, platform, dependencies, metadata) }
+  subject(:spec) { described_class.new(name, version, platform, spec_fetcher, dependencies, metadata) }
 
   describe "#build_dependency" do
     let(:name)           { "foo" }
@@ -47,8 +48,35 @@ RSpec.describe Bundler::EndpointSpecification do
     end
   end
 
+  describe "#required_ruby_version" do
+    context "required_ruby_version is already set on endpoint specification" do
+      existing_value = "already set value"
+      let(:required_ruby_version) { existing_value }
+
+      it "should return the current value when already set on endpoint specification" do
+        expect(spec.required_ruby_version). eql?(existing_value)
+      end
+    end
+
+    it "should return the remote spec value when not set on endpoint specification and remote spec has one" do
+      remote_value = "remote_value"
+      remote_spec = double(:remote_spec, required_ruby_version: remote_value, required_rubygems_version: nil)
+      allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
+
+      expect(spec.required_ruby_version). eql?(remote_value)
+    end
+
+    it "should use the default Gem Requirement value when not set on endpoint specification and not set on remote spec" do
+      remote_spec = double(:remote_spec, required_ruby_version: nil, required_rubygems_version: nil)
+      allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
+      expect(spec.required_ruby_version). eql?(Gem::Requirement.default)
+    end
+  end
+
   it "supports equality comparison" do
-    other_spec = described_class.new("bar", version, platform, dependencies, metadata)
+    remote_spec = double(:remote_spec, required_ruby_version: nil, required_rubygems_version: nil)
+    allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
+    other_spec = described_class.new("bar", version, platform, spec_fetcher, dependencies, metadata)
     expect(spec).to eql(spec)
     expect(spec).to_not eql(other_spec)
   end

@@ -27,6 +27,7 @@ class IseqDisassembler:
     TS_CDHASH   = b'H'[0]
     TS_IC       = b'K'[0]
     TS_IVC      = b'A'[0]
+    TS_ICVARC   = b'J'[0]
     TS_ID       = b'I'[0]
     TS_ISE      = b'T'[0]
     TS_ISEQ     = b'S'[0]
@@ -48,6 +49,7 @@ class IseqDisassembler:
             TS_ISE: "(iseq_inline_storage_entry *)%0#x",
             TS_ID: "ID: %0#x",
             TS_IVC: "(struct iseq_inline_iv_cache_entry *)%0#x",
+            TS_ICVARC: "(struct iseq_inline_cvar_cache_entry *)%0#x",
             TS_IC: "(struct iseq_inline_cache_entry *)%0#x",
             TS_CDHASH: "CDHASH (VALUE)%0#x",
             TS_CALLDATA: "(struct rb_call_data *)%0#x",
@@ -61,6 +63,7 @@ class IseqDisassembler:
         self.internal_dict = internal_dict
 
         self.target = debugger.GetSelectedTarget()
+        self.insns_address_table = self.__get_insns_address_table()
         self.process = self.target.GetProcess()
         self.thread = self.process.GetSelectedThread()
         self.frame = self.thread.GetSelectedFrame()
@@ -86,7 +89,7 @@ class IseqDisassembler:
         tIntPtr = target.FindFirstType("intptr_t")
         size = target.EvaluateExpression('ruby_vminsn_type::VM_INSTRUCTION_SIZE').unsigned
         sizeOfIntPtr = tIntPtr.GetByteSize()
-        addr_of_table = target.FindSymbols("vm_exec_core.insns_address_table")[0].GetSymbol().GetStartAddress().GetLoadAddress(target)
+        addr_of_table = self.insns_address_table.GetStartAddress().GetLoadAddress(target)
 
         my_dict = {}
 
@@ -142,7 +145,7 @@ class IseqDisassembler:
     def insn_len(self, target, offset):
         size_of_char = self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_len.t")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_len_info")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -160,7 +163,7 @@ class IseqDisassembler:
         size_of_short = tUShort.GetByteSize()
         size_of_char =  self.tChar.GetByteSize()
 
-        symbol = target.FindSymbols("insn_op_types.y")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_op_offset")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -172,7 +175,7 @@ class IseqDisassembler:
         if not error.Success():
             print("error getting op type offset: ", error)
 
-        symbol = target.FindSymbols("insn_op_types.x")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_op_base")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
         addr_in_name_table = addr_of_table + (offset * size_of_char)
@@ -188,7 +191,7 @@ class IseqDisassembler:
         tUShort = target.FindFirstType("unsigned short")
         size_of_short = tUShort.GetByteSize()
 
-        symbol = target.FindSymbols("insn_name.y")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_name_offset")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         table_offset = symbol.GetStartAddress().GetOffset()
 
@@ -203,7 +206,7 @@ class IseqDisassembler:
             print("error getting insn name table offset: ", error)
 
     def insn_name(self, target, process, result, offset):
-        symbol = target.FindSymbols("insn_name.x")[0].GetSymbol()
+        symbol = target.FindSymbols("rb_vm_insn_name_base")[0].GetSymbol()
         section = symbol.GetStartAddress().GetSection()
         addr_of_table = symbol.GetStartAddress().GetOffset()
 
@@ -217,6 +220,15 @@ class IseqDisassembler:
             return name
         else:
             print('error getting insn name', error)
+
+    def __get_insns_address_table(self):
+        module = self.target.FindSymbols("vm_exec_core")[0].GetModule()
+
+        for symbol in module:
+            if "insns_address_table" in symbol.name and symbol.GetType() == lldb.eSymbolTypeData:
+                print(f"found symbol {symbol.name}")
+                return symbol
+
 
 def disasm(debugger, command, result, internal_dict):
     disassembler = IseqDisassembler(debugger, command, result, internal_dict)
@@ -232,7 +244,6 @@ def disasm(debugger, command, result, internal_dict):
         return
 
     disassembler.disasm(val);
-
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_disasm.disasm rbdisasm")

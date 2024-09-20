@@ -135,18 +135,34 @@ describe "Literal (A::X) constant resolution" do
       ConstantSpecs::ClassB::CS_CONST109.should == :const109_2
     end
 
-    it "evaluates the right hand side before evaluating a constant path" do
-      mod = Module.new
+    ruby_version_is "3.2" do
+      it "evaluates left-to-right" do
+        mod = Module.new
 
-      mod.module_eval <<-EOC
-        ConstantSpecsRHS::B = begin
-          module ConstantSpecsRHS; end
+        mod.module_eval <<-EOC
+          order = []
+          ConstantSpecsRHS = Module.new
+          (order << :lhs; ConstantSpecsRHS)::B = (order << :rhs)
+        EOC
 
-          "hello"
-        end
-      EOC
+        mod::ConstantSpecsRHS::B.should == [:lhs, :rhs]
+      end
+    end
 
-      mod::ConstantSpecsRHS::B.should == 'hello'
+    ruby_version_is ""..."3.2" do
+      it "evaluates the right hand side before evaluating a constant path" do
+        mod = Module.new
+
+        mod.module_eval <<-EOC
+          ConstantSpecsRHS::B = begin
+            module ConstantSpecsRHS; end
+
+            "hello"
+          end
+        EOC
+
+        mod::ConstantSpecsRHS::B.should == 'hello'
+      end
     end
   end
 
@@ -154,34 +170,32 @@ describe "Literal (A::X) constant resolution" do
     -> { ConstantSpecs::ParentA::CS_CONSTX }.should raise_error(NameError)
   end
 
-  ruby_version_is "3.0" do
-    it "uses the module or class #name to craft the error message" do
-      mod = Module.new do
-        def self.name
-          "ModuleName"
-        end
-
-        def self.inspect
-          "<unusable info>"
-        end
+  it "uses the module or class #name to craft the error message" do
+    mod = Module.new do
+      def self.name
+        "ModuleName"
       end
 
-      -> { mod::DOES_NOT_EXIST }.should raise_error(NameError, /uninitialized constant ModuleName::DOES_NOT_EXIST/)
+      def self.inspect
+        "<unusable info>"
+      end
     end
 
-    it "uses the module or class #inspect to craft the error message if they are anonymous" do
-      mod = Module.new do
-        def self.name
-          nil
-        end
+    -> { mod::DOES_NOT_EXIST }.should raise_error(NameError, /uninitialized constant ModuleName::DOES_NOT_EXIST/)
+  end
 
-        def self.inspect
-          "<unusable info>"
-        end
+  it "uses the module or class #inspect to craft the error message if they are anonymous" do
+    mod = Module.new do
+      def self.name
+        nil
       end
 
-      -> { mod::DOES_NOT_EXIST }.should raise_error(NameError, /uninitialized constant <unusable info>::DOES_NOT_EXIST/)
+      def self.inspect
+        "<unusable info>"
+      end
     end
+
+    -> { mod::DOES_NOT_EXIST }.should raise_error(NameError, /uninitialized constant <unusable info>::DOES_NOT_EXIST/)
   end
 
   it "sends #const_missing to the original class or module scope" do
@@ -716,5 +730,19 @@ describe 'Allowed characters' do
     mod.const_set("ἍBB", 1)
 
     eval("mod::ἍBB").should == 1
+  end
+end
+
+describe 'Assignment' do
+  context 'dynamic assignment' do
+    it 'raises SyntaxError' do
+      -> do
+        eval <<-CODE
+          def test
+            B = 1
+          end
+        CODE
+      end.should raise_error(SyntaxError, /dynamic constant assignment/)
+    end
   end
 end

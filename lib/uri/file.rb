@@ -33,6 +33,9 @@ module URI
     # If an Array is used, the components must be passed in the
     # order <code>[host, path]</code>.
     #
+    # A path from e.g. the File class should be escaped before
+    # being passed.
+    #
     # Examples:
     #
     #     require 'uri'
@@ -43,6 +46,9 @@ module URI
     #     uri2 = URI::File.build({:host => 'host.example.com',
     #       :path => '/ruby/src'})
     #     uri2.to_s  # => "file://host.example.com/ruby/src"
+    #
+    #     uri3 = URI::File.build({:path => URI::escape('/path/my file.txt')})
+    #     uri3.to_s  # => "file:///path/my%20file.txt"
     #
     def self.build(args)
       tmp = Util::make_components_hash(self, args)
@@ -64,17 +70,17 @@ module URI
 
     # raise InvalidURIError
     def check_userinfo(user)
-      raise URI::InvalidURIError, "can not set userinfo for file URI"
+      raise URI::InvalidURIError, "cannot set userinfo for file URI"
     end
 
     # raise InvalidURIError
     def check_user(user)
-      raise URI::InvalidURIError, "can not set user for file URI"
+      raise URI::InvalidURIError, "cannot set user for file URI"
     end
 
     # raise InvalidURIError
     def check_password(user)
-      raise URI::InvalidURIError, "can not set password for file URI"
+      raise URI::InvalidURIError, "cannot set password for file URI"
     end
 
     # do nothing

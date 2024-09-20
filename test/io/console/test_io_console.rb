@@ -15,6 +15,7 @@ class TestIO_Console < Test::Unit::TestCase
     raise
   end
   PATHS.uniq!
+  INCLUDE_OPTS = "-I#{PATHS.join(File::PATH_SEPARATOR)}"
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
@@ -36,17 +37,26 @@ class TestIO_Console < Test::Unit::TestCase
     trap(:TTOU, @old_ttou) if defined?(@old_ttou) and @old_ttou
   end
 
+  exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
+    Errno.const_get(e) if Errno.const_defined?(e)
+  }
+  exceptions.compact!
+  FailedPathExceptions = (exceptions unless exceptions.empty?)
+
   def test_failed_path
-    exceptions = %w[ENODEV ENOTTY EBADF ENXIO].map {|e|
-      Errno.const_get(e) if Errno.const_defined?(e)
-    }
-    exceptions.compact!
-    omit if exceptions.empty?
     File.open(IO::NULL) do |f|
-      e = assert_raise(*exceptions) do
+      e = assert_raise(*FailedPathExceptions) do
         f.echo?
       end
       assert_include(e.message, IO::NULL)
+    end
+  end if FailedPathExceptions
+
+  def test_bad_keyword
+    assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
+      File.open(IO::NULL) do |f|
+        f.raw(bad: 0)
+      end
     end
   end
 end
@@ -232,7 +242,6 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_getpass
-    omit unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -246,6 +255,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
       w.print "asdf\C-D\C-D"
+      sleep 0.1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+
+    run_pty("$VERBOSE, $/ = nil, '.'; p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      sleep 0.1
+      w.print "asdf\n"
       sleep 0.1
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
@@ -357,6 +375,15 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   end
 
   def test_intr
+    # This test fails randomly on FreeBSD 13
+    # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
+    #
+    #   1) Failure:
+    # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
+    # <"25"> expected but was
+    # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
+    omit if /freebsd/ =~ RUBY_PLATFORM
+
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         require 'timeout'
@@ -407,6 +434,10 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       assert_equal(["true"], run_pty("IO.console(:close); p IO.console(:tty?)"))
     end
 
+    def test_console_kw
+      assert_equal(["File"], run_pty("IO.console.close; p IO.console(:clone, freeze: true).class"))
+    end
+
     def test_sync
       assert_equal(["true"], run_pty("p IO.console.sync"))
     end
@@ -427,7 +458,9 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def run_pty(src, n = 1)
     pend("PTY.spawn cannot control terminal on JRuby") if RUBY_ENGINE == 'jruby'
 
-    r, w, pid = PTY.spawn(EnvUtil.rubybin, "-I#{TestIO_Console::PATHS.join(File::PATH_SEPARATOR)}", "-rio/console", "-e", src)
+    args = [TestIO_Console::INCLUDE_OPTS, "-rio/console", "-e", src]
+    args.shift if args.first == "-I" # statically linked
+    r, w, pid = PTY.spawn(EnvUtil.rubybin, *args)
   rescue RuntimeError
     omit $!
   else
@@ -483,6 +516,12 @@ defined?(IO.console) and TestIO_Console.class_eval do
       IO.console(:close)
     end
 
+    def test_console_kw
+      io = IO.console(:clone, freeze: true)
+      io.close
+      assert_kind_of(IO, io)
+    end
+
     def test_sync
       assert(IO.console.sync, "console should be unbuffered")
     ensure
@@ -513,6 +552,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
       t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
+        TestIO_Console::INCLUDE_OPTS,
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',

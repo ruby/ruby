@@ -179,7 +179,7 @@ end
 Communication between Ractors is achieved by sending and receiving messages. There are two ways to communicate with each other.
 
 * (1) Message sending/receiving
-  * (1-1) push type send/receive (sender knows receiver). similar to the Actor model.
+  * (1-1) push type send/receive (sender knows receiver). Similar to the Actor model.
   * (1-2) pull type yield/take (receiver knows sender).
 * (2) Using shareable container objects
   * Ractor::TVar gem ([ko1/ractor-tvar](https://github.com/ko1/ractor-tvar))
@@ -204,8 +204,8 @@ For message sending and receiving, there are two types of APIs: push type and pu
   * When a Ractor is terminated, the Ractor's ports are closed.
 * There are 3 ways to send an object as a message
   * (1) Send a reference: Sending a shareable object, send only a reference to the object (fast)
-  * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects are not supported.
-  * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object.
+  * (2) Copy an object: Sending an unshareable object by copying an object deeply (slow). Note that you can not send an object which does not support deep copy. Some `T_DATA` objects (objects whose class is defined in a C extension, such as `StringIO`) are not supported.
+  * (3) Move an object: Sending an unshareable object reference with a membership. Sender Ractor can not access moved objects anymore (raise an exception) after moving it. Current implementation makes new object as a moved object for receiver Ractor and copies references of sending object to moved object. `T_DATA` objects are not supported.
   * You can choose "Copy" and "Move" by the `move:` keyword, `Ractor#send(obj, move: true/false)` and `Ractor.yield(obj, move: true/false)` (default is `false` (COPY)).
 
 ### Sending/Receiving ports
@@ -393,7 +393,7 @@ TODO: `select` syntax of go-language uses round-robin technique to make fair sch
 
 * `Ractor#close_incoming/outgoing` close incoming/outgoing ports (similar to `Queue#close`).
 * `Ractor#close_incoming`
-  * `r.send(obj) ` where `r`'s incoming port is closed, will raise an exception.
+  * `r.send(obj)` where `r`'s incoming port is closed, will raise an exception.
   * When the incoming queue is empty and incoming port is closed, `Ractor.receive` raises an exception. If the incoming queue is not empty, it dequeues an object without exceptions.
 * `Ractor#close_outgoing`
   * `Ractor.yield` on a Ractor which closed the outgoing port, it will raise an exception.
@@ -536,7 +536,7 @@ The following objects are shareable.
 
 Implementation: Now shareable objects (`RVALUE`) have `FL_SHAREABLE` flag. This flag can be added lazily.
 
-To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively travasible objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
+To make shareable objects, `Ractor.make_shareable(obj)` method is provided. In this case, try to make sharaeble by freezing `obj` and recursively traversable objects. This method accepts `copy:` keyword (default value is false).`Ractor.make_shareable(obj, copy: true)` tries to make a deep copy of `obj` and make the copied object shareable.
 
 ## Language changes to isolate unshareable objects between Ractors
 
@@ -705,8 +705,8 @@ TABLE = {a: 'ko1', b: 'ko2', c: 'ko3'}
 
 * none: Do nothing. Same as: `CONST = expr`
 * literal:
-  * if `expr` is consites of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
-  * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?}`.
+  * if `expr` consists of literals, replaced to `CONST = Ractor.make_shareable(expr)`.
+  * otherwise: replaced to `CONST = expr.tap{|o| raise unless Ractor.shareable?(o)}`.
 * experimental_everything: replaced to `CONST = Ractor.make_shareable(expr)`.
 * experimental_copy: replaced to `CONST = Ractor.make_shareable(expr, copy: true)`.
 

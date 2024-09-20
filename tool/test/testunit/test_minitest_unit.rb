@@ -171,7 +171,7 @@ class TestMiniTestUnit < MetaMetaMetaTestCase
   def test_passed_eh_teardown_skipped
     test_class = Class.new Test::Unit::TestCase do
       def teardown; assert true; end
-      def test_omg; skip "bork"; end
+      def test_omg; omit "bork"; end
     end
 
     test = test_class.new :test_omg
@@ -896,7 +896,7 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
         begin
           raise "blah"
         rescue
-          skip "skipped"
+          omit "skipped"
         end
       end
     end
@@ -1323,11 +1323,19 @@ class TestMiniTestUnitTestCase < Test::Unit::TestCase
     end
   end
 
-  def test_skip
+  def test_omit
     @assertion_count = 0
 
     util_assert_triggered "haha!", Test::Unit::PendedError do
-      @tc.skip "haha!"
+      @tc.omit "haha!"
+    end
+  end
+
+  def test_pend
+    @assertion_count = 0
+
+    util_assert_triggered "haha!", Test::Unit::PendedError do
+      @tc.pend "haha!"
     end
   end
 
@@ -1467,7 +1475,13 @@ class TestMiniTestUnitRecording < MetaMetaMetaTestCase
   def test_record_skip
     assert_run_record Test::Unit::PendedError do
       def test_method
-        skip "not yet"
+        omit "not yet"
+      end
+    end
+
+    assert_run_record Test::Unit::PendedError do
+      def test_method
+        pend "not yet"
       end
     end
   end

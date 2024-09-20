@@ -20,15 +20,12 @@ Gem::Specification.new do |spec|
     "LICENSE.txt",
     "README.md",
     "Rakefile",
-    "bin/downloader.rb",
-    "bin/extlibs.rb",
     "ext/fiddle/closure.c",
     "ext/fiddle/closure.h",
     "ext/fiddle/conversions.c",
     "ext/fiddle/conversions.h",
     "ext/fiddle/depend",
     "ext/fiddle/extconf.rb",
-    "ext/fiddle/extlibs",
     "ext/fiddle/fiddle.c",
     "ext/fiddle/fiddle.h",
     "ext/fiddle/function.c",
@@ -37,10 +34,6 @@ Gem::Specification.new do |spec|
     "ext/fiddle/memory_view.c",
     "ext/fiddle/pinned.c",
     "ext/fiddle/pointer.c",
-    "ext/fiddle/win32/fficonfig.h",
-    "ext/fiddle/win32/libffi-3.2.1-mswin.patch",
-    "ext/fiddle/win32/libffi-config.rb",
-    "ext/fiddle/win32/libffi.mk.tmpl",
     "fiddle.gemspec",
     "lib/fiddle.rb",
     "lib/fiddle/closure.rb",
@@ -59,4 +52,5 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 2.5.0"
 
   spec.metadata["msys2_mingw_dependencies"] = "libffi"
+  spec.metadata["changelog_uri"] = "https://github.com/ruby/fiddle/releases"
 end

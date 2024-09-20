@@ -107,14 +107,14 @@ VALUE rb_ary_new_from_args(long n, ...);
 VALUE rb_ary_new_from_values(long n, const VALUE *elts);
 
 /**
- * Allocates a  "temporary" array.   This is  a hidden  empty array.   Handy on
- * occasions.
+ * Allocates a hidden (no class) empty array.
  *
  * @param[in]  capa  Designed capacity of the array.
  * @return     A hidden, empty array.
  * @see        rb_obj_hide()
  */
-VALUE rb_ary_tmp_new(long capa);
+VALUE rb_ary_hidden_new(long capa);
+#define rb_ary_tmp_new rb_ary_hidden_new
 
 /**
  * Destroys the given array for no reason.
@@ -144,7 +144,13 @@ void rb_ary_free(VALUE ary);
  */
 void rb_ary_modify(VALUE ary);
 
-/** @alias{rb_obj_freeze} */
+/**
+ * Freeze an array, preventing further modifications. The underlying  buffer may
+ * be shrunk before freezing to conserve memory.
+ *
+ * @param[out]  obj  Object assumed to be an array to freeze.
+ * @see         RB_OBJ_FREEZE()
+ */
 VALUE rb_ary_freeze(VALUE obj);
 
 RBIMPL_ATTR_PURE()
@@ -187,7 +193,7 @@ VALUE rb_ary_shared_with_p(VALUE lhs, VALUE rhs);
  *     : (int i)                 -> T?
  *     | (int beg, int len)      -> ::Array[T]?
  *     | (Range[int] r)          -> ::Array[T]?
- *     | (ArithmeticSequence as) -> ::Array[T]? # This also raises RagneError.
+ *     | (ArithmeticSequence as) -> ::Array[T]? # This also raises RangeError.
  * end
  * ```
  */

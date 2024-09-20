@@ -163,11 +163,9 @@ VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 #if defined(HAVE_INT128_T)
 VALUE rb_int128t2big(int128_t n);
 #endif
-MJIT_SYMBOL_EXPORT_END
 
 /* sign: positive:1, negative:0 */
 static inline bool

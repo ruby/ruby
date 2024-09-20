@@ -8,20 +8,6 @@ describe :string_unpack_basic, shared: true do
     d.should_receive(:to_str).and_return("a"+unpack_format)
     "abc".unpack(d).should be_an_instance_of(Array)
   end
-
-  it "raises a TypeError when passed nil" do
-    -> { "abc".unpack(nil) }.should raise_error(TypeError)
-  end
-
-  it "raises a TypeError when passed an Integer" do
-    -> { "abc".unpack(1) }.should raise_error(TypeError)
-  end
-
-  ruby_version_is "3.1" do
-    it "starts unpacking from the given offset" do
-      "abc".unpack("CC", offset: 1).should == [98, 99]
-    end
-  end
 end
 
 describe :string_unpack_no_platform, shared: true do
@@ -31,19 +17,5 @@ describe :string_unpack_no_platform, shared: true do
 
   it "raises an ArgumentError when the format modifier is '!'" do
     -> { "abcdefgh".unpack(unpack_format("!")) }.should raise_error(ArgumentError)
-  end
-
-  ruby_version_is "3.1" do
-    it "raises an ArgumentError when the offset is negative" do
-      -> { "a".unpack("C", offset: -1) }.should raise_error(ArgumentError)
-    end
-
-    it "returns nil if the offset is at the end of the string" do
-      "a".unpack("C", offset: 1).should == [nil]
-    end
-
-    it "raises an ArgumentError when the offset is larget than the string" do
-      -> { "a".unpack("C", offset: 2) }.should raise_error(ArgumentError)
-    end
   end
 end

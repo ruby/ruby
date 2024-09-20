@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -58,51 +58,76 @@ VALUE eDHError;
  *
  * Examples:
  *   # Creating an instance from scratch
- *   dh = DH.new
+ *   # Note that this is deprecated and will not work on OpenSSL 3.0 or later.
+ *   dh = OpenSSL::PKey::DH.new
  *   dh.set_pqg(bn_p, nil, bn_g)
  *
  *   # Generating a parameters and a key pair
- *   dh = DH.new(2048) # An alias of DH.generate(2048)
+ *   dh = OpenSSL::PKey::DH.new(2048) # An alias of OpenSSL::PKey::DH.generate(2048)
  *
  *   # Reading DH parameters
- *   dh = DH.new(File.read('parameters.pem')) # -> dh, but no public/private key yet
- *   dh.generate_key! # -> dh with public and private key
+ *   dh_params = OpenSSL::PKey::DH.new(File.read('parameters.pem')) # loads parameters only
+ *   dh = OpenSSL::PKey.generate_key(dh_params) # generates a key pair
  */
 static VALUE
 ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
+    int type;
     DH *dh;
-    BIO *in;
+    BIO *in = NULL;
     VALUE arg;
 
-    GetPKey(self, pkey);
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
+
     /* The DH.new(size, generator) form is handled by lib/openssl/pkey.rb */
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
         dh = DH_new();
         if (!dh)
             ossl_raise(eDHError, "DH_new");
+        goto legacy;
     }
-    else {
-	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(&arg);
-	dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL);
-	if (!dh){
-	    OSSL_BIO_reset(in);
-	    dh = d2i_DHparams_bio(in, NULL);
-	}
-	BIO_free(in);
-	if (!dh) {
-	    ossl_raise(eDHError, NULL);
-	}
+
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(&arg);
+
+    /*
+     * On OpenSSL <= 1.1.1 and current versions of LibreSSL, the generic
+     * routine does not support DER-encoded parameters
+     */
+    dh = d2i_DHparams_bio(in, NULL);
+    if (dh)
+        goto legacy;
+    OSSL_BIO_reset(in);
+
+    pkey = ossl_pkey_read_generic(in, Qnil);
+    BIO_free(in);
+    if (!pkey)
+        ossl_raise(eDHError, "could not parse pkey");
+
+    type = EVP_PKEY_base_id(pkey);
+    if (type != EVP_PKEY_DH) {
+        EVP_PKEY_free(pkey);
+        rb_raise(eDHError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
-    if (!EVP_PKEY_assign_DH(pkey, dh)) {
-	DH_free(dh);
-	ossl_raise(eDHError, NULL);
+    RTYPEDDATA_DATA(self) = pkey;
+    return self;
+
+  legacy:
+    BIO_free(in);
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_DH(pkey, dh) != 1) {
+        EVP_PKEY_free(pkey);
+        DH_free(dh);
+        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
     }
+    RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_dh_initialize_copy(VALUE self, VALUE other)
 {
@@ -110,15 +135,14 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
     DH *dh, *dh_other;
     const BIGNUM *pub, *priv;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-	ossl_raise(eDHError, "DH already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
     GetDH(other, dh_other);
 
     dh = DHparams_dup(dh_other);
     if (!dh)
 	ossl_raise(eDHError, "DHparams_dup");
-    EVP_PKEY_assign_DH(pkey, dh);
 
     DH_get0_key(dh_other, &pub, &priv);
     if (pub) {
@@ -133,8 +157,16 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 	DH_set0_key(dh, pub2, priv2);
     }
 
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_DH(pkey, dh) != 1) {
+        EVP_PKEY_free(pkey);
+        DH_free(dh);
+        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
+#endif
 
 /*
  *  call-seq:
@@ -146,7 +178,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
@@ -165,14 +197,14 @@ ossl_dh_is_public(VALUE self)
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
     DH_get0_key(dh, NULL, &bn);
 
 #if !defined(OPENSSL_NO_ENGINE)
-    return (bn || DH_get0_engine(dh)) ? Qtrue : Qfalse;
+    return (bn || DH_get0_engine((DH *)dh)) ? Qtrue : Qfalse;
 #else
     return bn ? Qtrue : Qfalse;
 #endif
@@ -184,14 +216,25 @@ ossl_dh_is_private(VALUE self)
  *     dh.to_pem -> aString
  *     dh.to_s -> aString
  *
- * Encodes this DH to its PEM encoding. Note that any existing per-session
- * public/private keys will *not* get encoded, just the Diffie-Hellman
- * parameters will be encoded.
+ * Serializes the DH parameters to a PEM-encoding.
+ *
+ * Note that any existing per-session public/private keys will *not* get
+ * encoded, just the Diffie-Hellman parameters will be encoded.
+ *
+ * PEM-encoded parameters will look like:
+ *
+ *   -----BEGIN DH PARAMETERS-----
+ *   [...]
+ *   -----END DH PARAMETERS-----
+ *
+ * See also #public_to_pem (X.509 SubjectPublicKeyInfo) and
+ * #private_to_pem (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) for
+ * serialization with the private or public key components.
  */
 static VALUE
 ossl_dh_export(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     BIO *out;
     VALUE str;
 
@@ -212,15 +255,19 @@ ossl_dh_export(VALUE self)
  *  call-seq:
  *     dh.to_der -> aString
  *
- * Encodes this DH to its DER encoding. Note that any existing per-session
- * public/private keys will *not* get encoded, just the Diffie-Hellman
- * parameters will be encoded.
-
+ * Serializes the DH parameters to a DER-encoding
+ *
+ * Note that any existing per-session public/private keys will *not* get
+ * encoded, just the Diffie-Hellman parameters will be encoded.
+ *
+ * See also #public_to_der (X.509 SubjectPublicKeyInfo) and
+ * #private_to_der (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) for
+ * serialization with the private or public key components.
  */
 static VALUE
 ossl_dh_to_der(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     unsigned char *p;
     long len;
     VALUE str;
@@ -248,7 +295,7 @@ ossl_dh_to_der(VALUE self)
 static VALUE
 ossl_dh_get_params(VALUE self)
 {
-    DH *dh;
+    OSSL_3_const DH *dh;
     VALUE hash;
     const BIGNUM *p, *q, *g, *pub_key, *priv_key;
 
@@ -378,7 +425,9 @@ Init_ossl_dh(void)
      */
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
     rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cDH, "initialize_copy", ossl_dh_initialize_copy, 1);
+#endif
     rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
     rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
     rb_define_method(cDH, "export", ossl_dh_export, 0);

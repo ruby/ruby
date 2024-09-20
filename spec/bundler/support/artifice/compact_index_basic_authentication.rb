@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexBasicAuthentication < CompactIndexAPI
   before do
@@ -11,5 +9,7 @@ class CompactIndexBasicAuthentication < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexBasicAuthentication)

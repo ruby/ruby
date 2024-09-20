@@ -1,14 +1,15 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../query_utils'
+
+require_relative "../command"
+require_relative "../query_utils"
 
 class Gem::Commands::SearchCommand < Gem::Command
   include Gem::QueryUtils
 
   def initialize
-    super 'search', 'Display remote gems whose name matches REGEXP',
-         :name => //, :domain => :remote, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+    super "search", "Display remote gems whose name matches REGEXP",
+         domain: :remote, details: false, versions: true,
+         installed: nil, version: Gem::Requirement.default
 
     add_query_options
   end

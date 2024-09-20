@@ -2,10 +2,13 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative '../shared/enumeratorize'
 require_relative '../shared/keep_if'
+require_relative '../shared/iterable_and_tolerating_size_increasing'
 require_relative '../../enumerable/shared/enumeratorized'
 
 describe :array_select, shared: true do
   it_should_behave_like :enumeratorize
+
+  it_should_behave_like :array_iterable_and_tolerating_size_increasing
 
   before :each do
     @object = [1,2,3]

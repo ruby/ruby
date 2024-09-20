@@ -154,7 +154,7 @@ static void
 rb_digest_instance_method_unimpl(VALUE self, const char *method)
 {
     rb_raise(rb_eRuntimeError, "%s does not implement %s()",
-	     rb_obj_classname(self), method);
+             rb_obj_classname(self), method);
 }
 
 /*
@@ -383,8 +383,8 @@ rb_digest_instance_equal(VALUE self, VALUE other)
     StringValue(str2);
 
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
-	rb_str_cmp(str1, str2) == 0) {
-	return Qtrue;
+        rb_str_cmp(str1, str2) == 0) {
+        return Qtrue;
     }
     return Qfalse;
 }
@@ -534,8 +534,38 @@ rb_digest_class_init(VALUE self)
  *
  *
  *  rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
- *		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
+ *		rb_digest_make_metadata(&sha1));
  */
+
+#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+static const rb_data_type_t metadata_type = {
+    "digest/metadata",
+    {0},
+};
+
+RUBY_FUNC_EXPORTED VALUE
+rb_digest_wrap_metadata(const rb_digest_metadata_t *meta)
+{
+    return rb_obj_freeze(TypedData_Wrap_Struct(0, &metadata_type, (void *)meta));
+}
+#endif
+
+static rb_digest_metadata_t *
+get_metadata_ptr(VALUE obj)
+{
+    rb_digest_metadata_t *algo;
+
+#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+    if (!rb_typeddata_is_kind_of(obj, &metadata_type)) return 0;
+    algo = RTYPEDDATA_DATA(obj);
+#else
+# undef RUBY_UNTYPED_DATA_WARNING
+# define RUBY_UNTYPED_DATA_WARNING 0
+    Data_Get_Struct(obj, rb_digest_metadata_t, algo);
+#endif
+
+    return algo;
+}
 
 static rb_digest_metadata_t *
 get_digest_base_metadata(VALUE klass)
@@ -554,8 +584,8 @@ get_digest_base_metadata(VALUE klass)
     if (NIL_P(p))
         rb_raise(rb_eRuntimeError, "Digest::Base cannot be directly inherited in Ruby");
 
-    if (!RB_TYPE_P(obj, T_DATA) || RTYPEDDATA_P(obj)) {
-      wrong:
+    algo = get_metadata_ptr(obj);
+    if (!algo) {
         if (p == klass)
             rb_raise(rb_eTypeError, "%"PRIsVALUE"::metadata is not initialized properly",
                      klass);
@@ -563,12 +593,6 @@ get_digest_base_metadata(VALUE klass)
             rb_raise(rb_eTypeError, "%"PRIsVALUE"(%"PRIsVALUE")::metadata is not initialized properly",
                      klass, p);
     }
-
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
-    Data_Get_Struct(obj, rb_digest_metadata_t, algo);
-
-    if (!algo) goto wrong;
 
     switch (algo->api_version) {
       case 3:
@@ -602,7 +626,7 @@ static inline void
 algo_init(const rb_digest_metadata_t *algo, void *pctx)
 {
     if (algo->init_func(pctx) != 1) {
-	rb_raise(rb_eRuntimeError, "Digest initialization failed.");
+        rb_raise(rb_eRuntimeError, "Digest initialization failed.");
     }
 }
 
@@ -614,7 +638,7 @@ rb_digest_base_alloc(VALUE klass)
     void *pctx;
 
     if (klass == rb_cDigest_Base) {
-	rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
+        rb_raise(rb_eNotImpError, "Digest::Base is an abstract class");
     }
 
     algo = get_digest_base_metadata(klass);
@@ -639,7 +663,7 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
 
     algo = get_digest_obj_metadata(copy);
     if (algo != get_digest_obj_metadata(obj))
-	rb_raise(rb_eTypeError, "different algorithms");
+        rb_raise(rb_eTypeError, "different algorithms");
 
     TypedData_Get_Struct(obj, void, &digest_type, pctx1);
     TypedData_Get_Struct(copy, void, &digest_type, pctx2);

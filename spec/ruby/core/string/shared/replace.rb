@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 describe :string_replace, shared: true do
   it "returns self" do
     a = "a"
@@ -8,36 +9,6 @@ describe :string_replace, shared: true do
     a = "some string"
     a.send(@method, "another string")
     a.should == "another string"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other is tainted" do
-      a = ""
-      b = "".taint
-      a.send(@method, b)
-      a.should.tainted?
-    end
-
-    it "does not untaint self if other is untainted" do
-      a = "".taint
-      b = ""
-      a.send(@method, b)
-      a.should.tainted?
-    end
-
-    it "untrusts self if other is untrusted" do
-      a = ""
-      b = "".untrust
-      a.send(@method, b)
-      a.should.untrusted?
-    end
-
-    it "does not trust self if other is trusted" do
-      a = "".untrust
-      b = ""
-      a.send(@method, b)
-      a.should.untrusted?
-    end
   end
 
   it "replaces the encoding of self with that of other" do

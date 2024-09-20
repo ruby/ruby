@@ -12,9 +12,13 @@
 #include "ruby/encoding.h"      /* for rb_encoding */
 
 #define rb_enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
+#define rb_is_usascii_enc(enc) ((enc) == rb_usascii_encoding())
+#define rb_is_ascii8bit_enc(enc) ((enc) == rb_ascii8bit_encoding())
+#define rb_is_locale_enc(enc) ((enc) == rb_locale_encoding())
 
 /* encoding.c */
 ID rb_id_encoding(void);
+const char * rb_enc_inspect_name(rb_encoding *enc);
 rb_encoding *rb_enc_get_from_index(int index);
 rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
 int rb_encdb_replicate(const char *alias, const char *orig);
@@ -24,7 +28,9 @@ int rb_encdb_dummy(const char *name);
 void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
-void rb_encdb_set_unicode(int index);
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
+
+/* vm.c */
+void rb_free_global_enc_table(void);
 
 #endif /* INTERNAL_ENCODING_H */

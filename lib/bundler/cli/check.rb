@@ -17,7 +17,7 @@ module Bundler
       begin
         definition.resolve_only_locally!
         not_installed = definition.missing_specs
-      rescue GemNotFound, VersionConflict
+      rescue GemNotFound, GitError, SolveFailure
         Bundler.ui.error "Bundler can't satisfy your Gemfile's dependencies."
         Bundler.ui.warn "Install missing gems with `bundle install`."
         exit 1
@@ -29,10 +29,10 @@ module Bundler
         Bundler.ui.warn "Install missing gems with `bundle install`"
         exit 1
       elsif !Bundler.default_lockfile.file? && Bundler.frozen_bundle?
-        Bundler.ui.error "This bundle has been frozen, but there is no #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} present"
+        Bundler.ui.error "This bundle has been frozen, but there is no #{SharedHelpers.relative_lockfile_path} present"
         exit 1
       else
-        Bundler.load.lock(:preserve_unknown_sections => true) unless options[:"dry-run"]
+        Bundler.load.lock(preserve_unknown_sections: true) unless options[:"dry-run"]
         Bundler.ui.info "The Gemfile's dependencies are satisfied"
       end
     end

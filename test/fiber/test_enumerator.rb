@@ -6,15 +6,9 @@ class TestFiberEnumerator < Test::Unit::TestCase
   MESSAGE = "Hello World"
 
   def test_read_characters
-    skip "UNIXSocket is not defined!" unless defined?(UNIXSocket)
+    omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
     i, o = UNIXSocket.pair
-
-    unless i.nonblock? && o.nonblock?
-      i.close
-      o.close
-      skip "I/O is not non-blocking!"
-    end
 
     message = String.new
 
@@ -47,5 +41,13 @@ class TestFiberEnumerator < Test::Unit::TestCase
     assert_equal(MESSAGE, message)
     assert_predicate(i, :closed?)
     assert_predicate(o, :closed?)
+  end
+
+  def enumerator_fiber_is_nonblocking
+    enumerator = Enumerator.new do |yielder|
+      yielder << Fiber.current.blocking?
+    end
+
+    assert_equal(false, enumerator.next)
   end
 end

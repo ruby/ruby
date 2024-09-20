@@ -125,9 +125,11 @@ class RDoc::Parser
     return parser if ext_name.empty?
 
     if parser == RDoc::Parser::Simple and ext_name !~ /txt|rdoc/ then
-      case check_modeline file_name
+      case mode = check_modeline(file_name)
       when nil, 'rdoc' then # continue
-      else return nil
+      else
+        RDoc::Parser.parsers.find { |_, p| return p if mode.casecmp?(p.name[/\w+\z/]) }
+        return nil
       end
     end
 
@@ -164,7 +166,8 @@ class RDoc::Parser
   # Finds and instantiates the correct parser for the given +file_name+ and
   # +content+.
 
-  def self.for top_level, file_name, content, options, stats
+  def self.for top_level, content, options, stats
+    file_name = top_level.absolute_name
     return if binary? file_name
 
     parser = use_markup content
@@ -263,9 +266,26 @@ class RDoc::Parser
     @preprocess.options = @options
   end
 
-  autoload :RubyTools, 'rdoc/parser/ruby_tools'
-  autoload :Text,      'rdoc/parser/text'
+  autoload :RubyTools, "#{__dir__}/parser/ruby_tools"
+  autoload :Text,      "#{__dir__}/parser/text"
 
+  ##
+  # Normalizes tabs in +body+
+
+  def handle_tab_width(body)
+    if /\t/ =~ body
+      tab_width = @options.tab_width
+      body.split(/\n/).map do |line|
+        1 while line.gsub!(/\t+/) do
+          b, e = $~.offset(0)
+          ' ' * (tab_width * (e-b) - b % tab_width)
+        end
+        line
+      end.join "\n"
+    else
+      body
+    end
+  end
 end
 
 # simple must come first in order to show up last in the parsers list

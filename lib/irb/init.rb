@@ -1,16 +1,50 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/init.rb - irb initialize module
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:
+  @CONF = {}
+  @INITIALIZED = false
+  # Displays current configuration.
+  #
+  # Modifying the configuration is achieved by sending a message to IRB.conf.
+  #
+  # See IRB@Configuration for more information.
+  def IRB.conf
+    @CONF
+  end
+
+  def @CONF.inspect
+    array = []
+    for k, v in sort{|a1, a2| a1[0].id2name <=> a2[0].id2name}
+      case k
+      when :MAIN_CONTEXT, :__TMP__EHV__
+        array.push format("CONF[:%s]=...myself...", k.id2name)
+      when :PROMPT
+        s = v.collect{
+          |kk, vv|
+          ss = vv.collect{|kkk, vvv| ":#{kkk.id2name}=>#{vvv.inspect}"}
+          format(":%s=>{%s}", kk.id2name, ss.join(", "))
+        }
+        array.push format("CONF[:%s]={%s}", k.id2name, s.join(", "))
+      else
+        array.push format("CONF[:%s]=%s", k.id2name, v.inspect)
+      end
+    end
+    array.join("\n")
+  end
+
+  # Returns the current version of IRB, including release version and last
+  # updated date.
+  def IRB.version
+    format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
+  end
+
+  def IRB.initialized?
+    !!@INITIALIZED
+  end
 
   # initialize config
   def IRB.setup(ap_path, argv: ::ARGV)
@@ -18,22 +52,22 @@ module IRB # :nodoc:
     IRB.init_error
     IRB.parse_opts(argv: argv)
     IRB.run_config
+    IRB.validate_config
     IRB.load_modules
 
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
       fail UndefinedPromptMode, @CONF[:PROMPT_MODE]
     end
+    @INITIALIZED = true
   end
 
   # @CONF default setting
   def IRB.init_config(ap_path)
-    # class instance variables
-    @TRACER_INITIALIZED = false
-
     # default configurations
     unless ap_path and @CONF[:AP_NAME]
       ap_path = File.join(File.dirname(File.dirname(__FILE__)), "irb.rb")
     end
+    @CONF[:VERSION] = version
     @CONF[:AP_NAME] = File::basename(ap_path, ".rb")
 
     @CONF[:IRB_NAME] = "irb"
@@ -44,13 +78,15 @@ module IRB # :nodoc:
     @CONF[:IRB_RC] = nil
 
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
-    @CONF[:USE_COLORIZE] = !ENV['NO_COLOR']
-    @CONF[:USE_AUTOCOMPLETE] = true
+    @CONF[:USE_COLORIZE] = (nc = ENV['NO_COLOR']).nil? || nc.empty?
+    @CONF[:USE_AUTOCOMPLETE] = ENV.fetch("IRB_USE_AUTOCOMPLETE", "true") != "false"
+    @CONF[:COMPLETOR] = ENV.fetch("IRB_COMPLETOR", "regexp").to_sym
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:USE_PAGER] = true
     @CONF[:EXTRA_DOC_DIRS] = []
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
@@ -64,35 +100,30 @@ module IRB # :nodoc:
     @CONF[:PROMPT] = {
       :NULL => {
         :PROMPT_I => nil,
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "%s\n"
       },
       :DEFAULT => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
-        :PROMPT_S => "%N(%m):%03n:%i%l ",
-        :PROMPT_C => "%N(%m):%03n:%i* ",
+        :PROMPT_I => "%N(%m):%03n> ",
+        :PROMPT_S => "%N(%m):%03n%l ",
+        :PROMPT_C => "%N(%m):%03n* ",
         :RETURN => "=> %s\n"
       },
       :CLASSIC => {
         :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => "%N(%m):%03n:%i> ",
         :PROMPT_S => "%N(%m):%03n:%i%l ",
         :PROMPT_C => "%N(%m):%03n:%i* ",
         :RETURN => "%s\n"
       },
       :SIMPLE => {
         :PROMPT_I => ">> ",
-        :PROMPT_N => ">> ",
         :PROMPT_S => "%l> ",
         :PROMPT_C => "?> ",
         :RETURN => "=> %s\n"
       },
       :INF_RUBY => {
-        :PROMPT_I => "%N(%m):%03n:%i> ",
-        :PROMPT_N => nil,
+        :PROMPT_I => "%N(%m):%03n> ",
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "%s\n",
@@ -100,7 +131,6 @@ module IRB # :nodoc:
       },
       :XMP => {
         :PROMPT_I => nil,
-        :PROMPT_N => nil,
         :PROMPT_S => nil,
         :PROMPT_C => nil,
         :RETURN => "    ==>%s\n"
@@ -158,6 +188,12 @@ module IRB # :nodoc:
     @CONF[:LC_MESSAGES] = Locale.new
 
     @CONF[:AT_EXIT] = []
+
+    @CONF[:COMMAND_ALIASES] = {
+      # Symbol aliases
+      :'$' => :show_source,
+      :'@' => :whereami,
+    }
   end
 
   def IRB.set_measure_callback(type = nil, arg = nil, &block)
@@ -183,6 +219,7 @@ module IRB # :nodoc:
       added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end
     if added
+      IRB.conf[:MEASURE] = true
       found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
       if found
         # already added
@@ -203,6 +240,7 @@ module IRB # :nodoc:
       type_sym = type.upcase.to_sym
       IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, | t == type_sym }
     end
+    IRB.conf[:MEASURE] = nil if IRB.conf[:MEASURE_CALLBACKS].empty?
   end
 
   def IRB.init_error
@@ -250,13 +288,27 @@ module IRB # :nodoc:
         end
       when "--noinspect"
         @CONF[:INSPECT_MODE] = false
+      when "--no-pager"
+        @CONF[:USE_PAGER] = false
       when "--singleline", "--readline", "--legacy"
         @CONF[:USE_SINGLELINE] = true
       when "--nosingleline", "--noreadline"
         @CONF[:USE_SINGLELINE] = false
       when "--multiline", "--reidline"
+        if opt == "--reidline"
+          warn <<~MSG.strip
+            --reidline is deprecated, please use --multiline instead.
+          MSG
+        end
+
         @CONF[:USE_MULTILINE] = true
       when "--nomultiline", "--noreidline"
+        if opt == "--noreidline"
+          warn <<~MSG.strip
+            --noreidline is deprecated, please use --nomultiline instead.
+          MSG
+        end
+
         @CONF[:USE_MULTILINE] = false
       when /^--extra-doc-dir(?:=(.+))?/
         opt = $1 || argv.shift
@@ -283,12 +335,20 @@ module IRB # :nodoc:
         @CONF[:USE_AUTOCOMPLETE] = true
       when "--noautocomplete"
         @CONF[:USE_AUTOCOMPLETE] = false
+      when "--regexp-completor"
+        @CONF[:COMPLETOR] = :regexp
+      when "--type-completor"
+        @CONF[:COMPLETOR] = :type
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern
         @CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
         @CONF[:PROMPT_MODE] = :NULL
+      when "--script"
+        noscript = false
+      when "--noscript"
+        noscript = true
       when "--inf-ruby-mode"
         @CONF[:PROMPT_MODE] = :INF_RUBY
       when "--sample-book-mode", "--simple-prompt"
@@ -309,16 +369,20 @@ module IRB # :nodoc:
         IRB.print_usage
         exit 0
       when "--"
-        if opt = argv.shift
+        if !noscript && (opt = argv.shift)
           @CONF[:SCRIPT] = opt
           $0 = opt
         end
         break
-      when /^-/
+      when /^-./
         fail UnrecognizedSwitch, opt
       else
-        @CONF[:SCRIPT] = opt
-        $0 = opt
+        if noscript
+          argv.unshift(opt)
+        else
+          @CONF[:SCRIPT] = opt
+          $0 = opt
+        end
         break
       end
     end
@@ -329,63 +393,73 @@ module IRB # :nodoc:
     $LOAD_PATH.unshift(*load_path)
   end
 
-  # running config
+  # Run the config file
   def IRB.run_config
     if @CONF[:RC]
-      begin
-        load rc_file
-      rescue LoadError, Errno::ENOENT
-      rescue # StandardError, ScriptError
-        print "load error: #{rc_file}\n"
-        print $!.class, ": ", $!, "\n"
-        for err in $@[0, $@.size - 2]
-          print "\t", err, "\n"
-        end
+      irbrc_files.each do |rc|
+        load rc
+      rescue StandardError, ScriptError => e
+        warn "Error loading RC file '#{rc}':\n#{e.full_message(highlight: false)}"
       end
     end
   end
 
   IRBRC_EXT = "rc"
-  def IRB.rc_file(ext = IRBRC_EXT)
-    if !@CONF[:RC_NAME_GENERATOR]
-      rc_file_generators do |rcgen|
-        @CONF[:RC_NAME_GENERATOR] ||= rcgen
-        if File.exist?(rcgen.call(IRBRC_EXT))
-          @CONF[:RC_NAME_GENERATOR] = rcgen
-          break
-        end
-      end
+
+  def IRB.rc_file(ext)
+    prepare_irbrc_name_generators
+
+    # When irbrc exist in default location
+    if (rcgen = @existing_rc_name_generators.first)
+      return rcgen.call(ext)
     end
-    case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
-    when String
-      return rc_file
-    else
-      fail IllegalRCNameGenerator
+
+    # When irbrc does not exist in default location
+    rc_file_generators do |rcgen|
+      return rcgen.call(ext)
+    end
+
+    # When HOME and XDG_CONFIG_HOME are not available
+    nil
+  end
+
+  def IRB.irbrc_files
+    prepare_irbrc_name_generators
+    @irbrc_files
+  end
+
+  def IRB.validate_config
+    conf[:IRB_NAME] = conf[:IRB_NAME].to_s
+
+    irb_rc = conf[:IRB_RC]
+    unless irb_rc.nil? || irb_rc.respond_to?(:call)
+      raise_validation_error "IRB.conf[:IRB_RC] should be a callable object. Got #{irb_rc.inspect}."
+    end
+
+    back_trace_limit = conf[:BACK_TRACE_LIMIT]
+    unless back_trace_limit.is_a?(Integer)
+      raise_validation_error "IRB.conf[:BACK_TRACE_LIMIT] should be an integer. Got #{back_trace_limit.inspect}."
+    end
+
+    prompt = conf[:PROMPT]
+    unless prompt.is_a?(Hash)
+      msg = "IRB.conf[:PROMPT] should be a Hash. Got #{prompt.inspect}."
+
+      if prompt.is_a?(Symbol)
+        msg += " Did you mean to set `IRB.conf[:PROMPT_MODE]`?"
+      end
+
+      raise_validation_error msg
+    end
+
+    eval_history = conf[:EVAL_HISTORY]
+    unless eval_history.nil? || eval_history.is_a?(Integer)
+      raise_validation_error "IRB.conf[:EVAL_HISTORY] should be an integer. Got #{eval_history.inspect}."
     end
   end
 
-  # enumerate possible rc-file base name generators
-  def IRB.rc_file_generators
-    if irbrc = ENV["IRBRC"]
-      yield proc{|rc| rc == "rc" ? irbrc : irbrc+rc}
-    end
-    if xdg_config_home = ENV["XDG_CONFIG_HOME"]
-      irb_home = File.join(xdg_config_home, "irb")
-      unless File.exist? irb_home
-        require 'fileutils'
-        FileUtils.mkdir_p irb_home
-      end
-      yield proc{|rc| irb_home + "/irb#{rc}"}
-    end
-    if home = ENV["HOME"]
-      yield proc{|rc| home+"/.irb#{rc}"}
-    end
-    current_dir = Dir.pwd
-    yield proc{|rc| current_dir+"/.config/irb/irb#{rc}"}
-    yield proc{|rc| current_dir+"/.irb#{rc}"}
-    yield proc{|rc| current_dir+"/irb#{rc.sub(/\A_?/, '.')}"}
-    yield proc{|rc| current_dir+"/_irb#{rc}"}
-    yield proc{|rc| current_dir+"/$irb#{rc}"}
+  def IRB.raise_validation_error(msg)
+    raise TypeError, msg, @irbrc_files
   end
 
   # loading modules
@@ -399,10 +473,52 @@ module IRB # :nodoc:
     end
   end
 
-
-  DefaultEncodings = Struct.new(:external, :internal)
   class << IRB
     private
+
+    def prepare_irbrc_name_generators
+      return if @existing_rc_name_generators
+
+      @existing_rc_name_generators = []
+      @irbrc_files = []
+      rc_file_generators do |rcgen|
+        irbrc = rcgen.call(IRBRC_EXT)
+        if File.exist?(irbrc)
+          @irbrc_files << irbrc
+          @existing_rc_name_generators << rcgen
+        end
+      end
+      generate_current_dir_irbrc_files.each do |irbrc|
+        @irbrc_files << irbrc if File.exist?(irbrc)
+      end
+      @irbrc_files.uniq!
+    end
+
+    # enumerate possible rc-file base name generators
+    def rc_file_generators
+      if irbrc = ENV["IRBRC"]
+        yield proc{|rc| rc == "rc" ? irbrc : irbrc+rc}
+      end
+      if xdg_config_home = ENV["XDG_CONFIG_HOME"]
+        irb_home = File.join(xdg_config_home, "irb")
+        if File.directory?(irb_home)
+          yield proc{|rc| irb_home + "/irb#{rc}"}
+        end
+      end
+      if home = ENV["HOME"]
+        yield proc{|rc| home+"/.irb#{rc}"}
+        if xdg_config_home.nil? || xdg_config_home.empty?
+          yield proc{|rc| home+"/.config/irb/irb#{rc}"}
+        end
+      end
+    end
+
+    # possible irbrc files in current directory
+    def generate_current_dir_irbrc_files
+      current_dir = Dir.pwd
+      %w[.irbrc irbrc _irbrc $irbrc].map { |file| "#{current_dir}/#{file}" }
+    end
+
     def set_encoding(extern, intern = nil, override: true)
       verbose, $VERBOSE = $VERBOSE, nil
       Encoding.default_external = extern unless extern.nil? || extern.empty?

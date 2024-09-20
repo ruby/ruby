@@ -230,9 +230,9 @@ class RDoc::Generator::JsonIndex
   def index_methods
     debug_msg "  generating method search index"
 
-    list = @classes.uniq.map do |klass|
+    list = @classes.uniq.flat_map do |klass|
       klass.method_list
-    end.flatten.sort_by do |method|
+    end.sort_by do |method|
       [method.name, method.parent.full_name]
     end
 

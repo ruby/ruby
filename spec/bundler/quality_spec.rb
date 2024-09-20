@@ -12,7 +12,7 @@ RSpec.describe "The library itself" do
 
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ merge_conflicts_regex
+      failing_lines << number + 1 if line&.match?(merge_conflicts_regex)
     end
 
     return if failing_lines.empty?
@@ -22,7 +22,7 @@ RSpec.describe "The library itself" do
   def check_for_tab_characters(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ /\t/
+      failing_lines << number + 1 if line.include?("\t")
     end
 
     return if failing_lines.empty?
@@ -32,24 +32,22 @@ RSpec.describe "The library itself" do
   def check_for_extra_spaces(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      next if line =~ /^\s+#.*\s+\n$/
-      failing_lines << number + 1 if line =~ /\s+\n$/
+      next if /^\s+#.*\s+\n$/.match?(line)
+      failing_lines << number + 1 if /\s+\n$/.match?(line)
     end
 
     return if failing_lines.empty?
     "#{filename} has spaces on the EOL on lines #{failing_lines.join(", ")}"
   end
 
-  def check_for_straneous_quotes(filename)
-    return if File.expand_path(filename) == __FILE__
-
+  def check_for_extraneous_quotes(filename)
     failing_lines = []
     each_line(filename) do |line, number|
-      failing_lines << number + 1 if line =~ /’/
+      failing_lines << number + 1 if /\u{2019}/.match?(line)
     end
 
     return if failing_lines.empty?
-    "#{filename} has an straneous quote on lines #{failing_lines.join(", ")}"
+    "#{filename} has an extraneous quote on lines #{failing_lines.join(", ")}"
   end
 
   def check_for_expendable_words(filename)
@@ -89,19 +87,19 @@ RSpec.describe "The library itself" do
     exempt = /\.gitmodules|fixtures|vendor|LICENSE|vcr_cassettes|rbreadline\.diff|index\.txt$/
     error_messages = []
     tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_tab_characters(filename)
       error_messages << check_for_extra_spaces(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "has no estraneous quotes" do
+  it "has no extraneous quotes" do
     exempt = /vendor|vcr_cassettes|LICENSE|rbreadline\.diff/
     error_messages = []
     tracked_files.each do |filename|
-      next if filename =~ exempt
-      error_messages << check_for_straneous_quotes(filename)
+      next if filename&.match?(exempt)
+      error_messages << check_for_extraneous_quotes(filename)
     end
     expect(error_messages.compact).to be_well_formed
   end
@@ -110,7 +108,7 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = %r{lock/lockfile_spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
     tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_git_merge_conflicts(filename)
     end
     expect(error_messages.compact).to be_well_formed
@@ -120,7 +118,7 @@ RSpec.describe "The library itself" do
     included = /ronn/
     error_messages = []
     man_tracked_files.each do |filename|
-      next unless filename =~ included
+      next unless filename&.match?(included)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -131,7 +129,7 @@ RSpec.describe "The library itself" do
     error_messages = []
     exempt = /vendor|vcr_cassettes|CODE_OF_CONDUCT/
     lib_tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       error_messages << check_for_expendable_words(filename)
       error_messages << check_for_specific_pronouns(filename)
     end
@@ -151,7 +149,6 @@ RSpec.describe "The library itself" do
       git.allow_insecure
       inline
       trust-policy
-      use_gem_version_promoter_for_major_updates
     ]
 
     all_settings = Hash.new {|h, k| h[k] = [] }
@@ -194,11 +191,12 @@ RSpec.describe "The library itself" do
   end
 
   it "ships the correct set of files" do
-    git_list = git_ls_files(ruby_core? ? "lib/bundler lib/bundler.rb libexec/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec")
+    git_list = tracked_files.reject {|f| f.start_with?("spec/") }
 
     gem_list = loaded_gemspec.files
+    gem_list.map! {|f| f.sub(%r{\Aexe/}, "libexec/") } if ruby_core?
 
-    expect(git_list.sort).to eq(gem_list.sort)
+    expect(git_list).to match_array(gem_list)
   end
 
   it "does not contain any warnings" do
@@ -207,7 +205,6 @@ RSpec.describe "The library itself" do
       lib/bundler/deployment.rb
       lib/bundler/gem_tasks.rb
       lib/bundler/vlad.rb
-      lib/bundler/templates/gems.rb
     ]
     files_to_require = lib_tracked_files.grep(/\.rb$/) - exclusions
     files_to_require.reject! {|f| f.start_with?("lib/bundler/vendor") }
@@ -230,7 +227,7 @@ RSpec.describe "The library itself" do
     exempt = %r{templates/|\.5|\.1|vendor/}
     all_bad_requires = []
     lib_tracked_files.each do |filename|
-      next if filename =~ exempt
+      next if filename&.match?(exempt)
       each_line(filename) do |line, number|
         line.scan(/^ *require "bundler/).each { all_bad_requires << "#{filename}:#{number.succ}" }
       end
@@ -239,9 +236,24 @@ RSpec.describe "The library itself" do
     expect(all_bad_requires).to be_empty, "#{all_bad_requires.size} internal requires that should use `require_relative`: #{all_bad_requires}"
   end
 
+  # We don't want our artifice code to activate bundler, but it needs to use the
+  # namespaced implementation of `Net::HTTP`. So we duplicate the file in
+  # bundler that loads that.
+  it "keeps vendored_net_http spec code in sync with the lib implementation" do
+    lib_implementation_path = File.join(source_lib_dir, "bundler", "vendored_net_http.rb")
+    expect(File.exist?(lib_implementation_path)).to be_truthy
+    lib_code = File.read(lib_implementation_path)
+
+    spec_implementation_path = File.join(spec_dir, "support", "vendored_net_http.rb")
+    expect(File.exist?(spec_implementation_path)).to be_truthy
+    spec_code = File.read(spec_implementation_path)
+
+    expect(lib_code).to eq(spec_code)
+  end
+
   private
 
   def each_line(filename, &block)
-    File.readlines(filename, :encoding => "UTF-8").each_with_index(&block)
+    File.readlines(filename, encoding: "UTF-8").each_with_index(&block)
   end
 end

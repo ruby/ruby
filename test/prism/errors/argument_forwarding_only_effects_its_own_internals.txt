@@ -1,0 +1,3 @@
+def a(...); b(...); end; def c(x, y, z); b(...); end
+                                           ^~~ unexpected ... when the parent method is not forwarding
+

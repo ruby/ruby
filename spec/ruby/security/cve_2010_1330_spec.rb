@@ -8,7 +8,7 @@ describe "String#gsub" do
     # #gsub on a string in the UTF-8 encoding but with invalid an UTF-8 byte
     # sequence.
 
-    str = "\xF6<script>"
+    str = +"\xF6<script>"
     str.force_encoding Encoding::BINARY
     str.gsub(/</, "&lt;").should == "\xF6&lt;script>".b
     str.force_encoding Encoding::UTF_8

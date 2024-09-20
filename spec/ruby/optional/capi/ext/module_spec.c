@@ -9,18 +9,6 @@ static VALUE module_specs_test_method(VALUE self) {
   return ID2SYM(rb_intern("test_method"));
 }
 
-static VALUE module_specs_test_method_2required(VALUE self, VALUE arg1, VALUE arg2) {
-    return ID2SYM(rb_intern("test_method_2required"));
-}
-
-static VALUE module_specs_test_method_c_array(int argc, VALUE *argv, VALUE self) {
-    return ID2SYM(rb_intern("test_method_c_array"));
-}
-
-static VALUE module_specs_test_method_ruby_array(VALUE self, VALUE args) {
-    return ID2SYM(rb_intern("test_method_ruby_array"));
-}
-
 static VALUE module_specs_const_defined(VALUE self, VALUE klass, VALUE id) {
   return rb_const_defined(klass, SYM2ID(id)) ? Qtrue : Qfalse;
 }
@@ -88,19 +76,25 @@ static VALUE module_specs_rb_define_method(VALUE self, VALUE cls, VALUE str_name
   return Qnil;
 }
 
-static VALUE module_specs_rb_define_method_2required(VALUE self, VALUE cls, VALUE str_name) {
-  rb_define_method(cls, RSTRING_PTR(str_name), module_specs_test_method_2required, 2);
-  return Qnil;
+static VALUE module_specs_method_var_args_1(int argc, VALUE *argv, VALUE self) {
+  VALUE ary = rb_ary_new();
+  int i;
+  for (i = 0; i < argc; i++) {
+    rb_ary_push(ary, argv[i]);
+  }
+  return ary;
 }
 
-static VALUE module_specs_rb_define_method_c_array(VALUE self, VALUE cls, VALUE str_name) {
-  rb_define_method(cls, RSTRING_PTR(str_name), module_specs_test_method_c_array, -1);
-  return Qnil;
+static VALUE module_specs_method_var_args_2(VALUE self, VALUE argv) {
+  return argv;
 }
 
-static VALUE module_specs_rb_define_method_ruby_array(VALUE self, VALUE cls, VALUE str_name) {
-  rb_define_method(cls, RSTRING_PTR(str_name), module_specs_test_method_ruby_array, -2);
-  return Qnil;
+static VALUE module_specs_rb_define_method_1required(VALUE self, VALUE arg1) {
+    return arg1;
+}
+
+static VALUE module_specs_rb_define_method_2required(VALUE self, VALUE arg1, VALUE arg2) {
+    return arg2;
 }
 
 static VALUE module_specs_rb_define_module_function(VALUE self, VALUE cls, VALUE str_name) {
@@ -155,25 +149,21 @@ void Init_module_spec(void) {
   rb_define_method(cls, "rb_define_module_under", module_specs_rb_define_module_under, 2);
   rb_define_method(cls, "rb_define_const", module_specs_define_const, 3);
   rb_define_method(cls, "rb_define_global_const", module_specs_define_global_const, 2);
-  rb_define_method(cls, "rb_define_global_function",
-      module_specs_rb_define_global_function, 1);
+  rb_define_method(cls, "rb_define_global_function", module_specs_rb_define_global_function, 1);
 
   rb_define_method(cls, "rb_define_method", module_specs_rb_define_method, 2);
+  rb_define_method(cls, "rb_define_method_varargs_1", module_specs_method_var_args_1, -1);
+  rb_define_method(cls, "rb_define_method_varargs_2", module_specs_method_var_args_2, -2);
+  rb_define_method(cls, "rb_define_method_1required", module_specs_rb_define_method_1required, 1);
   rb_define_method(cls, "rb_define_method_2required", module_specs_rb_define_method_2required, 2);
-  rb_define_method(cls, "rb_define_method_c_array", module_specs_rb_define_method_c_array, 2);
-  rb_define_method(cls, "rb_define_method_ruby_array", module_specs_rb_define_method_ruby_array, 2);
 
-  rb_define_method(cls, "rb_define_module_function",
-      module_specs_rb_define_module_function, 2);
+  rb_define_method(cls, "rb_define_module_function", module_specs_rb_define_module_function, 2);
 
-  rb_define_method(cls, "rb_define_private_method",
-      module_specs_rb_define_private_method, 2);
+  rb_define_method(cls, "rb_define_private_method", module_specs_rb_define_private_method, 2);
 
-  rb_define_method(cls, "rb_define_protected_method",
-      module_specs_rb_define_protected_method, 2);
+  rb_define_method(cls, "rb_define_protected_method", module_specs_rb_define_protected_method, 2);
 
-  rb_define_method(cls, "rb_define_singleton_method",
-      module_specs_rb_define_singleton_method, 2);
+  rb_define_method(cls, "rb_define_singleton_method", module_specs_rb_define_singleton_method, 2);
 
   rb_define_method(cls, "rb_undef_method", module_specs_rb_undef_method, 2);
   rb_define_method(cls, "rb_undef", module_specs_rb_undef, 2);

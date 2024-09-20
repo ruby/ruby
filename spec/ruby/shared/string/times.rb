@@ -32,47 +32,25 @@ describe :string_times, shared: true do
     @object.call("", max_long).should == ""
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances" do
-      @object.call(MyString.new("cool"), 0).should be_an_instance_of(MyString)
-      @object.call(MyString.new("cool"), 1).should be_an_instance_of(MyString)
-      @object.call(MyString.new("cool"), 2).should be_an_instance_of(MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances" do
-      @object.call(MyString.new("cool"), 0).should be_an_instance_of(String)
-      @object.call(MyString.new("cool"), 1).should be_an_instance_of(String)
-      @object.call(MyString.new("cool"), 2).should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "always taints the result when self is tainted" do
-      ["", "OK", MyString.new(""), MyString.new("OK")].each do |str|
-        str.taint
-
-        [0, 1, 2].each do |arg|
-          @object.call(str, arg).should.tainted?
-        end
-      end
-    end
+  it "returns String instances" do
+    @object.call(MyString.new("cool"), 0).should be_an_instance_of(String)
+    @object.call(MyString.new("cool"), 1).should be_an_instance_of(String)
+    @object.call(MyString.new("cool"), 2).should be_an_instance_of(String)
   end
 
   it "returns a String in the same encoding as self" do
-    str = "\xE3\x81\x82".force_encoding Encoding::UTF_8
+    str = "\xE3\x81\x82".dup.force_encoding Encoding::UTF_8
     result = @object.call(str, 2)
     result.encoding.should equal(Encoding::UTF_8)
   end
 
-  platform_is wordsize: 32 do
+  platform_is c_long_size: 32 do
     it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
       -> { @object.call("abc", (2 ** 31) - 1) }.should raise_error(ArgumentError)
     end
   end
 
-  platform_is wordsize: 64 do
+  platform_is c_long_size: 64 do
     it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
       -> { @object.call("abc", (2 ** 63) - 1) }.should raise_error(ArgumentError)
     end

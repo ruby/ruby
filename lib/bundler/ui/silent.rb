@@ -13,28 +13,51 @@ module Bundler
         string
       end
 
-      def info(message, newline = nil)
+      def info(message = nil, newline = nil)
       end
 
-      def confirm(message, newline = nil)
+      def confirm(message = nil, newline = nil)
       end
 
-      def warn(message, newline = nil)
+      def warn(message = nil, newline = nil)
         @warnings |= [message]
       end
 
-      def error(message, newline = nil)
+      def error(message = nil, newline = nil)
       end
 
-      def debug(message, newline = nil)
+      def debug(message = nil, newline = nil)
+      end
+
+      def confirm?
+        false
+      end
+
+      def error?
+        false
       end
 
       def debug?
         false
       end
 
+      def info?
+        false
+      end
+
       def quiet?
         false
+      end
+
+      def warn?
+        false
+      end
+
+      def output_stream=(_symbol)
+      end
+
+      def output_stream
+        nil
       end
 
       def ask(message)
@@ -44,7 +67,7 @@ module Bundler
         raise "Cannot ask yes? with a silent shell"
       end
 
-      def no?
+      def no?(msg)
         raise "Cannot ask no? with a silent shell"
       end
 
@@ -58,6 +81,10 @@ module Bundler
       end
 
       def silence
+        yield
+      end
+
+      def progress
         yield
       end
 

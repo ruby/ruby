@@ -12,7 +12,7 @@ describe :dir_glob, shared: true do
   end
 
   it "raises an Encoding::CompatibilityError if the argument encoding is not compatible with US-ASCII" do
-    pattern = "file*".force_encoding Encoding::UTF_16BE
+    pattern = "file*".dup.force_encoding Encoding::UTF_16BE
     -> { Dir.send(@method, pattern) }.should raise_error(Encoding::CompatibilityError)
   end
 
@@ -23,39 +23,26 @@ describe :dir_glob, shared: true do
     Dir.send(@method, obj).should == %w[file_one.ext]
   end
 
-  ruby_version_is ""..."2.7" do
-    it "splits the string on \\0 if there is only one string given and warns" do
-      -> {
-        Dir.send(@method, "file_o*\0file_t*").should ==
-          %w!file_one.ext file_two.ext!
-      }.should complain(/warning: use glob patterns list instead of nul-separated patterns/)
-    end
+  it "raises an ArgumentError if the string contains \\0" do
+    -> {Dir.send(@method, "file_o*\0file_t*")}.should raise_error ArgumentError, /nul-separated/
   end
 
-  ruby_version_is "2.7" do
-    it "raises an ArgumentError if the string contains \\0" do
-      -> {Dir.send(@method, "file_o*\0file_t*")}.should raise_error ArgumentError, /nul-separated/
-    end
+  it "result is sorted by default" do
+    result = Dir.send(@method, '*')
+    result.should == result.sort
   end
 
-  ruby_version_is "3.0" do
-    it "result is sorted by default" do
-      result = Dir.send(@method, '*')
-      result.should == result.sort
-    end
-
-    it "result is sorted with sort: true" do
-      result = Dir.send(@method, '*', sort: true)
-      result.should == result.sort
-    end
-
-    it "sort: false returns same files" do
-      result = Dir.send(@method,'*', sort: false)
-      result.sort.should == Dir.send(@method, '*').sort
-    end
+  it "result is sorted with sort: true" do
+    result = Dir.send(@method, '*', sort: true)
+    result.should == result.sort
   end
 
-  ruby_version_is "3.0"..."3.1" do
+  it "sort: false returns same files" do
+    result = Dir.send(@method,'*', sort: false)
+    result.sort.should == Dir.send(@method, '*').sort
+  end
+
+  ruby_version_is ""..."3.1" do
     it "result is sorted with any non false value of sort:" do
       result = Dir.send(@method, '*', sort: 0)
       result.should == result.sort
@@ -121,6 +108,10 @@ describe :dir_glob, shared: true do
 
     it "matches files with backslashes in their name" do
       Dir.glob('special/\\\\{a,b}').should == ['special/\a']
+    end
+
+    it "matches directory with special characters in their name in complex patterns" do
+      Dir.glob("special/test +()\\[\\]\\{\\}/hello_world{.{en},}{.{html},}{+{phone},}{.{erb},}").should == ['special/test +()[]{}/hello_world.erb']
     end
   end
 
@@ -236,6 +227,7 @@ describe :dir_glob, shared: true do
       dir/
       nested/
       special/
+      special/test\ +()[]{}/
       special/test{1}/
       special/{}/
       subdir_one/

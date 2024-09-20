@@ -7,4 +7,8 @@ describe :float_to_i, shared: true do
     -9223372036854775808.1.send(@method).should eql(-9223372036854775808)
     9223372036854775808.1.send(@method).should eql(9223372036854775808)
   end
+
+  it "raises a FloatDomainError for NaN" do
+    -> { nan_value.send(@method) }.should raise_error(FloatDomainError)
+  end
 end

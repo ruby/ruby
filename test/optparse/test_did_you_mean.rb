@@ -6,17 +6,21 @@ rescue LoadError
   return
 end
 
-class TestOptionParser::DidYouMean < TestOptionParser
+class TestOptionParserDidYouMean < TestOptionParser
   def setup
     super
     @opt.def_option("--foo", Integer) { |v| @foo = v }
     @opt.def_option("--bar", Integer) { |v| @bar = v }
     @opt.def_option("--baz", Integer) { |v| @baz = v }
     @formatter = ::DidYouMean.formatter
-    case @formatter
-    when ::DidYouMean::PlainFormatter
+    if ::DidYouMean.const_defined?(:Formatter)
+      ::DidYouMean.formatter = ::DidYouMean::Formatter
     else
-      ::DidYouMean.formatter = ::DidYouMean::PlainFormatter.new
+      case @formatter
+      when ::DidYouMean::PlainFormatter
+      else
+        ::DidYouMean.formatter = ::DidYouMean::PlainFormatter.new
+      end
     end
   end
 

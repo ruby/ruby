@@ -10,6 +10,18 @@ describe "String#to_i" do
     "1_2_3asdf".to_i.should == 123
   end
 
+  it "ignores multiple non-consecutive underscoes when the first digit is 0" do
+    (2..16).each do |base|
+      "0_0_010".to_i(base).should == base;
+    end
+  end
+
+  it "bails out at the first double underscore if the first digit is 0" do
+    (2..16).each do |base|
+      "010__1".to_i(base).should == base;
+    end
+  end
+
   it "ignores leading whitespaces" do
     [ " 123", "     123", "\r\n\r\n123", "\t\t123",
       "\r\n\t\n123", " \t\n\r\t 123"].each do |str|

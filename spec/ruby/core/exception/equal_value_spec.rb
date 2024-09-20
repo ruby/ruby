@@ -22,18 +22,18 @@ describe "Exception#==" do
 
   it "returns true if both exceptions have the same class, the same message, and the same backtrace" do
     one = TypeError.new("message")
-    one.set_backtrace [File.dirname(__FILE__)]
+    one.set_backtrace [__dir__]
     two = TypeError.new("message")
-    two.set_backtrace [File.dirname(__FILE__)]
+    two.set_backtrace [__dir__]
     one.should == two
   end
 
   it "returns false if the two exceptions inherit from Exception but have different classes" do
     one = RuntimeError.new("message")
-    one.set_backtrace [File.dirname(__FILE__)]
+    one.set_backtrace [__dir__]
     one.should be_kind_of(Exception)
     two = TypeError.new("message")
-    two.set_backtrace [File.dirname(__FILE__)]
+    two.set_backtrace [__dir__]
     two.should be_kind_of(Exception)
     one.should_not == two
   end
@@ -52,7 +52,7 @@ describe "Exception#==" do
 
   it "returns false if the two exceptions differ only in their backtrace" do
     one = RuntimeError.new("message")
-    one.set_backtrace [File.dirname(__FILE__)]
+    one.set_backtrace [__dir__]
     two = RuntimeError.new("message")
     two.set_backtrace nil
     one.should_not == two
@@ -60,9 +60,9 @@ describe "Exception#==" do
 
   it "returns false if the two exceptions differ only in their message" do
     one = RuntimeError.new("message")
-    one.set_backtrace [File.dirname(__FILE__)]
+    one.set_backtrace [__dir__]
     two = RuntimeError.new("message2")
-    two.set_backtrace [File.dirname(__FILE__)]
+    two.set_backtrace [__dir__]
     one.should_not == two
   end
 end

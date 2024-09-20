@@ -22,6 +22,15 @@ describe "Regexps with back-references" do
     $10.should == "0"
   end
 
+  it "returns nil for numbered variable with too large index" do
+    -> {
+      eval(<<~CODE).should == nil
+        "a" =~ /(.)/
+        eval('$4294967296')
+      CODE
+    }.should complain(/warning: ('|`)\$4294967296' is too big for a number variable, always nil/)
+  end
+
   it "will not clobber capture variables across threads" do
     cap1, cap2, cap3 = nil
     "foo" =~ /(o+)/

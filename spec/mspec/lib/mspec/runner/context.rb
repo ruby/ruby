@@ -210,6 +210,7 @@ class ContextState
               MSpec.clear_expectations
               if example
                 passed = protect nil, example
+                passed = protect nil, -> { MSpec.actions :passed, state, example } if passed
                 MSpec.actions :example, state, example
                 protect nil, EXPECTATION_MISSING if !MSpec.expectation? and passed
               end

@@ -1,0 +1,16 @@
+Returns a left-justified copy of +self+.
+
+If integer argument +size+ is greater than the size (in characters) of +self+,
+returns a new string of length +size+ that is a copy of +self+,
+left justified and padded on the right with +pad_string+:
+
+  'hello'.ljust(10)       # => "hello     "
+  '  hello'.ljust(10)     # => "  hello   "
+  'hello'.ljust(10, 'ab') # => "helloababa"
+  'тест'.ljust(10)        # => "тест      "
+  'こんにちは'.ljust(10)    # => "こんにちは     "
+
+If +size+ is not greater than the size of +self+, returns a copy of +self+:
+
+  'hello'.ljust(5)  # => "hello"
+  'hello'.ljust(1)  # => "hello"

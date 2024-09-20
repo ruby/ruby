@@ -1,25 +1,15 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/lc/error.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
 
-# :stopdoc:
 module IRB
+  # :stopdoc:
+
   class UnrecognizedSwitch < StandardError
     def initialize(val)
       super("Unrecognized switch: #{val}")
-    end
-  end
-  class NotImplementedError < StandardError
-    def initialize(val)
-      super("Need to define `#{val}'")
     end
   end
   class CantReturnToNormalMode < StandardError
@@ -47,11 +37,6 @@ module IRB
       super("No such job(#{val}).")
     end
   end
-  class CantShiftToMultiIrbMode < StandardError
-    def initialize
-      super("Can't shift to multi irb mode.")
-    end
-  end
   class CantChangeBinding < StandardError
     def initialize(val)
       super("Can't change binding to (#{val}).")
@@ -62,10 +47,6 @@ module IRB
       super("Undefined prompt mode(#{val}).")
     end
   end
-  class IllegalRCGenerator < StandardError
-    def initialize
-      super("Define illegal RC_NAME_GENERATOR.")
-    end
-  end
+
+  # :startdoc:
 end
-# :startdoc:

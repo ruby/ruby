@@ -83,7 +83,7 @@ end
 
 describe "StringIO#readlines when in write-only mode" do
   it "raises an IOError" do
-    io = StringIO.new("xyz", "w")
+    io = StringIO.new(+"xyz", "w")
     -> { io.readlines }.should raise_error(IOError)
 
     io = StringIO.new("xyz")
@@ -96,5 +96,23 @@ describe "StringIO#readlines when passed [chomp]" do
   it "returns the data read without a trailing newline character" do
     io = StringIO.new("this>is\nan>example\r\n")
     io.readlines(chomp: true).should == ["this>is", "an>example"]
+  end
+end
+
+describe "StringIO#readlines when passed [limit]" do
+  before :each do
+    @io = StringIO.new("a b c d e\n1 2 3 4 5")
+  end
+
+  it "returns the data read until the limit is met" do
+    @io.readlines(4).should == ["a b ", "c d ", "e\n", "1 2 ", "3 4 ", "5"]
+  end
+
+  it "raises ArgumentError when limit is 0" do
+    -> { @io.readlines(0) }.should raise_error(ArgumentError)
+  end
+
+  it "ignores it when the limit is negative" do
+    @io.readlines(-4).should == ["a b c d e\n", "1 2 3 4 5"]
   end
 end

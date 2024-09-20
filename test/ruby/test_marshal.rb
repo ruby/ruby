@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'tempfile'
 require_relative 'marshaltestlib'
 
 class TestMarshal < Test::Unit::TestCase
@@ -33,7 +32,7 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_marshal
-    a = [1, 2, 3, [4,5,"foo"], {1=>"bar"}, 2.5, fact(30)]
+    a = [1, 2, 3, 2**32, 2**64, [4,5,"foo"], {1=>"bar"}, 2.5, fact(30)]
     assert_equal a, Marshal.load(Marshal.dump(a))
 
     [[1,2,3,4], [81, 2, 118, 3146]].each { |w,x,y,z|
@@ -45,6 +44,26 @@ class TestMarshal < Test::Unit::TestCase
     [1.0, 10.0, 100.0, 110.0].each {|x|
       assert_equal(x, Marshal.load(Marshal.dump(x)), bug3659)
     }
+  end
+
+  def test_marshal_integers
+    a = []
+    [-2, -1, 0, 1, 2].each do |i|
+      0.upto(65).map do |exp|
+        a << 2**exp + i
+      end
+    end
+    assert_equal a, Marshal.load(Marshal.dump(a))
+
+    a = [2**32, []]*2
+    assert_equal a, Marshal.load(Marshal.dump(a))
+
+    a = [2**32, 2**32, []]*2
+    assert_equal a, Marshal.load(Marshal.dump(a))
+  end
+
+  def test_marshal_small_bignum_backref
+    assert_equal [2**32, 2**32], Marshal.load("\x04\b[\al+\b\x00\x00\x00\x00\x01\x00@\x06")
   end
 
   StrClone = String.clone
@@ -70,6 +89,14 @@ class TestMarshal < Test::Unit::TestCase
     }
   ensure
     TestMarshal.instance_eval { remove_const :StructInvalidMembers }
+  end
+
+  def test_load_range_as_struct
+    assert_raise(TypeError, 'GH-6832') do
+      # Can be obtained with:
+      #  $ ruby -e 'Range = Struct.new(:a, :b, :c); p Marshal.dump(Range.new(nil, nil, nil))'
+      Marshal.load("\x04\bS:\nRange\b:\x06a0:\x06b0:\x06c0")
+    end
   end
 
   class C
@@ -286,11 +313,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(c, Marshal.load(Marshal.dump(c)), bug2109)
 
     assert_nothing_raised(ArgumentError, '[ruby-dev:40386]') do
-      re = Tempfile.create("marshal_regexp") do |f|
-        f.binmode.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
-        f.rewind
-        re2 = Marshal.load(f)
-        re2
+      re = IO.pipe do |r, w|
+        w.write("\x04\bI/\x00\x00\x06:\rencoding\"\rUS-ASCII")
+        # Marshal.load would not overread and block
+        Marshal.load(r)
       end
       assert_equal(//, re)
     end
@@ -544,13 +570,19 @@ class TestMarshal < Test::Unit::TestCase
   def test_class_ivar
     assert_raise(TypeError) {Marshal.load("\x04\x08Ic\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
     assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1bTestMarshal::TestClass\x06:\x0e@ivar_bug\"\x08bug")}
-    assert_not_operator(TestClass, :instance_variable_defined?, :@bug)
+    assert_not_operator(TestClass, :instance_variable_defined?, :@ivar_bug)
+
+    assert_raise(TypeError) {Marshal.load("\x04\x08[\x07c\x1bTestMarshal::TestClassI@\x06\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_not_operator(TestClass, :instance_variable_defined?, :@ivar_bug)
   end
 
   def test_module_ivar
     assert_raise(TypeError) {Marshal.load("\x04\x08Im\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
     assert_raise(TypeError) {Marshal.load("\x04\x08IM\x1cTestMarshal::TestModule\x06:\x0e@ivar_bug\"\x08bug")}
-    assert_not_operator(TestModule, :instance_variable_defined?, :@bug)
+    assert_not_operator(TestModule, :instance_variable_defined?, :@ivar_bug)
+
+    assert_raise(TypeError) {Marshal.load("\x04\x08[\x07m\x1cTestMarshal::TestModuleI@\x06\x06:\x0e@ivar_bug\"\x08bug")}
+    assert_not_operator(TestModule, :instance_variable_defined?, :@ivar_bug)
   end
 
   class TestForRespondToFalse
@@ -583,6 +615,8 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_continuation
     EnvUtil.suppress_warning {require "continuation"}
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)

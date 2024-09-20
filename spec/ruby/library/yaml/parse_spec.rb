@@ -1,13 +1,14 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/common'
 
-describe "YAML#parse with an empty string" do
+require 'yaml'
+
+describe "YAML.parse with an empty string" do
   it "returns false" do
     YAML.parse('').should be_false
   end
 end
 
-describe "YAML#parse" do
+describe "YAML.parse" do
   before :each do
     @string_yaml = "foo".to_yaml
   end

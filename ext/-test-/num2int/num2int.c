@@ -4,7 +4,7 @@ static VALUE
 test_num2short(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%d", NUM2SHORT(num));
+    snprintf(buf, sizeof(buf), "%d", NUM2SHORT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -12,7 +12,7 @@ static VALUE
 test_num2ushort(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%u", NUM2USHORT(num));
+    snprintf(buf, sizeof(buf), "%u", NUM2USHORT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -20,7 +20,7 @@ static VALUE
 test_num2int(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%d", NUM2INT(num));
+    snprintf(buf, sizeof(buf), "%d", NUM2INT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -28,7 +28,7 @@ static VALUE
 test_num2uint(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%u", NUM2UINT(num));
+    snprintf(buf, sizeof(buf), "%u", NUM2UINT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -36,7 +36,7 @@ static VALUE
 test_num2long(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%ld", NUM2LONG(num));
+    snprintf(buf, sizeof(buf), "%ld", NUM2LONG(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -44,7 +44,7 @@ static VALUE
 test_num2ulong(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%lu", NUM2ULONG(num));
+    snprintf(buf, sizeof(buf), "%lu", NUM2ULONG(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -53,7 +53,7 @@ static VALUE
 test_num2ll(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%"PRI_LL_PREFIX"d", NUM2LL(num));
+    snprintf(buf, sizeof(buf), "%"PRI_LL_PREFIX"d", NUM2LL(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -61,7 +61,7 @@ static VALUE
 test_num2ull(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%"PRI_LL_PREFIX"u", NUM2ULL(num));
+    snprintf(buf, sizeof(buf), "%"PRI_LL_PREFIX"u", NUM2ULL(num));
     return rb_str_new_cstr(buf);
 }
 #endif
@@ -70,7 +70,7 @@ static VALUE
 test_fix2short(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%d", FIX2SHORT(num));
+    snprintf(buf, sizeof(buf), "%d", FIX2SHORT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -78,7 +78,7 @@ static VALUE
 test_fix2int(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%d", FIX2INT(num));
+    snprintf(buf, sizeof(buf), "%d", FIX2INT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -86,7 +86,7 @@ static VALUE
 test_fix2uint(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%u", FIX2UINT(num));
+    snprintf(buf, sizeof(buf), "%u", FIX2UINT(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -94,7 +94,7 @@ static VALUE
 test_fix2long(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%ld", FIX2LONG(num));
+    snprintf(buf, sizeof(buf), "%ld", FIX2LONG(num));
     return rb_str_new_cstr(buf);
 }
 
@@ -102,7 +102,7 @@ static VALUE
 test_fix2ulong(VALUE obj, VALUE num)
 {
     char buf[128];
-    sprintf(buf, "%lu", FIX2ULONG(num));
+    snprintf(buf, sizeof(buf), "%lu", FIX2ULONG(num));
     return rb_str_new_cstr(buf);
 }
 

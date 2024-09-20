@@ -159,7 +159,6 @@ module OpenSSL
         DEFAULT_PBE_PKEYS,
         DEFAULT_PBE_CERTS,
         nil,
-        nil,
         2048
       )
 
@@ -178,10 +177,40 @@ module OpenSSL
       end
     end
 
+    def test_create_with_keytype
+      OpenSSL::PKCS12.create(
+        "omg",
+        "hello",
+        @mykey,
+        @mycert,
+        [],
+        DEFAULT_PBE_PKEYS,
+        DEFAULT_PBE_CERTS,
+        nil,
+        nil,
+        OpenSSL::PKCS12::KEY_SIG
+      )
+
+      assert_raise(ArgumentError) do
+        OpenSSL::PKCS12.create(
+          "omg",
+          "hello",
+          @mykey,
+          @mycert,
+          [],
+          DEFAULT_PBE_PKEYS,
+          DEFAULT_PBE_CERTS,
+          nil,
+          nil,
+          2048
+        )
+      end
+    end
+
     def test_new_with_no_keys
       # generated with:
       #   openssl pkcs12 -certpbe PBE-SHA1-3DES -in <@mycert> -nokeys -export
-      str = <<~EOF.unpack("m").first
+      str = <<~EOF.unpack1("m")
 MIIGJAIBAzCCBeoGCSqGSIb3DQEHAaCCBdsEggXXMIIF0zCCBc8GCSqGSIb3
 DQEHBqCCBcAwggW8AgEAMIIFtQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMw
 DgQIjv5c3OHvnBgCAggAgIIFiMJa8Z/w7errRvCQPXh9dGQz3eJaFq3S2gXD
@@ -230,7 +259,7 @@ AA==
     def test_new_with_no_certs
       # generated with:
       #   openssl pkcs12 -inkey fixtures/openssl/pkey/rsa-1.pem -nocerts -export
-      str = <<~EOF.unpack("m").first
+      str = <<~EOF.unpack1("m")
 MIIJ7wIBAzCCCbUGCSqGSIb3DQEHAaCCCaYEggmiMIIJnjCCCZoGCSqGSIb3
 DQEHAaCCCYsEggmHMIIJgzCCCX8GCyqGSIb3DQEMCgECoIIJbjCCCWowHAYK
 KoZIhvcNAQwBAzAOBAjX5nN8jyRKwQICCAAEgglIBIRLHfiY1mNHpl3FdX6+

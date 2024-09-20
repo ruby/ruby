@@ -19,11 +19,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
  */
 
 /*
- * Definitions for NT port of Perl
- */
-
-
-/*
  * Ok now we can include the normal include files.
  */
 
@@ -40,6 +35,7 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <mswsock.h>
 #if !defined(_MSC_VER) || _MSC_VER >= 1400
 #include <iphlpapi.h>
 #endif
@@ -152,13 +148,19 @@ typedef int clockid_t;
 #define open			rb_w32_uopen
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
-#define read(f, b, s)		rb_w32_read(f, b, s)
-#define write(f, b, s)		rb_w32_write(f, b, s)
+#define read(f, b, s) rb_w32_read(f, b, s)
+#define write(f, b, s) rb_w32_write(f, b, s)
+#define pread(f, b, s, o) rb_w32_pread(f, b, s, o)
+#define pwrite(f, b, s, o) rb_w32_pwrite(f, b, s, o)
 #define getpid()		rb_w32_getpid()
+#undef HAVE_GETPPID
+#define HAVE_GETPPID 1
 #define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
 
+#undef HAVE_EXECV
+#define HAVE_EXECV 1
 #undef execv
 #define execv(path,argv)	rb_w32_uaspawn(P_OVERLAY,path,argv)
 #undef isatty
@@ -191,7 +193,6 @@ struct stati128 {
   long st_ctimensec;
 };
 
-#define off_t __int64
 #define stat stati128
 #undef SIZEOF_STRUCT_STAT_ST_INO
 #define SIZEOF_STRUCT_STAT_ST_INO sizeof(unsigned __int64)
@@ -299,7 +300,6 @@ extern DWORD  rb_w32_osver(void);
 extern int rb_w32_uchown(const char *, int, int);
 extern int rb_w32_ulink(const char *, const char *);
 extern ssize_t rb_w32_ureadlink(const char *, char *, size_t);
-extern ssize_t rb_w32_wreadlink(const WCHAR *, WCHAR *, size_t);
 extern int rb_w32_usymlink(const char *src, const char *link);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern int clock_gettime(clockid_t, struct timespec *);
@@ -309,7 +309,9 @@ extern rb_pid_t wait(int *);
 extern rb_pid_t rb_w32_uspawn(int, const char *, const char*);
 extern rb_pid_t rb_w32_uaspawn(int, const char *, char *const *);
 extern rb_pid_t rb_w32_uaspawn_flags(int, const char *, char *const *, DWORD);
-extern int kill(int, int);
+#undef HAVE_KILL
+#define HAVE_KILL 1
+extern int kill(rb_pid_t, int);
 extern int fcntl(int, int, ...);
 extern int rb_w32_set_nonblock(int);
 extern rb_pid_t rb_w32_getpid(void);
@@ -388,6 +390,7 @@ scalb(double a, long b)
 #endif
 
 #define S_IFLNK 0xa000
+#define S_IFSOCK 0xc000
 
 /*
  * define this so we can do inplace editing
@@ -395,9 +398,9 @@ scalb(double a, long b)
 
 #define SUFFIX
 
-extern int rb_w32_ftruncate(int fd, off_t length);
-extern int rb_w32_truncate(const char *path, off_t length);
-extern int rb_w32_utruncate(const char *path, off_t length);
+extern int rb_w32_ftruncate(int fd, rb_off_t length);
+extern int rb_w32_truncate(const char *path, rb_off_t length);
+extern int rb_w32_utruncate(const char *path, rb_off_t length);
 
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
@@ -647,6 +650,8 @@ extern char *rb_w32_strerror(int);
 #undef setsockopt
 #define setsockopt(s, v, n, o, l) rb_w32_setsockopt(s, v, n, o, l)
 
+#undef HAVE_SHUTDOWN
+#define HAVE_SHUTDOWN 1
 #undef shutdown
 #define shutdown(s, h)		rb_w32_shutdown(s, h)
 
@@ -694,10 +699,10 @@ extern char *rb_w32_strerror(int);
 #endif
 
 struct tms {
-	long	tms_utime;
-	long	tms_stime;
-	long	tms_cutime;
-	long	tms_cstime;
+        long	tms_utime;
+        long	tms_stime;
+        long	tms_cutime;
+        long	tms_cstime;
 };
 
 int rb_w32_times(struct tms *);
@@ -714,7 +719,9 @@ int  rb_w32_fclose(FILE*);
 int  rb_w32_pipe(int[2]);
 ssize_t rb_w32_read(int, void *, size_t);
 ssize_t rb_w32_write(int, const void *, size_t);
-off_t  rb_w32_lseek(int, off_t, int);
+ssize_t rb_w32_pread(int, void *, size_t, rb_off_t offset);
+ssize_t rb_w32_pwrite(int, const void *, size_t, rb_off_t offset);
+rb_off_t  rb_w32_lseek(int, rb_off_t, int);
 int  rb_w32_uutime(const char *, const struct utimbuf *);
 int  rb_w32_uutimes(const char *, const struct timeval *);
 int  rb_w32_uutimensat(int /* must be AT_FDCWD */, const char *, const struct timespec *, int /* must be 0 */);
@@ -795,6 +802,25 @@ double rb_w32_pow(double x, double y);
 #endif
 #define pow rb_w32_pow
 #endif
+
+// mmap tiny emulation
+#define MAP_FAILED	((void *)-1)
+
+#define PROT_READ	0x01
+#define PROT_WRITE	0x02
+#define PROT_EXEC	0x04
+
+#define MAP_PRIVATE	0x0002
+#define MAP_ANON	0x1000
+#define MAP_ANONYMOUS	MAP_ANON
+
+extern void *rb_w32_mmap(void *, size_t, int, int, int, rb_off_t);
+extern int rb_w32_munmap(void *, size_t);
+extern int rb_w32_mprotect(void *, size_t, int);
+
+#define mmap(a, l, p, f, d, o) rb_w32_mmap(a, l, p, f, d, o)
+#define munmap(a, l) rb_w32_munmap(a, l)
+#define mprotect(a, l, prot) rb_w32_mprotect(a, l, prot)
 
 #if defined(__cplusplus)
 #if 0

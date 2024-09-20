@@ -48,5 +48,18 @@ module Psych
       @handler = handler
       @external_encoding = ANY
     end
+
+    ###
+    # call-seq:
+    #    parser.parse(yaml)
+    #
+    # Parse the YAML document contained in +yaml+.  Events will be called on
+    # the handler set on the parser instance.
+    #
+    # See Psych::Parser and Psych::Parser#handler
+
+    def parse yaml, path = yaml.respond_to?(:path) ? yaml.path : "<unknown>"
+      _native_parse @handler, yaml, path
+    end
   end
 end

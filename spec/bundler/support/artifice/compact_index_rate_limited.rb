@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "compact_index"
-
-Artifice.deactivate
+require_relative "helpers/compact_index"
 
 class CompactIndexRateLimited < CompactIndexAPI
   class RequestCounter
@@ -44,5 +42,7 @@ class CompactIndexRateLimited < CompactIndexAPI
     end
   end
 end
+
+require_relative "helpers/artifice"
 
 Artifice.activate_with(CompactIndexRateLimited)

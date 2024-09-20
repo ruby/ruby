@@ -46,17 +46,17 @@ class Bundler::Thor
       # Add runtime options that help actions execution.
       #
       def add_runtime_options!
-        class_option :force, :type => :boolean, :aliases => "-f", :group => :runtime,
-                             :desc => "Overwrite files that already exist"
+        class_option :force, type: :boolean, aliases: "-f", group: :runtime,
+                             desc: "Overwrite files that already exist"
 
-        class_option :pretend, :type => :boolean, :aliases => "-p", :group => :runtime,
-                               :desc => "Run but do not make any changes"
+        class_option :pretend, type: :boolean, aliases: "-p", group: :runtime,
+                               desc: "Run but do not make any changes"
 
-        class_option :quiet, :type => :boolean, :aliases => "-q", :group => :runtime,
-                             :desc => "Suppress status output"
+        class_option :quiet, type: :boolean, aliases: "-q", group: :runtime,
+                             desc: "Suppress status output"
 
-        class_option :skip, :type => :boolean, :aliases => "-s", :group => :runtime,
-                            :desc => "Skip files that already exist"
+        class_option :skip, type: :boolean, aliases: "-s", group: :runtime,
+                            desc: "Skip files that already exist"
       end
     end
 
@@ -113,9 +113,9 @@ class Bundler::Thor
     #
     def relative_to_original_destination_root(path, remove_dot = true)
       root = @destination_stack[0]
-      if path.start_with?(root) && [File::SEPARATOR, File::ALT_SEPARATOR, nil, ''].include?(path[root.size..root.size])
+      if path.start_with?(root) && [File::SEPARATOR, File::ALT_SEPARATOR, nil, ""].include?(path[root.size..root.size])
         path = path.dup
-        path[0...root.size] = '.'
+        path[0...root.size] = "."
         remove_dot ? (path[2..-1] || "") : path
       else
         path
@@ -161,6 +161,8 @@ class Bundler::Thor
     # to the block you provide. The path is set back to the previous path when
     # the method exits.
     #
+    # Returns the value yielded by the block.
+    #
     # ==== Parameters
     # dir<String>:: the directory to move to.
     # config<Hash>:: give :verbose => true to log and use padding.
@@ -173,22 +175,24 @@ class Bundler::Thor
       shell.padding += 1 if verbose
       @destination_stack.push File.expand_path(dir, destination_root)
 
-      # If the directory doesnt exist and we're not pretending
+      # If the directory doesn't exist and we're not pretending
       if !File.exist?(destination_root) && !pretend
         require "fileutils"
         FileUtils.mkdir_p(destination_root)
       end
 
+      result = nil
       if pretend
         # In pretend mode, just yield down to the block
-        block.arity == 1 ? yield(destination_root) : yield
+        result = block.arity == 1 ? yield(destination_root) : yield
       else
         require "fileutils"
-        FileUtils.cd(destination_root) { block.arity == 1 ? yield(destination_root) : yield }
+        FileUtils.cd(destination_root) { result = block.arity == 1 ? yield(destination_root) : yield }
       end
 
       @destination_stack.pop
       shell.padding -= 1 if verbose
+      result
     end
 
     # Goes to the root and execute the given block.
@@ -221,7 +225,7 @@ class Bundler::Thor
         require "open-uri"
         URI.open(path, "Accept" => "application/x-thor-template", &:read)
       else
-        open(path, &:read)
+        File.open(path, &:read)
       end
 
       instance_eval(contents, path)
@@ -280,7 +284,7 @@ class Bundler::Thor
     #
     def run_ruby_script(command, config = {})
       return unless behavior == :invoke
-      run command, config.merge(:with => Bundler::Thor::Util.ruby_command)
+      run command, config.merge(with: Bundler::Thor::Util.ruby_command)
     end
 
     # Run a thor command. A hash of options can be given and it's converted to
@@ -311,7 +315,7 @@ class Bundler::Thor
       args.push Bundler::Thor::Options.to_switches(config)
       command = args.join(" ").strip
 
-      run command, :with => :thor, :verbose => verbose, :pretend => pretend, :capture => capture
+      run command, with: :thor, verbose: verbose, pretend: pretend, capture: capture
     end
 
   protected
@@ -319,7 +323,7 @@ class Bundler::Thor
     # Allow current root to be shared between invocations.
     #
     def _shared_configuration #:nodoc:
-      super.merge!(:destination_root => destination_root)
+      super.merge!(destination_root: destination_root)
     end
 
     def _cleanup_options_and_set(options, key) #:nodoc:

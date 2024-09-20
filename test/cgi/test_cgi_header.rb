@@ -176,6 +176,14 @@ class CGIHeaderTest < Test::Unit::TestCase
   end
 
 
+  def test_cgi_http_header_crlf_injection
+    cgi = CGI.new
+    assert_raise(RuntimeError) { cgi.http_header("text/xhtml\r\nBOO") }
+    assert_raise(RuntimeError) { cgi.http_header("type" => "text/xhtml\r\nBOO") }
+    assert_raise(RuntimeError) { cgi.http_header("status" => "200 OK\r\nBOO") }
+    assert_raise(RuntimeError) { cgi.http_header("location" => "text/xhtml\r\nBOO") }
+  end
+
 
   instance_methods.each do |method|
     private method if method =~ /^test_(.*)/ && $1 != ENV['TEST']

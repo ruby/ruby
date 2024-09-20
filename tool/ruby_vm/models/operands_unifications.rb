@@ -38,8 +38,8 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
   end
 
   def operand_shift_of var
-    before = @original.opes.find_index var
-    after  = @opes.find_index var
+    before = @original.operands.find_index var
+    after  = @operands.find_index var
     raise "no #{var} for #{@name}" unless before and after
     return before - after
   end
@@ -50,7 +50,7 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
       case val when '*' then
         next nil
       else
-        type = @original.opes[i][:type]
+        type = @original.operands[i][:type]
         expr = RubyVM::Typemap.typecast_to_VALUE type, val
         next "#{ptr}[#{i}] == #{expr}"
       end
@@ -85,7 +85,7 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
   def compose location, spec, template
     name    = namegen spec
     *, argv = *spec
-    opes    = @original.opes
+    opes    = @original.operands
     if opes.size != argv.size
       raise sprintf("operand size mismatch for %s (%s's: %d, given: %d)",
                     name, template[:name], opes.size, argv.size)

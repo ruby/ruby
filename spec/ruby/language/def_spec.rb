@@ -197,31 +197,24 @@ describe "An instance method with a default argument" do
     foo(2,3,3).should == [2,3,[3]]
   end
 
-  ruby_version_is ''...'2.7' do
-    it "warns and uses a nil value when there is an existing local method with same name" do
-      def bar
-        1
-      end
-      -> {
-        eval "def foo(bar = bar)
-          bar
-        end"
-      }.should complain(/circular argument reference/)
-      foo.should == nil
-      foo(2).should == 2
-    end
-  end
-
-  ruby_version_is '2.7' do
-    it "raises a syntaxError an existing method with the same name as the local variable" do
-      def bar
-        1
-      end
+  ruby_version_is ""..."3.4" do
+    it "raises a SyntaxError if using the argument in its default value" do
       -> {
         eval "def foo(bar = bar)
           bar
         end"
       }.should raise_error(SyntaxError)
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "is nil if using the argument in its default value" do
+      -> {
+        eval "def foo(bar = bar)
+          bar
+        end
+        foo"
+      }.call.should == nil
     end
   end
 
@@ -255,7 +248,7 @@ describe "A singleton method definition" do
   end
 
   it "can be declared for a global variable" do
-    $__a__ = "hi"
+    $__a__ = +"hi"
     def $__a__.foo
       7
     end

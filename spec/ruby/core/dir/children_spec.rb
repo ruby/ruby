@@ -47,7 +47,7 @@ describe "Dir.children" do
     encoding = Encoding.find("filesystem")
     encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
     platform_is_not :windows do
-      children.should include("こんにちは.txt".force_encoding(encoding))
+      children.should include("こんにちは.txt".dup.force_encoding(encoding))
     end
     children.first.encoding.should equal(Encoding.find("filesystem"))
   end
@@ -105,14 +105,6 @@ describe "Dir#children" do
     dirs.each { |d| d.encoding.should == Encoding::UTF_8 }
   end
 
-  ruby_version_is ""..."2.7" do
-    it "accepts nil options" do
-      @dir = Dir.new("#{DirSpecs.mock_dir}/deeply/nested", nil)
-      dirs = @dir.to_a.sort
-      dirs.each { |d| d.encoding.should == Encoding.find("filesystem") }
-    end
-  end
-
   it "returns children encoded with the filesystem encoding by default" do
     # This spec depends on the locale not being US-ASCII because if it is, the
     # children that are not ascii_only? will be BINARY encoded.
@@ -121,7 +113,7 @@ describe "Dir#children" do
     encoding = Encoding.find("filesystem")
     encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
     platform_is_not :windows do
-      children.should include("こんにちは.txt".force_encoding(encoding))
+      children.should include("こんにちは.txt".dup.force_encoding(encoding))
     end
     children.first.encoding.should equal(Encoding.find("filesystem"))
   end
@@ -138,5 +130,18 @@ describe "Dir#children" do
     @dir = Dir.new(File.join(DirSpecs.mock_dir, 'special'))
     children = @dir.children.sort
     children.first.encoding.should equal(Encoding::EUC_KR)
+  end
+
+  it "returns the same result when called repeatedly" do
+    @dir = Dir.open DirSpecs.mock_dir
+
+    a = []
+    @dir.each {|dir| a << dir}
+
+    b = []
+    @dir.each {|dir| b << dir}
+
+    a.sort.should == b.sort
+    a.sort.should == DirSpecs.expected_paths
   end
 end

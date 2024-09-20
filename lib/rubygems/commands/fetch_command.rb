@@ -1,14 +1,20 @@
 # frozen_string_literal: true
-require_relative '../command'
-require_relative '../local_remote_options'
-require_relative '../version_option'
+
+require_relative "../command"
+require_relative "../local_remote_options"
+require_relative "../version_option"
 
 class Gem::Commands::FetchCommand < Gem::Command
   include Gem::LocalRemoteOptions
   include Gem::VersionOption
 
   def initialize
-    super 'fetch', 'Download a gem and place it in the current directory'
+    defaults = {
+      suggest_alternate: true,
+      version: Gem::Requirement.default,
+    }
+
+    super "fetch", "Download a gem and place it in the current directory", defaults
 
     add_bulk_threshold_option
     add_proxy_option
@@ -18,10 +24,14 @@ class Gem::Commands::FetchCommand < Gem::Command
     add_version_option
     add_platform_option
     add_prerelease_option
+
+    add_option "--[no-]suggestions", "Suggest alternates when gems are not found" do |value, options|
+      options[:suggest_alternate] = value
+    end
   end
 
   def arguments # :nodoc:
-    'GEMNAME       name of gem to download'
+    "GEMNAME       name of gem to download"
   end
 
   def defaults_str # :nodoc:
@@ -42,15 +52,38 @@ then repackaging it.
     "#{program_name} GEMNAME [GEMNAME ...]"
   end
 
+  def check_version # :nodoc:
+    if options[:version] != Gem::Requirement.default &&
+       get_all_gem_names.size > 1
+      alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
+                  " version requirements using `gem fetch 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+      terminate_interaction 1
+    end
+  end
+
   def execute
-    version = options[:version] || Gem::Requirement.default
+    check_version
+
+    exit_code = fetch_gems
+
+    terminate_interaction exit_code
+  end
+
+  private
+
+  def fetch_gems
+    exit_code = 0
+
+    version = options[:version]
 
     platform  = Gem.platforms.last
-    gem_names = get_all_gem_names
+    gem_names = get_all_gem_names_and_versions
 
-    gem_names.each do |gem_name|
-      dep = Gem::Dependency.new gem_name, version
+    gem_names.each do |gem_name, gem_version|
+      gem_version ||= version
+      dep = Gem::Dependency.new gem_name, gem_version
       dep.prerelease = options[:prerelease]
+      suppress_suggestions = !options[:suggest_alternate]
 
       specs_and_sources, errors =
         Gem::SpecFetcher.fetcher.spec_for_dependency dep
@@ -63,13 +96,14 @@ then repackaging it.
       spec, source = specs_and_sources.max_by {|s,| s }
 
       if spec.nil?
-        show_lookup_failure gem_name, version, errors, options[:domain]
+        show_lookup_failure gem_name, gem_version, errors, suppress_suggestions, options[:domain]
+        exit_code |= 2
         next
       end
-
       source.download spec
-
       say "Downloaded #{spec.full_name}"
     end
+
+    exit_code
   end
 end

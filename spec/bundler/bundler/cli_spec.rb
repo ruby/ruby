@@ -4,12 +4,12 @@ require "bundler/cli"
 
 RSpec.describe "bundle executable" do
   it "returns non-zero exit status when passed unrecognized options" do
-    bundle "--invalid_argument", :raise_on_error => false
+    bundle "--invalid_argument", raise_on_error: false
     expect(exitstatus).to_not be_zero
   end
 
   it "returns non-zero exit status when passed unrecognized task" do
-    bundle "unrecognized-task", :raise_on_error => false
+    bundle "unrecognized-task", raise_on_error: false
     expect(exitstatus).to_not be_zero
   end
 
@@ -87,7 +87,7 @@ RSpec.describe "bundle executable" do
   end
 
   context "with no arguments" do
-    it "prints a concise help message", :bundler => "3" do
+    it "prints a concise help message", bundler: "3" do
       bundle ""
       expect(err).to be_empty
       expect(out).to include("Bundler version #{Bundler::VERSION}").
@@ -101,38 +101,84 @@ RSpec.describe "bundle executable" do
   context "when ENV['BUNDLE_GEMFILE'] is set to an empty string" do
     it "ignores it" do
       gemfile bundled_app_gemfile, <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem 'rack'
+        source "https://gem.repo1"
+        gem 'myrack'
       G
 
-      bundle :install, :env => { "BUNDLE_GEMFILE" => "" }
+      bundle :install, env: { "BUNDLE_GEMFILE" => "" }
 
-      expect(the_bundle).to include_gems "rack 1.0.0"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
     end
   end
 
   context "with --verbose" do
     it "prints the running command" do
-      gemfile "source \"#{file_uri_for(gem_repo1)}\""
-      bundle "info bundler", :verbose => true
+      gemfile "source 'https://gem.repo1'"
+      bundle "info bundler", verbose: true
       expect(out).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION}")
     end
 
     it "doesn't print defaults" do
-      install_gemfile "source \"#{file_uri_for(gem_repo1)}\"", :verbose => true
+      install_gemfile "source 'https://gem.repo1'", verbose: true
       expect(out).to start_with("Running `bundle install --verbose` with bundler #{Bundler::VERSION}")
     end
 
     it "doesn't print defaults" do
-      install_gemfile "source \"#{file_uri_for(gem_repo1)}\"", :verbose => true
+      install_gemfile "source 'https://gem.repo1'", verbose: true
       expect(out).to start_with("Running `bundle install --verbose` with bundler #{Bundler::VERSION}")
+    end
+  end
+
+  describe "bundle outdated" do
+    let(:run_command) do
+      bundle "install"
+
+      bundle "outdated #{flags}", raise_on_error: false
+    end
+
+    before do
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack", '0.9.1'
+      G
+    end
+
+    context "with --groups flag" do
+      let(:flags) { "--groups" }
+
+      it "prints a message when there are outdated gems" do
+        run_command
+
+        expect(out).to include("Gem     Current  Latest  Requested  Groups")
+        expect(out).to include("myrack  0.9.1    1.0.0   = 0.9.1    default")
+      end
+    end
+
+    context "with --parseable" do
+      let(:flags) { "--parseable" }
+
+      it "prints a message when there are outdated gems" do
+        run_command
+
+        expect(out).to include("myrack (newest 1.0.0, installed 0.9.1, requested = 0.9.1)")
+      end
+    end
+
+    context "with --groups and --parseable" do
+      let(:flags) { "--groups --parseable" }
+
+      it "prints a simplified message when there are outdated gems" do
+        run_command
+
+        expect(out).to include("myrack (newest 1.0.0, installed 0.9.1, requested = 0.9.1)")
+      end
     end
   end
 
   describe "printing the outdated warning" do
     shared_examples_for "no warning" do
       it "prints no warning" do
-        bundle "fail", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false
+        bundle "fail", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
         expect(last_command.stdboth).to eq("Could not find command \"fail\".")
       end
     end
@@ -167,24 +213,24 @@ RSpec.describe "bundle executable" do
     context "when the latest version is greater than the current version" do
       let(:latest_version) { "222.0" }
       it "prints the version warning" do
-        bundle "fail", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false
+        bundle "fail", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
         expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
-To install the latest version, run `gem install bundler`
+To update to the most recent version, run `bundle update --bundler`
         EOS
       end
 
       context "and disable_version_check is set" do
-        before { bundle "config set disable_version_check true", :env => { "BUNDLER_VERSION" => bundler_version } }
+        before { bundle "config set disable_version_check true", env: { "BUNDLER_VERSION" => bundler_version } }
         include_examples "no warning"
       end
 
       context "running a parseable command" do
         it "prints no warning" do
-          bundle "config get --parseable foo", :env => { "BUNDLER_VERSION" => bundler_version }
+          bundle "config get --parseable foo", env: { "BUNDLER_VERSION" => bundler_version }
           expect(last_command.stdboth).to eq ""
 
-          bundle "platform --ruby", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false
+          bundle "platform --ruby", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
           expect(last_command.stdboth).to eq "Could not locate Gemfile"
         end
       end
@@ -192,10 +238,10 @@ To install the latest version, run `gem install bundler`
       context "and is a pre-release" do
         let(:latest_version) { "222.0.0.pre.4" }
         it "prints the version warning" do
-          bundle "fail", :env => { "BUNDLER_VERSION" => bundler_version }, :raise_on_error => false
+          bundle "fail", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
           expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
-To install the latest version, run `gem install bundler --pre`
+To update to the most recent version, run `bundle update --bundler`
           EOS
         end
       end
@@ -204,12 +250,12 @@ To install the latest version, run `gem install bundler --pre`
 end
 
 RSpec.describe "bundler executable" do
-  it "shows the bundler version just as the `bundle` executable does", :bundler => "< 3" do
+  it "shows the bundler version just as the `bundle` executable does", bundler: "< 3" do
     bundler "--version"
     expect(out).to eq("Bundler version #{Bundler::VERSION}")
   end
 
-  it "shows the bundler version just as the `bundle` executable does", :bundler => "3" do
+  it "shows the bundler version just as the `bundle` executable does", bundler: "3" do
     bundler "--version"
     expect(out).to eq(Bundler::VERSION)
   end

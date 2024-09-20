@@ -1,0 +1,11 @@
+tap { redo }
+
+begin; rescue; retry; end
+
+self
+
+__ENCODING__
+
+__FILE__
+
+__LINE__

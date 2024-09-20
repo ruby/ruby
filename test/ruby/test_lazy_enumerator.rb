@@ -282,6 +282,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(3, a.current)
   end
 
+  def test_zip_map_lambda_bug_19569
+    ary = [1, 2, 3].to_enum.lazy.zip([:a, :b, :c]).map(&:last).to_a
+    assert_equal([:a, :b, :c], ary)
+  end
+
   def test_take
     a = Step.new(1..10)
     assert_equal(1, a.take(5).first)
@@ -293,6 +298,26 @@ class TestLazyEnumerator < Test::Unit::TestCase
     a = Step.new(1..10)
     assert_equal([], a.lazy.take(0).force)
     assert_equal(nil, a.current)
+  end
+
+  def test_take_0_bug_18971
+    def (bomb = Object.new.extend(Enumerable)).each
+      raise
+    end
+    [2..10, bomb].each do |e|
+      assert_equal([], e.lazy.take(0).map(&:itself).to_a)
+      assert_equal([], e.lazy.take(0).select(&:even?).to_a)
+      assert_equal([], e.lazy.take(0).select(&:odd?).to_a)
+      assert_equal([], e.lazy.take(0).reject(&:even?).to_a)
+      assert_equal([], e.lazy.take(0).reject(&:odd?).to_a)
+      assert_equal([], e.lazy.take(0).take(1).to_a)
+      assert_equal([], e.lazy.take(0).take(0).take(1).to_a)
+      assert_equal([], e.lazy.take(0).drop(0).to_a)
+      assert_equal([], e.lazy.take(0).find_all {|_| true}.to_a)
+      assert_equal([], e.lazy.take(0).zip((12..20)).to_a)
+      assert_equal([], e.lazy.take(0).uniq.to_a)
+      assert_equal([], e.lazy.take(0).sort.to_a)
+    end
   end
 
   def test_take_bad_arg
@@ -462,6 +487,10 @@ EOS
     assert_equal Enumerator, enum.class
     assert_equal 3, enum.size
     assert_equal [1, 2, 3], enum.map { |x| x / 2 }
+  end
+
+  def test_lazy_zip_map_yield_arity_bug_20623
+    assert_equal([[1, 2]], [1].lazy.zip([2].lazy).map { |x| x }.force)
   end
 
   def test_lazy_to_enum

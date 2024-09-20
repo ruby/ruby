@@ -12,7 +12,7 @@ describe "IO#ioctl" do
     guard -> { RUBY_PLATFORM.include?("86") } do # x86 / x86_64
       it "resizes an empty String to match the output size" do
         File.open(__FILE__, 'r') do |f|
-          buffer = ''
+          buffer = +''
           # FIONREAD in /usr/include/asm-generic/ioctls.h
           f.ioctl 0x541B, buffer
           buffer.unpack('I').first.should be_kind_of(Integer)

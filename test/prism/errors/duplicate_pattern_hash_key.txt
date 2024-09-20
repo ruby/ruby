@@ -1,0 +1,4 @@
+case (); in {a:, a:}; end
+                 ^~ duplicated key name
+                 ^ duplicated variable name
+

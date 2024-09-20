@@ -128,7 +128,7 @@ RBIMPL_ATTR_NONNULL((1))
  *                 your code to see if it is actually worth releasing the GVL.
  */
 void *rb_thread_call_without_gvl(void *(*func)(void *), void *data1,
-				 rb_unblock_function_t *ubf, void *data2);
+                                 rb_unblock_function_t *ubf, void *data2);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
@@ -152,7 +152,7 @@ RBIMPL_ATTR_NONNULL((1))
  * @return         What `func` returned, or 0 in case `func` did not return.
  */
 void *rb_thread_call_without_gvl2(void *(*func)(void *), void *data1,
-				  rb_unblock_function_t *ubf, void *data2);
+                                  rb_unblock_function_t *ubf, void *data2);
 
 /*
  * XXX: unstable/unapproved - out-of-tree code should NOT not depend
@@ -189,6 +189,136 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
  * @deprecated  It seems even in the old days it made no sense...?
  */
 #define RUBY_CALL_WO_GVL_FLAG_SKIP_CHECK_INTS_
+
+/**
+ * Declare the current Ruby thread should acquire a dedicated
+ * native thread on M:N thread scheduler.
+ *
+ * If a C extension (or a library which the extension relies on) should
+ * keep to run on a native thread (e.g. using thread-local-storage),
+ * this function allocates a dedicated native thread for the thread.
+ *
+ * @return `false` if the thread already running on a dedicated native
+ *         thread. Otherwise `true`.
+ */
+bool rb_thread_lock_native_thread(void);
+
+/**
+ * Triggered when a new thread is started.
+ *
+ * @note       The callback will be called *without* the GVL held.
+ */
+#define RUBY_INTERNAL_THREAD_EVENT_STARTED    1 << 0
+
+/**
+* Triggered when a thread attempt to acquire the GVL.
+*
+* @note       The callback will be called *without* the GVL held.
+*/
+#define RUBY_INTERNAL_THREAD_EVENT_READY      1 << 1 /** acquiring GVL */
+
+/**
+ * Triggered when a thread successfully acquired the GVL.
+ *
+ * @note       The callback will be called *with* the GVL held.
+ */
+#define RUBY_INTERNAL_THREAD_EVENT_RESUMED    1 << 2 /** acquired GVL */
+
+/**
+ * Triggered when a thread released the GVL.
+ *
+ * @note       The callback will be called *without* the GVL held.
+ */
+#define RUBY_INTERNAL_THREAD_EVENT_SUSPENDED  1 << 3 /** released GVL */
+
+/**
+ * Triggered when a thread exits.
+ *
+ * @note       The callback will be called *without* the GVL held.
+ */
+#define RUBY_INTERNAL_THREAD_EVENT_EXITED     1 << 4 /** thread terminated */
+
+#define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
+
+typedef struct rb_internal_thread_event_data {
+   VALUE thread;
+} rb_internal_thread_event_data_t;
+
+typedef void (*rb_internal_thread_event_callback)(rb_event_flag_t event,
+              const rb_internal_thread_event_data_t *event_data,
+              void *user_data);
+typedef struct rb_internal_thread_event_hook rb_internal_thread_event_hook_t;
+
+/**
+ * Registers a thread event hook function.
+ *
+ * @param[in]  func    A callback.
+ * @param[in]  events  A set of events that `func` should run.
+ * @param[in]  data    Passed as-is to `func`.
+ * @return     An opaque pointer to the hook, to unregister it later.
+ * @note       This functionality is a noop on Windows and WebAssembly.
+ * @note       The callback will be called without the GVL held, except for the
+ *             RESUMED event.
+ * @note       Callbacks are not guaranteed to be executed on the native threads
+ *             that corresponds to the Ruby thread. To identify which Ruby thread
+ *             the event refers to, you must use `event_data->thread`.
+ * @warning    This function MUST not be called from a thread event callback.
+ */
+rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
+        rb_internal_thread_event_callback func, rb_event_flag_t events,
+        void *data);
+
+
+/**
+ * Unregister the passed hook.
+ *
+ * @param[in]  hook.  The hook to unregister.
+ * @return     Whether the hook was found and unregistered.
+ * @note       This functionality is a noop on Windows and WebAssembly.
+ * @warning    This function MUST not be called from a thread event callback.
+*/
+bool rb_internal_thread_remove_event_hook(
+        rb_internal_thread_event_hook_t * hook);
+
+
+typedef int rb_internal_thread_specific_key_t;
+#define RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX 8
+/**
+ * Create a key to store thread specific data.
+ *
+ * These APIs are designed for tools using
+ * rb_internal_thread_event_hook APIs.
+ *
+ * Note that only `RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX` keys
+ * can be created. raises `ThreadError` if exceeded.
+ *
+ * Usage:
+ *   // at initialize time:
+ *   int tool_key; // gvar
+ *   Init_tool() {
+ *     tool_key = rb_internal_thread_specific_key_create();
+ *   }
+ *
+ *   // at any timing:
+ *   rb_internal_thread_specific_set(thread, tool_key, per_thread_data);
+ *   ...
+ *   per_thread_data = rb_internal_thread_specific_get(thread, tool_key);
+ */
+rb_internal_thread_specific_key_t rb_internal_thread_specific_key_create(void);
+
+/**
+ * Get thread and tool specific data.
+ *
+ * This function is async signal safe and thread safe.
+ */
+void *rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_specific_key_t key);
+
+/**
+ * Set thread and tool specific data.
+ *
+ * This function is async signal safe and thread safe.
+ */
+void rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

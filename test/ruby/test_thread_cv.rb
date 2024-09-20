@@ -6,12 +6,6 @@ class TestThreadConditionVariable < Test::Unit::TestCase
   ConditionVariable = Thread::ConditionVariable
   Mutex = Thread::Mutex
 
-  def test_initialized
-    assert_raise(TypeError) {
-      ConditionVariable.allocate.wait(nil)
-    }
-  end
-
   def test_condvar_signal_and_wait
     mutex = Thread::Mutex.new
     condvar = Thread::ConditionVariable.new

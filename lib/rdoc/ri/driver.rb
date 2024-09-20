@@ -1,23 +1,10 @@
 # frozen_string_literal: true
-require 'abbrev'
 require 'optparse'
 
-begin
-  require 'readline'
-rescue LoadError
-end
+require_relative '../../rdoc'
 
-begin
-  require 'win32console'
-rescue LoadError
-end
-
-require 'rdoc'
-
-##
-# For RubyGems backwards compatibility
-
-require_relative 'formatter'
+require_relative 'formatter' # For RubyGems backwards compatibility
+# TODO: Fix weird documentation with `require_relative`
 
 ##
 # The RI driver implements the command-line ri tool.
@@ -47,9 +34,9 @@ class RDoc::RI::Driver
 
   class NotFoundError < Error
 
-    def initialize(klass, suggestions = nil) # :nodoc:
+    def initialize(klass, suggestion_proc = nil) # :nodoc:
       @klass = klass
-      @suggestions = suggestions
+      @suggestion_proc = suggestion_proc
     end
 
     ##
@@ -61,8 +48,9 @@ class RDoc::RI::Driver
 
     def message # :nodoc:
       str = "Nothing known about #{@klass}"
-      if @suggestions and !@suggestions.empty?
-        str += "\nDid you mean?  #{@suggestions.join("\n               ")}"
+      suggestions = @suggestion_proc&.call
+      if suggestions and !suggestions.empty?
+        str += "\nDid you mean?  #{suggestions.join("\n               ")}"
       end
       str
     end
@@ -122,10 +110,6 @@ class RDoc::RI::Driver
     options = default_options
 
     opts = OptionParser.new do |opt|
-      opt.accept File do |file,|
-        File.readable?(file) and not File.directory?(file) and file
-      end
-
       opt.program_name = File.basename $0
       opt.version = RDoc::VERSION
       opt.release = nil
@@ -357,9 +341,17 @@ or the PAGER environment variable.
 
       opt.separator nil
 
-      opt.on("--dump=CACHE", File,
+      opt.on("--dump=CACHE",
              "Dump data from an ri cache or data file.") do |value|
-        options[:dump_path] = value
+        unless File.readable?(value)
+          abort "#{value.inspect} is not readable"
+        end
+
+        if File.directory?(value)
+          abort "#{value.inspect} is a directory"
+        end
+
+        options[:dump_path] = File.new(value)
       end
     end
 
@@ -433,9 +425,6 @@ or the PAGER environment variable.
     @use_stdout  = options[:use_stdout]
     @show_all    = options[:show_all]
     @width       = options[:width]
-
-    # pager process for jruby
-    @jruby_pager_process = nil
   end
 
   ##
@@ -964,8 +953,8 @@ or the PAGER environment variable.
     ary = class_names.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
     if ary.length != 1 && ary.first != klass
       if check_did_you_mean
-        suggestions = DidYouMean::SpellChecker.new(dictionary: class_names).correct(klass)
-        raise NotFoundError.new(klass, suggestions)
+        suggestion_proc = -> { DidYouMean::SpellChecker.new(dictionary: class_names).correct(klass) }
+        raise NotFoundError.new(klass, suggestion_proc)
       else
         raise NotFoundError, klass
       end
@@ -1052,36 +1041,6 @@ or the PAGER environment variable.
   end
 
   ##
-  # Finds the given +pager+ for jruby.  Returns an IO if +pager+ was found.
-  #
-  # Returns false if +pager+ does not exist.
-  #
-  # Returns nil if the jruby JVM doesn't support ProcessBuilder redirection
-  # (1.6 and older).
-
-  def find_pager_jruby pager
-    require 'java'
-    require 'shellwords'
-
-    return nil unless java.lang.ProcessBuilder.constants.include? :Redirect
-
-    pager = Shellwords.split pager
-
-    pb = java.lang.ProcessBuilder.new(*pager)
-    pb = pb.redirect_output java.lang.ProcessBuilder::Redirect::INHERIT
-
-    @jruby_pager_process = pb.start
-
-    input = @jruby_pager_process.output_stream
-
-    io = input.to_io
-    io.sync = true
-    io
-  rescue java.io.IOException
-    false
-  end
-
-  ##
   # Finds a store that matches +name+ which can be the name of a gem, "ruby",
   # "home" or "site".
   #
@@ -1120,6 +1079,10 @@ or the PAGER environment variable.
   def interactive
     puts "\nEnter the method name you want to look up."
 
+    begin
+      require 'readline'
+    rescue LoadError
+    end
     if defined? Readline then
       Readline.completion_proc = method :complete
       puts "You can use tab to autocomplete."
@@ -1129,7 +1092,7 @@ or the PAGER environment variable.
 
     loop do
       name = if defined? Readline then
-               Readline.readline ">> "
+               Readline.readline ">> ", true
              else
                print ">> "
                $stdin.gets
@@ -1146,17 +1109,6 @@ or the PAGER environment variable.
 
   rescue Interrupt
     exit
-  end
-
-  ##
-  # Is +file+ in ENV['PATH']?
-
-  def in_path? file
-    return true if file =~ %r%\A/% and File.exist? file
-
-    ENV['PATH'].split(File::PATH_SEPARATOR).any? do |path|
-      File.exist? File.join(path, file)
-    end
   end
 
   ##
@@ -1290,8 +1242,8 @@ or the PAGER environment variable.
           methods.push(*store.instance_methods[klass]) if [:instance, :both].include? types
         end
         methods = methods.uniq
-        suggestions = DidYouMean::SpellChecker.new(dictionary: methods).correct(method_name)
-        raise NotFoundError.new(name, suggestions)
+        suggestion_proc = -> { DidYouMean::SpellChecker.new(dictionary: methods).correct(method_name) }
+        raise NotFoundError.new(name, suggestion_proc)
       else
         raise NotFoundError, name
       end
@@ -1353,7 +1305,6 @@ or the PAGER environment variable.
         yield pager
       ensure
         pager.close
-        @jruby_pager_process.wait_for if @jruby_pager_process
       end
     else
       yield $stdout
@@ -1521,27 +1472,14 @@ or the PAGER environment variable.
   def setup_pager
     return if @use_stdout
 
-    jruby = RUBY_ENGINE == 'jruby'
-
     pagers = [ENV['RI_PAGER'], ENV['PAGER'], 'pager', 'less', 'more']
 
+    require 'shellwords'
     pagers.compact.uniq.each do |pager|
-      next unless pager
+      pager = Shellwords.split(pager)
+      next if pager.empty?
 
-      pager_cmd = pager.split(' ').first
-
-      next unless in_path? pager_cmd
-
-      if jruby then
-        case io = find_pager_jruby(pager)
-        when nil   then break
-        when false then next
-        else            io
-        end
-      else
-        io = IO.popen(pager, 'w') rescue next
-      end
-
+      io = IO.popen(pager, 'w') rescue next
       next if $? and $?.pid == io.pid and $?.exited? # pager didn't work
 
       @paging = true

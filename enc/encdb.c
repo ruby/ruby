@@ -17,7 +17,7 @@
 #define ENC_DEFINE(name) rb_encdb_declare(name)
 #define ENC_SET_BASE(name, orig) rb_enc_set_base((name), (orig))
 #define ENC_SET_DUMMY(name, orig) rb_enc_set_dummy(name)
-#define ENC_DUMMY_UNICODE(name) rb_encdb_set_unicode(rb_enc_set_dummy(ENC_REPLICATE((name), name "BE")))
+#define ENC_DUMMY_UNICODE(name) ENC_DUMMY(name)
 
 void
 Init_encdb(void)

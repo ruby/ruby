@@ -46,25 +46,25 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 #define o1(b1)		(PType((((unsigned char)(b1))<<8)|ONEbt))
 #define o2(b1,b2)	(PType((((unsigned char)(b1))<<8)|\
-			       (((unsigned char)(b2))<<16)|\
-			       TWObt))
+                               (((unsigned char)(b2))<<16)|\
+                               TWObt))
 #define o3(b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|\
-				(((unsigned char)(b2))<<16)|\
-				(((unsigned int)(unsigned char)(b3))<<24)|\
-				THREEbt)&\
-			       0xffffffffU))
+                                (((unsigned char)(b2))<<16)|\
+                                (((unsigned int)(unsigned char)(b3))<<24)|\
+                                THREEbt)&\
+                               0xffffffffU))
 #define o4(b0,b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|\
-				(((unsigned char)(b2))<<16)|\
-				(((unsigned int)(unsigned char)(b3))<<24)|\
-				((((unsigned char)(b0))&0x07)<<5)|\
-				FOURbt)&\
-			       0xffffffffU))
+                                (((unsigned char)(b2))<<16)|\
+                                (((unsigned int)(unsigned char)(b3))<<24)|\
+                                ((((unsigned char)(b0))&0x07)<<5)|\
+                                FOURbt)&\
+                               0xffffffffU))
 #define g4(b0,b1,b2,b3) (PType(((((unsigned char)(b0))<<8)|\
-				(((unsigned char)(b2))<<16)|\
-				((((unsigned char)(b1))&0x0f)<<24)|\
-				((((unsigned int)(unsigned char)(b3))&0x0f)<<28)|\
-				GB4bt)&\
-			       0xffffffffU))
+                                (((unsigned char)(b2))<<16)|\
+                                ((((unsigned char)(b1))&0x0f)<<24)|\
+                                ((((unsigned int)(unsigned char)(b3))&0x0f)<<28)|\
+                                GB4bt)&\
+                               0xffffffffU))
 #define funsio(diff)	(PType((((unsigned int)(diff))<<8)|FUNsio))
 
 #define getBT1(a)	((unsigned char)((a)>> 8))

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-require_relative "deprecate"
+
+require_relative "version"
 
 ##
 # A Requirement is a set of one or more version restrictions. It supports a
@@ -9,14 +10,14 @@ require_relative "deprecate"
 # together in RubyGems.
 
 class Gem::Requirement
-  OPS = { #:nodoc:
-    "="  =>  lambda {|v, r| v == r },
-    "!=" =>  lambda {|v, r| v != r },
-    ">"  =>  lambda {|v, r| v >  r },
-    "<"  =>  lambda {|v, r| v <  r },
-    ">=" =>  lambda {|v, r| v >= r },
-    "<=" =>  lambda {|v, r| v <= r },
-    "~>" =>  lambda {|v, r| v >= r && v.release < r.bump },
+  OPS = { # :nodoc:
+    "=" => lambda {|v, r| v == r },
+    "!=" => lambda {|v, r| v != r },
+    ">" => lambda {|v, r| v > r },
+    "<" => lambda {|v, r| v < r },
+    ">=" => lambda {|v, r| v >= r },
+    "<=" => lambda {|v, r| v <= r },
+    "~>" => lambda {|v, r| v >= r && v.release < r.bump },
   }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
@@ -27,7 +28,7 @@ class Gem::Requirement
   ##
   # A regular expression that matches a requirement
 
-  PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+  PATTERN = /\A#{PATTERN_RAW}\z/
 
   ##
   # The default requirement matches any non-prerelease version
@@ -61,7 +62,7 @@ class Gem::Requirement
       input
     when Gem::Version, Array then
       new input
-    when '!' then
+    when "!" then
       source_set
     else
       if input.respond_to? :to_str
@@ -73,11 +74,11 @@ class Gem::Requirement
   end
 
   def self.default
-    new '>= 0'
+    new ">= 0"
   end
 
   def self.default_prerelease
-    new '>= 0.a'
+    new ">= 0.a"
   end
 
   ###
@@ -119,7 +120,7 @@ class Gem::Requirement
   # An array of requirement pairs. The first element of the pair is
   # the op, and the second is the Gem::Version.
 
-  attr_reader :requirements #:nodoc:
+  attr_reader :requirements # :nodoc:
 
   ##
   # Constructs a requirement from +requirements+. Requirements can be
@@ -155,7 +156,7 @@ class Gem::Requirement
   # Formats this requirement for use in a Gem::RequestSet::Lockfile.
 
   def for_lockfile # :nodoc:
-    return if [DefaultRequirement] == @requirements
+    return if @requirements == [DefaultRequirement]
 
     list = requirements.sort_by do |_, version|
       version
@@ -163,7 +164,7 @@ class Gem::Requirement
       "#{op} #{version}"
     end.uniq
 
-    " (#{list.join ', '})"
+    " (#{list.join ", "})"
   end
 
   ##
@@ -213,12 +214,8 @@ class Gem::Requirement
     yaml_initialize coder.tag, coder.map
   end
 
-  def to_yaml_properties # :nodoc:
-    ["@requirements"]
-  end
-
   def encode_with(coder) # :nodoc:
-    coder.add 'requirements', @requirements
+    coder.add "requirements", @requirements
   end
 
   ##
@@ -230,7 +227,7 @@ class Gem::Requirement
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 1, 'Gem::Requirement.new(', ')' do
+    q.group 1, "Gem::Requirement.new(", ")" do
       q.pp as_list
     end
   end
@@ -244,8 +241,8 @@ class Gem::Requirement
     requirements.all? {|op, rv| OPS[op].call version, rv }
   end
 
-  alias :=== :satisfied_by?
-  alias :=~ :satisfied_by?
+  alias_method :===, :satisfied_by?
+  alias_method :=~, :satisfied_by?
 
   ##
   # True if the requirement will not always match the latest version.
@@ -253,7 +250,7 @@ class Gem::Requirement
   def specific?
     return true if @requirements.length > 1 # GIGO, > 1, > 2 is silly
 
-    not %w[> >=].include? @requirements.first.first # grab the operator
+    !%w[> >=].include? @requirements.first.first # grab the operator
   end
 
   def to_s # :nodoc:
@@ -282,6 +279,11 @@ class Gem::Requirement
 
   def _tilde_requirements
     @_tilde_requirements ||= _sorted_requirements.select {|r| r.first == "~>" }
+  end
+
+  def initialize_copy(other) # :nodoc:
+    @requirements = other.requirements.dup
+    super
   end
 end
 

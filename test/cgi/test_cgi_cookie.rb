@@ -60,6 +60,27 @@ class CGICookieTest < Test::Unit::TestCase
   end
 
 
+  def test_cgi_cookie_new_with_domain
+    h = {'name'=>'name1', 'value'=>'value1'}
+    cookie = CGI::Cookie.new(h.merge('domain'=>'a.example.com'))
+    assert_equal('a.example.com', cookie.domain)
+
+    cookie = CGI::Cookie.new(h.merge('domain'=>'.example.com'))
+    assert_equal('.example.com', cookie.domain)
+
+    cookie = CGI::Cookie.new(h.merge('domain'=>'1.example.com'))
+    assert_equal('1.example.com', cookie.domain, 'enhanced by RFC 1123')
+
+    assert_raise(ArgumentError) {
+      CGI::Cookie.new(h.merge('domain'=>'-a.example.com'))
+    }
+
+    assert_raise(ArgumentError) {
+      CGI::Cookie.new(h.merge('domain'=>'a-.example.com'))
+    }
+  end
+
+
   def test_cgi_cookie_scriptname
     cookie = CGI::Cookie.new('name1', 'value1')
     assert_equal('', cookie.path)
@@ -117,6 +138,70 @@ class CGICookieTest < Test::Unit::TestCase
     assert_equal(['A', 'B', 'C'], cookie.collect{|e| e.upcase})
   end
 
+
+  def test_cgi_cookie_domain_injection_into_name
+    name = "a=b; domain=example.com;"
+    path = "/"
+    domain = "example.jp"
+    assert_raise(ArgumentError) do
+      CGI::Cookie.new('name' => name,
+                      'value' => "value",
+                      'domain' => domain,
+                      'path' => path)
+    end
+  end
+
+
+  def test_cgi_cookie_newline_injection_into_name
+    name = "a=b;\r\nLocation: http://example.com#"
+    path = "/"
+    domain = "example.jp"
+    assert_raise(ArgumentError) do
+      CGI::Cookie.new('name' => name,
+                      'value' => "value",
+                      'domain' => domain,
+                      'path' => path)
+    end
+  end
+
+
+  def test_cgi_cookie_multibyte_injection_into_name
+    name = "a=b;\u3042"
+    path = "/"
+    domain = "example.jp"
+    assert_raise(ArgumentError) do
+      CGI::Cookie.new('name' => name,
+                      'value' => "value",
+                      'domain' => domain,
+                      'path' => path)
+    end
+  end
+
+
+  def test_cgi_cookie_injection_into_path
+    name = "name"
+    path = "/; samesite=none"
+    domain = "example.jp"
+    assert_raise(ArgumentError) do
+      CGI::Cookie.new('name' => name,
+                      'value' => "value",
+                      'domain' => domain,
+                      'path' => path)
+    end
+  end
+
+
+  def test_cgi_cookie_injection_into_domain
+    name = "name"
+    path = "/"
+    domain = "example.jp; samesite=none"
+    assert_raise(ArgumentError) do
+      CGI::Cookie.new('name' => name,
+                      'value' => "value",
+                      'domain' => domain,
+                      'path' => path)
+    end
+  end
 
 
   instance_methods.each do |method|

@@ -1,0 +1,25 @@
+Returns a copy of +self+ with each invalid byte sequence replaced
+by the given +replacement_string+.
+
+With no block given and no argument, replaces each invalid sequence
+with the default replacement string
+(<tt>"�"</tt> for a Unicode encoding, <tt>'?'</tt> otherwise):
+
+  s = "foo\x81\x81bar"
+  s.scrub # => "foo��bar"
+
+With no block given and argument +replacement_string+ given,
+replaces each invalid sequence with that string:
+
+  "foo\x81\x81bar".scrub('xyzzy') # => "fooxyzzyxyzzybar"
+
+With a block given, replaces each invalid sequence with the value
+of the block:
+
+  "foo\x81\x81bar".scrub {|bytes| p bytes; 'XYZZY' }
+  # => "fooXYZZYXYZZYbar"
+
+Output:
+
+  "\x81"
+  "\x81"

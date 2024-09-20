@@ -117,7 +117,7 @@ development:
 bar:
   << : *foo
       eoyml
-      exp = assert_raise(Psych::BadAlias) { Psych.load yaml }
+      exp = assert_raise(Psych::AnchorNotDefined) { Psych.load(yaml, aliases: true) }
       assert_match 'foo', exp.message
     end
 

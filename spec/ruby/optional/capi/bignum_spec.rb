@@ -7,21 +7,23 @@ def ensure_bignum(n)
   n
 end
 
-full_range_longs = (fixnum_max == 2**(0.size * 8 - 1) - 1)
+full_range_longs = (fixnum_max == max_long)
+max_ulong = begin
+  require 'rbconfig/sizeof'
+  RbConfig::LIMITS['ULONG_MAX']
+rescue LoadError
+  nil
+end
+# If the system doesn't offer ULONG_MAX, assume 2's complement and derive it
+# from LONG_MAX.
+max_ulong ||= 2 * (max_long + 1) - 1
 
 describe "CApiBignumSpecs" do
   before :each do
     @s = CApiBignumSpecs.new
-
-    if full_range_longs
-      @max_long = 2**(0.size * 8 - 1) - 1
-      @min_long = -@max_long - 1
-      @max_ulong = ensure_bignum(2**(0.size * 8) - 1)
-    else
-      @max_long = ensure_bignum(2**(0.size * 8 - 1) - 1)
-      @min_long = ensure_bignum(-@max_long - 1)
-      @max_ulong = ensure_bignum(2**(0.size * 8) - 1)
-    end
+    @max_long = max_long
+    @min_long = min_long
+    @max_ulong = ensure_bignum(max_ulong)
   end
 
   describe "rb_big2long" do
@@ -123,7 +125,7 @@ describe "CApiBignumSpecs" do
       val.should == @max_ulong
     end
 
-    platform_is wordsize: 64 do
+    platform_is c_long_size: 64 do
       it "packs max_ulong into 2 ulongs to allow sign bit" do
         val = @s.rb_big_pack_length(@max_ulong)
         val.should == 2

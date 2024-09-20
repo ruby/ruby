@@ -15,6 +15,7 @@ date_core.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_core.o: $(hdrdir)/ruby/defines.h
 date_core.o: $(hdrdir)/ruby/encoding.h
 date_core.o: $(hdrdir)/ruby/intern.h
+date_core.o: $(hdrdir)/ruby/internal/abi.h
 date_core.o: $(hdrdir)/ruby/internal/anyargs.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_core.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -52,6 +53,7 @@ date_core.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 date_core.o: $(hdrdir)/ruby/internal/attr/noinline.h
 date_core.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 date_core.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+date_core.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 date_core.o: $(hdrdir)/ruby/internal/attr/pure.h
 date_core.o: $(hdrdir)/ruby/internal/attr/restrict.h
 date_core.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -120,7 +122,6 @@ date_core.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 date_core.o: $(hdrdir)/ruby/internal/intern/error.h
 date_core.o: $(hdrdir)/ruby/internal/intern/eval.h
 date_core.o: $(hdrdir)/ruby/internal/intern/file.h
-date_core.o: $(hdrdir)/ruby/internal/intern/gc.h
 date_core.o: $(hdrdir)/ruby/internal/intern/hash.h
 date_core.o: $(hdrdir)/ruby/internal/intern/io.h
 date_core.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -151,12 +152,12 @@ date_core.o: $(hdrdir)/ruby/internal/memory.h
 date_core.o: $(hdrdir)/ruby/internal/method.h
 date_core.o: $(hdrdir)/ruby/internal/module.h
 date_core.o: $(hdrdir)/ruby/internal/newobj.h
-date_core.o: $(hdrdir)/ruby/internal/rgengc.h
 date_core.o: $(hdrdir)/ruby/internal/scan_args.h
 date_core.o: $(hdrdir)/ruby/internal/special_consts.h
 date_core.o: $(hdrdir)/ruby/internal/static_assert.h
 date_core.o: $(hdrdir)/ruby/internal/stdalign.h
 date_core.o: $(hdrdir)/ruby/internal/stdbool.h
+date_core.o: $(hdrdir)/ruby/internal/stdckdint.h
 date_core.o: $(hdrdir)/ruby/internal/symbol.h
 date_core.o: $(hdrdir)/ruby/internal/value.h
 date_core.o: $(hdrdir)/ruby/internal/value_type.h
@@ -188,6 +189,7 @@ date_parse.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_parse.o: $(hdrdir)/ruby/defines.h
 date_parse.o: $(hdrdir)/ruby/encoding.h
 date_parse.o: $(hdrdir)/ruby/intern.h
+date_parse.o: $(hdrdir)/ruby/internal/abi.h
 date_parse.o: $(hdrdir)/ruby/internal/anyargs.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_parse.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -225,6 +227,7 @@ date_parse.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/noinline.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+date_parse.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/pure.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/restrict.h
 date_parse.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -294,7 +297,6 @@ date_parse.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 date_parse.o: $(hdrdir)/ruby/internal/intern/error.h
 date_parse.o: $(hdrdir)/ruby/internal/intern/eval.h
 date_parse.o: $(hdrdir)/ruby/internal/intern/file.h
-date_parse.o: $(hdrdir)/ruby/internal/intern/gc.h
 date_parse.o: $(hdrdir)/ruby/internal/intern/hash.h
 date_parse.o: $(hdrdir)/ruby/internal/intern/io.h
 date_parse.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -325,12 +327,12 @@ date_parse.o: $(hdrdir)/ruby/internal/memory.h
 date_parse.o: $(hdrdir)/ruby/internal/method.h
 date_parse.o: $(hdrdir)/ruby/internal/module.h
 date_parse.o: $(hdrdir)/ruby/internal/newobj.h
-date_parse.o: $(hdrdir)/ruby/internal/rgengc.h
 date_parse.o: $(hdrdir)/ruby/internal/scan_args.h
 date_parse.o: $(hdrdir)/ruby/internal/special_consts.h
 date_parse.o: $(hdrdir)/ruby/internal/static_assert.h
 date_parse.o: $(hdrdir)/ruby/internal/stdalign.h
 date_parse.o: $(hdrdir)/ruby/internal/stdbool.h
+date_parse.o: $(hdrdir)/ruby/internal/stdckdint.h
 date_parse.o: $(hdrdir)/ruby/internal/symbol.h
 date_parse.o: $(hdrdir)/ruby/internal/value.h
 date_parse.o: $(hdrdir)/ruby/internal/value_type.h
@@ -362,6 +364,7 @@ date_strftime.o: $(hdrdir)/ruby/backward/2/stdalign.h
 date_strftime.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_strftime.o: $(hdrdir)/ruby/defines.h
 date_strftime.o: $(hdrdir)/ruby/intern.h
+date_strftime.o: $(hdrdir)/ruby/internal/abi.h
 date_strftime.o: $(hdrdir)/ruby/internal/anyargs.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_strftime.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -399,6 +402,7 @@ date_strftime.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/noinline.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+date_strftime.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/pure.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/restrict.h
 date_strftime.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -458,7 +462,6 @@ date_strftime.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 date_strftime.o: $(hdrdir)/ruby/internal/intern/error.h
 date_strftime.o: $(hdrdir)/ruby/internal/intern/eval.h
 date_strftime.o: $(hdrdir)/ruby/internal/intern/file.h
-date_strftime.o: $(hdrdir)/ruby/internal/intern/gc.h
 date_strftime.o: $(hdrdir)/ruby/internal/intern/hash.h
 date_strftime.o: $(hdrdir)/ruby/internal/intern/io.h
 date_strftime.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -489,12 +492,12 @@ date_strftime.o: $(hdrdir)/ruby/internal/memory.h
 date_strftime.o: $(hdrdir)/ruby/internal/method.h
 date_strftime.o: $(hdrdir)/ruby/internal/module.h
 date_strftime.o: $(hdrdir)/ruby/internal/newobj.h
-date_strftime.o: $(hdrdir)/ruby/internal/rgengc.h
 date_strftime.o: $(hdrdir)/ruby/internal/scan_args.h
 date_strftime.o: $(hdrdir)/ruby/internal/special_consts.h
 date_strftime.o: $(hdrdir)/ruby/internal/static_assert.h
 date_strftime.o: $(hdrdir)/ruby/internal/stdalign.h
 date_strftime.o: $(hdrdir)/ruby/internal/stdbool.h
+date_strftime.o: $(hdrdir)/ruby/internal/stdckdint.h
 date_strftime.o: $(hdrdir)/ruby/internal/symbol.h
 date_strftime.o: $(hdrdir)/ruby/internal/value.h
 date_strftime.o: $(hdrdir)/ruby/internal/value_type.h
@@ -523,6 +526,7 @@ date_strptime.o: $(hdrdir)/ruby/backward/2/stdarg.h
 date_strptime.o: $(hdrdir)/ruby/defines.h
 date_strptime.o: $(hdrdir)/ruby/encoding.h
 date_strptime.o: $(hdrdir)/ruby/intern.h
+date_strptime.o: $(hdrdir)/ruby/internal/abi.h
 date_strptime.o: $(hdrdir)/ruby/internal/anyargs.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic.h
 date_strptime.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -560,6 +564,7 @@ date_strptime.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/noinline.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+date_strptime.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/pure.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/restrict.h
 date_strptime.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -629,7 +634,6 @@ date_strptime.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 date_strptime.o: $(hdrdir)/ruby/internal/intern/error.h
 date_strptime.o: $(hdrdir)/ruby/internal/intern/eval.h
 date_strptime.o: $(hdrdir)/ruby/internal/intern/file.h
-date_strptime.o: $(hdrdir)/ruby/internal/intern/gc.h
 date_strptime.o: $(hdrdir)/ruby/internal/intern/hash.h
 date_strptime.o: $(hdrdir)/ruby/internal/intern/io.h
 date_strptime.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -660,12 +664,12 @@ date_strptime.o: $(hdrdir)/ruby/internal/memory.h
 date_strptime.o: $(hdrdir)/ruby/internal/method.h
 date_strptime.o: $(hdrdir)/ruby/internal/module.h
 date_strptime.o: $(hdrdir)/ruby/internal/newobj.h
-date_strptime.o: $(hdrdir)/ruby/internal/rgengc.h
 date_strptime.o: $(hdrdir)/ruby/internal/scan_args.h
 date_strptime.o: $(hdrdir)/ruby/internal/special_consts.h
 date_strptime.o: $(hdrdir)/ruby/internal/static_assert.h
 date_strptime.o: $(hdrdir)/ruby/internal/stdalign.h
 date_strptime.o: $(hdrdir)/ruby/internal/stdbool.h
+date_strptime.o: $(hdrdir)/ruby/internal/stdckdint.h
 date_strptime.o: $(hdrdir)/ruby/internal/symbol.h
 date_strptime.o: $(hdrdir)/ruby/internal/value.h
 date_strptime.o: $(hdrdir)/ruby/internal/value_type.h

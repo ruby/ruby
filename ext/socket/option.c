@@ -31,7 +31,7 @@ VALUE rb_cSockOpt;
     ((len) == (size) ? \
      (void)0 : \
      rb_raise(rb_eTypeError, "size differ.  expected as "#size"=%d but %ld", \
-	      (int)size, (long)(len)))
+              (int)size, (long)(len)))
 
 static VALUE
 sockopt_pack_byte(VALUE value)
@@ -309,7 +309,7 @@ sockopt_bool(VALUE self)
     StringValue(data);
     len = RSTRING_LEN(data);
     if (len == 1) {
-	return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
+        return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
     }
     check_size(len, sizeof(int));
     memcpy((char*)&i, RSTRING_PTR(data), len);
@@ -420,7 +420,7 @@ sockopt_ipv4_multicast_loop(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_LOOP)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_LOOP) {
-	return XCAT(sockopt_,TYPE_IP_MULTICAST_LOOP)(self);
+        return XCAT(sockopt_,TYPE_IP_MULTICAST_LOOP)(self);
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_loop socket option expected");
@@ -471,7 +471,7 @@ sockopt_ipv4_multicast_ttl(VALUE self)
 
 #if defined(IPPROTO_IP) && defined(IP_MULTICAST_TTL)
     if (family == AF_INET && level == IPPROTO_IP && optname == IP_MULTICAST_TTL) {
-	return XCAT(sockopt_,TYPE_IP_MULTICAST_TTL)(self);
+        return XCAT(sockopt_,TYPE_IP_MULTICAST_TTL)(self);
     }
 #endif
     rb_raise(rb_eTypeError, "ipv4_multicast_ttl socket option expected");
@@ -657,8 +657,8 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #else
     unsigned long x = ntohl(*(unsigned long*)addr);
     snprintf(numaddr, numaddr_len, "%d.%d.%d.%d",
-	     (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
-	     (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
+             (int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
+             (int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff);
 #endif
     return numaddr;
 }
@@ -670,10 +670,10 @@ rb_if_indextoname(const char *succ_prefix, const char *fail_prefix, unsigned int
 {
 #if defined(HAVE_IF_INDEXTONAME)
     char ifbuf[IFNAMSIZ];
-    if (if_indextoname(ifindex, ifbuf) == NULL)
-        return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
-    else
+    if (if_indextoname(ifindex, ifbuf))
         return snprintf(buf, len, "%s%s", succ_prefix, ifbuf);
+    else
+        return snprintf(buf, len, "%s%u", fail_prefix, ifindex);
 #else
 #   ifndef IFNAMSIZ
 #       define IFNAMSIZ (sizeof(unsigned int)*3+1)
@@ -1059,16 +1059,16 @@ inspect_tcp_info(int level, int optname, VALUE data, VALUE ret)
         rb_str_catf(ret, " fackets=%u", s.tcpi_fackets);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_LAST_DATA_SENT
-	inspect_tcpi_last_data_sent(ret, s.tcpi_last_data_sent);
+        inspect_tcpi_last_data_sent(ret, s.tcpi_last_data_sent);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_LAST_ACK_SENT
-	inspect_tcpi_last_ack_sent(ret, s.tcpi_last_ack_sent);
+        inspect_tcpi_last_ack_sent(ret, s.tcpi_last_ack_sent);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_LAST_DATA_RECV
-	inspect_tcpi_last_data_recv(ret, s.tcpi_last_data_recv);
+        inspect_tcpi_last_data_recv(ret, s.tcpi_last_data_recv);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_LAST_ACK_RECV
-	inspect_tcpi_last_ack_recv(ret, s.tcpi_last_ack_recv);
+        inspect_tcpi_last_ack_recv(ret, s.tcpi_last_ack_recv);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_PMTU
         rb_str_catf(ret, " pmtu=%u", s.tcpi_pmtu);
@@ -1077,10 +1077,10 @@ inspect_tcp_info(int level, int optname, VALUE data, VALUE ret)
         rb_str_catf(ret, " rcv_ssthresh=%u", s.tcpi_rcv_ssthresh);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_RTT
-	inspect_tcpi_rtt(ret, s.tcpi_rtt);
+        inspect_tcpi_rtt(ret, s.tcpi_rtt);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_RTTVAR
-	inspect_tcpi_rttvar(ret, s.tcpi_rttvar);
+        inspect_tcpi_rttvar(ret, s.tcpi_rttvar);
 #endif
 #ifdef HAVE_STRUCT_TCP_INFO_TCPI_SND_SSTHRESH
         rb_str_catf(ret, " snd_ssthresh=%u", s.tcpi_snd_ssthresh);
@@ -1150,7 +1150,7 @@ inspect_peercred(int level, int optname, VALUE data, VALUE ret)
         RUBY_SOCK_PEERCRED cred;
         memcpy(&cred, RSTRING_PTR(data), sizeof(RUBY_SOCK_PEERCRED));
         rb_str_catf(ret, " pid=%u euid=%u egid=%u",
-		    (unsigned)cred.pid, (unsigned)cred.uid, (unsigned)cred.gid);
+                    (unsigned)cred.pid, (unsigned)cred.uid, (unsigned)cred.gid);
         rb_str_cat2(ret, " (ucred)");
         return 1;
     }
@@ -1171,14 +1171,14 @@ inspect_local_peercred(int level, int optname, VALUE data, VALUE ret)
             return 0;
         rb_str_catf(ret, " version=%u", cred.cr_version);
         rb_str_catf(ret, " euid=%u", cred.cr_uid);
-	if (cred.cr_ngroups) {
-	    int i;
-	    const char *sep = " groups=";
-	    for (i = 0; i < cred.cr_ngroups; i++) {
-		rb_str_catf(ret, "%s%u", sep, cred.cr_groups[i]);
-		sep = ",";
-	    }
-	}
+        if (cred.cr_ngroups) {
+            int i;
+            const char *sep = " groups=";
+            for (i = 0; i < cred.cr_ngroups; i++) {
+                rb_str_catf(ret, "%s%u", sep, cred.cr_groups[i]);
+                sep = ",";
+            }
+        }
         rb_str_cat2(ret, " (xucred)");
         return 1;
     }
@@ -1216,42 +1216,42 @@ sockopt_inspect(VALUE self)
 
     family_id = rsock_intern_family_noprefix(family);
     if (family_id)
-	rb_str_catf(ret, " %s", rb_id2name(family_id));
+        rb_str_catf(ret, " %s", rb_id2name(family_id));
     else
         rb_str_catf(ret, " family:%d", family);
 
     if (level == SOL_SOCKET) {
         rb_str_cat2(ret, " SOCKET");
 
-	optname_id = rsock_intern_so_optname(optname);
-	if (optname_id)
-	    rb_str_catf(ret, " %s", rb_id2name(optname_id));
-	else
-	    rb_str_catf(ret, " optname:%d", optname);
+        optname_id = rsock_intern_so_optname(optname);
+        if (optname_id)
+            rb_str_catf(ret, " %s", rb_id2name(optname_id));
+        else
+            rb_str_catf(ret, " optname:%d", optname);
     }
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
     else if (family == AF_UNIX) {
-	rb_str_catf(ret, " level:%d", level);
+        rb_str_catf(ret, " level:%d", level);
 
-	optname_id = rsock_intern_local_optname(optname);
-	if (optname_id)
-	    rb_str_catf(ret, " %s", rb_id2name(optname_id));
-	else
-	    rb_str_catf(ret, " optname:%d", optname);
+        optname_id = rsock_intern_local_optname(optname);
+        if (optname_id)
+            rb_str_catf(ret, " %s", rb_id2name(optname_id));
+        else
+            rb_str_catf(ret, " optname:%d", optname);
     }
 #endif
     else if (IS_IP_FAMILY(family)) {
-	level_id = rsock_intern_iplevel(level);
-	if (level_id)
-	    rb_str_catf(ret, " %s", rb_id2name(level_id));
-	else
-	    rb_str_catf(ret, " level:%d", level);
+        level_id = rsock_intern_iplevel(level);
+        if (level_id)
+            rb_str_catf(ret, " %s", rb_id2name(level_id));
+        else
+            rb_str_catf(ret, " level:%d", level);
 
-	v = optname_to_sym(level, optname);
-	if (SYMBOL_P(v))
-	    rb_str_catf(ret, " %"PRIsVALUE, rb_sym2str(v));
-	else
-	    rb_str_catf(ret, " optname:%d", optname);
+        v = optname_to_sym(level, optname);
+        if (SYMBOL_P(v))
+            rb_str_catf(ret, " %"PRIsVALUE, rb_sym2str(v));
+        else
+            rb_str_catf(ret, " optname:%d", optname);
     }
     else {
         rb_str_catf(ret, " level:%d", level);
@@ -1393,7 +1393,7 @@ sockopt_inspect(VALUE self)
         }
         break;
 
-#ifdef HAVE_SYS_UN_H
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case AF_UNIX:
         switch (level) {
           case 0:

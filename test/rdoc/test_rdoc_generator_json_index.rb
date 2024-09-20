@@ -104,8 +104,20 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     orig_file = Pathname(File.join srcdir, 'generator/template/json_index/js/navigation.js')
     generated_file = Pathname(File.join @tmpdir, 'js/navigation.js')
 
+    # The following assertion for the generated file's modified time randomly
+    # fails in a ppc64le environment.
+    # https://github.com/ruby/rdoc/issues/1048
+    if orig_file.mtime.inspect != generated_file.mtime.inspect &&
+      RUBY_PLATFORM =~ /powerpc64le/
+      pend <<~EOC
+        Unstable test in ppc64le.
+        <#{orig_file.mtime.inspect}> expected but was
+        <#{generated_file.mtime.inspect}>.
+      EOC
+    end
+
     # This is dirty hack on JRuby
-    assert orig_file.mtime.inspect == generated_file.mtime.inspect,
+    assert_equal orig_file.mtime.inspect, generated_file.mtime.inspect,
       '.js files should be the same timestamp of original'
 
     json = File.read 'js/search_index.js'

@@ -1,8 +1,49 @@
 # frozen_string_literal: true
 
 module Test
+
+  class << self
+    ##
+    # Filter object for backtraces.
+
+    attr_accessor :backtrace_filter
+  end
+
+  class BacktraceFilter # :nodoc:
+    def filter bt
+      return ["No backtrace"] unless bt
+
+      new_bt = []
+      pattern = %r[/(?:lib\/test/|core_assertions\.rb:)]
+
+      unless $DEBUG then
+        bt.each do |line|
+          break if pattern.match?(line)
+          new_bt << line
+        end
+
+        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
+        new_bt = bt.dup if new_bt.empty?
+      else
+        new_bt = bt.dup
+      end
+
+      new_bt
+    end
+  end
+
+  self.backtrace_filter = BacktraceFilter.new
+
+  def self.filter_backtrace bt # :nodoc:
+    backtrace_filter.filter bt
+  end
+
   module Unit
     module Assertions
+      def assert_raises(*exp, &b)
+        raise NoMethodError, "use assert_raise", caller
+      end
+
       def _assertions= n # :nodoc:
         @_assertions = n
       end
@@ -33,6 +74,11 @@ module Test
     module CoreAssertions
       require_relative 'envutil'
       require 'pp'
+      begin
+        require '-test-/asan'
+      rescue LoadError
+      end
+
       nil.pretty_inspect
 
       def mu_pp(obj) #:nodoc:
@@ -107,8 +153,13 @@ module Test
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
-        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::JIT) && RubyVM::JIT.enabled?
+        # TODO: consider choosing some appropriate limit for RJIT and stop skipping this once it does not randomly fail
+        pend 'assert_no_memory_leak may consider RJIT memory usage as leak' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        # For previous versions which implemented MJIT
+        pend 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+        # ASAN has the same problem - its shadow memory greatly increases memory usage
+        # (plus asan has better ways to detect memory leaks than this assertion)
+        pend 'assert_no_memory_leak may consider ASAN memory usage as leak' if defined?(Test::ASAN) && Test::ASAN.enabled?
 
         require_relative 'memory_status'
         raise Test::Unit::PendedError, "unsupported platform" unless defined?(Memory::Status)
@@ -244,7 +295,11 @@ module Test
         at_exit {
           out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
         }
-        Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true) if defined?(Test::Unit::Runner)
+        if defined?(Test::Unit::Runner)
+          Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
+        elsif defined?(Test::Unit::AutoRunner)
+          Test::Unit::AutoRunner.need_auto_run = false
+        end
       end
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
@@ -254,7 +309,7 @@ module Test
           line ||= loc.lineno
         end
         capture_stdout = true
-        unless /mswin|mingw/ =~ RUBY_PLATFORM
+        unless /mswin|mingw/ =~ RbConfig::CONFIG['host_os']
           capture_stdout = false
           opt[:out] = Test::Unit::Runner.output if defined?(Test::Unit::Runner)
           res_p, res_c = IO.pipe
@@ -264,7 +319,7 @@ module Test
         src = <<eom
 # -*- coding: #{line += __LINE__; src.encoding}; -*-
 BEGIN {
-  require "test/unit";include Test::Unit::Assertions;include Test::Unit::CoreAssertions;require #{__FILE__.dump}
+  require "test/unit";include Test::Unit::Assertions;require #{__FILE__.dump};include Test::Unit::CoreAssertions
   separated_runner #{token_dump}, #{res_c&.fileno || 'nil'}
 }
 #{line -= __LINE__; src}
@@ -531,11 +586,11 @@ eom
         refute_respond_to(obj, meth, msg)
       end
 
-      # pattern_list is an array which contains regexp and :*.
+      # pattern_list is an array which contains regexp, string and :*.
       # :* means any sequence.
       #
       # pattern_list is anchored.
-      # Use [:*, regexp, :*] for non-anchored match.
+      # Use [:*, regexp/string, :*] for non-anchored match.
       def assert_pattern_list(pattern_list, actual, message=nil)
         rest = actual
         anchored = true
@@ -544,11 +599,13 @@ eom
             anchored = false
           else
             if anchored
-              match = /\A#{pattern}/.match(rest)
+              match = rest.rindex(pattern, 0)
             else
-              match = pattern.match(rest)
+              match = rest.index(pattern)
             end
-            unless match
+            if match
+              post_match = $~ ? $~.post_match : rest[match+pattern.size..-1]
+            else
               msg = message(msg) {
                 expect_msg = "Expected #{mu_pp pattern}\n"
                 if /\n[^\n]/ =~ rest
@@ -565,7 +622,7 @@ eom
               }
               assert false, msg
             end
-            rest = match.post_match
+            rest = post_match
             anchored = true
           end
         }
@@ -592,14 +649,14 @@ eom
 
       def assert_deprecated_warning(mesg = /deprecated/)
         assert_warning(mesg) do
-          Warning[:deprecated] = true
+          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
           yield
         end
       end
 
       def assert_deprecated_warn(mesg = /deprecated/)
         assert_warn(mesg) do
-          Warning[:deprecated] = true
+          Warning[:deprecated] = true if Warning.respond_to?(:[]=)
           yield
         end
       end
@@ -691,7 +748,7 @@ eom
           msg = "exceptions on #{errs.length} threads:\n" +
             errs.map {|t, err|
             "#{t.inspect}:\n" +
-              RUBY_VERSION >= "2.5.0" ? err.full_message(highlight: false, order: :top) : err.message
+              (err.respond_to?(:full_message) ? err.full_message(highlight: false, order: :top) : err.message)
           }.join("\n---\n")
           if message
             msg = "#{message}\n#{msg}"
@@ -726,6 +783,64 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
+      %w[
+        CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
+        CLOCK_MONOTONIC
+      ].find do |c|
+        if Process.const_defined?(c)
+          [c.to_sym, Process.const_get(c)].find do |clk|
+            begin
+              Process.clock_gettime(clk)
+            rescue
+              # Constants may be defined but not implemented, e.g., mingw.
+            else
+              PERFORMANCE_CLOCK = clk
+            end
+          end
+        end
+      end
+
+      # Expect +seq+ to respond to +first+ and +each+ methods, e.g.,
+      # Array, Range, Enumerator::ArithmeticSequence and other
+      # Enumerable-s, and each elements should be size factors.
+      #
+      # :yield: each elements of +seq+.
+      def assert_linear_performance(seq, rehearsal: nil, pre: ->(n) {n})
+        pend "No PERFORMANCE_CLOCK found" unless defined?(PERFORMANCE_CLOCK)
+
+        # Timeout testing generally doesn't work when RJIT compilation happens.
+        rjit_enabled = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
+        measure = proc do |arg, message|
+          st = Process.clock_gettime(PERFORMANCE_CLOCK)
+          yield(*arg)
+          t = (Process.clock_gettime(PERFORMANCE_CLOCK) - st)
+          assert_operator 0, :<=, t, message unless rjit_enabled
+          t
+        end
+
+        first = seq.first
+        *arg = pre.call(first)
+        times = (0..(rehearsal || (2 * first))).map do
+          measure[arg, "rehearsal"].nonzero?
+        end
+        times.compact!
+        tmin, tmax = times.minmax
+
+        # safe_factor * tmax * rehearsal_time_variance_factor(equals to 1 when variance is small)
+        tbase = 10 * tmax * [(tmax / tmin) ** 2 / 4, 1].max
+        info = "(tmin: #{tmin}, tmax: #{tmax}, tbase: #{tbase})"
+
+        seq.each do |i|
+          next if i == first
+          t = tbase * i.fdiv(first)
+          *arg = pre.call(i)
+          message = "[#{i}]: in #{t}s #{info}"
+          Timeout.timeout(t, Timeout::Error, message) do
+            measure[arg, message]
+          end
+        end
+      end
+
       def diff(exp, act)
         require 'pp'
         q = PP.new(+"")
@@ -745,6 +860,82 @@ eom
       def new_test_token
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         return token.dump, Regexp.quote(token)
+      end
+
+      # Platform predicates
+
+      def self.mswin?
+        defined?(@mswin) ? @mswin : @mswin = RUBY_PLATFORM.include?('mswin')
+      end
+      private def mswin?
+        CoreAssertions.mswin?
+      end
+
+      def self.mingw?
+        defined?(@mingw) ? @mingw : @mingw = RUBY_PLATFORM.include?('mingw')
+      end
+      private def mingw?
+        CoreAssertions.mingw?
+      end
+
+      module_function def windows?
+        mswin? or mingw?
+      end
+
+      def self.version_compare(expected, actual)
+        expected.zip(actual).each {|e, a| z = (e <=> a); return z if z.nonzero?}
+        0
+      end
+
+      def self.version_match?(expected, actual)
+        if !actual
+          false
+        elsif expected.empty?
+          true
+        elsif expected.size == 1 and Range === (range = expected.first)
+          b, e = range.begin, range.end
+          return false if b and (c = version_compare(Array(b), actual)) > 0
+          return false if e and (c = version_compare(Array(e), actual)) < 0
+          return false if e and range.exclude_end? and c == 0
+          true
+        else
+          version_compare(expected, actual).zero?
+        end
+      end
+
+      def self.linux?(*ver)
+        unless defined?(@linux)
+          @linux = RUBY_PLATFORM.include?('linux') && `uname -r`.scan(/\d+/).map(&:to_i)
+        end
+        version_match? ver, @linux
+      end
+      private def linux?(*ver)
+        CoreAssertions.linux?(*ver)
+      end
+
+      def self.glibc?(*ver)
+        unless defined?(@glibc)
+          libc = `/usr/bin/ldd /bin/sh`[/^\s*libc.*=> *\K\S*/]
+          if libc and /version (\d+)\.(\d+)\.$/ =~ IO.popen([libc], &:read)[]
+            @glibc = [$1.to_i, $2.to_i]
+          else
+            @glibc = false
+          end
+        end
+        version_match? ver, @glibc
+      end
+      private def glibc?(*ver)
+        CoreAssertions.glibc?(*ver)
+      end
+
+      def self.macos?(*ver)
+        unless defined?(@macos)
+          @macos = RUBY_PLATFORM.include?('darwin') && `sw_vers -productVersion`.scan(/\d+/).map(&:to_i)
+        end
+        version_match? ver, @macos
+      end
+      private def macos?(*ver)
+        CoreAssertions.macos?(*ver)
       end
     end
   end

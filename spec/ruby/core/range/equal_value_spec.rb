@@ -12,9 +12,7 @@ describe "Range#==" do
     eval("(1.0..)").should == eval("(1.0..)")
   end
 
-  ruby_version_is "2.7" do
-    it "returns true if the endpoints are == for beginless ranges" do
-      eval("(...10)").should == eval("(...10)")
-    end
+  it "returns true if the endpoints are == for beginless ranges" do
+    (...10).should == (...10)
   end
 end

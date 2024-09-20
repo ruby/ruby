@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 
 describe "Array#to_h" do
   it "converts empty array to empty hash" do
@@ -44,6 +45,12 @@ describe "Array#to_h" do
       [:a, :b].to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
     end
 
+    it "passes to a block each element as a single argument" do
+      ScratchPad.record []
+      [[:a, 1], [:b, 2]].to_h { |*args| ScratchPad << args; [args[0], args[1]] }
+      ScratchPad.recorded.sort.should == [[[:a, 1]], [[:b, 2]]]
+    end
+
     it "raises ArgumentError if block returns longer or shorter array" do
       -> do
         [:a, :b].to_h { |k| [k, k.to_s, 1] }
@@ -76,4 +83,9 @@ describe "Array#to_h" do
       end.should raise_error(TypeError, /wrong element type MockObject at 0/)
     end
   end
+end
+
+describe "Array#to_h" do
+  @value_to_return = -> e { [e, e.to_s] }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :to_h
 end

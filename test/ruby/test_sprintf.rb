@@ -266,8 +266,8 @@ class TestSprintf < Test::Unit::TestCase
     # Specifying the precision multiple times with negative star arguments:
     assert_raise(ArgumentError, "[ruby-core:11570]") {sprintf("%.*.*.*.*f", -1, -1, -1, 5, 1)}
 
-    # Null bytes after percent signs are removed:
-    assert_equal("%\0x hello", sprintf("%\0x hello"), "[ruby-core:11571]")
+    assert_raise(ArgumentError) {sprintf("%\0x hello")}
+    assert_raise(ArgumentError) {sprintf("%\nx hello")}
 
     assert_raise(ArgumentError, "[ruby-core:11573]") {sprintf("%.25555555555555555555555555555555555555s", "hello")}
 
@@ -279,10 +279,9 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
     assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
 
-    verbose, $VERBOSE = $VERBOSE, nil
-    assert_nothing_raised { sprintf("", 1) }
-  ensure
-    $VERBOSE = verbose
+    assert_warning(/too many arguments/) do
+      sprintf("", 1)
+    end
   end
 
   def test_float
@@ -362,11 +361,16 @@ class TestSprintf < Test::Unit::TestCase
   def test_char
     assert_equal("a", sprintf("%c", 97))
     assert_equal("a", sprintf("%c", ?a))
-    assert_raise(ArgumentError) { sprintf("%c", sprintf("%c%c", ?a, ?a)) }
+    assert_equal("a", sprintf("%c", "a"))
+    assert_equal("a", sprintf("%c", sprintf("%c%c", ?a, ?a)))
     assert_equal(" " * (BSIZ - 1) + "a", sprintf(" " * (BSIZ - 1) + "%c", ?a))
     assert_equal(" " * (BSIZ - 1) + "a", sprintf(" " * (BSIZ - 1) + "%-1c", ?a))
     assert_equal(" " * BSIZ + "a", sprintf("%#{ BSIZ + 1 }c", ?a))
     assert_equal("a" + " " * BSIZ, sprintf("%-#{ BSIZ + 1 }c", ?a))
+    assert_raise(ArgumentError) { sprintf("%c", -1) }
+    s = sprintf("%c".encode(Encoding::US_ASCII), 0x80)
+    assert_equal("\x80".b, s)
+    assert_predicate(s, :valid_encoding?)
   end
 
   def test_string
@@ -505,6 +509,16 @@ class TestSprintf < Test::Unit::TestCase
       e = assert_raise_with_message(KeyError, "key{#{k}} not found") {sprintf("%{#{k}}", {})}
       assert_equal(enc, e.message.encoding)
     end
+  end
+
+  def test_coderange
+    format_str = "wrong constant name %s"
+    interpolated_str = "\u3042"
+    assert_predicate format_str, :ascii_only?
+    refute_predicate interpolated_str, :ascii_only?
+
+    str = format_str % interpolated_str
+    refute_predicate str, :ascii_only?
   end
 
   def test_named_default

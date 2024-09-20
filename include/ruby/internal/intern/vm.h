@@ -229,8 +229,7 @@ void rb_define_alloc_func(VALUE klass, rb_alloc_func_t func);
  * restrict creation  of an instance of  a class.  For example  it rarely makes
  * sense for  a DB adaptor class  to allow programmers creating  DB row objects
  * without querying  the DB  itself.  You  can kill  sporadic creation  of such
- * objects then,  by nullifying  the allocator function  using this  API.  Your
- * object shall be allocated using #RB_NEWOBJ_OF() directly.
+ * objects then,  by nullifying  the allocator function  using this  API.
  *
  * @param[out]  klass  The class to modify.
  * @pre         `klass` must be an instance of Class.
@@ -247,21 +246,17 @@ void rb_undef_alloc_func(VALUE klass);
  *
  * @internal
  *
- * Who cares?  @shyouhei fins no practical usage of the return value.  Maybe we
+ * Who cares?  @shyouhei finds no practical usage of the return value.  Maybe we
  * need KonMari.
  */
 rb_alloc_func_t rb_get_alloc_func(VALUE klass);
 
 /**
- * Clears  the constant  cache.   Extension libraries  should  not bother  such
- * things.   Just forget  about this  API (or  even, the  presence of  constant
- * cache).
- *
- * @internal
- *
- * Completely no idea why this function is defined in vm_method.c.
+ * Clears the inline constant caches associated with a particular ID. Extension
+ * libraries should not bother with such things. Just forget about this API (or
+ * even, the presence of constant caches).
  */
-void rb_clear_constant_cache(void);
+void rb_clear_constant_cache_for_id(ID id);
 
 /**
  * Resembles `alias`.

@@ -52,7 +52,7 @@ class TestFloatExt < Test::Unit::TestCase
               "#{'%a' % v2} = Bug::Float.system_nextafter(#{'%a' % n1}, #{'%a' % n2})")
             rescue Test::Unit::AssertionFailedError
               if /aix/ =~ RUBY_PLATFORM
-                skip "Known bug in nextafter(3) on AIX"
+                omit "Known bug in nextafter(3) on AIX"
               end
               raise $!
             end

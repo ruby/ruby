@@ -96,11 +96,6 @@ RSpec.describe MSpecScript, ".main" do
     MSpecScript.main
   end
 
-  it "attempts to load the '~/.mspecrc' script" do
-    expect(@script).to receive(:try_load).with('~/.mspecrc')
-    MSpecScript.main
-  end
-
   it "calls the #options method on the script" do
     expect(@script).to receive(:options)
     MSpecScript.main

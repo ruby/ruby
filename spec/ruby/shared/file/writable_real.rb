@@ -24,6 +24,22 @@ describe :file_writable_real, shared: true do
     -> { @object.send(@method, nil)   }.should raise_error(TypeError)
     -> { @object.send(@method, false) }.should raise_error(TypeError)
   end
+
+  platform_is_not :windows do
+    as_real_superuser do
+      context "when run by a real superuser" do
+        it "returns true unconditionally" do
+          file = tmp('temp.txt')
+          touch file
+
+          File.chmod(0555, file)
+          @object.send(@method, file).should == true
+
+          rm_r file
+        end
+      end
+    end
+  end
 end
 
 describe :file_writable_real_missing, shared: true do

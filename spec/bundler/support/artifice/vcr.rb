@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "net/http"
+require_relative "../vendored_net_http"
 require_relative "../path"
 
-CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes"
+CASSETTE_PATH = "#{Spec::Path.spec_dir}/support/artifice/vcr_cassettes".freeze
+USED_CASSETTES_PATH = "#{Spec::Path.spec_dir}/support/artifice/used_cassettes.txt".freeze
 CASSETTE_NAME = ENV.fetch("BUNDLER_SPEC_VCR_CASSETTE_NAME") { "realworld" }
 
-class BundlerVCRHTTP < Net::HTTP
+class BundlerVCRHTTP < Gem::Net::HTTP
   class RequestHandler
     attr_reader :http, :request, :body, :response_block
     def initialize(http, request, body = nil, &response_block)
@@ -20,6 +21,10 @@ class BundlerVCRHTTP < Net::HTTP
       handler = self
       request.instance_eval do
         @__vcr_request_handler = handler
+      end
+
+      File.open(USED_CASSETTES_PATH, "a+") do |f|
+        f.puts request_pair_paths.map {|path| Pathname.new(path).relative_path_from(Spec::Path.source_root).to_s }.join("\n")
       end
 
       if recorded_response?
@@ -36,13 +41,13 @@ class BundlerVCRHTTP < Net::HTTP
 
     def recorded_response
       File.open(request_pair_paths.last, "rb:ASCII-8BIT") do |response_file|
-        response_io = ::Net::BufferedIO.new(response_file)
-        ::Net::HTTPResponse.read_new(response_io).tap do |response|
+        response_io = ::Gem::Net::BufferedIO.new(response_file)
+        ::Gem::Net::HTTPResponse.read_new(response_io).tap do |response|
           response.decode_content = request.decode_content if request.respond_to?(:decode_content)
           response.uri = request.uri
 
           response.reading_body(response_io, request.response_body_permitted?) do
-            response_block.call(response) if response_block
+            response_block&.call(response)
           end
         end
       end
@@ -69,30 +74,13 @@ class BundlerVCRHTTP < Net::HTTP
     end
 
     def file_name_for_key(key)
-      key.join("/").gsub(/[\:*?"<>|]/, "-")
+      File.join(*key).gsub(/[\:*?"<>|]/, "-")
     end
 
     def request_pair_paths
       %w[request response].map do |kind|
-        File.join(CASSETTE_PATH, CASSETTE_NAME, file_name_for_key(key + [kind]))
+        File.join(CASSETTE_PATH, CASSETTE_NAME, file_name_for_key(key), kind)
       end
-    end
-
-    def read_stored_request(path)
-      contents = File.binread(path)
-      headers = {}
-      method = nil
-      path = nil
-      contents.lines.grep(/^> /).each do |line|
-        if line =~ /^> (GET|HEAD|POST|PATCH|PUT|DELETE) (.*)/
-          method = $1
-          path = $2.strip
-        elsif line =~ /^> (.*?): (.*)/
-          headers[$1] = $2
-        end
-      end
-      body = contents =~ /^([^>].*)/m && $1
-      Net::HTTP.const_get(method.capitalize).new(path, headers).tap {|r| r.body = body if body }
     end
 
     def request_to_string(request)
@@ -158,8 +146,7 @@ class BundlerVCRHTTP < Net::HTTP
   alias_method :request, :request_with_vcr
 end
 
-# Replace Net::HTTP with our VCR subclass
-::Net.class_eval do
-  remove_const(:HTTP)
-  const_set(:HTTP, BundlerVCRHTTP)
-end
+require_relative "helpers/artifice"
+
+# Replace Gem::Net::HTTP with our VCR subclass
+Artifice.replace_net_http(BundlerVCRHTTP)

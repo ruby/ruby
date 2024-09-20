@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -6,6 +7,10 @@ describe "String#upcase" do
   it "returns a copy of self with all lowercase letters upcased" do
     "Hello".upcase.should == "HELLO"
     "hello".upcase.should == "HELLO"
+  end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").upcase.encoding.should == Encoding::US_ASCII
   end
 
   describe "full Unicode case mapping" do
@@ -26,6 +31,10 @@ describe "String#upcase" do
   describe "ASCII-only case mapping" do
     it "does not upcase non-ASCII characters" do
       "aßet".upcase(:ascii).should == "AßET"
+    end
+
+    it "works with substrings" do
+      "prefix té"[-2..-1].upcase(:ascii).should == "Té"
     end
   end
 
@@ -65,24 +74,8 @@ describe "String#upcase" do
     -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self is tainted" do
-      "".taint.upcase.should.tainted?
-      "X".taint.upcase.should.tainted?
-      "x".taint.upcase.should.tainted?
-    end
-  end
-
-  ruby_version_is ''...'3.0' do
-    it "returns a subclass instance for subclasses" do
-      StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns a String instance for subclasses" do
-      StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
-    end
+  it "returns a String instance for subclasses" do
+    StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
   end
 end
 

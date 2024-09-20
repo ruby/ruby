@@ -13,7 +13,7 @@ describe "StringScanner#getch" do
 
   it "is multi-byte character sensitive" do
     # Japanese hiragana "A" in EUC-JP
-    src = "\244\242".force_encoding("euc-jp")
+    src = "\244\242".dup.force_encoding("euc-jp")
 
     s = StringScanner.new(src)
     s.getch.should == src

@@ -1,0 +1,63 @@
+# test regex, string, and lists that span a heredoc thanks to an escaped newline
+
+# ripper incorrectly creates a "b\nb" token instead of two separate string tokens
+pp <<-A.gsub(/b\
+a
+A
+b/, "")
+
+# ripper incorrectly creates a "d\nd" token instead of two separate string tokens
+pp <<-A, "d\
+c
+A
+d"
+
+# ripper gets this right
+pp <<-A, %q[f\
+e
+A
+f]
+
+# ripper incorrectly creates a "h\nh" token instead of two separate string tokens
+pp <<-A, %Q[h\
+g
+A
+h]
+
+# ripper can't parse this successfully, though ruby runs it correctly
+pp <<-A, %w[j\
+i
+A
+j]
+
+# ripper can't parse this successfully, though ruby runs it correctly
+# TODO: prism does not include the "\n" in "l\nl" in the AST like ruby does
+pp <<-A, %W[l\
+k
+A
+l]
+
+# ripper can't parse this successfully, though ruby runs it correctly
+pp <<-A, %i[n\
+m
+A
+n]
+
+# ripper gets this one wrong in the same way that prism does ...
+# TODO: prism does not include the "\n" in "p\np" in the AST like ruby does
+pp <<-A, %I[p\
+o
+A
+p]
+
+<<A; /\
+A
+(?<a>)/ =~ ''
+
+<<A; :'a
+A
+b'
+
+<<A; :"a
+A
+b"

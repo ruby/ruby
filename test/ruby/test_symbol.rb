@@ -36,6 +36,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_eval_inspected(:"@@1", false)
     assert_eval_inspected(:"@", false)
     assert_eval_inspected(:"@@", false)
+    assert_eval_inspected(:"[]=")
+    assert_eval_inspected(:"[][]", false)
+    assert_eval_inspected(:"[][]=", false)
+    assert_eval_inspected(:"@=", false)
+    assert_eval_inspected(:"@@=", false)
+    assert_eval_inspected(:"@x=", false)
+    assert_eval_inspected(:"@@x=", false)
+    assert_eval_inspected(:"$$=", false)
+    assert_eval_inspected(:"$==", false)
+    assert_eval_inspected(:"$x=", false)
+    assert_eval_inspected(:"$$$=", false)
+    assert_eval_inspected(:"foo?=", false)
+    assert_eval_inspected(:"foo!=", false)
   end
 
   def assert_inspect_evaled(n)
@@ -77,12 +90,15 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_inspect_dollar
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     # 4) :$- always treats next character literally:
     assert_raise(SyntaxError) {eval ':$-'}
     assert_raise(SyntaxError) {eval ":$-\n"}
     assert_raise(SyntaxError) {eval ":$- "}
     assert_raise(SyntaxError) {eval ":$-#"}
     assert_raise(SyntaxError) {eval ':$-('}
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def test_inspect_number
@@ -102,6 +118,14 @@ class TestSymbol < Test::Unit::TestCase
     invalid = %w{$a? $a! $a= @a? @a! @a= @@a? @@a! @@a= =}
     invalid.each do |sym|
       assert_equal(':"' + sym + '"', sym.intern.inspect)
+    end
+  end
+
+  def test_inspect_under_gc_compact_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+
+    EnvUtil.under_gc_compact_stress do
+      assert_inspect_evaled(':testing')
     end
   end
 

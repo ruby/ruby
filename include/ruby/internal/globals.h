@@ -94,7 +94,7 @@ RUBY_EXTERN VALUE rb_cRegexp;                 /**< `Regexp` class. */
 RUBY_EXTERN VALUE rb_cStat;                   /**< `File::Stat` class. */
 RUBY_EXTERN VALUE rb_cString;                 /**< `String` class. */
 RUBY_EXTERN VALUE rb_cStruct;                 /**< `Struct` class. */
-RUBY_EXTERN VALUE rb_cSymbol;                 /**< `Sumbol` class. */
+RUBY_EXTERN VALUE rb_cSymbol;                 /**< `Symbol` class. */
 RUBY_EXTERN VALUE rb_cThread;                 /**< `Thread` class. */
 RUBY_EXTERN VALUE rb_cTime;                   /**< `Time` class. */
 RUBY_EXTERN VALUE rb_cTrueClass;              /**< `TrueClass` class. */

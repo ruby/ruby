@@ -1,14 +1,15 @@
 class Bundler::Thor
-  class Command < Struct.new(:name, :description, :long_description, :usage, :options, :ancestor_name)
+  class Command < Struct.new(:name, :description, :long_description, :wrap_long_description, :usage, :options, :options_relation, :ancestor_name)
     FILE_REGEXP = /^#{Regexp.escape(File.dirname(__FILE__))}/
 
-    def initialize(name, description, long_description, usage, options = nil)
-      super(name.to_s, description, long_description, usage, options || {})
+    def initialize(name, description, long_description, wrap_long_description, usage, options = nil, options_relation = nil)
+      super(name.to_s, description, long_description, wrap_long_description, usage, options || {}, options_relation || {})
     end
 
     def initialize_copy(other) #:nodoc:
       super(other)
       self.options = other.options.dup if other.options
+      self.options_relation = other.options_relation.dup if other.options_relation
     end
 
     def hidden?
@@ -60,6 +61,14 @@ class Bundler::Thor
         # Strip and go!
         formatted_specific_usage.strip
       end.join("\n")
+    end
+
+    def method_exclusive_option_names #:nodoc:
+      self.options_relation[:exclusive_option_names] || []
+    end
+
+    def method_at_least_one_option_names #:nodoc:
+      self.options_relation[:at_least_one_option_names] || []
     end
 
   protected
@@ -127,7 +136,7 @@ class Bundler::Thor
   # A dynamic command that handles method missing scenarios.
   class DynamicCommand < Command
     def initialize(name, options = nil)
-      super(name.to_s, "A dynamically-generated command", name.to_s, name.to_s, options)
+      super(name.to_s, "A dynamically-generated command", name.to_s, nil, name.to_s, options)
     end
 
     def run(instance, args = [])

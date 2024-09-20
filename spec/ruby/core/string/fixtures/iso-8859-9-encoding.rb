@@ -4,6 +4,6 @@ module StringSpecs
     def source_encoding; __ENCODING__; end
     def x_escape; [0xDF].pack('C').force_encoding("iso-8859-9"); end
     def ascii_only; "glark"; end
-    def cedilla; "Åž"; end
+    def cedilla; "Þ"; end # S-cedilla
   end
 end

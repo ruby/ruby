@@ -1,21 +1,19 @@
 require_relative '../../spec_helper'
 
 describe "Random::DEFAULT" do
-  it "returns a random number generator" do
-    suppress_warning do
-      Random::DEFAULT.should respond_to(:rand)
-    end
-  end
-
-  ruby_version_is ''...'3.0' do
-    it "returns a Random instance" do
+  ruby_version_is ''...'3.2' do
+    it "returns a random number generator" do
       suppress_warning do
-        Random::DEFAULT.should be_an_instance_of(Random)
+        Random::DEFAULT.should respond_to(:rand)
       end
     end
-  end
 
-  ruby_version_is '3.0' do
+    it "changes seed on reboot" do
+      seed1 = ruby_exe('p Random::DEFAULT.seed', options: '--disable-gems')
+      seed2 = ruby_exe('p Random::DEFAULT.seed', options: '--disable-gems')
+      seed1.should != seed2
+    end
+
     it "refers to the Random class" do
       suppress_warning do
         Random::DEFAULT.should.equal?(Random)
@@ -29,9 +27,9 @@ describe "Random::DEFAULT" do
     end
   end
 
-  it "changes seed on reboot" do
-    seed1 = ruby_exe('p Random::DEFAULT.seed', options: '--disable-gems')
-    seed2 = ruby_exe('p Random::DEFAULT.seed', options: '--disable-gems')
-    seed1.should != seed2
+  ruby_version_is '3.2' do
+    it "is no longer defined" do
+      Random.should_not.const_defined?(:DEFAULT)
+    end
   end
 end

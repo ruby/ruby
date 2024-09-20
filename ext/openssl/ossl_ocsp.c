@@ -6,7 +6,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -86,7 +86,7 @@ static const rb_data_type_t ossl_ocsp_request_type = {
     {
 	0, ossl_ocsp_request_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -100,7 +100,7 @@ static const rb_data_type_t ossl_ocsp_response_type = {
     {
 	0, ossl_ocsp_response_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -114,7 +114,7 @@ static const rb_data_type_t ossl_ocsp_basicresp_type = {
     {
 	0, ossl_ocsp_basicresp_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -128,7 +128,7 @@ static const rb_data_type_t ossl_ocsp_singleresp_type = {
     {
 	0, ossl_ocsp_singleresp_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -142,7 +142,7 @@ static const rb_data_type_t ossl_ocsp_certid_type = {
     {
 	0, ossl_ocsp_certid_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -382,7 +382,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(flags))
 	flg = NUM2INT(flags);
     if (NIL_P(digest))
-	md = EVP_sha1();
+	md = NULL;
     else
 	md = ossl_evp_get_digestbyname(digest);
     if (NIL_P(certs))
@@ -1033,7 +1033,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(flags))
 	flg = NUM2INT(flags);
     if (NIL_P(digest))
-	md = EVP_sha1();
+	md = NULL;
     else
 	md = ossl_evp_get_digestbyname(digest);
     if (NIL_P(certs))
@@ -1701,7 +1701,7 @@ Init_ossl_ocsp(void)
      *   require 'net/http'
      *
      *   http_response =
-     *     Net::HTTP.start ocsp_uri.hostname, ocsp.port do |http|
+     *     Net::HTTP.start ocsp_uri.hostname, ocsp_uri.port do |http|
      *       http.post ocsp_uri.path, request.to_der,
      *                 'content-type' => 'application/ocsp-request'
      *   end

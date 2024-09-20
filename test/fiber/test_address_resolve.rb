@@ -179,7 +179,7 @@ class TestAddressResolve < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        assert_raise(SocketError) {
+        assert_raise(Socket::ResolutionError) {
           Addrinfo.getaddrinfo("non-existing-domain.abc", nil)
         }
       end
@@ -269,7 +269,7 @@ class TestAddressResolve < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        result = Socket.getnameinfo(["AF_INET", 80, "example.com"], Socket::NI_NUMERICSERV)
+        result = Socket.getnameinfo(["AF_INET", 80, "example.com"], Socket::NI_NUMERICSERV | Socket::NI_NUMERICHOST)
 
         assert_equal(["1.2.3.4", "80"], result)
       end

@@ -1,13 +1,13 @@
 # frozen_string_literal: false
-require 'test/unit'
 require 'tempfile'
-require 'rubygems'
 require 'irb'
 require 'irb/workspace'
 require 'irb/color'
 
+require_relative "helper"
+
 module TestIRB
-  class TestWorkSpace < Test::Unit::TestCase
+  class WorkSpaceTest < TestCase
     def test_code_around_binding
       IRB.conf[:USE_COLORIZE] = false
       Tempfile.create('irb') do |f|
@@ -80,9 +80,7 @@ module TestIRB
       assert_equal(nil, workspace.code_around_binding)
     end
 
-
     def test_toplevel_binding_local_variables
-      pend if RUBY_ENGINE == 'truffleruby'
       bug17623 = '[ruby-core:102468]'
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
       top_srcdir = "#{__dir__}/../.."
@@ -91,7 +89,7 @@ module TestIRB
         irb_path = "#{top_srcdir}/#{dir}/irb"
         File.exist?(irb_path)
       end or omit 'irb command not found'
-      assert_in_out_err(bundle_exec + ['-W0', "-C#{top_srcdir}", '-e', <<~RUBY , '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
+      assert_in_out_err(bundle_exec + ['-W0', "-C#{top_srcdir}", '-e', <<~RUBY, '--', '-f', '--'], 'binding.local_variables', /\[:_\]/, [], bug17623)
         version = 'xyz' # typical rubygems loading file
         load('#{irb_path}')
       RUBY

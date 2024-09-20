@@ -3,7 +3,10 @@ bundle-config(1) -- Set bundler configuration options
 
 ## SYNOPSIS
 
-`bundle config` [list|get|set|unset] [<name> [<value>]]
+`bundle config` list<br>
+`bundle config` [get] NAME<br>
+`bundle config` [set] NAME VALUE<br>
+`bundle config` unset NAME
 
 ## DESCRIPTION
 
@@ -16,24 +19,26 @@ Bundler loads configuration settings in this order:
 3. Global config (`~/.bundle/config`)
 4. Bundler default config
 
-Executing `bundle config list` with will print a list of all bundler
+Executing `bundle config list` will print a list of all bundler
 configuration for the current bundle, and where that configuration
 was set.
 
 Executing `bundle config get <name>` will print the value of that configuration
 setting, and where it was set.
 
-Executing `bundle config set <name> <value>` will set that configuration to the
-value specified for all bundles executed as the current user. The configuration
-will be stored in `~/.bundle/config`. If <name> already is set, <name> will be
-overridden and user will be warned.
-
-Executing `bundle config set --global <name> <value>` works the same as above.
+Executing `bundle config set <name> <value>` defaults to setting `local`
+configuration if executing from within a local application, otherwise it will
+set `global` configuration. See `--local` and `--global` options below.
 
 Executing `bundle config set --local <name> <value>` will set that configuration
 in the directory for the local application. The configuration will be stored in
 `<project_root>/.bundle/config`. If `BUNDLE_APP_CONFIG` is set, the configuration
 will be stored in `$BUNDLE_APP_CONFIG/config`.
+
+Executing `bundle config set --global <name> <value>` will set that
+configuration to the value specified for all bundles executed as the current
+user. The configuration will be stored in `~/.bundle/config`. If <name> already
+is set, <name> will be overridden and user will be warned.
 
 Executing `bundle config unset <name>` will delete the configuration in both
 local and global sources.
@@ -41,8 +46,8 @@ local and global sources.
 Executing `bundle config unset --global <name>` will delete the configuration
 only from the user configuration.
 
-Executing `bundle config unset --local <name> <value>` will delete the
-configuration only from the local application.
+Executing `bundle config unset --local <name>` will delete the configuration
+only from the local application.
 
 Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
 cause it to ignore all configuration.
@@ -72,6 +77,9 @@ The options that can be configured are:
    `production` use. Please check carefully if you want to have this option
    enabled in `development` or `test` environments.
 
+* `only`:
+   A space-separated list of groups to install only gems of the specified groups.
+
 * `path`:
    The location to install the specified gems to. This defaults to Rubygems'
    setting. Bundler shares this location with Rubygems, `gem install ...` will
@@ -83,7 +91,7 @@ The options that can be configured are:
    A space-separated list of groups referencing gems to skip during installation.
 
 * `with`:
-  A space-separated list of groups referencing gems to include during installation.
+  A space-separated list of **optional** groups referencing gems to include during installation.
 
 ## BUILD OPTIONS
 
@@ -129,9 +137,6 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
-* `allow_deployment_source_credential_changes` (`BUNDLE_ALLOW_DEPLOYMENT_SOURCE_CREDENTIAL_CHANGES`):
-   When in deployment mode, allow changing the credentials to a gem's source.
-   Ex: `https://some.host.com/gems/path/` -> `https://user_name:password@some.host.com/gems/path`
 * `allow_offline_install` (`BUNDLE_ALLOW_OFFLINE_INSTALL`):
    Allow Bundler to use cached data when installing without network access.
 * `auto_clean_without_path` (`BUNDLE_AUTO_CLEAN_WITHOUT_PATH`):
@@ -202,6 +207,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `global_gem_cache` (`BUNDLE_GLOBAL_GEM_CACHE`):
    Whether Bundler should cache all gems globally, rather than locally to the
    installing Ruby installation.
+* `ignore_funding_requests` (`BUNDLE_IGNORE_FUNDING_REQUESTS`):
+   When set, no funding requests will be printed.
 * `ignore_messages` (`BUNDLE_IGNORE_MESSAGES`):
    When set, no post install messages will be printed. To silence a single gem,
    use dot notation like `ignore_messages.httparty true`.
@@ -214,6 +221,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
+* `only` (`BUNDLE_ONLY`):
+   A space-separated list of groups to install only gems of the specified groups.
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
@@ -253,9 +262,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `ssl_verify_mode` (`BUNDLE_SSL_VERIFY_MODE`):
    The SSL verification mode Bundler uses when making HTTPS requests.
    Defaults to verify peer.
-* `suppress_install_using_messages` (`BUNDLE_SUPPRESS_INSTALL_USING_MESSAGES`):
-   Avoid printing `Using ...` messages during installation when the version of
-   a gem has not changed.
 * `system_bindir` (`BUNDLE_SYSTEM_BINDIR`):
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
@@ -265,13 +271,19 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    and disallow passing no options to `bundle update`.
 * `user_agent` (`BUNDLE_USER_AGENT`):
    The custom user agent fragment Bundler includes in API requests.
+* `version` (`BUNDLE_VERSION`):
+   The version of Bundler to use when running under Bundler environment.
+   Defaults to `lockfile`. You can also specify `system` or `x.y.z`.
+   `lockfile` will use the Bundler version specified in the `Gemfile.lock`,
+   `system` will use the system version of Bundler, and `x.y.z` will use
+   the specified version of Bundler.
 * `with` (`BUNDLE_WITH`):
    A `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
    A `:`-separated list of groups whose gems bundler should not install.
 
 In general, you should set these settings per-application by using the applicable
-flag to the [bundle install(1)](bundle-install.1.html) or [bundle package(1)](bundle-package.1.html) command.
+flag to the [bundle install(1)](bundle-install.1.html) or [bundle cache(1)](bundle-cache.1.html) command.
 
 You can set them globally either via environment variables or `bundle config`,
 whichever is preferable for your setup. If you use both, environment variables
@@ -319,9 +331,9 @@ mirror to fetch gems.
 
     bundle config set --global mirror.SOURCE_URL MIRROR_URL
 
-For example, to use a mirror of rubygems.org hosted at rubygems-mirror.org:
+For example, to use a mirror of https://rubygems.org hosted at https://example.org:
 
-    bundle config set --global mirror.http://rubygems.org http://rubygems-mirror.org
+    bundle config set --global mirror.https://rubygems.org https://example.org
 
 Each mirror also provides a fallback timeout setting. If the mirror does not
 respond within the fallback timeout, Bundler will try to use the original
@@ -373,10 +385,10 @@ copy-pasting bundler output.
 Also note that to guarantee a sane mapping between valid environment variable
 names and valid host names, bundler makes the following transformations:
 
-* Any `-` characters in a host name are mapped to a triple dash (`___`) in the
+* Any `-` characters in a host name are mapped to a triple underscore (`___`) in the
   corresponding environment variable.
 
-* Any `.` characters in a host name are mapped to a double dash (`__`) in the
+* Any `.` characters in a host name are mapped to a double underscore (`__`) in the
   corresponding environment variable.
 
 This means that if you have a gem server named `my.gem-host.com`, you'll need to
@@ -385,7 +397,7 @@ through ENV.
 
 ## CONFIGURE BUNDLER DIRECTORIES
 
-Bundler's home, config, cache and plugin directories are able to be configured
+Bundler's home, cache and plugin directories and config file can be configured
 through environment variables. The default location for Bundler's home directory is
 `~/.bundle`, which all directories inherit from by default. The following
 outlines the available environment variables and their default values

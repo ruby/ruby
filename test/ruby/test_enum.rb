@@ -234,6 +234,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(24, @obj.inject(2) {|z, x| z * x })
     assert_equal(24, assert_warning(/given block not used/) {@obj.inject(2, :*) {|z, x| z * x }})
     assert_equal(nil, @empty.inject() {9})
+
+    assert_raise(ArgumentError) {@obj.inject}
   end
 
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
@@ -460,6 +462,17 @@ class TestEnumerable < Test::Unit::TestCase
       end
       empty.first
       empty.block.call
+    end;
+
+    bug18475 = '[ruby-dev:107059]'
+    assert_in_out_err([], <<-'end;', [], /unexpected break/, bug18475)
+      e = Enumerator.new do |g|
+        Thread.new do
+          g << 1
+        end.join
+      end
+
+      e.first
     end;
   end
 
@@ -830,6 +843,8 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_callcc
+    omit 'requires callcc support' unless respond_to?(:callcc)
+
     assert_raise(RuntimeError) do
       c = nil
       @obj.sort_by {|x| callcc {|c2| c ||= c2 }; x }
@@ -1397,5 +1412,25 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], @obj.filter_map { false })
     assert_equal([], @obj.filter_map { nil })
     assert_instance_of(Enumerator, @obj.filter_map)
+  end
+
+  def test_ruby_svar
+    klass = Class.new do
+      include Enumerable
+      def each
+        %w(bar baz).each{|e| yield e}
+      end
+    end
+    svars = []
+    klass.new.grep(/(b.)/) { svars << $1 }
+    assert_equal(["ba", "ba"], svars)
+  end
+
+  def test_all_fast
+    data = { "key" => { "key2" => 1 } }
+    kk = vv = nil
+    data.all? { |(k, v)| kk, vv = k, v }
+    assert_equal(kk, "key")
+    assert_equal(vv, { "key2" => 1 })
   end
 end

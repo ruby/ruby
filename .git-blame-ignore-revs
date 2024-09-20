@@ -1,0 +1,35 @@
+# This is a file used by GitHub to ignore the following commits on `git blame`.
+#
+# You can also do the same thing in your local repository with:
+# $ git config --local blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Expand tabs
+5b21e94bebed90180d8ff63dad03b8b948361089
+c5e9af9c9d890578182a21e7b71b50334cd5579e
+e63a2115f64433b21cb5dd67c5bf8b30f87ef293
+712ac99e4d0384a941c80a9f48f62943ba7d97c0
+d1474affa8e105bece209cc9d594bb0a989859e1
+
+# Enable Style/StringLiterals cop for RubyGems/Bundler
+d7ffd3fea402239b16833cc434404a7af82d44f3
+
+# [ruby/digest] Revert tab-expansion in external files
+48b09aae7ec5632209229dcc294dd0d75a93a17f
+8a65cf3b61c60e4cb886f59a73ff6db44364bfa9
+39dc9f9093901d40d2998653948d5da38b18ee2c
+
+# [ruby/io-nonblock] Revert tab expansion
+f28287d34c03f472ffe90ea262bdde9affd4b965
+0d842fecb4f75ab3b1d4097ebdb8e88f51558041
+4ba2c66761d6a293abdfba409241d31063cefd62
+
+# Make benchmark indentation consistent
+fc4acf8cae82e5196186d3278d831f2438479d91
+
+# Make prism_compile.c indentation consistent
+40b2c8e5e7e6e5f83cee9276dc9c1922a69292d6
+d2c5867357ed88eccc28c2b3bd4a46e206e7ff85
+
+# Miss-and-revived commits
+a0f7de814ae5c299d6ce99bed5fb308a05d50ba0
+d4e24021d39e1f80f0055b55d91f8d5f22e15084

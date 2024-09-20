@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/common'
+
+require 'yaml'
 
 describe "YAML.dump_stream" do
   it "returns a YAML stream containing the objects passed" do

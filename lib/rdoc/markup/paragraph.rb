@@ -26,4 +26,3 @@ class RDoc::Markup::Paragraph < RDoc::Markup::Raw
   end
 
 end
-

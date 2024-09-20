@@ -42,6 +42,6 @@ module MultiFormatter
   end
 
   def print_exception(exc, count)
-    print "\n#{count})\n#{exc}\n"
+    @err.print "\n#{count})\n#{exc}\n"
   end
 end

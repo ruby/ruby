@@ -24,8 +24,6 @@
 #include "ruby/internal/assume.h"
 #include "ruby/internal/has/builtin.h"
 
-#undef  ASSUME             /* Kill config.h definition */
-#undef  UNREACHABLE        /* Kill config.h definition */
 #define ASSUME             RBIMPL_ASSUME             /**< @old{RBIMPL_ASSUME} */
 #define UNREACHABLE        RBIMPL_UNREACHABLE()      /**< @old{RBIMPL_UNREACHABLE} */
 #define UNREACHABLE_RETURN RBIMPL_UNREACHABLE_RETURN /**< @old{RBIMPL_UNREACHABLE_RETURN} */

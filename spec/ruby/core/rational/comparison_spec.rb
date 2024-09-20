@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative '../../shared/rational/comparison'
 
 describe "Rational#<=> when passed a Rational object" do

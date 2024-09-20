@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The primary source of gems is a file on disk, including all usages
 # internal to rubygems.
@@ -22,10 +23,10 @@ class Gem::Package::FileSource < Gem::Package::Source # :nodoc: all
   end
 
   def with_write_io(&block)
-    File.open path, 'wb', &block
+    File.open path, "wb", &block
   end
 
   def with_read_io(&block)
-    File.open path, 'rb', &block
+    File.open path, "rb", &block
   end
 end

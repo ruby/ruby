@@ -319,7 +319,7 @@ description:
 
         list = seq.to_ruby
         assert_equal %w{ foo foo }, list
-        assert_equal list[0].object_id, list[1].object_id
+        assert_same list[0], list[1]
       end
 
       def test_mapping_with_str_tag

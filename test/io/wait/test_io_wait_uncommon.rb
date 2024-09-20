@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'io/wait'
 
 # test uncommon device types to check portability problems
 # We may optimize IO#wait_*able for non-Linux kernels in the future
@@ -13,7 +12,7 @@ class TestIOWaitUncommon < Test::Unit::TestCase
   end
 
   def test_fifo_wait
-    skip 'no mkfifo' unless File.respond_to?(:mkfifo) && IO.const_defined?(:NONBLOCK)
+    omit 'no mkfifo' unless File.respond_to?(:mkfifo) && IO.const_defined?(:NONBLOCK)
     require 'tmpdir'
     Dir.mktmpdir('rubytest-fifo') do |dir|
       fifo = "#{dir}/fifo"

@@ -24,7 +24,7 @@ class TestComprehensiveCaseMapping < Test::Unit::TestCase
 
   def test_data_files_available
     unless TestComprehensiveCaseMapping.data_files_available?
-      skip "Unicode data files not available in #{UNICODE_DATA_PATH}."
+      omit "Unicode data files not available in #{UNICODE_DATA_PATH}."
     end
   end
 end
@@ -37,7 +37,7 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
   end
 
   def self.read_data_file(filename)
-    IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
+    File.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
       if $. == 1
         if filename == 'UnicodeData'
         elsif line.start_with?("# #{filename}-#{UNICODE_VERSION}.txt")

@@ -165,12 +165,7 @@ class TestRDocRDoc < RDoc::TestCase
       b = Dir.glob(b).first
       c = Dir.glob(c).first
 
-      dot_doc = File.expand_path('.document')
-      FileUtils.touch dot_doc
-      open(dot_doc, 'w') do |f|
-        f.puts 'a.rb'
-        f.puts 'b.rb'
-      end
+      File.write('.document', "a.rb\n""b.rb\n")
       expected_files << a
       expected_files << b
 
@@ -196,21 +191,58 @@ class TestRDocRDoc < RDoc::TestCase
       b = Dir.glob(b).first
       c = Dir.glob(c).first
 
-      dot_doc = File.expand_path('.document')
-      FileUtils.touch dot_doc
-      open(dot_doc, 'w') do |f|
-        f.puts 'a.rb'
-        f.puts 'b.rb'
-      end
+      File.write('.document', "a.rb\n""b.rb\n")
       expected_files << a
 
-      @rdoc.options.exclude = Regexp.new(['b.rb'].join('|'))
+      @rdoc.options.exclude = /b\.rb$/
       @rdoc.normalized_file_list [File.realpath(dir)]
     end
 
     files = files.map { |file, *| File.expand_path file }
 
     assert_equal expected_files, files
+  end
+
+  def test_normalized_file_list_with_skipping_tests_enabled
+    files = temp_dir do |dir|
+      @a = File.expand_path('a.rb')
+      spec_dir = File.expand_path('spec')
+      spec_file = File.expand_path(File.join('spec', 'my_spec.rb'))
+      test_dir = File.expand_path('test')
+      test_file = File.expand_path(File.join('test', 'my_test.rb'))
+      FileUtils.touch @a
+      FileUtils.mkdir_p spec_dir
+      FileUtils.touch spec_file
+      FileUtils.mkdir_p test_dir
+      FileUtils.touch test_file
+
+      @rdoc.options.skip_tests = true
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file, *| File.expand_path file }
+    assert_equal [@a], files
+  end
+
+  def test_normalized_file_list_with_skipping_tests_disabled
+    files = temp_dir do |dir|
+      @a = File.expand_path('a.rb')
+      spec_dir = File.expand_path('spec')
+      @spec_file = File.expand_path(File.join('spec', 'my_spec.rb'))
+      test_dir = File.expand_path('test')
+      @test_file = File.expand_path(File.join('test', 'my_test.rb'))
+      FileUtils.touch @a
+      FileUtils.mkdir_p spec_dir
+      FileUtils.touch @spec_file
+      FileUtils.mkdir_p test_dir
+      FileUtils.touch @test_file
+
+      @rdoc.options.skip_tests = false
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file, *| File.expand_path file }
+    assert_equal [@a, @spec_file, @test_file], files.sort
   end
 
   def test_parse_file
@@ -254,6 +286,7 @@ class TestRDocRDoc < RDoc::TestCase
     top_level = nil
     temp_dir do |dir|
       @rdoc.options.parse %W[--root #{test_path}]
+      @rdoc.options.finish
 
       File.open 'include.txt', 'w' do |io|
         io.puts ':include: test.txt'

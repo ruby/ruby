@@ -154,6 +154,43 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal caller(0), caller(0, nil)
   end
 
+  def test_each_backtrace_location
+    assert_nil(Thread.each_caller_location {})
+
+    assert_raise(LocalJumpError) {Thread.each_caller_location}
+
+    i = 0
+    cl = caller_locations(1, 1)[0]; ecl = Thread.each_caller_location{|x| i+=1; break x if i == 1}
+    assert_equal(cl.to_s, ecl.to_s)
+    assert_kind_of(Thread::Backtrace::Location, ecl)
+
+    i = 0
+    ary = []
+    cllr = caller_locations(1, 2); last = Thread.each_caller_location{|x| ary << x; i+=1; break x if i == 2}
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    i = 0
+    ary = []
+    ->{->{
+      cllr = caller_locations(1, 2); last = Thread.each_caller_location{|x| ary << x; i+=1; break x if i == 2}
+    }.()}.()
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+    assert_kind_of(Thread::Backtrace::Location, last)
+
+    cllr = caller_locations(1, 2); ary = Thread.to_enum(:each_caller_location).to_a[2..3]
+    assert_equal(cllr.map(&:to_s), ary.map(&:to_s))
+
+    ecl = Thread.to_enum(:each_caller_location)
+    assert_raise(StopIteration) {
+      ecl.next
+    }
+
+    ary = []
+    cl = caller_locations(1, 2); Thread.each_caller_location(1, 2) {|x| ary << x}
+    assert_equal(cl.map(&:to_s), ary.map(&:to_s))
+  end
+
   def test_caller_locations_first_label
     def self.label
       caller_locations.first.label
@@ -186,15 +223,15 @@ class TestBacktrace < Test::Unit::TestCase
       @res = caller_locations(2, 1).inspect
     end
     @line = __LINE__ + 1
-    1.times.map { 1.times.map { foo } }
-    assert_equal("[\"#{__FILE__}:#{@line}:in `times'\"]", @res)
+    [1].map.map { [1].map.map { foo } }
+    assert_equal("[\"#{__FILE__}:#{@line}:in 'Array#map'\"]", @res)
   end
 
   def test_caller_location_path_cfunc_iseq_no_pc
     def self.foo
       @res = caller_locations(2, 1)[0].path
     end
-    1.times.map { 1.times.map { foo } }
+    [1].map.map { [1].map.map { foo } }
     assert_equal(__FILE__, @res)
   end
 
@@ -263,13 +300,13 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_caller_locations_label
-    assert_equal("#{__method__}", caller_locations(0, 1)[0].label)
+    assert_equal("TestBacktrace##{__method__}", caller_locations(0, 1)[0].label)
     loc, = tap {break caller_locations(0, 1)}
-    assert_equal("block in #{__method__}", loc.label)
+    assert_equal("block in TestBacktrace##{__method__}", loc.label)
     begin
       raise
     rescue
-      assert_equal("rescue in #{__method__}", caller_locations(0, 1)[0].label)
+      assert_equal("TestBacktrace##{__method__}", caller_locations(0, 1)[0].label)
     end
   end
 
@@ -349,17 +386,17 @@ class TestBacktrace < Test::Unit::TestCase
 
   def test_core_backtrace_hash_merge
     e = assert_raise(TypeError) do
-      {**nil}
+      {**1}
     end
     assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
   end
 
   def test_notty_backtrace
-    err = ["-:1:in `<main>': unhandled exception"]
+    err = ["-:1:in '<main>': unhandled exception"]
     assert_in_out_err([], "raise", [], err)
 
-    err = ["-:2:in `foo': foo! (RuntimeError)",
-           "\tfrom -:4:in `<main>'"]
+    err = ["-:2:in 'Object#foo': foo! (RuntimeError)",
+           "\tfrom -:4:in '<main>'"]
     assert_in_out_err([], <<-"end;", [], err)
     def foo
       raise "foo!"
@@ -367,12 +404,11 @@ class TestBacktrace < Test::Unit::TestCase
     foo
     end;
 
-    err = ["-:7:in `rescue in bar': bar! (RuntimeError)",
-           "\tfrom -:4:in `bar'",
-           "\tfrom -:9:in `<main>'",
-           "-:2:in `foo': foo! (RuntimeError)",
-           "\tfrom -:5:in `bar'",
-           "\tfrom -:9:in `<main>'"]
+    err = ["-:7:in 'Object#bar': bar! (RuntimeError)",
+           "\tfrom -:9:in '<main>'",
+           "-:2:in 'Object#foo': foo! (RuntimeError)",
+           "\tfrom -:5:in 'Object#bar'",
+           "\tfrom -:9:in '<main>'"]
     assert_in_out_err([], <<-"end;", [], err)
     def foo
       raise "foo!"
@@ -387,7 +423,7 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_caller_to_enum
-    err = ["-:3:in `foo': unhandled exception", "\tfrom -:in `each'"]
+    err = ["-:3:in 'Object#foo': unhandled exception", "\tfrom -:in 'Enumerator#each'"]
     assert_in_out_err([], <<-"end;", [], err, "[ruby-core:91911]")
       def foo
         return to_enum(__method__) unless block_given?
@@ -397,6 +433,25 @@ class TestBacktrace < Test::Unit::TestCase
 
       enum = foo
       enum.next
+    end;
+  end
+
+  def test_no_receiver_for_anonymous_class
+    err = ["-:2:in 'bar': unhandled exception", # Not '#<Class:0xXXX>.bar'
+           "\tfrom -:3:in '<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    foo = Class.new
+    def foo.bar = raise
+    foo.bar
+    end;
+
+    err = ["-:3:in 'baz': unhandled exception", # Not '#<Class:0xXXX>::Bar.baz'
+           "\tfrom -:4:in '<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    foo = Class.new
+    foo::Bar = Class.new
+    def (foo::Bar).baz = raise
+    foo::Bar.baz
     end;
   end
 end

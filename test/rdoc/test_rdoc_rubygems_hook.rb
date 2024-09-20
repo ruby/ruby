@@ -1,9 +1,9 @@
 # frozen_string_literal: true
-require "rubygems"
-require "fileutils"
-require "tmpdir"
-require 'rdoc/rubygems_hook'
-require "test/unit"
+require 'rubygems'
+require 'fileutils'
+require 'tmpdir'
+require_relative '../../lib/rdoc/rubygems_hook'
+require 'test/unit'
 
 class TestRDocRubygemsHook < Test::Unit::TestCase
   def setup

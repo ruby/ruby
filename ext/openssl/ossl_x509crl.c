@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -41,7 +41,7 @@ static const rb_data_type_t ossl_x509crl_type = {
     {
 	0, ossl_x509crl_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -474,12 +474,12 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509CRL(self, crl);
-    while ((ext = X509_CRL_delete_ext(crl, 0)))
-	X509_EXTENSION_free(ext);
+    for (i = X509_CRL_get_ext_count(crl); i > 0; i--)
+        X509_EXTENSION_free(X509_CRL_delete_ext(crl, 0));
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	ext = GetX509ExtPtr(RARRAY_AREF(ary, i)); /* NO NEED TO DUP */
 	if (!X509_CRL_add_ext(crl, ext, -1)) {
-	    ossl_raise(eX509CRLError, NULL);
+	    ossl_raise(eX509CRLError, "X509_CRL_add_ext");
 	}
     }
 

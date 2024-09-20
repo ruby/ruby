@@ -23,15 +23,17 @@
 #
 # == References
 # Christian Lindig, Strictly Pretty, March 2000,
-# http://www.st.cs.uni-sb.de/~lindig/papers/#pretty
+# https://lindig.github.io/papers/strictly-pretty-2000.pdf
 #
 # Philip Wadler, A prettier printer, March 1998,
-# http://homepages.inf.ed.ac.uk/wadler/topics/language-design.html#prettier
+# https://homepages.inf.ed.ac.uk/wadler/topics/language-design.html#prettier
 #
 # == Author
 # Tanaka Akira <akr@fsij.org>
 #
 class PrettyPrint
+
+  VERSION = "0.2.0"
 
   # This is a convenience method which is same as follows:
   #

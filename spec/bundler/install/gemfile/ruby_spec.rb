@@ -10,100 +10,148 @@ RSpec.describe "ruby requirement" do
   # requirement. This test verifies the fix, committed in bfbad5c5.
   it "allows adding gems" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby "#{RUBY_VERSION}"
-      gem "rack"
+      source "https://gem.repo1"
+      ruby "#{Gem.ruby_version}"
+      gem "myrack"
     G
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby "#{RUBY_VERSION}"
-      gem "rack"
-      gem "rack-obama"
+      source "https://gem.repo1"
+      ruby "#{Gem.ruby_version}"
+      gem "myrack"
+      gem "myrack-obama"
     G
 
-    expect(the_bundle).to include_gems "rack-obama 1.0"
+    expect(the_bundle).to include_gems "myrack-obama 1.0"
   end
 
   it "allows removing the ruby version requirement" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby "~> #{RUBY_VERSION}"
-      gem "rack"
+      source "https://gem.repo1"
+      ruby "~> #{Gem.ruby_version}"
+      gem "myrack"
     G
 
     expect(lockfile).to include("RUBY VERSION")
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      gem "rack"
+      source "https://gem.repo1"
+      gem "myrack"
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
     expect(lockfile).not_to include("RUBY VERSION")
   end
 
   it "allows changing the ruby version requirement to something compatible" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby ">= 1.0.0"
-      gem "rack"
+      source "https://gem.repo1"
+      ruby ">= #{current_ruby_minor}"
+      gem "myrack"
     G
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
 
-    simulate_ruby_version "5100"
-
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby ">= 1.0.1"
-      gem "rack"
+      source "https://gem.repo1"
+      ruby ">= #{Gem.ruby_version}"
+      gem "myrack"
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
     expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
   end
 
   it "allows changing the ruby version requirement to something incompatible" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       ruby ">= 1.0.0"
-      gem "rack"
+      gem "myrack"
     G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo1/
+        specs:
+          myrack (1.0.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      RUBY VERSION
+         ruby 2.1.4p422
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
-
-    simulate_ruby_version "5100"
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby ">= 5000.0"
-      gem "rack"
+      source "https://gem.repo1"
+      ruby ">= #{current_ruby_minor}"
+      gem "myrack"
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
-    expect(locked_ruby_version.versions).to eq(["5100"])
+    expect(the_bundle).to include_gems "myrack 1.0.0"
+    expect(locked_ruby_version).to eq(Bundler::RubyVersion.system)
   end
 
   it "allows requirements with trailing whitespace" do
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
-      ruby "#{RUBY_VERSION}\\n \t\\n"
-      gem "rack"
+      source "https://gem.repo1"
+      ruby "#{Gem.ruby_version}\\n \t\\n"
+      gem "myrack"
     G
 
-    expect(the_bundle).to include_gems "rack 1.0.0"
+    expect(the_bundle).to include_gems "myrack 1.0.0"
   end
 
   it "fails gracefully with malformed requirements" do
-    install_gemfile <<-G, :raise_on_error => false
-      source "#{file_uri_for(gem_repo1)}"
+    install_gemfile <<-G, raise_on_error: false
+      source "https://gem.repo1"
       ruby ">= 0", "-.\\0"
-      gem "rack"
+      gem "myrack"
     G
 
     expect(err).to include("There was an error parsing") # i.e. DSL error, not error template
+  end
+
+  it "allows picking up ruby version from a file" do
+    create_file ".ruby-version", Gem.ruby_version.to_s
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      ruby file: ".ruby-version"
+      gem "myrack"
+    G
+
+    expect(lockfile).to include("RUBY VERSION")
+  end
+
+  it "reads the ruby version file from the right folder when nested Gemfiles are involved" do
+    create_file ".ruby-version", Gem.ruby_version.to_s
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      ruby file: ".ruby-version"
+      gem "myrack"
+    G
+
+    nested_dir = bundled_app(".ruby-lsp")
+
+    FileUtils.mkdir nested_dir
+
+    gemfile ".ruby-lsp/Gemfile", <<-G
+      eval_gemfile(File.expand_path("../Gemfile", __dir__))
+    G
+
+    bundle "install", dir: nested_dir
+
+    expect(bundled_app(".ruby-lsp/Gemfile.lock").read).to include("RUBY VERSION")
   end
 end

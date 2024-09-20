@@ -18,4 +18,3 @@ class TestRDocSingleClass < RDoc::TestCase
   end
 
 end
-

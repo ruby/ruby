@@ -7,10 +7,13 @@
 
 = Licence
   This program is licensed under the same licence as Ruby.
-  (See the file 'LICENCE'.)
+  (See the file 'COPYING'.)
 =end
 
 require "openssl/buffering"
+
+if defined?(OpenSSL::SSL)
+
 require "io/nonblock"
 require "ipaddr"
 require "socket"
@@ -19,7 +22,6 @@ module OpenSSL
   module SSL
     class SSLContext
       DEFAULT_PARAMS = { # :nodoc:
-        :min_version => OpenSSL::SSL::TLS1_VERSION,
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
         :verify_hostname => true,
         :options => -> {
@@ -31,27 +33,28 @@ module OpenSSL
       }
 
       if defined?(OpenSSL::PKey::DH)
-        DEFAULT_2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
+        DH_ffdhe2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
-MIIBCAKCAQEA7E6kBrYiyvmKAMzQ7i8WvwVk9Y/+f8S7sCTN712KkK3cqd1jhJDY
-JbrYeNV3kUIKhPxWHhObHKpD1R84UpL+s2b55+iMd6GmL7OYmNIT/FccKhTcveab
-VBmZT86BZKYyf45hUF9FOuUM9xPzuK3Vd8oJQvfYMCd7LPC0taAEljQLR4Edf8E6
-YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
-1bNveX5wInh5GDx1FGhKBZ+s1H+aedudCm7sCgRwv8lKWYGiHzObSma8A86KG+MD
-7Lo5JquQ3DlBodj3IDyPrxIv96lvRPFtAwIBAg==
+MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
++8yTnc4kmz75fS/jY2MMddj2gbICrsRhetPfHtXV/WVhJDP1H18GbtCFY2VVPe0a
+87VXE15/V8k1mE8McODmi3fipona8+/och3xWKE2rec1MKzKT0g6eXq8CrGCsyT7
+YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
+7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
+ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 -----END DH PARAMETERS-----
         _end_of_pem_
-        private_constant :DEFAULT_2048
+        private_constant :DH_ffdhe2048
 
         DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen| # :nodoc:
           warn "using default DH parameters." if $VERBOSE
-          DEFAULT_2048
+          DH_ffdhe2048
         }
       end
 
       if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
            OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
         DEFAULT_PARAMS.merge!(
+          min_version: OpenSSL::SSL::TLS1_VERSION,
           ciphers: %w{
             ECDHE-ECDSA-AES128-GCM-SHA256
             ECDHE-RSA-AES128-GCM-SHA256
@@ -249,6 +252,14 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         to_io.peeraddr
       end
 
+      def local_address
+        to_io.local_address
+      end
+
+      def remote_address
+        to_io.remote_address
+      end
+
       def setsockopt(level, optname, optval)
         to_io.setsockopt(level, optname, optval)
       end
@@ -267,6 +278,36 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
 
       def do_not_reverse_lookup=(flag)
         to_io.do_not_reverse_lookup = flag
+      end
+
+      def close_on_exec=(value)
+        to_io.close_on_exec = value
+      end
+
+      def close_on_exec?
+        to_io.close_on_exec?
+      end
+
+      def wait(*args)
+        to_io.wait(*args)
+      end
+
+      def wait_readable(*args)
+        to_io.wait_readable(*args)
+      end
+
+      def wait_writable(*args)
+        to_io.wait_writable(*args)
+      end
+
+      if IO.method_defined?(:timeout)
+        def timeout
+          to_io.timeout
+        end
+
+        def timeout=(value)
+          to_io.timeout=(value)
+        end
       end
     end
 
@@ -418,6 +459,32 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         nil
       end
 
+      # Close the stream for reading.
+      # This method is ignored by OpenSSL as there is no reasonable way to
+      # implement it, but exists for compatibility with IO.
+      def close_read
+        # Unsupported and ignored.
+        # Just don't read any more.
+      end
+
+      # Closes the stream for writing. The behavior of this method depends on
+      # the version of OpenSSL and the TLS protocol in use.
+      #
+      # - Sends a 'close_notify' alert to the peer.
+      # - Does not wait for the peer's 'close_notify' alert in response.
+      #
+      # In TLS 1.2 and earlier:
+      # - On receipt of a 'close_notify' alert, responds with a 'close_notify'
+      #   alert of its own and close down the connection immediately,
+      #   discarding any pending writes.
+      #
+      # Therefore, on TLS 1.2, this method will cause the connection to be
+      # completely shut down. On TLS 1.3, the connection will remain open for
+      # reading only.
+      def close_write
+        stop
+      end
+
       private
 
       def using_anon_cipher?
@@ -491,7 +558,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         unless ctx.session_id_context
           # see #6137 - session id may not exceed 32 bytes
           prng = ::Random.new($0.hash)
-          session_id = prng.bytes(16).unpack('H*')[0]
+          session_id = prng.bytes(16).unpack1('H*')
           @ctx.session_id_context = session_id
         end
         @start_immediately = true
@@ -539,4 +606,6 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       end
     end
   end
+end
+
 end

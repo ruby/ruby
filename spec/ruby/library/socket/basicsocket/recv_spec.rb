@@ -32,6 +32,25 @@ describe "BasicSocket#recv" do
     ScratchPad.recorded.should == 'hello'
   end
 
+  ruby_version_is "3.3" do
+    it "returns nil on a closed stream socket" do
+      t = Thread.new do
+        client = @server.accept
+        packet = client.recv(10)
+        client.close
+        packet
+      end
+
+      Thread.pass while t.status and t.status != "sleep"
+      t.status.should_not be_nil
+
+      socket = TCPSocket.new('127.0.0.1', @port)
+      socket.close
+
+      t.value.should be_nil
+    end
+  end
+
   platform_is_not :solaris do
     it "accepts flags to specify unusual receiving behaviour" do
       t = Thread.new do
@@ -81,13 +100,29 @@ describe "BasicSocket#recv" do
     socket.write("data")
 
     client = @server.accept
-    buf = "foo"
+    buffer = +"foo"
     begin
-      client.recv(4, 0, buf)
+      client.recv(4, 0, buffer).should.equal?(buffer)
     ensure
       client.close
     end
-    buf.should == "data"
+    buffer.should == "data"
+
+    socket.close
+  end
+
+  it "preserves the encoding of the given buffer" do
+    socket = TCPSocket.new('127.0.0.1', @port)
+    socket.write("data")
+
+    client = @server.accept
+    buffer = ''.encode(Encoding::ISO_8859_1)
+    begin
+      client.recv(4, 0, buffer)
+    ensure
+      client.close
+    end
+    buffer.encoding.should == Encoding::ISO_8859_1
 
     socket.close
   end

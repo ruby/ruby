@@ -1,0 +1,6 @@
+{a: b c}
+     ^ expected a `}` to close the hash literal
+      ^ unexpected local variable or method, expecting end-of-input
+       ^ unexpected '}', expecting end-of-input
+       ^ unexpected '}', ignoring it
+

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'cgi'
+require 'cgi/util'
 
 ##
 # Creates HTML-safe labels suitable for use in id attributes.  Tidylinks are
@@ -72,4 +72,3 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   alias start_accepting           ignore
 
 end
-

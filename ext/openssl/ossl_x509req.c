@@ -5,7 +5,7 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
 
@@ -41,7 +41,7 @@ static const rb_data_type_t ossl_x509req_type = {
     {
 	0, ossl_x509req_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -380,13 +380,13 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
     }
     GetX509Req(self, req);
-    while ((attr = X509_REQ_delete_attr(req, 0)))
-	X509_ATTRIBUTE_free(attr);
+    for (i = X509_REQ_get_attr_count(req); i > 0; i--)
+        X509_ATTRIBUTE_free(X509_REQ_delete_attr(req, 0));
     for (i=0;i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
 	attr = GetX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
-	    ossl_raise(eX509ReqError, NULL);
+	    ossl_raise(eX509ReqError, "X509_REQ_add1_attr");
 	}
     }
     return ary;

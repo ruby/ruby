@@ -3,8 +3,12 @@
 require "pathname"
 require "rbconfig"
 
+require_relative "env"
+
 module Spec
   module Path
+    include Spec::Env
+
     def source_root
       @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../..").expand_path(__dir__)
     end
@@ -30,7 +34,7 @@ module Spec
     end
 
     def test_gemfile
-      @test_gemfile ||= source_root.join("tool/bundler/test_gems.rb")
+      @test_gemfile ||= tool_dir.join("test_gems.rb")
     end
 
     def rubocop_gemfile
@@ -42,7 +46,7 @@ module Spec
     end
 
     def dev_gemfile
-      @dev_gemfile ||= git_root.join("dev_gems.rb")
+      @dev_gemfile ||= tool_dir.join("dev_gems.rb")
     end
 
     def bindir
@@ -58,7 +62,7 @@ module Spec
     end
 
     def gem_bin
-      @gem_bin ||= ruby_core? ? ENV["GEM_COMMAND"] : "gem"
+      @gem_bin ||= ENV["GEM_COMMAND"] || "gem"
     end
 
     def path
@@ -71,10 +75,6 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
-    def api_request_limit_hack_file
-      spec_dir.join("support/api_request_limit_hax.rb")
-    end
-
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -84,7 +84,13 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= loaded_gemspec.files
+      @shipped_files ||= if ruby_core_tarball?
+        loaded_gemspec.files.map {|f| f.gsub(%r{^exe/}, "libexec/") }
+      elsif ruby_core?
+        tracked_files
+      else
+        loaded_gemspec.files
+      end
     end
 
     def lib_tracked_files
@@ -96,7 +102,18 @@ module Spec
     end
 
     def tmp(*path)
-      source_root.join("tmp", scope, *path)
+      tmp_root(scope).join(*path)
+    end
+
+    def tmp_root(scope)
+      source_root.join("tmp", "#{test_env_version}.#{scope}")
+    end
+
+    # Bump this version whenever you make a breaking change to the spec setup
+    # that requires regenerating tmp/.
+
+    def test_env_version
+      1
     end
 
     def scope
@@ -107,7 +124,7 @@ module Spec
     end
 
     def home(*path)
-      tmp.join("home", *path)
+      tmp("home", *path)
     end
 
     def default_bundle_path(*path)
@@ -118,14 +135,22 @@ module Spec
       end
     end
 
+    def default_cache_path(*path)
+      if Bundler.feature_flag.global_gem_cache?
+        home(".bundle/cache", *path)
+      else
+        default_bundle_path("cache/bundler", *path)
+      end
+    end
+
     def bundled_app(*path)
-      root = tmp.join("bundled_app")
+      root = tmp("bundled_app")
       FileUtils.mkdir_p(root)
       root.join(*path)
     end
 
     def bundled_app2(*path)
-      root = tmp.join("bundled_app2")
+      root = tmp("bundled_app2")
       FileUtils.mkdir_p(root)
       root.join(*path)
     end
@@ -146,16 +171,20 @@ module Spec
       bundled_app("Gemfile.lock")
     end
 
+    def base_system_gem_path
+      scoped_gem_path(base_system_gems)
+    end
+
     def base_system_gems
-      tmp.join("gems/base")
+      tmp("gems/base")
     end
 
     def rubocop_gems
-      tmp.join("gems/rubocop")
+      tmp("gems/rubocop")
     end
 
     def standard_gems
-      tmp.join("gems/standard")
+      tmp("gems/standard")
     end
 
     def file_uri_for(path)
@@ -217,13 +246,6 @@ module Spec
       root.join("lib")
     end
 
-    # Sometimes rubygems version under test does not include
-    # https://github.com/rubygems/rubygems/pull/2728 and will not always end up
-    # activating the current bundler. In that case, require bundler absolutely.
-    def entrypoint
-      Gem.rubygems_version < Gem::Version.new("3.1.a") ? "#{lib_dir}/bundler" : "bundler"
-    end
-
     def global_plugin_gem(*args)
       home ".bundle", "plugin", "gems", *args
     end
@@ -243,15 +265,19 @@ module Spec
       File.open(version_file, "w") {|f| f << contents }
     end
 
-    def ruby_core?
-      # avoid to warnings
-      @ruby_core ||= nil
+    def replace_required_ruby_version(version, dir:)
+      gemspec_file = File.expand_path("bundler.gemspec", dir)
+      contents = File.read(gemspec_file)
+      contents.sub!(/(^\s+s\.required_ruby_version\s*=\s*)"[^"]+"/, %(\\1"#{version}"))
+      File.open(gemspec_file, "w") {|f| f << contents }
+    end
 
-      if @ruby_core.nil?
-        @ruby_core = true & ENV["GEM_COMMAND"]
-      else
-        @ruby_core
-      end
+    def git_root
+      ruby_core? ? source_root : source_root.parent
+    end
+
+    def rake_path
+      Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
     end
 
     private
@@ -259,11 +285,11 @@ module Spec
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
 
-      sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
+      git("ls-files -z -- #{glob}", source_root).split("\x0")
     end
 
     def tracked_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe spec CHANGELOG.md LICENSE.md README.md bundler.gemspec"
     end
 
     def lib_tracked_files_glob
@@ -274,34 +300,24 @@ module Spec
       ruby_core? ? "man/bundle* man/gemfile*" : "lib/bundler/man/bundle*.1 lib/bundler/man/gemfile*.5"
     end
 
-    def git_root
-      ruby_core? ? source_root : source_root.parent
-    end
-
     def ruby_core_tarball?
       !git_root.join(".git").directory?
     end
 
     def rubocop_gemfile_basename
-      filename = if RUBY_VERSION.start_with?("2.3")
-        "rubocop23_gems"
-      elsif RUBY_VERSION.start_with?("2.4")
-        "rubocop24_gems"
-      else
-        "rubocop_gems"
-      end
-      source_root.join("tool/bundler/#{filename}.rb")
+      tool_dir.join("rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      filename = if RUBY_VERSION.start_with?("2.3")
-        "standard23_gems"
-      elsif RUBY_VERSION.start_with?("2.4")
-        "standard24_gems"
-      else
-        "standard_gems"
-      end
-      source_root.join("tool/bundler/#{filename}.rb")
+      tool_dir.join("standard_gems.rb")
+    end
+
+    def tool_dir
+      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
+    end
+
+    def templates_dir
+      lib_dir.join("bundler", "templates")
     end
 
     extend self

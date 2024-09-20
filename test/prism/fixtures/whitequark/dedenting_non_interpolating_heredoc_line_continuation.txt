@@ -1,0 +1,4 @@
+<<~'FOO'
+  baz\
+  qux
+FOO

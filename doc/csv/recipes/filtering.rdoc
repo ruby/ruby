@@ -1,5 +1,7 @@
 == Recipes for Filtering \CSV
 
+These recipes are specific code examples for specific \CSV filtering tasks.
+
 For other recipes, see {Recipes for CSV}[./recipes_rdoc.html].
 
 All code snippets on this page assume that the following has been executed:

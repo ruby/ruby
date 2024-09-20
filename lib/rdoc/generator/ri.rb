@@ -28,4 +28,3 @@ class RDoc::Generator::RI
   end
 
 end
-

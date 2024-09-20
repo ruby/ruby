@@ -1,6 +1,86 @@
 require_relative '../spec_helper'
 require_relative 'fixtures/variables'
 
+describe "Evaluation order during assignment" do
+  context "with single assignment" do
+    it "evaluates from left to right" do
+      obj = VariablesSpecs::EvalOrder.new
+      obj.instance_eval do
+        foo[0] = a
+      end
+
+      obj.order.should == ["foo", "a", "foo[]="]
+    end
+  end
+
+  context "with multiple assignment" do
+    ruby_version_is ""..."3.1" do
+      it "does not evaluate from left to right" do
+        obj = VariablesSpecs::EvalOrder.new
+
+        obj.instance_eval do
+          foo[0], bar.baz = a, b
+        end
+
+        obj.order.should == ["a", "b", "foo", "foo[]=", "bar", "bar.baz="]
+      end
+
+      it "cannot be used to swap variables with nested method calls" do
+        node = VariablesSpecs::EvalOrder.new.node
+
+        original_node = node
+        original_node_left = node.left
+        original_node_left_right = node.left.right
+
+        node.left, node.left.right, node = node.left.right, node, node.left
+        # Should evaluate in the order of:
+        # RHS: node.left.right, node, node.left
+        # LHS:
+        # * node(original_node), original_node.left = original_node_left_right
+        # * node(original_node), node.left(changed in the previous assignment to original_node_left_right),
+        #   original_node_left_right.right = original_node
+        # * node = original_node_left
+
+        node.should == original_node_left
+        node.right.should_not == original_node
+        node.right.left.should_not == original_node_left_right
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "evaluates from left to right, receivers first then methods" do
+        obj = VariablesSpecs::EvalOrder.new
+        obj.instance_eval do
+          foo[0], bar.baz = a, b
+        end
+
+        obj.order.should == ["foo", "bar", "a", "b", "foo[]=", "bar.baz="]
+      end
+
+      it "can be used to swap variables with nested method calls" do
+        node = VariablesSpecs::EvalOrder.new.node
+
+        original_node = node
+        original_node_left = node.left
+        original_node_left_right = node.left.right
+
+        node.left, node.left.right, node = node.left.right, node, node.left
+        # Should evaluate in the order of:
+        # LHS: node, node.left(original_node_left)
+        # RHS: original_node_left_right, original_node, original_node_left
+        # Ops:
+        # * node(original_node), original_node.left = original_node_left_right
+        # * original_node_left.right = original_node
+        # * node = original_node_left
+
+        node.should == original_node_left
+        node.right.should == original_node
+        node.right.left.should == original_node_left_right
+      end
+    end
+  end
+end
+
 describe "Multiple assignment" do
   context "with a single RHS value" do
     it "assigns a simple MLHS" do
@@ -287,8 +367,13 @@ describe "Multiple assignment" do
 
     it "assigns indexed elements" do
       a = []
-      a[1], a[2] = 1
-      a.should == [nil, 1, nil]
+      a[1], a[2] = 1, 2
+      a.should == [nil, 1, 2]
+
+      # with splatted argument
+      a = []
+      a[*[1]], a[*[2]] = 1, 2
+      a.should == [nil, 1, 2]
     end
 
     it "assigns constants" do
@@ -797,17 +882,6 @@ describe 'Local variable shadowing' do
 end
 
 describe 'Allowed characters' do
-  # new feature in 2.6 -- https://bugs.ruby-lang.org/issues/13770
-  it 'does not allow non-ASCII upcased characters at the beginning' do
-    -> do
-      eval <<-CODE
-        def test
-          ἍBB = 1
-        end
-      CODE
-    end.should raise_error(SyntaxError, /dynamic constant assignment/)
-  end
-
   it 'allows non-ASCII lowercased characters at the beginning' do
     result = nil
 
@@ -821,26 +895,25 @@ describe 'Allowed characters' do
 
     result.should == 1
   end
+
+  it 'parses a non-ASCII upcased character as a constant identifier' do
+    -> do
+      eval <<-CODE
+        def test
+          ἍBB = 1
+        end
+      CODE
+    end.should raise_error(SyntaxError, /dynamic constant assignment/)
+  end
 end
 
 describe "Instance variables" do
   context "when instance variable is uninitialized" do
-    ruby_version_is ""..."3.0" do
-      it "warns about accessing uninitialized instance variable" do
-        obj = Object.new
-        def obj.foobar; a = @a; end
+    it "doesn't warn about accessing uninitialized instance variable" do
+      obj = Object.new
+      def obj.foobar; a = @a; end
 
-        -> { obj.foobar }.should complain(/warning: instance variable @a not initialized/, verbose: true)
-      end
-    end
-
-    ruby_version_is "3.0" do
-      it "doesn't warn about accessing uninitialized instance variable" do
-        obj = Object.new
-        def obj.foobar; a = @a; end
-
-        -> { obj.foobar }.should_not complain(verbose: true)
-      end
+      -> { obj.foobar }.should_not complain(verbose: true)
     end
 
     it "doesn't warn at lazy initialization" do
@@ -848,6 +921,24 @@ describe "Instance variables" do
       def obj.foobar; @a ||= 42; end
 
       -> { obj.foobar }.should_not complain(verbose: true)
+    end
+  end
+
+  describe "global variable" do
+    context "when global variable is uninitialized" do
+      it "warns about accessing uninitialized global variable in verbose mode" do
+        obj = Object.new
+        def obj.foobar; a = $specs_uninitialized_global_variable; end
+
+        -> { obj.foobar }.should complain(/warning: global variable [`']\$specs_uninitialized_global_variable' not initialized/, verbose: true)
+      end
+
+      it "doesn't warn at lazy initialization" do
+        obj = Object.new
+        def obj.foobar; $specs_uninitialized_global_variable_lazy ||= 42; end
+
+        -> { obj.foobar }.should_not complain(verbose: true)
+      end
     end
   end
 end

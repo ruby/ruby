@@ -1043,6 +1043,25 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_lutime
+    return if !has_symlink?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {|f| f.write "abc" }
+      atime = File.atime("a")
+      mtime = File.mtime("a")
+      latime = Time.utc(2000)
+      lmtime = Time.utc(1999)
+      File.symlink("a", "l")
+      Pathname("l").utime(latime, lmtime)
+      s = File.lstat("a")
+      ls = File.lstat("l")
+      assert_equal(atime, s.atime)
+      assert_equal(mtime, s.mtime)
+      assert_equal(latime, ls.atime)
+      assert_equal(lmtime, ls.mtime)
+    }
+  end
+
   def test_basename
     assert_equal(Pathname("basename"), Pathname("dirname/basename").basename)
     assert_equal(Pathname("bar"), Pathname("foo/bar.x").basename(".x"))
@@ -1351,6 +1370,18 @@ class TestPathname < Test::Unit::TestCase
       open("b", "w") {}
       a = []
       Pathname(".").each_entry {|v| a << v }
+      assert_equal([Pathname("."), Pathname(".."), Pathname("a"), Pathname("b")], a.sort)
+    }
+  end
+
+  def test_each_entry_enumerator
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("a", "w") {}
+      open("b", "w") {}
+      a = []
+      e = Pathname(".").each_entry
+      assert_kind_of(Enumerator, e)
+      e.each {|v| a << v }
       assert_equal([Pathname("."), Pathname(".."), Pathname("a"), Pathname("b")], a.sort)
     }
   end

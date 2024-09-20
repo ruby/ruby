@@ -33,6 +33,18 @@
 # include <sys/time.h>
 #endif
 
+#ifdef HAVE_SYS_STAT_H
+# include <sys/stat.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_STDIO_H
+# include <stdio.h>
+#endif
+
 #ifdef HAVE_IEEEFP_H
 # include <ieeefp.h>
 #endif
@@ -222,6 +234,107 @@ RUBY_EXTERN void setproctitle(const char *fmt, ...);
 # define explicit_bzero(b, len) SecureZeroMemory(b, len)
 #else
 RUBY_EXTERN void explicit_bzero(void *b, size_t len);
+#endif
+
+#ifndef HAVE_TZSET
+RUBY_EXTERN void tzset(void);
+#endif
+
+#ifndef HAVE_POSIX_MADVISE
+RUBY_EXTERN int posix_madvise(void *, size_t, int);
+#endif
+
+#ifndef HAVE_GETEUID
+RUBY_EXTERN rb_uid_t geteuid(void);
+#endif
+
+#ifndef HAVE_GETUID
+RUBY_EXTERN rb_uid_t getuid(void);
+#endif
+
+#ifndef HAVE_GETEGID
+RUBY_EXTERN rb_gid_t getegid(void);
+#endif
+
+#ifndef HAVE_GETGID
+RUBY_EXTERN rb_gid_t getgid(void);
+#endif
+
+#ifndef HAVE_GETLOGIN
+RUBY_EXTERN char *getlogin(void);
+#endif
+
+#ifndef HAVE_GETPPID
+RUBY_EXTERN rb_pid_t getppid(void);
+#endif
+
+#ifndef HAVE_UMASK
+RUBY_EXTERN rb_mode_t umask(rb_mode_t);
+#endif
+
+#ifndef HAVE_CHMOD
+RUBY_EXTERN int chmod(const char *, rb_mode_t);
+#endif
+
+#ifndef HAVE_CHOWN
+RUBY_EXTERN int chown(const char *, rb_uid_t, rb_gid_t);
+#endif
+
+#ifndef HAVE_PCLOSE
+RUBY_EXTERN int pclose(FILE *);
+#endif
+
+#ifndef HAVE_POPEN
+RUBY_EXTERN FILE *popen(const char *, const char *);
+#endif
+
+#ifndef HAVE_PIPE
+RUBY_EXTERN int pipe(int [2]);
+#endif
+
+#ifndef HAVE_DUP
+RUBY_EXTERN int dup(int);
+#endif
+
+#ifndef HAVE_DUP2
+RUBY_EXTERN int dup2(int, int);
+#endif
+
+#ifndef HAVE_KILL
+RUBY_EXTERN int kill(rb_pid_t, int);
+#endif
+
+#ifndef HAVE_EXECL
+RUBY_EXTERN int execl(const char *, const char *, ...);
+#endif
+
+#ifndef HAVE_EXECLE
+RUBY_EXTERN int execle(const char *, const char *, ...);
+#endif
+
+#ifndef HAVE_EXECV
+RUBY_EXTERN int execv(const char *, char *const []);
+#endif
+
+#ifndef HAVE_EXECVE
+RUBY_EXTERN int execve(const char *, char *const [], char *const []);
+#endif
+
+#ifndef HAVE_SHUTDOWN
+RUBY_EXTERN int shutdown(int, int);
+#endif
+
+#ifndef HAVE_SYSTEM
+RUBY_EXTERN int system(const char *);
+#endif
+
+#ifndef WNOHANG
+# define WNOHANG 0
+#endif
+
+#ifndef HAVE_WAITPID
+# define HAVE_WAITPID 1
+RUBY_EXTERN rb_pid_t waitpid(rb_pid_t, int *, int);
 #endif
 
 RBIMPL_SYMBOL_EXPORT_END()

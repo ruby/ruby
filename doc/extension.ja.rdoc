@@ -190,21 +190,6 @@ INT2NUM() :: 任意の整数からVALUEへ
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 してくれます(が，少し遅い)．
 
-Cの真偽値をRubyの +true+ または +false+ に変換する
-
-RBOOL() ::
-
-<code>RBOOL(v)</code> は _v_ が非0のとき +Qtrue+ ，それ以外
-の _v_ が0のとき +Qfalse+ を返します．
-
-注意: RBOOLは定義されているのはRuby 3.1以降なので，それより
-古いバージョンをサポートするプログラム中で使いたいときは，以
-下のような定義を追加しておく必要があるでしょう．
-
-    #ifndef RBOOL
-    #define RBOOL(v) ((v) ? Qtrue : Qfalse)
-    #endif
-
 === Rubyのデータを操作する
 
 先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を
@@ -795,9 +780,14 @@ RUBY_TYPED_WB_PROTECTED ::
   メソッドの実装に適切にライトバリアを挿入する責任があります．
   さもなくばRubyは実行時にクラッシュする可能性があります．
 
-  ライトバリアについてはdoc/extension.ja.rdocのAppendix D
-  "世代別GC"も参照してください．
+  ライトバリアについては{世代別
+  GC}[rdoc-ref:@Appendix+D.+-E4-B8-96-E4-BB-A3-E5-88-A5GC]
+  も参照してください．
 
+このマクロは例外を発生させる可能性があることに注意してくださ
+い． ラップされる sval が，解放する必要があるリソース (割り
+当てられたメモリ，外部ライブラリからのハンドルなど) を保持し
+ている場合は，rb_protect を使用する必要があります．
 
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
 ロとして以下のものが提供されています．
@@ -903,12 +893,12 @@ dbm.cではTypedData_Make_Structを以下のように使っています．
 
   obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 
-ここではdbmdata構造体へのポインタをDataにカプセル化してい
-ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
-えてのことです．
+ここではdbmdata構造体へのポインタをRubyオブジェクトにカプセ
+ル化しています．DBM*を直接カプセル化しないのはclose()した時
+の処理を考えてのことです．
 
-Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
-に以下のマクロを使っています．
+Rubyオブジェクトからdbmdata構造体のポインタを取り出すために
+以下のマクロを使っています．
 
   #define GetDBM(obj, dbmp) do {\
       TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
@@ -1080,6 +1070,20 @@ Rubyのソースはいくつかに分類することが出来ます．このう�
 スライブラリの部分は基本的に拡張ライブラリと同じ作り方になっ
 ています．これらのソースは今までの説明でほとんど理解できると
 思います．
+
+=== Rubyのヘッダファイル
+
+<tt>$repo_root/include/ruby</tt>以下はすべて<tt>make
+install</tt>でインストールされます．拡張ライブラリからは，
+<tt>#include <ruby.h></tt>でインクルードする必要があります．
++rbimpl_+，+RBIMPL_+のプレフィックスが付いた実装の詳細のため
+のシンボルを除き，すべてのシンボルは公開APIです．
+
+拡張ライブラリで直接インクルードできるのは，
+<tt>$repo_root/include/ruby/*.h</tt>のうち，対応する
+<tt>HAVE_RUBY_*_H</tt>マクロが
+<tt>$repo_root/include/ruby.h</tt>ヘッダーで定義されているも
+のです．
 
 === Ruby言語のコア
 
@@ -1696,6 +1700,9 @@ HAVE_RUBY_*_H ::
   を意味する．たとえば，HAVE_RUBY_ST_H が定義されている場合は
   単なる st.h ではなく ruby/st.h を使用する．
 
+  これらのマクロに対応するヘッダーファイルは，拡張ライブラリ
+  から直接インクルードしてもよい．
+
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
   rb_add_event_hook() がフック関数に渡す data を第3引数として
@@ -1729,7 +1736,7 @@ have_func(func, header) ::
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
   く事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{FUNC}` を定義し，trueを返す．
+  <tt>HAVE_{FUNC}</tt> を定義し，trueを返す．
 
 have_var(var, header) ::
 
@@ -1737,40 +1744,48 @@ have_var(var, header) ::
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
   事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{VAR}` を定義し，trueを返す．
+  <tt>HAVE_{VAR}</tt> を定義し，trueを返す．
 
 have_header(header) ::
 
   ヘッダファイルの存在をチェックする．チェックに成功すると，
-  プリプロセッサマクロ `HAVE_{HEADER_H}` を定義し，trueを返す．
+  プリプロセッサマクロ <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
   する．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{HEADER_H}` を定義し，trueを返す．
+  <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 have_struct_member(type, member[, header[, opt]]) ::
 
   ヘッダファイルheaderをインクルードして型typeが定義され，
   なおかつメンバmemberが存在するかをチェックする．チェックに
-  成功すると，プリプロセッサマクロ `HAVE_{TYPE}_{MEMBER}` を
+  成功すると，プリプロセッサマクロ <tt>HAVE_{TYPE}_{MEMBER}</tt> を
   定義し，trueを返す．
 
 have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
   チェックする．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_TYPE_{TYPE}` を定義し，trueを返す．
+  <tt>HAVE_TYPE_{TYPE}</tt> を定義し，trueを返す．
 
 check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
   ズを調べる．チェックに成功すると，プリプロセッサマクロ
-  `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
+  <tt>SIZEOF_{TYPE}</tt> を定義し，そのサイズを返す．定義されていな
   いときはnilを返す．
+
+append_cppflags(array-of-flags[, opt]) ::
+append_cflags(array-of-flags[, opt]) ::
+append_ldflags(array-of-flags[, opt]) ::
+
+  各flagが使用可能であれば，それぞれ$CPPFLAGS, $CFLAGS,
+  $LDFLAGSに追加する．コンパイラのフラグには移植性がないので，
+  変数に直接追加せずこれらを使うことが望ましい．
 
 create_makefile(target[, target_prefix]) ::
 
@@ -1840,8 +1855,9 @@ RGenGCは，過去の拡張ライブラリに（ほぼ）互換性を保つよ�
 スするようなコードは書かないようにして下さい．代わりに，rb_ary_aref(),
 rb_ary_store() などの，適切な API 関数を利用するようにして下さい．
 
-そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
-GC」を参照して下さい．
+そのほか，対応についての詳細は {Appendix D. Generational
+GC}[rdoc-ref:extension.rdoc@Appendix+D.+Generational+GC]を参
+照して下さい．
 
 == Appendix E. Ractor サポート
 
@@ -1850,10 +1866,12 @@ Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組み
 なります。サポートしていないライブラリは、メイン Ractor 以外で実行すると
 エラーになります（Ractor::UnsafeError）。
 
-Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
-support」を参照してください。
+Ractor をサポートするための詳細は、{Appendix F. Ractor
+support}[rdoc-ref:extension.rdoc@Appendix+F.+Ractor+support]
+を参照してください。
 
-
-:enddoc: Local variables:
-:enddoc: fill-column: 60
-:enddoc: end:
+--
+Local variables:
+fill-column: 60
+end:
+++

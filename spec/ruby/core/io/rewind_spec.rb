@@ -18,6 +18,17 @@ describe "IO#rewind" do
     @io.readline.should == "Voici la ligne une.\n"
   end
 
+  it "positions the instance to the beginning of output for write-only IO" do
+    name = tmp("io_rewind_spec")
+    io = File.open(name, "w")
+    io.write("Voici la ligne une.\n")
+    io.rewind
+    io.pos.should == 0
+  ensure
+    io.close
+    rm_r name
+  end
+
   it "positions the instance to the beginning of input and clears EOF" do
     value = @io.read
     @io.rewind
@@ -30,6 +41,10 @@ describe "IO#rewind" do
     @io.lineno.should == 1
     @io.rewind
     @io.lineno.should == 0
+  end
+
+  it "returns 0" do
+    @io.rewind.should == 0
   end
 
   it "raises IOError on closed stream" do

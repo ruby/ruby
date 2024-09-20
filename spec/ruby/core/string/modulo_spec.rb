@@ -55,33 +55,48 @@ describe "String#%" do
     -> { ("foo%" % [])}.should raise_error(ArgumentError)
   end
 
-  it "formats single % character before a newline as literal %" do
-    ("%\n" % []).should == "%\n"
-    ("foo%\n" % []).should == "foo%\n"
-    ("%\n.3f" % 1.2).should == "%\n.3f"
+  ruby_version_is ""..."3.4" do
+    it "formats single % character before a newline as literal %" do
+      ("%\n" % []).should == "%\n"
+      ("foo%\n" % []).should == "foo%\n"
+      ("%\n.3f" % 1.2).should == "%\n.3f"
+    end
+
+    it "formats single % character before a NUL as literal %" do
+      ("%\0" % []).should == "%\0"
+      ("foo%\0" % []).should == "foo%\0"
+      ("%\0.3f" % 1.2).should == "%\0.3f"
+    end
+
+    it "raises an error if single % appears anywhere else" do
+      -> { (" % " % []) }.should raise_error(ArgumentError)
+      -> { ("foo%quux" % []) }.should raise_error(ArgumentError)
+    end
+
+    it "raises an error if NULL or \\n appear anywhere else in the format string" do
+      begin
+        old_debug, $DEBUG = $DEBUG, false
+
+        -> { "%.\n3f" % 1.2 }.should raise_error(ArgumentError)
+        -> { "%.3\nf" % 1.2 }.should raise_error(ArgumentError)
+        -> { "%.\03f" % 1.2 }.should raise_error(ArgumentError)
+        -> { "%.3\0f" % 1.2 }.should raise_error(ArgumentError)
+      ensure
+        $DEBUG = old_debug
+      end
+    end
   end
 
-  it "formats single % character before a NUL as literal %" do
-    ("%\0" % []).should == "%\0"
-    ("foo%\0" % []).should == "foo%\0"
-    ("%\0.3f" % 1.2).should == "%\0.3f"
-  end
-
-  it "raises an error if single % appears anywhere else" do
-    -> { (" % " % []) }.should raise_error(ArgumentError)
-    -> { ("foo%quux" % []) }.should raise_error(ArgumentError)
-  end
-
-  it "raises an error if NULL or \\n appear anywhere else in the format string" do
-    begin
-      old_debug, $DEBUG = $DEBUG, false
-
+  ruby_version_is "3.4" do
+    it "raises an ArgumentError if % is not followed by a conversion specifier" do
+      -> { "%" % [] }.should raise_error(ArgumentError)
+      -> { "%\n" % [] }.should raise_error(ArgumentError)
+      -> { "%\0" % [] }.should raise_error(ArgumentError)
+      -> { " % " % [] }.should raise_error(ArgumentError)
       -> { "%.\n3f" % 1.2 }.should raise_error(ArgumentError)
       -> { "%.3\nf" % 1.2 }.should raise_error(ArgumentError)
       -> { "%.\03f" % 1.2 }.should raise_error(ArgumentError)
       -> { "%.3\0f" % 1.2 }.should raise_error(ArgumentError)
-    ensure
-      $DEBUG = old_debug
     end
   end
 
@@ -125,8 +140,16 @@ describe "String#%" do
     end
   end
 
-  it "replaces trailing absolute argument specifier without type with percent sign" do
-    ("hello %1$" % "foo").should == "hello %"
+  ruby_version_is ""..."3.4" do
+    it "replaces trailing absolute argument specifier without type with percent sign" do
+      ("hello %1$" % "foo").should == "hello %"
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "raises an ArgumentError if absolute argument specifier is followed by a conversion specifier" do
+      -> { "hello %1$" % "foo" }.should raise_error(ArgumentError)
+    end
   end
 
   it "raises an ArgumentError when given invalid argument specifiers" do
@@ -302,29 +325,6 @@ describe "String#%" do
     end
   end
 
-  ruby_version_is ''...'2.7' do
-    it "always taints the result when the format string is tainted" do
-      universal = mock('0')
-      def universal.to_int() 0 end
-      def universal.to_str() "0" end
-      def universal.to_f() 0.0 end
-
-      [
-        "", "foo",
-        "%b", "%B", "%c", "%d", "%e", "%E",
-        "%f", "%g", "%G", "%i", "%o", "%p",
-        "%s", "%u", "%x", "%X"
-      ].each do |format|
-        subcls_format = StringSpecs::MyString.new(format)
-        subcls_format.taint
-        format.taint
-
-        (format % universal).should.tainted?
-        (subcls_format % universal).should.tainted?
-      end
-    end
-  end
-
   it "supports binary formats using %b for positive numbers" do
     ("%b" % 10).should == "1010"
     ("% b" % 10).should == " 1010"
@@ -391,8 +391,16 @@ describe "String#%" do
     ("%c" % 'A').should == "A"
   end
 
-  it "raises an exception for multiple character strings as argument for %c" do
-    -> { "%c" % 'AA' }.should raise_error(ArgumentError)
+  ruby_version_is ""..."3.2" do
+    it "raises an exception for multiple character strings as argument for %c" do
+      -> { "%c" % 'AA' }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "3.2" do
+    it "supports only the first character as argument for %c" do
+      ("%c" % 'AA').should == "A"
+    end
   end
 
   it "calls to_str on argument for %c formats" do
@@ -578,20 +586,6 @@ describe "String#%" do
     # ("%p" % obj).should == "obj"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result for %p when argument.inspect is tainted" do
-      obj = mock('x')
-      def obj.inspect() "x".taint end
-
-      ("%p" % obj).should.tainted?
-
-      obj = mock('x'); obj.taint
-      def obj.inspect() "x" end
-
-      ("%p" % obj).should_not.tainted?
-    end
-  end
-
   it "supports string formats using %s" do
     ("%s" % "hello").should == "hello"
     ("%s" % "").should == ""
@@ -618,13 +612,6 @@ describe "String#%" do
     # def obj.method_missing(*args) "obj" end
     #
     # ("%s" % obj).should == "obj"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints result for %s when argument is tainted" do
-      ("%s" % "x".taint).should.tainted?
-      ("%s" % mock('x').taint).should.tainted?
-    end
   end
 
   # MRI crashes on this one.
@@ -785,12 +772,6 @@ describe "String#%" do
 
     it "behaves as if calling Kernel#Float for #{format} arguments, when the passed argument is hexadecimal string" do
       (format % "0xA").should == (format % 0xA)
-    end
-
-    ruby_version_is ''...'2.7' do
-      it "doesn't taint the result for #{format} when argument is tainted" do
-        (format % "5".taint).should_not.tainted?
-      end
     end
   end
 

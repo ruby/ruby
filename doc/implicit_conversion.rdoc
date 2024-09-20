@@ -1,7 +1,8 @@
-== Implicit Conversions
+= Implicit Conversions
 
 Some Ruby methods accept one or more objects
 that can be either:
+
 * <i>Of a given class</i>, and so accepted as is.
 * <i>Implicitly convertible to that class</i>, in which case
   the called method converts the object.
@@ -14,12 +15,17 @@ a specific conversion method:
 * Integer: +to_int+
 * String: +to_str+
 
-=== Array-Convertible Objects
+== Array-Convertible Objects
 
 An <i>Array-convertible object</i> is an object that:
+
 * Has instance method +to_ary+.
 * The method accepts no arguments.
 * The method returns an object +obj+ for which <tt>obj.kind_of?(Array)</tt> returns +true+.
+
+The Ruby core class that satisfies these requirements is:
+
+* Array
 
 The examples in this section use method <tt>Array#replace</tt>,
 which accepts an Array-convertible argument.
@@ -63,12 +69,17 @@ This class is not Array-convertible (method +to_ary+ returns non-Array):
     # Raises TypeError (can't convert NotArrayConvertible to Array (NotArrayConvertible#to_ary gives Symbol))
     a.replace(NotArrayConvertible.new)
 
-=== Hash-Convertible Objects
+== Hash-Convertible Objects
 
 A <i>Hash-convertible object</i> is an object that:
+
 * Has instance method +to_hash+.
 * The method accepts no arguments.
 * The method returns an object +obj+ for which <tt>obj.kind_of?(Hash)</tt> returns +true+.
+
+The Ruby core class that satisfies these requirements is:
+
+* Hash
 
 The examples in this section use method <tt>Hash#merge</tt>,
 which accepts a Hash-convertible argument.
@@ -112,12 +123,20 @@ This class is not Hash-convertible (method +to_hash+ returns non-Hash):
     # Raises TypeError (can't convert NotHashConvertible to Hash (ToHashReturnsNonHash#to_hash gives Symbol))
     h.merge(NotHashConvertible.new)
 
-=== Integer-Convertible Objects
+== Integer-Convertible Objects
 
 An <i>Integer-convertible object</i> is an object that:
+
 * Has instance method +to_int+.
 * The method accepts no arguments.
 * The method returns an object +obj+ for which <tt>obj.kind_of?(Integer)</tt> returns +true+.
+
+The Ruby core classes that satisfy these requirements are:
+
+* Integer
+* Float
+* Complex
+* Rational
 
 The examples in this section use method <tt>Array.new</tt>,
 which accepts an Integer-convertible argument.
@@ -152,12 +171,16 @@ This class is not Integer-convertible (method +to_int+ returns non-Integer):
     # Raises TypeError (can't convert NotIntegerConvertible to Integer (NotIntegerConvertible#to_int gives Symbol))
     Array.new(NotIntegerConvertible.new)
 
-=== String-Convertible Objects
+== String-Convertible Objects
 
 A <i>String-convertible object</i> is an object that:
 * Has instance method +to_str+.
 * The method accepts no arguments.
 * The method returns an object +obj+ for which <tt>obj.kind_of?(String)</tt> returns +true+.
+
+The Ruby core class that satisfies these requirements is:
+
+* String
 
 The examples in this section use method <tt>String::new</tt>,
 which accepts a String-convertible argument.

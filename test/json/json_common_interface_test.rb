@@ -1,5 +1,5 @@
 #frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
 
@@ -99,18 +99,26 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_dump
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
-    assert_equal too_deep, dump(eval(too_deep))
-    assert_kind_of String, Marshal.dump(eval(too_deep))
-    assert_raise(ArgumentError) { dump(eval(too_deep), 100) }
-    assert_raise(ArgumentError) { Marshal.dump(eval(too_deep), 100) }
-    assert_equal too_deep, dump(eval(too_deep), 101)
-    assert_kind_of String, Marshal.dump(eval(too_deep), 101)
-    output = StringIO.new
-    dump(eval(too_deep), output)
-    assert_equal too_deep, output.string
-    output = StringIO.new
-    dump(eval(too_deep), output, 101)
-    assert_equal too_deep, output.string
+    obj = eval(too_deep)
+    assert_equal too_deep, dump(obj)
+    assert_kind_of String, Marshal.dump(obj)
+    assert_raise(ArgumentError) { dump(obj, 100) }
+    assert_raise(ArgumentError) { Marshal.dump(obj, 100) }
+    assert_equal too_deep, dump(obj, 101)
+    assert_kind_of String, Marshal.dump(obj, 101)
+
+    assert_equal too_deep, JSON.dump(obj, StringIO.new, 101, strict: false).string
+    assert_equal too_deep, dump(obj, StringIO.new, 101, strict: false).string
+    assert_raise(JSON::GeneratorError) { JSON.dump(Object.new, StringIO.new, 101, strict: true).string }
+    assert_raise(JSON::GeneratorError) { dump(Object.new, StringIO.new, 101, strict: true).string }
+
+    assert_equal too_deep, dump(obj, nil, nil, strict: false)
+    assert_equal too_deep, dump(obj, nil, 101, strict: false)
+    assert_equal too_deep, dump(obj, StringIO.new, nil, strict: false).string
+    assert_equal too_deep, dump(obj, nil, strict: false)
+    assert_equal too_deep, dump(obj, 101, strict: false)
+    assert_equal too_deep, dump(obj, StringIO.new, strict: false).string
+    assert_equal too_deep, dump(obj, strict: false)
   end
 
   def test_dump_should_modify_defaults

@@ -22,11 +22,9 @@ int rb_block_min_max_arity(int *max);
 VALUE rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_info);
 VALUE rb_callable_receiver(VALUE);
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_func_proc_new(rb_block_call_func_t func, VALUE val);
 VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc);
 VALUE rb_iseq_location(const struct rb_iseq_struct *iseq);
 VALUE rb_sym_to_proc(VALUE sym);
-MJIT_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_PROC_H */

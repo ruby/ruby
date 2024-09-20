@@ -1,0 +1,29 @@
+Returns a new string copied from +self+, with trailing characters possibly removed:
+
+When +line_sep+ is <tt>"\n"</tt>, removes the last one or two characters
+if they are <tt>"\r"</tt>, <tt>"\n"</tt>, or <tt>"\r\n"</tt>
+(but not <tt>"\n\r"</tt>):
+
+  $/                    # => "\n"
+  "abc\r".chomp         # => "abc"
+  "abc\n".chomp         # => "abc"
+  "abc\r\n".chomp       # => "abc"
+  "abc\n\r".chomp       # => "abc\n"
+  "тест\r\n".chomp      # => "тест"
+  "こんにちは\r\n".chomp  # => "こんにちは"
+
+When +line_sep+ is <tt>''</tt> (an empty string),
+removes multiple trailing occurrences of <tt>"\n"</tt> or <tt>"\r\n"</tt>
+(but not <tt>"\r"</tt> or <tt>"\n\r"</tt>):
+
+  "abc\n\n\n".chomp('')           # => "abc"
+  "abc\r\n\r\n\r\n".chomp('')     # => "abc"
+  "abc\n\n\r\n\r\n\n\n".chomp('') # => "abc"
+  "abc\n\r\n\r\n\r".chomp('')     # => "abc\n\r\n\r\n\r"
+  "abc\r\r\r".chomp('')           # => "abc\r\r\r"
+
+When +line_sep+ is neither <tt>"\n"</tt> nor <tt>''</tt>,
+removes a single trailing line separator if there is one:
+
+  'abcd'.chomp('d')  # => "abc"
+  'abcdd'.chomp('d') # => "abcd"

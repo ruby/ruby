@@ -97,15 +97,18 @@ class RDoc::Markup::PreProcess
   # RDoc::CodeObject#metadata for details.
 
   def handle text, code_object = nil, &block
+    first_line = 1
     if RDoc::Comment === text then
       comment = text
       text = text.text
+      first_line = comment.line || 1
     end
 
     # regexp helper (square brackets for optional)
     # $1      $2  $3        $4      $5
     # [prefix][\]:directive:[spaces][param]newline
-    text = text.gsub(/^([ \t]*(?:#|\/?\*)?[ \t]*)(\\?):(\w+):([ \t]*)(.+)?(\r?\n|$)/) do
+    text = text.lines.map.with_index(first_line) do |line, num|
+      next line unless line =~ /\A([ \t]*(?:#|\/?\*)?[ \t]*)(\\?):([\w-]+):([ \t]*)(.+)?(\r?\n|$)/
       # skip something like ':toto::'
       next $& if $4.empty? and $5 and $5[0, 1] == ':'
 
@@ -120,8 +123,8 @@ class RDoc::Markup::PreProcess
         next "#{$1.strip}\n"
       end
 
-      handle_directive $1, $3, $5, code_object, text.encoding, &block
-    end
+      handle_directive $1, $3, $5, code_object, text.encoding, num, &block
+    end.join
 
     if comment then
       comment.text = text
@@ -148,7 +151,7 @@ class RDoc::Markup::PreProcess
   # When 1.8.7 support is ditched prefix can be defaulted to ''
 
   def handle_directive prefix, directive, param, code_object = nil,
-                       encoding = nil
+                       encoding = nil, line = nil
     blankline = "#{prefix.strip}\n"
     directive = directive.downcase
 
@@ -220,11 +223,11 @@ class RDoc::Markup::PreProcess
       # remove parameter &block
       code_object.params = code_object.params.sub(/,?\s*&\w+/, '') if code_object.params
 
-      code_object.block_params = param
+      code_object.block_params = param || ''
 
       blankline
     else
-      result = yield directive, param if block_given?
+      result = yield directive, param, line if block_given?
 
       case result
       when nil then

@@ -27,4 +27,3 @@ class TestRDocMarkupHeading < RDoc::TestCase
   end
 
 end
-

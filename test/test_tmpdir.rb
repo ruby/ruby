@@ -12,7 +12,7 @@ class TestTmpdir < Test::Unit::TestCase
   end
 
   def test_world_writable
-    skip "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
+    omit "no meaning on this platform" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir do |tmpdir|
       # ToDo: fix for parallel test
       envs = %w[TMPDIR TMP TEMP]
@@ -23,14 +23,14 @@ class TestTmpdir < Test::Unit::TestCase
           ENV[e] = tmpdirx
           assert_not_equal(tmpdirx, assert_warn('') {Dir.tmpdir})
           File.write(tmpdirx, "")
-          assert_not_equal(tmpdirx, assert_warn(/not a directory/) {Dir.tmpdir})
+          assert_not_equal(tmpdirx, assert_warn(/\A#{e} is not a directory/) {Dir.tmpdir})
           File.unlink(tmpdirx)
           ENV[e] = tmpdir
           assert_equal(tmpdir, Dir.tmpdir)
           File.chmod(0555, tmpdir)
-          assert_not_equal(tmpdir, assert_warn(/not writable/) {Dir.tmpdir})
+          assert_not_equal(tmpdir, assert_warn(/\A#{e} is not writable/) {Dir.tmpdir})
           File.chmod(0777, tmpdir)
-          assert_not_equal(tmpdir, assert_warn(/world-writable/) {Dir.tmpdir})
+          assert_not_equal(tmpdir, assert_warn(/\A#{e} is world-writable/) {Dir.tmpdir})
           newdir = Dir.mktmpdir("d", tmpdir) do |dir|
             assert_file.directory? dir
             assert_equal(tmpdir, File.dirname(dir))
@@ -44,6 +44,18 @@ class TestTmpdir < Test::Unit::TestCase
       ensure
         ENV.update(oldenv)
       end
+    end
+  end
+
+  def test_tmpdir_not_empty_parent
+    Dir.mktmpdir do |tmpdir|
+      envs = %w[TMPDIR TMP TEMP]
+      oldenv = envs.each_with_object({}) {|v, h| h[v] = ENV.delete(v)}
+      ENV[envs[0]] = ""
+      ENV[envs[1]] = tmpdir
+      assert_equal(tmpdir, Dir.tmpdir)
+    ensure
+      ENV.update(oldenv)
     end
   end
 
@@ -92,6 +104,12 @@ class TestTmpdir < Test::Unit::TestCase
     end
   end
 
+  def test_mktmpdir_not_empty_parent
+    assert_raise(ArgumentError) do
+      Dir.mktmpdir("foo", "")
+    end
+  end
+
   def assert_mktmpdir_traversal
     Dir.mktmpdir do |target|
       target = target.chomp('/') + '/'
@@ -102,5 +120,21 @@ class TestTmpdir < Test::Unit::TestCase
         assert_not_send([File.absolute_path(actual), :start_with?, target])
       end
     end
+  end
+
+  def test_ractor
+    assert_ractor(<<~'end;', require: "tmpdir")
+      r = Ractor.new do
+        Dir.mktmpdir() do |d|
+          Ractor.yield d
+          Ractor.receive
+        end
+      end
+      dir = r.take
+      assert_file.directory? dir
+      r.send true
+      r.take
+      assert_file.not_exist? dir
+    end;
   end
 end

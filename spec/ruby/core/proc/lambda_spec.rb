@@ -14,9 +14,11 @@ describe "Proc#lambda?" do
     Proc.new {}.lambda?.should be_false
   end
 
-  it "is preserved when passing a Proc with & to the lambda keyword" do
-    suppress_warning {lambda(&->{})}.lambda?.should be_true
-    suppress_warning {lambda(&proc{})}.lambda?.should be_false
+  ruby_version_is ""..."3.3" do
+    it "is preserved when passing a Proc with & to the lambda keyword" do
+      suppress_warning {lambda(&->{})}.lambda?.should be_true
+      suppress_warning {lambda(&proc{})}.lambda?.should be_false
+    end
   end
 
   it "is preserved when passing a Proc with & to the proc keyword" do

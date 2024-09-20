@@ -1,0 +1,4 @@
+foo {} &&= 1
+^~~~~~ unexpected write target
+       ^~~ unexpected operator after a call with a block
+

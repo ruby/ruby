@@ -101,23 +101,12 @@
 # endif
 #endif
 
-#if defined(__hpux) && !defined(__GNUC__) && !defined(__STDC__)
-#define const
-#endif
-
 #if defined(sgi)
 #undef __const
 #define __const
 #endif /* People who don't like const sys_error */
 
 #include <stddef.h>
-#if defined(__hpux) && !defined(__GNUC__) || defined(__DECC)
-#include <string.h>
-#endif
-
-#if !defined(__CYGWIN32__) && defined(__hpux) && !defined(__GNUC__)
-#include <stdlib.h>
-#endif
 
 #ifndef NULL
 #define	NULL	0
@@ -251,9 +240,7 @@ BSD__sfvwrite(register FILE *fp, register struct __suio *uio)
 
 	if ((len = uio->uio_resid) == 0)
 		return (0);
-#ifndef __hpux
 #define	MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
 #define	COPY(n)	  (void)memcpy((void *)fp->_p, (void *)p, (size_t)(n))
 
 	iov = uio->uio_iov;
@@ -565,7 +552,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 #endif
 	u_long MAYBE_UNUSED(ulval) = 0; /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t MAYBE_UNUSED(uqval); /* %q integers */
+	u_quad_t MAYBE_UNUSED(uqval) = 0; /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
@@ -1268,8 +1255,8 @@ cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *l
 	}
 	buf[0] = 0; /* rve - digits may be 0 */
 	memcpy(buf, digits, rve - digits);
-	xfree(digits);
 	rve = buf + (rve - digits);
+	free(digits);
 	digits = buf;
 	if (flags & ALT) {	/* Print trailing zeros */
 		bp = digits + ndigits;

@@ -19,6 +19,9 @@ module DefinedSpecs
     DefinedSpecs
   end
 
+  def self.any_args(*)
+  end
+
   class Basic
     A = 42
 

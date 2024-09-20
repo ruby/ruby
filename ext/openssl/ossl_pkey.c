@@ -5,9 +5,13 @@
  */
 /*
  * This program is licensed under the same licence as Ruby.
- * (See the file 'LICENCE'.)
+ * (See the file 'COPYING'.)
  */
 #include "ossl.h"
+
+#ifdef OSSL_USE_ENGINE
+# include <openssl/engine.h>
+#endif
 
 /*
  * Classes
@@ -31,7 +35,7 @@ const rb_data_type_t ossl_evp_pkey_type = {
     {
 	0, ossl_evp_pkey_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -39,12 +43,8 @@ pkey_new0(VALUE arg)
 {
     EVP_PKEY *pkey = (EVP_PKEY *)arg;
     VALUE klass, obj;
-    int type;
 
-    if (!pkey || (type = EVP_PKEY_base_id(pkey)) == EVP_PKEY_NONE)
-	ossl_raise(rb_eRuntimeError, "pkey is empty");
-
-    switch (type) {
+    switch (EVP_PKEY_base_id(pkey)) {
 #if !defined(OPENSSL_NO_RSA)
       case EVP_PKEY_RSA: klass = cRSA; break;
 #endif
@@ -59,8 +59,8 @@ pkey_new0(VALUE arg)
 #endif
       default:           klass = cPKey; break;
     }
-    obj = NewPKey(klass);
-    SetPKey(obj, pkey);
+    obj = rb_obj_alloc(klass);
+    RTYPEDDATA_DATA(obj) = pkey;
     return obj;
 }
 
@@ -79,6 +79,107 @@ ossl_pkey_new(EVP_PKEY *pkey)
     return obj;
 }
 
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+# include <openssl/decoder.h>
+
+static EVP_PKEY *
+ossl_pkey_read(BIO *bio, const char *input_type, int selection, VALUE pass)
+{
+    void *ppass = (void *)pass;
+    OSSL_DECODER_CTX *dctx;
+    EVP_PKEY *pkey = NULL;
+    int pos = 0, pos2;
+
+    dctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, input_type, NULL, NULL,
+                                         selection, NULL, NULL);
+    if (!dctx)
+        goto out;
+    if (OSSL_DECODER_CTX_set_pem_password_cb(dctx, ossl_pem_passwd_cb,
+                                             ppass) != 1)
+        goto out;
+    while (1) {
+        if (OSSL_DECODER_from_bio(dctx, bio) == 1)
+            goto out;
+        if (BIO_eof(bio))
+            break;
+        pos2 = BIO_tell(bio);
+        if (pos2 < 0 || pos2 <= pos)
+            break;
+        ossl_clear_error();
+        pos = pos2;
+    }
+  out:
+    OSSL_BIO_reset(bio);
+    OSSL_DECODER_CTX_free(dctx);
+    return pkey;
+}
+
+EVP_PKEY *
+ossl_pkey_read_generic(BIO *bio, VALUE pass)
+{
+    EVP_PKEY *pkey = NULL;
+    /* First check DER, then check PEM. */
+    const char *input_types[] = {"DER", "PEM"};
+    int input_type_num = (int)(sizeof(input_types) / sizeof(char *));
+    /*
+     * Non-zero selections to try to decode.
+     *
+     * See EVP_PKEY_fromdata(3) - Selections to see all the selections.
+     *
+     * This is a workaround for the decoder failing to decode or returning
+     * bogus keys with selection 0, if a key management provider is different
+     * from a decoder provider. The workaround is to avoid using selection 0.
+     *
+     * Affected OpenSSL versions: >= 3.1.0, <= 3.1.2, or >= 3.0.0, <= 3.0.10
+     * Fixed OpenSSL versions: 3.2, next release of the 3.1.z and 3.0.z
+     *
+     * See https://github.com/openssl/openssl/pull/21519 for details.
+     *
+     * First check for private key formats (EVP_PKEY_KEYPAIR). This is to keep
+     * compatibility with ruby/openssl < 3.0 which decoded the following as a
+     * private key.
+     *
+     *     $ openssl ecparam -name prime256v1 -genkey -outform PEM
+     *     -----BEGIN EC PARAMETERS-----
+     *     BggqhkjOPQMBBw==
+     *     -----END EC PARAMETERS-----
+     *     -----BEGIN EC PRIVATE KEY-----
+     *     MHcCAQEEIAG8ugBbA5MHkqnZ9ujQF93OyUfL9tk8sxqM5Wv5tKg5oAoGCCqGSM49
+     *     AwEHoUQDQgAEVcjhJfkwqh5C7kGuhAf8XaAjVuG5ADwb5ayg/cJijCgs+GcXeedj
+     *     86avKpGH84DXUlB23C/kPt+6fXYlitUmXQ==
+     *     -----END EC PRIVATE KEY-----
+     *
+     * While the first PEM block is a proper encoding of ECParameters, thus
+     * OSSL_DECODER_from_bio() would pick it up, ruby/openssl used to return
+     * the latter instead. Existing applications expect this behavior.
+     *
+     * Note that normally, the input is supposed to contain a single decodable
+     * PEM block only, so this special handling should not create a new problem.
+     *
+     * Note that we need to create the OSSL_DECODER_CTX variable each time when
+     * we use the different selection as a workaround.
+     * See https://github.com/openssl/openssl/issues/20657 for details.
+     */
+    int selections[] = {
+        EVP_PKEY_KEYPAIR,
+        EVP_PKEY_KEY_PARAMETERS,
+        EVP_PKEY_PUBLIC_KEY
+    };
+    int selection_num = (int)(sizeof(selections) / sizeof(int));
+    int i, j;
+
+    for (i = 0; i < input_type_num; i++) {
+        for (j = 0; j < selection_num; j++) {
+            pkey = ossl_pkey_read(bio, input_types[i], selections[j], pass);
+            if (pkey) {
+                goto out;
+            }
+        }
+    }
+  out:
+    return pkey;
+}
+#else
 EVP_PKEY *
 ossl_pkey_read_generic(BIO *bio, VALUE pass)
 {
@@ -107,6 +208,7 @@ ossl_pkey_read_generic(BIO *bio, VALUE pass)
   out:
     return pkey;
 }
+#endif
 
 /*
  *  call-seq:
@@ -160,6 +262,7 @@ static VALUE
 pkey_ctx_apply_options0(VALUE args_v)
 {
     VALUE *args = (VALUE *)args_v;
+    Check_Type(args[1], T_HASH);
 
     rb_block_call(args[1], rb_intern("each"), 0, NULL,
                   pkey_ctx_apply_options_i, args[0]);
@@ -180,9 +283,9 @@ struct pkey_blocking_generate_arg {
     EVP_PKEY_CTX *ctx;
     EVP_PKEY *pkey;
     int state;
-    int yield: 1;
-    int genparam: 1;
-    int interrupted: 1;
+    unsigned int yield: 1;
+    unsigned int genparam: 1;
+    unsigned int interrupted: 1;
 };
 
 static VALUE
@@ -276,6 +379,11 @@ pkey_generate(int argc, VALUE *argv, VALUE self, int genparam)
             ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
     }
     else {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+        ctx = EVP_PKEY_CTX_new_from_name(NULL, StringValueCStr(alg), NULL);
+        if (!ctx)
+            ossl_raise(ePKeyError, "EVP_PKEY_CTX_new_from_name");
+#else
         const EVP_PKEY_ASN1_METHOD *ameth;
         ENGINE *tmpeng;
         int pkey_id;
@@ -294,6 +402,7 @@ pkey_generate(int argc, VALUE *argv, VALUE self, int genparam)
         ctx = EVP_PKEY_CTX_new_id(pkey_id, NULL/* engine */);
         if (!ctx)
             ossl_raise(ePKeyError, "EVP_PKEY_CTX_new_id");
+#endif
     }
 
     if (genparam && EVP_PKEY_paramgen_init(ctx) <= 0) {
@@ -389,9 +498,19 @@ ossl_pkey_s_generate_key(int argc, VALUE *argv, VALUE self)
     return pkey_generate(argc, argv, self, 0);
 }
 
+/*
+ * TODO: There is no convenient way to check the presence of public key
+ * components on OpenSSL 3.0. But since keys are immutable on 3.0, pkeys without
+ * these should only be created by OpenSSL::PKey.generate_parameters or by
+ * parsing DER-/PEM-encoded string. We would need another flag for that.
+ */
 void
 ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    if (EVP_PKEY_missing_parameters(pkey))
+        ossl_raise(ePKeyError, "parameters missing");
+#else
     void *ptr;
     const BIGNUM *n, *e, *pubkey;
 
@@ -427,6 +546,7 @@ ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 	return;
     }
     ossl_raise(ePKeyError, "public key missing");
+#endif
 }
 
 EVP_PKEY *
@@ -476,16 +596,7 @@ DupPKeyPtr(VALUE obj)
 static VALUE
 ossl_pkey_alloc(VALUE klass)
 {
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	ossl_raise(ePKeyError, NULL);
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_evp_pkey_type, NULL);
 }
 
 /*
@@ -503,6 +614,92 @@ ossl_pkey_initialize(VALUE self)
     }
     return self;
 }
+
+#ifdef HAVE_EVP_PKEY_DUP
+static VALUE
+ossl_pkey_initialize_copy(VALUE self, VALUE other)
+{
+    EVP_PKEY *pkey, *pkey_other;
+
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    TypedData_Get_Struct(other, EVP_PKEY, &ossl_evp_pkey_type, pkey_other);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
+    if (pkey_other) {
+        pkey = EVP_PKEY_dup(pkey_other);
+        if (!pkey)
+            ossl_raise(ePKeyError, "EVP_PKEY_dup");
+        RTYPEDDATA_DATA(self) = pkey;
+    }
+    return self;
+}
+#endif
+
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+/*
+ *  call-seq:
+ *      OpenSSL::PKey.new_raw_private_key(algo, string) -> PKey
+ *
+ * See the OpenSSL documentation for EVP_PKEY_new_raw_private_key()
+ */
+
+static VALUE
+ossl_pkey_new_raw_private_key(VALUE self, VALUE type, VALUE key)
+{
+    EVP_PKEY *pkey;
+    const EVP_PKEY_ASN1_METHOD *ameth;
+    int pkey_id;
+    size_t keylen;
+
+    StringValue(type);
+    StringValue(key);
+    ameth = EVP_PKEY_asn1_find_str(NULL, RSTRING_PTR(type), RSTRING_LENINT(type));
+    if (!ameth)
+        ossl_raise(ePKeyError, "algorithm %"PRIsVALUE" not found", type);
+    EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
+
+    keylen = RSTRING_LEN(key);
+
+    pkey = EVP_PKEY_new_raw_private_key(pkey_id, NULL, (unsigned char *)RSTRING_PTR(key), keylen);
+    if (!pkey)
+        ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key");
+
+    return ossl_pkey_new(pkey);
+}
+#endif
+
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+/*
+ *  call-seq:
+ *      OpenSSL::PKey.new_raw_public_key(algo, string) -> PKey
+ *
+ * See the OpenSSL documentation for EVP_PKEY_new_raw_public_key()
+ */
+
+static VALUE
+ossl_pkey_new_raw_public_key(VALUE self, VALUE type, VALUE key)
+{
+    EVP_PKEY *pkey;
+    const EVP_PKEY_ASN1_METHOD *ameth;
+    int pkey_id;
+    size_t keylen;
+
+    StringValue(type);
+    StringValue(key);
+    ameth = EVP_PKEY_asn1_find_str(NULL, RSTRING_PTR(type), RSTRING_LENINT(type));
+    if (!ameth)
+        ossl_raise(ePKeyError, "algorithm %"PRIsVALUE" not found", type);
+    EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
+
+    keylen = RSTRING_LEN(key);
+
+    pkey = EVP_PKEY_new_raw_public_key(pkey_id, NULL, (unsigned char *)RSTRING_PTR(key), keylen);
+    if (!pkey)
+        ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key");
+
+    return ossl_pkey_new(pkey);
+}
+#endif
 
 /*
  * call-seq:
@@ -602,7 +799,7 @@ ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 	}
     }
     else {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_LIBRESSL_PREREQ(3, 5, 0)
 	if (!PEM_write_bio_PrivateKey_traditional(bio, pkey, enc, NULL, 0,
 						  ossl_pem_passwd_cb,
 						  (void *)pass)) {
@@ -685,12 +882,53 @@ ossl_pkey_private_to_der(int argc, VALUE *argv, VALUE self)
  *
  * Serializes the private key to PEM-encoded PKCS #8 format. See #private_to_der
  * for more details.
+ *
+ * An unencrypted PEM-encoded key will look like:
+ *
+ *   -----BEGIN PRIVATE KEY-----
+ *   [...]
+ *   -----END PRIVATE KEY-----
+ *
+ * An encrypted PEM-encoded key will look like:
+ *
+ *   -----BEGIN ENCRYPTED PRIVATE KEY-----
+ *   [...]
+ *   -----END ENCRYPTED PRIVATE KEY-----
  */
 static VALUE
 ossl_pkey_private_to_pem(int argc, VALUE *argv, VALUE self)
 {
     return do_pkcs8_export(argc, argv, self, 0);
 }
+
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+/*
+ *  call-seq:
+ *     pkey.raw_private_key   => string
+ *
+ *  See the OpenSSL documentation for EVP_PKEY_get_raw_private_key()
+ */
+
+static VALUE
+ossl_pkey_raw_private_key(VALUE self)
+{
+    EVP_PKEY *pkey;
+    VALUE str;
+    size_t len;
+
+    GetPKey(self, pkey);
+    if (EVP_PKEY_get_raw_private_key(pkey, NULL, &len) != 1)
+        ossl_raise(ePKeyError, "EVP_PKEY_get_raw_private_key");
+    str = rb_str_new(NULL, len);
+
+    if (EVP_PKEY_get_raw_private_key(pkey, (unsigned char *)RSTRING_PTR(str), &len) != 1)
+        ossl_raise(ePKeyError, "EVP_PKEY_get_raw_private_key");
+
+    rb_str_set_len(str, len);
+
+    return str;
+}
+#endif
 
 VALUE
 ossl_pkey_export_spki(VALUE self, int to_der)
@@ -734,12 +972,47 @@ ossl_pkey_public_to_der(VALUE self)
  *    pkey.public_to_pem -> string
  *
  * Serializes the public key to PEM-encoded X.509 SubjectPublicKeyInfo format.
+ *
+ * A PEM-encoded key will look like:
+ *
+ *   -----BEGIN PUBLIC KEY-----
+ *   [...]
+ *   -----END PUBLIC KEY-----
  */
 static VALUE
 ossl_pkey_public_to_pem(VALUE self)
 {
     return ossl_pkey_export_spki(self, 0);
 }
+
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+/*
+ *  call-seq:
+ *     pkey.raw_public_key   => string
+ *
+ *  See the OpenSSL documentation for EVP_PKEY_get_raw_public_key()
+ */
+
+static VALUE
+ossl_pkey_raw_public_key(VALUE self)
+{
+    EVP_PKEY *pkey;
+    VALUE str;
+    size_t len;
+
+    GetPKey(self, pkey);
+    if (EVP_PKEY_get_raw_public_key(pkey, NULL, &len) != 1)
+        ossl_raise(ePKeyError, "EVP_PKEY_get_raw_public_key");
+    str = rb_str_new(NULL, len);
+
+    if (EVP_PKEY_get_raw_public_key(pkey, (unsigned char *)RSTRING_PTR(str), &len) != 1)
+        ossl_raise(ePKeyError, "EVP_PKEY_get_raw_public_key");
+
+    rb_str_set_len(str, len);
+
+    return str;
+}
+#endif
 
 /*
  *  call-seq:
@@ -843,7 +1116,7 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     if (EVP_DigestSign(ctx, NULL, &siglen, (unsigned char *)RSTRING_PTR(data),
                        RSTRING_LEN(data)) < 1) {
         EVP_MD_CTX_free(ctx);
@@ -948,7 +1221,7 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     ret = EVP_DigestVerify(ctx, (unsigned char *)RSTRING_PTR(sig),
                            RSTRING_LEN(sig), (unsigned char *)RSTRING_PTR(data),
                            RSTRING_LEN(data));
@@ -1478,9 +1751,18 @@ Init_ossl_pkey(void)
     rb_define_module_function(mPKey, "read", ossl_pkey_new_from_data, -1);
     rb_define_module_function(mPKey, "generate_parameters", ossl_pkey_s_generate_parameters, -1);
     rb_define_module_function(mPKey, "generate_key", ossl_pkey_s_generate_key, -1);
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+    rb_define_module_function(mPKey, "new_raw_private_key", ossl_pkey_new_raw_private_key, 2);
+    rb_define_module_function(mPKey, "new_raw_public_key", ossl_pkey_new_raw_public_key, 2);
+#endif
 
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
+#ifdef HAVE_EVP_PKEY_DUP
+    rb_define_method(cPKey, "initialize_copy", ossl_pkey_initialize_copy, 1);
+#else
+    rb_undef_method(cPKey, "initialize_copy");
+#endif
     rb_define_method(cPKey, "oid", ossl_pkey_oid, 0);
     rb_define_method(cPKey, "inspect", ossl_pkey_inspect, 0);
     rb_define_method(cPKey, "to_text", ossl_pkey_to_text, 0);
@@ -1488,6 +1770,10 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "private_to_pem", ossl_pkey_private_to_pem, -1);
     rb_define_method(cPKey, "public_to_der", ossl_pkey_public_to_der, 0);
     rb_define_method(cPKey, "public_to_pem", ossl_pkey_public_to_pem, 0);
+#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
+    rb_define_method(cPKey, "raw_private_key", ossl_pkey_raw_private_key, 0);
+    rb_define_method(cPKey, "raw_public_key", ossl_pkey_raw_public_key, 0);
+#endif
     rb_define_method(cPKey, "compare?", ossl_pkey_compare, 1);
 
     rb_define_method(cPKey, "sign", ossl_pkey_sign, -1);

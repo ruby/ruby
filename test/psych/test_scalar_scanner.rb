@@ -126,6 +126,19 @@ module Psych
       assert_equal '100_', ss.tokenize('100_')
     end
 
+    def test_scan_strings_with_legacy_int_delimiters
+      assert_equal '0x_,_', ss.tokenize('0x_,_')
+      assert_equal '+0__,,', ss.tokenize('+0__,,')
+      assert_equal '-0b,_,', ss.tokenize('-0b,_,')
+    end
+
+    def test_scan_strings_with_strict_int_delimiters
+      scanner = Psych::ScalarScanner.new ClassLoader.new, strict_integer: true
+      assert_equal '0x___', scanner.tokenize('0x___')
+      assert_equal '+0____', scanner.tokenize('+0____')
+      assert_equal '-0b___', scanner.tokenize('-0b___')
+    end
+
     def test_scan_int_commas_and_underscores
       # NB: This test is to ensure backward compatibility with prior Psych versions,
       # not to test against any actual YAML specification.
@@ -147,6 +160,31 @@ module Psych
       assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef')
       assert_equal 0x123456789abcdef, ss.tokenize('0x_12_,34,_56,_789abcdef')
       assert_equal 0x123456789abcdef, ss.tokenize('0x12_,34,_56,_789abcdef__')
+    end
+
+    def test_scan_strict_int_commas_and_underscores
+      # this test is to ensure adherence to YML spec using the 'strict_integer' option
+      scanner = Psych::ScalarScanner.new ClassLoader.new, strict_integer: true
+      assert_equal 123_456_789, scanner.tokenize('123_456_789')
+      assert_equal '123,456,789', scanner.tokenize('123,456,789')
+      assert_equal '1_2,3,4_5,6_789', scanner.tokenize('1_2,3,4_5,6_789')
+
+      assert_equal 1, scanner.tokenize('1')
+      assert_equal 1, scanner.tokenize('+1')
+      assert_equal(-1, scanner.tokenize('-1'))
+
+      assert_equal 0b010101010, scanner.tokenize('0b010101010')
+      assert_equal 0b010101010, scanner.tokenize('0b01_01_01_010')
+      assert_equal '0b0,1_0,1_,0,1_01,0', scanner.tokenize('0b0,1_0,1_,0,1_01,0')
+
+      assert_equal 01234567, scanner.tokenize('01234567')
+      assert_equal '0_,,,1_2,_34567', scanner.tokenize('0_,,,1_2,_34567')
+
+      assert_equal 0x123456789abcdef, scanner.tokenize('0x123456789abcdef')
+      assert_equal 0x123456789abcdef, scanner.tokenize('0x12_34_56_789abcdef')
+      assert_equal '0x12_,34,_56,_789abcdef', scanner.tokenize('0x12_,34,_56,_789abcdef')
+      assert_equal '0x_12_,34,_56,_789abcdef', scanner.tokenize('0x_12_,34,_56,_789abcdef')
+      assert_equal '0x12_,34,_56,_789abcdef__', scanner.tokenize('0x12_,34,_56,_789abcdef__')
     end
 
     def test_scan_dot

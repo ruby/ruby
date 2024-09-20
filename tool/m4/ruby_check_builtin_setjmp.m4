@@ -20,7 +20,7 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 	    void (*volatile f)(void) = t;
 	    if (!jump()) printf("%d\n", f != 0);
 	    ]])],
-	    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"])
+	    [ac_cv_func___builtin_setjmp="yes${cast:+ with cast ($cast)}"])
 	])
 	test "$ac_cv_func___builtin_setjmp" = no || break
     done])

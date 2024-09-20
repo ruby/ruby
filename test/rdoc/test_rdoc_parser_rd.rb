@@ -53,4 +53,3 @@ class TestRDocParserRd < RDoc::TestCase
   end
 
 end
-

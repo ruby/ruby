@@ -610,7 +610,7 @@ class RDoc::Generator::Darkfish
 
     @classes = @store.all_classes_and_modules.sort
     @files   = @store.all_files.sort
-    @methods = @classes.map { |m| m.method_list }.flatten.sort
+    @methods = @classes.flat_map { |m| m.method_list }.sort
     @modsort = get_sorted_module_list @classes
   end
 
@@ -677,7 +677,6 @@ class RDoc::Generator::Darkfish
     return body if body =~ /<html/
 
     head_file = @template_dir + '_head.rhtml'
-    footer_file = @template_dir + '_footer.rhtml'
 
     <<-TEMPLATE
 <!DOCTYPE html>
@@ -687,8 +686,6 @@ class RDoc::Generator::Darkfish
 #{head_file.read}
 
 #{body}
-
-#{footer_file.read}
     TEMPLATE
   end
 
@@ -778,11 +775,7 @@ class RDoc::Generator::Darkfish
       erbout = "_erbout_#{file_var}"
     end
 
-    if RUBY_VERSION >= '2.6'
-      template = klass.new template, trim_mode: '-', eoutvar: erbout
-    else
-      template = klass.new template, nil, '-', erbout
-    end
+    template = klass.new template, trim_mode: '-', eoutvar: erbout
     @template_cache[file] = template
     template
   end

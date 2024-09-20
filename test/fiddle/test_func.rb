@@ -60,25 +60,35 @@ module Fiddle
     end
 
     def test_qsort1
-      cb = Class.new(Closure) {
+      closure_class = Class.new(Closure) do
         def call(x, y)
           Pointer.new(x)[0] <=> Pointer.new(y)[0]
         end
-      }.new(TYPE_INT, [TYPE_VOIDP, TYPE_VOIDP])
-
-      qsort = Function.new(@libc['qsort'],
-                           [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP],
-                           TYPE_VOID)
-      buff = "9341"
-      qsort.call(buff, buff.size, 1, cb)
-      assert_equal("1349", buff)
-
-      bug4929 = '[ruby-core:37395]'
-      buff = "9341"
-      under_gc_stress do
-        qsort.call(buff, buff.size, 1, cb)
       end
-      assert_equal("1349", buff, bug4929)
+
+      closure_class.create(TYPE_INT, [TYPE_VOIDP, TYPE_VOIDP]) do |callback|
+        qsort = Function.new(@libc['qsort'],
+                             [TYPE_VOIDP, TYPE_SIZE_T, TYPE_SIZE_T, TYPE_VOIDP],
+                             TYPE_VOID)
+        buff = "9341"
+        qsort.call(buff, buff.size, 1, callback)
+        assert_equal("1349", buff)
+
+        bug4929 = '[ruby-core:37395]'
+        buff = "9341"
+        under_gc_stress do
+          qsort.call(buff, buff.size, 1, callback)
+        end
+        assert_equal("1349", buff, bug4929)
+      end
+    ensure
+      # Ensure freeing all closures.
+      # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
+      not_freed_closures = []
+      ObjectSpace.each_object(Fiddle::Closure) do |closure|
+        not_freed_closures << closure unless closure.freed?
+      end
+      assert_equal([], not_freed_closures)
     end
 
     def test_snprintf
@@ -134,6 +144,23 @@ module Fiddle
                               :int, 29)
       assert_equal("string: He, const string: World, uint: 29\n",
                    output_buffer[0, written])
+    end
+
+    def test_rb_memory_view_available_p
+      omit "MemoryView is unavailable" unless defined? Fiddle::MemoryView
+      libruby = Fiddle.dlopen(nil)
+      case Fiddle::SIZEOF_VOIDP
+      when Fiddle::SIZEOF_LONG_LONG
+        value_type = -Fiddle::TYPE_LONG_LONG
+      else
+        value_type = -Fiddle::TYPE_LONG
+      end
+      rb_memory_view_available_p =
+        Function.new(libruby["rb_memory_view_available_p"],
+                     [value_type],
+                     :bool,
+                     need_gvl: true)
+      assert_equal(false, rb_memory_view_available_p.call(Fiddle::Qnil))
     end
   end
 end if defined?(Fiddle)

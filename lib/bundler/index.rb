@@ -10,30 +10,30 @@ module Bundler
       i
     end
 
-    attr_reader :specs, :all_specs, :sources
-    protected :specs, :all_specs
+    attr_reader :specs, :duplicates, :sources
+    protected :specs, :duplicates
 
-    RUBY = "ruby".freeze
-    NULL = "\0".freeze
+    RUBY = "ruby"
+    NULL = "\0"
 
     def initialize
       @sources = []
       @cache = {}
-      @specs = Hash.new {|h, k| h[k] = {} }
-      @all_specs = Hash.new {|h, k| h[k] = EMPTY_SEARCH }
+      @specs = {}
+      @duplicates = {}
     end
 
     def initialize_copy(o)
       @sources = o.sources.dup
       @cache = {}
-      @specs = Hash.new {|h, k| h[k] = {} }
-      @all_specs = Hash.new {|h, k| h[k] = EMPTY_SEARCH }
+      @specs = {}
+      @duplicates = {}
 
       o.specs.each do |name, hash|
         @specs[name] = hash.dup
       end
-      o.all_specs.each do |name, array|
-        @all_specs[name] = array.dup
+      o.duplicates.each do |name, array|
+        @duplicates[name] = array.dup
       end
     end
 
@@ -46,66 +46,42 @@ module Bundler
       true
     end
 
-    def search_all(name)
-      all_matches = local_search(name) + @all_specs[name]
-      @sources.each do |source|
-        all_matches.concat(source.search_all(name))
-      end
-      all_matches
+    def search_all(name, &blk)
+      return enum_for(:search_all, name) unless blk
+      specs_by_name(name).each(&blk)
+      @duplicates[name]&.each(&blk)
+      @sources.each {|source| source.search_all(name, &blk) }
     end
 
     # Search this index's specs, and any source indexes that this index knows
     # about, returning all of the results.
-    def search(query, base = nil)
-      sort_specs(unsorted_search(query, base))
-    end
-
-    def unsorted_search(query, base)
-      results = local_search(query, base)
-
-      seen = results.map(&:full_name).uniq unless @sources.empty?
+    def search(query)
+      results = local_search(query)
+      return results unless @sources.any?
 
       @sources.each do |source|
-        source.unsorted_search(query, base).each do |spec|
-          next if seen.include?(spec.full_name)
-
-          seen << spec.full_name
-          results << spec
-        end
+        results = safe_concat(results, source.search(query))
       end
-
+      results.uniq!(&:full_name) unless results.empty? # avoid modifying frozen EMPTY_SEARCH
       results
     end
-    protected :unsorted_search
 
-    def self.sort_specs(specs)
-      specs.sort_by do |s|
-        platform_string = s.platform.to_s
-        [s.version, platform_string == RUBY ? NULL : platform_string]
-      end
-    end
+    alias_method :[], :search
 
-    def sort_specs(specs)
-      self.class.sort_specs(specs)
-    end
-
-    def local_search(query, base = nil)
+    def local_search(query)
       case query
       when Gem::Specification, RemoteSpecification, LazySpecification, EndpointSpecification then search_by_spec(query)
       when String then specs_by_name(query)
-      when Gem::Dependency then search_by_dependency(query, base)
-      when DepProxy then search_by_dependency(query.dep, base)
+      when Array then specs_by_name_and_version(*query)
       else
         raise "You can't search for a #{query.inspect}."
       end
     end
 
-    alias_method :[], :search
-
-    def <<(spec)
-      @specs[spec.name][spec.full_name] = spec
-      spec
+    def add(spec)
+      (@specs[spec.name] ||= {}).store(spec.full_name, spec)
     end
+    alias_method :<<, :add
 
     def each(&blk)
       return enum_for(:each) unless blk
@@ -139,15 +115,25 @@ module Bundler
       names.uniq
     end
 
-    def use(other, override_dupes = false)
+    # Combines indexes proritizing existing specs, like `Hash#reverse_merge!`
+    # Duplicate specs found in `other` are stored in `@duplicates`.
+    def use(other)
       return unless other
-      other.each do |s|
-        if (dupes = search_by_spec(s)) && !dupes.empty?
-          # safe to << since it's a new array when it has contents
-          @all_specs[s.name] = dupes << s
-          next unless override_dupes
+      other.each do |spec|
+        exist?(spec) ? add_duplicate(spec) : add(spec)
+      end
+      self
+    end
+
+    # Combines indexes proritizing specs from `other`, like `Hash#merge!`
+    # Duplicate specs found in `self` are saved in `@duplicates`.
+    def merge!(other)
+      return unless other
+      other.each do |spec|
+        if existing = find_by_spec(spec)
+          add_duplicate(existing)
         end
-        self << s
+        add spec
       end
       self
     end
@@ -159,8 +145,7 @@ module Bundler
     end
 
     # Whether all the specs in self are in other
-    # TODO: rename to #include?
-    def ==(other)
+    def subset?(other)
       all? do |spec|
         other_spec = other[spec].first
         other_spec && dependencies_eql?(spec, other_spec) && spec.source == other_spec.source
@@ -181,33 +166,40 @@ module Bundler
 
     private
 
-    def specs_by_name(name)
-      @specs[name].values
+    def safe_concat(a, b)
+      return a if b.empty?
+      return b if a.empty?
+      a.concat(b)
     end
 
-    def search_by_dependency(dependency, base = nil)
-      @cache[base || false] ||= {}
-      @cache[base || false][dependency] ||= begin
-        specs = specs_by_name(dependency.name)
-        specs += base if base
-        found = specs.select do |spec|
-          next true if spec.source.is_a?(Source::Gemspec)
-          if base # allow all platforms when searching from a lockfile
-            dependency.matches_spec?(spec)
-          else
-            dependency.matches_spec?(spec) && Gem::Platform.match_spec?(spec)
-          end
-        end
+    def add_duplicate(spec)
+      (@duplicates[spec.name] ||= []) << spec
+    end
 
-        found
-      end
+    def specs_by_name_and_version(name, version)
+      results = @specs[name]&.values
+      return EMPTY_SEARCH unless results
+      results.select! {|spec| spec.version == version }
+      results
+    end
+
+    def specs_by_name(name)
+      @specs[name]&.values || EMPTY_SEARCH
     end
 
     EMPTY_SEARCH = [].freeze
 
     def search_by_spec(spec)
-      spec = @specs[spec.name][spec.full_name]
+      spec = find_by_spec(spec)
       spec ? [spec] : EMPTY_SEARCH
+    end
+
+    def find_by_spec(spec)
+      @specs[spec.name]&.fetch(spec.full_name, nil)
+    end
+
+    def exist?(spec)
+      @specs[spec.name]&.key?(spec.full_name)
     end
   end
 end

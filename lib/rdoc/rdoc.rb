@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc'
+require_relative '../rdoc'
 
 require 'find'
 require 'fileutils'
@@ -34,6 +34,17 @@ class RDoc::RDoc
   # This is the list of supported output generators
 
   GENERATORS = {}
+
+  ##
+  # List of directory names always skipped
+
+  UNCONDITIONALLY_SKIPPED_DIRECTORIES = %w[CVS .svn .git].freeze
+
+  ##
+  # List of directory names skipped if test suites should be skipped
+
+  TEST_SUITE_DIRECTORY_NAMES = %w[spec test].freeze
+
 
   ##
   # Generator instance used for creating output
@@ -108,7 +119,7 @@ class RDoc::RDoc
   # +files+.
 
   def gather_files files
-    files = ["."] if files.empty?
+    files = [@options.root.to_s] if files.empty?
 
     file_list = normalized_file_list files, true, @options.exclude
 
@@ -280,7 +291,10 @@ option)
           file_list[rel_file_name] = mtime
         end
       when "directory" then
-        next if rel_file_name == "CVS" || rel_file_name == ".svn"
+        next if UNCONDITIONALLY_SKIPPED_DIRECTORIES.include?(rel_file_name)
+
+        basename = File.basename(rel_file_name)
+        next if options.skip_tests && TEST_SUITE_DIRECTORY_NAMES.include?(basename)
 
         created_rid = File.join rel_file_name, "created.rid"
         next if File.file? created_rid
@@ -342,7 +356,7 @@ option)
 
     top_level = @store.add_file filename, relative_name: relative_path.to_s
 
-    parser = RDoc::Parser.for top_level, filename, content, @options, @stats
+    parser = RDoc::Parser.for top_level, content, @options, @stats
 
     return unless parser
 
@@ -415,9 +429,7 @@ The internal error was:
     files.reject do |file, *|
       file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
-         File.open(file, 'rb') { |io|
-           io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
-         })
+         /\A(\f\n[^,]+,\d+$|!_TAG_)/.match?(File.binread(file, 100)))
     end
   end
 
@@ -440,11 +452,11 @@ The internal error was:
 
     if RDoc::Options === options then
       @options = options
-      @options.finish
     else
       @options = RDoc::Options.load_options
       @options.parse options
     end
+    @options.finish
 
     if @options.pipe then
       handle_pipe
@@ -532,7 +544,7 @@ end
 begin
   require 'rubygems'
 
-  rdoc_extensions = Gem.find_files 'rdoc/discover'
+  rdoc_extensions = Gem.find_latest_files 'rdoc/discover'
 
   rdoc_extensions.each do |extension|
     begin

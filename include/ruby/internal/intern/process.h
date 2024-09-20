@@ -31,6 +31,15 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 /* process.c */
 
 /**
+ * Wait for the specified process to terminate, reap it, and return its status.
+ *
+ * @param[in] pid The process ID to wait for.
+ * @param[in] flags The flags to pass to waitpid(2).
+ * @return VALUE An instance of Process::Status.
+ */
+VALUE rb_process_status_wait(rb_pid_t pid, int flags);
+
+/**
  * Sets the "last status", or the `$?`.
  *
  * @param[in]  status  The termination status, as defined in `waitpid(3posix)`.
@@ -247,7 +256,7 @@ rb_pid_t rb_spawn_err(int argc, const VALUE *argv, char *errbuf, size_t buflen);
  *
  * @internal
  *
- * This function  might or might  not exist depending on  `./confiugre` result.
+ * This function  might or might  not exist depending on  `./configure` result.
  * It must be a portability hell.  Better not use.
  */
 VALUE rb_proc_times(VALUE _);

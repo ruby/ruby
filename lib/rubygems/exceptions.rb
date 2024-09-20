@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative 'deprecate'
-require_relative 'unknown_command_spell_checker'
+require_relative "deprecate"
+require_relative "unknown_command_spell_checker"
 
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
@@ -24,10 +24,14 @@ class Gem::UnknownCommandError < Gem::Exception
     return if defined?(@attached)
 
     if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
-      DidYouMean::SPELL_CHECKERS['Gem::UnknownCommandError'] =
-        Gem::UnknownCommandSpellChecker
+      if DidYouMean.respond_to?(:correct_error)
+        DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
+      else
+        DidYouMean::SPELL_CHECKERS["Gem::UnknownCommandError"] =
+          Gem::UnknownCommandSpellChecker
 
-      prepend DidYouMean::Correctable
+        prepend DidYouMean::Correctable
+      end
     end
 
     @attached = true
@@ -100,9 +104,6 @@ end
 
 class Gem::GemNotFoundException < Gem::Exception; end
 
-##
-# Raised by the DependencyInstaller when a specific gem cannot be found
-
 class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   ##
   # Creates a new SpecificGemNotFoundException for a gem with the given +name+
@@ -133,6 +134,8 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   attr_reader :errors
 end
 
+Gem.deprecate_constant :SpecificGemNotFoundException
+
 ##
 # Raised by Gem::Resolver when dependencies conflict and create the
 # inability to find a valid possible spec for a request.
@@ -150,7 +153,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
 
   def build_message # :nodoc:
     requester  = @request.requester
-    requester  = requester ? requester.spec.full_name : 'The user'
+    requester  = requester ? requester.spec.full_name : "The user"
     dependency = @request.dependency
 
     message = "#{requester} requires #{dependency} but it conflicted:\n".dup
@@ -168,6 +171,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
 end
 
 class Gem::InstallError < Gem::Exception; end
+
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError
   attr_accessor :suggestion
   def message
@@ -210,6 +214,16 @@ class Gem::RubyVersionMismatch < Gem::Exception; end
 class Gem::VerificationError < Gem::Exception; end
 
 ##
+# Raised by Gem::WebauthnListener when an error occurs during security
+# device verification.
+
+class Gem::WebauthnVerificationError < Gem::Exception
+  def initialize(message)
+    super "Security device verification failed: #{message}"
+  end
+end
+
+##
 # Raised to indicate that a system exit should occur with the specified
 # exit_code
 
@@ -217,14 +231,12 @@ class Gem::SystemExitException < SystemExit
   ##
   # The exit code for the process
 
-  attr_accessor :exit_code
+  alias_method :exit_code, :status
 
   ##
   # Creates a new SystemExitException with the given +exit_code+
 
   def initialize(exit_code)
-    @exit_code = exit_code
-
     super exit_code, "Exiting RubyGems with exit_code #{exit_code}"
   end
 end
@@ -250,9 +262,9 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   # Gem::Resolver::DependencyRequest +dep+
 
   def initialize(dep, platform_mismatch=nil)
-    if platform_mismatch and !platform_mismatch.empty?
+    if platform_mismatch && !platform_mismatch.empty?
       plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
-      super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(', ')}"
+      super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(", ")}"
     else
       if dep.explicit?
         super "Unable to resolve dependency: user requested '#{dep}'"
@@ -279,9 +291,3 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
     @dependency.requirement
   end
 end
-
-##
-# Backwards compatible typo'd exception class for early RubyGems 2.0.x
-
-Gem::UnsatisfiableDepedencyError = Gem::UnsatisfiableDependencyError # :nodoc:
-Gem.deprecate_constant :UnsatisfiableDepedencyError

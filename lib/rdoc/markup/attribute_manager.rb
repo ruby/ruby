@@ -1,8 +1,19 @@
 # frozen_string_literal: true
+
 ##
 # Manages changes of attributes in a block of text
 
 class RDoc::Markup::AttributeManager
+  unless ::MatchData.method_defined?(:match_length)
+    using ::Module.new {
+      refine(::MatchData) {
+        def match_length(nth) # :nodoc:
+          b, e = offset(nth)
+          e - b if b
+        end
+      }
+    }
+  end
 
   ##
   # The NUL character
@@ -127,6 +138,7 @@ class RDoc::Markup::AttributeManager
     res
   end
 
+  # :nodoc:
   def exclusive?(attr)
     (attr & @exclusive_bitmap) != 0
   end
@@ -144,47 +156,42 @@ class RDoc::Markup::AttributeManager
     convert_attrs_word_pair_map(str, attrs, exclusive)
   end
 
+  # :nodoc:
   def convert_attrs_matching_word_pairs(str, attrs, exclusive)
     # first do matching ones
     tags = @matching_word_pairs.select { |start, bitmap|
-      if exclusive && exclusive?(bitmap)
-        true
-      elsif !exclusive && !exclusive?(bitmap)
-        true
-      else
-        false
-      end
+      exclusive == exclusive?(bitmap)
     }.keys
     return if tags.empty?
-    all_tags = @matching_word_pairs.keys
+    tags = "[#{tags.join("")}](?!#{PROTECT_ATTR})"
+    all_tags = "[#{@matching_word_pairs.keys.join("")}](?!#{PROTECT_ATTR})"
 
-    re = /(^|\W|[#{all_tags.join("")}])([#{tags.join("")}])(\2*[#\\]?[\w:.\/\[\]-]+?\S?)\2(?!\2)([#{all_tags.join("")}]|\W|$)/
+    re = /(?:^|\W|#{all_tags})\K(#{tags})(\1*[#\\]?[\w:#{PROTECT_ATTR}.\/\[\]-]+?\S?)\1(?!\1)(?=#{all_tags}|\W|$)/
 
     1 while str.gsub!(re) { |orig|
-      attr = @matching_word_pairs[$2]
-      attr_updated = attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
-      if attr_updated
-        $1 + NULL * $2.length + $3 + NULL * $2.length + $4
+      a, w = (m = $~).values_at(1, 2)
+      attr = @matching_word_pairs[a]
+      if attrs.set_attrs(m.begin(2), w.length, attr)
+        a = NULL * a.length
       else
-        $1 + NON_PRINTING_START + $2 + NON_PRINTING_END + $3 + NON_PRINTING_START + $2 + NON_PRINTING_END + $4
+        a = NON_PRINTING_START + a + NON_PRINTING_END
       end
+      a + w + a
     }
     str.delete!(NON_PRINTING_START + NON_PRINTING_END)
   end
 
+  # :nodoc:
   def convert_attrs_word_pair_map(str, attrs, exclusive)
     # then non-matching
     unless @word_pair_map.empty? then
       @word_pair_map.each do |regexp, attr|
-        if !exclusive
-          next if exclusive?(attr)
-        else
-          next if !exclusive?(attr)
-        end
+        next unless exclusive == exclusive?(attr)
         1 while str.gsub!(regexp) { |orig|
-          updated = attrs.set_attrs($`.length + $1.length, $2.length, attr)
+          w = (m = ($~))[2]
+          updated = attrs.set_attrs(m.begin(2), w.length, attr)
           if updated
-            NULL * $1.length + $2 + NULL * $3.length
+            NULL * m.match_length(1) + w + NULL * m.match_length(3)
           else
             orig
           end
@@ -198,20 +205,14 @@ class RDoc::Markup::AttributeManager
 
   def convert_html(str, attrs, exclusive = false)
     tags = @html_tags.select { |start, bitmap|
-      if exclusive && exclusive?(bitmap)
-        true
-      elsif !exclusive && !exclusive?(bitmap)
-        true
-      else
-        false
-      end
+      exclusive == exclusive?(bitmap)
     }.keys.join '|'
 
     1 while str.gsub!(/<(#{tags})>(.*?)<\/\1>/i) { |orig|
       attr = @html_tags[$1.downcase]
-      html_length = $1.length + 2
+      html_length = $~.match_length(1) + 2 # "<>".length
       seq = NULL * html_length
-      attrs.set_attrs($`.length + html_length, $2.length, attr)
+      attrs.set_attrs($~.begin(2), $~.match_length(2), attr)
       seq + $2 + seq + NULL
     }
   end
@@ -221,11 +222,7 @@ class RDoc::Markup::AttributeManager
 
   def convert_regexp_handlings str, attrs, exclusive = false
     @regexp_handlings.each do |regexp, attribute|
-      if exclusive
-        next if !exclusive?(attribute)
-      else
-        next if exclusive?(attribute)
-      end
+      next unless exclusive == exclusive?(attribute)
       str.scan(regexp) do
         capture = $~.size == 1 ? 0 : 1
 
@@ -263,7 +260,7 @@ class RDoc::Markup::AttributeManager
 
   def add_word_pair(start, stop, name, exclusive = false)
     raise ArgumentError, "Word flags may not start with '<'" if
-      start[0,1] == '<'
+      start[0, 1] == '<'
 
     bitmap = @attributes.bitmap_for name
 
@@ -274,7 +271,7 @@ class RDoc::Markup::AttributeManager
       @word_pair_map[pattern] = bitmap
     end
 
-    @protectable << start[0,1]
+    @protectable << start[0, 1]
     @protectable.uniq!
 
     @exclusive_bitmap |= bitmap if exclusive
@@ -406,4 +403,3 @@ class RDoc::Markup::AttributeManager
   end
 
 end
-

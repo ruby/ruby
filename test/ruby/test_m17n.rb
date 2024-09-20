@@ -226,38 +226,16 @@ class TestM17N < Test::Unit::TestCase
     end
   end
 
-  STR_WITHOUT_BOM = "\u3042".freeze
-  STR_WITH_BOM = "\uFEFF\u3042".freeze
-  bug8940 = '[ruby-core:59757] [Bug #8940]'
-  bug9415 = '[ruby-dev:47895] [Bug #9415]'
-  %w/UTF-16 UTF-32/.each do |enc|
-    %w/BE LE/.each do |endian|
-      bom = "\uFEFF".encode("#{enc}#{endian}").force_encoding(enc)
+  def test_utf_dummy_are_like_regular_dummy_encodings
+    [Encoding::UTF_16, Encoding::UTF_32].each do |enc|
+      s = "\u3042".encode("UTF-32BE")
+      assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect, s.dup.force_encoding(enc).inspect)
+      s = "\x00\x00\xFE\xFF"
+      assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect, s.dup.force_encoding(enc).inspect)
 
-      define_method("test_utf_16_32_inspect(#{enc}#{endian})") do
-        s = STR_WITHOUT_BOM.encode(enc + endian)
-        # When a UTF-16/32 string doesn't have a BOM,
-        # inspect as a dummy encoding string.
-        assert_equal(s.dup.force_encoding("ISO-2022-JP").inspect,
-                     s.dup.force_encoding(enc).inspect)
-        assert_normal_exit("#{bom.b.dump}.force_encoding('#{enc}').inspect", bug8940)
-      end
-
-      define_method("test_utf_16_32_codepoints(#{enc}#{endian})") do
-        assert_equal([0xFEFF], bom.codepoints, bug9415)
-      end
-
-      define_method("test_utf_16_32_ord(#{enc}#{endian})") do
-        assert_equal(0xFEFF, bom.ord, bug9415)
-      end
-
-      define_method("test_utf_16_32_inspect(#{enc}#{endian}-BOM)") do
-        s = STR_WITH_BOM.encode(enc + endian)
-        # When a UTF-16/32 string has a BOM,
-        # inspect as a particular encoding string.
-        assert_equal(s.inspect,
-                     s.dup.force_encoding(enc).inspect)
-      end
+      assert_equal [0, 0, 254, 255], "\x00\x00\xFE\xFF".force_encoding(enc).codepoints
+      assert_equal 0, "\x00\x00\xFE\xFF".force_encoding(enc).ord
+      assert_equal 255, "\xFF\xFE\x00\x00".force_encoding(enc).ord
     end
   end
 
@@ -300,7 +278,7 @@ class TestM17N < Test::Unit::TestCase
     orig_int, Encoding.default_internal = Encoding.default_internal, nil
     orig_ext = Encoding.default_external
 
-    skip "https://bugs.ruby-lang.org/issues/18338"
+    omit "https://bugs.ruby-lang.org/issues/18338"
 
     o = Object.new
 
@@ -892,10 +870,22 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError) {
       "%s%s" % [s("\xc2\xa1"), e("\xc2\xa1")]
     }
+
+    assert_equal("\u3042".encode('Windows-31J'), "%c" % "\u3042\u3044".encode('Windows-31J'))
   end
 
   def test_sprintf_p
     Encoding.list.each do |e|
+      unless e.ascii_compatible?
+        format = e.dummy? ? "%p".force_encoding(e) : "%p".encode(e)
+        assert_raise(Encoding::CompatibilityError) do
+          sprintf(format, nil)
+        end
+        assert_raise(Encoding::CompatibilityError) do
+          format % nil
+        end
+        next
+      end
       format = "%p".force_encoding(e)
       ['', 'a', "\xC2\xA1", "\x00"].each do |s|
         s.force_encoding(e)
@@ -1100,7 +1090,23 @@ class TestM17N < Test::Unit::TestCase
     assert_nil(e("\xa1\xa2\xa3\xa4").index(e("\xa3")))
     assert_nil(e("\xa1\xa2\xa3\xa4").rindex(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(Encoding::CompatibilityError){s.rindex(a("\xb1\xa3"))}
+
+    a_with_e = /EUC-JP and BINARY \(ASCII-8BIT\)/
+    assert_raise_with_message(Encoding::CompatibilityError, a_with_e) do
+      s.index(a("\xb1\xa3"))
+    end
+    assert_raise_with_message(Encoding::CompatibilityError, a_with_e) do
+      s.rindex(a("\xb1\xa3"))
+    end
+
+    a_with_e = /BINARY \(ASCII-8BIT\) regexp with EUC-JP string/
+    assert_raise_with_message(Encoding::CompatibilityError, a_with_e) do
+      s.index(Regexp.new(a("\xb1\xa3")))
+    end
+    assert_raise_with_message(Encoding::CompatibilityError, a_with_e) do
+      s.rindex(Regexp.new(a("\xb1\xa3")))
+    end
+
     bug11488 = '[ruby-core:70592] [Bug #11488]'
     each_encoding("abcdef", "def") do |str, substr|
       assert_equal(3, str.index(substr), bug11488)
@@ -1433,20 +1439,20 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_usascii_literal('//', Encoding::US_ASCII)
     assert_regexp_usascii_literal('/#{ }/', Encoding::US_ASCII)
     assert_regexp_usascii_literal('/#{"a"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/#{"\x80"}/', nil, SyntaxError)
+    assert_regexp_usascii_literal('/#{%q"\x80"}/', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/#{"\x80"}/', Encoding::ASCII_8BIT)
 
     assert_regexp_usascii_literal('/a/', Encoding::US_ASCII)
     assert_regexp_usascii_literal('/a#{ }/', Encoding::US_ASCII)
     assert_regexp_usascii_literal('/a#{"a"}/', Encoding::US_ASCII)
     assert_regexp_usascii_literal('/a#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/a#{"\x80"}/', nil, SyntaxError)
+    assert_regexp_usascii_literal('/a#{"\x80"}/', Encoding::ASCII_8BIT)
 
     assert_regexp_usascii_literal('/\x80/', Encoding::ASCII_8BIT)
     assert_regexp_usascii_literal('/\x80#{ }/', Encoding::ASCII_8BIT)
     assert_regexp_usascii_literal('/\x80#{"a"}/', Encoding::ASCII_8BIT)
     assert_regexp_usascii_literal('/\x80#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{"\x80"}/', nil, SyntaxError)
+    assert_regexp_usascii_literal('/\x80#{"\x80"}/', Encoding::ASCII_8BIT)
 
     assert_regexp_usascii_literal('/\u1234/', Encoding::UTF_8)
     assert_regexp_usascii_literal('/\u1234#{ }/', Encoding::UTF_8)
@@ -1713,6 +1719,23 @@ class TestM17N < Test::Unit::TestCase
       [e("\xB4\xC1\xBB\xFA")].inspect
     end
     assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
+  end
+
+  def test_encoding_names_of_default_internal
+    # [Bug #20595] [Bug #20598]
+    [
+      "default_internal.names",
+      "name_list",
+      "aliases.keys"
+    ].each do |method|
+      assert_separately(%w(-W0), <<~RUBY)
+        exp_name = "int" + "ernal"
+        Encoding.default_internal = Encoding::ASCII_8BIT
+        name = Encoding.#{method}.find { |x| x == exp_name }
+        Encoding.default_internal = nil
+        assert_equal exp_name, name, "Encoding.#{method} [Bug #20595] [Bug #20598]"
+      RUBY
+    end
   end
 
   def test_greek_capital_gap

@@ -19,18 +19,21 @@ struct rb_id_table *rb_id_table_create(size_t size);
 void rb_id_table_free(struct rb_id_table *tbl);
 void rb_id_table_clear(struct rb_id_table *tbl);
 
-size_t rb_id_table_size(const struct rb_id_table *tbl);
 size_t rb_id_table_memsize(const struct rb_id_table *tbl);
 
 int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val);
 int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp);
 int rb_id_table_delete(struct rb_id_table *tbl, ID id);
 
-typedef enum rb_id_table_iterator_result rb_id_table_update_callback_func_t(ID *id, VALUE *val, void *data, int existing);
+typedef enum rb_id_table_iterator_result rb_id_table_update_value_callback_func_t(VALUE *val, void *data, int existing);
 typedef enum rb_id_table_iterator_result rb_id_table_foreach_func_t(ID id, VALUE val, void *data);
 typedef enum rb_id_table_iterator_result rb_id_table_foreach_values_func_t(VALUE val, void *data);
 void rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data);
-void rb_id_table_foreach_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, rb_id_table_update_callback_func_t *replace, void *data);
 void rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data);
+void rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, rb_id_table_update_value_callback_func_t *replace, void *data);
+
+RUBY_SYMBOL_EXPORT_BEGIN
+size_t rb_id_table_size(const struct rb_id_table *tbl);
+RUBY_SYMBOL_EXPORT_END
 
 #endif	/* RUBY_ID_TABLE_H */

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'cgi'
+require 'cgi/util'
 
 ##
 # Outputs RDoc markup as HTML.
@@ -61,12 +61,15 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   #
   # These methods are used by regexp handling markup added by RDoc::Markup#add_regexp_handling.
 
+  # :nodoc:
+  URL_CHARACTERS_REGEXP_STR = /[A-Za-z0-9\-._~:\/\?#\[\]@!$&'\(\)*+,;%=]/.source
+
   ##
   # Adds regexp handlings.
 
   def init_regexp_handlings
     # external links
-    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
+    @markup.add_regexp_handling(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)#{URL_CHARACTERS_REGEXP_STR}+\w/,
                                 :HYPERLINK)
     init_link_notation_regexp_handlings
   end
@@ -82,7 +85,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def handle_RDOCLINK url # :nodoc:
     case url
     when /^rdoc-ref:/
-      $'
+      CGI.escapeHTML($')
     when /^rdoc-label:/
       text = $'
 
@@ -93,13 +96,11 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
              else                    text
              end
 
-      gen_url url, text
+      gen_url CGI.escapeHTML(url), CGI.escapeHTML(text)
     when /^rdoc-image:/
-      "<img src=\"#{$'}\">"
-    else
-      url =~ /\Ardoc-[a-z]+:/
-
-      $'
+      %[<img src=\"#{CGI.escapeHTML($')}\">]
+    when /\Ardoc-[a-z]+:/
+      CGI.escapeHTML($')
     end
   end
 
@@ -123,7 +124,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   #   Reference to a local file relative to the output directory.
 
   def handle_regexp_HYPERLINK(target)
-    url = target.text
+    url = CGI.escapeHTML(target.text)
 
     gen_url url, url
   end
@@ -152,9 +153,13 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       text =~ /^\{(.*)\}\[(.*?)\]$/ or text =~ /^(\S+)\[(.*?)\]$/
 
     label = $1
-    url   = $2
+    url   = CGI.escapeHTML($2)
 
-    label = handle_RDOCLINK label if /^rdoc-image:/ =~ label
+    if /^rdoc-image:/ =~ label
+      label = handle_RDOCLINK(label)
+    else
+      label = CGI.escapeHTML(label)
+    end
 
     gen_url url, label
   end
@@ -198,7 +203,9 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def accept_paragraph paragraph
     @res << "\n<p>"
     text = paragraph.text @hard_break
-    text = text.gsub(/\r?\n/, ' ')
+    text = text.gsub(/(#{SPACE_SEPARATED_LETTER_CLASS})?\K\r?\n(?=(?(1)(#{SPACE_SEPARATED_LETTER_CLASS})?))/o) {
+      defined?($2) && ' '
+    }
     @res << to_html(text)
     @res << "</p>\n"
   end
@@ -322,7 +329,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     header.zip(aligns) do |text, align|
       @res << '<th'
       @res << ' align="' << align << '"' if align
-      @res << '>' << CGI.escapeHTML(text) << "</th>\n"
+      @res << '>' << to_html(text) << "</th>\n"
     end
     @res << "</tr>\n</thead>\n<tbody>\n"
     body.each do |row|
@@ -330,7 +337,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       row.zip(aligns) do |text, align|
         @res << '<td'
         @res << ' align="' << align << '"' if align
-        @res << '>' << CGI.escapeHTML(text) << "</td>\n"
+        @res << '>' << to_html(text) << "</td>\n"
       end
       @res << "</tr>\n"
     end
@@ -426,7 +433,9 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   def parseable? text
     verbose, $VERBOSE = $VERBOSE, nil
-    eval("BEGIN {return true}\n#{text}")
+    catch(:valid) do
+      eval("BEGIN { throw :valid, true }\n#{text}")
+    end
   rescue SyntaxError
     false
   ensure
@@ -441,4 +450,3 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
 end
-

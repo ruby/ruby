@@ -37,3 +37,6 @@ Miscellaneous[rdoc-ref:syntax/miscellaneous.rdoc] ::
 
 Comments[rdoc-ref:syntax/comments.rdoc] ::
   Line and block code comments
+
+Operators[rdoc-ref:syntax/operators.rdoc] ::
+  Operator method behaviors

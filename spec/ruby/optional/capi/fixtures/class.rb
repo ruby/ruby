@@ -15,6 +15,16 @@ class CApiClassSpecs
     end
   end
 
+  class KeywordAlloc
+    attr_reader :initialized, :args, :kwargs
+
+    def initialize(*args, **kwargs)
+      @initialized = true
+      @args = args
+      @kwargs = kwargs
+    end
+  end
+
   class Attr
     def initialize
       @foo, @bar, @baz = 1, 2, 3

@@ -225,7 +225,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_method_should_use_refinements
-    skip if Test::Unit::Runner.current_repeat_count > 0
+    omit if Test::Unit::Runner.current_repeat_count > 0
 
     foo = Foo.new
     assert_raise(NameError) { foo.method(:z) }
@@ -248,7 +248,7 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
   def test_instance_method_should_use_refinements
-    skip if Test::Unit::Runner.current_repeat_count > 0
+    omit if Test::Unit::Runner.current_repeat_count > 0
 
     foo = Foo.new
     assert_raise(NameError) { Foo.instance_method(:z) }
@@ -754,134 +754,30 @@ class TestRefinement < Test::Unit::TestCase
     $VERBOSE = verbose
   end
 
-  module IncludeIntoRefinement
-    class C
-      def bar
-        return "C#bar"
-      end
-
-      def baz
-        return "C#baz"
-      end
-    end
-
-    module Mixin
-      def foo
-        return "Mixin#foo"
-      end
-
-      def bar
-        return super << " Mixin#bar"
-      end
-
-      def baz
-        return super << " Mixin#baz"
-      end
-    end
-
-    module M
-      refine C do
-        TestRefinement.suppress_verbose do
-          include Mixin
-        end
-
-        def baz
-          return super << " M#baz"
-        end
-      end
-    end
-  end
-
-  eval <<-EOF, Sandbox::BINDING
-    using TestRefinement::IncludeIntoRefinement::M
-
-    module TestRefinement::IncludeIntoRefinement::User
-      def self.invoke_foo_on(x)
-        x.foo
-      end
-
-      def self.invoke_bar_on(x)
-        x.bar
-      end
-
-      def self.invoke_baz_on(x)
-        x.baz
-      end
-    end
-  EOF
-
   def test_include_into_refinement
-    x = IncludeIntoRefinement::C.new
-    assert_equal("Mixin#foo", IncludeIntoRefinement::User.invoke_foo_on(x))
-    assert_equal("C#bar Mixin#bar",
-                 IncludeIntoRefinement::User.invoke_bar_on(x))
-    assert_equal("C#baz Mixin#baz M#baz",
-                 IncludeIntoRefinement::User.invoke_baz_on(x))
-  end
+    assert_raise(TypeError) do
+      c = Class.new
+      mixin = Module.new
 
-  module PrependIntoRefinement
-    class C
-      def bar
-        return "C#bar"
-      end
-
-      def baz
-        return "C#baz"
-      end
-    end
-
-    module Mixin
-      def foo
-        return "Mixin#foo"
-      end
-
-      def bar
-        return super << " Mixin#bar"
-      end
-
-      def baz
-        return super << " Mixin#baz"
-      end
-    end
-
-    module M
-      refine C do
-        TestRefinement.suppress_verbose do
-          prepend Mixin
-        end
-
-        def baz
-          return super << " M#baz"
+      Module.new do
+        refine c do
+          include mixin
         end
       end
     end
   end
-
-  eval <<-EOF, Sandbox::BINDING
-    using TestRefinement::PrependIntoRefinement::M
-
-    module TestRefinement::PrependIntoRefinement::User
-      def self.invoke_foo_on(x)
-        x.foo
-      end
-
-      def self.invoke_bar_on(x)
-        x.bar
-      end
-
-      def self.invoke_baz_on(x)
-        x.baz
-      end
-    end
-  EOF
 
   def test_prepend_into_refinement
-    x = PrependIntoRefinement::C.new
-    assert_equal("Mixin#foo", PrependIntoRefinement::User.invoke_foo_on(x))
-    assert_equal("C#bar Mixin#bar",
-                 PrependIntoRefinement::User.invoke_bar_on(x))
-    assert_equal("C#baz M#baz Mixin#baz",
-                 PrependIntoRefinement::User.invoke_baz_on(x))
+    assert_raise(TypeError) do
+      c = Class.new
+      mixin = Module.new
+
+      Module.new do
+        refine c do
+          prepend mixin
+        end
+      end
+    end
   end
 
   PrependAfterRefine_CODE = <<-EOC
@@ -923,13 +819,13 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_prepend_after_refine_wb_miss
     if /\A(arm|mips)/ =~ RUBY_PLATFORM
-      skip "too slow cpu"
+      omit "too slow cpu"
     end
     assert_normal_exit %Q{
       GC.stress = true
       10.times{
         #{PrependAfterRefine_CODE}
-        undef PrependAfterRefine
+        Object.send(:remove_const, :PrependAfterRefine)
       }
     }, timeout: 60
   end
@@ -1148,7 +1044,7 @@ class TestRefinement < Test::Unit::TestCase
       end
       using Test
       def t
-        'Refinements are broken!'.chop!
+        'Refinements are broken!'.dup.chop!
       end
       t
       module Test
@@ -1308,6 +1204,41 @@ class TestRefinement < Test::Unit::TestCase
         m
         42.m
     INPUT
+  end
+
+  def test_refined_protected_methods
+    assert_separately([], <<-"end;")
+    bug18806 = '[ruby-core:108705] [Bug #18806]'
+    class C; end
+
+    module R
+      refine C do
+        def refined_call_foo = foo
+        def refined_call_foo_on(other) = other.foo
+
+        protected
+
+        def foo = :foo
+      end
+    end
+
+    class C
+      using R
+
+      def call_foo = foo
+      def call_foo_on(other) = other.foo
+    end
+
+    c = C.new
+    assert_equal :foo, c.call_foo, bug18806
+    assert_equal :foo, c.call_foo_on(c), bug18806
+    assert_equal :foo, c.call_foo_on(C.new), bug18806
+
+    using R
+    assert_equal :foo, c.refined_call_foo, bug18806
+    assert_equal :foo, c.refined_call_foo_on(c), bug18806
+    assert_equal :foo, c.refined_call_foo_on(C.new), bug18806
+    end;
   end
 
   def test_refine_basic_object
@@ -1675,18 +1606,35 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       using R
+      def m
+        C.new.m
+      end
+
       assert_equal(:foo, C.new.m)
+      assert_equal(:foo, m)
 
       module R
         refine C do
+
+          assert_equal(:foo, C.new.m)
+          assert_equal(:foo, m)
+
           alias m m
+
+          assert_equal(:foo, C.new.m)
+          assert_equal(:foo, m)
+
           def m
             :bar
           end
+
+          assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
+          assert_equal(:bar, m, "[Bug #20285]")
         end
       end
 
       assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
+      assert_equal(:bar, m, "[Bug #20285]")
     end;
   end
 
@@ -1791,6 +1739,8 @@ class TestRefinement < Test::Unit::TestCase
       refine Object do
         def in_ref_a
         end
+
+        RefA.const_set(:REF, self)
       end
     end
 
@@ -1798,6 +1748,8 @@ class TestRefinement < Test::Unit::TestCase
       refine Object do
         def in_ref_b
         end
+
+        RefB.const_set(:REF, self)
       end
     end
 
@@ -1807,23 +1759,28 @@ class TestRefinement < Test::Unit::TestCase
       refine Object do
         def in_ref_c
         end
+
+        RefC.const_set(:REF, self)
       end
     end
 
     module Foo
       using RefB
       USED_MODS = Module.used_modules
+      USED_REFS = Module.used_refinements
     end
 
     module Bar
       using RefC
       USED_MODS = Module.used_modules
+      USED_REFS = Module.used_refinements
     end
 
     module Combined
       using RefA
       using RefB
       USED_MODS = Module.used_modules
+      USED_REFS = Module.used_refinements
     end
   end
 
@@ -1833,6 +1790,47 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal [ref::RefB], ref::Foo::USED_MODS
     assert_equal [ref::RefC], ref::Bar::USED_MODS
     assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_MODS
+  end
+
+  def test_used_refinements
+    ref = VisibleRefinements
+    assert_equal [], Module.used_refinements
+    assert_equal [ref::RefB::REF], ref::Foo::USED_REFS
+    assert_equal [ref::RefC::REF], ref::Bar::USED_REFS
+    assert_equal [ref::RefB::REF, ref::RefA::REF], ref::Combined::USED_REFS
+  end
+
+  def test_refinements
+    int_refinement = nil
+    str_refinement = nil
+    m = Module.new {
+      refine Integer do
+        int_refinement = self
+      end
+
+      refine String do
+        str_refinement = self
+      end
+    }
+    assert_equal([int_refinement, str_refinement], m.refinements)
+  end
+
+  def test_target
+    refinements = Module.new {
+      refine Integer do
+      end
+
+      refine String do
+      end
+    }.refinements
+    assert_equal(Integer, refinements[0].target)
+    assert_warn(/Refinement#refined_class is deprecated and will be removed in Ruby 3.4; use Refinement#target instead/) do
+      assert_equal(Integer, refinements[0].refined_class)
+    end
+    assert_equal(String, refinements[1].target)
+    assert_warn(/Refinement#refined_class is deprecated and will be removed in Ruby 3.4; use Refinement#target instead/) do
+      assert_equal(String, refinements[1].refined_class)
+    end
   end
 
   def test_warn_setconst_in_refinmenet
@@ -1979,10 +1977,10 @@ class TestRefinement < Test::Unit::TestCase
     m = Module.new do
       r = refine(String) {def test;:ok end}
     end
-    assert_raise_with_message(ArgumentError, /refinement/, bug) do
+    assert_raise_with_message(TypeError, /refinement/, bug) do
       m.module_eval {include r}
     end
-    assert_raise_with_message(ArgumentError, /refinement/, bug) do
+    assert_raise_with_message(TypeError, /refinement/, bug) do
       m.module_eval {prepend r}
     end
   end
@@ -2626,28 +2624,8 @@ class TestRefinement < Test::Unit::TestCase
       end
     end
 
-    module D
-      refine A do
-        TestRefinement.suppress_verbose do
-          include B
-        end
-
-        def foo
-          "refined"
-        end
-      end
-    end
-
     module UsingC
       using C
-
-      def self.call_bar
-        A.new.bar
-      end
-    end
-
-    module UsingD
-      using D
 
       def self.call_bar
         A.new.bar
@@ -2657,7 +2635,6 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_import_methods
     assert_equal("refined:bar", TestImport::UsingC.call_bar)
-    assert_equal("original:bar", TestImport::UsingD.call_bar)
 
     assert_raise(ArgumentError) do
       Module.new do
@@ -2670,6 +2647,75 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_inherit_singleton_methods_of_module
     assert_equal([], Refinement.used_modules)
+  end
+
+  def test_inlinecache
+    assert_separately([], <<-"end;")
+      module R
+        refine String do
+          def to_s = :R
+        end
+      end
+
+      2.times{|i|
+        s = ''.to_s
+        assert_equal '', s if i == 0
+        assert_equal :R, s if i == 1
+        using R            if i == 0
+        assert_equal :R, ''.to_s
+      }
+    end;
+  end
+
+  def test_inline_cache_invalidation
+    klass = Class.new do
+      def cached_foo_callsite = foo
+
+      def foo = :v1
+
+      host = self
+      @refinement = Module.new do
+        refine(host) do
+          def foo = :unused
+        end
+      end
+    end
+
+    obj = klass.new
+    obj.cached_foo_callsite # prime cache
+    klass.class_eval do
+      def foo = :v2 # invalidate
+    end
+    assert_equal(:v2, obj.cached_foo_callsite)
+  end
+
+  # [Bug #20302]
+  def test_multiple_refinements_for_same_module
+    assert_in_out_err([], <<-INPUT, %w(:f2 :f1), [])
+      module M1
+        refine(Kernel) do
+          def f1 = :f1
+        end
+      end
+
+      module M2
+        refine(Kernel) do
+          def f2 = :f2
+        end
+      end
+
+      class Foo
+        using M1
+        using M2
+
+        def test
+          p f2
+          p f1
+        end
+      end
+
+      Foo.new.test
+    INPUT
   end
 
   private

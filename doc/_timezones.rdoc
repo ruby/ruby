@@ -1,0 +1,156 @@
+== Timezone Specifiers
+
+Certain +Time+ methods accept arguments that specify timezones:
+
+- Time.at: keyword argument +in:+.
+- Time.new: positional argument +zone+ or keyword argument +in:+.
+- Time.now: keyword argument +in:+.
+- Time#getlocal: positional argument +zone+.
+- Time#localtime: positional argument +zone+.
+
+The value given with any of these must be one of the following
+(each detailed below):
+
+- {Hours/minutes offset}[rdoc-ref:Time@Hours-2FMinutes+Offsets].
+- {Single-letter offset}[rdoc-ref:Time@Single-Letter+Offsets].
+- {Integer offset}[rdoc-ref:Time@Integer+Offsets].
+- {Timezone object}[rdoc-ref:Time@Timezone+Objects].
+- {Timezone name}[rdoc-ref:Time@Timezone+Names].
+
+=== Hours/Minutes Offsets
+
+The zone value may be a string offset from UTC
+in the form <tt>'+HH:MM'</tt> or <tt>'-HH:MM'</tt>,
+where:
+
+- +HH+ is the 2-digit hour in the range <tt>0..23</tt>.
+- +MM+ is the 2-digit minute in the range <tt>0..59</tt>.
+
+Examples:
+
+  t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+  Time.at(t, in: '-23:59')            # => 1999-12-31 20:16:01 -2359
+  Time.at(t, in: '+23:59')            # => 2000-01-02 20:14:01 +2359
+
+=== Single-Letter Offsets
+
+The zone value may be a  letter in the range <tt>'A'..'I'</tt>
+or <tt>'K'..'Z'</tt>;
+see {List of military time zones}[https://en.wikipedia.org/wiki/List_of_military_time_zones]:
+
+  t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+  Time.at(t, in: 'A')                 # => 2000-01-01 21:15:01 +0100
+  Time.at(t, in: 'I')                 # => 2000-01-02 05:15:01 +0900
+  Time.at(t, in: 'K')                 # => 2000-01-02 06:15:01 +1000
+  Time.at(t, in: 'Y')                 # => 2000-01-01 08:15:01 -1200
+  Time.at(t, in: 'Z')                 # => 2000-01-01 20:15:01 UTC
+
+=== \Integer Offsets
+
+The zone value may be an integer number of seconds
+in the range <tt>-86399..86399</tt>:
+
+  t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
+  Time.at(t, in: -86399)              # => 1999-12-31 20:15:02 -235959
+  Time.at(t, in: 86399)               # => 2000-01-02 20:15:00 +235959
+
+=== Timezone Objects
+
+The zone value may be an object responding to certain timezone methods, an
+instance of {Timezone}[https://github.com/panthomakos/timezone] and
+{TZInfo}[https://tzinfo.github.io] for example.
+
+The timezone methods are:
+
+- +local_to_utc+:
+
+  - Called when Time.new is invoked with +tz+
+    as the value of positional argument +zone+ or keyword argument +in:+.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the UTC timezone.
+
+- +utc_to_local+:
+
+  - Called when Time.at or Time.now is invoked with +tz+
+    as the value for keyword argument +in:+,
+    and when Time#getlocal or Time#localtime is called with +tz+
+    as the value for positional argument +zone+.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the local timezone.
+
+A custom timezone class may have these instance methods,
+which will be called if defined:
+
+- +abbr+:
+
+  - Called when Time#strftime is invoked with a format involving <tt>%Z</tt>.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a string abbreviation for the timezone name.
+
+- +dst?+:
+
+  - Called when Time.at or Time.now is invoked with +tz+
+    as the value for keyword argument +in:+,
+    and when Time#getlocal or Time#localtime is called with +tz+
+    as the value for positional argument +zone+.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: whether the time is daylight saving time.
+
+- +name+:
+
+  - Called when <tt>Marshal.dump(t)</tt> is invoked
+  - Argument: none.
+  - Returns: the string name of the timezone.
+
+==== +Time+-Like Objects
+
+A +Time+-like object is a container object capable of interfacing with
+timezone libraries for timezone conversion.
+
+The argument to the timezone conversion methods above will have attributes
+similar to Time, except that timezone related attributes are meaningless.
+
+The objects returned by +local_to_utc+ and +utc_to_local+ methods of the
+timezone object may be of the same class as their arguments, of arbitrary
+object classes, or of class Integer.
+
+For a returned class other than +Integer+, the class must have the
+following methods:
+
+- +year+
+- +mon+
+- +mday+
+- +hour+
+- +min+
+- +sec+
+- +isdst+
+- +to_i+
+
+For a returned +Integer+, its components, decomposed in UTC, are
+interpreted as times in the specified timezone.
+
+=== Timezone Names
+
+If the class (the receiver of class methods, or the class of the receiver
+of instance methods) has +find_timezone+ singleton method, this method is
+called to achieve the corresponding timezone object from a timezone name.
+
+For example, using {Timezone}[https://github.com/panthomakos/timezone]:
+    class TimeWithTimezone < Time
+      require 'timezone'
+      def self.find_timezone(z) = Timezone[z]
+    end
+
+    TimeWithTimezone.now(in: "America/New_York")        #=> 2023-12-25 00:00:00 -0500
+    TimeWithTimezone.new("2023-12-25 America/New_York") #=> 2023-12-25 00:00:00 -0500
+
+Or, using {TZInfo}[https://tzinfo.github.io]:
+    class TimeWithTZInfo < Time
+      require 'tzinfo'
+      def self.find_timezone(z) = TZInfo::Timezone.get(z)
+    end
+
+    TimeWithTZInfo.now(in: "America/New_York")          #=> 2023-12-25 00:00:00 -0500
+    TimeWithTZInfo.new("2023-12-25 America/New_York")   #=> 2023-12-25 00:00:00 -0500
+
+You can define this method per subclasses, or on the toplevel Time class.

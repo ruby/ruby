@@ -1,7 +1,8 @@
 # frozen_string_literal: true
-require 'rubygems'
-require 'rubygems/source_list'
-require_relative 'helper'
+
+require "rubygems"
+require "rubygems/source_list"
+require_relative "helper"
 
 class TestGemSourceList < Gem::TestCase
   def setup
@@ -36,7 +37,7 @@ class TestGemSourceList < Gem::TestCase
 
     assert_kind_of Gem::Source, source
 
-    assert_kind_of URI, source.uri
+    assert_kind_of Gem::URI, source.uri
     assert_equal source.uri.to_s, @uri
 
     assert_equal [source], sl.sources
@@ -45,7 +46,7 @@ class TestGemSourceList < Gem::TestCase
   def test_clear
     sl = Gem::SourceList.new
 
-    sl << 'http://source.example'
+    sl << "http://source.example"
 
     sl.clear
 
@@ -76,7 +77,7 @@ class TestGemSourceList < Gem::TestCase
 
     assert_empty sl
 
-    sl << 'http://source.example'
+    sl << "http://source.example"
 
     refute_empty sl
   end
@@ -98,7 +99,7 @@ class TestGemSourceList < Gem::TestCase
 
   def test_include_eh
     assert @sl.include?(@uri), "string comparison not working"
-    assert @sl.include?(URI.parse(@uri)), "uri comparison not working"
+    assert @sl.include?(Gem::URI.parse(@uri)), "uri comparison not working"
   end
 
   def test_include_matches_a_source

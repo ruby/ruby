@@ -1,4 +1,12 @@
 *.md
-*.rdoc
-NEWS-*
+*.rb
+[^_]*.rdoc
+contributing
+NEWS
 syntax
+optparse
+rdoc
+regexp
+rjit
+yjit
+ruby

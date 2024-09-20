@@ -221,6 +221,37 @@ describe "Signal.trap" do
       Signal.trap(:HUP, @saved_trap).should equal(@proc)
     end
 
+    it "calls #to_str on an object to convert to a String" do
+      obj = mock("signal")
+      obj.should_receive(:to_str).exactly(2).times.and_return("HUP")
+      Signal.trap obj, @proc
+      Signal.trap(obj, @saved_trap).should equal(@proc)
+    end
+
+    it "accepts Integer values" do
+      hup = Signal.list["HUP"]
+      Signal.trap hup, @proc
+      Signal.trap(hup, @saved_trap).should equal(@proc)
+    end
+
+    it "does not call #to_int on an object to convert to an Integer" do
+      obj = mock("signal")
+      obj.should_not_receive(:to_int)
+      -> { Signal.trap obj, @proc }.should raise_error(ArgumentError, /bad signal type/)
+    end
+
+    it "raises ArgumentError when passed unknown signal" do
+      -> { Signal.trap(300) { } }.should raise_error(ArgumentError, "invalid signal number (300)")
+      -> { Signal.trap("USR10") { } }.should raise_error(ArgumentError, /\Aunsupported signal [`']SIGUSR10'\z/)
+      -> { Signal.trap("SIGUSR10") { } }.should raise_error(ArgumentError, /\Aunsupported signal [`']SIGUSR10'\z/)
+    end
+
+    it "raises ArgumentError when passed signal is not Integer, String or Symbol" do
+      -> { Signal.trap(nil) { } }.should raise_error(ArgumentError, "bad signal type NilClass")
+      -> { Signal.trap(100.0) { } }.should raise_error(ArgumentError, "bad signal type Float")
+      -> { Signal.trap(Rational(100)) { } }.should raise_error(ArgumentError, "bad signal type Rational")
+    end
+
     # See man 2 signal
     %w[KILL STOP].each do |signal|
       it "raises ArgumentError or Errno::EINVAL for SIG#{signal}" do
@@ -230,6 +261,14 @@ describe "Signal.trap" do
           [ArgumentError, Errno::EINVAL].should include(e.class)
           e.message.should =~ /Invalid argument|Signal already used by VM or OS/
         }
+      end
+    end
+
+    %w[SEGV BUS ILL FPE VTALRM].each do |signal|
+      it "raises ArgumentError for SIG#{signal} which is reserved by Ruby" do
+        -> {
+          Signal.trap(signal, -> {})
+        }.should raise_error(ArgumentError, "can't trap reserved signal: SIG#{signal}")
       end
     end
 
@@ -254,12 +293,10 @@ describe "Signal.trap" do
         r.close
         loop { w.write("a"*1024) }
       RUBY
-      out = ruby_exe(code, exit_status: nil)
+      out = ruby_exe(code, exit_status: :SIGPIPE)
       status = $?
       out.should == "nil\n"
       status.should.signaled?
-      status.termsig.should be_kind_of(Integer)
-      Signal.signame(status.termsig).should == "PIPE"
     end
   end
 

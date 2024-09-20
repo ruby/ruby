@@ -8,6 +8,7 @@ class Reline::Test < Reline::TestCase
   end
 
   def setup
+    Reline.send(:test_mode)
     Reline.output_modifier_proc = nil
     Reline.completion_proc = nil
     Reline.prompt_proc = nil
@@ -137,14 +138,14 @@ class Reline::Test < Reline::TestCase
   end
 
   def test_completion_proc
-    skip unless Reline.completion_proc == nil
+    omit unless Reline.completion_proc == nil
     # Another test can set Reline.completion_proc
 
     # assert_equal(nil, Reline.completion_proc)
 
-    p = proc {}
-    Reline.completion_proc = p
-    assert_equal(p, Reline.completion_proc)
+    dummy_proc = proc {}
+    Reline.completion_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.completion_proc)
 
     l = lambda {}
     Reline.completion_proc = l
@@ -161,9 +162,9 @@ class Reline::Test < Reline::TestCase
   def test_output_modifier_proc
     assert_equal(nil, Reline.output_modifier_proc)
 
-    p = proc {}
-    Reline.output_modifier_proc = p
-    assert_equal(p, Reline.output_modifier_proc)
+    dummy_proc = proc {}
+    Reline.output_modifier_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.output_modifier_proc)
 
     l = lambda {}
     Reline.output_modifier_proc = l
@@ -180,9 +181,9 @@ class Reline::Test < Reline::TestCase
   def test_prompt_proc
     assert_equal(nil, Reline.prompt_proc)
 
-    p = proc {}
-    Reline.prompt_proc = p
-    assert_equal(p, Reline.prompt_proc)
+    dummy_proc = proc {}
+    Reline.prompt_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.prompt_proc)
 
     l = lambda {}
     Reline.prompt_proc = l
@@ -199,9 +200,9 @@ class Reline::Test < Reline::TestCase
   def test_auto_indent_proc
     assert_equal(nil, Reline.auto_indent_proc)
 
-    p = proc {}
-    Reline.auto_indent_proc = p
-    assert_equal(p, Reline.auto_indent_proc)
+    dummy_proc = proc {}
+    Reline.auto_indent_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.auto_indent_proc)
 
     l = lambda {}
     Reline.auto_indent_proc = l
@@ -218,9 +219,9 @@ class Reline::Test < Reline::TestCase
   def test_pre_input_hook
     assert_equal(nil, Reline.pre_input_hook)
 
-    p = proc {}
-    Reline.pre_input_hook = p
-    assert_equal(p, Reline.pre_input_hook)
+    dummy_proc = proc {}
+    Reline.pre_input_hook = dummy_proc
+    assert_equal(dummy_proc, Reline.pre_input_hook)
 
     l = lambda {}
     Reline.pre_input_hook = l
@@ -230,9 +231,9 @@ class Reline::Test < Reline::TestCase
   def test_dig_perfect_match_proc
     assert_equal(nil, Reline.dig_perfect_match_proc)
 
-    p = proc {}
-    Reline.dig_perfect_match_proc = p
-    assert_equal(p, Reline.dig_perfect_match_proc)
+    dummy_proc = proc {}
+    Reline.dig_perfect_match_proc = dummy_proc
+    assert_equal(dummy_proc, Reline.dig_perfect_match_proc)
 
     l = lambda {}
     Reline.dig_perfect_match_proc = l
@@ -284,7 +285,7 @@ class Reline::Test < Reline::TestCase
     input, to_write = IO.pipe
     to_read, output = IO.pipe
     unless Reline.__send__(:input=, input)
-      omit "Setting to input is not effective on #{Reline::IOGate}"
+      omit "Setting to input is not effective on #{Reline.core.io_gate}"
     end
     Reline.output = output
 
@@ -302,12 +303,57 @@ class Reline::Test < Reline::TestCase
 
   def test_vi_editing_mode
     Reline.vi_editing_mode
-    assert_equal(Reline::KeyActor::ViInsert, Reline.send(:core).config.editing_mode.class)
+    assert_equal(:vi_insert, Reline.core.config.instance_variable_get(:@editing_mode_label))
   end
 
   def test_emacs_editing_mode
     Reline.emacs_editing_mode
-    assert_equal(Reline::KeyActor::Emacs, Reline.send(:core).config.editing_mode.class)
+    assert_equal(:emacs, Reline.core.config.instance_variable_get(:@editing_mode_label))
+  end
+
+  def test_add_dialog_proc
+    dummy_proc = proc {}
+    Reline.add_dialog_proc(:test_proc, dummy_proc)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+
+    dummy_proc_2 = proc {}
+    Reline.add_dialog_proc(:test_proc, dummy_proc_2)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc_2, d.dialog_proc)
+
+    Reline.add_dialog_proc(:test_proc, nil)
+    assert_nil(Reline.dialog_proc(:test_proc))
+
+    l = lambda {}
+    Reline.add_dialog_proc(:test_lambda, l)
+    d = Reline.dialog_proc(:test_lambda)
+    assert_equal(l, d.dialog_proc)
+
+    assert_equal(nil, Reline.dialog_proc(:test_nothing))
+
+    assert_raise(ArgumentError) { Reline.add_dialog_proc(:error, 42) }
+    assert_raise(ArgumentError) { Reline.add_dialog_proc(:error, 'hoge') }
+    assert_raise(ArgumentError) { Reline.add_dialog_proc('error', proc {} ) }
+
+    dummy = DummyCallbackObject.new
+    Reline.add_dialog_proc(:dummy, dummy)
+    d = Reline.dialog_proc(:dummy)
+    assert_equal(dummy, d.dialog_proc)
+  end
+
+  def test_add_dialog_proc_with_context
+    dummy_proc = proc {}
+    array = Array.new
+    Reline.add_dialog_proc(:test_proc, dummy_proc, array)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+    assert_equal(array, d.context)
+
+    Reline.add_dialog_proc(:test_proc, dummy_proc, nil)
+    d = Reline.dialog_proc(:test_proc)
+    assert_equal(dummy_proc, d.dialog_proc)
+    assert_equal(nil, d.context)
   end
 
   def test_readmultiline
@@ -322,26 +368,74 @@ class Reline::Test < Reline::TestCase
     assert_include(Reline.private_instance_methods, :readline)
   end
 
-  def test_inner_readline
-    # TODO in Reline::Core
-  end
-
   def test_read_io
     # TODO in Reline::Core
   end
 
-  def test_read_escaped_key
-    # TODO in Reline::Core
+  def test_dumb_terminal
+    lib = File.expand_path("../../lib", __dir__)
+    out = IO.popen([{"TERM"=>"dumb"}, Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", "p Reline.core.io_gate"], &:read)
+    assert_match(/#<Reline::Dumb/, out.chomp)
   end
 
-  def test_may_req_ambiguous_char_width
-    # TODO in Reline::Core
+  def test_print_prompt_before_everything_else
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p Reline::IOGate.class; p Reline.readline 'prompt> '"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "abc\n"
+      io.close_write
+      io.read
+    end
+    assert_match(/\AReline::ANSI\nprompt> /, out)
+  end
+
+  def test_read_eof_returns_input
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-a"
+      io.close_write
+      io.read
+    end
+    assert_include(out, { result: 'a' }.inspect)
+  end
+
+  def test_read_eof_returns_nil_if_empty
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = "p result: Reline.readline"
+    out = IO.popen([Reline.test_rubybin, "-I#{lib}", "-rreline", "-e", code], "r+") do |io|
+      io.write "a\C-h"
+      io.close_write
+      io.read
+    end
+    assert_include(out, { result: nil }.inspect)
+  end
+
+  def test_require_reline_should_not_trigger_winsize
+    pend if win?
+    lib = File.expand_path("../../lib", __dir__)
+    code = <<~RUBY
+      require "io/console"
+      def STDIN.tty?; true; end
+      def STDOUT.tty?; true; end
+      def STDIN.winsize; raise; end
+      require("reline") && p(Reline.core.io_gate)
+    RUBY
+    out = IO.popen([{}, Reline.test_rubybin, "-I#{lib}", "-e", code], &:read)
+    assert_include(out.chomp, "Reline::ANSI")
+  end
+
+  def win?
+    /mswin|mingw/.match?(RUBY_PLATFORM)
   end
 
   def get_reline_encoding
-    if encoding = Reline::IOGate.encoding
+    if encoding = Reline.core.encoding
       encoding
-    elsif RUBY_PLATFORM =~ /mswin|mingw/
+    elsif win?
       Encoding::UTF_8
     else
       Encoding::default_external

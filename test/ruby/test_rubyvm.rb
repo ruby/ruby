@@ -1,14 +1,13 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestRubyVM < Test::Unit::TestCase
   def test_stat
     assert_kind_of Hash, RubyVM.stat
-    assert_kind_of Integer, RubyVM.stat[:global_constant_state]
 
     RubyVM.stat(stat = {})
     assert_not_empty stat
-    assert_equal stat[:global_constant_state], RubyVM.stat(:global_constant_state)
   end
 
   def test_stat_unknown
@@ -34,6 +33,9 @@ class TestRubyVM < Test::Unit::TestCase
   end
 
   def test_keep_script_lines
+    omit if ParserSupport.prism_enabled?
+    pend if ENV['RUBY_ISEQ_DUMP_DEBUG'] # TODO
+
     prev_conf = RubyVM.keep_script_lines
 
     # keep

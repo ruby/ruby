@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle show", :bundler => "< 3" do
+RSpec.describe "bundle show", bundler: "< 3" do
   context "with a standard Gemfile" do
     before :each do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
     end
@@ -50,14 +50,14 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "complains if gem not in bundle" do
-      bundle "show missing", :raise_on_error => false
+      bundle "show missing", raise_on_error: false
       expect(err).to match(/could not find gem 'missing'/i)
     end
 
     it "prints path of all gems in bundle sorted by name" do
       bundle "show --paths"
 
-      expect(out).to include(default_bundle_path("gems", "rake-13.0.1").to_s)
+      expect(out).to include(default_bundle_path("gems", "rake-#{rake_version}").to_s)
       expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       # Gem names are the last component of their path.
@@ -100,11 +100,11 @@ RSpec.describe "bundle show", :bundler => "< 3" do
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle :show
-      expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
+      expect(out).to include("foo (1.0 #{@git.ref_for("main", 6)}")
     end
 
-    it "prints out branch names other than master" do
-      update_git "foo", :branch => "omg" do |s|
+    it "prints out branch names other than main" do
+      update_git "foo", branch: "omg" do |s|
         s.write "lib/foo.rb", "FOO = '1.0.omg'"
       end
       @revision = revision_for(lib_path("foo-1.0"))[0...6]
@@ -129,7 +129,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
     end
 
     it "handles when a version is a '-' prerelease" do
-      @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
+      @git = build_git("foo", "1.0.0-beta.1", path: lib_path("foo"))
       install_gemfile <<-G
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
       G
@@ -142,20 +142,20 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
   context "in a fresh gem in a blank git repo" do
     before :each do
-      build_git "foo", :path => lib_path("foo")
+      build_git "foo", path: lib_path("foo")
       File.open(lib_path("foo/Gemfile"), "w") {|f| f.puts "gemspec" }
-      sys_exec "rm -rf .git && git init", :dir => lib_path("foo")
+      sys_exec "rm -rf .git && git init", dir: lib_path("foo")
     end
 
     it "does not output git errors" do
-      bundle :show, :dir => lib_path("foo")
+      bundle :show, dir: lib_path("foo")
       expect(err_without_deprecations).to be_empty
     end
   end
 
   it "performs an automatic bundle install" do
     gemfile <<-G
-      source "#{file_uri_for(gem_repo1)}"
+      source "https://gem.repo1"
       gem "foo"
     G
 
@@ -167,26 +167,26 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   context "with a valid regexp for gem name" do
     it "presents alternatives", :readline do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-        gem "rack-obama"
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
       G
 
       bundle "show rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>)?\z/)
+      expect(out).to match(/\A1 : myrack\n2 : myrack-obama\n0 : - exit -(\n>|\z)/)
     end
   end
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
 
       invalid_regexp = "[]"
 
-      bundle "show #{invalid_regexp}", :raise_on_error => false
+      bundle "show #{invalid_regexp}", raise_on_error: false
       expect(err).to include("Could not find gem '#{invalid_regexp}'.")
     end
   end
@@ -199,7 +199,7 @@ RSpec.describe "bundle show", :bundler => "< 3" do
 
     it "doesn't update gems to newer versions" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails"
       G
 
@@ -219,6 +219,6 @@ RSpec.describe "bundle show", :bundler => "< 3" do
   end
 end
 
-RSpec.describe "bundle show", :bundler => "3" do
+RSpec.describe "bundle show", bundler: "3" do
   pending "shows a friendly error about the command removal"
 end

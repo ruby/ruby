@@ -66,3 +66,5 @@ PublicMSpecMatchers = Class.new {
   include MSpecMatchers
   public :raise_error
 }.new
+
+BACKTRACE_QUOTE = RUBY_VERSION >= "3.4" ? "'" : "`"

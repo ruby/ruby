@@ -35,6 +35,7 @@ static ID id_lchmod;
 static ID id_lchown;
 static ID id_link;
 static ID id_lstat;
+static ID id_lutime;
 static ID id_mkdir;
 static ID id_mtime;
 static ID id_open;
@@ -126,32 +127,6 @@ path_freeze(VALUE self)
 {
     rb_call_super(0, 0);
     rb_str_freeze(get_strpath(self));
-    return self;
-}
-
-/*
- * call-seq:
- *   pathname.taint -> obj
- *
- * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
- */
-static VALUE
-path_taint(VALUE self)
-{
-    rb_warn("Pathname#taint is deprecated and will be removed in Ruby 3.2.");
-    return self;
-}
-
-/*
- * call-seq:
- *   pathname.untaint -> obj
- *
- * Returns pathname.  This method is deprecated and will be removed in Ruby 3.2.
- */
-static VALUE
-path_untaint(VALUE self)
-{
-    rb_warn("Pathname#untaint is deprecated and will be removed in Ruby 3.2.");
     return self;
 }
 
@@ -504,7 +479,6 @@ path_atime(VALUE self)
     return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
-#if defined(HAVE_RB_FILE_S_BIRTHTIME)
 /*
  * call-seq:
  *   pathname.birthtime	-> time
@@ -519,10 +493,6 @@ path_birthtime(VALUE self)
 {
     return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
-#else
-/* check at compilation time for `respond_to?` */
-# define path_birthtime rb_f_notimplement
-#endif
 
 /*
  * call-seq:
@@ -762,6 +732,19 @@ static VALUE
 path_utime(VALUE self, VALUE atime, VALUE mtime)
 {
     return rb_funcall(rb_cFile, id_utime, 3, atime, mtime, get_strpath(self));
+}
+
+/*
+ * Update the access and modification times of the file.
+ *
+ * Same as Pathname#utime, but does not follow symbolic links.
+ *
+ * See File.lutime.
+ */
+static VALUE
+path_lutime(VALUE self, VALUE atime, VALUE mtime)
+{
+    return rb_funcall(rb_cFile, id_lutime, 3, atime, mtime, get_strpath(self));
 }
 
 /*
@@ -1212,7 +1195,7 @@ path_entries(VALUE self)
     ary = rb_funcall(rb_cDir, id_entries, 1, str);
     ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	VALUE elt = RARRAY_AREF(ary, i);
+        VALUE elt = RARRAY_AREF(ary, i);
         elt = rb_class_new_instance(1, &elt, klass);
         rb_ary_store(ary, i, elt);
     }
@@ -1274,6 +1257,7 @@ static VALUE
 path_each_entry(VALUE self)
 {
     VALUE args[1];
+    RETURN_ENUMERATOR(self, 0, 0);
 
     args[0] = get_strpath(self);
     return rb_block_call(rb_cDir, id_foreach, 1, args, each_entry_i, rb_obj_class(self));
@@ -1464,6 +1448,7 @@ path_f_pathname(VALUE self, VALUE str)
  * - #make_symlink(old)
  * - #truncate(length)
  * - #utime(atime, mtime)
+ * - #lutime(atime, mtime)
  * - #basename(*args)
  * - #dirname
  * - #extname
@@ -1521,8 +1506,6 @@ Init_pathname(void)
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "initialize", path_initialize, 1);
     rb_define_method(rb_cPathname, "freeze", path_freeze, 0);
-    rb_define_method(rb_cPathname, "taint", path_taint, 0);
-    rb_define_method(rb_cPathname, "untaint", path_untaint, 0);
     rb_define_method(rb_cPathname, "==", path_eq, 1);
     rb_define_method(rb_cPathname, "===", path_eq, 1);
     rb_define_method(rb_cPathname, "eql?", path_eq, 1);
@@ -1562,6 +1545,7 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "make_symlink", path_make_symlink, 1);
     rb_define_method(rb_cPathname, "truncate", path_truncate, 1);
     rb_define_method(rb_cPathname, "utime", path_utime, 2);
+    rb_define_method(rb_cPathname, "lutime", path_lutime, 2);
     rb_define_method(rb_cPathname, "basename", path_basename, -1);
     rb_define_method(rb_cPathname, "dirname", path_dirname, 0);
     rb_define_method(rb_cPathname, "extname", path_extname, 0);
@@ -1645,6 +1629,7 @@ InitVM_pathname(void)
     id_lchown = rb_intern("lchown");
     id_link = rb_intern("link");
     id_lstat = rb_intern("lstat");
+    id_lutime = rb_intern("lutime");
     id_mkdir = rb_intern("mkdir");
     id_mtime = rb_intern("mtime");
     id_open = rb_intern("open");

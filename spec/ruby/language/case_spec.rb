@@ -103,7 +103,7 @@ describe "The 'case'-construct" do
     $1.should == "42"
   end
 
-  it "tests with a regexp interpolated within another regexp" do
+  it "tests with a string interpolated in a regexp" do
     digits = '\d+'
     case "foo44"
     when /oo(#{digits})/
@@ -116,7 +116,7 @@ describe "The 'case'-construct" do
     $1.should == "44"
   end
 
-  it "tests with a string interpolated in a regexp" do
+  it "tests with a regexp interpolated within another regexp" do
     digits_regexp = /\d+/
     case "foo43"
     when /oo(#{digits_regexp})/
@@ -154,6 +154,15 @@ describe "The 'case'-construct" do
     when 'x', 'y', 'z'
       "bar"
     end.should == "foo"
+  end
+
+  it "tests an empty array" do
+    case []
+    when []
+      'foo'
+    else
+      'bar'
+    end.should == 'foo'
   end
 
   it "expands arrays to lists of values" do
@@ -320,49 +329,6 @@ describe "The 'case'-construct" do
       100
     end.should == 100
   end
-end
-
-describe "The 'case'-construct with no target expression" do
-  it "evaluates the body of the first clause when at least one of its condition expressions is true" do
-    case
-    when true, false; 'foo'
-    end.should == 'foo'
-  end
-
-  it "evaluates the body of the first when clause that is not false/nil" do
-    case
-    when false; 'foo'
-    when 2; 'bar'
-    when 1 == 1; 'baz'
-    end.should == 'bar'
-
-    case
-    when false; 'foo'
-    when nil; 'foo'
-    when 1 == 1; 'bar'
-    end.should == 'bar'
-  end
-
-  it "evaluates the body of the else clause if all when clauses are false/nil" do
-    case
-    when false; 'foo'
-    when nil; 'foo'
-    when 1 == 2; 'bar'
-    else 'baz'
-    end.should == 'baz'
-  end
-
-  it "evaluates multiple conditional expressions as a boolean disjunction" do
-    case
-    when true, false; 'foo'
-    else 'bar'
-    end.should == 'foo'
-
-    case
-    when false, true; 'foo'
-    else 'bar'
-    end.should == 'foo'
-  end
 
   it "evaluates true as only 'true' when true is the first clause" do
     case 1
@@ -425,6 +391,104 @@ describe "The 'case'-construct with no target expression" do
     end.should == :called
   end
 
+  it "only matches last value in complex expressions within ()" do
+    case 'a'
+    when ('a'; 'b')
+      :wrong_called
+    when ('b'; 'a')
+      :called
+    end.should == :called
+  end
+
+  it "supports declaring variables in the case target expression" do
+    def test(v)
+      case new_variable_in_expression = v
+      when true
+        # This extra block is a test that `new_variable_in_expression` is declared outside of it and not inside
+        self.then { new_variable_in_expression }
+      else
+        # Same
+        self.then { new_variable_in_expression.casecmp?("foo") }
+      end
+    end
+
+    self.test("bar").should == false
+    self.test(true).should == true
+  end
+
+  ruby_version_is ""..."3.4" do
+    it "warns if there are identical when clauses" do
+      -> {
+        eval <<~RUBY
+          case 1
+          when 2
+            :foo
+          when 2
+            :bar
+          end
+        RUBY
+      }.should complain(/warning: (duplicated .when' clause with line \d+ is ignored|'when' clause on line \d+ duplicates 'when' clause on line \d+ and is ignored)/, verbose: true)
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "warns if there are identical when clauses" do
+      -> {
+        eval <<~RUBY
+          case 1
+          when 2
+            :foo
+          when 2
+            :bar
+          end
+        RUBY
+      }.should complain(/warning: 'when' clause on line \d+ duplicates 'when' clause on line \d+ and is ignored/, verbose: true)
+    end
+  end
+end
+
+describe "The 'case'-construct with no target expression" do
+  it "evaluates the body of the first clause when at least one of its condition expressions is true" do
+    case
+    when true, false; 'foo'
+    end.should == 'foo'
+  end
+
+  it "evaluates the body of the first when clause that is not false/nil" do
+    case
+    when false; 'foo'
+    when 2; 'bar'
+    when 1 == 1; 'baz'
+    end.should == 'bar'
+
+    case
+    when false; 'foo'
+    when nil; 'foo'
+    when 1 == 1; 'bar'
+    end.should == 'bar'
+  end
+
+  it "evaluates the body of the else clause if all when clauses are false/nil" do
+    case
+    when false; 'foo'
+    when nil; 'foo'
+    when 1 == 2; 'bar'
+    else 'baz'
+    end.should == 'baz'
+  end
+
+  it "evaluates multiple conditional expressions as a boolean disjunction" do
+    case
+    when true, false; 'foo'
+    else 'bar'
+    end.should == 'foo'
+
+    case
+    when false, true; 'foo'
+    else 'bar'
+    end.should == 'foo'
+  end
+
   # Homogeneous cases are often optimized to avoid === using a jump table, and should be tested separately.
   # See https://github.com/jruby/jruby/issues/6440
   it "handles homogeneous cases" do
@@ -432,5 +496,14 @@ describe "The 'case'-construct with no target expression" do
     when 1; 'foo'
     when 2; 'bar'
     end.should == 'foo'
+  end
+
+  it "expands arrays to lists of values" do
+    case
+    when *[false]
+      "foo"
+    when *[true]
+      "bar"
+    end.should == "bar"
   end
 end

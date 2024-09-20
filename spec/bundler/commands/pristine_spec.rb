@@ -2,9 +2,9 @@
 
 require "bundler/vendored_fileutils"
 
-RSpec.describe "bundle pristine", :ruby_repo do
+RSpec.describe "bundle pristine" do
   before :each do
-    build_lib "baz", :path => bundled_app do |s|
+    build_lib "baz", path: bundled_app do |s|
       s.version = "1.0.0"
       s.add_development_dependency "baz-dev", "=1.0.0"
     end
@@ -13,16 +13,16 @@ RSpec.describe "bundle pristine", :ruby_repo do
       build_gem "weakling"
       build_gem "baz-dev", "1.0.0"
       build_gem "very_simple_binary", &:add_c_extension
-      build_git "foo", :path => lib_path("foo")
-      build_git "git_with_ext", :path => lib_path("git_with_ext"), &:add_c_extension
-      build_lib "bar", :path => lib_path("bar")
+      build_git "foo", path: lib_path("foo")
+      build_git "git_with_ext", path: lib_path("git_with_ext"), &:add_c_extension
+      build_lib "bar", path: lib_path("bar")
     end
 
     install_gemfile <<-G
-      source "#{file_uri_for(gem_repo2)}"
+      source "https://gem.repo2"
       gem "weakling"
       gem "very_simple_binary"
-      gem "foo", :git => "#{lib_path("foo")}", :branch => "master"
+      gem "foo", :git => "#{lib_path("foo")}", :branch => "main"
       gem "git_with_ext", :git => "#{lib_path("git_with_ext")}"
       gem "bar", :path => "#{lib_path("bar")}"
 
@@ -164,7 +164,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
     end
 
     it "raises when one of them is not in the lockfile" do
-      bundle "pristine abcabcabc", :raise_on_error => false
+      bundle "pristine abcabcabc", raise_on_error: false
       expect(err).to include("Could not find gem 'abcabcabc'.")
     end
   end
@@ -181,8 +181,8 @@ RSpec.describe "bundle pristine", :ruby_repo do
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
-      expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
-      expect(makefile_contents).to match(/LIBPATH =.*-L#{c_ext_dir}/)
+      expect(makefile_contents).to match(/libpath =.*#{Regexp.escape(c_ext_dir.to_s)}/)
+      expect(makefile_contents).to match(/LIBPATH =.*-L#{Regexp.escape(c_ext_dir.to_s)}/)
     end
   end
 
@@ -198,14 +198,14 @@ RSpec.describe "bundle pristine", :ruby_repo do
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
-      expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
-      expect(makefile_contents).to match(/LIBPATH =.*-L#{c_ext_dir}/)
+      expect(makefile_contents).to match(/libpath =.*#{Regexp.escape(c_ext_dir.to_s)}/)
+      expect(makefile_contents).to match(/LIBPATH =.*-L#{Regexp.escape(c_ext_dir.to_s)}/)
     end
   end
 
   context "when BUNDLE_GEMFILE doesn't exist" do
     before do
-      bundle "pristine", :env => { "BUNDLE_GEMFILE" => "does/not/exist" }, :raise_on_error => false
+      bundle "pristine", env: { "BUNDLE_GEMFILE" => "does/not/exist" }, raise_on_error: false
     end
 
     it "shows a meaningful error" do

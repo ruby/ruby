@@ -16,7 +16,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def parse(str, nm = nil, &bl)
-    dp = DummyParser.new(str)
+    dp = TestRipper::DummyParser.new(str)
     dp.hook(*nm, &bl) if nm
     dp.parse.to_s
   end
@@ -152,6 +152,45 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
       thru_args_forward = false
       parse(code, :on_args_forward) {thru_args_forward = true}
       assert_equal true, thru_args_forward, "no args_forward for: #{code}"
+      parse(code, :on_params) {|*, block| assert_nil(block)}
+    end
+  end
+
+  def test_anonymous_block_forwarding
+    thru_args_add_block = false
+    parse('def b(&); c(&); end', :on_args_add_block) {thru_args_add_block = true}
+    assert_equal true, thru_args_add_block
+    assert_match "no anonymous block parameter", compile_error('def b; c(&); end')
+  end
+
+  def test_anonymous_rest_forwarding
+    [
+      'c(*)',
+      'c(*, *)',
+    ].each do |code|
+      thru_args_add_star = false
+      src = "def b(*); #{code} end"
+      parse(src, :on_args_add_star) {thru_args_add_star = true}
+      assert_equal true, thru_args_add_star, src
+
+      src = "def b; #{code} end"
+      assert_match "no anonymous rest parameter", compile_error(src), src
+    end
+  end
+
+  def test_anonymous_keyword_rest_forwarding
+    [
+      'c(**)',
+      'c(k: 1, **)',
+      'c(**, k: 1)',
+    ].each do |code|
+      thru_assoc_splat = false
+      src = "def b(**); #{code} end"
+      parse(src, :on_assoc_splat) {thru_assoc_splat = true}
+      assert_equal true, thru_assoc_splat, src
+
+      src = "def b; #{code} end"
+      assert_match "no anonymous keyword rest parameter", compile_error(src), src
     end
   end
 
@@ -228,17 +267,29 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_assign_error_backref
-    thru_assign_error = false
+    errors = []
     result =
-      parse('$` = 1', :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
-    assert_equal '[assign(assign_error(var_field($`)),1)]', result
+      parse('$& = 1', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
+    assert_equal '[assign(assign_error(var_field($&)),1)]', result
 
-    thru_assign_error = false
+    errors = []
     result =
-      parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
-    assert_equal '[massign([assign_error(var_field($`)),var_field(_)],1)]', result
+      parse('$&, _ = 1', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
+    assert_equal '[massign([assign_error(var_field($&)),var_field(_)],1)]', result
+
+    errors = []
+    result =
+      parse('$& += 1', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
+    assert_equal '[assign_error(opassign(var_field($&),+=,1))]', result
+
+    errors = []
+    result =
+      parse('$& += cmd 1, 2', %i[on_assign_error compile_error]) {|e, *| errors << e}
+    assert_equal %i[on_assign_error], errors
+    assert_equal '[assign_error(opassign(var_field($&),+=,command(cmd,[1,2])))]', result
   end
 
   def test_assign_error_const_qualified
@@ -459,6 +510,23 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse("self&.foo()", :on_call) {thru_call = true}
     assert_equal true, thru_call
     assert_equal "[call(ref(self),&.,foo,[])]", tree
+  end
+
+  def test_call_colon2
+    hook = Module.new do
+      def on_op(op)
+        super("(op: #{op.inspect})")
+      end
+      def on_call(recv, name, *args)
+        super(recv, "(method: #{name})", *args)
+      end
+      def on_ident(name)
+        super("(ident: #{name.inspect})")
+      end
+    end
+
+    parser = TestRipper::DummyParser.new("a::b").extend(hook)
+    assert_equal '[call(vcall((ident: "a")),(method: (op: "::")),(ident: "b"))]', parser.parse.to_s
   end
 
   def test_excessed_comma
@@ -1588,20 +1656,20 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_invalid_instance_variable_name
-    assert_equal("`@1' is not allowed as an instance variable name", compile_error('proc{@1}'))
-    assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
-    assert_equal("`@' without identifiers is not allowed as an instance variable name", compile_error('@'))
+    assert_equal("'@1' is not allowed as an instance variable name", compile_error('proc{@1}'))
+    assert_equal("'@' without identifiers is not allowed as an instance variable name", compile_error('@%'))
+    assert_equal("'@' without identifiers is not allowed as an instance variable name", compile_error('@'))
   end
 
   def test_invalid_class_variable_name
-    assert_equal("`@@1' is not allowed as a class variable name", compile_error('@@1'))
-    assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@%'))
-    assert_equal("`@@' without identifiers is not allowed as a class variable name", compile_error('@@'))
+    assert_equal("'@@1' is not allowed as a class variable name", compile_error('@@1'))
+    assert_equal("'@@' without identifiers is not allowed as a class variable name", compile_error('@@%'))
+    assert_equal("'@@' without identifiers is not allowed as a class variable name", compile_error('@@'))
   end
 
   def test_invalid_global_variable_name
-    assert_equal("`$%' is not allowed as a global variable name", compile_error('$%'))
-    assert_equal("`$' without identifiers is not allowed as a global variable name", compile_error('$'))
+    assert_equal("'$%' is not allowed as a global variable name", compile_error('$%'))
+    assert_equal("'$' without identifiers is not allowed as a global variable name", compile_error('$'))
   end
 
   def test_warning_ignored_magic_comment
@@ -1614,6 +1682,26 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     fmt, *args = warning("#-*- frozen-string-literal: nottrue -*-")
     assert_match(/invalid value/, fmt)
     assert_equal(%w"frozen_string_literal nottrue", args)
+  end
+
+  def test_warning_duplicated_when_clause
+    fmt, *args = warning(<<~STR)
+      a = 1
+      case a
+      when 1
+      when 1
+      when 2
+      else
+      end
+    STR
+    assert_match(/duplicates 'when' clause/, fmt)
+    assert_equal([4, 3], args)
+  end
+
+  def test_warn_duplicated_hash_keys
+    fmt, *args = warn("{ a: 1, a: 2 }")
+    assert_match(/is duplicated and overwritten on line/, fmt)
+    assert_equal([:a, 1], args)
   end
 
   def test_warn_cr_in_middle
@@ -1654,5 +1742,70 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_hshptn = false
     parse('case 0; in {a:}; end', :on_hshptn) {thru_hshptn = true}
     assert_equal true, thru_hshptn
+  end
+
+  def test_return_out_of_compile_error_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def compile_error(msg) = @blk.call(msg)
+      end
+
+      def call_parse = MyRipper.new("/") { |msg| return msg }.parse
+
+      # Check that call_parse does return a syntax error
+      raise "call_parse should return a syntax error" unless call_parse
+    begin;
+      100_000.times do
+        call_parse
+      end
+    end;
+  end
+
+  def test_return_out_of_warn_no_memory_leak
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def warn(msg, *args) = @blk.call(msg)
+      end
+
+      def call_parse = MyRipper.new("{ a: 1, a: 2 }") { |msg| return msg }.parse
+
+      # Check that call_parse does warn
+      raise "call_parse should warn" unless call_parse
+    begin;
+      500_000.times do
+        call_parse
+      end
+    end;
+
+    assert_no_memory_leak(%w(-rripper), "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      class MyRipper < Ripper
+        def initialize(src, &blk)
+          super(src)
+          @blk = blk
+        end
+
+        def warn(msg, *args) = @blk.call(msg)
+      end
+
+      $VERBOSE = true
+      def call_parse = MyRipper.new("if true\n  end\n") { |msg| return msg }.parse
+
+      # Check that call_parse does warn
+      raise "call_parse should warn" unless call_parse
+    begin;
+      1_000_000.times do
+        call_parse
+      end
+    end;
   end
 end if ripper_test

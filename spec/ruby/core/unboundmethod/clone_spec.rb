@@ -1,12 +1,13 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
+require_relative 'shared/dup'
 
 describe "UnboundMethod#clone" do
-  it "returns a copy of the UnboundMethod" do
-    um1 = UnboundMethodSpecs::Methods.instance_method(:foo)
-    um2 = um1.clone
+  it_behaves_like :unboundmethod_dup, :clone
 
-    (um1 == um2).should == true
-    um1.bind(UnboundMethodSpecs::Methods.new).call.should == um2.bind(UnboundMethodSpecs::Methods.new).call
+  it "preserves frozen status" do
+    method = Class.instance_method(:instance_method)
+    method.freeze
+    method.frozen?.should == true
+    method.clone.frozen?.should == true
   end
 end

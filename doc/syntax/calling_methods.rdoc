@@ -210,6 +210,24 @@ definition.  If a keyword argument is given that the method did not list,
 and the method definition does not accept arbitrary keyword arguments, an
 ArgumentError will be raised.
 
+Keyword argument value can be omitted, meaning the value will be fetched
+from the context by the name of the key
+
+  keyword1 = 'some value'
+  my_method(positional1, keyword1:)
+  # ...is the same as
+  my_method(positional1, keyword1: keyword1)
+
+Be aware that when method parenthesis are omitted, too, the parsing order might
+be unexpected:
+
+  my_method positional1, keyword1:
+
+  some_other_expression
+
+  # ...is actually parsed as
+  my_method(positional1, keyword1: some_other_expression)
+
 === Block Argument
 
 The block argument sends a closure from the calling scope to the method.
@@ -303,18 +321,6 @@ or:
 Both are equivalent to:
 
   my_method(1, 2, 3)
-
-If the method accepts keyword arguments, the splat operator will convert a
-hash at the end of the array into keyword arguments:
-
-  def my_method(a, b, c: 3)
-  end
-
-  arguments = [1, 2, { c: 4 }]
-  my_method(*arguments)
-
-Note that this behavior is currently deprecated and will emit a warning.
-This behavior will be removed in Ruby 3.0.
 
 You may also use the <code>**</code> (described next) to convert a Hash into
 keyword arguments.

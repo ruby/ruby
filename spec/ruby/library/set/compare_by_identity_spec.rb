@@ -5,7 +5,7 @@ describe "Set#compare_by_identity" do
   it "compares its members by identity" do
     a = "a"
     b1 = "b"
-    b2 = "b"
+    b2 = b1.dup
 
     set = Set.new
     set.compare_by_identity

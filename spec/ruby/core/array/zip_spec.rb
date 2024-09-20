@@ -62,4 +62,10 @@ describe "Array#zip" do
   it "does not return subclass instance on Array subclasses" do
     ArraySpecs::MyArray[1, 2, 3].zip(["a", "b"]).should be_an_instance_of(Array)
   end
+
+  it "raises TypeError when some argument isn't Array and doesn't respond to #to_ary and #to_enum" do
+    -> { [1, 2, 3].zip(Object.new) }.should raise_error(TypeError, "wrong argument type Object (must respond to :each)")
+    -> { [1, 2, 3].zip(1) }.should raise_error(TypeError, "wrong argument type Integer (must respond to :each)")
+    -> { [1, 2, 3].zip(true) }.should raise_error(TypeError, "wrong argument type TrueClass (must respond to :each)")
+  end
 end

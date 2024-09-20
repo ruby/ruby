@@ -47,16 +47,6 @@ describe "String#center with length, padding" do
     "radiology".center(8, '-').should == "radiology"
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints result when self or padstr is tainted" do
-      "x".taint.center(4).should.tainted?
-      "x".taint.center(0).should.tainted?
-      "".taint.center(0).should.tainted?
-      "x".taint.center(4, "*").should.tainted?
-      "x".center(4, "*".taint).should.tainted?
-    end
-  end
-
   it "calls #to_int to convert length to an integer" do
     "_".center(3.8, "^").should == "^_^"
 
@@ -91,39 +81,18 @@ describe "String#center with length, padding" do
     -> { "hello".center(0, "")  }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on subclasses" do
-      StringSpecs::MyString.new("").center(10).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").center(10).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("foo").center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(StringSpecs::MyString)
+  it "returns String instances when called on subclasses" do
+    StringSpecs::MyString.new("").center(10).should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").center(10).should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
 
-      "".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-      "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances when called on subclasses" do
-      StringSpecs::MyString.new("").center(10).should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").center(10).should be_an_instance_of(String)
-      StringSpecs::MyString.new("foo").center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-
-      "".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-      "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "when padding is tainted and self is untainted returns a tainted string if and only if length is longer than self" do
-      "hello".center(4, 'X'.taint).tainted?.should be_false
-      "hello".center(5, 'X'.taint).tainted?.should be_false
-      "hello".center(6, 'X'.taint).tainted?.should be_true
-    end
+    "".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
+    "foo".center(10, StringSpecs::MyString.new("x")).should be_an_instance_of(String)
   end
 
   describe "with width" do
     it "returns a String in the same encoding as the original" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.center 6
       result.should == " abc  "
       result.encoding.should equal(Encoding::IBM437)
@@ -132,7 +101,7 @@ describe "String#center with length, padding" do
 
   describe "with width, pattern" do
     it "returns a String in the compatible encoding" do
-      str = "abc".force_encoding Encoding::IBM437
+      str = "abc".dup.force_encoding Encoding::IBM437
       result = str.center 6, "あ"
       result.should == "あabcああ"
       result.encoding.should equal(Encoding::UTF_8)

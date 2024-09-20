@@ -33,7 +33,7 @@ describe "String#unpack with format 'u'" do
     str = "".unpack("u")[0]
     str.encoding.should == Encoding::BINARY
 
-    str = "1".force_encoding('UTF-8').unpack("u")[0]
+    str = "1".dup.force_encoding('UTF-8').unpack("u")[0]
     str.encoding.should == Encoding::BINARY
   end
 

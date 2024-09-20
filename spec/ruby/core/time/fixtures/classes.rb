@@ -59,7 +59,6 @@ module TimeSpecs
   Zone = Struct.new(:std, :dst, :dst_range)
   Zones = {
     "Asia/Colombo" => Zone[Z[5*3600+30*60, "MMT"], nil, nil],
-    "Europe/Kiev" => Zone[Z[2*3600, "EET"], Z[3*3600, "EEST"], 4..10],
     "PST" => Zone[Z[(-9*60*60), "PST"], nil, nil],
   }
 

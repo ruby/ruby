@@ -118,6 +118,7 @@ module Spec
         opts[:raise_on_error] = false
         @errors = names.map do |full_name|
           name, version, platform = full_name.split(/\s+/)
+          platform ||= "ruby"
           require_path = name.tr("-", "/")
           version_const = name == "bundler" ? "Bundler::VERSION" : Spec::Builders.constantize(name)
           source_const = "#{Spec::Builders.constantize(name)}_SOURCE"
@@ -127,6 +128,7 @@ module Spec
 
             require '#{require_path}'
             actual_version, actual_platform = #{version_const}.split(/\s+/, 2)
+            actual_platform ||= "ruby"
             unless Gem::Version.new(actual_version) == Gem::Version.new('#{version}')
               puts actual_version
               exit 64
@@ -178,7 +180,7 @@ module Spec
 
             begin
               require '#{name}'
-              name_constant = '#{Spec::Builders.constantize(name)}'
+              name_constant = #{Spec::Builders.constantize(name)}
               if #{version.nil?} || name_constant == '#{version}'
                 exit 64
               else

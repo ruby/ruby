@@ -54,7 +54,7 @@
  *       get smarter and  smarter.  Today they can infer if  it actually throws
  *       or not without any annotations by humans (correct me if I'm wrong).
  *
- *     - When an inline function attributed `noexcepr` actually _does_ throw an
+ *     - When an inline function attributed `noexcept` actually _does_ throw an
  *       exception:  they  have to  call  `std::terminate`  then (C++  standard
  *       mandates  so).  This  means exception  handling routines  are actually
  *       enforced, not  omitted.  This doesn't impact  runtime performance (The

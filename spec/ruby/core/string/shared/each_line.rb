@@ -40,14 +40,6 @@ describe :string_each_line, shared: true do
     b.should == ["foo\n", "🤡🤡🤡🤡🤡🤡🤡\n", "bar\n", "baz\n"]
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints substrings that are passed to the block if self is tainted" do
-      "one\ntwo\r\nthree".taint.send(@method) { |s| s.should.tainted? }
-
-      "x.y.".send(@method, ".".taint) { |s| s.should_not.tainted? }
-    end
-  end
-
   it "passes self as a whole to the block if the separator is nil" do
     a = []
     "one\ntwo\r\nthree".send(@method, nil) { |s| a << s }
@@ -93,20 +85,10 @@ describe :string_each_line, shared: true do
     end
   end
 
-  ruby_version_is ''...'3.0' do
-    it "yields subclass instances for subclasses" do
-      a = []
-      StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
-      a.should == [StringSpecs::MyString, StringSpecs::MyString]
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "yields String instances for subclasses" do
-      a = []
-      StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
-      a.should == [String, String]
-    end
+  it "yields String instances for subclasses" do
+    a = []
+    StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
+    a.should == [String, String]
   end
 
   it "returns self" do
@@ -124,10 +106,16 @@ describe :string_each_line, shared: true do
   end
 
   it "does not care if the string is modified while substituting" do
-    str = "hello\nworld."
+    str = +"hello\nworld."
     out = []
     str.send(@method){|x| out << x; str[-1] = '!' }.should == "hello\nworld!"
     out.should == ["hello\n", "world."]
+  end
+
+  it "returns Strings in the same encoding as self" do
+    "one\ntwo\r\nthree".encode("US-ASCII").send(@method) do |s|
+      s.encoding.should == Encoding::US_ASCII
+    end
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do

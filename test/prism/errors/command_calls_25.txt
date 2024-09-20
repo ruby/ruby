@@ -1,0 +1,8 @@
+->(a=b c){}
+      ^ expected a matching `)`
+      ^ expected a `do` keyword or a `{` to open the lambda block
+        ^ unexpected ')', expecting end-of-input
+        ^ unexpected ')', ignoring it
+           ^ unexpected end-of-input, assuming it is closing the parent top level context
+           ^ expected a lambda block beginning with `do` to end with `end`
+

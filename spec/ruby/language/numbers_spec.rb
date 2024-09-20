@@ -53,7 +53,7 @@ describe "A number literal" do
     eval('0.0174532925199432957r').should == Rational(174532925199432957, 10000000000000000000)
   end
 
-  it "can be an bignum literal with trailing 'r' to represent a Rational" do
+  it "can be a bignum literal with trailing 'r' to represent a Rational" do
     eval('1111111111111111111111111111111111111111111111r').should == Rational(1111111111111111111111111111111111111111111111, 1)
     eval('-1111111111111111111111111111111111111111111111r').should == Rational(-1111111111111111111111111111111111111111111111, 1)
   end

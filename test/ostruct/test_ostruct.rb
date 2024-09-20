@@ -406,4 +406,29 @@ class TC_OpenStruct < Test::Unit::TestCase
     o2 = Marshal.load(Marshal.dump(o))
     assert_equal o, o2
   end
+
+  def test_class
+    os = OpenStruct.new(class: 'my-class', method: 'post')
+    assert_equal('my-class', os.class)
+    assert_equal(OpenStruct, os.class!)
+  end
+
+  has_performance_warnings = begin
+    Warning[:performance]
+    true
+  rescue NoMethodError, ArgumentError
+    false
+  end
+
+  if has_performance_warnings
+    def test_performance_warning
+      assert_in_out_err(
+        %w(-Ilib -rostruct -w -W:performance -e) + ['OpenStruct.new(a: 1)'],
+        "",
+        [],
+        ["-e:1: warning: OpenStruct use is discouraged for performance reasons"],
+        success: true,
+      )
+    end
+  end
 end

@@ -76,7 +76,7 @@ describe "IO#eof?" do
   end
 
   it "returns true on one-byte stream after single-byte read" do
-    File.open(File.dirname(__FILE__) + '/fixtures/one_byte.txt') { |one_byte|
+    File.open(__dir__ + '/fixtures/one_byte.txt') { |one_byte|
       one_byte.read(1)
       one_byte.should.eof?
     }

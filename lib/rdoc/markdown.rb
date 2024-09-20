@@ -6,7 +6,7 @@
 # RDoc::Markdown as described by the [markdown syntax][syntax].
 #
 # To choose Markdown as your only default format see
-# RDoc::Options@Saved+Options for instructions on setting up a `.doc_options`
+# RDoc::Options@Saved+Options for instructions on setting up a `.rdoc_options`
 # file to store your project default.
 #
 # ## Usage
@@ -175,7 +175,7 @@
 # [dingus]: http://daringfireball.net/projects/markdown/dingus
 # [GFM]: https://github.github.com/gfm/
 # [pegmarkdown]: https://github.com/jgm/peg-markdown
-# [PHPE]: http://michelf.com/projects/php-markdown/extra/#def-list
+# [PHPE]: https://michelf.ca/projects/php-markdown/extra/#def-list
 # [syntax]: http://daringfireball.net/projects/markdown/syntax
 #--
 # Last updated to jgm/peg-markdown commit 8f8fc22ef0
@@ -199,6 +199,7 @@ class RDoc::Markdown
       @result = nil
       @failed_rule = nil
       @failing_rule_offset = -1
+      @line_offsets = nil
 
       setup_foreign_grammar
     end
@@ -208,30 +209,75 @@ class RDoc::Markdown
     attr_accessor :result, :pos
 
     def current_column(target=pos)
-      if c = string.rindex("\n", target-1)
-        return target - c - 1
+      if string[target] == "\n" && (c = string.rindex("\n", target-1) || -1)
+        return target - c
+      elsif c = string.rindex("\n", target)
+        return target - c
       end
 
       target + 1
     end
 
-    def current_line(target=pos)
-      cur_offset = 0
-      cur_line = 0
-
-      string.each_line do |line|
-        cur_line += 1
-        cur_offset += line.size
-        return cur_line if cur_offset >= target
+    def position_line_offsets
+      unless @position_line_offsets
+        @position_line_offsets = []
+        total = 0
+        string.each_line do |line|
+          total += line.size
+          @position_line_offsets << total
+        end
       end
+      @position_line_offsets
+    end
 
-      -1
+    if [].respond_to? :bsearch_index
+      def current_line(target=pos)
+        if line = position_line_offsets.bsearch_index {|x| x > target }
+          return line + 1
+        end
+        raise "Target position #{target} is outside of string"
+      end
+    else
+      def current_line(target=pos)
+        if line = position_line_offsets.index {|x| x > target }
+          return line + 1
+        end
+
+        raise "Target position #{target} is outside of string"
+      end
+    end
+
+    def current_character(target=pos)
+      if target < 0 || target >= string.size
+        raise "Target position #{target} is outside of string"
+      end
+      string[target, 1]
+    end
+
+    KpegPosInfo = Struct.new(:pos, :lno, :col, :line, :char)
+
+    def current_pos_info(target=pos)
+      l = current_line target
+      c = current_column target
+      ln = get_line(l-1)
+      chr = string[target,1]
+      KpegPosInfo.new(target, l, c, ln, chr)
     end
 
     def lines
-      lines = []
-      string.each_line { |l| lines << l }
-      lines
+      string.lines
+    end
+
+    def get_line(no)
+      loff = position_line_offsets
+      if no < 0
+        raise "Line No is out of range: #{no} < 0"
+      elsif no >= loff.size
+        raise "Line No is out of range: #{no} >= #{loff.size}"
+      end
+      lend = loff[no]-1
+      lstart = no > 0 ? loff[no-1] : 0
+      string[lstart..lend]
     end
 
 
@@ -245,6 +291,7 @@ class RDoc::Markdown
       @string = string
       @string_size = string ? string.size : 0
       @pos = pos
+      @position_line_offsets = nil
     end
 
     def show_pos
@@ -269,30 +316,22 @@ class RDoc::Markdown
     end
 
     def failure_caret
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-
-      line = lines[l-1]
-      "#{line}\n#{' ' * (c - 1)}^"
+      p = current_pos_info @failing_rule_offset
+      "#{p.line.chomp}\n#{' ' * (p.col - 1)}^"
     end
 
     def failure_character
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-      lines[l-1][c-1, 1]
+      current_character @failing_rule_offset
     end
 
     def failure_oneline
-      l = current_line @failing_rule_offset
-      c = current_column @failing_rule_offset
-
-      char = lines[l-1][c-1, 1]
+      p = current_pos_info @failing_rule_offset
 
       if @failed_rule.kind_of? Symbol
         info = self.class::Rules[@failed_rule]
-        "@#{l}:#{c} failed rule '#{info.name}', got '#{char}'"
+        "@#{p.lno}:#{p.col} failed rule '#{info.name}', got '#{p.char}'"
       else
-        "@#{l}:#{c} failed rule '#{@failed_rule}', got '#{char}'"
+        "@#{p.lno}:#{p.col} failed rule '#{@failed_rule}', got '#{p.char}'"
       end
     end
 
@@ -305,10 +344,9 @@ class RDoc::Markdown
 
     def show_error(io=STDOUT)
       error_pos = @failing_rule_offset
-      line_no = current_line(error_pos)
-      col_no = current_column(error_pos)
+      p = current_pos_info(error_pos)
 
-      io.puts "On line #{line_no}, column #{col_no}:"
+      io.puts "On line #{p.lno}, column #{p.col}:"
 
       if @failed_rule.kind_of? Symbol
         info = self.class::Rules[@failed_rule]
@@ -317,10 +355,9 @@ class RDoc::Markdown
         io.puts "Failed to match rule '#{@failed_rule}'"
       end
 
-      io.puts "Got: #{string[error_pos,1].inspect}"
-      line = lines[line_no-1]
-      io.puts "=> #{line}"
-      io.print(" " * (col_no + 3))
+      io.puts "Got: #{p.char.inspect}"
+      io.puts "=> #{p.line}"
+      io.print(" " * (p.col + 2))
       io.puts "^"
     end
 
@@ -429,6 +466,7 @@ class RDoc::Markdown
     end
 
     def apply_with_args(rule, *args)
+      @result = nil
       memo_key = [rule, args]
       if m = @memoizations[memo_key][@pos]
         @pos = m.pos
@@ -462,6 +500,7 @@ class RDoc::Markdown
     end
 
     def apply(rule)
+      @result = nil
       if m = @memoizations[rule][@pos]
         @pos = m.pos
         if !m.set
@@ -533,11 +572,11 @@ class RDoc::Markdown
 
 
 
-  require 'rdoc'
-  require 'rdoc/markup/to_joined_paragraph'
-  require 'rdoc/markdown/entities'
+  require_relative '../rdoc'
+  require_relative 'markup/to_joined_paragraph'
+  require_relative 'markdown/entities'
 
-  require 'rdoc/markdown/literals'
+  require_relative 'markdown/literals'
 
   ##
   # Supported extensions
@@ -795,7 +834,7 @@ class RDoc::Markdown
 
       @note_order.each_with_index do |ref, index|
         label = index + 1
-        note = @footnotes[ref]
+        note = @footnotes[ref] or raise ParseError, "footnote [^#{ref}] not found"
 
         link = "{^#{label}}[rdoc-label:footmark-#{label}:foottext-#{label}] "
         note.parts.unshift link
@@ -1119,7 +1158,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxHeading = AtxStart:s @Sp AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
+  # AtxHeading = AtxStart:s @Spacechar+ AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
   def _AtxHeading
 
     _save = self.pos
@@ -1130,12 +1169,22 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = _Sp()
+      _save1 = self.pos
+      _tmp = _Spacechar()
+      if _tmp
+        while true
+          _tmp = _Spacechar()
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save1
+      end
       unless _tmp
         self.pos = _save
         break
       end
-      _save1 = self.pos
+      _save2 = self.pos
       _ary = []
       _tmp = apply(:_AtxInline)
       if _tmp
@@ -1148,37 +1197,37 @@ class RDoc::Markdown
         _tmp = true
         @result = _ary
       else
-        self.pos = _save1
+        self.pos = _save2
       end
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
-      _save2 = self.pos
-
       _save3 = self.pos
+
+      _save4 = self.pos
       while true # sequence
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = scan(/\G(?-mix:#*)/)
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
           break
         end
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save3
+          self.pos = _save4
         end
         break
       end # end sequence
 
       unless _tmp
         _tmp = true
-        self.pos = _save2
+        self.pos = _save3
       end
       unless _tmp
         self.pos = _save
@@ -14918,7 +14967,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawLine = (< (!"\r" !"\n" .)* @Newline > | < .+ > @Eof) { text }
+  # RawLine = (< /[^\r\n]*/ @Newline > | < .+ > @Eof) { text }
   def _RawLine
 
     _save = self.pos
@@ -14930,36 +14979,7 @@ class RDoc::Markdown
 
         _save2 = self.pos
         while true # sequence
-          while true
-
-            _save4 = self.pos
-            while true # sequence
-              _save5 = self.pos
-              _tmp = match_string("\r")
-              _tmp = _tmp ? nil : true
-              self.pos = _save5
-              unless _tmp
-                self.pos = _save4
-                break
-              end
-              _save6 = self.pos
-              _tmp = match_string("\n")
-              _tmp = _tmp ? nil : true
-              self.pos = _save6
-              unless _tmp
-                self.pos = _save4
-                break
-              end
-              _tmp = get_byte
-              unless _tmp
-                self.pos = _save4
-              end
-              break
-            end # end sequence
-
-            break unless _tmp
-          end
-          _tmp = true
+          _tmp = scan(/\G(?-mix:[^\r\n]*)/)
           unless _tmp
             self.pos = _save2
             break
@@ -14977,10 +14997,10 @@ class RDoc::Markdown
         break if _tmp
         self.pos = _save1
 
-        _save7 = self.pos
+        _save3 = self.pos
         while true # sequence
           _text_start = self.pos
-          _save8 = self.pos
+          _save4 = self.pos
           _tmp = get_byte
           if _tmp
             while true
@@ -14989,18 +15009,18 @@ class RDoc::Markdown
             end
             _tmp = true
           else
-            self.pos = _save8
+            self.pos = _save4
           end
           if _tmp
             text = get_text(_text_start)
           end
           unless _tmp
-            self.pos = _save7
+            self.pos = _save3
             break
           end
           _tmp = _Eof()
           unless _tmp
-            self.pos = _save7
+            self.pos = _save3
           end
           break
         end # end sequence
@@ -15546,7 +15566,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # RawNoteBlock = @StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }
+  # RawNoteBlock = @StartList:a (!@BlankLine !RawNoteReference OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }
   def _RawNoteBlock
 
     _save = self.pos
@@ -15569,6 +15589,14 @@ class RDoc::Markdown
           self.pos = _save2
           break
         end
+        _save4 = self.pos
+        _tmp = apply(:_RawNoteReference)
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
+          self.pos = _save2
+          break
+        end
         _tmp = apply(:_OptionallyIndentedLine)
         l = @result
         unless _tmp
@@ -15586,26 +15614,34 @@ class RDoc::Markdown
       if _tmp
         while true
 
-          _save4 = self.pos
+          _save5 = self.pos
           while true # sequence
-            _save5 = self.pos
+            _save6 = self.pos
             _tmp = _BlankLine()
             _tmp = _tmp ? nil : true
-            self.pos = _save5
+            self.pos = _save6
             unless _tmp
-              self.pos = _save4
+              self.pos = _save5
+              break
+            end
+            _save7 = self.pos
+            _tmp = apply(:_RawNoteReference)
+            _tmp = _tmp ? nil : true
+            self.pos = _save7
+            unless _tmp
+              self.pos = _save5
               break
             end
             _tmp = apply(:_OptionallyIndentedLine)
             l = @result
             unless _tmp
-              self.pos = _save4
+              self.pos = _save5
               break
             end
             @result = begin;  a << l ; end
             _tmp = true
             unless _tmp
-              self.pos = _save4
+              self.pos = _save5
             end
             break
           end # end sequence
@@ -15907,7 +15943,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Table = &{ github? } TableRow:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }
+  # Table = &{ github? } TableHead:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }
   def _Table
 
     _save = self.pos
@@ -15919,7 +15955,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _tmp = apply(:_TableRow)
+      _tmp = apply(:_TableHead)
       header = @result
       unless _tmp
         self.pos = _save
@@ -15963,18 +15999,18 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableRow = TableItem+:row "|" @Newline { row }
-  def _TableRow
+  # TableHead = TableItem2+:items "|"? @Newline { items }
+  def _TableHead
 
     _save = self.pos
     while true # sequence
       _save1 = self.pos
       _ary = []
-      _tmp = apply(:_TableItem)
+      _tmp = apply(:_TableItem2)
       if _tmp
         _ary << @result
         while true
-          _tmp = apply(:_TableItem)
+          _tmp = apply(:_TableItem2)
           _ary << @result if _tmp
           break unless _tmp
         end
@@ -15983,12 +16019,110 @@ class RDoc::Markdown
       else
         self.pos = _save1
       end
-      row = @result
+      items = @result
       unless _tmp
         self.pos = _save
         break
       end
+      _save2 = self.pos
       _tmp = match_string("|")
+      unless _tmp
+        _tmp = true
+        self.pos = _save2
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = _Newline()
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  items ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_TableHead unless _tmp
+    return _tmp
+  end
+
+  # TableRow = ((TableItem:item1 TableItem2*:items { [item1, *items] }):row | TableItem2+:row) "|"? @Newline { row }
+  def _TableRow
+
+    _save = self.pos
+    while true # sequence
+
+      _save1 = self.pos
+      while true # choice
+
+        _save2 = self.pos
+        while true # sequence
+          _tmp = apply(:_TableItem)
+          item1 = @result
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          _ary = []
+          while true
+            _tmp = apply(:_TableItem2)
+            _ary << @result if _tmp
+            break unless _tmp
+          end
+          _tmp = true
+          @result = _ary
+          items = @result
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          @result = begin;  [item1, *items] ; end
+          _tmp = true
+          unless _tmp
+            self.pos = _save2
+          end
+          break
+        end # end sequence
+
+        row = @result
+        break if _tmp
+        self.pos = _save1
+        _save4 = self.pos
+        _ary = []
+        _tmp = apply(:_TableItem2)
+        if _tmp
+          _ary << @result
+          while true
+            _tmp = apply(:_TableItem2)
+            _ary << @result if _tmp
+            break unless _tmp
+          end
+          _tmp = true
+          @result = _ary
+        else
+          self.pos = _save4
+        end
+        row = @result
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save5 = self.pos
+      _tmp = match_string("|")
+      unless _tmp
+        _tmp = true
+        self.pos = _save5
+      end
       unless _tmp
         self.pos = _save
         break
@@ -16010,8 +16144,8 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableItem = "|" < (!"|" !@Newline .)+ > { text.strip }
-  def _TableItem
+  # TableItem2 = "|" TableItem
+  def _TableItem2
 
     _save = self.pos
     while true # sequence
@@ -16020,68 +16154,24 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _text_start = self.pos
-      _save1 = self.pos
-
-      _save2 = self.pos
-      while true # sequence
-        _save3 = self.pos
-        _tmp = match_string("|")
-        _tmp = _tmp ? nil : true
-        self.pos = _save3
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _save4 = self.pos
-        _tmp = _Newline()
-        _tmp = _tmp ? nil : true
-        self.pos = _save4
-        unless _tmp
-          self.pos = _save2
-          break
-        end
-        _tmp = get_byte
-        unless _tmp
-          self.pos = _save2
-        end
-        break
-      end # end sequence
-
-      if _tmp
-        while true
-
-          _save5 = self.pos
-          while true # sequence
-            _save6 = self.pos
-            _tmp = match_string("|")
-            _tmp = _tmp ? nil : true
-            self.pos = _save6
-            unless _tmp
-              self.pos = _save5
-              break
-            end
-            _save7 = self.pos
-            _tmp = _Newline()
-            _tmp = _tmp ? nil : true
-            self.pos = _save7
-            unless _tmp
-              self.pos = _save5
-              break
-            end
-            _tmp = get_byte
-            unless _tmp
-              self.pos = _save5
-            end
-            break
-          end # end sequence
-
-          break unless _tmp
-        end
-        _tmp = true
-      else
-        self.pos = _save1
+      _tmp = apply(:_TableItem)
+      unless _tmp
+        self.pos = _save
       end
+      break
+    end # end sequence
+
+    set_failed_rule :_TableItem2 unless _tmp
+    return _tmp
+  end
+
+  # TableItem = < /(?:\\.|[^|\n])+/ > { text.strip.gsub(/\\(.)/, '\1')  }
+  def _TableItem
+
+    _save = self.pos
+    while true # sequence
+      _text_start = self.pos
+      _tmp = scan(/\G(?-mix:(?:\\.|[^|\n])+)/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -16089,7 +16179,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  text.strip ; end
+      @result = begin;  text.strip.gsub(/\\(.)/, '\1')  ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -16101,32 +16191,78 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableLine = TableColumn+:line "|" @Newline { line }
+  # TableLine = ((TableAlign:align1 TableAlign2*:aligns {[align1, *aligns] }):line | TableAlign2+:line) "|"? @Newline { line }
   def _TableLine
 
     _save = self.pos
     while true # sequence
+
       _save1 = self.pos
-      _ary = []
-      _tmp = apply(:_TableColumn)
-      if _tmp
-        _ary << @result
-        while true
-          _tmp = apply(:_TableColumn)
-          _ary << @result if _tmp
-          break unless _tmp
-        end
-        _tmp = true
-        @result = _ary
-      else
+      while true # choice
+
+        _save2 = self.pos
+        while true # sequence
+          _tmp = apply(:_TableAlign)
+          align1 = @result
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          _ary = []
+          while true
+            _tmp = apply(:_TableAlign2)
+            _ary << @result if _tmp
+            break unless _tmp
+          end
+          _tmp = true
+          @result = _ary
+          aligns = @result
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          @result = begin; [align1, *aligns] ; end
+          _tmp = true
+          unless _tmp
+            self.pos = _save2
+          end
+          break
+        end # end sequence
+
+        line = @result
+        break if _tmp
         self.pos = _save1
-      end
-      line = @result
+        _save4 = self.pos
+        _ary = []
+        _tmp = apply(:_TableAlign2)
+        if _tmp
+          _ary << @result
+          while true
+            _tmp = apply(:_TableAlign2)
+            _ary << @result if _tmp
+            break unless _tmp
+          end
+          _tmp = true
+          @result = _ary
+        else
+          self.pos = _save4
+        end
+        line = @result
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
       unless _tmp
         self.pos = _save
         break
       end
+      _save5 = self.pos
       _tmp = match_string("|")
+      unless _tmp
+        _tmp = true
+        self.pos = _save5
+      end
       unless _tmp
         self.pos = _save
         break
@@ -16148,8 +16284,8 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TableColumn = "|" < ("-"+ ":"? | ":" "-"*) > { text.start_with?(":") ? :left :                 text.end_with?(":") ? :right : nil               }
-  def _TableColumn
+  # TableAlign2 = "|" @Sp TableAlign
+  def _TableAlign2
 
     _save = self.pos
     while true # sequence
@@ -16158,66 +16294,29 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _text_start = self.pos
-
-      _save1 = self.pos
-      while true # choice
-
-        _save2 = self.pos
-        while true # sequence
-          _save3 = self.pos
-          _tmp = match_string("-")
-          if _tmp
-            while true
-              _tmp = match_string("-")
-              break unless _tmp
-            end
-            _tmp = true
-          else
-            self.pos = _save3
-          end
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          _save4 = self.pos
-          _tmp = match_string(":")
-          unless _tmp
-            _tmp = true
-            self.pos = _save4
-          end
-          unless _tmp
-            self.pos = _save2
-          end
-          break
-        end # end sequence
-
-        break if _tmp
-        self.pos = _save1
-
-        _save5 = self.pos
-        while true # sequence
-          _tmp = match_string(":")
-          unless _tmp
-            self.pos = _save5
-            break
-          end
-          while true
-            _tmp = match_string("-")
-            break unless _tmp
-          end
-          _tmp = true
-          unless _tmp
-            self.pos = _save5
-          end
-          break
-        end # end sequence
-
-        break if _tmp
-        self.pos = _save1
+      _tmp = _Sp()
+      unless _tmp
+        self.pos = _save
         break
-      end # end choice
+      end
+      _tmp = apply(:_TableAlign)
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
 
+    set_failed_rule :_TableAlign2 unless _tmp
+    return _tmp
+  end
+
+  # TableAlign = < /:?-+:?/ > @Sp {                 text.start_with?(":") ?                 (text.end_with?(":") ? :center : :left) :                 (text.end_with?(":") ? :right : nil)               }
+  def _TableAlign
+
+    _save = self.pos
+    while true # sequence
+      _text_start = self.pos
+      _tmp = scan(/\G(?-mix::?-+:?)/)
       if _tmp
         text = get_text(_text_start)
       end
@@ -16225,8 +16324,15 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  text.start_with?(":") ? :left :
-                text.end_with?(":") ? :right : nil
+      _tmp = _Sp()
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;
+                text.start_with?(":") ?
+                (text.end_with?(":") ? :center : :left) :
+                (text.end_with?(":") ? :right : nil)
               ; end
       _tmp = true
       unless _tmp
@@ -16235,7 +16341,7 @@ class RDoc::Markdown
       break
     end # end sequence
 
-    set_failed_rule :_TableColumn unless _tmp
+    set_failed_rule :_TableAlign unless _tmp
     return _tmp
   end
 
@@ -16349,12 +16455,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # DefinitionListLabel = StrChunk:label @Sp @Newline { label }
+  # DefinitionListLabel = Inline:label @Sp @Newline { label }
   def _DefinitionListLabel
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_StrChunk)
+      _tmp = apply(:_Inline)
       label = @result
       unless _tmp
         self.pos = _save
@@ -16443,7 +16549,7 @@ class RDoc::Markdown
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
   Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp /\#*/ @Sp @Newline) Inline")
   Rules[:_AtxStart] = rule_info("AtxStart", "< /\\\#{1,6}/ > { text.length }")
-  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
+  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Spacechar+ AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
   Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={1,}/ @Newline")
   Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{1,}/ @Newline")
@@ -16661,7 +16767,7 @@ class RDoc::Markdown
   Rules[:_OptionallyIndentedLine] = rule_info("OptionallyIndentedLine", "Indent? Line")
   Rules[:_StartList] = rule_info("StartList", "&. { [] }")
   Rules[:_Line] = rule_info("Line", "@RawLine:a { a }")
-  Rules[:_RawLine] = rule_info("RawLine", "(< (!\"\\r\" !\"\\n\" .)* @Newline > | < .+ > @Eof) { text }")
+  Rules[:_RawLine] = rule_info("RawLine", "(< /[^\\r\\n]*/ @Newline > | < .+ > @Eof) { text }")
   Rules[:_SkipBlock] = rule_info("SkipBlock", "(HtmlBlock | (!\"\#\" !SetextBottom1 !SetextBottom2 !@BlankLine @RawLine)+ @BlankLine* | @BlankLine+ | @RawLine)")
   Rules[:_ExtendedSpecialChar] = rule_info("ExtendedSpecialChar", "&{ notes? } \"^\"")
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")
@@ -16669,16 +16775,19 @@ class RDoc::Markdown
   Rules[:_Note] = rule_info("Note", "&{ notes? } @NonindentSpace RawNoteReference:ref \":\" @Sp @StartList:a RawNoteBlock:i { a.concat i } (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
   Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" @StartList:a (!\"]\" Inline:l { a << l })+ \"]\" { ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
   Rules[:_Notes] = rule_info("Notes", "(Note | SkipBlock)*")
-  Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
+  Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine !RawNoteReference OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
   Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format.instance_of?(String)               verbatim             }")
-  Rules[:_Table] = rule_info("Table", "&{ github? } TableRow:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }")
-  Rules[:_TableRow] = rule_info("TableRow", "TableItem+:row \"|\" @Newline { row }")
-  Rules[:_TableItem] = rule_info("TableItem", "\"|\" < (!\"|\" !@Newline .)+ > { text.strip }")
-  Rules[:_TableLine] = rule_info("TableLine", "TableColumn+:line \"|\" @Newline { line }")
-  Rules[:_TableColumn] = rule_info("TableColumn", "\"|\" < (\"-\"+ \":\"? | \":\" \"-\"*) > { text.start_with?(\":\") ? :left :                 text.end_with?(\":\") ? :right : nil               }")
+  Rules[:_Table] = rule_info("Table", "&{ github? } TableHead:header TableLine:line TableRow+:body { table = RDoc::Markup::Table.new(header, line, body) }")
+  Rules[:_TableHead] = rule_info("TableHead", "TableItem2+:items \"|\"? @Newline { items }")
+  Rules[:_TableRow] = rule_info("TableRow", "((TableItem:item1 TableItem2*:items { [item1, *items] }):row | TableItem2+:row) \"|\"? @Newline { row }")
+  Rules[:_TableItem2] = rule_info("TableItem2", "\"|\" TableItem")
+  Rules[:_TableItem] = rule_info("TableItem", "< /(?:\\\\.|[^|\\n])+/ > { text.strip.gsub(/\\\\(.)/, '\\1')  }")
+  Rules[:_TableLine] = rule_info("TableLine", "((TableAlign:align1 TableAlign2*:aligns {[align1, *aligns] }):line | TableAlign2+:line) \"|\"? @Newline { line }")
+  Rules[:_TableAlign2] = rule_info("TableAlign2", "\"|\" @Sp TableAlign")
+  Rules[:_TableAlign] = rule_info("TableAlign", "< /:?-+:?/ > @Sp {                 text.start_with?(\":\") ?                 (text.end_with?(\":\") ? :center : :left) :                 (text.end_with?(\":\") ? :right : nil)               }")
   Rules[:_DefinitionList] = rule_info("DefinitionList", "&{ definition_lists? } DefinitionListItem+:list { RDoc::Markup::List.new :NOTE, *list.flatten }")
   Rules[:_DefinitionListItem] = rule_info("DefinitionListItem", "DefinitionListLabel+:label DefinitionListDefinition+:defns { list_items = []                        list_items <<                          RDoc::Markup::ListItem.new(label, defns.shift)                         list_items.concat defns.map { |defn|                          RDoc::Markup::ListItem.new nil, defn                        } unless list_items.empty?                         list_items                      }")
-  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "StrChunk:label @Sp @Newline { label }")
+  Rules[:_DefinitionListLabel] = rule_info("DefinitionListLabel", "Inline:label @Sp @Newline { label }")
   Rules[:_DefinitionListDefinition] = rule_info("DefinitionListDefinition", "@NonindentSpace \":\" @Space Inlines:a @BlankLine+ { paragraph a }")
   # :startdoc:
 end

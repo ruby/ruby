@@ -6,6 +6,8 @@
 #  include <sys/time.h>
 #endif
 
+#include "internal/compilers.h"
+
 /*
  * Hi-res monotonic clock.  It is currently nsec resolution, which has over
  * 500 years of range (with an unsigned 64-bit integer).  Developers
@@ -36,6 +38,7 @@
 #define RB_HRTIME_PER_MSEC (RB_HRTIME_PER_USEC * (rb_hrtime_t)1000)
 #define RB_HRTIME_PER_SEC  (RB_HRTIME_PER_MSEC * (rb_hrtime_t)1000)
 #define RB_HRTIME_MAX      UINT64_MAX
+#define RB_HRTIME_MIN      ((rb_hrtime_t)0)
 
 /*
  * Lets try to support time travelers.  Lets assume anybody with a time machine
@@ -60,7 +63,11 @@ rb_hrtime_mul(rb_hrtime_t a, rb_hrtime_t b)
 {
     rb_hrtime_t c;
 
-#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
+#ifdef ckd_mul
+    if (ckd_mul(&c, a, b))
+        return RB_HRTIME_MAX;
+
+#elif __has_builtin(__builtin_mul_overflow)
     if (__builtin_mul_overflow(a, b, &c))
         return RB_HRTIME_MAX;
 #else
@@ -80,7 +87,11 @@ rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
 {
     rb_hrtime_t c;
 
-#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+#ifdef ckd_add
+    if (ckd_add(&c, a, b))
+        return RB_HRTIME_MAX;
+
+#elif __has_builtin(__builtin_add_overflow)
     if (__builtin_add_overflow(a, b, &c))
         return RB_HRTIME_MAX;
 #else
@@ -89,6 +100,15 @@ rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
         return RB_HRTIME_MAX;
 #endif
     return c;
+}
+
+static inline rb_hrtime_t
+rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
+{
+    if (a < b) {
+        return RB_HRTIME_MIN;
+    }
+    return a - b;
 }
 
 /*
@@ -165,4 +185,53 @@ rb_hrtime2timeval(struct timeval *tv, const rb_hrtime_t *hrt)
     }
     return 0;
 }
+
+#include "internal/warnings.h"
+#include "internal/time.h"
+
+/*
+ * Back when we used "struct timeval", not all platforms implemented
+ * tv_sec as time_t.  Nowadays we use "struct timespec" and tv_sec
+ * seems to be implemented more consistently across platforms.
+ * At least other parts of our code hasn't had to deal with non-time_t
+ * tv_sec in timespec...
+ */
+#define TIMESPEC_SEC_MAX TIMET_MAX
+#define TIMESPEC_SEC_MIN TIMET_MIN
+
+COMPILER_WARNING_PUSH
+#if __has_warning("-Wimplicit-int-float-conversion")
+COMPILER_WARNING_IGNORED(-Wimplicit-int-float-conversion)
+#elif defined(_MSC_VER)
+/* C4305: 'initializing': truncation from '__int64' to 'const double' */
+COMPILER_WARNING_IGNORED(4305)
+#endif
+static const double TIMESPEC_SEC_MAX_as_double = TIMESPEC_SEC_MAX;
+COMPILER_WARNING_POP
+
+static inline rb_hrtime_t *
+double2hrtime(rb_hrtime_t *hrt, double d)
+{
+    /* assume timespec.tv_sec has same signedness as time_t */
+    const double TIMESPEC_SEC_MAX_PLUS_ONE = 2.0 * (TIMESPEC_SEC_MAX_as_double / 2.0 + 1.0);
+
+    if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
+        *hrt = RB_HRTIME_MAX;
+        return NULL;
+    }
+    else if (d <= 0) {
+        *hrt = 0;
+    }
+    else {
+        *hrt = (rb_hrtime_t)(d * (double)RB_HRTIME_PER_SEC);
+    }
+    return hrt;
+}
+
+static inline double
+hrtime2double(rb_hrtime_t hrt)
+{
+    return (double)hrt / (double)RB_HRTIME_PER_SEC;
+}
+
 #endif /* RB_HRTIME_H */

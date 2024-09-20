@@ -1,0 +1,11 @@
+Returns the count of bytes (not characters) in +self+:
+
+  'foo'.bytesize        # => 3
+  'тест'.bytesize       # => 8
+  'こんにちは'.bytesize   # => 15
+
+Contrast with String#length:
+
+  'foo'.length       # => 3
+  'тест'.length      # => 4
+  'こんにちは'.length  # => 5

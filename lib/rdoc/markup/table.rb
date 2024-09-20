@@ -3,12 +3,21 @@
 # A section of table
 
 class RDoc::Markup::Table
-  attr_accessor :header, :align, :body
+  # headers of each column
+  attr_accessor :header
 
+  # alignments of each column
+  attr_accessor :align
+
+  # body texts of each column
+  attr_accessor :body
+
+  # Creates new instance
   def initialize header, align, body
     @header, @align, @body = header, align, body
   end
 
+  # :stopdoc:
   def == other
     self.class == other.class and
       @header == other.header and
@@ -20,7 +29,7 @@ class RDoc::Markup::Table
     visitor.accept_table @header, @body, @align
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print q
     q.group 2, '[Table: ', ']' do
       q.group 2, '[Head: ', ']' do
         q.seplist @header.zip(@align) do |text, align|

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
@@ -15,6 +15,12 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     result = @to.convert 'C1'
 
     assert_equal para("<a href=\"C1.html\"><code>C1</code></a>"), result
+  end
+
+  def test_convert_CROSSREF_method
+    result = @to.convert 'C1#m(foo, bar, baz)'
+
+    assert_equal para("<a href=\"C1.html#method-i-m\"><code>C1#m(foo, bar, baz)</code></a>"), result
   end
 
   def test_convert_CROSSREF_label
@@ -125,6 +131,18 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
 
     assert_equal para("<a href=\"C1.html#class-C1-label-foo\">foo at <code>C1</code></a>"), result,
                  'rdoc-ref:C1@foo'
+  end
+
+  def test_convert_RDOCLINK_rdoc_ref_label_in_current_file
+    result = @to.convert 'rdoc-ref:@foo'
+
+    assert_equal para("<a href=\"#label-foo\">foo</a>"), result,
+                 'rdoc-ref:@foo'
+
+    result = @to.convert '{Foo}[rdoc-ref:@foo]'
+
+    assert_equal para("<a href=\"#label-foo\">Foo</a>"), result,
+                 '{Foo}[rdoc-ref:@foo]'
   end
 
   def test_gen_url
@@ -260,4 +278,3 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
   end
 
 end
-

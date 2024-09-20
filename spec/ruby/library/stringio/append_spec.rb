@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "StringIO#<< when passed [Object]" do
   before :each do
-    @io = StringIO.new("example")
+    @io = StringIO.new(+"example")
   end
 
   it "returns self" do
@@ -29,20 +29,6 @@ describe "StringIO#<< when passed [Object]" do
     @io.string.should == "example\000\000\000\000\000\000\000\000just testing"
   end
 
-  ruby_version_is ""..."2.7" do
-    it "taints self's String when the passed argument is tainted" do
-      (@io << "test".taint)
-      @io.string.tainted?.should be_true
-    end
-  end
-
-  ruby_version_is ""..."3.0" do
-    it "does not taint self when the passed argument is tainted" do
-      (@io << "test".taint)
-      @io.tainted?.should be_false
-    end
-  end
-
   it "updates self's position" do
     @io << "test"
     @io.pos.should eql(4)
@@ -58,10 +44,10 @@ end
 
 describe "StringIO#<< when self is not writable" do
   it "raises an IOError" do
-    io = StringIO.new("test", "r")
+    io = StringIO.new(+"test", "r")
     -> { io << "test" }.should raise_error(IOError)
 
-    io = StringIO.new("test")
+    io = StringIO.new(+"test")
     io.close_write
     -> { io << "test" }.should raise_error(IOError)
   end
@@ -69,7 +55,7 @@ end
 
 describe "StringIO#<< when in append mode" do
   before :each do
-    @io = StringIO.new("example", "a")
+    @io = StringIO.new(+"example", "a")
   end
 
   it "appends the passed argument to the end of self, ignoring current position" do

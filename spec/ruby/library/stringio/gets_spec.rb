@@ -171,6 +171,10 @@ describe "StringIO#gets when passed [limit]" do
   it "returns a blank string when passed a limit of 0" do
     @io.gets(0).should == ""
   end
+
+  it "ignores it when passed a negative limit" do
+    @io.gets(-4).should == "this>is>an>example"
+  end
 end
 
 describe "StringIO#gets when passed [separator] and [limit]" do
@@ -229,7 +233,7 @@ end
 
 describe "StringIO#gets when in write-only mode" do
   it "raises an IOError" do
-    io = StringIO.new("xyz", "w")
+    io = StringIO.new(+"xyz", "w")
     -> { io.gets }.should raise_error(IOError)
 
     io = StringIO.new("xyz")

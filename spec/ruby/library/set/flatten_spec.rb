@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/set_like'
 require 'set'
+set_version = defined?(Set::VERSION) ? Set::VERSION : '1.0.0'
 
 describe "Set#flatten" do
   it "returns a copy of self with each included Set flattened" do
@@ -45,9 +46,11 @@ describe "Set#flatten!" do
     -> { set.flatten! }.should raise_error(ArgumentError)
   end
 
-  context "when Set contains a Set-like object" do
-    it "flattens self, including Set-like objects" do
-      Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]
+  version_is(set_version, ""..."1.1.0") do #ruby_version_is ""..."3.3" do
+    context "when Set contains a Set-like object" do
+      it "flattens self, including Set-like objects" do
+        Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]
+      end
     end
   end
 end

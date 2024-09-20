@@ -1,13 +1,7 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   xmp.rb - irb version of gotoken xmp
-#   	$Release Version: 0.9$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
-#
-# --
-#
-#
 #
 
 require_relative "../irb"
@@ -50,8 +44,8 @@ class XMP
   # The top-level binding or, optional +bind+ parameter will be used when
   # creating the workspace. See WorkSpace.new for more information.
   #
-  # This uses the +:XMP+ prompt mode, see IRB@Customizing+the+IRB+Prompt for
-  # full detail.
+  # This uses the +:XMP+ prompt mode.
+  # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
   def initialize(bind = nil)
     IRB.init_config(nil)
 

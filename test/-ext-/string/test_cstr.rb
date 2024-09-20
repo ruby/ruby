@@ -43,7 +43,11 @@ class Test_StringCStr < Test::Unit::TestCase
   end
 
   def test_rb_str_new_frozen_embed
-    str = Bug::String.cstr_noembed("rbconfig.rb")
+    # "rbconfi" is the smallest "maximum embeddable string".  VWA adds
+    # a capacity field, which removes one pointer capacity for embedded objects,
+    # so if VWA is enabled, but there is only one size pool, then the
+    # maximum embeddable capacity on 32 bit machines is 8 bytes.
+    str = Bug::String.cstr_noembed("rbconfi")
     str = Bug::String.rb_str_new_frozen(str)
     assert_equal true, Bug::String.cstr_embedded?(str)
   end

@@ -17,3 +17,11 @@ end
 describe "StringIO#each when passed chomp" do
   it_behaves_like :stringio_each_chomp, :each
 end
+
+describe "StringIO#each when passed chomp" do
+  it_behaves_like :stringio_each_separator_and_chomp, :each
+end
+
+describe "StringIO#each when passed limit" do
+  it_behaves_like :stringio_each_limit, :each
+end

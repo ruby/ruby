@@ -42,8 +42,7 @@ module Bundler
 
       # Checks installed dependencies against spec's dependencies to make
       # sure needed dependencies have been installed.
-      def dependencies_installed?(all_specs)
-        installed_specs = all_specs.select(&:installed?).map(&:name)
+      def dependencies_installed?(installed_specs)
         dependencies.all? {|d| installed_specs.include? d.name }
       end
 
@@ -51,10 +50,6 @@ module Bundler
       # itself and are in the total list.
       def dependencies
         @dependencies ||= all_dependencies.reject {|dep| ignorable_dependency? dep }
-      end
-
-      def missing_lockfile_dependencies(all_spec_names)
-        dependencies.reject {|dep| all_spec_names.include? dep.name }
       end
 
       # Represents all dependencies
@@ -67,25 +62,27 @@ module Bundler
       end
     end
 
-    def self.call(*args)
-      new(*args).call
+    def self.call(*args, **kwargs)
+      new(*args, **kwargs).call
     end
 
     attr_reader :size
 
-    def initialize(installer, all_specs, size, standalone, force)
+    def initialize(installer, all_specs, size, standalone, force, local: false, skip: nil)
       @installer = installer
       @size = size
       @standalone = standalone
       @force = force
+      @local = local
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
+      @specs.each do |spec_install|
+        spec_install.state = :installed if skip.include?(spec_install.name)
+      end if skip
       @spec_set = all_specs
-      @rake = @specs.find {|s| s.name == "rake" }
+      @rake = @specs.find {|s| s.name == "rake" unless s.installed? }
     end
 
     def call
-      check_for_corrupt_lockfile
-
       if @rake
         do_install(@rake, 0)
         Gem::Specification.reset
@@ -97,60 +94,10 @@ module Bundler
         install_serially
       end
 
-      check_for_unmet_dependencies
-
       handle_error if failed_specs.any?
       @specs
     ensure
-      worker_pool && worker_pool.stop
-    end
-
-    def check_for_unmet_dependencies
-      unmet_dependencies = @specs.map do |s|
-        [
-          s,
-          s.dependencies.reject {|dep| @specs.any? {|spec| dep.matches_spec?(spec.spec) } },
-        ]
-      end.reject {|a| a.last.empty? }
-      return if unmet_dependencies.empty?
-
-      warning = []
-      warning << "Your lockfile doesn't include a valid resolution."
-      warning << "You can fix this by regenerating your lockfile or trying to manually editing the bad locked gems to a version that satisfies all dependencies."
-      warning << "The unmet dependencies are:"
-
-      unmet_dependencies.each do |spec, unmet_spec_dependencies|
-        unmet_spec_dependencies.each do |unmet_spec_dependency|
-          warning << "* #{unmet_spec_dependency}, depended upon #{spec.full_name}, unsatisfied by #{@specs.find {|s| s.name == unmet_spec_dependency.name && !unmet_spec_dependency.matches_spec?(s.spec) }.full_name}"
-        end
-      end
-
-      Bundler.ui.warn(warning.join("\n"))
-    end
-
-    def check_for_corrupt_lockfile
-      missing_dependencies = @specs.map do |s|
-        [
-          s,
-          s.missing_lockfile_dependencies(@specs.map(&:name)),
-        ]
-      end.reject {|a| a.last.empty? }
-      return if missing_dependencies.empty?
-
-      warning = []
-      warning << "Your lockfile was created by an old Bundler that left some things out."
-      if @size != 1
-        warning << "Because of the missing DEPENDENCIES, we can only install gems one at a time, instead of installing #{@size} at a time."
-        @size = 1
-      end
-      warning << "You can fix this by adding the missing gems to your Gemfile, running bundle install, and then removing the gems from your Gemfile."
-      warning << "The missing gems are:"
-
-      missing_dependencies.each do |spec, missing|
-        warning << "* #{missing.map(&:name).join(", ")} depended upon by #{spec.name}"
-      end
-
-      Bundler.ui.warn(warning.join("\n"))
+      worker_pool&.stop
     end
 
     private
@@ -181,7 +128,7 @@ module Bundler
     def do_install(spec_install, worker_num)
       Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL, spec_install)
       gem_installer = Bundler::GemInstaller.new(
-        spec_install.spec, @installer, @standalone, worker_num, @force
+        spec_install.spec, @installer, @standalone, worker_num, @force, @local
       )
       success, message = gem_installer.install_from_spec
       if success
@@ -239,8 +186,14 @@ module Bundler
     # previously installed specifications. We continue until all specs
     # are installed.
     def enqueue_specs
-      @specs.select(&:ready_to_enqueue?).each do |spec|
-        if spec.dependencies_installed? @specs
+      installed_specs = {}
+      @specs.each do |spec|
+        next unless spec.installed?
+        installed_specs[spec.name] = true
+      end
+
+      @specs.each do |spec|
+        if spec.ready_to_enqueue? && spec.dependencies_installed?(installed_specs)
           spec.state = :enqueued
           worker_pool.enq spec
         end

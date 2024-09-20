@@ -1,5 +1,6 @@
+require_relative '../../spec_helper'
+
 platform_is_not :windows do
-  require_relative '../../spec_helper'
   require 'expect'
 
   describe "IO#expect" do

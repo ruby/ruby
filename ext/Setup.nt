@@ -1,24 +1,20 @@
 #option platform cygwin|mingw|mswin
 #option nodynamic
 
-Win32API
 bigdecimal
 cgi/escape
-#dbm
 digest
 digest/md5
 digest/rmd160
 digest/sha1
 digest/sha2
-enumerator
 etc
 fcntl
-#gdbm
 #io/wait
 nkf
 #openssl
 #pty
-racc/cparse
+#racc/cparse
 #readline
 #ripper
 socket

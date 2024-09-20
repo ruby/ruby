@@ -96,6 +96,13 @@ class TestClass < Test::Unit::TestCase
 
   def test_superclass_of_basicobject
     assert_equal(nil, BasicObject.superclass)
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      module Mod end
+      BasicObject.include(Mod)
+      assert_equal(nil, BasicObject.superclass)
+    end;
   end
 
   def test_module_function
@@ -309,6 +316,7 @@ class TestClass < Test::Unit::TestCase
 
   def test_invalid_return_from_class_definition
     assert_syntax_error("class C; return; end", /Invalid return/)
+    assert_syntax_error("class << Object; return; end", /Invalid return/)
   end
 
   def test_invalid_yield_from_class_definition
@@ -353,6 +361,17 @@ class TestClass < Test::Unit::TestCase
       end
     END
     assert_equal(42, PrivateClass.new.foo)
+  end
+
+  def test_private_const_access
+    assert_raise_with_message NameError, /uninitialized/ do
+      begin
+        eval('class ::TestClass::PrivateClass; end')
+      rescue NameError
+      end
+
+      Object.const_get "NOT_AVAILABLE_CONST_NAME_#{__LINE__}"
+    end
   end
 
   StrClone = String.clone
@@ -702,9 +721,13 @@ class TestClass < Test::Unit::TestCase
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
-      Date = (class C\u{1f5ff}; self; end).new
+      module Bug
+        module Class
+          TestClassDefinedInC = (class C\u{1f5ff}; self; end).new
+        end
+      end
       assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
-        require 'date'
+        require '-test-/class'
       }
     end;
   end
@@ -738,38 +761,6 @@ class TestClass < Test::Unit::TestCase
     assert_same(c, Module.new.const_set(:Foo, c))
   end
 
-  def test_descendants
-    c = Class.new
-    sc = Class.new(c)
-    ssc = Class.new(sc)
-    [c, sc, ssc].each do |k|
-      k.include Module.new
-      k.new.define_singleton_method(:force_singleton_class){}
-    end
-    assert_equal([sc, ssc], c.descendants)
-    assert_equal([ssc], sc.descendants)
-    assert_equal([], ssc.descendants)
-
-    object_descendants = Object.descendants
-    assert_include(object_descendants, c)
-    assert_include(object_descendants, sc)
-    assert_include(object_descendants, ssc)
-  end
-
-  def test_descendants_gc
-    c = Class.new
-    100000.times { Class.new(c) }
-    assert(c.descendants.size <= 100000)
-  end
-
-  def test_descendants_gc_stress
-    10000.times do
-      c = Class.new
-      100.times { Class.new(c) }
-      assert(c.descendants.size <= 100)
-    end
-  end
-
   def test_subclasses
     c = Class.new
     sc = Class.new(c)
@@ -788,6 +779,31 @@ class TestClass < Test::Unit::TestCase
     assert_not_include(object_subclasses, ssc)
     object_subclasses.each do |subclass|
       assert_equal Object, subclass.superclass, "Expected #{subclass}.superclass to be Object"
+    end
+  end
+
+  def test_attached_object
+    c = Class.new
+    sc = c.singleton_class
+    obj = c.new
+
+    assert_equal(obj, obj.singleton_class.attached_object)
+    assert_equal(c, sc.attached_object)
+
+    assert_raise_with_message(TypeError, /is not a singleton class/) do
+      c.attached_object
+    end
+
+    assert_raise_with_message(TypeError, /'NilClass' is not a singleton class/) do
+      nil.singleton_class.attached_object
+    end
+
+    assert_raise_with_message(TypeError, /'FalseClass' is not a singleton class/) do
+      false.singleton_class.attached_object
+    end
+
+    assert_raise_with_message(TypeError, /'TrueClass' is not a singleton class/) do
+      true.singleton_class.attached_object
     end
   end
 
@@ -815,5 +831,14 @@ code = proc { Class.new }
 PREP
 3_000_000.times(&code)
 CODE
+  end
+
+  def test_instance_freeze_dont_freeze_the_class_bug_19164
+    klass = Class.new
+    klass.prepend(Module.new)
+
+    klass.new.freeze
+    klass.define_method(:bar) {}
+    assert_equal klass, klass.remove_method(:bar), '[Bug #19164]'
   end
 end

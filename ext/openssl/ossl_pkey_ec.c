@@ -109,13 +109,16 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
     VALUE obj;
 
     obj = rb_obj_alloc(klass);
-    GetPKey(obj, pkey);
 
     ec = ec_key_new_from_group(arg);
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
+        EVP_PKEY_free(pkey);
         EC_KEY_free(ec);
         ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
     }
+    RTYPEDDATA_DATA(obj) = pkey;
+
     if (!EC_KEY_generate_key(ec))
 	ossl_raise(eECError, "EC_KEY_generate_key");
 
@@ -136,75 +139,83 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
 static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec = NULL;
+    EC_KEY *ec;
+    BIO *in;
     VALUE arg, pass;
+    int type;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-        ossl_raise(eECError, "EC_KEY already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
 
     rb_scan_args(argc, argv, "02", &arg, &pass);
-
     if (NIL_P(arg)) {
         if (!(ec = EC_KEY_new()))
-	    ossl_raise(eECError, NULL);
-    } else if (rb_obj_is_kind_of(arg, cEC)) {
-	EC_KEY *other_ec = NULL;
-
-	GetEC(arg, other_ec);
-	if (!(ec = EC_KEY_dup(other_ec)))
-	    ossl_raise(eECError, NULL);
-    } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
-	ec = ec_key_new_from_group(arg);
-    } else {
-        BIO *in = ossl_obj2bio(&arg);
-        EVP_PKEY *tmp;
-        pass = ossl_pem_passwd_value(pass);
-        tmp = ossl_pkey_read_generic(in, pass);
-        if (tmp) {
-            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_EC)
-                rb_raise(eECError, "incorrect pkey type: %s",
-                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
-            ec = EVP_PKEY_get1_EC_KEY(tmp);
-            EVP_PKEY_free(tmp);
-        }
-	BIO_free(in);
-
-	if (!ec) {
-	    ossl_clear_error();
-	    ec = ec_key_new_from_group(arg);
-	}
+            ossl_raise(eECError, "EC_KEY_new");
+        goto legacy;
+    }
+    else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
+        ec = ec_key_new_from_group(arg);
+        goto legacy;
     }
 
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
-	EC_KEY_free(ec);
-	ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+    pass = ossl_pem_passwd_value(pass);
+    arg = ossl_to_der_if_possible(arg);
+    in = ossl_obj2bio(&arg);
+
+    pkey = ossl_pkey_read_generic(in, pass);
+    BIO_free(in);
+    if (!pkey) {
+        ossl_clear_error();
+        ec = ec_key_new_from_group(arg);
+        goto legacy;
     }
 
+    type = EVP_PKEY_base_id(pkey);
+    if (type != EVP_PKEY_EC) {
+        EVP_PKEY_free(pkey);
+        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+    }
+    RTYPEDDATA_DATA(self) = pkey;
+    return self;
+
+  legacy:
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
+        EVP_PKEY_free(pkey);
+        EC_KEY_free(ec);
+        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+    }
+    RTYPEDDATA_DATA(self) = pkey;
     return self;
 }
 
+#ifndef HAVE_EVP_PKEY_DUP
 static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
     EC_KEY *ec, *ec_new;
 
-    GetPKey(self, pkey);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
-	ossl_raise(eECError, "EC already initialized");
+    TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
+    if (pkey)
+        rb_raise(rb_eTypeError, "pkey already initialized");
     GetEC(other, ec);
 
     ec_new = EC_KEY_dup(ec);
     if (!ec_new)
 	ossl_raise(eECError, "EC_KEY_dup");
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec_new)) {
-	EC_KEY_free(ec_new);
-	ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+
+    pkey = EVP_PKEY_new();
+    if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec_new) != 1) {
+        EC_KEY_free(ec_new);
+        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
     }
+    RTYPEDDATA_DATA(self) = pkey;
 
     return self;
 }
+#endif
 
 /*
  * call-seq:
@@ -216,7 +227,7 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_ec_key_get_group(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const EC_GROUP *group;
 
     GetEC(self, ec);
@@ -237,6 +248,9 @@ ossl_ec_key_get_group(VALUE self)
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     EC_GROUP *group;
 
@@ -247,6 +261,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
         ossl_raise(eECError, "EC_KEY_set_group");
 
     return group_v;
+#endif
 }
 
 /*
@@ -257,7 +272,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
  */
 static VALUE ossl_ec_key_get_private_key(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const BIGNUM *bn;
 
     GetEC(self, ec);
@@ -275,6 +290,9 @@ static VALUE ossl_ec_key_get_private_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     BIGNUM *bn = NULL;
 
@@ -294,6 +312,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
     }
 
     return private_key;
+#endif
 }
 
 /*
@@ -304,7 +323,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
  */
 static VALUE ossl_ec_key_get_public_key(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
     const EC_POINT *point;
 
     GetEC(self, ec);
@@ -322,6 +341,9 @@ static VALUE ossl_ec_key_get_public_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
     EC_POINT *point = NULL;
 
@@ -341,6 +363,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
     }
 
     return public_key;
+#endif
 }
 
 /*
@@ -352,7 +375,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
  */
 static VALUE ossl_ec_key_is_public(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -368,7 +391,7 @@ static VALUE ossl_ec_key_is_public(VALUE self)
  */
 static VALUE ossl_ec_key_is_private(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
 
@@ -377,20 +400,70 @@ static VALUE ossl_ec_key_is_private(VALUE self)
 
 /*
  *  call-seq:
- *     key.export([cipher, pass_phrase]) => String
- *     key.to_pem([cipher, pass_phrase]) => String
+ *     key.export([cipher, password]) => String
+ *     key.to_pem([cipher, password]) => String
  *
- * Outputs the EC key in PEM encoding.  If _cipher_ and _pass_phrase_ are given
- * they will be used to encrypt the key.  _cipher_ must be an OpenSSL::Cipher
- * instance. Note that encryption will only be effective for a private key,
- * public keys will always be encoded in plain text.
+ * Serializes a private or public key to a PEM-encoding.
+ *
+ * [When the key contains public components only]
+ *
+ *   Serializes it into an X.509 SubjectPublicKeyInfo.
+ *   The parameters _cipher_ and _password_ are ignored.
+ *
+ *   A PEM-encoded key will look like:
+ *
+ *     -----BEGIN PUBLIC KEY-----
+ *     [...]
+ *     -----END PUBLIC KEY-----
+ *
+ *   Consider using #public_to_pem instead. This serializes the key into an
+ *   X.509 SubjectPublicKeyInfo regardless of whether it is a public key
+ *   or a private key.
+ *
+ * [When the key contains private components, and no parameters are given]
+ *
+ *   Serializes it into a SEC 1/RFC 5915 ECPrivateKey.
+ *
+ *   A PEM-encoded key will look like:
+ *
+ *     -----BEGIN EC PRIVATE KEY-----
+ *     [...]
+ *     -----END EC PRIVATE KEY-----
+ *
+ * [When the key contains private components, and _cipher_ and _password_ are given]
+ *
+ *   Serializes it into a SEC 1/RFC 5915 ECPrivateKey
+ *   and encrypts it in OpenSSL's traditional PEM encryption format.
+ *   _cipher_ must be a cipher name understood by OpenSSL::Cipher.new or an
+ *   instance of OpenSSL::Cipher.
+ *
+ *   An encrypted PEM-encoded key will look like:
+ *
+ *     -----BEGIN EC PRIVATE KEY-----
+ *     Proc-Type: 4,ENCRYPTED
+ *     DEK-Info: AES-128-CBC,733F5302505B34701FC41F5C0746E4C0
+ *
+ *     [...]
+ *     -----END EC PRIVATE KEY-----
+ *
+ *   Note that this format uses MD5 to derive the encryption key, and hence
+ *   will not be available on FIPS-compliant systems.
+ *
+ * <b>This method is kept for compatibility.</b>
+ * This should only be used when the SEC 1/RFC 5915 ECPrivateKey format is
+ * required.
+ *
+ * Consider using #public_to_pem (X.509 SubjectPublicKeyInfo) or #private_to_pem
+ * (PKCS #8 PrivateKeyInfo or EncryptedPrivateKeyInfo) instead.
  */
 static VALUE
 ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
+    if (EC_KEY_get0_public_key(ec) == NULL)
+        ossl_raise(eECError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(argc, argv, self, 0);
     else
@@ -401,14 +474,24 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     key.to_der   => String
  *
- *  See the OpenSSL documentation for i2d_ECPrivateKey_bio()
+ * Serializes a private or public key to a DER-encoding.
+ *
+ * See #to_pem for details.
+ *
+ * <b>This method is kept for compatibility.</b>
+ * This should only be used when the SEC 1/RFC 5915 ECPrivateKey format is
+ * required.
+ *
+ * Consider using #public_to_der or #private_to_der instead.
  */
 static VALUE
 ossl_ec_key_to_der(VALUE self)
 {
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
+    if (EC_KEY_get0_public_key(ec) == NULL)
+        ossl_raise(eECError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
@@ -430,6 +513,9 @@ ossl_ec_key_to_der(VALUE self)
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
+#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+    rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
+#else
     EC_KEY *ec;
 
     GetEC(self, ec);
@@ -437,6 +523,7 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
 	ossl_raise(eECError, "EC_KEY_generate_key");
 
     return self;
+#endif
 }
 
 /*
@@ -452,16 +539,28 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 #ifdef HAVE_EVP_PKEY_CHECK
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pctx;
-    int ret;
+    const EC_KEY *ec;
 
     GetPKey(self, pkey);
+    GetEC(self, ec);
     pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!pctx)
-        ossl_raise(eDHError, "EVP_PKEY_CTX_new");
-    ret = EVP_PKEY_public_check(pctx);
+        ossl_raise(eECError, "EVP_PKEY_CTX_new");
+
+    if (EC_KEY_get0_private_key(ec) != NULL) {
+        if (EVP_PKEY_check(pctx) != 1) {
+            EVP_PKEY_CTX_free(pctx);
+            ossl_raise(eECError, "EVP_PKEY_check");
+        }
+    }
+    else {
+        if (EVP_PKEY_public_check(pctx) != 1) {
+            EVP_PKEY_CTX_free(pctx);
+            ossl_raise(eECError, "EVP_PKEY_public_check");
+        }
+    }
+
     EVP_PKEY_CTX_free(pctx);
-    if (ret != 1)
-        ossl_raise(eECError, "EVP_PKEY_public_check");
 #else
     EC_KEY *ec;
 
@@ -487,7 +586,7 @@ static const rb_data_type_t ossl_ec_group_type = {
     {
 	0, ossl_ec_group_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -637,10 +736,11 @@ static VALUE ossl_ec_group_eql(VALUE a, VALUE b)
     GetECGroup(a, group1);
     GetECGroup(b, group2);
 
-    if (EC_GROUP_cmp(group1, group2, ossl_bn_ctx) == 1)
-       return Qfalse;
-
-    return Qtrue;
+    switch (EC_GROUP_cmp(group1, group2, ossl_bn_ctx)) {
+    case 0: return Qtrue;
+    case 1: return Qfalse;
+    default: ossl_raise(eEC_GROUP, "EC_GROUP_cmp");
+    }
 }
 
 /*
@@ -1071,7 +1171,7 @@ static const rb_data_type_t ossl_ec_point_type = {
     {
 	0, ossl_ec_point_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1201,10 +1301,13 @@ static VALUE ossl_ec_point_eql(VALUE a, VALUE b)
     GetECPoint(b, point2);
     GetECGroup(group_v1, group);
 
-    if (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx) == 1)
-        return Qfalse;
+    switch (EC_POINT_cmp(group, point1, point2, ossl_bn_ctx)) {
+    case 0: return Qtrue;
+    case 1: return Qfalse;
+    default: ossl_raise(eEC_POINT, "EC_POINT_cmp");
+    }
 
-    return Qtrue;
+    UNREACHABLE;
 }
 
 /*
@@ -1222,7 +1325,7 @@ static VALUE ossl_ec_point_is_at_infinity(VALUE self)
     switch (EC_POINT_is_at_infinity(group, point)) {
     case 1: return Qtrue;
     case 0: return Qfalse;
-    default: ossl_raise(cEC_POINT, "EC_POINT_is_at_infinity");
+    default: ossl_raise(eEC_POINT, "EC_POINT_is_at_infinity");
     }
 
     UNREACHABLE;
@@ -1243,7 +1346,7 @@ static VALUE ossl_ec_point_is_on_curve(VALUE self)
     switch (EC_POINT_is_on_curve(group, point, ossl_bn_ctx)) {
     case 1: return Qtrue;
     case 0: return Qfalse;
-    default: ossl_raise(cEC_POINT, "EC_POINT_is_on_curve");
+    default: ossl_raise(eEC_POINT, "EC_POINT_is_on_curve");
     }
 
     UNREACHABLE;
@@ -1266,7 +1369,7 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
 #if !OSSL_OPENSSL_PREREQ(3, 0, 0)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
-        ossl_raise(cEC_POINT, "EC_POINT_make_affine");
+        ossl_raise(eEC_POINT, "EC_POINT_make_affine");
 #endif
 
     return self;
@@ -1285,7 +1388,7 @@ static VALUE ossl_ec_point_invert(VALUE self)
     GetECPointGroup(self, group);
 
     if (EC_POINT_invert(group, point, ossl_bn_ctx) != 1)
-        ossl_raise(cEC_POINT, "EC_POINT_invert");
+        ossl_raise(eEC_POINT, "EC_POINT_invert");
 
     return self;
 }
@@ -1303,7 +1406,7 @@ static VALUE ossl_ec_point_set_to_infinity(VALUE self)
     GetECPointGroup(self, group);
 
     if (EC_POINT_set_to_infinity(group, point) != 1)
-        ossl_raise(cEC_POINT, "EC_POINT_set_to_infinity");
+        ossl_raise(eEC_POINT, "EC_POINT_set_to_infinity");
 
     return self;
 }
@@ -1514,8 +1617,9 @@ void Init_ossl_ec(void)
 
     rb_define_singleton_method(cEC, "generate", ossl_ec_key_s_generate, 1);
     rb_define_method(cEC, "initialize", ossl_ec_key_initialize, -1);
+#ifndef HAVE_EVP_PKEY_DUP
     rb_define_method(cEC, "initialize_copy", ossl_ec_key_initialize_copy, 1);
-/* copy/dup/cmp */
+#endif
 
     rb_define_method(cEC, "group", ossl_ec_key_get_group, 0);
     rb_define_method(cEC, "group=", ossl_ec_key_set_group, 1);

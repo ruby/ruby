@@ -355,6 +355,41 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_remove_instance_variable_re_embed
+    require "objspace"
+
+    c = Class.new do
+      def a = @a
+
+      def b = @b
+
+      def c = @c
+    end
+
+    o1 = c.new
+    o2 = c.new
+
+    o1.instance_variable_set(:@foo, 5)
+    o1.instance_variable_set(:@a, 0)
+    o1.instance_variable_set(:@b, 1)
+    o1.instance_variable_set(:@c, 2)
+    refute_includes ObjectSpace.dump(o1), '"embedded":true'
+    o1.remove_instance_variable(:@foo)
+    assert_includes ObjectSpace.dump(o1), '"embedded":true'
+
+    o2.instance_variable_set(:@a, 0)
+    o2.instance_variable_set(:@b, 1)
+    o2.instance_variable_set(:@c, 2)
+    assert_includes ObjectSpace.dump(o2), '"embedded":true'
+
+    assert_equal(0, o1.a)
+    assert_equal(1, o1.b)
+    assert_equal(2, o1.c)
+    assert_equal(0, o2.a)
+    assert_equal(1, o2.b)
+    assert_equal(2, o2.c)
+  end
+
   def test_convert_string
     o = Object.new
     def o.to_s; 1; end
@@ -422,6 +457,18 @@ class TestObject < Test::Unit::TestCase
     assert_equal(1+3+5+7+9, n)
   end
 
+  def test_max_shape_variation_with_performance_warnings
+    assert_in_out_err([], <<-INPUT, %w(), /The class Foo reached 8 shape variations, instance variables accesses will be slower and memory usage increased/)
+      $VERBOSE = false
+      Warning[:performance] = true
+
+      class Foo; end
+      10.times do |i|
+        Foo.new.instance_variable_set(:"@a\#{i}", nil)
+      end
+    INPUT
+  end
+
   def test_redefine_method_under_verbose
     assert_in_out_err([], <<-INPUT, %w(2), /warning: method redefined; discarding old foo$/)
       $VERBOSE = true
@@ -433,12 +480,12 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining `object_id' may cause serious problems$")
+    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining 'object_id' may cause serious problems$")
       $VERBOSE = false
       def (Object.new).object_id; end
     INPUT
 
-    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining `__send__' may cause serious problems$")
+    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '__send__' may cause serious problems$")
       $VERBOSE = false
       def (Object.new).__send__; end
     INPUT
@@ -481,7 +528,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(NoMethodError, bug2202) {o2.meth2}
 
     %w(object_id __send__ initialize).each do |m|
-      assert_in_out_err([], <<-INPUT, %w(:ok), %r"warning: removing `#{m}' may cause serious problems$")
+      assert_in_out_err([], <<-INPUT, %w(:ok), %r"warning: removing '#{m}' may cause serious problems$")
         $VERBOSE = false
         begin
           Class.new.instance_eval { remove_method(:#{m}) }
@@ -853,6 +900,15 @@ class TestObject < Test::Unit::TestCase
     x.instance_variable_set(:@bar, 42)
     assert_match(/\A#<Object:0x\h+ (?:@foo="value", @bar=42|@bar=42, @foo="value")>\z/, x.inspect)
 
+    # Bug: [ruby-core:19167]
+    x = Object.new
+    x.instance_variable_set(:@foo, NilClass)
+    assert_match(/\A#<Object:0x\h+ @foo=NilClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, TrueClass)
+    assert_match(/\A#<Object:0x\h+ @foo=TrueClass>\z/, x.inspect)
+    x.instance_variable_set(:@foo, FalseClass)
+    assert_match(/\A#<Object:0x\h+ @foo=FalseClass>\z/, x.inspect)
+
     # #inspect does not call #to_s anymore
     feature6130 = '[ruby-core:43238]'
     x = Object.new
@@ -925,6 +981,19 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_singleton_class_freeze
+    x = Object.new
+    xs = x.singleton_class
+    x.freeze
+    assert_predicate(xs, :frozen?)
+
+    y = Object.new
+    ys = y.singleton_class
+    ys.prepend(Module.new)
+    y.freeze
+    assert_predicate(ys, :frozen?, '[Bug #19169]')
+  end
+
   def test_redef_method_missing
     bug5473 = '[ruby-core:40287]'
     ['ArgumentError.new("bug5473")', 'ArgumentError, "bug5473"', '"bug5473"'].each do |code|
@@ -992,5 +1061,14 @@ class TestObject < Test::Unit::TestCase
         GC.start
       end
     EOS
+  end
+
+  def test_frozen_inspect
+    obj = Object.new
+    obj.instance_variable_set(:@a, "a")
+    ins = obj.inspect
+    obj.freeze
+
+    assert_equal(ins, obj.inspect)
   end
 end

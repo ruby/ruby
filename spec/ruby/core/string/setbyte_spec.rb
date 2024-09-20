@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 
 describe "String#setbyte" do
@@ -36,6 +37,12 @@ describe "String#setbyte" do
     str.valid_encoding?.should be_true
     str.setbyte(2,253)
     str.valid_encoding?.should be_false
+
+    str = "ABC"
+    str.setbyte(0, 0x20) # ' '
+    str.should.valid_encoding?
+    str.setbyte(0, 0xE3)
+    str.should_not.valid_encoding?
   end
 
   it "regards a negative index as counting from the end of the String" do

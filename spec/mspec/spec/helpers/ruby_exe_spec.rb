@@ -145,9 +145,9 @@ RSpec.describe Object, "#ruby_exe" do
     stub_const 'RUBY_EXE', 'ruby_spec_exe -w -Q'
 
     @script = RubyExeSpecs.new
-    allow(@script).to receive(:`).and_return('OUTPUT')
+    allow(IO).to receive(:popen).and_return('OUTPUT')
 
-    status_successful = double(Process::Status,  exitstatus: 0)
+    status_successful = double(Process::Status, exited?: true, exitstatus: 0)
     allow(Process).to receive(:last_status).and_return(status_successful)
   end
 
@@ -155,7 +155,7 @@ RSpec.describe Object, "#ruby_exe" do
     code = "code"
     options = {}
     output = "output"
-    allow(@script).to receive(:`).and_return(output)
+    expect(IO).to receive(:popen).and_return(output)
 
     expect(@script.ruby_exe(code, options)).to eq output
   end
@@ -168,7 +168,7 @@ RSpec.describe Object, "#ruby_exe" do
     code = "code"
     options = {}
     expect(@script).to receive(:ruby_cmd).and_return("ruby_cmd")
-    expect(@script).to receive(:`).with("ruby_cmd")
+    expect(IO).to receive(:popen).with("ruby_cmd")
     @script.ruby_exe(code, options)
   end
 
@@ -176,7 +176,7 @@ RSpec.describe Object, "#ruby_exe" do
     code = "code"
     options = {}
 
-    status_failed = double(Process::Status, exitstatus: 4)
+    status_failed = double(Process::Status, exited?: true, exitstatus: 4)
     allow(Process).to receive(:last_status).and_return(status_failed)
 
     expect {
@@ -184,16 +184,16 @@ RSpec.describe Object, "#ruby_exe" do
     }.to raise_error(%r{Expected exit status is 0 but actual is 4 for command ruby_exe\(.+\)})
   end
 
-  it "shows in the exception message if exitstatus is nil (e.g., signal)" do
+  it "shows in the exception message if a signal killed the process" do
     code = "code"
     options = {}
 
-    status_failed = double(Process::Status, exitstatus: nil)
+    status_failed = double(Process::Status, exited?: false, signaled?: true, termsig: Signal.list.fetch('TERM'))
     allow(Process).to receive(:last_status).and_return(status_failed)
 
     expect {
       @script.ruby_exe(code, options)
-    }.to raise_error(%r{Expected exit status is 0 but actual is nil for command ruby_exe\(.+\)})
+    }.to raise_error(%r{Expected exit status is 0 but actual is :SIGTERM for command ruby_exe\(.+\)})
   end
 
   describe "with :dir option" do
@@ -227,7 +227,7 @@ RSpec.describe Object, "#ruby_exe" do
       expect(ENV).to receive(:[]=).with("ABC", "xyz")
       expect(ENV).to receive(:[]=).with("ABC", "123")
 
-      expect(@script).to receive(:`).and_raise(Exception)
+      expect(IO).to receive(:popen).and_raise(Exception)
       expect do
         @script.ruby_exe nil, :env => { :ABC => "xyz" }
       end.to raise_error(Exception)
@@ -236,7 +236,7 @@ RSpec.describe Object, "#ruby_exe" do
 
   describe "with :exit_status option" do
     before do
-      status_failed = double(Process::Status, exitstatus: 4)
+      status_failed = double(Process::Status, exited?: true, exitstatus: 4)
       allow(Process).to receive(:last_status).and_return(status_failed)
     end
 
@@ -248,7 +248,7 @@ RSpec.describe Object, "#ruby_exe" do
 
     it "does not raise exception when command ends with expected status" do
       output = "output"
-      allow(@script).to receive(:`).and_return(output)
+      expect(IO).to receive(:popen).and_return(output)
 
       expect(@script.ruby_exe("path", exit_status: 4)).to eq output
     end

@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'test_optparse'
 
-class TestOptionParser::CClass < TestOptionParser
+class TestOptionParserCClass < TestOptionParser
   def test_no_argument
     flags = []
     @opt.def_option("-[a-z]") {|x| flags << x}

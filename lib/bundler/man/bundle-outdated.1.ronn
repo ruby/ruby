@@ -10,7 +10,6 @@ bundle-outdated(1) -- List installed gems with newer versions available
                         [--parseable | --porcelain]
                         [--group=GROUP]
                         [--groups]
-                        [--update-strict]
                         [--patch|--minor|--major]
                         [--filter-major]
                         [--filter-minor]
@@ -36,7 +35,7 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
   Check against a specific source.
 
 * `--strict`:
-  Only list newer versions allowed by your Gemfile requirements.
+  Only list newer versions allowed by your Gemfile requirements, also respecting conservative update flags (--patch, --minor, --major).
 
 * `--parseable`, `--porcelain`:
    Use minimal formatting for more parseable output.
@@ -46,9 +45,6 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 
 * `--groups`:
   List gems organized by groups.
-
-* `--update-strict`:
-  Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor| --major.
 
 * `--minor`:
   Prefer updating only to next minor version.
@@ -75,11 +71,6 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 
 See [bundle update(1)](bundle-update.1.html) for details.
 
-One difference between the patch level options in `bundle update` and here is the `--strict` option.
-`--strict` was already an option on outdated before the patch level options were added. `--strict`
-wasn't altered, and the `--update-strict` option on `outdated` reflects what `--strict` does on
-`bundle update`.
-
 ## FILTERING OUTPUT
 
 The 3 filtering options do not affect the resolution of versions, merely what versions are shown
@@ -87,25 +78,29 @@ in the output.
 
 If the regular output shows the following:
 
-    * faker (newest 1.6.6, installed 1.6.5, requested ~> 1.4) in groups "development, test"
-    * hashie (newest 3.4.6, installed 1.2.0, requested = 1.2.0) in groups "default"
-    * headless (newest 2.3.1, installed 2.2.3) in groups "test"
+    * Gem       Current  Latest  Requested  Groups
+    * faker     1.6.5    1.6.6   ~> 1.4     development, test
+    * hashie    1.2.0    3.4.6   = 1.2.0    default
+    * headless  2.2.3    2.3.1   = 2.2.3    test
 
 `--filter-major` would only show:
 
-    * hashie (newest 3.4.6, installed 1.2.0, requested = 1.2.0) in groups "default"
+    * Gem       Current  Latest  Requested  Groups
+    * hashie    1.2.0    3.4.6   = 1.2.0    default
 
 `--filter-minor` would only show:
 
-    * headless (newest 2.3.1, installed 2.2.3) in groups "test"
+    * Gem       Current  Latest  Requested  Groups
+    * headless  2.2.3    2.3.1   = 2.2.3    test
 
 `--filter-patch` would only show:
 
-    * faker (newest 1.6.6, installed 1.6.5, requested ~> 1.4) in groups "development, test"
+    * Gem       Current  Latest  Requested  Groups
+    * faker     1.6.5    1.6.6   ~> 1.4     development, test
 
 Filter options can be combined. `--filter-minor` and `--filter-patch` would show:
 
-    * faker (newest 1.6.6, installed 1.6.5, requested ~> 1.4) in groups "development, test"
-    * headless (newest 2.3.1, installed 2.2.3) in groups "test"
+    * Gem       Current  Latest  Requested  Groups
+    * faker     1.6.5    1.6.6   ~> 1.4     development, test
 
 Combining all three `filter` options would be the same result as providing none of them.

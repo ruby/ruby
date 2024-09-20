@@ -47,7 +47,7 @@ module Bundler
 
       def fetch_valid_mirror_for(uri)
         downcased = uri.to_s.downcase
-        mirror = @mirrors[downcased] || @mirrors[Bundler::URI(downcased).host] || Mirror.new(uri)
+        mirror = @mirrors[downcased] || @mirrors[Gem::URI(downcased).host] || Mirror.new(uri)
         mirror.validate!(@prober)
         mirror = Mirror.new(uri) unless mirror.valid?
         mirror
@@ -74,7 +74,7 @@ module Bundler
         @uri = if uri.nil?
           nil
         else
-          Bundler::URI(uri.to_s)
+          Gem::URI(uri.to_s)
         end
         @valid = nil
       end
@@ -126,7 +126,7 @@ module Bundler
         if uri == "all"
           @all = true
         else
-          @uri = Bundler::URI(uri).absolute? ? Settings.normalize_uri(uri) : uri
+          @uri = Gem::URI(uri).absolute? ? Settings.normalize_uri(uri) : uri
         end
         @value = value
       end
@@ -148,13 +148,11 @@ module Bundler
     class TCPSocketProbe
       def replies?(mirror)
         MirrorSockets.new(mirror).any? do |socket, address, timeout|
-          begin
-            socket.connect_nonblock(address)
-          rescue Errno::EINPROGRESS
-            wait_for_writtable_socket(socket, address, timeout)
-          rescue RuntimeError # Connection failed somehow, again
-            false
-          end
+          socket.connect_nonblock(address)
+        rescue Errno::EINPROGRESS
+          wait_for_writtable_socket(socket, address, timeout)
+        rescue RuntimeError # Connection failed somehow, again
+          false
         end
       end
 

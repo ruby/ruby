@@ -11,14 +11,6 @@ describe "Enumerator#initialize" do
     Enumerator.should have_private_instance_method(:initialize, false)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns self when given an object" do
-      suppress_warning do
-        @uninitialized.send(:initialize, Object.new).should equal(@uninitialized)
-      end
-    end
-  end
-
   it "returns self when given a block" do
     @uninitialized.send(:initialize) {}.should equal(@uninitialized)
   end
@@ -56,10 +48,10 @@ describe "Enumerator#initialize" do
   end
 
   describe "on frozen instance" do
-    it "raises a RuntimeError" do
+    it "raises a FrozenError" do
       -> {
         @uninitialized.freeze.send(:initialize) {}
-      }.should raise_error(RuntimeError)
+      }.should raise_error(FrozenError)
     end
   end
 end

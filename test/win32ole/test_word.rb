@@ -35,13 +35,13 @@ if defined?(WIN32OLE)
   class TestWIN32OLE_WITH_WORD < Test::Unit::TestCase
     unless word_installed?
       def test_dummy_for_skip_message
-        skip "Microsoft Word is not installed"
+        omit "Microsoft Word is not installed"
       end
     else
       def setup
         begin
           @obj = WIN32OLE.new('Word.Application')
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
           @obj = nil
         end
       end

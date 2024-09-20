@@ -21,7 +21,7 @@ $DEBUG_RDOC = nil
 # see RDoc::Markup and refer to <tt>rdoc --help</tt> for command line usage.
 #
 # If you want to set the default markup format see
-# RDoc::Markup@Supported+Formats
+# RDoc::Markup@Markup+Formats
 #
 # If you want to store rdoc configuration in your gem (such as the default
 # markup format) see RDoc::Options@Saved+Options
@@ -62,7 +62,7 @@ module RDoc
 
   class Error < RuntimeError; end
 
-  require 'rdoc/version'
+  require_relative 'rdoc/version'
 
   ##
   # Method visibilities
@@ -120,6 +120,17 @@ module RDoc
     end
   end
 
+  ##
+  # Searches and returns the directory for settings.
+  #
+  # 1. <tt>$HOME/.rdoc</tt> directory, if it exists.
+  # 2. The +rdoc+ directory under the path specified by the
+  #    +XDG_DATA_HOME+ environment variable, if it is set.
+  # 3. <tt>$HOME/.local/share/rdoc</tt> directory.
+  #
+  # Other than the home directory, the containing directory will be
+  # created automatically.
+
   def self.home
     rdoc_dir = begin
                 File.expand_path('~/.rdoc')
@@ -129,6 +140,7 @@ module RDoc
     if File.directory?(rdoc_dir)
       rdoc_dir
     else
+      require 'fileutils'
       begin
         # XDG
         xdg_data_home = ENV["XDG_DATA_HOME"] || File.join(File.expand_path("~"), '.local', 'share')
@@ -141,61 +153,61 @@ module RDoc
     end
   end
 
-  autoload :RDoc,           'rdoc/rdoc'
+  autoload :RDoc,           "#{__dir__}/rdoc/rdoc"
 
-  autoload :CrossReference, 'rdoc/cross_reference'
-  autoload :ERBIO,          'rdoc/erbio'
-  autoload :ERBPartial,     'rdoc/erb_partial'
-  autoload :Encoding,       'rdoc/encoding'
-  autoload :Generator,      'rdoc/generator'
-  autoload :Options,        'rdoc/options'
-  autoload :Parser,         'rdoc/parser'
-  autoload :Servlet,        'rdoc/servlet'
-  autoload :RI,             'rdoc/ri'
-  autoload :Stats,          'rdoc/stats'
-  autoload :Store,          'rdoc/store'
-  autoload :Task,           'rdoc/task'
-  autoload :Text,           'rdoc/text'
+  autoload :CrossReference, "#{__dir__}/rdoc/cross_reference"
+  autoload :ERBIO,          "#{__dir__}/rdoc/erbio"
+  autoload :ERBPartial,     "#{__dir__}/rdoc/erb_partial"
+  autoload :Encoding,       "#{__dir__}/rdoc/encoding"
+  autoload :Generator,      "#{__dir__}/rdoc/generator"
+  autoload :Options,        "#{__dir__}/rdoc/options"
+  autoload :Parser,         "#{__dir__}/rdoc/parser"
+  autoload :Servlet,        "#{__dir__}/rdoc/servlet"
+  autoload :RI,             "#{__dir__}/rdoc/ri"
+  autoload :Stats,          "#{__dir__}/rdoc/stats"
+  autoload :Store,          "#{__dir__}/rdoc/store"
+  autoload :Task,           "#{__dir__}/rdoc/task"
+  autoload :Text,           "#{__dir__}/rdoc/text"
 
-  autoload :Markdown,       'rdoc/markdown'
-  autoload :Markup,         'rdoc/markup'
-  autoload :RD,             'rdoc/rd'
-  autoload :TomDoc,         'rdoc/tom_doc'
+  autoload :Markdown,       "#{__dir__}/rdoc/markdown"
+  autoload :Markup,         "#{__dir__}/rdoc/markup"
+  autoload :RD,             "#{__dir__}/rdoc/rd"
+  autoload :TomDoc,         "#{__dir__}/rdoc/tom_doc"
 
-  autoload :KNOWN_CLASSES,  'rdoc/known_classes'
+  autoload :KNOWN_CLASSES,  "#{__dir__}/rdoc/known_classes"
 
-  autoload :TokenStream,    'rdoc/token_stream'
+  autoload :TokenStream,    "#{__dir__}/rdoc/token_stream"
 
-  autoload :Comment,        'rdoc/comment'
+  autoload :Comment,        "#{__dir__}/rdoc/comment"
 
-  require 'rdoc/i18n'
+  require_relative 'rdoc/i18n'
 
   # code objects
   #
   # We represent the various high-level code constructs that appear in Ruby
   # programs: classes, modules, methods, and so on.
-  autoload :CodeObject,     'rdoc/code_object'
+  autoload :CodeObject,     "#{__dir__}/rdoc/code_object"
 
-  autoload :Context,        'rdoc/context'
-  autoload :TopLevel,       'rdoc/top_level'
+  autoload :Context,        "#{__dir__}/rdoc/code_object/context"
+  autoload :TopLevel,       "#{__dir__}/rdoc/code_object/top_level"
 
-  autoload :AnonClass,      'rdoc/anon_class'
-  autoload :ClassModule,    'rdoc/class_module'
-  autoload :NormalClass,    'rdoc/normal_class'
-  autoload :NormalModule,   'rdoc/normal_module'
-  autoload :SingleClass,    'rdoc/single_class'
+  autoload :AnonClass,      "#{__dir__}/rdoc/code_object/anon_class"
+  autoload :ClassModule,    "#{__dir__}/rdoc/code_object/class_module"
+  autoload :NormalClass,    "#{__dir__}/rdoc/code_object/normal_class"
+  autoload :NormalModule,   "#{__dir__}/rdoc/code_object/normal_module"
+  autoload :SingleClass,    "#{__dir__}/rdoc/code_object/single_class"
 
-  autoload :Alias,          'rdoc/alias'
-  autoload :AnyMethod,      'rdoc/any_method'
-  autoload :MethodAttr,     'rdoc/method_attr'
-  autoload :GhostMethod,    'rdoc/ghost_method'
-  autoload :MetaMethod,     'rdoc/meta_method'
-  autoload :Attr,           'rdoc/attr'
+  autoload :Alias,          "#{__dir__}/rdoc/code_object/alias"
+  autoload :AnyMethod,      "#{__dir__}/rdoc/code_object/any_method"
+  autoload :MethodAttr,     "#{__dir__}/rdoc/code_object/method_attr"
+  autoload :GhostMethod,    "#{__dir__}/rdoc/code_object/ghost_method"
+  autoload :MetaMethod,     "#{__dir__}/rdoc/code_object/meta_method"
+  autoload :Attr,           "#{__dir__}/rdoc/code_object/attr"
 
-  autoload :Constant,       'rdoc/constant'
-  autoload :Mixin,          'rdoc/mixin'
-  autoload :Include,        'rdoc/include'
-  autoload :Extend,         'rdoc/extend'
-  autoload :Require,        'rdoc/require'
+  autoload :Constant,       "#{__dir__}/rdoc/code_object/constant"
+  autoload :Mixin,          "#{__dir__}/rdoc/code_object/mixin"
+  autoload :Include,        "#{__dir__}/rdoc/code_object/include"
+  autoload :Extend,         "#{__dir__}/rdoc/code_object/extend"
+  autoload :Require,        "#{__dir__}/rdoc/code_object/require"
 
 end

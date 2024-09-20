@@ -22,6 +22,7 @@ module Bundler
       @metadata_source        = Source::Metadata.new
 
       @merged_gem_lockfile_sections = false
+      @local_mode = true
     end
 
     def merged_gem_lockfile_sections?
@@ -71,6 +72,10 @@ module Bundler
     def add_global_rubygems_remote(uri)
       global_rubygems_source.add_remote(uri)
       global_rubygems_source
+    end
+
+    def local_mode?
+      @local_mode
     end
 
     def default_source
@@ -140,11 +145,17 @@ module Bundler
       all_sources.each(&:local_only!)
     end
 
+    def local!
+      all_sources.each(&:local!)
+    end
+
     def cached!
       all_sources.each(&:cached!)
     end
 
     def remote!
+      @local_mode = false
+
       all_sources.each(&:remote!)
     end
 
@@ -157,18 +168,37 @@ module Bundler
     end
 
     def map_sources(replacement_sources)
-      [@rubygems_sources, @path_sources, @git_sources, @plugin_sources].map do |sources|
+      rubygems = @rubygems_sources.map do |source|
+        replace_rubygems_source(replacement_sources, source) || source
+      end
+
+      git, plugin = [@git_sources, @plugin_sources].map do |sources|
         sources.map do |source|
           replacement_sources.find {|s| s == source } || source
         end
       end
+
+      path = @path_sources.map do |source|
+        replacement_sources.find {|s| s == (source.is_a?(Source::Gemspec) ? source.as_path_source : source) } || source
+      end
+
+      [rubygems, path, git, plugin]
     end
 
     def global_replacement_source(replacement_sources)
-      replacement_source = replacement_sources.find {|s| s == global_rubygems_source }
+      replacement_source = replace_rubygems_source(replacement_sources, global_rubygems_source)
       return global_rubygems_source unless replacement_source
 
       replacement_source.local!
+      replacement_source
+    end
+
+    def replace_rubygems_source(replacement_sources, gemfile_source)
+      replacement_source = replacement_sources.find {|s| s == gemfile_source }
+      return unless replacement_source
+
+      # locked sources never include credentials so always prefer remotes from the gemfile
+      replacement_source.remotes = gemfile_source.remotes
       replacement_source
     end
 
@@ -202,7 +232,7 @@ module Bundler
     def warn_on_git_protocol(source)
       return if Bundler.settings["git.allow_insecure"]
 
-      if source.uri =~ /^git\:/
+      if /^git\:/.match?(source.uri)
         Bundler.ui.warn "The git source `#{source.uri}` uses the `git` protocol, " \
           "which transmits data without encryption. Disable this warning with " \
           "`bundle config set --local git.allow_insecure true`, or switch to the `https` " \

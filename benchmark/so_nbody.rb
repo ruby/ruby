@@ -12,38 +12,38 @@ def _puts *args
 end
 
 class Planet
- attr_accessor :x, :y, :z, :vx, :vy, :vz, :mass
+  attr_accessor :x, :y, :z, :vx, :vy, :vz, :mass
 
- def initialize(x, y, z, vx, vy, vz, mass)
-  @x, @y, @z = x, y, z
-  @vx, @vy, @vz = vx * DAYS_PER_YEAR, vy * DAYS_PER_YEAR, vz * DAYS_PER_YEAR
-  @mass = mass * SOLAR_MASS
- end
-
- def move_from_i(bodies, nbodies, dt, i)
-  while i < nbodies
-   b2 = bodies[i]
-   dx = @x - b2.x
-   dy = @y - b2.y
-   dz = @z - b2.z
-
-   distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
-   mag = dt / (distance * distance * distance)
-   b_mass_mag, b2_mass_mag = @mass * mag, b2.mass * mag
-
-   @vx -= dx * b2_mass_mag
-   @vy -= dy * b2_mass_mag
-   @vz -= dz * b2_mass_mag
-   b2.vx += dx * b_mass_mag
-   b2.vy += dy * b_mass_mag
-   b2.vz += dz * b_mass_mag
-   i += 1
+  def initialize(x, y, z, vx, vy, vz, mass)
+    @x, @y, @z = x, y, z
+    @vx, @vy, @vz = vx * DAYS_PER_YEAR, vy * DAYS_PER_YEAR, vz * DAYS_PER_YEAR
+    @mass = mass * SOLAR_MASS
   end
 
-  @x += dt * @vx
-  @y += dt * @vy
-  @z += dt * @vz
- end
+  def move_from_i(bodies, nbodies, dt, i)
+    while i < nbodies
+      b2 = bodies[i]
+      dx = @x - b2.x
+      dy = @y - b2.y
+      dz = @z - b2.z
+
+      distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+      mag = dt / (distance * distance * distance)
+      b_mass_mag, b2_mass_mag = @mass * mag, b2.mass * mag
+
+      @vx -= dx * b2_mass_mag
+      @vy -= dy * b2_mass_mag
+      @vz -= dz * b2_mass_mag
+      b2.vx += dx * b_mass_mag
+      b2.vy += dy * b_mass_mag
+      b2.vz += dz * b_mass_mag
+      i += 1
+    end
+
+    @x += dt * @vx
+    @y += dt * @vy
+    @z += dt * @vz
+  end
 end
 
 def energy(bodies)

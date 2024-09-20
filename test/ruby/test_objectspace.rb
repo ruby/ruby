@@ -65,6 +65,14 @@ End
     assert_raise_with_message(TypeError, msg) {ObjectSpace._id2ref(Object.new)}
   end
 
+  def test_id2ref_invalid_symbol_id
+    # RB_STATIC_SYM_P checks for static symbols by checking that the bottom
+    # 8 bits of the object is equal to RUBY_SYMBOL_FLAG, so we need to make
+    # sure that the bottom 8 bits remain unchanged.
+    msg = /is not symbol id value/
+    assert_raise_with_message(RangeError, msg) { ObjectSpace._id2ref(:a.object_id + 256) }
+  end
+
   def test_count_objects
     h = {}
     ObjectSpace.count_objects(h)
@@ -93,6 +101,20 @@ End
       ObjectSpace.define_finalizer(a) { p :ok }
       !b
     END
+
+    assert_in_out_err(["-e", <<~RUBY], "", %w(:ok :ok), [], timeout: 60)
+      a = Object.new
+      ObjectSpace.define_finalizer(a) { p :ok }
+
+      1_000_000.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o) { }
+      end
+
+      b = Object.new
+      ObjectSpace.define_finalizer(b) { p :ok }
+    RUBY
+
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
 
     code = proc do |priv|
@@ -169,30 +191,29 @@ End
   end
 
   def test_finalizer_thread_raise
-    GC.disable
-    fzer = proc do |id|
-      sleep 0.2
-    end
-    2.times do
-      o = Object.new
-      ObjectSpace.define_finalizer(o, fzer)
-    end
-
-    my_error = Class.new(RuntimeError)
-    begin
-      main_th = Thread.current
-      Thread.new do
-        sleep 0.1
-        main_th.raise(my_error)
+    EnvUtil.without_gc do
+      fzer = proc do |id|
+        sleep 0.2
       end
-      GC.start
-      puts "After GC"
-      sleep(10)
-      assert(false)
-    rescue my_error
+      2.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o, fzer)
+      end
+
+      my_error = Class.new(RuntimeError)
+      begin
+        main_th = Thread.current
+        Thread.new do
+          sleep 0.1
+          main_th.raise(my_error)
+        end
+        GC.start
+        puts "After GC"
+        sleep(10)
+        assert(false)
+      rescue my_error
+      end
     end
-  ensure
-    GC.enable
   end
 
   def test_each_object

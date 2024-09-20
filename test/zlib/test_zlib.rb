@@ -506,6 +506,7 @@ if defined? Zlib
     end
 
     def test_multithread_deflate
+      pend 'hangs' if RUBY_ENGINE == 'truffleruby'
       zd = Zlib::Deflate.new
 
       s = "x" * 10000
@@ -522,6 +523,7 @@ if defined? Zlib
     end
 
     def test_multithread_inflate
+      pend 'hangs' if RUBY_ENGINE == 'truffleruby'
       zi = Zlib::Inflate.new
 
       s = Zlib.deflate("x" * 10000)
@@ -792,31 +794,40 @@ if defined? Zlib
       }
     end
 
-    if defined? File::TMPFILE
+    if defined?(File::TMPFILE) and RUBY_ENGINE != 'truffleruby'
       def test_path_tmpfile
         sio = StringIO.new("".dup, 'w')
         gz = Zlib::GzipWriter.new(sio)
         gz.write "hi"
         gz.close
 
-        File.open(Dir.mktmpdir, File::RDWR | File::TMPFILE) do |io|
+        tmpdir = Dir.mktmpdir("zlib_file_tmpfile")
+        File.open(tmpdir, File::RDWR | File::TMPFILE) do |io|
           io.write sio.string
           io.rewind
 
           gz0 = Zlib::GzipWriter.new(io)
-          assert_raise(NoMethodError) { gz0.path }
-
           gz1 = Zlib::GzipReader.new(io)
-          assert_raise(NoMethodError) { gz1.path }
+
+          if IO.method_defined?(:path)
+            assert_nil gz0.path
+            assert_nil gz1.path
+          else
+            assert_raise(NoMethodError) { gz0.path }
+            assert_raise(NoMethodError) { gz1.path }
+          end
+
           gz0.close
           gz1.close
         end
       rescue Errno::EINVAL
-        skip 'O_TMPFILE not supported (EINVAL)'
+        omit 'O_TMPFILE not supported (EINVAL)'
       rescue Errno::EISDIR
-        skip 'O_TMPFILE not supported (EISDIR)'
+        omit 'O_TMPFILE not supported (EISDIR)'
       rescue Errno::EOPNOTSUPP
-        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
+        omit 'O_TMPFILE not supported (EOPNOTSUPP)'
+      ensure
+        Dir.rmdir(tmpdir) if tmpdir
       end
     end
   end
@@ -980,6 +991,25 @@ if defined? Zlib
           assert_raise(ArgumentError) { f.read(-1) }
           assert_equal(str, f.read)
         end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          s = "".b
+
+          assert_raise(ArgumentError) { f.read(-1, s) }
+
+          assert_same s, f.read(1, s)
+          assert_equal "\xE3".b, s
+
+          assert_same s, f.read(2, s)
+          assert_equal "\x81\x82".b, s
+
+          assert_same s, f.read(6, s)
+          assert_equal "\u3044\u3046".b, s
+
+          assert_nil f.read(1, s)
+          assert_equal "".b, s
+          assert_predicate f, :eof?
+        end
       }
     end
 
@@ -994,10 +1024,14 @@ if defined? Zlib
 
         Zlib::GzipReader.open(t.path) do |f|
           s = "".dup
-          f.readpartial(3, s)
+          assert_same s, f.readpartial(3, s)
           assert("foo".start_with?(s))
 
           assert_raise(ArgumentError) { f.readpartial(-1) }
+
+          assert_same s, f.readpartial(3, s)
+
+          assert_predicate f, :eof?
         end
       }
     end
@@ -1197,6 +1231,38 @@ if defined? Zlib
       }
     end
 
+    # Various methods of Zlib::GzipReader failed when to reading files
+    # just a few bytes larger than GZFILE_READ_SIZE.
+    def test_gzfile_read_size_boundary
+      Tempfile.create("test_zlib_gzip_read_size_boundary") {|t|
+        t.close
+        # NO_COMPRESSION helps with recreating the error condition.
+        # The error happens on compressed files too, but it's harder to reproduce.
+        # For example, ~12750 bytes are needed to trigger the error using __FILE__.
+        # We avoid this because the test file will change over time.
+        Zlib::GzipWriter.open(t.path, Zlib::NO_COMPRESSION) do |gz|
+          gz.print("\n" * 2024) # range from 2024 to 2033 triggers the error
+          gz.flush
+        end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          f.readpartial(1024) until f.eof?
+          assert_raise(EOFError) { f.readpartial(1) }
+        end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          f.readline until f.eof?
+          assert_raise(EOFError) { f.readline }
+        end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          b = f.readbyte until f.eof?
+          f.ungetbyte(b)
+          f.readbyte
+          assert_raise(EOFError) { f.readbyte }
+        end
+      }
+    end
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
@@ -1303,6 +1369,7 @@ if defined? Zlib
       assert_equal(0x02820145, Zlib.adler32("foo"))
       assert_equal(0x02820145, Zlib.adler32("o", Zlib.adler32("fo")))
       assert_equal(0x8a62c964, Zlib.adler32("abc\x01\x02\x03" * 10000))
+      assert_equal(0x97d1a9f7, Zlib.adler32("p", -305419897))
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         File.binwrite(t.path, "foo")
         t.rewind
@@ -1324,10 +1391,10 @@ if defined? Zlib
       begin
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "adler32_combine is not implemented"
+        omit "adler32_combine is not implemented"
       rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end
@@ -1338,6 +1405,7 @@ if defined? Zlib
       assert_equal(0x8c736521, Zlib.crc32("foo"))
       assert_equal(0x8c736521, Zlib.crc32("o", Zlib.crc32("fo")))
       assert_equal(0x07f0d68f, Zlib.crc32("abc\x01\x02\x03" * 10000))
+      assert_equal(0xf136439b, Zlib.crc32("p", -305419897))
       Tempfile.create("test_zlib_gzip_file_to_io") {|t|
         File.binwrite(t.path, "foo")
         t.rewind
@@ -1359,10 +1427,10 @@ if defined? Zlib
       begin
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
-        skip "crc32_combine is not implemented"
+        omit "crc32_combine is not implemented"
       rescue Test::Unit::AssertionFailedError
         if /aix/ =~ RUBY_PLATFORM
-          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+          omit "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
         end
         raise $!
       end
@@ -1447,6 +1515,13 @@ if defined? Zlib
 
       src = %w[1f8b080000000000000].pack("H*")
       assert_raise(Zlib::GzipFile::Error){ Zlib.gunzip(src) }
+    end
+
+    # Zlib.gunzip input is always considered a binary string, regardless of its String#encoding.
+    def test_gunzip_encoding
+      #                vvvvvvvv = mtime, but valid UTF-8 string of U+0080
+      src = %w[1f8b0800c28000000003cb48cdc9c9070086a6103605000000].pack("H*").force_encoding('UTF-8')
+      assert_equal 'hello', Zlib.gunzip(src.freeze)
     end
 
     def test_gunzip_no_memory_leak

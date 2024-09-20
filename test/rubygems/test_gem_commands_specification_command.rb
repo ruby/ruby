@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/commands/specification_command'
+
+require_relative "helper"
+require "rubygems/commands/specification_command"
 
 class TestGemCommandsSpecificationCommand < Gem::TestCase
   def setup
@@ -10,7 +11,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute
-    foo = util_spec 'foo'
+    foo = util_spec "foo"
 
     install_specs foo
 
@@ -20,14 +21,14 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
-    assert_equal '', @ui.error
+    assert_match(/Gem::Specification/, @ui.output)
+    assert_match(/name: foo/, @ui.output)
+    assert_equal "", @ui.error
   end
 
   def test_execute_all
-    install_specs util_spec 'foo', '0.0.1'
-    install_specs util_spec 'foo', '0.0.2'
+    install_specs util_spec "foo", "0.0.1"
+    install_specs util_spec "foo", "0.0.2"
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:all] = true
@@ -36,16 +37,16 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
-    assert_match %r{version: 0.0.1}, @ui.output
-    assert_match %r{version: 0.0.2}, @ui.output
-    assert_equal '', @ui.error
+    assert_match(/Gem::Specification/, @ui.output)
+    assert_match(/name: foo/, @ui.output)
+    assert_match(/version: 0.0.1/, @ui.output)
+    assert_match(/version: 0.0.2/, @ui.output)
+    assert_equal "", @ui.error
   end
 
   def test_execute_all_conflicts_with_version
-    util_spec 'foo', '0.0.1'
-    util_spec 'foo', '0.0.2'
+    util_spec "foo", "0.0.1"
+    util_spec "foo", "0.0.2"
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:all] = true
@@ -57,7 +58,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       end
     end
 
-    assert_equal '', @ui.output
+    assert_equal "", @ui.output
     assert_equal "ERROR:  Specify --all or -v, not both\n", @ui.error
   end
 
@@ -70,7 +71,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       end
     end
 
-    assert_equal '', @ui.output
+    assert_equal "", @ui.output
     assert_equal "ERROR:  No gem matching 'foo (>= 0)' found\n", @ui.error
   end
 
@@ -84,13 +85,13 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       end
     end
 
-    assert_equal '', @ui.output
+    assert_equal "", @ui.output
     assert_equal "ERROR:  No gem matching 'foo (= 1.3.2)' found\n", @ui.error
   end
 
   def test_execute_exact_match
-    install_specs util_spec 'foo'
-    install_specs util_spec 'foo_bar'
+    install_specs util_spec "foo"
+    install_specs util_spec "foo_bar"
 
     @cmd.options[:args] = %w[foo]
 
@@ -98,13 +99,13 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
-    assert_equal '', @ui.error
+    assert_match(/Gem::Specification/, @ui.output)
+    assert_match(/name: foo/, @ui.output)
+    assert_equal "", @ui.error
   end
 
   def test_execute_field
-    foo = util_spec 'foo', '2'
+    foo = util_spec "foo", "2"
 
     install_specs foo
 
@@ -118,7 +119,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_file
-    foo = util_spec 'foo' do |s|
+    foo = util_spec "foo" do |s|
       s.files = %w[lib/code.rb]
     end
 
@@ -130,13 +131,13 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
-    assert_equal '', @ui.error
+    assert_match(/Gem::Specification/, @ui.output)
+    assert_match(/name: foo/, @ui.output)
+    assert_equal "", @ui.error
   end
 
   def test_execute_marshal
-    foo = util_spec 'foo', '2'
+    foo = util_spec "foo", "2"
 
     install_specs foo
 
@@ -148,12 +149,12 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_equal foo, Marshal.load(@ui.output)
-    assert_equal '', @ui.error
+    assert_equal "", @ui.error
   end
 
   def test_execute_remote
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', 1
+      fetcher.spec "foo", 1
     end
 
     @cmd.options[:args] = %w[foo]
@@ -164,13 +165,13 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
+    assert_match(/name: foo/, @ui.output)
   end
 
   def test_execute_remote_with_version
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', "1"
-      fetcher.spec 'foo', "2"
+      fetcher.spec "foo", "1"
+      fetcher.spec "foo", "2"
     end
 
     @cmd.options[:args] = %w[foo]
@@ -190,9 +191,9 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     original_platforms = Gem.platforms.dup
 
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', "1"
-      fetcher.spec 'foo', "1" do |s|
-        s.platform = 'x86_64-linux'
+      fetcher.spec "foo", "1"
+      fetcher.spec "foo", "1" do |s|
+        s.platform = "x86_64-linux"
       end
     end
 
@@ -216,8 +217,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
 
   def test_execute_remote_without_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', '2.0.0'
-      fetcher.spec 'foo', '2.0.1.pre'
+      fetcher.spec "foo", "2.0.0"
+      fetcher.spec "foo", "2.0.1.pre"
     end
 
     @cmd.options[:args] = %w[foo]
@@ -228,7 +229,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
+    assert_match(/name: foo/, @ui.output)
 
     spec = load_yaml @ui.output
 
@@ -237,8 +238,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
 
   def test_execute_remote_with_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', '2.0.0'
-      fetcher.spec 'foo', '2.0.1.pre'
+      fetcher.spec "foo", "2.0.0"
+      fetcher.spec "foo", "2.0.1.pre"
     end
 
     @cmd.options[:args] = %w[foo]
@@ -250,7 +251,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
     end
 
     assert_match %r{\A--- !ruby/object:Gem::Specification}, @ui.output
-    assert_match %r{name: foo}, @ui.output
+    assert_match(/name: foo/, @ui.output)
 
     spec = load_yaml @ui.output
 
@@ -258,7 +259,7 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_ruby
-    foo = util_spec 'foo'
+    foo = util_spec "foo"
 
     install_specs foo
 
@@ -269,8 +270,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_match %r{Gem::Specification.new}, @ui.output
-    assert_match %r{s.name = "foo"}, @ui.output
-    assert_equal '', @ui.error
+    assert_match(/Gem::Specification.new/, @ui.output)
+    assert_match(/s.name = "foo"/, @ui.output)
+    assert_equal "", @ui.error
   end
 end

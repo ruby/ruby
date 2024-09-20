@@ -1,0 +1,174 @@
+name: Setup directories etc.
+description: >-
+  Set up the source code and build directories (plus some
+  environmental tweaks)
+
+inputs:
+  srcdir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Directory to (re-)checkout source codes.  This will be created
+      if absent.  If there is no `configure` file that is also
+      generated inside.
+
+  builddir:
+    required: false
+    default: ${{ github.workspace }}
+    description: >-
+      Where binaries and other generated contents go.  This will be
+      created if absent.
+
+  makeup:
+    required: false
+    type: boolean
+    # Note that `default: false` evaluates to a string constant
+    # `'false'`, which is a truthy value :sigh:
+    # https://github.com/actions/runner/issues/2238
+    default: ''
+    description: >-
+      If set to true, additionally runs `make up`.
+
+  checkout:
+    required: false
+    type: boolean
+    default: true
+    description: >-
+      If set to '' (false), skip running actions/checkout. This is useful when
+      you don't want to overwrite a GitHub token that is already set up.
+
+  dummy-files:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, creates dummy files in build dir.
+
+  fetch-depth:
+    required: false
+    default: '1'
+    description: The depth of commit history fetched from the remote repository
+
+  clean:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, clean build directory.
+
+outputs: {} # nothing?
+
+runs:
+  using: composite
+
+  steps:
+    # Note that `shell: bash` works on both Windows and Linux, but not
+    # `shell: sh`.  This is because GitHub hosted Windows runners have
+    # their bash manually installed.
+    - shell: bash
+      run: |
+        mkdir -p ${{ inputs.srcdir }}
+        mkdir -p ${{ inputs.builddir }}
+
+    # Did you know that actions/checkout works without git(1)?  We are
+    # checking that here.
+    - id: which
+      shell: bash
+      run: |
+        echo "git=`command -v git`" >> "$GITHUB_OUTPUT"
+        echo "sudo=`command -v sudo`" >> "$GITHUB_OUTPUT"
+        echo "autoreconf=`command -v autoreconf`" >> "$GITHUB_OUTPUT"
+
+    - if: steps.which.outputs.git
+      shell: bash
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+        git config --global advice.detachedHead 0
+        git config --global init.defaultBranch garbage
+
+    - if: inputs.checkout
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with:
+        path: ${{ inputs.srcdir }}
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      with:
+        path: ${{ inputs.srcdir }}/.downloaded-cache
+        key: downloaded-cache
+
+    - if: steps.which.outputs.autoreconf
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: ./autogen.sh
+
+    # This is for MinGW.
+    - if: runner.os == 'Windows'
+      shell: bash
+      run: echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
+
+    - if: runner.os == 'Linux'
+      shell: bash
+      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> "$GITHUB_ENV"
+
+    # macOS' GNU make is so old that they doesn't understand `GNUMAKEFLAGS`.
+    - if: runner.os == 'macOS'
+      shell: bash
+      run: echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> "$GITHUB_ENV"
+
+    - if: inputs.makeup
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: |
+        touch config.status
+        touch .rbconfig.time
+        sed -f tool/prereq.status template/Makefile.in > Makefile
+        sed -f tool/prereq.status template/GNUmakefile.in > GNUmakefile
+        make up
+
+    # Cleanup, runs even on failure
+    - if: always() && inputs.makeup
+      shell: bash
+      working-directory: ${{ inputs.srcdir }}
+      run: rm -f config.status Makefile rbconfig.rb .rbconfig.time
+
+    - if: steps.which.outputs.sudo
+      shell: bash
+      run: |
+        sudo chmod -R go-w /usr/share
+        chmod -v go-w $HOME $HOME/.config || :
+        sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v go-w $d; done' || :
+
+    - if: inputs.dummy-files == 'true'
+      shell: bash
+      id: dummy-files
+      working-directory: ${{ inputs.builddir }}
+      run: |
+        : Create dummy files in build dir
+        set {{a..z},{A..Z},{0..9},foo,bar,test,zzz}.rb
+        for file; do \
+          echo > $file "raise 'do not load $file'"; \
+        done
+        # drop {a..z}.rb if case-insensitive filesystem
+        grep -F A.rb a.rb > /dev/null && set "${@:27}"
+        echo clean="cd ${{ inputs.builddir }} && rm $*" >> $GITHUB_OUTPUT
+
+    - if: inputs.clean == 'true'
+      shell: bash
+      id: clean
+      run: |
+        echo distclean='make -C ${{ inputs.builddir }} distclean' >> $GITHUB_OUTPUT
+        echo remained-files='find ${{ inputs.builddir }} -ls' >> $GITHUB_OUTPUT
+        [ "${{ inputs.builddir }}" = "${{ inputs.srcdir }}" ] ||
+        echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
+
+    - name: clean
+      uses: gacts/run-and-post-run@4683764dd706df847f57b9bed39d08164bcd2690 # v1.4.1
+      with:
+        working-directory:
+        post: |
+          ${{ steps.dummy-files.outputs.clean }}
+          ${{ steps.clean.outputs.distclean }}
+          ${{ steps.clean.outputs.remained-files }}
+          ${{ steps.clean.outputs.final }}

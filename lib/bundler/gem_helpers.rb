@@ -10,6 +10,7 @@ module Bundler
       [Gem::Platform.new("universal-mingw32"), Gem::Platform.new("universal-mingw32")],
       [Gem::Platform.new("x64-mingw32"), Gem::Platform.new("x64-mingw32")],
       [Gem::Platform.new("x86_64-mingw32"), Gem::Platform.new("x64-mingw32")],
+      [Gem::Platform.new("x64-mingw-ucrt"), Gem::Platform.new("x64-mingw-ucrt")],
       [Gem::Platform.new("mingw32"), Gem::Platform.new("x86-mingw32")],
     ].freeze
 
@@ -33,6 +34,11 @@ module Bundler
     end
     module_function :local_platform
 
+    def generic_local_platform_is_ruby?
+      generic_local_platform == Gem::Platform::RUBY
+    end
+    module_function :generic_local_platform_is_ruby?
+
     def platform_specificity_match(spec_platform, user_platform)
       spec_platform = Gem::Platform.new(spec_platform)
 
@@ -40,17 +46,37 @@ module Bundler
     end
     module_function :platform_specificity_match
 
-    def select_best_platform_match(specs, platform)
-      matching = specs.select {|spec| spec.match_platform(platform) }
+    def select_best_platform_match(specs, platform, force_ruby: false, prefer_locked: false)
+      matching = if force_ruby
+        specs.select {|spec| spec.match_platform(Gem::Platform::RUBY) && spec.force_ruby_platform! }
+      else
+        specs.select {|spec| spec.match_platform(platform) }
+      end
+
+      if prefer_locked
+        locked_originally = matching.select {|spec| spec.is_a?(LazySpecification) }
+        return locked_originally if locked_originally.any?
+      end
+
+      sort_best_platform_match(matching, platform)
+    end
+    module_function :select_best_platform_match
+
+    def select_best_local_platform_match(specs, force_ruby: false)
+      select_best_platform_match(specs, local_platform, force_ruby: force_ruby).map(&:materialize_for_installation).compact
+    end
+    module_function :select_best_local_platform_match
+
+    def sort_best_platform_match(matching, platform)
       exact = matching.select {|spec| spec.platform == platform }
       return exact if exact.any?
 
       sorted_matching = matching.sort_by {|spec| platform_specificity_match(spec.platform, platform) }
       exemplary_spec = sorted_matching.first
 
-      sorted_matching.take_while{|spec| same_specificity(platform, spec, exemplary_spec) && same_deps(spec, exemplary_spec) }
+      sorted_matching.take_while {|spec| same_specificity(platform, spec, exemplary_spec) && same_deps(spec, exemplary_spec) }
     end
-    module_function :select_best_platform_match
+    module_function :sort_best_platform_match
 
     class PlatformMatch
       def self.specificity_score(spec_platform, user_platform)
@@ -100,8 +126,6 @@ module Bundler
 
     def same_deps(spec, exemplary_spec)
       same_runtime_deps = spec.dependencies.sort == exemplary_spec.dependencies.sort
-      return same_runtime_deps unless spec.is_a?(Gem::Specification) && exemplary_spec.is_a?(Gem::Specification)
-
       same_metadata_deps = spec.required_ruby_version == exemplary_spec.required_ruby_version && spec.required_rubygems_version == exemplary_spec.required_rubygems_version
       same_runtime_deps && same_metadata_deps
     end

@@ -53,6 +53,14 @@ describe "Enumerable#to_h" do
       @enum.to_h { |k| [k, k.to_s] }.should == { a: 'a', b: 'b' }
     end
 
+    it "passes to a block each element as a single argument" do
+      enum_of_arrays = EnumerableSpecs::EachDefiner.new([:a, 1], [:b, 2])
+
+      ScratchPad.record []
+      enum_of_arrays.to_h { |*args| ScratchPad << args; [args[0], args[1]] }
+      ScratchPad.recorded.sort.should == [[[:a, 1]], [[:b, 2]]]
+    end
+
     it "raises ArgumentError if block returns longer or shorter array" do
       -> do
         @enum.to_h { |k| [k, k.to_s, 1] }

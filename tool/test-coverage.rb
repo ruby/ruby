@@ -4,6 +4,16 @@ Coverage.start(lines: true, branches: true, methods: true)
 
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
 
+FILTER_PATHS = %w[
+  lib/bundler/vendor
+  lib/rubygems/resolver/molinillo
+  lib/rubygems/tsort
+  lib/rubygems/optparse
+  tool
+  test
+  spec
+]
+
 def merge_coverage_data(res1, res2)
   res1.each do |path, cov1|
     cov2 = res2[path]
@@ -62,8 +72,11 @@ def save_coverage_data(res1)
 end
 
 def invoke_simplecov_formatter
-  %w[doclie simplecov-html simplecov].each do |f|
-    $LOAD_PATH.unshift "#{__dir__}/../coverage/#{f}/lib"
+  # XXX docile-x.y.z and simplecov-x.y.z, simplecov-html-x.y.z, simplecov_json_formatter-x.y.z
+  %w[simplecov simplecov-html simplecov_json_formatter docile].each do |f|
+    Dir.glob("#{__dir__}/../.bundle/gems/#{f}-*/lib").each do |d|
+      $LOAD_PATH.unshift d
+    end
   end
 
   require "simplecov"
@@ -74,8 +87,8 @@ def invoke_simplecov_formatter
 
   res.each do |path, cov|
     next unless path.start_with?(base_dir) || path.start_with?(cur_dir)
-    next if path.start_with?(File.join(base_dir, "test"))
-    simplecov_result[path] = cov[:lines]
+    next if FILTER_PATHS.any? {|dir| path.start_with?(File.join(base_dir, dir))}
+    simplecov_result[path] = cov
   end
 
   a, b = base_dir, cur_dir

@@ -15,6 +15,16 @@ module Fiddle
       end
     end
 
+    def teardown
+      # Ensure freeing all closures.
+      # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
+      not_freed_closures = []
+      ObjectSpace.each_object(Fiddle::Closure) do |closure|
+        not_freed_closures << closure unless closure.freed?
+      end
+      assert_equal([], not_freed_closures)
+    end
+
     def test_default_abi
       func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE)
       assert_equal Function::DEFAULT, func.abi
@@ -75,18 +85,20 @@ module Fiddle
     end
 
     def test_argument_count
-      closure = Class.new(Closure) {
+      closure_class = Class.new(Closure) do
         def call one
           10 + one
         end
-      }.new(TYPE_INT, [TYPE_INT])
-      func = Function.new(closure, [TYPE_INT], TYPE_INT)
-
-      assert_raise(ArgumentError) do
-        func.call(1,2,3)
       end
-      assert_raise(ArgumentError) do
-        func.call
+      closure_class.create(TYPE_INT, [TYPE_INT]) do |closure|
+        func = Function.new(closure, [TYPE_INT], TYPE_INT)
+
+        assert_raise(ArgumentError) do
+          func.call(1,2,3)
+        end
+        assert_raise(ArgumentError) do
+          func.call
+        end
       end
     end
 
@@ -155,6 +167,8 @@ module Fiddle
     end
 
     def test_nogvl_poll
+      require "envutil" unless defined?(EnvUtil)
+
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
       # Making pipes (and sockets) non-blocking by default would allow
@@ -168,13 +182,13 @@ module Fiddle
       end
       f = Function.new(poll, [TYPE_VOIDP, TYPE_INT, TYPE_INT], TYPE_INT)
 
-      msec = 200
+      msec = EnvUtil.apply_timeout_scale(1000)
       t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
       th = Thread.new { f.call(nil, 0, msec) }
       n1 = f.call(nil, 0, msec)
       n2 = th.value
       t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
-      assert_in_delta(msec, t1 - t0, 180, 'slept amount of time')
+      assert_in_delta(msec, t1 - t0, EnvUtil.apply_timeout_scale(500), 'slept amount of time')
       assert_equal(0, n1, perror("poll(2) in main-thread"))
       assert_equal(0, n2, perror("poll(2) in sub-thread"))
     end

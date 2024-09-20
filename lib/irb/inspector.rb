@@ -1,18 +1,10 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/inspector.rb - inspect methods
-#   	$Release Version: 0.9.6$
-#   	$Revision: 1.19 $
-#   	$Date: 2002/06/11 07:51:31 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:
-
 
   # Convenience method to create a new Inspector, using the given +inspect+
   # proc, and optional +init+ proc and passes them to Inspector.new
@@ -42,6 +34,7 @@ module IRB # :nodoc:
   #     irb(main):001:0> "what?" #=> omg! what?
   #
   class Inspector
+    KERNEL_INSPECT = Object.instance_method(:inspect)
     # Default inspectors available to irb, this includes:
     #
     # +:pp+::       Using Kernel#pretty_inspect
@@ -49,38 +42,40 @@ module IRB # :nodoc:
     # +:marshal+::  Using Marshal.dump
     INSPECTORS = {}
 
-    # Determines the inspector to use where +inspector+ is one of the keys passed
-    # during inspector definition.
-    def self.keys_with_inspector(inspector)
-      INSPECTORS.select{|k,v| v == inspector}.collect{|k, v| k}
-    end
-
-    # Example
-    #
-    #     Inspector.def_inspector(key, init_p=nil){|v| v.inspect}
-    #     Inspector.def_inspector([key1,..], init_p=nil){|v| v.inspect}
-    #     Inspector.def_inspector(key, inspector)
-    #     Inspector.def_inspector([key1,...], inspector)
-    def self.def_inspector(key, arg=nil, &block)
-      if block_given?
-        inspector = IRB::Inspector(block, arg)
-      else
-        inspector = arg
+    class << self
+      # Determines the inspector to use where +inspector+ is one of the keys passed
+      # during inspector definition.
+      def keys_with_inspector(inspector)
+        INSPECTORS.select{|k, v| v == inspector}.collect{|k, v| k}
       end
 
-      case key
-      when Array
-        for k in key
-          def_inspector(k, inspector)
+      # Example
+      #
+      #     Inspector.def_inspector(key, init_p=nil){|v| v.inspect}
+      #     Inspector.def_inspector([key1,..], init_p=nil){|v| v.inspect}
+      #     Inspector.def_inspector(key, inspector)
+      #     Inspector.def_inspector([key1,...], inspector)
+      def def_inspector(key, arg=nil, &block)
+        if block_given?
+          inspector = IRB::Inspector(block, arg)
+        else
+          inspector = arg
         end
-      when Symbol
-        INSPECTORS[key] = inspector
-        INSPECTORS[key.to_s] = inspector
-      when String
-        INSPECTORS[key] = inspector
-        INSPECTORS[key.intern] = inspector
-      else
-        INSPECTORS[key] = inspector
+
+        case key
+        when Array
+          for k in key
+            def_inspector(k, inspector)
+          end
+        when Symbol
+          INSPECTORS[key] = inspector
+          INSPECTORS[key.to_s] = inspector
+        when String
+          INSPECTORS[key] = inspector
+          INSPECTORS[key.intern] = inspector
+        else
+          INSPECTORS[key] = inspector
+        end
       end
     end
 
@@ -100,26 +95,26 @@ module IRB # :nodoc:
     # Proc to call when the input is evaluated and output in irb.
     def inspect_value(v)
       @inspect.call(v)
-    rescue
-      puts "(Object doesn't support #inspect)"
-      ''
+    rescue => e
+      puts "An error occurred when inspecting the object: #{e.inspect}"
+
+      begin
+        puts "Result of Kernel#inspect: #{KERNEL_INSPECT.bind_call(v)}"
+        ''
+      rescue => e
+        puts "An error occurred when running Kernel#inspect: #{e.inspect}"
+        puts e.backtrace.join("\n")
+        ''
+      end
     end
   end
 
   Inspector.def_inspector([false, :to_s, :raw]){|v| v.to_s}
   Inspector.def_inspector([:p, :inspect]){|v|
-    result = v.inspect
-    if IRB.conf[:MAIN_CONTEXT]&.use_colorize? && Color.inspect_colorable?(v)
-      result = Color.colorize_code(result)
-    end
-    result
+    Color.colorize_code(v.inspect, colorable: Color.colorable? && Color.inspect_colorable?(v))
   }
-  Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require "irb/color_printer"}){|v|
-    if IRB.conf[:MAIN_CONTEXT]&.use_colorize?
-      IRB::ColorPrinter.pp(v, '').chomp
-    else
-      v.pretty_inspect.chomp
-    end
+  Inspector.def_inspector([true, :pp, :pretty_inspect], proc{require_relative "color_printer"}){|v|
+    IRB::ColorPrinter.pp(v, +'').chomp
   }
   Inspector.def_inspector([:yaml, :YAML], proc{require "yaml"}){|v|
     begin

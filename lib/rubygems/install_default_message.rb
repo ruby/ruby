@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative '../rubygems'
-require_relative 'user_interaction'
+
+require_relative "../rubygems"
+require_relative "user_interaction"
 
 ##
 # A post-install hook that displays "Successfully installed

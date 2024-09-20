@@ -206,6 +206,15 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
     assert_equal expected, comment.text
   end
 
+  def test_extract_call_linear_performance
+    pre = ->(n) {[n, RDoc::Comment.new("\n"*n + 'call-seq:' + 'a'*n)]}
+    method_obj = RDoc::AnyMethod.new nil, 'blah'
+    assert_linear_performance((2..5).map {|i| 10**i}, pre: pre) do |n, comment|
+      comment.extract_call_seq method_obj
+      assert_equal n, method_obj.call_seq.size
+    end
+  end
+
   def test_force_encoding
     @comment = RDoc::Encoding.change_encoding @comment, Encoding::UTF_8
 

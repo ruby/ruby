@@ -1,0 +1,3 @@
+def ().a; end
+    ^ expected a receiver for the method definition
+

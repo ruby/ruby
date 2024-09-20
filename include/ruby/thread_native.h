@@ -28,6 +28,11 @@ typedef union rb_thread_lock_union {
     CRITICAL_SECTION crit;
 } rb_nativethread_lock_t;
 
+struct rb_thread_cond_struct {
+    struct cond_event_entry *next;
+    struct cond_event_entry *prev;
+};
+
 typedef struct rb_thread_cond_struct rb_nativethread_cond_t;
 
 #elif defined(HAVE_PTHREAD_H)
@@ -36,6 +41,12 @@ typedef struct rb_thread_cond_struct rb_nativethread_cond_t;
 typedef pthread_t rb_nativethread_id_t;
 typedef pthread_mutex_t rb_nativethread_lock_t;
 typedef pthread_cond_t rb_nativethread_cond_t;
+
+#elif defined(__wasi__) // no-thread platforms
+
+typedef struct rb_nativethread_id_t *rb_nativethread_id_t;
+typedef struct rb_nativethread_lock_t *rb_nativethread_lock_t;
+typedef struct rb_nativethread_cond_t *rb_nativethread_cond_t;
 
 #elif defined(__DOXYGEN__)
 

@@ -16,6 +16,7 @@ console.o: $(hdrdir)/ruby/defines.h
 console.o: $(hdrdir)/ruby/encoding.h
 console.o: $(hdrdir)/ruby/fiber/scheduler.h
 console.o: $(hdrdir)/ruby/intern.h
+console.o: $(hdrdir)/ruby/internal/abi.h
 console.o: $(hdrdir)/ruby/internal/anyargs.h
 console.o: $(hdrdir)/ruby/internal/arithmetic.h
 console.o: $(hdrdir)/ruby/internal/arithmetic/char.h
@@ -53,6 +54,7 @@ console.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 console.o: $(hdrdir)/ruby/internal/attr/noinline.h
 console.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 console.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+console.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 console.o: $(hdrdir)/ruby/internal/attr/pure.h
 console.o: $(hdrdir)/ruby/internal/attr/restrict.h
 console.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -121,7 +123,6 @@ console.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 console.o: $(hdrdir)/ruby/internal/intern/error.h
 console.o: $(hdrdir)/ruby/internal/intern/eval.h
 console.o: $(hdrdir)/ruby/internal/intern/file.h
-console.o: $(hdrdir)/ruby/internal/intern/gc.h
 console.o: $(hdrdir)/ruby/internal/intern/hash.h
 console.o: $(hdrdir)/ruby/internal/intern/io.h
 console.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -152,12 +153,12 @@ console.o: $(hdrdir)/ruby/internal/memory.h
 console.o: $(hdrdir)/ruby/internal/method.h
 console.o: $(hdrdir)/ruby/internal/module.h
 console.o: $(hdrdir)/ruby/internal/newobj.h
-console.o: $(hdrdir)/ruby/internal/rgengc.h
 console.o: $(hdrdir)/ruby/internal/scan_args.h
 console.o: $(hdrdir)/ruby/internal/special_consts.h
 console.o: $(hdrdir)/ruby/internal/static_assert.h
 console.o: $(hdrdir)/ruby/internal/stdalign.h
 console.o: $(hdrdir)/ruby/internal/stdbool.h
+console.o: $(hdrdir)/ruby/internal/stdckdint.h
 console.o: $(hdrdir)/ruby/internal/symbol.h
 console.o: $(hdrdir)/ruby/internal/value.h
 console.o: $(hdrdir)/ruby/internal/value_type.h
@@ -168,6 +169,7 @@ console.o: $(hdrdir)/ruby/io.h
 console.o: $(hdrdir)/ruby/missing.h
 console.o: $(hdrdir)/ruby/onigmo.h
 console.o: $(hdrdir)/ruby/oniguruma.h
+console.o: $(hdrdir)/ruby/ractor.h
 console.o: $(hdrdir)/ruby/ruby.h
 console.o: $(hdrdir)/ruby/st.h
 console.o: $(hdrdir)/ruby/subst.h
@@ -184,7 +186,7 @@ win32_vk.inc: win32_vk.list
 	-e 'n=$$F[1] and (n.strip!; /\AVK_/=~n) and' \
 	-e   'puts(%[#ifndef #{n}\n# define #{n} UNDEFINED_VK\n#endif])' \
 	$< && \
-	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
+	gperf --ignore-case -L ANSI-C -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
 	| sed -f $(top_srcdir)/tool/gperf.sed \
 	) > $(@F)
 

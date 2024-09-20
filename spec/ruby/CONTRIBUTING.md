@@ -13,12 +13,14 @@ Spec are grouped in 5 separate top-level groups:
 * `optional/capi`: for functions available to the Ruby C-extension API
 
 The exact file for methods is decided by the `#owner` of a method, for instance for `#group_by`:
+
 ```ruby
 > [].method(:group_by)
 => #<Method: Array(Enumerable)#group_by>
 > [].method(:group_by).owner
 => Enumerable
 ```
+
 Which should therefore be specified in `core/enumerable/group_by_spec.rb`.
 
 ### MkSpec - a tool to generate the spec structure
@@ -136,12 +138,12 @@ Here is a list of the most commonly-used guards:
 #### Version guards
 
 ```ruby
-ruby_version_is ""..."2.6" do
-  # Specs for RUBY_VERSION < 2.6
+ruby_version_is ""..."3.2" do
+  # Specs for RUBY_VERSION < 3.2
 end
 
-ruby_version_is "2.6" do
-  # Specs for RUBY_VERSION >= 2.6
+ruby_version_is "3.2" do
+  # Specs for RUBY_VERSION >= 3.2
 end
 ```
 
@@ -162,7 +164,7 @@ end
 platform_is_not :linux, :darwin do # Not Linux and not Darwin
 end
 
-platform_is wordsize: 64 do
+platform_is pointer_size: 64 do
   # 64-bit platform
 end
 
@@ -173,12 +175,14 @@ end
 
 #### Guard for bug
 
-In case there is a bug in MRI but the expected behavior is obvious.
+In case there is a bug in MRI and the fix will be backported to previous versions.
+If it is not backported or not likely, use `ruby_version_is` instead.
 First, file a bug at https://bugs.ruby-lang.org/.
-It is better to use a `ruby_version_is` guard if there was a release with the fix.
+The problem is `ruby_bug` would make non-MRI implementations fail this spec while MRI itself does not pass it, so it should only be used if the bug is/will be fixed and backported.
+Otherwise, non-MRI implementations would have to choose between being incompatible with the latest release of MRI to pass the spec or fail the spec, both which make no sense.
 
 ```ruby
-ruby_bug '#13669', ''...'2.7' do
+ruby_bug '#13669', ''...'3.2' do
   it "works like this" do
     # Specify the expected behavior here, not the bug
   end
@@ -188,11 +192,11 @@ end
 #### Combining guards
 
 ```ruby
-guard -> { platform_is :windows and ruby_version_is ""..."2.6" } do
-  # Windows and RUBY_VERSION < 2.6
+guard -> { platform_is :windows and ruby_version_is ""..."3.2" } do
+  # Windows and RUBY_VERSION < 3.2
 end
 
-guard_not -> { platform_is :windows and ruby_version_is ""..."2.6" } do
+guard_not -> { platform_is :windows and ruby_version_is ""..."3.2" } do
   # The opposite
 end
 ```
@@ -220,7 +224,7 @@ If an implementation does not support some feature, simply tag the related specs
 ### Shared Specs
 
 Often throughout Ruby, identical functionality is used by different methods and modules. In order
-to avoid duplication of specs, we have shared specs that are re-used in other specs.  The use is a
+to avoid duplication of specs, we have shared specs that are re-used in other specs. The use is a
 bit tricky however, so let's go over it.
 
 Commonly, if a shared spec is only reused within its own module, the shared spec will live within a
@@ -232,7 +236,7 @@ An example of this is the `shared/file/socket.rb` which is used by `core/file/so
 `core/filetest/socket_spec.rb`, and `core/file/state/socket_spec.rb` and so it lives in the root `shared/`.
 
 Defining a shared spec involves adding a `shared: true` option to the top-level `describe` block. This
-will signal not to run the specs directly by the runner.  Shared specs have access to two instance
+will signal not to run the specs directly by the runner. Shared specs have access to two instance
 variables from the implementor spec: `@method` and `@object`, which the implementor spec will pass in.
 
 Here's an example of a snippet of a shared spec and two specs which integrates it:
@@ -257,12 +261,12 @@ end
 ```
 
 In the example, the first `describe` defines the shared spec `:hash_key_p`, which defines a spec that
-calls the `@method` method with an expectation.  In the implementor spec, we use `it_behaves_like` to
-integrate the shared spec.  `it_behaves_like` takes 3 parameters: the key of the shared spec, a method,
-and an object.  These last two parameters are accessible via `@method` and `@object` in the shared spec.
+calls the `@method` method with an expectation. In the implementor spec, we use `it_behaves_like` to
+integrate the shared spec. `it_behaves_like` takes 3 parameters: the key of the shared spec, a method,
+and an object. These last two parameters are accessible via `@method` and `@object` in the shared spec.
 
 Sometimes, shared specs require more context from the implementor class than a simple object. We can address
-this by passing a lambda as the method, which will have the scope of the implementor.  Here's an example of
+this by passing a lambda as the method, which will have the scope of the implementor. Here's an example of
 how this is used currently:
 
 ```ruby
@@ -273,13 +277,13 @@ describe :kernel_sprintf, shared: true do
 end
 
 describe "Kernel#sprintf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     sprintf(format, *args)
   }
 end
 
 describe "Kernel.sprintf" do
-  it_behaves_like :kernel_sprintf, -> (format, *args) {
+  it_behaves_like :kernel_sprintf, -> format, *args {
     Kernel.sprintf(format, *args)
   }
 end

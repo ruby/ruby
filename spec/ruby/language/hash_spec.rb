@@ -33,7 +33,7 @@ describe "Hash literal" do
   end
 
   it "freezes string keys on initialization" do
-    key = "foo"
+    key = +"foo"
     h = {key => "bar"}
     key.reverse!
     h["foo"].should == "bar"
@@ -86,6 +86,30 @@ describe "Hash literal" do
     -> { eval("{:a ==> 1}") }.should raise_error(SyntaxError)
   end
 
+  it "recognizes '!' at the end of the key" do
+    eval("{:a! =>1}").should == {:"a!" => 1}
+    eval("{:a! => 1}").should == {:"a!" => 1}
+
+    eval("{a!:1}").should == {:"a!" => 1}
+    eval("{a!: 1}").should == {:"a!" => 1}
+  end
+
+  it "raises a SyntaxError if there is no space between `!` and `=>`" do
+    -> { eval("{:a!=> 1}") }.should raise_error(SyntaxError)
+  end
+
+  it "recognizes '?' at the end of the key" do
+    eval("{:a? =>1}").should == {:"a?" => 1}
+    eval("{:a? => 1}").should == {:"a?" => 1}
+
+    eval("{a?:1}").should == {:"a?" => 1}
+    eval("{a?: 1}").should == {:"a?" => 1}
+  end
+
+  it "raises a SyntaxError if there is no space between `?` and `=>`" do
+    -> { eval("{:a?=> 1}") }.should raise_error(SyntaxError)
+  end
+
   it "constructs a new hash with the given elements" do
     {foo: 123}.should == {foo: 123}
     h = {rbx: :cool, specs: 'fail_sometimes'}
@@ -127,11 +151,24 @@ describe "Hash literal" do
     {a: 1, **h, c: 4}.should == {a: 1, b: 2, c: 4}
   end
 
-  it "expands an '**{}' element with the last key/value pair taking precedence" do
+  it "expands an '**{}' or '**obj' element with the last key/value pair taking precedence" do
     -> {
       @h = eval "{a: 1, **{a: 2, b: 3, c: 1}, c: 3}"
     }.should complain(/key :a is duplicated|duplicated key/)
     @h.should == {a: 2, b: 3, c: 3}
+
+    -> {
+      h = {a: 2, b: 3, c: 1}
+      @h = eval "{a: 1, **h, c: 3}"
+    }.should_not complain
+    @h.should == {a: 2, b: 3, c: 3}
+  end
+
+  it "expands an '**{}' and warns when finding an additional duplicate key afterwards" do
+    -> {
+      @h = eval "{d: 1, **{a: 2, b: 3, c: 1}, c: 3}"
+    }.should complain(/key :c is duplicated|duplicated key/)
+    @h.should == {a: 2, b: 3, c: 3, d: 1}
   end
 
   it "merges multiple nested '**obj' in Hash literals" do
@@ -148,18 +185,9 @@ describe "Hash literal" do
     {a: 1, **obj, c: 3}.should == {a:1, b: 2, c: 3, d: 4}
   end
 
-  ruby_version_is ""..."2.7" do
-    it "raises a TypeError if any splatted elements keys are not symbols" do
-      h = {1 => 2, b: 3}
-      -> { {a: 1, **h} }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is "2.7" do
-    it "allows splatted elements keys that are not symbols" do
-      h = {1 => 2, b: 3}
-      {a: 1, **h}.should == {a: 1, 1 => 2, b: 3}
-    end
+  it "allows splatted elements keys that are not symbols" do
+    h = {1 => 2, b: 3}
+    {a: 1, **h}.should == {a: 1, 1 => 2, b: 3}
   end
 
   it "raises a TypeError if #to_hash does not return a Hash" do
@@ -186,6 +214,24 @@ describe "Hash literal" do
     utf8_hash.keys.first.should == usascii_hash.keys.first
     usascii_hash.keys.first.encoding.should == Encoding::US_ASCII
   end
+
+  ruby_bug "#20280", ""..."3.4" do
+    it "raises a SyntaxError at parse time when Symbol key with invalid bytes" do
+      ScratchPad.record []
+      -> {
+        eval 'ScratchPad << 1; {:"\xC3" => 1}'
+      }.should raise_error(SyntaxError, /invalid symbol/)
+      ScratchPad.recorded.should == []
+    end
+
+    it "raises a SyntaxError at parse time when Symbol key with invalid bytes and 'key: value' syntax used" do
+      ScratchPad.record []
+      -> {
+        eval 'ScratchPad << 1; {"\xC3": 1}'
+      }.should raise_error(SyntaxError, /invalid symbol/)
+      ScratchPad.recorded.should == []
+    end
+  end
 end
 
 describe "The ** operator" do
@@ -200,8 +246,8 @@ describe "The ** operator" do
     h.should == { one: 1, two: 2 }
   end
 
-  ruby_version_is ""..."3.0" do
-    it "makes a caller-side copy when calling a method taking a positional Hash" do
+  ruby_bug "#20012", ""..."3.3" do
+    it "makes a copy when calling a method taking a positional Hash" do
       def m(h)
         h.delete(:one); h
       end
@@ -210,19 +256,6 @@ describe "The ** operator" do
       m(**h).should == { two: 2 }
       m(**h).should_not.equal?(h)
       h.should == { one: 1, two: 2 }
-    end
-  end
-
-  ruby_version_is "3.0" do
-    it "does not copy when calling a method taking a positional Hash" do
-      def m(h)
-        h.delete(:one); h
-      end
-
-      h = { one: 1, two: 2 }
-      m(**h).should == { two: 2 }
-      m(**h).should.equal?(h)
-      h.should == { two: 2 }
     end
   end
 
@@ -261,6 +294,14 @@ describe "The ** operator" do
         RUBY
 
         a.new.foo(1).should == {bar: "baz", val: 1}
+      end
+
+      it "raises a SyntaxError when the hash key ends with `!`" do
+        -> { eval("{a!:}") }.should raise_error(SyntaxError, /identifier a! is not valid to get/)
+      end
+
+      it "raises a SyntaxError when the hash key ends with `?`" do
+        -> { eval("{a?:}") }.should raise_error(SyntaxError, /identifier a\? is not valid to get/)
       end
     end
   end

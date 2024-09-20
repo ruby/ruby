@@ -6,7 +6,10 @@ describe "ENV.to_a" do
     a = ENV.to_a
     a.is_a?(Array).should == true
     a.size.should == ENV.size
-    ENV.each_pair { |k, v| a.should include([k, v])}
+    a.each { |k,v| ENV[k].should == v }
+
+    a.first.should.is_a?(Array)
+    a.first.size.should == 2
   end
 
   it "returns the entries in the locale encoding" do

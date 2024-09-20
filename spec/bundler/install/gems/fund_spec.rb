@@ -6,20 +6,20 @@ RSpec.describe "bundle install" do
       build_repo2 do
         build_gem "has_funding_and_other_metadata" do |s|
           s.metadata = {
-            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+            "bug_tracker_uri" => "https://example.com/user/bestgemever/issues",
+            "changelog_uri" => "https://example.com/user/bestgemever/CHANGELOG.md",
             "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-            "homepage_uri"      => "https://bestgemever.example.io",
-            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-            "funding_uri"       => "https://example.com/has_funding_and_other_metadata/funding",
-            "source_code_uri"   => "https://example.com/user/bestgemever",
-            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+            "homepage_uri" => "https://bestgemever.example.io",
+            "mailing_list_uri" => "https://groups.example.com/bestgemever",
+            "funding_uri" => "https://example.com/has_funding_and_other_metadata/funding",
+            "source_code_uri" => "https://example.com/user/bestgemever",
+            "wiki_uri" => "https://example.com/user/bestgemever/wiki",
           }
         end
 
         build_gem "has_funding", "1.2.3" do |s|
           s.metadata = {
-            "funding_uri"       => "https://example.com/has_funding/funding",
+            "funding_uri" => "https://example.com/has_funding/funding",
           }
         end
 
@@ -32,10 +32,10 @@ RSpec.describe "bundle install" do
     context "when gems include a fund URI" do
       it "displays the plural fund message after installing" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
+          source "https://gem.repo2"
           gem 'has_funding_and_other_metadata'
           gem 'has_funding'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         expect(out).to include("2 installed gems you directly depend on are looking for funding.")
@@ -43,19 +43,46 @@ RSpec.describe "bundle install" do
 
       it "displays the singular fund message after installing" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
+          source "https://gem.repo2"
           gem 'has_funding'
-          gem 'rack-obama'
+          gem 'myrack-obama'
         G
 
         expect(out).to include("1 installed gem you directly depend on is looking for funding.")
       end
     end
 
+    context "when gems include a fund URI but `ignore_funding_requests` is configured" do
+      before do
+        bundle "config set ignore_funding_requests true"
+      end
+
+      it "does not display the plural fund message after installing" do
+        install_gemfile <<-G
+          source "https://gem.repo2"
+          gem 'has_funding_and_other_metadata'
+          gem 'has_funding'
+          gem 'myrack-obama'
+        G
+
+        expect(out).not_to include("2 installed gems you directly depend on are looking for funding.")
+      end
+
+      it "does not display the singular fund message after installing" do
+        install_gemfile <<-G
+          source "https://gem.repo2"
+          gem 'has_funding'
+          gem 'myrack-obama'
+        G
+
+        expect(out).not_to include("1 installed gem you directly depend on is looking for funding.")
+      end
+    end
+
     context "when gems do not include fund messages" do
       it "does not display any fund messages" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
+          source "https://gem.repo2"
           gem "activesupport"
         G
 
@@ -66,7 +93,7 @@ RSpec.describe "bundle install" do
     context "when a dependency includes a fund message" do
       it "does not display the fund message" do
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo2)}"
+          source "https://gem.repo2"
           gem 'gem_with_dependent_funding'
         G
 
@@ -84,7 +111,7 @@ RSpec.describe "bundle install" do
           }
         end
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.0")}'
         G
 
@@ -98,7 +125,7 @@ RSpec.describe "bundle install" do
           }
         end
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.0")}'
         G
 
@@ -108,7 +135,7 @@ RSpec.describe "bundle install" do
           }
         end
         install_gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.1")}'
         G
 
@@ -122,7 +149,7 @@ RSpec.describe "bundle install" do
           }
         end
         gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem 'also_has_funding', :git => '#{lib_path("also_has_funding-1.0")}'
         G
 

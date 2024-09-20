@@ -38,7 +38,7 @@
 # include <alloca.h>
 #endif
 
-#if defined(_MSC_VER) && defined(_WIN64)
+#if defined(_MSC_VER) && defined(_M_AMD64)
 # include <intrin.h>
 # pragma intrinsic(_umul128)
 #endif
@@ -56,13 +56,14 @@
 #include "ruby/internal/has/builtin.h"
 #include "ruby/internal/stdalign.h"
 #include "ruby/internal/stdbool.h"
+#include "ruby/internal/stdckdint.h"
 #include "ruby/internal/xmalloc.h"
 #include "ruby/backward/2/limits.h"
 #include "ruby/backward/2/long_long.h"
 #include "ruby/backward/2/assume.h"
 #include "ruby/defines.h"
 
-/** @cond INTENAL_MACRO  */
+/** @cond INTERNAL_MACRO  */
 
 /* Make alloca work the best possible way.  */
 #if defined(alloca)
@@ -287,12 +288,12 @@ typedef uint128_t DSIZE_T;
     RBIMPL_CAST((type *)alloca(rbimpl_size_mul_or_raise(sizeof(type), (n))))
 
 /**
- * Identical to #RB_ALLOCV_N(), except it  implicitly assumes the type of array
- * is ::VALUE.
+ * Identical to #RB_ALLOCV_N(), except that it allocates a number of bytes and
+ * returns a void* .
  *
  * @param   v  A variable to hold the just-in-case opaque Ruby object.
  * @param   n  Size of allocation, in bytes.
- * @return  An array of `n` bytes of ::VALUE.
+ * @return  A void pointer to `n` bytes storage.
  * @note    `n` may be evaluated twice.
  */
 #define RB_ALLOCV(v, n)        \
@@ -363,7 +364,7 @@ typedef uint128_t DSIZE_T;
  * @return  `p1`.
  * @post    First `n` elements of `p2` are copied into `p1`.
  */
-#define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), rbimpl_size_mul_or_raise(sizeof(type), (n)))
+#define MEMCPY(p1,p2,type,n) ruby_nonempty_memcpy((p1), (p2), rbimpl_size_mul_or_raise(sizeof(type), (n)))
 
 /**
  * Handy macro to call memmove.
@@ -567,7 +568,10 @@ rbimpl_size_mul_overflow(size_t x, size_t y)
 {
     struct rbimpl_size_mul_overflow_tag ret = { false,  0, };
 
-#if RBIMPL_HAS_BUILTIN(__builtin_mul_overflow)
+#if defined(ckd_mul)
+    ret.left = ckd_mul(&ret.right, x, y);
+
+#elif RBIMPL_HAS_BUILTIN(__builtin_mul_overflow)
     ret.left = __builtin_mul_overflow(x, y, &ret.right);
 
 #elif defined(DSIZE_T)
@@ -639,12 +643,11 @@ rbimpl_size_mul_or_raise(size_t x, size_t y)
 static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
-    const size_t total_size = rbimpl_size_mul_or_raise(count, elsize);
+    const size_t total_size = rbimpl_size_mul_or_raise(RBIMPL_CAST((size_t)count), elsize);
     const size_t cnt = (total_size + sizeof(VALUE) - 1) / sizeof(VALUE);
     return rb_alloc_tmp_buffer_with_count(store, total_size, cnt);
 }
 
-#if ! defined(__MINGW32__) && ! defined(__DOXYGEN__)
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
@@ -663,8 +666,5 @@ ruby_nonempty_memcpy(void *dest, const void *src, size_t n)
     }
 }
 RBIMPL_SYMBOL_EXPORT_END()
-#undef memcpy
-#define memcpy ruby_nonempty_memcpy
-#endif
 
 #endif /* RBIMPL_MEMORY_H */

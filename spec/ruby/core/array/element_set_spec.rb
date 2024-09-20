@@ -481,50 +481,48 @@ describe "Array#[]= with [m..]" do
   end
 end
 
-ruby_version_is "2.7" do
-  describe "Array#[]= with [..n] and [...n]" do
-    it "just sets the section defined by range to nil even if the rhs is nil" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(..2)")] = nil
-      a.should == [nil, 4, 5]
-      a[eval("(...2)")] = nil
-      a.should == [nil, 5]
-    end
+describe "Array#[]= with [..n] and [...n]" do
+  it "just sets the section defined by range to nil even if the rhs is nil" do
+    a = [1, 2, 3, 4, 5]
+    a[(..2)] = nil
+    a.should == [nil, 4, 5]
+    a[(...2)] = nil
+    a.should == [nil, 5]
+  end
 
-    it "just sets the section defined by range to nil if n < 0 and the rhs is nil" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(..-3)")] = nil
-      a.should == [nil, 4, 5]
-      a[eval("(...-1)")] = [nil, 5]
-    end
+  it "just sets the section defined by range to nil if n < 0 and the rhs is nil" do
+    a = [1, 2, 3, 4, 5]
+    a[(..-3)] = nil
+    a.should == [nil, 4, 5]
+    a[(...-1)] = [nil, 5]
+  end
 
-    it "replaces the section defined by range" do
-      a = [6, 5, 4, 3, 2, 1]
-      a[eval("(...3)")] = 9
-      a.should == [9, 3, 2, 1]
-      a[eval("(..2)")] = [7, 7, 7, 7, 7]
-      a.should == [7, 7, 7, 7, 7, 1]
-    end
+  it "replaces the section defined by range" do
+    a = [6, 5, 4, 3, 2, 1]
+    a[(...3)] = 9
+    a.should == [9, 3, 2, 1]
+    a[(..2)] = [7, 7, 7, 7, 7]
+    a.should == [7, 7, 7, 7, 7, 1]
+  end
 
-    it "replaces the section if n < 0" do
-      a = [1, 2, 3, 4, 5]
-      a[eval("(..-2)")] = [7, 8, 9]
-      a.should == [7, 8, 9, 5]
-    end
+  it "replaces the section if n < 0" do
+    a = [1, 2, 3, 4, 5]
+    a[(..-2)] = [7, 8, 9]
+    a.should == [7, 8, 9, 5]
+  end
 
-    it "replaces everything if n > the array size" do
-      a = [1, 2, 3]
-      a[eval("(...7)")] = [4]
-      a.should == [4]
-    end
+  it "replaces everything if n > the array size" do
+    a = [1, 2, 3]
+    a[(...7)] = [4]
+    a.should == [4]
+  end
 
-    it "inserts at the beginning if n < negative the array size" do
-      a = [1, 2, 3]
-      a[eval("(..-7)")] = [4]
-      a.should == [4, 1, 2, 3]
-      a[eval("(...-10)")] = [6]
-      a.should == [6, 4, 1, 2, 3]
-    end
+  it "inserts at the beginning if n < negative the array size" do
+    a = [1, 2, 3]
+    a[(..-7)] = [4]
+    a.should == [4, 1, 2, 3]
+    a[(...-10)] = [6]
+    a.should == [6, 4, 1, 2, 3]
   end
 end
 

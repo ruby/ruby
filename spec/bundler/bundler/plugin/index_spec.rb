@@ -5,7 +5,7 @@ RSpec.describe Bundler::Plugin::Index do
 
   before do
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    gemfile "source 'https://gem.repo1'"
     path = lib_path(plugin_name)
     index.register_plugin("new-plugin", path.to_s, [path.join("lib").to_s], commands, sources, hooks)
   end
@@ -140,7 +140,7 @@ RSpec.describe Bundler::Plugin::Index do
   describe "after conflict" do
     let(:commands) { ["foo"] }
     let(:sources) { ["bar"] }
-    let(:hooks) { ["hoook"] }
+    let(:hooks) { ["thehook"] }
 
     shared_examples "it cleans up" do
       it "the path" do
@@ -156,7 +156,7 @@ RSpec.describe Bundler::Plugin::Index do
       end
 
       it "the hook" do
-        expect(index.hook_plugins("xhoook")).to be_empty
+        expect(index.hook_plugins("xthehook")).to be_empty
       end
     end
 
@@ -164,7 +164,7 @@ RSpec.describe Bundler::Plugin::Index do
       before do
         expect do
           path = lib_path("cplugin")
-          index.register_plugin("cplugin", path.to_s, [path.join("lib").to_s], ["foo"], ["xbar"], ["xhoook"])
+          index.register_plugin("cplugin", path.to_s, [path.join("lib").to_s], ["foo"], ["xbar"], ["xthehook"])
         end.to raise_error(Index::CommandConflict)
       end
 
@@ -175,7 +175,7 @@ RSpec.describe Bundler::Plugin::Index do
       before do
         expect do
           path = lib_path("cplugin")
-          index.register_plugin("cplugin", path.to_s, [path.join("lib").to_s], ["xfoo"], ["bar"], ["xhoook"])
+          index.register_plugin("cplugin", path.to_s, [path.join("lib").to_s], ["xfoo"], ["bar"], ["xthehook"])
         end.to raise_error(Index::SourceConflict)
       end
 
@@ -186,7 +186,7 @@ RSpec.describe Bundler::Plugin::Index do
       before do
         expect do
           path = lib_path("cplugin")
-          index.register_plugin("cplugin", path.to_s, [path.join("lib").to_s], ["foo"], ["bar"], ["xhoook"])
+          index.register_plugin("cplugin", path.to_s, [path.join("lib").to_s], ["foo"], ["bar"], ["xthehook"])
         end.to raise_error(Index::CommandConflict)
       end
 

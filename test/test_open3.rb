@@ -3,10 +3,6 @@
 require 'test/unit'
 require 'open3'
 
-if RUBY_ENGINE == 'ruby'
-  require_relative 'lib/jit_support'
-end
-
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
@@ -95,7 +91,7 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_numeric_file_descriptor3
-    skip "passing FDs bigger than 2 is not supported on Windows" if /mswin|mingw/ =~ RbConfig::CONFIG['host_os']
+    omit "passing FDs bigger than 2 is not supported on Windows" if /mswin|mingw/ =~ RbConfig::CONFIG['host_os']
     with_pipe {|r, w|
       Open3.popen3(RUBY, '-e', 'IO.open(3).puts "foo"', 3 => w) {|i,o,e,t|
         assert_equal("foo\n", r.gets, "[GH-808] [ruby-core:67347] [Bug #10699]")
@@ -130,11 +126,7 @@ class TestOpen3 < Test::Unit::TestCase
           i.close
           STDERR.reopen(old)
           assert_equal("zo", o.read)
-          if defined?(JITSupport)
-            assert_equal("ze", JITSupport.remove_mjit_logs(r.read))
-          else
-            assert_equal("ze", r.read)
-          end
+          assert_equal("ze", r.read)
         }
       }
     }

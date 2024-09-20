@@ -29,14 +29,36 @@
 #define rb_raise_static(e, m) \
     rb_raise_cstr_i((e), rb_str_new_static((m), rb_strlen_lit(m)))
 #ifdef RUBY_FUNCTION_NAME_STRING
-# define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 # define rb_syserr_new_path(err, path) rb_syserr_new_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 #else
-# define rb_sys_fail_path(path) rb_sys_fail_str(path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
 # define rb_syserr_new_path(err, path) rb_syserr_new_str((err), (path))
 #endif
+
+#define rb_sys_fail(mesg) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail(errno_to_fail, (mesg)); \
+} while (0)
+
+#define rb_sys_fail_str(mesg) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_str(errno_to_fail, (mesg)); \
+} while (0)
+
+#define rb_sys_fail_path(path) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_path(errno_to_fail, (path)); \
+} while (0)
+
+#define rb_sys_fail_sprintf(...) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_str(errno_to_fail, rb_sprintf("" __VA_ARGS__)); \
+} while (0)
 
 /* error.c */
 extern long rb_backtrace_length_limit;
@@ -120,6 +142,8 @@ VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, 
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
+PRINTF_ARGS(void rb_enc_compile_warning(rb_encoding *enc, const char *file, int line, const char *fmt, ...), 4, 5);
+PRINTF_ARGS(void rb_enc_compile_warn(rb_encoding *enc, const char *file, int line, const char *fmt, ...), 4, 5);
 rb_warning_category_t rb_warning_category_from_name(VALUE category);
 bool rb_warning_category_enabled_p(rb_warning_category_t category);
 VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
@@ -146,6 +170,9 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 VALUE rb_syserr_new_path_in(const char *func_name, int n, VALUE path);
 #endif
 RUBY_SYMBOL_EXPORT_END
+
+/* vm.c */
+void rb_free_warning(void);
 
 static inline void
 rb_raise_cstr_i(VALUE etype, VALUE mesg)

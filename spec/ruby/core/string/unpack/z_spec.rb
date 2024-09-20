@@ -20,4 +20,9 @@ describe "String#unpack with format 'Z'" do
       ["\x00a\x00 bc \x00",  ["", "c"]]
     ].should be_computed_by(:unpack, "Z5Z")
   end
+
+  it "does not advance past the null byte when given a 'Z' format specifier" do
+    "a\x00\x0f".unpack('Zxc').should == ['a', 15]
+    "a\x00\x0f".unpack('Zcc').should == ['a', 0, 15]
+  end
 end

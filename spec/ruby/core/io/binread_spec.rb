@@ -44,4 +44,14 @@ describe "IO.binread" do
   it "raises an Errno::EINVAL when not passed a valid offset" do
     -> { IO.binread @fname, 0, -1  }.should raise_error(Errno::EINVAL)
   end
+
+  ruby_version_is "3.3" do
+    # https://bugs.ruby-lang.org/issues/19630
+    it "warns about deprecation given a path with a pipe" do
+      cmd = "|echo ok"
+      -> {
+        IO.binread(cmd)
+      }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
 end

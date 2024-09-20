@@ -9,8 +9,26 @@ describe "Regexp#source" do
     /x(.)xz/.source.should == "x(.)xz"
   end
 
-  it "will remove escape characters" do
-    /foo\/bar/.source.should == "foo/bar"
+  it "keeps escape sequences as is" do
+    /\x20\+/.source.should == '\x20\+'
+  end
+
+  describe "escaping" do
+    it "keeps escaping of metacharacter" do
+      /\$/.source.should == "\\$"
+    end
+
+    it "keeps escaping of metacharacter used as a terminator" do
+      %r+\++.source.should == "\\+"
+    end
+
+    it "removes escaping of non-metacharacter used as a terminator" do
+      %r@\@@.source.should == "@"
+    end
+
+    it "keeps escaping of non-metacharacter not used as a terminator" do
+      /\@/.source.should == "\\@"
+    end
   end
 
   not_supported_on :opal do

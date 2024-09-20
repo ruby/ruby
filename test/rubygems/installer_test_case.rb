@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require_relative 'helper'
-require 'rubygems/installer'
+
+require_relative "helper"
+require "rubygems/installer"
 
 class Gem::Installer
   ##
@@ -110,7 +111,7 @@ class Gem::InstallerTestCase < Gem::TestCase
 
   def setup_base_installer(force = true)
     @gem = setup_base_gem
-    util_installer @spec, @gemhome, false, force
+    util_installer @spec, @gemhome, force
   end
 
   ##
@@ -133,7 +134,7 @@ class Gem::InstallerTestCase < Gem::TestCase
   # And returns it
 
   def setup_base_spec
-    quick_gem 'a' do |spec|
+    quick_gem "a" do |spec|
       util_make_exec spec
     end
   end
@@ -154,7 +155,7 @@ class Gem::InstallerTestCase < Gem::TestCase
   # And returns a Gem::Installer for the @user_spec that installs into Gem.user_dir
 
   def setup_base_user_installer
-    @user_spec = quick_gem 'b' do |spec|
+    @user_spec = quick_gem "b" do |spec|
       util_make_exec spec
     end
 
@@ -162,7 +163,7 @@ class Gem::InstallerTestCase < Gem::TestCase
 
     @user_gem = @user_spec.cache_file
 
-    util_installer @user_spec, Gem.user_dir, :user
+    Gem::Installer.at @user_gem, user_install: true
   end
 
   ##
@@ -183,23 +184,23 @@ class Gem::InstallerTestCase < Gem::TestCase
   #   ext/a/mkrf_conf.rb
 
   def util_setup_gem(ui = @ui, force = true)
-    @spec.files << File.join('lib', 'code.rb')
-    @spec.extensions << File.join('ext', 'a', 'mkrf_conf.rb')
+    @spec.files << File.join("lib", "code.rb")
+    @spec.extensions << File.join("ext", "a", "mkrf_conf.rb")
 
     Dir.chdir @tempdir do
-      FileUtils.mkdir_p 'bin'
-      FileUtils.mkdir_p 'lib'
-      FileUtils.mkdir_p File.join('ext', 'a')
+      FileUtils.mkdir_p "bin"
+      FileUtils.mkdir_p "lib"
+      FileUtils.mkdir_p File.join("ext", "a")
 
-      File.open File.join('bin', 'executable'), 'w' do |f|
+      File.open File.join("bin", "executable"), "w" do |f|
         f.puts "raise 'ran executable'"
       end
 
-      File.open File.join('lib', 'code.rb'), 'w' do |f|
-        f.puts '1'
+      File.open File.join("lib", "code.rb"), "w" do |f|
+        f.puts "1"
       end
 
-      File.open File.join('ext', 'a', 'mkrf_conf.rb'), 'w' do |f|
+      File.open File.join("ext", "a", "mkrf_conf.rb"), "w" do |f|
         f << <<-EOF
           File.open 'Rakefile', 'w' do |rf| rf.puts "task :default" end
         EOF
@@ -214,18 +215,16 @@ class Gem::InstallerTestCase < Gem::TestCase
       end
     end
 
-    Gem::Installer.at @gem, :force => force
+    Gem::Installer.at @gem, force: force
   end
 
   ##
-  # Creates an installer for +spec+ that will install into +gem_home+.  If
-  # +user+ is true a user-install will be performed.
+  # Creates an installer for +spec+ that will install into +gem_home+.
 
-  def util_installer(spec, gem_home, user=false, force=true)
+  def util_installer(spec, gem_home, force=true)
     Gem::Installer.at(spec.cache_file,
-                       :install_dir => gem_home,
-                       :user_install => user,
-                       :force => force)
+                       install_dir: gem_home,
+                       force: force)
   end
 
   @@symlink_supported = nil

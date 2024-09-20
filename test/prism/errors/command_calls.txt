@@ -1,0 +1,3 @@
+[a b]
+  ^ unexpected local variable or method; expected a `,` separator for the array elements
+

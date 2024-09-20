@@ -12,7 +12,7 @@ module Bundler
         yield
         f.flock(File::LOCK_UN)
       end
-    rescue Errno::EACCES, Errno::ENOLCK, Errno::ENOTSUP
+    rescue Errno::EACCES, Errno::ENOLCK, Errno::ENOTSUP, Errno::EPERM, Errno::EROFS
       # In the case the user does not have access to
       # create the lock file or is using NFS where
       # locks are not available we skip locking.

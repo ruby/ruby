@@ -1,17 +1,11 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 #   irb/version.rb - irb version definition file
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
-#
-# --
-#
-#
 #
 
 module IRB # :nodoc:
-  VERSION = "1.3.8.pre.11"
+  VERSION = "1.14.0"
   @RELEASE_VERSION = VERSION
-  @LAST_UPDATE_DATE = "2021-10-09"
+  @LAST_UPDATE_DATE = "2024-07-06"
 end

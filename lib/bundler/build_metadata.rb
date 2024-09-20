@@ -27,9 +27,9 @@ module Bundler
 
       # If Bundler has been installed without its .git directory and without a
       # commit instance variable then we can't determine its commits SHA.
-      git_dir = File.join(File.expand_path("../../../..", __FILE__), ".git")
+      git_dir = File.expand_path("../../../.git", __dir__)
       if File.directory?(git_dir)
-        return @git_commit_sha = Dir.chdir(git_dir) { `git rev-parse --short HEAD`.strip.freeze }
+        return @git_commit_sha = IO.popen(%w[git rev-parse --short HEAD], { chdir: git_dir }, &:read).strip.freeze
       end
 
       @git_commit_sha ||= "unknown"

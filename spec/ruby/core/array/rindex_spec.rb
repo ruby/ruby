@@ -4,7 +4,7 @@ require_relative '../enumerable/shared/enumeratorized'
 
 # Modifying a collection while the contents are being iterated
 # gives undefined behavior. See
-# http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/23633
+# https://blade.ruby-lang.org/ruby-core/23633
 
 describe "Array#rindex" do
   it "returns the first index backwards from the end where element == to object" do
@@ -66,6 +66,21 @@ describe "Array#rindex" do
     ary.rindex { |x| seen << x; ary.clear; false }
 
     seen.should == [3]
+  end
+
+  it "tolerates increasing an array size during iteration" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.rindex do |e|
+      ScratchPad << e
+      array.prepend i if i < 100
+      i += 1
+      false
+    end
+
+    ScratchPad.recorded.should == [:c, :a, 1]
   end
 
   describe "given no argument and no block" do

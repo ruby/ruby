@@ -92,9 +92,13 @@ struct pty_info {
 
 static void getDevice(int*, int*, char [DEVICELEN], int);
 
+static int start_new_session(char *errbuf, size_t errbuf_len);
+static int obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len);
+static int drop_privilige(char *errbuf, size_t errbuf_len);
+
 struct child_info {
     int master, slave;
-    char *slavename;
+    const char *slavename;
     VALUE execarg_obj;
     struct rb_execarg *eargp;
 };
@@ -102,26 +106,42 @@ struct child_info {
 static int
 chfunc(void *data, char *errbuf, size_t errbuf_len)
 {
-    struct child_info *carg = data;
+    const struct child_info *carg = data;
     int master = carg->master;
     int slave = carg->slave;
+    const char *slavename = carg->slavename;
+
+    if (start_new_session(errbuf, errbuf_len))
+        return -1;
+
+    if (obtain_ctty(master, slave, slavename, errbuf, errbuf_len))
+        return -1;
+
+    if (drop_privilige(errbuf, errbuf_len))
+        return -1;
+
+    return rb_exec_async_signal_safe(carg->eargp, errbuf, errbuf_len);
+}
 
 #define ERROR_EXIT(str) do { \
-	strlcpy(errbuf, (str), errbuf_len); \
-	return -1; \
+        strlcpy(errbuf, (str), errbuf_len); \
+        return -1; \
     } while (0)
 
-    /*
-     * Set free from process group and controlling terminal
-     */
+/*
+ * Set free from process group and controlling terminal
+ */
+static int
+start_new_session(char *errbuf, size_t errbuf_len)
+{
 #ifdef HAVE_SETSID
     (void) setsid();
 #else /* HAS_SETSID */
 # ifdef HAVE_SETPGRP
-#  ifdef SETGRP_VOID
+#  ifdef SETPGRP_VOID
     if (setpgrp() == -1)
         ERROR_EXIT("setpgrp()");
-#  else /* SETGRP_VOID */
+#  else /* SETPGRP_VOID */
     if (setpgrp(0, getpid()) == -1)
         ERROR_EXIT("setpgrp()");
     {
@@ -132,20 +152,25 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
             ERROR_EXIT("ioctl(TIOCNOTTY)");
         close(i);
     }
-#  endif /* SETGRP_VOID */
+#  endif /* SETPGRP_VOID */
 # endif /* HAVE_SETPGRP */
 #endif /* HAS_SETSID */
+    return 0;
+}
 
-    /*
-     * obtain new controlling terminal
-     */
+/*
+ * obtain new controlling terminal
+ */
+static int
+obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t errbuf_len)
+{
 #if defined(TIOCSCTTY)
     close(master);
     (void) ioctl(slave, TIOCSCTTY, (char *)0);
     /* errors ignored for sun */
 #else
     close(slave);
-    slave = rb_cloexec_open(carg->slavename, O_RDWR, 0);
+    slave = rb_cloexec_open(slavename, O_RDWR, 0);
     if (slave < 0) {
         ERROR_EXIT("open: pty slave");
     }
@@ -156,42 +181,52 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,1);
     dup2(slave,2);
     if (slave < 0 || slave > 2) (void)!close(slave);
+    return 0;
+}
+
+static int
+drop_privilige(char *errbuf, size_t errbuf_len)
+{
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
-
-    return rb_exec_async_signal_safe(carg->eargp, errbuf, sizeof(errbuf_len));
-#undef ERROR_EXIT
+    return 0;
 }
+
+#undef ERROR_EXIT
 
 static void
 establishShell(int argc, VALUE *argv, struct pty_info *info,
-	       char SlaveName[DEVICELEN])
+               char SlaveName[DEVICELEN])
 {
     int 		master, slave, status = 0;
     rb_pid_t		pid;
-    char		*p, *getenv();
+    char		*p;
     VALUE		v;
     struct child_info   carg;
     char		errbuf[32];
 
     if (argc == 0) {
-	const char *shellname = "/bin/sh";
+        const char *shellname = "/bin/sh";
 
-	if ((p = getenv("SHELL")) != NULL) {
-	    shellname = p;
-	}
-	else {
+        if ((p = getenv("SHELL")) != NULL) {
+            shellname = p;
+        }
+        else {
 #if defined HAVE_PWD_H
-	    const char *username = getenv("USER");
-	    struct passwd *pwent = getpwnam(username ? username : getlogin());
-	    if (pwent && pwent->pw_shell)
-		shellname = pwent->pw_shell;
+            const char *username = getenv("USER");
+            if (username == NULL)
+                username = getlogin();
+            if (username != NULL) {
+                struct passwd *pwent = getpwnam(username);
+                if (pwent && pwent->pw_shell)
+                    shellname = pwent->pw_shell;
+            }
 #endif
-	}
-	v = rb_str_new2(shellname);
-	argc = 1;
-	argv = &v;
+        }
+        v = rb_str_new2(shellname);
+        argc = 1;
+        argv = &v;
     }
 
     carg.execarg_obj = rb_execarg_new(argc, argv, 1, 0);
@@ -207,13 +242,13 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     pid = rb_fork_async_signal_safe(&status, chfunc, &carg, Qnil, errbuf, sizeof(errbuf));
 
     if (pid < 0) {
-	int e = errno;
-	close(master);
-	close(slave);
+        int e = errno;
+        close(master);
+        close(slave);
         rb_execarg_parent_end(carg.execarg_obj);
-	errno = e;
-	if (status) rb_jump_tag(status);
-	rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
+        errno = e;
+        if (status) rb_jump_tag(status);
+        rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
     }
 
     close(slave);
@@ -225,7 +260,21 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     RB_GC_GUARD(carg.execarg_obj);
 }
 
-#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME)
+#if (defined(HAVE_POSIX_OPENPT) || defined(HAVE_PTSNAME)) && !defined(HAVE_PTSNAME_R)
+/* glibc only, not obsolete interface on Tru64 or HP-UX */
+static int
+ptsname_r(int fd, char *buf, size_t buflen)
+{
+    extern char *ptsname(int);
+    char *name = ptsname(fd);
+    if (!name) return -1;
+    strlcpy(buf, name, buflen);
+    return 0;
+}
+# define HAVE_PTSNAME_R 1
+#endif
+
+#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME_R)
 static int
 no_mesg(char *slavedevice, int nomesg)
 {
@@ -258,30 +307,39 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     /* Unix98 PTY */
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
+    struct sigaction dfl, old;
+
+    dfl.sa_handler = SIG_DFL;
+    dfl.sa_flags = 0;
+    sigemptyset(&dfl.sa_mask);
 
 #if defined(__sun) || defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
-    if (rb_grantpt(masterfd) == -1) goto error;
+    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
+    if (grantpt(masterfd) == -1) goto grantpt_error;
     rb_fd_fix_cloexec(masterfd);
 #else
     {
-	int flags = O_RDWR|O_NOCTTY;
+        int flags = O_RDWR|O_NOCTTY;
 # if defined(O_CLOEXEC)
-	/* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
-	 * So version dependency on GNU/Linux is the same as O_CLOEXEC with open().
-	 * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
-	flags |= O_CLOEXEC;
+        /* glibc posix_openpt() in GNU/Linux calls open("/dev/ptmx", flags) internally.
+         * So version dependency on GNU/Linux is the same as O_CLOEXEC with open().
+         * O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
+        flags |= O_CLOEXEC;
 # endif
-	if ((masterfd = posix_openpt(flags)) == -1) goto error;
+        if ((masterfd = posix_openpt(flags)) == -1) goto error;
     }
     rb_fd_fix_cloexec(masterfd);
-    if (rb_grantpt(masterfd) == -1) goto error;
+    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
+    if (grantpt(masterfd) == -1) goto grantpt_error;
 #endif
+    if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
     if (unlockpt(masterfd) == -1) goto error;
-    if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
+    slavedevice = SlaveName;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
@@ -294,9 +352,10 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     *master = masterfd;
     *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
+  grantpt_error:
+    sigaction(SIGCHLD, &old, NULL);
   error:
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
@@ -310,15 +369,15 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
  * or the same interface function.
  */
     if (openpty(master, slave, SlaveName,
-		(struct termios *)0, (struct winsize *)0) == -1) {
-	if (!fail) return -1;
-	rb_raise(rb_eRuntimeError, "openpty() failed");
+                (struct termios *)0, (struct winsize *)0) == -1) {
+        if (!fail) return -1;
+        rb_raise(rb_eRuntimeError, "openpty() failed");
     }
     rb_fd_fix_cloexec(*master);
     rb_fd_fix_cloexec(*slave);
     if (no_mesg(SlaveName, nomesg) == -1) {
-	if (!fail) return -1;
-	rb_raise(rb_eRuntimeError, "can't chmod slave pty");
+        if (!fail) return -1;
+        rb_raise(rb_eRuntimeError, "can't chmod slave pty");
     }
 
     return 0;
@@ -329,8 +388,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     mode_t mode = nomesg ? 0600 : 0622;
 
     if (!(name = _getpty(master, O_RDWR, mode, 0))) {
-	if (!fail) return -1;
-	rb_raise(rb_eRuntimeError, "_getpty() failed");
+        if (!fail) return -1;
+        rb_raise(rb_eRuntimeError, "_getpty() failed");
     }
     rb_fd_fix_cloexec(*master);
 
@@ -346,21 +405,25 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     char *slavedevice;
     void (*s)();
 
-    extern char *ptsname(int);
     extern int unlockpt(int);
+    extern int grantpt(int);
 
 #if defined(__sun)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    if(rb_grantpt(masterfd) == -1) goto error;
+    s = signal(SIGCHLD, SIG_DFL);
+    if(grantpt(masterfd) == -1) goto error;
     rb_fd_fix_cloexec(masterfd);
 #else
     if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(masterfd);
-    if(rb_grantpt(masterfd) == -1) goto error;
+    s = signal(SIGCHLD, SIG_DFL);
+    if(grantpt(masterfd) == -1) goto error;
 #endif
+    signal(SIGCHLD, s);
     if(unlockpt(masterfd) == -1) goto error;
-    if((slavedevice = ptsname(masterfd)) == NULL) goto error;
+    if (ptsname_r(masterfd, SlaveName, DEVICELEN) != 0) goto error;
+    slavedevice = SlaveName;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
@@ -371,7 +434,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #endif
     *master = masterfd;
     *slave = slavefd;
-    strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
   error:
@@ -386,49 +448,42 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     char MasterName[DEVICELEN];
 
 #define HEX1(c) \
-	c"0",c"1",c"2",c"3",c"4",c"5",c"6",c"7", \
-	c"8",c"9",c"a",c"b",c"c",c"d",c"e",c"f"
+        c"0",c"1",c"2",c"3",c"4",c"5",c"6",c"7", \
+        c"8",c"9",c"a",c"b",c"c",c"d",c"e",c"f"
 
-#if defined(__hpux)
-    static const char MasterDevice[] = "/dev/ptym/pty%s";
-    static const char SlaveDevice[] =  "/dev/pty/tty%s";
-    static const char deviceNo[][3] = {
-	HEX1("p"), HEX1("q"), HEX1("r"), HEX1("s"),
-	HEX1("t"), HEX1("u"), HEX1("v"), HEX1("w"),
-    };
-#elif defined(_IBMESA)  /* AIX/ESA */
+#if defined(_IBMESA)  /* AIX/ESA */
     static const char MasterDevice[] = "/dev/ptyp%s";
     static const char SlaveDevice[] = "/dev/ttyp%s";
     static const char deviceNo[][3] = {
-	HEX1("0"), HEX1("1"), HEX1("2"), HEX1("3"),
-	HEX1("4"), HEX1("5"), HEX1("6"), HEX1("7"),
-	HEX1("8"), HEX1("9"), HEX1("a"), HEX1("b"),
-	HEX1("c"), HEX1("d"), HEX1("e"), HEX1("f"),
+        HEX1("0"), HEX1("1"), HEX1("2"), HEX1("3"),
+        HEX1("4"), HEX1("5"), HEX1("6"), HEX1("7"),
+        HEX1("8"), HEX1("9"), HEX1("a"), HEX1("b"),
+        HEX1("c"), HEX1("d"), HEX1("e"), HEX1("f"),
     };
 #else /* 4.2BSD */
     static const char MasterDevice[] = "/dev/pty%s";
     static const char SlaveDevice[] = "/dev/tty%s";
     static const char deviceNo[][3] = {
-	HEX1("p"), HEX1("q"), HEX1("r"), HEX1("s"),
+        HEX1("p"), HEX1("q"), HEX1("r"), HEX1("s"),
     };
 #endif
 #undef HEX1
     for (i = 0; i < numberof(deviceNo); i++) {
-	const char *const devno = deviceNo[i];
-	snprintf(MasterName, sizeof MasterName, MasterDevice, devno);
-	if ((masterfd = rb_cloexec_open(MasterName,O_RDWR,0)) >= 0) {
+        const char *const devno = deviceNo[i];
+        snprintf(MasterName, sizeof MasterName, MasterDevice, devno);
+        if ((masterfd = rb_cloexec_open(MasterName,O_RDWR,0)) >= 0) {
             rb_update_max_fd(masterfd);
-	    *master = masterfd;
-	    snprintf(SlaveName, DEVICELEN, SlaveDevice, devno);
-	    if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
+            *master = masterfd;
+            snprintf(SlaveName, DEVICELEN, SlaveDevice, devno);
+            if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
                 rb_update_max_fd(slavefd);
-		*slave = slavefd;
-		if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
-		if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;
-		return 0;
-	    }
-	    close(masterfd);
-	}
+                *slave = slavefd;
+                if (chown(SlaveName, getuid(), getgid()) != 0) goto error;
+                if (chmod(SlaveName, nomesg ? 0600 : 0622) != 0) goto error;
+                return 0;
+            }
+            close(masterfd);
+        }
     }
   error:
     if (slavefd != -1) close(slavefd);
@@ -442,8 +497,8 @@ static void
 getDevice(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg)
 {
     if (get_device_once(master, slave, SlaveName, nomesg, 0)) {
-	rb_gc();
-	get_device_once(master, slave, SlaveName, nomesg, 1);
+        rb_gc();
+        get_device_once(master, slave, SlaveName, nomesg, 1);
     }
 }
 
@@ -455,8 +510,10 @@ pty_close_pty(VALUE assoc)
 
     for (i = 0; i < 2; i++) {
         io = rb_ary_entry(assoc, i);
-        if (RB_TYPE_P(io, T_FILE) && 0 <= RFILE(io)->fptr->fd)
+        if (RB_TYPE_P(io, T_FILE)) {
+            /* it's OK to call rb_io_close again even if it's already closed */
             rb_io_close(io);
+        }
     }
     return Qnil;
 }
@@ -506,28 +563,21 @@ pty_open(VALUE klass)
 {
     int master_fd, slave_fd;
     char slavename[DEVICELEN];
-    VALUE master_io, slave_file;
-    rb_io_t *master_fptr, *slave_fptr;
-    VALUE assoc;
 
     getDevice(&master_fd, &slave_fd, slavename, 1);
 
-    master_io = rb_obj_alloc(rb_cIO);
-    MakeOpenFile(master_io, master_fptr);
-    master_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX;
-    master_fptr->fd = master_fd;
-    master_fptr->pathv = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
+    VALUE master_path = rb_obj_freeze(rb_sprintf("masterpty:%s", slavename));
+    VALUE master_io = rb_io_open_descriptor(rb_cIO, master_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX, master_path, RUBY_IO_TIMEOUT_DEFAULT, NULL);
 
-    slave_file = rb_obj_alloc(rb_cFile);
-    MakeOpenFile(slave_file, slave_fptr);
-    slave_fptr->mode = FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY;
-    slave_fptr->fd = slave_fd;
-    slave_fptr->pathv = rb_obj_freeze(rb_str_new_cstr(slavename));
+    VALUE slave_path = rb_obj_freeze(rb_str_new_cstr(slavename));
+    VALUE slave_file = rb_io_open_descriptor(rb_cFile, slave_fd, FMODE_READWRITE | FMODE_SYNC | FMODE_DUPLEX | FMODE_TTY, slave_path, RUBY_IO_TIMEOUT_DEFAULT, NULL);
 
-    assoc = rb_assoc_new(master_io, slave_file);
+    VALUE assoc = rb_assoc_new(master_io, slave_file);
+
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, assoc, pty_close_pty, assoc);
+        return rb_ensure(rb_yield, assoc, pty_close_pty, assoc);
     }
+
     return assoc;
 }
 
@@ -538,7 +588,7 @@ pty_detach_process(VALUE v)
 #ifdef WNOHANG
     int st;
     if (rb_waitpid(info->child_pid, &st, WNOHANG) <= 0)
-	return Qnil;
+        return Qnil;
 #endif
     rb_detach_process(info->child_pid);
     return Qnil;
@@ -546,16 +596,23 @@ pty_detach_process(VALUE v)
 
 /*
  * call-seq:
- *   PTY.spawn(command_line)  { |r, w, pid| ... }
- *   PTY.spawn(command_line)  => [r, w, pid]
- *   PTY.spawn(command, arguments, ...)  { |r, w, pid| ... }
- *   PTY.spawn(command, arguments, ...)  => [r, w, pid]
+ *   PTY.spawn([env,] command_line)  { |r, w, pid| ... }
+ *   PTY.spawn([env,] command_line)  => [r, w, pid]
+ *   PTY.spawn([env,] command, arguments, ...)  { |r, w, pid| ... }
+ *   PTY.spawn([env,] command, arguments, ...)  => [r, w, pid]
  *
  * Spawns the specified command on a newly allocated pty. You can also use the
  * alias ::getpty.
  *
  * The command's controlling tty is set to the slave device of the pty
  * and its standard input/output/error is redirected to the slave device.
+ *
+ * +env+ is an optional hash that provides additional environment variables to the spawned pty.
+ *
+ *   # sets FOO to "bar"
+ *   PTY.spawn({"FOO"=>"bar"}, "printenv", "FOO") { |r,w,pid| p r.read } #=> "bar\r\n"
+ *   # unsets FOO
+ *   PTY.spawn({"FOO"=>nil}, "printenv", "FOO") { |r,w,pid| p r.read } #=> ""
  *
  * +command+ and +command_line+ are the full commands to run, given a String.
  * Any additional +arguments+ will be passed to the command.
@@ -577,35 +634,32 @@ pty_getpty(int argc, VALUE *argv, VALUE self)
 {
     VALUE res;
     struct pty_info info;
-    rb_io_t *wfptr,*rfptr;
-    VALUE rport = rb_obj_alloc(rb_cFile);
-    VALUE wport = rb_obj_alloc(rb_cFile);
     char SlaveName[DEVICELEN];
-
-    MakeOpenFile(rport, rfptr);
-    MakeOpenFile(wport, wfptr);
 
     establishShell(argc, argv, &info, SlaveName);
 
-    rfptr->mode = rb_io_modestr_fmode("r");
-    rfptr->fd = info.fd;
-    rfptr->pathv = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    VALUE pty_path = rb_obj_freeze(rb_str_new_cstr(SlaveName));
+    VALUE rport = rb_io_open_descriptor(
+        rb_cFile, info.fd, FMODE_READABLE, pty_path, RUBY_IO_TIMEOUT_DEFAULT, NULL
+    );
 
-    wfptr->mode = rb_io_modestr_fmode("w") | FMODE_SYNC;
-    wfptr->fd = rb_cloexec_dup(info.fd);
-    if (wfptr->fd == -1)
+    int wpty_fd = rb_cloexec_dup(info.fd);
+    if (wpty_fd == -1) {
         rb_sys_fail("dup()");
-    rb_update_max_fd(wfptr->fd);
-    wfptr->pathv = rfptr->pathv;
+    }
+    VALUE wport = rb_io_open_descriptor(
+        rb_cFile, wpty_fd, FMODE_WRITABLE | FMODE_TRUNC | FMODE_CREATE | FMODE_SYNC,
+        pty_path, RUBY_IO_TIMEOUT_DEFAULT, NULL
+    );
 
     res = rb_ary_new2(3);
-    rb_ary_store(res,0,(VALUE)rport);
-    rb_ary_store(res,1,(VALUE)wport);
+    rb_ary_store(res, 0, rport);
+    rb_ary_store(res, 1, wport);
     rb_ary_store(res,2,PIDT2NUM(info.child_pid));
 
     if (rb_block_given_p()) {
-	rb_ensure(rb_yield, res, pty_detach_process, (VALUE)&info);
-	return Qnil;
+        rb_ensure(rb_yield, res, pty_detach_process, (VALUE)&info);
+        return Qnil;
     }
     return res;
 }
@@ -625,13 +679,13 @@ raise_from_check(rb_pid_t pid, int status)
 ---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
 #endif /* WIFSTOPPED | IF_STOPPED */
     if (WIFSTOPPED(status)) { /* suspend */
-	state = "stopped";
+        state = "stopped";
     }
     else if (kill(pid, 0) == 0) {
-	state = "changed";
+        state = "changed";
     }
     else {
-	state = "exited";
+        state = "exited";
     }
     msg = rb_sprintf("pty - %s: %ld", state, (long)pid);
     exc = rb_exc_new_str(eChildExited, msg);
@@ -664,12 +718,12 @@ pty_check(int argc, VALUE *argv, VALUE self)
     int status;
     const int flag =
 #ifdef WNOHANG
-	WNOHANG|
+        WNOHANG|
 #endif
 #ifdef WUNTRACED
-	WUNTRACED|
+        WUNTRACED|
 #endif
-	0;
+        0;
 
     rb_scan_args(argc, argv, "11", &pid, &exc);
     cpid = rb_waitpid(NUM2PIDT(pid), &status, flag);
@@ -753,8 +807,13 @@ void
 Init_pty(void)
 {
     cPTY = rb_define_module("PTY");
-    /* :nodoc: */
-    rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
+#if 1
+    rb_define_module_function(cPTY,"get""pty",pty_getpty,-1);
+#else  /* for RDoc */
+    /* show getpty as an alias of spawn */
+    VALUE sPTY = rb_singleton_class(cPTY);
+    rb_define_alias(sPTY, "getpty", "spawn");
+#endif
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
     rb_define_singleton_method(cPTY,"check",pty_check,-1);
     rb_define_singleton_method(cPTY,"open",pty_open,0);

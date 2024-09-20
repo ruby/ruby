@@ -17,3 +17,7 @@ end
 describe "StringIO#each_line when passed chomp" do
   it_behaves_like :stringio_each_chomp, :each_line
 end
+
+describe "StringIO#each_line when passed limit" do
+  it_behaves_like :stringio_each_limit, :each_line
+end

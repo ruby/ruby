@@ -9,11 +9,11 @@ RSpec.describe Bundler::Plugin do
   let(:spec2) { double(:spec2) }
 
   before do
-    build_lib "new-plugin", :path => lib_path("new-plugin") do |s|
+    build_lib "new-plugin", path: lib_path("new-plugin") do |s|
       s.write "plugins.rb"
     end
 
-    build_lib "another-plugin", :path => lib_path("another-plugin") do |s|
+    build_lib "another-plugin", path: lib_path("another-plugin") do |s|
       s.write "plugins.rb"
     end
 
@@ -225,7 +225,7 @@ RSpec.describe Bundler::Plugin do
     end
   end
 
-  describe "#source_from_lock" do
+  describe "#from_lock" do
     it "returns instance of registered class initialized with locked opts" do
       opts = { "type" => "l_source", "remote" => "xyz", "other" => "random" }
       allow(index).to receive(:source_plugin).with("l_source") { "plugin_name" }
@@ -236,7 +236,7 @@ RSpec.describe Bundler::Plugin do
 
       expect(SClass).to receive(:new).
         with(hash_including("type" => "l_source", "uri" => "xyz", "other" => "random")) { s_instance }
-      expect(subject.source_from_lock(opts)).to be(s_instance)
+      expect(subject.from_lock(opts)).to be(s_instance)
     end
   end
 
@@ -247,7 +247,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       it "returns plugin dir in app .bundle path" do
-        expect(subject.root).to eq(bundled_app.join(".bundle/plugin"))
+        expect(subject.root).to eq(bundled_app(".bundle/plugin"))
       end
     end
 
@@ -257,7 +257,7 @@ RSpec.describe Bundler::Plugin do
       end
 
       it "returns plugin dir in global bundle path" do
-        expect(subject.root).to eq(home.join(".bundle/plugin"))
+        expect(subject.root).to eq(home(".bundle/plugin"))
       end
     end
   end
@@ -275,17 +275,17 @@ RSpec.describe Bundler::Plugin do
   describe "#hook" do
     before do
       path = lib_path("foo-plugin")
-      build_lib "foo-plugin", :path => path do |s|
+      build_lib "foo-plugin", path: path do |s|
         s.write "plugins.rb", code
       end
 
       Bundler::Plugin::Events.send(:reset)
-      Bundler::Plugin::Events.send(:define, :EVENT_1, "event-1")
-      Bundler::Plugin::Events.send(:define, :EVENT_2, "event-2")
+      Bundler::Plugin::Events.send(:define, :EVENT1, "event-1")
+      Bundler::Plugin::Events.send(:define, :EVENT2, "event-2")
 
-      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_1).
+      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT1).
         and_return(["foo-plugin", "", nil])
-      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_2).
+      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT2).
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
       allow(index).to receive(:load_paths).with("foo-plugin").and_return([])
@@ -303,33 +303,33 @@ RSpec.describe Bundler::Plugin do
 
     it "executes the hook" do
       expect do
-        Plugin.hook(Bundler::Plugin::Events::EVENT_1)
+        Plugin.hook(Bundler::Plugin::Events::EVENT1)
       end.to output("hook for event 1\n").to_stdout
     end
 
     context "single plugin declaring more than one hook" do
       let(:code) { <<-RUBY }
-        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_1) {}
-        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_2) {}
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT1) {}
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT2) {}
         puts "loaded"
       RUBY
 
       it "evals plugins.rb once" do
         expect do
-          Plugin.hook(Bundler::Plugin::Events::EVENT_1)
-          Plugin.hook(Bundler::Plugin::Events::EVENT_2)
+          Plugin.hook(Bundler::Plugin::Events::EVENT1)
+          Plugin.hook(Bundler::Plugin::Events::EVENT2)
         end.to output("loaded\n").to_stdout
       end
     end
 
     context "a block is passed" do
       let(:code) { <<-RUBY }
-        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_1) { |&blk| blk.call }
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT1) { |&blk| blk.call }
       RUBY
 
       it "is passed to the hook" do
         expect do
-          Plugin.hook(Bundler::Plugin::Events::EVENT_1) { puts "win" }
+          Plugin.hook(Bundler::Plugin::Events::EVENT1) { puts "win" }
         end.to output("win\n").to_stdout
       end
     end

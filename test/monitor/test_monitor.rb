@@ -300,6 +300,8 @@ class TestMonitor < Test::Unit::TestCase
         result4 = cond.wait
         assert_equal(true, result4)
         assert_equal("bar", c)
+      ensure
+        queue3.enq(nil)
       end
     end
     assert_join_threads([th, th2])

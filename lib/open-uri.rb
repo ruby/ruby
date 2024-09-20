@@ -9,7 +9,7 @@ module URI
   # If the first argument responds to the 'open' method, 'open' is called on
   # it with the rest of the arguments.
   #
-  # If the first argument is a string that begins with <code>(protocol)://<code>, it is parsed by
+  # If the first argument is a string that begins with <code>(protocol)://</code>, it is parsed by
   # URI.parse.  If the parsed object responds to the 'open' method,
   # 'open' is called on it with the rest of the arguments.
   #
@@ -31,6 +31,7 @@ module URI
       super
     end
   end
+  singleton_class.send(:ruby2_keywords, :open) if respond_to?(:ruby2_keywords, true)
 end
 
 # OpenURI is an easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP.
@@ -89,6 +90,9 @@ end
 # Author:: Tanaka Akira <akr@m17n.org>
 
 module OpenURI
+
+  VERSION = "0.4.1"
+
   Options = {
     :proxy => true,
     :proxy_http_basic_authentication => true,
@@ -99,9 +103,13 @@ module OpenURI
     :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
+    :ssl_min_version => nil,
+    :ssl_max_version => nil,
     :ftp_active_mode => false,
     :redirect => true,
     :encoding => nil,
+    :max_redirects => 64,
+    :request_specific_fields => nil,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -141,7 +149,11 @@ module OpenURI
       end
       encoding = Encoding.find(options[:encoding])
     end
-
+    if options.has_key? :request_specific_fields
+      if !(options[:request_specific_fields].is_a?(Hash) || options[:request_specific_fields].is_a?(Proc))
+        raise ArgumentError, "Invalid request_specific_fields option: #{options[:request_specific_fields].inspect}"
+      end
+    end
     unless mode == nil ||
            mode == 'r' || mode == 'rb' ||
            mode == File::RDONLY
@@ -205,11 +217,20 @@ module OpenURI
     end
 
     uri_set = {}
+    max_redirects = options[:max_redirects] || Options.fetch(:max_redirects)
     buf = nil
     while true
+      request_specific_fields = {}
+      if options.has_key? :request_specific_fields
+        request_specific_fields = if options[:request_specific_fields].is_a?(Hash)
+                                    options[:request_specific_fields]
+                                  else options[:request_specific_fields].is_a?(Proc)
+                                    options[:request_specific_fields].call(uri)
+                                  end
+      end
       redirect = catch(:open_uri_redirect) {
         buf = Buffer.new
-        uri.buffer_open(buf, find_proxy.call(uri), options)
+        uri.buffer_open(buf, find_proxy.call(uri), options.merge(request_specific_fields))
         nil
       }
       if redirect
@@ -229,9 +250,14 @@ module OpenURI
           options = options.dup
           options.delete :http_basic_authentication
         end
+        if options.include?(:request_specific_fields) && options[:request_specific_fields].is_a?(Hash)
+          # Send request specific headers only for the initial request.
+          options.delete :request_specific_fields
+        end
         uri = redirect
         raise "HTTP redirection loop: #{uri}" if uri_set.include? uri.to_s
         uri_set[uri.to_s] = true
+        raise TooManyRedirects.new("Too many redirects", buf.io) if max_redirects && uri_set.size > max_redirects
       else
         break
       end
@@ -298,6 +324,8 @@ module OpenURI
       require 'net/https'
       http.use_ssl = true
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
+      http.min_version = options[:ssl_min_version]
+      http.max_version = options[:ssl_max_version]
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
         Array(options[:ssl_ca_cert]).each do |cert|
@@ -353,7 +381,8 @@ module OpenURI
     when Net::HTTPMovedPermanently, # 301
          Net::HTTPFound, # 302
          Net::HTTPSeeOther, # 303
-         Net::HTTPTemporaryRedirect # 307
+         Net::HTTPTemporaryRedirect, # 307
+         Net::HTTPPermanentRedirect # 308
       begin
         loc_uri = URI.parse(resp['location'])
       rescue URI::InvalidURIError
@@ -383,6 +412,9 @@ module OpenURI
     attr_reader :uri
   end
 
+  class TooManyRedirects < HTTPError
+  end
+
   class Buffer # :nodoc: all
     def initialize
       @io = StringIO.new
@@ -409,6 +441,13 @@ module OpenURI
       @io
     end
   end
+
+  # :stopdoc:
+  RE_LWS = /[\r\n\t ]+/n
+  RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
+  RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
+  RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
+  # :startdoc:
 
   # Mixin for holding meta-information.
   module Meta
@@ -486,13 +525,6 @@ module OpenURI
         nil
       end
     end
-
-    # :stopdoc:
-    RE_LWS = /[\r\n\t ]+/n
-    RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
-    RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
-    RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
-    # :startdoc:
 
     def content_type_parse # :nodoc:
       vs = @metas['content-type']
@@ -698,6 +730,20 @@ module OpenURI
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
     #
+    # [:ssl_min_version]
+    #  Synopsis:
+    #    :ssl_min_version=>:TLS1_2
+    #
+    #  :ssl_min_version option specifies the minimum allowed SSL/TLS protocol
+    #  version.  See also OpenSSL::SSL::SSLContext#min_version=.
+    #
+    # [:ssl_max_version]
+    #  Synopsis:
+    #    :ssl_max_version=>:TLS1_2
+    #
+    #  :ssl_max_version option specifies the maximum allowed SSL/TLS protocol
+    #  version.  See also OpenSSL::SSL::SSLContext#max_version=.
+    #
     # [:ftp_active_mode]
     #  Synopsis:
     #    :ftp_active_mode=>bool
@@ -716,6 +762,44 @@ module OpenURI
     #  OpenURI::HTTPRedirect exception raised on redirection.
     #  Using +true+ also means that redirections between http and ftp are
     #  permitted.
+    #
+    # [:max_redirects]
+    #  Synopsis:
+    #    :max_redirects=>int
+    #
+    #  Number of HTTP redirects allowed before OpenURI::TooManyRedirects is raised.
+    #  The default is 64.
+    #
+    # [:request_specific_fields]
+    #  Synopsis:
+    #    :request_specific_fields => {}
+    #    :request_specific_fields => lambda {|url| ...}
+    #
+    #  :request_specific_fields option allows specifying custom header fields that
+    #  are sent with the HTTP request. It can be passed as a Hash or a Proc that
+    #  gets evaluated on each request and returns a Hash of header fields.
+    #
+    #  If a Hash is provided, it specifies the headers only for the initial
+    #  request and these headers will not be sent on redirects.
+    #
+    #  If a Proc is provided, it will be executed for each request including
+    #  redirects, allowing dynamic header customization based on the request URL.
+    #  It is important that the Proc returns a Hash. And this Hash specifies the
+    #  headers to be sent with the request.
+    #
+    #  For Example with Hash
+    #    URI.open("http://...",
+    #             request_specific_fields: {"Authorization" => "token dummy"}) {|f| ... }
+    #
+    #  For Example with Proc:
+    #    URI.open("http://...",
+    #             request_specific_fields: lambda { |uri|
+    #               if uri.host == "example.com"
+    #                 {"Authorization" => "token dummy"}
+    #               else
+    #                 {}
+    #               end
+    #             }) {|f| ... }
     #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)

@@ -59,4 +59,3 @@ class TestRDocParserMarkdown < RDoc::TestCase
   end
 
 end
-

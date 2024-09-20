@@ -80,8 +80,16 @@ describe "Array#pack with format 'M'" do
     ].should be_computed_by(:pack, "M")
   end
 
-  it "encodes a tab followed by a newline with an encoded newline" do
+  it "encodes a tab at the end of a line with an encoded newline" do
+    ["\t"].pack("M").should == "\t=\n"
     ["\t\n"].pack("M").should == "\t=\n\n"
+    ["abc\t\nxyz"].pack("M").should == "abc\t=\n\nxyz=\n"
+  end
+
+  it "encodes a space at the end of a line with an encoded newline" do
+    [" "].pack("M").should == " =\n"
+    [" \n"].pack("M").should == " =\n\n"
+    ["abc \nxyz"].pack("M").should == "abc =\n\nxyz=\n"
   end
 
   it "encodes 127..255 in hex format" do

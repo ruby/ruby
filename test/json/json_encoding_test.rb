@@ -1,6 +1,5 @@
-# encoding: utf-8
-#frozen_string_literal: false
-require 'test_helper'
+# frozen_string_literal: false
+require_relative 'test_helper'
 
 class JSONEncodingTest < Test::Unit::TestCase
   include JSON
@@ -86,9 +85,7 @@ class JSONEncodingTest < Test::Unit::TestCase
   def test_chars
     (0..0x7f).each do |i|
       json = '["\u%04x"]' % i
-      if RUBY_VERSION >= "1.9."
-        i = i.chr
-      end
+      i = i.chr
       assert_equal i, parse(json).first[0]
       if i == ?\b
         generated = generate(["" << i])

@@ -107,7 +107,15 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.5.2"
+  VERSION = "0.6.0"
+
+  HAS_PERFORMANCE_WARNINGS = begin
+    Warning[:performance]
+    true
+  rescue NoMethodError, ArgumentError
+    false
+  end
+  private_constant :HAS_PERFORMANCE_WARNINGS
 
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
@@ -124,6 +132,10 @@ class OpenStruct
   #   data   # => #<OpenStruct country="Australia", capital="Canberra">
   #
   def initialize(hash=nil)
+    if HAS_PERFORMANCE_WARNINGS && Warning[:performance]
+       warn "OpenStruct use is discouraged for performance reasons", uplevel: 1, category: :performance
+    end
+
     if hash
       update_to_values!(hash)
     else
@@ -197,7 +209,7 @@ class OpenStruct
   #   data.each_pair.to_a   # => [[:country, "Australia"], [:capital, "Canberra"]]
   #
   def each_pair
-    return to_enum(__method__) { @table.size } unless block_given!
+    return to_enum(__method__) { @table.size } unless defined?(yield)
     @table.each_pair{|p| yield p}
     self
   end
@@ -246,7 +258,7 @@ class OpenStruct
       if owner.class == ::Class
         owner < ::OpenStruct
       else
-        self.class.ancestors.any? do |mod|
+        self.class!.ancestors.any? do |mod|
           return false if mod == ::OpenStruct
           mod == owner
         end
@@ -356,15 +368,15 @@ class OpenStruct
   #
   #   person.delete_field('number') { 8675_309 } # => 8675309
   #
-  def delete_field(name)
+  def delete_field(name, &block)
     sym = name.to_sym
     begin
       singleton_class.remove_method(sym, "#{sym}=")
     rescue NameError
     end
     @table.delete(sym) do
-      return yield if block_given!
-      raise! NameError.new("no field `#{sym}' in #{self}", sym)
+      return yield if block
+      raise! NameError.new("no field '#{sym}' in #{self}", sym)
     end
   end
 
@@ -467,6 +479,11 @@ class OpenStruct
   end
   # Other builtin private methods we use:
   alias_method :raise!, :raise
-  alias_method :block_given!, :block_given?
-  private :raise!, :block_given!
+  private :raise!
+
+  # See https://github.com/ruby/ostruct/issues/40
+  if RUBY_ENGINE != 'jruby'
+    alias_method :block_given!, :block_given?
+    private :block_given!
+  end
 end

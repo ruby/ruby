@@ -13,14 +13,4 @@ describe :enumerable_entries, shared: true do
     count.send(@method, :hello, "world").should == [1, 2, 3]
     count.arguments_passed.should == [:hello, "world"]
   end
-
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted array if self is tainted" do
-      EnumerableSpecs::Empty.new.taint.send(@method).tainted?.should be_true
-    end
-
-    it "returns an untrusted array if self is untrusted" do
-      EnumerableSpecs::Empty.new.untrust.send(@method).untrusted?.should be_true
-    end
-  end
 end

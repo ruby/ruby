@@ -2,11 +2,12 @@
 
 require "rbconfig"
 require "shellwords"
+require "fiddle"
 
 module Bundler
   class CLI::Doctor
-    DARWIN_REGEX = /\s+(.+) \(compatibility /.freeze
-    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/.freeze
+    DARWIN_REGEX = /\s+(.+) \(compatibility /
+    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/
 
     attr_reader :options
 
@@ -71,7 +72,12 @@ module Bundler
 
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
-          bad_paths = dylibs(bundle).select {|f| !File.exist?(f) }
+          bad_paths = dylibs(bundle).select do |f|
+            Fiddle.dlopen(f)
+            false
+          rescue Fiddle::DLError
+            true
+          end
           if bad_paths.any?
             broken_links[spec] ||= []
             broken_links[spec].concat(bad_paths)

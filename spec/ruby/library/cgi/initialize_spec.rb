@@ -29,8 +29,8 @@ describe "CGI#initialize when passed no arguments" do
 
   it "does not extend self with any of the other HTML modules" do
     @cgi.send(:initialize)
-    @cgi.should_not be_kind_of(CGI::Html3)
     @cgi.should_not be_kind_of(CGI::HtmlExtension)
+    @cgi.should_not be_kind_of(CGI::Html3)
     @cgi.should_not be_kind_of(CGI::Html4)
     @cgi.should_not be_kind_of(CGI::Html4Tr)
     @cgi.should_not be_kind_of(CGI::Html4Fr)

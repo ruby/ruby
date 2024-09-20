@@ -15,6 +15,9 @@ a status of 0.
 
 If not, the first missing gem is listed and Bundler exits status 1.
 
+If the lockfile needs to be updated then it will be resolved using the gems
+installed on the local machine, if they satisfy the requirements.
+
 ## OPTIONS
 
 * `--dry-run`:

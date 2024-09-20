@@ -4,6 +4,7 @@
 
 #include "ossl.h"
 
+#ifndef OPENSSL_NO_SOCK
 VALUE cSSLSession;
 static VALUE eSSLSession;
 
@@ -18,7 +19,7 @@ const rb_data_type_t ossl_ssl_session_type = {
     {
 	0, ossl_ssl_session_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE ossl_ssl_session_alloc(VALUE klass)
@@ -299,6 +300,7 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 	return ossl_membio2str(out);
 }
 
+#endif /* !defined(OPENSSL_NO_SOCK) */
 
 void Init_ossl_ssl_session(void)
 {
@@ -307,6 +309,7 @@ void Init_ossl_ssl_session(void)
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
+#ifndef OPENSSL_NO_SOCK
 	cSSLSession = rb_define_class_under(mSSL, "Session", rb_cObject);
 	eSSLSession = rb_define_class_under(cSSLSession, "SessionError", eOSSLError);
 
@@ -324,4 +327,5 @@ void Init_ossl_ssl_session(void)
 	rb_define_method(cSSLSession, "to_der", ossl_ssl_session_to_der, 0);
 	rb_define_method(cSSLSession, "to_pem", ossl_ssl_session_to_pem, 0);
 	rb_define_method(cSSLSession, "to_text", ossl_ssl_session_to_text, 0);
+#endif /* !defined(OPENSSL_NO_SOCK) */
 }

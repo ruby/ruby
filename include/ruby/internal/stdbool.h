@@ -39,7 +39,7 @@
 # /* Take stdbool.h definition. */
 # include <stdbool.h>
 
-#else
+#elif !defined(HAVE__BOOL)
 typedef unsigned char _Bool;
 # /* See also http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2229.htm */
 # define bool  _Bool

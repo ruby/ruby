@@ -136,14 +136,14 @@ class LeakChecker
         attr_accessor :count
       end
 
-      def new(data)
+      def new(...)
         LeakChecker::TempfileCounter.count += 1
-        super(data)
+        super
       end
     }
     LeakChecker.const_set(:TempfileCounter, m)
 
-    class << Tempfile::Remover
+    class << Tempfile
       prepend LeakChecker::TempfileCounter
     end
   end
@@ -155,8 +155,8 @@ class LeakChecker
     if prev_count == count
       [prev_count, []]
     else
-      tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t|
-        t.instance_variable_defined?(:@tmpfile) and t.path
+      tempfiles = ObjectSpace.each_object(Tempfile).reject {|t|
+        t.instance_variables.empty? || t.closed?
       }
       [count, tempfiles]
     end
@@ -182,7 +182,8 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && t.alive?
+      t != Thread.current && t.alive? &&
+        !(t.thread_variable?(:"\0__detached_thread__") && t.thread_variable_get(:"\0__detached_thread__"))
     }
   end
 
@@ -232,7 +233,13 @@ class LeakChecker
     old_env = @env_info
     new_env = find_env
     return false if old_env == new_env
+    if defined?(Bundler::EnvironmentPreserver)
+      bundler_prefix = Bundler::EnvironmentPreserver::BUNDLER_PREFIX
+    end
     (old_env.keys | new_env.keys).sort.each {|k|
+      # Don't report changed environment variables caused by Bundler's backups
+      next if bundler_prefix and k.start_with?(bundler_prefix)
+
       if old_env.has_key?(k)
         if new_env.has_key?(k)
           if old_env[k] != new_env[k]

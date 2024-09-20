@@ -3,6 +3,8 @@
 # Adds tags based on error and failures output (e.g., from a CI log),
 # without running any spec code.
 
+tag = ENV["TAG"] || "fails"
+
 tags_dir = %w[
   spec/tags
   spec/tags/ruby
@@ -10,6 +12,11 @@ tags_dir = %w[
 abort 'Could not find tags directory' unless tags_dir
 
 output = ARGF.readlines
+
+# Automatically strip datetime of GitHub Actions
+if output.first =~ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z /
+  output = output.map { |line| line.split(' ', 2).last }
+end
 
 NUMBER = /^\d+\)$/
 ERROR_OR_FAILED = / (ERROR|FAILED)$/
@@ -22,11 +29,24 @@ output.slice_before(NUMBER).select { |number, *rest|
   description = error_line.match(ERROR_OR_FAILED).pre_match
 
   spec_file = rest.find { |line| line =~ SPEC_FILE }
-  unless spec_file
-    warn "Could not find file for:\n#{error_line}"
-    next
+  if spec_file
+    spec_file = spec_file[SPEC_FILE, 1] or raise
+  else
+    if error_line =~ /^([\w:]+)[#\.](\w+) /
+      mod, method = $1, $2
+      file = "#{mod.downcase.gsub('::', '/')}/#{method}_spec.rb"
+      spec_file = ['spec/ruby/core', 'spec/ruby/library', *Dir.glob('spec/ruby/library/*')].find { |dir|
+        path = "#{dir}/#{file}"
+        break path if File.exist?(path)
+      }
+    end
+
+    unless spec_file
+      warn "Could not find file for:\n#{error_line}"
+      next
+    end
   end
-  spec_file = spec_file[SPEC_FILE, 1]
+
   prefix = spec_file.index('spec/ruby/') || spec_file.index('spec/truffle/')
   spec_file = spec_file[prefix..-1]
 
@@ -36,7 +56,7 @@ output.slice_before(NUMBER).select { |number, *rest|
   dir = File.dirname(tags_file)
   Dir.mkdir(dir) unless Dir.exist?(dir)
 
-  tag_line = "fails:#{description}"
+  tag_line = "#{tag}:#{description}"
   lines = File.exist?(tags_file) ? File.readlines(tags_file, chomp: true) : []
   unless lines.include?(tag_line)
     puts tags_file

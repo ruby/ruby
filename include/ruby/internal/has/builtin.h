@@ -53,8 +53,10 @@
 # define RBIMPL_HAS_BUILTIN___builtin_assume            0
 # /* See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=52624 for bswap16. */
 # define RBIMPL_HAS_BUILTIN___builtin_bswap16           RBIMPL_COMPILER_SINCE(GCC, 4, 8, 0)
+#ifndef __OpenBSD__
 # define RBIMPL_HAS_BUILTIN___builtin_bswap32           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_bswap64           RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
+#endif
 # define RBIMPL_HAS_BUILTIN___builtin_clz               RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_clzl              RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_clzll             RBIMPL_COMPILER_SINCE(GCC, 3, 6, 0)
@@ -75,10 +77,6 @@
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_unreachable       RBIMPL_COMPILER_SINCE(GCC, 4, 5, 0)
 # /* Note that "0, 0, 0" might be inaccurate. */
-
-#elif RBIMPL_COMPILER_IS(MSVC)
-# /* MSVC has UNREACHABLE, but that is not __builtin_unreachable. */
-# define RBIMPL_HAS_BUILTIN(_) 0
 
 #else
 # /* Take config.h definition when available */
@@ -109,7 +107,7 @@
 # define RBIMPL_HAS_BUILTIN___builtin_rotateright64     0
 # define RBIMPL_HAS_BUILTIN___builtin_popcountll        HAVE_BUILTIN___BUILTIN_POPCOUNTLL
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
-# if defined(UNREACHABLE)
+# if defined(HAVE___BUILTIN_UNREACHABLE)
 #  define RBIMPL_HAS_BUILTIN___builtin_unreachable 1
 # else
 #  define RBIMPL_HAS_BUILTIN___builtin_unreachable 0

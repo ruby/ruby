@@ -8,21 +8,43 @@ RSpec.describe "process lock spec" do
       thread = Thread.new do
         Bundler::ProcessLock.lock(default_bundle_path) do
           sleep 1 # ignore quality_spec
-          expect(the_bundle).not_to include_gems "rack 1.0"
+          expect(the_bundle).not_to include_gems "myrack 1.0"
         end
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       G
 
       thread.join
-      expect(the_bundle).to include_gems "rack 1.0"
+      expect(the_bundle).to include_gems "myrack 1.0"
     end
 
     context "when creating a lock raises Errno::ENOTSUP" do
       before { allow(File).to receive(:open).and_raise(Errno::ENOTSUP) }
+
+      it "skips creating the lock file and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
+      end
+    end
+
+    context "when creating a lock raises Errno::EPERM" do
+      before { allow(File).to receive(:open).and_raise(Errno::EPERM) }
+
+      it "skips creating the lock file and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
+      end
+    end
+
+    context "when creating a lock raises Errno::EROFS" do
+      before { allow(File).to receive(:open).and_raise(Errno::EROFS) }
 
       it "skips creating the lock file and yields" do
         processed = false

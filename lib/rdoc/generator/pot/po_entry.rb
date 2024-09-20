@@ -23,7 +23,7 @@ class RDoc::Generator::POT::POEntry
   attr_reader :flags
 
   ##
-  # Creates a PO entry for +msgid+. Other valus can be specified by
+  # Creates a PO entry for +msgid+. Other values can be specified by
   # +options+.
 
   def initialize msgid, options = {}

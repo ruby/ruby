@@ -1,5 +1,6 @@
-# :stopdoc:
 module Forwardable
+  # :stopdoc:
+
   def self._valid_method?(method)
     catch {|tag|
       eval("BEGIN{throw tag}; ().#{method}", binding, __FILE__, __LINE__)

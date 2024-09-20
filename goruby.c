@@ -1,4 +1,4 @@
-static void Init_golf(void);
+static void Init_golf_prelude(void);
 static void *goruby_options(int argc, char **argv);
 static int goruby_run_node(void *arg);
 #define ruby_options goruby_options
@@ -17,14 +17,13 @@ static int goruby_run_node(void *arg);
 
 RUBY_EXTERN void *ruby_options(int argc, char **argv);
 RUBY_EXTERN int ruby_run_node(void*);
-RUBY_EXTERN void ruby_init_ext(const char *name, void (*init)(void));
 
-#include "golf_prelude.c"
+#include "golf_prelude.rbbin"
 
 static VALUE
 init_golf(VALUE arg)
 {
-    Init_golf();
+    Init_golf_prelude();
     rb_provide("golf.so");
     return arg;
 }
@@ -37,21 +36,21 @@ goruby_options(int argc, char **argv)
     void *ret;
 
     if ((isatty(0) && isatty(1) && isatty(2)) && (pipe(rw) == 0)) {
-	ssize_t n;
-	infd = dup(0);
-	if (infd < 0) {
-	    close(rw[0]);
-	    close(rw[1]);
-	    goto no_irb;
-	}
-	dup2(rw[0], 0);
-	close(rw[0]);
-	n = write(rw[1], cmd, sizeof(cmd) - 1);
-	close(rw[1]);
-	ret = n > 0 ? ruby_options(argc, argv) : NULL;
-	dup2(infd, 0);
-	close(infd);
-	return ret;
+        ssize_t n;
+        infd = dup(0);
+        if (infd < 0) {
+            close(rw[0]);
+            close(rw[1]);
+            goto no_irb;
+        }
+        dup2(rw[0], 0);
+        close(rw[0]);
+        n = write(rw[1], cmd, sizeof(cmd) - 1);
+        close(rw[1]);
+        ret = n > 0 ? ruby_options(argc, argv) : NULL;
+        dup2(infd, 0);
+        close(infd);
+        return ret;
     }
   no_irb:
     return ruby_options(argc, argv);
@@ -61,8 +60,9 @@ int
 goruby_run_node(void *arg)
 {
     int state;
-    if (NIL_P(rb_protect(init_golf, Qtrue, &state))) {
-	return state == EXIT_SUCCESS ? EXIT_FAILURE : state;
+    if (ruby_executable_node(arg, NULL) &&
+        NIL_P(rb_protect(init_golf, Qtrue, &state))) {
+        return state == EXIT_SUCCESS ? EXIT_FAILURE : state;
     }
     return ruby_run_node(arg);
 }

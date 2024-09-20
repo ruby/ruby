@@ -1,13 +1,20 @@
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", "ext/lib"].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
 Gem::Specification.new do |spec|
-  spec.name          = "pathname"
-  spec.version       = "0.2.0"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Tanaka Akira"]
   spec.email         = ["akr@fsij.org"]
 
   spec.summary       = %q{Representation of the name of a file or directory on the filesystem}
   spec.description   = %q{Representation of the name of a file or directory on the filesystem}
   spec.homepage      = "https://github.com/ruby/pathname"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.7.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
   spec.metadata["homepage_uri"] = spec.homepage

@@ -21,6 +21,12 @@ describe :process_exit, shared: true do
     end
   end
 
+  it "raises a SystemExit with message 'exit'" do
+    -> { @object.exit }.should raise_error(SystemExit) { |e|
+      e.message.should == "exit"
+    }
+  end
+
   it "tries to convert the passed argument to an Integer using #to_int" do
     obj = mock('5')
     obj.should_receive(:to_int).and_return(5)
@@ -95,6 +101,12 @@ describe :process_exit!, shared: true do
   it "skips at_exit handlers" do
     out = ruby_exe("at_exit { STDERR.puts 'at_exit' }; #{@object}.send(:exit!, 21)", args: '2>&1', exit_status: 21)
     out.should == ""
+    $?.exitstatus.should == 21
+  end
+
+  it "skips ensure clauses" do
+    out = ruby_exe("begin; STDERR.puts 'before'; #{@object}.send(:exit!, 21); ensure; STDERR.puts 'ensure'; end", args: '2>&1', exit_status: 21)
+    out.should == "before\n"
     $?.exitstatus.should == 21
   end
 

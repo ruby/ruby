@@ -193,7 +193,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
     entries << [entry_name, entry_body] if entry_name
 
-    entries.reject! do |(entry,_)|
+    entries.reject! do |(entry, _)|
       entry == nil
     end
 
@@ -216,11 +216,21 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     @top_level
   end
 
+  ##
+  # The extension for Git commit log
+
   module Git
+    ##
+    # Parses auxiliary info.  Currently `base-url` to expand
+    # references is effective.
+
     def parse_info(info)
       /^\s*base-url\s*=\s*(.*\S)/ =~ info
       @base_url = $1
     end
+
+    ##
+    # Parses the entries in the Git commit logs
 
     def parse_entries
       entries = []
@@ -243,6 +253,11 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
 
       entries
     end
+
+    ##
+    # Returns a list of ChangeLog entries as
+    # RDoc::Parser::ChangeLog::Git::LogEntry list for the given
+    # +entries+.
 
     def create_entries entries
       # git log entries have no strictly itemized style like the old
@@ -332,4 +347,3 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     end
   end
 end
-

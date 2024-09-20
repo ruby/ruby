@@ -28,7 +28,7 @@ typedef struct statvfs statfs_t;
 # if defined HAVE_STRUCT_STATVFS_F_TYPE
 #   define HAVE_STRUCT_STATFS_T_F_TYPE 1
 # endif
-#elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, HP-UX, Solaris */
+#elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, Solaris */
 typedef struct statvfs statfs_t;
 # define STATFS(f, s) statvfs((f), (s))
 # define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
@@ -54,24 +54,24 @@ get_fsname(VALUE self, VALUE str)
     FilePathValue(str);
     str = rb_str_encode_ospath(str);
     if (STATFS(StringValueCStr(str), &st) == -1) {
-	rb_sys_fail_str(str);
+        rb_sys_fail_str(str);
     }
 # ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
     if (st.f_fstypename[0])
-	return CSTR(st.f_fstypename);
+        return CSTR(st.f_fstypename);
 # endif
 # ifdef HAVE_STRUCT_STATFS_T_F_TYPE
     switch (st.f_type) {
       case 0x9123683E: /* BTRFS_SUPER_MAGIC */
-	return CSTR("btrfs");
+        return CSTR("btrfs");
       case 0x7461636f: /* OCFS2_SUPER_MAGIC */
-	return CSTR("ocfs");
+        return CSTR("ocfs");
       case 0xEF53: /* EXT2_SUPER_MAGIC EXT3_SUPER_MAGIC EXT4_SUPER_MAGIC */
-	return CSTR("ext4");
+        return CSTR("ext4");
       case 0x58465342: /* XFS_SUPER_MAGIC */
-	return CSTR("xfs");
+        return CSTR("xfs");
       case 0x01021994: /* TMPFS_MAGIC */
-	return CSTR("tmpfs");
+        return CSTR("tmpfs");
     }
 # endif
 #endif

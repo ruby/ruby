@@ -1,5 +1,13 @@
 # -*- ruby -*-
-_VERSION = "0.5.9"
+_VERSION = ["", "ext/io/console/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}console.c")) {|f|
+      f.gets("\nIO_CONSOLE_VERSION ")
+      f.gets[/"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
 
 Gem::Specification.new do |s|
   s.name = "io-console"
@@ -7,12 +15,14 @@ Gem::Specification.new do |s|
   s.summary = "Console interface"
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
-  s.required_ruby_version = ">= 2.4.0"
+  s.required_ruby_version = ">= 2.6.0"
   s.homepage = "https://github.com/ruby/io-console"
   s.metadata["source_code_url"] = s.homepage
+  s.metadata["changelog_uri"] = s.homepage + "/releases"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
   s.files = %w[
+    .document
     LICENSE.txt
     README.md
     ext/io/console/console.c
@@ -25,15 +35,16 @@ Gem::Specification.new do |s|
   if Gem::Platform === s.platform and s.platform =~ 'java'
     s.files.delete_if {|f| f.start_with?("ext/")}
     s.extensions.clear
+    s.require_paths.unshift('lib/ffi')
     s.files.concat(%w[
-      lib/io/console.rb
-      lib/io/console/ffi/bsd_console.rb
-      lib/io/console/ffi/common.rb
-      lib/io/console/ffi/console.rb
-      lib/io/console/ffi/linux_console.rb
-      lib/io/console/ffi/native_console.rb
-      lib/io/console/ffi/stty_console.rb
-      lib/io/console/ffi/stub_console.rb
+      lib/ffi/io/console.rb
+      lib/ffi/io/console/bsd_console.rb
+      lib/ffi/io/console/common.rb
+      lib/ffi/io/console/linux_console.rb
+      lib/ffi/io/console/native_console.rb
+      lib/ffi/io/console/stty_console.rb
+      lib/ffi/io/console/stub_console.rb
+      lib/ffi/io/console/version.rb
     ])
   end
 

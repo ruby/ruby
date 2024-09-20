@@ -1,7 +1,10 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocCrossReference < XrefTestCase
+  EXAMPLE_METHODS = %w'== === != =~ !~ < > <= >= <=> [] []= << >>
+    -@ +@ ! - + * / % ** !@ ` | & ^ ~ __id__
+  '
 
   def setup
     super
@@ -18,9 +21,9 @@ class TestRDocCrossReference < XrefTestCase
   end
 
   def test_METHOD_REGEXP_STR
-    re = /#{RDoc::CrossReference::METHOD_REGEXP_STR}/
+    re = /\A(?:#{RDoc::CrossReference::METHOD_REGEXP_STR})\z/
 
-    %w'== === [] []= << >>'.each do |x|
+    EXAMPLE_METHODS.each do |x|
       re =~ x
       assert_equal x, $&
     end
@@ -163,34 +166,35 @@ class TestRDocCrossReference < XrefTestCase
     assert_ref @c9_a_c_bar, 'C9::B.bar'
   end
 
-  def test_resolve_method_equals3
-    m = RDoc::AnyMethod.new '', '==='
-    @c1.add_method m
-
-    assert_ref m, '==='
-  end
-
   def test_resolve_page
     page = @store.add_file 'README.txt', parser: RDoc::Parser::Simple
 
     assert_ref page, 'README'
   end
 
-  def test_resolve_percent
-    i_percent = RDoc::AnyMethod.new nil, '%'
-    i_percent.singleton = false
-    @c1.add_method i_percent
+  def assert_resolve_method(x)
+    @c1.methods_hash.clear
 
-    c_percent = RDoc::AnyMethod.new nil, '%'
-    c_percent.singleton = true
-    @c1.add_method c_percent
+    i_op = RDoc::AnyMethod.new nil, x
+    i_op.singleton = false
+    @c1.add_method i_op
 
-    assert_ref i_percent, '%'
-    assert_ref i_percent, '#%'
-    assert_ref c_percent, '::%'
+    c_op = RDoc::AnyMethod.new nil, x
+    c_op.singleton = true
+    @c1.add_method c_op
 
-    assert_ref i_percent, 'C1#%'
-    assert_ref c_percent, 'C1::%'
+    assert_ref i_op, x
+    assert_ref i_op, "##{x}"
+    assert_ref c_op, "::#{x}"
+
+    assert_ref i_op, "C1##{x}"
+    assert_ref c_op, "C1::#{x}"
+  end
+
+  EXAMPLE_METHODS.each do |x|
+    define_method("test_resolve_method:#{x}") do
+      assert_resolve_method(x)
+    end
   end
 
   def test_resolve_no_ref
@@ -213,4 +217,3 @@ class TestRDocCrossReference < XrefTestCase
   end
 
 end
-

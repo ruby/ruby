@@ -49,12 +49,10 @@ describe "Thread#backtrace_locations" do
     locations2.map(&:to_s).should == locations1[2..-1].map(&:to_s)
   end
 
-  ruby_version_is "2.7" do
-    it "can be called with an beginless range" do
-      locations1 = Thread.current.backtrace_locations(0)
-      locations2 = Thread.current.backtrace_locations(eval("(..5)"))
-      locations2.map(&:to_s)[eval("(2..)")].should == locations1[eval("(..5)")].map(&:to_s)[eval("(2..)")]
-    end
+  it "can be called with an beginless range" do
+    locations1 = Thread.current.backtrace_locations(0)
+    locations2 = Thread.current.backtrace_locations((..5))
+    locations2.map(&:to_s)[eval("(2..)")].should == locations1[(..5)].map(&:to_s)[eval("(2..)")]
   end
 
   it "returns nil if omitting more locations than available" do
@@ -72,7 +70,7 @@ describe "Thread#backtrace_locations" do
   end
 
   it "the first location reports the call to #backtrace_locations" do
-    Thread.current.backtrace_locations(0..0)[0].to_s.should == "#{__FILE__ }:#{__LINE__ }:in `backtrace_locations'"
+    Thread.current.backtrace_locations(0..0)[0].to_s.should =~ /\A#{__FILE__ }:#{__LINE__ }:in [`'](?:Thread#)?backtrace_locations'\z/
   end
 
   it "[1..-1] is the same as #caller_locations(0..-1) for Thread.current" do

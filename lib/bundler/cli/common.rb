@@ -15,6 +15,7 @@ module Bundler
     end
 
     def self.output_fund_metadata_summary
+      return if Bundler.settings["ignore_funding_requests"]
       definition = Bundler.definition
       current_dependencies = definition.requested_dependencies
       current_specs = definition.specs
@@ -40,7 +41,7 @@ module Bundler
     end
 
     def self.verbalize_groups(groups)
-      groups.map!{|g| "'#{g}'" }
+      groups.map! {|g| "'#{g}'" }
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
       group_str = groups.size == 1 ? "group" : "groups"
@@ -53,8 +54,11 @@ module Bundler
 
       Bundler.definition.specs.each do |spec|
         return spec if spec.name == name
-        specs << spec if regexp && spec.name =~ regexp
+        specs << spec if regexp && spec.name.match?(regexp)
       end
+
+      default_spec = default_gem_spec(name)
+      specs << default_spec if default_spec
 
       case specs.count
       when 0
@@ -72,6 +76,11 @@ module Bundler
       end
     rescue RegexpError
       raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
+    end
+
+    def self.default_gem_spec(name)
+      gem_spec = Gem::Specification.find_all_by_name(name).last
+      gem_spec if gem_spec&.default_gem?
     end
 
     def self.ask_for_spec_from(specs)
@@ -109,7 +118,8 @@ module Bundler
 
       definition.gem_version_promoter.tap do |gvp|
         gvp.level = patch_level.first || :major
-        gvp.strict = options[:strict] || options["update-strict"] || options["filter-strict"]
+        gvp.strict = options[:strict] || options["filter-strict"]
+        gvp.pre = options[:pre]
       end
     end
 

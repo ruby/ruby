@@ -17,7 +17,7 @@ AS_IF([test ${target_archs+set}], [
 	    cpu=$archs
 	    cpu=`echo $cpu | sed 's/-.*-.*//'`
 	    universal_binary="${universal_binary+$universal_binary,}$cpu"
-	    universal_archnames="${universal_archnames} ${archs}=${cpu}"
+	    universal_archnames="${universal_archnames:+$universal_archnames }${archs}=${cpu}"
 	    ARCH_FLAG="${ARCH_FLAG+$ARCH_FLAG }-arch $archs"
 	    ])
     done
@@ -40,7 +40,7 @@ AS_IF([test ${target_archs+set}], [
 	    AS_IF([$CC $CFLAGS $ARCH_FLAG -o conftest conftest.c > /dev/null 2>&1], [
 		rm -fr conftest.*
 	    ], [test -z "$ARCH_FLAG"], [
-		RUBY_DEFAULT_ARCH("$target_archs")
+		RUBY_DEFAULT_ARCH($target_archs)
 	    ])
 	])
 	target_cpu=${target_archs}
@@ -73,7 +73,7 @@ EOF
 	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
 	    target="$target_cpu${target}"
 	    AC_MSG_RESULT([$target_cpu])
-	    ])
+	])
     ])
     target_archs="$target_cpu"
 ])
@@ -105,9 +105,9 @@ AC_DEFUN([RUBY_UNIVERSAL_CHECK_HEADER_COND], [ dnl
   $4], [$5])
 ])dnl
 dnl
-# RUBY_UNIVERSAL_CHECK_HEADER(CPU-LIST, HEADER,
-#                      [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
-#                      [INCLUDES = DEFAULT-INCLUDES])
+dnl RUBY_UNIVERSAL_CHECK_HEADER(CPU-LIST, HEADER,
+dnl                      [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND],
+dnl                      [INCLUDES = DEFAULT-INCLUDES])
 AC_DEFUN([RUBY_UNIVERSAL_CHECK_HEADER], [ dnl
   m4_if([$# dnl
   ], [0], [], [ dnl

@@ -107,6 +107,17 @@ VALUE rb_hash(VALUE obj);
 VALUE rb_hash_new(void);
 
 /**
+ * Identical to rb_hash_new(), except it additionally specifies how many keys
+ * it is expected to contain. This way you can create a hash that is large enough
+ * for your need. For large hashes it means it won't need to be reallocated and
+ * rehashed as much, improving performance.
+ *
+ * @param[in]  capa  Designed capacity of the hash.
+ * @return     An empty Hash, whose capacity is `capa`.
+ */
+VALUE rb_hash_new_capa(long capa);
+
+/**
  * Duplicates a hash.
  *
  * @param[in]  hash  An instance of ::rb_cHash.
@@ -286,15 +297,6 @@ VALUE rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func);
 int rb_path_check(const char *path);
 
 /* hash.c */
-
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @return      0 always.
- */
-int rb_env_path_tainted(void);
 
 /**
  * Destructively removes every environment variables of the running process.

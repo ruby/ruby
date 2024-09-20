@@ -25,7 +25,7 @@ describe "CApiFixnumSpecs" do
       end
     end
 
-    platform_is wordsize: 64 do # sizeof(long) > sizeof(int)
+    platform_is c_long_size: 64 do # sizeof(long) > sizeof(int)
       it "raises a TypeError if passed nil" do
         -> { @s.FIX2INT(nil) }.should raise_error(TypeError)
       end
@@ -74,7 +74,7 @@ describe "CApiFixnumSpecs" do
       end
     end
 
-    platform_is wordsize: 64 do # sizeof(long) > sizeof(int)
+    platform_is c_long_size: 64 do # sizeof(long) > sizeof(int)
       it "raises a TypeError if passed nil" do
         -> { @s.FIX2UINT(nil) }.should raise_error(TypeError)
       end

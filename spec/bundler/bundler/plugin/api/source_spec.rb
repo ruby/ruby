@@ -51,7 +51,7 @@ RSpec.describe Bundler::Plugin::API::Source do
 
   context "to_lock" do
     it "returns the string with remote and type" do
-      expected = strip_whitespace <<-L
+      expected = <<~L
         PLUGIN SOURCE
           remote: #{uri}
           type: #{type}
@@ -67,7 +67,7 @@ RSpec.describe Bundler::Plugin::API::Source do
       end
 
       it "includes them" do
-        expected = strip_whitespace <<-L
+        expected = <<~L
           PLUGIN SOURCE
             remote: #{uri}
             type: #{type}

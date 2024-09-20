@@ -1,0 +1,24 @@
+Returns a 3-element array of substrings of +self+.
+
+Matches a pattern against +self+, scanning from the beginning.
+The pattern is:
+
+- +string_or_regexp+ itself, if it is a Regexp.
+- <tt>Regexp.quote(string_or_regexp)</tt>, if +string_or_regexp+ is a string.
+
+If the pattern is matched, returns pre-match, first-match, post-match:
+
+  'hello'.partition('l')      # => ["he", "l", "lo"]
+  'hello'.partition('ll')     # => ["he", "ll", "o"]
+  'hello'.partition('h')      # => ["", "h", "ello"]
+  'hello'.partition('o')      # => ["hell", "o", ""]
+  'hello'.partition(/l+/)     #=> ["he", "ll", "o"]
+  'hello'.partition('')       # => ["", "", "hello"]
+  'тест'.partition('т')       # => ["", "т", "ест"]
+  'こんにちは'.partition('に')  # => ["こん", "に", "ちは"]
+
+If the pattern is not matched, returns a copy of +self+ and two empty strings:
+
+  'hello'.partition('x') # => ["hello", "", ""]
+
+Related: String#rpartition, String#split.

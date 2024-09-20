@@ -175,10 +175,13 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_block_given
+    verbose_bak, $VERBOSE = $VERBOSE, nil
     assert(m1{p 'test'})
     assert(m2{p 'test'})
     assert(!m1())
     assert(!m2())
+  ensure
+    $VERBOSE = verbose_bak
   end
 
   def m3(var, &block)
@@ -308,7 +311,18 @@ class TestIterator < Test::Unit::TestCase
 
   def test_ljump
     assert_raise(LocalJumpError) {get_block{break}.call}
-    assert_raise(LocalJumpError) {proc_call2(get_block{break}){}}
+    begin
+      verbose_bak, $VERBOSE = $VERBOSE, nil
+      # See the commit https://github.com/ruby/ruby/commit/7d8a415bc2d08a1b5e9d1ea802493b6eeb99c219
+      # This block is not used but this is intentional.
+      #   |
+      #   +-----------------------------------------------------+
+      #                                                         |
+      #                                                         vv
+      assert_raise(LocalJumpError) {proc_call2(get_block{break}){}}
+    ensure
+      $VERBOSE = verbose_bak
+    end
 
     # cannot use assert_nothing_raised due to passing block.
     begin

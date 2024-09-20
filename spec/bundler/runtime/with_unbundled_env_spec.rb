@@ -2,13 +2,13 @@
 
 RSpec.describe "Bundler.with_env helpers" do
   def bundle_exec_ruby(args, options = {})
-    build_bundler_context options
+    build_bundler_context options.dup
     bundle "exec '#{Gem.ruby}' #{args}", options
   end
 
   def build_bundler_context(options = {})
-    bundle "config set path vendor/bundle"
-    gemfile "source \"#{file_uri_for(gem_repo1)}\""
+    bundle "config set path vendor/bundle", options.dup
+    gemfile "source 'https://gem.repo1'"
     bundle "install", options
   end
 
@@ -65,11 +65,11 @@ RSpec.describe "Bundler.with_env helpers" do
       # Simulate bundler has not yet been loaded
       ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
-      original = ruby('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")')
+      original = ruby('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")', artifice: "fail")
       create_file("source.rb", <<-RUBY)
         puts Bundler.original_env.to_a.map {|e| e.join("=") }.sort.join("\n")
       RUBY
-      bundle_exec_ruby bundled_app("source.rb")
+      bundle_exec_ruby bundled_app("source.rb"), artifice: "fail"
       expect(out).to eq original
     end
   end
@@ -90,9 +90,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       setup_require = "-r#{lib_dir}/bundler/setup"
       ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 #{setup_require} #{ENV["RUBYOPT"]}"
-      simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-        bundle_exec_ruby bundled_app("source.rb")
-      end
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).not_to include(setup_require)
     end
 
@@ -101,9 +99,7 @@ RSpec.describe "Bundler.with_env helpers" do
         print #{modified_env}['RUBYOPT']
       RUBY
       ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
-      simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-        bundle_exec_ruby bundled_app("source.rb")
-      end
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
@@ -134,7 +130,7 @@ RSpec.describe "Bundler.with_env helpers" do
     it_behaves_like "an unbundling helper"
   end
 
-  describe "Bundler.clean_env", :bundler => 2 do
+  describe "Bundler.clean_env", bundler: 2 do
     let(:modified_env) { "Bundler.clean_env" }
 
     it_behaves_like "an unbundling helper"
@@ -143,7 +139,7 @@ RSpec.describe "Bundler.with_env helpers" do
   describe "Bundler.with_original_env" do
     it "should set ENV to original_env in the block" do
       expected = Bundler.original_env
-      actual = Bundler.with_original_env { Bundler::EnvironmentPreserver.env_to_hash(ENV) }
+      actual = Bundler.with_original_env { ENV.to_hash }
       expect(actual).to eq(expected)
     end
 
@@ -156,12 +152,12 @@ RSpec.describe "Bundler.with_env helpers" do
     end
   end
 
-  describe "Bundler.with_clean_env", :bundler => 2 do
+  describe "Bundler.with_clean_env", bundler: 2 do
     it "should set ENV to unbundled_env in the block" do
       expected = Bundler.unbundled_env
 
       actual = Bundler.ui.silence do
-        Bundler.with_clean_env { Bundler::EnvironmentPreserver.env_to_hash(ENV) }
+        Bundler.with_clean_env { ENV.to_hash }
       end
 
       expect(actual).to eq(expected)
@@ -179,7 +175,7 @@ RSpec.describe "Bundler.with_env helpers" do
   describe "Bundler.with_unbundled_env" do
     it "should set ENV to unbundled_env in the block" do
       expected = Bundler.unbundled_env
-      actual = Bundler.with_unbundled_env { Bundler::EnvironmentPreserver.env_to_hash(ENV) }
+      actual = Bundler.with_unbundled_env { ENV.to_hash }
       expect(actual).to eq(expected)
     end
 
@@ -207,7 +203,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
   end
 
-  describe "Bundler.clean_system", :bundler => 2 do
+  describe "Bundler.clean_system", bundler: 2 do
     before do
       create_file("source.rb", <<-'RUBY')
         Bundler.ui.silence { Bundler.clean_system("ruby", "-e", "exit(42) unless ENV['BUNDLE_FOO'] == 'bar'") }
@@ -258,7 +254,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
   end
 
-  describe "Bundler.clean_exec", :bundler => 2 do
+  describe "Bundler.clean_exec", bundler: 2 do
     before do
       create_file("source.rb", <<-'RUBY')
         Process.fork do

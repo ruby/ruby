@@ -7,5 +7,5 @@ ENC_ALIAS("ebcdic-cp-us", "IBM037");
  * hopefully the most widely used one.
  *
  * See http://www.iana.org/assignments/character-sets/character-sets.xhtml
- *     http://tools.ietf.org/html/rfc1345
+ *     https://www.rfc-editor.org/rfc/rfc1345
  */

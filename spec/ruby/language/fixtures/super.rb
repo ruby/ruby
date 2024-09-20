@@ -539,6 +539,30 @@ module SuperSpecs
         args
       end
 
+      def m3(*args)
+        args
+      end
+
+      def m4(*args)
+        args
+      end
+
+      def m_default(*args)
+        args
+      end
+
+      def m_rest(*args)
+        args
+      end
+
+      def m_pre_default_rest_post(*args)
+        args
+      end
+
+      def m_kwrest(**kw)
+        kw
+      end
+
       def m_modified(*args)
         args
       end
@@ -549,9 +573,47 @@ module SuperSpecs
         super
       end
 
+      def m3(_, _, _)
+        super
+      end
+
+      def m4(_, _, _, _)
+        super
+      end
+
+      def m_default(_ = 0)
+        super
+      end
+
+      def m_rest(*_)
+        super
+      end
+
+      def m_pre_default_rest_post(_, _, _=:a, _=:b, *_, _, _)
+        super
+      end
+
+      def m_kwrest(**_)
+        super
+      end
+
       def m_modified(_, _)
         _ = 14
         super
+      end
+    end
+  end
+
+  module ZSuperInBlock
+    class A
+      def m(arg:)
+        arg
+      end
+    end
+
+    class B < A
+      def m(arg:)
+        proc { super }.call
       end
     end
   end

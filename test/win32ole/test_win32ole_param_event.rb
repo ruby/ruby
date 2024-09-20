@@ -5,7 +5,7 @@ end
 
 require 'test/unit'
 
-if defined?(WIN32OLE_PARAM)
+if defined?(WIN32OLE::Param)
   require_relative 'available_ole'
 
   class TestWIN32OLE_PARAM_EVENT < Test::Unit::TestCase
@@ -23,7 +23,7 @@ if defined?(WIN32OLE_PARAM)
       end
     else
       def test_dummy_for_skip_message
-        skip 'ActiveX Data Object Library and MS XML not found'
+        omit 'ActiveX Data Object Library and MS XML not found'
       end
     end
   end

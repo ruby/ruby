@@ -128,7 +128,7 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 #define SHA512_SHORT_BLOCK_LENGTH	(SHA512_BLOCK_LENGTH - 16)
 
 
-#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(__GNUC__) || defined(_HPUX_SOURCE) || defined(__IBMC__)
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(__GNUC__) || defined(__IBMC__)
 #define ULL(number)	number##ULL
 #else
 #define ULL(number)	(uint64_t)(number)

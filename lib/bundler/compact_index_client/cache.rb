@@ -7,103 +7,89 @@ module Bundler
     class Cache
       attr_reader :directory
 
-      def initialize(directory)
+      def initialize(directory, fetcher = nil)
         @directory = Pathname.new(directory).expand_path
-        info_roots.each do |dir|
+        @updater = Updater.new(fetcher) if fetcher
+        @mutex = Thread::Mutex.new
+        @endpoints = Set.new
+
+        @info_root = mkdir("info")
+        @special_characters_info_root = mkdir("info-special-characters")
+        @info_etag_root = mkdir("info-etags")
+      end
+
+      def names
+        fetch("names", names_path, names_etag_path)
+      end
+
+      def versions
+        fetch("versions", versions_path, versions_etag_path)
+      end
+
+      def info(name, remote_checksum = nil)
+        path = info_path(name)
+
+        if remote_checksum && remote_checksum != SharedHelpers.checksum_for_file(path, :MD5)
+          fetch("info/#{name}", path, info_etag_path(name))
+        else
+          Bundler::CompactIndexClient.debug { "update skipped info/#{name} (#{remote_checksum ? "versions index checksum is nil" : "versions index checksum matches local"})" }
+          read(path)
+        end
+      end
+
+      def reset!
+        @mutex.synchronize { @endpoints.clear }
+      end
+
+      private
+
+      def names_path = directory.join("names")
+      def names_etag_path = directory.join("names.etag")
+      def versions_path = directory.join("versions")
+      def versions_etag_path = directory.join("versions.etag")
+
+      def info_path(name)
+        name = name.to_s
+        # TODO: converge this into the info_root by hashing all filenames like info_etag_path
+        if /[^a-z0-9_-]/.match?(name)
+          name += "-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}"
+          @special_characters_info_root.join(name)
+        else
+          @info_root.join(name)
+        end
+      end
+
+      def info_etag_path(name)
+        name = name.to_s
+        @info_etag_root.join("#{name}-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}")
+      end
+
+      def mkdir(name)
+        directory.join(name).tap do |dir|
           SharedHelpers.filesystem_access(dir) do
             FileUtils.mkdir_p(dir)
           end
         end
       end
 
-      def names
-        lines(names_path)
-      end
-
-      def names_path
-        directory.join("names")
-      end
-
-      def versions
-        versions_by_name = Hash.new {|hash, key| hash[key] = [] }
-        info_checksums_by_name = {}
-
-        lines(versions_path).each do |line|
-          name, versions_string, info_checksum = line.split(" ", 3)
-          info_checksums_by_name[name] = info_checksum || ""
-          versions_string.split(",").each do |version|
-            if version.start_with?("-")
-              version = version[1..-1].split("-", 2).unshift(name)
-              versions_by_name[name].delete(version)
-            else
-              version = version.split("-", 2).unshift(name)
-              versions_by_name[name] << version
-            end
-          end
-        end
-
-        [versions_by_name, info_checksums_by_name]
-      end
-
-      def versions_path
-        directory.join("versions")
-      end
-
-      def checksums
-        checksums = {}
-
-        lines(versions_path).each do |line|
-          name, _, checksum = line.split(" ", 3)
-          checksums[name] = checksum
-        end
-
-        checksums
-      end
-
-      def dependencies(name)
-        lines(info_path(name)).map do |line|
-          parse_gem(line)
-        end
-      end
-
-      def info_path(name)
-        name = name.to_s
-        if name =~ /[^a-z0-9_-]/
-          name += "-#{SharedHelpers.digest(:MD5).hexdigest(name).downcase}"
-          info_roots.last.join(name)
+      def fetch(remote_path, path, etag_path)
+        if already_fetched?(remote_path)
+          Bundler::CompactIndexClient.debug { "already fetched #{remote_path}" }
         else
-          info_roots.first.join(name)
+          Bundler::CompactIndexClient.debug { "fetching #{remote_path}" }
+          @updater&.update(remote_path, path, etag_path)
         end
+
+        read(path)
       end
 
-      def specific_dependency(name, version, platform)
-        pattern = [version, platform].compact.join("-")
-        return nil if pattern.empty?
-
-        gem_lines = info_path(name).read
-        gem_line = gem_lines[/^#{Regexp.escape(pattern)}\b.*/, 0]
-        gem_line ? parse_gem(gem_line) : nil
+      def already_fetched?(remote_path)
+        @mutex.synchronize { !@endpoints.add?(remote_path) }
       end
 
-      private
-
-      def lines(path)
-        return [] unless path.file?
-        lines = SharedHelpers.filesystem_access(path, :read, &:read).split("\n")
-        header = lines.index("---")
-        header ? lines[header + 1..-1] : lines
-      end
-
-      def parse_gem(line)
-        @dependency_parser ||= GemParser.new
-        @dependency_parser.parse(line)
-      end
-
-      def info_roots
-        [
-          directory.join("info"),
-          directory.join("info-special-characters"),
-        ]
+      def read(path)
+        return unless path.file?
+        SharedHelpers.filesystem_access(path, :read, &:read)
       end
     end
   end

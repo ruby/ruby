@@ -20,8 +20,8 @@
 #endif
 
 #include "ruby/ruby.h"          /* for VALUE */
+#include "internal/compilers.h" /* for __has_warning */
 #include "internal/imemo.h"     /* for RB_IMEMO_TMPBUF_PTR */
-#include "internal/warnings.h"  /* for COMPILER_WARNING_PUSH */
 
 #define RB_MAX_GROUPS (65536)
 
@@ -120,18 +120,5 @@ ARGVSTR2ARGC(VALUE argv_str)
         ;
     return i - 1;
 }
-
-#ifdef HAVE_WORKING_FORK
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wdeprecated-declarations") || RBIMPL_COMPILER_IS(GCC)
-COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
-#endif
-static inline rb_pid_t
-rb_fork(void)
-{
-    return fork();
-}
-COMPILER_WARNING_POP
-#endif
 
 #endif /* INTERNAL_PROCESS_H */

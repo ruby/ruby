@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/set_like'
 require 'set'
+set_version = defined?(Set::VERSION) ? Set::VERSION : '1.0.0'
 
 describe "Set#proper_subset?" do
   before :each do
@@ -33,9 +34,11 @@ describe "Set#proper_subset?" do
     -> { Set[].proper_subset?(Object.new) }.should raise_error(ArgumentError)
   end
 
-  context "when comparing to a Set-like object" do
-    it "returns true if passed a Set-like object that self is a proper subset of" do
-      Set[1, 2, 3].proper_subset?(SetSpecs::SetLike.new([1, 2, 3, 4])).should be_true
+  version_is(set_version, ""..."1.1.0") do #ruby_version_is ""..."3.3" do
+    context "when comparing to a Set-like object" do
+      it "returns true if passed a Set-like object that self is a proper subset of" do
+        Set[1, 2, 3].proper_subset?(SetSpecs::SetLike.new([1, 2, 3, 4])).should be_true
+      end
     end
   end
 end

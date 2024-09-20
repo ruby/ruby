@@ -14,10 +14,11 @@ class TestParse < Test::Unit::TestCase
 
   def test_error_line
     assert_syntax_error('------,,', /\n\z/, 'Message to pipe should end with a newline')
+    assert_syntax_error("{hello\n  world}", /hello/)
   end
 
   def test_else_without_rescue
-    assert_syntax_error(<<-END, %r":#{__LINE__+2}: else without rescue"o, [__FILE__, __LINE__+1])
+    assert_syntax_error(<<-END, %r"(:#{__LINE__+2}:|#{__LINE__+2} \|.+?\n.+?\^~.+?;) else without rescue"o, [__FILE__, __LINE__+1])
       begin
       else
         42
@@ -377,10 +378,10 @@ class TestParse < Test::Unit::TestCase
 
   def assert_disallowed_variable(type, noname, invalid)
     noname.each do |name|
-      assert_syntax_error("proc{a = #{name} }", "`#{noname[0]}' without identifiers is not allowed as #{type} variable name")
+      assert_syntax_error("proc{a = #{name} }", "'#{noname[0]}' without identifiers is not allowed as #{type} variable name")
     end
     invalid.each do |name|
-      assert_syntax_error("proc {a = #{name} }", "`#{name}' is not allowed as #{type} variable name")
+      assert_syntax_error("proc {a = #{name} }", "'#{name}' is not allowed as #{type} variable name")
     end
   end
 
@@ -452,10 +453,46 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_define_singleton_error
-    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /singleton method for literals/) do
-      begin;
-        def ("foo").foo; end
-      end;
+    msg = /singleton method for literals/
+    assert_parse_error(%q[def ("foo").foo; end], msg)
+    assert_parse_error(%q[def (1).foo; end], msg)
+    assert_parse_error(%q[def ((1;1)).foo; end], msg)
+    assert_parse_error(%q[def ((;1)).foo; end], msg)
+    assert_parse_error(%q[def ((1+1;1)).foo; end], msg)
+    assert_parse_error(%q[def ((%s();1)).foo; end], msg)
+    assert_parse_error(%q[def ((%w();1)).foo; end], msg)
+    assert_parse_error(%q[def ("#{42}").foo; end], msg)
+    assert_parse_error(%q[def (:"#{42}").foo; end], msg)
+    assert_parse_error(%q[def ([]).foo; end], msg)
+    assert_parse_error(%q[def ([1]).foo; end], msg)
+  end
+
+  def test_flip_flop
+    all_assertions_foreach(nil,
+      ['(cond1..cond2)', true],
+      ['((cond1..cond2))', true],
+
+      # '(;;;cond1..cond2)', # don't care
+
+      '(1; cond1..cond2)',
+      '(%s(); cond1..cond2)',
+      '(%w(); cond1..cond2)',
+      '(1; (2; (3; 4; cond1..cond2)))',
+      '(1+1; cond1..cond2)',
+    ) do |code, pass|
+      code = code.sub("cond1", "n==4").sub("cond2", "n==5")
+      if pass
+        assert_equal([4,5], eval("(1..9).select {|n| true if #{code}}"))
+      else
+        assert_raise_with_message(ArgumentError, /bad value for range/, code) {
+          verbose_bak, $VERBOSE = $VERBOSE, nil # disable "warning: possibly useless use of a literal in void context"
+          begin
+            eval("[4].each {|n| true if #{code}}")
+          ensure
+            $VERBOSE = verbose_bak
+          end
+        }
+      end
     end
   end
 
@@ -463,6 +500,10 @@ class TestParse < Test::Unit::TestCase
     t = Object.new
     a = []
     blk = proc {|x| a << x }
+
+    # Prevent an "assigned but unused variable" warning
+    _ = blk
+
     def t.[](_)
       yield(:aref)
       nil
@@ -472,16 +513,16 @@ class TestParse < Test::Unit::TestCase
     end
     def t.dummy(_)
     end
-    eval <<-END, nil, __FILE__, __LINE__+1
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index assignment/)
+    begin;
       t[42, &blk] ||= 42
-    END
-    assert_equal([:aref, :aset], a)
-    a.clear
-    eval <<-END, nil, __FILE__, __LINE__+1
-    t[42, &blk] ||= t.dummy 42 # command_asgn test
-    END
-    assert_equal([:aref, :aset], a)
-    blk
+    end;
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index assignment/)
+    begin;
+      t[42, &blk] ||= t.dummy 42 # command_asgn test
+    end;
   end
 
   def test_backquote
@@ -492,7 +533,7 @@ class TestParse < Test::Unit::TestCase
         def t.`(x); "foo" + x + "bar"; end
       END
     end
-    a = b = nil
+    a = b = c = nil
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         a = t.` "zzz"
@@ -500,10 +541,12 @@ class TestParse < Test::Unit::TestCase
       END
       t.instance_eval <<-END, __FILE__, __LINE__+1
         b = `zzz`
+        c = %x(ccc)
       END
     end
     assert_equal("foozzzbar", a)
     assert_equal("foozzzbar", b)
+    assert_equal("foocccbar", c)
   end
 
   def test_carrige_return
@@ -514,34 +557,42 @@ class TestParse < Test::Unit::TestCase
     mesg = 'from the backslash through the invalid char'
 
     e = assert_syntax_error('"\xg1"', /hex escape/)
-    assert_equal(' ^~'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| ) \^~(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
-    assert_equal('        ^'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| )        \^(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
-    assert_equal('    ^'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| )    \^(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx', 'Unicode escape')
-    assert_pattern_list([
-                          /.*: invalid Unicode escape\n.*\n/,
-                          /    \^/,
-                          /\n/,
-                          /.*: unterminated Unicode escape\n.*\n/,
-                          /    \^/,
-                          /\n/,
-                          /.*: unterminated string.*\n.*\n/,
-                          /        \^\n/,
-                        ], e.message)
+    if e.message.lines.first == "#{__FILE__}:#{__LINE__ - 1}: syntax errors found\n"
+      assert_pattern_list([
+                            /\s+\| \^ unterminated string;.+\n/,
+                            /\s+\|     \^ unterminated Unicode escape\n/,
+                            /\s+\|     \^ invalid Unicode escape sequence\n/,
+                          ], e.message.lines[2..-1].join)
+    else
+      assert_pattern_list([
+                            /.*: invalid Unicode escape\n.*\n/,
+                            /    \^/,
+                            /\n/,
+                            /.*: unterminated Unicode escape\n.*\n/,
+                            /    \^/,
+                            /\n/,
+                            /.*: unterminated string.*\n.*\n/,
+                            /        \^\n/,
+                          ], e.message)
+    end
 
     e = assert_syntax_error('"\M1"', /escape character syntax/)
-    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| ) \^~~(?!~)/, e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\C1"', /escape character syntax/)
-    assert_equal(' ^~~'"\n", e.message.lines.last, mesg)
+    assert_match(/(^|\| ) \^~~(?!~)/, e.message.lines.last, mesg)
 
     src = '"\xD0\u{90'"\n""000000000000000000000000"
-    assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
+    assert_syntax_error(src, /(:#{__LINE__}:|> #{__LINE__} \|.+) unterminated/om)
 
     assert_syntax_error('"\u{100000000}"', /invalid Unicode escape/)
     assert_equal("", eval('"\u{}"'))
@@ -564,19 +615,23 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("\"\\C-\\M-\x01\"", 'Invalid escape character syntax')
 
     e = assert_syntax_error('"\c\u0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~(?!~)/, e.message.lines.last)
     e = assert_syntax_error('"\c\U0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~(?!~)/, e.message.lines.last)
 
     e = assert_syntax_error('"\C-\u0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
     e = assert_syntax_error('"\C-\U0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
 
     e = assert_syntax_error('"\M-\u0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
     e = assert_syntax_error('"\M-\U0000"', 'Invalid escape character syntax')
-    assert_equal(' ^~~~~'"\n", e.message.lines.last)
+    assert_match(/(^|\| ) \^~~~~(?!~)/, e.message.lines.last)
+
+    e = assert_syntax_error(%["\\C-\u3042"], 'Invalid escape character syntax')
+    assert_match(/(^|\|\s)\s \^(?# \\ ) ~(?# C ) ~(?# - ) ~+(?# U+3042 )($|\s)/x, e.message.lines.last)
+    assert_not_include(e.message, "invalid multibyte char")
   end
 
   def test_question
@@ -607,6 +662,8 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error("?\\M-\x01", 'Invalid escape character syntax')
     assert_syntax_error("?\\M-\\C-\x01", 'Invalid escape character syntax')
     assert_syntax_error("?\\C-\\M-\x01", 'Invalid escape character syntax')
+
+    assert_equal("\xff", eval("# encoding: ascii-8bit\n""?\\\xFF"))
   end
 
   def test_percent
@@ -640,6 +697,7 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error(':@@1', /is not allowed/)
     assert_syntax_error(':@', /is not allowed/)
     assert_syntax_error(':@1', /is not allowed/)
+    assert_syntax_error(':$01234', /is not allowed/)
   end
 
   def test_parse_string
@@ -680,6 +738,16 @@ FOO
       eval "x = <<""FOO\r\n1\r\nFOO"
     end
     assert_equal("1\n", x)
+
+    assert_nothing_raised do
+      x = eval "<<' FOO'\n""[Bug #19539]\n"" FOO\n"
+    end
+    assert_equal("[Bug #19539]\n", x)
+
+    assert_nothing_raised do
+      x = eval "<<-' FOO'\n""[Bug #19539]\n"" FOO\n"
+    end
+    assert_equal("[Bug #19539]\n", x)
   end
 
   def test_magic_comment
@@ -715,6 +783,54 @@ x = __ENCODING__
       END
     end
     assert_equal(__ENCODING__, x)
+
+    assert_raise(ArgumentError) do
+      EnvUtil.with_default_external(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
+# coding = external
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      EnvUtil.with_default_internal(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
+# coding = internal
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = filesystem
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = locale
+x = __ENCODING__
+      END
+    end
+
+    e = assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: foo
+      END
+    end
+
+    message = e.message.gsub(/\033\[.*?m/, "")
+    assert_include(message, "# coding: foo\n")
+    assert_include(message, "          ^")
+
+    e = assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = foo
+      END
+    end
+
+    message = e.message.gsub(/\033\[.*?m/, "")
+    assert_include(message, "# coding = foo\n")
+    assert_include(message, "           ^")
   end
 
   def test_utf8_bom
@@ -758,7 +874,7 @@ x = __ENCODING__
 
   def test_float
     assert_predicate(assert_warning(/out of range/) {eval("1e10000")}, :infinite?)
-    assert_syntax_error('1_E', /trailing `_'/)
+    assert_syntax_error('1_E', /trailing '_'/)
     assert_syntax_error('1E1E1', /unexpected constant/)
   end
 
@@ -769,7 +885,8 @@ x = __ENCODING__
     $test_parse_foobarbazqux = nil
     assert_equal(nil, $&)
     assert_equal(nil, eval('alias $& $preserve_last_match'))
-    assert_syntax_error('a = $#', /as a global variable name\na = \$\#\n    \^~$/)
+    assert_syntax_error('a = $#', /as a global variable name/)
+    assert_syntax_error('a = $#', /a = \$\#\n(^|.+?\| )    \^~(?!~)/)
   end
 
   def test_invalid_instance_variable
@@ -786,7 +903,7 @@ x = __ENCODING__
 
   def test_invalid_char
     bug10117 = '[ruby-core:64243] [Bug #10117]'
-    invalid_char = /Invalid char `\\x01'/
+    invalid_char = /Invalid char '\\x01'/
     x = 1
     assert_in_out_err(%W"-e \x01x", "", [], invalid_char, bug10117)
     assert_syntax_error("\x01x", invalid_char, bug10117)
@@ -820,24 +937,9 @@ x = __ENCODING__
     assert_syntax_error("$& = 1", /Can't set variable/)
   end
 
-  def test_arg_concat
-    o = Object.new
-    class << o; self; end.instance_eval do
-      define_method(:[]=) {|*r, &b| b.call(r) }
-    end
-    r = nil
-    assert_nothing_raised do
-      eval <<-END, nil, __FILE__, __LINE__+1
-        o[&proc{|x| r = x }] = 1
-      END
-    end
-    assert_equal([1], r)
-  end
-
   def test_void_expr_stmts_value
     x = 1
     useless_use = /useless use/
-    unused = /unused/
     assert_nil assert_warning(useless_use) {eval("x; nil")}
     assert_nil assert_warning(useless_use) {eval("1+1; nil")}
     assert_nil assert_warning('') {eval("1.+(1); nil")}
@@ -845,24 +947,27 @@ x = __ENCODING__
     assert_nil assert_warning(useless_use) {eval("::TestParse; nil")}
     assert_nil assert_warning(useless_use) {eval("x..x; nil")}
     assert_nil assert_warning(useless_use) {eval("x...x; nil")}
-    assert_nil assert_warning(unused) {eval("self; nil")}
-    assert_nil assert_warning(unused) {eval("nil; nil")}
-    assert_nil assert_warning(unused) {eval("true; nil")}
-    assert_nil assert_warning(unused) {eval("false; nil")}
+    assert_nil assert_warning(useless_use) {eval("self; nil")}
+    assert_nil assert_warning(useless_use) {eval("nil; nil")}
+    assert_nil assert_warning(useless_use) {eval("true; nil")}
+    assert_nil assert_warning(useless_use) {eval("false; nil")}
     assert_nil assert_warning(useless_use) {eval("defined?(1); nil")}
+    assert_nil assert_warning(useless_use) {eval("begin; ensure; x; end")}
     assert_equal 1, x
 
     assert_syntax_error("1; next; 2", /Invalid next/)
   end
 
   def test_assign_in_conditional
-    assert_warning(/`= literal' in conditional/) do
+    # multiple assignment
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         (x, y = 1, 2) ? 1 : 2
       END
     end
 
-    assert_warning(/`= literal' in conditional/) do
+    # instance variable assignment
+    assert_warning(/'= literal' in conditional/) do
       eval <<-END, nil, __FILE__, __LINE__+1
         if @x = true
           1
@@ -871,6 +976,71 @@ x = __ENCODING__
         end
       END
     end
+
+    # local variable assignment
+    assert_warning(/'= literal' in conditional/) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+        def m
+          if x = true
+            1
+          else
+            2
+          end
+        end
+      END
+    end
+
+    # global variable assignment
+    assert_separately([], <<-RUBY)
+      assert_warning(/'= literal' in conditional/) do
+        eval <<-END, nil, __FILE__, __LINE__+1
+          if $x = true
+            1
+          else
+            2
+          end
+        END
+      end
+    RUBY
+
+    # dynamic variable assignment
+    assert_warning(/'= literal' in conditional/) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+        y = 1
+
+        1.times do
+          if y = true
+            1
+          else
+            2
+          end
+        end
+      END
+    end
+
+    # class variable assignment
+    assert_warning(/'= literal' in conditional/) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+        c = Class.new
+        class << c
+          if @@a = 1
+          end
+        end
+      END
+    end
+
+    # constant declaration
+    assert_separately([], <<-RUBY)
+      assert_warning(/'= literal' in conditional/) do
+        eval <<-END, nil, __FILE__, __LINE__+1
+          if Const = true
+            1
+          else
+            2
+          end
+        END
+      end
+    RUBY
   end
 
   def test_literal_in_conditional
@@ -930,6 +1100,10 @@ x = __ENCODING__
     assert_no_warning(/shadowing outer local variable/) {eval("a=1; tap {|a|}")}
   end
 
+  def test_shadowing_private_local_variable
+    assert_equal 1, eval("_ = 1; [[2]].each{ |(_)| }; _")
+  end
+
   def test_unused_variable
     o = Object.new
     assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
@@ -943,11 +1117,49 @@ x = __ENCODING__
     assert_warning('') {o.instance_eval("def marg2((a)); nil; end")}
   end
 
+  def test_parsing_begin_statement_inside_method_definition
+    assert_equal :bug_20234, eval("def (begin;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
+    assert_equal :bug_20234, eval("def (begin;rescue;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
+    assert_equal :bug_20234, eval("def (begin;ensure;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
+    assert_equal :bug_20234, eval("def (begin;rescue;else;end).bug_20234; end")
+    NilClass.remove_method(:bug_20234)
+
+    assert_raise(SyntaxError) { eval("def (begin;else;end).bug_20234; end") }
+    assert_raise(SyntaxError) { eval("def (begin;ensure;else;end).bug_20234; end") }
+  end
+
   def test_named_capture_conflict
     a = 1
     assert_warning('') {eval("a = 1; /(?<a>)/ =~ ''")}
     a = "\u{3042}"
     assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
+  end
+
+  def test_named_capture_in_block
+    all_assertions_foreach(nil,
+      '(/(?<a>.*)/)',
+      '(;/(?<a>.*)/)',
+      '(%s();/(?<a>.*)/)',
+      '(%w();/(?<a>.*)/)',
+      '(1; (2; 3; (4; /(?<a>.*)/)))',
+      '(1+1; /(?<a>.*)/)',
+      '/#{""}(?<a>.*)/',
+    ) do |code, pass|
+      token = Random.bytes(4).unpack1("H*")
+      if pass
+        assert_equal(token, eval("#{code} =~ #{token.dump}; a"))
+      else
+        verbose_bak, $VERBOSE = $VERBOSE, nil # disable "warning: possibly useless use of a literal in void context"
+        begin
+          assert_nil(eval("#{code} =~ #{token.dump}; defined?(a)"), code)
+        ensure
+          $VERBOSE = verbose_bak
+        end
+      end
+    end
   end
 
   def test_rescue_in_command_assignment
@@ -1037,14 +1249,30 @@ x = __ENCODING__
     assert_syntax_error("    0b\n", /\^/)
   end
 
+  def test_unclosed_unicode_escape_at_eol_bug_19750
+    assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_syntax_error("/\\u", /too short escape sequence/)
+      assert_syntax_error("/\\u{", /unterminated regexp meets end of file/)
+      assert_syntax_error("/\\u{\\n", /invalid Unicode list/)
+      assert_syntax_error("/a#\\u{\\n/", /invalid Unicode list/)
+      re = eval("/a#\\u{\n$/x")
+      assert_match(re, 'a')
+      assert_not_match(re, 'a#')
+      re = eval("/a#\\u\n$/x")
+      assert_match(re, 'a')
+      assert_not_match(re, 'a#')
+    end;
+  end
+
   def test_error_def_in_argument
     assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
     begin;
       assert_syntax_error("def f r:def d; def f 0end", /unexpected/)
     end;
 
-    assert_syntax_error("def\nf(000)end", /^  \^~~/)
-    assert_syntax_error("def\nf(&0)end", /^   \^/)
+    assert_syntax_error("def\nf(000)end", /(^|\| )  \^~~/)
+    assert_syntax_error("def\nf(&0)end",  /(^|\| )   \^/)
   end
 
   def test_method_location_in_rescue
@@ -1080,46 +1308,61 @@ x = __ENCODING__
     end;
   end
 
-    def test_heredoc_interpolation
-      var = 1
+  def test_heredoc_interpolation
+    var = 1
 
-      v1 = <<~HEREDOC
-        something
-        #{"/#{var}"}
-      HEREDOC
+    v1 = <<~HEREDOC
+      something
+      #{"/#{var}"}
+    HEREDOC
 
-      v2 = <<~HEREDOC
-        something
-        #{_other = "/#{var}"}
-      HEREDOC
+    v2 = <<~HEREDOC
+      something
+      #{_other = "/#{var}"}
+    HEREDOC
 
-      v3 = <<~HEREDOC
-        something
-        #{("/#{var}")}
-      HEREDOC
+    v3 = <<~HEREDOC
+      something
+      #{("/#{var}")}
+    HEREDOC
 
-      assert_equal "something\n/1\n", v1
-      assert_equal "something\n/1\n", v2
-      assert_equal "something\n/1\n", v3
-      assert_equal v1, v2
-      assert_equal v2, v3
-      assert_equal v1, v3
-    end
+    assert_equal "something\n/1\n", v1
+    assert_equal "something\n/1\n", v2
+    assert_equal "something\n/1\n", v3
+    assert_equal v1, v2
+    assert_equal v2, v3
+    assert_equal v1, v3
+  end
+
+  def test_heredoc_unterminated_interpolation
+    code = <<~'HEREDOC'
+    <<A+1
+    #{
+    HEREDOC
+
+    assert_syntax_error(code, /can't find string "A"/)
+  end
 
   def test_unexpected_token_error
     assert_syntax_error('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', /unexpected/)
   end
 
   def test_unexpected_token_after_numeric
-    assert_syntax_error('0000xyz', /^    \^~~\Z/)
-    assert_syntax_error('1.2i1.1', /^    \^~~\Z/)
-    assert_syntax_error('1.2.3', /^   \^~\Z/)
+    assert_syntax_error('0000xyz', /(^|\| )    \^~~(?!~)/)
+    assert_syntax_error('1.2i1.1', /(^|\| )    \^~~(?!~)/)
+    assert_syntax_error('1.2.3', /(^|\| )   \^~(?!~)/)
+    assert_syntax_error('1.', /unexpected end-of-input/)
+    assert_syntax_error('1e', /expecting end-of-input/)
   end
 
   def test_truncated_source_line
-    e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789",
+    lineno = __LINE__ + 1
+    e = assert_syntax_error("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 123456789012345678901234567890123456789",
                             /unexpected local variable or method/)
+
     line = e.message.lines[1]
+    line.delete_prefix!("> #{lineno} | ") if line.start_with?(">")
+
     assert_operator(line, :start_with?, "...")
     assert_operator(line, :end_with?, "...\n")
   end
@@ -1163,11 +1406,11 @@ x = __ENCODING__
   end
 
   def test_unexpected_eof
-    assert_syntax_error('unless', /^      \^\Z/)
+    assert_syntax_error('unless', /(^|\| )      \^(?!~)/)
   end
 
   def test_location_of_invalid_token
-    assert_syntax_error('class xxx end', /^      \^~~\Z/)
+    assert_syntax_error('class xxx end', /(^|\| )      \^~~(?!~)/)
   end
 
   def test_whitespace_warning
@@ -1233,9 +1476,22 @@ x = __ENCODING__
 
   def test_void_value_in_rhs
     w = "void value expression"
-    ["x = return 1", "x = return, 1", "x = 1, return", "x, y = return"].each do |code|
+    [
+      "x = return 1", "x = return, 1", "x = 1, return", "x, y = return",
+      "x = begin return ensure end",
+      "x = begin ensure return end",
+      "x = begin return ensure return end",
+      "x = begin return; rescue; return end",
+      "x = begin return; rescue; return; else return end",
+    ].each do |code|
       ex = assert_syntax_error(code, w)
       assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
+    end
+    [
+      "x = begin return; rescue; end",
+      "x = begin return; rescue; return; else end",
+    ].each do |code|
+      assert_valid_syntax(code)
     end
   end
 
@@ -1300,6 +1556,39 @@ x = __ENCODING__
     assert_not_ractor_shareable(obj)
     assert_equal obj, a
     assert !obj.equal?(a)
+
+    bug_20339 = '[ruby-core:117186] [Bug #20339]'
+    bug_20341 = '[ruby-core:117197] [Bug #20341]'
+    a, b = eval_separately(<<~'end;')
+      # shareable_constant_value: literal
+      foo = 1
+      bar = 2
+      A = { foo => bar }
+      B = [foo, bar]
+      [A, B]
+    end;
+
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+    assert_equal([1], a.keys, bug_20339)
+    assert_equal([2], a.values, bug_20339)
+    assert_equal(1, b[0], bug_20341)
+    assert_equal(2, b[1], bug_20341)
+  end
+
+  def test_shareable_constant_value_literal_const_refs
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      # [Bug #20668]
+      SOME_CONST = {
+        'Object' => Object,
+        'String' => String,
+        'Array' => Array,
+      }
+      SOME_CONST
+    end;
+    assert_ractor_shareable(a)
   end
 
   def test_shareable_constant_value_nested
@@ -1321,11 +1610,70 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_unshareable_literal
-    assert_raise_separately(Ractor::IsolationError, /unshareable/,
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to B::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      B::C = ["Not " + "shareable"]
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::C/) do
+        # shareable_constant_value: literal
+        ::C = ["Not " + "shareable"]
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::B::C/) do
+        # shareable_constant_value: literal
+        ::B = Class.new
+        ::B::C = ["Not " + "shareable"]
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::C/) do
+        # shareable_constant_value: literal
+        ::C ||= ["Not " + "shareable"]
+      end
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to B::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      B::C ||= ["Not " + "shareable"]
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::B::C/) do
+        # shareable_constant_value: literal
+        ::B = Class.new
+        ::B::C ||= ["Not " + "shareable"]
+      end
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to ...::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      def self.expr; B; end
+      expr::C ||= ["Not " + "shareable"]
     end;
   end
 
@@ -1355,9 +1703,75 @@ x = __ENCODING__
     end;
   end
 
+  def test_if_after_class
+    assert_valid_syntax('module if true; Object end::Kernel; end')
+    assert_valid_syntax('module while true; break Object end::Kernel; end')
+    assert_valid_syntax('class if true; Object end::Kernel; end')
+    assert_valid_syntax('class while true; break Object end::Kernel; end')
+  end
+
+  def test_escaped_space
+    assert_syntax_error('x = \ 42', /escaped space/)
+  end
+
+  def test_label
+    expected = {:foo => 1}
+
+    code = '{"foo": 1}'
+    assert_valid_syntax(code)
+    assert_equal(expected, eval(code))
+
+    code = '{foo: 1}'
+    assert_valid_syntax(code)
+    assert_equal(expected, eval(code))
+
+    class << (obj = Object.new)
+      attr_reader :arg
+      def set(arg)
+        @arg = arg
+      end
+    end
+
+    assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
+    do;
+      obj.set foo:
+                1
+    end;
+    assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
+
+    assert_valid_syntax(code = "#{<<~"do;"}\n#{<<~'end;'}")
+    do;
+      obj.set "foo":
+                  1
+    end;
+    assert_equal(expected, eval(code))
+    assert_equal(expected, obj.arg)
+  end
+
+  def test_ungettable_gvar
+    assert_syntax_error('$01234', /not allowed/)
+    assert_syntax_error('"#$01234"', /not allowed/)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
   end
 =end
+
+  def assert_parse(code)
+    assert_kind_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.parse(code))
+  end
+
+  def assert_parse_error(code, message)
+    assert_raise_with_message(SyntaxError, message) do
+      $VERBOSE, verbose_bak = nil, $VERBOSE
+      begin
+        RubyVM::AbstractSyntaxTree.parse(code)
+      ensure
+        $VERBOSE = verbose_bak
+      end
+    end
+  end
 end

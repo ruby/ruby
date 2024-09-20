@@ -27,7 +27,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.8"
+#define WIN32OLE_VERSION "1.8.10"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -454,12 +454,12 @@ vtdate2rbtime(double date)
     double sec;
     VariantTimeToSystemTime(date, &st);
     v = rb_funcall(rb_cTime, rb_intern("new"), 6,
-		      RB_INT2FIX(st.wYear),
-		      RB_INT2FIX(st.wMonth),
-		      RB_INT2FIX(st.wDay),
-		      RB_INT2FIX(st.wHour),
-		      RB_INT2FIX(st.wMinute),
-		      RB_INT2FIX(st.wSecond));
+                      RB_INT2FIX(st.wYear),
+                      RB_INT2FIX(st.wMonth),
+                      RB_INT2FIX(st.wDay),
+                      RB_INT2FIX(st.wHour),
+                      RB_INT2FIX(st.wMinute),
+                      RB_INT2FIX(st.wSecond));
     st.wYear = RB_FIX2INT(rb_funcall(v, rb_intern("year"), 0));
     st.wMonth = RB_FIX2INT(rb_funcall(v, rb_intern("month"), 0));
     st.wDay = RB_FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
@@ -568,16 +568,16 @@ load_conv_function51932(void)
     void *p;
     if (!pIMultiLanguage) {
 #if defined(HAVE_TYPE_IMULTILANGUAGE2)
-	hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
-		              &IID_IMultiLanguage2, &p);
+        hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
+                              &IID_IMultiLanguage2, &p);
 #elif defined(HAVE_TYPE_IMULTILANGUAGE)
-	hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
-		              &IID_IMultiLanguage, &p);
+        hr = CoCreateInstance(&CLSID_CMultiLanguage, NULL, CLSCTX_INPROC_SERVER,
+                              &IID_IMultiLanguage, &p);
 #endif
-	if (FAILED(hr)) {
-	    failed_load_conv51932();
-	}
-	pIMultiLanguage = p;
+        if (FAILED(hr)) {
+            failed_load_conv51932();
+        }
+        pIMultiLanguage = p;
     }
 }
 #define need_conv_function51932() (load_conv_function51932(), 1)
@@ -624,7 +624,7 @@ ole_init_cp(void)
     rb_encoding *encdef;
     encdef = rb_default_internal_encoding();
     if (!encdef) {
-	encdef = rb_default_external_encoding();
+        encdef = rb_default_external_encoding();
     }
     cp = ole_encoding2cp(encdef);
     set_ole_codepage(cp);
@@ -650,38 +650,38 @@ ole_cp2encoding(UINT cp)
     int idx;
 
     if (!code_page_installed(cp)) {
-	switch(cp) {
-	  case CP_ACP:
-	    cp = GetACP();
-	    break;
-	  case CP_OEMCP:
-	    cp = GetOEMCP();
-	    break;
-	  case CP_MACCP:
-	  case CP_THREAD_ACP:
-	    if (!pGetCPInfoEx) {
-		pGetCPInfoEx = (BOOL (*)(UINT, DWORD, struct myCPINFOEX *))
-		    GetProcAddress(GetModuleHandle("kernel32"), "GetCPInfoEx");
-		if (!pGetCPInfoEx) {
-		    pGetCPInfoEx = (void*)-1;
-		}
-	    }
-	    buf = ALLOCA_N(struct myCPINFOEX, 1);
-	    ZeroMemory(buf, sizeof(struct myCPINFOEX));
-	    if (pGetCPInfoEx == (void*)-1 || !pGetCPInfoEx(cp, 0, buf)) {
-		rb_raise(eWIN32OLERuntimeError, "cannot map codepage to encoding.");
-		break;	/* never reach here */
-	    }
-	    cp = buf->CodePage;
-	    break;
-	  case CP_SYMBOL:
-	  case CP_UTF7:
-	  case CP_UTF8:
-	    break;
-	  case 51932:
-	    load_conv_function51932();
-	    break;
-	  default:
+        switch(cp) {
+          case CP_ACP:
+            cp = GetACP();
+            break;
+          case CP_OEMCP:
+            cp = GetOEMCP();
+            break;
+          case CP_MACCP:
+          case CP_THREAD_ACP:
+            if (!pGetCPInfoEx) {
+                pGetCPInfoEx = (BOOL (*)(UINT, DWORD, struct myCPINFOEX *))
+                    GetProcAddress(GetModuleHandle("kernel32"), "GetCPInfoEx");
+                if (!pGetCPInfoEx) {
+                    pGetCPInfoEx = (void*)-1;
+                }
+            }
+            buf = ALLOCA_N(struct myCPINFOEX, 1);
+            ZeroMemory(buf, sizeof(struct myCPINFOEX));
+            if (pGetCPInfoEx == (void*)-1 || !pGetCPInfoEx(cp, 0, buf)) {
+                rb_raise(eWIN32OLERuntimeError, "cannot map codepage to encoding.");
+                break;	/* never reach here */
+            }
+            cp = buf->CodePage;
+            break;
+          case CP_SYMBOL:
+          case CP_UTF7:
+          case CP_UTF8:
+            break;
+          case 51932:
+            load_conv_function51932();
+            break;
+          default:
             rb_raise(eWIN32OLERuntimeError, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8, or installed codepage.");
             break;
         }
@@ -690,7 +690,7 @@ ole_cp2encoding(UINT cp)
     enc_name = rb_sprintf("CP%d", cp);
     idx = rb_enc_find_index(enc_cstr = StringValueCStr(enc_name));
     if (idx < 0)
-	idx = rb_define_dummy_encoding(enc_cstr);
+        idx = rb_define_dummy_encoding(enc_cstr);
     return rb_enc_from_index(idx);
 }
 
@@ -700,14 +700,14 @@ ole_ml_wc2mb_conv0(LPWSTR pw, LPSTR pm, UINT *size)
 {
     DWORD dw = 0;
     return pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
-		    &dw, cWIN32OLE_cp, pw, NULL, pm, size);
+                    &dw, cWIN32OLE_cp, pw, NULL, pm, size);
 }
 #define ole_ml_wc2mb_conv(pw, pm, size, onfailure) do { \
-	HRESULT hr = ole_ml_wc2mb_conv0(pw, pm, &size); \
-	if (FAILED(hr)) { \
-	    onfailure; \
-	    ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp); \
-	} \
+        HRESULT hr = ole_ml_wc2mb_conv0(pw, pm, &size); \
+        if (FAILED(hr)) { \
+            onfailure; \
+            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp); \
+        } \
     } while (0)
 #endif
 
@@ -720,11 +720,11 @@ ole_wc2mb_alloc(LPWSTR pw, char *(alloc)(UINT size, void *arg), void *arg)
     UINT size = 0;
     if (conv_51932(cWIN32OLE_cp)) {
 #ifndef pIMultiLanguage
-	ole_ml_wc2mb_conv(pw, NULL, size, {});
-	pm = alloc(size, arg);
-	if (size) ole_ml_wc2mb_conv(pw, pm, size, xfree(pm));
-	pm[size] = '\0';
-	return pm;
+        ole_ml_wc2mb_conv(pw, NULL, size, {});
+        pm = alloc(size, arg);
+        if (size) ole_ml_wc2mb_conv(pw, pm, size, xfree(pm));
+        pm[size] = '\0';
+        return pm;
 #endif
     }
     size = ole_wc2mb_conv(pw, NULL, 0);
@@ -816,8 +816,8 @@ ole_initialize(void)
     HRESULT hr;
 
     if(!g_uninitialize_hooked) {
-	rb_add_event_hook(ole_uninitialize_hook, RUBY_EVENT_THREAD_END, Qnil);
-	g_uninitialize_hooked = TRUE;
+        rb_add_event_hook(ole_uninitialize_hook, RUBY_EVENT_THREAD_END, Qnil);
+        g_uninitialize_hooked = TRUE;
     }
 
     if(g_ole_initialized == FALSE) {
@@ -911,21 +911,21 @@ ole_mb2wc(char *pm, int len, UINT cp)
 
     if (conv_51932(cp)) {
 #ifndef pIMultiLanguage
-	DWORD dw = 0;
-	UINT n = len;
-	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
-		&dw, cp, pm, &n, NULL, &size);
-	if (FAILED(hr)) {
+        DWORD dw = 0;
+        UINT n = len;
+        HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
+                &dw, cp, pm, &n, NULL, &size);
+        if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
-	}
-	pw = SysAllocStringLen(NULL, size);
-	n = len;
-	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
-		&dw, cp, pm, &n, pw, &size);
-	if (FAILED(hr)) {
+        }
+        pw = SysAllocStringLen(NULL, size);
+        n = len;
+        hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
+                &dw, cp, pm, &n, pw, &size);
+        if (FAILED(hr)) {
             ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
-	}
-	return pw;
+        }
+        return pw;
 #endif
     }
     size = MultiByteToWideChar(cp, 0, pm, len, NULL, 0);
@@ -1426,9 +1426,10 @@ ole_variant2val(VARIANT *pvar)
         vt = V_VT(pvar);
     }
 
+#define ARG_AS(type, pvar) (V_ISBYREF(pvar) ? *V_##type##REF(pvar) : V_##type(pvar))
     if(V_ISARRAY(pvar)) {
         VARTYPE vt_base = vt & VT_TYPEMASK;
-        SAFEARRAY *psa = V_ISBYREF(pvar) ? *V_ARRAYREF(pvar) : V_ARRAY(pvar);
+        SAFEARRAY *psa = ARG_AS(ARRAY, pvar);
         UINT i = 0;
         LONG *pid, *plb, *pub;
         VARIANT variant;
@@ -1495,109 +1496,58 @@ ole_variant2val(VARIANT *pvar)
     case VT_NULL:
         break;
     case VT_I1:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_I1REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_I1(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(I1, pvar));
         break;
 
     case VT_UI1:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UI1REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UI1(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UI1, pvar));
         break;
 
     case VT_I2:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_I2REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_I2(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(I2, pvar));
         break;
 
     case VT_UI2:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UI2REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UI2(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UI2, pvar));
         break;
 
     case VT_I4:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_I4REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_I4(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(I4, pvar));
         break;
 
     case VT_UI4:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UI4REF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UI4(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UI4, pvar));
         break;
 
     case VT_INT:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_INTREF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_INT(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(INT, pvar));
         break;
 
     case VT_UINT:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM((long)*V_UINTREF(pvar));
-        else
-            obj = RB_INT2NUM((long)V_UINT(pvar));
+        obj = RB_INT2NUM((long)ARG_AS(UINT, pvar));
         break;
 
 #if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
     case VT_I8:
-        if(V_ISBYREF(pvar))
-#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
-#ifdef V_I8REF
-            obj = I8_2_NUM(*V_I8REF(pvar));
-#endif
-#else
-            obj = Qnil;
-#endif
-        else
-            obj = I8_2_NUM(V_I8(pvar));
+        obj = I8_2_NUM(ARG_AS(I8, pvar));
         break;
     case VT_UI8:
-        if(V_ISBYREF(pvar))
-#if (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__)
-#ifdef V_UI8REF
-            obj = UI8_2_NUM(*V_UI8REF(pvar));
-#endif
-#else
-            obj = Qnil;
-#endif
-        else
-            obj = UI8_2_NUM(V_UI8(pvar));
+        obj = UI8_2_NUM(ARG_AS(UI8, pvar));
         break;
 #endif  /* (defined(_MSC_VER) && (_MSC_VER >= 1300)) || defined(__CYGWIN__) || defined(__MINGW32__) */
 
     case VT_R4:
-        if(V_ISBYREF(pvar))
-            obj = rb_float_new(*V_R4REF(pvar));
-        else
-            obj = rb_float_new(V_R4(pvar));
+        obj = rb_float_new(ARG_AS(R4, pvar));
         break;
 
     case VT_R8:
-        if(V_ISBYREF(pvar))
-            obj = rb_float_new(*V_R8REF(pvar));
-        else
-            obj = rb_float_new(V_R8(pvar));
+        obj = rb_float_new(ARG_AS(R8, pvar));
         break;
 
     case VT_BSTR:
     {
         BSTR bstr;
-        if(V_ISBYREF(pvar))
-            bstr = *V_BSTRREF(pvar);
-        else
-            bstr = V_BSTR(pvar);
+        bstr = ARG_AS(BSTR, pvar);
         obj = (SysStringLen(bstr) == 0)
             ? rb_str_new2("")
             : ole_wc2vstr(bstr, FALSE);
@@ -1605,27 +1555,18 @@ ole_variant2val(VARIANT *pvar)
     }
 
     case VT_ERROR:
-        if(V_ISBYREF(pvar))
-            obj = RB_INT2NUM(*V_ERRORREF(pvar));
-        else
-            obj = RB_INT2NUM(V_ERROR(pvar));
+        obj = RB_INT2NUM(ARG_AS(ERROR, pvar));
         break;
 
     case VT_BOOL:
-        if (V_ISBYREF(pvar))
-            obj = (*V_BOOLREF(pvar) ? Qtrue : Qfalse);
-        else
-            obj = (V_BOOL(pvar) ? Qtrue : Qfalse);
+        obj = (ARG_AS(BOOL, pvar) ? Qtrue : Qfalse);
         break;
 
     case VT_DISPATCH:
     {
         IDispatch *pDispatch;
 
-        if (V_ISBYREF(pvar))
-            pDispatch = *V_DISPATCHREF(pvar);
-        else
-            pDispatch = V_DISPATCH(pvar);
+        pDispatch = ARG_AS(DISPATCH, pvar);
 
         if (pDispatch != NULL ) {
             OLE_ADDREF(pDispatch);
@@ -1642,10 +1583,7 @@ ole_variant2val(VARIANT *pvar)
         void *p;
         HRESULT hr;
 
-        if (V_ISBYREF(pvar))
-            punk = *V_UNKNOWNREF(pvar);
-        else
-            punk = V_UNKNOWN(pvar);
+        punk = ARG_AS(UNKNOWN, pvar);
 
         if(punk != NULL) {
            hr = punk->lpVtbl->QueryInterface(punk, &IID_IDispatch, &p);
@@ -1660,10 +1598,7 @@ ole_variant2val(VARIANT *pvar)
     case VT_DATE:
     {
         DATE date;
-        if(V_ISBYREF(pvar))
-            date = *V_DATEREF(pvar);
-        else
-            date = V_DATE(pvar);
+        date = ARG_AS(DATE, pvar);
 
         obj =  vtdate2rbtime(date);
         break;
@@ -1693,6 +1628,7 @@ ole_variant2val(VARIANT *pvar)
         }
     }
     return obj;
+#undef ARG_AS
 }
 
 LONG
@@ -1737,11 +1673,11 @@ reg_get_val(HKEY hkey, const char *subkey)
         if (err == ERROR_SUCCESS) {
             pbuf[size] = '\0';
             if (dwtype == REG_EXPAND_SZ) {
-		char* pbuf2 = (char *)pbuf;
-		DWORD len = ExpandEnvironmentStrings(pbuf2, NULL, 0);
-		pbuf = ALLOC_N(char, len + 1);
-		ExpandEnvironmentStrings(pbuf2, pbuf, len + 1);
-		free(pbuf2);
+                char* pbuf2 = (char *)pbuf;
+                DWORD len = ExpandEnvironmentStrings(pbuf2, NULL, 0);
+                pbuf = ALLOC_N(char, len + 1);
+                ExpandEnvironmentStrings(pbuf2, pbuf, len + 1);
+                free(pbuf2);
             }
             val = rb_str_new2((char *)pbuf);
         }
@@ -1962,7 +1898,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.connect( ole ) --> aWIN32OLE
+ *     connect(ole) --> aWIN32OLE
  *
  *  Returns running OLE Automation object or WIN32OLE object from moniker.
  *  1st argument should be OLE program id or class id or moniker.
@@ -2019,7 +1955,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.const_load( ole, mod = WIN32OLE)
+ *     const_load(ole, mod = WIN32OLE)
  *
  *  Defines the constants of OLE Automation server as mod's constants.
  *  The first argument is WIN32OLE object or type library name.
@@ -2124,7 +2060,7 @@ reference_count(struct oledata * pole)
 
 /*
  *  call-seq:
- *     WIN32OLE.ole_reference_count(aWIN32OLE) --> number
+ *     ole_reference_count(aWIN32OLE) --> number
  *
  *  Returns reference counter of Dispatch interface of WIN32OLE object.
  *  You should not use this method because this method
@@ -2140,7 +2076,7 @@ fole_s_reference_count(VALUE self, VALUE obj)
 
 /*
  *  call-seq:
- *     WIN32OLE.ole_free(aWIN32OLE) --> number
+ *     ole_free(aWIN32OLE) --> number
  *
  *  Invokes Release method of Dispatch interface of WIN32OLE object.
  *  You should not use this method because this method
@@ -2184,10 +2120,10 @@ ole_show_help(VALUE helpfile, VALUE helpcontext)
 
 /*
  *  call-seq:
- *     WIN32OLE.ole_show_help(obj [,helpcontext])
+ *     ole_show_help(obj [,helpcontext])
  *
- *  Displays helpfile. The 1st argument specifies WIN32OLE_TYPE
- *  object or WIN32OLE_METHOD object or helpfile.
+ *  Displays helpfile. The 1st argument specifies WIN32OLE::Type
+ *  object or WIN32OLE::Method object or helpfile.
  *
  *     excel = WIN32OLE.new('Excel.Application')
  *     typeobj = excel.ole_type
@@ -2215,7 +2151,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
         helpfile = target;
     }
     if (!RB_TYPE_P(helpfile, T_STRING)) {
-        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE_TYPE|WIN32OLE_METHOD)");
+        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE::Type|WIN32OLE::Method)");
     }
     hwnd = ole_show_help(helpfile, helpcontext);
     if(hwnd == 0) {
@@ -2227,7 +2163,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.codepage
+ *     codepage
  *
  *  Returns current codepage.
  *     WIN32OLE.codepage # => WIN32OLE::CP_ACP
@@ -2258,7 +2194,7 @@ code_page_installed(UINT cp)
 
 /*
  *  call-seq:
- *     WIN32OLE.codepage = CP
+ *     codepage = CP
  *
  *  Sets current codepage.
  *  The WIN32OLE.codepage is initialized according to
@@ -2282,7 +2218,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
 
 /*
  *  call-seq:
- *     WIN32OLE.locale -> locale id.
+ *     locale -> locale id.
  *
  *  Returns current locale id (lcid). The default locale is
  *  WIN32OLE::LOCALE_SYSTEM_DEFAULT.
@@ -2316,12 +2252,12 @@ lcid_installed(LCID lcid)
 
 /*
  *  call-seq:
- *     WIN32OLE.locale = lcid
+ *     locale = lcid
  *
  *  Sets current locale id (lcid).
  *
  *     WIN32OLE.locale = 1033 # set locale English(U.S)
- *     obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
+ *     obj = WIN32OLE::Variant.new("$100,000", WIN32OLE::VARIANT::VT_CY)
  *
  */
 static VALUE
@@ -2345,7 +2281,7 @@ fole_s_set_locale(VALUE self, VALUE vlcid)
 
 /*
  *  call-seq:
- *     WIN32OLE.create_guid
+ *     create_guid
  *
  *  Creates GUID.
  *     WIN32OLE.create_guid # => {1CB530F1-F6B1-404D-BCE6-1959BF91F4A8}
@@ -2393,9 +2329,9 @@ fole_s_ole_uninitialize(VALUE self)
 /*
  * Document-class: WIN32OLE
  *
- *   <code>WIN32OLE</code> objects represent OLE Automation object in Ruby.
+ *   +WIN32OLE+ objects represent OLE Automation object in Ruby.
  *
- *   By using WIN32OLE, you can access OLE server like VBScript.
+ *   By using +WIN32OLE+, you can access OLE server like VBScript.
  *
  *   Here is sample script.
  *
@@ -2419,18 +2355,18 @@ fole_s_ole_uninitialize(VALUE self)
  *     excel.ActiveWorkbook.Close(0);
  *     excel.Quit();
  *
- *   Unfortunately, Win32OLE doesn't support the argument passed by
+ *   Unfortunately, +WIN32OLE+ doesn't support the argument passed by
  *   reference directly.
- *   Instead, Win32OLE provides WIN32OLE::ARGV or WIN32OLE_VARIANT object.
+ *   Instead, +WIN32OLE+ provides WIN32OLE::ARGV or WIN32OLE::Variant object.
  *   If you want to get the result value of argument passed by reference,
- *   you can use WIN32OLE::ARGV or WIN32OLE_VARIANT.
+ *   you can use WIN32OLE::ARGV or WIN32OLE::Variant.
  *
  *     oleobj.method(arg1, arg2, refargv3)
  *     puts WIN32OLE::ARGV[2]   # the value of refargv3 after called oleobj.method
  *
  *   or
  *
- *     refargv3 = WIN32OLE_VARIANT.new(XXX,
+ *     refargv3 = WIN32OLE::Variant.new(XXX,
  *                 WIN32OLE::VARIANT::VT_BYREF|WIN32OLE::VARIANT::VT_XXX)
  *     oleobj.method(arg1, arg2, refargv3)
  *     p refargv3.value # the value of refargv3 after called oleobj.method.
@@ -2439,7 +2375,7 @@ fole_s_ole_uninitialize(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.new(server, [host]) -> WIN32OLE object
+ *     new(server, [host]) -> WIN32OLE object
  *     WIN32OLE.new(server, license: 'key') -> WIN32OLE object
  *
  *  Returns a new WIN32OLE object(OLE Automation object).
@@ -2522,12 +2458,12 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
             OLE_RELEASE(pIClassFactory2);
         }
     }
-    pDispatch = p;
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
                   "failed to create WIN32OLE object from `%s'",
                   StringValuePtr(svr_name));
     }
+    pDispatch = p;
 
     ole_set_member(self, pDispatch);
     return self;
@@ -2555,7 +2491,7 @@ hash2named_arg(VALUE key, VALUE val, VALUE pop)
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
     if (RB_TYPE_P(key, T_SYMBOL)) {
-	key = rb_sym2str(key);
+        key = rb_sym2str(key);
     }
 
     /* pNamedArgs[0] is <method name>, so "index + 1" */
@@ -2619,10 +2555,10 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
     if(!RB_TYPE_P(cmd, T_STRING) && !RB_TYPE_P(cmd, T_SYMBOL) && !is_bracket) {
-	rb_raise(rb_eTypeError, "method is wrong type (expected String or Symbol)");
+        rb_raise(rb_eTypeError, "method is wrong type (expected String or Symbol)");
     }
     if (RB_TYPE_P(cmd, T_SYMBOL)) {
-	cmd = rb_sym2str(cmd);
+        cmd = rb_sym2str(cmd);
     }
     pole = oledata_get_struct(self);
     if(!pole->pDispatch) {
@@ -2631,7 +2567,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     if (is_bracket) {
         DispID = DISPID_VALUE;
         argc += 1;
-	rb_ary_unshift(paramS, cmd);
+        rb_ary_unshift(paramS, cmd);
     } else {
         wcmdname = ole_vstr2wc(cmd);
         hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
@@ -2826,7 +2762,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
 /*
  *  call-seq:
- *     WIN32OLE#invoke(method, [arg1,...])  => return value of method.
+ *     invoke(method, [arg1,...])  => return value of method.
  *
  *  Runs OLE method.
  *  The first argument specifies the method name of OLE Automation object.
@@ -3038,7 +2974,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
 
 /*
  *   call-seq:
- *      WIN32OLE#_invoke(dispid, args, types)
+ *      _invoke(dispid, args, types)
  *
  *   Runs the early binding method.
  *   The 1st argument specifies dispatch ID,
@@ -3056,7 +2992,7 @@ fole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 
 /*
  *  call-seq:
- *     WIN32OLE#_getproperty(dispid, args, types)
+ *     _getproperty(dispid, args, types)
  *
  *  Runs the early binding method to get property.
  *  The 1st argument specifies dispatch ID,
@@ -3074,7 +3010,7 @@ fole_getproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 
 /*
  *   call-seq:
- *      WIN32OLE#_setproperty(dispid, args, types)
+ *      _setproperty(dispid, args, types)
  *
  *   Runs the early binding method to set property.
  *   The 1st argument specifies dispatch ID,
@@ -3120,7 +3056,7 @@ fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.setproperty('property', [arg1, arg2,...] val)
+ *     setproperty('property', [arg1, arg2,...] val)
  *
  *  Sets property of OLE object.
  *  When you want to set property with argument, you can use this method.
@@ -3226,7 +3162,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_free
+ *     ole_free
  *
  *  invokes Release method of Dispatch interface of WIN32OLE object.
  *  Usually, you do not need to call this method because Release method
@@ -3269,7 +3205,7 @@ ole_ienum_free(VALUE pEnumV)
 
 /*
  *  call-seq:
- *     WIN32OLE#each {|i|...}
+ *     each {|i|...}
  *
  *  Iterates over each item of OLE collection which has IEnumVARIANT interface.
  *
@@ -3340,7 +3276,7 @@ fole_each(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#method_missing(id [,arg1, arg2, ...])
+ *     method_missing(id [,arg1, arg2, ...])
  *
  *  Calls WIN32OLE#invoke method.
  */
@@ -3438,9 +3374,9 @@ ole_methods(VALUE self, int mask)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_methods
+ *     ole_methods
  *
- *  Returns the array of WIN32OLE_METHOD object.
+ *  Returns the array of WIN32OLE::Method object.
  *  The element is OLE method of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3455,9 +3391,9 @@ fole_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_get_methods
+ *     ole_get_methods
  *
- *  Returns the array of WIN32OLE_METHOD object .
+ *  Returns the array of WIN32OLE::Method object .
  *  The element of the array is property (gettable) of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3471,9 +3407,9 @@ fole_get_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_put_methods
+ *     ole_put_methods
  *
- *  Returns the array of WIN32OLE_METHOD object .
+ *  Returns the array of WIN32OLE::Method object .
  *  The element of the array is property (settable) of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3487,9 +3423,9 @@ fole_put_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_func_methods
+ *     ole_func_methods
  *
- *  Returns the array of WIN32OLE_METHOD object .
+ *  Returns the array of WIN32OLE::Method object .
  *  The element of the array is property (settable) of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3504,9 +3440,9 @@ fole_func_methods(VALUE self)
 
 /*
  *   call-seq:
- *      WIN32OLE#ole_type
+ *      ole_type
  *
- *   Returns WIN32OLE_TYPE object.
+ *   Returns WIN32OLE::Type object.
  *
  *      excel = WIN32OLE.new('Excel.Application')
  *      tobj = excel.ole_type
@@ -3529,16 +3465,16 @@ fole_type(VALUE self)
     type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
     if (type == Qnil) {
-        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE_TYPE obj from ITypeInfo");
+        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE::Type obj from ITypeInfo");
     }
     return type;
 }
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_typelib -> The WIN32OLE_TYPELIB object
+ *     ole_typelib -> The WIN32OLE_TYPELIB object
  *
- *  Returns the WIN32OLE_TYPELIB object. The object represents the
+ *  Returns the WIN32OLE::TypeLib object. The object represents the
  *  type library which contains the WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3570,7 +3506,7 @@ fole_typelib(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_query_interface(iid) -> WIN32OLE object
+ *     ole_query_interface(iid) -> WIN32OLE object
  *
  *  Returns WIN32OLE object for a specific dispatch or dual
  *  interface specified by iid.
@@ -3616,7 +3552,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_respond_to?(method) -> true or false
+ *     ole_respond_to?(method) -> true or false
  *
  *  Returns true when OLE object has OLE method, otherwise returns false.
  *
@@ -3639,7 +3575,7 @@ fole_respond_to(VALUE self, VALUE method)
     pole = oledata_get_struct(self);
     wcmdname = ole_vstr2wc(method);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
-	    &wcmdname, 1, cWIN32OLE_lcid, &DispID);
+            &wcmdname, 1, cWIN32OLE_lcid, &DispID);
     SysFreeString(wcmdname);
     return SUCCEEDED(hr) ? Qtrue : Qfalse;
 }
@@ -3825,9 +3761,9 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 
 /*
  *   call-seq:
- *      WIN32OLE#ole_method_help(method)
+ *      ole_method_help(method)
  *
- *   Returns WIN32OLE_METHOD object corresponding with method
+ *   Returns WIN32OLE::Method object corresponding with method
  *   specified by 1st argument.
  *
  *      excel = WIN32OLE.new('Excel.Application')
@@ -3859,7 +3795,7 @@ fole_method_help(VALUE self, VALUE cmdname)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_activex_initialize() -> Qnil
+ *     ole_activex_initialize() -> Qnil
  *
  *  Initialize WIN32OLE object(ActiveX Control) by calling
  *  IPersistMemory::InitNew.
@@ -4073,7 +4009,7 @@ Init_win32ole(void)
      *   p c # => 0
      *   p WIN32OLE::ARGV # => [10, 20, 30]
      *
-     * You can use WIN32OLE_VARIANT object to retrieve the value of reference
+     * You can use WIN32OLE::Variant object to retrieve the value of reference
      * arguments instead of referring WIN32OLE::ARGV.
      *
      */

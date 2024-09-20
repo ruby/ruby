@@ -87,11 +87,6 @@ void rb_match_busy(VALUE md);
  * @retval     RUBY_Qfalse    There is a `n`-th capture and is empty.
  * @retval     RUBY_Qtrue     There is a `n`-th capture that has something.
  *
- * @internal
- *
- * @shyouhei   wonders:  why   there   are   both  rb_reg_match_defined()   and
- * rb_match_nth_defined, which  are largely the  same things, but do  not share
- * their implementations at all?
  */
 VALUE rb_reg_nth_defined(int n, VALUE md);
 

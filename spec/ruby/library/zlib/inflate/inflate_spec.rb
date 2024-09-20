@@ -39,6 +39,13 @@ describe "Zlib::Inflate#inflate" do
     @inflator.finish.should == 'uncompressed_data'
   end
 
+  it "has a binary encoding" do
+    data = [120, 156, 99, 96, 128, 1, 0, 0, 10, 0, 1].pack('C*')
+    unzipped = @inflator.inflate data
+    @inflator.finish.encoding.should == Encoding::BINARY
+    unzipped.encoding.should == Encoding::BINARY
+  end
+
 end
 
 describe "Zlib::Inflate.inflate" do
@@ -65,7 +72,7 @@ describe "Zlib::Inflate.inflate" do
     data = [120, 156, 75, 203, 207, 7, 0, 2, 130, 1, 69].pack('C*')
     z = Zlib::Inflate.new
     # add bytes, one by one
-    result = ""
+    result = +""
     data.each_byte { |d| result << z.inflate(d.chr)}
     result << z.finish
     result.should == "foo"
@@ -75,7 +82,7 @@ describe "Zlib::Inflate.inflate" do
     data = [120, 156, 75, 203, 207, 7, 0, 2, 130, 1, 69].pack('C*')[0,5]
     z = Zlib::Inflate.new
     # add bytes, one by one, but not all
-    result = ""
+    result = +""
     data.each_byte { |d| result << z.inflate(d.chr)}
     -> { result << z.finish }.should raise_error(Zlib::BufError)
   end
@@ -83,7 +90,7 @@ describe "Zlib::Inflate.inflate" do
   it "properly handles excessive data, byte-by-byte" do
     main_data = [120, 156, 75, 203, 207, 7, 0, 2, 130, 1, 69].pack('C*')
     data =  main_data * 2
-    result = ""
+    result = +""
 
     z = Zlib::Inflate.new
     # add bytes, one by one
@@ -98,7 +105,7 @@ describe "Zlib::Inflate.inflate" do
   it "properly handles excessive data, in one go" do
     main_data = [120, 156, 75, 203, 207, 7, 0, 2, 130, 1, 69].pack('C*')
     data =  main_data * 2
-    result = ""
+    result = +""
 
     z = Zlib::Inflate.new
     result << z.inflate(data)

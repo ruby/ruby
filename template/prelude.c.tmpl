@@ -20,18 +20,12 @@ class Prelude
 
   def initialize(output, preludes, vpath)
     @output = output
-    @have_sublib = false
     @vpath = vpath
-    @prelude_count = 0
     @builtin_count = 0
     @preludes = {}
     @mains = preludes.map do |filename|
-      if prelude = filename.end_with?("golf_prelude.rb")
-        @prelude_count += 1
-      else
-        @builtin_count += 1
-      end
-      translate(filename, (filename unless prelude))[0]
+      @builtin_count += 1
+      translate(filename, filename)[0]
     end
     @preludes.delete_if {|_, (_, _, lines, sub)| sub && lines.empty?}
   end
@@ -44,11 +38,14 @@ class Prelude
     lineno = 0
     result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
-      line.force_encoding("ASCII-8BIT") if line.respond_to?(:force_encoding)
+      if line.respond_to?(:force_encoding)
+        enc = line.encoding
+        line.force_encoding("ASCII-8BIT")
+      end
       line.rstrip!
       lineno += 1
       @preludes[filename] ||= result
-      comment = ($1 || '' if line.sub!(/(?:^|\s+)\#(?:$|[#\s](.*))/, ''))
+      comment = ($1 || '' if line.sub!(/(?:^|\s+)\#(?!\{)(?:$|(?:[#\s]|(?=\W))(.*))/, ''))
       if !line.empty? or start_line
         line << "\n"
         start_line ||= lineno
@@ -56,7 +53,7 @@ class Prelude
       if line.size > LINE_LIMIT
         raise "#{filename}:#{lines.size+1}: too long line"
       end
-      line.sub!(/require(_relative)?\s*\(?\s*(["'])(.*?)(?:\.rb)?\2\)?/) do
+      line.sub!(/require(_relative)?\s*\(?\s*([\"\'])(.*?)(?:\.rb)?\2\)?/) do
         orig, rel, path = $&, $2, $3
         if rel
           path = File.join(File.dirname(filename), path)
@@ -64,12 +61,15 @@ class Prelude
         end
         path = translate("#{path}.rb", true) rescue nil
         if path
-          @have_sublib = true
-          "TMP_RUBY_PREFIX.require(#{path[0]})"
+	  # This library will be loaded before this,
+	  # the order cannot be preserved
+	  comment = "#{orig} #{comment}".rstrip
+          ""
         else
           orig
         end
       end
+      comment.force_encoding(enc) if enc and comment
       lines << [line, comment]
     end
     result << (start_line || 1)
@@ -85,6 +85,7 @@ Prelude.new(output, ARGV, vpath).instance_eval do
 */
 %unless @preludes.empty?
 #include "internal.h"
+#include "internal/ruby_parser.h"
 #include "internal/warnings.h"
 #include "iseq.h"
 #include "ruby/ruby.h"
@@ -131,151 +132,38 @@ static const struct {
 
 COMPILER_WARNING_POP
 
-% if @have_sublib
-#define PRELUDE_COUNT <%=preludes.size%>
-
-struct prelude_env {
-    volatile VALUE prefix_path;
-#if PRELUDE_COUNT > 0
-    char loaded[PRELUDE_COUNT];
-#endif
-};
-
-static VALUE
-prelude_prefix_path(VALUE self)
-{
-    struct prelude_env *ptr = DATA_PTR(self);
-    return ptr->prefix_path;
-}
-
-% end
-% unless preludes.empty?
 #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 #define PRELUDE_CODE(n) rb_utf8_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
 
-static rb_ast_t *
-prelude_ast(VALUE name, VALUE code, int line)
-{
-    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->body.root) {
-	rb_ast_dispose(ast);
-	rb_exc_raise(rb_errinfo());
-    }
-    return ast;
-}
-
 % end
 % if @builtin_count > 0
-#define PRELUDE_AST(n, name_str, start_line) \
+#define PRELUDE_MATCH(n) \
     (((sizeof(prelude_name<%='##'%><%=%>n) - prefix_len - 2) == namelen) && \
-     (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0) ? \
-     prelude_ast((name_str) = PRELUDE_NAME(n), PRELUDE_CODE(n), start_line) : 0)
+     (strncmp(prelude_name<%='##'%><%=%>n + prefix_len, feature_name, namelen) == 0))
 
-rb_ast_t *
-rb_builtin_ast(const char *feature_name, VALUE *name_str)
+VALUE
+rb_builtin_find(const char *feature_name, VALUE *name_str, int *start_line)
 {
     const size_t prefix_len = rb_strlen_lit("<internal:");
     size_t namelen = strlen(feature_name);
-    rb_ast_t *ast = 0;
+
+#define PRELUDE_FOUND(n, l) \
+    (*name_str = PRELUDE_NAME(n), *start_line = (l), PRELUDE_CODE(n))
 
 %   @preludes.each_value do |i, prelude, lines, sub, start_line|
-%     if sub and sub != true
-    if ((ast = PRELUDE_AST(<%=i%><%=%>, *name_str, <%=start_line%>)) != 0) return ast;
+%     if sub
+    if (PRELUDE_MATCH(<%=i%>)) return PRELUDE_FOUND(<%=i%>, <%=start_line%>);
 %     end
 %   end
-    return ast;
+#undef PRELUDE_FOUND
+
+    return Qnil;
 }
 
-% end
-% if @prelude_count > 0
-COMPILER_WARNING_PUSH
-#if GCC_VERSION_SINCE(4, 2, 0)
-COMPILER_WARNING_ERROR(-Wmissing-field-initializers)
-#endif
-static void
-prelude_eval(VALUE code, VALUE name, int line)
-{
-    static const rb_compile_option_t optimization = {
-	TRUE, /* int inline_const_cache; */
-	TRUE, /* int peephole_optimization; */
-	FALSE,/* int tailcall_optimization; */
-	TRUE, /* int specialized_instruction; */
-	TRUE, /* int operands_unification; */
-	TRUE, /* int instructions_unification; */
-	TRUE, /* int stack_caching; */
-	TRUE, /* int frozen_string_literal; */
-	FALSE, /* int debug_frozen_string_literal; */
-	FALSE, /* unsigned int coverage_enabled; */
-	0, /* int debug_level; */
-    };
-
-    rb_ast_t *ast = prelude_ast(name, code, line);
-    rb_iseq_eval(rb_iseq_new_with_opt(&ast->body, name, name, Qnil, INT2FIX(line),
-				      NULL, 0, ISEQ_TYPE_TOP, &optimization));
-    rb_ast_dispose(ast);
-}
-COMPILER_WARNING_POP
-
-% end
-% if @have_sublib
-static VALUE
-prelude_require(VALUE self, VALUE nth)
-{
-    struct prelude_env *ptr = DATA_PTR(self);
-    VALUE code, name;
-    int n = FIX2INT(nth);
-    int start_line;
-
-    if (n > PRELUDE_COUNT) return Qfalse;
-    if (ptr->loaded[n]) return Qfalse;
-    ptr->loaded[n] = 1;
-    switch (n) {
-%   @preludes.each_value do |i, prelude, lines, sub, start_line|
-%     if sub == true
-      case <%=i%><%=%>:
-	code = PRELUDE_CODE(<%=i%><%=%>);
-	name = PRELUDE_NAME(<%=i%><%=%>);
-	start_line = <%=start_line%>;
-	break;
-%     end
-%   end
-      default:
-	return Qfalse;
-    }
-    prelude_eval(code, name, start_line);
-    return Qtrue;
-}
-
-% end
 %end
 % init_name = @output && @output[/\w+(?=_prelude.c\b)/] || 'prelude'
 void
 Init_<%=init_name%><%=%>(void)
 {
-%unless @prelude_count.zero?
-% if @have_sublib
-    struct prelude_env memo;
-    ID name = rb_intern("TMP_RUBY_PREFIX");
-    VALUE prelude = Data_Wrap_Struct(rb_cData, 0, 0, &memo);
-
-    memo.prefix_path = rb_const_remove(rb_cObject, name);
-    rb_const_set(rb_cObject, name, prelude);
-    rb_define_singleton_method(prelude, "to_s", prelude_prefix_path, 0);
-% end
-% if @have_sublib
-    memset(memo.loaded, 0, sizeof(memo.loaded));
-    rb_define_singleton_method(prelude, "require", prelude_require, 1);
-% end
-% preludes.each do |i, prelude, lines, sub, start_line|
-%   next if sub
-    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), <%=start_line%>);
-% end
-
-#if 0
-% preludes.length.times {|i|
-    printf("%.*s", (int)sizeof(prelude_code<%=i%><%=%>), prelude_code<%=i%><%=%>.L0);
-% }
-#endif
-%end
 }
 <%end -%>

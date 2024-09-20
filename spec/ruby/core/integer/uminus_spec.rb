@@ -20,11 +20,11 @@ describe "Integer#-@" do
 
   context "bignum" do
     it "returns self as a negative value" do
-      bignum_value.send(:-@).should == -9223372036854775808
-      (-bignum_value).send(:-@).should == 9223372036854775808
+      bignum_value.send(:-@).should == -18446744073709551616
+      (-bignum_value).send(:-@).should == 18446744073709551616
 
-      bignum_value(921).send(:-@).should == -9223372036854776729
-      (-bignum_value(921).send(:-@)).should == 9223372036854776729
+      bignum_value(921).send(:-@).should == -18446744073709552537
+      (-bignum_value(921).send(:-@)).should == 18446744073709552537
     end
   end
 end

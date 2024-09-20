@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 #
 # test Win32OLE avoids cfp consistency error when the exception raised
-# in WIN32OLE_EVENT handler block. [ruby-dev:35450]
+# in WIN32OLE::Event handler block. [ruby-dev:35450]
 #
 
 begin
@@ -31,14 +31,14 @@ if defined?(WIN32OLE)
     def available_adodb?
       begin
         WIN32OLE.new('ADODB.Connection')
-      rescue WIN32OLERuntimeError
+      rescue WIN32OLE::RuntimeError
         return false
       end
       return true
     end
 
     def test_err_in_callback
-      skip "'ADODB.Connection' is not available" unless available_adodb?
+      omit "'ADODB.Connection' is not available" unless available_adodb?
       if @ruby
         Dir.mktmpdir do |tmpdir|
           logfile = File.join(tmpdir, "test_err_in_callback.log")

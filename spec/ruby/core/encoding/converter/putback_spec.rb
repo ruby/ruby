@@ -4,7 +4,7 @@ require_relative '../../../spec_helper'
 describe "Encoding::Converter#putback" do
   before :each do
     @ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
-    @ret = @ec.primitive_convert(@src="abc\xa1def", @dst="", nil, 10)
+    @ret = @ec.primitive_convert(@src=+"abc\xa1def", @dst=+"", nil, 10)
   end
 
   it "returns a String" do
@@ -36,21 +36,21 @@ describe "Encoding::Converter#putback" do
 
   it "returns the problematic bytes for UTF-16LE" do
     ec = Encoding::Converter.new("utf-16le", "iso-8859-1")
-    src = "\x00\xd8\x61\x00"
-    dst = ""
+    src = +"\x00\xd8\x61\x00"
+    dst = +""
     ec.primitive_convert(src, dst).should == :invalid_byte_sequence
     ec.primitive_errinfo.should == [:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "a\x00"]
-    ec.putback.should == "a\x00".force_encoding("utf-16le")
+    ec.putback.should == "a\x00".dup.force_encoding("utf-16le")
     ec.putback.should == ""
   end
 
   it "accepts an integer argument corresponding to the number of bytes to be put back" do
     ec = Encoding::Converter.new("utf-16le", "iso-8859-1")
-    src = "\x00\xd8\x61\x00"
-    dst = ""
+    src = +"\x00\xd8\x61\x00"
+    dst = +""
     ec.primitive_convert(src, dst).should == :invalid_byte_sequence
     ec.primitive_errinfo.should == [:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "a\x00"]
-    ec.putback(2).should == "a\x00".force_encoding("utf-16le")
+    ec.putback(2).should == "a\x00".dup.force_encoding("utf-16le")
     ec.putback.should == ""
   end
 end

@@ -21,7 +21,7 @@ describe "CSV.generate" do
   end
 
   it "appends and returns the argument itself" do
-    str = ""
+    str = +""
     csv_str = CSV.generate(str) do |csv|
       csv.add_row [1, 2, 3]
       csv << [4, 5, 6]

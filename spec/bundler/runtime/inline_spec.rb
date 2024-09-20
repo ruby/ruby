@@ -2,10 +2,9 @@
 
 RSpec.describe "bundler/inline#gemfile" do
   def script(code, options = {})
-    requires = ["#{entrypoint}/inline"]
-    requires.unshift "#{spec_dir}/support/artifice/" + options.delete(:artifice) if options.key?(:artifice)
-    requires = requires.map {|r| "require '#{r}'" }.join("\n")
-    ruby("#{requires}\n\n" + code, options)
+    options[:artifice] ||= "compact_index"
+    options[:env] ||= { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+    ruby("require 'bundler/inline'\n\n" + code, options)
   end
 
   before :each do
@@ -28,7 +27,7 @@ RSpec.describe "bundler/inline#gemfile" do
       s.write "lib/four.rb", "puts 'four'"
     end
 
-    build_lib "five", "1.0.0", :no_default => true do |s|
+    build_lib "five", "1.0.0", no_default: true do |s|
       s.write "lib/mofive.rb", "puts 'five'"
     end
 
@@ -48,7 +47,7 @@ RSpec.describe "bundler/inline#gemfile" do
   it "requires the gems" do
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         path "#{lib_path}" do
           gem "two"
         end
@@ -57,9 +56,9 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("two")
 
-    script <<-RUBY, :raise_on_error => false
+    script <<-RUBY, raise_on_error: false
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         path "#{lib_path}" do
           gem "eleven"
         end
@@ -73,14 +72,14 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile(true) do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
     RUBY
 
-    expect(out).to include("Rack's post install message")
+    expect(out).to include("Myrack's post install message")
 
-    script <<-RUBY, :artifice => "endpoint"
+    script <<-RUBY, artifice: "endpoint"
       gemfile(true) do
         source "https://notaserver.com"
         gem "activesupport", :require => true
@@ -89,19 +88,21 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Installing activesupport")
     err_lines = err.split("\n")
-    err_lines.reject!{|line| line =~ /\.rb:\d+: warning: / } unless RUBY_VERSION < "2.7"
+    err_lines.reject! {|line| line =~ /\.rb:\d+: warning: / }
     expect(err_lines).to be_empty
   end
 
   it "lets me use my own ui object" do
-    script <<-RUBY, :artifice => "endpoint"
-      require '#{entrypoint}'
-      class MyBundlerUI < Bundler::UI::Silent
+    script <<-RUBY, artifice: "endpoint"
+      require 'bundler'
+      class MyBundlerUI < Bundler::UI::Shell
         def confirm(msg, newline = nil)
           puts "CONFIRMED!"
         end
       end
-      gemfile(true, :ui => MyBundlerUI.new) do
+      my_ui = MyBundlerUI.new
+      my_ui.level = "confirm"
+      gemfile(true, :ui => my_ui) do
         source "https://notaserver.com"
         gem "activesupport", :require => true
       end
@@ -111,8 +112,8 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "has an option for quiet installation" do
-    script <<-RUBY, :artifice => "endpoint"
-      require '#{entrypoint}/inline'
+    script <<-RUBY, artifice: "endpoint"
+      require 'bundler/inline'
 
       gemfile(true, :quiet => true) do
         source "https://notaserver.com"
@@ -124,7 +125,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "raises an exception if passed unknown arguments" do
-    script <<-RUBY, :raise_on_error => false
+    script <<-RUBY, raise_on_error: false
       gemfile(true, :arglebargle => true) do
         path "#{lib_path}"
         gem "two"
@@ -138,10 +139,10 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not mutate the option argument" do
     script <<-RUBY
-      require '#{entrypoint}'
+      require 'bundler'
       options = { :ui => Bundler::UI::Shell.new }
       gemfile(false, options) do
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         path "#{lib_path}" do
           gem "two"
         end
@@ -155,11 +156,59 @@ RSpec.describe "bundler/inline#gemfile" do
   it "installs quietly if necessary when the install option is not set" do
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
-      puts RACK
+      puts MYRACK
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
+  it "installs subdependencies quietly if necessary when the install option is not set" do
+    build_repo4 do
+      build_gem "myrack" do |s|
+        s.add_dependency "myrackdep"
+      end
+
+      build_gem "myrackdep", "1.0.0"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      gemfile do
+        source "https://gem.repo4"
+        gem "myrack"
+      end
+
+      require "myrackdep"
+      puts MYRACKDEP
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
+  it "installs subdependencies quietly if necessary when the install option is not set, and multiple sources used" do
+    build_repo4 do
+      build_gem "myrack" do |s|
+        s.add_dependency "myrackdep"
+      end
+
+      build_gem "myrackdep", "1.0.0"
+    end
+
+    script <<-RUBY, artifice: "compact_index_extra_api"
+      gemfile do
+        source "https://test.repo"
+        source "https://test.repo/extra" do
+          gem "myrack"
+        end
+      end
+
+      require "myrackdep"
+      puts MYRACKDEP
     RUBY
 
     expect(out).to eq("1.0.0")
@@ -171,7 +220,7 @@ RSpec.describe "bundler/inline#gemfile" do
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => #{lib_path("foo-1.0.0").to_s.dump}
         gem "baz", :git => #{lib_path("baz-2.0.0").to_s.dump}, :ref => #{baz_ref.dump}
       end
@@ -188,20 +237,127 @@ RSpec.describe "bundler/inline#gemfile" do
     script <<-RUBY
       gemfile do
         path "#{lib_path}" do
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "two"
         end
       end
 
       gemfile do
         path "#{lib_path}" do
-          source "#{file_uri_for(gem_repo1)}"
+          source "https://gem.repo1"
           gem "four"
         end
       end
     RUBY
 
     expect(out).to eq("two\nfour")
+    expect(err).to be_empty
+  end
+
+  it "doesn't reinstall already installed gems" do
+    system_gems "myrack-1.0.0"
+
+    script <<-RUBY
+      require 'bundler'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "activesupport"
+        gem "myrack"
+      end
+    RUBY
+
+    expect(out).to include("Installing activesupport")
+    expect(out).not_to include("Installing myrack")
+    expect(err).to be_empty
+  end
+
+  it "installs gems in later gemfile calls" do
+    system_gems "myrack-1.0.0"
+
+    script <<-RUBY
+      require 'bundler'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "activesupport"
+      end
+    RUBY
+
+    expect(out).to include("Installing activesupport")
+    expect(out).not_to include("Installing myrack")
+    expect(err).to be_empty
+  end
+
+  it "doesn't reinstall already installed gems in later gemfile calls" do
+    system_gems "myrack-1.0.0"
+
+    script <<-RUBY
+      require 'bundler'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "activesupport"
+      end
+
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+    RUBY
+
+    expect(out).to include("Installing activesupport")
+    expect(out).not_to include("Installing myrack")
+    expect(err).to be_empty
+  end
+
+  it "installs gems with native extensions in later gemfile calls" do
+    system_gems "myrack-1.0.0"
+
+    build_git "foo" do |s|
+      s.add_dependency "rake"
+      s.extensions << "Rakefile"
+      s.write "Rakefile", <<-RUBY
+        task :default do
+          path = File.expand_path("lib", __dir__)
+          FileUtils.mkdir_p(path)
+          File.open("\#{path}/foo.rb", "w") do |f|
+            f.puts "FOO = 'YES'"
+          end
+        end
+      RUBY
+    end
+
+    script <<-RUBY
+      require 'bundler'
+      ui = Bundler::UI::Shell.new
+      ui.level = "confirm"
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+
+      gemfile(true, ui: ui) do
+        source "https://gem.repo1"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      end
+
+      require 'foo'
+      puts FOO
+      puts $:.grep(/ext/)
+    RUBY
+
+    expect(out).to include("YES")
+    expect(out).to include(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     expect(err).to be_empty
   end
 
@@ -229,37 +385,71 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
-      puts RACK
+      puts MYRACK
     RUBY
 
     expect(err).to be_empty
   end
 
+  it "does not leak Gemfile.lock versions to the installation output" do
+    gemfile <<-G
+      source "https://notaserver.com"
+      gem "rake"
+    G
+
+    lockfile <<-G
+      GEM
+        remote: https://rubygems.org/
+        specs:
+          rake (11.3.0)
+
+      PLATFORMS
+        ruby
+
+      DEPENDENCIES
+        rake
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    G
+
+    script <<-RUBY
+      gemfile(true) do
+        source "https://gem.repo1"
+        gem "rake", "#{rake_version}"
+      end
+    RUBY
+
+    expect(out).to include("Installing rake #{rake_version}")
+    expect(out).not_to include("was 11.3.0")
+    expect(err).to be_empty
+  end
+
   it "installs inline gems when frozen is set" do
-    script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
+    script <<-RUBY, env: { "BUNDLE_FROZEN" => "true", "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
-      puts RACK
+      puts MYRACK
     RUBY
 
     expect(last_command.stderr).to be_empty
   end
 
   it "installs inline gems when deployment is set" do
-    script <<-RUBY, :env => { "BUNDLE_DEPLOYMENT" => "true" }
+    script <<-RUBY, env: { "BUNDLE_DEPLOYMENT" => "true", "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
-      puts RACK
+      puts MYRACK
     RUBY
 
     expect(last_command.stderr).to be_empty
@@ -270,11 +460,11 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
-      puts RACK
+      puts MYRACK
     RUBY
 
     expect(err).to be_empty
@@ -285,11 +475,11 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack" # has the rackup executable
+        source "https://gem.repo1"
+        gem "myrack" # has the myrackup executable
       end
 
-      puts RACK
+      puts MYRACK
     RUBY
     expect(last_command).to be_success
     expect(out).to eq "1.0.0"
@@ -297,36 +487,50 @@ RSpec.describe "bundler/inline#gemfile" do
 
   context "when BUNDLE_PATH is set" do
     it "installs inline gems to the system path regardless" do
-      script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
+      script <<-RUBY, env: { "BUNDLE_PATH" => "./vendor/inline", "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
         gemfile(true) do
-          source "#{file_uri_for(gem_repo1)}"
-          gem "rack"
+          source "https://gem.repo1"
+          gem "myrack"
         end
       RUBY
       expect(last_command).to be_success
-      expect(system_gem_path("gems/rack-1.0.0")).to exist
+      expect(system_gem_path("gems/myrack-1.0.0")).to exist
     end
   end
 
   it "skips platform warnings" do
-    simulate_platform "ruby"
+    bundle "config set --local force_ruby_platform true"
 
     script <<-RUBY
       gemfile(true) do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack", platform: :jruby
+        source "https://gem.repo1"
+        gem "myrack", platform: :jruby
       end
     RUBY
 
     expect(err).to be_empty
   end
 
+  it "still installs if the application has `bundle package` no_install config set" do
+    bundle "config set --local no_install true"
+
+    script <<-RUBY
+      gemfile do
+        source "https://gem.repo1"
+        gem "myrack"
+      end
+    RUBY
+
+    expect(last_command).to be_success
+    expect(system_gem_path("gems/myrack-1.0.0")).to exist
+  end
+
   it "preserves previous BUNDLE_GEMFILE value" do
     ENV["BUNDLE_GEMFILE"] = ""
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
       puts "BUNDLE_GEMFILE is empty" if ENV["BUNDLE_GEMFILE"].empty?
@@ -342,8 +546,8 @@ RSpec.describe "bundler/inline#gemfile" do
     ENV["BUNDLE_GEMFILE"] = nil
     script <<-RUBY
       gemfile do
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
+        source "https://gem.repo1"
+        gem "myrack"
       end
 
       puts "BUNDLE_GEMFILE is empty" if ENV["BUNDLE_GEMFILE"].empty?
@@ -371,9 +575,9 @@ RSpec.describe "bundler/inline#gemfile" do
       s.write "lib/foo.rb", foo_code
     end
 
-    script <<-RUBY, :dir => tmp("path_without_gemfile")
+    script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       gemfile do
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         path "#{lib_path}" do
           gem "foo", require: false
         end
@@ -387,34 +591,91 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "when requiring fileutils after does not show redefinition warnings" do
-    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
-    skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
-
-    skip "pathname does not install cleanly on this ruby" if RUBY_VERSION < "2.7.0"
-
     Dir.mkdir tmp("path_without_gemfile")
 
-    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", :raise_on_error => false
+    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", raise_on_error: false
     skip "fileutils isn't a default gem" if default_fileutils_version.empty?
 
     realworld_system_gems "fileutils --version 1.4.1"
 
     realworld_system_gems "pathname --version 0.2.0"
 
-    realworld_system_gems "fiddle" # not sure why, but this is needed on Windows to boot rubygems successfully
-
-    realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
-
-    script <<-RUBY, :dir => tmp("path_without_gemfile"), :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+    script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s, "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       require "bundler/inline"
 
       gemfile(true) do
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
       end
 
       require "fileutils"
     RUBY
 
     expect(err).to eq("The Gemfile specifies no dependencies")
+  end
+
+  it "does not load default timeout" do
+    default_timeout_version = ruby "gem 'timeout', '< 999999'; require 'timeout'; puts Timeout::VERSION", raise_on_error: false
+    skip "timeout isn't a default gem" if default_timeout_version.empty?
+
+    # This only works on RubyGems 3.5.0 or higher
+    ruby "require 'rubygems/timeout'", raise_on_error: false
+    skip "rubygems under test does not yet vendor timeout" unless last_command.success?
+
+    build_repo4 do
+      build_gem "timeout", "999"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "https://gem.repo4"
+
+        gem "timeout"
+      end
+    RUBY
+
+    expect(out).to include("Installing timeout 999")
+  end
+
+  it "does not upcase ENV" do
+    script <<-RUBY
+      require 'bundler/inline'
+
+      ENV['Test_Variable'] = 'value string'
+      puts("before: \#{ENV.each_key.select { |key| key.match?(/test_variable/i) }}")
+
+      gemfile do
+        source "https://gem.repo1"
+      end
+
+      puts("after: \#{ENV.each_key.select { |key| key.match?(/test_variable/i) }}")
+    RUBY
+
+    expect(out).to include("before: [\"Test_Variable\"]")
+    expect(out).to include("after: [\"Test_Variable\"]")
+  end
+
+  it "does not load specified version of psych and stringio", :ruby_repo do
+    build_repo4 do
+      build_gem "psych", "999"
+      build_gem "stringio", "999"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "https://gem.repo4"
+
+        gem "psych"
+        gem "stringio"
+      end
+    RUBY
+
+    expect(out).to include("Installing psych 999")
+    expect(out).to include("Installing stringio 999")
+    expect(out).to include("The psych gem was resolved to 999")
+    expect(out).to include("The stringio gem was resolved to 999")
   end
 end

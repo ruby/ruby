@@ -279,7 +279,7 @@ class TestSocketNonblock < Test::Unit::TestCase
           s1.sendmsg_nonblock("a" * 100000)
         }
       rescue NotImplementedError, Errno::ENOSYS
-        skip "sendmsg not implemented on this platform: #{$!}"
+        omit "sendmsg not implemented on this platform: #{$!}"
       rescue Errno::EMSGSIZE
         # UDP has 64K limit (if no Jumbograms).  No problem.
       rescue Errno::EWOULDBLOCK
@@ -307,11 +307,13 @@ class TestSocketNonblock < Test::Unit::TestCase
           loop { s1.sendmsg_nonblock(buf) }
         end
       end
-    rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT
-      skip "UNIXSocket.pair(:SEQPACKET) not implemented on this platform: #{$!}"
+    rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT, Errno::EPROTOTYPE
+      omit "UNIXSocket.pair(:SEQPACKET) not implemented on this platform: #{$!}"
     end
 
     def test_sendmsg_nonblock_no_exception
+      omit "AF_UNIX + SEQPACKET is not supported on windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+
       buf = '*' * 4096
       UNIXSocket.pair(:SEQPACKET) do |s1, s2|
         n = 0
@@ -329,7 +331,7 @@ class TestSocketNonblock < Test::Unit::TestCase
         end
       end
     rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT
-      skip "UNIXSocket.pair(:SEQPACKET) not implemented on this platform: #{$!}"
+      omit "UNIXSocket.pair(:SEQPACKET) not implemented on this platform: #{$!}"
     end
   end
 
@@ -338,7 +340,7 @@ class TestSocketNonblock < Test::Unit::TestCase
       begin
         s1.recvmsg_nonblock(4096)
       rescue NotImplementedError
-        skip "recvmsg not implemented on this platform."
+        omit "recvmsg not implemented on this platform."
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end

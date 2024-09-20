@@ -129,14 +129,14 @@
 
 #ifndef HAVE_TYPE_STRUCT_ADDRINFO
 struct addrinfo {
-	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
-	int	ai_family;	/* PF_xxx */
-	int	ai_socktype;	/* SOCK_xxx */
-	int	ai_protocol;	/* 0 or IPPROTO_xxx for IPv4 and IPv6 */
-	size_t	ai_addrlen;	/* length of ai_addr */
-	char	*ai_canonname;	/* canonical name for hostname */
-	struct sockaddr *ai_addr;	/* binary address */
-	struct addrinfo *ai_next;	/* next structure in linked list */
+        int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
+        int	ai_family;	/* PF_xxx */
+        int	ai_socktype;	/* SOCK_xxx */
+        int	ai_protocol;	/* 0 or IPPROTO_xxx for IPv4 and IPv6 */
+        size_t	ai_addrlen;	/* length of ai_addr */
+        char	*ai_canonname;	/* canonical name for hostname */
+        struct sockaddr *ai_addr;	/* binary address */
+        struct addrinfo *ai_next;	/* next structure in linked list */
 };
 #endif
 
@@ -158,18 +158,18 @@ struct addrinfo {
 #endif
 
 extern int getaddrinfo __P((
-	const char *hostname, const char *servname,
-	const struct addrinfo *hints,
-	struct addrinfo **res));
+        const char *hostname, const char *servname,
+        const struct addrinfo *hints,
+        struct addrinfo **res));
 
 extern int getnameinfo __P((
-	const struct sockaddr *sa,
-	socklen_t salen,
-	char *host,
-	socklen_t hostlen,
-	char *serv,
-	socklen_t servlen,
-	int flags));
+        const struct sockaddr *sa,
+        socklen_t salen,
+        char *host,
+        socklen_t hostlen,
+        char *serv,
+        socklen_t servlen,
+        int flags));
 
 extern void freehostent __P((struct hostent *));
 extern void freeaddrinfo __P((struct addrinfo *));

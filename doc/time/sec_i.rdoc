@@ -1,1 +1,0 @@
-- +isec_i+ is the integer number of seconds in the range <tt>0..60</tt>.

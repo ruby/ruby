@@ -2,7 +2,7 @@
 
 require "test_helper"
 
-class Test<%= config[:constant_name] %> < Minitest::Test
+class <%= config[:minitest_constant_name] %> < Minitest::Test
   def test_that_it_has_a_version_number
     refute_nil ::<%= config[:constant_name] %>::VERSION
   end

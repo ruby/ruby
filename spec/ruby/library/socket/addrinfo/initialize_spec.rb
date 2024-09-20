@@ -91,7 +91,7 @@ describe "Addrinfo#initialize" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
-      it "returns the 0 socket type" do
+      it "returns the specified socket type" do
         @addrinfo.socktype.should == Socket::SOCK_STREAM
       end
 

@@ -18,12 +18,6 @@ describe "String#unpack with format 'P'" do
     -> { packed.to_sym.to_s.unpack("P5") }.should raise_error(ArgumentError, /no associated pointer/)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "taints the unpacked string" do
-      ["hello"].pack("P").unpack("P5").first.tainted?.should be_true
-    end
-  end
-
   it "reads as many characters as specified" do
     ["hello"].pack("P").unpack("P1").should == ["h"]
   end
@@ -46,11 +40,5 @@ describe "String#unpack with format 'p'" do
     packed.unpack("p").should == ["hello"]
     packed.dup.unpack("p").should == ["hello"]
     -> { packed.to_sym.to_s.unpack("p") }.should raise_error(ArgumentError, /no associated pointer/)
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints the unpacked string" do
-      ["hello"].pack("p").unpack("p").first.tainted?.should be_true
-    end
   end
 end

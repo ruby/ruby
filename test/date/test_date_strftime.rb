@@ -125,7 +125,7 @@ class TestDateStrftime < Test::Unit::TestCase
 
   def test_strftime__3_2
     s = Time.now.strftime('%G')
-    skip if s.empty? || s == '%G'
+    omit if s.empty? || s == '%G'
     (Date.new(1970,1,1)..Date.new(2037,12,31)).each do |d|
       t = Time.utc(d.year,d.mon,d.mday)
       assert_equal(t.strftime('%G'), d.strftime('%G'))

@@ -7,12 +7,13 @@
 
 = Licence
   This program is licensed under the same licence as Ruby.
-  (See the file 'LICENCE'.)
+  (See the file 'COPYING'.)
 =end
 
 require 'openssl.so'
 
 require_relative 'openssl/bn'
+require_relative 'openssl/asn1'
 require_relative 'openssl/pkey'
 require_relative 'openssl/cipher'
 require_relative 'openssl/digest'

@@ -1,0 +1,30 @@
+Returns the offset (in bytes) of the beginning of the specified match.
+
+When non-negative integer argument +n+ is given,
+returns the offset of the beginning of the <tt>n</tt>th match:
+
+  m = /(.)(.)(\d+)(\d)/.match("THX1138.")
+  # => #<MatchData "HX1138" 1:"H" 2:"X" 3:"113" 4:"8">
+  m[0]       # => "HX1138"
+  m.bytebegin(0) # => 1
+  m[3]       # => "113"
+  m.bytebegin(3) # => 3
+
+  m = /(т)(е)(с)/.match('тест')
+  # => #<MatchData "тес" 1:"т" 2:"е" 3:"с">
+  m[0]       # => "тес"
+  m.bytebegin(0) # => 0
+  m[3]       # => "с"
+  m.bytebegin(3) # => 4
+
+When string or symbol argument +name+ is given,
+returns the offset of the beginning for the named match:
+
+  m = /(?<foo>.)(.)(?<bar>.)/.match("hoge")
+  # => #<MatchData "hog" foo:"h" bar:"g">
+  m[:foo]        # => "h"
+  m.bytebegin('foo') # => 0
+  m[:bar]        # => "g"
+  m.bytebegin(:bar)  # => 2
+
+Related: MatchData#byteend, MatchData#byteoffset.

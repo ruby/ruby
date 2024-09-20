@@ -1,0 +1,25 @@
+prelude: |
+  h1, h10, h100, h1000 = [1, 10, 100, 1000].map do |n|
+    h = {kw: 1}
+    n.times{|i| h[i.to_s.to_sym] = i}
+    h
+  end
+  eh = {}
+  def kw(kw: nil, **kws) end
+benchmark:
+  1: |
+    kw(**h1)
+  1_mutable: |
+    kw(**eh, **h1)
+  10: |
+    kw(**h10)
+  10_mutable: |
+    kw(**eh, **h10)
+  100: |
+    kw(**h100)
+  100_mutable: |
+    kw(**eh, **h100)
+  1000: |
+    kw(**h1000)
+  1000_mutable: |
+    kw(**eh, **h1000)

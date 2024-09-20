@@ -6,16 +6,6 @@ describe "Kernel#inspect" do
     Object.new.inspect.should be_an_instance_of(String)
   end
 
-  ruby_version_is ''...'2.7' do
-    it "returns a tainted string if self is tainted" do
-      Object.new.taint.inspect.tainted?.should be_true
-    end
-
-    it "returns an untrusted string if self is untrusted" do
-      Object.new.untrust.inspect.untrusted?.should be_true
-    end
-  end
-
   it "does not call #to_s if it is defined" do
     # We must use a bare Object here
     obj = Object.new

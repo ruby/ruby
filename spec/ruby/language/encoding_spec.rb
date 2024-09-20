@@ -13,15 +13,15 @@ describe "The __ENCODING__ pseudo-variable" do
   end
 
   it "is the evaluated strings's one inside an eval" do
-    eval("__ENCODING__".force_encoding("US-ASCII")).should == Encoding::US_ASCII
-    eval("__ENCODING__".force_encoding("BINARY")).should == Encoding::BINARY
+    eval("__ENCODING__".dup.force_encoding("US-ASCII")).should == Encoding::US_ASCII
+    eval("__ENCODING__".dup.force_encoding("BINARY")).should == Encoding::BINARY
   end
 
   it "is the encoding specified by a magic comment inside an eval" do
-    code = "# encoding: BINARY\n__ENCODING__".force_encoding("US-ASCII")
+    code = "# encoding: BINARY\n__ENCODING__".dup.force_encoding("US-ASCII")
     eval(code).should == Encoding::BINARY
 
-    code = "# encoding: us-ascii\n__ENCODING__".force_encoding("BINARY")
+    code = "# encoding: us-ascii\n__ENCODING__".dup.force_encoding("BINARY")
     eval(code).should == Encoding::US_ASCII
   end
 

@@ -1,0 +1,35 @@
+describe "webmock tests" do
+  before(:each) do
+    WebMock.enable!
+  end
+
+  after(:each) do
+    WebMock.disable!
+  end
+
+  it "port" do
+    port = rand(1000...9999)
+    stub_request(:any, "localhost:#{port}")
+
+    query = Cutlass::FunctionQuery.new(
+      port: port
+    ).call
+
+    expect(WebMock).to have_requested(:post, "localhost:#{port}").
+      with(body: "{}")
+  end
+
+  it "body" do
+    body = { lol: "hi" }
+    port = 8080
+    stub_request(:any, "localhost:#{port}")
+
+    query = Cutlass::FunctionQuery.new(
+      port: port
+      body: body
+    ).call
+
+    expect(WebMock).to have_requested(:post, "localhost:#{port}").
+      with(body: body.to_json)
+  end
+end

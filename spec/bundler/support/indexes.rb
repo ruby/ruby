@@ -14,26 +14,35 @@ module Spec
 
     alias_method :platforms, :platform
 
-    def resolve(args = [])
+    def resolve(args = [], dependency_api_available: true)
       @platforms ||= ["ruby"]
-      deps = []
-      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_s => "locally install gems")
-      source_requirements = { :default => default_source }
+      default_source = instance_double("Bundler::Source::Rubygems", specs: @index, to_s: "locally install gems", dependency_api_available?: dependency_api_available)
+      source_requirements = { default: default_source }
+      base = args[0] || Bundler::SpecSet.new([])
+      base.each {|ls| ls.source = default_source }
+      gem_version_promoter = args[1] || Bundler::GemVersionPromoter.new
+      originally_locked = args[2] || Bundler::SpecSet.new([])
+      unlock = args[3] || []
       @deps.each do |d|
-        source_requirements[d.name] = d.source = default_source
-        @platforms.each do |p|
-          deps << Bundler::DepProxy.get_proxy(d, p)
-        end
+        name = d.name
+        source_requirements[name] = d.source = default_source
       end
-      args[0] ||= [] # base
-      args[1] ||= Bundler::GemVersionPromoter.new # gem_version_promoter
-      args[2] ||= [] # additional_base_requirements
-      args[3] ||= @platforms # platforms
-      Bundler::Resolver.resolve(deps, source_requirements, *args)
+      packages = Bundler::Resolver::Base.new(source_requirements, @deps, base, @platforms, locked_specs: originally_locked, unlock: unlock)
+      Bundler::Resolver.new(packages, gem_version_promoter).start
+    end
+
+    def should_not_resolve
+      expect { resolve }.to raise_error(Bundler::GemNotFound)
     end
 
     def should_resolve_as(specs)
       got = resolve
+      got = got.map(&:full_name).sort
+      expect(got).to eq(specs.sort)
+    end
+
+    def should_resolve_without_dependency_api(specs)
+      got = resolve(dependency_api_available: false)
       got = got.map(&:full_name).sort
       expect(got).to eq(specs.sort)
     end
@@ -44,13 +53,6 @@ module Spec
       specs.each do |s|
         expect(got).to include(s)
       end
-    end
-
-    def should_conflict_on(names)
-      got = resolve
-      raise "The resolve succeeded with: #{got.map(&:full_name).sort.inspect}"
-    rescue Bundler::VersionConflict => e
-      expect(Array(names).sort).to eq(e.conflicts.sort)
     end
 
     def gem(*args, &blk)
@@ -66,18 +68,17 @@ module Spec
     def should_conservative_resolve_and_include(opts, unlock, specs)
       # empty unlock means unlock all
       opts = Array(opts)
-      search = Bundler::GemVersionPromoter.new(@locked, unlock).tap do |s|
+      search = Bundler::GemVersionPromoter.new.tap do |s|
         s.level = opts.first
         s.strict = opts.include?(:strict)
-        s.prerelease_specified = Hash[@deps.map {|d| [d.name, d.requirement.prerelease?] }]
       end
-      should_resolve_and_include specs, [@base, search]
+      should_resolve_and_include specs, [@base, search, @locked, unlock]
     end
 
     def an_awesome_index
       build_index do
-        gem "rack", %w[0.8 0.9 0.9.1 0.9.2 1.0 1.1]
-        gem "rack-mount", %w[0.4 0.5 0.5.1 0.5.2 0.6]
+        gem "myrack", %w[0.8 0.9 0.9.1 0.9.2 1.0 1.1]
+        gem "myrack-mount", %w[0.4 0.5 0.5.1 0.5.2 0.6]
 
         # --- Pre-release support
         gem "RubyGems\0", ["1.3.2"]
@@ -88,10 +89,10 @@ module Spec
           gem "actionpack", version do
             dep "activesupport", version
             if version >= v("3.0.0.beta")
-              dep "rack", "~> 1.1"
-              dep "rack-mount", ">= 0.5"
-            elsif version > v("2.3")   then dep "rack", "~> 1.0.0"
-            elsif version > v("2.0.0") then dep "rack", "~> 0.9.0"
+              dep "myrack", "~> 1.1"
+              dep "myrack-mount", ">= 0.5"
+            elsif version > v("2.3")   then dep "myrack", "~> 1.0.0"
+            elsif version > v("2.0.0") then dep "myrack", "~> 0.9.0"
             end
           end
           gem "activerecord", version do
@@ -126,7 +127,7 @@ module Spec
             next if version == v("1.4.2.1") && platform != pl("x86-mswin32")
             next if version == v("1.4.2") && platform == pl("x86-mswin32")
             gem "nokogiri", version, platform do
-              dep "weakling", ">= 0.0.3" if platform =~ pl("java")
+              dep "weakling", ">= 0.0.3" if platform =~ pl("java") # rubocop:disable Performance/RegexpMatch
             end
           end
         end
@@ -303,7 +304,7 @@ module Spec
       end
     end
 
-    def a_unresovable_child_index
+    def a_unresolvable_child_index
       build_index do
         gem "json", %w[1.8.0]
 
@@ -366,7 +367,7 @@ module Spec
 
     def a_circular_index
       build_index do
-        gem "rack", "1.0.1"
+        gem "myrack", "1.0.1"
         gem("foo", "0.2.6") do
           dep "bar", ">= 0"
         end

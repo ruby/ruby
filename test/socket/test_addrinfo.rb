@@ -103,7 +103,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   end
 
   def test_error_message
-    e = assert_raise_with_message(SocketError, /getaddrinfo/) do
+    e = assert_raise_with_message(Socket::ResolutionError, /getaddrinfo/) do
       Addrinfo.ip("...")
     end
     m = e.message
@@ -357,7 +357,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     ai = Addrinfo.unix("/testdir/sock").family_addrinfo("/testdir/sock2")
     assert_equal("/testdir/sock2", ai.unix_path)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
-    assert_raise(SocketError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
+    assert_raise(Socket::ResolutionError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
   end
 
   def random_port
@@ -373,8 +373,8 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 
   def errors_addrinuse
     errs = [Errno::EADDRINUSE]
-    # MinGW fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
-    errs << Errno::EACCES if /mingw/ =~ RUBY_PLATFORM
+    # Windows fails with "Errno::EACCES: Permission denied - bind(2) for 0.0.0.0:49721"
+    errs << Errno::EACCES if /mingw|mswin/ =~ RUBY_PLATFORM
     errs
   end
 
@@ -588,7 +588,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 	      assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
             rescue Test::Unit::AssertionFailedError
               if /aix/ =~ RUBY_PLATFORM
-                skip "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
+                omit "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
               end
               raise $!
             end

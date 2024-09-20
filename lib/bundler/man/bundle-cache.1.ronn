@@ -5,10 +5,12 @@ bundle-cache(1) -- Package your needed `.gem` files into your application
 
 `bundle cache`
 
+alias: `package`, `pack`
+
 ## DESCRIPTION
 
 Copy all of the `.gem` files needed to run the application into the
-`vendor/cache` directory. In the future, when running [bundle install(1)][bundle-install],
+`vendor/cache` directory. In the future, when running [`bundle install(1)`](bundle-install.1.html),
 use the gems in the cache in preference to the ones on `rubygems.org`.
 
 ## GIT AND PATH GEMS
@@ -27,7 +29,7 @@ bundler configuration.
 
 ## REMOTE FETCHING
 
-By default, if you run `bundle install(1)`](bundle-install.1.html) after running
+By default, if you run [`bundle install(1)`](bundle-install.1.html) after running
 [bundle cache(1)](bundle-cache.1.html), bundler will still connect to `rubygems.org`
 to check whether a platform-specific gem exists for any of the gems
 in `vendor/cache`.
@@ -70,3 +72,8 @@ By default, [bundle cache(1)](bundle-cache.1.html) fetches and also
 installs the gems to the default location. To package the
 dependencies to `vendor/cache` without installing them to the
 local install location, you can run `bundle cache --no-install`.
+
+## HISTORY
+
+In Bundler 2.1, `cache` took in the functionalities of `package` and now
+`package` and `pack` are aliases of `cache`.

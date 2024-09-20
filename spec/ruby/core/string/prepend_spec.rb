@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
@@ -32,16 +33,6 @@ describe "String#prepend" do
     a = " world"
     a.prepend StringSpecs::MyString.new("hello")
     a.should == "hello world"
-  end
-
-  ruby_version_is ''...'2.7' do
-    it "taints self if other is tainted" do
-      x = "x"
-      x.prepend("".taint).tainted?.should be_true
-
-      x = "x"
-      x.prepend("y".taint).tainted?.should be_true
-    end
   end
 
   it "takes multiple arguments" do

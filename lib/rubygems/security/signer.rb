@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Basic OpenSSL-based package signing class.
 
@@ -42,7 +43,7 @@ class Gem::Security::Signer
   def self.re_sign_cert(expired_cert, expired_cert_path, private_key)
     return unless expired_cert.not_after < Time.now
 
-    expiry = expired_cert.not_after.strftime('%Y%m%d%H%M%S')
+    expiry = expired_cert.not_after.strftime("%Y%m%d%H%M%S")
     expired_cert_file = "#{File.basename(expired_cert_path)}.expired.#{expiry}"
     new_expired_cert_path = File.join(Gem.user_home, ".gem", expired_cert_file)
 
@@ -105,7 +106,7 @@ class Gem::Security::Signer
   # this value is preferred, otherwise the subject is used.
 
   def extract_name(cert) # :nodoc:
-    subject_alt_name = cert.extensions.find {|e| 'subjectAltName' == e.oid }
+    subject_alt_name = cert.extensions.find {|e| e.oid == "subjectAltName" }
 
     if subject_alt_name
       /\Aemail:/ =~ subject_alt_name.value # rubocop:disable Performance/StartWith
@@ -139,9 +140,9 @@ class Gem::Security::Signer
   def sign(data)
     return unless @key
 
-    raise Gem::Security::Exception, 'no certs provided' if @cert_chain.empty?
+    raise Gem::Security::Exception, "no certs provided" if @cert_chain.empty?
 
-    if @cert_chain.length == 1 and @cert_chain.last.not_after < Time.now
+    if @cert_chain.length == 1 && @cert_chain.last.not_after < Time.now
       alert("Your certificate has expired, trying to re-sign it...")
 
       re_sign_key(
@@ -174,15 +175,23 @@ class Gem::Security::Signer
     old_cert = @cert_chain.last
 
     disk_cert_path = File.join(Gem.default_cert_path)
-    disk_cert = File.read(disk_cert_path) rescue nil
+    disk_cert = begin
+                  File.read(disk_cert_path)
+                rescue StandardError
+                  nil
+                end
 
     disk_key_path = File.join(Gem.default_key_path)
-    disk_key = OpenSSL::PKey.read(File.read(disk_key_path), @passphrase) rescue nil
+    disk_key = begin
+                 OpenSSL::PKey.read(File.read(disk_key_path), @passphrase)
+               rescue StandardError
+                 nil
+               end
 
     return unless disk_key
 
     if disk_key.to_pem == @key.to_pem && disk_cert == old_cert.to_pem
-      expiry = old_cert.not_after.strftime('%Y%m%d%H%M%S')
+      expiry = old_cert.not_after.strftime("%Y%m%d%H%M%S")
       old_cert_file = "gem-public_cert.pem.expired.#{expiry}"
       old_cert_path = File.join(Gem.user_home, ".gem", old_cert_file)
 

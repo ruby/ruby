@@ -26,7 +26,7 @@
 
 /**
  * Wraps  (or simulates)  `[[nodiscard]]`.  In  C++  (at least  since C++20)  a
- * nodiscard attribute can  have a message why the result  shall not be ignoed.
+ * nodiscard attribute can  have a message why the result shall not be ignored.
  * However GCC attribute and SAL annotation cannot take them.
  */
 #if RBIMPL_HAS_CPP_ATTRIBUTE(nodiscard)

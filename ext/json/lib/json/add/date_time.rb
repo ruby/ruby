@@ -6,9 +6,7 @@ require 'date'
 
 class DateTime
 
-  # Deserializes JSON string by converting year <tt>y</tt>, month <tt>m</tt>,
-  # day <tt>d</tt>, hour <tt>H</tt>, minute <tt>M</tt>, second <tt>S</tt>,
-  # offset <tt>of</tt> and Day of Calendar Reform <tt>sg</tt> to DateTime.
+  # See #as_json.
   def self.json_create(object)
     args = object.values_at('y', 'm', 'd', 'H', 'M', 'S')
     of_a, of_b = object['of'].split('/')
@@ -23,8 +21,21 @@ class DateTime
 
   alias start sg unless method_defined?(:start)
 
-  # Returns a hash, that will be turned into a JSON object and represent this
-  # object.
+  # Methods <tt>DateTime#as_json</tt> and +DateTime.json_create+ may be used
+  # to serialize and deserialize a \DateTime object;
+  # see Marshal[rdoc-ref:Marshal].
+  #
+  # \Method <tt>DateTime#as_json</tt> serializes +self+,
+  # returning a 2-element hash representing +self+:
+  #
+  #   require 'json/add/datetime'
+  #   x = DateTime.now.as_json
+  #   # => {"json_class"=>"DateTime", "y"=>2023, "m"=>11, "d"=>21, "sg"=>2299161.0}
+  #
+  # \Method +JSON.create+ deserializes such a hash, returning a \DateTime object:
+  #
+  #   DateTime.json_create(x) # BUG? Raises Date::Error "invalid date"
+  #
   def as_json(*)
     {
       JSON.create_id => self.class.name,
@@ -39,9 +50,15 @@ class DateTime
     }
   end
 
-  # Stores class name (DateTime) with Julian year <tt>y</tt>, month <tt>m</tt>,
-  # day <tt>d</tt>, hour <tt>H</tt>, minute <tt>M</tt>, second <tt>S</tt>,
-  # offset <tt>of</tt> and Day of Calendar Reform <tt>sg</tt> as JSON string
+  # Returns a JSON string representing +self+:
+  #
+  #   require 'json/add/datetime'
+  #   puts DateTime.now.to_json
+  #
+  # Output:
+  #
+  #   {"json_class":"DateTime","y":2023,"m":11,"d":21,"sg":2299161.0}
+  #
   def to_json(*args)
     as_json.to_json(*args)
   end

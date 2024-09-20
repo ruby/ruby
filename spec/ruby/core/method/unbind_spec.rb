@@ -27,8 +27,16 @@ describe "Method#unbind" do
       @string.should =~ /MethodSpecs::MyMod/
     end
 
-    it "returns a String containing the Module the method is referenced from" do
-      @string.should =~ /MethodSpecs::MySub/
+    ruby_version_is ""..."3.2" do
+      it "returns a String containing the Module the method is referenced from" do
+        @string.should =~ /MethodSpecs::MySub/
+      end
+    end
+
+    ruby_version_is "3.2" do
+      it "returns a String containing the Module the method is referenced from" do
+        @string.should =~ /MethodSpecs::MyMod/
+      end
     end
   end
 

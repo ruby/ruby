@@ -51,18 +51,12 @@ VALUE string_spec_rb_str_set_len_RSTRING_LEN(VALUE self, VALUE str, VALUE len) {
   return INT2FIX(RSTRING_LEN(str));
 }
 
-VALUE rb_fstring(VALUE str); /* internal.h, used in ripper */
-
-VALUE string_spec_rb_str_fstring(VALUE self, VALUE str) {
-  return rb_fstring(str);
-}
-
 VALUE string_spec_rb_str_buf_new(VALUE self, VALUE len, VALUE str) {
   VALUE buf;
 
   buf = rb_str_buf_new(NUM2LONG(len));
 
-  if(RTEST(str)) {
+  if (RTEST(str)) {
     snprintf(RSTRING_PTR(buf), NUM2LONG(len), "%s", RSTRING_PTR(str));
   }
 
@@ -85,6 +79,10 @@ VALUE string_spec_rb_str_tmp_new(VALUE self, VALUE len) {
 
 VALUE string_spec_rb_str_tmp_new_klass(VALUE self, VALUE len) {
   return RBASIC_CLASS(rb_str_tmp_new(NUM2LONG(len)));
+}
+
+VALUE string_spec_rb_str_buf_append(VALUE self, VALUE str, VALUE two) {
+  return rb_str_buf_append(str, two);
 }
 
 VALUE string_spec_rb_str_buf_cat(VALUE self, VALUE str) {
@@ -125,7 +123,7 @@ VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
 
   from_enc = rb_to_encoding(from);
 
-  if(NIL_P(to)) {
+  if (NIL_P(to)) {
     to_enc = 0;
   } else {
     to_enc = rb_to_encoding(to);
@@ -135,14 +133,13 @@ VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
 }
 
 VALUE string_spec_rb_str_conv_enc_opts(VALUE self, VALUE str, VALUE from, VALUE to,
-                                       VALUE ecflags, VALUE ecopts)
-{
+                                       VALUE ecflags, VALUE ecopts) {
   rb_encoding* from_enc;
   rb_encoding* to_enc;
 
   from_enc = rb_to_encoding(from);
 
-  if(NIL_P(to)) {
+  if (NIL_P(to)) {
     to_enc = 0;
   } else {
     to_enc = rb_to_encoding(to);
@@ -196,7 +193,7 @@ VALUE string_spec_rb_str_new_offset(VALUE self, VALUE str, VALUE offset, VALUE l
 }
 
 VALUE string_spec_rb_str_new2(VALUE self, VALUE str) {
-  if(NIL_P(str)) {
+  if (NIL_P(str)) {
     return rb_str_new2("");
   } else {
     return rb_str_new2(RSTRING_PTR(str));
@@ -212,7 +209,7 @@ VALUE string_spec_rb_str_export_to_enc(VALUE self, VALUE str, VALUE enc) {
 }
 
 VALUE string_spec_rb_str_new_cstr(VALUE self, VALUE str) {
-  if(NIL_P(str)) {
+  if (NIL_P(str)) {
     return rb_str_new_cstr("");
   } else {
     return rb_str_new_cstr(RSTRING_PTR(str));
@@ -251,16 +248,7 @@ VALUE string_spec_rb_str_new5(VALUE self, VALUE str, VALUE ptr, VALUE len) {
   return rb_str_new5(str, RSTRING_PTR(ptr), FIX2INT(len));
 }
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(__clang__) && defined(__has_warning)
-# if __has_warning("-Wdeprecated-declarations")
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
-# endif
-#endif
-
+#ifndef RUBY_VERSION_IS_3_2
 VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
   return rb_tainted_str_new(RSTRING_PTR(str), FIX2INT(len));
 }
@@ -268,13 +256,6 @@ VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
 VALUE string_spec_rb_tainted_str_new2(VALUE self, VALUE str) {
   return rb_tainted_str_new2(RSTRING_PTR(str));
 }
-
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
-# pragma GCC diagnostic pop
-#elif defined(__clang__) && defined(__has_warning)
-# if __has_warning("-Wdeprecated-declarations")
-#  pragma clang diagnostic pop
-# endif
 #endif
 
 VALUE string_spec_rb_str_plus(VALUE self, VALUE str1, VALUE str2) {
@@ -384,7 +365,7 @@ VALUE string_spec_RSTRING_PTR_set(VALUE self, VALUE str, VALUE i, VALUE chr) {
 
 VALUE string_spec_RSTRING_PTR_after_funcall(VALUE self, VALUE str, VALUE cb) {
   /* Silence gcc 4.3.2 warning about computed value not used */
-  if(RSTRING_PTR(str)) { /* force it out */
+  if (RSTRING_PTR(str)) { /* force it out */
     rb_funcall(cb, rb_intern("call"), 1, str);
   }
 
@@ -429,6 +410,12 @@ VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
   rb_str_set_len(str, 53);
   close(fd);
   return capacities;
+}
+
+VALUE string_spec_RSTRING_PTR_null_terminate(VALUE self, VALUE str, VALUE min_length) {
+  char* ptr = RSTRING_PTR(str);
+  char* end = ptr + RSTRING_LEN(str);
+  return rb_str_new(end, FIX2LONG(min_length));
 }
 
 VALUE string_spec_StringValue(VALUE self, VALUE str) {
@@ -561,7 +548,7 @@ static VALUE string_spec_rb_utf8_str_new_cstr(VALUE self) {
 }
 
 PRINTF_ARGS(static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...), 2, 3);
-static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...){
+static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   VALUE result = rb_str_vcatf(mesg, fmt, ap);
@@ -585,11 +572,19 @@ static VALUE string_spec_rb_str_unlocktmp(VALUE self, VALUE str) {
   return rb_str_unlocktmp(str);
 }
 
+static VALUE string_spec_rb_enc_interned_str_cstr(VALUE self, VALUE str, VALUE enc) {
+  rb_encoding *e = NIL_P(enc) ? 0 : rb_to_encoding(enc);
+  return rb_enc_interned_str_cstr(RSTRING_PTR(str), e);
+}
+
+static VALUE string_spec_rb_str_to_interned_str(VALUE self, VALUE str) {
+  return rb_str_to_interned_str(str);
+}
+
 void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
   rb_define_method(cls, "rb_cstr_to_inum", string_spec_rb_cstr_to_inum, 3);
-  rb_define_method(cls, "rb_fstring", string_spec_rb_str_fstring, 1);
   rb_define_method(cls, "rb_str2inum", string_spec_rb_str2inum, 2);
   rb_define_method(cls, "rb_str_append", string_spec_rb_str_append, 2);
   rb_define_method(cls, "rb_str_buf_new", string_spec_rb_str_buf_new, 2);
@@ -597,6 +592,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_buf_new2", string_spec_rb_str_buf_new2, 0);
   rb_define_method(cls, "rb_str_tmp_new", string_spec_rb_str_tmp_new, 1);
   rb_define_method(cls, "rb_str_tmp_new_klass", string_spec_rb_str_tmp_new_klass, 1);
+  rb_define_method(cls, "rb_str_buf_append", string_spec_rb_str_buf_append, 2);
   rb_define_method(cls, "rb_str_buf_cat", string_spec_rb_str_buf_cat, 1);
   rb_define_method(cls, "rb_enc_str_buf_cat", string_spec_rb_enc_str_buf_cat, 3);
   rb_define_method(cls, "rb_str_cat", string_spec_rb_str_cat, 1);
@@ -629,8 +625,10 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_new3", string_spec_rb_str_new3, 1);
   rb_define_method(cls, "rb_str_new4", string_spec_rb_str_new4, 1);
   rb_define_method(cls, "rb_str_new5", string_spec_rb_str_new5, 3);
+#ifndef RUBY_VERSION_IS_3_2
   rb_define_method(cls, "rb_tainted_str_new", string_spec_rb_tainted_str_new, 2);
   rb_define_method(cls, "rb_tainted_str_new2", string_spec_rb_tainted_str_new2, 1);
+#endif
   rb_define_method(cls, "rb_str_plus", string_spec_rb_str_plus, 2);
   rb_define_method(cls, "rb_str_times", string_spec_rb_str_times, 2);
   rb_define_method(cls, "rb_str_modify_expand", string_spec_rb_str_modify_expand, 2);
@@ -653,6 +651,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "RSTRING_PTR_after_funcall", string_spec_RSTRING_PTR_after_funcall, 2);
   rb_define_method(cls, "RSTRING_PTR_after_yield", string_spec_RSTRING_PTR_after_yield, 1);
   rb_define_method(cls, "RSTRING_PTR_read", string_spec_RSTRING_PTR_read, 2);
+  rb_define_method(cls, "RSTRING_PTR_null_terminate", string_spec_RSTRING_PTR_null_terminate, 2);
   rb_define_method(cls, "StringValue", string_spec_StringValue, 1);
   rb_define_method(cls, "SafeStringValue", string_spec_SafeStringValue, 1);
   rb_define_method(cls, "rb_str_hash", string_spec_rb_str_hash, 1);
@@ -682,6 +681,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_catf", string_spec_rb_str_catf, 1);
   rb_define_method(cls, "rb_str_locktmp", string_spec_rb_str_locktmp, 1);
   rb_define_method(cls, "rb_str_unlocktmp", string_spec_rb_str_unlocktmp, 1);
+  rb_define_method(cls, "rb_enc_interned_str_cstr", string_spec_rb_enc_interned_str_cstr, 2);
+  rb_define_method(cls, "rb_str_to_interned_str", string_spec_rb_str_to_interned_str, 1);
 }
 
 #ifdef __cplusplus

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require File.expand_path '../xref_test_case', __FILE__
+require_relative 'xref_test_case'
 
 class TestRDocStore < XrefTestCase
 
@@ -319,8 +319,7 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_friendly_path
-    @orig_xdg_data_home = ENV['XDG_DATA_HOME']
-    ENV.delete('XDG_DATA_HOME')
+    @orig_xdg_data_home = ENV.delete('XDG_DATA_HOME')
 
     @s.path = @tmpdir
     @s.type = nil
@@ -374,9 +373,9 @@ class TestRDocStore < XrefTestCase
     assert_equal [@mod],                s.all_modules.sort
     assert_equal [@page, @top_level],   s.all_files.sort
 
-    methods = s.all_classes_and_modules.map do |mod|
+    methods = s.all_classes_and_modules.flat_map do |mod|
       mod.method_list
-    end.flatten.sort
+    end.sort
 
     _meth_bang_alias = RDoc::AnyMethod.new nil, 'method_bang'
     _meth_bang_alias.parent = @klass
@@ -389,9 +388,9 @@ class TestRDocStore < XrefTestCase
 
     assert_equal @klass, methods.last.parent
 
-    attributes = s.all_classes_and_modules.map do |mod|
+    attributes = s.all_classes_and_modules.flat_map do |mod|
       mod.attributes
-    end.flatten.sort
+    end.sort
 
     assert_equal [@attr], attributes
 

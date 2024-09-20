@@ -33,7 +33,11 @@ pass_passed_block_handler(rb_execution_context_t *ec)
 #endif
 
 #include <stdio.h>
-#include <setjmp.h>
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+# include "wasm/setjmp.h"
+#else
+# include <setjmp.h>
+#endif
 
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
@@ -91,14 +95,6 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 
 #include <sys/stat.h>
 
-
-#define SAVE_ROOT_JMPBUF(th, stmt) do \
-  if (true) { \
-      stmt; \
-  } \
-  else if (th) { /* suppress unused-variable warning */ \
-  } while (0)
-
 #define EC_PUSH_TAG(ec) do { \
   rb_execution_context_t * const _ec = (ec); \
   struct rb_vm_tag _tag; \
@@ -106,9 +102,11 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   _tag.tag = Qundef; \
   _tag.prev = _ec->tag; \
   _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
+  rb_vm_tag_jmpbuf_init(&_tag.buf); \
 
 #define EC_POP_TAG() \
   _ec->tag = _tag.prev; \
+  rb_vm_tag_jmpbuf_deinit(&_tag.buf); \
 } while (0)
 
 #define EC_TMPPOP_TAG() \
@@ -147,6 +145,8 @@ rb_ec_tag_state(const rb_execution_context_t *ec)
     enum ruby_tag_type state = tag->state;
     tag->state = TAG_NONE;
     rb_ec_vm_lock_rec_check(ec, tag->lock_rec);
+    RBIMPL_ASSUME(state > TAG_NONE);
+    RBIMPL_ASSUME(state <= TAG_FATAL);
     return state;
 }
 
@@ -154,8 +154,9 @@ NORETURN(static inline void rb_ec_tag_jump(const rb_execution_context_t *ec, enu
 static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
+    RUBY_ASSERT(st > TAG_NONE && st <= TAG_FATAL, ": Invalid tag jump: %d", (int)st);
     ec->tag->state = st;
-    ruby_longjmp(ec->tag->buf, 1);
+    ruby_longjmp(RB_VM_TAG_JMPBUF_GET(ec->tag->buf), 1);
 }
 
 /*
@@ -163,7 +164,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
   [ISO/IEC 9899:1999] 7.13.1.1
 */
 #define EC_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
+    (UNLIKELY(ruby_setjmp(RB_VM_TAG_JMPBUF_GET(_tag.buf))) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
 #define EC_JUMP_TAG(ec, st) rb_ec_tag_jump(ec, st)
 
@@ -182,7 +183,8 @@ CREF_CLASS(const rb_cref_t *cref)
 {
     if (CREF_SINGLETON(cref)) {
         return CLASS_OF(cref->klass_or_self);
-    } else {
+    }
+    else {
         return cref->klass_or_self;
     }
 }
@@ -192,7 +194,8 @@ CREF_CLASS_FOR_DEFINITION(const rb_cref_t *cref)
 {
     if (CREF_SINGLETON(cref)) {
         return rb_singleton_class(cref->klass_or_self);
-    } else {
+    }
+    else {
         return cref->klass_or_self;
     }
 }
@@ -281,15 +284,15 @@ VALUE rb_make_exception(int argc, const VALUE *argv);
 
 NORETURN(void rb_method_name_error(VALUE, VALUE));
 
-void rb_fiber_start(rb_fiber_t*);
+NORETURN(void rb_fiber_start(rb_fiber_t*));
 
 NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
-NORETURN(void rb_vm_jump_tag_but_local_jump(int));
+NORETURN(void rb_vm_jump_tag_but_local_jump(enum ruby_tag_type));
 
-VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
+VALUE rb_vm_make_jump_tag_but_local_jump(enum ruby_tag_type state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
@@ -316,18 +319,6 @@ rb_char_next(const char *p)
 # else
 #  define CharNext(p) ((p) + 1)
 # endif
-#endif
-
-#if defined DOSISH || defined __CYGWIN__
-static inline void
-translit_char(char *p, int from, int to)
-{
-    while (*p) {
-	if ((unsigned char)*p == from)
-	    *p = to;
-	p = CharNext(p);
-    }
-}
 #endif
 
 #endif /* RUBY_EVAL_INTERN_H */

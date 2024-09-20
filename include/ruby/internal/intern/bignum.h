@@ -51,7 +51,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_big_new(size_t len, int sign);
 
 /**
- * Queries if  the passed bignum  instance is a  "bigzro".  What is  a bigzero?
+ * Queries if  the passed bignum  instance is a  "bigzero".  What is a bigzero?
  * Well, bignums  are for very big  integers, but can also  represent tiny ones
  * like -1,  0, 1.   Bigzero are  instances of bignums  whose values  are zero.
  * Knowing if a bignum is bigzero can  be handy on occasions, like for instance
@@ -793,7 +793,7 @@ size_t rb_absint_size(VALUE val, int *nlz_bits_ret);
  * @exception   rb_eTypeError  `val` doesn't respond to `#to_int`.
  * @retval      (size_t)-1     Overflowed.
  * @retval      otherwise
-                `((val_numbits * CHAR_BIT + word_numbits - 1) / word_numbits)`,
+ *              `((val_numbits * CHAR_BIT + word_numbits - 1) / word_numbits)`,
  *              where val_numbits is the number of bits of `abs(val)`.
  * @post        If  `nlz_bits_ret` is  not  `NULL` and  there  is no  overflow,
  *              `(return_value * word_numbits - val_numbits)`   is  stored   in

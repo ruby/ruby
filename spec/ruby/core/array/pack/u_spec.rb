@@ -18,6 +18,16 @@ describe "Array#pack with format 'u'" do
   it_behaves_like :array_pack_arguments, 'u'
   it_behaves_like :array_pack_taint, 'u'
 
+  it "calls #to_str to convert an Object to a String" do
+    obj = mock("pack u string")
+    obj.should_receive(:to_str).and_return("``abcdef")
+    [obj].pack("u*").should == "(8&!A8F-D968`\n"
+  end
+
+  it "will not implicitly convert a number to a string" do
+    -> { [0].pack('u') }.should raise_error(TypeError)
+  end
+
   it "encodes an empty string as an empty string" do
     [""].pack("u").should == ""
   end

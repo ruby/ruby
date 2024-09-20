@@ -1,14 +1,13 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
+require_relative 'shared/dup'
 
 describe "Method#clone" do
-  it "returns a copy of the method" do
-    m1 = MethodSpecs::Methods.new.method(:foo)
-    m2 = m1.clone
+  it_behaves_like :method_dup, :clone
 
-    m1.should == m2
-    m1.should_not equal(m2)
-
-    m1.call.should == m2.call
+  it "preserves frozen status" do
+    method = Object.new.method(:method)
+    method.freeze
+    method.frozen?.should == true
+    method.clone.frozen?.should == true
   end
 end

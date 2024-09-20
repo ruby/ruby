@@ -1,12 +1,13 @@
 # frozen_string_literal: true
+
 ##
 # An InstalledSpecification represents a gem that is already installed
 # locally.
 
 class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   def ==(other) # :nodoc:
-    self.class === other and
-      @set  == other.set and
+    self.class === other &&
+      @set  == other.set &&
       @spec == other.spec
   end
 
@@ -24,13 +25,13 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
   def installable_platform?
     # BACKCOMPAT If the file is coming out of a specified file, then we
     # ignore the platform. This code can be removed in RG 3.0.
-    return true if @source.kind_of? Gem::Source::SpecificFile
+    return true if @source.is_a? Gem::Source::SpecificFile
 
     super
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[InstalledSpecification', ']' do
+    q.group 2, "[InstalledSpecification", "]" do
       q.breakable
       q.text "name: #{name}"
 
@@ -41,7 +42,7 @@ class Gem::Resolver::InstalledSpecification < Gem::Resolver::SpecSpecification
       q.text "platform: #{platform}"
 
       q.breakable
-      q.text 'dependencies:'
+      q.text "dependencies:"
       q.breakable
       q.pp spec.dependencies
     end

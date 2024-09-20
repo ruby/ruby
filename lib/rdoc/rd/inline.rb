@@ -69,4 +69,3 @@ class RDoc::RD::Inline
   alias to_s rdoc # :nodoc:
 
 end
-

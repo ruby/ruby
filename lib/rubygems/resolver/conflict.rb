@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Used internally to indicate that a dependency conflicted
 # with a spec that would be activated.
@@ -27,9 +28,9 @@ class Gem::Resolver::Conflict
   end
 
   def ==(other) # :nodoc:
-    self.class === other and
-      @dependency == other.dependency and
-      @activated  == other.activated  and
+    self.class === other &&
+      @dependency == other.dependency &&
+      @activated  == other.activated  &&
       @failed_dep == other.failed_dep
   end
 
@@ -54,7 +55,7 @@ class Gem::Resolver::Conflict
     activated   = @activated.spec.full_name
     dependency  = @failed_dep.dependency
     requirement = dependency.requirement
-    alternates  = dependency.matching_specs.map {|spec| spec.full_name }
+    alternates  = dependency.matching_specs.map(&:full_name)
 
     unless alternates.empty?
       matching = <<-MATCHING.chomp
@@ -63,10 +64,7 @@ class Gem::Resolver::Conflict
     %s
       MATCHING
 
-      matching = matching % [
-        dependency,
-        alternates.join(', '),
-      ]
+      matching = format(matching, dependency, alternates.join(", "))
     end
 
     explanation = <<-EXPLANATION
@@ -81,12 +79,7 @@ class Gem::Resolver::Conflict
 %s
     EXPLANATION
 
-    explanation % [
-      activated, requirement,
-      request_path(@activated).reverse.join(", depends on\n    "),
-      request_path(@failed_dep).reverse.join(", depends on\n    "),
-      matching
-    ]
+    format(explanation, activated, requirement, request_path(@activated).reverse.join(", depends on\n    "), request_path(@failed_dep).reverse.join(", depends on\n    "), matching)
   end
 
   ##
@@ -97,21 +90,21 @@ class Gem::Resolver::Conflict
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, '[Dependency conflict: ', ']' do
+    q.group 2, "[Dependency conflict: ", "]" do
       q.breakable
 
-      q.text 'activated '
+      q.text "activated "
       q.pp @activated
 
       q.breakable
-      q.text ' dependency '
+      q.text " dependency "
       q.pp @dependency
 
       q.breakable
       if @dependency == @failed_dep
-        q.text ' failed'
+        q.text " failed"
       else
-        q.text ' failed dependency '
+        q.text " failed dependency "
         q.pp @failed_dep
       end
     end
@@ -131,7 +124,7 @@ class Gem::Resolver::Conflict
 
         current = current.parent
       when Gem::Resolver::DependencyRequest then
-        path << "#{current.dependency}"
+        path << current.dependency.to_s
 
         current = current.requester
       else
@@ -139,7 +132,7 @@ class Gem::Resolver::Conflict
       end
     end
 
-    path = ['user request (gem command or Gemfile)'] if path.empty?
+    path = ["user request (gem command or Gemfile)"] if path.empty?
 
     path
   end

@@ -30,15 +30,14 @@ class Bundler::ConnectionPool
       METHODS.include?(id) || with { |c| c.respond_to?(id, *args) }
     end
 
-    # rubocop:disable Style/MethodMissingSuper
     # rubocop:disable Style/MissingRespondToMissing
-    if ::Gem.ruby_version >= ::Gem::Version.new("3.0.0")
+    if ::RUBY_VERSION >= "3.0.0"
       def method_missing(name, *args, **kwargs, &block)
         with do |connection|
           connection.send(name, *args, **kwargs, &block)
         end
       end
-    elsif ::Gem.ruby_version >= ::Gem::Version.new("2.7.0")
+    elsif ::RUBY_VERSION >= "2.7.0"
       ruby2_keywords def method_missing(name, *args, &block)
         with do |connection|
           connection.send(name, *args, &block)

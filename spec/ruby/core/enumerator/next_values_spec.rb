@@ -11,6 +11,7 @@ describe "Enumerator#next_values" do
       yield :e1, :e2, :e3
       yield nil
       yield
+      yield [:f1, :f2]
     end
 
     @e = o.to_enum
@@ -48,8 +49,13 @@ describe "Enumerator#next_values" do
     @e.next_values.should == []
   end
 
-  it "raises StopIteration if called on a finished enumerator" do
+  it "returns an array of array if yield is called with an array" do
     7.times { @e.next }
+    @e.next_values.should == [[:f1, :f2]]
+  end
+
+  it "raises StopIteration if called on a finished enumerator" do
+    8.times { @e.next }
     -> { @e.next_values }.should raise_error(StopIteration)
   end
 end

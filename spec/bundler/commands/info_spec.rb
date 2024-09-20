@@ -6,21 +6,22 @@ RSpec.describe "bundle info" do
       build_repo2 do
         build_gem "has_metadata" do |s|
           s.metadata = {
-            "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
-            "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+            "bug_tracker_uri" => "https://example.com/user/bestgemever/issues",
+            "changelog_uri" => "https://example.com/user/bestgemever/CHANGELOG.md",
             "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
-            "homepage_uri"      => "https://bestgemever.example.io",
-            "mailing_list_uri"  => "https://groups.example.com/bestgemever",
-            "source_code_uri"   => "https://example.com/user/bestgemever",
-            "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
+            "homepage_uri" => "https://bestgemever.example.io",
+            "mailing_list_uri" => "https://groups.example.com/bestgemever",
+            "source_code_uri" => "https://example.com/user/bestgemever",
+            "wiki_uri" => "https://example.com/user/bestgemever/wiki",
           }
         end
       end
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo2)}"
+        source "https://gem.repo2"
         gem "rails"
         gem "has_metadata"
+        gem "thin"
       G
     end
 
@@ -64,7 +65,7 @@ RSpec.describe "bundle info" do
     end
 
     it "complains if gem not in bundle" do
-      bundle "info missing", :raise_on_error => false
+      bundle "info missing", raise_on_error: false
       expect(err).to eq("Could not find gem 'missing'.")
     end
 
@@ -73,16 +74,16 @@ RSpec.describe "bundle info" do
 
       bundle "info rails --path"
 
-      expect(err).to match(/The gem rails has been deleted/i)
-      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       bundle "info rail --path"
-      expect(err).to match(/The gem rails has been deleted/i)
-      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       bundle "info rails"
-      expect(err).to match(/The gem rails has been deleted/i)
-      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
     context "given a default gem shippped in ruby", :ruby_repo do
@@ -123,6 +124,30 @@ RSpec.describe "bundle info" do
         expect(out).to_not include("Homepage:")
       end
     end
+
+    context "when gem has a reverse dependency on any version" do
+      it "prints the details" do
+        bundle "info myrack"
+
+        expect(out).to include("Reverse Dependencies: \n\t\tthin (1.0) depends on myrack (>= 0)")
+      end
+    end
+
+    context "when gem has a reverse dependency on a specific version" do
+      it "prints the details" do
+        bundle "info actionpack"
+
+        expect(out).to include("Reverse Dependencies: \n\t\trails (2.3.2) depends on actionpack (= 2.3.2)")
+      end
+    end
+
+    context "when gem has no reverse dependencies" do
+      it "excludes the reverse dependencies field from the output" do
+        bundle "info rails"
+
+        expect(out).not_to include("Reverse Dependencies:")
+      end
+    end
   end
 
   context "with a git repo in the Gemfile" do
@@ -132,23 +157,23 @@ RSpec.describe "bundle info" do
 
     it "prints out git info" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo-1.0")}"
       G
       expect(the_bundle).to include_gems "foo 1.0"
 
       bundle "info foo"
-      expect(out).to include("foo (1.0 #{@git.ref_for("master", 6)}")
+      expect(out).to include("foo (1.0 #{@git.ref_for("main", 6)}")
     end
 
-    it "prints out branch names other than master" do
-      update_git "foo", :branch => "omg" do |s|
+    it "prints out branch names other than main" do
+      update_git "foo", branch: "omg" do |s|
         s.write "lib/foo.rb", "FOO = '1.0.omg'"
       end
       @revision = revision_for(lib_path("foo-1.0"))[0...6]
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "omg"
       G
       expect(the_bundle).to include_gems "foo 1.0.omg"
@@ -160,7 +185,7 @@ RSpec.describe "bundle info" do
     it "doesn't print the branch when tied to a ref" do
       sha = revision_for(lib_path("foo-1.0"))
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", :git => "#{lib_path("foo-1.0")}", :ref => "#{sha}"
       G
 
@@ -169,9 +194,9 @@ RSpec.describe "bundle info" do
     end
 
     it "handles when a version is a '-' prerelease" do
-      @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
+      @git = build_git("foo", "1.0.0-beta.1", path: lib_path("foo"))
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
       G
       expect(the_bundle).to include_gems "foo 1.0.0.pre.beta.1"
@@ -184,26 +209,26 @@ RSpec.describe "bundle info" do
   context "with a valid regexp for gem name" do
     it "presents alternatives", :readline do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
-        gem "rack"
-        gem "rack-obama"
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
       G
 
       bundle "info rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>)?\z/)
+      expect(out).to match(/\A1 : myrack\n2 : myrack-obama\n0 : - exit -(\n>|\z)/)
     end
   end
 
   context "with an invalid regexp for gem name" do
     it "does not find the gem" do
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails"
       G
 
       invalid_regexp = "[]"
 
-      bundle "info #{invalid_regexp}", :raise_on_error => false
+      bundle "info #{invalid_regexp}", raise_on_error: false
       expect(err).to include("Could not find gem '#{invalid_regexp}'.")
     end
   end
@@ -213,11 +238,11 @@ RSpec.describe "bundle info" do
       bundle "config without test"
 
       install_gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "https://gem.repo1"
         gem "rails", group: :test
       G
 
-      bundle "info rails", :raise_on_error => false
+      bundle "info rails", raise_on_error: false
       expect(err).to include("Could not find gem 'rails', because it's in the group 'test', configured to be ignored.")
     end
   end

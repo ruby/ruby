@@ -11,17 +11,18 @@ module Bundler
 
     attr_accessor :dependency_names
 
+    attr_reader :checksum_store
+
     def unmet_deps
       specs.unmet_dependency_names
     end
 
-    def version_message(spec)
+    def version_message(spec, locked_spec = nil)
       message = "#{spec.name} #{spec.version}"
       message += " (#{spec.platform})" if spec.platform != Gem::Platform::RUBY && !spec.platform.nil?
 
-      if Bundler.locked_gems
-        locked_spec = Bundler.locked_gems.specs.find {|s| s.name == spec.name }
-        locked_spec_version = locked_spec.version if locked_spec
+      if locked_spec
+        locked_spec_version = locked_spec.version
         if locked_spec_version && spec.version != locked_spec_version
           message += Bundler.ui.add_color(" (was #{locked_spec_version})", version_color(spec.version, locked_spec_version))
         end
@@ -101,7 +102,7 @@ module Bundler
     end
 
     def print_using_message(message)
-      if !message.include?("(was ") && Bundler.feature_flag.suppress_install_using_messages?
+      if !message.include?("(was ")
         Bundler.ui.debug message
       else
         Bundler.ui.info message

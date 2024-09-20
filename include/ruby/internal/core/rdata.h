@@ -37,12 +37,8 @@
 #include "ruby/defines.h"
 
 /** @cond INTERNAL_MACRO */
-#ifdef RUBY_UNTYPED_DATA_WARNING
-# /* Take that. */
-#elif defined(RUBY_EXPORT)
-# define RUBY_UNTYPED_DATA_WARNING 1
-#else
-# define RUBY_UNTYPED_DATA_WARNING 0
+#ifndef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 1
 #endif
 
 #define RBIMPL_DATA_FUNC(f) RBIMPL_CAST((void (*)(void *))(f))
@@ -331,15 +327,6 @@ rb_data_object_get_warning(VALUE obj)
     return rb_data_object_get(obj);
 }
 
-#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-# define rb_data_object_wrap_warning(klass, ptr, mark, free) \
-    RB_GNUC_EXTENSION(                                       \
-        __builtin_choose_expr(                               \
-            __builtin_constant_p(klass) && !(klass),         \
-            rb_data_object_wrap(klass, ptr, mark, free),     \
-            (rb_data_object_wrap_warning)(klass, ptr, mark, free)))
-#endif
-
 /**
  * This is an implementation detail  of #Data_Make_Struct.  People don't use it
  * directly.
@@ -368,30 +355,6 @@ rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     return rb_data_object_wrap(klass, data, dmark, dfree);
 }
-
-RBIMPL_ATTR_DEPRECATED(("by: rb_cObject.  Will be removed in 3.1."))
-RBIMPL_ATTR_PURE()
-/**
- * @private
- *
- * @deprecated  There  once was  a variable  called rb_cData,  which no  longer
- *              exists  today.  This  function is  a function  because we  want
- *              warnings for the usages.
- */
-static inline VALUE
-rb_cData(void)
-{
-    return rb_cObject;
-}
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- */
-#define rb_cData rb_cData()
 
 /** @cond INTERNAL_MACRO */
 #define rb_data_object_wrap_0 rb_data_object_wrap

@@ -4,6 +4,8 @@ class MethodNameCheckTest < Test::Unit::TestCase
   include DidYouMean::TestHelper
 
   class User
+    attr_writer :writer
+    attr_reader :reader
     def friends; end
     def first_name; end
     def descendants; end
@@ -41,28 +43,28 @@ class MethodNameCheckTest < Test::Unit::TestCase
     error = assert_raise(NoMethodError){ @user.flrst_name }
 
     assert_correction :first_name, error.corrections
-    assert_match "Did you mean?  first_name",  error.to_s
+    assert_match "Did you mean?  first_name",  get_message(error)
   end
 
   def test_corrections_include_private_method
     error = assert_raise(NoMethodError){ @user.friend }
 
     assert_correction :friends, error.corrections
-    assert_match "Did you mean?  friends", error.to_s
+    assert_match "Did you mean?  friends", get_message(error)
   end
 
   def test_corrections_include_method_from_module
     error = assert_raise(NoMethodError){ @user.fr0m_module }
 
     assert_correction :from_module, error.corrections
-    assert_match "Did you mean?  from_module", error.to_s
+    assert_match "Did you mean?  from_module", get_message(error)
   end
 
   def test_corrections_include_class_method
     error = assert_raise(NoMethodError){ User.l0ad }
 
     assert_correction :load, error.corrections
-    assert_match "Did you mean?  load", error.to_s
+    assert_match "Did you mean?  load", get_message(error)
   end
 
   def test_private_methods_should_not_be_suggested
@@ -77,7 +79,7 @@ class MethodNameCheckTest < Test::Unit::TestCase
     error = assert_raise(NoMethodError){ @user.call_incorrect_private_method }
 
     assert_correction :raise, error.corrections
-    assert_match "Did you mean?  raise", error.to_s
+    assert_match "Did you mean?  raise", get_message(error)
   end
 
   def test_exclude_methods_on_nil
@@ -104,7 +106,7 @@ class MethodNameCheckTest < Test::Unit::TestCase
       end
     end
 
-    assert_equal 1, error.to_s.scan(/Did you mean/).count
+    assert_equal 1, get_message(error).scan(/Did you mean/).count
   end
 
   def test_does_not_append_suggestions_three_times
@@ -116,7 +118,7 @@ class MethodNameCheckTest < Test::Unit::TestCase
       end
     end
 
-    assert_equal 1, error.to_s.scan(/Did you mean/).count
+    assert_equal 1, get_message(error).scan(/Did you mean/).count
   end
 
   def test_suggests_corrections_on_nested_error
@@ -128,20 +130,36 @@ class MethodNameCheckTest < Test::Unit::TestCase
       end
     end
 
-    assert_equal 1, error.to_s.scan(/Did you mean/).count
+    assert_equal 1, get_message(error).scan(/Did you mean/).count
   end
 
   def test_suggests_yield
     error = assert_raise(NoMethodError) { yeild(1) }
 
     assert_correction :yield, error.corrections
-    assert_match "Did you mean?  yield", error.to_s
+    assert_match "Did you mean?  yield", get_message(error)
   end
 
   def test_does_not_suggest_yield
     error = assert_raise(NoMethodError) { 1.yeild }
 
     assert_correction [], error.corrections
-    assert_not_match(/Did you mean\? +yield/, error.to_s)
+    assert_not_match(/Did you mean\? +yield/, get_message(error))
   end if RUBY_ENGINE != "jruby"
+
+  # Do not suggest `name=` for `name`
+  def test_does_not_suggest_writer
+    error = assert_raise(NoMethodError) { @user.writer }
+
+    assert_correction [], error.corrections
+    assert_not_match(/Did you mean\?  writer=/, get_message(error))
+  end
+
+  # Do not suggest `name` for `name=`
+  def test_does_not_suggest_reader
+    error = assert_raise(NoMethodError) { @user.reader = 1 }
+
+    assert_correction [], error.corrections
+    assert_not_match(/Did you mean\?  reader/, get_message(error))
+  end
 end

@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/quo'
 
 describe "Numeric#quo" do
   it "returns the result of self divided by the given Integer as a Rational" do
@@ -20,7 +19,7 @@ describe "Numeric#quo" do
     -> { 10.quo(0) }.should raise_error(ZeroDivisionError)
     -> { -10.quo(0) }.should raise_error(ZeroDivisionError)
     -> { bignum_value.quo(0) }.should raise_error(ZeroDivisionError)
-    -> { -bignum_value.quo(0) }.should raise_error(ZeroDivisionError)
+    -> { (-bignum_value).quo(0) }.should raise_error(ZeroDivisionError)
   end
 
   it "calls #to_r to convert the object to a Rational" do

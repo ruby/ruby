@@ -10,4 +10,20 @@ benchmark:
     int.finite?
   infinite?: |
     int.infinite?
+  integer_real: |
+    int.real
+  float_real: |
+    flo.real
+  integr_imag: |
+    int.imag
+  float_imag: |
+    flo.imag
+  integer_conj: |
+    int.conj
+  float_conj: |
+    flo.conj
+  integer_numerator: |
+    int.numerator
+  integer_denominator: |
+    int.denominator
 loop_count: 20000000

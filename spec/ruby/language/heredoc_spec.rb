@@ -59,20 +59,10 @@ HERE
     s.encoding.should == Encoding::US_ASCII
   end
 
-  ruby_version_is "2.7" do
-    it 'raises SyntaxError if quoted HEREDOC identifier is ending not on same line' do
-      -> {
-        eval %{<<"HERE\n"\nraises syntax error\nHERE}
-      }.should raise_error(SyntaxError)
-    end
-  end
-
-  ruby_version_is ""..."2.7" do
-    it 'prints a warning if quoted HEREDOC identifier is ending not on same line' do
-      -> {
-        eval %{<<"HERE\n"\nit warns\nHERE}
-      }.should complain(/here document identifier ends with a newline/)
-    end
+  it 'raises SyntaxError if quoted HEREDOC identifier is ending not on same line' do
+    -> {
+      eval %{<<"HERE\n"\nraises syntax error\nHERE}
+    }.should raise_error(SyntaxError)
   end
 
   it "allows HEREDOC with <<~'identifier', allowing to indent identifier and content" do
@@ -115,5 +105,15 @@ HERE
     require_relative 'fixtures/squiggly_heredoc'
     SquigglyHeredocSpecs.least_indented_on_the_first_line_single.should == "a\n  b\n    c\n"
     SquigglyHeredocSpecs.least_indented_on_the_last_line_single.should == "    a\n  b\nc\n"
+  end
+
+  it "reports line numbers inside HEREDOC with method call" do
+    -> {
+      <<-HERE.chomp
+        a
+        b
+        #{c}
+      HERE
+    }.should raise_error(NameError) { |e| e.backtrace[0].should.start_with?("#{__FILE__}:#{__LINE__ - 2}") }
   end
 end

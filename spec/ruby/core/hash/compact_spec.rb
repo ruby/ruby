@@ -18,6 +18,30 @@ describe "Hash#compact" do
     @hash.compact
     @hash.should == @initial_pairs
   end
+
+  ruby_version_is '3.3' do
+    it "retains the default value" do
+      hash = Hash.new(1)
+      hash.compact.default.should == 1
+      hash[:a] = 1
+      hash.compact.default.should == 1
+    end
+
+    it "retains the default_proc" do
+      pr = proc { |h, k| h[k] = [] }
+      hash = Hash.new(&pr)
+      hash.compact.default_proc.should == pr
+      hash[:a] = 1
+      hash.compact.default_proc.should == pr
+    end
+
+    it "retains compare_by_identity_flag" do
+      hash = {}.compare_by_identity
+      hash.compact.compare_by_identity?.should == true
+      hash[:a] = 1
+      hash.compact.compare_by_identity?.should == true
+    end
+  end
 end
 
 describe "Hash#compact!" do

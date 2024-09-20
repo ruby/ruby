@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 $expect_verbose = false
 
-# Expect library adds the IO instance method #expect, which does similar act to
-# tcl's expect extension.
-#
-# In order to use this method, you must require expect:
-#
-#   require 'expect'
-#
-# Please see #expect for usage.
 class IO
   # call-seq:
   #   IO#expect(pattern,timeout=9999999)                  ->  Array
   #   IO#expect(pattern,timeout=9999999) { |result| ... } ->  nil
+  #
+  # The +expect+ library adds instance method IO#expect,
+  # which is similar to the
+  # {TCL expect extension}[https://www.tcl.tk/man/expect5.31/expect.1.html].
+  #
+  # To use this method, you must require +expect+:
+  #
+  #   require 'expect'
   #
   # Reads from the IO until the given +pattern+ matches or the +timeout+ is over.
   #
