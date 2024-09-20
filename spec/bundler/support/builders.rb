@@ -538,10 +538,10 @@ module Spec
         end
 
         @files.each do |file, source|
-          file = Pathname.new(path).join(file)
-          FileUtils.mkdir_p(file.dirname)
-          File.open(file, "w") {|f| f.puts source }
-          File.chmod("+x", file) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
+          full_path = Pathname.new(path).join(file)
+          FileUtils.mkdir_p(full_path.dirname)
+          File.open(full_path, "w") {|f| f.puts source }
+          FileUtils.chmod("+x", full_path) if @spec.executables.map {|exe| "#{@spec.bindir}/#{exe}" }.include?(file)
         end
         path
       end
