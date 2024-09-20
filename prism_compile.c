@@ -2785,8 +2785,8 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             PUSH_INSN(ret, location, putnil);
         }
         else {
+            rb_obj_hide(keys);
             PUSH_INSN1(ret, location, duparray, keys);
-            RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_hide(keys));
         }
         PUSH_SEND(ret, location, rb_intern("deconstruct_keys"), INT2FIX(1));
 
@@ -7676,7 +7676,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         PUSH_INSN3(ret, location, defineclass, ID2SYM(class_id), class_iseq, INT2FIX(flags));
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
 
         if (popped) PUSH_INSN(ret, location, pop);
         return;
@@ -7894,7 +7893,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         else {
             PUSH_INSN2(ret, location, definemethod, ID2SYM(method_name), method_iseq);
         }
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) method_iseq);
 
         if (!popped) {
             PUSH_INSN1(ret, location, putobject, ID2SYM(method_name));
@@ -8300,7 +8298,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 else {
                     VALUE value = pm_static_literal_value(iseq, node, scope_node);
                     PUSH_INSN1(ret, location, duphash, value);
-                    RB_OBJ_WRITTEN(iseq, Qundef, value);
                 }
             }
         }
@@ -8641,7 +8638,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         VALUE argc = INT2FIX(0);
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         PUSH_CALL_WITH_BLOCK(ret, location, idLambda, argc, block);
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) block);
 
         if (popped) PUSH_INSN(ret, location, pop);
         return;
@@ -8944,7 +8940,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const int flags = VM_DEFINECLASS_TYPE_MODULE | pm_compile_class_path(iseq, cast->constant_path, &location, ret, false, scope_node);
         PUSH_INSN(ret, location, putnil);
         PUSH_INSN3(ret, location, defineclass, ID2SYM(module_id), module_iseq, INT2FIX(flags));
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) module_iseq);
 
         if (popped) PUSH_INSN(ret, location, pop);
         return;
@@ -9217,7 +9212,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         int is_index = ISEQ_BODY(iseq)->ise_size++;
         PUSH_INSN2(ret, location, once, child_iseq, INT2FIX(is_index));
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) child_iseq);
         if (popped) PUSH_INSN(ret, location, pop);
 
         ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
@@ -9619,7 +9613,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PUSH_INSN3(ret, location, defineclass, ID2SYM(singletonclass), child_iseq, INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
 
         if (popped) PUSH_INSN(ret, location, pop);
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) child_iseq);
 
         return;
       }
