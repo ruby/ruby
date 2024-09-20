@@ -9303,8 +9303,6 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
     free(objspace);
 }
 
-void rb_gc_impl_mark(void *objspace_ptr, VALUE obj);
-
 #if MALLOC_ALLOCATED_SIZE
 /*
  *  call-seq:
