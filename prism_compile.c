@@ -646,7 +646,9 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                         current_string = rb_enc_str_new(NULL, 0, encoding);
                     }
 
-                    PUSH_INSN1(ret, current_location, putobject, rb_fstring(current_string));
+                    current_string = rb_fstring(current_string);
+                    PUSH_INSN1(ret, current_location, putobject, current_string);
+                    RB_GC_GUARD(current_string);
                     PM_COMPILE_NOT_POPPED(part);
 
                     const pm_node_location_t current_location = PM_NODE_START_LOCATION(scope_node->parser, part);
