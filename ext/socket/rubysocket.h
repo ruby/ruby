@@ -413,13 +413,20 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 
-#define IPV6_HOSTNAME_RESOLVED "1"
-#define IPV4_HOSTNAME_RESOLVED "2"
-#define SELECT_CANCELLED "3"
-
 char *host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr);
 char *port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
 
+#ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
+#  if !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)
+#    define FAST_FALLBACK_INIT_INETSOCK_IMPL 0
+#  else
+#    include "ruby/thread_native.h"
+#    define FAST_FALLBACK_INIT_INETSOCK_IMPL 1
+#    define IPV6_HOSTNAME_RESOLVED "1"
+#    define IPV4_HOSTNAME_RESOLVED "2"
+#    define SELECT_CANCELLED "3"
+#    define IPV6_ENTRY_POS 0
+#    define IPV4_ENTRY_POS 1
 struct fast_fallback_getaddrinfo_shared {
     int wait, notify, refcount, connection_attempt_fds_size;
     int *connection_attempt_fds, *cancelled;
@@ -441,6 +448,8 @@ int do_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 void *do_fast_fallback_getaddrinfo(void *ptr);
 void free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry);
 void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared);
+#  endif
+#endif
 
 void rsock_init_basicsocket(void);
 void rsock_init_ipsocket(void);

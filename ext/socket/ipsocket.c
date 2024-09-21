@@ -169,20 +169,33 @@ init_inetsock_internal(VALUE v)
     return io;
 }
 
-#ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
-#  if defined(HAVE_PTHREAD_CREATE) && defined(HAVE_PTHREAD_DETACH) && \
-     !defined(__MINGW32__) && !defined(__MINGW64__) && \
-     defined(F_SETFL) && defined(F_GETFL)
-#    include "ruby/thread_native.h"
-#    define FAST_FALLBACK_INIT_INETSOCK_IMPL 1
-#    define IPV6_ENTRY_POS 0
-#    define IPV4_ENTRY_POS 1
-#  else
-#    define FAST_FALLBACK_INIT_INETSOCK_IMPL 0
-#  endif
-#endif
+#if FAST_FALLBACK_INIT_INETSOCK_IMPL == 0
 
-int
+VALUE
+rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
+                    VALUE local_host, VALUE local_serv, int type,
+                    VALUE resolv_timeout, VALUE connect_timeout, VALUE fast_fallback,
+                    VALUE test_mode_settings)
+{
+    struct inetsock_arg arg;
+    arg.sock = sock;
+    arg.remote.host = remote_host;
+    arg.remote.serv = remote_serv;
+    arg.remote.res = 0;
+    arg.local.host = local_host;
+    arg.local.serv = local_serv;
+    arg.local.res = 0;
+    arg.type = type;
+    arg.fd = -1;
+    arg.resolv_timeout = resolv_timeout;
+    arg.connect_timeout = connect_timeout;
+    return rb_ensure(init_inetsock_internal, (VALUE)&arg,
+                     inetsock_cleanup, (VALUE)&arg);
+}
+
+#elif FAST_FALLBACK_INIT_INETSOCK_IMPL == 1
+
+static int
 is_specified_ip_address(const char *hostname)
 {
     if (!hostname) return false;
@@ -294,13 +307,13 @@ struct hostname_resolution_store
     int is_all_finised;
 };
 
-int
+static int
 any_addrinfos(struct hostname_resolution_store *resolution_store)
 {
     return resolution_store->v6.ai || resolution_store->v4.ai;
 }
 
-struct timespec
+static struct timespec
 current_clocktime_ts()
 {
     struct timespec ts;
@@ -308,7 +321,7 @@ current_clocktime_ts()
     return ts;
 }
 
-void
+static void
 set_timeout_tv(struct timeval *tv, long ms, struct timespec from)
 {
     long sec = ms / 1000;
@@ -323,7 +336,7 @@ set_timeout_tv(struct timeval *tv, long ms, struct timespec from)
     tv->tv_usec = (int)(result_nsec / 1000);
 }
 
-struct timeval
+static struct timeval
 add_ts_to_tv(struct timeval tv, struct timespec ts)
 {
     long ts_usec = ts.tv_nsec / 1000;
@@ -338,14 +351,14 @@ add_ts_to_tv(struct timeval tv, struct timespec ts)
     return tv;
 }
 
-int
+static int
 is_infinity(struct timeval tv)
 {
     // { -1, -1 } as infinity
     return tv.tv_sec == -1 || tv.tv_usec == -1;
 }
 
-int
+static int
 is_timeout_tv(struct timeval *timeout_tv, struct timespec now) {
     if (!timeout_tv) return false;
     if (timeout_tv->tv_sec == -1 && timeout_tv->tv_usec == -1) return false;
@@ -359,7 +372,7 @@ is_timeout_tv(struct timeval *timeout_tv, struct timespec now) {
     return false;
 }
 
-struct timeval *
+static struct timeval *
 select_expires_at(
     struct hostname_resolution_store *resolution_store,
     struct timeval *resolution_delay,
@@ -388,7 +401,7 @@ select_expires_at(
     return timeout;
 }
 
-struct timeval
+static struct timeval
 tv_to_timeout(struct timeval *ends_at, struct timespec now)
 {
     struct timeval delay;
@@ -412,7 +425,7 @@ tv_to_timeout(struct timeval *ends_at, struct timespec now)
     return delay;
 }
 
-struct addrinfo *
+static struct addrinfo *
 pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_family)
 {
     int priority_on_v6[2] = { AF_INET6, AF_INET };
@@ -1019,6 +1032,8 @@ fast_fallback_inetsock_cleanup(VALUE v)
     return Qnil;
 }
 
+
+
 VALUE
 rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE fast_fallback, VALUE test_mode_settings)
 {
@@ -1114,6 +1129,8 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv, VALUE loca
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
                      inetsock_cleanup, (VALUE)&arg);
 }
+
+#endif
 
 static ID id_numeric, id_hostname;
 
