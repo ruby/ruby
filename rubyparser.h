@@ -1166,7 +1166,6 @@ typedef struct rb_parser_config_struct {
     void *(*alloc)(size_t elemsiz);
     void *(*realloc_n)(void *ptr, size_t newelems, size_t newsiz);
     void *(*zalloc)(size_t elemsiz);
-    void *(*rb_memmove)(void *dest, const void *src, size_t t, size_t n);
     void *(*nonempty_memcpy)(void *dest, const void *src, size_t t, size_t n);
     void *(*xmalloc_mul_add)(size_t x, size_t y, size_t z);
 
@@ -1294,7 +1293,6 @@ typedef struct rb_parser_config_struct {
     void (*compile_warn)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
     void (*compile_warning)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
     void (*bug)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
-    void (*fatal)(const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(1, 2);
     VALUE (*verbose)(void);
     int *(*errno_ptr)(void);
 
