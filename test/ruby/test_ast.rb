@@ -1358,6 +1358,11 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 19], [1, 0, 1, 4], [1, 16, 1, 19]])
     end
 
+    def test_case2_locations
+      node = ast_parse("case; when 1; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
