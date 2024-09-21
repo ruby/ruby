@@ -4707,17 +4707,21 @@ rb_ary_clear(VALUE ary)
  *    ['a', 'b', 'c', 'd'].fill('-', 1, 2)          # => ["a", "-", "-", "d"]
  *    ['a', 'b', 'c', 'd'].fill(1, 2) {|e| e.to_s } # => ["a", "1", "2", "d"]
  *
- *    # Extended with specified values.
+ *    # Extends with specified values if necessary.
  *    ['a', 'b', 'c', 'd'].fill('-', 3, 2)          # => ["a", "b", "c", "-", "-"]
  *    ['a', 'b', 'c', 'd'].fill(3, 2) {|e| e.to_s } # => ["a", "b", "c", "3", "4"]
  *
- *    # Extended with nils and specified values.
+ *    # Extends with nils and specified values if necessary.
  *    ['a', 'b', 'c', 'd'].fill('-', 6, 2)          # => ["a", "b", "c", "d", nil, nil, "-", "-"]
  *    ['a', 'b', 'c', 'd'].fill(6, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, nil, "6", "7"]
  *
- *    # Negative start; counts backwards from the end.
+ *    # For negative start, counts backwards from the end.
  *    ['a', 'b', 'c', 'd'].fill('-', -3, 3)          # => ["a", "-", "-", "-"]
  *    ['a', 'b', 'c', 'd'].fill(-3, 3) {|e| e.to_s } # => ["a", "1", "2", "3"]
+ *
+ *    # Range.
+ *    ['a', 'b', 'c', 'd'].fill('-', 1..2)          # => ["a", "-", "-", "d"]
+ *    ['a', 'b', 'c', 'd'].fill(1..2) {|e| e.to_s } # => ["a", "1", "2", "d"]
  *
  *  When arguments +start+ and +count+ are given,
  *  they select the elements of +self+ to be replaced;
@@ -4725,19 +4729,12 @@ rb_ary_clear(VALUE ary)
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
  *  (or +nil+):
  *
- *  - +start+ specifies the zero-based offset of the first element to be replaced:
- *
- *    - If +start+ is non-negative, the effective start is +start+.
- *    - If +start+ is +nil+, the effective start is zero.
- *    - If +start+ is negative, counts backwards from the end of self;
- *      the effective start is <tt>self.size + start</tt>.
- *
+ *  - +start+ specifies the zero-based offset of the first element to be replaced;
+ *    +nil+ means zero.
  *  - +count+ is the number of consecutive elements to be replaced;
  *    +nil+ means "all the rest."
- *  - If the effective start plus +count+ is greater than <tt>self.size</tt>,
- *    elements are appended.
  *
- *  If argument +object+ is given,
+ *  With argument +object+ given,
  *  that one object is the sole replacement value:
  *
  *    o = Object.new           # => #<Object:0x0000014e7bff7600>
@@ -4745,7 +4742,9 @@ rb_ary_clear(VALUE ary)
  *    a.fill(o, 1, 2)
  *    # => ["a", #<Object:0x0000014e7bff7600>, #<Object:0x0000014e7bff7600>, "d"]
  *
- *  If a block is given, the block is called with the <i>index</i> of each element to be replaced;
+ *  With a block given, the block is called once for each element to be replaced;
+ *  the value passed to the block is the _index_ of the element to be replaced
+ *  (not the element itself);
  *  the block's return value is the element's replacement:
  *
  *    a = ['a', 'b', 'c', 'd']               # => ["a", "b", "c", "d"]
@@ -4824,11 +4823,46 @@ rb_ary_clear(VALUE ary)
  *
  *  When argument +range+ is given,
  *  it must be a Range object whose members are numeric;
- *  its effect is the same as above, where:
+ *  its +begin+ and +end+ values determine the elements of +self+
+ *  to be replaced:
  *
- *  - +start+ is <tt>range.min</tt>, or zero if the range is beginless.
- *  - +end+ is <tt>range.max</tt>
- *  - +count+ is <tt>range.size</tt>, or "all the rest" if the range is endless.
+ *  - If both +begin+ and +end+ are positive, they specify the first and last elements
+ *    to be replaced:
+ *
+ *      ['a', 'b', 'c', 'd'].fill('-', 1..2)          # => ["a", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(1..2) {|e| e.to_s } # => ["a", "1", "2", "d"]
+ *
+ *    If +end+ is smaller than +begin+, no elements are replaced:
+ *
+ *      ['a', 'b', 'c', 'd'].fill('-', 2..1)          # => ["a", "b", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(2..1) {|e| e.to_s } # => ["a", "b", "c", "d"]
+ *
+ *  - If either is negative (or both are negative), counts backwards from the end of +self+:
+ *
+ *      ['a', 'b', 'c', 'd'].fill('-', -3..2)  # => ["a", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 1..-2)  # => ["a", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', -3..-2) # => ["a", "-", "-", "d"]
+ *
+ *      ['a', 'b', 'c', 'd'].fill(-3..2) {|e| e.to_s }  # => ["a", "1", "2", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(1..-2) {|e| e.to_s }  # => ["a", "1", "2", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(-3..-2) {|e| e.to_s } # => ["a", "1", "2", "d"]
+ *
+ *  - If the +end+ value is excluded (see Range#exclude_end?), omits the last replacement:
+ *
+ *      ['a', 'b', 'c', 'd'].fill('-', 1...2)          # => ["a", "-", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(1...2) {|e| e.to_s } # => ["a", "1", "c", "d"]
+ *
+ *  - If the range is endless (see {Endless Ranges}[rdoc-ref:Range@Endless+Ranges]),
+ *    replaces elements to the end of +self+:
+ *
+ *      ['a', 'b', 'c', 'd'].fill('-', 1..)          # => ["a", "-", "-", "-"]
+ *      ['a', 'b', 'c', 'd'].fill(1..) {|e| e.to_s } # => ["a", "1", "2", "3"]
+ *
+ *  - If the range is beginless (see {Beginless Ranges}[rdoc-ref:Range@Beginless+Ranges]),
+ *    replaces elements from the beginning of +self+:
+ *
+ *      ['a', 'b', 'c', 'd'].fill('-', ..2)          # => ["-", "-", "-", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(..2) {|e| e.to_s } # => ["0", "1", "2", "d"]
  *
  *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
