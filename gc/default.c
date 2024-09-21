@@ -788,7 +788,9 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
         GC_ASSERT(page->slot_size == 0);
         GC_ASSERT(page->size_pool == NULL);
         GC_ASSERT(page->free_slots == 0);
-        GC_ASSERT(page->freelist == NULL);
+        asan_unpoisoning_memory_region(&page->freelist, sizeof(&page->freelist)) {
+            GC_ASSERT(page->freelist == NULL);
+        }
 
         return true;
     }
@@ -1176,12 +1178,6 @@ tick(void)
 #else /* USE_TICK_T */
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
-
-#define asan_unpoisoning_object(obj) \
-    for (void *poisoned = asan_unpoison_object_temporary(obj), \
-              *unpoisoning = &poisoned; /* flag to loop just once */ \
-         unpoisoning; \
-         unpoisoning = asan_poison_object_restore(obj, poisoned))
 
 #define FL_CHECK2(name, x, pred) \
     ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
