@@ -341,7 +341,7 @@ add_ts_to_tv(struct timeval tv, struct timespec ts)
 int
 is_infinity(struct timeval tv)
 {
-    // {-1, -1 } as infinity
+    // { -1, -1 } as infinity
     return tv.tv_sec == -1 || tv.tv_usec == -1;
 }
 
@@ -876,7 +876,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     if (resolved_type_size > 0) {
                         resolved_type[resolved_type_size] = '\0';
 
-                        if (strcmp(resolved_type, IPV6_HOSTNAME_RESOLVED) == 0) { // IPv6解決
+                        if (strcmp(resolved_type, IPV6_HOSTNAME_RESOLVED) == 0) {
                             resolution_store.v6.ai = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->ai;
                             resolution_store.v6.finished = true;
                             if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
@@ -892,7 +892,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
                             }
-                        } else if (strcmp(resolved_type, IPV4_HOSTNAME_RESOLVED) == 0) { // IPv4解決
+                        } else if (strcmp(resolved_type, IPV4_HOSTNAME_RESOLVED) == 0) {
                             resolution_store.v4.ai = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->ai;
                             resolution_store.v4.finished = true;
 
