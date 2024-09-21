@@ -142,6 +142,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -164,6 +165,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_hostname_resolved_earlier
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -182,6 +184,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -205,6 +208,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -226,6 +230,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -249,6 +254,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -267,6 +273,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     server = TCPServer.new("::1", 0)
@@ -281,6 +288,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     server = TCPServer.new("::1", 0)
@@ -295,6 +303,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_connected_socket_with_v6_address
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -317,6 +326,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_connected_socket_with_v4_address
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
@@ -334,6 +344,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_fast_fallback_is_false
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     server = TCPServer.new("127.0.0.1", 0)
     _, port, = server.addr
     server_thread = Thread.new { server.accept }

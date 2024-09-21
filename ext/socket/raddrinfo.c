@@ -3024,6 +3024,8 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
     UNREACHABLE_RETURN(Qnil);
 }
 
+#if FAST_FALLBACK_INIT_INETSOCK_IMPL == 1
+
 void
 free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared)
 {
@@ -3117,6 +3119,8 @@ do_fast_fallback_getaddrinfo(void *ptr)
 
     return 0;
 }
+
+#endif
 
 /*
  * Addrinfo class
