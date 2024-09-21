@@ -8485,7 +8485,7 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
         VALUE argv2[2], hash;
         argv2[0] = str;
         argv2[1] = opt;
-        if (!NIL_P(opt)) argc2--;
+        if (!NIL_P(opt)) argc2++;
 	hash = date_s__iso8601(argc2, argv2, klass);
 	return dt_new_by_frags(klass, hash, sg);
     }
