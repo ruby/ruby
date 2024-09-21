@@ -812,8 +812,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
             user_specified_connect_timeout_at
         );
         if (ends_at) {
-            if (debug) printf("[DEBUG] %d: ends_at->tv_sec %ld\n", count, ends_at->tv_sec);
-            if (debug) printf("[DEBUG] %d: ends_at->tv_usec %d\n", count, ends_at->tv_usec);
+            if (debug) printf("[DEBUG] %d: ends_at->tv_sec %"PRI_TIMET_PREFIX"d\n", count, ends_at->tv_sec);
+            if (debug) printf("[DEBUG] %d: ends_at->tv_usec %d\n", count, (int)ends_at->tv_usec);
             delay = tv_to_timeout(ends_at, now);
             wait_arg.delay = &delay;
         } else {
