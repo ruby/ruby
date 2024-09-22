@@ -978,6 +978,9 @@ typedef struct RNode_SYM {
     NODE node;
 
     struct rb_parser_string *string;
+    rb_code_location_t opening_loc;
+    rb_code_location_t value_loc;
+    rb_code_location_t closing_loc;
 } rb_node_sym_t;
 
 typedef rb_node_dstr_t rb_node_dsym_t;
