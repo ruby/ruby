@@ -4711,7 +4711,7 @@ rb_ary_clear(VALUE ary)
  *    ['a', 'b', 'c', 'd'].fill('-', 3, 2)          # => ["a", "b", "c", "-", "-"]
  *    ['a', 'b', 'c', 'd'].fill(3, 2) {|e| e.to_s } # => ["a", "b", "c", "3", "4"]
  *
- *    # Extends with nils and specified values if necessary.
+ *    # Fills with nils if necessary.
  *    ['a', 'b', 'c', 'd'].fill('-', 6, 2)          # => ["a", "b", "c", "d", nil, nil, "-", "-"]
  *    ['a', 'b', 'c', 'd'].fill(6, 2) {|e| e.to_s } # => ["a", "b", "c", "d", nil, nil, "6", "7"]
  *
@@ -4735,7 +4735,7 @@ rb_ary_clear(VALUE ary)
  *    +nil+ means "all the rest."
  *
  *  With argument +object+ given,
- *  that one object is the sole replacement value:
+ *  that one object is used for all replacements:
  *
  *    o = Object.new           # => #<Object:0x0000014e7bff7600>
  *    a = ['a', 'b', 'c', 'd'] # => ["a", "b", "c", "d"]
@@ -4745,7 +4745,7 @@ rb_ary_clear(VALUE ary)
  *  With a block given, the block is called once for each element to be replaced;
  *  the value passed to the block is the _index_ of the element to be replaced
  *  (not the element itself);
- *  the block's return value is the element's replacement:
+ *  the block's return value replaces the element:
  *
  *    a = ['a', 'b', 'c', 'd']               # => ["a", "b", "c", "d"]
  *    a.fill(1, 2) {|element| element.to_s } # => ["a", "1", "2", "d"]
@@ -4753,7 +4753,7 @@ rb_ary_clear(VALUE ary)
  *  For arguments +start+ and +count+:
  *
  *  - If +start+ is non-negative,
- *    replaces +count+ elements from offset +start+ through the end:
+ *    replaces +count+ elements beginning at offset +start+:
  *
  *      ['a', 'b', 'c', 'd'].fill('-', 0, 2) # => ["-", "-", "c", "d"]
  *      ['a', 'b', 'c', 'd'].fill('-', 1, 2) # => ["a", "-", "-", "d"]
@@ -4832,7 +4832,7 @@ rb_ary_clear(VALUE ary)
  *      ['a', 'b', 'c', 'd'].fill('-', 1..2)          # => ["a", "-", "-", "d"]
  *      ['a', 'b', 'c', 'd'].fill(1..2) {|e| e.to_s } # => ["a", "1", "2", "d"]
  *
- *    If +end+ is smaller than +begin+, no elements are replaced:
+ *    If +end+ is smaller than +begin+, replaces no elements:
  *
  *      ['a', 'b', 'c', 'd'].fill('-', 2..1)          # => ["a", "b", "c", "d"]
  *      ['a', 'b', 'c', 'd'].fill(2..1) {|e| e.to_s } # => ["a", "b", "c", "d"]
@@ -4849,8 +4849,11 @@ rb_ary_clear(VALUE ary)
  *
  *  - If the +end+ value is excluded (see Range#exclude_end?), omits the last replacement:
  *
- *      ['a', 'b', 'c', 'd'].fill('-', 1...2)          # => ["a", "-", "c", "d"]
- *      ['a', 'b', 'c', 'd'].fill(1...2) {|e| e.to_s } # => ["a", "1", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 1...2)  # => ["a", "-", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill('-', 1...-2) # => ["a", "-", "c", "d"]
+ *
+ *      ['a', 'b', 'c', 'd'].fill(1...2) {|e| e.to_s }  # => ["a", "1", "c", "d"]
+ *      ['a', 'b', 'c', 'd'].fill(1...-2) {|e| e.to_s } # => ["a", "1", "c", "d"]
  *
  *  - If the range is endless (see {Endless Ranges}[rdoc-ref:Range@Endless+Ranges]),
  *    replaces elements to the end of +self+:
