@@ -14,6 +14,8 @@ prelude: |
   end
   time = Time.now
   utc_time = Time.now.utc
+  fraction_sec = Time.at(123456789.quo(9999999999)).getlocal("+09:00")
+  future_time = Time.utc(10000)
 benchmark:
   - time.xmlschema
   - utc_time.xmlschema
@@ -21,3 +23,5 @@ benchmark:
   - utc_time.xmlschema(6)
   - time.xmlschema(9)
   - utc_time.xmlschema(9)
+  - fraction_sec.xmlschema(10)
+  - future_time.xmlschema
