@@ -425,8 +425,7 @@ char *port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
 #    define IPV6_HOSTNAME_RESOLVED "1"
 #    define IPV4_HOSTNAME_RESOLVED "2"
 #    define SELECT_CANCELLED "3"
-#    define IPV6_ENTRY_POS 0
-#    define IPV4_ENTRY_POS 1
+
 struct fast_fallback_getaddrinfo_shared {
     int wait, notify, refcount, connection_attempt_fds_size;
     int *connection_attempt_fds, *cancelled;

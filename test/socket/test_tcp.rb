@@ -263,7 +263,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       port = server.addr[1]
 
       server_thread = Thread.new { server.accept }
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 10 }, error: { ipv6: Errno::EFAULT } })
+      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 10 }, error: { ipv6: Socket::EAI_FAIL } })
 
       assert_true(socket.remote_address.ipv4?)
       server_thread.value.close
@@ -291,13 +291,32 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
-    server = TCPServer.new("::1", 0)
+    begin
+      server = TCPServer.new("::1", 0)
+    rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      exit
+    end
     port = server.connect_address.ip_port
     server.close
 
     begin;
-      assert_raise(Errno::EFAULT) do
-        TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 100 }, error: { ipv4: Errno::EFAULT } })
+      assert_raise(Socket::ResolutionError) do
+        TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 100 }, error: { ipv4: Socket::EAI_FAIL } })
+      end
+    end;
+  end
+
+  def test_initialize_with_connection_failure_after_hostname_resolution_failure
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    opts = %w[-rsocket -W1]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+    server.close
+
+    begin;
+      assert_raise(Errno::ECONNREFUSED) do
+        TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_FAIL } })
       end
     end;
   end
