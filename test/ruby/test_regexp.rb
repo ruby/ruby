@@ -1296,6 +1296,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/\A[[:space:]]+\z/, "\r\n\v\f\r\s\u0085")
     assert_match(/\A[[:ascii:]]+\z/, "\x00\x7F")
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
+
+    assert_match(/[[:word:]]/, "\u{200C}")
+    assert_match(/[[:word:]]/, "\u{200D}")
   end
 
   def test_cclass_R
