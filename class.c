@@ -2632,30 +2632,27 @@ rb_scan_args_result(const struct rb_scan_args_t *const arg, int argc)
     UNREACHABLE_RETURN(-1);
 }
 
+#define rb_scan_args_with(kw) \
+    va_list vargs; \
+    struct rb_scan_args_t arg; \
+    rb_scan_args_parse(kw, fmt, &arg); \
+    va_start(vargs,fmt); \
+    argc = rb_scan_args_assign(&arg, argc, argv, vargs); \
+    va_end(vargs); \
+    return rb_scan_args_result(&arg, argc);
+
 #undef rb_scan_args
 int
 rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 {
-    va_list vargs;
-    struct rb_scan_args_t arg;
-    rb_scan_args_parse(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS, fmt, &arg);
-    va_start(vargs,fmt);
-    argc = rb_scan_args_assign(&arg, argc, argv, vargs);
-    va_end(vargs);
-    return rb_scan_args_result(&arg, argc);
+    rb_scan_args_with(RB_SCAN_ARGS_PASS_CALLED_KEYWORDS)
 }
 
 #undef rb_scan_args_kw
 int
 rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
 {
-    va_list vargs;
-    struct rb_scan_args_t arg;
-    rb_scan_args_parse(kw_flag, fmt, &arg);
-    va_start(vargs,fmt);
-    argc = rb_scan_args_assign(&arg, argc, argv, vargs);
-    va_end(vargs);
-    return rb_scan_args_result(&arg, argc);
+    rb_scan_args_with(kw_flag)
 }
 
 /*!
