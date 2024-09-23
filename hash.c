@@ -3579,6 +3579,43 @@ rb_hash_keys(VALUE hash)
 }
 
 static int
+keys_of_i(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+
+    if (rb_equal(value, args[0])) {
+        rb_ary_push(args[1], key);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *    hash.keys_of(value) -> new_array
+ *
+ *  Returns a new \Array containing keys for the given +value+:
+ *    h = {foo: 0, bar: 1, baz: 0}
+ *    h.keys_of(0) # => [:foo, :baz]
+ *
+ *  An empty \Array is returned if no key is found:
+ *    h.keys_of(3) # => []
+ */
+
+static VALUE
+rb_hash_keys_of(VALUE hash, VALUE value)
+{
+    VALUE result = rb_ary_new();
+
+    VALUE args[2];
+    args[0] = value;
+    args[1] = result;
+
+    rb_hash_foreach(hash, keys_of_i, (VALUE)args);
+
+    return result;
+}
+
+static int
 values_i(VALUE key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, value);
@@ -7156,6 +7193,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "transform_values!", rb_hash_transform_values_bang, 0);
 
     rb_define_method(rb_cHash, "keys", rb_hash_keys, 0);
+    rb_define_method(rb_cHash, "keys_of", rb_hash_keys_of, 1);
     rb_define_method(rb_cHash, "values", rb_hash_values, 0);
     rb_define_method(rb_cHash, "values_at", rb_hash_values_at, -1);
     rb_define_method(rb_cHash, "fetch_values", rb_hash_fetch_values, -1);
