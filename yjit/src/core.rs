@@ -969,7 +969,7 @@ impl Context {
 
             let cache = CTX_CACHE.as_mut().unwrap();
 
-            // Check that the context for this cache entry mmatches
+            // Check that the context for this cache entry matches
             let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
             if cache_entry.0 == *ctx {
                 debug_assert!(cache_entry.1 != 0);
