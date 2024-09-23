@@ -1135,7 +1135,13 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.index('ca'))
     assert_nil(a.index([1,2]))
 
+    assert_equal(3, a.index(99, 2))
+    assert_equal(2, a.index(/a/, -4))
+    assert_nil(a.index(99, a.size))
+    assert_nil(a.index(99, -a.size - 1))
+
     assert_equal(1, assert_warn(/given block not used/) {a.index(99) {|x| x == 'cat' }})
+    assert_equal(3, assert_warn(/given block not used/) {a.index(99, 2) {|x| x == 'cat' }})
   end
 
   def test_values_at
