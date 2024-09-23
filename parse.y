@@ -764,8 +764,6 @@ string_buffer_append(struct parser_params *p, rb_parser_string_t *str)
     buf->last->buf[buf->last->used++] = str;
 }
 
-static void rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str);
-
 static void
 string_buffer_free(struct parser_params *p)
 {
@@ -2048,15 +2046,15 @@ rb_str_to_parser_string(rb_parser_t *p, VALUE str)
     RB_GC_GUARD(str);
     return ret;
 }
-#endif
 
-static void
+void
 rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
 {
     if (!str) return;
     xfree(PARSER_STRING_PTR(str));
     xfree(str);
 }
+#endif
 
 static st_index_t
 rb_parser_str_hash(rb_parser_string_t *str)

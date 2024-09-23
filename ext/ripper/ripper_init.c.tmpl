@@ -260,6 +260,7 @@ ripper_parser_dedent_string(struct parser_params *p, VALUE string, int width)
     str = rb_str_to_parser_string(p, string);
     col = rb_ruby_ripper_dedent_string(p, str, width);
     rb_str_replace(string, rb_str_new_parser_string(str));
+    rb_parser_string_free(p, str);
     return col;
 }
 
