@@ -5244,7 +5244,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     if (FIXNUM_P(tobj->vtm.year)) {
         long year = FIX2LONG(tobj->vtm.year);
         int year_width = (year < 0) + rb_strlen_lit("YYYY");
-        int w = (year >= -9999 && year <= 9999 ? year_width : (year < 0) + DECIMAL_SIZE_OF(year));
+        int w = (year >= -9999 && year <= 9999 ? year_width : (year < 0) + (int)DECIMAL_SIZE_OF(year));
         str = rb_usascii_str_new(0, w + size_after_year);
         ptr = RSTRING_PTR(str);
         fill_digits_long(w + 1, year_width, year) {
