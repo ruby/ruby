@@ -391,6 +391,7 @@ module Bundler
       end
 
       env.delete_if {|k, _| k[0, 7] == "BUNDLE_" }
+      env.delete("BUNDLER_SETUP)
 
       if env.key?("RUBYOPT")
         rubyopt = env["RUBYOPT"].split(" ")
