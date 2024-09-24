@@ -2947,13 +2947,13 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %rule f_kw(value) <node_kw_arg>: f_label value
                                     {
                                         p->ctxt.in_argdef = 1;
-                                        $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
-                                    /*% ripper: [$:$, $:2] %*/
+                                        $$ = new_kw_arg(p, assignable(p, $f_label, $value, &@$), &@$);
+                                    /*% ripper: [$:$, $:value] %*/
                                     }
                                 | f_label
                                     {
                                         p->ctxt.in_argdef = 1;
-                                        $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
+                                        $$ = new_kw_arg(p, assignable(p, $f_label, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
                                     /*% ripper: [$:$, 0] %*/
                                     }
                                 ;
