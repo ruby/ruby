@@ -115,7 +115,6 @@
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr
 #define rb_str_cat_cstr                   p->config->str_cat_cstr
-#define rb_str_cat                        p->config->str_cat
 #define rb_str_resize                     p->config->str_resize
 #undef rb_str_new
 #define rb_str_new                        p->config->str_new
