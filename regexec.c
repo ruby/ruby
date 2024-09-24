@@ -4158,7 +4158,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  size_t length = (end - str) + 1;
 	  size_t num_match_cache_points = (size_t)msa->num_cache_points * length;
 #ifdef ONIG_DEBUG_MATCH_CACHE
-	  fprintf(stderr, "MATCH CACHE: #match cache points = %ld (length = %zu)\n", num_match_cache_points, length);
+	  fprintf(stderr, "MATCH CACHE: #match cache points = %"PRIuSIZE" (length = %"PRIuSIZE")\n", num_match_cache_points, length);
 #endif
 	  /* Overflow check */
 	  if (num_match_cache_points / length != (size_t)msa->num_cache_points) {

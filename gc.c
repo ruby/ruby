@@ -213,7 +213,7 @@ rb_malloc_grow_capa(size_t current, size_t type_size)
     new_capacity -= malloc_offset;
     new_capacity /= type_size;
     if (current > new_capacity) {
-        rb_bug("rb_malloc_grow_capa: current_capacity=%zu, new_capacity=%zu, malloc_offset=%zu", current, new_capacity, malloc_offset);
+        rb_bug("rb_malloc_grow_capa: current_capacity=%"PRIuSIZE", new_capacity=%"PRIuSIZE", malloc_offset=%"PRIuSIZE"", current, new_capacity, malloc_offset);
     }
     RUBY_ASSERT(new_capacity > current);
     return new_capacity;
@@ -13963,7 +13963,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             {
                 if (rb_shape_obj_too_complex(obj)) {
                     size_t hash_len = rb_st_table_size(ROBJECT_IV_HASH(obj));
-                    APPEND_F("(too_complex) len:%zu", hash_len);
+                    APPEND_F("(too_complex) len:%"PRIuSIZE"", hash_len);
                 }
                 else {
                     uint32_t len = ROBJECT_IV_CAPACITY(obj);
