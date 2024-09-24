@@ -140,6 +140,10 @@ jobs:
       - name: compiler version
         run: cl
 
+      - name: volume info
+        run: Get-Volume
+        shell: pwsh
+
       - name: Install libraries with vcpkg
         run: |
           vcpkg install
