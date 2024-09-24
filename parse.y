@@ -4344,36 +4344,36 @@ opt_block_arg	: ',' block_arg
 /* value */
 args		: arg_value
                     {
-                        $$ = NEW_LIST($1, &@$);
-                    /*% ripper: args_add!(args_new!, $:1) %*/
+                        $$ = NEW_LIST($arg_value, &@$);
+                    /*% ripper: args_add!(args_new!, $:arg_value) %*/
                     }
                 | arg_splat
                     {
                         $$ = $arg_splat;
                     /*% ripper: args_add_star!(args_new!, $:arg_splat) %*/
                     }
-                | args ',' arg_value
+                | args[non_last_args] ',' arg_value
                     {
-                        $$ = last_arg_append(p, $1, $3, &@$);
-                    /*% ripper: args_add!($:1, $:3) %*/
+                        $$ = last_arg_append(p, $non_last_args, $arg_value, &@$);
+                    /*% ripper: args_add!($:non_last_args, $:arg_value) %*/
                     }
-                | args ',' arg_splat
+                | args[non_last_args] ',' arg_splat
                     {
-                        $$ = rest_arg_append(p, $1, RNODE_SPLAT($arg_splat)->nd_head, &@$);
-                    /*% ripper: args_add_star!($:1, $:3) %*/
+                        $$ = rest_arg_append(p, $non_last_args, RNODE_SPLAT($arg_splat)->nd_head, &@$);
+                    /*% ripper: args_add_star!($:non_last_args, $:arg_splat) %*/
                     }
                 ;
 
 /* value */
 arg_splat	: tSTAR arg_value
                     {
-                        $$ = NEW_SPLAT($2, &@$, &@1);
-                    /*% ripper: $:2 %*/
+                        $$ = NEW_SPLAT($arg_value, &@$, &@tSTAR);
+                    /*% ripper: $:arg_value %*/
                     }
                 | tSTAR /* none */
                     {
                         forwarding_arg_check(p, idFWD_REST, idFWD_ALL, "rest");
-                        $$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$, &@1);
+                        $$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@tSTAR), &@$, &@tSTAR);
                     /*% ripper: Qnil %*/
                     }
                 ;
@@ -4386,18 +4386,18 @@ mrhs_arg	: mrhs
 /* value */
 mrhs		: args ',' arg_value
                     {
-                        $$ = last_arg_append(p, $1, $3, &@$);
-                    /*% ripper: mrhs_add!(mrhs_new_from_args!($:1), $:3) %*/
+                        $$ = last_arg_append(p, $args, $arg_value, &@$);
+                    /*% ripper: mrhs_add!(mrhs_new_from_args!($:args), $:arg_value) %*/
                     }
                 | args ',' tSTAR arg_value
                     {
-                        $$ = rest_arg_append(p, $1, $4, &@$);
-                    /*% ripper: mrhs_add_star!(mrhs_new_from_args!($:1), $:4) %*/
+                        $$ = rest_arg_append(p, $args, $arg_value, &@$);
+                    /*% ripper: mrhs_add_star!(mrhs_new_from_args!($:args), $:arg_value) %*/
                     }
                 | tSTAR arg_value
                     {
-                        $$ = NEW_SPLAT($2, &@$, &@1);
-                    /*% ripper: mrhs_add_star!(mrhs_new!, $:2) %*/
+                        $$ = NEW_SPLAT($arg_value, &@$, &@tSTAR);
+                    /*% ripper: mrhs_add_star!(mrhs_new!, $:arg_value) %*/
                     }
                 ;
 
@@ -5424,25 +5424,25 @@ do_body 	:   {
 
 case_args	: arg_value
                     {
-                        check_literal_when(p, $1, &@1);
-                        $$ = NEW_LIST($1, &@$);
-                    /*% ripper: args_add!(args_new!, $:1) %*/
+                        check_literal_when(p, $arg_value, &@arg_value);
+                        $$ = NEW_LIST($arg_value, &@$);
+                    /*% ripper: args_add!(args_new!, $:arg_value) %*/
                     }
                 | tSTAR arg_value
                     {
-                        $$ = NEW_SPLAT($2, &@$, &@1);
-                    /*% ripper: args_add_star!(args_new!, $:2) %*/
+                        $$ = NEW_SPLAT($arg_value, &@$, &@tSTAR);
+                    /*% ripper: args_add_star!(args_new!, $:arg_value) %*/
                     }
-                | case_args ',' arg_value
+                | case_args[non_last_args] ',' arg_value
                     {
-                        check_literal_when(p, $3, &@3);
-                        $$ = last_arg_append(p, $1, $3, &@$);
-                    /*% ripper: args_add!($:1, $:3) %*/
+                        check_literal_when(p, $arg_value, &@arg_value);
+                        $$ = last_arg_append(p, $non_last_args, $arg_value, &@$);
+                    /*% ripper: args_add!($:non_last_args, $:arg_value) %*/
                     }
-                | case_args ',' tSTAR arg_value
+                | case_args[non_last_args] ',' tSTAR arg_value
                     {
-                        $$ = rest_arg_append(p, $1, $4, &@$);
-                    /*% ripper: args_add_star!($:1, $:4) %*/
+                        $$ = rest_arg_append(p, $non_last_args, $arg_value, &@$);
+                    /*% ripper: args_add_star!($:non_last_args, $:arg_value) %*/
                     }
                 ;
 
