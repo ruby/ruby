@@ -910,8 +910,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             }
         }
         F_NODE(nd_head, RNODE_BLOCK_PASS, "other arguments");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_BLOCK_PASS, "block argument");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_BLOCK_PASS);
         return;
 
       case NODE_DEFN:
