@@ -810,6 +810,7 @@ typedef struct RNode_BLOCK_PASS {
     struct RNode *nd_head;
     struct RNode *nd_body;
     unsigned int forwarding: 1;
+    rb_code_location_t operator_loc;
 } rb_node_block_pass_t;
 
 typedef struct RNode_DEFN {
