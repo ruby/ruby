@@ -3790,6 +3790,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
                 if (ENC_CODERANGE(obj) != ENC_CODERANGE_7BIT) {
                     goto clear_cr;
                 }
+                break;
               }
               default:
                 UNREACHABLE;
