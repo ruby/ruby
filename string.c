@@ -3763,9 +3763,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
             break;
           }
           default:
-            UNREACHABLE;
-            RUBY_ASSERT("append_as_bytes arguments should have been validated");
-            break;
+            rb_bug("append_as_bytes arguments should have been validated");
         }
     }
 
@@ -3793,9 +3791,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
                 break;
               }
               default:
-                UNREACHABLE;
-                RUBY_ASSERT("append_as_bytes arguments should have been validated");
-                break;
+                rb_bug("append_as_bytes arguments should have been validated");
             }
         }
         break;
