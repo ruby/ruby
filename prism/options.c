@@ -1,5 +1,4 @@
 #include "prism/options.h"
-#include "prism/util/pm_char.h"
 
 /**
  * Set the shebang callback option on the given options struct.
@@ -58,7 +57,11 @@ pm_options_command_line_set(pm_options_t *options, uint8_t command_line) {
     options->command_line = command_line;
 }
 
-static bool is_number(const char *string, size_t length) {
+/**
+ * Checks if the given slice represents a number.
+ */
+static inline bool
+is_number(const char *string, size_t length) {
     return pm_strspn_decimal_digit((const uint8_t *) string, (ptrdiff_t) length) == length;
 }
 
@@ -72,6 +75,20 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
     if (version == NULL) {
         options->version = PM_OPTIONS_VERSION_LATEST;
         return true;
+    }
+
+    if (length == 3) {
+        if (strncmp(version, "3.3", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_3;
+            return true;
+        }
+
+        if (strncmp(version, "3.4", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_LATEST;
+            return true;
+        }
+
+        return false;
     }
 
     if (length >= 4) {
