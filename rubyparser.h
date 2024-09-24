@@ -807,6 +807,7 @@ typedef struct RNode_SPLAT {
     NODE node;
 
     struct RNode *nd_head;
+    rb_code_location_t operator_loc;
 } rb_node_splat_t;
 
 typedef struct RNode_BLOCK_PASS {

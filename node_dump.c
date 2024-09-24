@@ -899,8 +899,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("splat argument");
         ANN("format: *[nd_head]");
         ANN("example: foo(*ary)");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_SPLAT, "splat'ed array");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_SPLAT);
         return;
 
       case NODE_BLOCK_PASS:
