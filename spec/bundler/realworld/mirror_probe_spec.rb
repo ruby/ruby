@@ -112,13 +112,15 @@ RSpec.describe "fetching dependencies with a not available mirror", realworld: t
 
     require_relative "../support/artifice/endpoint"
 
+    require "rackup/server"
+
     @server_thread = Thread.new do
-      Rack::Server.start(app: Endpoint,
-                         Host: host,
-                         Port: @server_port,
-                         server: "webrick",
-                         AccessLog: [],
-                         Logger: Spec::SilentLogger.new)
+      Rackup::Server.start(app: Endpoint,
+                           Host: host,
+                           Port: @server_port,
+                           server: "webrick",
+                           AccessLog: [],
+                           Logger: Spec::SilentLogger.new)
     end.run
 
     wait_for_server(host, @server_port)
