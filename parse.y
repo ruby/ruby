@@ -1133,7 +1133,7 @@ static rb_node_kw_arg_t *rb_node_kw_arg_new(struct parser_params *p, NODE *nd_bo
 static rb_node_postarg_t *rb_node_postarg_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc);
 static rb_node_argscat_t *rb_node_argscat_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_argspush_t *rb_node_argspush_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_splat_t *rb_node_splat_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
+static rb_node_splat_t *rb_node_splat_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_block_pass_t *rb_node_block_pass_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_defn_t *rb_node_defn_new(struct parser_params *p, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc);
 static rb_node_defs_t *rb_node_defs_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_defn, const YYLTYPE *loc);
@@ -1241,7 +1241,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_POSTARG(i,v,loc) (NODE *)rb_node_postarg_new(p,i,v,loc)
 #define NEW_ARGSCAT(a,b,loc) (NODE *)rb_node_argscat_new(p,a,b,loc)
 #define NEW_ARGSPUSH(a,b,loc) (NODE *)rb_node_argspush_new(p,a,b,loc)
-#define NEW_SPLAT(a,loc) (NODE *)rb_node_splat_new(p,a,loc)
+#define NEW_SPLAT(a,loc,op_loc) (NODE *)rb_node_splat_new(p,a,loc,op_loc)
 #define NEW_BLOCK_PASS(b,loc,o_loc) rb_node_block_pass_new(p,b,loc,o_loc)
 #define NEW_DEFN(i,s,loc) (NODE *)rb_node_defn_new(p,i,s,loc)
 #define NEW_DEFS(r,i,s,loc) (NODE *)rb_node_defs_new(p,r,i,s,loc)
@@ -4349,7 +4349,7 @@ args		: arg_value
                     }
                 | arg_splat
                     {
-                        $$ = NEW_SPLAT($arg_splat, &@$);
+                        $$ = $arg_splat;
                     /*% ripper: args_add_star!(args_new!, $:arg_splat) %*/
                     }
                 | args ',' arg_value
@@ -4359,7 +4359,7 @@ args		: arg_value
                     }
                 | args ',' arg_splat
                     {
-                        $$ = rest_arg_append(p, $1, $3, &@$);
+                        $$ = rest_arg_append(p, $1, RNODE_SPLAT($arg_splat)->nd_head, &@$);
                     /*% ripper: args_add_star!($:1, $:3) %*/
                     }
                 ;
@@ -4367,13 +4367,13 @@ args		: arg_value
 /* value */
 arg_splat	: tSTAR arg_value
                     {
-                        $$ = $2;
+                        $$ = NEW_SPLAT($2, &@$, &@1);
                     /*% ripper: $:2 %*/
                     }
                 | tSTAR /* none */
                     {
                         forwarding_arg_check(p, idFWD_REST, idFWD_ALL, "rest");
-                        $$ = NEW_LVAR(idFWD_REST, &@1);
+                        $$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$, &@1);
                     /*% ripper: Qnil %*/
                     }
                 ;
@@ -4396,7 +4396,7 @@ mrhs		: args ',' arg_value
                     }
                 | tSTAR arg_value
                     {
-                        $$ = NEW_SPLAT($2, &@$);
+                        $$ = NEW_SPLAT($2, &@$, &@1);
                     /*% ripper: mrhs_add_star!(mrhs_new!, $:2) %*/
                     }
                 ;
@@ -5430,7 +5430,7 @@ case_args	: arg_value
                     }
                 | tSTAR arg_value
                     {
-                        $$ = NEW_SPLAT($2, &@$);
+                        $$ = NEW_SPLAT($2, &@$, &@1);
                     /*% ripper: args_add_star!(args_new!, $:2) %*/
                     }
                 | case_args ',' arg_value
@@ -12316,10 +12316,11 @@ rb_node_argspush_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, cons
 }
 
 static rb_node_splat_t *
-rb_node_splat_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
+rb_node_splat_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *operator_loc)
 {
     rb_node_splat_t *n = NODE_NEWNODE(NODE_SPLAT, rb_node_splat_t, loc);
     n->nd_head = nd_head;
+    n->operator_loc = *operator_loc;
 
     return n;
 }
@@ -15167,7 +15168,7 @@ new_args_forward_call(struct parser_params *p, NODE *leading, const YYLTYPE *loc
     NODE *kwrest = list_append(p, NEW_LIST(0, loc), NEW_LVAR(idFWD_KWREST, loc));
 #endif
     rb_node_block_pass_t *block = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, loc), argsloc, &NULL_LOC);
-    NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc);
+    NODE *args = leading ? rest_arg_append(p, leading, rest, argsloc) : NEW_SPLAT(rest, loc, &NULL_LOC);
     block->forwarding = TRUE;
 #ifndef FORWARD_ARGS_WITH_RUBY2_KEYWORDS
     args = arg_append(p, args, new_hash(p, kwrest, loc), argsloc);
