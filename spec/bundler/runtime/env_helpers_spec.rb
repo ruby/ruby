@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "Bundler.with_env helpers" do
+RSpec.describe "env helpers" do
   def bundle_exec_ruby(args, options = {})
     build_bundler_context options.dup
     bundle "exec '#{Gem.ruby}' #{args}", options
