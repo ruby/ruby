@@ -371,7 +371,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .str_catf = rb_str_catf,
     .str_cat_cstr = rb_str_cat_cstr,
-    .str_cat = rb_str_cat,
     .str_resize = rb_str_resize,
     .str_new = rb_str_new,
     .str_new_cstr = rb_str_new_cstr,
