@@ -12621,6 +12621,8 @@ prism/node.$(OBJEXT): {$(VPATH)}prism/node.c
 prism/options.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.c
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.h
+prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/pack.c
