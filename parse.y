@@ -3388,13 +3388,12 @@ expr		: command_call
 
 def_name	: fname
                     {
-                        ID fname = $1;
-                        numparam_name(p, fname);
+                        numparam_name(p, $fname);
                         local_push(p, 0);
                         p->ctxt.in_def = 1;
                         p->ctxt.in_rescue = before_rescue;
                         p->ctxt.cant_return = 0;
-                        $$ = $1;
+                        $$ = $fname;
                     }
                 ;
 
