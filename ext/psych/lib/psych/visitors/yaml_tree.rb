@@ -261,7 +261,7 @@ module Psych
           style = Nodes::Scalar::LITERAL
           plain = false
           quote = false
-        elsif o =~ /\n(?!\Z)/  # match \n except blank line at the end of string
+        elsif o.match?(/\n(?!\Z)/)  # match \n except blank line at the end of string
           style = Nodes::Scalar::LITERAL
         elsif o == '<<'
           style = Nodes::Scalar::SINGLE_QUOTED
@@ -272,9 +272,9 @@ module Psych
           style = Nodes::Scalar::DOUBLE_QUOTED
         elsif @line_width && o.length > @line_width
           style = Nodes::Scalar::FOLDED
-        elsif o =~ /^[^[:word:]][^"]*$/
+        elsif o.match?(/^[^[:word:]][^"]*$/)
           style = Nodes::Scalar::DOUBLE_QUOTED
-        elsif not String === @ss.tokenize(o) or /\A0[0-7]*[89]/ =~ o
+        elsif not String === @ss.tokenize(o) or /\A0[0-7]*[89]/.match?(o)
           style = Nodes::Scalar::SINGLE_QUOTED
         end
 
