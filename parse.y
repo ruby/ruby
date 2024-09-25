@@ -2916,63 +2916,69 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 /*
  *	inlining rules
  */
-%rule %inline ident_or_const: tIDENTIFIER
-                            | tCONSTANT
-                            ;
+%rule %inline ident_or_const
+                : tIDENTIFIER
+                | tCONSTANT
+                ;
 
 /*
  *	parameterizing rules
  */
-%rule f_opt(value) <node_opt_arg>: f_arg_asgn f_eq value
-                                    {
-                                        p->ctxt.in_argdef = 1;
-                                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
-                                    /*% ripper: [$:$, $:3] %*/
-                                    }
-                                ;
+%rule f_opt(value) <node_opt_arg>
+                : f_arg_asgn f_eq value
+                    {
+                        p->ctxt.in_argdef = 1;
+                        $$ = NEW_OPT_ARG(assignable(p, $1, $3, &@$), &@$);
+                    /*% ripper: [$:$, $:3] %*/
+                    }
+                ;
 
-%rule f_optarg(value) <node_opt_arg>: f_opt(value)
-                                        {
-                                            $$ = $1;
-                                        /*% ripper: rb_ary_new3(1, $:1) %*/
-                                        }
-                                    | f_optarg(value) ',' f_opt(value)
-                                        {
-                                            $$ = opt_arg_append($1, $3);
-                                        /*% ripper: rb_ary_push($:1, $:3) %*/
-                                        }
-                                    ;
+%rule f_optarg(value) <node_opt_arg>
+                : f_opt(value)
+                    {
+                        $$ = $1;
+                    /*% ripper: rb_ary_new3(1, $:1) %*/
+                    }
+                | f_optarg(value) ',' f_opt(value)
+                    {
+                        $$ = opt_arg_append($1, $3);
+                    /*% ripper: rb_ary_push($:1, $:3) %*/
+                    }
+                ;
 
-%rule f_kwarg(kw) <node_kw_arg>: kw
-                                    {
-                                        $$ = $1;
-                                    /*% ripper: rb_ary_new3(1, $:1) %*/
-                                    }
-                                | f_kwarg(kw) ',' kw
-                                    {
-                                        $$ = kwd_append($1, $3);
-                                    /*% ripper: rb_ary_push($:1, $:3) %*/
-                                    }
-                                ;
+%rule f_kwarg(kw) <node_kw_arg>
+                : kw
+                    {
+                        $$ = $1;
+                    /*% ripper: rb_ary_new3(1, $:1) %*/
+                    }
+                | f_kwarg(kw) ',' kw
+                    {
+                        $$ = kwd_append($1, $3);
+                    /*% ripper: rb_ary_push($:1, $:3) %*/
+                    }
+                ;
 
-%rule opt_args_tail(tail) <node_args>: ',' tail
-                                        {
-                                            $$ = $2;
-                                        /*% ripper: $:2 %*/
-                                        }
-                                    | /* none */
-                                        {
-                                            $$ = new_args_tail(p, 0, 0, 0, &@0);
-                                        /*% ripper: [Qnil, Qnil, Qnil] %*/
-                                        }
-                                    ;
+%rule opt_args_tail(tail) <node_args>
+                : ',' tail
+                    {
+                        $$ = $2;
+                    /*% ripper: $:2 %*/
+                    }
+                | /* none */
+                    {
+                        $$ = new_args_tail(p, 0, 0, 0, &@0);
+                    /*% ripper: [Qnil, Qnil, Qnil] %*/
+                    }
+                ;
 
-%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
-                                {
-                                    $$ = make_list($3, &@$);
-                                /*% ripper: array!($:3) %*/
-                                }
-                            ;
+%rule words(begin, word_list)
+                : begin ' '+ word_list tSTRING_END
+                    {
+                        $$ = make_list($3, &@$);
+                    /*% ripper: array!($:3) %*/
+                    }
+                ;
 
 %%
 program		:  {
