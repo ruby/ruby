@@ -2090,7 +2090,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
- *  With neither an argument nor a block given, returns a new Enumerator:
+ *  With neither an argument nor a block given, returns a new Enumerator.
  *
  *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
