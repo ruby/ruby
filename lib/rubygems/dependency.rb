@@ -337,4 +337,12 @@ class Gem::Dependency
       :released
     end
   end
+
+  def encode_with(coder) # :nodoc:
+    coder.add "name", @name
+    coder.add "requirement", @requirement
+    coder.add "type", @type
+    coder.add "prerelease", @prerelease
+    coder.add "version_requirements", @version_requirements
+  end
 end

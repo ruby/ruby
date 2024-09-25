@@ -563,10 +563,14 @@ if you believe they were disclosed to a third party.
     yaml = <<~YAML
       ---
       :foo: bar # buzz
+      #:notkey: bar
     YAML
 
     actual = Gem::ConfigFile.load_with_rubygems_config_hash(yaml)
     assert_equal("bar", actual[:foo])
+    assert_equal(false, actual.key?("#:notkey"))
+    assert_equal(false, actual.key?(:notkey))
+    assert_equal(1, actual.size)
   end
 
   def test_s3_source

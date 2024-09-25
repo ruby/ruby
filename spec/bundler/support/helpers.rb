@@ -425,7 +425,7 @@ module Spec
     def simulate_platform(platform)
       old = ENV["BUNDLER_SPEC_PLATFORM"]
       ENV["BUNDLER_SPEC_PLATFORM"] = platform.to_s
-      yield if block_given?
+      yield
     ensure
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
     end

@@ -48,13 +48,14 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
     G
 
-    simulate_platform "x86-darwin-10"
-    install_gemfile <<-G
-      source "https://gem.repo1"
-      gem "nokogiri"
-    G
+    simulate_platform "x86-darwin-10" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "nokogiri"
+      G
 
-    expect(the_bundle).to include_gems "nokogiri 1.4.2"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2"
+    end
   end
 
   it "will keep both platforms when both ruby and a specific ruby platform are locked and the bundle is unlocked" do
@@ -200,15 +201,15 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
     G
 
-    simulate_platform "x86-darwin-100"
+    simulate_platform "x86-darwin-100" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "nokogiri"
+        gem "platform_specific"
+      G
 
-    install_gemfile <<-G
-      source "https://gem.repo1"
-      gem "nokogiri"
-      gem "platform_specific"
-    G
-
-    expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 x86-darwin-100"
+      expect(the_bundle).to include_gems "nokogiri 1.4.2", "platform_specific 1.0 x86-darwin-100"
+    end
   end
 
   it "allows specifying only-ruby-platform on jruby", :jruby_only do

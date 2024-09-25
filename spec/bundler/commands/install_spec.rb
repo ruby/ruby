@@ -249,43 +249,47 @@ RSpec.describe "bundle install with gem sources" do
 
     describe "with a gem that installs multiple platforms" do
       it "installs gems for the local platform as first choice" do
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "x86-darwin-100" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 #{Bundler.local_platform}")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-darwin-100")
+        end
       end
 
       it "falls back on plain ruby" do
-        simulate_platform "foo-bar-baz"
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "foo-bar-baz" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
+          expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
+        end
       end
 
       it "installs gems for java" do
-        simulate_platform "java"
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
+        simulate_platform "java" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        expect(the_bundle).to include_gems("platform_specific 1.0 java")
+          expect(the_bundle).to include_gems("platform_specific 1.0 java")
+        end
       end
 
       it "installs gems for windows" do
-        simulate_platform x86_mswin32
+        simulate_platform x86_mswin32 do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
 
-        install_gemfile <<-G
-          source "https://gem.repo1"
-          gem "platform_specific"
-        G
-
-        expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
+          expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
+        end
       end
     end
 
@@ -672,7 +676,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "writes current Ruby version to Gemfile.lock" do
-        checksums = checksums_section_when_existing
+        checksums = checksums_section_when_enabled
         expect(lockfile).to eq <<~L
          GEM
            remote: https://gem.repo1/
@@ -697,7 +701,7 @@ RSpec.describe "bundle install with gem sources" do
           source "https://gem.repo1"
         G
 
-        checksums = checksums_section_when_existing
+        checksums = checksums_section_when_enabled
 
         expect(lockfile).to eq <<~L
          GEM
@@ -1132,11 +1136,15 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
-  context "in a frozen bundle" do
-    before do
+  context "when current platform not included in the lockfile" do
+    around do |example|
       build_repo4 do
         build_gem "libv8", "8.4.255.0" do |s|
           s.platform = "x86_64-darwin-19"
+        end
+
+        build_gem "libv8", "8.4.255.0" do |s|
+          s.platform = "x86_64-linux"
         end
       end
 
@@ -1162,11 +1170,36 @@ RSpec.describe "bundle install with gem sources" do
            #{Bundler::VERSION}
       L
 
-      bundle "config set --local deployment true"
+      simulate_platform("x86_64-linux", &example)
     end
 
-    it "should fail loudly if the lockfile platforms don't include the current platform" do
-      simulate_platform(Gem::Platform.new("x86_64-linux")) { bundle "install", raise_on_error: false }
+    it "adds the current platform to the lockfile" do
+      bundle "install --verbose"
+
+      expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            libv8 (8.4.255.0-x86_64-darwin-19)
+            libv8 (8.4.255.0-x86_64-linux)
+
+        PLATFORMS
+          x86_64-darwin-19
+          x86_64-linux
+
+        DEPENDENCIES
+          libv8
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "fails loudly if frozen mode set" do
+      bundle "config set --local deployment true"
+      bundle "install", raise_on_error: false
 
       expect(err).to eq(
         "Your bundle only supports platforms [\"x86_64-darwin-19\"] but your local platform is x86_64-linux. " \
@@ -1247,7 +1280,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle "install", artifice: "compact_index"
       end
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "crass", "1.0.6"
         c.checksum gem_repo4, "loofah", "2.12.0"
         c.checksum gem_repo4, "nokogiri", "1.12.4", "x86_64-darwin"

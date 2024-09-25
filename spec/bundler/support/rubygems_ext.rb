@@ -57,8 +57,8 @@ module Spec
       install_test_deps
 
       (2..Parallel.processor_count).each do |n|
-        source = Path.source_root.join("tmp", "1")
-        destination = Path.source_root.join("tmp", n.to_s)
+        source = Path.tmp_root("1")
+        destination = Path.tmp_root(n.to_s)
 
         FileUtils.rm_rf destination
         FileUtils.cp_r source, destination
