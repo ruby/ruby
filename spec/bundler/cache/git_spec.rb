@@ -258,6 +258,46 @@ RSpec.describe "bundle cache with git" do
     end
   end
 
+  it "can install after bundle cache generated with an older Bundler that kept checkouts in the cache" do
+    git = build_git("foo")
+    locked_revision = git.ref_for("main")
+    path_revision = git.ref_for("main", 11)
+
+    git_path = lib_path("foo-1.0")
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => '#{git_path}'
+    G
+    lockfile <<~L
+      GIT
+        remote: #{git_path}/
+        revision: #{locked_revision}
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: https://gem.repo1/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    # Simulate an old incorrect situation where vendor/cache would be the install location of git gems
+    FileUtils.mkdir_p bundled_app("vendor/cache")
+    FileUtils.cp_r git_path, bundled_app("vendor/cache/foo-1.0-#{path_revision}")
+    FileUtils.rm_rf bundled_app("vendor/cache/foo-1.0-#{path_revision}/.git")
+
+    bundle :install, env: { "BUNDLE_DEPLOYMENT" => "true", "BUNDLE_CACHE_ALL" => "true" }
+  end
+
   it "respects the --no-install flag" do
     git = build_git "foo", &:add_c_extension
     ref = git.ref_for("main", 11)

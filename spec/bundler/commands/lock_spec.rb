@@ -1990,4 +1990,64 @@ RSpec.describe "bundle lock" do
       L
     end
   end
+
+  context "when lockfile has incorrectly indented platforms" do
+    before do
+      build_repo4 do
+        build_gem "ffi", "1.1.0" do |s|
+          s.platform = "x86_64-linux"
+        end
+
+        build_gem "ffi", "1.1.0" do |s|
+          s.platform = "arm64-darwin"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "ffi"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            ffi (1.1.0-arm64-darwin)
+
+        PLATFORMS
+           arm64-darwin
+
+        DEPENDENCIES
+          ffi
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "does not remove any gems" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock --update"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            ffi (1.1.0-arm64-darwin)
+            ffi (1.1.0-x86_64-linux)
+
+        PLATFORMS
+          arm64-darwin
+          x86_64-linux
+
+        DEPENDENCIES
+          ffi
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
 end

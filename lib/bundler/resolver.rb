@@ -84,9 +84,9 @@ module Bundler
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
-      names_to_unlock, names_to_allow_prereleases_for, extended_explanation = find_names_to_relax(incompatibility)
+      names_to_unlock, names_to_allow_prereleases_for, names_to_allow_remote_specs_for, extended_explanation = find_names_to_relax(incompatibility)
 
-      names_to_relax = names_to_unlock + names_to_allow_prereleases_for
+      names_to_relax = names_to_unlock + names_to_allow_prereleases_for + names_to_allow_remote_specs_for
 
       if names_to_relax.any?
         if names_to_unlock.any?
@@ -96,9 +96,15 @@ module Bundler
         end
 
         if names_to_allow_prereleases_for.any?
-          Bundler.ui.debug "Found conflicts with dependencies with prereleases. Will retrying considering prereleases for #{names_to_allow_prereleases_for.join(", ")}...", true
+          Bundler.ui.debug "Found conflicts with dependencies with prereleases. Will retry considering prereleases for #{names_to_allow_prereleases_for.join(", ")}...", true
 
           @base.include_prereleases(names_to_allow_prereleases_for)
+        end
+
+        if names_to_allow_remote_specs_for.any?
+          Bundler.ui.debug "Found conflicts with local versions of #{names_to_allow_remote_specs_for.join(", ")}. Will retry considering remote versions...", true
+
+          @base.include_remote_specs(names_to_allow_remote_specs_for)
         end
 
         root, logger = setup_solver
@@ -120,6 +126,7 @@ module Bundler
     def find_names_to_relax(incompatibility)
       names_to_unlock = []
       names_to_allow_prereleases_for = []
+      names_to_allow_remote_specs_for = []
       extended_explanation = nil
 
       while incompatibility.conflict?
@@ -134,6 +141,8 @@ module Bundler
             names_to_unlock << name
           elsif package.ignores_prereleases? && @all_specs[name].any? {|s| s.version.prerelease? }
             names_to_allow_prereleases_for << name
+          elsif package.prefer_local? && @all_specs[name].any? {|s| !s.is_a?(StubSpecification) }
+            names_to_allow_remote_specs_for << name
           end
 
           no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(PubGrub::Incompatibility::NoVersions) }
@@ -143,7 +152,7 @@ module Bundler
         end
       end
 
-      [names_to_unlock.uniq, names_to_allow_prereleases_for.uniq, extended_explanation]
+      [names_to_unlock.uniq, names_to_allow_prereleases_for.uniq, names_to_allow_remote_specs_for.uniq, extended_explanation]
     end
 
     def parse_dependency(package, dependency)
@@ -244,7 +253,7 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = (@base[name] + filter_prereleases(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform] }
+      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform] }
 
       if name == "bundler" && !bundler_pinned_to_current_version?
         bundler_spec = Gem.loaded_specs["bundler"]
@@ -368,10 +377,20 @@ module Bundler
       end
     end
 
+    def filter_specs(specs, package)
+      filter_remote_specs(filter_prereleases(specs, package), package)
+    end
+
     def filter_prereleases(specs, package)
       return specs unless package.ignores_prereleases? && specs.size > 1
 
       specs.reject {|s| s.version.prerelease? }
+    end
+
+    def filter_remote_specs(specs, package)
+      return specs unless package.prefer_local?
+
+      specs.select {|s| s.is_a?(StubSpecification) }
     end
 
     # Ignore versions that depend on themselves incorrectly
@@ -405,10 +424,13 @@ module Bundler
 
         dep_range = dep_constraint.range
         versions = select_sorted_versions(dep_package, dep_range)
-        if versions.empty? && dep_package.ignores_prereleases?
-          @all_versions.delete(dep_package)
-          @sorted_versions.delete(dep_package)
-          dep_package.consider_prereleases!
+        if versions.empty?
+          if dep_package.ignores_prereleases? || dep_package.prefer_local?
+            @all_versions.delete(dep_package)
+            @sorted_versions.delete(dep_package)
+          end
+          dep_package.consider_prereleases! if dep_package.ignores_prereleases?
+          dep_package.consider_remote_versions! if dep_package.prefer_local?
           versions = select_sorted_versions(dep_package, dep_range)
         end
 

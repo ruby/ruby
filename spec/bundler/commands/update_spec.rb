@@ -956,7 +956,7 @@ RSpec.describe "bundle update" do
         build_gem "vcr", "6.0.0"
       end
 
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "pkg-gem-flowbyte-with-dep", "1.0.0" do |s|
           s.add_dependency "oj"
         end

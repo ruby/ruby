@@ -72,6 +72,12 @@ module Bundler
         end
       end
 
+      def include_remote_specs(names)
+        names.each do |name|
+          get_package(name).consider_remote_versions!
+        end
+      end
+
       private
 
       def indirect_pins(names)
