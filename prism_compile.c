@@ -1977,7 +1977,7 @@ pm_compile_index_operator_write_node(rb_iseq_t *iseq, const pm_index_operator_wr
     int boff = (node->block == NULL ? 0 : 1);
     int flag = PM_NODE_TYPE_P(node->receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
     struct rb_callinfo_kwarg *keywords = NULL;
-    int argc = pm_setup_args(node->arguments, node->block, &flag, &keywords, iseq, ret, scope_node, node_location);
+    int argc = pm_setup_args(node->arguments, (const pm_node_t *) node->block, &flag, &keywords, iseq, ret, scope_node, node_location);
 
     if ((argc > 0 || boff) && (flag & VM_CALL_KW_SPLAT)) {
         if (boff) {
@@ -2084,7 +2084,7 @@ pm_compile_index_operator_write_node(rb_iseq_t *iseq, const pm_index_operator_wr
  * []= method.
  */
 static void
-pm_compile_index_control_flow_write_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_t *receiver, const pm_arguments_node_t *arguments, const pm_node_t *block, const pm_node_t *value, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_compile_index_control_flow_write_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_t *receiver, const pm_arguments_node_t *arguments, const pm_block_argument_node_t *block, const pm_node_t *value, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = *node_location;
     if (!popped) PUSH_INSN(ret, location, putnil);
@@ -2093,7 +2093,7 @@ pm_compile_index_control_flow_write_node(rb_iseq_t *iseq, const pm_node_t *node,
     int boff = (block == NULL ? 0 : 1);
     int flag = PM_NODE_TYPE_P(receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
     struct rb_callinfo_kwarg *keywords = NULL;
-    int argc = pm_setup_args(arguments, block, &flag, &keywords, iseq, ret, scope_node, node_location);
+    int argc = pm_setup_args(arguments, (const pm_node_t *) block, &flag, &keywords, iseq, ret, scope_node, node_location);
 
     if ((argc > 0 || boff) && (flag & VM_CALL_KW_SPLAT)) {
         if (boff) {
@@ -2648,8 +2648,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 CHECK(pm_compile_pattern_match(iseq, scope_node, cast->requireds.nodes[index], ret, next_loop_label, in_single_pattern, in_alternation_pattern, false, base_index + 4));
             }
 
-            RUBY_ASSERT(PM_NODE_TYPE_P(cast->left, PM_SPLAT_NODE));
-            const pm_splat_node_t *left = (const pm_splat_node_t *) cast->left;
+            const pm_splat_node_t *left = cast->left;
 
             if (left->expression != NULL) {
                 PUSH_INSN1(ret, location, topn, INT2FIX(3));
@@ -2896,7 +2895,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
         PUSH_INSN(ret, location, dup);
         CHECK(pm_compile_pattern_match(iseq, scope_node, cast->value, ret, match_failed_label, in_single_pattern, in_alternation_pattern, use_deconstructed_cache, base_index + 1));
-        CHECK(pm_compile_pattern(iseq, scope_node, cast->target, ret, matched_label, match_failed_label, in_single_pattern, in_alternation_pattern, false, base_index));
+        CHECK(pm_compile_pattern(iseq, scope_node, (const pm_node_t *) cast->target, ret, matched_label, match_failed_label, in_single_pattern, in_alternation_pattern, false, base_index));
         PUSH_INSN(ret, location, putnil);
 
         PUSH_LABEL(ret, match_failed_label);
@@ -4595,7 +4594,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         int flags = 0;
         struct rb_callinfo_kwarg *kwargs = NULL;
-        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &kwargs, iseq, parents, scope_node, &location);
+        int argc = pm_setup_args(cast->arguments, (const pm_node_t *) cast->block, &flags, &kwargs, iseq, parents, scope_node, &location);
 
         if (state != NULL) {
             PUSH_INSN1(writes, location, topn, INT2FIX(argc + 1));
