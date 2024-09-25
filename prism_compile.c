@@ -646,12 +646,21 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                         current_string = rb_enc_str_new(NULL, 0, encoding);
                     }
 
-                    PUSH_INSN1(ret, current_location, putobject, rb_fstring(current_string));
+                    {
+                        VALUE operand = rb_fstring(current_string);
+                        PUSH_INSN1(ret, current_location, putobject, operand);
+                    }
+
                     PM_COMPILE_NOT_POPPED(part);
 
                     const pm_node_location_t current_location = PM_NODE_START_LOCATION(scope_node->parser, part);
                     PUSH_INSN(ret, current_location, dup);
-                    PUSH_INSN1(ret, current_location, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE, NULL, FALSE));
+
+                    {
+                        const struct rb_callinfo *callinfo = new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE, NULL, FALSE);
+                        PUSH_INSN1(ret, current_location, objtostring, callinfo);
+                    }
+
                     PUSH_INSN(ret, current_location, anytostring);
 
                     current_string = Qnil;
@@ -891,7 +900,10 @@ pm_compile_flip_flop_bound(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *
 
     if (PM_NODE_TYPE_P(node, PM_INTEGER_NODE)) {
         PM_COMPILE_NOT_POPPED(node);
-        PUSH_INSN1(ret, location, getglobal, ID2SYM(rb_intern("$.")));
+
+        VALUE operand = ID2SYM(rb_intern("$."));
+        PUSH_INSN1(ret, location, getglobal, operand);
+
         PUSH_SEND(ret, location, idEq, INT2FIX(1));
         if (popped) PUSH_INSN(ret, location, pop);
     }
@@ -2295,9 +2307,11 @@ pm_compile_pattern_eqq_error(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const
 
     PUSH_INSN(ret, location, dup);
     PUSH_INSNL(ret, location, branchif, match_succeeded_label);
-
     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-    PUSH_INSN1(ret, location, putobject, rb_fstring_lit("%p === %p does not return true"));
+
+    VALUE operand = rb_fstring_lit("%p === %p does not return true");
+    PUSH_INSN1(ret, location, putobject, operand);
+
     PUSH_INSN1(ret, location, topn, INT2FIX(3));
     PUSH_INSN1(ret, location, topn, INT2FIX(5));
     PUSH_SEND(ret, location, id_core_sprintf, INT2FIX(3));
@@ -2357,7 +2371,9 @@ pm_compile_pattern_deconstruct(rb_iseq_t *iseq, pm_scope_node_t *scope_node, con
 
     PUSH_LABEL(ret, deconstruct_label);
     PUSH_INSN(ret, location, dup);
-    PUSH_INSN1(ret, location, putobject, ID2SYM(rb_intern("deconstruct")));
+
+    VALUE operand = ID2SYM(rb_intern("deconstruct"));
+    PUSH_INSN1(ret, location, putobject, operand);
     PUSH_SEND(ret, location, idRespond_to, INT2FIX(1));
 
     if (use_deconstructed_cache) {
@@ -2429,7 +2445,12 @@ pm_compile_pattern_error_handler(rb_iseq_t *iseq, const pm_scope_node_t *scope_n
 
     PUSH_INSN1(ret, location, putobject, rb_eNoMatchingPatternError);
     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-    PUSH_INSN1(ret, location, putobject, rb_fstring_lit("%p: %s"));
+
+    {
+        VALUE operand = rb_fstring_lit("%p: %s");
+        PUSH_INSN1(ret, location, putobject, operand);
+    }
+
     PUSH_INSN1(ret, location, topn, INT2FIX(4));
     PUSH_INSN1(ret, location, topn, INT2FIX(PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 6));
     PUSH_SEND(ret, location, id_core_sprintf, INT2FIX(3));
@@ -2439,7 +2460,12 @@ pm_compile_pattern_error_handler(rb_iseq_t *iseq, const pm_scope_node_t *scope_n
     PUSH_LABEL(ret, key_error_label);
     PUSH_INSN1(ret, location, putobject, rb_eNoMatchingPatternKeyError);
     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-    PUSH_INSN1(ret, location, putobject, rb_fstring_lit("%p: %s"));
+
+    {
+        VALUE operand = rb_fstring_lit("%p: %s");
+        PUSH_INSN1(ret, location, putobject, operand);
+    }
+
     PUSH_INSN1(ret, location, topn, INT2FIX(4));
     PUSH_INSN1(ret, location, topn, INT2FIX(PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 6));
     PUSH_SEND(ret, location, id_core_sprintf, INT2FIX(3));
@@ -2570,7 +2596,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         PUSH_LABEL(ret, type_error_label);
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         PUSH_INSN1(ret, location, putobject, rb_eTypeError);
-        PUSH_INSN1(ret, location, putobject, rb_fstring_lit("deconstruct must return Array"));
+
+        {
+            VALUE operand = rb_fstring_lit("deconstruct must return Array");
+            PUSH_INSN1(ret, location, putobject, operand);
+        }
+
         PUSH_SEND(ret, location, id_core_raise, INT2FIX(2));
         PUSH_INSN(ret, location, pop);
 
@@ -2682,7 +2713,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             PUSH_INSN1(ret, location, adjuststack, INT2FIX(3));
             if (in_single_pattern) {
                 PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                PUSH_INSN1(ret, location, putobject, rb_fstring_lit("%p does not match to find pattern"));
+
+                {
+                    VALUE operand = rb_fstring_lit("%p does not match to find pattern");
+                    PUSH_INSN1(ret, location, putobject, operand);
+                }
+
                 PUSH_INSN1(ret, location, topn, INT2FIX(2));
                 PUSH_SEND(ret, location, id_core_sprintf, INT2FIX(2));
                 PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 1));
@@ -2707,7 +2743,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         PUSH_LABEL(ret, type_error_label);
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         PUSH_INSN1(ret, location, putobject, rb_eTypeError);
-        PUSH_INSN1(ret, location, putobject, rb_fstring_lit("deconstruct must return Array"));
+
+        {
+            VALUE operand = rb_fstring_lit("deconstruct must return Array");
+            PUSH_INSN1(ret, location, putobject, operand);
+        }
+
         PUSH_SEND(ret, location, id_core_raise, INT2FIX(2));
         PUSH_INSN(ret, location, pop);
 
@@ -2756,7 +2797,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         }
 
         PUSH_INSN(ret, location, dup);
-        PUSH_INSN1(ret, location, putobject, ID2SYM(rb_intern("deconstruct_keys")));
+
+        {
+            VALUE operand = ID2SYM(rb_intern("deconstruct_keys"));
+            PUSH_INSN1(ret, location, putobject, operand);
+        }
+
         PUSH_SEND(ret, location, idRespond_to, INT2FIX(1));
         if (in_single_pattern) {
             CHECK(pm_compile_pattern_generic_error(iseq, scope_node, node, ret, rb_fstring_lit("%p does not respond to #deconstruct_keys"), base_index + 1));
@@ -2803,7 +2849,11 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                     PUSH_INSN(ret, location, dup);
                     PUSH_INSNL(ret, location, branchif, match_succeeded_label);
 
-                    PUSH_INSN1(ret, location, putobject, rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol)));
+                    {
+                        VALUE operand = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol));
+                        PUSH_INSN1(ret, location, putobject, operand);
+                    }
+
                     PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 2));
                     PUSH_INSN1(ret, location, putobject, Qtrue);
                     PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 3));
@@ -2870,7 +2920,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         PUSH_LABEL(ret, type_error_label);
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         PUSH_INSN1(ret, location, putobject, rb_eTypeError);
-        PUSH_INSN1(ret, location, putobject, rb_fstring_lit("deconstruct_keys must return Hash"));
+
+        {
+            VALUE operand = rb_fstring_lit("deconstruct_keys must return Hash");
+            PUSH_INSN1(ret, location, putobject, operand);
+        }
+
         PUSH_SEND(ret, location, id_core_raise, INT2FIX(2));
         PUSH_INSN(ret, location, pop);
 
@@ -3069,7 +3124,11 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 PUSH_INSNL(ret, location, branchunless, match_succeeded_label);
             }
 
-            PUSH_INSN1(ret, location, putobject, rb_fstring_lit("guard clause does not return true"));
+            {
+                VALUE operand = rb_fstring_lit("guard clause does not return true");
+                PUSH_INSN1(ret, location, putobject, operand);
+            }
+
             PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 1));
             PUSH_INSN1(ret, location, putobject, Qfalse);
             PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 2));
@@ -4462,7 +4521,8 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         const pm_class_variable_target_node_t *cast = (const pm_class_variable_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        PUSH_INSN2(writes, location, setclassvariable, ID2SYM(name), get_cvar_ic_value(iseq, name));
+        VALUE operand = ID2SYM(name);
+        PUSH_INSN2(writes, location, setclassvariable, operand, get_cvar_ic_value(iseq, name));
         break;
       }
       case PM_CONSTANT_TARGET_NODE: {
@@ -4474,8 +4534,9 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         const pm_constant_target_node_t *cast = (const pm_constant_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
+        VALUE operand = ID2SYM(name);
         PUSH_INSN1(writes, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-        PUSH_INSN1(writes, location, setconstant, ID2SYM(name));
+        PUSH_INSN1(writes, location, setconstant, operand);
         break;
       }
       case PM_GLOBAL_VARIABLE_TARGET_NODE: {
@@ -4487,7 +4548,8 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         const pm_global_variable_target_node_t *cast = (const pm_global_variable_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        PUSH_INSN1(writes, location, setglobal, ID2SYM(name));
+        VALUE operand = ID2SYM(name);
+        PUSH_INSN1(writes, location, setglobal, operand);
         break;
       }
       case PM_INSTANCE_VARIABLE_TARGET_NODE: {
@@ -4499,7 +4561,8 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         const pm_instance_variable_target_node_t *cast = (const pm_instance_variable_target_node_t *) node;
         ID name = pm_constant_id_lookup(scope_node, cast->name);
 
-        PUSH_INSN2(writes, location, setinstancevariable, ID2SYM(name), get_ivar_ic_value(iseq, name));
+        VALUE operand = ID2SYM(name);
+        PUSH_INSN2(writes, location, setinstancevariable, operand, get_ivar_ic_value(iseq, name));
         break;
       }
       case PM_CONSTANT_PATH_TARGET_NODE: {
@@ -4529,7 +4592,8 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
             pm_multi_target_state_push(state, (INSN *) LAST_ELEMENT(writes), 1);
         }
 
-        PUSH_INSN1(writes, location, setconstant, ID2SYM(name));
+        VALUE operand = ID2SYM(name);
+        PUSH_INSN1(writes, location, setconstant, operand);
 
         if (state != NULL) {
             PUSH_INSN(cleanup, location, pop);
@@ -5297,7 +5361,9 @@ pm_compile_constant_write_node(rb_iseq_t *iseq, const pm_constant_write_node_t *
 
     if (!popped) PUSH_INSN(ret, location, dup);
     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-    PUSH_INSN1(ret, location, setconstant, ID2SYM(name_id));
+
+    VALUE operand = ID2SYM(name_id);
+    PUSH_INSN1(ret, location, setconstant, operand);
 }
 
 /**
@@ -6546,11 +6612,17 @@ pm_compile_alias_global_variable_node(rb_iseq_t *iseq, const pm_alias_global_var
     // ^^^^^^^^^^^^^^^
     PUSH_INSN1(ret, *location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 
-    const pm_location_t *new_name_loc = &node->new_name->location;
-    PUSH_INSN1(ret, *location, putobject, ID2SYM(rb_intern3((const char *) new_name_loc->start, new_name_loc->end - new_name_loc->start, scope_node->encoding)));
+    {
+        const pm_location_t *name_loc = &node->new_name->location;
+        VALUE operand = ID2SYM(rb_intern3((const char *) name_loc->start, name_loc->end - name_loc->start, scope_node->encoding));
+        PUSH_INSN1(ret, *location, putobject, operand);
+    }
 
-    const pm_location_t *old_name_loc = &node->old_name->location;
-    PUSH_INSN1(ret, *location, putobject, ID2SYM(rb_intern3((const char *) old_name_loc->start, old_name_loc->end - old_name_loc->start, scope_node->encoding)));
+    {
+        const pm_location_t *name_loc = &node->old_name->location;
+        VALUE operand = ID2SYM(rb_intern3((const char *) name_loc->start, name_loc->end - name_loc->start, scope_node->encoding));
+        PUSH_INSN1(ret, *location, putobject, operand);
+    }
 
     PUSH_SEND(ret, *location, id_core_set_variable_alias, INT2FIX(2));
     if (popped) PUSH_INSN(ret, *location, pop);
@@ -6841,7 +6913,8 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
       case idUMinus: {
         if (pm_opt_str_freeze_p(iseq, node)) {
             VALUE value = parse_static_literal_string(iseq, scope_node, node->receiver, &((const pm_string_node_t * ) node->receiver)->unescaped);
-            PUSH_INSN2(ret, location, opt_str_uminus, value, new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
+            const struct rb_callinfo *callinfo = new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE);
+            PUSH_INSN2(ret, location, opt_str_uminus, value, callinfo);
             return;
         }
         break;
@@ -6849,7 +6922,8 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
       case idFreeze: {
         if (pm_opt_str_freeze_p(iseq, node)) {
             VALUE value = parse_static_literal_string(iseq, scope_node, node->receiver, &((const pm_string_node_t * ) node->receiver)->unescaped);
-            PUSH_INSN2(ret, location, opt_str_freeze, value, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
+            const struct rb_callinfo *callinfo = new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE);
+            PUSH_INSN2(ret, location, opt_str_freeze, value, callinfo);
             return;
         }
         break;
@@ -6860,7 +6934,9 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
             VALUE value = parse_static_literal_string(iseq, scope_node, (const pm_node_t *) string, &string->unescaped);
 
             PM_COMPILE_NOT_POPPED(node->receiver);
-            PUSH_INSN2(ret, location, opt_aref_with, value, new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
+
+            const struct rb_callinfo *callinfo = new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE);
+            PUSH_INSN2(ret, location, opt_aref_with, value, callinfo);
 
             if (popped) {
                 PUSH_INSN(ret, location, pop);
@@ -6883,7 +6959,8 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
                 PUSH_INSN1(ret, location, topn, INT2FIX(1));
             }
 
-            PUSH_INSN2(ret, location, opt_aset_with, value, new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
+            const struct rb_callinfo *callinfo = new_callinfo(iseq, idASET, 2, 0, NULL, FALSE);
+            PUSH_INSN2(ret, location, opt_aset_with, value, callinfo);
             PUSH_INSN(ret, location, pop);
             return;
         }
@@ -7479,7 +7556,10 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
         flag |= VM_CALL_FORWARDING;
         pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
         PUSH_GETLOCAL(ret, *location, mult_local.index, mult_local.level);
-        PUSH_INSN2(ret, *location, invokesuperforward, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
+
+        const struct rb_callinfo *callinfo = new_callinfo(iseq, 0, 0, flag, NULL, block != NULL);
+        PUSH_INSN2(ret, *location, invokesuperforward, callinfo, block);
+
         if (popped) PUSH_INSN(ret, *location, pop);
         if (node->block) {
             ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
@@ -7556,7 +7636,12 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
         for (; i < local_keyword->num; ++i) {
             ID id = local_keyword->table[i];
             int idx = local_size - get_local_var_idx(local_iseq, id);
-            PUSH_INSN1(args, *location, putobject, ID2SYM(id));
+
+            {
+                VALUE operand = ID2SYM(id);
+                PUSH_INSN1(args, *location, putobject, operand);
+            }
+
             PUSH_GETLOCAL(args, *location, idx, depth);
         }
 
@@ -7571,7 +7656,11 @@ pm_compile_forwarding_super_node(rb_iseq_t *iseq, const pm_forwarding_super_node
     }
 
     PUSH_SEQ(ret, args);
-    PUSH_INSN2(ret, *location, invokesuper, new_callinfo(iseq, 0, argc, flag, NULL, block != NULL), block);
+
+    {
+        const struct rb_callinfo *callinfo = new_callinfo(iseq, 0, argc, flag, NULL, block != NULL);
+        PUSH_INSN2(ret, *location, invokesuper, callinfo, block);
+    }
 
     if (node->block != NULL) {
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
@@ -7641,7 +7730,11 @@ pm_compile_match_write_node(rb_iseq_t *iseq, const pm_match_write_node_t *node, 
     // Now, check if the match was successful. If it was, then we'll
     // continue on and assign local variables. Otherwise we'll skip over the
     // assignment code.
-    PUSH_INSN1(ret, *location, getglobal, rb_id2sym(idBACKREF));
+    {
+        VALUE operand = rb_id2sym(idBACKREF);
+        PUSH_INSN1(ret, *location, getglobal, operand);
+    }
+
     PUSH_INSN(ret, *location, dup);
     PUSH_INSNL(ret, *location, branchunless, fail_label);
 
@@ -7656,7 +7749,11 @@ pm_compile_match_write_node(rb_iseq_t *iseq, const pm_match_write_node_t *node, 
         const pm_local_variable_target_node_t *local_target = (const pm_local_variable_target_node_t *) target;
         pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
 
-        PUSH_INSN1(ret, *location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
+        {
+            VALUE operand = rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name));
+            PUSH_INSN1(ret, *location, putobject, operand);
+        }
+
         PUSH_SEND(ret, *location, idAREF, INT2FIX(1));
         PUSH_LABEL(ret, fail_label);
         PUSH_SETLOCAL(ret, *location, index.index, index.level);
@@ -7679,7 +7776,12 @@ pm_compile_match_write_node(rb_iseq_t *iseq, const pm_match_write_node_t *node, 
         if (((size_t) targets_index) < (targets_count - 1)) {
             PUSH_INSN(ret, *location, dup);
         }
-        PUSH_INSN1(ret, *location, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
+
+        {
+            VALUE operand = rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name));
+            PUSH_INSN1(ret, *location, putobject, operand);
+        }
+
         PUSH_SEND(ret, *location, idAREF, INT2FIX(1));
         PUSH_SETLOCAL(ret, *location, index.index, index.level);
 
@@ -8037,10 +8139,18 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
     PUSH_SEQ(ret, args);
     if (is_forwardable && ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
         flags |= VM_CALL_FORWARDING;
-        PUSH_INSN2(ret, *location, invokesuperforward, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+
+        {
+            const struct rb_callinfo *callinfo = new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL);
+            PUSH_INSN2(ret, *location, invokesuperforward, callinfo, current_block);
+        }
     }
     else {
-        PUSH_INSN2(ret, *location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL), current_block);
+        {
+            const struct rb_callinfo *callinfo = new_callinfo(iseq, 0, argc, flags, keywords, current_block != NULL);
+            PUSH_INSN2(ret, *location, invokesuper, callinfo, current_block);
+        }
+
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
     }
 
@@ -8069,7 +8179,9 @@ pm_compile_yield_node(rb_iseq_t *iseq, const pm_yield_node_t *node, const pm_nod
         argc = pm_setup_args(node->arguments, NULL, &flags, &keywords, iseq, ret, scope_node, location);
     }
 
-    PUSH_INSN1(ret, *location, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
+    const struct rb_callinfo *callinfo = new_callinfo(iseq, 0, argc, flags, keywords, FALSE);
+    PUSH_INSN1(ret, *location, invokeblock, callinfo);
+
     iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
     if (popped) PUSH_INSN(ret, *location, pop);
 
@@ -8333,7 +8445,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN(ret, location, putnil);
         }
 
-        PUSH_INSN3(ret, location, defineclass, ID2SYM(class_id), class_iseq, INT2FIX(flags));
+        {
+            VALUE operand = ID2SYM(class_id);
+            PUSH_INSN3(ret, location, defineclass, operand, class_iseq, INT2FIX(flags));
+        }
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)class_iseq);
 
         if (popped) PUSH_INSN(ret, location, pop);
@@ -8653,7 +8768,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // 1.0
         // ^^^
         if (!popped) {
-            PUSH_INSN1(ret, location, putobject, parse_float((const pm_float_node_t *) node));
+            VALUE operand = parse_float((const pm_float_node_t *) node);
+            PUSH_INSN1(ret, location, putobject, operand);
         }
         return;
       }
@@ -8858,7 +8974,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // 1i
         // ^^
         if (!popped) {
-            PUSH_INSN1(ret, location, putobject, parse_imaginary((const pm_imaginary_node_t *) node));
+            VALUE operand = parse_imaginary((const pm_imaginary_node_t *) node);
+            PUSH_INSN1(ret, location, putobject, operand);
         }
         return;
       }
@@ -8994,7 +9111,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // 1
         // ^
         if (!popped) {
-            PUSH_INSN1(ret, location, putobject, parse_integer((const pm_integer_node_t *) node));
+            VALUE operand = parse_integer((const pm_integer_node_t *) node);
+            PUSH_INSN1(ret, location, putobject, operand);
         }
         return;
       }
