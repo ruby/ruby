@@ -15421,7 +15421,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         // then we have a trailing comma where we need to check whether it is
         // allowed or not.
         if (parser->previous.type == PM_TOKEN_COMMA && !match1(parser, PM_TOKEN_SEMICOLON)) {
-            pm_parser_err_previous(parser, PM_ERR_EXPECT_ARGUMENT);
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_type_human(parser->current.type));
         }
 
         pm_accepts_block_stack_pop(parser);
@@ -17649,7 +17649,8 @@ pm_parser_err_prefix(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, diag_id, human, parser->previous.start[0]);
             break;
         }
-        case PM_ERR_UNARY_DISALLOWED: {
+        case PM_ERR_UNARY_DISALLOWED:
+        case PM_ERR_EXPECT_ARGUMENT: {
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, pm_token_type_human(parser->current.type));
             break;
         }
@@ -17999,7 +18000,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             accept1(parser, PM_TOKEN_NEWLINE);
-            expect1(parser, PM_TOKEN_BRACKET_RIGHT, PM_ERR_ARRAY_TERM);
+
+            if (!accept1(parser, PM_TOKEN_BRACKET_RIGHT)) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_ARRAY_TERM, pm_token_type_human(parser->current.type));
+                parser->previous.start = parser->previous.end;
+                parser->previous.type = PM_TOKEN_MISSING;
+            }
+
             pm_array_node_close_set(array, &parser->previous);
             pm_accepts_block_stack_pop(parser);
 
