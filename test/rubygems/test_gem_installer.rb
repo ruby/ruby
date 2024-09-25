@@ -208,7 +208,7 @@ gem 'other', version
     ENV["PATH"] = [ENV["PATH"], bin_dir].join(File::PATH_SEPARATOR)
 
     use_ui @ui do
-      installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path(["executable"])
     end
 
     assert_empty @ui.error
@@ -218,7 +218,7 @@ gem 'other', version
     ENV["PATH"] = [orig_path, bin_dir.tr(File::SEPARATOR, File::ALT_SEPARATOR)].join(File::PATH_SEPARATOR)
 
     use_ui @ui do
-      installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path(["executable"])
     end
 
     assert_empty @ui.error
@@ -236,7 +236,7 @@ gem 'other', version
     installer.bin_dir.replace File.join @userhome, "bin"
 
     use_ui @ui do
-      installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path(["executable"])
     end
 
     assert_empty @ui.error
@@ -248,7 +248,7 @@ gem 'other', version
     installer = setup_base_installer
 
     use_ui @ui do
-      installer.check_that_user_bin_dir_is_in_path
+      installer.check_that_user_bin_dir_is_in_path(["executable"])
     end
 
     expected = installer.bin_dir
@@ -258,6 +258,7 @@ gem 'other', version
     end
 
     assert_match expected, @ui.error
+    assert_match "(executable)", @ui.error
   end
 
   def test_ensure_dependency
@@ -358,10 +359,8 @@ gem 'other', version
 
     inst = Gem::Installer.at "", options
 
-    Gem::Installer.path_warning = false
-
     use_ui @ui do
-      inst.check_that_user_bin_dir_is_in_path
+      inst.check_that_user_bin_dir_is_in_path(["executable"])
     end
 
     assert_equal "", @ui.error

@@ -64,12 +64,6 @@ end
 # A test case for Gem::Installer.
 
 class Gem::InstallerTestCase < Gem::TestCase
-  def setup
-    super
-
-    Gem::Installer.path_warning = false
-  end
-
   ##
   # The path where installed executables live
 
