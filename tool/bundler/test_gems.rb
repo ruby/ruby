@@ -2,12 +2,13 @@
 
 source "https://rubygems.org"
 
-gem "rack", "~> 2.0"
+gem "rack", "~> 3.0"
+gem "rackup", "~> 2.1"
 gem "base64"
-gem "webrick", "1.7.0"
-gem "rack-test", "~> 1.1"
+gem "webrick", "~> 1.8"
+gem "rack-test", "~> 2.1"
 gem "compact_index", "~> 0.15.0"
-gem "sinatra", "~> 3.0"
+gem "sinatra", "~> 4.0"
 gem "rake", "~> 13.1"
 gem "builder", "~> 3.2"
 gem "rb_sys"
