@@ -2078,8 +2078,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if no such element found.
  *
- *  When both argument +object+ and a block are given,
- *  calls the block with each successive element;
+ *  When a block is given, calls the block with each successive element;
  *  returns the index of the first element for which the block returns a truthy value:
  *
  *    a = [:foo, 'bar', 2, 'bar']
@@ -2087,6 +2086,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
+ *  When both an argument and a block is given, issues a warning, ignores the block, 
+ *  and returns the index of the first element +element+ for which <tt>object == element</tt>:
  *  When neither an argument nor a block is given, returns a new Enumerator:
  *
  *    a = [:foo, 'bar', 2]
