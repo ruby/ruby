@@ -6548,7 +6548,6 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    flatten -> new_array
  *    flatten(depth = nil) -> new_array
  *
  *  Returns a new array that is a recursive flattening of +self+
@@ -6578,7 +6577,8 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *    a.flatten     # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
  *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
  *
- *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
+ *  Related: Array#flatten!;
+ *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
