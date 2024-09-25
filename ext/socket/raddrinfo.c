@@ -3099,10 +3099,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
                 entry->ai = NULL;
             }
         } else {
-            if (entry->family == AF_INET6) {
-                write(shared->notify, IPV6_HOSTNAME_RESOLVED, strlen(IPV6_HOSTNAME_RESOLVED));
-            } else if (entry->family == AF_INET) {
-                write(shared->notify, IPV4_HOSTNAME_RESOLVED, strlen(IPV4_HOSTNAME_RESOLVED));
+            const char *notification = entry->family == AF_INET6 ?
+            IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
+
+            if ((write(shared->notify, notification, strlen(notification))) < 0) {
+                entry->err = errno;
+                entry->has_syserr = true;
             }
         }
         if (--(entry->refcount) == 0) need_free = 1;

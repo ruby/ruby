@@ -439,6 +439,7 @@ struct fast_fallback_getaddrinfo_entry
     struct addrinfo hints;
     struct addrinfo *ai;
     struct fast_fallback_getaddrinfo_shared *shared;
+    int has_syserr;
     long test_sleep_ms;
     int test_ecode;
 };
