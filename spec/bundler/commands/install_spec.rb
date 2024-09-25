@@ -1362,12 +1362,20 @@ RSpec.describe "bundle install with gem sources" do
         build_gem "foo", "1.0.1"
         build_gem "foo", "1.0.0"
         build_gem "bar", "1.0.0"
+
+        build_gem "a", "1.0.0" do |s|
+          s.add_dependency "foo", "~> 1.0.0"
+        end
+
+        build_gem "b", "1.0.0" do |s|
+          s.add_dependency "foo", "~> 1.0.1"
+        end
       end
 
       system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
     end
 
-    it "fetches remote sources only when not available locally" do
+    it "fetches remote sources when not available locally" do
       install_gemfile <<-G, "prefer-local": true, verbose: true
         source "https://gem.repo4"
 
@@ -1376,6 +1384,40 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+      expect(last_command).to be_success
+    end
+
+    it "fetches remote sources when local version does not match requirements" do
+      install_gemfile <<-G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "foo", "1.0.1"
+        gem "bar"
+      G
+
+      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+      expect(last_command).to be_success
+    end
+
+    it "uses the locally available version for sub-dependencies when possible" do
+      install_gemfile <<-G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "a"
+      G
+
+      expect(out).to include("Using foo 1.0.0").and include("Fetching a 1.0.0").and include("Installing a 1.0.0")
+      expect(last_command).to be_success
+    end
+
+    it "fetches remote sources for sub-dependencies when the locally available version does not satisfy the requirement" do
+      install_gemfile <<-G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "b"
+      G
+
+      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
       expect(last_command).to be_success
     end
   end

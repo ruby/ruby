@@ -214,6 +214,7 @@ module Bundler
       @resolve = nil
       @resolver = nil
       @resolution_packages = nil
+      @source_requirements = nil
       @specs = nil
 
       Bundler.ui.debug "The definition is missing dependencies, failed to resolve & materialize locally (#{e})"
@@ -476,9 +477,6 @@ module Bundler
       end
     end
 
-    attr_reader :sources
-    private :sources
-
     def nothing_changed?
       return false unless lockfile_exists?
 
@@ -502,7 +500,11 @@ module Bundler
       @unlocking
     end
 
+    attr_writer :source_requirements
+
     private
+
+    attr_reader :sources
 
     def should_add_extra_platforms?
       !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
@@ -569,7 +571,7 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @gems_to_unlock, prerelease: gem_version_promoter.pre?)
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local)
         packages = additional_base_requirements_to_prevent_downgrades(packages, last_resolve)
         packages = additional_base_requirements_to_force_updates(packages)
         packages
@@ -651,19 +653,6 @@ module Bundler
 
     def precompute_source_requirements_for_indirect_dependencies?
       sources.non_global_rubygems_sources.all?(&:dependency_api_available?) && !sources.aggregate_global_source?
-    end
-
-    def pin_locally_available_names(source_requirements)
-      source_requirements.each_with_object({}) do |(name, original_source), new_source_requirements|
-        local_source = original_source.dup
-        local_source.local_only!
-
-        new_source_requirements[name] = if local_source.specs.search(name).any?
-          local_source
-        else
-          original_source
-        end
-      end
     end
 
     def current_platform_locked?
@@ -972,12 +961,15 @@ module Bundler
     end
 
     def source_requirements
+      @source_requirements ||= find_source_requirements
+    end
+
+    def find_source_requirements
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
         all_requirements = source_map.all_requirements
-        all_requirements = pin_locally_available_names(all_requirements) if @prefer_local
         { default: default_source }.merge(all_requirements)
       else
         { default: Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
@@ -1053,6 +1045,7 @@ module Bundler
 
     def dup_for_full_unlock
       unlocked_definition = self.class.new(@lockfile, @dependencies, @sources, true, @ruby_version, @optional_groups, @gemfiles)
+      unlocked_definition.source_requirements = source_requirements
       unlocked_definition.gem_version_promoter.tap do |gvp|
         gvp.level = gem_version_promoter.level
         gvp.strict = gem_version_promoter.strict

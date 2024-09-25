@@ -267,6 +267,7 @@ RSpec.describe Bundler do
         it "should issue a warning and return a temporary user home" do
           allow(Bundler.rubygems).to receive(:user_home).and_return(path)
           allow(File).to receive(:directory?).with(path).and_return true
+          allow(File).to receive(:writable?).and_call_original
           allow(File).to receive(:writable?).with(path).and_return false
           allow(File).to receive(:directory?).with(dotbundle).and_return false
           allow(Bundler).to receive(:tmp).and_return(Pathname.new("/tmp/trulyrandom"))

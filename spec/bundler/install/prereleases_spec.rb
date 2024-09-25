@@ -38,7 +38,7 @@ RSpec.describe "bundle install" do
 
   describe "when prerelease gems are not available" do
     it "still works" do
-      build_repo gem_repo3 do
+      build_repo3 do
         build_gem "myrack"
       end
       FileUtils.rm_rf Dir[gem_repo3("prerelease*")]
