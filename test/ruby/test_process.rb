@@ -1874,6 +1874,8 @@ class TestProcess < Test::Unit::TestCase
     end
 
     def test_daemon_noclose
+      pend "macOS 15.0 is not working with this test" if macos?(15, 0)
+
       data = IO.popen("-", "r+") do |f|
         break f.read if f
         Process.daemon(false, true)
