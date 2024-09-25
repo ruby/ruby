@@ -12,3 +12,11 @@ static DEFINE_FINISH_FUNC_FROM_FINAL(SHA1)
 #undef SHA1_Finish
 #define SHA1_Update rb_digest_SHA1_update
 #define SHA1_Finish rb_digest_SHA1_finish
+
+/*
+ * Pre-10.6 defines are with args, which don't match the argless use in
+ * the function pointer inits.  Thus, we redefine SHA1_Init as well.
+ * This is a NOP on 10.6+.
+ */
+#undef SHA1_Init
+#define SHA1_Init CC_SHA1_Init
