@@ -2063,13 +2063,16 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.index(object) -> integer or nil
- *    array.index {|element| ... } -> integer or nil
- *    array.index -> new_enumerator
+ *    find_index(object) -> integer or nil
+ *    find_index {|element| ... } -> integer or nil
+ *    find_index -> new_enumerator
+ *    index(object) -> integer or nil
+ *    index {|element| ... } -> integer or nil
+ *    index -> new_enumerator
  *
- *  Returns the index of a specified element.
+ *  Returns the zero-based integer index of a specified element, or +nil+.
  *
- *  When argument +object+ is given but no block,
+ *  With only argument +object+ given,
  *  returns the index of the first element +element+
  *  for which <tt>object == element</tt>:
  *
@@ -2078,7 +2081,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if no such element found.
  *
- *  When both argument +object+ and a block are given,
+ *  With only a block given,,
  *  calls the block with each successive element;
  *  returns the index of the first element for which the block returns a truthy value:
  *
@@ -2087,14 +2090,9 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if the block never returns a truthy value.
  *
- *  When neither an argument nor a block is given, returns a new Enumerator:
+ *  With neither an argument nor a block given, returns a new Enumerator:
  *
- *    a = [:foo, 'bar', 2]
- *    e = a.index
- *    e # => #<Enumerator: [:foo, "bar", 2]:index>
- *    e.each {|element| element == 'bar' } # => 1
- *
- *  Related: #rindex.
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
