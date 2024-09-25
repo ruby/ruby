@@ -6056,6 +6056,13 @@ VALUE rb_mod_name(VALUE);
 static VALUE
 vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 {
+    // Debugging code for ASAN issues such as:
+    // http://ci.rvm.jp/logfiles/brlog.trunk_asan.20240922-002945
+    if (!RB_IMMEDIATE_P(recv) && asan_poisoned_object_p(recv)) {
+        asan_unpoison_object(recv, false);
+        rb_bug("vm_objtostring: recv is poisoned (type %d)", TYPE(recv));
+    }
+
     int type = TYPE(recv);
     if (type == T_STRING) {
         return recv;

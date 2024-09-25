@@ -218,6 +218,6 @@ typedef enum pm_<%= flag.human %> {
  * to specify that through the environment. It will never be true except for in
  * those build systems.
  */
-#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS %>
+#define PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS <%= Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS ? 1 : 0 %>
 
 #endif

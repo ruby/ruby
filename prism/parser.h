@@ -861,6 +861,13 @@ struct pm_parser {
      */
     bool parsing_eval;
 
+    /**
+     * Whether or not we are parsing a "partial" script, which is a script that
+     * will be evaluated in the context of another script, so we should not
+     * check jumps (next/break/etc.) for validity.
+     */
+    bool partial_script;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 

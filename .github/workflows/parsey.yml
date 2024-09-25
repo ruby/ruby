@@ -3,20 +3,18 @@ on:
   push:
     paths-ignore:
       - 'doc/**'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
       - '.*.yml'
   pull_request:
     paths-ignore:
       - 'doc/**'
+      - '**/man/*'
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '**.[1-8]'
-      - '**.ronn'
       - '.*.yml'
   merge_group:
 
@@ -92,6 +90,8 @@ jobs:
           srcdir: src
           builddir: build
           makeup: true
+          clean: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG

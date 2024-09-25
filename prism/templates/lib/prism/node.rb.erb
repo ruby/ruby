@@ -225,7 +225,7 @@ module Prism
       @flags = flags
       <%- node.fields.each do |field| -%>
       <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
-      raise <%= field.name %>.inspect unless <%= field.check_field_kind %>
+      raise "<%= node.name %>#<%= field.name %> was of unexpected type:\n#{<%= field.name %>.inspect}" unless <%= field.check_field_kind %>
       <%- end -%>
       @<%= field.name %> = <%= field.name %>
       <%- end -%>

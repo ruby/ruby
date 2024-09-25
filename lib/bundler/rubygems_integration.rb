@@ -61,11 +61,6 @@ module Bundler
       nil
     end
 
-    def set_installed_by_version(spec, installed_by_version = Gem::VERSION)
-      return unless spec.respond_to?(:installed_by_version=)
-      spec.installed_by_version = Gem::Version.create(installed_by_version)
-    end
-
     def spec_missing_extensions?(spec, default = true)
       return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
 

@@ -197,6 +197,15 @@ undefined method `foo' for #{ NIL_RECV_MESSAGE }
     end
   end
 
+  def test_CALL_arg_7
+    assert_error_message(ArgumentError, <<~END) do
+tried to create Proc object without a block (ArgumentError)
+    END
+
+      Proc.new
+    end
+  end
+
   def test_QCALL_1
     assert_error_message(NoMethodError, <<~END) do
 undefined method `foo' for #{ ONE_RECV_MESSAGE }

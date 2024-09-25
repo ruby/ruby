@@ -1593,16 +1593,15 @@ f_tpositive_p(VALUE x)
 }
 
 static VALUE
-f_format(VALUE self, VALUE (*func)(VALUE))
+f_format(VALUE self, VALUE s, VALUE (*func)(VALUE))
 {
-    VALUE s;
     int impos;
 
     get_dat1(self);
 
     impos = f_tpositive_p(dat->imag);
 
-    s = (*func)(dat->real);
+    rb_str_concat(s, (*func)(dat->real));
     rb_str_cat2(s, !impos ? "-" : "+");
 
     rb_str_concat(s, (*func)(f_abs(dat->imag)));
@@ -1629,7 +1628,7 @@ f_format(VALUE self, VALUE (*func)(VALUE))
 static VALUE
 nucomp_to_s(VALUE self)
 {
-    return f_format(self, rb_String);
+    return f_format(self, rb_usascii_str_new2(""), rb_String);
 }
 
 /*
@@ -1651,7 +1650,7 @@ nucomp_inspect(VALUE self)
     VALUE s;
 
     s = rb_usascii_str_new2("(");
-    rb_str_concat(s, f_format(self, rb_inspect));
+    f_format(self, s, rb_inspect);
     rb_str_cat2(s, ")");
 
     return s;

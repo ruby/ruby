@@ -69,7 +69,11 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
   WCHAR_NUL = "\0".encode(WCHAR).freeze
   WCHAR_CR = "\r".encode(WCHAR).freeze
   WCHAR_SIZE = WCHAR_NUL.bytesize
-  LOCALE = Encoding.find(Encoding.locale_charmap)
+  begin
+    LOCALE = Encoding.find(Encoding.locale_charmap)
+  rescue ArgumentError
+    LOCALE = Encoding::UTF_8
+  end
 
   class Registry
 

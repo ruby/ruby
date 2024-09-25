@@ -788,7 +788,9 @@ heap_page_in_global_empty_pages_pool(rb_objspace_t *objspace, struct heap_page *
         GC_ASSERT(page->slot_size == 0);
         GC_ASSERT(page->size_pool == NULL);
         GC_ASSERT(page->free_slots == 0);
-        GC_ASSERT(page->freelist == NULL);
+        asan_unpoisoning_memory_region(&page->freelist, sizeof(&page->freelist)) {
+            GC_ASSERT(page->freelist == NULL);
+        }
 
         return true;
     }
@@ -1177,12 +1179,6 @@ tick(void)
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
 
-#define asan_unpoisoning_object(obj) \
-    for (void *poisoned = asan_unpoison_object_temporary(obj), \
-              *unpoisoning = &poisoned; /* flag to loop just once */ \
-         unpoisoning; \
-         unpoisoning = asan_poison_object_restore(obj, poisoned))
-
 #define FL_CHECK2(name, x, pred) \
     ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
      (rb_bug(name": SPECIAL_CONST (%p)", (void *)(x)), 0) : (pred))
@@ -1541,12 +1537,12 @@ rb_gc_impl_set_measure_total_time(void *objspace_ptr, VALUE flag)
     objspace->flags.measure_gc = RTEST(flag) ? TRUE : FALSE;
 }
 
-VALUE
+bool
 rb_gc_impl_get_measure_total_time(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    return objspace->flags.measure_gc ? Qtrue : Qfalse;
+    return objspace->flags.measure_gc;
 }
 
 static size_t
@@ -1554,14 +1550,6 @@ minimum_slots_for_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
 {
     size_t size_pool_idx = size_pool - size_pools;
     return gc_params.size_pool_init_slots[size_pool_idx];
-}
-
-static VALUE initial_stress = Qfalse;
-
-void
-rb_gc_impl_initial_stress_set(VALUE flag)
-{
-    initial_stress = flag;
 }
 
 static int
@@ -6138,6 +6126,13 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
     }
 
+    GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
+    GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);
+    GC_ASSERT(RB_BUILTIN_TYPE(a) != T_ZOMBIE);
+    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_NONE);
+    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_MOVED);
+    GC_ASSERT(RB_BUILTIN_TYPE(b) != T_ZOMBIE);
+
   retry:
     if (!is_incremental_marking(objspace)) {
         if (!RVALUE_OLD_P(objspace, a) || RVALUE_OLD_P(objspace, b)) {
@@ -9311,8 +9306,6 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
     free(objspace);
 }
 
-void rb_gc_impl_mark(void *objspace_ptr, VALUE obj);
-
 #if MALLOC_ALLOCATED_SIZE
 /*
  *  call-seq:
@@ -9359,9 +9352,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     rb_objspace_t *objspace = objspace_ptr;
 
     gc_config_full_mark_set(TRUE);
-
-    objspace->flags.gc_stressful = RTEST(initial_stress);
-    objspace->gc_stress_mode = initial_stress;
 
     objspace->flags.measure_gc = true;
     malloc_limit = gc_params.malloc_limit_min;

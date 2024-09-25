@@ -42,6 +42,7 @@
 #include "internal/time.h"
 #include "internal/variable.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include "timev.h"
 
 #include "builtin.h"
@@ -569,6 +570,9 @@ num_exact(VALUE v)
 }
 
 /* time_t */
+
+/* TIME_SCALE should be 10000... */
+static const int TIME_SCALE_NUMDIGITS = rb_strlen_lit(STRINGIZE(TIME_SCALE)) - 1;
 
 static wideval_t
 rb_time_magnify(wideval_t w)
@@ -2643,10 +2647,6 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, V
     }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
-        static const size_t TIME_SCALE_NUMDIGITS =
-            /* TIME_SCALE should be 10000... */
-            rb_strlen_lit(STRINGIZE(TIME_SCALE)) - 1;
-
         if (ndigits < TIME_SCALE_NUMDIGITS) {
             VALUE mul = rb_int_positive_pow(10, TIME_SCALE_NUMDIGITS - ndigits);
             subsec = rb_int_mul(subsec, mul);
@@ -5232,51 +5232,79 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
 
-    long year = -1;
+    const long size_after_year = sizeof("-MM-DDTHH:MM:SS+ZH:ZM") + fraction_digits
+        + (fraction_digits > 0);
+    VALUE str;
+    char *ptr;
+
+# define fill_digits_long(len, prec, n) \
+    for (int fill_it = 1, written = snprintf(ptr, len, "%0*ld", prec, n); \
+         fill_it; ptr += written, fill_it = 0)
+
     if (FIXNUM_P(tobj->vtm.year)) {
-        year = FIX2LONG(tobj->vtm.year);
-    }
-    if (RB_UNLIKELY(year > 9999 || year < 0 || fraction_digits > 9)) {
-        // Slow path for uncommon dates.
-        VALUE format = rb_utf8_str_new_cstr("%FT%T");
-        if (fraction_digits > 0) {
-            rb_str_catf(format, ".%%#%ldN", fraction_digits);
+        long year = FIX2LONG(tobj->vtm.year);
+        int year_width = (year < 0) + rb_strlen_lit("YYYY");
+        int w = (year >= -9999 && year <= 9999 ? year_width : (year < 0) + (int)DECIMAL_SIZE_OF(year));
+        str = rb_usascii_str_new(0, w + size_after_year);
+        ptr = RSTRING_PTR(str);
+        fill_digits_long(w + 1, year_width, year) {
+            if (year >= -9999 && year <= 9999) {
+                RUBY_ASSERT(written == year_width);
+            }
+            else {
+                RUBY_ASSERT(written >= year_width);
+                RUBY_ASSERT(written <= w);
+            }
         }
-        rb_str_cat_cstr(format, TZMODE_UTC_P(tobj) ? "Z" : "%:z");
-        return rb_funcallv(time, rb_intern("strftime"), 1, &format);
+    }
+    else {
+        str = rb_int2str(tobj->vtm.year, 10);
+        rb_str_modify_expand(str, size_after_year);
+        ptr = RSTRING_END(str);
     }
 
-    long buf_size = sizeof("YYYY-MM-DDTHH:MM:SS+ZH:ZM") + fraction_digits + (fraction_digits > 0 ? 1 : 0);
-
-    VALUE str = rb_str_buf_new(buf_size);
-    rb_enc_associate_index(str, rb_utf8_encindex());
-
-    char *ptr = RSTRING_PTR(str);
-    char *start = ptr;
-    int written = snprintf(
-        ptr,
-        sizeof("YYYY-MM-DDTHH:MM:SS"),
-        "%04ld-%02d-%02dT%02d:%02d:%02d",
-        year,
-        tobj->vtm.mon,
-        tobj->vtm.mday,
-        tobj->vtm.hour,
-        tobj->vtm.min,
-        tobj->vtm.sec
-    );
-    RUBY_ASSERT(written == sizeof("YYYY-MM-DDTHH:MM:SS") - 1);
-    ptr += written;
+# define fill_2(c, n) (*ptr++ = c, *ptr++ = '0' + (n) / 10, *ptr++ = '0' + (n) % 10)
+    fill_2('-', tobj->vtm.mon);
+    fill_2('-', tobj->vtm.mday);
+    fill_2('T', tobj->vtm.hour);
+    fill_2(':', tobj->vtm.min);
+    fill_2(':', tobj->vtm.sec);
 
     if (fraction_digits > 0) {
-        long nsec = NUM2LONG(mulquov(tobj->vtm.subsecx, INT2FIX(1000000000), INT2FIX(TIME_SCALE)));
-        long subsec = nsec / (long)pow(10, 9 - fraction_digits);
-
-        *ptr = '.';
-        ptr++;
-
-        written = snprintf(ptr, fraction_digits + 1, "%0*ld", (int)fraction_digits, subsec); // Always allow to write \0
-        RUBY_ASSERT(written > 0);
-        ptr += written;
+        VALUE subsecx = tobj->vtm.subsecx;
+        long subsec;
+        int digits = -1;
+        *ptr++ = '.';
+        if (fraction_digits <= TIME_SCALE_NUMDIGITS) {
+            digits = TIME_SCALE_NUMDIGITS - (int)fraction_digits;
+        }
+        else {
+            long w = fraction_digits - TIME_SCALE_NUMDIGITS; /* > 0 */
+            subsecx = mulv(subsecx, rb_int_positive_pow(10, (unsigned long)w));
+            if (!RB_INTEGER_TYPE_P(subsecx)) { /* maybe Rational */
+                subsecx = rb_Integer(subsecx);
+            }
+            if (FIXNUM_P(subsecx)) digits = 0;
+        }
+        if (digits >= 0 && fraction_digits < INT_MAX) {
+            subsec = NUM2LONG(subsecx);
+            if (digits > 0) subsec /= (long)pow(10, digits);
+            fill_digits_long(fraction_digits + 1, (int)fraction_digits, subsec) {
+                RUBY_ASSERT(written == (int)fraction_digits);
+            }
+        }
+        else {
+            subsecx = rb_int2str(subsecx, 10);
+            long len = RSTRING_LEN(subsecx);
+            if (fraction_digits > len) {
+                memset(ptr, '0', fraction_digits - len);
+            }
+            else {
+                len = fraction_digits;
+            }
+            ptr += fraction_digits;
+            memcpy(ptr - len, RSTRING_PTR(subsecx), len);
+        }
     }
 
     if (TZMODE_UTC_P(tobj)) {
@@ -5285,14 +5313,13 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     }
     else {
         long offset = NUM2LONG(rb_time_utc_offset(time));
-        *ptr++ = offset < 0 ? '-' : '+';
+        char sign = offset < 0 ? '-' : '+';
         if (offset < 0) offset = -offset;
-        int offset_hours = (int)(offset / 3600);
-        int offset_minutes = (int)(offset % 3600 / 60);
-        written = snprintf(ptr, sizeof("ZH:ZM"), "%02d:%02d", offset_hours, offset_minutes);
-        RUBY_ASSERT(written == sizeof("ZH:ZM") - 1, "%d[%.*s]", written, written, ptr);
-        ptr += written;
+        offset /= 60;
+        fill_2(sign, offset / 60);
+        fill_2(':', offset % 60);
     }
+    const char *const start = RSTRING_PTR(str);
     rb_str_set_len(str, ptr - start); // We could skip coderange scanning as we know it's full ASCII.
     return str;
 }

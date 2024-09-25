@@ -870,16 +870,23 @@ enum CtxOp {
 }
 
 // Number of entries in the context cache
-const CTX_CACHE_SIZE: usize = 1024;
+const CTX_ENCODE_CACHE_SIZE: usize = 1024;
+const CTX_DECODE_CACHE_SIZE: usize = 1024;
 
-// Cache of the last contexts encoded
-// Empirically this saves a few percent of memory
+// Cache of the last contexts encoded/decoded
+// Empirically this saves a few percent of memory and speeds up compilation
 // We can experiment with varying the size of this cache
-pub type CtxCacheTbl = [(Context, u32); CTX_CACHE_SIZE];
-static mut CTX_CACHE: Option<Box<CtxCacheTbl>> = None;
+pub type CtxEncodeCache = [(Context, u32); CTX_ENCODE_CACHE_SIZE];
+static mut CTX_ENCODE_CACHE: Option<Box<CtxEncodeCache>> = None;
+
+// Cache of the last contexts encoded/decoded
+// This speeds up compilation
+pub type CtxDecodeCache = [(Context, u32); CTX_DECODE_CACHE_SIZE];
+static mut CTX_DECODE_CACHE: Option<Box<CtxDecodeCache>> = None;
 
 // Size of the context cache in bytes
-pub const CTX_CACHE_BYTES: usize = std::mem::size_of::<CtxCacheTbl>();
+pub const CTX_ENCODE_CACHE_BYTES: usize = std::mem::size_of::<CtxEncodeCache>();
+pub const CTX_DECODE_CACHE_BYTES: usize = std::mem::size_of::<CtxDecodeCache>();
 
 impl Context {
     // Encode a context into the global context data, or return
@@ -892,7 +899,7 @@ impl Context {
             return 0;
         }
 
-        if let Some(idx) = Self::cache_get(self) {
+        if let Some(idx) = Self::encode_cache_get(self) {
             incr_counter!(context_cache_hits);
             debug_assert!(Self::decode(idx) == *self);
             return idx;
@@ -910,7 +917,8 @@ impl Context {
         let idx: u32 = idx.try_into().unwrap();
 
         // Save this offset into the cache
-        Self::cache_set(self, idx);
+        Self::encode_cache_set(self, idx);
+        Self::decode_cache_set(self, idx);
 
         // In debug mode, check that the round-trip decoding always matches
         debug_assert!(Self::decode(idx) == *self);
@@ -923,16 +931,21 @@ impl Context {
             return Context::default();
         };
 
+        if let Some(ctx) = Self::decode_cache_get(start_idx) {
+            return ctx;
+        }
+
         let context_data = CodegenGlobals::get_context_data();
         let ctx = Self::decode_from(context_data, start_idx as usize);
 
-        Self::cache_set(&ctx, start_idx);
+        Self::encode_cache_set(&ctx, start_idx);
+        Self::decode_cache_set(&ctx, start_idx);
 
         ctx
     }
 
-    // Store an entry in a cache of recently encoded/decoded contexts
-    fn cache_set(ctx: &Context, idx: u32)
+    // Store an entry in a cache of recently encoded/decoded contexts for encoding
+    fn encode_cache_set(ctx: &Context, idx: u32)
     {
         // Compute the hash for this context
         let mut hasher = DefaultHasher::new();
@@ -941,21 +954,38 @@ impl Context {
 
         unsafe {
             // Lazily initialize the context cache
-            if CTX_CACHE == None {
+            if CTX_ENCODE_CACHE == None {
                 // Here we use the vec syntax to avoid allocating the large table on the stack,
                 // as this can cause a stack overflow
-                let tbl = vec![(Context::default(), 0); CTX_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
-                CTX_CACHE = Some(tbl);
+                let tbl = vec![(Context::default(), 0); CTX_ENCODE_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
+                CTX_ENCODE_CACHE = Some(tbl);
             }
 
             // Write a cache entry for this context
-            let cache = CTX_CACHE.as_mut().unwrap();
-            cache[ctx_hash % CTX_CACHE_SIZE] = (*ctx, idx);
+            let cache = CTX_ENCODE_CACHE.as_mut().unwrap();
+            cache[ctx_hash % CTX_ENCODE_CACHE_SIZE] = (*ctx, idx);
         }
     }
 
-    // Lookup the context in a cache of recently encoded/decoded contexts
-    fn cache_get(ctx: &Context) -> Option<u32>
+    // Store an entry in a cache of recently encoded/decoded contexts for decoding
+    fn decode_cache_set(ctx: &Context, idx: u32) {
+        unsafe {
+            // Lazily initialize the context cache
+            if CTX_DECODE_CACHE == None {
+                // Here we use the vec syntax to avoid allocating the large table on the stack,
+                // as this can cause a stack overflow
+                let tbl = vec![(Context::default(), 0); CTX_ENCODE_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
+                CTX_DECODE_CACHE = Some(tbl);
+            }
+
+            // Write a cache entry for this context
+            let cache = CTX_DECODE_CACHE.as_mut().unwrap();
+            cache[idx as usize % CTX_ENCODE_CACHE_SIZE] = (*ctx, idx);
+        }
+    }
+
+    // Lookup the context in a cache of recently encoded/decoded contexts for encoding
+    fn encode_cache_get(ctx: &Context) -> Option<u32>
     {
         // Compute the hash for this context
         let mut hasher = DefaultHasher::new();
@@ -963,17 +993,36 @@ impl Context {
         let ctx_hash = hasher.finish() as usize;
 
         unsafe {
-            if CTX_CACHE == None {
+            if CTX_ENCODE_CACHE == None {
                 return None;
             }
 
-            let cache = CTX_CACHE.as_mut().unwrap();
+            let cache = CTX_ENCODE_CACHE.as_mut().unwrap();
 
-            // Check that the context for this cache entry mmatches
-            let cache_entry = &cache[ctx_hash % CTX_CACHE_SIZE];
+            // Check that the context for this cache entry matches
+            let cache_entry = &cache[ctx_hash % CTX_ENCODE_CACHE_SIZE];
             if cache_entry.0 == *ctx {
                 debug_assert!(cache_entry.1 != 0);
                 return Some(cache_entry.1);
+            }
+
+            return None;
+        }
+    }
+
+    // Lookup the context in a cache of recently encoded/decoded contexts for decoding
+    fn decode_cache_get(start_idx: u32) -> Option<Context> {
+        unsafe {
+            if CTX_DECODE_CACHE == None {
+                return None;
+            }
+
+            let cache = CTX_DECODE_CACHE.as_mut().unwrap();
+
+            // Check that the start_idx for this cache entry matches
+            let cache_entry = &cache[start_idx as usize % CTX_DECODE_CACHE_SIZE];
+            if cache_entry.1 == start_idx {
+                return Some(cache_entry.0);
             }
 
             return None;

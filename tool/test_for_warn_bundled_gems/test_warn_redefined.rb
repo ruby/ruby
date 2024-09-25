@@ -1,3 +1,6 @@
+require "bundler"
+Bundler::Definition.no_lock = true
+
 module My
   def warn(msg)
   end

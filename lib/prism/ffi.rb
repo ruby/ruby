@@ -411,6 +411,20 @@ module Prism
       end
     end
 
+    # Return the value that should be dumped for the version option.
+    def dump_options_version(version)
+      case version
+      when nil, "latest"
+        0
+      when /\A3\.3(\.\d+)?\z/
+        1
+      when /\A3\.4(\.\d+)?\z/
+        0
+      else
+        raise ArgumentError, "invalid version: #{version}"
+      end
+    end
+
     # Convert the given options into a serialized options string.
     def dump_options(options)
       template = +""
@@ -443,13 +457,16 @@ module Prism
       values << dump_options_command_line(options)
 
       template << "C"
-      values << { nil => 0, "3.3.0" => 1, "3.3.1" => 1, "3.4.0" => 0, "latest" => 0 }.fetch(options[:version])
+      values << dump_options_version(options[:version])
 
       template << "C"
       values << (options[:encoding] == false ? 1 : 0)
 
       template << "C"
       values << (options.fetch(:main_script, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:partial_script, false) ? 1 : 0)
 
       template << "L"
       if (scopes = options[:scopes])

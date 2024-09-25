@@ -129,7 +129,6 @@ class Gem::BasicSpecification
   end
 
   def find_full_gem_path # :nodoc:
-    # TODO: also, shouldn't it default to full_name if it hasn't been written?
     File.expand_path File.join(gems_dir, full_name)
   end
 
@@ -137,10 +136,10 @@ class Gem::BasicSpecification
 
   ##
   # The full path to the gem (install path + full name).
+  #
+  # TODO: This is duplicated with #gem_dir. Eventually either of them should be deprecated.
 
   def full_gem_path
-    # TODO: This is a heavily used method by gems, so we'll need
-    # to aleast just alias it to #gem_dir rather than remove it.
     @full_gem_path ||= find_full_gem_path
   end
 
@@ -216,9 +215,11 @@ class Gem::BasicSpecification
   ##
   # Returns the full path to this spec's gem directory.
   # eg: /usr/local/lib/ruby/1.8/gems/mygem-1.0
+  #
+  # TODO: This is duplicated with #full_gem_path. Eventually either of them should be deprecated.
 
   def gem_dir
-    @gem_dir ||= File.expand_path File.join(gems_dir, full_name)
+    @gem_dir ||= find_full_gem_path
   end
 
   ##

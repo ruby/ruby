@@ -507,6 +507,28 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     File.unlink(script) if script
   end
 
+  def test_debug_integration_doesnt_hint_debugger_commands_in_nomultiline_mode
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_SINGLELINE] = true
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("pp 1")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # submitted input shouldn't contain hint
+    assert_include(screen, "irb:rdbg(main):002> pp 1\n")
+  ensure
+    File.unlink(script) if script
+  end
+
   private
 
   def write_irbrc(content)

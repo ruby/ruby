@@ -187,6 +187,12 @@ module Prism
         EXPR_BEG = 0x1 # :nodoc:
         EXPR_LABEL = 0x400 # :nodoc:
 
+        # It is used to determine whether `do` is of the token type `kDO` or `kDO_LAMBDA`.
+        #
+        # NOTE: In edge cases like `-> (foo = -> (bar) {}) do end`, please note that `kDO` is still returned
+        # instead of `kDO_LAMBDA`, which is expected: https://github.com/ruby/prism/pull/3046
+        LAMBDA_TOKEN_TYPES = [:kDO_LAMBDA, :tLAMBDA, :tLAMBEG]
+
         # The `PARENTHESIS_LEFT` token in Prism is classified as either `tLPAREN` or `tLPAREN2` in the Parser gem.
         # The following token types are listed as those classified as `tLPAREN`.
         LPAREN_CONVERSION_TOKEN_TYPES = [
@@ -194,7 +200,7 @@ module Prism
           :tEQL, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
         ]
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LPAREN_CONVERSION_TOKEN_TYPES
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LAMBDA_TOKEN_TYPES, :LPAREN_CONVERSION_TOKEN_TYPES
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -236,6 +242,13 @@ module Prism
             location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset])
 
             case type
+            when :kDO
+              types = tokens.map(&:first)
+              nearest_lambda_token_type = types.reverse.find { |type| LAMBDA_TOKEN_TYPES.include?(type) }
+
+              if nearest_lambda_token_type == :tLAMBDA
+                type = :kDO_LAMBDA
+              end
             when :tCHARACTER
               value.delete_prefix!("?")
             when :tCOMMENT

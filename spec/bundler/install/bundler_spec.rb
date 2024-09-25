@@ -5,7 +5,7 @@ RSpec.describe "bundle install" do
     before(:each) do
       build_repo2 do
         build_gem "rails", "3.0" do |s|
-          s.add_dependency "bundler", ">= 0.9.0.pre"
+          s.add_dependency "bundler", ">= 0.9.0"
         end
         build_gem "bundler", "0.9.1"
         build_gem "bundler", Bundler::VERSION
@@ -59,8 +59,8 @@ RSpec.describe "bundle install" do
       nice_error = <<~E.strip
         Could not find compatible versions
 
-        Because rails >= 3.0 depends on bundler >= 0.9.0.pre
-          and the current Bundler version (#{Bundler::VERSION}) does not satisfy bundler >= 0.9.0.pre, < 1.A,
+        Because rails >= 3.0 depends on bundler >= 0.9.0
+          and the current Bundler version (#{Bundler::VERSION}) does not satisfy bundler >= 0.9.0, < 1.A,
           rails >= 3.0 requires bundler >= 1.A.
         So, because Gemfile depends on rails = 3.0
           and Gemfile depends on bundler ~> 0.8,

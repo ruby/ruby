@@ -4234,9 +4234,15 @@ rb_fork_ruby(int *status)
         child.error = err = errno;
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
-        rb_thread_release_fork_lock();
+        if (
+#if defined(__FreeBSD__)
+            pid != 0 &&
+#endif
+            true) {
+            rb_thread_release_fork_lock();
+        }
         if (pid == 0) {
-          rb_thread_reset_fork_lock();
+            rb_thread_reset_fork_lock();
         }
         after_fork_ruby(pid);
 

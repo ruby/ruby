@@ -506,7 +506,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     }
 
     RB_OBJ_WRITE(obj, &ptr1->obj, ptr0->obj);
-    RB_OBJ_WRITE(obj, &ptr1->meth, ptr0->meth);
+    ptr1->meth = ptr0->meth;
     RB_OBJ_WRITE(obj, &ptr1->args, ptr0->args);
     ptr1->fib  = 0;
     ptr1->lookahead  = Qundef;

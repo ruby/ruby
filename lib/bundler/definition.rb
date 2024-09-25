@@ -317,7 +317,7 @@ module Bundler
 
     def lock(file_or_preserve_unknown_sections = false, preserve_unknown_sections_or_unused = false)
       if [true, false, nil].include?(file_or_preserve_unknown_sections)
-        target_lockfile = lockfile || Bundler.default_lockfile
+        target_lockfile = lockfile
         preserve_unknown_sections = file_or_preserve_unknown_sections
       else
         target_lockfile = file_or_preserve_unknown_sections

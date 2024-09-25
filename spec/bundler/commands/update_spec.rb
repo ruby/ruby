@@ -1202,10 +1202,10 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
   before do
     build_repo2 do
       build_gem "rails", "3.0.1" do |s|
-        s.add_dependency "bundler", Bundler::VERSION.succ
+        s.add_dependency "bundler", "9.9.9"
       end
 
-      build_gem "bundler", Bundler::VERSION.succ
+      build_gem "bundler", "9.9.9"
     end
 
     gemfile <<-G
@@ -1218,7 +1218,7 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
     bundle "update", all: true, raise_on_error: false
     expect(last_command.stdboth).not_to match(/in snapshot/i)
     expect(err).to match(/current Bundler version/i).
-      and match(/Install the necessary version with `gem install bundler:#{Bundler::VERSION.succ}`/i)
+      and match(/Install the necessary version with `gem install bundler:9\.9\.9`/i)
   end
 end
 

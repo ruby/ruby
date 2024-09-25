@@ -12621,6 +12621,8 @@ prism/node.$(OBJEXT): {$(VPATH)}prism/node.c
 prism/options.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.c
 prism/options.$(OBJEXT): $(top_srcdir)/prism/options.h
+prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/options.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/pack.$(OBJEXT): $(top_srcdir)/prism/pack.c
@@ -18927,6 +18929,7 @@ time.$(OBJEXT): {$(VPATH)}thread_native.h
 time.$(OBJEXT): {$(VPATH)}time.c
 time.$(OBJEXT): {$(VPATH)}timev.h
 time.$(OBJEXT): {$(VPATH)}timev.rbinc
+time.$(OBJEXT): {$(VPATH)}util.h
 time.$(OBJEXT): {$(VPATH)}vm_core.h
 time.$(OBJEXT): {$(VPATH)}vm_opts.h
 transcode.$(OBJEXT): $(hdrdir)/ruby/ruby.h

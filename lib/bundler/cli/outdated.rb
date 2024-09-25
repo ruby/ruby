@@ -97,28 +97,26 @@ module Bundler
         }
       end
 
-      if outdated_gems.empty?
+      relevant_outdated_gems = if options_include_groups
+        outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
+          contains_group = groups.split(", ").include?(options[:group])
+          next unless options[:groups] || contains_group
+
+          gems
+        end.compact
+      else
+        outdated_gems
+      end
+
+      if relevant_outdated_gems.empty?
         unless options[:parseable]
           Bundler.ui.info(nothing_outdated_message)
         end
       else
-        if options_include_groups
-          relevant_outdated_gems = outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
-            contains_group = groups.split(", ").include?(options[:group])
-            next unless options[:groups] || contains_group
-
-            gems
-          end.compact
-
-          if options[:parseable]
-            print_gems(relevant_outdated_gems)
-          else
-            print_gems_table(relevant_outdated_gems)
-          end
-        elsif options[:parseable]
-          print_gems(outdated_gems)
+        if options[:parseable]
+          print_gems(relevant_outdated_gems)
         else
-          print_gems_table(outdated_gems)
+          print_gems_table(relevant_outdated_gems)
         end
 
         exit 1

@@ -1634,6 +1634,8 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\e$B%*!+%,%I%J!+%N!+%P%\\%^!+%Q%]%\"\e(B".force_encoding("cp50220"),
         "\xB5\xDE\xB6\xDE\xC4\xDE\xC5\xDE\xC9\xDE\xCA\xDE\xCE\xDE\xCF\xDE\xCA\xDF\xCE\xDF\xB1".
                  encode("cp50220", "sjis"))
+    assert_equal("\e$B\x21\x23\e(I\x7E\e(B".force_encoding("cp50220"),
+                 "\x8E\xA1\x8E\xFE".encode("cp50220", "cp51932"))
   end
 
   def test_iso_2022_jp_1

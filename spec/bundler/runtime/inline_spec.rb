@@ -656,6 +656,20 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("after: [\"Test_Variable\"]")
   end
 
+  it "does not create a lockfile" do
+    script <<-RUBY
+      require 'bundler/inline'
+
+      gemfile do
+        source "https://gem.repo1"
+      end
+
+      puts Dir.glob("Gemfile.lock")
+    RUBY
+
+    expect(out).to be_empty
+  end
+
   it "does not load specified version of psych and stringio", :ruby_repo do
     build_repo4 do
       build_gem "psych", "999"
@@ -677,5 +691,26 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("Installing stringio 999")
     expect(out).to include("The psych gem was resolved to 999")
     expect(out).to include("The stringio gem was resolved to 999")
+  end
+
+  it "leaves a lockfile in the same directory as the inline script alone" do
+    install_gemfile <<~G
+      source "https://gem.repo1"
+      gem "foo"
+    G
+
+    original_lockfile = lockfile
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "https://gem.repo1"
+
+        gem "myrack"
+      end
+    RUBY
+
+    expect(lockfile).to eq(original_lockfile)
   end
 end

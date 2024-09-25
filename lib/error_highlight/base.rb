@@ -85,7 +85,7 @@ module ErrorHighlight
   # corresponding to the backtrace location in the source code.
   def self.prism_find(location)
     require "prism"
-    return nil if Prism::VERSION < "0.29.0"
+    return nil if Prism::VERSION < "1.0.0"
 
     absolute_path = location.absolute_path
     return unless absolute_path
@@ -700,6 +700,9 @@ module ErrorHighlight
     #   foo 42
     #       ^^
     def prism_spot_call_for_args
+      # Disallow highlighting arguments if there are no arguments.
+      return if @node.arguments.nil?
+
       # Explicitly turn off foo.() syntax because error_highlight expects this
       # to not work.
       return nil if @node.name == :call && @node.message_loc.nil?

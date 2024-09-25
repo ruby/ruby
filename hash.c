@@ -5053,44 +5053,6 @@ envix(const char *nam)
 }
 #endif
 
-#if defined(_WIN32)
-static size_t
-getenvsize(const WCHAR* p)
-{
-    const WCHAR* porg = p;
-    while (*p++) p += lstrlenW(p) + 1;
-    return p - porg + 1;
-}
-
-static size_t
-getenvblocksize(void)
-{
-#ifdef _MAX_ENV
-    return _MAX_ENV;
-#else
-    return 32767;
-#endif
-}
-
-static int
-check_envsize(size_t n)
-{
-    if (_WIN32_WINNT < 0x0600 && rb_w32_osver() < 6) {
-        /* https://msdn.microsoft.com/en-us/library/windows/desktop/ms682653(v=vs.85).aspx */
-        /* Windows Server 2003 and Windows XP: The maximum size of the
-         * environment block for the process is 32,767 characters. */
-        WCHAR* p = GetEnvironmentStringsW();
-        if (!p) return -1; /* never happen */
-        n += getenvsize(p);
-        FreeEnvironmentStringsW(p);
-        if (n >= getenvblocksize()) {
-            return -1;
-        }
-    }
-    return 0;
-}
-#endif
-
 #if defined(_WIN32) || \
   (defined(__sun) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV)))
 
@@ -5116,9 +5078,6 @@ void
 ruby_setenv(const char *name, const char *value)
 {
 #if defined(_WIN32)
-# if defined(MINGW_HAS_SECURE_API) || RUBY_MSVCRT_VERSION >= 80
-#   define HAVE__WPUTENV_S 1
-# endif
     VALUE buf;
     WCHAR *wname;
     WCHAR *wvalue = 0;
@@ -5129,34 +5088,23 @@ ruby_setenv(const char *name, const char *value)
     if (value) {
         int len2;
         len2 = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
-        if (check_envsize((size_t)len + len2)) { /* len and len2 include '\0' */
-            goto fail;  /* 2 for '=' & '\0' */
-        }
         wname = ALLOCV_N(WCHAR, buf, len + len2);
         wvalue = wname + len;
         MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, len);
         MultiByteToWideChar(CP_UTF8, 0, value, -1, wvalue, len2);
-#ifndef HAVE__WPUTENV_S
-        wname[len-1] = L'=';
-#endif
     }
     else {
         wname = ALLOCV_N(WCHAR, buf, len + 1);
         MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, len);
         wvalue = wname + len;
         *wvalue = L'\0';
-#ifndef HAVE__WPUTENV_S
-        wname[len-1] = L'=';
-#endif
     }
 
     ENV_LOCK();
     {
-#ifndef HAVE__WPUTENV_S
-        failed = _wputenv(wname);
-#else
+        /* Use _wputenv_s() instead of SetEnvironmentVariableW() to make sure
+         * special variables like "TZ" are interpret by libc. */
         failed = _wputenv_s(wname, wvalue);
-#endif
     }
     ENV_UNLOCK();
 
@@ -5165,7 +5113,7 @@ ruby_setenv(const char *name, const char *value)
      * variable from the system area. */
     if (!value || !*value) {
         /* putenv() doesn't handle empty value */
-        if (!SetEnvironmentVariable(name, value) &&
+        if (!SetEnvironmentVariableW(wname, value ? wvalue : NULL) &&
             GetLastError() != ERROR_ENVVAR_NOT_FOUND) goto fail;
     }
     if (failed) {

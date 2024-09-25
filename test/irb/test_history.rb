@@ -149,7 +149,7 @@ module TestIRB
     def test_history_different_encodings
       IRB.conf[:SAVE_HISTORY] = 2
       Encoding.default_external = Encoding::US_ASCII
-      locale = IRB::Locale.new("C")
+      locale = IRB::Locale.new("en_US.ASCII")
       assert_history(<<~EXPECTED_HISTORY.encode(Encoding::US_ASCII), <<~INITIAL_HISTORY.encode(Encoding::UTF_8), <<~INPUT, locale: locale)
         ????
         exit

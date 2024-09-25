@@ -3763,9 +3763,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
             break;
           }
           default:
-            UNREACHABLE;
-            RUBY_ASSERT("append_as_bytes arguments should have been validated");
-            break;
+            rb_bug("append_as_bytes arguments should have been validated");
         }
     }
 
@@ -3790,11 +3788,10 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
                 if (ENC_CODERANGE(obj) != ENC_CODERANGE_7BIT) {
                     goto clear_cr;
                 }
+                break;
               }
               default:
-                UNREACHABLE;
-                RUBY_ASSERT("append_as_bytes arguments should have been validated");
-                break;
+                rb_bug("append_as_bytes arguments should have been validated");
             }
         }
         break;
@@ -12398,7 +12395,7 @@ string_for_symbol(VALUE name)
     if (!RB_TYPE_P(name, T_STRING)) {
         VALUE tmp = rb_check_string_type(name);
         if (NIL_P(tmp)) {
-            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol",
+            rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
                      name);
         }
         name = tmp;

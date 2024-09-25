@@ -26,10 +26,6 @@
 #define rb_strlen_lit(str) (sizeof(str "") - 1)
 #undef FIXNUM_MAX
 #define FIXNUM_MAX (LONG_MAX / 2)
-#undef RSTRING_GETMEM
-#define RSTRING_GETMEM(str, ptrvar, lenvar) \
-    ((ptrvar) = RSTRING_PTR(str),           \
-     (lenvar) = RSTRING_LEN(str))
 
 /* parser_st */
 #define st_table parser_st_table
@@ -119,8 +115,6 @@
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr
 #define rb_str_cat_cstr                   p->config->str_cat_cstr
-#define rb_str_modify                     p->config->str_modify
-#define rb_str_set_len                    p->config->str_set_len
 #define rb_str_cat                        p->config->str_cat
 #define rb_str_resize                     p->config->str_resize
 #undef rb_str_new

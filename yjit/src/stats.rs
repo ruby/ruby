@@ -775,7 +775,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         // How many bytes we are using to store context data
         let context_data = CodegenGlobals::get_context_data();
         set_stat_usize!(hash, "context_data_bytes", context_data.num_bytes());
-        set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_CACHE_BYTES);
+        set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
         set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
