@@ -1039,6 +1039,8 @@ rb_float_new_in_heap(double d)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    to_s -> string
  *
@@ -1052,11 +1054,13 @@ rb_float_new_in_heap(double d)
  *  - '-Infinity'.
  *  - 'NaN' (indicating not-a-number).
  *
- *    3.14.to_s         # => "3.14"
- *    (10.1**50).to_s   # => "1.644631821843879e+50"
- *    (10.1**500).to_s  # => "Infinity"
- *    (-10.1**500).to_s # => "-Infinity"
- *    (0.0/0.0).to_s    # => "NaN"
+ *  ```
+ *  3.14.to_s         # => "3.14"
+ *  (10.1**50).to_s   # => "1.644631821843879e+50"
+ *  (10.1**500).to_s  # => "Infinity"
+ *  (-10.1**500).to_s # => "-Infinity"
+ *  (0.0/0.0).to_s    # => "NaN"
+ *  ```
  *
  */
 
