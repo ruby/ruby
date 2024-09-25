@@ -63,7 +63,7 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "foo 2.0", source: "git@#{lib_path("foo")}"
     end
 
-    it "should allows git repos that are missing but not being installed" do
+    it "allows git repos that are missing but not being installed" do
       revision = build_git("foo").ref_for("HEAD")
 
       gemfile <<-G

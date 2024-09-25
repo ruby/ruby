@@ -70,13 +70,13 @@ module Bundler
       end
 
       def hash
-        [self.class, uri, ref, branch, name, version, glob, submodules].hash
+        [self.class, uri, ref, branch, name, glob, submodules].hash
       end
 
       def eql?(other)
         other.is_a?(Git) && uri == other.uri && ref == other.ref &&
           branch == other.branch && name == other.name &&
-          version == other.version && glob == other.glob &&
+          glob == other.glob &&
           submodules == other.submodules
       end
 
@@ -226,6 +226,7 @@ module Bundler
         git_proxy.checkout if requires_checkout?
         FileUtils.cp_r("#{cache_path}/.", app_cache_path)
         FileUtils.touch(app_cache_path.join(".bundlecache"))
+        FileUtils.rm_rf(Dir.glob(app_cache_path.join("hooks/*.sample")))
       end
 
       def load_spec_files
@@ -392,9 +393,12 @@ module Bundler
       def validate_spec(_spec); end
 
       def load_gemspec(file)
-        stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-        stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s
-        StubSpecification.from_stub(stub)
+        dirname = Pathname.new(file).dirname
+        SharedHelpers.chdir(dirname.to_s) do
+          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+          stub.full_gem_path = dirname.expand_path(root).to_s
+          StubSpecification.from_stub(stub)
+        end
       end
 
       def git_scope

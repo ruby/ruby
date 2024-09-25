@@ -1,6 +1,6 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "GEMFILE" "5" "June 2024" ""
+.TH "GEMFILE" "5" "September 2024" ""
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
 .SH "SYNOPSIS"
@@ -216,6 +216,8 @@ The following platform values are deprecated and should be replaced with \fBwind
 .IP "\(bu" 4
 \fBmswin\fR, \fBmswin64\fR, \fBmingw32\fR, \fBx64_mingw\fR
 .IP "" 0
+.P
+Note that, while unfortunately using the same terminology, the values of this option are different from the values that \fBbundle lock \-\-add\-platform\fR can take\. The values of this option are more closer to "Ruby Implementation" while the values that \fBbundle lock \-\-add\-platform\fR understands are more related to OS and architecture of the different systems where your lockfile will be used\.
 .SS "FORCE_RUBY_PLATFORM"
 If you always want the pure ruby variant of a gem to be chosen over platform specific variants, you can use the \fBforce_ruby_platform\fR option:
 .IP "" 4

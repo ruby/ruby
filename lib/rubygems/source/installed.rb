@@ -32,6 +32,8 @@ class Gem::Source::Installed < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.text "[Installed]"
+    q.object_group(self) do
+      q.text "[Installed]"
+    end
   end
 end

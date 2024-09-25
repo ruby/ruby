@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "benchmark"
 require_relative "helper"
 require "date"
 require "pathname"
@@ -146,6 +145,12 @@ end
   end
 
   def test_find_in_unresolved_tree_is_not_exponentiental
+    begin
+      require "benchmark"
+    rescue LoadError
+      pend "Benchmark is not available in this environment. Please install it with `gem install benchmark`."
+    end
+
     pend "currently slower in CI on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     num_of_pkg = 7
     num_of_version_per_pkg = 3

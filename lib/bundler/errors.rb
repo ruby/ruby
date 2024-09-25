@@ -217,15 +217,15 @@ module Bundler
   end
 
   class InsecureInstallPathError < BundlerError
-    def initialize(path)
+    def initialize(name, path)
+      @name = name
       @path = path
     end
 
     def message
-      "The installation path is insecure. Bundler cannot continue.\n" \
-      "#{@path} is world-writable (without sticky bit).\n" \
-      "Bundler cannot safely replace gems in world-writeable directories due to potential vulnerabilities.\n" \
-      "Please change the permissions of this directory or choose a different install path."
+      "Bundler cannot reinstall #{@name} because there's a previous installation of it at #{@path} that is unsafe to remove.\n" \
+      "The parent of #{@path} is world-writable and does not have the sticky bit set, making it insecure to remove due to potential vulnerabilities.\n" \
+      "Please change the permissions of #{File.dirname(@path)} or choose a different install path."
     end
 
     status_code(38)
@@ -244,4 +244,6 @@ module Bundler
 
     status_code(39)
   end
+
+  class InvalidArgumentError < BundlerError; status_code(40); end
 end

@@ -655,4 +655,27 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("before: [\"Test_Variable\"]")
     expect(out).to include("after: [\"Test_Variable\"]")
   end
+
+  it "does not load specified version of psych and stringio", :ruby_repo do
+    build_repo4 do
+      build_gem "psych", "999"
+      build_gem "stringio", "999"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "https://gem.repo4"
+
+        gem "psych"
+        gem "stringio"
+      end
+    RUBY
+
+    expect(out).to include("Installing psych 999")
+    expect(out).to include("Installing stringio 999")
+    expect(out).to include("The psych gem was resolved to 999")
+    expect(out).to include("The stringio gem was resolved to 999")
+  end
 end

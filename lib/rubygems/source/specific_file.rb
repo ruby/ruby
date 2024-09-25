@@ -42,9 +42,11 @@ class Gem::Source::SpecificFile < Gem::Source
   end
 
   def pretty_print(q) # :nodoc:
-    q.group 2, "[SpecificFile:", "]" do
-      q.breakable
-      q.text @path
+    q.object_group(self) do
+      q.group 2, "[SpecificFile:", "]" do
+        q.breakable
+        q.text @path
+      end
     end
   end
 

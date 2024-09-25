@@ -15,8 +15,8 @@ module Bundler
       end
 
       print = options[:print]
-      previous_ui_level = Bundler.ui.level
-      Bundler.ui.level = "silent" if print
+      previous_output_stream = Bundler.ui.output_stream
+      Bundler.ui.output_stream = :stderr if print
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
@@ -48,8 +48,8 @@ module Bundler
         options["add-platform"].each do |platform_string|
           platform = Gem::Platform.new(platform_string)
           if platform.to_s == "unknown"
-            Bundler.ui.warn "The platform `#{platform_string}` is unknown to RubyGems " \
-              "and adding it will likely lead to resolution errors"
+            Bundler.ui.error "The platform `#{platform_string}` is unknown to RubyGems and can't be added to the lockfile."
+            exit 1
           end
           definition.add_platform(platform)
         end
@@ -68,7 +68,7 @@ module Bundler
         end
       end
 
-      Bundler.ui.level = previous_ui_level
+      Bundler.ui.output_stream = previous_output_stream
     end
   end
 end

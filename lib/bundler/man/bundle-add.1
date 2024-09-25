@@ -1,24 +1,12 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-ADD" "1" "June 2024" ""
+.TH "BUNDLE\-ADD" "1" "September 2024" ""
 .SH "NAME"
 \fBbundle\-add\fR \- Add gem to the Gemfile and run bundle install
 .SH "SYNOPSIS"
-\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-path=PATH] [\-\-git=GIT] [\-\-github=GITHUB] [\-\-branch=BRANCH] [\-\-ref=REF] [\-\-skip\-install] [\-\-strict] [\-\-optimistic]
+\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-path=PATH] [\-\-git=GIT|\-\-github=GITHUB] [\-\-branch=BRANCH] [\-\-ref=REF] [\-\-skip\-install] [\-\-strict|\-\-optimistic]
 .SH "DESCRIPTION"
-Adds the named gem to the Gemfile and run \fBbundle install\fR\. \fBbundle install\fR can be avoided by using the flag \fB\-\-skip\-install\fR\.
-.P
-Example:
-.P
-bundle add rails
-.P
-bundle add rails \-\-version "< 3\.0, > 1\.1"
-.P
-bundle add rails \-\-version "~> 5\.0\.0" \-\-source "https://gems\.example\.com" \-\-group "development"
-.P
-bundle add rails \-\-skip\-install
-.P
-bundle add rails \-\-group "development, test"
+Adds the named gem to the [\fBGemfile(5)\fR][Gemfile(5)] and run \fBbundle install\fR\. \fBbundle install\fR can be avoided by using the flag \fB\-\-skip\-install\fR\.
 .SH "OPTIONS"
 .TP
 \fB\-\-version\fR, \fB\-v\fR
@@ -56,4 +44,27 @@ Adds optimistic declaration of version\.
 .TP
 \fB\-\-strict\fR
 Adds strict declaration of version\.
-
+.SH "EXAMPLES"
+.IP "1." 4
+You can add the \fBrails\fR gem to the Gemfile without any version restriction\. The source of the gem will be the global source\.
+.IP
+\fBbundle add rails\fR
+.IP "2." 4
+You can add the \fBrails\fR gem with version greater than 1\.1 (not including 1\.1) and less than 3\.0\.
+.IP
+\fBbundle add rails \-\-version "> 1\.1, < 3\.0"\fR
+.IP "3." 4
+You can use the \fBhttps://gems\.example\.com\fR custom source and assign the gem to a group\.
+.IP
+\fBbundle add rails \-\-version "~> 5\.0\.0" \-\-source "https://gems\.example\.com" \-\-group "development"\fR
+.IP "4." 4
+The following adds the \fBgem\fR entry to the Gemfile without installing the gem\. You can install gems later via \fBbundle install\fR\.
+.IP
+\fBbundle add rails \-\-skip\-install\fR
+.IP "5." 4
+You can assign the gem to more than one group\.
+.IP
+\fBbundle add rails \-\-group "development, test"\fR
+.IP "" 0
+.SH "SEE ALSO"
+Gemfile(5) \fIhttps://bundler\.io/man/gemfile\.5\.html\fR, bundle\-remove(1) \fIbundle\-remove\.1\.html\fR

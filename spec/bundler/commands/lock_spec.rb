@@ -202,6 +202,25 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  it "prints an updated lockfile when there is an outdated lockfile using --print --update" do
+    lockfile outdated_lockfile
+
+    bundle "lock --print --update"
+
+    expect(out).to eq(expected_lockfile.rstrip)
+  end
+
+  it "emits info messages to stderr when updating an outdated lockfile using --print --update" do
+    lockfile outdated_lockfile
+
+    bundle "lock --print --update"
+
+    expect(err).to eq(<<~STDERR.rstrip)
+      Fetching gem metadata from https://gem.repo4/...
+      Resolving dependencies...
+    STDERR
+  end
+
   it "writes a lockfile when there is an outdated lockfile and bundle is frozen" do
     lockfile outdated_lockfile
 
@@ -838,9 +857,10 @@ RSpec.describe "bundle lock" do
     expect(lockfile.platforms).to match_array(default_platform_list("ruby"))
   end
 
-  it "warns when adding an unknown platform" do
-    bundle "lock --add-platform foobarbaz"
-    expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and adding it will likely lead to resolution errors")
+  it "fails when adding an unknown platform" do
+    bundle "lock --add-platform foobarbaz", raise_on_error: false
+    expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and can't be added to the lockfile")
+    expect(last_command).to be_failure
   end
 
   it "allows removing platforms" do

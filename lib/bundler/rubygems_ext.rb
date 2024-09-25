@@ -30,23 +30,31 @@ module Gem
     end
   end
 
-  # Can be removed once RubyGems 3.5.14 support is dropped
-  unless Gem.respond_to?(:open_file_with_flock)
-    def self.open_file_with_flock(path, &block)
-      flags = File.exist?(path) ? "r+" : "a+"
+  # Can be removed once RubyGems 3.5.18 support is dropped
+  unless Gem.respond_to?(:open_file_with_lock)
+    class << self
+      remove_method :open_file_with_flock if Gem.respond_to?(:open_file_with_flock)
 
-      File.open(path, flags) do |io|
-        begin
-          io.flock(File::LOCK_EX)
-        rescue Errno::ENOSYS, Errno::ENOTSUP
+      def open_file_with_flock(path, &block)
+        mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+        mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
+
+        File.open(path, mode) do |io|
+          begin
+            io.flock(File::LOCK_EX)
+          rescue Errno::ENOSYS, Errno::ENOTSUP
+          rescue Errno::ENOLCK # NFS
+            raise unless Thread.main == Thread.current
+          end
+          yield io
         end
-        yield io
-      rescue Errno::ENOLCK # NFS
-        if Thread.main != Thread.current
-          raise
-        else
-          File.open(path, flags, &block)
-        end
+      end
+
+      def open_file_with_lock(path, &block)
+        file_lock = "#{path}.lock"
+        open_file_with_flock(file_lock, &block)
+      ensure
+        FileUtils.rm_f file_lock
       end
     end
   end
@@ -404,6 +412,25 @@ module Gem
         "#{name} (#{version})"
       else
         "#{name} (#{version}-#{platform})"
+      end
+    end
+  end
+
+  unless Gem.rubygems_version >= Gem::Version.new("3.5.19")
+    class Resolver::ActivationRequest
+      remove_method :installed?
+
+      def installed?
+        case @spec
+        when Gem::Resolver::VendorSpecification then
+          true
+        else
+          this_spec = full_spec
+
+          Gem::Specification.any? do |s|
+            s == this_spec && s.base_dir == this_spec.base_dir
+          end
+        end
       end
     end
   end

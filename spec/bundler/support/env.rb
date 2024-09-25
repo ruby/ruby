@@ -3,7 +3,7 @@
 module Spec
   module Env
     def ruby_core?
-      !ENV["GEM_COMMAND"].nil?
+      File.exist?(File.expand_path("../../../lib/bundler/bundler.gemspec", __dir__))
     end
   end
 end
