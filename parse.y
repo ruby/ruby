@@ -2969,7 +2969,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                                         }
                                     ;
 
-%rule words(begin, word_list): begin ' '+ word_list tSTRING_END
+%rule words(begin, word_list) <node>: begin ' '+ word_list tSTRING_END
                                 {
                                     $$ = make_list($3, &@$);
                                 /*% ripper: array!($:3) %*/
@@ -6064,7 +6064,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     }
                 ;
 
-words		: words(tWORDS_BEG, word_list) <node>
+words		: words(tWORDS_BEG, word_list)
                 ;
 
 word_list	: /* none */
@@ -6088,7 +6088,7 @@ word		: string_content
                     }
                 ;
 
-symbols 	: words(tSYMBOLS_BEG, symbol_list) <node>
+symbols 	: words(tSYMBOLS_BEG, symbol_list)
                 ;
 
 symbol_list	: /* none */
@@ -6103,10 +6103,10 @@ symbol_list	: /* none */
                     }
                 ;
 
-qwords		: words(tQWORDS_BEG, qword_list) <node>
+qwords		: words(tQWORDS_BEG, qword_list)
                 ;
 
-qsymbols	: words(tQSYMBOLS_BEG, qsym_list) <node>
+qsymbols	: words(tQSYMBOLS_BEG, qsym_list)
                 ;
 
 qword_list	: /* none */
