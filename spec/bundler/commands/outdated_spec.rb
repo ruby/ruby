@@ -251,6 +251,14 @@ RSpec.describe "bundle outdated" do
       expect(out).to end_with("Bundle up to date!")
     end
 
+    it "works when only out of date gems are not in given group" do
+      update_repo2 do
+        build_gem "terranova", "9"
+      end
+      bundle "outdated --group development"
+      expect(out).to end_with("Bundle up to date!")
+    end
+
     it "returns a sorted list of outdated gems from one group => 'default'" do
       test_group_option("default")
 

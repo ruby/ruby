@@ -15,13 +15,15 @@ RSpec.describe "gemcutter's dependency API" do
       # mustermann depends on URI::RFC2396_PARSER behavior
       URI.parser = URI::RFC2396_PARSER if URI.respond_to?(:parser=)
 
+      require "rackup/server"
+
       @t = Thread.new do
-        server = Rack::Server.start(app: EndpointTimeout,
-                                    Host: "0.0.0.0",
-                                    Port: port,
-                                    server: "webrick",
-                                    AccessLog: [],
-                                    Logger: Spec::SilentLogger.new)
+        server = Rackup::Server.start(app: EndpointTimeout,
+                                      Host: "0.0.0.0",
+                                      Port: port,
+                                      server: "webrick",
+                                      AccessLog: [],
+                                      Logger: Spec::SilentLogger.new)
         server.start
       end
       @t.run

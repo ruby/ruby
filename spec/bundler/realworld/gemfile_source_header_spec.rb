@@ -39,13 +39,15 @@ RSpec.describe "fetching dependencies with a mirrored source", realworld: true d
 
     require_relative "../support/artifice/endpoint_mirror_source"
 
+    require "rackup/server"
+
     @t = Thread.new do
-      Rack::Server.start(app: EndpointMirrorSource,
-                         Host: "0.0.0.0",
-                         Port: @port,
-                         server: "webrick",
-                         AccessLog: [],
-                         Logger: Spec::SilentLogger.new)
+      Rackup::Server.start(app: EndpointMirrorSource,
+                           Host: "0.0.0.0",
+                           Port: @port,
+                           server: "webrick",
+                           AccessLog: [],
+                           Logger: Spec::SilentLogger.new)
     end.run
 
     wait_for_server("127.0.0.1", @port)
