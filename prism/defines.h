@@ -233,7 +233,7 @@
     #define PRISM_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #elif defined(_MSC_VER) && (_MSC_VER >= 1400)
     /** The compiler should predicate that this branch will be taken. */
-    #define PRISM_LIKELY(x) __assume((x))
+    #define PRISM_LIKELY(x) __assume(!!(x))
 
     /** The compiler should predicate that this branch will not be taken. */
     #define PRISM_UNLIKELY(x) __assume(!(x))
