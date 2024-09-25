@@ -18,11 +18,11 @@ RSpec.describe "bundle install with install_if conditionals" do
     expect(the_bundle).not_to include_gems("thin")
     expect(the_bundle).not_to include_gems("foo")
 
-    checksums = checksums_section_when_existing do |c|
+    checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo1, "activesupport", "2.3.5"
-      c.no_checksum "foo", "1.0"
+      c.checksum gem_repo1, "foo", "1.0"
       c.checksum gem_repo1, "myrack", "1.0.0"
-      c.no_checksum "thin", "1.0"
+      c.checksum gem_repo1, "thin", "1.0"
     end
 
     expect(lockfile).to eq <<~L

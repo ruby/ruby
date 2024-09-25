@@ -309,7 +309,7 @@ RSpec.describe "bundle update" do
 
       bundle "update --source bar"
 
-      checksums = checksums_section_when_existing do |c|
+      checksums = checksums_section_when_enabled do |c|
         c.no_checksum "foo", "2.0"
         c.checksum gem_repo2, "myrack", "1.0.0"
       end
