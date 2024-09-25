@@ -2081,7 +2081,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
  *
  *  Returns +nil+ if no such element found.
  *
- *  With only a block given,,
+ *  With only a block given,
  *  calls the block with each successive element;
  *  returns the index of the first element for which the block returns a truthy value:
  *
