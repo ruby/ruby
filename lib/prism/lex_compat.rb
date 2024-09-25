@@ -481,7 +481,7 @@ module Prism
                 embexpr_balance -= 1
               when :on_tstring_content
                 if embexpr_balance == 0
-                  while index < max_index && tokens[index].event == :on_tstring_content
+                  while index < max_index && tokens[index].event == :on_tstring_content && !token.value.match?(/\\\r?\n\z/)
                     token.value << tokens[index].value
                     index += 1
                   end
