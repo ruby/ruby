@@ -1005,30 +1005,14 @@ init_fast_fallback_inetsock_internal(VALUE v)
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
                             }
+                        } else {
+                            /* Retry to read from hostname_resolution_waiter */
                         }
                     } else if (resolved_type_size < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                         errno = 0;
                         break;
                     } else {
-                        last_error.type = SYSCALL_ERROR;
-                        last_error.ecode = errno;
-
-                        if (!any_addrinfos(&resolution_store) &&
-                            !in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size) &&
-                            resolution_store.is_all_finised) {
-                            if (local_status < 0) {
-                                host = arg->local.host;
-                                serv = arg->local.serv;
-                            } else {
-                                host = arg->remote.host;
-                                serv = arg->remote.serv;
-                            }
-                            if (last_error.type == RESOLUTION_ERROR) {
-                                rsock_raise_resolution_error(syscall, last_error.ecode);
-                            } else {
-                                rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
-                            }
-                        }
+                        /* Retry to read from hostname_resolution_waiter */
                     }
 
                     if (!resolution_store.v6.finished &&
@@ -1142,20 +1126,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
     }
 
     int connection_attempt_fd;
-    int error = 0;
-    socklen_t len = sizeof(error);
 
     for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
         connection_attempt_fd = arg->connection_attempt_fds[i];
+
         if (connection_attempt_fd >= 0) {
-            if ((getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, &error, &len)) < 0) {
-                rb_syserr_fail(errno, "getsockopt(2)");
-            }
-            if (error == 0) {
-                if ((shutdown(connection_attempt_fd, SHUT_RDWR)) < 0) {
-                    rb_syserr_fail(errno, "shutdown(2)");
-                }
-            }
+            int error = 0;
+            socklen_t len = sizeof(error);
+            getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+            if (error == 0) shutdown(connection_attempt_fd, SHUT_RDWR);
             close(connection_attempt_fd);
        }
     }
