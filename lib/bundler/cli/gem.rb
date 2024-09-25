@@ -191,7 +191,10 @@ module Bundler
         templates.merge!("standard.yml.tt" => ".standard.yml")
       end
 
-      templates.merge!("exe/newgem.tt" => "exe/#{name}") if config[:exe]
+      if config[:exe]
+        templates.merge!("exe/newgem.tt" => "exe/#{name}")
+        executables.push("exe/#{name}")
+      end
 
       if extension == "c"
         templates.merge!(

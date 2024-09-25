@@ -57,8 +57,6 @@ to the same gem path as user-installed gems.
   end
 
   def execute
-    gem_paths = { "GEM_HOME" => Gem.paths.home, "GEM_PATH" => Gem.paths.path.join(File::PATH_SEPARATOR), "GEM_SPEC_CACHE" => Gem.paths.spec_cache_dir }.compact
-
     check_executable
 
     print_command
@@ -74,9 +72,6 @@ to the same gem path as user-installed gems.
     end
 
     load!
-  ensure
-    ENV.update(gem_paths) if gem_paths
-    Gem.clear_paths
   end
 
   private
@@ -143,7 +138,7 @@ to the same gem path as user-installed gems.
   end
 
   def set_gem_exec_install_paths
-    home = File.join(Gem.dir, "gem_exec")
+    home = Gem.dir
 
     ENV["GEM_PATH"] = ([home] + Gem.path).join(File::PATH_SEPARATOR)
     ENV["GEM_HOME"] = home

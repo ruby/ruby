@@ -170,12 +170,8 @@ module Spec
         requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
       end
 
-      hax_path = "#{Path.spec_dir}/support/hax.rb"
+      requires << "#{Path.spec_dir}/support/hax.rb"
 
-      # For specs that need to ignore the default Bundler gem, load hax before
-      # anything else since other stuff may actually load bundler and not skip
-      # the default version
-      env.include?("BUNDLER_IGNORE_DEFAULT_GEM") ? requires.prepend(hax_path) : requires.append(hax_path)
       require_option = requires.map {|r| "-r#{r}" }
 
       [env, [Gem.ruby, *lib_option, *require_option].compact.join(" ")]

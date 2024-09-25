@@ -104,9 +104,6 @@ end
 
 class Gem::GemNotFoundException < Gem::Exception; end
 
-##
-# Raised by the DependencyInstaller when a specific gem cannot be found
-
 class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   ##
   # Creates a new SpecificGemNotFoundException for a gem with the given +name+
@@ -136,6 +133,8 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
 
   attr_reader :errors
 end
+
+Gem.deprecate_constant :SpecificGemNotFoundException
 
 ##
 # Raised by Gem::Resolver when dependencies conflict and create the

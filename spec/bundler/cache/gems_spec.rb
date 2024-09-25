@@ -103,10 +103,14 @@ RSpec.describe "bundle cache" do
         end
       end
 
-      it "uses remote gems when installing to system gems" do
-        bundle "config set path.system true"
+      it "uses remote gems when installing" do
         install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true
         expect(out).to include("Installing json #{default_json_version}")
+      end
+
+      it "does not use remote gems when installing with --local flag" do
+        install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true, local: true
+        expect(out).to include("Using json #{default_json_version}")
       end
 
       it "caches remote and builtin gems" do
@@ -134,9 +138,7 @@ RSpec.describe "bundle cache" do
       end
 
       it "doesn't make remote request after caching the gem" do
-        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache") do |s|
-          s.summary = "This builtin_gem is bundled with Ruby"
-        end
+        build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache"), default: true
 
         install_gemfile <<-G
           source "https://gem.repo2"
@@ -149,9 +151,10 @@ RSpec.describe "bundle cache" do
     end
 
     context "when a remote gem is not available for caching" do
-      it "uses builtin gems when installing to system gems" do
+      it "warns, but uses builtin gems when installing to system gems" do
         bundle "config set path.system true"
         install_gemfile %(source "https://gem.repo1"; gem 'json', '#{default_json_version}'), verbose: true
+        expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
         expect(out).to include("Using json #{default_json_version}")
       end
 

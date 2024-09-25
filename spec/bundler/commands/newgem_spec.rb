@@ -681,6 +681,9 @@ RSpec.describe "bundle gem" do
 
       it "builds exe skeleton" do
         expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to exist
+        unless Gem.win_platform?
+          expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to be_executable
+        end
       end
 
       it "requires the main file" do

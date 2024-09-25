@@ -36,18 +36,4 @@ module Gem
   if ENV["BUNDLER_SPEC_GEM_SOURCES"]
     self.sources = [ENV["BUNDLER_SPEC_GEM_SOURCES"]]
   end
-
-  if ENV["BUNDLER_IGNORE_DEFAULT_GEM"]
-    module RemoveDefaultBundlerStub
-      def default_stubs(pattern = "*")
-        super.delete_if {|stub| stub.name == "bundler" }
-      end
-    end
-
-    class Specification
-      class << self
-        prepend RemoveDefaultBundlerStub
-      end
-    end
-  end
 end

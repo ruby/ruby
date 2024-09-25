@@ -68,11 +68,12 @@ module Bundler
 
     attr_reader :size
 
-    def initialize(installer, all_specs, size, standalone, force, skip: nil)
+    def initialize(installer, all_specs, size, standalone, force, local: false, skip: nil)
       @installer = installer
       @size = size
       @standalone = standalone
       @force = force
+      @local = local
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
       @specs.each do |spec_install|
         spec_install.state = :installed if skip.include?(spec_install.name)
@@ -127,7 +128,7 @@ module Bundler
     def do_install(spec_install, worker_num)
       Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL, spec_install)
       gem_installer = Bundler::GemInstaller.new(
-        spec_install.spec, @installer, @standalone, worker_num, @force
+        spec_install.spec, @installer, @standalone, worker_num, @force, @local
       )
       success, message = gem_installer.install_from_spec
       if success

@@ -42,20 +42,20 @@ module Bundler
     end
 
     def eval_gemfile(gemfile, contents = nil)
-      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
-      original_gemfile = @gemfile
-      @gemfile = expanded_gemfile_path
-      @gemfiles << expanded_gemfile_path
-      contents ||= Bundler.read_file(@gemfile.to_s)
-      instance_eval(contents, @gemfile.to_s, 1)
-    rescue Exception => e # rubocop:disable Lint/RescueException
-      message = "There was an error " \
-        "#{e.is_a?(GemfileEvalError) ? "evaluating" : "parsing"} " \
-        "`#{File.basename gemfile.to_s}`: #{e.message}"
-
-      raise DSLError.new(message, gemfile, e.backtrace, contents)
-    ensure
-      @gemfile = original_gemfile
+      with_gemfile(gemfile) do |current_gemfile|
+        contents ||= Bundler.read_file(current_gemfile)
+        instance_eval(contents, current_gemfile, 1)
+      rescue GemfileEvalError => e
+        message = "There was an error evaluating `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      rescue GemfileError, InvalidArgumentError, InvalidOption, DeprecatedError, ScriptError => e
+        message = "There was an error parsing `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      rescue StandardError => e
+        raise unless e.backtrace_locations.first.path == current_gemfile
+        message = "There was an error parsing `#{File.basename current_gemfile}`: #{e.message}"
+        raise DSLError.new(message, current_gemfile, e.backtrace, contents)
+      end
     end
 
     def gemspec(opts = nil)
@@ -219,7 +219,7 @@ module Bundler
     end
 
     def github(repo, options = {})
-      raise ArgumentError, "GitHub sources require a block" unless block_given?
+      raise InvalidArgumentError, "GitHub sources require a block" unless block_given?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)
@@ -284,6 +284,16 @@ module Bundler
     end
 
     private
+
+    def with_gemfile(gemfile)
+      expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
+      original_gemfile = @gemfile
+      @gemfile = expanded_gemfile_path
+      @gemfiles << expanded_gemfile_path
+      yield @gemfile.to_s
+    ensure
+      @gemfile = original_gemfile
+    end
 
     def add_git_sources
       git_source(:github) do |repo_name|
@@ -577,7 +587,7 @@ module Bundler
 
           return m unless backtrace && dsl_path && contents
 
-          trace_line = backtrace.find {|l| l.include?(dsl_path.to_s) } || trace_line
+          trace_line = backtrace.find {|l| l.include?(dsl_path) } || trace_line
           return m unless trace_line
           line_numer = trace_line.split(":")[1].to_i - 1
           return m unless line_numer
@@ -603,7 +613,7 @@ module Bundler
 
       def parse_line_number_from_description
         description = self.description
-        if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path.to_s}):\d+)/
+        if dsl_path && description =~ /((#{Regexp.quote File.expand_path(dsl_path)}|#{Regexp.quote dsl_path}):\d+)/
           trace_line = Regexp.last_match[1]
           description = description.sub(/\n.*\n(\.\.\.)? *\^~+$/, "").sub(/#{Regexp.quote trace_line}:\s*/, "").sub("\n", " - ")
         end

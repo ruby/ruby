@@ -304,7 +304,7 @@ RSpec.describe "bundle add" do
     it "throws error" do
       bundle "add 'foo' --strict --optimistic", raise_on_error: false
 
-      expect(err).to include("You can not specify `--strict` and `--optimistic` at the same time")
+      expect(err).to include("You cannot specify `--strict` and `--optimistic` at the same time")
     end
   end
 

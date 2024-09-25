@@ -1318,7 +1318,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@has_rdoc,                  array[15]
     spec.instance_variable_set :@new_platform,              array[16]
     spec.instance_variable_set :@platform,                  array[16].to_s
-    spec.instance_variable_set :@license,                   array[17]
+    spec.instance_variable_set :@licenses,                  [array[17]]
     spec.instance_variable_set :@metadata,                  array[18]
     spec.instance_variable_set :@loaded,                    false
     spec.instance_variable_set :@activated,                 false

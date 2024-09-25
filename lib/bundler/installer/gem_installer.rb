@@ -2,14 +2,15 @@
 
 module Bundler
   class GemInstaller
-    attr_reader :spec, :standalone, :worker, :force, :installer
+    attr_reader :spec, :standalone, :worker, :force, :local, :installer
 
-    def initialize(spec, installer, standalone = false, worker = 0, force = false)
+    def initialize(spec, installer, standalone = false, worker = 0, force = false, local = false)
       @spec = spec
       @installer = installer
       @standalone = standalone
       @worker = worker
       @force = force
+      @local = local
     end
 
     def install_from_spec
@@ -54,6 +55,7 @@ module Bundler
       spec.source.install(
         spec,
         force: force,
+        local: local,
         build_args: Array(spec_settings),
         previous_spec: previous_spec,
       )

@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.5.18"
+  VERSION = "3.5.19"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -753,18 +753,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open_file(path, "rb+", &:read)
-  rescue Errno::EACCES, Errno::EROFS
-    open_file(path, "rb", &:read)
+    File.binread(path)
   end
 
   ##
   # Safely write a file in binary mode on all platforms.
 
   def self.write_binary(path, data)
-    open_file(path, "wb") do |io|
-      io.write data
-    end
+    File.binwrite(path, data)
   rescue Errno::ENOSPC
     # If we ran out of space but the file exists, it's *guaranteed* to be corrupted.
     File.delete(path) if File.exist?(path)
@@ -779,23 +775,30 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Open a file with given flags, and protect access with a file lock
+
+  def self.open_file_with_lock(path, &block)
+    file_lock = "#{path}.lock"
+    open_file_with_flock(file_lock, &block)
+  ensure
+    FileUtils.rm_f file_lock
+  end
+
+  ##
   # Open a file with given flags, and protect access with flock
 
   def self.open_file_with_flock(path, &block)
-    flags = File.exist?(path) ? "r+" : "a+"
+    mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+    mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
 
-    File.open(path, flags) do |io|
+    File.open(path, mode) do |io|
       begin
         io.flock(File::LOCK_EX)
       rescue Errno::ENOSYS, Errno::ENOTSUP
+      rescue Errno::ENOLCK # NFS
+        raise unless Thread.main == Thread.current
       end
       yield io
-    rescue Errno::ENOLCK # NFS
-      if Thread.main != Thread.current
-        raise
-      else
-        open_file(path, flags, &block)
-      end
     end
   end
 

@@ -915,16 +915,16 @@ G
       should_be_engine_incorrect
     end
 
-    # it "fails when the engine version doesn't match", :jruby_only do
-    #   gemfile <<-G
-    #     gem "myrack", "0.9.1"
-    #
-    #     #{engine_version_incorrect}
-    #   G
-    #
-    #   bundle "exec myrackup"
-    #   should_be_engine_version_incorrect
-    # end
+    it "fails when the engine version doesn't match", :jruby_only do
+      gemfile <<-G
+        gem "myrack", "0.9.1"
+
+        #{engine_version_incorrect}
+      G
+
+      bundle "exec myrackup", raise_on_error: false
+      should_be_engine_version_incorrect
+    end
 
     it "fails when patchlevel doesn't match" do
       gemfile <<-G

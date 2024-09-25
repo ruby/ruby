@@ -305,6 +305,18 @@ class TestGemSafeMarshal < Gem::TestCase
     end
   end
 
+  def test_gem_spec_unmarshall_license
+    spec = Gem::Specification.new do |s|
+      s.name = "hi"
+      s.version = "1.2.3"
+      s.license = "MIT"
+    end
+
+    unmarshalled_spec = Gem::SafeMarshal.safe_load(Marshal.dump(spec))
+
+    assert_equal ["MIT"], unmarshalled_spec.license
+  end
+
   def test_gem_spec_disallowed_symbol
     e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnpermittedSymbolError) do
       spec = Gem::Specification.new do |s|

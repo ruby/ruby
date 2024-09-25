@@ -81,11 +81,11 @@ module Bundler
       end
     end
 
-    if Bundler.rubygems.provides?("< 3.5.15")
+    if Bundler.rubygems.provides?("< 3.5.19")
       def generate_bin_script(filename, bindir)
         bin_script_path = File.join bindir, formatted_program_filename(filename)
 
-        Gem.open_file_with_flock("#{bin_script_path}.lock") do
+        Gem.open_file_with_lock(bin_script_path) do
           require "fileutils"
           FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
@@ -150,12 +150,13 @@ module Bundler
 
     def strict_rm_rf(dir)
       return unless File.exist?(dir)
+      return if Dir.empty?(dir)
 
       parent = File.dirname(dir)
       parent_st = File.stat(parent)
 
       if parent_st.world_writable? && !parent_st.sticky?
-        raise InsecureInstallPathError.new(parent)
+        raise InsecureInstallPathError.new(spec.full_name, dir)
       end
 
       begin

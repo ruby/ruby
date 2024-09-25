@@ -511,15 +511,11 @@ module Bundler
     end
 
     def lockfile_exists?
-      file_exists?(lockfile)
-    end
-
-    def file_exists?(file)
-      file && File.exist?(file)
+      lockfile && File.exist?(lockfile)
     end
 
     def write_lock(file, preserve_unknown_sections)
-      return if Definition.no_lock
+      return if Definition.no_lock || file.nil?
 
       contents = to_lock
 
@@ -536,7 +532,7 @@ module Bundler
 
       preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
 
-      if file_exists?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
+      if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
         return if Bundler.frozen_bundle?
         SharedHelpers.filesystem_access(file) { FileUtils.touch(file) }
         return
