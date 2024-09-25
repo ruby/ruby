@@ -2467,7 +2467,7 @@ module Net   #:nodoc:
           debug 'Conn close because of keep_alive_timeout'
           @socket.close
           connect
-        elsif @socket.io.to_io.wait_readable(0) && @socket.eof?
+        elsif eof?
           debug "Conn close because of EOF"
           @socket.close
           connect
@@ -2480,6 +2480,14 @@ module Net   #:nodoc:
 
       req.update_uri address, port, use_ssl?
       req['host'] ||= addr_port()
+    end
+
+    def eof?
+      if defined?(OpenSSL::SSL) && @socket.io.is_a?(OpenSSL::SSL::SSLSocket)
+        @socket.io.read_nonblock(0, exception: false).nil?
+      else
+        @socket.io.to_io.wait_readable(0) && @socket.eof?
+      end
     end
 
     def end_transport(req, res)
