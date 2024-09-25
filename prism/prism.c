@@ -1034,7 +1034,7 @@ pm_parser_optional_constant_id_token(pm_parser_t *parser, const pm_token_t *toke
  */
 static pm_node_t *
 pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
-    pm_node_t* void_node = NULL;
+    pm_node_t *void_node = NULL;
 
     while (node != NULL) {
         switch (PM_NODE_TYPE(node)) {
@@ -1050,24 +1050,43 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
             case PM_BEGIN_NODE: {
                 pm_begin_node_t *cast = (pm_begin_node_t *) node;
 
-                if (cast->statements == NULL && cast->ensure_clause != NULL) {
-                    node = (pm_node_t *) cast->ensure_clause;
-                }
-                else {
+                if (cast->ensure_clause != NULL) {
                     if (cast->rescue_clause != NULL) {
-                        if (cast->rescue_clause->statements == NULL) {
-                            return NULL;
+                        pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->rescue_clause);
+                        if (vn != NULL) return vn;
+                    }
+
+                    if (cast->statements != NULL) {
+                        pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
+                        if (vn != NULL) return vn;
+                    }
+
+                    node = (pm_node_t *) cast->ensure_clause;
+                } else if (cast->rescue_clause != NULL) {
+                    if (cast->statements == NULL) return NULL;
+
+                    pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
+                    if (vn == NULL) return NULL;
+                    if (void_node == NULL) void_node = vn;
+
+                    for (pm_rescue_node_t *rescue_clause = cast->rescue_clause; rescue_clause != NULL; rescue_clause = rescue_clause->subsequent) {
+                        pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) rescue_clause->statements);
+                        if (vn == NULL) {
+                            void_node = NULL;
+                            break;
                         }
-                        else if (cast->else_clause != NULL) {
-                            node = (pm_node_t *) cast->else_clause;
-                        }
-                        else {
-                            node = (pm_node_t *) cast->statements;
+                        if (void_node == NULL) {
+                            void_node = vn;
                         }
                     }
-                    else {
-                        node = (pm_node_t *) cast->statements;
+
+                    if (cast->else_clause != NULL) {
+                        node = (pm_node_t *) cast->else_clause;
+                    } else {
+                        return void_node;
                     }
+                } else {
+                    node = (pm_node_t *) cast->statements;
                 }
 
                 break;
