@@ -159,7 +159,7 @@ typedef struct pm_node {
  *
  * Type: ::<%= node.type %>
 <% if (node_flags = node.flags) %>
- * Applicable flags (#pm_<%= node_flags.human %>):
+ * Flags (#pm_<%= node_flags.human %>):
 <%- node_flags.values.each do |value| -%>
  * * ::PM_<%= node_flags.human.upcase %>_<%= value.name %>
 <%- end -%>
