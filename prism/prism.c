@@ -21643,16 +21643,26 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 break;
         }
 
+        // If the operator is nonassoc and we should not be able to parse the
+        // upcoming infix operator, break.
         if (current_binding_powers.nonassoc) {
-            bool endless_range_p = PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL;
-            pm_binding_power_t left = endless_range_p ? PM_BINDING_POWER_TERM : current_binding_powers.left;
-            if (
-                left <= pm_binding_powers[parser->current.type].left ||
-                // Exceptionally to operator precedences, '1.. & 2' is rejected.
-                // '1.. || 2' is also an exception, but it is handled by the lexer.
-                // (Here, parser->current is PM_TOKEN_PIPE, not PM_TOKEN_PIPE_PIPE).
-                (endless_range_p && match1(parser, PM_TOKEN_AMPERSAND))
-            ) {
+            // If this is an endless range, then we need to reject a couple of
+            // additional operators because it violates the normal operator
+            // precedence rules. Those patterns are:
+            //
+            //     1.. & 2
+            //     1.. * 2
+            //
+            if (PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL) {
+                if (match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT)) {
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(parser->previous.type));
+                    break;
+                }
+
+                if (PM_BINDING_POWER_TERM <= pm_binding_powers[parser->current.type].left) {
+                    break;
+                }
+            } else if (current_binding_powers.left <= pm_binding_powers[parser->current.type].left) {
                 break;
             }
         }

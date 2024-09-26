@@ -269,6 +269,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_MULTI_ASSIGN_UNEXPECTED_REST]       = { "unexpected '%.*s' resulting in multiple splats in multiple assignment", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_NESTING_TOO_DEEP]                   = { "nesting too deep", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_NO_LOCAL_VARIABLE]                  = { "%.*s: no such local variable", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_NON_ASSOCIATIVE_OPERATOR]           = { "unexpected %s; %s is a non-associative operator", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_NOT_EXPRESSION]                     = { "expected an expression after `not`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_NUMBER_LITERAL_UNDERSCORE]          = { "number literal ending with a `_`", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_NUMBERED_PARAMETER_INNER_BLOCK]     = { "numbered parameter is already used in inner block", PM_ERROR_LEVEL_SYNTAX },
