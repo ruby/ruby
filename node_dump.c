@@ -406,8 +406,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: begin; foo; rescue; bar; else; baz; end");
         F_NODE(nd_head, RNODE_RESCUE, "body");
         F_NODE(nd_resq, RNODE_RESCUE, "rescue clause list");
-        LAST_NODE;
         F_NODE(nd_else, RNODE_RESCUE, "rescue else clause");
+        F_LOC(keyword_loc, RNODE_RESCUE);
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_RESCUE);
         return;
 
       case NODE_RESBODY:

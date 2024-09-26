@@ -1394,6 +1394,17 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 11], [1, 7, 1, 11]])
     end
 
+    def test_rescue_locations
+      node = ast_parse("begin rescue; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 13], [1, 6, 1, 12], nil])
+
+      node = ast_parse("begin rescue => e; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 18], [1, 6, 1, 12], [1, 16, 1, 17]])
+
+      node = ast_parse("begin rescue StandardError; end")
+      assert_locations(node.children[-1].locations, [[1, 5, 1, 27], [1, 6, 1, 12], nil])
+    end
+
     def test_return_locations
       node = ast_parse("return 1")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 6]])
