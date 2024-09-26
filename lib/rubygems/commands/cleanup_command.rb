@@ -38,8 +38,6 @@ class Gem::Commands::CleanupCommand < Gem::Command
     @default_gems    = []
     @full            = nil
     @gems_to_cleanup = nil
-    @original_home   = nil
-    @original_path   = nil
     @primary_gems    = nil
   end
 
@@ -95,9 +93,6 @@ If no gems are named all gems in GEM_HOME are cleaned.
   end
 
   def clean_gems
-    @original_home = Gem.dir
-    @original_path = Gem.path
-
     get_primary_gems
     get_candidate_gems
     get_gems_to_cleanup
@@ -112,8 +107,6 @@ If no gems are named all gems in GEM_HOME are cleaned.
     deps.reverse_each do |spec|
       uninstall_dep spec
     end
-
-    Gem::Specification.reset
   end
 
   def get_candidate_gems
@@ -133,7 +126,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
 
     default_gems, gems_to_cleanup = gems_to_cleanup.partition(&:default_gem?)
 
-    uninstall_from = options[:user_install] ? Gem.user_dir : @original_home
+    uninstall_from = options[:user_install] ? Gem.user_dir : Gem.dir
 
     gems_to_cleanup = gems_to_cleanup.select do |spec|
       spec.base_dir == uninstall_from
@@ -181,8 +174,5 @@ If no gems are named all gems in GEM_HOME are cleaned.
       say "Unable to uninstall #{spec.full_name}:"
       say "\t#{e.class}: #{e.message}"
     end
-  ensure
-    # Restore path Gem::Uninstaller may have changed
-    Gem.use_paths @original_home, *@original_path
   end
 end
