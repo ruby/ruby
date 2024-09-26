@@ -271,6 +271,18 @@ rb_str_encode_ospath(VALUE path)
 # define NORMALIZE_UTF8PATH 1
 
 # ifdef HAVE_WORKING_FORK
+static CFMutableStringRef
+mutable_CFString_new(CFStringRef *s, const char *ptr, long len)
+{
+    const CFAllocatorRef alloc = kCFAllocatorDefault;
+    *s = CFStringCreateWithBytesNoCopy(alloc, (const UInt8 *)ptr, len,
+                                       kCFStringEncodingUTF8, FALSE,
+                                       kCFAllocatorNull);
+    return CFStringCreateMutableCopy(alloc, len, *s);
+}
+
+#   define mutable_CFString_release(m, s) (CFRelease(m), CFRelease(s))
+
 static void
 rb_CFString_class_initialize_before_fork(void)
 {
@@ -297,15 +309,9 @@ rb_CFString_class_initialize_before_fork(void)
     /* Enough small but non-empty ASCII string to fit in NSTaggedPointerString. */
     const char small_str[] = "/";
     long len = sizeof(small_str) - 1;
-
-    const CFAllocatorRef alloc = kCFAllocatorDefault;
-    CFStringRef s = CFStringCreateWithBytesNoCopy(alloc,
-                                                  (const UInt8 *)small_str,
-                                                  len, kCFStringEncodingUTF8,
-                                                  FALSE, kCFAllocatorNull);
-    CFMutableStringRef m = CFStringCreateMutableCopy(alloc, len, s);
-    CFRelease(m);
-    CFRelease(s);
+    CFStringRef s;
+    CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
+    mutable_CFString_release(m, s);
 }
 # endif /* HAVE_WORKING_FORK */
 
@@ -314,11 +320,8 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 {
     CFIndex buflen = 0;
     CFRange all;
-    CFStringRef s = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault,
-                                                  (const UInt8 *)ptr, len,
-                                                  kCFStringEncodingUTF8, FALSE,
-                                                  kCFAllocatorNull);
-    CFMutableStringRef m = CFStringCreateMutableCopy(kCFAllocatorDefault, len, s);
+    CFStringRef s;
+    CFMutableStringRef m = mutable_CFString_new(&s, ptr, len);
     long oldlen = RSTRING_LEN(str);
 
     CFStringNormalize(m, kCFStringNormalizationFormC);
@@ -328,8 +331,7 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
     CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE,
                      (UInt8 *)(RSTRING_PTR(str) + oldlen), buflen, &buflen);
     rb_str_set_len(str, oldlen + buflen);
-    CFRelease(m);
-    CFRelease(s);
+    mutable_CFString_release(m, s);
     return str;
 }
 
