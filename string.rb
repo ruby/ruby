@@ -29,9 +29,11 @@
 #  These methods perform substitutions:
 #
 #  - String#sub: One substitution (or none); returns a new string.
-#  - String#sub!: One substitution (or none); returns +self+.
+#  - String#sub!: One substitution (or none); returns +self+ if any changes,
+#    +nil+ otherwise.
 #  - String#gsub: Zero or more substitutions; returns a new string.
-#  - String#gsub!: Zero or more substitutions; returns +self+.
+#  - String#gsub!: Zero or more substitutions; returns +self+ if any changes,
+#    +nil+ otherwise.
 #
 #  Each of these methods takes:
 #

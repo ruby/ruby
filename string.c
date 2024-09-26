@@ -6092,8 +6092,8 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
  *    sub!(pattern, replacement)   -> self or nil
  *    sub!(pattern) {|match| ... } -> self or nil
  *
- *  Returns +self+ with only the first occurrence
- *  (not all occurrences) of the given +pattern+ replaced.
+ *  Replaces the first occurrence (not all occurrences) of the given +pattern+
+ *  on +self+; returns +self+ if a replacement occurred, +nil+ otherwise.
  *
  *  See {Substitution Methods}[rdoc-ref:String@Substitution+Methods].
  *
