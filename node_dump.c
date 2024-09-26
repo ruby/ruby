@@ -560,8 +560,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             A_ID(RNODE_OP_ASGN2(node)->nd_vid);
         }
         F_ID(nd_mid, RNODE_OP_ASGN2, "operator");
-        LAST_NODE;
         F_NODE(nd_value, RNODE_OP_ASGN2, "rvalue");
+        F_LOC(call_operator_loc, RNODE_OP_ASGN2);
+        F_LOC(message_loc, RNODE_OP_ASGN2);
+        LAST_NODE;
+        F_LOC(binary_operator_loc, RNODE_OP_ASGN2);
         return;
 
       case NODE_OP_ASGN_AND:
