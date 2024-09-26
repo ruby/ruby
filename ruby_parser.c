@@ -34,12 +34,6 @@
 
 #define parser_encoding const void
 
-static int
-is_ascii_string2(VALUE str)
-{
-    return is_ascii_string(str);
-}
-
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
 static VALUE
 syntax_error_append(VALUE exc, VALUE file, int line, int column,
@@ -375,7 +369,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_new = rb_str_new,
     .str_new_cstr = rb_str_new_cstr,
     .str_to_interned_str = rb_str_to_interned_str,
-    .is_ascii_string = is_ascii_string2,
     .enc_str_new = enc_str_new,
     .str_vcatf = rb_str_vcatf,
     .rb_sprintf = rb_sprintf,
