@@ -6503,7 +6503,7 @@ flatten(VALUE ary, int level)
  *  or +nil+.
  *  At each level of recursion:
  *
- *  - Each element that is an array is “flattened”
+ *  - Each element that is an array is "flattened"
  *    (that is, replaced by its individual array elements).
  *  - Each element that is not an array is unchanged
  *    (even if the element is an object that has instance method flatten).
