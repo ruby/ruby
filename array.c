@@ -5290,13 +5290,16 @@ rb_ary_hash(VALUE ary)
 
 /*
  *  call-seq:
- *    array.include?(obj) -> true or false
+ *    include?(object) -> true or false
  *
- *  Returns +true+ if for some index +i+ in +self+, <tt>obj == self[i]</tt>;
- *  otherwise +false+:
+ *  Returns whether for some element +element+ in +self+,
+ *  <tt>object == element</tt>:
  *
- *    [0, 1, 2].include?(2) # => true
- *    [0, 1, 2].include?(3) # => false
+ *    [0, 1, 2].include?(2)   # => true
+ *    [0, 1, 2].include?(2.0) # => true
+ *    [0, 1, 2].include?(2.1) # => false
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 VALUE
