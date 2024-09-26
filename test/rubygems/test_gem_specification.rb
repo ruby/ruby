@@ -3087,6 +3087,40 @@ Please report a bug if this causes problems.
     assert_equal(expected, actual_stderr)
   end
 
+  def test_unresolved_specs_with_duplicated_versions
+    specification = Gem::Specification.clone
+
+    set_orig specification
+
+    specification.define_singleton_method(:unresolved_deps) do
+      { b: Gem::Dependency.new("x","1") }
+    end
+
+    specification.define_singleton_method(:find_all_by_name) do |_dep_name|
+      [
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("1") }, # default copy
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("1") }, # regular copy
+        specification.new {|s| s.name = "z", s.version = Gem::Version.new("2") }, # regular copy
+      ]
+    end
+
+    expected = <<-EXPECTED
+WARN: Unresolved or ambiguous specs during Gem::Specification.reset:
+      x (= 1)
+      Available/installed versions of this gem:
+      - 1
+      - 2
+WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
+Please report a bug if this causes problems.
+    EXPECTED
+
+    actual_stdout, actual_stderr = capture_output do
+      specification.reset
+    end
+    assert_empty actual_stdout
+    assert_equal(expected, actual_stderr)
+  end
+
   def test_duplicate_runtime_dependency
     expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
     out, err = capture_output do

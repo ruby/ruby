@@ -1208,7 +1208,7 @@ class Gem::Specification < Gem::BasicSpecification
       unresolved.values.each do |dep|
         warn "      #{dep}"
 
-        versions = find_all_by_name(dep.name)
+        versions = find_all_by_name(dep.name).uniq(&:full_name)
         unless versions.empty?
           warn "      Available/installed versions of this gem:"
           versions.each {|s| warn "      - #{s.version}" }
