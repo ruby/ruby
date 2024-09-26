@@ -611,13 +611,25 @@ branch_coverage_valid_p(rb_iseq_t *iseq, int first_line)
 
 #define PTR2NUM(x) (rb_int2inum((intptr_t)(void *)(x)))
 
-static VALUE
-decl_branch_base(rb_iseq_t *iseq, VALUE key, const rb_code_location_t *loc, const char *type)
+static void
+setup_branch(const rb_code_location_t *loc, const char *type, VALUE structure, VALUE key, VALUE *branch)
 {
     const int first_lineno = loc->beg_pos.lineno, first_column = loc->beg_pos.column;
     const int last_lineno = loc->end_pos.lineno, last_column = loc->end_pos.column;
 
-    if (!branch_coverage_valid_p(iseq, first_lineno)) return Qundef;
+    *branch = rb_ary_hidden_new(6);
+    rb_hash_aset(structure, key, *branch);
+    rb_ary_push(*branch, ID2SYM(rb_intern(type)));
+    rb_ary_push(*branch, INT2FIX(first_lineno));
+    rb_ary_push(*branch, INT2FIX(first_column));
+    rb_ary_push(*branch, INT2FIX(last_lineno));
+    rb_ary_push(*branch, INT2FIX(last_column));
+}
+
+static VALUE
+decl_branch_base(rb_iseq_t *iseq, VALUE key, const rb_code_location_t *loc, const char *type)
+{
+    if (!branch_coverage_valid_p(iseq, loc->beg_pos.lineno)) return Qundef;
 
     /*
      * if !structure[node]
@@ -632,13 +644,7 @@ decl_branch_base(rb_iseq_t *iseq, VALUE key, const rb_code_location_t *loc, cons
     VALUE branches;
 
     if (NIL_P(branch_base)) {
-        branch_base = rb_ary_hidden_new(6);
-        rb_hash_aset(structure, key, branch_base);
-        rb_ary_push(branch_base, ID2SYM(rb_intern(type)));
-        rb_ary_push(branch_base, INT2FIX(first_lineno));
-        rb_ary_push(branch_base, INT2FIX(first_column));
-        rb_ary_push(branch_base, INT2FIX(last_lineno));
-        rb_ary_push(branch_base, INT2FIX(last_column));
+        setup_branch(loc, type, structure, key, &branch_base);
         branches = rb_hash_new();
         rb_obj_hide(branches);
         rb_ary_push(branch_base, branches);
@@ -662,10 +668,7 @@ generate_dummy_line_node(int lineno, int node_id)
 static void
 add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const rb_code_location_t *loc, int node_id, int branch_id, const char *type, VALUE branches)
 {
-    const int first_lineno = loc->beg_pos.lineno, first_column = loc->beg_pos.column;
-    const int last_lineno = loc->end_pos.lineno, last_column = loc->end_pos.column;
-
-    if (!branch_coverage_valid_p(iseq, first_lineno)) return;
+    if (!branch_coverage_valid_p(iseq, loc->beg_pos.lineno)) return;
 
     /*
      * if !branches[branch_id]
@@ -680,13 +683,7 @@ add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const rb_code
     long counter_idx;
 
     if (NIL_P(branch)) {
-        branch = rb_ary_hidden_new(6);
-        rb_hash_aset(branches, key, branch);
-        rb_ary_push(branch, ID2SYM(rb_intern(type)));
-        rb_ary_push(branch, INT2FIX(first_lineno));
-        rb_ary_push(branch, INT2FIX(first_column));
-        rb_ary_push(branch, INT2FIX(last_lineno));
-        rb_ary_push(branch, INT2FIX(last_column));
+        setup_branch(loc, type, branches, key, &branch);
         VALUE counters = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 1);
         counter_idx = RARRAY_LEN(counters);
         rb_ary_push(branch, LONG2FIX(counter_idx));
@@ -697,7 +694,7 @@ add_trace_branch_coverage(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const rb_code
     }
 
     ADD_TRACE_WITH_DATA(seq, RUBY_EVENT_COVERAGE_BRANCH, counter_idx);
-    ADD_SYNTHETIC_INSN(seq, last_lineno, node_id, nop);
+    ADD_SYNTHETIC_INSN(seq, loc->end_pos.lineno, node_id, nop);
 }
 
 #define ISEQ_LAST_LINE(iseq) (ISEQ_COMPILE_DATA(iseq)->last_line)
