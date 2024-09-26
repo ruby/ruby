@@ -629,16 +629,19 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 
 /*
  *  call-seq:
- *    array.freeze -> self
+ *    freeze -> self
  *
- *  Freezes +self+; returns +self+:
+ *  Freezes +self+ (if not already frozen); returns +self+:
  *
  *    a = []
  *    a.frozen? # => false
  *    a.freeze
  *    a.frozen? # => true
  *
- *  An attempt to modify a frozen +Array+ raises FrozenError.
+ *  No further changes may be made to +self+;
+ *  raises FrozenError if a change is attempted.
+ *
+ *  Related: Kernel#frozen?.
  */
 
 VALUE
