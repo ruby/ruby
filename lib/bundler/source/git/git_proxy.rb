@@ -84,8 +84,10 @@ module Bundler
           end
         end
 
-        def not_a_bare_repository?
-          git_local("rev-parse", "--is-bare-repository", dir: path).strip == "false"
+        def not_a_repository?
+          _, status = git_null("rev-parse", "--resolve-git-dir", path.to_s, dir: path)
+
+          !status.success?
         end
 
         def contains?(commit)
