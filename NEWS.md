@@ -73,7 +73,7 @@ The following default gems are updated.
 * erb 4.0.4
 * fiddle 1.1.3.dev
 * io-console 0.7.2
-* irb 1.14.0
+* irb 1.14.1
 * json 2.7.2
 * logger 1.6.1
 * net-http 0.4.1
