@@ -864,7 +864,7 @@ nodes:
         type: node
         kind: pattern expression
         comment: |
-          Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+          Represents the left side of the expression.
 
               foo => bar | baz
                      ^^^
@@ -872,7 +872,7 @@ nodes:
         type: node
         kind: pattern expression
         comment: |
-          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+          Represents the right side of the expression.
 
               foo => bar | baz
                            ^^^
