@@ -5063,11 +5063,7 @@ gc_raise(VALUE exc, const char *fmt, ...)
         exc, fmt, &ap,
     };
 
-    if (ruby_thread_has_gvl_p()) {
-        gc_vraise(&argv);
-        UNREACHABLE;
-    }
-    else if (ruby_native_thread_p()) {
+    if (ruby_native_thread_p()) {
         rb_thread_call_with_gvl(gc_vraise, &argv);
         UNREACHABLE;
     }
