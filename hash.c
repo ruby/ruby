@@ -64,7 +64,7 @@
  *            The bounds of the AR table.
  * 13-19: RHASH_LEV_MASK
  *            The iterational level of the hash. Used to prevent modifications
- *            to the hash during interation.
+ *            to the hash during iteration.
  */
 
 #ifndef HASH_DEBUG
