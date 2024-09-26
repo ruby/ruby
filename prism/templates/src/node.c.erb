@@ -248,7 +248,11 @@ pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *no
 
             // Dump the <%= field.name %> field
             pm_buffer_append_byte(buffer, ',');
+            <%- if field.is_a?(Prism::Template::Flags) -%>
+            pm_buffer_append_string(buffer, "\"flags\":", 8);
+            <%- else -%>
             pm_buffer_append_string(buffer, "\"<%= field.name %>\":", <%= field.name.bytesize + 3 %>);
+            <%- end -%>
             <%- case field -%>
             <%- when Prism::Template::NodeField -%>
             pm_dump_json(buffer, parser, (const pm_node_t *) cast-><%= field.name %>);
