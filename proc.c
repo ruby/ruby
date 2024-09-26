@@ -840,7 +840,7 @@ f_lambda_filter_non_literal(void)
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
-        // no block erorr raised else where
+        // no block error raised else where
         return;
     }
 
