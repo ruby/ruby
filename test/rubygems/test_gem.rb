@@ -21,8 +21,6 @@ class TestGem < Gem::TestCase
     common_installer_setup
 
     @additional = %w[a b].map {|d| File.join @tempdir, d }
-
-    util_remove_interrupt_command
   end
 
   def test_self_finish_resolve
@@ -1524,8 +1522,6 @@ class TestGem < Gem::TestCase
       nil
     end
 
-    util_remove_interrupt_command
-
     # Should attempt to cause a StandardError
     with_plugin("standarderror") { Gem.load_env_plugins }
     begin
@@ -1533,8 +1529,6 @@ class TestGem < Gem::TestCase
     rescue StandardError
       nil
     end
-
-    util_remove_interrupt_command
 
     # Should attempt to cause an Exception
     with_plugin("scripterror") { Gem.load_env_plugins }
@@ -1789,11 +1783,6 @@ class TestGem < Gem::TestCase
     @exec_path = File.join spec.full_gem_path, spec.bindir, "exec"
     @abin_path = File.join spec.full_gem_path, spec.bindir, "abin"
     spec
-  end
-
-  def util_remove_interrupt_command
-    Gem::Commands.send :remove_const, :InterruptCommand if
-      Gem::Commands.const_defined? :InterruptCommand
   end
 
   def util_cache_dir
