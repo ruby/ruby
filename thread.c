@@ -2042,6 +2042,9 @@ rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, voi
  *       created as Ruby thread (created by Thread.new or so).  In other
  *       words, this function *DOES NOT* associate or convert a NON-Ruby
  *       thread to a Ruby thread.
+ *
+ * NOTE: If this thread has already acquired the GVL, then the method call
+ *       is performed without acquiring or releasing the GVL (from Ruby 4.0).
  */
 void *
 rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
@@ -2065,7 +2068,8 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     prev_unblock = th->unblock;
 
     if (brb == 0) {
-        rb_bug("rb_thread_call_with_gvl: called by a thread which has GVL.");
+        /* the GVL is already acquired, call method directly */
+        return (*func)(data1);
     }
 
     blocking_region_end(th, brb);
