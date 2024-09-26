@@ -999,8 +999,6 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[REG_S2+9], "s11");
 #   elif defined __loongarch64
         dump_machine_register(mctx->__gregs[LARCH_REG_SP], "sp");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0], "a0");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+1], "a1");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+2], "a2");
@@ -1009,9 +1007,8 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+5], "a5");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+6], "a6");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S0+1], "s1");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0+2], "s2");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0+3], "s3");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0+4], "s4");
