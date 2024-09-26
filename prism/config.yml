@@ -822,6 +822,17 @@ nodes:
         kind:
           - SymbolNode
           - InterpolatedSymbolNode
+        comment: |
+          Represents the new name of the method that will be aliased.
+
+              alias foo bar
+                    ^^^
+
+              alias :foo :bar
+                    ^^^^
+
+              alias :"#{foo}" :"#{bar}"
+                    ^^^^^^^^^
       - name: old_name
         type: node
         kind:
@@ -829,6 +840,17 @@ nodes:
           - InterpolatedSymbolNode
           - on error: GlobalVariableReadNode # alias a $b
           - on error: MissingNode # alias a 42
+        comment: |
+          Represents the old name of the method that will be aliased.
+
+              alias foo bar
+                        ^^^
+
+              alias :foo :bar
+                         ^^^^
+
+              alias :"#{foo}" :"#{bar}"
+                              ^^^^^^^^^
       - name: keyword_loc
         type: location
     comment: |
@@ -841,11 +863,26 @@ nodes:
       - name: left
         type: node
         kind: pattern expression
+        comment: |
+          Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo => bar | baz
+                     ^^^
       - name: right
         type: node
         kind: pattern expression
+        comment: |
+          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo => bar | baz
+                           ^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the alternation operator location.
+
+              foo => bar | baz
+                         ^
     comment: |
       Represents an alternation pattern in pattern matching.
 
