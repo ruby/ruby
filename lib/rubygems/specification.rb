@@ -1412,7 +1412,7 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       begin
-        specs = spec_dep.to_specs
+        specs = spec_dep.to_specs.uniq(&:full_name)
       rescue Gem::MissingSpecError => e
         raise Gem::MissingSpecError.new(e.name, e.requirement, "at: #{spec_file}")
       end

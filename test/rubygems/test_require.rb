@@ -182,6 +182,22 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[a-1 b-1], loaded_spec_names
   end
 
+  def test_require_is_not_lazy_with_shadowed_default_gem
+    b1_default = new_default_spec("b", "1", nil, "foo.rb")
+    install_default_gems b1_default
+
+    a1 = util_spec "a", "1", { "b" => ">= 1" }, "lib/test_gem_require_a.rb"
+    b1 = util_spec("b", "1", nil, "lib/foo.rb")
+    install_specs b1, a1
+
+    # Load default ruby gems fresh as if we've just started a ruby script.
+    Gem::Specification.reset
+
+    assert_require "test_gem_require_a"
+    assert_equal %w[a-1 b-1], loaded_spec_names
+    assert_equal unresolved_names, []
+  end
+
   def test_require_is_lazy_with_inexact_req
     a1 = util_spec "a", "1", { "b" => ">= 1" }, "lib/test_gem_require_a.rb"
     b1 = util_spec "b", "1", nil, "lib/b/c.rb"
