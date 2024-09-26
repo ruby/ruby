@@ -33,7 +33,7 @@ class Hash
   # If both a block and a <tt>default_value</tt> are given, raises an +ArgumentError+
   #
   # If the optional keyword argument +capacity+ is given, the hash will be allocated
-  # with enough capacity to accomodate this many keys without having to be resized.
+  # with enough capacity to accommodate this many keys without having to be resized.
   def initialize(ifnone = (ifnone_unset = true), capacity: 0, &block)
     Primitive.rb_hash_init(capacity, ifnone_unset, ifnone, block)
   end
