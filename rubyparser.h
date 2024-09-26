@@ -469,6 +469,9 @@ typedef struct RNode_OP_ASGN2 {
     ID nd_vid;
     ID nd_mid;
     bool nd_aid;
+    rb_code_location_t call_operator_loc;
+    rb_code_location_t message_loc;
+    rb_code_location_t binary_operator_loc;
 } rb_node_op_asgn2_t;
 
 typedef struct RNode_OP_ASGN_AND {
