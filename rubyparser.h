@@ -455,6 +455,10 @@ typedef struct RNode_OP_ASGN1 {
     ID nd_mid;
     struct RNode *nd_index;
     struct RNode *nd_rvalue;
+    rb_code_location_t call_operator_loc;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
+    rb_code_location_t binary_operator_loc;
 } rb_node_op_asgn1_t;
 
 typedef struct RNode_OP_ASGN2 {
