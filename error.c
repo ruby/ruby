@@ -3507,11 +3507,11 @@ Init_Exception(void)
     *  and will render `idPath` as an attribute name without this trick */
     ID path = idPath;
 
-    /* the path failed to parse */
+    /* the path that failed to parse */
     rb_attr(rb_eSyntaxError, path, TRUE, FALSE, FALSE);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
-    /* the path failed to load */
+    /* the path that failed to load */
     rb_attr(rb_eLoadError, path, TRUE, FALSE, FALSE);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
