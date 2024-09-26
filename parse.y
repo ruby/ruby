@@ -7694,15 +7694,20 @@ static VALUE
 parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
 {
     VALUE str;
+    rb_parser_string_t *pstr;
 
-    str = rb_enc_str_new(ptr, len, enc);
+    pstr = rb_parser_encoding_string_new(p, ptr, len, enc);
+    str = rb_str_new_mutable_parser_string(pstr);
+
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
-        if (is_ascii_string(str)) {
+        if (rb_parser_is_ascii_string(p, pstr)) {
         }
         else if (rb_is_usascii_enc((void *)enc0) && enc != rb_utf8_encoding()) {
             rb_enc_associate(str, rb_ascii8bit_encoding());
         }
     }
+
+    rb_parser_string_free(p, pstr);
 
     return str;
 }
