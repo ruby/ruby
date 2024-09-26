@@ -5819,7 +5819,7 @@ ary_max_generic(VALUE ary, long i, VALUE vmax)
     for (; i < RARRAY_LEN(ary); ++i) {
         v = RARRAY_AREF(ary, i);
 
-        if (rb_cmpint(rb_funcallv(vmax, id_cmp, 1, &v), vmax, v) < 0) {
+        if (OPTIMIZED_CMP(vmax, v) < 0) {
             vmax = v;
         }
     }
@@ -5987,7 +5987,7 @@ ary_min_generic(VALUE ary, long i, VALUE vmin)
     for (; i < RARRAY_LEN(ary); ++i) {
         v = RARRAY_AREF(ary, i);
 
-        if (rb_cmpint(rb_funcallv(vmin, id_cmp, 1, &v), vmin, v) > 0) {
+        if (OPTIMIZED_CMP(vmin, v) > 0) {
             vmin = v;
         }
     }
