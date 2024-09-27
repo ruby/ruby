@@ -438,7 +438,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("You have changed in the Gemfile:\n* myrack from `no specified source` to `git://hubz.com`")
     end
 
-    it "explodes if you change a source" do
+    it "explodes if you change a source from git to the default" do
       build_git "myrack"
 
       install_gemfile <<-G
@@ -459,7 +459,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("You have changed in the Gemfile:\n* myrack from `#{lib_path("myrack-1.0")}` to `no specified source`")
     end
 
-    it "explodes if you change a source" do
+    it "explodes if you change a source from git to the default, in presence of other git sources" do
       build_lib "foo", path: lib_path("myrack/foo")
       build_git "myrack", path: lib_path("myrack")
 
