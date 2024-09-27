@@ -84,7 +84,13 @@ grouped make test
 
 [[ -z "${INPUT_CHECK}" ]] && exit 0
 
+if [ "$INPUT_CHECK" = "true" ]; then
+  tests="ruby -ext-"
+else
+  tests="$INPUT_CHECK"
+fi
+
 grouped make install
 grouped make test-tool
-grouped make test-all TESTS='-- ruby -ext-'
+grouped make test-all TESTS="-- $tests"
 grouped env CHECK_LEAKS=true make test-spec
