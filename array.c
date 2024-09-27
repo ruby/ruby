@@ -2521,38 +2521,38 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.insert(index, *objects) -> self
+ *    insert(index, *objects) -> self
  *
- *  Inserts given +objects+ before or after the element at Integer index +offset+;
+ *  Inserts the given +objects+ as elements of +self+;
  *  returns +self+.
  *
- *  When +index+ is non-negative, inserts all given +objects+
- *  before the element at offset +index+:
+ *  When +index+ is non-negative, inserts +objects+
+ *  _before_ the element at offset +index+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.insert(1, :bat, :bam) # => [:foo, :bat, :bam, "bar", 2]
+ *    a = ['a', 'b', 'c']     # => ["a", "b", "c"]
+ *    a.insert(1, :x, :y, :z) # => ["a", :x, :y, :z, "b", "c"]
  *
  *  Extends the array if +index+ is beyond the array (<tt>index >= self.size</tt>):
  *
- *    a = [:foo, 'bar', 2]
- *    a.insert(5, :bat, :bam)
- *    a # => [:foo, "bar", 2, nil, nil, :bat, :bam]
+ *    a = ['a', 'b', 'c']     # => ["a", "b", "c"]
+ *    a.insert(5, :x, :y, :z) # => ["a", "b", "c", nil, nil, :x, :y, :z]
  *
- *  Does nothing if no objects given:
- *
- *    a = [:foo, 'bar', 2]
- *    a.insert(1)
- *    a.insert(50)
- *    a.insert(-50)
- *    a # => [:foo, "bar", 2]
- *
- *  When +index+ is negative, inserts all given +objects+
+ *  When +index+ is negative, inserts +objects+
  *  _after_ the element at offset <tt>index+self.size</tt>:
  *
- *    a = [:foo, 'bar', 2]
- *    a.insert(-2, :bat, :bam)
- *    a # => [:foo, "bar", :bat, :bam, 2]
+ *    a = ['a', 'b', 'c']      # => ["a", "b", "c"]
+ *    a.insert(-2, :x, :y, :z) # => ["a", "b", :x, :y, :z, "c"]
  *
+ *  With no +objects+ given, does nothing:
+ *
+ *    a = ['a', 'b', 'c'] # => ["a", "b", "c"]
+ *    a.insert(1)         # => ["a", "b", "c"]
+ *    a.insert(50)        # => ["a", "b", "c"]
+ *    a.insert(-50)       # => ["a", "b", "c"]
+ *
+ *  Raises IndexError if +objects+ are given and +index+ is negative and out of range.
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
