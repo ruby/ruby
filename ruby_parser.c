@@ -373,7 +373,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_vcatf = rb_str_vcatf,
     .rb_sprintf = rb_sprintf,
     .rstring_ptr = RSTRING_PTR,
-    .rstring_end = RSTRING_END,
     .rstring_len = RSTRING_LEN,
     .obj_as_string = rb_obj_as_string,
 

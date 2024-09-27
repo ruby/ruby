@@ -709,10 +709,11 @@ after_pop_stack(int len, struct parser_params *p)
 #define VALID_SYMNAME_P(s, l, enc, type) (rb_enc_symname_type(s, l, enc, (1U<<(type))) == (int)(type))
 
 #ifndef RIPPER
-static inline bool
-end_with_newline_p(struct parser_params *p, VALUE str)
+static inline int
+char_at_end(struct parser_params *p, VALUE str, int when_empty)
 {
-    return RSTRING_LEN(str) > 0 && RSTRING_END(str)[-1] == '\n';
+    long len = RSTRING_LEN(str);
+    return len > 0 ? (unsigned char)RSTRING_PTR(str)[len-1] : when_empty;
 }
 #endif
 
@@ -2002,10 +2003,10 @@ parser_memhash(const void *ptr, long len)
     ((ptrvar) = str->ptr,                            \
      (lenvar) = str->len)
 
-static inline bool
-parser_string_end_with_newline_p(struct parser_params *p, rb_parser_string_t *str)
+static inline int
+parser_string_char_at_end(struct parser_params *p, rb_parser_string_t *str, int when_empty)
 {
-    return PARSER_STRING_LEN(str) > 0 && PARSER_STRING_END(str)[-1] == '\n';
+    return PARSER_STRING_LEN(str) > 0 ? (unsigned char)PARSER_STRING_END(str)[-1] : when_empty;
 }
 
 static rb_parser_string_t *
@@ -7354,7 +7355,7 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
     }
     if (RTEST(errbuf)) {
         mesg = rb_attr_get(errbuf, idMesg);
-        if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
+        if (char_at_end(p, mesg, '\n') != '\n')
             rb_str_cat_cstr(mesg, "\n");
     }
     else {
@@ -7750,7 +7751,7 @@ parser_add_delayed_token(struct parser_params *p, const char *tok, const char *e
 
     if (tok < end) {
         if (has_delayed_token(p)) {
-            bool next_line = parser_string_end_with_newline_p(p, p->delayed.token);
+            bool next_line = parser_string_char_at_end(p, p->delayed.token, 0) == '\n';
             int end_line = (next_line ? 1 : 0) + p->delayed.end_line;
             int end_col = (next_line ? 0 : p->delayed.end_col);
             if (end_line != p->ruby_sourceline || end_col != tok - p->lex.pbeg) {
@@ -15961,7 +15962,7 @@ rb_parser_printf(struct parser_params *p, const char *fmt, ...)
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
-    if (end_with_newline_p(p, mesg)) {
+    if (char_at_end(p, mesg, 0) == '\n') {
         rb_io_write(p->debug_output, mesg);
         p->debug_buffer = Qnil;
     }
