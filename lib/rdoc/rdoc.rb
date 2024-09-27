@@ -520,6 +520,7 @@ The internal error was:
       Dir.chdir @options.op_dir do
         unless @options.quiet then
           $stderr.puts "\nGenerating #{@generator.class.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
+          $stderr.puts "\nYou can visit the home page at: \e]8;;file://#{Dir.pwd}/index.html\e\\file://#{Dir.pwd}/index.html\e]8;;\e\\"
         end
 
         @generator.generate
