@@ -541,6 +541,9 @@ typedef struct RNode_SUPER {
     NODE node;
 
     struct RNode *nd_args;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
 } rb_node_super_t;
 
 typedef struct RNode_ZSUPER {

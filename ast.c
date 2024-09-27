@@ -846,6 +846,12 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_SPLAT(node)->operator_loc));
+      case NODE_SUPER:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_SUPER(node)->keyword_loc),
+                                    location_new(&RNODE_SUPER(node)->lparen_loc),
+                                    location_new(&RNODE_SUPER(node)->rparen_loc));
       case NODE_UNDEF:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),

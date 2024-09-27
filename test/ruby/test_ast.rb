@@ -1456,6 +1456,14 @@ dummy
       assert_locations(node.children[-1].children[1].children[0].children[0].locations, [[1, 13, 1, 15], [1, 13, 1, 14]])
     end
 
+    def test_super_locations
+      node = ast_parse("super 1")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 0, 1, 5], nil, nil])
+
+      node = ast_parse("super(1)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 5], [1, 5, 1, 6], [1, 7, 1, 8]])
+    end
+
     def test_unless_locations
       node = ast_parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])

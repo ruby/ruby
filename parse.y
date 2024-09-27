@@ -1094,7 +1094,7 @@ static rb_node_opcall_t *rb_node_opcall_new(struct parser_params *p, NODE *nd_re
 static rb_node_fcall_t *rb_node_fcall_new(struct parser_params *p, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_vcall_t *rb_node_vcall_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc);
 static rb_node_qcall_t *rb_node_qcall_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
-static rb_node_super_t *rb_node_super_new(struct parser_params *p, NODE *nd_args, const YYLTYPE *loc);
+static rb_node_super_t *rb_node_super_new(struct parser_params *p, NODE *nd_args, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_node_zsuper_t * rb_node_zsuper_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_list_t *rb_node_list_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_list_t *rb_node_list_new2(struct parser_params *p, NODE *nd_head, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
@@ -1202,7 +1202,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_FCALL(m,a,loc) rb_node_fcall_new(p,m,a,loc)
 #define NEW_VCALL(m,loc) (NODE *)rb_node_vcall_new(p,m,loc)
 #define NEW_QCALL0(r,m,a,loc) (NODE *)rb_node_qcall_new(p,r,m,a,loc)
-#define NEW_SUPER(a,loc) (NODE *)rb_node_super_new(p,a,loc)
+#define NEW_SUPER(a,loc,k_loc,l_loc,r_loc) (NODE *)rb_node_super_new(p,a,loc,k_loc,l_loc,r_loc)
 #define NEW_ZSUPER(loc) (NODE *)rb_node_zsuper_new(p,loc)
 #define NEW_LIST(a,loc) (NODE *)rb_node_list_new(p,a,loc)
 #define NEW_LIST2(h,l,n,loc) (NODE *)rb_node_list_new2(p,h,l,n,loc)
@@ -3509,7 +3509,7 @@ command		: fcall command_args       %prec tLOWEST
                    }
                 | keyword_super command_args
                     {
-                        $$ = NEW_SUPER($2, &@$);
+                        $$ = NEW_SUPER($2, &@$, &@1, &NULL_LOC, &NULL_LOC);
                         fixpos($$, $2);
                     /*% ripper: super!($:2) %*/
                     }
@@ -5316,7 +5316,12 @@ method_call	: fcall paren_args
                     }
                 | keyword_super paren_args
                     {
-                        $$ = NEW_SUPER($2, &@$);
+                        rb_code_location_t lparen_loc = @2;
+                        rb_code_location_t rparen_loc = @2;
+                        lparen_loc.end_pos.column = lparen_loc.beg_pos.column + 1;
+                        rparen_loc.beg_pos.column = rparen_loc.end_pos.column - 1;
+
+                        $$ = NEW_SUPER($2, &@$, &@1, &lparen_loc, &rparen_loc);
                     /*% ripper: super!($:2) %*/
                     }
                 | keyword_super
@@ -11749,10 +11754,14 @@ rb_node_false_new(struct parser_params *p, const YYLTYPE *loc)
 }
 
 static rb_node_super_t *
-rb_node_super_new(struct parser_params *p, NODE *nd_args, const YYLTYPE *loc)
+rb_node_super_new(struct parser_params *p, NODE *nd_args, const YYLTYPE *loc,
+                  const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc)
 {
     rb_node_super_t *n = NODE_NEWNODE(NODE_SUPER, rb_node_super_t, loc);
     n->nd_args = nd_args;
+    n->keyword_loc = *keyword_loc;
+    n->lparen_loc = *lparen_loc;
+    n->rparen_loc = *rparen_loc;
 
     return n;
 }
