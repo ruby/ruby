@@ -307,6 +307,7 @@ module Benchmark
 
   #
   # Returns the elapsed real time used to execute the given block.
+  # The unit of time is seconds.
   #
   def realtime # :yield:
     r0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
