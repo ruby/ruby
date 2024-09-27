@@ -1227,7 +1227,6 @@ typedef struct rb_parser_config_struct {
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
-    char *(*rstring_end)(VALUE str);
     long (*rstring_len)(VALUE str);
     VALUE (*obj_as_string)(VALUE);
 
