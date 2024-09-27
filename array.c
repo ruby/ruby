@@ -4603,13 +4603,17 @@ rb_ary_transpose(VALUE ary)
 
 /*
  *  call-seq:
- *    array.replace(other_array) -> self
+ *    initialize_copy(other_array) -> self
+ *    replace(other_array) -> self
  *
- *  Replaces the content of +self+ with the content of +other_array+; returns +self+:
+ *  Replaces the elements of +self+ with the elements of +other_array+, which must be an
+ *  {array-convertible object}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects];
+ *  returns +self+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.replace(['foo', :bar, 3]) # => ["foo", :bar, 3]
+ *    a = ['a', 'b', 'c']   # => ["a", "b", "c"]
+ *    a.replace(['d', 'e']) # => ["d", "e"]
  *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 VALUE
