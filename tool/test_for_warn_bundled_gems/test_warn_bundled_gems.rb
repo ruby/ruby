@@ -7,5 +7,7 @@ gemfile do
   source "https://rubygems.org"
 end
 
+Object.send(:remove_const, :Bundler)
+
 require "mutex_m"
 require "rss"
