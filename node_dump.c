@@ -646,8 +646,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("super invocation");
         ANN("format: super [nd_args]");
         ANN("example: super 1");
-        LAST_NODE;
         F_NODE(nd_args, RNODE_SUPER, "arguments");
+        F_LOC(keyword_loc, RNODE_SUPER);
+        F_LOC(lparen_loc, RNODE_SUPER);
+        LAST_NODE;
+        F_LOC(rparen_loc, RNODE_SUPER);
         return;
 
       case NODE_ZSUPER:
