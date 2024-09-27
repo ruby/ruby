@@ -428,6 +428,7 @@ typedef struct rb_size_pool_struct {
     size_t total_allocated_objects;
     size_t total_freed_objects;
     size_t final_slots_count;
+    size_t pooled_slots_count;
 
     /* Sweeping statistics */
     size_t freed_slots;
@@ -595,7 +596,6 @@ typedef struct rb_objspace {
     } rcompactor;
 
     struct {
-        size_t pooled_slots;
         size_t step_slots;
     } rincgc;
 
@@ -958,6 +958,17 @@ total_final_slots_count(rb_objspace_t *objspace)
         count += size_pool->final_slots_count;
     }
     return count;
+}
+
+static size_t
+total_pooled_slots_count(rb_objspace_t *objspace)
+{
+    size_t pooled_slots = 0;
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        pooled_slots += size_pool->pooled_slots_count;
+    }
+    return pooled_slots;
 }
 
 #define gc_mode(objspace)                gc_mode_verify((enum gc_mode)(objspace)->flags.mode)
@@ -1723,15 +1734,15 @@ heap_add_freepage(rb_heap_t *heap, struct heap_page *page)
 }
 
 static inline void
-heap_add_poolpage(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
+heap_add_poolpage(rb_objspace_t *objspace, rb_size_pool_t *size_pool, struct heap_page *page)
 {
     asan_unlock_freelist(page);
     GC_ASSERT(page->free_slots != 0);
     GC_ASSERT(page->freelist != NULL);
 
-    page->free_next = heap->pooled_pages;
-    heap->pooled_pages = page;
-    objspace->rincgc.pooled_slots += page->free_slots;
+    page->free_next = SIZE_POOL_EDEN_HEAP(size_pool)->pooled_pages;
+    SIZE_POOL_EDEN_HEAP(size_pool)->pooled_pages = page;
+    size_pool->pooled_slots_count += page->free_slots;
 
     asan_lock_freelist(page);
 }
@@ -2140,8 +2151,8 @@ heap_prepare(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap
                         gc_continue(objspace, size_pool, heap);
 
                         if (heap->free_pages == NULL &&
-                                !heap_page_allocate_and_initialize(objspace, size_pool, heap)) {
-                            rb_bug("cannot create a new page after major GC");
+                            !heap_page_allocate_and_initialize(objspace, size_pool, heap)) {
+                                rb_bug("cannot create a new page after major GC");
                         }
                     }
                 }
@@ -3780,7 +3791,6 @@ static void
 gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
-    objspace->rincgc.pooled_slots = 0;
     objspace->heap_pages.allocatable_slots = 0;
 
 #if GC_CAN_COMPILE_COMPACTION
@@ -3794,6 +3804,7 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
+        size_pool->pooled_slots_count = 0;
         rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
         gc_sweep_start_heap(objspace, heap);
@@ -3814,27 +3825,18 @@ gc_sweep_finish_size_pool(rb_objspace_t *objspace, rb_size_pool_t *size_pool)
 {
     rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
     size_t total_slots = heap->total_slots;
-    size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots;
+    size_t swept_slots = size_pool->freed_slots + size_pool->empty_slots - size_pool->pooled_slots_count;
+    GC_ASSERT(size_pool->freed_slots + size_pool->empty_slots >= size_pool->pooled_slots_count);
 
     size_t init_slots = gc_params.size_pool_init_slots[size_pool - size_pools];
     size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
 
     if (swept_slots < min_free_slots &&
             /* The heap is a growth heap if it freed more slots than had empty slots. */
-            (size_pool->empty_slots == 0 || size_pool->freed_slots > size_pool->empty_slots)) {
-        /* If we don't have enough slots and we have pages on the tomb heap, move
-        * pages from the tomb heap to the eden heap. This may prevent page
-        * creation thrashing (frequently allocating and deallocting pages) and
-        * GC thrashing (running GC more frequently than required). */
-        struct heap_page *resurrected_page;
-        while (swept_slots < min_free_slots &&
-                (resurrected_page = heap_page_resurrect(objspace))) {
-            size_pool_add_page(objspace, size_pool, heap, resurrected_page);
-            heap_add_freepage(heap, resurrected_page);
-
-            swept_slots += resurrected_page->free_slots;
-        }
-
+            (size_pool->empty_slots == 0 || size_pool->freed_slots > size_pool->empty_slots ||
+                /* If all of the swept slots were placed in pooled slots, then we don't have access to it until the next GC.
+                 * This can happen when all GC's are major - such as when RGENGC_FORCE_MAJOR_GC is enabled. */
+                (is_full_marking(objspace) && size_pool->pooled_slots_count > 0 && swept_slots == 0))) {
         if (swept_slots < min_free_slots) {
             /* Grow this heap if we are in a major GC or if we haven't run at least
             * RVALUE_OLD_AGE minor GC since the last major GC. */
@@ -3875,7 +3877,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
                 eden_heap->free_pages = eden_heap->pooled_pages;
             }
             eden_heap->pooled_pages = NULL;
-            objspace->rincgc.pooled_slots = 0;
+            size_pool->pooled_slots_count = 0;
         }
     }
 
@@ -3944,7 +3946,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *hea
             size_pool->empty_slots += ctx.empty_slots;
 
             if (pooled_slots < GC_INCREMENTAL_SWEEP_POOL_SLOT_COUNT) {
-                heap_add_poolpage(objspace, heap, sweep_page);
+                heap_add_poolpage(objspace, size_pool, sweep_page);
                 pooled_slots += free_slots;
             }
             else {
@@ -5775,6 +5777,7 @@ gc_marks_continue(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t 
     return marking_finished;
 }
 
+
 static void
 gc_marks_start(rb_objspace_t *objspace, int full_mark)
 {
@@ -5783,13 +5786,13 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
     gc_mode_transition(objspace, gc_mode_marking);
 
     if (full_mark) {
-        size_t incremental_marking_steps = (objspace->rincgc.pooled_slots / INCREMENTAL_MARK_STEP_ALLOCATIONS) + 1;
+        size_t incremental_marking_steps = (total_pooled_slots_count(objspace) / INCREMENTAL_MARK_STEP_ALLOCATIONS) + 1;
         objspace->rincgc.step_slots = (objspace->marked_slots * 2) / incremental_marking_steps;
 
         if (0) fprintf(stderr, "objspace->marked_slots: %"PRIdSIZE", "
                        "objspace->rincgc.pooled_page_num: %"PRIdSIZE", "
                        "objspace->rincgc.step_slots: %"PRIdSIZE", \n",
-                       objspace->marked_slots, objspace->rincgc.pooled_slots, objspace->rincgc.step_slots);
+                       objspace->marked_slots, total_pooled_slots_count(objspace), objspace->rincgc.step_slots);
         objspace->flags.during_minor_gc = FALSE;
         if (ruby_enable_autocompact) {
             objspace->flags.during_compacting |= TRUE;
