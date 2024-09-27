@@ -483,6 +483,27 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).not_to include("You have deleted from the Gemfile")
     end
 
+    it "explodes if you change a source from path to git" do
+      build_git "myrack", path: lib_path("myrack")
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack", :path => "#{lib_path("myrack")}"
+      G
+
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack", :git => "https:/my-git-repo-for-myrack"
+      G
+
+      bundle "config set --local frozen true"
+      bundle :install, raise_on_error: false
+      expect(err).to include("frozen mode")
+      expect(err).to include("You have changed in the Gemfile:\n* myrack from `#{lib_path("myrack")}` to `https:/my-git-repo-for-myrack`")
+      expect(err).not_to include("You have added to the Gemfile")
+      expect(err).not_to include("You have deleted from the Gemfile")
+    end
+
     it "remembers that the bundle is frozen at runtime" do
       bundle :lock
 
