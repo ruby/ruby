@@ -9678,18 +9678,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
         else {
-            if (cast->left == NULL) {
-                PUSH_INSN(ret, location, putnil);
-            }
-            else {
+            if (cast->left != NULL) {
                 PM_COMPILE(cast->left);
             }
-
-            if (cast->right == NULL) {
+            else if (!popped) {
                 PUSH_INSN(ret, location, putnil);
             }
-            else {
+
+            if (cast->right != NULL) {
                 PM_COMPILE(cast->right);
+            }
+            else if (!popped) {
+                PUSH_INSN(ret, location, putnil);
             }
 
             if (!popped) {
