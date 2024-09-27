@@ -6926,8 +6926,8 @@ static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t
 }
 # define set_yylval_str(x) \
 do { \
-  set_yylval_node(NEW_STR(rb_str_to_parser_string(p, x), &_cur_loc)); \
-  set_parser_s_value(x); \
+  set_yylval_node(NEW_STR(x, &_cur_loc)); \
+  set_parser_s_value(rb_str_new_mutable_parser_string(x)); \
 } while(0)
 # define set_yylval_num(x) { \
   yylval.num = (x); \
@@ -7693,26 +7693,24 @@ enum string_type {
     str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND)
 };
 
-static VALUE
+static rb_parser_string_t *
 parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
 {
-    VALUE str;
     rb_parser_string_t *pstr;
 
     pstr = rb_parser_encoding_string_new(p, ptr, len, enc);
-    str = rb_str_new_mutable_parser_string(pstr);
 
     if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
         if (rb_parser_is_ascii_string(p, pstr)) {
         }
         else if (rb_is_usascii_enc((void *)enc0) && enc != rb_utf8_encoding()) {
-            rb_enc_associate(str, rb_ascii8bit_encoding());
+            /* everything is valid in ASCII-8BIT */
+            enc = rb_ascii8bit_encoding();
+            PARSER_ENCODING_CODERANGE_SET(pstr, enc, RB_PARSER_ENC_CODERANGE_VALID);
         }
     }
 
-    rb_parser_string_free(p, pstr);
-
-    return str;
+    return pstr;
 }
 
 static int
@@ -8761,7 +8759,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
     int c, space = 0;
     rb_encoding *enc = p->enc;
     rb_encoding *base_enc = 0;
-    VALUE lit;
+    rb_parser_string_t *lit;
 
     if (func & STR_FUNC_TERM) {
         if (func & STR_FUNC_QWORDS) nextc(p); /* delayed term */
@@ -9166,7 +9164,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     int c, func, indent = 0;
     const char *eos, *ptr, *ptr_end;
     long len;
-    VALUE str = 0;
+    rb_parser_string_t *str = 0;
     rb_encoding *enc = p->enc;
     rb_encoding *base_enc = 0;
     int bol;
@@ -9252,16 +9250,17 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
             }
 
             if (str)
-                rb_str_cat(str, ptr, ptr_end - ptr);
+                parser_str_cat(str, ptr, ptr_end - ptr);
             else
-                str = STR_NEW(ptr, ptr_end - ptr);
-            if (!lex_eol_ptr_p(p, ptr_end)) rb_str_cat(str, "\n", 1);
+                str = rb_parser_encoding_string_new(p, ptr, ptr_end - ptr, enc);
+            if (!lex_eol_ptr_p(p, ptr_end)) parser_str_cat_cstr(str, "\n");
             lex_goto_eol(p);
             if (p->heredoc_indent > 0) {
                 goto flush_str;
             }
             if (nextc(p) == -1) {
                 if (str) {
+                    rb_parser_string_free(p, str);
                     str = 0;
                 }
                 goto error;
@@ -10067,7 +10066,7 @@ parse_qmark(struct parser_params *p, int space_seen)
 {
     rb_encoding *enc;
     register int c;
-    VALUE lit;
+    rb_parser_string_t *lit;
 
     if (IS_END()) {
         SET_LEX_STATE(EXPR_VALUE);
