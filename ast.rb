@@ -92,6 +92,10 @@ module RubyVM::AbstractSyntaxTree
   #     RubyVM::AbstractSyntaxTree.of(method(:hello))
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
   #
+  #   Note that this only works with nodes compiled by <tt>parse.y</tt> and starting with Ruby 3.4,
+  #   <tt>prism</tt> is the default compiler. For related functionality for nodes compiled by <tt>prism</tt>,
+  #   see RubyVM::InstructionSequence::of.
+  #
   #   See ::parse for explanation of keyword argument meaning and usage.
   def self.of body, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false
     Primitive.ast_s_of body, keep_script_lines, error_tolerant, keep_tokens
