@@ -2342,6 +2342,9 @@ rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const ch
     return str;
 }
 
+#define parser_str_cat(str, ptr, len) rb_parser_str_buf_cat(p, str, ptr, len)
+#define parser_str_cat_cstr(str, lit) rb_parser_str_buf_cat(p, str, lit, strlen(lit))
+
 static rb_parser_string_t *
 rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len,
     rb_encoding *ptr_enc, int ptr_cr, int *ptr_cr_ret)
@@ -2407,7 +2410,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
     if (len < 0) {
         compile_error(p, "negative string size (or size too big)");
     }
-    rb_parser_str_buf_cat(p, str, ptr, len);
+    parser_str_cat(str, ptr, len);
     PARSER_ENCODING_CODERANGE_SET(str, res_enc, res_cr);
     return str;
 
@@ -6992,7 +6995,7 @@ rb_parser_str_escape(struct parser_params *p, rb_parser_string_t *str)
         const char *cc;
         int n = rb_enc_precise_mbclen(ptr, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
-            if (ptr > prev) rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+            if (ptr > prev) parser_str_cat(result, prev, ptr - prev);
             n = rb_enc_mbminlen(enc);
             if (pend < ptr + n)
                 n = (int)(pend - ptr);
@@ -7001,7 +7004,7 @@ rb_parser_str_escape(struct parser_params *p, rb_parser_string_t *str)
                 charbuf[2] = (c < 10) ? '0' + c : 'A' + c - 10;
                 c = *ptr & 0x0f;
                 charbuf[3] = (c < 10) ? '0' + c : 'A' + c - 10;
-                rb_parser_str_buf_cat(p, result, charbuf, 4);
+                parser_str_cat(result, charbuf, 4);
                 prev = ++ptr;
             }
             continue;
@@ -7011,22 +7014,22 @@ rb_parser_str_escape(struct parser_params *p, rb_parser_string_t *str)
         ptr += n;
         cc = escaped_char(c);
         if (cc) {
-            if (ptr - n > prev) rb_parser_str_buf_cat(p, result, prev, ptr - n - prev);
-            rb_parser_str_buf_cat(p, result, cc, strlen(cc));
+            if (ptr - n > prev) parser_str_cat(result, prev, ptr - n - prev);
+            parser_str_cat_cstr(result, cc);
             prev = ptr;
         }
         else if (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c)) {
         }
         else {
             if (ptr - n > prev) {
-                rb_parser_str_buf_cat(p, result, prev, ptr - n - prev);
+                parser_str_cat(result, prev, ptr - n - prev);
                 prev = ptr - n;
             }
-            rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+            parser_str_cat(result, prev, ptr - prev);
             prev = ptr;
         }
     }
-    if (ptr > prev) rb_parser_str_buf_cat(p, result, prev, ptr - prev);
+    if (ptr > prev) parser_str_cat(result, prev, ptr - prev);
 
     return result;
 }
@@ -7762,7 +7765,7 @@ parser_add_delayed_token(struct parser_params *p, const char *tok, const char *e
             p->delayed.beg_line = p->ruby_sourceline;
             p->delayed.beg_col = rb_long2int(tok - p->lex.pbeg);
         }
-        rb_parser_str_buf_cat(p, p->delayed.token, tok, end - tok);
+        parser_str_cat(p->delayed.token, tok, end - tok);
         p->delayed.end_line = p->ruby_sourceline;
         p->delayed.end_col = rb_long2int(end - p->lex.pbeg);
         p->lex.ptok = end;
