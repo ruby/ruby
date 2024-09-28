@@ -3,7 +3,7 @@
 /**
  * This compiler defines its own concept of the location of a node. We do this
  * because we want to pair line information with node identifier so that we can
- * have reproducable parses.
+ * have reproducible parses.
  */
 typedef struct {
     /** This is the line number of a node. */
