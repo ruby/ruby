@@ -7499,7 +7499,7 @@ yycompile(struct parser_params *p, VALUE fname, int line)
         p->ruby_sourcefile = "(none)";
     }
     else {
-        p->ruby_sourcefile_string = rb_str_to_parser_string(p, rb_str_to_interned_str(fname));
+        p->ruby_sourcefile_string = rb_str_to_parser_string(p, fname);
         p->ruby_sourcefile = StringValueCStr(fname);
     }
     p->ruby_sourceline = line - 1;
