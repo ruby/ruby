@@ -116,6 +116,19 @@ ast_parse_done(VALUE ast_value)
 }
 
 static VALUE
+rb_ast_compile(VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens, VALUE source, VALUE compile_func(VALUE, VALUE, VALUE, int))
+{
+    VALUE vparser = ast_parse_new();
+    VALUE ast_value = Qnil;
+
+    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
+    if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
+    if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
+    ast_value = compile_func(vparser, Qnil, source, 1);
+    return ast_parse_done(ast_value);
+}
+
+static VALUE
 ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     return rb_ast_parse_str(str, keep_script_lines, error_tolerant, keep_tokens);
@@ -124,15 +137,8 @@ ast_s_parse(rb_execution_context_t *ec, VALUE module, VALUE str, VALUE keep_scri
 static VALUE
 rb_ast_parse_str(VALUE str, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
-    VALUE ast_value;
-
     StringValue(str);
-    VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
-    if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
-    if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
-    ast_value = rb_parser_compile_string_path(vparser, Qnil, str, 1);
-    return ast_parse_done(ast_value);
+    return rb_ast_compile(keep_script_lines, error_tolerant, keep_tokens, str, rb_parser_compile_string_path);
 }
 
 static VALUE
@@ -144,33 +150,21 @@ ast_s_parse_file(rb_execution_context_t *ec, VALUE module, VALUE path, VALUE kee
 static VALUE
 rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
-    VALUE f;
     VALUE ast_value = Qnil;
+    VALUE f = rb_file_open_str(path, "r");
     rb_encoding *enc = rb_utf8_encoding();
 
-    f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
-    if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
-    if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
-    ast_value = rb_parser_compile_file_path(vparser, Qnil, f, 1);
+    ast_value = rb_ast_compile(keep_script_lines, error_tolerant, keep_tokens, f, rb_parser_compile_file_path);
     rb_io_close(f);
-    return ast_parse_done(ast_value);
+    return ast_value;
 }
 
 static VALUE
 rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
-    VALUE ast_value = Qnil;
-
     array = rb_check_array_type(array);
-    VALUE vparser = ast_parse_new();
-    if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
-    if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
-    if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
-    ast_value = rb_parser_compile_array(vparser, Qnil, array, 1);
-    return ast_parse_done(ast_value);
+    return rb_ast_compile(keep_script_lines, error_tolerant, keep_tokens, array, rb_parser_compile_array);
 }
 
 static VALUE node_children(VALUE, const NODE*);
