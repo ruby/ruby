@@ -12,13 +12,15 @@
 
 /*
  * call-seq:
- *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, connect_timeout: nil)
+ *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, resolv_timeout: nil, connect_timeout: nil, fast_fallback: true)
  *
  * Opens a TCP connection to +remote_host+ on +remote_port+.  If +local_host+
  * and +local_port+ are specified, then those parameters are used on the local
  * end to establish the connection.
  *
- * [:connect_timeout] specify the timeout in seconds.
+ * [:resolv_timeout] specify the timeout of hostname resolution in seconds.
+ * [:connect_timeout] specify the timeout of conncetion in seconds.
+ * [:fast_fallback] enable Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305]) algorithm (Enabled by default).
  */
 static VALUE
 tcp_init(int argc, VALUE *argv, VALUE sock)
