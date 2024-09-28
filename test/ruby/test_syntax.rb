@@ -1968,6 +1968,8 @@ eom
     assert_valid_syntax("def foo b = 1, ...; bar(...); end")
     assert_valid_syntax("(def foo ...\n  bar(...)\nend)")
     assert_valid_syntax("(def foo ...; bar(...); end)")
+    assert_valid_syntax("def (1...).foo ...; bar(...); end")
+    assert_valid_syntax("def (tap{1...}).foo ...; bar(...); end")
     assert_valid_syntax('def ==(...) end')
     assert_valid_syntax('def [](...) end')
     assert_valid_syntax('def nil(...) end')
