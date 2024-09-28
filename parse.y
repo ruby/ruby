@@ -9311,7 +9311,7 @@ parser_set_encode(struct parser_params *p, const char *name)
       error:
         excargs[0] = rb_eArgError;
         excargs[2] = rb_make_backtrace();
-        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", rb_str_new_parser_string(p->ruby_sourcefile_string), p->ruby_sourceline));
+        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string == NULL ? Qnil : rb_str_new_parser_string(p->ruby_sourcefile_string), p->ruby_sourceline));
         VALUE exc = rb_make_exception(3, excargs);
         ruby_show_error_line(p, exc, &(YYLTYPE)RUBY_INIT_YYLLOC(), p->ruby_sourceline, p->lex.lastline);
 
