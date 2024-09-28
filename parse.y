@@ -9289,6 +9289,8 @@ parser_encode_length(struct parser_params *p, const char *name, long len)
     return len;
 }
 
+#define RB_SOURCEFILE_STRING rb_str_new_parser_string(p->ruby_sourcefile_string)
+
 static void
 parser_set_encode(struct parser_params *p, const char *name)
 {
@@ -9311,7 +9313,7 @@ parser_set_encode(struct parser_params *p, const char *name)
       error:
         excargs[0] = rb_eArgError;
         excargs[2] = rb_make_backtrace();
-        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string == NULL ? Qnil : rb_str_new_parser_string(p->ruby_sourcefile_string), p->ruby_sourceline));
+        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string == NULL ? Qnil : RB_SOURCEFILE_STRING, p->ruby_sourceline));
         VALUE exc = rb_make_exception(3, excargs);
         ruby_show_error_line(p, exc, &(YYLTYPE)RUBY_INIT_YYLLOC(), p->ruby_sourceline, p->lex.lastline);
 
@@ -12969,7 +12971,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	    if (p->ruby_sourcefile_string == NULL) {
 	        file = rb_str_new(0, 0);
 	    } else {
-		file = rb_str_new_parser_string(p->ruby_sourcefile_string);
+		file = RB_SOURCEFILE_STRING;
 	    }
 
             node = NEW_FILE(file, loc);
@@ -15767,7 +15769,7 @@ rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p)
     if (p->ruby_sourcefile_string == NULL) {
         return Qnil;
     }
-    return rb_str_new_parser_string(p->ruby_sourcefile_string);
+    return RB_SOURCEFILE_STRING;
 }
 
 int
