@@ -187,15 +187,18 @@ class Gem::SpecFetcher
       # If the gem doesn't support the current platform, bail early.
       next unless n.match_platform?
 
-      distance = levenshtein_distance gem_name, n.name.downcase.tr("_-", "")
-
-      # Edit distance is greater than the maximum we allow, so skip this result.
-      next if distance >= max
+      # The candidate name, normalized the same as gem_name.
+      normalized_name = n.name.downcase.tr("_-", "")
 
       # If we found an exact match (after stripping underscores and hyphens),
       # that's our most likely candidate.
       # Return it immediately, and skip the rest of the loop.
-      return [n.name] if distance == 0
+      return [n.name] if normalized_name == gem_name
+
+      distance = levenshtein_distance gem_name, normalized_name
+
+      # Skip current candidate, if the edit distance is greater than allowed.
+      next if distance >= max
 
       # If all else fails, return the name and the calculated distance.
       [n.name, distance]
