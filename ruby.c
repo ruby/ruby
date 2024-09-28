@@ -2193,10 +2193,12 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         error = pm_parse_string(result, opt->e_script, rb_str_new2("-e"), NULL);
     }
     else {
+        VALUE script_name = rb_str_encode_ospath(opt->script_name);
+
         pm_options_command_line_set(options, command_line);
         pm_options_shebang_callback_set(options, prism_script_shebang_callback, (void *) opt);
 
-        error = pm_load_file(result, opt->script_name, true);
+        error = pm_load_file(result, script_name, true);
 
         // If reading the file did not error, at that point we load the command
         // line options. We do it in this order so that if the main script fails
@@ -2217,7 +2219,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // contents after the marker.
         if (NIL_P(error) && result->parser.data_loc.start != NULL) {
             int xflag = opt->xflag;
-            VALUE file = open_load_file(opt->script_name, &xflag);
+            VALUE file = open_load_file(script_name, &xflag);
 
             const pm_parser_t *parser = &result->parser;
             size_t offset = parser->data_loc.start - parser->start + 7;
