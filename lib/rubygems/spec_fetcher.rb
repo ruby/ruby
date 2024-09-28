@@ -181,7 +181,7 @@ class Gem::SpecFetcher
     min_length = gem_name.length - max
     max_length = gem_name.length + max
 
-    matches = names.map do |n|
+    matches = names.filter_map do |n|
       len = n.name.length
       # If the length is min_length or shorter, we've done `max` deletions.
       # If the length is max_length or longer, we've done `max` insertions.
@@ -206,7 +206,7 @@ class Gem::SpecFetcher
 
       # If all else fails, return the name and the calculated distance.
       [n.name, distance]
-    end.compact
+    end
 
     matches = if matches.empty? && type != :prerelease
       suggest_gems_from_name gem_name, :prerelease
