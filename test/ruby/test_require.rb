@@ -1011,4 +1011,45 @@ class TestRequire < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_require_refined_and_redefined
+    bug20767 = '[ruby-core:20767]'
+    expectedn = <<~EOE.split("\n")
+    refined require('yay')
+    re-aliasing
+    re-aliased
+    aliased method undefined
+    EOE
+    Tempfile.create(%w'bug-20767- .rb') do |script|
+      script.close
+      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<~'RUBY', expected, [], bug20767, timeout: 60)
+      m = Module.new do
+        refine Kernel do
+          def require(fname)
+            puts "refined require('#{fname}')"
+            super
+          end
+        end
+      end
+      using m
+
+      Kernel.send(:alias_method, :aliased_require, :require)
+      Kernel.define_method(:require) do |fname|
+        "redefined require('#{fname}')"
+        aliased_require(fname)
+      end
+
+      begin
+        require 'yay'
+      rescue LoadError
+      ensure
+        puts "re-aliasing"
+        Kernel.send(:alias_method, :require, :aliased_require)
+        puts "re-aliased"
+        Kernel.send(:undef_method, :aliased_require)
+        puts "aliased method undefined"
+      end
+      RUBY
+    end
+  end
 end
