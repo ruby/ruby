@@ -176,18 +176,11 @@ class Gem::SpecFetcher
 
     matches = names.map do |n|
       next unless n.match_platform?
-      [n.name, 0] if n.name.downcase.tr("_-", "").include?(gem_name)
+      distance = levenshtein_distance gem_name, n.name.downcase.tr("_-", "")
+      next if distance >= max
+      return [n.name] if distance == 0
+      [n.name, distance]
     end.compact
-
-    if matches.length < num_results
-      matches += names.map do |n|
-        next unless n.match_platform?
-        distance = levenshtein_distance gem_name, n.name.downcase.tr("_-", "")
-        next if distance >= max
-        return [n.name] if distance == 0
-        [n.name, distance]
-      end.compact
-    end
 
     matches = if matches.empty? && type != :prerelease
       suggest_gems_from_name gem_name, :prerelease
