@@ -493,7 +493,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_equal 2, e.exit_code
       assert_equal <<~ERR, @ui.error
         ERROR:  Could not find a valid gem 'a' (= 2) in any repository
-        ERROR:  Possible alternatives: a
       ERR
     end
   end
@@ -574,7 +573,6 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_include @ui.output, "a (= 2) not available locally"
       assert_equal <<~ERROR, @ui.error
         ERROR:  Could not find a valid gem 'a' (= 2) in any repository
-        ERROR:  Possible alternatives: a
       ERROR
     end
   end
@@ -769,8 +767,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_raise Gem::MockGemUi::TermError do
         invoke "a"
       end
-      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n" \
-                   "ERROR:  Possible alternatives: a\n", @ui.error
+      assert_equal "ERROR:  Could not find a valid gem 'a' (>= 0) in any repository\n", @ui.error
       assert_empty @ui.output
       assert_empty @installed_specs
     end
