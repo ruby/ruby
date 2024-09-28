@@ -2472,8 +2472,8 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *    buffer.copy(IO::Buffer.for('test'), 0)
  *    # in `copy': Specified offset+length is bigger than the buffer size! (ArgumentError)
  *
- *  It is safe to copy between the memory regions that overlaps each other.
- *  In such a case, the data is copied as if the data is first copied from the source buffer to
+ *  It is safe to copy between memory regions that overlaps each other.
+ *  In such case, the data is copied as if the data was first copied from the source buffer to
  *  a temporary buffer, and then copied from the temporary buffer to the destination buffer.
  *
  *    buffer = IO::Buffer.new(10)
