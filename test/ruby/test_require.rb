@@ -1014,7 +1014,7 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_refined_and_redefined
     bug20767 = '[ruby-core:20767]'
-    expectedn = <<~EOE.split("\n")
+    expected = <<~EOE.split("\n")
     refined require('yay')
     re-aliasing
     re-aliased
