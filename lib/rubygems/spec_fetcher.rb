@@ -174,8 +174,17 @@ class Gem::SpecFetcher
     max             = gem_name.size / 2
     names           = available_specs(type).first.values.flatten(1)
 
+    min_length = gem_name.length - max
+    max_length = gem_name.length + max
+
     matches = names.map do |n|
+      len = n.name.length
+      # If the length is min_length or shorter, we've done `max` deletions.
+      # If the length is max_length or longer, we've done `max` insertions.
+      # These would both be rejected later, so we bail early for performance.
+      next if len <= min_length || len >= max_length
       next unless n.match_platform?
+
       distance = levenshtein_distance gem_name, n.name.downcase.tr("_-", "")
       next if distance >= max
       return [n.name] if distance == 0
