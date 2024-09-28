@@ -181,13 +181,23 @@ class Gem::SpecFetcher
       len = n.name.length
       # If the length is min_length or shorter, we've done `max` deletions.
       # If the length is max_length or longer, we've done `max` insertions.
-      # These would both be rejected later, so we bail early for performance.
+      # These would both be rejected later, so we skip early for performance.
       next if len <= min_length || len >= max_length
+
+      # If the gem doesn't support the current platform, bail early.
       next unless n.match_platform?
 
       distance = levenshtein_distance gem_name, n.name.downcase.tr("_-", "")
+
+      # Edit distance is greater than the maximum we allow, so skip this result.
       next if distance >= max
+
+      # If we found an exact match (after stripping underscores and hyphens),
+      # that's our most likely candidate.
+      # Return it immediately, and skip the rest of the loop.
       return [n.name] if distance == 0
+
+      # If all else fails, return the name and the calculated distance.
       [n.name, distance]
     end.compact
 
