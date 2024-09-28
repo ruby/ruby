@@ -3426,7 +3426,6 @@ defn_head	: k_def def_name
 defs_head	: k_def singleton dot_or_colon
                     {
                         SET_LEX_STATE(EXPR_FNAME);
-                        p->ctxt.in_argdef = 1;
                     }
                   def_name
                     {
@@ -6746,8 +6745,14 @@ singleton	: var_ref
                         value_expr($1);
                         $$ = $1;
                     }
-                | '(' {SET_LEX_STATE(EXPR_BEG);} expr rparen
+                | '('
                     {
+                        SET_LEX_STATE(EXPR_BEG);
+                        p->ctxt.in_argdef = 0;
+                    }
+                  expr rparen
+                    {
+                        p->ctxt.in_argdef = 1;
                         NODE *expr = last_expr_node($3);
                         switch (nd_type(expr)) {
                           case NODE_STR:
