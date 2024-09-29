@@ -131,7 +131,7 @@ class Array
   # With non-negative integer argument +count+ given,
   # returns the first +count+ elements (as available) in a new array:
   #
-  #   a.first(0)  # []
+  #   a.first(0)  # => []
   #   a.first(2)  # => [:foo, "bar"]
   #   a.first(50) # => [:foo, "bar", 2]
   #
