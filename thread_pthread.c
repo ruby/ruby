@@ -2360,7 +2360,8 @@ rb_threadptr_sched_free(rb_thread_t *th)
     }
 
     ruby_xfree(th->sched.context);
-    VM_ASSERT((th->sched.context = NULL) == NULL);
+    th->sched.context = NULL;
+    // VM_ASSERT(th->sched.context == NULL);
 #else
     ruby_xfree(th->sched.context_stack);
     native_thread_destroy(th->nt);
