@@ -302,7 +302,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'SHARABLE_MIDDLE_SUBSTRING',      with: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' } }
       - { uses: './.github/actions/compilers', name: 'DEBUG_FIND_TIME_NUMGUESS',       with: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
       - { uses: './.github/actions/compilers', name: 'DEBUG_INTEGER_PACK',             with: { cppflags: '-DDEBUG_INTEGER_PACK' } }
-      - { uses: './.github/actions/compilers', name: 'ENABLE_PATH_CHECK',              with: { cppflags: '-DENABLE_PATH_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
       - { uses: './.github/actions/compilers', name: 'GC_ENABLE_LAZY_SWEEP=0',         with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
       - { uses: './.github/actions/compilers', name: 'GC_PROFILE_DETAIL_MEMORY',       with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' } }
