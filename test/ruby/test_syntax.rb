@@ -2229,6 +2229,43 @@ eom
     RUBY
   end
 
+  def test_defined_in_short_circuit_if_condition
+    bug = '[ruby-core:20501]'
+    conds = [
+      "false && defined?(Some::CONSTANT)",
+      "true || defined?(Some::CONSTANT)",
+      "(false && defined?(Some::CONSTANT))", # parens exercise different code path
+      "(true || defined?(Some::CONSTANT))",
+      "@val && false && defined?(Some::CONSTANT)",
+      "@val || true || defined?(Some::CONSTANT)"
+    ]
+
+    conds.each do |cond|
+      code = %Q{
+        def my_method
+          var = nil
+          if #{cond}
+            "here"
+          end
+          raise
+        end
+        begin
+          my_method
+        rescue
+          print 'ok'
+        else
+          print 'ng'
+        end
+      }
+      # Invoke in a subprocess because the bug caused a segfault using the parse.y compiler.
+      # Don't use assert_separately because the bug was best reproducible in a clean slate,
+      # without test env loaded.
+      out, _err, status = EnvUtil.invoke_ruby(["--disable-gems"], code, true, false)
+      assert_predicate(status, :success?, bug)
+      assert_equal 'ok', out
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

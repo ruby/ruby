@@ -495,7 +495,7 @@ static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
 
-static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr);
+static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr, bool ignore);
 static int compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int method_call_keywords, int popped);
 
 /*
@@ -1353,6 +1353,7 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->set = 0;
     labelobj->rescued = LABEL_RESCUE_NONE;
     labelobj->unremovable = 0;
+    labelobj->position = -1;
     return labelobj;
 }
 
@@ -2878,11 +2879,16 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         table->size = tlen;
 
         for (i = 0; i < table->size; i++) {
+            int pos;
             ptr = RARRAY_CONST_PTR(tptr[i]);
             entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
             entry->type = (enum rb_catch_type)(ptr[0] & 0xffff);
-            entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
-            entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
+            pos = label_get_position((LABEL *)(ptr[1] & ~1));
+            RUBY_ASSERT(pos >= 0);
+            entry->start = (unsigned int)pos;
+            pos = label_get_position((LABEL *)(ptr[2] & ~1));
+            RUBY_ASSERT(pos >= 0);
+            entry->end = (unsigned int)pos;
             entry->iseq = (rb_iseq_t *)ptr[3];
             RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
 
@@ -4640,7 +4646,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         CHECK(compile_flip_flop(iseq, ret, cond, FALSE, then_label, else_label));
         return COMPILE_OK;
       case NODE_DEFINED:
-        CHECK(compile_defined_expr(iseq, ret, cond, Qfalse));
+        CHECK(compile_defined_expr(iseq, ret, cond, Qfalse, ret == ignore));
         break;
       default:
         {
@@ -5857,7 +5863,7 @@ private_recv_p(const NODE *node)
 
 static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-             const NODE *const node, LABEL **lfinish, VALUE needstr);
+             const NODE *const node, LABEL **lfinish, VALUE needstr, bool ignore);
 
 static int
 compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, const enum node_type type, const NODE *const line_node, int popped, bool assume_receiver);
@@ -6098,7 +6104,7 @@ build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const void *u
 
 static void
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-             const NODE *const node, LABEL **lfinish, VALUE needstr)
+             const NODE *const node, LABEL **lfinish, VALUE needstr, bool ignore)
 {
     LINK_ELEMENT *lcur = ret->last;
     defined_expr0(iseq, ret, node, lfinish, needstr, false);
@@ -6117,12 +6123,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         lend->rescued = LABEL_RESCUE_END;
         APPEND_LABEL(ret, lcur, lstart);
         ADD_LABEL(ret, lend);
-        ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
+        if (!ignore) {
+            ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
+        }
     }
 }
 
 static int
-compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr)
+compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, VALUE needstr, bool ignore)
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
@@ -6136,7 +6144,7 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
         lfinish[0] = NEW_LABEL(line);
         lfinish[1] = 0;
         lfinish[2] = 0;
-        defined_expr(iseq, ret, RNODE_DEFINED(node)->nd_head, lfinish, needstr);
+        defined_expr(iseq, ret, RNODE_DEFINED(node)->nd_head, lfinish, needstr, ignore);
         if (lfinish[1]) {
             ELEM_INSERT_NEXT(last, &new_insn_body(iseq, nd_line(line_node), nd_node_id(line_node), BIN(putnil), 0)->link);
             ADD_INSN(ret, line_node, swap);
@@ -6695,7 +6703,12 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    CHECK(compile_branch_condition(iseq, cond_seq, RNODE_IF(node)->nd_cond, then_label, else_label));
+    NODE *cond = RNODE_IF(node)->nd_cond;
+    if (nd_type(cond) == NODE_BLOCK) {
+        cond = RNODE_BLOCK(cond)->nd_head;
+    }
+
+    CHECK(compile_branch_condition(iseq, cond_seq, cond, then_label, else_label));
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
@@ -8179,7 +8192,7 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         // Normally, "send" instruction is at the last.
         // However, qcall under branch coverage measurement adds some instructions after the "send".
         //
-        // Note that "invokesuper" appears instead of "send".
+        // Note that "invokesuper", "invokesuperforward" appears instead of "send".
         INSN *iobj;
         LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
         iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
@@ -9638,7 +9651,7 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         LABEL *lfinish[2];
         lfinish[0] = lfin;
         lfinish[1] = 0;
-        defined_expr(iseq, ret, RNODE_OP_ASGN_OR(node)->nd_head, lfinish, Qfalse);
+        defined_expr(iseq, ret, RNODE_OP_ASGN_OR(node)->nd_head, lfinish, Qfalse, false);
         lassign = lfinish[1];
         if (!lassign) {
             lassign = NEW_LABEL(line);
@@ -11233,7 +11246,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         break;
       case NODE_DEFINED:
         if (!popped) {
-            CHECK(compile_defined_expr(iseq, ret, node, Qtrue));
+            CHECK(compile_defined_expr(iseq, ret, node, Qtrue, false));
         }
         break;
       case NODE_POSTEXE:{
