@@ -583,14 +583,15 @@ MSG
   end
 
   def libpathflag(libpath=$DEFLIBPATH|$LIBPATH)
+    libpathflags = nil
     libpath.map{|x|
       case x
       when "$(topdir)", /\A\./
         LIBPATHFLAG
       else
-        LIBPATHFLAG+RPATHFLAG
+        libpathflags ||= [LIBPATHFLAG, RPATHFLAG].grep(/\S/).join(" ")
       end % x.quote
-    }.join
+    }.join(" ")
   end
 
   def werror_flag(opt = nil)
@@ -2906,7 +2907,7 @@ MESSAGE
   ##
   # Argument which will add a library path to the linker
 
-  LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
+  LIBPATHFLAG = config_string('LIBPATHFLAG') || '-L%s'
 
   ##
   # Argument which will add a runtime library path to the linker

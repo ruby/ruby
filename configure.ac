@@ -662,9 +662,9 @@ RUBY_WERROR_FLAG([
         [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
 
     AS_IF([test "$enable_rpath:${RPATHFLAG}" = yes:], [
-        RPATHFLAG="${rpathflag:+ ${rpathflag}%1\$-s}"
+        RPATHFLAG="${rpathflag:+${rpathflag}%1\$-s}"
     ])
-    AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG=' -L%1$-s'}],[: ${LIBPATHFLAG=' -L%s'}])
+    AS_CASE([${RPATHFLAG}],[*'%1$'*],[: ${LIBPATHFLAG='-L%1$-s'}],[: ${LIBPATHFLAG='-L%s'}])
 }
 
 RUBY_TRY_LDFLAGS(-fdeclspec, [fdeclspec=yes], [fdeclspec=no])

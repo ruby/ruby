@@ -360,7 +360,7 @@ install-cross: $(arch)-fake.rb $(RBCONFIG) rbconfig.rb $(arch_hdrdir)/ruby/confi
 	$(Q) sed '/^\$$:\.unshift/q' $(arch)-fake.rb > fake.rb
 	$(Q) $(BASERUBY) -p \
 	-e '~/^\s*CONFIG\["LDFLAGS"\]/ and' \
-	-e '$$_[/(?=\s*"$$)/] = %q[ #{(CONFIG["LIBPATHFLAG"]%File.dirname(__FILE__)).strip}]' \
+	-e '$$_[/(?=\s*"$$)/] = %q[ #{CONFIG["LIBPATHFLAG"]%File.dirname(__FILE__)}]' \
 	rbconfig.rb > fake-rbconfig.rb
 	$(INSTALL_SCRIPT) fake.rb $(XRUBY_RUBYLIBDIR)/$(arch)/fake.rb
 	$(INSTALL_SCRIPT) fake-rbconfig.rb $(XRUBY_RUBYLIBDIR)/$(arch)/rbconfig.rb
