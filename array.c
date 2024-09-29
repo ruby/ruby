@@ -2538,7 +2538,7 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
  *    a.insert(5, :x, :y, :z) # => ["a", "b", "c", nil, nil, :x, :y, :z]
  *
  *  When +index+ is negative, inserts +objects+
- *  _after_ the element at offset <tt>index+self.size</tt>:
+ *  _after_ the element at offset <tt>index + self.size</tt>:
  *
  *    a = ['a', 'b', 'c']      # => ["a", "b", "c"]
  *    a.insert(-2, :x, :y, :z) # => ["a", "b", :x, :y, :z, "c"]
