@@ -674,31 +674,31 @@ ruby_external_gc_init(void)
               case '.':
                 break;
               default:
-                rb_bug("Only alphanumeric, dash, underscore, and period is allowed in "RUBY_GC_LIBRARY"");
+                rb_fatal("Only alphanumeric, dash, underscore, and period is allowed in "RUBY_GC_LIBRARY"");
             }
         }
 
         gc_so_path = alloca(strlen(SHARED_GC_DIR) + strlen(gc_so_file) + 1);
         strcpy(gc_so_path, SHARED_GC_DIR);
         strcpy(gc_so_path + strlen(SHARED_GC_DIR), gc_so_file);
-        gc_so_path[strlen(SHARED_GC_DIR) + strlen(gc_so_file)] = '\0';
 
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
-            fprintf(stderr, "%s\n", dlerror());
-            rb_bug("ruby_external_gc_init: Shared library %s cannot be opened", gc_so_path);
+            rb_fatal("ruby_external_gc_init: Shared library %s cannot be opened: %s", gc_so_path, dlerror());
         }
     }
 
+    rb_gc_function_map_t gc_functions;
+
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        rb_gc_functions.name = dlsym(handle, "rb_gc_impl_" #name); \
-        if (!rb_gc_functions.name) { \
-            rb_bug("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
+        gc_functions.name = dlsym(handle, "rb_gc_impl_" #name); \
+        if (!gc_functions.name) { \
+            rb_fatal("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
         } \
     } \
     else { \
-        rb_gc_functions.name = rb_gc_impl_##name; \
+        gc_functions.name = rb_gc_impl_##name; \
     } \
 } while (0)
 
@@ -777,6 +777,8 @@ ruby_external_gc_init(void)
     load_external_gc_func(copy_attributes);
 
 # undef load_external_gc_func
+
+    rb_gc_functions = gc_functions;
 }
 
 // Bootup
