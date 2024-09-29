@@ -133,7 +133,7 @@ class Array
   #
   #   a.first(0)  # []
   #   a.first(2)  # => [:foo, "bar"]
-  #   a.first(50) # => [:foo, "bar", 2]0
+  #   a.first(50) # => [:foo, "bar", 2]
   #
   # Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
   def first n = unspecified = true
