@@ -193,20 +193,69 @@ VALUE_to_float(VALUE obj)
     }
 }
 
+static void
+str_expand_fill(VALUE res, int c, long len)
+{
+    long olen = RSTRING_LEN(res);
+    memset(RSTRING_PTR(res) + olen, c, len);
+    rb_str_set_len(res, olen + len);
+}
+
+static char *
+skip_to_eol(const char *p, const char *pend)
+{
+    p = memchr(p, '\n', pend - p);
+    return (char *)(p ? p + 1 : pend);
+}
+
+#define skip_blank(p, type) \
+    (ISSPACE(type) || (type == '#' && (p = skip_to_eol(p, pend), 1)))
+
+#ifndef NATINT_PACK
+# define pack_modifiers(p, t, n, e) pack_modifiers(p, t, e)
+#endif
+static char *
+pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
+{
+     while (1) {
+         switch (*p) {
+           case '_':
+           case '!':
+             if (strchr(natstr, type)) {
+#ifdef NATINT_PACK
+                 *natint = 1;
+#endif
+                 p++;
+             }
+             else {
+                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
+             }
+             break;
+
+           case '<':
+           case '>':
+             if (!strchr(endstr, type)) {
+                 rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
+             }
+             if (*explicit_endian) {
+                 rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
+             }
+             *explicit_endian = *p++;
+             break;
+           default:
+             return (char *)p;
+         }
+    }
+}
+
 static VALUE
 pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 {
-    static const char nul10[] = "\0\0\0\0\0\0\0\0\0\0";
-    static const char spc10[] = "          ";
     const char *p, *pend;
     VALUE res, from, associates = 0;
-    char type;
     long len, idx, plen;
     const char *ptr;
     int enc_info = 1;		/* 0 - BINARY, 1 - US-ASCII, 2 - UTF-8 */
-#ifdef NATINT_PACK
-    int natint;		/* native integer */
-#endif
     int integer_size, bigendian_p;
 
     StringValue(fmt);
@@ -233,50 +282,16 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
     while (p < pend) {
         int explicit_endian = 0;
-        if (RSTRING_PTR(fmt) + RSTRING_LEN(fmt) != pend) {
+        if (RSTRING_END(fmt) != pend) {
             rb_raise(rb_eRuntimeError, "format string modified");
         }
-        type = *p++;		/* get data type */
+        const char type = *p++; /* get data type */
 #ifdef NATINT_PACK
-        natint = 0;
+        int natint = 0; 	/* native integer */
 #endif
 
-        if (ISSPACE(type)) continue;
-        if (type == '#') {
-            while ((p < pend) && (*p != '\n')) {
-                p++;
-            }
-            continue;
-        }
-
-        {
-          modifiers:
-            switch (*p) {
-              case '_':
-              case '!':
-                if (strchr(natstr, type)) {
-#ifdef NATINT_PACK
-                    natint = 1;
-#endif
-                    p++;
-                }
-                else {
-                    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
-                }
-                goto modifiers;
-
-              case '<':
-              case '>':
-                if (!strchr(endstr, type)) {
-                    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
-                }
-                if (explicit_endian) {
-                    rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
-                }
-                explicit_endian = *p++;
-                goto modifiers;
-            }
-        }
+        if (skip_blank(p, type)) continue;
+        p = pack_modifiers(p, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
             len = strchr("@Xxu", type) ? 0
@@ -333,16 +348,12 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 if (plen >= len) {
                     rb_str_buf_cat(res, ptr, len);
                     if (p[-1] == '*' && type == 'Z')
-                        rb_str_buf_cat(res, nul10, 1);
+                        rb_str_buf_cat(res, "", 1);
                 }
                 else {
+                    rb_str_modify_expand(res, len);
                     rb_str_buf_cat(res, ptr, plen);
-                    len -= plen;
-                    while (len >= 10) {
-                        rb_str_buf_cat(res, (type == 'A')?spc10:nul10, 10);
-                        len -= 10;
-                    }
-                    rb_str_buf_cat(res, (type == 'A')?spc10:nul10, len);
+                    str_expand_fill(res, (type == 'A' ? ' ' : '\0'), len - plen);
                 }
                 break;
 
@@ -616,11 +627,8 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'x':		/* null byte */
           grow:
-            while (len >= 10) {
-                rb_str_buf_cat(res, nul10, 10);
-                len -= 10;
-            }
-            rb_str_buf_cat(res, nul10, len);
+            rb_str_modify_expand(res, len);
+            str_expand_fill(res, '\0', len);
             break;
 
           case 'X':		/* back up byte */
@@ -945,13 +953,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
     char *s, *send;
     char *p, *pend;
     VALUE ary, associates = Qfalse;
-    char type;
     long len;
     AVOID_CC_BUG long tmp_len;
-    int star;
-#ifdef NATINT_PACK
-    int natint;			/* native integer */
-#endif
     int signed_p, integer_size, bigendian_p;
 #define UNPACK_PUSH(item) do {\
         VALUE item_val = (item);\
@@ -986,49 +989,14 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
     ary = mode == UNPACK_ARRAY ? rb_ary_new() : Qnil;
     while (p < pend) {
         int explicit_endian = 0;
-        type = *p++;
+        const char type = *p++;
 #ifdef NATINT_PACK
-        natint = 0;
+        int natint = 0;		/* native integer */
 #endif
+        int star = 0;
 
-        if (ISSPACE(type)) continue;
-        if (type == '#') {
-            while ((p < pend) && (*p != '\n')) {
-                p++;
-            }
-            continue;
-        }
-
-        star = 0;
-        {
-          modifiers:
-            switch (*p) {
-              case '_':
-              case '!':
-
-                if (strchr(natstr, type)) {
-#ifdef NATINT_PACK
-                    natint = 1;
-#endif
-                    p++;
-                }
-                else {
-                    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
-                }
-                goto modifiers;
-
-              case '<':
-              case '>':
-                if (!strchr(endstr, type)) {
-                    rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, endstr);
-                }
-                if (explicit_endian) {
-                    rb_raise(rb_eRangeError, "Can't use both '<' and '>'");
-                }
-                explicit_endian = *p++;
-                goto modifiers;
-            }
-        }
+        if (skip_blank(p, type)) continue;
+        p = pack_modifiers(p, type, &natint, &explicit_endian);
 
         if (p >= pend)
             len = 1;

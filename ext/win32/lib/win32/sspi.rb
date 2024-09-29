@@ -56,11 +56,11 @@ module Win32
     # SecHandle struct
     class SecurityHandle
       def upper
-        @struct.unpack("LL")[1]
+        @struct.unpack1("x4L")
       end
 
       def lower
-        @struct.unpack("LL")[0]
+        @struct.unpack1("L")
       end
 
       def to_p
@@ -129,7 +129,7 @@ module Win32
       def unpack
         if ! @unpacked && @sec_buffer && @struct
           @bufferSize, @type = @sec_buffer.unpack("LL")
-          @buffer = @sec_buffer.unpack("LLP#{@bufferSize}")[2]
+          @buffer = @sec_buffer.unpack1("x8P#{@bufferSize}")
           @struct = nil
           @sec_buffer = nil
           @unpacked = true
@@ -181,20 +181,19 @@ module Win32
       SEC_E_SECPKG_NOT_FOUND = 0x80090305
       SEC_E_UNKNOWN_CREDENTIALS = 0x8009030D
 
-      @@map = {}
-      constants.each { |v| @@map[self.const_get(v.to_s)] = v }
+      RESULT_MAP = constants.to_h {|v| [const_get(v), v]}.freeze
 
       attr_reader :value
 
       def initialize(value)
         # convert to unsigned long
-        value = [value].pack("L").unpack("L").first
-        raise "#{value.to_s(16)} is not a recognized result" unless @@map.has_key? value
+        value &= 0xffffffff
+        raise "#{value.to_s(16)} is not a recognized result" unless RESULT_MAP.key? value
         @value = value
       end
 
       def to_s
-        @@map[@value].to_s
+        RESULT_MAP[@value].to_s
       end
 
       def ok?
@@ -202,10 +201,13 @@ module Win32
       end
 
       def ==(other)
-        if other.is_a?(SSPIResult)
+        case other
+        when SSPIResult
           @value == other.value
-        elsif other.is_a?(Fixnum)
-          @value == @@map[other]
+        when Integer
+          @value == other
+        when Symbol
+          RESULT_MAP[@value] == other
         else
           false
         end
@@ -281,18 +283,18 @@ module Win32
         # Nil token OK, just set it to empty string
         token = "" if token.nil?
 
-        if token.include? "Negotiate"
+        if token.start_with? "Negotiate"
           # If the Negotiate prefix is passed in, assume we are seeing "Negotiate <token>" and get the token.
-          token = token.split(" ").last
+          token = token.split(" ", 2).last
         end
 
-        if token.include? B64_TOKEN_PREFIX
+        if token.start_with? B64_TOKEN_PREFIX
           # indicates base64 encoded token
-          token = token.strip.unpack("m")[0]
+          token = token.strip.unpack1("m")
         end
 
         outputBuffer = SecurityBuffer.new
-        result = SSPIResult.new(API::InitializeSecurityContext.call(@credentials.to_p, @context.to_p, nil,
+        result = SSPIResult.new(API::InitializeSecurityContextA.call(@credentials.to_p, @context.to_p, nil,
           REQUEST_FLAGS, 0, SECURITY_NETWORK_DREP, SecurityBuffer.new(token).to_p, 0,
           @context.to_p,
           outputBuffer.to_p, @contextAttributes, TimeStamp.new.to_p))
@@ -307,7 +309,7 @@ module Win32
         clean_up unless @cleaned_up
       end
 
-     private
+    private
 
       def clean_up
         # free structures allocated
@@ -330,8 +332,7 @@ module Win32
       end
 
       def encode_token(t)
-        # encode64 will add newlines every 60 characters so we need to remove those.
-        [t].pack("m").delete("\n")
+        [t].pack("m0")
       end
     end
   end
