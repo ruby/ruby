@@ -6546,35 +6546,37 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.flatten -> new_array
- *    array.flatten(level) -> new_array
+ *    flatten(depth = nil) -> new_array
  *
- *  Returns a new +Array+ that is a recursive flattening of +self+:
- *  - Each non-Array element is unchanged.
- *  - Each +Array+ is replaced by its individual elements.
+ *  Returns a new array that is a recursive flattening of +self+
+ *  to +depth+ levels of recursion;
+ *  +depth+ must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  or +nil+.
+ *  At each level of recursion:
  *
- *  With non-negative Integer argument +level+, flattens recursively through +level+ levels:
+ *  - Each element that is an array is "flattened"
+ *    (that is, replaced by its individual array elements).
+ *  - Each element that is not an array is unchanged
+ *    (even if the element is an object that has instance method +flatten+).
  *
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten(0) # => [0, [1, [2, 3], 4], 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten(1) # => [0, 1, [2, 3], 4, 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten(2) # => [0, 1, 2, 3, 4, 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten(3) # => [0, 1, 2, 3, 4, 5]
+ *  With non-negative integer argument +depth+, flattens recursively through +depth+ levels:
  *
- *  With no argument, a +nil+ argument, or with negative argument +level+, flattens all levels:
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5, {foo: 0}, Set.new([6, 7]) ]
+ *    a              # => [0, [1, [2, 3], 4], 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten(0)   # => [0, [1, [2, 3], 4], 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten(1  ) # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten(1.1) # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten(2)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten(3)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
  *
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten # => [0, 1, 2]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten(-2) # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten(-1) # => [0, 1, 2]
+ *  With +nil+ or negative +depth+, flattens all levels.
  *
+ *    a.flatten     # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.flatten(-1) # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *
+ *  Related: Array#flatten!;
+ *  see also {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
