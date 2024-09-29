@@ -3307,7 +3307,7 @@ pm_scope_node_destroy(pm_scope_node_t *scope_node)
  * Normally, "send" instruction is at the last. However, qcall under branch
  * coverage measurement adds some instructions after the "send".
  *
- * Note that "invokesuper" appears instead of "send".
+ * Note that "invokesuper", "invokesuperforward" appears instead of "send".
  */
 static void
 pm_compile_retry_end_label(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *retry_end_l)
@@ -8151,8 +8151,9 @@ pm_compile_super_node(rb_iseq_t *iseq, const pm_super_node_t *node, const pm_nod
             PUSH_INSN2(ret, *location, invokesuper, callinfo, current_block);
         }
 
-        pm_compile_retry_end_label(iseq, ret, retry_end_l);
     }
+
+    pm_compile_retry_end_label(iseq, ret, retry_end_l);
 
     if (popped) PUSH_INSN(ret, *location, pop);
     ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;

@@ -165,6 +165,11 @@ module EnvUtil
     }
 
     args = [args] if args.kind_of?(String)
+    # use the same parser as current ruby
+    if args.none? { |arg| arg.start_with?("--parser=") }
+      current_parser = RUBY_DESCRIPTION =~ /prism/i ? "prism" : "parse.y"
+      args = ["--parser=#{current_parser}"] + args
+    end
     pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
     out_c&.close
