@@ -193,6 +193,14 @@ VALUE_to_float(VALUE obj)
     }
 }
 
+static void
+str_expand_fill(VALUE res, int c, long len)
+{
+    long olen = RSTRING_LEN(res);
+    memset(RSTRING_PTR(res) + olen, c, len);
+    rb_str_set_len(res, olen + len);
+}
+
 static char *
 skip_to_eol(const char *p, const char *pend)
 {
@@ -243,8 +251,6 @@ pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
 static VALUE
 pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 {
-    static const char nul10[] = "\0\0\0\0\0\0\0\0\0\0";
-    static const char spc10[] = "          ";
     const char *p, *pend;
     VALUE res, from, associates = 0;
     long len, idx, plen;
@@ -342,16 +348,12 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 if (plen >= len) {
                     rb_str_buf_cat(res, ptr, len);
                     if (p[-1] == '*' && type == 'Z')
-                        rb_str_buf_cat(res, nul10, 1);
+                        rb_str_buf_cat(res, "", 1);
                 }
                 else {
+                    rb_str_modify_expand(res, len);
                     rb_str_buf_cat(res, ptr, plen);
-                    len -= plen;
-                    while (len >= 10) {
-                        rb_str_buf_cat(res, (type == 'A')?spc10:nul10, 10);
-                        len -= 10;
-                    }
-                    rb_str_buf_cat(res, (type == 'A')?spc10:nul10, len);
+                    str_expand_fill(res, (type == 'A' ? ' ' : '\0'), len - plen);
                 }
                 break;
 
@@ -625,11 +627,8 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'x':		/* null byte */
           grow:
-            while (len >= 10) {
-                rb_str_buf_cat(res, nul10, 10);
-                len -= 10;
-            }
-            rb_str_buf_cat(res, nul10, len);
+            rb_str_modify_expand(res, len);
+            str_expand_fill(res, '\0', len);
             break;
 
           case 'X':		/* back up byte */
