@@ -220,7 +220,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'enable-mkmf-verbose', with: { append_configure: '--enable-mkmf-verbose' } }
       - { uses: './.github/actions/compilers', name: 'disable-rubygems',    with: { append_configure: '--disable-rubygems' } }
       - { uses: './.github/actions/compilers', name: 'RUBY_DEVEL',          with: { append_configure: '--enable-devel' } }
-      - { uses: './.github/actions/compilers', name: 'SHARED_GC',           with: { append_configure: '--with-shared-gc=/home/runner/shared-gc' } }
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=0',            with: { cppflags: '-DOPT_THREADED_CODE=0' } }
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=1',            with: { cppflags: '-DOPT_THREADED_CODE=1' } }
       - { uses: './.github/actions/compilers', name: 'OPT_THREADED_CODE=2',            with: { cppflags: '-DOPT_THREADED_CODE=2' } }
