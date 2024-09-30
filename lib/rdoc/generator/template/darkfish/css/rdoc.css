@@ -585,6 +585,9 @@ main header h3 {
 /* @group Method Details */
 
 main .method-source-code {
+  /* While this is already invisible through the rule below, this will inform the browser to
+  not consider source code during text searching until it is actually expanded. */
+  visibility: hidden;
   max-height: 0;
   overflow: auto;
   transition-duration: 200ms;
@@ -594,6 +597,7 @@ main .method-source-code {
 }
 
 main .method-source-code.active-menu {
+  visibility: visible;
   max-height: 100vh;
 }
 
