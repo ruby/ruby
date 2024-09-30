@@ -4,9 +4,6 @@
 
 module Gem::BUNDLED_GEMS
   SINCE = {
-    "rexml" => "3.0.0",
-    "rss" => "3.0.0",
-    "webrick" => "3.0.0",
     "matrix" => "3.1.0",
     "net-ftp" => "3.1.0",
     "net-imap" => "3.1.0",
