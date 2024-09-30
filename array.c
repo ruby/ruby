@@ -3971,20 +3971,18 @@ rb_ary_select_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.keep_if {|element| ... } -> self
- *    array.keep_if -> new_enumeration
+ *    keep_if {|element| ... } -> self
+ *    keep_if -> new_enumerator
  *
- *  Retains those elements for which the block returns a truthy value;
- *  deletes all other elements; returns +self+:
+ *  With a block given, calls the block with each element of +self+;
+ *  removes the element from +self+ if the block does not return a truthy value:
  *
  *    a = [:foo, 'bar', 2, :bam]
  *    a.keep_if {|element| element.to_s.start_with?('b') } # => ["bar", :bam]
  *
- *  Returns a new Enumerator if no block given:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [:foo, 'bar', 2, :bam]
- *    a.keep_if # => #<Enumerator: [:foo, "bar", 2, :bam]:keep_if>
- *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
