@@ -5767,19 +5767,14 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     ary.intersect?(other_ary)   -> true or false
+ *    intersect?(other_array) -> true or false
  *
- *  Returns +true+ if the array and +other_ary+ have at least one element in
- *  common, otherwise returns +false+:
+ *  Returns whether +other_array+ has at least one element that is #eql? to some element of +self+:
  *
- *     a = [ 1, 2, 3 ]
- *     b = [ 3, 4, 5 ]
- *     c = [ 5, 6, 7 ]
- *     a.intersect?(b)   #=> true
- *     a.intersect?(c)   #=> false
+ *    [1, 2, 3].intersect?([3, 4, 5]) # => true
+ *    [1, 2, 3].intersect?([4, 5, 6]) # => false
  *
- *  +Array+ elements are compared using <tt>eql?</tt>
- *  (items must also implement +hash+ correctly).
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
