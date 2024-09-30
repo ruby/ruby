@@ -81,7 +81,8 @@ module Gem::BUNDLED_GEMS
           result = e
         end
 
-        if (result || !OPTIONAL[name]) && message
+        # Don't warn if the gem is optional dependency and not found in the Bundler environment.
+        if !(result.is_a?(LoadError) && OPTIONAL[name]) && message
           if ::Gem::BUNDLED_GEMS.uplevel > 0
             Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
           else
