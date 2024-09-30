@@ -182,6 +182,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_MAX] = {
     [PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT]      = { "expected an expression after `*` splat in an argument", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_EXPECT_EXPRESSION_AFTER_SPLAT_HASH] = { "expected an expression after `**` in a hash", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_EXPECT_EXPRESSION_AFTER_STAR]       = { "expected an expression after `*`", PM_ERROR_LEVEL_SYNTAX },
+    [PM_ERR_EXPECT_FOR_DELIMITER]               = { "unexpected %s; expected a 'do', newline, or ';' after the 'for' loop collection", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_EXPECT_IDENT_REQ_PARAMETER]         = { "expected an identifier for the required parameter", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_EXPECT_IN_DELIMITER]                = { "expected a delimiter after the patterns of an `in` clause", PM_ERROR_LEVEL_SYNTAX },
     [PM_ERR_EXPECT_LPAREN_REQ_PARAMETER]        = { "expected a `(` to start a required parameter", PM_ERROR_LEVEL_SYNTAX },
