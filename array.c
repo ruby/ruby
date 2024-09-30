@@ -5275,14 +5275,16 @@ rb_ary_hash_values(long len, const VALUE *elements)
 
 /*
  *  call-seq:
- *    array.hash -> integer
+ *    hash -> integer
  *
  *  Returns the integer hash value for +self+.
  *
- *  Two arrays with the same content will have the same hash code (and will compare using #eql?):
+ *  Two arrays with the same content will have the same hash value
+ *  (and will compare using eql?):
  *
- *    [0, 1, 2].hash == [0, 1, 2].hash # => true
- *    [0, 1, 2].hash == [0, 1, 3].hash # => false
+ *    ['a', 'b'].hash == ['a', 'b'].hash # => true
+ *    ['a', 'b'].hash == ['a', 'c'].hash # => false
+ *    ['a', 'b'].hash == ['a'].hash      # => false
  *
  */
 
