@@ -643,12 +643,15 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                             encoding = scope_node->encoding;
                         }
 
-                        current_string = rb_enc_str_new(NULL, 0, encoding);
+                        if (parts_size == 1) {
+                            current_string = rb_enc_str_new(NULL, 0, encoding);
+                        }
                     }
 
-                    {
+                    if (RTEST(current_string)) {
                         VALUE operand = rb_fstring(current_string);
                         PUSH_INSN1(ret, current_location, putobject, operand);
+                        stack_size++;
                     }
 
                     PM_COMPILE_NOT_POPPED(part);
@@ -664,7 +667,7 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                     PUSH_INSN(ret, current_location, anytostring);
 
                     current_string = Qnil;
-                    stack_size += 2;
+                    stack_size++;
                 }
             }
         }
