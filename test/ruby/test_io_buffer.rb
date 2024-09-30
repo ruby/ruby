@@ -248,6 +248,31 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Hello World", hello
   end
 
+  def test_transfer
+    hello = %w"Hello World".join(" ")
+    buffer = IO::Buffer.for(hello)
+    transferred = buffer.transfer
+    assert_equal "Hello World", transferred.get_string
+    assert_predicate buffer, :null?
+    assert_raise IO::Buffer::AccessError do
+      transferred.set_string("Goodbye")
+    end
+    assert_equal "Hello World", hello
+  end
+
+  def test_transfer_in_block
+    hello = %w"Hello World".join(" ")
+    buffer = IO::Buffer.for(hello, &:transfer)
+    assert_equal "Hello World", buffer.get_string
+    buffer.set_string("Ciao!")
+    assert_equal "Ciao! World", hello
+    hello.freeze
+    assert_raise IO::Buffer::AccessError do
+      buffer.set_string("Hola")
+    end
+    assert_equal "Ciao! World", hello
+  end
+
   def test_locked
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
 
