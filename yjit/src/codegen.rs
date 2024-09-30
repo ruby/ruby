@@ -10563,7 +10563,7 @@ impl CodegenGlobals {
         let cfunc_exit_code = gen_full_cfunc_return(&mut ocb).unwrap();
 
         let ocb_end_addr = ocb.unwrap().get_write_ptr();
-        let ocb_pages = ocb.unwrap().addrs_to_pages(ocb_start_addr, ocb_end_addr);
+        let ocb_pages = ocb.unwrap().addrs_to_pages(ocb_start_addr, ocb_end_addr).collect();
 
         // Mark all code memory as executable
         cb.mark_all_executable();
