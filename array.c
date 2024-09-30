@@ -6503,33 +6503,37 @@ flatten(VALUE ary, int level)
 
 /*
  *  call-seq:
- *    array.flatten! -> self or nil
- *    array.flatten!(level) -> self or nil
+ *    flatten!(depth = nil) -> self or nil
  *
- *  Replaces each nested +Array+ in +self+ with the elements from that +Array+;
- *  returns +self+ if any changes, +nil+ otherwise.
+ *  Returns +self+ as a recursively flattening of +self+ to +depth+ levels of recursion;
+ *  +depth+ must be an
+ *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects],
+ *  or +nil+.
+ *  At each level of recursion:
  *
- *  With non-negative Integer argument +level+, flattens recursively through +level+ levels:
+ *  - Each element that is an array is "flattened"
+ *    (that is, replaced by its individual array elements).
+ *  - Each element that is not an array is unchanged
+ *    (even if the element is an object that has instance method +flatten+).
  *
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(1) # => [0, 1, [2, 3], 4, 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(2) # => [0, 1, 2, 3, 4, 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(3) # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten!(1) # => nil
+ *  Returns +nil+ if no elements were flattened.
  *
- *  With no argument, a +nil+ argument, or with negative argument +level+, flattens all levels:
+ *  With non-negative integer argument +depth+, flattens recursively through +depth+ levels:
  *
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten! # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten! # => nil
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(-1) # => [0, 1, 2, 3, 4, 5]
- *    a = [ 0, [ 1, [2, 3], 4 ], 5 ]
- *    a.flatten!(-2) # => [0, 1, 2, 3, 4, 5]
- *    [0, 1, 2].flatten!(-1) # => nil
+ *    a = [ 0, [ 1, [2, 3], 4 ], 5, {foo: 0}, Set.new([6, 7]) ]
+ *    a                   # => [0, [1, [2, 3], 4], 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(1)   # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(1.1) # => [0, 1, [2, 3], 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(2)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(3)   # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
  *
+ *  With +nil+ or negative argument +depth+, flattens all levels:
+ *
+ *    a.dup.flatten!     # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *    a.dup.flatten!(-1) # => [0, 1, 2, 3, 4, 5, {:foo=>0}, #<Set: {6, 7}>]
+ *
+ *  Related: Array#flatten;
+ *  see also {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
@@ -8639,6 +8643,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #insert: Inserts given objects at a given offset; does not replace elements.
  *  - #concat: Appends all elements from given arrays.
  *  - #fill: Replaces specified elements with specified objects.
+ *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
  *  - #initialize_copy (aliased as #replace): Replaces the content of +self+ with the content of a given array.
  *  - #reverse!: Replaces +self+ with its elements reversed.
  *  - #rotate!: Replaces +self+ with its elements rotated.
@@ -8700,7 +8705,6 @@ rb_ary_deconstruct(VALUE ary)
  *  - #collect (aliased as #map): Returns an array containing the block return-value for each element.
  *  - #collect! (aliased as #map!): Replaces each element with a block return-value.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
- *  - #flatten!: Replaces each nested array in +self+ with the elements from that array.
  *  - #inspect (aliased as #to_s): Returns a new String containing the elements.
  *  - #join: Returns a newsString containing the elements joined by the field separator.
  *  - #to_a: Returns +self+ or a new array containing all elements.
