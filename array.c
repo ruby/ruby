@@ -2908,31 +2908,32 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *    array.join ->new_string
  *    array.join(separator = $,) -> new_string
  *
- *  Returns the new String formed by joining the array elements after conversion.
- *  For each element +element+:
+ *  Returns the new string formed by joining the converted elements of +self+;
+ *  for each element +element+:
  *
- *  - Uses <tt>element.to_s</tt> if +element+ is not a <tt>kind_of?(Array)</tt>.
- *  - Uses recursive <tt>element.join(separator)</tt> if +element+ is a <tt>kind_of?(Array)</tt>.
+ *  - Converts recursively using <tt>element.join(separator)</tt>
+ *    if +element+ is a <tt>kind_of?(Array)</tt>.
+ *  - Otherwise, converts using <tt>element.to_s</tt>.
  *
- *  With no argument, joins using the output field separator, <tt>$,</tt>:
+ *  With no argument given, joins using the output field separator, <tt>$,</tt>:
  *
  *    a = [:foo, 'bar', 2]
  *    $, # => nil
  *    a.join # => "foobar2"
  *
- *  With \string argument +separator+, joins using that separator:
+ *  With string argument +separator+ given, joins using that separator:
  *
  *    a = [:foo, 'bar', 2]
  *    a.join("\n") # => "foo\nbar\n2"
  *
- *  Joins recursively for nested Arrays:
+ *  Joins recursively for nested arrays:
  *
  *   a = [:foo, [:bar, [:baz, :bat]]]
  *   a.join # => "foobarbazbat"
  *
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 static VALUE
 rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
