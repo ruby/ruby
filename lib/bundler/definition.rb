@@ -19,7 +19,8 @@ module Bundler
       :ruby_version,
       :lockfile,
       :gemfiles,
-      :locked_checksums
+      :locked_checksums,
+      :sources
     )
 
     # Given a gemfile and lockfile creates a Bundler definition
@@ -499,8 +500,6 @@ module Bundler
     attr_writer :source_requirements
 
     private
-
-    attr_reader :sources
 
     def should_add_extra_platforms?
       !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
