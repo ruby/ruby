@@ -113,12 +113,12 @@ class Array
   end
 
   # call-seq:
-  #   array.first -> object or nil
-  #   array.first(n) -> new_array
+  #   first -> object or nil
+  #   first(count) -> new_array
   #
-  # Returns elements from +self+; does not modify +self+.
+  # Returns elements from +self+, or +nil+; does not modify +self+.
   #
-  # When no argument is given, returns the first element:
+  # With no argument given, returns the first element (if available):
   #
   #   a = [:foo, 'bar', 2]
   #   a.first # => :foo
@@ -126,23 +126,16 @@ class Array
   #
   # If +self+ is empty, returns +nil+.
   #
-  # When non-negative Integer argument +n+ is given,
-  # returns the first +n+ elements in a new +Array+:
+  #   [].first # => nil
   #
-  #   a = [:foo, 'bar', 2]
-  #   a.first(2) # => [:foo, "bar"]
+  # With non-negative integer argument +count+ given,
+  # returns the first +count+ elements (as available) in a new array:
   #
-  # If <tt>n >= array.size</tt>, returns all elements:
-  #
-  #   a = [:foo, 'bar', 2]
+  #   a.first(0)  # => []
+  #   a.first(2)  # => [:foo, "bar"]
   #   a.first(50) # => [:foo, "bar", 2]
   #
-  # If <tt>n == 0</tt> returns an new empty +Array+:
-  #
-  #   a = [:foo, 'bar', 2]
-  #   a.first(0) # []
-  #
-  # Related: #last.
+  # Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
   def first n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
