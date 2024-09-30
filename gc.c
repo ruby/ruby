@@ -1087,8 +1087,6 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 {
     RB_DEBUG_COUNTER_INC(obj_free);
 
-    rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_FREEOBJ);
-
     switch (BUILTIN_TYPE(obj)) {
       case T_NIL:
       case T_FIXNUM:
