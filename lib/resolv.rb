@@ -1215,9 +1215,23 @@ class Resolv
     end
 
     module Label # :nodoc:
+      # RFC 1035, RFC 1123 and RFC 2181
+      # Label size is 1..63 octets
+      # Total size max is 255 - (str len byte) - root = 253 octets
       def self.split(arg)
-        labels = []
-        arg.scan(/[^\.]+/) {labels << Str.new($&)}
+        errors = []
+        errors << 'unexpected end of input' if arg.bytes.empty?
+        len = arg.bytes.size
+        len -= 1 if /\.\z/ =~ arg
+        errors << 'ran out of space' if len > 253
+        labels = arg.split( '.' ).map do |label|
+          errors << 'empty label' if label.bytes.empty?
+          errors << 'label too long' if label.bytes.size > 63
+          Str.new(label)
+        end
+        if errors.any?
+          raise ArgumentError.new("#{arg.inspect} is not a legal name (#{errors.first})")
+        end
         return labels
       end
 
