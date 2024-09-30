@@ -658,7 +658,7 @@ static void
 ruby_external_gc_init(void)
 {
     // Assert that the directory path ends with a /
-    GC_ASSERT(SHARED_GC_DIR[strlen(SHARED_GC_DIR) - 2] == '/');
+    RUBY_ASSERT_ALWAYS(SHARED_GC_DIR[sizeof(SHARED_GC_DIR) - 2] == '/');
 
     char *gc_so_file = getenv(RUBY_GC_LIBRARY);
 
