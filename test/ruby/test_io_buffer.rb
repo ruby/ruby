@@ -236,6 +236,18 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_slice_readonly
+    hello = %w"Hello World".join(" ").freeze
+    buffer = IO::Buffer.for(hello)
+    slice = buffer.slice
+    assert_predicate slice, :readonly?
+    assert_raise IO::Buffer::AccessError do
+      # This breaks the literal in string pool and many other tests in this file.
+      slice.set_string("Adios", 0, 5)
+    end
+    assert_equal "Hello World", hello
+  end
+
   def test_locked
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
 
