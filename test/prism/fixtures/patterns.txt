@@ -87,10 +87,7 @@ foo => *bar, baz, qux
 foo => bar, *baz, qux
 foo => bar, baz, *qux
 foo => *bar, baz, *qux
-
-foo => bar,
-
-; # end the previous pattern for ParseTest#test_filepath_patterns.txt which parses the whole file at once
+foo => bar,;
 
 foo => []
 foo => [[[[[]]]]]
@@ -127,10 +124,7 @@ foo in __FILE__
 foo in __LINE__
 foo in __ENCODING__
 foo in -> { bar }
-
-foo in bar,
-
-; # end the previous pattern for ParseTest#test_filepath_patterns.txt which parses the whole file at once
+foo in bar,;
 
 case foo; in bar then end
 case foo; in 1 then end
