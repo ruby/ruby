@@ -341,7 +341,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .attr_get = rb_attr_get,
 
-    .ary_new = rb_ary_new,
     .ary_push = rb_ary_push,
     .ary_new_from_args = rb_ary_new_from_args,
     .ary_unshift = rb_ary_unshift,
