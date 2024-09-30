@@ -3568,6 +3568,8 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #undef CHECK
 #endif
 
+                rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+
                 bool has_object_id = FL_TEST(vp, FL_SEEN_OBJ_ID);
                 if (rb_gc_obj_free(objspace, vp)) {
                     if (has_object_id) {
