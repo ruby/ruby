@@ -17,8 +17,8 @@ AS_IF([test x"$modular_gc_dir" != x], [
     # Ensure that modular_gc_dir is always an absolute path so that Ruby
     # never loads a modular GC from a relative path
     AS_CASE(["$modular_gc_dir"],
-        [/*], [modular_gc_dir=$modular_gc_dir],
-        [modular_gc_dir=`pwd`/$modular_gc_dir]
+        [/*], [],
+        [test "$load_relative" = yes || modular_gc_dir="$prefix/$modular_gc_dir"]
     )
 
     # Ensure that modular_gc_dir always terminates with a /
@@ -28,7 +28,6 @@ AS_IF([test x"$modular_gc_dir" != x], [
     )
 
     AC_DEFINE([USE_MODULAR_GC], [1])
-    AC_DEFINE_UNQUOTED([MODULAR_GC_DIR], "$modular_gc_dir")
 
     modular_gc_summary="yes (in $modular_gc_dir)"
 ], [

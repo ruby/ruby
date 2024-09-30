@@ -714,7 +714,7 @@ ruby_modular_gc_init(void)
     // Assert that the directory path ends with a /
     RUBY_ASSERT_ALWAYS(MODULAR_GC_DIR[sizeof(MODULAR_GC_DIR) - 2] == '/');
 
-    char *gc_so_file = getenv(RUBY_GC_LIBRARY);
+    const char *gc_so_file = getenv(RUBY_GC_LIBRARY);
 
     rb_gc_function_map_t gc_functions = { 0 };
 
@@ -737,14 +737,39 @@ ruby_modular_gc_init(void)
         }
 
         size_t gc_so_path_size = strlen(MODULAR_GC_DIR "librubygc." DLEXT) + strlen(gc_so_file) + 1;
+#ifdef LOAD_RELATIVE
+        Dl_info dli;
+        size_t prefix_len = 0;
+        if (dladdr((void *)(uintptr_t)ruby_modular_gc_init, &dli)) {
+            const char *base = strrchr(dli.dli_fname, '/');
+            if (base) {
+                size_t tail = 0;
+# define end_with_p(lit) \
+                (prefix_len >= (tail = rb_strlen_lit(lit)) && \
+                 memcmp(base - tail, lit, tail) == 0)
+
+                prefix_len = base - dli.dli_fname;
+                if (end_with_p("/bin") || end_with_p("/lib")) {
+                    prefix_len -= tail;
+                }
+                prefix_len += MODULAR_GC_DIR[0] != '/';
+                gc_so_path_size += prefix_len;
+            }
+        }
+#endif
         gc_so_path = alloca(gc_so_path_size);
         {
             size_t gc_so_path_idx = 0;
 #define GC_SO_PATH_APPEND(str) do { \
     gc_so_path_idx += strlcpy(gc_so_path + gc_so_path_idx, str, gc_so_path_size - gc_so_path_idx); \
 } while (0)
-            GC_SO_PATH_APPEND(MODULAR_GC_DIR);
-            GC_SO_PATH_APPEND("librubygc.");
+#ifdef LOAD_RELATIVE
+            if (prefix_len > 0) {
+                memcpy(gc_so_path, dli.dli_fname, prefix_len);
+                gc_so_path_idx = prefix_len;
+            }
+#endif
+            GC_SO_PATH_APPEND(MODULAR_GC_DIR "librubygc.");
             GC_SO_PATH_APPEND(gc_so_file);
             GC_SO_PATH_APPEND(DLEXT);
             GC_ASSERT(gc_so_path_idx == gc_so_path_size - 1);
