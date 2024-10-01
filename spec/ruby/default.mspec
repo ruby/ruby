@@ -47,6 +47,5 @@ class MSpecScript
     /\wSpecs?$/,
     /^CS_CONST/,
     /^CSL_CONST/,
-    /^RactorLocalSingleton/,
   ]
 end
