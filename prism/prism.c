@@ -14215,7 +14215,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     arguments->block = argument;
                 }
 
-                if (parser->current.type == PM_TOKEN_COMMA) {
+                if (match1(parser, PM_TOKEN_COMMA)) {
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
                 }
 
