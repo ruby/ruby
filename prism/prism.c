@@ -16545,6 +16545,8 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
 
             pm_string_shared_init(&symbol->unescaped, content.start, content.end);
             node = (pm_node_t *) symbol;
+
+            if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
         } else if (!lex_interpolation) {
             // If we don't accept interpolation then we expect the string to
             // start with a single string content node.
