@@ -8,6 +8,7 @@ use crate::stats::incr_counter;
 use crate::stats::with_compile_time;
 
 use std::os::raw;
+use crate::compilation_log::CompilationLog;
 
 /// Is YJIT on? The interpreter uses this variable to decide whether to trigger
 /// compilation. See jit_exec() and jit_compile().
@@ -181,6 +182,7 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
             unsafe {
                 OPTIONS.gen_compilation_log = gen_compilation_log.test();
                 OPTIONS.print_compilation_log = print_compilation_log.test();
+                CompilationLog::init();
             }
         }
 
