@@ -19,7 +19,7 @@ class Reline::History < Array
 
   def []=(index, val)
     index = check_index(index)
-    super(index, String.new(val, encoding: Reline.encoding_system_needs))
+    super(index, Reline::Unicode.safe_encode(val, Reline.encoding_system_needs))
   end
 
   def concat(*val)
@@ -45,7 +45,7 @@ class Reline::History < Array
       end
     end
     super(*(val.map{ |v|
-      String.new(v, encoding: Reline.encoding_system_needs)
+      Reline::Unicode.safe_encode(v, Reline.encoding_system_needs)
     }))
   end
 
@@ -56,7 +56,7 @@ class Reline::History < Array
     if @config.history_size.positive?
       shift if size + 1 > @config.history_size
     end
-    super(String.new(val, encoding: Reline.encoding_system_needs))
+    super(Reline::Unicode.safe_encode(val, Reline.encoding_system_needs))
   end
 
   private def check_index(index)

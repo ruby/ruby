@@ -266,6 +266,15 @@ class Reline::History::Test < Reline::TestCase
     assert_equal 5, history.size
   end
 
+  def test_history_encoding_conversion
+    history = history_new
+    text1 = String.new("a\u{65535}b\xFFc", encoding: Encoding::UTF_8)
+    text2 = String.new("d\xFFe", encoding: Encoding::Shift_JIS)
+    history.push(text1.dup, text2.dup)
+    expected = [text1, text2].map { |s| s.encode(Reline.encoding_system_needs, invalid: :replace, undef: :replace) }
+    assert_equal(expected, history.to_a)
+  end
+
   private
 
   def history_new(history_size: 10)

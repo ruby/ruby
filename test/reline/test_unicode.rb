@@ -89,4 +89,32 @@ class Reline::Unicode::Test < Reline::TestCase
     assert_equal ["\e[31mc\1ABC\2d\e[0mef", 2, 4], Reline::Unicode.take_mbchar_range("\e[31mabc\1ABC\2d\e[0mefghi", 2, 4)
     assert_equal ["\e[41m \e[42mい\e[43m ", 1, 4], Reline::Unicode.take_mbchar_range("\e[41mあ\e[42mい\e[43mう", 1, 4, padding: true)
   end
+
+  def test_encoding_conversion
+    texts = [
+      String.new("invalid\xFFutf8", encoding: 'utf-8'),
+      String.new("invalid\xFFsjis", encoding: 'sjis'),
+      "utf8#{33111.chr('sjis')}convertible",
+      "utf8#{33222.chr('sjis')}inconvertible",
+      "sjis->utf8->sjis#{60777.chr('sjis')}irreversible"
+    ]
+    utf8_texts = [
+      'invalid�utf8',
+      'invalid�sjis',
+      'utf8仝convertible',
+      'utf8�inconvertible',
+      'sjis->utf8->sjis劦irreversible'
+    ]
+    sjis_texts = [
+      'invalid?utf8',
+      'invalid?sjis',
+      "utf8#{33111.chr('sjis')}convertible",
+      'utf8?inconvertible',
+      "sjis->utf8->sjis#{60777.chr('sjis')}irreversible"
+    ]
+    assert_equal(utf8_texts, texts.map { |s| Reline::Unicode.safe_encode(s, 'utf-8') })
+    assert_equal(utf8_texts, texts.map { |s| Reline::Unicode.safe_encode(s, Encoding::UTF_8) })
+    assert_equal(sjis_texts, texts.map { |s| Reline::Unicode.safe_encode(s, 'sjis') })
+    assert_equal(sjis_texts, texts.map { |s| Reline::Unicode.safe_encode(s, Encoding::Windows_31J) })
+  end
 end
