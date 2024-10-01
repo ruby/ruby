@@ -21657,7 +21657,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             //     1.. * 2
             //
             if (PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL) {
-                if (match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT)) {
+                if (match4(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT, PM_TOKEN_AMPERSAND_DOT)) {
                     PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(parser->previous.type));
                     break;
                 }

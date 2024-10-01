@@ -1,0 +1,3 @@
+0 if true...&.abs
+            ^~ unexpected '&.'; ... is a non-associative operator
+
