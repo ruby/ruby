@@ -2202,7 +2202,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
  *
  */
 static VALUE
-enum_one(int argc, VALUE *argv, VALUE obj)
+enum_one_p(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qundef);
     VALUE result;
@@ -2212,6 +2212,53 @@ enum_one(int argc, VALUE *argv, VALUE obj)
     result = memo->v1;
     if (UNDEF_P(result)) return Qfalse;
     return result;
+}
+
+/*
+ *  call-seq:
+ *     enum.one                           -> object
+ *     enum.one(default_value)            -> object
+ *     enum.one { ... }                   -> object
+ *
+ *  Returns one and only one item. Raises an error if there are none or more than one.
+ *     [99].one             #=> 99
+ *     [].one               #=> RuntimeError: collection is empty
+ *     [99, 100].one        #=> RuntimeError: collection contains more than one item
+ *
+ *  If collection is empty and no block was given, returns +default_value+:
+ *     [].one(99)           #=> 99
+ *
+ * If collection is empty and a block was given, returns the block's return value:
+ *     [].one { 99 }        #=> 99
+ */
+static VALUE
+enum_one(int argc, VALUE* argv, VALUE obj)
+{
+    VALUE default_val, result;
+    struct MEMO *memo = MEMO_ENUM_NEW(Qundef);
+
+    rb_scan_args(argc, argv, "01", &default_val);
+    if (rb_block_given_p() && argc == 1) {
+        rb_warn("block supersedes default value argument");
+    }
+
+    rb_block_call(obj, id_each, 0, 0, one_i, (VALUE)memo);
+    result = memo->v1;
+
+    if (result == Qundef) {
+        if (rb_block_given_p()) {
+            return rb_yield(Qundef);
+        }
+        else if (!NIL_P(default_val)) {
+            return default_val;
+        }
+        rb_raise(rb_eRuntimeError, "collection is empty");
+    }
+    else if (result == Qfalse) {
+        rb_raise(rb_eRuntimeError, "collection contains more than one item");
+    }
+
+    return enum_first(0, 0, obj);
 }
 
 DEFINE_ENUMFUNCS(none)
@@ -5146,7 +5193,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "first", enum_first, -1);
     rb_define_method(rb_mEnumerable, "all?", enum_all, -1);
     rb_define_method(rb_mEnumerable, "any?", enum_any, -1);
-    rb_define_method(rb_mEnumerable, "one?", enum_one, -1);
+    rb_define_method(rb_mEnumerable, "one?", enum_one_p, -1);
+    rb_define_method(rb_mEnumerable, "one", enum_one, -1);
     rb_define_method(rb_mEnumerable, "none?", enum_none, -1);
     rb_define_method(rb_mEnumerable, "min", enum_min, -1);
     rb_define_method(rb_mEnumerable, "max", enum_max, -1);
