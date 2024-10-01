@@ -1,0 +1,6 @@
+{ 'a':.upcase => 1 }
+      ^ unexpected '.'; expected a value in the hash literal
+      ^ expected a `}` to close the hash literal
+                   ^ unexpected '}', expecting end-of-input
+                   ^ unexpected '}', ignoring it
+

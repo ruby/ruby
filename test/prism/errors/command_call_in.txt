@@ -1,7 +1,5 @@
 foo 1 in a
-         ^ unexpected `in` keyword in arguments
-         ^ unexpected local variable or method, expecting end-of-input
+      ^~ unexpected 'in', expecting end-of-input
+      ^~ unexpected 'in', ignoring it
 a = foo 2 in b
-             ^ unexpected `in` keyword in arguments
-             ^ unexpected local variable or method, expecting end-of-input
 
