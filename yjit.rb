@@ -263,7 +263,10 @@ module RubyVM::YJIT
     # Print the compilation log
     def print_compilation_log # :nodoc:
       if Primitive.rb_yjit_print_compilation_log_p
-        $stderr.puts("***YJIT: Printing YJIT compilation log on exit***")
+        RubyVM::YJIT.compilation_log.each do |iseq_path, timestamp|
+          t = Time.at(timestamp)
+          $stderr.puts "%15.6f: %s" % [t.to_f, iseq_path]
+        end
       end
     end
 

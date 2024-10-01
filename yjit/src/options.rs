@@ -179,6 +179,7 @@ macro_rules! get_option_ref {
     };
 }
 pub(crate) use get_option_ref;
+use crate::compilation_log::CompilationLog;
 
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
@@ -323,6 +324,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             "" => unsafe {
                 OPTIONS.gen_compilation_log = true;
                 OPTIONS.print_compilation_log = true;
+                CompilationLog::init();
             }
             _ => {
                 return None;

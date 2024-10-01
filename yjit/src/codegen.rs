@@ -9113,7 +9113,7 @@ fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
 }
 
 /// Assemble "{label}@{iseq_path}:{lineno}" (iseq_inspect() format) from an ISEQ
-fn get_iseq_name(iseq: IseqPtr) -> String {
+pub fn get_iseq_name(iseq: IseqPtr) -> String {
     let c_string = unsafe { rb_yjit_iseq_inspect(iseq) };
     let string = unsafe { CStr::from_ptr(c_string) }.to_str()
         .unwrap_or_else(|_| "not UTF-8").to_string();

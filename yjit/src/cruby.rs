@@ -84,6 +84,7 @@
 
 use std::convert::From;
 use std::ffi::{CString, CStr};
+use std::fmt::{Debug, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
@@ -623,6 +624,12 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
 pub struct SourceLocation {
     pub file: &'static CStr,
     pub line: c_int,
+}
+
+impl Debug for SourceLocation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}:{}", self.file.to_string_lossy(), self.line))
+    }
 }
 
 /// Make a [SourceLocation] at the current spot.
