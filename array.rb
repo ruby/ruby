@@ -151,7 +151,7 @@ class Array
 
   # call-seq:
   #   last  -> last_object or nil
-  #   array.last(n) -> new_array
+  #  last(n) -> new_array
   #
   # Returns elements from +self+, or +nil+; +self+ is not modified.
   #
