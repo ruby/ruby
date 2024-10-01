@@ -14271,9 +14271,6 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                     pm_static_literals_free(&hash_keys);
                     parsed_bare_hash = true;
-                } else if (accept1(parser, PM_TOKEN_KEYWORD_IN)) {
-                    // TODO: Could we solve this with binding powers instead?
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_IN);
                 }
 
                 parse_arguments_append(parser, arguments, argument);
@@ -14786,7 +14783,7 @@ parse_parameters(
             }
             default:
                 if (parser->previous.type == PM_TOKEN_COMMA) {
-                    if (allows_trailing_comma) {
+                    if (allows_trailing_comma && order >= PM_PARAMETERS_ORDER_NAMED) {
                         // If we get here, then we have a trailing comma in a
                         // block parameter list.
                         pm_node_t *param = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
@@ -21576,6 +21573,19 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 #undef PM_PARSE_PATTERN_MULTI
 
 /**
+ * Determine if a given call node looks like a "command", which means it has
+ * arguments but does not have parentheses.
+ */
+static inline bool
+pm_call_node_command_p(const pm_call_node_t *node) {
+    return (
+        (node->opening_loc.start == NULL) &&
+        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE)) &&
+        (node->arguments != NULL || node->block != NULL)
+    );
+}
+
+/**
  * Parse an expression at the given point of the parser using the given binding
  * power to parse subsequent chains. If this function finds a syntax error, it
  * will append the error message to the parser's error list.
@@ -21609,6 +21619,23 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 return node;
             }
             break;
+        case PM_CALL_NODE:
+            // If we have a call node, then we need to check if it looks like a
+            // method call without parentheses that contains arguments. If it
+            // does, then it has different rules for parsing infix operators,
+            // namely that it only accepts composition (and/or) and modifiers
+            // (if/unless/etc.).
+            if ((pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_COMPOSITION) && pm_call_node_command_p((pm_call_node_t *) node)) {
+                return node;
+            }
+            break;
+        case PM_SYMBOL_NODE:
+            // If we have a symbol node that is being parsed as a label, then we
+            // need to immediately return, because there should never be an
+            // infix operator following this node.
+            if (pm_symbol_node_label_p(node)) {
+                return node;
+            }
         default:
             break;
     }
@@ -21624,6 +21651,13 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
         switch (PM_NODE_TYPE(node)) {
+            case PM_MULTI_WRITE_NODE:
+                // Multi-write nodes are statements, and cannot be followed by
+                // operators except modifiers.
+                if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
+                    return node;
+                }
+                break;
             case PM_CLASS_VARIABLE_WRITE_NODE:
             case PM_CONSTANT_PATH_WRITE_NODE:
             case PM_CONSTANT_WRITE_NODE:
