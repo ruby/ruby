@@ -2925,6 +2925,11 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                 | tCONSTANT
                 ;
 
+%rule %inline user_or_keyword_variable
+                : user_variable
+                | keyword_variable
+                ;
+
 /*
  *	parameterizing rules
  */
@@ -3657,12 +3662,7 @@ mlhs_post	: mlhs_item
                     }
                 ;
 
-mlhs_node	: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+mlhs_node	: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
@@ -3707,12 +3707,7 @@ mlhs_node	: user_variable
                     }
                 ;
 
-lhs		: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+lhs		: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
@@ -6336,12 +6331,7 @@ var_ref		: user_variable
                     }
                 ;
 
-var_lhs		: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+var_lhs		: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
