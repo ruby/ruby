@@ -17274,6 +17274,9 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
         case PM_CASE_PRIMITIVE: {
             pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_MAX, false, true, diag_id, (uint16_t) (depth + 1));
 
+            // If we found a label, we need to immediately return to the caller.
+            if (pm_symbol_node_label_p(node)) return node;
+
             // Now that we have a primitive, we need to check if it's part of a range.
             if (accept2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
                 pm_token_t operator = parser->previous;
@@ -17391,10 +17394,10 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
  * assignment.
  */
 static pm_node_t *
-parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_diagnostic_id_t diag_id, uint16_t depth) {
-    pm_node_t *node = NULL;
+parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, pm_diagnostic_id_t diag_id, uint16_t depth) {
+    pm_node_t *node = first_node;
 
-    do {
+    while ((node == NULL) || accept1(parser, PM_TOKEN_PIPE)) {
         pm_token_t operator = parser->previous;
 
         switch (parser->current.type) {
@@ -17447,7 +17450,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
                 break;
             }
         }
-    } while (accept1(parser, PM_TOKEN_PIPE));
+    }
 
     // If we have an =>, then we are assigning this pattern to a variable.
     // In this case we should create an assignment node.
@@ -17508,6 +17511,24 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
 
             return node;
         }
+        case PM_TOKEN_STRING_BEGIN: {
+            // We need special handling for string beginnings because they could
+            // be dynamic symbols leading to hash patterns.
+            node = parse_pattern_primitive(parser, captures, diag_id, (uint16_t) (depth + 1));
+
+            if (pm_symbol_node_label_p(node)) {
+                node = (pm_node_t *) parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1));
+
+                if (!(flags & PM_PARSE_PATTERN_TOP)) {
+                    pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
+                }
+
+                return node;
+            }
+
+            node = parse_pattern_primitives(parser, captures, node, diag_id, (uint16_t) (depth + 1));
+            break;
+        }
         case PM_TOKEN_USTAR: {
             if (flags & (PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI)) {
                 parser_lex(parser);
@@ -17518,7 +17539,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         }
         /* fallthrough */
         default:
-            node = parse_pattern_primitives(parser, captures, diag_id, (uint16_t) (depth + 1));
+            node = parse_pattern_primitives(parser, captures, NULL, diag_id, (uint16_t) (depth + 1));
             break;
     }
 
@@ -17556,7 +17577,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
 
                 trailing_rest = true;
             } else {
-                node = parse_pattern_primitives(parser, captures, PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
+                node = parse_pattern_primitives(parser, captures, NULL, PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
             }
 
             pm_node_list_append(&nodes, node);
