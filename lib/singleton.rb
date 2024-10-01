@@ -124,7 +124,7 @@ module Singleton
     end
 
     def instance # :nodoc:
-      @singleton__instance__ || @singleton__mutex__.synchronize { @singleton__instance__ ||= set_instance(new) }
+      @singleton__instance__ || @singleton__mutex__.synchronize { @singleton__instance__ ||= new }
     end
 
     private
