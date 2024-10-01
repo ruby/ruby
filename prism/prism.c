@@ -14167,9 +14167,6 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
     bool parsed_forwarding_arguments = false;
 
     while (!match1(parser, PM_TOKEN_EOF)) {
-        if (parsed_block_argument) {
-            pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
-        }
         if (parsed_forwarding_arguments) {
             pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES);
         }
@@ -14216,6 +14213,10 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     parse_arguments_append(parser, arguments, argument);
                 } else {
                     arguments->block = argument;
+                }
+
+                if (parser->current.type == PM_TOKEN_COMMA) {
+                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
                 }
 
                 parsed_block_argument = true;
