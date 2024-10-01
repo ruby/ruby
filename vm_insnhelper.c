@@ -2388,7 +2388,11 @@ opt_equality_specialized(VALUE recv, VALUE obj)
         goto compare_by_identity;
     }
     else if (SPECIAL_CONST_P(recv)) {
-        //
+        if (FIXNUM_P(recv) && EQ_UNREDEFINED_P(INTEGER)) {
+            if (STATIC_SYM_P(obj) && EQ_UNREDEFINED_P(SYMBOL)) return Qfalse;
+            if (RB_TYPE_P(obj, T_STRING) && EQ_UNREDEFINED_P(STRING)) return Qfalse;
+        }
+        return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat && RB_FLOAT_TYPE_P(obj) && EQ_UNREDEFINED_P(FLOAT)) {
         double a = RFLOAT_VALUE(recv);
