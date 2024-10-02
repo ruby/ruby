@@ -554,7 +554,7 @@ module Bundler
 
     def dependencies_with_bundler
       return dependencies unless @unlocking_bundler
-      return dependencies if dependencies.map(&:name).include?("bundler")
+      return dependencies if dependencies.any? {|d| d.name == "bundler" }
 
       [Dependency.new("bundler", @unlocking_bundler)] + dependencies
     end

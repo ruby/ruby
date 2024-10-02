@@ -616,10 +616,6 @@ RSpec.describe "bundle exec" do
   end
 
   it "loads the correct optparse when `auto_install` is set, and optparse is a dependency" do
-    if Gem.rubygems_version < Gem::Version.new("3.3.0.a")
-      skip "optparse is a default gem, and rubygems loads it during install"
-    end
-
     build_repo4 do
       build_gem "fastlane", "2.192.0" do |s|
         s.executables = "fastlane"

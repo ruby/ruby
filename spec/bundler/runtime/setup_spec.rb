@@ -1399,8 +1399,6 @@ end
       let(:exemptions) do
         exempts = %w[did_you_mean bundler uri pathname]
         exempts << "etc" if (Gem.ruby_version < Gem::Version.new("3.2") || Gem.ruby_version >= Gem::Version.new("3.3.2")) && Gem.win_platform?
-        exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
-        exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
         exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem

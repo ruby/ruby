@@ -10,11 +10,9 @@ RSpec.describe "bundle install from an existing gemspec" do
 
   let(:x64_mingw_archs) do
     if RUBY_PLATFORM == "x64-mingw-ucrt"
-      if Gem.rubygems_version >= Gem::Version.new("3.2.28")
-        ["x64-mingw-ucrt", "x64-mingw32"]
-      else
-        ["x64-mingw32", "x64-unknown"]
-      end
+
+      ["x64-mingw-ucrt", "x64-mingw32"]
+
     else
       ["x64-mingw32"]
     end

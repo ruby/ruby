@@ -141,16 +141,13 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with default gems and a lockfile", :ruby_repo do
     before do
-      skip "Does not work on old Windows Rubies" if Gem.ruby_version < Gem::Version.new("3.2") && Gem.win_platform?
-
       necessary_system_gems = ["tsort --version 0.1.0"]
-      necessary_system_gems += ["etc --version 1.4.3"] if Gem.ruby_version >= Gem::Version.new("3.3.2") && Gem.win_platform?
+      necessary_system_gems += ["etc --version 1.4.3"]
       realworld_system_gems(*necessary_system_gems)
     end
 
     it "works and points to the vendored copies, not to the default copies" do
       necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3", "stringio --version 3.1.0"]
-      necessary_gems_in_bundle_path += ["shellwords --version 0.2.0", "base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
       necessary_gems_in_bundle_path += ["yaml --version 0.1.1"] if Gem.rubygems_version < Gem::Version.new("3.4.a")
       realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
 
@@ -188,7 +185,6 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "works for gems with extensions and points to the vendored copies, not to the default copies" do
       necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3", "stringio --version 3.1.0", "shellwords --version 0.2.0", "open3 --version 0.2.1"]
-      necessary_gems_in_bundle_path += ["base64 --version 0.1.0", "resolv --version 0.2.1"] if Gem.rubygems_version < Gem::Version.new("3.3.a")
       necessary_gems_in_bundle_path += ["yaml --version 0.1.1"] if Gem.rubygems_version < Gem::Version.new("3.4.a")
       realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
 
