@@ -354,10 +354,6 @@ void rb_vm_update_references(void *ptr);
 int ruby_gc_debug_indent = 0;
 #endif
 
-#ifndef RGENGC_CHECK_MODE
-# define RGENGC_CHECK_MODE  0
-#endif
-
 #ifndef RGENGC_OBJ_INFO
 # define RGENGC_OBJ_INFO RGENGC_CHECK_MODE
 #endif

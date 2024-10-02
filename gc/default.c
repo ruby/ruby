@@ -236,18 +236,6 @@ static ruby_gc_params_t gc_params = {
 #endif
 int ruby_rgengc_debug;
 
-/* RGENGC_CHECK_MODE
- * 0: disable all assertions
- * 1: enable assertions (to debug RGenGC)
- * 2: enable internal consistency check at each GC (for debugging)
- * 3: enable internal consistency check at each GC steps (for debugging)
- * 4: enable liveness check
- * 5: show all references
- */
-#ifndef RGENGC_CHECK_MODE
-# define RGENGC_CHECK_MODE  0
-#endif
-
 /* RGENGC_PROFILE
  * 0: disable RGenGC profiling
  * 1: enable profiling for basic information
