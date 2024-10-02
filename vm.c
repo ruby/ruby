@@ -4456,14 +4456,6 @@ rb_ruby_verbose_ptr(void)
     return &cr->verbose;
 }
 
-static bool prism = (RB_DEFAULT_PARSER == 1);
-
-bool *
-rb_ruby_prism_ptr(void)
-{
-    return &prism;
-}
-
 VALUE *
 rb_ruby_debug_ptr(void)
 {

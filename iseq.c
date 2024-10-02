@@ -1564,7 +1564,7 @@ iseqw_s_compile_parser(int argc, VALUE *argv, VALUE self, bool prism)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    return iseqw_s_compile_parser(argc, argv, self, *rb_ruby_prism_ptr());
+    return iseqw_s_compile_parser(argc, argv, self, rb_ruby_prism_p());
 }
 
 /*
