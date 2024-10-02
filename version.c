@@ -153,20 +153,14 @@ define_ruby_description(const char *const jit_opt)
         + rb_strlen_lit(" +PRISM")
     ];
 
-    const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
-    const char *const parser_opt = (*rb_ruby_prism_ptr()) ? " +PRISM" : "";
-
-    int n = snprintf(desc, sizeof(desc),
-                     "%.*s"
-                     "%s" // jit_opt
-                     "%s" // threads_opts
-                     "%s" // parser_opt
-                     "%s",
-                     ruby_description_opt_point, ruby_description,
-                     jit_opt,
-                     threads_opt,
-                     parser_opt,
-                     ruby_description + ruby_description_opt_point);
+    int n = ruby_description_opt_point;
+    memcpy(desc, ruby_description, n);
+# define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n), assert(n < sizeof(desc)))
+    if (*jit_opt) append(jit_opt);
+    if (ruby_mn_threads_enabled) append(" +MN");
+    if (*rb_ruby_prism_ptr()) append(" +PRISM");
+    append(ruby_description + ruby_description_opt_point);
+# undef append
 
     VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));
     rb_dynamic_description = desc;
