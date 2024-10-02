@@ -1665,57 +1665,29 @@ class Reline::LineEditor
   end
 
   private def incremental_search_history(key)
-    unless @history_pointer
-      @line_backup_in_history = whole_buffer
-    end
+    backup = @buffer_of_lines.dup, @line_index, @byte_pointer, @history_pointer, @line_backup_in_history
     searcher = generate_searcher(key)
     @searching_prompt = "(reverse-i-search)`': "
     termination_keys = ["\C-j".ord]
-    termination_keys.concat(@config.isearch_terminators&.chars&.map(&:ord)) if @config.isearch_terminators
+    termination_keys.concat(@config.isearch_terminators.chars.map(&:ord)) if @config.isearch_terminators
     @waiting_proc = ->(k) {
-      case k
-      when *termination_keys
-        if @history_pointer
-          buffer = Reline::HISTORY[@history_pointer]
-        else
-          buffer = @line_backup_in_history
-        end
-        @buffer_of_lines = buffer.split("\n")
-        @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
-        @line_index = @buffer_of_lines.size - 1
+      chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
+      if k == "\C-g".ord
+        # cancel search and restore buffer
+        @buffer_of_lines, @line_index, @byte_pointer, @history_pointer, @line_backup_in_history = backup
         @searching_prompt = nil
         @waiting_proc = nil
-        @byte_pointer = 0
-      when "\C-g".ord
-        @buffer_of_lines = @line_backup_in_history.split("\n")
-        @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
-        @line_index = @buffer_of_lines.size - 1
-        move_history(nil, line: :end, cursor: :end, save_buffer: false)
-        @searching_prompt = nil
-        @waiting_proc = nil
-        @byte_pointer = 0
+      elsif !termination_keys.include?(k) && (chr.match?(/[[:print:]]/) || k == "\C-h".ord || k == "\C-?".ord || k == "\C-r".ord || k == "\C-s".ord)
+        search_word, prompt_name, hit_pointer = searcher.call(k)
+        Reline.last_incremental_search = search_word
+        @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
+        @searching_prompt += ': ' unless @is_multiline
+        move_history(hit_pointer, line: :end, cursor: :end) if hit_pointer
       else
-        chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
-        if chr.match?(/[[:print:]]/) or k == "\C-h".ord or k == "\C-?".ord or k == "\C-r".ord or k == "\C-s".ord
-          search_word, prompt_name, hit_pointer = searcher.call(k)
-          Reline.last_incremental_search = search_word
-          @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
-          @searching_prompt += ': ' unless @is_multiline
-          move_history(hit_pointer, line: :end, cursor: :end, save_buffer: false) if hit_pointer
-        else
-          if @history_pointer
-            line = Reline::HISTORY[@history_pointer]
-          else
-            line = @line_backup_in_history
-          end
-          @line_backup_in_history = whole_buffer
-          @buffer_of_lines = line.split("\n")
-          @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
-          @line_index = @buffer_of_lines.size - 1
-          @searching_prompt = nil
-          @waiting_proc = nil
-          @byte_pointer = 0
-        end
+        # terminaton_keys and other keys will terminalte
+        move_history(@history_pointer, line: :end, cursor: :start)
+        @searching_prompt = nil
+        @waiting_proc = nil
       end
     }
   end
@@ -1770,14 +1742,14 @@ class Reline::LineEditor
   end
   alias_method :history_search_forward, :ed_search_next_history
 
-  private def move_history(history_pointer, line:, cursor:, save_buffer: true)
+  private def move_history(history_pointer, line:, cursor:)
     history_pointer ||= Reline::HISTORY.size
     return if history_pointer < 0 || history_pointer > Reline::HISTORY.size
     old_history_pointer = @history_pointer || Reline::HISTORY.size
     if old_history_pointer == Reline::HISTORY.size
-      @line_backup_in_history = save_buffer ? whole_buffer : ''
+      @line_backup_in_history = whole_buffer
     else
-      Reline::HISTORY[old_history_pointer] = whole_buffer if save_buffer
+      Reline::HISTORY[old_history_pointer] = whole_buffer
     end
     if history_pointer == Reline::HISTORY.size
       buf = @line_backup_in_history

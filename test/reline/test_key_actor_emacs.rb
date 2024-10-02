@@ -1328,6 +1328,29 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_line_around_cursor('abd', 'c')
   end
 
+  def test_incremental_search_history_saves_and_restores_last_input
+    Reline::HISTORY.concat(['abc', '123'])
+    input_keys("abcd")
+    # \C-j: terminate incremental search
+    input_keys("\C-r12\C-j")
+    assert_line_around_cursor('', '123')
+    input_key_by_symbol(:ed_next_history)
+    assert_line_around_cursor('abcd', '')
+    # Most non-printable keys also terminates incremental search
+    input_keys("\C-r12\C-i")
+    assert_line_around_cursor('', '123')
+    input_key_by_symbol(:ed_next_history)
+    assert_line_around_cursor('abcd', '')
+    # \C-g: cancel incremental search and restore input, cursor position and history index
+    input_key_by_symbol(:ed_prev_history)
+    input_keys("\C-b\C-b")
+    assert_line_around_cursor('1', '23')
+    input_keys("\C-rab\C-g")
+    assert_line_around_cursor('1', '23')
+    input_key_by_symbol(:ed_next_history)
+    assert_line_around_cursor('abcd', '')
+  end
+
   # Unicode emoji test
   def test_ed_insert_for_include_zwj_emoji
     omit "This test is for UTF-8 but the locale is #{Reline.core.encoding}" if Reline.core.encoding != Encoding::UTF_8
