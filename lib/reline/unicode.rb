@@ -54,6 +54,22 @@ class Reline::Unicode
     }.join
   end
 
+  def self.safe_encode(str, encoding)
+    # Reline only supports utf-8 convertible string.
+    converted = str.encode(encoding, invalid: :replace, undef: :replace)
+    return converted if str.encoding == Encoding::UTF_8 || converted.encoding == Encoding::UTF_8 || converted.ascii_only?
+
+    # This code is essentially doing the same thing as
+    # `str.encode(utf8, **replace_options).encode(encoding, **replace_options)`
+    # but also avoids unneccesary irreversible encoding conversion.
+    converted.gsub(/\X/) do |c|
+      c.encode(Encoding::UTF_8)
+      c
+    rescue Encoding::UndefinedConversionError
+      '?'
+    end
+  end
+
   require 'reline/unicode/east_asian_width'
 
   def self.get_mbchar_width(mbchar)

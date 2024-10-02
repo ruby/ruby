@@ -2925,6 +2925,11 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                 | tCONSTANT
                 ;
 
+%rule %inline user_or_keyword_variable
+                : user_variable
+                | keyword_variable
+                ;
+
 /*
  *	parameterizing rules
  */
@@ -3657,12 +3662,7 @@ mlhs_post	: mlhs_item
                     }
                 ;
 
-mlhs_node	: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+mlhs_node	: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
@@ -3707,12 +3707,7 @@ mlhs_node	: user_variable
                     }
                 ;
 
-lhs		: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+lhs		: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
@@ -5202,7 +5197,6 @@ lambda		: tLAMBDA[lpar]
                     {
                         token_info_push(p, "->", &@1);
                         $$ = dyna_push(p);
-                        p->lex.lpar_beg = p->lex.paren_nest;
                     }[dyna]<vars>
                   max_numparam numparam it_id allow_exits
                   f_larglist[args]
@@ -5235,7 +5229,7 @@ lambda		: tLAMBDA[lpar]
 f_larglist	: '(' f_args opt_bv_decl ')'
                     {
                         p->ctxt.in_argdef = 0;
-                        $$ = $2;
+                        $$ = $f_args;
                         p->max_numparam = ORDINAL_PARAM;
                     /*% ripper: paren!($:2) %*/
                     }
@@ -5244,7 +5238,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
                         p->ctxt.in_argdef = 0;
                         if (!args_info_empty_p(&$1->nd_ainfo))
                             p->max_numparam = ORDINAL_PARAM;
-                        $$ = $1;
+                        $$ = $f_args;
                     }
                 ;
 
@@ -6337,12 +6331,7 @@ var_ref		: user_variable
                     }
                 ;
 
-var_lhs		: user_variable
-                    {
-                    /*% ripper: var_field!($:1) %*/
-                        $$ = assignable(p, $1, 0, &@$);
-                    }
-                | keyword_variable
+var_lhs		: user_or_keyword_variable
                     {
                     /*% ripper: var_field!($:1) %*/
                         $$ = assignable(p, $1, 0, &@$);
@@ -6430,8 +6419,16 @@ args_tail	: f_kwarg(f_kw) ',' f_kwrest opt_f_block_arg
                     }
                 | args_forward
                     {
-                        add_forwarding_args(p);
-                        $$ = new_args_tail(p, 0, $1, arg_FWD_BLOCK, &@1);
+                        ID fwd = $args_forward;
+                        if (lambda_beginning_p() ||
+                            (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest)) {
+                            yyerror0("unexpected ... in lambda argument");
+                            fwd = 0;
+                        }
+                        else {
+                            add_forwarding_args(p);
+                        }
+                        $$ = new_args_tail(p, 0, fwd, arg_FWD_BLOCK, &@1);
                         $$->nd_ainfo.forwarding = 1;
                     /*% ripper: [Qnil, $:1, Qnil] %*/
                     }
@@ -11049,6 +11046,7 @@ parser_yylex(struct parser_params *p)
         if (c == '>') {
             SET_LEX_STATE(EXPR_ENDFN);
             yylval.num = p->lex.lpar_beg;
+            p->lex.lpar_beg = p->lex.paren_nest;
             return tLAMBDA;
         }
         if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous(p, '-'))) {
@@ -11068,16 +11066,12 @@ parser_yylex(struct parser_params *p)
         SET_LEX_STATE(EXPR_BEG);
         if ((c = nextc(p)) == '.') {
             if ((c = nextc(p)) == '.') {
-                if (p->ctxt.in_argdef) {
+                if (p->ctxt.in_argdef || IS_LABEL_POSSIBLE() || lambda_beginning_p()) {
                     SET_LEX_STATE(EXPR_ENDARG);
                     return tBDOT3;
                 }
                 if (p->lex.paren_nest == 0 && looking_at_eol_p(p)) {
                     rb_warn0("... at EOL, should be parenthesized?");
-                }
-                else if (p->lex.lpar_beg >= 0 && p->lex.lpar_beg+1 == p->lex.paren_nest) {
-                    if (IS_lex_state_for(last_state, EXPR_LABEL))
-                        return tDOT3;
                 }
                 return is_beg ? tBDOT3 : tDOT3;
             }

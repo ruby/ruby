@@ -14271,9 +14271,6 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                     pm_static_literals_free(&hash_keys);
                     parsed_bare_hash = true;
-                } else if (accept1(parser, PM_TOKEN_KEYWORD_IN)) {
-                    // TODO: Could we solve this with binding powers instead?
-                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_IN);
                 }
 
                 parse_arguments_append(parser, arguments, argument);
@@ -14786,7 +14783,7 @@ parse_parameters(
             }
             default:
                 if (parser->previous.type == PM_TOKEN_COMMA) {
-                    if (allows_trailing_comma) {
+                    if (allows_trailing_comma && order >= PM_PARAMETERS_ORDER_NAMED) {
                         // If we get here, then we have a trailing comma in a
                         // block parameter list.
                         pm_node_t *param = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
@@ -16545,6 +16542,8 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
 
             pm_string_shared_init(&symbol->unescaped, content.start, content.end);
             node = (pm_node_t *) symbol;
+
+            if (!label_allowed) pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_LABEL);
         } else if (!lex_interpolation) {
             // If we don't accept interpolation then we expect the string to
             // start with a single string content node.
@@ -17275,6 +17274,9 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
         case PM_CASE_PRIMITIVE: {
             pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_MAX, false, true, diag_id, (uint16_t) (depth + 1));
 
+            // If we found a label, we need to immediately return to the caller.
+            if (pm_symbol_node_label_p(node)) return node;
+
             // Now that we have a primitive, we need to check if it's part of a range.
             if (accept2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
                 pm_token_t operator = parser->previous;
@@ -17392,10 +17394,10 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
  * assignment.
  */
 static pm_node_t *
-parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_diagnostic_id_t diag_id, uint16_t depth) {
-    pm_node_t *node = NULL;
+parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, pm_diagnostic_id_t diag_id, uint16_t depth) {
+    pm_node_t *node = first_node;
 
-    do {
+    while ((node == NULL) || accept1(parser, PM_TOKEN_PIPE)) {
         pm_token_t operator = parser->previous;
 
         switch (parser->current.type) {
@@ -17448,7 +17450,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
                 break;
             }
         }
-    } while (accept1(parser, PM_TOKEN_PIPE));
+    }
 
     // If we have an =>, then we are assigning this pattern to a variable.
     // In this case we should create an assignment node.
@@ -17509,6 +17511,24 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
 
             return node;
         }
+        case PM_TOKEN_STRING_BEGIN: {
+            // We need special handling for string beginnings because they could
+            // be dynamic symbols leading to hash patterns.
+            node = parse_pattern_primitive(parser, captures, diag_id, (uint16_t) (depth + 1));
+
+            if (pm_symbol_node_label_p(node)) {
+                node = (pm_node_t *) parse_pattern_hash(parser, captures, node, (uint16_t) (depth + 1));
+
+                if (!(flags & PM_PARSE_PATTERN_TOP)) {
+                    pm_parser_err_node(parser, node, PM_ERR_PATTERN_HASH_IMPLICIT);
+                }
+
+                return node;
+            }
+
+            node = parse_pattern_primitives(parser, captures, node, diag_id, (uint16_t) (depth + 1));
+            break;
+        }
         case PM_TOKEN_USTAR: {
             if (flags & (PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI)) {
                 parser_lex(parser);
@@ -17519,7 +17539,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         }
         /* fallthrough */
         default:
-            node = parse_pattern_primitives(parser, captures, diag_id, (uint16_t) (depth + 1));
+            node = parse_pattern_primitives(parser, captures, NULL, diag_id, (uint16_t) (depth + 1));
             break;
     }
 
@@ -17557,7 +17577,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
 
                 trailing_rest = true;
             } else {
-                node = parse_pattern_primitives(parser, captures, PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
+                node = parse_pattern_primitives(parser, captures, NULL, PM_ERR_PATTERN_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
             }
 
             pm_node_list_append(&nodes, node);
@@ -21574,6 +21594,19 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 #undef PM_PARSE_PATTERN_MULTI
 
 /**
+ * Determine if a given call node looks like a "command", which means it has
+ * arguments but does not have parentheses.
+ */
+static inline bool
+pm_call_node_command_p(const pm_call_node_t *node) {
+    return (
+        (node->opening_loc.start == NULL) &&
+        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE)) &&
+        (node->arguments != NULL || node->block != NULL)
+    );
+}
+
+/**
  * Parse an expression at the given point of the parser using the given binding
  * power to parse subsequent chains. If this function finds a syntax error, it
  * will append the error message to the parser's error list.
@@ -21607,6 +21640,23 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
                 return node;
             }
             break;
+        case PM_CALL_NODE:
+            // If we have a call node, then we need to check if it looks like a
+            // method call without parentheses that contains arguments. If it
+            // does, then it has different rules for parsing infix operators,
+            // namely that it only accepts composition (and/or) and modifiers
+            // (if/unless/etc.).
+            if ((pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_COMPOSITION) && pm_call_node_command_p((pm_call_node_t *) node)) {
+                return node;
+            }
+            break;
+        case PM_SYMBOL_NODE:
+            // If we have a symbol node that is being parsed as a label, then we
+            // need to immediately return, because there should never be an
+            // infix operator following this node.
+            if (pm_symbol_node_label_p(node)) {
+                return node;
+            }
         default:
             break;
     }
@@ -21622,6 +21672,13 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
         switch (PM_NODE_TYPE(node)) {
+            case PM_MULTI_WRITE_NODE:
+                // Multi-write nodes are statements, and cannot be followed by
+                // operators except modifiers.
+                if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
+                    return node;
+                }
+                break;
             case PM_CLASS_VARIABLE_WRITE_NODE:
             case PM_CONSTANT_PATH_WRITE_NODE:
             case PM_CONSTANT_WRITE_NODE:
@@ -21657,7 +21714,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             //     1.. * 2
             //
             if (PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL) {
-                if (match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT)) {
+                if (match4(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT, PM_TOKEN_AMPERSAND_DOT)) {
                     PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(parser->previous.type));
                     break;
                 }

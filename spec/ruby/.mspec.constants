@@ -146,6 +146,7 @@ Prime
 Private
 ProcFromMethod
 Psych
+RactorLocalSingleton
 REXML
 RUBY_SIGNALS
 RbReadline

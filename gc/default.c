@@ -940,16 +940,6 @@ heap_eden_total_pages(rb_objspace_t *objspace)
 }
 
 static inline size_t
-heap_eden_total_slots(rb_objspace_t *objspace)
-{
-    size_t count = 0;
-    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
-        count += SIZE_POOL_EDEN_HEAP(&size_pools[i])->total_slots;
-    }
-    return count;
-}
-
-static inline size_t
 total_allocated_objects(rb_objspace_t *objspace)
 {
     size_t count = 0;
@@ -5461,7 +5451,7 @@ gc_marks_finish(rb_objspace_t *objspace)
     {
         const unsigned long r_mul = objspace->live_ractor_cache_count > 8 ? 8 : objspace->live_ractor_cache_count; // upto 8
 
-        size_t total_slots = heap_eden_total_slots(objspace);
+        size_t total_slots = objspace_available_slots(objspace);
         size_t sweep_slots = total_slots - objspace->marked_slots; /* will be swept slots */
         size_t max_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_max_ratio);
         size_t min_free_slots = (size_t)(total_slots * gc_params.heap_free_slots_min_ratio);
@@ -5471,7 +5461,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 
         int full_marking = is_full_marking(objspace);
 
-        GC_ASSERT(heap_eden_total_slots(objspace) >= objspace->marked_slots);
+        GC_ASSERT(objspace_available_slots(objspace) >= objspace->marked_slots);
 
         /* Setup freeable slots. */
         size_t total_init_slots = 0;
@@ -5525,7 +5515,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         gc_report(1, objspace, "gc_marks_finish (marks %"PRIdSIZE" objects, "
                   "old %"PRIdSIZE" objects, total %"PRIdSIZE" slots, "
                   "sweep %"PRIdSIZE" slots, allocatable %"PRIdSIZE" slots, next GC: %s)\n",
-                  objspace->marked_slots, objspace->rgengc.old_objects, heap_eden_total_slots(objspace), sweep_slots, objspace->heap_pages.allocatable_slots,
+                  objspace->marked_slots, objspace->rgengc.old_objects, objspace_available_slots(objspace), sweep_slots, objspace->heap_pages.allocatable_slots,
                   gc_needs_major_flags ? "major" : "minor");
     }
 
@@ -6861,7 +6851,7 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    size_t orig_total_slots = heap_eden_total_slots(objspace);
+    size_t orig_total_slots = objspace_available_slots(objspace);
     size_t orig_allocatable_slots = objspace->heap_pages.allocatable_slots;
 
     rb_gc_impl_each_objects(objspace, gc_set_candidate_object_i, objspace_ptr);
@@ -6877,7 +6867,7 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
     GC_ASSERT(objspace->empty_pages_count == 0);
     objspace->heap_pages.allocatable_slots = orig_allocatable_slots;
 
-    size_t total_slots = heap_eden_total_slots(objspace);
+    size_t total_slots = objspace_available_slots(objspace);
     if (orig_total_slots > total_slots) {
         objspace->heap_pages.allocatable_slots += orig_total_slots - total_slots;
     }

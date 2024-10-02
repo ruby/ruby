@@ -1325,7 +1325,7 @@ class Reline::LineEditor
     save_old_buffer
     pre = @buffer_of_lines[@line_index].byteslice(0, @byte_pointer)
     post = @buffer_of_lines[@line_index].byteslice(@byte_pointer..)
-    lines = (pre + text.gsub(/\r\n?/, "\n") + post).split("\n", -1)
+    lines = (pre + Reline::Unicode.safe_encode(text, @encoding).gsub(/\r\n?/, "\n") + post).split("\n", -1)
     lines << '' if lines.empty?
     @buffer_of_lines[@line_index, 1] = lines
     @line_index += lines.size - 1
