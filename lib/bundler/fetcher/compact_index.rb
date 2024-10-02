@@ -10,7 +10,7 @@ module Bundler
         method = instance_method(method_name)
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
-          method.bind(self).call(*args, &blk)
+          method.bind_call(self, *args, &blk)
         rescue NetworkDownError, CompactIndexClient::Updater::MismatchedChecksumError => e
           raise HTTPError, e.message
         rescue AuthenticationRequiredError, BadAuthenticationError

@@ -266,11 +266,7 @@ module Bundler
       groups.map!(&:to_sym)
       deps = current_dependencies # always returns a new array
       deps.select! do |d|
-        if RUBY_VERSION >= "3.1"
-          d.groups.intersect?(groups)
-        else
-          !(d.groups & groups).empty?
-        end
+        d.groups.intersect?(groups)
       end
       deps
     end
