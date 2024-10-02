@@ -3,6 +3,7 @@ use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
 
+use std::fmt::{Display, Formatter};
 use std::os::raw::c_long;
 
 #[derive(Copy, Clone)]
@@ -12,6 +13,12 @@ pub struct CompilationLogEntry {
 
     /// The time when the block was compiled.
     pub timestamp: f64,
+}
+
+impl Display for CompilationLogEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:15.6}: {}", self.timestamp, self.block_id.iseq_name())
+    }
 }
 
 pub type CompilationLog = CircularBuffer<CompilationLogEntry, 1024>;
@@ -41,10 +48,29 @@ impl CompilationLog {
             return;
         }
 
-        Self::get_instance().push(CompilationLogEntry {
-            block_id: block_id,
-            timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64()
-        });
+        let print_compilation_log = get_option!(print_compilation_log);
+        let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64();
+
+        let entry = CompilationLogEntry {
+            block_id,
+            timestamp
+        };
+
+        match print_compilation_log {
+            Some(CompilationLogOutput::File(fd)) => {
+                use std::os::unix::io::{FromRawFd, IntoRawFd};
+                use std::io::Write;
+
+                // Write with the fd opened during boot
+                let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
+                writeln!(file, "{}", entry).unwrap();
+                file.flush().unwrap();
+                file.into_raw_fd(); // keep the fd open
+            },
+            _ => {
+                Self::get_instance().push(entry);
+            }
+        }
     }
 
     pub fn clear() {
@@ -152,7 +178,7 @@ pub extern "C" fn rb_yjit_compilation_log_enabled_p(_ec: EcPtr, _ruby_self: VALU
 /// Check if the compilation log should print at exit
 #[no_mangle]
 pub extern "C" fn rb_yjit_print_compilation_log_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if yjit_enabled_p() && get_option!(print_compilation_log) {
+    if yjit_enabled_p() && get_option!(print_compilation_log) == Some(CompilationLogOutput::Stderr) {
         return Qtrue;
     } else {
         return Qfalse;
@@ -167,7 +193,7 @@ pub extern "C" fn rb_yjit_get_compilation_log(_ec: EcPtr, _ruby_self: VALUE) -> 
 }
 
 fn rb_yjit_get_compilation_log_array() -> VALUE {
-    if !yjit_enabled_p() {
+    if !yjit_enabled_p() || !get_option!(gen_compilation_log) {
         return Qnil;
     }
 
@@ -177,7 +203,7 @@ fn rb_yjit_get_compilation_log_array() -> VALUE {
     for entry in log.iter() {
         unsafe {
             let entry_array = rb_ary_new_capa(2);
-            rb_ary_push(entry_array, entry.block_id.iseq_name());
+            rb_ary_push(entry_array, entry.block_id.iseq_name().into());
             rb_ary_push(entry_array, rb_float_new(entry.timestamp));
             rb_ary_push(array, entry_array);
         }

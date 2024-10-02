@@ -181,7 +181,13 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
         if gen_compilation_log.test() {
             unsafe {
                 OPTIONS.gen_compilation_log = gen_compilation_log.test();
-                OPTIONS.print_compilation_log = print_compilation_log.test();
+
+                if print_compilation_log.test() {
+                    OPTIONS.print_compilation_log = Some(CompilationLogOutput::Stderr);
+                } else {
+                    OPTIONS.print_compilation_log = None;
+                }
+
                 CompilationLog::init();
             }
         }
