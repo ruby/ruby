@@ -5632,7 +5632,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *
  *    [0, 0, 1, 1, 2, 3].intersection([0, 1, 2], [0, 1, 3]) # => [0, 1]
  *
- *   Each element must correctly implement method <tt>#hash</tt>.
+ *  Each element must correctly implement method <tt>#hash</tt>.
  *
  *  Order from +self+ is preserved:
  *
