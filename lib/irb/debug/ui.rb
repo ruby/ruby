@@ -56,7 +56,7 @@ module IRB
       def readline _
         setup_interrupt do
           tc = DEBUGGER__::SESSION.instance_variable_get(:@tc)
-          cmd = @irb.debug_readline(tc.current_frame.binding || TOPLEVEL_BINDING)
+          cmd = @irb.debug_readline(tc.current_frame.eval_binding || TOPLEVEL_BINDING)
 
           case cmd
           when nil # when user types C-d
