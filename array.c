@@ -4489,10 +4489,10 @@ take_items(VALUE obj, long n)
  *
  *  If an argument is not an array, it extracts the values by calling #each:
  *
- *  a = [:a0, :a1, :a2, :a2]
- *  b = 1..4
- *  c = a.zip(b)
- *  c # => [[:a0, 1], [:a1, 2], [:a2, 3], [:a2, 4]]
+ *    a = [:a0, :a1, :a2, :a2]
+ *    b = 1..4
+ *    c = a.zip(b)
+ *    c # => [[:a0, 1], [:a1, 2], [:a2, 3], [:a2, 4]]
  *
  *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns +nil+:
  *
