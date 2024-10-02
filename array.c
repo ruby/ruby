@@ -5925,7 +5925,7 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *
  *  Does not modify +self+.
  *
- *  With no block given, each element in +self+ must respond to method <tt><=></tt>
+ *  With no block given, each element in +self+ must respond to method <tt>#<=></tt>
  *  with a numeric.
  *
  *  With no argument and no block, returns the element in +self+
