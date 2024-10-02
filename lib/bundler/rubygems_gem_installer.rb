@@ -145,7 +145,6 @@ module Bundler
       SharedHelpers.filesystem_access(extension_dir, :create) do
         FileUtils.mkdir_p extension_dir
       end
-      require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
     end
 
     def strict_rm_rf(dir)

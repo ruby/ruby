@@ -106,7 +106,6 @@ module Bundler
 
     def autoswitching_applies?
       ENV["BUNDLER_VERSION"].nil? &&
-        Bundler.rubygems.supports_bundler_trampolining? &&
         ruby_can_restart_with_same_arguments? &&
         SharedHelpers.in_bundle? &&
         lockfile_version

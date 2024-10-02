@@ -20,10 +20,6 @@ module Bundler
       Gem::Requirement.new(req_str).satisfied_by?(version)
     end
 
-    def supports_bundler_trampolining?
-      provides?(">= 3.3.0.a")
-    end
-
     def build_args
       require "rubygems/command"
       Gem::Command.build_args
@@ -356,11 +352,7 @@ module Bundler
       @replaced_methods.each do |(sym, klass), method|
         redefine_method(klass, sym, method)
       end
-      if Binding.public_method_defined?(:source_location)
-        post_reset_hooks.reject! {|proc| proc.binding.source_location[0] == __FILE__ }
-      else
-        post_reset_hooks.reject! {|proc| proc.binding.eval("__FILE__") == __FILE__ }
-      end
+      post_reset_hooks.reject! {|proc| proc.binding.source_location[0] == __FILE__ }
       @replaced_methods.clear
     end
 
