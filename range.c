@@ -2621,7 +2621,7 @@ range_overlap(VALUE range, VALUE other)
  * == Ranges and User-Defined Classes
  *
  * A user-defined class that is to be used in a range
- * must implement instance <tt>#<=></tt>;
+ * must implement instance method <tt>#<=></tt>;
  * see Integer#<=>.
  * To make iteration available, it must also implement
  * instance method +succ+; see Integer#succ.
