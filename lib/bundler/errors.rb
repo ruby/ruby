@@ -246,4 +246,14 @@ module Bundler
   end
 
   class InvalidArgumentError < BundlerError; status_code(40); end
+
+  class IncorrectLockfileDependencies < BundlerError
+    attr_reader :spec
+
+    def initialize(spec)
+      @spec = spec
+    end
+
+    status_code(41)
+  end
 end

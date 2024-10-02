@@ -587,7 +587,13 @@ module Bundler
     end
 
     def materialize(dependencies)
-      specs = resolve.materialize(dependencies)
+      specs = begin
+        resolve.materialize(dependencies)
+      rescue IncorrectLockfileDependencies => e
+        reresolve_without([e.spec])
+        retry
+      end
+
       missing_specs = specs.missing_specs
 
       if missing_specs.any?
@@ -613,8 +619,7 @@ module Bundler
 
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
         sources.remote!
-        resolution_packages.delete(incomplete_specs)
-        @resolve = start_resolution
+        reresolve_without(incomplete_specs)
         specs = resolve.materialize(dependencies)
 
         still_incomplete_specs = specs.incomplete_specs
@@ -631,6 +636,11 @@ module Bundler
       specs["bundler"] = bundler
 
       specs
+    end
+
+    def reresolve_without(incomplete_specs)
+      resolution_packages.delete(incomplete_specs)
+      @resolve = start_resolution
     end
 
     def start_resolution
