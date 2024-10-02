@@ -3404,7 +3404,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *
  *  Returns +self+ with its elements sorted in place.
  *
- *  With no block, compares elements using operator <tt><=></tt>
+ *  With no block, compares elements using operator <tt>#<=></tt>
  *  (see Comparable):
  *
  *    a = 'abcde'.split('').shuffle
@@ -3507,7 +3507,7 @@ rb_ary_sort_bang(VALUE ary)
  *
  *  Returns a new +Array+ whose elements are those from +self+, sorted.
  *
- *  With no block, compares elements using operator <tt><=></tt>
+ *  With no block, compares elements using operator <tt>#<=></tt>
  *  (see Comparable):
  *
  *    a = 'abcde'.split('').shuffle
@@ -5932,13 +5932,13 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  with a numeric.
  *
  *  With no argument and no block, returns the element in +self+
- *  having the maximum value per method <tt><=></tt>:
+ *  having the maximum value per method <tt>#<=></tt>:
  *
  *    [1, 0, 3, 2].max # => 3
  *
  *  With non-negative numeric argument +n+ and no block,
  *  returns a new array with at most +n+ elements,
- *  in descending order, per method <tt><=></tt>:
+ *  in descending order, per method <tt>#<=></tt>:
  *
  *    [1, 0, 3, 2].max(3)   # => [3, 2, 1]
  *    [1, 0, 3, 2].max(3.0) # => [3, 2, 1]
@@ -6103,16 +6103,16 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  - The minimum-valued element from +self+.
  *  - A new +Array+ of minimum-valued elements selected from +self+.
  *
- *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  When no block is given, each element in +self+ must respond to method <tt>#<=></tt>
  *  with an Integer.
  *
  *  With no argument and no block, returns the element in +self+
- *  having the minimum value per method <tt><=></tt>:
+ *  having the minimum value per method <tt>#<=></tt>:
  *
  *    [0, 1, 2].min # => 0
  *
  *  With Integer argument +n+ and no block, returns a new +Array+ with at most +n+ elements,
- *  in ascending order per method <tt><=></tt>:
+ *  in ascending order per method <tt>#<=></tt>:
  *
  *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
  *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
@@ -6176,12 +6176,12 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *    array.minmax {|a, b| ... } -> [min_val, max_val]
  *
  *  Returns a new 2-element +Array+ containing the minimum and maximum values
- *  from +self+, either per method <tt><=></tt> or per a given block:.
+ *  from +self+, either per method <tt>#<=></tt> or per a given block:.
  *
- *  When no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  When no block is given, each element in +self+ must respond to method <tt>#<=></tt>
  *  with an Integer;
  *  returns a new 2-element +Array+ containing the minimum and maximum values
- *  from +self+, per method <tt><=></tt>:
+ *  from +self+, per method <tt>#<=></tt>:
  *
  *    [0, 1, 2].minmax # => [0, 2]
  *
@@ -8616,11 +8616,11 @@ rb_ary_deconstruct(VALUE ary)
  *  - #first: Returns one or more leading elements.
  *  - #last: Returns one or more trailing elements.
  *  - #max: Returns one or more maximum-valued elements,
- *    as determined by <tt><=></tt> or a given block.
+ *    as determined by <tt>#<=></tt> or a given block.
  *  - #min: Returns one or more minimum-valued elements,
- *    as determined by <tt><=></tt> or a given block.
+ *    as determined by <tt>#<=></tt> or a given block.
  *  - #minmax: Returns the minimum-valued and maximum-valued elements,
- *    as determined by <tt><=></tt> or a given block.
+ *    as determined by <tt>#<=></tt> or a given block.
  *  - #assoc: Returns the first element that is an array
  *    whose first element <tt>==</tt> a given object.
  *  - #rassoc: Returns the first element that is an array
@@ -8633,7 +8633,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #take: Returns leading elements as determined by a given index.
  *  - #drop_while: Returns trailing elements as determined by a given block.
  *  - #take_while: Returns leading elements as determined by a given block.
- *  - #sort: Returns all elements in an order determined by <tt><=></tt> or a given block.
+ *  - #sort: Returns all elements in an order determined by <tt>#<=></tt> or a given block.
  *  - #reverse: Returns all elements in reverse order.
  *  - #compact: Returns an array containing all non-+nil+ elements.
  *  - #select (aliased as #filter): Returns an array containing elements selected by a given block.
@@ -8663,7 +8663,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #rotate!: Replaces +self+ with its elements rotated.
  *  - #shuffle!: Replaces +self+ with its elements in random order.
  *  - #sort!: Replaces +self+ with its elements sorted,
- *    as determined by <tt><=></tt> or a given block.
+ *    as determined by <tt>#<=></tt> or a given block.
  *  - #sort_by!: Replaces +self+ with its elements sorted, as determined by a given block.
  *
  *  === Methods for Deleting

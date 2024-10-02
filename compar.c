@@ -293,7 +293,7 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *
  *  == What's Here
  *
- *  \Module \Comparable provides these methods, all of which use method <tt><=></tt>:
+ *  \Module \Comparable provides these methods, all of which use method <tt>#<=></tt>:
  *
  *  - #<: Returns whether +self+ is less than the given object.
  *  - #<=: Returns whether +self+ is less than or equal to the given object.
