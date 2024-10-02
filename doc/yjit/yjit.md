@@ -187,7 +187,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
   compiled, lower values mean less code is compiled (default 200K)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
-- `--yjit-compilation-log`: print a log of all compiled methods to the console.
+- `--yjit-compilation-log[=file|dir]`: log all compilation events to the specified file or directory. If no name is supplied, the last 1024 log entries will be printed to stderr when the application exits.
 - `--yjit-compilation-log=quiet`: gather a circular buffer of recent YJIT compilations. The compilation log entries are accessible through `RubyVM::YJIT.compilation_log` and old entries will be discarded if the buffer is not drained quickly. (incurs a run-time cost)
 - `--yjit-disable`: disable YJIT despite other `--yjit*` flags for lazily enabling it with `RubyVM::YJIT.enable`
 - `--yjit-code-gc`: enable code GC (disabled by default as of Ruby 3.3).

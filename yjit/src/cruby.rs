@@ -564,6 +564,18 @@ impl From<*const rb_callable_method_entry_t> for VALUE {
     }
 }
 
+impl From<&str> for VALUE {
+    fn from(value: &str) -> Self {
+        rust_str_to_ruby(value)
+    }
+}
+
+impl From<String> for VALUE {
+    fn from(value: String) -> Self {
+        rust_str_to_ruby(&value)
+    }
+}
+
 impl From<VALUE> for u64 {
     fn from(value: VALUE) -> Self {
         let VALUE(uimm) = value;
@@ -595,7 +607,6 @@ impl From<VALUE> for u16 {
 }
 
 /// Produce a Ruby string from a Rust string slice
-#[cfg(feature = "disasm")]
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }

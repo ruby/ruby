@@ -189,7 +189,11 @@ module RubyVM::YJIT
   # Return an array of compilation log entries.
   # Return `nil` when option is not passed or unavailable.
   def self.compilation_log
-    Primitive.rb_yjit_get_compilation_log
+    return nil unless compilation_log_enabled?
+
+    Primitive.rb_yjit_get_compilation_log.map do |path, timestamp|
+      [path, Time.at(timestamp)]
+    end
   end
 
   # Produce disassembly for an iseq. This requires a `--enable-yjit=dev` build.
@@ -263,9 +267,9 @@ module RubyVM::YJIT
     # Print the compilation log
     def print_compilation_log # :nodoc:
       if Primitive.rb_yjit_print_compilation_log_p
+        $stderr.puts "***YJIT: Printing YJIT compilation log on exit***"
         RubyVM::YJIT.compilation_log.each do |iseq_path, timestamp|
-          t = Time.at(timestamp)
-          $stderr.puts "%15.6f: %s" % [t.to_f, iseq_path]
+          $stderr.puts "%15.6f: %s" % [timestamp.to_f, iseq_path]
         end
       end
     end

@@ -3050,9 +3050,8 @@ impl BlockId {
         unsafe { rb_yjit_dump_iseq_loc(self.iseq, self.idx as u32) }
     }
 
-    pub fn iseq_name(&self) -> VALUE {
-        let path = get_iseq_name(self.iseq);
-        rust_str_to_ruby(&path)
+    pub fn iseq_name(&self) -> String {
+        get_iseq_name(self.iseq)
     }
 }
 
