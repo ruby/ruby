@@ -5914,9 +5914,9 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
 /*
  *  call-seq:
  *    max -> element
- *    max(n) -> new_array
+ *    max(n) -> array
  *    max {|a, b| ... } -> element
- *    max(n) {|a, b| ... } -> new_array
+ *    max(n) {|a, b| ... } -> array
  *
  *  Returns one of the following:
  *
@@ -5925,7 +5925,7 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *
  *  Does not modify +self+.
  *
- *  With no block is given, each element in +self+ must respond to method <tt><=></tt>
+ *  With no block given, each element in +self+ must respond to method <tt><=></tt>
  *  with a numeric.
  *
  *  With no argument and no block, returns the element in +self+
