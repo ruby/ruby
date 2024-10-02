@@ -2527,14 +2527,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     }
     rb_enc_associate(opt->script_name, IF_UTF8_PATH(uenc, lenc));
-#if UTF8_PATH
-    if (uenc != lenc) {
-        opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
-        opt->script = RSTRING_PTR(opt->script_name);
-    }
-#endif
     rb_obj_freeze(opt->script_name);
-    if (IF_UTF8_PATH(uenc != lenc, 1)) {
+    {
         long i;
         VALUE load_path = box->load_path;
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
@@ -2544,13 +2538,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         for (i = 0; i < RARRAY_LEN(load_path); ++i) {
             VALUE path = RARRAY_AREF(load_path, i);
             int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
-#if UTF8_PATH
-            VALUE newpath = rb_str_conv_enc(path, uenc, lenc);
-            if (newpath == path) continue;
-            path = newpath;
-#else
-            if (!(path = copy_str(path, lenc, !mark))) continue;
-#endif
+            if (!(path = copy_str(path, IF_UTF8_PATH(uenc, lenc), !mark))) continue;
             if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
             if (!modifiable) {
                 rb_ary_modify(load_path);
@@ -2678,11 +2666,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         VALUE path = Qnil;
         if (!opt->e_script && strcmp(opt->script, "-")) {
             path = rb_realpath_internal(Qnil, opt->script_name, 1);
-#if UTF8_PATH
-            if (uenc != lenc) {
-                path = str_conv_enc(path, uenc, lenc);
-            }
-#endif
             if (!ENCODING_GET(path)) { /* ASCII-8BIT */
                 rb_enc_copy(path, opt->script_name);
             }
