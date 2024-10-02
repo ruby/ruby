@@ -118,15 +118,6 @@ module Kernel
   #     # does not meet condition, drop value
   #     2.then.detect(&:odd?)            # => nil
   #
-  #  Good usage for +then+ is value piping in method chains:
-  #
-  #     require 'open-uri'
-  #     require 'json'
-  #
-  #     construct_url(arguments).
-  #       then {|url| URI(url).read }.
-  #       then {|response| JSON.parse(response) }
-  #
   def then
     Primitive.attr! :inline_block
     unless defined?(yield)
