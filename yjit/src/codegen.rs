@@ -458,6 +458,7 @@ macro_rules! perf_call {
 }
 
 use crate::codegen::JCCKinds::*;
+use crate::compilation_log::CompilationLog;
 
 #[allow(non_camel_case_types, unused)]
 pub enum JCCKinds {
@@ -6594,6 +6595,9 @@ fn gen_send_cfunc(
                 perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ci, cme, block, argc, recv_known_class))
             };
 
+            let method_id = unsafe { (*cme).called_id };
+            CompilationLog::add_cfunc(recv_known_class, method_id);
+
             if cfunc_codegen {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(jit, asm, Counter::num_send_cfunc_inline);
@@ -9102,7 +9106,7 @@ fn get_class_name(class: Option<VALUE>) -> String {
 }
 
 /// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
-fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
+pub fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
     let class_name = get_class_name(class);
     let method_name = if mid != 0 {
         unsafe { cstr_to_rust_string(rb_id2name(mid)) }

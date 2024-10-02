@@ -2,22 +2,44 @@ use crate::core::BlockId;
 use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
+use crate::codegen::get_method_name;
 
 use std::fmt::{Display, Formatter};
 use std::os::raw::c_long;
 
-#[derive(Copy, Clone)]
-pub struct CompilationLogEntry {
-    /// The compiled block.
-    pub block_id: BlockId,
+type Timestamp = f64;
 
+#[derive(Copy, Clone, Debug)]
+pub struct CompilationLogEntry {
     /// The time when the block was compiled.
-    pub timestamp: f64,
+    pub timestamp: Timestamp,
+
+    /// The compilation event payload.
+    pub payload: CompilationLogPayload,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum CompilationLogPayload {
+    ISeq(BlockId),
+    CFunc(Option<VALUE>, ID)
+}
+
+impl Display for CompilationLogPayload {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompilationLogPayload::ISeq(block_id) => {
+                write!(f, "{}", block_id.iseq_name())
+            }
+            CompilationLogPayload::CFunc(class, method_id) => {
+                write!(f, "<cfunc> {}", get_method_name(*class, *method_id))
+            }
+        }
+    }
 }
 
 impl Display for CompilationLogEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:15.6}: {}", self.timestamp, self.block_id.iseq_name())
+        write!(f, "{:15.6}: {}", self.timestamp, self.payload)
     }
 }
 
@@ -43,7 +65,15 @@ impl CompilationLog {
         }
     }
 
-    pub fn add_entry(block_id: BlockId) {
+    pub fn add_iseq(block_id: BlockId) {
+        Self::add_payload(CompilationLogPayload::ISeq(block_id))
+    }
+
+    pub fn add_cfunc(class: Option<VALUE>, method_id: ID) {
+        Self::add_payload(CompilationLogPayload::CFunc(class, method_id))
+    }
+
+    fn add_payload(payload: CompilationLogPayload) {
         if !Self::has_instance() {
             return;
         }
@@ -52,8 +82,8 @@ impl CompilationLog {
         let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64();
 
         let entry = CompilationLogEntry {
-            block_id,
-            timestamp
+            timestamp,
+            payload
         };
 
         match print_compilation_log {
@@ -203,7 +233,7 @@ fn rb_yjit_get_compilation_log_array() -> VALUE {
     for entry in log.iter() {
         unsafe {
             let entry_array = rb_ary_new_capa(2);
-            rb_ary_push(entry_array, entry.block_id.iseq_name().into());
+            rb_ary_push(entry_array, entry.payload.to_string().into());
             rb_ary_push(entry_array, rb_float_new(entry.timestamp));
             rb_ary_push(array, entry_array);
         }
