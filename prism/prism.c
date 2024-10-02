@@ -14203,10 +14203,20 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     parser_lex(parser);
 
                     if (token_begins_expression_p(parser->current.type)) {
-                        // If the token begins an expression then this ... was not actually
-                        // argument forwarding but was instead a range.
+                        // If the token begins an expression then this ... was
+                        // not actually argument forwarding but was instead a
+                        // range.
                         pm_token_t operator = parser->previous;
                         pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_RANGE, false, false, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
+
+                        // If we parse a range, we need to validate that we
+                        // didn't accidentally violate the nonassoc rules of the
+                        // ... operator.
+                        if (PM_NODE_TYPE_P(right, PM_RANGE_NODE)) {
+                            pm_range_node_t *range = (pm_range_node_t *) right;
+                            pm_parser_err(parser, range->operator_loc.start, range->operator_loc.end, PM_ERR_UNEXPECTED_RANGE_OPERATOR);
+                        }
+
                         argument = (pm_node_t *) pm_range_node_create(parser, NULL, &operator, right);
                     } else {
                         pm_parser_scope_forwarding_all_check(parser, &parser->previous);
