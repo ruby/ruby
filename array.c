@@ -5774,6 +5774,8 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *    [1, 2, 3].intersect?([3, 4, 5]) # => true
  *    [1, 2, 3].intersect?([4, 5, 6]) # => false
  *
+ *  Each element must correctly implement method <tt>#hash</tt>.
+ *
  *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
