@@ -1430,10 +1430,10 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     }
     else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
         if (strcmp("prism", s) == 0) {
-            *rb_ruby_prism_ptr() = true;
+            rb_ruby_default_parser_set(RB_DEFAULT_PARSER_PRISM);
         }
         else if (strcmp("parse.y", s) == 0) {
-            *rb_ruby_prism_ptr() = false;
+            rb_ruby_default_parser_set(RB_DEFAULT_PARSER_PARSE_Y);
         }
         else {
             rb_raise(rb_eRuntimeError, "unknown parser %s", s);
@@ -2522,7 +2522,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_enc_associate(opt->e_script, eenc);
     }
 
-    if (!(*rb_ruby_prism_ptr())) {
+    if (!rb_ruby_prism_p()) {
         ast_value = process_script(opt);
         if (!(result.ast = rb_ruby_ast_data_get(ast_value))) return Qfalse;
     }
