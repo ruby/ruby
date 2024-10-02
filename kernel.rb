@@ -71,6 +71,19 @@ module Kernel
 
   #
   #  call-seq:
+  #     obj.not_nil!
+  #
+  #  Raises a TypeError if <i>obj</i> is nil, returns <i>self</i> otherwise.
+  #
+  #     1.not_nil!   #=> 1
+  #     nil.not_nil!  #=> TypeError: Receiver of not_nil! is nil
+  #
+  def not_nil!
+    self
+  end
+
+  #
+  #  call-seq:
   #     obj.tap {|x| block }    -> obj
   #
   #  Yields self to the block, and then returns self.
@@ -134,6 +147,8 @@ module Kernel
     end
     yield(self)
   end
+
+  alias not_nil not_nil!
 
   #
   #  call-seq:

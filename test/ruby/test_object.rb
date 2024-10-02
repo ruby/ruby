@@ -182,6 +182,16 @@ class TestObject < Test::Unit::TestCase
     assert_equal(true, nil.send(:!))
   end
 
+  def test_not_nil!
+    assert_equal(42, 42.not_nil!)
+    assert_raise(TypeError) { nil.not_nil! }
+  end
+
+  def test_not_nil
+    assert_equal(42, 42.not_nil { "not 42" })
+    assert_equal(42, nil.not_nil { 42 })
+  end
+
   def test_true_and
     assert_equal(true, true & true)
     assert_equal(true, true & 1)
