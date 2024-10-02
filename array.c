@@ -5914,9 +5914,9 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
 /*
  *  call-seq:
  *    max -> element
- *    max(n) -> array
+ *    max(n) -> new_array
  *    max {|a, b| ... } -> element
- *    max(n) {|a, b| ... } -> array
+ *    max(n) {|a, b| ... } -> new_array
  *
  *  Returns one of the following:
  *
@@ -5931,29 +5931,31 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  With no argument and no block, returns the element in +self+
  *  having the maximum value per method <tt><=></tt>:
  *
- *    [0, 1, 2].max # => 2
+ *    [1, 0, 3, 2].max # => 3
  *
  *  With non-negative numeric argument +n+ and no block,
  *  returns a new array with at most +n+ elements,
  *  in descending order, per method <tt><=></tt>:
  *
- *    [0, 1, 2, 3].max(3)   # => [3, 2, 1]
- *    [0, 1, 2, 3].max(3.0) # => [3, 2, 1]
- *    [0, 1, 2, 3].max(9)   # => [3, 2, 1, 0]
- *    [0, 1, 2, 3].max(0)   # => []
+ *    [1, 0, 3, 2].max(3)   # => [3, 2, 1]
+ *    [1, 0, 3, 2].max(3.0) # => [3, 2, 1]
+ *    [1, 0, 3, 2].max(9)   # => [3, 2, 1, 0]
+ *    [1, 0, 3, 2].max(0)   # => []
  *
  *  With a block given, the block must return a numeric.
  *
  *  With a block and no argument, calls the block <tt>self.size - 1</tt> times to compare elements;
  *  returns the element having the maximum return value from the block:
  *
- *    ['0', '00', '000'].max {|a, b| a.size <=> b.size } # => "000"
+ *    ['0', '', '000', '00'].max {|a, b| a.size <=> b.size }
+ *    # => "000"
  *
  *  With non-negative numeric argument +n+ and a block,
  *  returns a new array with at most +n+ elements,
  *  in descending order, per the block:
  *
- *    ['0', '00', '000'].max(2) {|a, b| a.size <=> b.size } # => ["000", "00"]
+ *    ['0', '', '000', '00'].max(2) {|a, b| a.size <=> b.size }
+ *    # => ["000", "00"]
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
