@@ -171,8 +171,9 @@ define_ruby_description(const char *const jit_opt)
 
     int n = ruby_description_opt_point;
     memcpy(desc, ruby_description, n);
-# define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n), assert(n < sizeof(desc)))
+# define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n))
     if (*jit_opt) append(jit_opt);
+    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(YJIT_DESCRIPTION));
     if (ruby_mn_threads_enabled) append(" +MN");
     if (rb_ruby_prism_p()) append(" +PRISM");
     append(ruby_description + ruby_description_opt_point);
