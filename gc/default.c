@@ -4832,10 +4832,10 @@ allrefs_roots_i(VALUE obj, void *ptr)
     }
 }
 #define PUSH_MARK_FUNC_DATA(v) do { \
-    struct gc_mark_func_data_struct *prev_mark_func_data = GET_RACTOR()->mfd; \
-    GET_RACTOR()->mfd = (v);
+    struct gc_mark_func_data_struct *prev_mark_func_data = GET_VM()->gc.mark_func_data; \
+    GET_VM()->gc.mark_func_data = (v);
 
-#define POP_MARK_FUNC_DATA() GET_RACTOR()->mfd = prev_mark_func_data;} while (0)
+#define POP_MARK_FUNC_DATA() GET_VM()->gc.mark_func_data = prev_mark_func_data;} while (0)
 
 static st_table *
 objspace_allrefs(rb_objspace_t *objspace)
@@ -4855,7 +4855,7 @@ objspace_allrefs(rb_objspace_t *objspace)
 
     /* traverse root objects */
     PUSH_MARK_FUNC_DATA(&mfd);
-    GET_RACTOR()->mfd = &mfd;
+    GET_VM()->gc.mark_func_data = &mfd;
     mark_roots(objspace, &data.category);
     POP_MARK_FUNC_DATA();
 
@@ -4913,7 +4913,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, st_data_t ptr)
     rb_objspace_t *objspace = (rb_objspace_t *)ptr;
 
     /* object should be marked or oldgen */
-    if (!RVALUE_MARKED(obj)) {
+    if (!RVALUE_MARKED(objspace, obj)) {
         fprintf(stderr, "gc_check_after_marks_i: %s is not marked and not oldgen.\n", rb_obj_info(obj));
         fprintf(stderr, "gc_check_after_marks_i: %p is referred from ", (void *)obj);
         reflist_dump(refs);
