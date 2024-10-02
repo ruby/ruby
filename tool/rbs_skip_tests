@@ -77,3 +77,13 @@ test_merge_types(RBS::RuntimePrototypeTest)
 test_reflection(RBS::RuntimePrototypeTest)
 test_todo(RBS::RuntimePrototypeTest)
 test_of(RubyVM::AbstractSyntaxTreeSingletonTest)
+
+# rbs-3.6.0 and Ruby 3.4.0dev: IOError: closed stream
+
+test_spawn(PTYSingletonTest)
+test_getpty(PTYSingletonTest)
+test_check(PTYSingletonTest)
+test_width_for(PPSingletonTest)
+test_singleline_pp(PPSingletonTest)
+test_singleline_pp(PPSingletonTest)
+test_capture2e(Open3SingletonTest)
