@@ -264,23 +264,6 @@ module Gem
     end
   end
 
-  # Requirements using lambda operator differentiate trailing zeros since rubygems 3.2.6
-  if Gem::Requirement.new("~> 2.0").hash == Gem::Requirement.new("~> 2.0.0").hash
-    class Requirement
-      module CorrectHashForLambdaOperator
-        def hash
-          if requirements.any? {|r| r.first == "~>" }
-            requirements.map {|r| r.first == "~>" ? [r[0], r[1].to_s] : r }.sort.hash
-          else
-            super
-          end
-        end
-      end
-
-      prepend CorrectHashForLambdaOperator
-    end
-  end
-
   require "rubygems/platform"
 
   class Platform
