@@ -2971,7 +2971,8 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *  call-seq:
  *    inspect -> new_string
  *
- *  Returns a string representation of +self+:
+ *  Returns the new string formed by calling method <tt>#inspect</tt>
+ *  on each array element:
  *
  *    a = [:foo, 'bar', 2]
  *    a.inspect # => "[:foo, \"bar\", 2]"
