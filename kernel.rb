@@ -105,9 +105,9 @@ module Kernel
   #     require 'open-uri'
   #     require 'json'
   #
-  #     construct_url(arguments).
-  #       then {|url| URI(url).read }.
-  #       then {|response| JSON.parse(response) }
+  #     construct_url(arguments)
+  #       .then {|url| URI(url).read }
+  #       .then {|response| JSON.parse(response) }
   #
   #  When called without block, the method returns +Enumerator+,
   #  which can be used, for example, for conditional
