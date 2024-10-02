@@ -135,21 +135,7 @@ module Kernel
     yield(self)
   end
 
-  #
-  #  call-seq:
-  #     obj.yield_self {|x| block }    -> an_object
-  #
-  #  Yields self to the block and returns the result of the block.
-  #
-  #     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
-  #
-  def yield_self
-    Primitive.attr! :inline_block
-    unless defined?(yield)
-      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
-    end
-    yield(self)
-  end
+  alias yield_self then
 
   module_function
 
