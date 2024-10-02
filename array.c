@@ -5769,7 +5769,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *    intersect?(other_array) -> true or false
  *
- *  Returns whether +other_array+ has at least one element that is #eql? to some element of +self+:
+ *  Returns whether +other_array+ has at least one element that is +#eql?+ to some element of +self+:
  *
  *    [1, 2, 3].intersect?([3, 4, 5]) # => true
  *    [1, 2, 3].intersect?([4, 5, 6]) # => false
