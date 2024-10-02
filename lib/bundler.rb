@@ -577,7 +577,7 @@ module Bundler
 
       requested_path_gems = definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
       path_plugin_files = requested_path_gems.map do |spec|
-        Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+        spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
       rescue TypeError
         error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
         raise Gem::InvalidSpecificationException, error_message
