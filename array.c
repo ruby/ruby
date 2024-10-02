@@ -2725,9 +2725,15 @@ rb_ary_reverse_each(VALUE ary)
 
 /*
  *  call-seq:
- *    array.length -> an_integer
+ *    length -> integer
+ *    size -> integer
  *
- *  Returns the count of elements in +self+.
+ *  Returns the count of elements in +self+:
+ *
+ *    [0, 1, 2].length # => 3
+ *    [].length        # => 0
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
