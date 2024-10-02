@@ -60,7 +60,7 @@ class Reline::Dumb < Reline::IO
   end
 
   def cursor_pos
-    Reline::CursorPos.new(1, 1)
+    Reline::CursorPos.new(0, 0)
   end
 
   def hide_cursor

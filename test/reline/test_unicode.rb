@@ -15,7 +15,7 @@ class Reline::Unicode::Test < Reline::TestCase
   end
 
   def test_ambiguous_width
-    assert_equal 2, Reline::Unicode.calculate_width('√', true)
+    assert_equal 1, Reline::Unicode.calculate_width('√', true)
   end
 
   def test_csi_regexp
