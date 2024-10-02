@@ -150,7 +150,7 @@ class Array
   end
 
   # call-seq:
-  #   last  -> last_object or nil
+  #  last  -> last_object or nil
   #  last(n) -> new_array
   #
   # Returns elements from +self+, or +nil+; +self+ is not modified.
