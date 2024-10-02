@@ -210,7 +210,7 @@ module Bundler
           checkout
         end
 
-        generate_bin_options = { disable_extensions: !Bundler.rubygems.spec_missing_extensions?(spec), build_args: options[:build_args] }
+        generate_bin_options = { disable_extensions: !spec.missing_extensions?, build_args: options[:build_args] }
         generate_bin(spec, generate_bin_options)
 
         requires_checkout? ? spec.post_install_message : nil

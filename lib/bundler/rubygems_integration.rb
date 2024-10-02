@@ -57,15 +57,6 @@ module Bundler
       nil
     end
 
-    def spec_missing_extensions?(spec, default = true)
-      return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
-
-      return false if spec.default_gem?
-      return false if spec.extensions.empty?
-
-      default
-    end
-
     def stub_set_spec(stub, spec)
       stub.instance_variable_set(:@spec, spec)
     end
