@@ -1358,7 +1358,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no block given, the sort compares
- *  using the elements' own method <tt><=></tt>:
+ *  using the elements' own method <tt>#<=></tt>:
  *
  *    %w[b c a d].sort              # => ["a", "b", "c", "d"]
  *    {foo: 0, bar: 1, baz: 2}.sort # => [[:bar, 1], [:baz, 2], [:foo, 0]]
@@ -2327,7 +2327,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum element,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).min                   # => 1
  *    (-4..-1).min                 # => -4
@@ -2449,7 +2449,7 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the maximum element,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).max                   # => 4
  *    (-4..-1).max                 # => -1
@@ -2638,7 +2638,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum and maximum elements,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).minmax                   # => [1, 4]
  *    (-4..-1).minmax                 # => [-4, -1]
@@ -4980,9 +4980,9 @@ enum_compact(VALUE obj)
  * <i>Minimum and maximum value elements</i>:
  *
  * - #min: Returns the elements whose values are smallest among the elements,
- *   as determined by <tt><=></tt> or a given block.
+ *   as determined by <tt>#<=></tt> or a given block.
  * - #max: Returns the elements whose values are largest among the elements,
- *   as determined by <tt><=></tt> or a given block.
+ *   as determined by <tt>#<=></tt> or a given block.
  * - #minmax: Returns a 2-element Array containing the smallest and largest elements.
  * - #min_by: Returns the smallest element, as determined by the given block.
  * - #max_by: Returns the largest element, as determined by the given block.
@@ -5015,7 +5015,7 @@ enum_compact(VALUE obj)
  *
  * These methods return elements in sorted order:
  *
- * - #sort: Returns the elements, sorted by <tt><=></tt> or the given block.
+ * - #sort: Returns the elements, sorted by <tt>#<=></tt> or the given block.
  * - #sort_by: Returns the elements, sorted by the given block.
  *
  * === Methods for Iterating
