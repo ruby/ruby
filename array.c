@@ -2970,14 +2970,15 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *    array.inspect -> new_string
+ *    inspect -> new_string
  *
- *  Returns the new String formed by calling method <tt>#inspect</tt>
+ *  Returns the new string formed by calling method <tt>#inspect</tt>
  *  on each array element:
  *
  *    a = [:foo, 'bar', 2]
  *    a.inspect # => "[:foo, \"bar\", 2]"
  *
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
