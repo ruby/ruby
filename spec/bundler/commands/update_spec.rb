@@ -1486,7 +1486,7 @@ RSpec.describe "bundle update --bundler" do
         myrack
 
       BUNDLED WITH
-          999.0.0
+         999.0.0
     L
 
     expect(the_bundle).to include_gems "bundler 999.0.0"
