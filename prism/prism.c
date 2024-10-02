@@ -19218,7 +19218,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     parser_lex(parser);
 
                     pm_token_t lparen = parser->previous;
-                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_STATEMENT, true, false, PM_ERR_DEF_RECEIVER, (uint16_t) (depth + 1));
+                    pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, true, false, PM_ERR_DEF_RECEIVER, (uint16_t) (depth + 1));
 
                     accept1(parser, PM_TOKEN_NEWLINE);
                     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
