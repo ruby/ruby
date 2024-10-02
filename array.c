@@ -5626,7 +5626,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
  *  call-seq:
  *    intersection(*other_arrays) -> new_array
  *
- *  Returns a new array containing each element in +self+ that is #eql?
+ *  Returns a new array containing each element in +self+ that is +#eql?+
  *  to at least one element in each of the given +other_arrays+;
  *  duplicates are omitted:
  *
