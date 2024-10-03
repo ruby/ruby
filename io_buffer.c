@@ -1568,7 +1568,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  buffer's bounds.
  *
  *    string = 'test'
- *    buffer = IO::Buffer.for(string)
+ *    buffer = IO::Buffer.for(string).dup
  *
  *    slice = buffer.slice
  *    # =>
@@ -1595,12 +1595,8 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *    # it is also visible at position 1 of the original buffer
  *    buffer
  *    # =>
- *    # #<IO::Buffer 0x00007fc3d31e2d80+4 SLICE>
+ *    # #<IO::Buffer 0x00007fc3d31e2d80+4 INTERNAL>
  *    # 0x00000000  74 6f 73 74                                     tost
- *
- *    # ...and original string
- *    string
- *    # => tost
  */
 static VALUE
 io_buffer_slice(int argc, VALUE *argv, VALUE self)
@@ -2443,10 +2439,11 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
  *
  *  #copy can be used to put buffer into strings associated with buffer:
  *
- *    string= "data:    "
+ *    string = "data:    "
  *    # => "data:    "
- *    buffer = IO::Buffer.for(string)
- *    buffer.copy(IO::Buffer.for("test"), 5)
+ *    buffer = IO::Buffer.for(string) do |buffer|
+ *      buffer.copy(IO::Buffer.for("test"), 5)
+ *    end
  *    # => 4
  *    string
  *    # => "data:test"
@@ -2590,29 +2587,29 @@ rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
  *  Fill buffer with +value+, starting with +offset+ and going for +length+
  *  bytes.
  *
- *    buffer = IO::Buffer.for('test')
+ *    buffer = IO::Buffer.for('test').dup
  *    # =>
- *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 INTERNAL>
  *    #   0x00000000  74 65 73 74         test
  *
  *    buffer.clear
  *    # =>
- *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 INTERNAL>
  *    #   0x00000000  00 00 00 00         ....
  *
  *    buf.clear(1) # fill with 1
  *    # =>
- *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 INTERNAL>
  *    #   0x00000000  01 01 01 01         ....
  *
  *    buffer.clear(2, 1, 2) # fill with 2, starting from offset 1, for 2 bytes
  *    # =>
- *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 INTERNAL>
  *    #   0x00000000  01 02 02 01         ....
  *
  *    buffer.clear(2, 1) # fill with 2, starting from offset 1
  *    # =>
- *    #   <IO::Buffer 0x00007fca40087c38+4 SLICE>
+ *    #   <IO::Buffer 0x00007fca40087c38+4 INTERNAL>
  *    #   0x00000000  01 02 02 02         ....
  */
 static VALUE
