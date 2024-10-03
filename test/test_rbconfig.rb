@@ -53,19 +53,17 @@ class TestRbConfig < Test::Unit::TestCase
   end
 
   def test_limits_and_sizeof_access_in_ractor
-    if defined?(Ractor)
-      assert_separately(["-W0"], <<~'RUBY')
-        r = Ractor.new do
-          sizeof_int = RbConfig::SIZEOF["int"]
-          fixnum_max = RbConfig::LIMITS["FIXNUM_MAX"]
-          [sizeof_int, fixnum_max]
-        end
+    assert_separately(["-W0"], <<~'RUBY')
+      r = Ractor.new do
+        sizeof_int = RbConfig::SIZEOF["int"]
+        fixnum_max = RbConfig::LIMITS["FIXNUM_MAX"]
+        [sizeof_int, fixnum_max]
+      end
 
-        sizeof_int, fixnum_max = r.take
+      sizeof_int, fixnum_max = r.take
 
-        assert_kind_of Numeric, sizeof_int, "RbConfig::SIZEOF['int'] should be a Numeric"
-        assert_kind_of Numeric, fixnum_max, "RbConfig::LIMITS['FIXNUM_MAX'] should be a Numeric"
-      RUBY
-    end
-  end
+      assert_kind_of Integer, sizeof_int, "RbConfig::SIZEOF['int'] should be an Integer"
+      assert_kind_of Integer, fixnum_max, "RbConfig::LIMITS['FIXNUM_MAX'] should be an Integer"
+    RUBY
+  end if defined?(Ractor)
 end
