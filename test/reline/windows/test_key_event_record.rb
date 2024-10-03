@@ -10,31 +10,31 @@ class Reline::Windows
     end
 
     def test_matches__with_no_arguments_raises_error
-      assert_raise(ArgumentError) { @key.matches? }
+      assert_raise(ArgumentError) { @key.match? }
     end
 
     def test_matches_char_code
-      assert @key.matches?(char_code: 0x1)
+      assert @key.match?(char_code: 0x1)
     end
 
     def test_matches_virtual_key_code
-      assert @key.matches?(virtual_key_code: 0x41)
+      assert @key.match?(virtual_key_code: 0x41)
     end
 
     def test_matches_control_keys
-      assert @key.matches?(control_keys: :CTRL)
+      assert @key.match?(control_keys: :CTRL)
     end
 
     def test_doesnt_match_alt
-      refute @key.matches?(control_keys: :ALT)
+      refute @key.match?(control_keys: :ALT)
     end
 
     def test_doesnt_match_empty_control_key
-      refute @key.matches?(control_keys: [])
+      refute @key.match?(control_keys: [])
     end
 
     def test_matches_control_keys_and_virtual_key_code
-      assert @key.matches?(control_keys: :CTRL, virtual_key_code: 0x41)
+      assert @key.match?(control_keys: :CTRL, virtual_key_code: 0x41)
     end
 
   end
