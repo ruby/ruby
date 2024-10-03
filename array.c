@@ -6163,7 +6163,7 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *    minmax -> array
  *    minmax {|a, b| ... } -> array
  *
- *  Returns a 2-element array containing the minimum-valued and maximum values
+ *  Returns a 2-element array containing the minimum-valued and maximum-valued
  *  elements from +self+;
  *  does not modify +self+.
  *
