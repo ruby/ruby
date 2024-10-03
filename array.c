@@ -6093,42 +6093,51 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
 
 /*
  *  call-seq:
- *    array.min -> element
- *    array.min { |a, b| ... } -> element
- *    array.min(n) -> new_array
- *    array.min(n) { |a, b| ... } -> new_array
+ *    min -> element
+ *    min(n) -> new_array
+ *    min {|a, b| ... } -> element
+ *    min(n) {|a, b| ... } -> new_array
  *
  *  Returns one of the following:
  *
  *  - The minimum-valued element from +self+.
- *  - A new +Array+ of minimum-valued elements selected from +self+.
+ *  - A new array of minimum-valued elements from +self+.
  *
- *  When no block is given, each element in +self+ must respond to method <tt>#<=></tt>
- *  with an Integer.
+ *  Does not modify +self+.
+ *
+ *  With no block given, each element in +self+ must respond to method <tt>#<=></tt>
+ *  with a numeric.
  *
  *  With no argument and no block, returns the element in +self+
  *  having the minimum value per method <tt>#<=></tt>:
  *
- *    [0, 1, 2].min # => 0
+ *    [1, 0, 3, 2].min # => 0
  *
- *  With Integer argument +n+ and no block, returns a new +Array+ with at most +n+ elements,
- *  in ascending order per method <tt>#<=></tt>:
+ *  With non-negative numeric argument +n+ and no block,
+ *  returns a new array with at most +n+ elements,
+ *  in ascending order, per method <tt>#<=></tt>:
  *
- *    [0, 1, 2, 3].min(3) # => [0, 1, 2]
- *    [0, 1, 2, 3].min(6) # => [0, 1, 2, 3]
+ *    [1, 0, 3, 2].min(3)   # => [0, 1, 2]
+ *    [1, 0, 3, 2].min(3.0) # => [0, 1, 2]
+ *    [1, 0, 3, 2].min(9)   # => [0, 1, 2, 3]
+ *    [1, 0, 3, 2].min(0)   # => []
  *
- *  When a block is given, the block must return an Integer.
+ *  With a block given, the block must return a numeric.
  *
- *  With a block and no argument, calls the block <tt>self.size-1</tt> times to compare elements;
- *  returns the element having the minimum value per the block:
+ *  With a block and no argument, calls the block <tt>self.size - 1</tt> times to compare elements;
+ *  returns the element having the minimum return value per the block:
  *
- *    ['0', '00', '000'].min { |a, b| a.size <=> b.size } # => "0"
+ *    ['0', '', '000', '00'].min {|a, b| a.size <=> b.size }
+ *    # => ""
  *
- *  With an argument +n+ and a block, returns a new +Array+ with at most +n+ elements,
- *  in ascending order per the block:
+ *  With non-negative numeric argument +n+ and a block,
+ *  returns a new array with at most +n+ elements,
+ *  in ascending order, per the block:
  *
- *    ['0', '00', '000'].min(2) {|a, b| a.size <=> b.size } # => ["0", "00"]
+ *    ['0', '', '000', '00'].min(2) {|a, b| a.size <=> b.size }
+ *    # => ["", "0"]
  *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
