@@ -1157,13 +1157,6 @@ tick(void)
 #define MEASURE_LINE(expr) expr
 #endif /* USE_TICK_T */
 
-#define FL_CHECK2(name, x, pred) \
-    ((RGENGC_CHECK_MODE && SPECIAL_CONST_P(x)) ? \
-     (rb_bug(name": SPECIAL_CONST (%p)", (void *)(x)), 0) : (pred))
-#define FL_TEST2(x,f)  FL_CHECK2("FL_TEST2",  x, FL_TEST_RAW((x),(f)) != 0)
-#define FL_SET2(x,f)   FL_CHECK2("FL_SET2",   x, RBASIC(x)->flags |= (f))
-#define FL_UNSET2(x,f) FL_CHECK2("FL_UNSET2", x, RBASIC(x)->flags &= ~(f))
-
 static inline VALUE check_rvalue_consistency(rb_objspace_t *objspace, const VALUE obj);
 
 #define RVALUE_MARKED_BITMAP(obj)         MARKED_IN_BITMAP(GET_HEAP_MARK_BITS(obj), (obj))
