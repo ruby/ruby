@@ -6173,7 +6173,7 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
  *
  *  With a block given, the block must return a numeric;
  *  the block is called <tt>self.size - 1</tt> times to compare elements;
- *  returns the elements having the minimum and maximum return values from the block:
+ *  returns the elements having the minimum and maximum values per the block:
  *
  *    ['0', '', '000', '00'].minmax {|a, b| a.size <=> b.size }
  *    # => ["", "000"]
