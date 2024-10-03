@@ -547,7 +547,7 @@ class HeapPageIter:
         self.target = target
         self.start = page.GetChildMemberWithName('start').GetValueAsUnsigned();
         self.num_slots = page.GetChildMemberWithName('total_slots').unsigned
-        self.slot_size = page.GetChildMemberWithName('size_pool').GetChildMemberWithName('slot_size').unsigned
+        self.slot_size = page.GetChildMemberWithName('heap').GetChildMemberWithName('slot_size').unsigned
         self.counter = 0
         self.tRBasic = target.FindFirstType("struct RBasic")
         self.tRValue = target.FindFirstType("struct RVALUE")
