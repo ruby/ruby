@@ -6113,7 +6113,7 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  With a block given, the block must return a numeric.
  *
  *  With a block and no argument, calls the block <tt>self.size - 1</tt> times to compare elements;
- *  returns the element having the minimum return value from the block:
+ *  returns the element having the minimum return value per the block:
  *
  *    ['0', '', '000', '00'].min {|a, b| a.size <=> b.size }
  *    # => ""
