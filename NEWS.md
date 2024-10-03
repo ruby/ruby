@@ -92,6 +92,7 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.25.1
+* power_assert 2.0.4
 * rake 13.2.1
 * test-unit 3.6.2
 * rexml 3.3.8
@@ -99,7 +100,7 @@ The following bundled gems are updated.
 * net-ftp 0.3.7
 * net-imap 0.4.16
 * net-smtp 0.5.0
-* rbs 3.6.0
+* rbs 3.6.1
 * typeprof 0.21.11
 * debug 1.9.2
 * racc 1.8.1
