@@ -454,6 +454,9 @@ class Reline::Test < Reline::TestCase
         loop { break if r.readpartial(1024).include?("\e[6n") }
         w.puts "hello\e[10;#{ambiguous_width + 1}Rworld"
         assert_include(r.gets, [ambiguous_width, 'helloworld'].inspect)
+      ensure
+        r.close
+        w.close
         Process.waitpid pid
       end
     end
@@ -463,6 +466,9 @@ class Reline::Test < Reline::TestCase
       loop { break if r.readpartial(1024).include?("\e[6n") }
       w.puts "hello\e[10;2Sworld"
       assert_include(r.gets, [1, "hello\e[10;2Sworld"].inspect)
+    ensure
+      r.close
+      w.close
       Process.waitpid pid
     end
   end
