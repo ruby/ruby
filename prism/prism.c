@@ -9048,6 +9048,10 @@ lex_global_variable(pm_parser_t *parser) {
         return PM_TOKEN_GLOBAL_VARIABLE;
     }
 
+    // True if multiple characters are allowed after the declaration of the
+    // global variable. Not true when it starts with "$-".
+    bool allow_multiple = true;
+
     switch (*parser->current.end) {
         case '~':  // $~: match-data
         case '*':  // $*: argv
@@ -9106,6 +9110,7 @@ lex_global_variable(pm_parser_t *parser) {
 
         case '-':
             parser->current.end++;
+            allow_multiple = false;
             /* fallthrough */
         default: {
             size_t width;
@@ -9113,7 +9118,7 @@ lex_global_variable(pm_parser_t *parser) {
             if ((width = char_is_identifier(parser, parser->current.end)) > 0) {
                 do {
                     parser->current.end += width;
-                } while (parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0);
+                } while (allow_multiple && parser->current.end < parser->end && (width = char_is_identifier(parser, parser->current.end)) > 0);
             } else if (pm_char_is_whitespace(peek(parser))) {
                 // If we get here, then we have a $ followed by whitespace,
                 // which is not allowed.
