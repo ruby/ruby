@@ -274,7 +274,7 @@ parse_isdigit(int c)
 static inline int
 parse_isalnum(int c)
 {
-    return parse_isalpha(c) || parse_isdigit(c);
+    return ISALPHA(c) || ISDIGIT(c);
 }
 
 #undef ISALNUM
@@ -283,7 +283,7 @@ parse_isalnum(int c)
 static inline int
 parse_isxdigit(int c)
 {
-    return parse_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
+    return ISDIGIT(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f');
 }
 
 #undef ISXDIGIT
