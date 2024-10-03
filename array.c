@@ -7952,9 +7952,9 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.one? -> true or false
- *    array.one? {|element| ... } -> true or false
- *    array.one?(obj) -> true or false
+ *    one? -> true or false
+ *    one? {|element| ... } -> true or false
+ *    one?(object) -> true or false
  *
  *  Returns +true+ if exactly one element of +self+ meets a given criterion.
  *
@@ -7966,14 +7966,14 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *    [nil, nil].one? # => false
  *    [].one? # => false
  *
- *  With a block given and no argument, calls the block with each element in +self+;
+ *  With a block given, calls the block with each element in +self+;
  *  returns +true+ if the block a truthy value for exactly one element, +false+ otherwise:
  *
  *    [0, 1, 2].one? {|element| element > 0 } # => false
  *    [0, 1, 2].one? {|element| element > 1 } # => true
  *    [0, 1, 2].one? {|element| element > 2 } # => false
  *
- *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> exactly one element,
+ *  With argument +object+ given, returns +true+ if <tt>object.===</tt> for exactly one element,
  *  +false+ otherwise:
  *
  *    [0, 1, 2].one?(0) # => true
@@ -7983,7 +7983,7 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *    ['food', 'drink'].one?(/foo/) # => true
  *    [].one?(/foo/) # => false
  *
- *  Related: Enumerable#one?
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
