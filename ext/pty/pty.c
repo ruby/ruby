@@ -610,9 +610,17 @@ pty_detach_process(VALUE v)
  * +env+ is an optional hash that provides additional environment variables to the spawned pty.
  *
  *   # sets FOO to "bar"
- *   PTY.spawn({"FOO"=>"bar"}, "printenv", "FOO") { |r,w,pid| p r.read } #=> "bar\r\n"
+ *   PTY.spawn({"FOO"=>"bar"}, "printenv", "FOO") do |r, w, pid|
+ *     p r.read #=> "bar\r\n"
+ *   ensure
+ *     r.close; w.close; Process.wait(pid)
+ *   end
  *   # unsets FOO
- *   PTY.spawn({"FOO"=>nil}, "printenv", "FOO") { |r,w,pid| p r.read } #=> ""
+ *   PTY.spawn({"FOO"=>nil}, "printenv", "FOO") do |r, w, pid|
+ *     p r.read #=> ""
+ *   ensure
+ *     r.close; w.close; Process.wait(pid)
+ *   end
  *
  * +command+ and +command_line+ are the full commands to run, given a String.
  * Any additional +arguments+ will be passed to the command.
@@ -628,6 +636,15 @@ pty_detach_process(VALUE v)
  *       standard output and standard error
  * +w+:: A writable IO that is the command's standard input
  * +pid+:: The process identifier for the command.
+ *
+ * === Clean up
+ *
+ * This method does not clean up like closing IOs or waiting for child
+ * process, except that the process is detached in the block form to
+ * prevent it from becoming a zombie (see Process.detach).  Any other
+ * cleanup is the responsibility of the caller.  If waiting for +pid+,
+ * be sure to close both +r+ and +w+ before doing so; doing it in the
+ * reverse order may cause deadlock on some OSes.
  */
 static VALUE
 pty_getpty(int argc, VALUE *argv, VALUE self)
