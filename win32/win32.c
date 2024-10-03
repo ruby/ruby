@@ -6767,20 +6767,6 @@ constat_handle(HANDLE h)
     return p;
 }
 
-/* License: Ruby's */
-static void
-constat_reset(HANDLE h)
-{
-    st_data_t data;
-    struct constat *p;
-    thread_exclusive(conlist) {
-        if (!conlist || conlist == conlist_disabled) continue;
-        if (!st_lookup(conlist, (st_data_t)h, &data)) continue;
-        p = (struct constat *)data;
-        p->vt100.state = constat_init;
-    }
-}
-
 #define FOREGROUND_MASK (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY)
 #define BACKGROUND_MASK (BACKGROUND_BLUE | BACKGROUND_GREEN | BACKGROUND_RED | BACKGROUND_INTENSITY)
 
@@ -7233,8 +7219,6 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     size_t ret;
     OVERLAPPED ol;
     BOOL isconsole;
-    BOOL islineinput = FALSE;
-    int start = 0;
 
     if (is_socket(sock))
         return rb_w32_recv(fd, buf, size, 0);
@@ -7257,97 +7241,131 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     }
 
     ret = 0;
-    isconsole = is_console(_osfhnd(fd)) && (osver.dwMajorVersion < 6 || (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2));
-    if (isconsole) {
-        DWORD mode;
-        GetConsoleMode((HANDLE)_osfhnd(fd),&mode);
-        islineinput = (mode & ENABLE_LINE_INPUT) != 0;
-    }
+    isconsole = is_console(_osfhnd(fd));
   retry:
-    /* get rid of console reading bug */
-    if (isconsole) {
-        constat_reset((HANDLE)_osfhnd(fd));
-        if (start)
-            len = 1;
-        else {
-            len = 0;
-            start = 1;
-        }
-    }
-    else
-        len = size;
+    len = size;
     size -= len;
 
-    if (setup_overlapped(&ol, fd, FALSE, offset)) {
-        rb_acrt_lowio_unlock_fh(fd);
-        return -1;
-    }
+    if (isconsole) {
+        /* Direct console input, without pipe */
+        CONSOLE_READCONSOLE_CONTROL read_ctrl = {
+            .nLength = sizeof(CONSOLE_READCONSOLE_CONTROL),
+            .nInitialChars = 0,
+            .dwCtrlWakeupMask = (1 << 4), // stop on ctrl-d
+            .dwControlKeyState = 0 };
+        WCHAR *pw = ALLOCA_N(WCHAR, len);
+        DWORD readw;
 
-    if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, &ol)) {
-        err = GetLastError();
-        if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
-            DWORD state;
-            if (GetNamedPipeHandleState((HANDLE)_osfhnd(fd), &state, NULL, NULL, NULL, NULL, 0) && (state & PIPE_NOWAIT)) {
-                errno = EWOULDBLOCK;
-            }
-            else {
-                errno = map_errno(err);
-            }
+        if (!ReadConsoleW((HANDLE)_osfhnd(fd), pw, len, &readw, &read_ctrl)) {
+            err = GetLastError();
+            errno = map_errno(err);
+
             rb_acrt_lowio_unlock_fh(fd);
             return -1;
         }
-        else if (err != ERROR_IO_PENDING) {
-            CloseHandle(ol.hEvent);
-            if (err == ERROR_ACCESS_DENIED)
-                errno = EBADF;
-            else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
+        else {
+            if (readw > 1 && pw[readw-1] == L'\x04') {
+                /* ctrl-d at the end of read bytes */
+                /* -> cut and return EOF the next time */
+                DWORD written;
+                INPUT_RECORD ir = {
+                    .EventType = KEY_EVENT,
+                    .Event = {
+                        .KeyEvent = {
+                            .bKeyDown = TRUE,
+                            .wRepeatCount = 1,
+                            .wVirtualKeyCode = 0,
+                            .wVirtualScanCode = 0,
+                            .uChar = {
+                                .UnicodeChar = pw[readw-1]
+                            },
+                            .dwControlKeyState = 0
+                        }
+                    }
+                };
+                WriteConsoleInputW((HANDLE)_osfhnd(fd), &ir, 1, &written);
+                readw -= 1;
+            } else if (readw == 1 && pw[readw-1] == L'\x04') {
+                /* only read ctrl-d */
+                /* return EOF */
                 rb_acrt_lowio_unlock_fh(fd);
                 return 0;
             }
-            else
-                errno = map_errno(err);
-
+            err = GetLastError();
+            read = WideCharToMultiByte(CP_UTF8, 0, pw, readw, buf, len, NULL, NULL);
+            errno = map_errno(err);
+        }
+    } else {
+        if (setup_overlapped(&ol, fd, FALSE, offset)) {
             rb_acrt_lowio_unlock_fh(fd);
             return -1;
         }
 
-        wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
-        if (wait != WAIT_OBJECT_0) {
-            if (wait == WAIT_OBJECT_0 + 1)
-                errno = EINTR;
-            else
-                errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
-            CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
-        }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
-            (err = GetLastError()) != ERROR_HANDLE_EOF) {
-            int ret = 0;
-            if (err != ERROR_BROKEN_PIPE) {
-                errno = map_errno(err);
-                ret = -1;
+        if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, &ol)) {
+            err = GetLastError();
+            if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
+                DWORD state;
+                if (GetNamedPipeHandleState((HANDLE)_osfhnd(fd), &state, NULL, NULL, NULL, NULL, 0) && (state & PIPE_NOWAIT)) {
+                    errno = EWOULDBLOCK;
+                }
+                else {
+                    errno = map_errno(err);
+                }
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
             }
-            CloseHandle(ol.hEvent);
-            CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return ret;
-        }
-    }
-    else {
-        err = GetLastError();
-        errno = map_errno(err);
-    }
+            else if (err != ERROR_IO_PENDING) {
+                CloseHandle(ol.hEvent);
+                if (err == ERROR_ACCESS_DENIED)
+                    errno = EBADF;
+                else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
+                    rb_acrt_lowio_unlock_fh(fd);
+                    return 0;
+                }
+                else
+                    errno = map_errno(err);
 
-    finish_overlapped(&ol, fd, read, offset);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
+
+            wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+            if (wait != WAIT_OBJECT_0) {
+                if (wait == WAIT_OBJECT_0 + 1)
+                    errno = EINTR;
+                else
+                    errno = map_errno(GetLastError());
+                CloseHandle(ol.hEvent);
+                CancelIo((HANDLE)_osfhnd(fd));
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
+
+            if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+                (err = GetLastError()) != ERROR_HANDLE_EOF) {
+                int ret = 0;
+                if (err != ERROR_BROKEN_PIPE) {
+                    errno = map_errno(err);
+                    ret = -1;
+                }
+                CloseHandle(ol.hEvent);
+                CancelIo((HANDLE)_osfhnd(fd));
+                rb_acrt_lowio_unlock_fh(fd);
+                return ret;
+            }
+        }
+        else {
+            err = GetLastError();
+            errno = map_errno(err);
+        }
+
+        finish_overlapped(&ol, fd, read, offset);
+    }
 
     ret += read;
     if (read >= len) {
         buf = (char *)buf + read;
-        if (err != ERROR_OPERATION_ABORTED &&
-            !(isconsole && len == 1 && (!islineinput || *((char *)buf - 1) == '\n')) && size > 0)
+        if (err != ERROR_OPERATION_ABORTED && size > 0)
             goto retry;
     }
     if (read == 0)
