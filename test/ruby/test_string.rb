@@ -662,8 +662,8 @@ CODE
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
   end
 
-  def test_string_interpolations_across_size_pools_get_embedded
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+  def test_string_interpolations_across_heaps_get_embedded
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     require 'objspace'
     base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]

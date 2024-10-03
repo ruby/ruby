@@ -40,7 +40,7 @@ const char *rb_obj_info(VALUE obj);
 bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
 uint32_t rb_gc_get_shape(VALUE obj);
 void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
-uint32_t rb_gc_rebuild_shape(VALUE obj, size_t size_pool_id);
+uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
 size_t rb_obj_memsize_of(VALUE obj);
 RUBY_SYMBOL_EXPORT_END
 

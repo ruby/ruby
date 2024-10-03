@@ -283,7 +283,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_arrays_down_size_pools
+  def test_moving_arrays_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
@@ -305,7 +305,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_arrays_up_size_pools
+  def test_moving_arrays_up_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
@@ -329,7 +329,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_objects_between_size_pools
+  def test_moving_objects_between_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
@@ -361,7 +361,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_strings_up_size_pools
+  def test_moving_strings_up_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
@@ -382,7 +382,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_strings_down_size_pools
+  def test_moving_strings_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
@@ -402,7 +402,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_hashes_down_size_pools
+  def test_moving_hashes_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
@@ -425,7 +425,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_objects_between_size_pools_keeps_shape_frozen_status
+  def test_moving_objects_between_heaps_keeps_shape_frozen_status
     # [Bug #19536]
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
