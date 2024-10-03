@@ -2563,6 +2563,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
     base = (unsigned char*)base + offset;
+    size = size - offset;
 
     struct io_buffer_read_internal_argument argument = {
         .descriptor = descriptor,
@@ -2575,16 +2576,18 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 }
 
 /*
- *  call-seq: read(io, length, [offset]) -> read length or -errno
+ *  call-seq: read(io, [length, [offset]]) -> read length or -errno
  *
- *  Read at most +length+ bytes from +io+ into the buffer, starting at
+ *  Read at least +length+ bytes from the +io+, into the buffer starting at
  *  +offset+. If an error occurs, return <tt>-errno</tt>.
  *
- *  If +offset+ is not given, read from the beginning of the buffer.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
  *
- *  If +length+ is 0, read nothing.
+ *  If +length+ is zero, exactly one <tt>read</tt> operation will occur.
  *
- *  Example:
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
  *
  *    IO::Buffer.for('test') do |buffer|
  *      p buffer
@@ -2785,7 +2788,8 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    base = (unsigned char *)base + offset;
+    base = (unsigned char*)base + offset;
+    size = size - offset;
 
     struct io_buffer_write_internal_argument argument = {
         .descriptor = descriptor,
@@ -2800,14 +2804,16 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 /*
  *  call-seq: write(io, [length, [offset]]) -> written length or -errno
  *
- *  Writes at least +length+ bytes from buffer into +io+, starting at
- *  +offset+ in the buffer. If an error occurs, return <tt>-errno</tt>.
+ *  Write at least +length+ bytes from the buffer starting at +offset+, into the +io+.
+ *  If an error occurs, return <tt>-errno</tt>.
  *
- *  If +length+ is not given or nil, the whole buffer is written, minus
- *  the offset. If +length+ is zero, write will be called once.
+ *  If +length+ is not given or +nil+, it defaults to the size of the buffer
+ *  minus the offset, i.e. the entire buffer.
  *
- *  If +offset+ is not given, the bytes are taken from the beginning
- *  of the buffer.
+ *  If +length+ is zero, exactly one <tt>write</tt> operation will occur.
+ *
+ *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
+ *  buffer.
  *
  *    out = File.open('output.txt', 'wb')
  *    IO::Buffer.for('1234567').write(out, 3)
