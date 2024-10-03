@@ -3650,7 +3650,7 @@ mlhs_node	: user_or_keyword_variable
                         $$ = aryset(p, $1, $3, &@$);
                     /*% ripper: aref_field!($:1, $:3) %*/
                     }
-                | primary_value call_op tIDENTIFIER
+                | primary_value call_op ident_or_const
                     {
                         anddot_multiple_assignment_check(p, &@2, $2);
                         $$ = attrset(p, $1, $2, $3, &@$);
@@ -3660,12 +3660,6 @@ mlhs_node	: user_or_keyword_variable
                     {
                         $$ = attrset(p, $1, idCOLON2, $3, &@$);
                     /*% ripper: const_path_field!($:1, $:3) %*/
-                    }
-                | primary_value call_op tCONSTANT
-                    {
-                        anddot_multiple_assignment_check(p, &@2, $2);
-                        $$ = attrset(p, $1, $2, $3, &@$);
-                    /*% ripper: field!($:1, $:2, $:3) %*/
                     }
                 | primary_value tCOLON2 tCONSTANT
                     {
@@ -3847,12 +3841,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         $$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$, &NULL_LOC, &@2, &@4, &@5);
                     /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
                     }
-                | primary_value call_op tIDENTIFIER tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        $$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$, &@2, &@3, &@4);
-                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
-                    }
-                | primary_value call_op tCONSTANT tOP_ASGN lex_ctxt arg_rhs
+                | primary_value call_op ident_or_const tOP_ASGN lex_ctxt arg_rhs
                     {
                         $$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$, &@2, &@3, &@4);
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
