@@ -544,10 +544,7 @@ pm_parser_warn_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id
  * token.
  */
 static void
-pm_parser_err_heredoc_term(pm_parser_t *parser, pm_lex_mode_t *lex_mode) {
-    const uint8_t *ident_start = lex_mode->as.heredoc.ident_start;
-    size_t ident_length = lex_mode->as.heredoc.ident_length;
-
+pm_parser_err_heredoc_term(pm_parser_t *parser, const uint8_t *ident_start, size_t ident_length) {
     PM_PARSER_ERR_FORMAT(
         parser,
         ident_start,
@@ -11153,12 +11150,14 @@ parser_lex(pm_parser_t *parser) {
                                 lex_mode_push(parser, (pm_lex_mode_t) {
                                     .mode = PM_LEX_HEREDOC,
                                     .as.heredoc = {
-                                        .ident_start = ident_start,
-                                        .ident_length = ident_length,
+                                        .base = {
+                                            .ident_start = ident_start,
+                                            .ident_length = ident_length,
+                                            .quote = quote,
+                                            .indent = indent
+                                        },
                                         .next_start = parser->current.end,
-                                        .quote = quote,
-                                        .indent = indent,
-                                        .common_whitespace = (size_t) -1,
+                                        .common_whitespace = NULL,
                                         .line_continuation = false
                                     }
                                 });
@@ -11171,7 +11170,7 @@ parser_lex(pm_parser_t *parser) {
                                         // this is not a valid heredoc declaration. In this case we
                                         // will add an error, but we will still return a heredoc
                                         // start.
-                                        if (!ident_error) pm_parser_err_heredoc_term(parser, parser->lex_modes.current);
+                                        if (!ident_error) pm_parser_err_heredoc_term(parser, ident_start, ident_length);
                                         body_start = parser->end;
                                     } else {
                                         // Otherwise, we want to indicate that the body of the
@@ -12514,6 +12513,7 @@ parser_lex(pm_parser_t *parser) {
             // Now let's grab the information about the identifier off of the
             // current lex mode.
             pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+            pm_heredoc_lex_mode_t *heredoc_lex_mode = &lex_mode->as.heredoc.base;
 
             bool line_continuation = lex_mode->as.heredoc.line_continuation;
             lex_mode->as.heredoc.line_continuation = false;
@@ -12523,15 +12523,16 @@ parser_lex(pm_parser_t *parser) {
             // terminator) but still continue parsing so that content after the
             // declaration of the heredoc can be parsed.
             if (parser->current.end >= parser->end) {
-                pm_parser_err_heredoc_term(parser, lex_mode);
+                pm_parser_err_heredoc_term(parser, heredoc_lex_mode->ident_start, heredoc_lex_mode->ident_length);
                 parser->next_start = lex_mode->as.heredoc.next_start;
                 parser->heredoc_end = parser->current.end;
                 lex_state_set(parser, PM_LEX_STATE_END);
+                lex_mode_pop(parser);
                 LEX(PM_TOKEN_HEREDOC_END);
             }
 
-            const uint8_t *ident_start = lex_mode->as.heredoc.ident_start;
-            size_t ident_length = lex_mode->as.heredoc.ident_length;
+            const uint8_t *ident_start = heredoc_lex_mode->ident_start;
+            size_t ident_length = heredoc_lex_mode->ident_length;
 
             // If we are immediately following a newline and we have hit the
             // terminator, then we need to return the ending of the heredoc.
@@ -12556,10 +12557,7 @@ parser_lex(pm_parser_t *parser) {
                     const uint8_t *terminator_start = ident_end - ident_length;
                     const uint8_t *cursor = start;
 
-                    if (
-                        lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_DASH ||
-                        lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE
-                    ) {
+                    if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_DASH || heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
                         while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
                             cursor++;
                         }
@@ -12582,17 +12580,19 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         lex_state_set(parser, PM_LEX_STATE_END);
+                        lex_mode_pop(parser);
                         LEX(PM_TOKEN_HEREDOC_END);
                     }
                 }
 
-                size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
+                size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, heredoc_lex_mode->indent);
                 if (
-                    lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE &&
-                    (lex_mode->as.heredoc.common_whitespace > whitespace) &&
+                    heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE &&
+                    lex_mode->as.heredoc.common_whitespace != NULL &&
+                    (*lex_mode->as.heredoc.common_whitespace > whitespace) &&
                     peek_at(parser, start) != '\n'
                 ) {
-                    lex_mode->as.heredoc.common_whitespace = whitespace;
+                    *lex_mode->as.heredoc.common_whitespace = whitespace;
                 }
             }
 
@@ -12601,7 +12601,7 @@ parser_lex(pm_parser_t *parser) {
             // strpbrk to find the first of these characters.
             uint8_t breakpoints[] = "\r\n\\#";
 
-            pm_heredoc_quote_t quote = lex_mode->as.heredoc.quote;
+            pm_heredoc_quote_t quote = heredoc_lex_mode->quote;
             if (quote == PM_HEREDOC_QUOTE_SINGLE) {
                 breakpoints[3] = '\0';
             }
@@ -12664,8 +12664,7 @@ parser_lex(pm_parser_t *parser) {
                             // leading whitespace if we have a - or ~ heredoc.
                             const uint8_t *cursor = start;
 
-                            if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_DASH ||
-                                lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                            if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_DASH || heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
                                 while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
                                     cursor++;
                                 }
@@ -12681,16 +12680,16 @@ parser_lex(pm_parser_t *parser) {
                             }
                         }
 
-                        size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
+                        size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.base.indent);
 
                         // If we have hit a newline that is followed by a valid
                         // terminator, then we need to return the content of the
                         // heredoc here as string content. Then, the next time a
                         // token is lexed, it will match again and return the
                         // end of the heredoc.
-                        if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
-                            if ((lex_mode->as.heredoc.common_whitespace > whitespace) && peek_at(parser, start) != '\n') {
-                                lex_mode->as.heredoc.common_whitespace = whitespace;
+                        if (lex_mode->as.heredoc.base.indent == PM_HEREDOC_INDENT_TILDE) {
+                            if ((lex_mode->as.heredoc.common_whitespace != NULL) && (*lex_mode->as.heredoc.common_whitespace > whitespace) && peek_at(parser, start) != '\n') {
+                                *lex_mode->as.heredoc.common_whitespace = whitespace;
                             }
 
                             parser->current.end = breakpoint + 1;
@@ -12757,7 +12756,7 @@ parser_lex(pm_parser_t *parser) {
                                     // If we are in a tilde here, we should
                                     // break out of the loop and return the
                                     // string content.
-                                    if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                                    if (heredoc_lex_mode->indent == PM_HEREDOC_INDENT_TILDE) {
                                         const uint8_t *end = parser->current.end;
                                         pm_newline_list_append(&parser->newline_list, end);
 
@@ -13165,13 +13164,11 @@ expect3(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_to
  * lex mode accordingly.
  */
 static void
-expect1_heredoc_term(pm_parser_t *parser, pm_lex_mode_t *lex_mode) {
+expect1_heredoc_term(pm_parser_t *parser, const uint8_t *ident_start, size_t ident_length) {
     if (match1(parser, PM_TOKEN_HEREDOC_END)) {
-        lex_mode_pop(parser);
         parser_lex(parser);
     } else {
-        pm_parser_err_heredoc_term(parser, lex_mode);
-        lex_mode_pop(parser);
+        pm_parser_err_heredoc_term(parser, ident_start, ident_length);
         parser->previous.start = parser->previous.end;
         parser->previous.type = PM_TOKEN_MISSING;
     }
@@ -18441,10 +18438,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
         case PM_TOKEN_HEREDOC_START: {
             // Here we have found a heredoc. We'll parse it and add it to the
             // list of strings.
-            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
-            assert(lex_mode->mode == PM_LEX_HEREDOC);
-            pm_heredoc_quote_t quote = lex_mode->as.heredoc.quote;
-            pm_heredoc_indent_t indent = lex_mode->as.heredoc.indent;
+            assert(parser->lex_modes.current->mode == PM_LEX_HEREDOC);
+            pm_heredoc_lex_mode_t lex_mode = parser->lex_modes.current->as.heredoc.base;
+
+            size_t common_whitespace = (size_t) -1;
+            parser->lex_modes.current->as.heredoc.common_whitespace = &common_whitespace;
 
             parser_lex(parser);
             pm_token_t opening = parser->previous;
@@ -18455,10 +18453,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
                 // If we get here, then we have an empty heredoc. We'll create
                 // an empty content token and return an empty string node.
-                expect1_heredoc_term(parser, lex_mode);
+                expect1_heredoc_term(parser, lex_mode.ident_start, lex_mode.ident_length);
                 pm_token_t content = parse_strings_empty_content(parser->previous.start);
 
-                if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                if (lex_mode.quote == PM_HEREDOC_QUOTE_BACKTICK) {
                     node = (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_STRING_EMPTY);
                 } else {
                     node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->previous, &PM_STRING_EMPTY);
@@ -18485,18 +18483,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 cast->closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->current);
                 cast->base.location = cast->opening_loc;
 
-                if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                if (lex_mode.quote == PM_HEREDOC_QUOTE_BACKTICK) {
                     assert(sizeof(pm_string_node_t) == sizeof(pm_x_string_node_t));
                     cast->base.type = PM_X_STRING_NODE;
                 }
 
-                size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
-                if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
+                if (lex_mode.indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
                     parse_heredoc_dedent_string(&cast->unescaped, common_whitespace);
                 }
 
                 node = (pm_node_t *) cast;
-                expect1_heredoc_term(parser, lex_mode);
+                expect1_heredoc_term(parser, lex_mode.ident_start, lex_mode.ident_length);
             } else {
                 // If we get here, then we have multiple parts in the heredoc,
                 // so we'll need to create an interpolated string node to hold
@@ -18510,15 +18507,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     }
                 }
 
-                size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
-
                 // Now that we have all of the parts, create the correct type of
                 // interpolated node.
-                if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                if (lex_mode.quote == PM_HEREDOC_QUOTE_BACKTICK) {
                     pm_interpolated_x_string_node_t *cast = pm_interpolated_xstring_node_create(parser, &opening, &opening);
                     cast->parts = parts;
 
-                    expect1_heredoc_term(parser, lex_mode);
+                    expect1_heredoc_term(parser, lex_mode.ident_start, lex_mode.ident_length);
                     pm_interpolated_xstring_node_closing_set(cast, &parser->previous);
 
                     cast->base.location = cast->opening_loc;
@@ -18527,7 +18522,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     pm_interpolated_string_node_t *cast = pm_interpolated_string_node_create(parser, &opening, &parts, &opening);
                     pm_node_list_free(&parts);
 
-                    expect1_heredoc_term(parser, lex_mode);
+                    expect1_heredoc_term(parser, lex_mode.ident_start, lex_mode.ident_length);
                     pm_interpolated_string_node_closing_set(cast, &parser->previous);
 
                     cast->base.location = cast->opening_loc;
@@ -18536,9 +18531,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 // If this is a heredoc that is indented with a ~, then we need
                 // to dedent each line by the common leading whitespace.
-                if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
+                if (lex_mode.indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
                     pm_node_list_t *nodes;
-                    if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
+                    if (lex_mode.quote == PM_HEREDOC_QUOTE_BACKTICK) {
                         nodes = &((pm_interpolated_x_string_node_t *) node)->parts;
                     } else {
                         nodes = &((pm_interpolated_string_node_t *) node)->parts;
