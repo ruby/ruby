@@ -6106,9 +6106,9 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *  in ascending order, per method <tt>#<=></tt>:
  *
  *    [1, 0, 3, 2].min(3)   # => [0, 1, 2]
-      [1, 0, 3, 2].min(3.0) # => [0, 1, 2]
-      [1, 0, 3, 2].min(9)   # => [0, 1, 2, 3]
-      [1, 0, 3, 2].min(0)   # => []
+ *    [1, 0, 3, 2].min(3.0) # => [0, 1, 2]
+ *    [1, 0, 3, 2].min(9)   # => [0, 1, 2, 3]
+ *    [1, 0, 3, 2].min(0)   # => []
  *
  *  With a block given, the block must return a numeric.
  *
