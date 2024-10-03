@@ -1596,13 +1596,13 @@ module Prism
       # Parse the given source and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse(source, filepath = "(string)")
-        translate(Prism.parse(source, filepath: filepath, scopes: [[]]), filepath)
+        translate(Prism.parse(source, filepath: filepath, partial_script: true), filepath)
       end
 
       # Parse the given file and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse_file(filepath)
-        translate(Prism.parse_file(filepath, scopes: [[]]), filepath)
+        translate(Prism.parse_file(filepath, partial_script: true), filepath)
       end
 
       class << self
