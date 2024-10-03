@@ -880,12 +880,10 @@ init_fast_fallback_inetsock_internal(VALUE v)
             wait_arg.nfds = n;
         }
 
-        if (!resolution_store.is_all_finised) {
-            FD_ZERO(wait_arg.readfds);
-            FD_SET(hostname_resolution_waiter, wait_arg.readfds);
-            if ((hostname_resolution_waiter + 1) > wait_arg.nfds) {
-                wait_arg.nfds = hostname_resolution_waiter + 1;
-            }
+        FD_ZERO(wait_arg.readfds);
+        FD_SET(hostname_resolution_waiter, wait_arg.readfds);
+        if ((hostname_resolution_waiter + 1) > wait_arg.nfds) {
+            wait_arg.nfds = hostname_resolution_waiter + 1;
         }
 
         rb_thread_call_without_gvl2(
@@ -895,6 +893,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_shared
         );
         rb_thread_check_ints();
+        if (errno == EINTR || arg->cancelled) break;
 
         status = wait_arg.status;
         syscall = "select(2)";
@@ -983,7 +982,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             }
                             if (resolution_store.v4.finished) {
                                 resolution_store.is_all_finised = true;
-                                wait_arg.readfds = NULL;
                                 resolution_delay_expires_at = NULL;
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
@@ -1002,7 +1000,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                             if (resolution_store.v6.finished) {
                                 resolution_store.is_all_finised = true;
-                                wait_arg.readfds = NULL;
                                 resolution_delay_expires_at = NULL;
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
@@ -1084,6 +1081,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
     }
+
+    rb_thread_check_ints();
 
     /* create new instance */
     return rsock_init_sock(arg->sock, connected_fd);
