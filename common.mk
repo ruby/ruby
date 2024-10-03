@@ -1912,9 +1912,8 @@ shared-gc: probes.h
 	elif test -z $(SHARED_GC); then \
 		echo "You must specify SHARED_GC with the GC to build"; \
 		exit 1; \
-	else \
-		echo generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT); \
 	fi
+	$(ECHO) generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT)
 	$(Q) $(MAKEDIRS) $(shared_gc_dir)
 	$(Q) $(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) $(XDLDFLAGS) $(cflags) -DBUILDING_SHARED_GC -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c
 
@@ -19522,6 +19521,7 @@ version.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h
 version.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 version.$(OBJEXT): $(top_srcdir)/internal/gc.h
 version.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+version.$(OBJEXT): $(top_srcdir)/internal/parse.h
 version.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 version.$(OBJEXT): $(top_srcdir)/internal/serial.h
 version.$(OBJEXT): $(top_srcdir)/internal/static_assert.h

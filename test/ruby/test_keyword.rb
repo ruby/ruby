@@ -2863,7 +2863,7 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def test_top_ruby2_keywords
-    assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
+    assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{k: 1}"], [])
       def bar(*a, **kw)
         p a, kw
       end

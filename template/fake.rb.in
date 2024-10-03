@@ -24,9 +24,8 @@ File.read(File.join(arg['srcdir'], 'version.c')).
   scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |n, s, v|
   version[n] = arg[v] || src.value(v) || (s ? v : 0)
 end
-arg['RUBY_DESCRIPTION_WITH_RJIT'] = src.value('description_with_rjit') || 'description_with_rjit'
-arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit') || 'description_with_yjit'
-%>baseruby="<%=arg['BASERUBY']%>"
+-%>
+baseruby="<%=arg['BASERUBY']%>"
 _\
 =begin
 _=
@@ -39,16 +38,14 @@ exec $ruby "$r" "$@"
 class Object
   remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
   CROSS_COMPILING = RUBY_PLATFORM
+  options = remove_const(:RUBY_DESCRIPTION)[/( \+[^\[\]\+]+)*(?= \[\S+\]\z)/]
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>case
-    when RubyVM.const_defined?(:RJIT) && RubyVM::RJIT.enabled?
-      <%=arg['RUBY_DESCRIPTION_WITH_RJIT'].inspect%>
-    when RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
-      <%=arg['RUBY_DESCRIPTION_WITH_YJIT'].inspect%>
-    else
-      <%=v.inspect%>
-    end<%else%><%=v.inspect%><%end%>
+  <%=n%> = <%if n=='RUBY_DESCRIPTION'
+    v1, v2 = v.split(/(?= \[\S+\]\z)/)
+    %><%=v1.dump.chomp('"')%>#{options}<%=
+    v2.dump[1..-1]%>.freeze<%
+  else%><%=v.inspect%><%end%>
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))

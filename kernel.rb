@@ -105,9 +105,9 @@ module Kernel
   #     require 'open-uri'
   #     require 'json'
   #
-  #     construct_url(arguments).
-  #       then {|url| URI(url).read }.
-  #       then {|response| JSON.parse(response) }
+  #     construct_url(arguments)
+  #       .then {|url| URI(url).read }
+  #       .then {|response| JSON.parse(response) }
   #
   #  When called without block, the method returns +Enumerator+,
   #  which can be used, for example, for conditional
@@ -118,15 +118,6 @@ module Kernel
   #     # does not meet condition, drop value
   #     2.then.detect(&:odd?)            # => nil
   #
-  #  Good usage for +then+ is value piping in method chains:
-  #
-  #     require 'open-uri'
-  #     require 'json'
-  #
-  #     construct_url(arguments).
-  #       then {|url| URI(url).read }.
-  #       then {|response| JSON.parse(response) }
-  #
   def then
     Primitive.attr! :inline_block
     unless defined?(yield)
@@ -135,21 +126,7 @@ module Kernel
     yield(self)
   end
 
-  #
-  #  call-seq:
-  #     obj.yield_self {|x| block }    -> an_object
-  #
-  #  Yields self to the block and returns the result of the block.
-  #
-  #     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
-  #
-  def yield_self
-    Primitive.attr! :inline_block
-    unless defined?(yield)
-      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, rb_obj_size)'
-    end
-    yield(self)
-  end
+  alias yield_self then
 
   module_function
 

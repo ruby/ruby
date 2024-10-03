@@ -541,9 +541,7 @@ impl VALUE {
 
         ptr
     }
-}
 
-impl VALUE {
     pub fn fixnum_from_usize(item: usize) -> Self {
         assert!(item <= (RUBY_FIXNUM_MAX as usize)); // An unsigned will always be greater than RUBY_FIXNUM_MIN
         let k: usize = item.wrapping_add(item.wrapping_add(1));

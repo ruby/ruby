@@ -92,14 +92,15 @@ The following default gems are updated.
 The following bundled gems are updated.
 
 * minitest 5.25.1
+* power_assert 2.0.4
 * rake 13.2.1
 * test-unit 3.6.2
 * rexml 3.3.8
 * rss 0.3.1
-* net-ftp 0.3.7
+* net-ftp 0.3.8
 * net-imap 0.4.16
 * net-smtp 0.5.0
-* rbs 3.5.3
+* rbs 3.6.1
 * typeprof 0.21.11
 * debug 1.9.2
 * racc 1.8.1
@@ -118,6 +119,7 @@ The following bundled gems are promoted from default gems.
 * nkf 0.2.0
 * syslog 0.1.2
 * csv 3.3.0
+* repl_type_completor 0.1.7
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 

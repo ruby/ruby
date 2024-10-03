@@ -30,6 +30,7 @@ module Gem
       @name        = name
       @requirement = requirement
       @extra_message = extra_message
+      super(message)
     end
 
     def message # :nodoc:
@@ -53,8 +54,8 @@ module Gem
     attr_reader :specs
 
     def initialize(name, requirement, specs)
-      super(name, requirement)
       @specs = specs
+      super(name, requirement)
     end
 
     private

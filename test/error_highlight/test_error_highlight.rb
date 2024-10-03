@@ -1241,7 +1241,7 @@ nil can't be coerced into Integer (TypeError)
     assert_error_message(NoMethodError, <<~END) do
 undefined method `time' for #{ ONE_RECV_MESSAGE }
 
-{:first_lineno=>#{ __LINE__ + 3 }, :first_column=>7, :last_lineno=>#{ __LINE__ + 3 }, :last_column=>12, :snippet=>"      1.time {}\\n"}
+#{{ first_lineno: __LINE__ + 3, first_column: 7, last_lineno: __LINE__ + 3, last_column: 12, snippet: "      1.time {}\n" }.inspect}
     END
 
       1.time {}

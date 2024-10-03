@@ -87,7 +87,14 @@ module Prism
 
       # Compare against Ruby's expectation.
       if defined?(RubyVM::InstructionSequence)
-        expected = RubyVM::InstructionSequence.compile(source).eval.encoding
+        previous = $VERBOSE
+        expected =
+          begin
+            $VERBOSE = nil
+            RubyVM::InstructionSequence.compile(source).eval.encoding
+          ensure
+            $VERBOSE = previous
+          end
         assert_equal expected, actual
       end
     end

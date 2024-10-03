@@ -940,6 +940,38 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(NameError, bug14658) {o.singleton_method(:bar)}
   end
 
+  def test_singleton_method_included_or_prepended_bug_20620
+    m = Module.new do
+      extend self
+      def foo = :foo
+    end
+    assert_equal(:foo, m.singleton_method(:foo).call)
+    assert_raise(NameError) {m.singleton_method(:puts)}
+
+    sc = Class.new do
+      def t = :t
+    end
+    c = Class.new(sc) do
+      singleton_class.prepend(Module.new do
+        def bar = :bar
+      end)
+      extend(Module.new do
+        def quux = :quux
+      end)
+      def self.baz = :baz
+    end
+    assert_equal(:bar, c.singleton_method(:bar).call)
+    assert_equal(:baz, c.singleton_method(:baz).call)
+    assert_equal(:quux, c.singleton_method(:quux).call)
+
+    assert_raise(NameError) {c.singleton_method(:t)}
+
+    c2 = Class.new(c)
+    assert_raise(NameError) {c2.singleton_method(:bar)}
+    assert_raise(NameError) {c2.singleton_method(:baz)}
+    assert_raise(NameError) {c2.singleton_method(:quux)}
+  end
+
   Feature9783 = '[ruby-core:62212] [Feature #9783]'
 
   def assert_curry_three_args(m)

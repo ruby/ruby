@@ -245,39 +245,30 @@ class Reline::ANSI < Reline::IO
     self
   end
 
-  def cursor_pos
-    if both_tty?
-      res = +''
-      m = nil
-      @input.raw do |stdin|
-        @output << "\e[6n"
-        @output.flush
-        loop do
-          c = stdin.getc
-          next if c.nil?
-          res << c
-          m = res.match(/\e\[(?<row>\d+);(?<column>\d+)R/)
-          break if m
-        end
-        (m.pre_match + m.post_match).chars.reverse_each do |ch|
-          stdin.ungetc ch
+  private def cursor_pos_internal(timeout:)
+    match = nil
+    @input.raw do |stdin|
+      @output << "\e[6n"
+      @output.flush
+      timeout_at = Time.now + timeout
+      buf = +''
+      while (wait = timeout_at - Time.now) > 0 && stdin.wait_readable(wait)
+        buf << stdin.readpartial(1024)
+        if (match = buf.match(/\e\[(?<row>\d+);(?<column>\d+)R/))
+          buf = match.pre_match + match.post_match
+          break
         end
       end
-      column = m[:column].to_i - 1
-      row = m[:row].to_i - 1
-    else
-      begin
-        buf = @output.pread(@output.pos, 0)
-        row = buf.count("\n")
-        column = buf.rindex("\n") ? (buf.size - buf.rindex("\n")) - 1 : 0
-      rescue Errno::ESPIPE, IOError
-        # Just returns column 1 for ambiguous width because this I/O is not
-        # tty and can't seek.
-        row = 0
-        column = 1
+      buf.chars.reverse_each do |ch|
+        stdin.ungetc ch
       end
     end
-    Reline::CursorPos.new(column, row)
+    [match[:column].to_i - 1, match[:row].to_i - 1] if match
+  end
+
+  def cursor_pos
+    col, row = cursor_pos_internal(timeout: 0.5) if both_tty?
+    Reline::CursorPos.new(col || 0, row || 0)
   end
 
   def both_tty?

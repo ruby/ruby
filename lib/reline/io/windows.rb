@@ -252,7 +252,7 @@ class Reline::Windows < Reline::IO
 
     key = KeyEventRecord.new(virtual_key_code, char_code, control_key_state)
 
-    match = KEY_MAP.find { |args,| key.matches?(**args) }
+    match = KEY_MAP.find { |args,| key.match?(**args) }
     unless match.nil?
       @output_buf.concat(match.last)
       return
@@ -501,7 +501,7 @@ class Reline::Windows < Reline::IO
     # Verifies if the arguments match with this key event.
     # Nil arguments are ignored, but at least one must be passed as non-nil.
     # To verify that no control keys were pressed, pass an empty array: `control_keys: []`.
-    def matches?(control_keys: nil, virtual_key_code: nil, char_code: nil)
+    def match?(control_keys: nil, virtual_key_code: nil, char_code: nil)
       raise ArgumentError, 'No argument was passed to match key event' if control_keys.nil? && virtual_key_code.nil? && char_code.nil?
 
       (control_keys.nil? || [*control_keys].sort == @control_keys) &&

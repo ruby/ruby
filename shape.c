@@ -418,7 +418,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
 {
     rb_shape_t * shape = rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
     shape->type = (uint8_t)type;
-    shape->size_pool_index = parent->size_pool_index;
+    shape->heap_index = parent->heap_index;
     shape->capacity = parent->capacity;
     shape->edges = 0;
     return shape;
@@ -1059,7 +1059,7 @@ rb_shape_t_to_rb_cShape(rb_shape_t *shape)
             INT2NUM(shape->parent_id),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_iv_index),
-            INT2NUM(shape->size_pool_index),
+            INT2NUM(shape->heap_index),
             INT2NUM(shape->type),
             INT2NUM(shape->capacity));
     rb_obj_freeze(obj);
@@ -1266,7 +1266,7 @@ Init_default_shapes(void)
     rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
     root->capacity = 0;
     root->type = SHAPE_ROOT;
-    root->size_pool_index = 0;
+    root->heap_index = 0;
     GET_SHAPE_TREE()->root_shape = root;
     RUBY_ASSERT(rb_shape_id(GET_SHAPE_TREE()->root_shape) == ROOT_SHAPE_ID);
 
@@ -1282,16 +1282,16 @@ Init_default_shapes(void)
 
     rb_shape_t *too_complex_shape = rb_shape_alloc_with_parent_id(0, ROOT_SHAPE_ID);
     too_complex_shape->type = SHAPE_OBJ_TOO_COMPLEX;
-    too_complex_shape->size_pool_index = 0;
+    too_complex_shape->heap_index = 0;
     RUBY_ASSERT(OBJ_TOO_COMPLEX_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
     RUBY_ASSERT(rb_shape_id(too_complex_shape) == OBJ_TOO_COMPLEX_SHAPE_ID);
 
     // Make shapes for T_OBJECT
-    size_t *sizes = rb_gc_size_pool_sizes();
+    size_t *sizes = rb_gc_heap_sizes();
     for (int i = 0; sizes[i] > 0; i++) {
         rb_shape_t *t_object_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
         t_object_shape->type = SHAPE_T_OBJECT;
-        t_object_shape->size_pool_index = i;
+        t_object_shape->heap_index = i;
         t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
@@ -1308,7 +1308,7 @@ Init_shape(void)
             "parent_id",
             "edge_name",
             "next_iv_index",
-            "size_pool_index",
+            "heap_index",
             "type",
             "capacity",
             NULL);

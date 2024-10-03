@@ -1798,7 +1798,7 @@ assert_equal '{}', %q{
 }
 
 # test building hash with values
-assert_equal '{:foo=>:bar}', %q{
+assert_equal '{foo: :bar}', %q{
   def build_hash(val)
     { foo: val }
   end
@@ -3375,7 +3375,7 @@ assert_equal '[[1, 2, 3, 4]]', %q{
 }
 
 # cfunc kwargs
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo(bar)
     bar.store(:value, foo: 123)
     bar[:value]
@@ -3386,7 +3386,7 @@ assert_equal '{:foo=>123}', %q{
 }
 
 # cfunc kwargs
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo(bar)
     bar.replace(foo: 123)
   end
@@ -3396,7 +3396,7 @@ assert_equal '{:foo=>123}', %q{
 }
 
 # cfunc kwargs
-assert_equal '{:foo=>123, :bar=>456}', %q{
+assert_equal '{foo: 123, bar: 456}', %q{
   def foo(bar)
     bar.replace(foo: 123, bar: 456)
   end
@@ -3406,7 +3406,7 @@ assert_equal '{:foo=>123, :bar=>456}', %q{
 }
 
 # variadic cfunc kwargs
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo(bar)
     bar.merge(foo: 123)
   end
@@ -3530,7 +3530,7 @@ assert_equal "true", %q{
 }
 
 # duphash
-assert_equal '{:foo=>123}', %q{
+assert_equal '{foo: 123}', %q{
   def foo
     {foo: 123}
   end
@@ -3540,7 +3540,7 @@ assert_equal '{:foo=>123}', %q{
 }
 
 # newhash
-assert_equal '{:foo=>2}', %q{
+assert_equal '{foo: 2}', %q{
   def foo
     {foo: 1+1}
   end
@@ -4349,7 +4349,7 @@ assert_equal "ArgumentError", %q{
 
 # Rest with block
 # Simplified code from railsbench
-assert_equal '[{"/a"=>"b", :as=>:c, :via=>:post}, [], nil]', %q{
+assert_equal '[{"/a" => "b", as: :c, via: :post}, [], nil]', %q{
   def match(path, *rest, &block)
     [path, rest, block]
   end
@@ -4610,7 +4610,7 @@ assert_equal '[nil, "yield"]', %q{
 }
 
 # splat with ruby2_keywords into rest parameter
-assert_equal '[[{:a=>1}], {}]', %q{
+assert_equal '[[{a: 1}], {}]', %q{
   ruby2_keywords def foo(*args) = args
 
   def bar(*args, **kw) = [args, kw]
@@ -4651,7 +4651,7 @@ assert_normal_exit %q{
 }
 
 # a kwrest case
-assert_equal '[1, 2, {:complete=>false}]', %q{
+assert_equal '[1, 2, {complete: false}]', %q{
   def rest(foo: 1, bar: 2, **kwrest)
     [foo, bar, kwrest]
   end
@@ -4710,7 +4710,7 @@ assert_equal '[[1, 2, 3], [0, 2, 3], [1, 2, 3], [2, 2, 3], [], [], [{}]]', %q{
 }
 
 # Class#new (arity=-1), splat, and ruby2_keywords
-assert_equal '[0, {1=>1}]', %q{
+assert_equal '[0, {1 => 1}]', %q{
   class KwInit
     attr_reader :init_args
     def initialize(x = 0, **kw)

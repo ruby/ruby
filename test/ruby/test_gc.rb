@@ -226,7 +226,7 @@ class TestGc < Test::Unit::TestCase
     GC.stat_heap(0, stat_heap)
     GC.stat(stat)
 
-    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+    GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
       EnvUtil.without_gc do
         GC.stat_heap(i, stat_heap)
         GC.stat(stat)
@@ -248,7 +248,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat_heap[:slot_size], GC.stat_heap(0)[:slot_size]
 
     assert_raise(ArgumentError) { GC.stat_heap(-1) }
-    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT]) }
+    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:HEAP_COUNT]) }
   end
 
   def test_stat_heap_all
@@ -259,7 +259,7 @@ class TestGc < Test::Unit::TestCase
     GC.stat_heap(0, stat_heap)
     GC.stat_heap(nil, stat_heap_all)
 
-    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+    GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
       GC.stat_heap(nil, stat_heap_all)
       GC.stat_heap(i, stat_heap)
 
@@ -538,7 +538,7 @@ class TestGc < Test::Unit::TestCase
 
       gc_count = GC.stat(:count)
       # Fill up all of the size pools to the init slots
-      GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
         capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
         while GC.stat_heap(i, :heap_eden_slots) < GC_HEAP_INIT_SLOTS
           Array.new(capa)
@@ -558,7 +558,7 @@ class TestGc < Test::Unit::TestCase
 
       gc_count = GC.stat(:count)
       # Fill up all of the size pools to the init slots
-      GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
         capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
         while GC.stat_heap(i, :heap_eden_slots) < SIZES[i]
           Array.new(capa)

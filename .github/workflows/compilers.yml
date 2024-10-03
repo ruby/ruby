@@ -193,7 +193,7 @@ jobs:
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
       - { uses: './.github/actions/compilers', name: '-O0', with: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
       # - { uses: './.github/actions/compilers', name: '-O3', with: { optflags: '-O3 -march=x86-64 -mtune=generic', check: true } }
-      - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', check: 'ruby/test_bignum.rb' } }
+      - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', check: 'ruby/test_bignum.rb', mspecopt: "/github/workspace/src/spec/ruby/core/integer" } }
       - { uses: './.github/actions/compilers', name: 'jemalloc',            with: { append_configure: '--with-jemalloc' } }
       - { uses: './.github/actions/compilers', name: 'valgrind',            with: { append_configure: '--with-valgrind' } }
       - { uses: './.github/actions/compilers', name: 'coroutine=ucontext',  with: { append_configure: '--with-coroutine=ucontext' } }

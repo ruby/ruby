@@ -13,11 +13,15 @@
 #include "internal/static_assert.h"
 
 // The default parser to use for Ruby code.
-// 0: parse.y
-// 1: Prism
-#ifndef RB_DEFAULT_PARSER
-#define RB_DEFAULT_PARSER 1
-#endif
+typedef enum {
+    RB_DEFAULT_PARSER_PARSE_Y,
+    RB_DEFAULT_PARSER_PRISM,
+} ruby_default_parser_enum;
+
+ruby_default_parser_enum rb_ruby_default_parser(void);
+void rb_ruby_default_parser_set(ruby_default_parser_enum parser);
+
+#define rb_ruby_prism_p() (rb_ruby_default_parser() == RB_DEFAULT_PARSER_PRISM)
 
 #ifdef UNIVERSAL_PARSER
 #define rb_encoding const void

@@ -201,8 +201,8 @@ void *rb_gc_ractor_cache_alloc(void);
 void rb_gc_ractor_cache_free(void *cache);
 
 bool rb_gc_size_allocatable_p(size_t size);
-size_t *rb_gc_size_pool_sizes(void);
-size_t rb_gc_size_pool_id_for_size(size_t size);
+size_t *rb_gc_heap_sizes(void);
+size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 

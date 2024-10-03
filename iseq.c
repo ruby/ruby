@@ -354,11 +354,13 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
             }
         }
 
-        if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
+        if (body->param.flags.has_kw && body->param.keyword != NULL) {
             const struct rb_iseq_param_keyword *const keyword = body->param.keyword;
 
-            for (int j = 0, i = keyword->required_num; i < keyword->num; i++, j++) {
-                rb_gc_mark_and_move(&keyword->default_values[j]);
+            if (keyword->default_values != NULL) {
+                for (int j = 0, i = keyword->required_num; i < keyword->num; i++, j++) {
+                    rb_gc_mark_and_move(&keyword->default_values[j]);
+                }
             }
         }
 
@@ -1564,7 +1566,7 @@ iseqw_s_compile_parser(int argc, VALUE *argv, VALUE self, bool prism)
 static VALUE
 iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 {
-    return iseqw_s_compile_parser(argc, argv, self, *rb_ruby_prism_ptr());
+    return iseqw_s_compile_parser(argc, argv, self, rb_ruby_prism_p());
 }
 
 /*

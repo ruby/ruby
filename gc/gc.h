@@ -40,7 +40,7 @@ const char *rb_obj_info(VALUE obj);
 bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
 uint32_t rb_gc_get_shape(VALUE obj);
 void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
-uint32_t rb_gc_rebuild_shape(VALUE obj, size_t size_pool_id);
+uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
 size_t rb_obj_memsize_of(VALUE obj);
 RUBY_SYMBOL_EXPORT_END
 
@@ -48,6 +48,18 @@ void rb_ractor_finish_marking(void);
 
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c
+
+/* RGENGC_CHECK_MODE
+ * 0: disable all assertions
+ * 1: enable assertions (to debug RGenGC)
+ * 2: enable internal consistency check at each GC (for debugging)
+ * 3: enable internal consistency check at each GC steps (for debugging)
+ * 4: enable liveness check
+ * 5: show all references
+ */
+#ifndef RGENGC_CHECK_MODE
+# define RGENGC_CHECK_MODE  0
+#endif
 
 #ifndef GC_ASSERT
 # define GC_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(RGENGC_CHECK_MODE > 0, expr, #expr)

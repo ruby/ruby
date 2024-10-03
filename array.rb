@@ -150,36 +150,29 @@ class Array
   end
 
   # call-seq:
-  #   array.last  -> object or nil
-  #   array.last(n) -> new_array
+  #  last  -> last_object or nil
+  #  last(n) -> new_array
   #
-  # Returns elements from +self+; +self+ is not modified.
+  # Returns elements from +self+, or +nil+; +self+ is not modified.
   #
-  # When no argument is given, returns the last element:
+  # With no argument given, returns the last element, or +nil+ if +self+ is empty:
   #
   #   a = [:foo, 'bar', 2]
   #   a.last # => 2
   #   a # => [:foo, "bar", 2]
+  #   [].last # => nil
   #
-  # If +self+ is empty, returns +nil+.
   #
-  # When non-negative Integer argument +n+ is given,
-  # returns the last +n+ elements in a new +Array+:
-  #
-  #   a = [:foo, 'bar', 2]
-  #   a.last(2) # => ["bar", 2]
-  #
-  # If <tt>n >= array.size</tt>, returns all elements:
+  # With non-negative integer argument +n+ is given,
+  # returns a new array containing the trailing +n+ elements of +self+, as available:
   #
   #   a = [:foo, 'bar', 2]
+  #   a.last(2)  # => ["bar", 2]
   #   a.last(50) # => [:foo, "bar", 2]
+  #   a.last(0)  # => []
+  #   [].last(3) # => []
   #
-  # If <tt>n == 0</tt>, returns an new empty +Array+:
-  #
-  #   a = [:foo, 'bar', 2]
-  #   a.last(0) # []
-  #
-  # Related: #first.
+  # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
   def last n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
