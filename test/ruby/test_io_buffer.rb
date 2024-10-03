@@ -450,9 +450,11 @@ class TestIOBuffer < Test::Unit::TestCase
     input.close
   end
 
-  def hello_world_tempfile
+  def hello_world_tempfile(repeats = 1)
     io = Tempfile.new
-    io.write("Hello World")
+    repeats.times do
+      io.write("Hello World")
+    end
     io.seek(0)
 
     yield io
@@ -484,6 +486,15 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_read_with_length_and_offset
+    hello_world_tempfile(100) do |io|
+      buffer = IO::Buffer.new(1024)
+      # Only read 24 bytes from the file, as we are starting at offset 1000 in the buffer.
+      assert_equal 24, buffer.read(io, 0, 1000)
+      assert_equal "Hello World", buffer.get_string(1000, 11)
+    end
+  end
+
   def test_write
     io = Tempfile.new
 
@@ -493,6 +504,19 @@ class TestIOBuffer < Test::Unit::TestCase
 
     io.seek(0)
     assert_equal "Hello", io.read(5)
+  ensure
+    io.close!
+  end
+
+  def test_write_with_length_and_offset
+    io = Tempfile.new
+
+    buffer = IO::Buffer.new(5)
+    buffer.set_string("Hello")
+    buffer.write(io, 4, 1)
+
+    io.seek(0)
+    assert_equal "ello", io.read(4)
   ensure
     io.close!
   end
