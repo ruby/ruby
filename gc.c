@@ -648,8 +648,6 @@ static rb_gc_function_map_t rb_gc_functions;
 
 # define RUBY_GC_LIBRARY "RUBY_GC_LIBRARY"
 
-# define fatal(...) do {fprintf(stderr, "" __VA_ARGS__); return;} while (0)
-
 static void
 ruby_external_gc_init(void)
 {
@@ -672,7 +670,8 @@ ruby_external_gc_init(void)
               case '.':
                 break;
               default:
-                fatal("Only alphanumeric, dash, underscore, and period is allowed in "RUBY_GC_LIBRARY"");
+                fprintf(stderr, "Only alphanumeric, dash, underscore, and period is allowed in "RUBY_GC_LIBRARY"\n");
+                exit(1);
             }
         }
 
@@ -682,7 +681,8 @@ ruby_external_gc_init(void)
 
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
-            fatal("ruby_external_gc_init: Shared library %s cannot be opened: %s", gc_so_path, dlerror());
+            fprintf(stderr, "ruby_external_gc_init: Shared library %s cannot be opened: %s\n", gc_so_path, dlerror());
+            exit(1);
         }
     }
 
@@ -692,7 +692,8 @@ ruby_external_gc_init(void)
     if (handle) { \
         gc_functions.name = dlsym(handle, "rb_gc_impl_" #name); \
         if (!gc_functions.name) { \
-            fatal("ruby_external_gc_init: " #name " func not exported by library %s", gc_so_path); \
+            fprintf(stderr, "ruby_external_gc_init: " #name " func not exported by library %s\n", gc_so_path); \
+            exit(1); \
         } \
     } \
     else { \
