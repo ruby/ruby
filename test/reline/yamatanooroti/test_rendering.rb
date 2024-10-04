@@ -556,7 +556,7 @@ begin
       close
     end
 
-    def test_bracketed_paste_with_undo
+    def test_bracketed_paste_with_undo_redo
       omit if Reline.core.io_gate.win?
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("abc")
@@ -566,15 +566,6 @@ begin
         Multiline REPL.
         prompt> abc
       EOC
-      close
-    end
-
-    def test_bracketed_paste_with_redo
-      omit if Reline.core.io_gate.win?
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write("abc")
-      write("\e[200~def hoge\r\t3\rend\e[201~")
-      write("\C-_")
       write("\M-\C-_")
       assert_screen(<<~EOC)
         Multiline REPL.
@@ -639,46 +630,6 @@ begin
         prompt>   end
         prompt> end
       EOC
-      close
-    end
-
-    def test_longer_than_screen_height_with_scroll_back
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write(<<~EOC.chomp)
-        def each_top_level_statement
-          initialize_input
-          catch(:TERM_INPUT) do
-            loop do
-              begin
-                prompt
-                unless l = lex
-                  throw :TERM_INPUT if @line == ''
-                else
-                  @line_no += l.count("\n")
-                  next if l == "\n"
-                  @line.concat l
-                  if @code_block_open or @ltype or @continue or @indent > 0
-                    next
-                  end
-                end
-                if @line != "\n"
-                  @line.force_encoding(@io.encoding)
-                  yield @line, @exp_line_no
-                end
-                break if @io.eof?
-                @line = ''
-                @exp_line_no = @line_no
-                #
-                @indent = 0
-              rescue TerminateLineInput
-                initialize_input
-                prompt
-              end
-            end
-          end
-        end
-      EOC
-      sleep 1
       write("\C-p" * 6)
       assert_screen(<<~EOC)
         prompt>       rescue Terminate
@@ -687,49 +638,9 @@ begin
         ut
         prompt>         prompt
       EOC
-      close
-    end
-
-    def test_longer_than_screen_height_with_complex_scroll_back
-      start_terminal(4, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
-      write(<<~EOC.chomp)
-        def each_top_level_statement
-          initialize_input
-          catch(:TERM_INPUT) do
-            loop do
-              begin
-                prompt
-                unless l = lex
-                  throw :TERM_INPUT if @line == ''
-                else
-                  @line_no += l.count("\n")
-                  next if l == "\n"
-                  @line.concat l
-                  if @code_block_open or @ltype or @continue or @indent > 0
-                    next
-                  end
-                end
-                if @line != "\n"
-                  @line.force_encoding(@io.encoding)
-                  yield @line, @exp_line_no
-                end
-                break if @io.eof?
-                @line = ''
-                @exp_line_no = @line_no
-                #
-                @indent = 0
-              rescue TerminateLineInput
-                initialize_input
-                prompt
-              end
-            end
-          end
-        end
-      EOC
-      sleep 1
-      write("\C-p" * 5)
-      write("\C-n" * 3)
+      write("\C-n" * 4)
       assert_screen(<<~EOC)
+        prompt>         initialize_inp
         ut
         prompt>         prompt
         prompt>       end
@@ -1459,12 +1370,7 @@ begin
                 Socket
                 StringIO
       EOC
-      close
-    end
-
-    def test_autocomplete_long_with_scrollbar_scroll
-      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
-      write('S' + "\C-i" * 16)
+      write("\C-i" * 16)
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> StringScanner
