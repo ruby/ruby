@@ -7973,7 +7973,7 @@ rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].one? {|element| element > 1 } # => true
  *    [0, 1, 2].one? {|element| element > 2 } # => false
  *
- *  With argument +object+ given, returns +true+ if <tt>object.===</tt> for exactly one element,
+ *  With argument +object+ given, returns +true+ if for exactly one element `element`, <tt>object === element</tt>;
  *  +false+ otherwise:
  *
  *    [0, 1, 2].one?(0) # => true
