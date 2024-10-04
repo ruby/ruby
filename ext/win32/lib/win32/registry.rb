@@ -69,11 +69,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
   WCHAR_NUL = "\0".encode(WCHAR).freeze
   WCHAR_CR = "\r".encode(WCHAR).freeze
   WCHAR_SIZE = WCHAR_NUL.bytesize
-  begin
-    LOCALE = Encoding.find(Encoding.locale_charmap)
-  rescue ArgumentError
-    LOCALE = Encoding::UTF_8
-  end
+  LOCALE = Encoding::UTF_8
 
   class Registry
 
@@ -567,9 +563,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Enumerate values.
+    # Enumerate all values in this registry path.
+    #
+    # For each value it yields key, type and data.
+    #
+    # key is a String which contains name of key.
+    # type is a type contant kind of Win32::Registry::REG_*
+    # data is the value of this key.
     #
     def each_value
+      return enum_for(:each_value) unless block_given?
       index = 0
       while true
         begin
@@ -600,13 +603,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Enumerate subkeys.
+    # Enumerate all subkeys.
+    #
+    # For each subkey it yields subkey and wtime.
     #
     # subkey is String which contains name of subkey.
     # wtime is last write time as FILETIME (64-bit integer).
     # (see Registry.wtime2time)
     #
     def each_key
+      return enum_for(:each_key) unless block_given?
       index = 0
       while true
         begin
