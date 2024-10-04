@@ -983,8 +983,8 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
 
 /**
  * Blocks until the passed IO is ready for reading, if that makes sense for the
- * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that  only
- * concerns for reading.
+ * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that is
+ * only concerned with reading and handles the timeout.
  *
  * If you do not want the default timeout handling, consider using
  * ::rb_io_maybe_wait directly.
@@ -1002,8 +1002,8 @@ int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
 
 /**
  * Blocks until the passed IO is ready for writing, if that makes sense for the
- * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that  only
- * concernsfor writing.
+ * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that is
+ * only concerned with writing, and handles the timeout.
  *
  * If you do not want the default timeout handling, consider using
  * ::rb_io_maybe_wait directly.
