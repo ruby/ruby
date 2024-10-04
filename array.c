@@ -7912,34 +7912,35 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.none? -> true or false
- *    array.none? {|element| ... } -> true or false
- *    array.none?(obj) -> true or false
+ *    none? -> true or false
+ *    none?(object) -> true or false
+ *    none? {|element| ... } -> true or false
  *
- *  Returns +true+ if no element of +self+ meet a given criterion.
+ *  Returns +true+ if no element of +self+ meets a given criterion, +false+ otherwise.
  *
  *  With no block given and no argument, returns +true+ if +self+ has no truthy elements,
  *  +false+ otherwise:
  *
- *    [nil, false].none? # => true
+ *    [nil, false].none?    # => true
  *    [nil, 0, false].none? # => false
- *    [].none? # => true
+ *    [].none?              # => true
  *
- *  With a block given and no argument, calls the block with each element in +self+;
+ *  With argument +object+ given, returns +false+ if for any element +element+,
+ *  <tt>object === element</tt>; +true+ otherwise:
+ *
+ *    ['food', 'drink'].none?(/bar/) # => true
+ *    ['food', 'drink'].none?(/foo/) # => false
+ *    [].none?(/foo/)                # => true
+ *    [0, 1, 2].none?(3)             # => true
+ *    [0, 1, 2].none?(1)             # => false
+ *
+ *  With a block given, calls the block with each element in +self+;
  *  returns +true+ if the block returns no truthy value, +false+ otherwise:
  *
  *    [0, 1, 2].none? {|element| element > 3 } # => true
  *    [0, 1, 2].none? {|element| element > 1 } # => false
  *
- *  If argument +obj+ is given, returns +true+ if <tt>obj.===</tt> no element, +false+ otherwise:
- *
- *    ['food', 'drink'].none?(/bar/) # => true
- *    ['food', 'drink'].none?(/foo/) # => false
- *    [].none?(/foo/) # => true
- *    [0, 1, 2].none?(3) # => true
- *    [0, 1, 2].none?(1) # => false
- *
- *  Related: Enumerable#none?
+ *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
  */
 
 static VALUE
