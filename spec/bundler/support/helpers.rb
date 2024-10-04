@@ -76,9 +76,11 @@ module Spec
       requires = options.delete(:requires) || []
 
       dir = options.delete(:dir) || bundled_app
+      custom_load_path = options.delete(:load_path)
 
       load_path = []
       load_path << spec_dir
+      load_path << custom_load_path if custom_load_path
 
       build_ruby_options = { load_path: load_path, requires: requires, env: env }
       build_ruby_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice)

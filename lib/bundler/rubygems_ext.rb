@@ -269,6 +269,16 @@ module Gem
       end
       out
     end
+
+    if Gem.rubygems_version < Gem::Version.new("3.5.22")
+      module FilterIgnoredSpecs
+        def matching_specs(platform_only = false)
+          super.reject(&:ignored?)
+        end
+      end
+
+      prepend FilterIgnoredSpecs
+    end
   end
 
   require "rubygems/platform"
@@ -373,6 +383,15 @@ module Gem
             Gem.default_ext_dir_for(base_dir) || File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM, Gem.extension_api_version)
         end
       end
+    end
+
+    remove_method :ignored? if new.respond_to?(:ignored?)
+
+    # Same as RubyGems, but without warnings, because Bundler prints its own warnings
+    def ignored?
+      return @ignored unless @ignored.nil?
+
+      @ignored = missing_extensions?
     end
   end
 
