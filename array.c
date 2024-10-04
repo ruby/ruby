@@ -7000,82 +7000,41 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    array.permutation {|element| ... } -> self
- *    array.permutation(n) {|element| ... } -> self
- *    array.permutation -> new_enumerator
- *    array.permutation(n) -> new_enumerator
+ *    permutation(n = self.size) {|permutation| ... } -> self
+ *    permutation(n = self.size) -> new_enumerator
  *
- *  When invoked with a block, yield all permutations of elements of +self+; returns +self+.
- *  The order of permutations is indeterminate.
+ *  Iterates over permutations of the elements of +self+;
+ *  the order of permutations is indeterminate.
  *
- *  When a block and an in-range positive Integer argument +n+ (<tt>0 < n <= self.size</tt>)
- *  are given, calls the block with all +n+-tuple permutations of +self+.
+ *  The examples here use a helper method to gather and return permutations:
  *
- *  Example:
+ *    def get_perms(a, n)
+ *      perms = []
+ *      a.permutation(n) {|perm| perms.push(perm) }
+ *      perms
+ *    end
  *
- *    a = [0, 1, 2]
- *    a.permutation(2) {|permutation| p permutation }
+ *  With a block and an in-range positive integer argument +n+ (<tt>0 < n <= self.size</tt>) given,
+ *  calls the block with each +n+-tuple permutations of +self+;
+ *  returns +self+:
  *
- *  Output:
+ *    get_perms(a, 1) # => [[0], [1], [2]]
+ *    get_perms(a, 2) # => [[0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1]]
+ *    get_perms(a, 3) # => [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
  *
- *    [0, 1]
- *    [0, 2]
- *    [1, 0]
- *    [1, 2]
- *    [2, 0]
- *    [2, 1]
+ *  When +n+ is zero, calls the block once with a new empty array:
  *
- *  Another example:
- *
- *    a = [0, 1, 2]
- *    a.permutation(3) {|permutation| p permutation }
- *
- *  Output:
- *
- *    [0, 1, 2]
- *    [0, 2, 1]
- *    [1, 0, 2]
- *    [1, 2, 0]
- *    [2, 0, 1]
- *    [2, 1, 0]
- *
- *  When +n+ is zero, calls the block once with a new empty +Array+:
- *
- *    a = [0, 1, 2]
- *    a.permutation(0) {|permutation| p permutation }
- *
- *  Output:
- *
- *    []
+ *    get_perms(a, 0) # => [[]]
  *
  *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
  *  does not call the block:
  *
- *    a = [0, 1, 2]
  *    a.permutation(-1) {|permutation| fail 'Cannot happen' }
  *    a.permutation(4) {|permutation| fail 'Cannot happen' }
  *
- *  When a block given but no argument,
- *  behaves the same as <tt>a.permutation(a.size)</tt>:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [0, 1, 2]
- *    a.permutation {|permutation| p permutation }
- *
- *  Output:
- *
- *    [0, 1, 2]
- *    [0, 2, 1]
- *    [1, 0, 2]
- *    [1, 2, 0]
- *    [2, 0, 1]
- *    [2, 1, 0]
- *
- *  Returns a new Enumerator if no block given:
- *
- *    a = [0, 1, 2]
- *    a.permutation # => #<Enumerator: [0, 1, 2]:permutation>
- *    a.permutation(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
- *
+ *  Related: {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
  */
 
 static VALUE
