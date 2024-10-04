@@ -6181,26 +6181,25 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.minmax -> [min_val, max_val]
- *    array.minmax {|a, b| ... } -> [min_val, max_val]
+ *    minmax -> array
+ *    minmax {|a, b| ... } -> array
  *
- *  Returns a new 2-element +Array+ containing the minimum and maximum values
- *  from +self+, either per method <tt>#<=></tt> or per a given block:.
+ *  Returns a 2-element array containing the minimum-valued and maximum-valued
+ *  elements from +self+;
+ *  does not modify +self+.
  *
- *  When no block is given, each element in +self+ must respond to method <tt>#<=></tt>
- *  with an Integer;
- *  returns a new 2-element +Array+ containing the minimum and maximum values
- *  from +self+, per method <tt>#<=></tt>:
+ *  With no block given, the minimum and maximum values are determined using method <tt>#<=></tt>:
  *
- *    [0, 1, 2].minmax # => [0, 2]
+ *    [1, 0, 3, 2].minmax # => [0, 3]
  *
- *  When a block is given, the block must return an Integer;
- *  the block is called <tt>self.size-1</tt> times to compare elements;
- *  returns a new 2-element +Array+ containing the minimum and maximum values
- *  from +self+, per the block:
+ *  With a block given, the block must return a numeric;
+ *  the block is called <tt>self.size - 1</tt> times to compare elements;
+ *  returns the elements having the minimum and maximum values per the block:
  *
- *    ['0', '00', '000'].minmax {|a, b| a.size <=> b.size } # => ["0", "000"]
+ *    ['0', '', '000', '00'].minmax {|a, b| a.size <=> b.size }
+ *    # => ["", "000"]
  *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 static VALUE
 rb_ary_minmax(VALUE ary)
