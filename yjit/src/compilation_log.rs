@@ -86,21 +86,18 @@ impl CompilationLog {
             payload
         };
 
-        match print_compilation_log {
-            Some(CompilationLogOutput::File(fd)) => {
-                use std::os::unix::io::{FromRawFd, IntoRawFd};
-                use std::io::Write;
+        if let Some(CompilationLogOutput::File(fd)) = print_compilation_log {
+            use std::os::unix::io::{FromRawFd, IntoRawFd};
+            use std::io::Write;
 
-                // Write with the fd opened during boot
-                let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
-                writeln!(file, "{}", entry).unwrap();
-                file.flush().unwrap();
-                file.into_raw_fd(); // keep the fd open
-            },
-            _ => {
-                Self::get_instance().push(entry);
-            }
+            // Write with the fd opened during boot
+            let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
+            writeln!(file, "{}", entry).unwrap();
+            file.flush().unwrap();
+            file.into_raw_fd(); // keep the fd open
         }
+
+        Self::get_instance().push(entry);
     }
 
     pub fn clear() {
