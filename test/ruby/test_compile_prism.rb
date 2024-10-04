@@ -768,6 +768,9 @@ module Prism
       assert_prism_eval("a = [1,2]; [0, *a, 3, 4, *5..6, 7, 8, *9..11]")
       assert_prism_eval("[[*1..2], 3, *4..5]")
 
+      elements = Array.new(64) { ":foo" }
+      assert_prism_eval("[#{elements.join(", ")}, bar: 1, baz: 2]")
+
       # Test keyword splat inside of array
       assert_prism_eval("[**{x: 'hello'}]")
 
@@ -2628,7 +2631,7 @@ end
     def compare_eval(source, raw:, location:)
       source = raw ? source : "class Prism::TestCompilePrism\n#{source}\nend"
 
-      ruby_eval = RubyVM::InstructionSequence.compile(source).eval
+      ruby_eval = RubyVM::InstructionSequence.compile_parsey(source).eval
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
 
       if ruby_eval.is_a? Proc
