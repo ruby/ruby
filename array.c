@@ -7905,7 +7905,8 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
  *    [nil, 0, false].none? # => false
  *    [].none?              # => true
  *
- *  With argument +object+ given, returns +true+ if <tt>object.===</tt> no element, +false+ otherwise:
+ *  With argument +object+ given, returns +false+ if for any element +element+,
+ *  <tt>object === element</tt>; +true+ otherwise:
  *
  *    ['food', 'drink'].none?(/bar/) # => true
  *    ['food', 'drink'].none?(/foo/) # => false
