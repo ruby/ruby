@@ -17057,7 +17057,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 parse_pattern_hash_key(parser, &keys, first_node);
                 pm_node_t *value;
 
-                if (match7(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
+                if (match8(parser, PM_TOKEN_COMMA, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
                     // Otherwise, we will create an implicit local variable
                     // target for the value.
                     value = parse_pattern_hash_implicit_value(parser, captures, (pm_symbol_node_t *) first_node);
@@ -17094,7 +17094,12 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
     // If there are any other assocs, then we'll parse them now.
     while (accept1(parser, PM_TOKEN_COMMA)) {
         // Here we need to break to support trailing commas.
-        if (match6(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
+        if (match7(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_TOKEN_EOF)) {
+            // Trailing commas are not allowed to follow a rest pattern.
+            if (rest != NULL) {
+                pm_parser_err_token(parser, &parser->current, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
+            }
+
             break;
         }
 
@@ -17587,9 +17592,10 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
         // Gather up all of the patterns into the list.
         while (accept1(parser, PM_TOKEN_COMMA)) {
             // Break early here in case we have a trailing comma.
-            if (match4(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_SEMICOLON)) {
+            if (match6(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE, PM_TOKEN_EOF)) {
                 node = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
                 pm_node_list_append(&nodes, node);
+                trailing_rest = true;
                 break;
             }
 
