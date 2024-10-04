@@ -7914,7 +7914,7 @@ rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
  *    [0, 1, 2].none?(3)             # => true
  *    [0, 1, 2].none?(1)             # => false
  *
- *  With a block given , calls the block with each element in +self+;
+ *  With a block given, calls the block with each element in +self+;
  *  returns +true+ if the block returns no truthy value, +false+ otherwise:
  *
  *    [0, 1, 2].none? {|element| element > 3 } # => true
