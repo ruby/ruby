@@ -12,18 +12,38 @@ end
 if defined?(Win32::Registry)
   class TestWin32Registry < Test::Unit::TestCase
     COMPUTERNAME = 'SYSTEM\\CurrentControlSet\\Control\\ComputerName\\ComputerName'
+    TEST_REGISTRY_PATH = 'Volatile Environment'
+    TEST_REGISTRY_KEY = 'ruby-win32-registry-test-<RND>'
 
-    private def backslachs(path)
-      path.gsub("/", "\\")
+    # Create a new registry key per test in an atomic way, which is deleted on teardown.
+    #
+    # Fills the following instance variables:
+    #
+    #   @test_registry_key - A registry path which is not yet created,
+    #                        but can be created without collisions even when running
+    #                        multiple test processes.
+    #   @test_registry_rnd - The part of the registry path with a random number.
+    #   @createopts        - Required parameters (desired, opt) for create method in
+    #                        the volatile environment of the registry.
+    def setup
+      @createopts = [Win32::Registry::KEY_ALL_ACCESS, Win32::Registry::REG_OPTION_VOLATILE]
+      100.times do |i|
+        k = TEST_REGISTRY_KEY.gsub("<RND>", i.to_s)
+        next unless Win32::Registry::HKEY_CURRENT_USER.create(
+          TEST_REGISTRY_PATH + "\\" + k,
+          *@createopts
+        ).created?
+        @test_registry_key = TEST_REGISTRY_PATH + "\\" + k + "\\" + "test\\"
+        @test_registry_rnd = k
+        break
+      end
+      omit "Unused registry subkey not found in #{TEST_REGISTRY_KEY}" unless @test_registry_key
     end
 
-    TEST_REGISTRY_KEY = "SOFTWARE/ruby-win32-registry-test/"
-
-    def setup
-      Win32::Registry::HKEY_CURRENT_USER.open(backslachs(File.dirname(TEST_REGISTRY_KEY))) do |reg|
-        reg.delete_key File.basename(TEST_REGISTRY_KEY), true
+    def teardown
+      Win32::Registry::HKEY_CURRENT_USER.open(TEST_REGISTRY_PATH) do |reg|
+        reg.delete_key @test_registry_rnd, true
       end
-    rescue Win32::Registry::Error
     end
 
     def test_predefined
@@ -39,9 +59,9 @@ if defined?(Win32::Registry)
     end
 
     def test_open_no_block
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)).close
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts).close
 
-      reg = Win32::Registry::HKEY_CURRENT_USER.open(backslachs(TEST_REGISTRY_KEY), Win32::Registry::KEY_ALL_ACCESS)
+      reg = Win32::Registry::HKEY_CURRENT_USER.open(@test_registry_key, Win32::Registry::KEY_ALL_ACCESS)
       assert_kind_of Win32::Registry, reg
       assert_equal true, reg.open?
       assert_equal false, reg.created?
@@ -53,10 +73,10 @@ if defined?(Win32::Registry)
     end
 
     def test_open_with_block
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)).close
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts).close
 
       regs = []
-      Win32::Registry::HKEY_CURRENT_USER.open(backslachs(TEST_REGISTRY_KEY), Win32::Registry::KEY_ALL_ACCESS) do |reg|
+      Win32::Registry::HKEY_CURRENT_USER.open(@test_registry_key, Win32::Registry::KEY_ALL_ACCESS) do |reg|
         regs << reg
         assert_equal true, reg.open?
         assert_equal false, reg.created?
@@ -92,17 +112,8 @@ if defined?(Win32::Registry)
       end
     end
 
-    def test_create_volatile
-      desired = Win32::Registry::KEY_ALL_ACCESS
-      option = Win32::Registry::REG_OPTION_VOLATILE
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY), desired) do |reg|
-        reg.create("volkey", desired, option) {}
-        reg.delete_key("volkey", true)
-      end
-    end
-
     def test_create_no_block
-      reg = Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY))
+      reg = Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts)
       assert_kind_of Win32::Registry, reg
       assert_equal true, reg.open?
       assert_equal true, reg.created?
@@ -116,7 +127,7 @@ if defined?(Win32::Registry)
 
     def test_create_with_block
       regs = []
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
         regs << reg
         reg["test"] = "abc"
         assert_equal true, reg.open?
@@ -132,8 +143,7 @@ if defined?(Win32::Registry)
     end
 
     def test_write
-      desired = Win32::Registry::KEY_ALL_ACCESS
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY), desired) do |reg|
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
         reg.write_s("key1", "data")
         assert_equal [Win32::Registry::REG_SZ, "data"], reg.read("key1")
         reg.write_i("key2", 0x5fe79027)
@@ -142,32 +152,32 @@ if defined?(Win32::Registry)
     end
 
     def test_accessors
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
         assert_kind_of Integer, reg.hkey
         assert_kind_of Win32::Registry, reg.parent
         assert_equal "HKEY_CURRENT_USER", reg.parent.name
-        assert_equal "SOFTWARE\\ruby-win32-registry-test\\", reg.keyname
+        assert_equal "Volatile Environment\\#{@test_registry_rnd}\\test\\", reg.keyname
         assert_equal Win32::Registry::REG_CREATED_NEW_KEY, reg.disposition
       end
     end
 
     def test_name
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        assert_equal "HKEY_CURRENT_USER\\SOFTWARE\\ruby-win32-registry-test\\", reg.name
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        assert_equal "HKEY_CURRENT_USER\\Volatile Environment\\#{@test_registry_rnd}\\test\\", reg.name
       end
     end
 
     def test_keys
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("key1")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("key1", *@createopts)
         assert_equal ["key1"], reg.keys
       end
     end
 
     def test_each_key
       keys = []
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("key1")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("key1", *@createopts)
         reg.each_key { |*a| keys << a }
       end
       assert_equal [2], keys.map(&:size)
@@ -177,10 +187,10 @@ if defined?(Win32::Registry)
 
     def test_each_key_enum
       keys = nil
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("key1")
-        reg.create("key2")
-        reg.create("key3")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("key1", *@createopts)
+        reg.create("key2", *@createopts)
+        reg.create("key3", *@createopts)
         reg["value1"] = "abcd"
         keys = reg.each_key.to_a
       end
@@ -190,8 +200,8 @@ if defined?(Win32::Registry)
     end
 
     def test_values
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("key1")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("key1", *@createopts)
         reg["value1"] = "abcd"
         assert_equal ["abcd"], reg.values
       end
@@ -199,8 +209,8 @@ if defined?(Win32::Registry)
 
     def test_each_value
       vals = []
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("key1")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("key1", *@createopts)
         reg["value1"] = "abcd"
         reg.each_value { |*a| vals << a }
       end
@@ -209,8 +219,8 @@ if defined?(Win32::Registry)
 
     def test_each_value_enum
       vals = nil
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("key1")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("key1", *@createopts)
         reg["value1"] = "abcd"
         reg["value2"] = 42
         vals = reg.each_value.to_a
@@ -221,9 +231,9 @@ if defined?(Win32::Registry)
 
     def test_utf8_encoding
       keys = []
-      Win32::Registry::HKEY_CURRENT_USER.create(backslachs(TEST_REGISTRY_KEY)) do |reg|
-        reg.create("abc EUR")
-        reg.create("abc €")
+      Win32::Registry::HKEY_CURRENT_USER.create(@test_registry_key, *@createopts) do |reg|
+        reg.create("abc EUR", *@createopts)
+        reg.create("abc €", *@createopts)
         reg.each_key do |subkey|
           keys << subkey
         end
