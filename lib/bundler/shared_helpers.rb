@@ -162,10 +162,10 @@ module Bundler
       extra_deps = new_deps - old_deps
       return if extra_deps.empty?
 
-      Bundler.ui.debug "#{spec.full_name} from #{spec.remote} has either corrupted API or lockfile dependencies" \
+      Bundler.ui.debug "#{spec.full_name} from #{spec.remote} has corrupted API dependencies" \
         " (was expecting #{old_deps.map(&:to_s)}, but the real spec has #{new_deps.map(&:to_s)})"
       raise APIResponseMismatchError,
-        "Downloading #{spec.full_name} revealed dependencies not in the API or the lockfile (#{extra_deps.join(", ")})." \
+        "Downloading #{spec.full_name} revealed dependencies not in the API (#{extra_deps.join(", ")})." \
         "\nRunning `bundle update #{spec.name}` should fix the problem."
     end
 

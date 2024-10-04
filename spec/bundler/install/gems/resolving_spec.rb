@@ -117,7 +117,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       gem "actionpack", "2.3.2"
     G
 
-    expect(err).to include("Downloading actionpack-2.3.2 revealed dependencies not in the API or the lockfile (activesupport (= 2.3.2)).")
+    expect(err).to include("Downloading actionpack-2.3.2 revealed dependencies not in the API (activesupport (= 2.3.2)).")
 
     expect(the_bundle).not_to include_gems "actionpack 2.3.2", "activesupport 2.3.2"
   end

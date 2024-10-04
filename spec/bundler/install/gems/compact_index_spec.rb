@@ -1074,9 +1074,9 @@ RSpec.describe "compact index api" do
             Gem::Dependency.new("activerecord", "= 2.3.2"),
             Gem::Dependency.new("actionmailer", "= 2.3.2"),
             Gem::Dependency.new("activeresource", "= 2.3.2")]
-    expect(out).to include("rails-2.3.2 from rubygems remote at #{source_uri}/ has either corrupted API or lockfile dependencies")
+    expect(out).to include("rails-2.3.2 from rubygems remote at #{source_uri}/ has corrupted API dependencies")
     expect(err).to include(<<-E.strip)
-Bundler::APIResponseMismatchError: Downloading rails-2.3.2 revealed dependencies not in the API or the lockfile (#{deps.map(&:to_s).join(", ")}).
+Bundler::APIResponseMismatchError: Downloading rails-2.3.2 revealed dependencies not in the API (#{deps.map(&:to_s).join(", ")}).
 Running `bundle update rails` should fix the problem.
     E
   end
