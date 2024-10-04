@@ -5948,7 +5948,7 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *  With a block given, the block must return a numeric.
  *
  *  With a block and no argument, calls the block <tt>self.size - 1</tt> times to compare elements;
- *  returns the element having the maximum return value per the block:
+ *  returns the element having the maximum value per the block:
  *
  *    ['0', '', '000', '00'].max {|a, b| a.size <=> b.size }
  *    # => "000"
