@@ -191,8 +191,8 @@ module RubyVM::YJIT
   def self.compilation_log
     return nil unless compilation_log_enabled?
 
-    Primitive.rb_yjit_get_compilation_log.map do |path, timestamp|
-      [path, Time.at(timestamp)]
+    Primitive.rb_yjit_get_compilation_log.map do |timestamp, path|
+      [Time.at(timestamp), path]
     end
   end
 
