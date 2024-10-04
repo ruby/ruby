@@ -975,6 +975,7 @@ VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
  * @retval     RUBY_Qfalse          Operation timed out.
+ * @retval     RUBY_Qnil            Operation failed for some other reason (errno).
  * @retval     Otherwise            Actual events reached.
  *
  */
@@ -982,8 +983,11 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
 
 /**
  * Blocks until the passed IO is ready for reading, if that makes sense for the
- * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that  only
- * concerns for reading.
+ * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that is
+ * only concerned with reading and handles the timeout.
+ *
+ * If you do not want the default timeout handling, consider using
+ * ::rb_io_maybe_wait directly.
  *
  * @param[in]  error                System errno.
  * @param[in]  io                   An IO object to wait.
@@ -991,15 +995,18 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @retval     0                    Operation timed out.
+ * @exception  rb_eIOTimeoutError   The wait operation timed out.
  * @retval     Otherwise            Always returns ::RUBY_IO_READABLE.
  */
 int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
 
 /**
  * Blocks until the passed IO is ready for writing, if that makes sense for the
- * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that  only
- * concernsfor writing.
+ * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that is
+ * only concerned with writing, and handles the timeout.
+ *
+ * If you do not want the default timeout handling, consider using
+ * ::rb_io_maybe_wait directly.
  *
  * @param[in]  error                System errno.
  * @param[in]  io                   An IO object to wait.
@@ -1007,7 +1014,7 @@ int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @retval     0                    Operation timed out.
+ * @exception  rb_eIOTimeoutError   The wait operation timed out.
  * @retval     Otherwise            Always returns ::RUBY_IO_WRITABLE.
  */
 int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout);

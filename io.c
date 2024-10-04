@@ -1623,7 +1623,7 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 
       default:
         // Non-specific error, no event is ready:
-        return Qfalse;
+        return Qnil;
     }
 }
 
@@ -1635,9 +1635,11 @@ rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
     if (RTEST(result)) {
         return RB_NUM2INT(result);
     }
-    else {
-        return 0;
+    else if (result == RUBY_Qfalse) {
+        rb_raise(rb_eIOTimeoutError, "Timed out waiting for IO to become readable!");
     }
+
+    return 0;
 }
 
 int
@@ -1648,9 +1650,11 @@ rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
     if (RTEST(result)) {
         return RB_NUM2INT(result);
     }
-    else {
-        return 0;
+    else if (result == RUBY_Qfalse) {
+        rb_raise(rb_eIOTimeoutError, "Timed out waiting for IO to become writable!");
     }
+
+    return 0;
 }
 
 static void
