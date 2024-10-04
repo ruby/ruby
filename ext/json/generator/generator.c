@@ -66,42 +66,6 @@ static const char trailingBytesForUTF8[256] = {
 static const UTF32 offsetsFromUTF8[6] = { 0x00000000UL, 0x00003080UL, 0x000E2080UL,
     0x03C82080UL, 0xFA082080UL, 0x82082080UL };
 
-/*
- * Utility routine to tell whether a sequence of bytes is legal UTF-8.
- * This must be called with the length pre-determined by the first byte.
- * If not calling this from ConvertUTF8to*, then the length can be set by:
- *  length = trailingBytesForUTF8[*source]+1;
- * and the sequence is illegal right away if there aren't that many bytes
- * available.
- * If presented with a length > 4, this returns 0.  The Unicode
- * definition of UTF-8 goes up to 4-byte sequences.
- */
-static unsigned char isLegalUTF8(const UTF8 *source, unsigned long length)
-{
-    UTF8 a;
-    const UTF8 *srcptr = source+length;
-    switch (length) {
-        default: return 0;
-                 /* Everything else falls through when "1"... */
-        case 4: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return 0;
-        case 3: if ((a = (*--srcptr)) < 0x80 || a > 0xBF) return 0;
-        case 2: if ((a = (*--srcptr)) > 0xBF) return 0;
-
-                    switch (*source) {
-                        /* no fall-through in this inner switch */
-                        case 0xE0: if (a < 0xA0) return 0; break;
-                        case 0xED: if (a > 0x9F) return 0; break;
-                        case 0xF0: if (a < 0x90) return 0; break;
-                        case 0xF4: if (a > 0x8F) return 0; break;
-                        default:   if (a < 0x80) return 0;
-                    }
-
-        case 1: if (*source >= 0x80 && *source < 0xC2) return 0;
-    }
-    if (*source > 0xF4) return 0;
-    return 1;
-}
-
 /* Escapes the UTF16 character and stores the result in the buffer buf. */
 static void unicode_escape(char *buf, UTF16 character)
 {
@@ -130,17 +94,18 @@ static void convert_UTF8_to_JSON_ASCII(FBuffer *buffer, VALUE string, char scrip
     const UTF8 *sourceEnd = source + RSTRING_LEN(string);
     char buf[6] = { '\\', 'u' };
 
-    while (source < sourceEnd) {
-        UTF32 ch = 0;
-        unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
-        if (source + extraBytesToRead >= sourceEnd) {
-            rb_raise(rb_path2class("JSON::GeneratorError"),
-                    "partial character in source, but hit end");
-        }
-        if (!isLegalUTF8(source, extraBytesToRead+1)) {
+    int ascii_only = rb_enc_str_asciionly_p(string);
+
+    if (!ascii_only) {
+        if (RB_ENCODING_GET_INLINED(string) != rb_utf8_encindex() || RB_ENC_CODERANGE(string) != RUBY_ENC_CODERANGE_VALID) {
             rb_raise(rb_path2class("JSON::GeneratorError"),
                     "source sequence is illegal/malformed utf-8");
         }
+    }
+
+    while (source < sourceEnd) {
+        UTF32 ch = 0;
+        unsigned short extraBytesToRead = trailingBytesForUTF8[*source];
         /*
          * The cases all fall through. See "Note A" below.
          */
@@ -238,6 +203,13 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char script_safe
     char buf[6] = { '\\', 'u' };
     int ascii_only = rb_enc_str_asciionly_p(string);
 
+    if (!ascii_only) {
+        if (RB_ENCODING_GET_INLINED(string) != rb_utf8_encindex() || RB_ENC_CODERANGE(string) != RUBY_ENC_CODERANGE_VALID) {
+            rb_raise(rb_path2class("JSON::GeneratorError"),
+                    "source sequence is illegal/malformed utf-8");
+        }
+    }
+
     for (start = 0, end = 0; end < len;) {
         p = ptr + end;
         c = (unsigned char) *p;
@@ -308,11 +280,6 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string, char script_safe
                                     }
                                     continue;
                                 }
-                            }
-
-                            if (!isLegalUTF8((UTF8 *) p, clen)) {
-                                rb_raise(rb_path2class("JSON::GeneratorError"),
-                                        "source sequence is illegal/malformed utf-8");
                             }
                         }
                         end += clen;
@@ -847,7 +814,6 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     long delim2_len = FBUFFER_LEN(state->object_delim2);
     long depth = state->depth;
     int j;
-    VALUE klass, key_to_s;
 
     if (arg->iter > 0) fbuffer_append(buffer, delim, delim_len);
     if (object_nl) {
@@ -859,15 +825,19 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
         }
     }
 
-    klass = CLASS_OF(key);
-    if (klass == rb_cString) {
-        key_to_s = key;
-    } else if (klass == rb_cSymbol) {
-        key_to_s = rb_sym2str(key);
-    } else {
-        key_to_s = rb_funcall(key, i_to_s, 0);
+    VALUE key_to_s;
+    switch(rb_type(key)) {
+        case T_STRING:
+            key_to_s = key;
+            break;
+        case T_SYMBOL:
+            key_to_s = rb_sym2str(key);
+            break;
+        default:
+            key_to_s = rb_convert_type(key, T_STRING, "String", "to_s");
+            break;
     }
-    Check_Type(key_to_s, T_STRING);
+
     generate_json(buffer, Vstate, state, key_to_s);
     fbuffer_append(buffer, delim2, delim2_len);
     generate_json(buffer, Vstate, state, val);

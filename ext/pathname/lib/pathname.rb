@@ -588,7 +588,7 @@ class Pathname    # * FileUtils *
   def mkpath(mode: nil)
     require 'fileutils'
     FileUtils.mkpath(@path, mode: mode)
-    nil
+    self
   end
 
   # Recursively deletes a directory, including all directories beneath it.
@@ -599,7 +599,23 @@ class Pathname    # * FileUtils *
     # File::Path provides "mkpath" and "rmtree".
     require 'fileutils'
     FileUtils.rm_rf(@path, noop: noop, verbose: verbose, secure: secure)
-    nil
+    self
   end
 end
 
+class Pathname    # * tmpdir *
+  # Creates a tmp directory and wraps the returned path in a Pathname object.
+  #
+  # See Dir.mktmpdir
+  def self.mktmpdir
+    require 'tmpdir' unless defined?(Dir.mktmpdir)
+    if block_given?
+      Dir.mktmpdir do |dir|
+        dir = self.new(dir)
+        yield dir
+      end
+    else
+      self.new(Dir.mktmpdir)
+    end
+  end
+end

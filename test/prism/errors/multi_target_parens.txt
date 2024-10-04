@@ -1,0 +1,19 @@
+( + ( * ) )
+    ^~~~~ unexpected write target
+( a ( * ) )
+    ^~~~~ unexpected write target
+( 1 + ( * ) )
+      ^~~~~ unexpected write target
+( .. ( * ) )
+     ^~~~~ unexpected write target
+( a = ( * ) )
+      ^~~~~ unexpected write target
+( * = ( * ) )
+      ^~~~~ unexpected write target
+( a if ( * ) )
+       ^~~~~ unexpected write target
+( 1; ( * ) )
+     ^~~~~ unexpected write target
+( def f() = ( * ) )
+            ^~~~~ unexpected write target
+

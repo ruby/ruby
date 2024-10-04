@@ -721,11 +721,11 @@ class TestGemRequire < Gem::TestCase
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
         end
-        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        assert_match(/#{{ x: 1 }.inspect}\n#{{ y: 2 }.inspect}\n$/, err)
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
         end
-        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        assert_match(/#{{ x: 1 }.inspect}\n#{{ y: 2 }.inspect}\n$/, err)
       end
     end
   end

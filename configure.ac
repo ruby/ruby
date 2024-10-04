@@ -3719,16 +3719,16 @@ AS_CASE("$enable_shared", [yes], [
   ])
 ])
 AS_IF([test "$enable_rpath" = yes], [
-    test -z "$LIBRUBY_RPATHFLAGS" || LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS "
-    rpathflag="${RPATHFLAG}"
-    AS_CASE(["${cross_compiling}${load_relative}"], [*yes*], [], [rpathflag="$RPATHFLAG$LIBPATHFLAG"])
+    AS_CASE(["${cross_compiling}${load_relative}"],
+        [*yes*], [rpathflag="${RPATHFLAG}"],
+        [rpathflag="$RPATHFLAG${LIBPATHFLAG:+${RPATHFLAG:+ }$LIBPATHFLAG}"])
     rpathflag=`IFS="$PATH_SEPARATOR"
         echo x "$rpathflag" |
         sed "s/^x *//;s${IFS}"'%1\\$-s'"${IFS}${libprefix}${IFS}g;s${IFS}%s${IFS}${libprefix}${IFS}g"
     `
-    LIBRUBY_RPATHFLAGS="$LIBRUBY_RPATHFLAGS${rpathflag}"
-    LIBRUBYARG_SHARED="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_SHARED"
-    LIBRUBYARG_STATIC="$LIBRUBY_RPATHFLAGS $LIBRUBYARG_STATIC"
+    LIBRUBY_RPATHFLAGS="${LIBRUBY_RPATHFLAGS:+$LIBRUBY_RPATHFLAGS }${rpathflag}"
+    LIBRUBYARG_SHARED="${LIBRUBY_RPATHFLAGS:+$LIBRUBY_RPATHFLAGS }$LIBRUBYARG_SHARED"
+    LIBRUBYARG_STATIC="${LIBRUBY_RPATHFLAGS:+$LIBRUBY_RPATHFLAGS }$LIBRUBYARG_STATIC"
 ])
 AC_SUBST(LIBRUBY_RELATIVE)
 

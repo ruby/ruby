@@ -328,10 +328,7 @@ class Float
     Primitive.cexpr! 'rb_float_abs(self)'
   end
 
-  def magnitude
-    Primitive.attr! :leaf
-    Primitive.cexpr! 'rb_float_abs(self)'
-  end
+  alias magnitude abs
 
   # call-seq:
   #   -float -> float

@@ -47,7 +47,7 @@ struct rb_shape {
     attr_index_t next_iv_index;
     uint32_t capacity; // Total capacity of the object with this shape
     uint8_t type;
-    uint8_t size_pool_index;
+    uint8_t heap_index;
     shape_id_t parent_id;
     redblack_node_t * ancestor_index;
 };

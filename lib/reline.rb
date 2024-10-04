@@ -412,7 +412,7 @@ module Reline
     end
 
     private def may_req_ambiguous_char_width
-      @ambiguous_width = 2 if io_gate.dumb? || !STDIN.tty? || !STDOUT.tty?
+      @ambiguous_width = 1 if io_gate.dumb? || !STDIN.tty? || !STDOUT.tty?
       return if defined? @ambiguous_width
       io_gate.move_cursor_column(0)
       begin
@@ -421,7 +421,7 @@ module Reline
         # LANG=C
         @ambiguous_width = 1
       else
-        @ambiguous_width = io_gate.cursor_pos.x
+        @ambiguous_width = io_gate.cursor_pos.x == 2 ? 2 : 1
       end
       io_gate.move_cursor_column(0)
       io_gate.erase_after_cursor

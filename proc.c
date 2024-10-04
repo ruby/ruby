@@ -2046,6 +2046,19 @@ rb_obj_public_method(VALUE obj, VALUE vid)
     return obj_method(obj, vid, TRUE);
 }
 
+static VALUE
+rb_obj_singleton_method_lookup(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    return rb_obj_method(args[0], args[1]);
+}
+
+static VALUE
+rb_obj_singleton_method_lookup_fail(VALUE arg1, VALUE arg2)
+{
+    return Qfalse;
+}
+
 /*
  *  call-seq:
  *     obj.singleton_method(sym)    -> method
@@ -2073,11 +2086,12 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
-    VALUE klass = rb_singleton_class_get(obj);
+    VALUE sc = rb_singleton_class_get(obj);
+    VALUE klass;
     ID id = rb_check_id(&vid);
 
-    if (NIL_P(klass) ||
-        NIL_P(klass = RCLASS_ORIGIN(klass)) ||
+    if (NIL_P(sc) ||
+        NIL_P(klass = RCLASS_ORIGIN(sc)) ||
         !NIL_P(rb_special_singleton_class(obj))) {
         /* goto undef; */
     }
@@ -2087,21 +2101,26 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
         /* else goto undef; */
     }
     else {
-        const rb_method_entry_t *me = rb_method_entry_at(klass, id);
-        vid = ID2SYM(id);
+        VALUE args[2] = {obj, vid};
+        VALUE ruby_method = rb_rescue(rb_obj_singleton_method_lookup, (VALUE)args, rb_obj_singleton_method_lookup_fail, Qfalse);
+        if (ruby_method) {
+            struct METHOD *method = (struct METHOD *)RTYPEDDATA_GET_DATA(ruby_method);
+            VALUE lookup_class = RBASIC_CLASS(obj);
+            VALUE stop_class = rb_class_superclass(sc);
+            VALUE method_class = method->iclass;
 
-        if (UNDEFINED_METHOD_ENTRY_P(me)) {
-            /* goto undef; */
-        }
-        else if (UNDEFINED_REFINED_METHOD_P(me->def)) {
-            /* goto undef; */
-        }
-        else {
-            return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+            /* Determine if method is in singleton class, or module included in or prepended to it */
+            do {
+                if (lookup_class == method_class) {
+                    return ruby_method;
+                }
+                lookup_class = RCLASS_SUPER(lookup_class);
+            } while (lookup_class && lookup_class != stop_class);
         }
     }
 
   /* undef: */
+    vid = ID2SYM(id);
     rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);

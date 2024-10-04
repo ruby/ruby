@@ -365,6 +365,23 @@ module TestIRB
       assert_include(output, "InputMethod: RelineInputMethod")
     end
 
+    def test_irb_command_can_check_local_variables
+      write_ruby <<~'ruby'
+        binding.irb
+      ruby
+
+      output = run_ruby_file do
+        type "debug"
+        type 'foobar = IRB'
+        type "show_source foobar.start"
+        type "show_source = 'Foo'"
+        type "show_source + 'Bar'"
+        type "continue"
+      end
+      assert_include(output, "def start(ap_path = nil)")
+      assert_include(output, '"FooBar"')
+    end
+
     def test_help_command_is_delegated_to_the_debugger
       write_ruby <<~'ruby'
         binding.irb

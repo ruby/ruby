@@ -60,6 +60,12 @@ inputs:
     description: >-
       Whether to run `make check`
 
+  mspecopt:
+    required: false
+    default: ''
+    description: >-
+      Additional options for mspec.
+
   static_exts:
     required: false
     description: >-
@@ -89,6 +95,7 @@ runs:
         --env INPUT_CPPFLAGS='${{ inputs.cppflags }}'
         --env INPUT_APPEND_CONFIGURE='${{ inputs.append_configure }}'
         --env INPUT_CHECK='${{ inputs.check }}'
+        --env INPUT_MSPECOPT='${{ inputs.mspecopt }}'
         --env INPUT_ENABLE_SHARED='${{ inputs.enable_shared }}'
         --env INPUT_STATIC_EXTS='${{ inputs.static_exts }}'
         'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
