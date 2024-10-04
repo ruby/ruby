@@ -701,9 +701,11 @@ after_pop_stack(int len, struct parser_params *p)
 
 #define STRING_NEW0() rb_parser_encoding_string_new(p,0,0,p->enc)
 
-#define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
-#define STR_NEW0() rb_enc_str_new(0,0,p->enc)
-#define STR_NEW2(ptr) rb_enc_str_new((ptr),strlen(ptr),p->enc)
+static VALUE rb_str_new_encoding_parser_string(rb_parser_t *, const char*, long, rb_encoding*);
+
+#define STR_NEW(ptr,len) rb_str_new_encoding_parser_string(p,(ptr),(len),p->enc)
+#define STR_NEW0() rb_str_new_encoding_parser_string(p,0,0,p->enc)
+#define STR_NEW2(ptr) rb_str_new_encoding_parser_string(p,(ptr),strlen(ptr),p->enc)
 #define STR_NEW3(ptr,len,e,func) parser_str_new(p, (ptr),(len),(e),(func),p->enc)
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
 #define VALID_SYMNAME_P(s, l, enc, type) (rb_enc_symname_type(s, l, enc, (1U<<(type))) == (int)(type))
@@ -2035,6 +2037,19 @@ rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_enco
     rb_parser_string_t *str = rb_parser_string_new(p, ptr, len);
     str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
     str->enc = enc;
+    return str;
+}
+
+static VALUE
+rb_str_new_encoding_parser_string(rb_parser_t *p, const char* ptr, long len, rb_encoding* enc)
+{
+    VALUE str;
+    rb_parser_string_t *pstr;
+
+    pstr = rb_parser_encoding_string_new(p, ptr, len, enc);
+    str = rb_str_new_mutable_parser_string(pstr);
+    rb_parser_string_free(p, pstr);
+
     return str;
 }
 
@@ -7361,7 +7376,7 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
             rb_str_cat_cstr(mesg, "\n");
     }
     else {
-        mesg = rb_enc_str_new(0, 0, rb_parser_str_get_encoding(str));
+        mesg = rb_str_new_encoding_parser_string(p, 0, 0, rb_parser_str_get_encoding(str));
     }
     if (!errbuf && rb_stderr_tty_p()) {
 #define CSI_BEGIN "\033["

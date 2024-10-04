@@ -121,7 +121,6 @@
 #undef rb_str_new_cstr
 #define rb_str_new_cstr                   p->config->str_new_cstr
 #define rb_str_to_interned_str            p->config->str_to_interned_str
-#define rb_enc_str_new                    p->config->enc_str_new
 #define rb_str_vcatf                      p->config->str_vcatf
 #define rb_sprintf                        p->config->rb_sprintf
 #undef RSTRING_PTR
