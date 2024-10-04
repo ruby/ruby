@@ -143,7 +143,11 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
     errno = saved_errno;
   }
 
+#ifdef RUBY_VERSION_IS_3_1
+  ret = rb_io_maybe_wait_readable(errno, io, Qnil);
+#else
   ret = rb_io_wait_readable(fd);
+#endif
 
   if (RTEST(read_p)) {
     ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
@@ -162,7 +166,11 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
 }
 
 VALUE io_spec_rb_io_wait_writable(VALUE self, VALUE io) {
+#ifdef RUBY_VERSION_IS_3_1
+  int ret = rb_io_maybe_wait_writable(errno, io, Qnil);
+#else
   int ret = rb_io_wait_writable(io_spec_get_fd(io));
+#endif
   return ret ? Qtrue : Qfalse;
 }
 
@@ -230,13 +238,23 @@ VALUE io_spec_rb_thread_wait_fd(VALUE self, VALUE io) {
 }
 
 VALUE io_spec_rb_wait_for_single_fd(VALUE self, VALUE io, VALUE events, VALUE secs, VALUE usecs) {
-  int fd = io_spec_get_fd(io);
+#ifdef RUBY_VERSION_IS_3_0
+  VALUE timeout = Qnil;
+  if (!NIL_P(secs)) {
+      timeout = rb_float_new((double)FIX2INT(secs) + (0.000001f * FIX2INT(usecs)));
+  }
+  VALUE result = rb_io_wait(io, events, timeout);
+  if (result == Qfalse) return INT2FIX(0);
+  else return result;
+#else
   struct timeval tv;
   if (!NIL_P(secs)) {
     tv.tv_sec = FIX2INT(secs);
     tv.tv_usec = FIX2INT(usecs);
   }
+  int fd = io_spec_get_fd(io);
   return INT2FIX(rb_wait_for_single_fd(fd, FIX2INT(events), NIL_P(secs) ? NULL : &tv));
+#endif
 }
 
 VALUE io_spec_rb_thread_fd_writable(VALUE self, VALUE io) {
