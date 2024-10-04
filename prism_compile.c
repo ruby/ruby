@@ -6797,6 +6797,8 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
                 // Create the temporary array.
                 for (; tmp_array_size; tmp_array_size--)
                     rb_ary_push(tmp_array, pm_static_literal_value(iseq, elements->nodes[index++], scope_node));
+
+                index--; // about to be incremented by for loop
                 OBJ_FREEZE(tmp_array);
 
                 // Emit the optimized code.
