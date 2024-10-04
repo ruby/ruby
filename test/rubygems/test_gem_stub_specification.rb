@@ -66,7 +66,6 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_contains_requirable_file_eh_extension
-    pend "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub_with_extension do |stub|
       _, err = capture_output do
         refute stub.contains_requirable_file? "nonexistent"
@@ -123,7 +122,6 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_missing_extensions_eh
-    pend "I guess making the stub match the running platform should work" if Gem.java_platform?
     stub = stub_with_extension do |s|
       extconf_rb = File.join s.gem_dir, s.extensions.first
       FileUtils.mkdir_p File.dirname extconf_rb

@@ -1567,7 +1567,7 @@ end
   end
 
   def test_find_lib_file_after_install
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
@@ -1655,7 +1655,7 @@ end
   end
 
   def test_install_extension_flat
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
 
     begin
       @spec = setup_base_spec
@@ -1693,7 +1693,7 @@ end
   end
 
   def test_install_extension_clean_intermediate_files
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
     @spec = setup_base_spec
     @spec.require_paths = ["."]
     @spec.extensions << "extconf.rb"

@@ -1334,7 +1334,6 @@ dependencies: []
   end
 
   def test_build_args
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert_empty @ext.build_args
@@ -1351,7 +1350,6 @@ dependencies: []
   end
 
   def test_build_extensions
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert_path_not_exist @ext.extension_dir, "sanity check"
@@ -1387,7 +1385,6 @@ dependencies: []
   end
 
   def test_build_extensions_built
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, "sanity check"
@@ -1426,7 +1423,6 @@ dependencies: []
   end
 
   def test_build_extensions_error
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, "sanity check"
@@ -1440,7 +1436,7 @@ dependencies: []
     pend "chmod not supported" if Gem.win_platform?
     pend "skipped in root privilege" if Process.uid.zero?
 
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, "sanity check"
@@ -1473,7 +1469,6 @@ dependencies: []
 
   def test_build_extensions_no_extensions_dir_unwritable
     pend "chmod not supported" if Gem.win_platform?
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     refute_empty @ext.extensions, "sanity check"
@@ -1512,7 +1507,6 @@ dependencies: []
   end
 
   def test_build_extensions_preview
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
@@ -1547,7 +1541,6 @@ dependencies: []
   end
 
   def test_contains_requirable_file_eh_extension
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     _, err = capture_output do
@@ -3843,7 +3836,6 @@ end
   end
 
   def test_missing_extensions_eh
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
     ext_spec
 
     assert @ext.missing_extensions?
