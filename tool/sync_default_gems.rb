@@ -18,6 +18,7 @@ module SyncDefaultGems
     "net-http": "ruby/net-http",
     "net-protocol": "ruby/net-protocol",
     "open-uri": "ruby/open-uri",
+    "win32-registry": "ruby/win32-registry",
     English: "ruby/English",
     benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
@@ -396,6 +397,11 @@ module SyncDefaultGems
       rm_rf("ext/win32/resolv/lib") # Clean up empty directory
       cp_r("#{upstream}/test/resolv", "test")
       `git checkout ext/win32/resolv/depend`
+    when "win32-registry"
+      rm_rf(%w[ext/win32/lib/win32/registry.rb test/win32/test_registry.rb])
+      cp_r("#{upstream}/lib/win32/registry.rb", "ext/win32/lib/win32")
+      cp_r("#{upstream}/test/win32/test_registry.rb", "test/win32")
+      cp_r("#{upstream}/win32-registry.gemspec", "ext/win32")
     else
       sync_lib gem, upstream
     end
@@ -426,6 +432,7 @@ module SyncDefaultGems
       "ext/#{gem}/#{gem}.gemspec",
       "ext/#{gem.split("-").join("/")}/#{gem}.gemspec",
       "lib/#{gem.split("-").first}/#{gem}.gemspec",
+      "ext/#{gem.split("-").first}/#{gem}.gemspec",
       "lib/#{gem.split("-").join("/")}/#{gem}.gemspec",
     ].find{|gemspec| File.exist?(gemspec)}
     spec = Gem::Specification.load(gemspec)
