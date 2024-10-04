@@ -12,6 +12,7 @@
 
 #ifdef _WIN32
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+#include <ruby/win32.h>
 #endif
 
 VALUE rb_cBasicSocket;
@@ -610,7 +611,7 @@ void
 rsock_make_fd_nonblock(int fd)
 {
 #ifdef _WIN32
-    return;
+    rb_w32_set_nonblock(fd);
 #endif
 
     int flags;
