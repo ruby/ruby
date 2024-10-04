@@ -77,3 +77,7 @@ test_merge_types(RBS::RuntimePrototypeTest)
 test_reflection(RBS::RuntimePrototypeTest)
 test_todo(RBS::RuntimePrototypeTest)
 test_of(RubyVM::AbstractSyntaxTreeSingletonTest)
+
+# Pathname#mkpath and #rmtree https://github.com/ruby/ruby/pull/3705
+test_mkpath(PathnameInstanceTest)
+test_rmtree(PathnameInstanceTest)
