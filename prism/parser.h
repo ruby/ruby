@@ -392,6 +392,9 @@ typedef enum {
     /** a rescue statement within a module statement */
     PM_CONTEXT_MODULE_RESCUE,
 
+    /** a multiple target expression */
+    PM_CONTEXT_MULTI_TARGET,
+
     /** a parenthesized expression */
     PM_CONTEXT_PARENS,
 

@@ -1,0 +1,17 @@
+[(*),]
+ ^~~ unexpected write target
+[1,(a,*b,(c,d)),1]
+   ^~~~~~~~~~~~ unexpected write target
+{a:(*),}
+   ^~~ unexpected write target
+[1+(*),]
+   ^~~ unexpected write target
+x=(*),1
+  ^~~ unexpected write target
+p((*),)
+  ^~~ unexpected write target
+p (*),1
+  ^~~ unexpected write target
+x = def f = (*),1
+            ^~~ unexpected write target
+
