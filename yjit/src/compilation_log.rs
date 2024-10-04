@@ -230,8 +230,8 @@ fn rb_yjit_get_compilation_log_array() -> VALUE {
     for entry in log.iter() {
         unsafe {
             let entry_array = rb_ary_new_capa(2);
-            rb_ary_push(entry_array, entry.payload.to_string().into());
             rb_ary_push(entry_array, rb_float_new(entry.timestamp));
+            rb_ary_push(entry_array, entry.payload.to_string().into());
             rb_ary_push(array, entry_array);
         }
     }
