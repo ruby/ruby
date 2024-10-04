@@ -222,6 +222,17 @@ static VALUE sym_HOLE;
 
 static VALUE prep_io(int fd, int fmode, VALUE klass, const char *path);
 
+VALUE
+rb_io_blocking_region_events(struct rb_io *io, rb_blocking_function_t *function, void *argument, enum rb_io_event events)
+{
+    return rb_thread_io_blocking_call(function, argument, io->fd, events);
+}
+
+VALUE rb_io_blocking_region(struct rb_io *io, rb_blocking_function_t *function, void *argument)
+{
+    return rb_io_blocking_region_events(io, function, argument, 0);
+}
+
 struct argf {
     VALUE filename, current_file;
     long last_lineno;		/* $. */
