@@ -115,14 +115,13 @@ begin
     def test_finish_autowrapped_line
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'a@a', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]\n")
+      expected = [{'user'=>{'email'=>'a@a', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}].inspect
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt> [{'user'=>{'email'=>'a@a', 'id'=
         >'ABC'}, 'version'=>4, 'status'=>'succee
         ded'}]
-        => [{"user"=>{"email"=>"a@a", "id"=>"ABC
-        "}, "version"=>4, "status"=>"succeeded"}
-        ]
+        #{fold_multiline("=> " + expected, 40)}
         prompt>
       EOC
       close
@@ -132,16 +131,14 @@ begin
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}")
       write("\n")
+      expected = [{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}].inspect
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt> [{'user'=>{'email'=>'a
         bcdef@abcdef', 'id'=>'ABC'}, '
         version'=>4, 'status'=>'succee
         ded'}]
-        => [{"user"=>{"email"=>"abcdef
-        @abcdef", "id"=>"ABC"}, "versi
-        on"=>4, "status"=>"succeeded"}
-        ]
+        #{fold_multiline("=> " + expected, 30)}
         prompt>
       EOC
       close
@@ -1823,6 +1820,10 @@ begin
       File.open(@inputrc_file, 'w') do |f|
         f.write content
       end
+    end
+
+    def fold_multiline(str, width)
+      str.scan(/.{1,#{width}}/).each(&:rstrip!).join("\n")
     end
   end
 rescue LoadError, NameError
