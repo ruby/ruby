@@ -10118,7 +10118,7 @@ parse_qmark(struct parser_params *p, int space_seen)
             enc = rb_utf8_encoding();
             tokadd_utf8(p, &enc, -1, 0, 0);
         }
-        else if (!ISASCII(c = peekc(p))) {
+        else if (!ISASCII(c = peekc(p)) && c != -1) {
             nextc(p);
             if (tokadd_mbchar(p, c) == -1) return 0;
         }
