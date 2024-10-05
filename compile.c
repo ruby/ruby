@@ -1977,7 +1977,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->num = kw;
 
     if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
-        ID kw_id = iseq->body->local_table[arg_size];
+        ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
         keyword->rest_start = arg_size++;
         body->param.flags.has_kwrest = TRUE;
 
@@ -2107,7 +2107,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
         }
         else if (args->kw_rest_arg && !optimized_forward) {
-            ID kw_id = iseq->body->local_table[arg_size];
+            ID kw_id = ISEQ_BODY(iseq)->local_table[arg_size];
             struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
             keyword->rest_start = arg_size++;
             body->param.keyword = keyword;
@@ -4009,8 +4009,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             if (IS_NEXT_INSN_ID(iobj->link.next, leave)) {
                 iobj->insn_id = BIN(opt_invokebuiltin_delegate_leave);
                 const struct rb_builtin_function *bf = (const struct rb_builtin_function *)iobj->operands[0];
-                if (iobj == (INSN *)list && bf->argc == 0 && (iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF)) {
-                    iseq->body->builtin_attrs |= BUILTIN_ATTR_SINGLE_NOARG_LEAF;
+                if (iobj == (INSN *)list && bf->argc == 0 && (ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF)) {
+                    ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_SINGLE_NOARG_LEAF;
                 }
             }
         }
