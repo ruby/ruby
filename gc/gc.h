@@ -49,6 +49,11 @@ void rb_ractor_finish_marking(void);
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c
 
+#ifdef BUILDING_SHARED_GC
+RBIMPL_WARNING_PUSH()
+RBIMPL_WARNING_IGNORED(-Wunused-function)
+#endif
+
 /* RGENGC_CHECK_MODE
  * 0: disable all assertions
  * 1: enable assertions (to debug RGenGC)
@@ -180,6 +185,10 @@ type_sym(size_t type)
         default:              return SIZET2NUM(type); break;
     }
 }
+
+#ifdef BUILDING_SHARED_GC
+RBIMPL_WARNING_POP()
+#endif
 // -------------------Private section end------------------------
 
 #endif
