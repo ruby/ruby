@@ -1814,6 +1814,9 @@ begin
       write "\ebg"
       assert_screen(/>abc\n>def\n>ghi\n/)
       close
+    ensure
+      File.delete(rubyfile.path) if rubyfile
+      File.delete(pidfile.path) if pidfile
     end
 
     def write_inputrc(content)

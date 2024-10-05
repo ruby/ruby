@@ -471,6 +471,8 @@ class Reline::Test < Reline::TestCase
       w.close
       Process.waitpid pid
     end
+  ensure
+    File.delete(ruby_file.path) if ruby_file
   end
 
   def get_reline_encoding
