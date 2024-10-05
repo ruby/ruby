@@ -141,6 +141,10 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
           from test.rb:2:in `<main>'
   ```
 
+* `Hash#inspect` rendering have been changed. [[Bug #20433]]
+  * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
+  * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
+
 ## Stdlib compatibility issues
 
 ## C API updates
@@ -180,6 +184,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
+[Bug #20433]:     https://bugs.ruby-lang.org/issues/20433
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
