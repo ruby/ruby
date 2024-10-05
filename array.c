@@ -7018,6 +7018,7 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  calls the block with each +n+-tuple permutations of +self+;
  *  returns +self+:
  *
+ *    a = [0, 1, 2]
  *    get_perms(a, 1) # => [[0], [1], [2]]
  *    get_perms(a, 2) # => [[0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1]]
  *    get_perms(a, 3) # => [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
