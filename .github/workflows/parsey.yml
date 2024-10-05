@@ -30,34 +30,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - test_task: test
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
-          - test_task: test-all
-            run_opts: '--parser=parse.y'
-            testopts: '-q --tty=no --excludes-dir="../src/test/.excludes-parsey"'
-            timeout: 40
-          - test_task: test-spec
-            run_opts: '--parser=parse.y'
-            specopts: '-T --parser=parse.y'
-            timeout: 10
-          - test_task: test-tool
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
+          - test_task: check
           - test_task: test-bundler-parallel
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 50
           - test_task: test-bundled-gems
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
-          - test_task: test-syntax-suggest
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
       fail-fast: false
 
     env:
@@ -103,8 +78,9 @@ jobs:
         timeout-minutes: ${{ matrix.timeout }}
         env:
           RUBY_TESTOPTS: ${{ matrix.testopts }}
-          RUN_OPTS: ${{ matrix.run_opts }}
-          SPECOPTS: ${{ matrix.specopts }}
+          EXCLUDES: '../src/test/.excludes-parsey'
+          RUN_OPTS: ${{ matrix.run_opts || '--parser=parse.y' }}
+          SPECOPTS: ${{ matrix.specopts || '-T --parser=parse.y' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
 
       - uses: ./.github/actions/slack
