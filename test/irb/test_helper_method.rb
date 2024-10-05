@@ -76,7 +76,8 @@ module TestIRB
         type "exit"
       end
 
-      assert_include(output, '["required", "optional", ["splat"], "required", "optional", {:a=>1, :b=>2}, "block"]')
+      optional = {a: 1, b: 2}
+      assert_include(output, %[["required", "optional", ["splat"], "required", "optional", #{optional.inspect}, "block"]])
     end
 
     def test_helper_method_injection_can_happen_after_irb_require

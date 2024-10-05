@@ -155,8 +155,8 @@ module TestIRB
         type 'exit'
       end
 
-      assert_include output, '{:context_changed=>true}'
-      assert_include output, '{:context_restored=>true}'
+      assert_include output, {context_changed: true}.inspect
+      assert_include output, {context_restored: true}.inspect
     end
   end
 
