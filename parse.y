@@ -2216,14 +2216,24 @@ rb_parser_is_ascii_string(struct parser_params *p, rb_parser_string_t *str)
 }
 
 static rb_encoding *
-rb_parser_enc_compatible_latter(struct parser_params *p, rb_parser_string_t *str1, rb_parser_string_t *str2, rb_encoding *enc1, rb_encoding *enc2)
+rb_parser_enc_compatible(struct parser_params *p, rb_parser_string_t *str1, rb_parser_string_t *str2)
 {
-    int cr1, cr2;
+    rb_encoding *enc1 = rb_parser_str_get_encoding(str1);
+    rb_encoding *enc2 = rb_parser_str_get_encoding(str2);
+
+    if (enc1 == NULL || enc2 == NULL)
+        return 0;
+
+    if (enc1 == enc2) {
+        return enc1;
+    }
 
     if (PARSER_STRING_LEN(str2) == 0)
         return enc1;
     if (PARSER_STRING_LEN(str1) == 0)
         return rb_parser_is_ascii_string(p, str2) ? enc1 : enc2;
+
+    int cr1, cr2;
 
     cr1 = rb_parser_enc_str_coderange(p, str1);
     cr2 = rb_parser_enc_str_coderange(p, str2);
@@ -2242,22 +2252,6 @@ rb_parser_enc_compatible_latter(struct parser_params *p, rb_parser_string_t *str
     }
 
     return 0;
-}
-
-static rb_encoding *
-rb_parser_enc_compatible(struct parser_params *p, rb_parser_string_t *str1, rb_parser_string_t *str2)
-{
-    rb_encoding *enc1 = rb_parser_str_get_encoding(str1);
-    rb_encoding *enc2 = rb_parser_str_get_encoding(str2);
-
-    if (enc1 == NULL || enc2 == NULL)
-        return 0;
-
-    if (enc1 == enc2) {
-        return enc1;
-    }
-
-    return rb_parser_enc_compatible_latter(p, str1, str2, enc1, enc2);
 }
 
 static void
