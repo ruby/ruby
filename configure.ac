@@ -2088,7 +2088,7 @@ AC_CHECK_FUNCS(_longjmp)		# used for AC_ARG_WITH(setjmp-type)
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 AC_CHECK_FUNCS(arc4random_buf)
 AC_CHECK_FUNCS(atan2l atan2f)
-AC_CHECK_DECLS(atomic_signal_fence, [], [], [#include <stdatomic.h>])
+AC_CHECK_DECLS(atomic_signal_fence, [], [], [@%:@include <stdatomic.h>])
 AC_CHECK_FUNCS(chmod)
 AC_CHECK_FUNCS(chown)
 AC_CHECK_FUNCS(chroot)
