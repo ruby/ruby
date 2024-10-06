@@ -167,9 +167,10 @@ module TestIRB
       orig_use_autocomplete_env = ENV['IRB_COMPLETOR']
       orig_use_autocomplete_conf = IRB.conf[:COMPLETOR]
 
+      # Default value is nil: auto-detect
       ENV['IRB_COMPLETOR'] = nil
       IRB.setup(__FILE__)
-      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+      assert_equal(nil, IRB.conf[:COMPLETOR])
 
       ENV['IRB_COMPLETOR'] = 'regexp'
       IRB.setup(__FILE__)
@@ -193,10 +194,12 @@ module TestIRB
 
     def test_completor_setup_with_argv
       orig_completor_conf = IRB.conf[:COMPLETOR]
+      orig_completor_env = ENV['IRB_COMPLETOR']
+      ENV['IRB_COMPLETOR'] = nil
 
-      # Default is :regexp
+      # Default value is nil: auto-detect
       IRB.setup(__FILE__, argv: [])
-      assert_equal :regexp, IRB.conf[:COMPLETOR]
+      assert_equal nil, IRB.conf[:COMPLETOR]
 
       IRB.setup(__FILE__, argv: ['--type-completor'])
       assert_equal :type, IRB.conf[:COMPLETOR]
@@ -205,6 +208,7 @@ module TestIRB
       assert_equal :regexp, IRB.conf[:COMPLETOR]
     ensure
       IRB.conf[:COMPLETOR] = orig_completor_conf
+      ENV['IRB_COMPLETOR'] = orig_completor_env
     end
 
     def test_noscript

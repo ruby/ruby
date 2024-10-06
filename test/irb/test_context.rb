@@ -705,6 +705,8 @@ module TestIRB
     def test_build_completor
       verbose, $VERBOSE = $VERBOSE, nil
       original_completor = IRB.conf[:COMPLETOR]
+      IRB.conf[:COMPLETOR] = nil
+      assert_match /IRB::(Regexp|Type)Completor/, @context.send(:build_completor).class.name
       IRB.conf[:COMPLETOR] = :regexp
       assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
       IRB.conf[:COMPLETOR] = :unknown
