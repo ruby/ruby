@@ -126,41 +126,46 @@ class Reline::Config::Test < Reline::TestCase
   end
 
   def test_bind_key
-    assert_equal ['input'.bytes, 'abcde'.bytes], @config.bind_key('"input"', '"abcde"')
+    assert_equal ['input'.bytes, 'abcde'.bytes], @config.parse_key_binding('"input"', '"abcde"')
   end
 
   def test_bind_key_with_macro
 
-    assert_equal ['input'.bytes, :abcde], @config.bind_key('"input"', 'abcde')
+    assert_equal ['input'.bytes, :abcde], @config.parse_key_binding('"input"', 'abcde')
   end
 
   def test_bind_key_with_escaped_chars
-    assert_equal ['input'.bytes, "\e \\ \" ' \a \b \d \f \n \r \t \v".bytes], @config.bind_key('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
+    assert_equal ['input'.bytes, "\e \\ \" ' \a \b \d \f \n \r \t \v".bytes], @config.parse_key_binding('"input"', '"\\e \\\\ \\" \\\' \\a \\b \\d \\f \\n \\r \\t \\v"')
   end
 
   def test_bind_key_with_ctrl_chars
-    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\C-h\C-H"')
-    assert_equal ['input'.bytes, "\C-h\C-h".bytes], @config.bind_key('"input"', '"\Control-h\Control-H"')
+    assert_equal ['input'.bytes, "\C-h\C-h\C-_".bytes], @config.parse_key_binding('"input"', '"\C-h\C-H\C-_"')
+    assert_equal ['input'.bytes, "\C-h\C-h\C-_".bytes], @config.parse_key_binding('"input"', '"\Control-h\Control-H\Control-_"')
   end
 
   def test_bind_key_with_meta_chars
-    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\M-h\M-H"')
-    assert_equal ['input'.bytes, "\M-h\M-H".bytes], @config.bind_key('"input"', '"\Meta-h\Meta-H"')
+    assert_equal ['input'.bytes, "\eh\eH\e_".bytes], @config.parse_key_binding('"input"', '"\M-h\M-H\M-_"')
+    assert_equal ['input'.bytes, "\eh\eH\e_".bytes], @config.parse_key_binding('"input"', '"\Meta-h\Meta-H\M-_"')
+  end
+
+  def test_bind_key_with_ctrl_meta_chars
+    assert_equal ['input'.bytes, "\e\C-h\e\C-h\e\C-_".bytes], @config.parse_key_binding('"input"', '"\M-\C-h\C-\M-H\M-\C-_"')
+    assert_equal ['input'.bytes, "\e\C-h\e\C-_".bytes], @config.parse_key_binding('"input"', '"\Meta-\Control-h\Control-\Meta-_"')
   end
 
   def test_bind_key_with_octal_number
     input = %w{i n p u t}.map(&:ord)
-    assert_equal [input, "\1".bytes], @config.bind_key('"input"', '"\1"')
-    assert_equal [input, "\12".bytes], @config.bind_key('"input"', '"\12"')
-    assert_equal [input, "\123".bytes], @config.bind_key('"input"', '"\123"')
-    assert_equal [input, "\123".bytes + '4'.bytes], @config.bind_key('"input"', '"\1234"')
+    assert_equal [input, "\1".bytes], @config.parse_key_binding('"input"', '"\1"')
+    assert_equal [input, "\12".bytes], @config.parse_key_binding('"input"', '"\12"')
+    assert_equal [input, "\123".bytes], @config.parse_key_binding('"input"', '"\123"')
+    assert_equal [input, "\123".bytes + '4'.bytes], @config.parse_key_binding('"input"', '"\1234"')
   end
 
   def test_bind_key_with_hexadecimal_number
     input = %w{i n p u t}.map(&:ord)
-    assert_equal [input, "\x4".bytes], @config.bind_key('"input"', '"\x4"')
-    assert_equal [input, "\x45".bytes], @config.bind_key('"input"', '"\x45"')
-    assert_equal [input, "\x45".bytes + '6'.bytes], @config.bind_key('"input"', '"\x456"')
+    assert_equal [input, "\x4".bytes], @config.parse_key_binding('"input"', '"\x4"')
+    assert_equal [input, "\x45".bytes], @config.parse_key_binding('"input"', '"\x45"')
+    assert_equal [input, "\x45".bytes + '6'.bytes], @config.parse_key_binding('"input"', '"\x456"')
   end
 
   def test_include
@@ -381,6 +386,20 @@ class Reline::Config::Test < Reline::TestCase
     LINES
 
     expected = { 'ef'.bytes => 'EF'.bytes, 'gh'.bytes => 'GH'.bytes }
+    assert_equal expected, registered_key_bindings(expected.keys)
+  end
+
+  def test_unquoted_additional_key_bindings
+    @config.read_lines(<<~'LINES'.lines)
+      Meta-a: "Ma"
+      Control-b: "Cb"
+      Meta-Control-c: "MCc"
+      Control-Meta-d: "CMd"
+      M-C-e: "MCe"
+      C-M-f: "CMf"
+    LINES
+
+    expected = { "\ea".bytes => 'Ma'.bytes, "\C-b".bytes => 'Cb'.bytes, "\e\C-c".bytes => 'MCc'.bytes, "\e\C-d".bytes => 'CMd'.bytes, "\e\C-e".bytes => 'MCe'.bytes, "\e\C-f".bytes => 'CMf'.bytes }
     assert_equal expected, registered_key_bindings(expected.keys)
   end
 

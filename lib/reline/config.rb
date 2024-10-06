@@ -1,7 +1,7 @@
 class Reline::Config
   attr_reader :test_mode
 
-  KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
+  KEYSEQ_PATTERN = /\\(?:C|Control)-[A-Za-z_]|\\(?:M|Meta)-[0-9A-Za-z_]|\\(?:C|Control)-\\(?:M|Meta)-[A-Za-z_]|\\(?:M|Meta)-\\(?:C|Control)-[A-Za-z_]|\\e|\\[\\\"\'abdfnrtv]|\\\d{1,3}|\\x\h{1,2}|./
 
   class InvalidInputrc < RuntimeError
     attr_accessor :file, :lineno
@@ -194,13 +194,14 @@ class Reline::Config
         # value ignores everything after a space, raw_value does not.
         var, value, raw_value = $1.downcase, $2.partition(' ').first, $2
         bind_variable(var, value, raw_value)
-        next
-      when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
-        key, func_name = $1, $2
-        func_name = func_name.split.first
-        keystroke, func = bind_key(key, func_name)
-        next unless keystroke
-        @additional_key_bindings[@keymap_label].add(@keymap_prefix + keystroke, func)
+      when /^\s*(?:M|Meta)-([a-zA-Z_])\s*:\s*(.*)\s*$/o
+        bind_key("\"\\M-#$1\"", $2)
+      when /^\s*(?:C|Control)-([a-zA-Z_])\s*:\s*(.*)\s*$/o
+        bind_key("\"\\C-#$1\"", $2)
+      when /^\s*(?:(?:C|Control)-(?:M|Meta)|(?:M|Meta)-(?:C|Control))-([a-zA-Z_])\s*:\s*(.*)\s*$/o
+        bind_key("\"\\M-\\C-#$1\"", $2)
+      when /^\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
+        bind_key($1, $2)
       end
     end
     unless if_stack.empty?
@@ -310,7 +311,12 @@ class Reline::Config
     parse_keyseq(str).map { |c| c.chr(Reline.encoding_system_needs) }.join
   end
 
-  def bind_key(key, func_name)
+  def bind_key(key, value)
+    keystroke, func = parse_key_binding(key, value)
+    @additional_key_bindings[@keymap_label].add(@keymap_prefix + keystroke, func) if keystroke
+  end
+
+  def parse_key_binding(key, func_name)
     if key =~ /\A"(.*)"\z/
       keyseq = parse_keyseq($1)
     else
@@ -319,27 +325,19 @@ class Reline::Config
     if func_name =~ /"(.*)"/
       func = parse_keyseq($1)
     else
-      func = func_name.tr(?-, ?_).to_sym # It must be macro.
+      func = func_name.split.first.tr(?-, ?_).to_sym # It must be macro.
     end
     [keyseq, func]
   end
 
   def key_notation_to_code(notation)
     case notation
+    when /(?:\\(?:C|Control)-\\(?:M|Meta)|\\(?:M|Meta)-\\(?:C|Control))-([A-Za-z_])/
+      [?\e.ord, $1.ord % 32]
     when /\\(?:C|Control)-([A-Za-z_])/
-      (1 + $1.downcase.ord - ?a.ord)
+      ($1.upcase.ord % 32)
     when /\\(?:M|Meta)-([0-9A-Za-z_])/
-      modified_key = $1
-      case $1
-      when /[0-9]/
-        ?\M-0.bytes.first + (modified_key.ord - ?0.ord)
-      when /[A-Z]/
-        ?\M-A.bytes.first + (modified_key.ord - ?A.ord)
-      when /[a-z]/
-        ?\M-a.bytes.first + (modified_key.ord - ?a.ord)
-      end
-    when /\\(?:C|Control)-(?:M|Meta)-[A-Za-z_]/, /\\(?:M|Meta)-(?:C|Control)-[A-Za-z_]/
-    # 129 M-^A
+      [?\e.ord, $1.ord]
     when /\\(\d{1,3})/ then $1.to_i(8) # octal
     when /\\x(\h{1,2})/ then $1.to_i(16) # hexadecimal
     when "\\e" then ?\e.ord
@@ -359,11 +357,9 @@ class Reline::Config
   end
 
   def parse_keyseq(str)
-    ret = []
-    str.scan(KEYSEQ_PATTERN) do
-      ret << key_notation_to_code($&)
+    str.scan(KEYSEQ_PATTERN).flat_map do |notation|
+      key_notation_to_code(notation)
     end
-    ret
   end
 
   def reload
