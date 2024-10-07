@@ -26,7 +26,7 @@ pub struct VirtualMemory<A: Allocator> {
     /// Location of the virtual memory region.
     region_start: NonNull<u8>,
 
-    /// Size of the region in bytes.
+    /// Size of this virtual memory region in bytes.
     region_size_bytes: usize,
 
     /// mapped_region_bytes + yjit_alloc_size may not increase beyond this limit.
