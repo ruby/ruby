@@ -27,7 +27,6 @@ class JSONParserTest < Test::Unit::TestCase
   end if defined?(Encoding::UTF_16)
 
   def test_error_message_encoding
-    # https://github.com/flori/json/actions/runs/6478148162/job/17589572890
     pend if RUBY_ENGINE == 'truffleruby'
 
     bug10705 = '[ruby-core:67386] [Bug #10705]'
