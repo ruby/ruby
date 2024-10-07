@@ -106,9 +106,10 @@ pub static mut OPTIONS: Options = Options {
 };
 
 /// YJIT option descriptions for `ruby --help`.
+/// Note that --help allows only 80 characters per line, including indentation.   80-character limit --> |
 pub const YJIT_OPTIONS: &'static [(&str, &str)] = &[
-    ("--yjit-mem-size=num",                "Soft limit of all memory bytes for YJIT in MiB (default: 128)."),
-    ("--yjit-exec-mem-size=num",           "Hard limit of executable memory bytes in MiB."),
+    ("--yjit-mem-size=num",                "Soft limit on YJIT memory usage in MiB (default: 128)."),
+    ("--yjit-exec-mem-size=num",           "Hard limit on executable memory block in MiB."),
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT."),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)."),
     ("--yjit-stats",                       "Enable collecting YJIT statistics."),
