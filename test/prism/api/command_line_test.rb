@@ -52,6 +52,9 @@ module Prism
       assert_kind_of CallNode, predicate
       assert_equal :gets, predicate.name
 
+      arguments = predicate.arguments
+      assert arguments.contains_keywords?
+
       arguments = predicate.arguments.arguments
       assert_equal 2, arguments.length
       assert_equal :$/, arguments.first.name

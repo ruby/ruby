@@ -21906,6 +21906,7 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
             ));
 
             pm_arguments_node_arguments_append(arguments, (pm_node_t *) keywords);
+            pm_node_flag_set((pm_node_t *) arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORDS);
         }
 
         pm_statements_node_t *wrapped_statements = pm_statements_node_create(parser);
