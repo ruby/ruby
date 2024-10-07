@@ -68,6 +68,8 @@ autoload :OpenSSL, 'openssl'
 # #verify_callback    :: For server certificate verification
 # #verify_depth       :: Depth of certificate verification
 # #verify_mode        :: How connections should be verified
+# #verify_hostname    :: Use hostname verification for server certificate
+#                        during the handshake
 #
 # == Proxies
 #
@@ -174,7 +176,7 @@ class Gem::Net::HTTP::Persistent
   ##
   # The version of Gem::Net::HTTP::Persistent you are using
 
-  VERSION = '4.0.2'
+  VERSION = '4.0.4'
 
   ##
   # Error class for errors raised by Gem::Net::HTTP::Persistent.  Various
@@ -450,6 +452,21 @@ class Gem::Net::HTTP::Persistent
   attr_reader :verify_mode
 
   ##
+  # HTTPS verify_hostname.
+  #
+  # If a client sets this to true and enables SNI with SSLSocket#hostname=,
+  # the hostname verification on the server certificate is performed
+  # automatically during the handshake using
+  # OpenSSL::SSL.verify_certificate_identity().
+  #
+  # You can set +verify_hostname+ as true to use hostname verification
+  # during the handshake.
+  #
+  # NOTE: This works with Ruby > 3.0.
+
+  attr_reader :verify_hostname
+
+  ##
   # Creates a new Gem::Net::HTTP::Persistent.
   #
   # Set a +name+ for fun.  Your library name should be good enough, but this
@@ -508,6 +525,7 @@ class Gem::Net::HTTP::Persistent
     @verify_callback    = nil
     @verify_depth       = nil
     @verify_mode        = nil
+    @verify_hostname    = nil
     @cert_store         = nil
 
     @generation         = 0 # incremented when proxy Gem::URI changes
@@ -607,13 +625,23 @@ class Gem::Net::HTTP::Persistent
 
     return yield connection
   rescue Errno::ECONNREFUSED
-    address = http.proxy_address || http.address
-    port    = http.proxy_port    || http.port
+    if http.proxy?
+      address = http.proxy_address
+      port    = http.proxy_port
+    else
+      address = http.address
+      port    = http.port
+    end
 
     raise Error, "connection refused: #{address}:#{port}"
   rescue Errno::EHOSTDOWN
-    address = http.proxy_address || http.address
-    port    = http.proxy_port    || http.port
+    if http.proxy?
+      address = http.proxy_address
+      port    = http.proxy_port
+    else
+      address = http.address
+      port    = http.port
+    end
 
     raise Error, "host down: #{address}:#{port}"
   ensure
@@ -948,8 +976,10 @@ class Gem::Net::HTTP::Persistent
     connection.min_version = @min_version if @min_version
     connection.max_version = @max_version if @max_version
 
-    connection.verify_depth = @verify_depth
-    connection.verify_mode  = @verify_mode
+    connection.verify_depth    = @verify_depth
+    connection.verify_mode     = @verify_mode
+    connection.verify_hostname = @verify_hostname if
+      @verify_hostname != nil && connection.respond_to?(:verify_hostname=)
 
     if OpenSSL::SSL::VERIFY_PEER == OpenSSL::SSL::VERIFY_NONE and
        not Object.const_defined?(:I_KNOW_THAT_OPENSSL_VERIFY_PEER_EQUALS_VERIFY_NONE_IS_WRONG) then
@@ -1059,6 +1089,15 @@ application:
   end
 
   ##
+  # Sets the HTTPS verify_hostname.
+
+  def verify_hostname= verify_hostname
+    @verify_hostname = verify_hostname
+
+    reconnect_ssl
+  end
+
+  ##
   # SSL verification callback.
 
   def verify_callback= callback
@@ -1070,4 +1109,3 @@ end
 
 require_relative 'persistent/connection'
 require_relative 'persistent/pool'
-
