@@ -497,7 +497,7 @@ module Spec
         write "ext/#{name}.c", <<-C
           #include "ruby.h"
 
-          void Init_#{name}_c() {
+          void Init_#{name}_c(void) {
             rb_define_module("#{Builders.constantize(name)}_IN_C");
           }
         C
