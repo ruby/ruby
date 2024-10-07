@@ -92,7 +92,6 @@ h6:target {
   color: var(--link-color);
   text-decoration: none;
   transition: color 0.3s ease;
-  font-weight: 600;  /* Make links bolder */
 }
 
 :link:hover,
