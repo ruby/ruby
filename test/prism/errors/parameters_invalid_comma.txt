@@ -1,0 +1,4 @@
+def f(a
+,b);end
+^ invalid comma
+
