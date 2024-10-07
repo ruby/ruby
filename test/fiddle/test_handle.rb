@@ -134,7 +134,7 @@ module Fiddle
 
     def test_file_name
       if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Handle::NEXT doesn't exist with JRuby")
+        omit("Fiddle::Handle#file_name doesn't exist in JRuby")
       end
 
       file_name = Handle.new(LIBC_SO).file_name
