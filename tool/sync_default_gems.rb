@@ -35,7 +35,7 @@ module SyncDefaultGems
     forwardable: "ruby/forwardable",
     ipaddr: 'ruby/ipaddr',
     irb: 'ruby/irb',
-    json: 'flori/json',
+    json: 'ruby/json',
     logger: 'ruby/logger',
     open3: "ruby/open3",
     openssl: "ruby/openssl",
