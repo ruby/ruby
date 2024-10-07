@@ -635,7 +635,9 @@ class Socket < BasicSocket
   # The optional last argument _opts_ is options represented by a hash.
   # _opts_ may have following options:
   #
-  # [:connect_timeout] specify the timeout in seconds.
+  # [:resolv_timeout] specify the timeout of hostname resolution in seconds.
+  # [:connect_timeout] specify the timeout of conncetion in seconds.
+  # [:fast_fallback] enable Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305]) algorithm (Enabled by default).
   #
   # If a block is given, the block is called with the socket.
   # The value of the block is returned.
