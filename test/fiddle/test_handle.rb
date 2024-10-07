@@ -156,7 +156,7 @@ module Fiddle
 
     def test_NEXT
       if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Handle::NEXT doesn't exist with JRuby")
+        omit("Fiddle::Handle::NEXT doesn't exist in JRuby")
       end
 
       begin
