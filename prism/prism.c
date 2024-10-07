@@ -9885,6 +9885,10 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         }
         case 'c': {
             parser->current.end++;
+            if (flags & PM_ESCAPE_FLAG_CONTROL) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
+            }
+
             if (parser->current.end == parser->end) {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
                 return;
@@ -9898,10 +9902,6 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     return;
                 }
                 case '\\':
-                    if (flags & PM_ESCAPE_FLAG_CONTROL) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
-                        return;
-                    }
                     parser->current.end++;
 
                     if (match(parser, 'u') || match(parser, 'U')) {
@@ -9935,6 +9935,10 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         }
         case 'C': {
             parser->current.end++;
+            if (flags & PM_ESCAPE_FLAG_CONTROL) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
+            }
+
             if (peek(parser) != '-') {
                 size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
                 pm_parser_err(parser, parser->current.start, parser->current.end + width, PM_ERR_ESCAPE_INVALID_CONTROL);
@@ -9955,10 +9959,6 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     return;
                 }
                 case '\\':
-                    if (flags & PM_ESCAPE_FLAG_CONTROL) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL_REPEAT);
-                        return;
-                    }
                     parser->current.end++;
 
                     if (match(parser, 'u') || match(parser, 'U')) {
@@ -9993,6 +9993,10 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         }
         case 'M': {
             parser->current.end++;
+            if (flags & PM_ESCAPE_FLAG_META) {
+                pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
+            }
+
             if (peek(parser) != '-') {
                 size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
                 pm_parser_err(parser, parser->current.start, parser->current.end + width, PM_ERR_ESCAPE_INVALID_META);
@@ -10008,10 +10012,6 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
             uint8_t peeked = peek(parser);
             switch (peeked) {
                 case '\\':
-                    if (flags & PM_ESCAPE_FLAG_META) {
-                        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_META_REPEAT);
-                        return;
-                    }
                     parser->current.end++;
 
                     if (match(parser, 'u') || match(parser, 'U')) {
@@ -10054,6 +10054,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         default: {
             if (parser->current.end < parser->end) {
                 escape_write_escape_encoded(parser, buffer);
+            } else {
+                pm_parser_err_current(parser, PM_ERR_INVALID_ESCAPE_CHARACTER);
             }
             return;
         }
