@@ -880,7 +880,6 @@ end
   it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
-    ext_dir = File.join(tmp("extensions", full_gem_name))
 
     system_gems full_gem_name
 
@@ -889,12 +888,6 @@ end
     G
 
     ruby <<-R
-      s = Gem::Specification.find_by_name '#{gem_name}'
-      s.extension_dir = '#{ext_dir}'
-
-      # Don't build extensions.
-      s.class.send(:define_method, :build_extensions) { nil }
-
       require 'bundler'
       gem '#{gem_name}'
 
