@@ -7006,14 +7006,6 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  Iterates over permutations of the elements of +self+;
  *  the order of permutations is indeterminate.
  *
- *  The examples here use a helper method to gather and return permutations:
- *
- *    def get_perms(a, n)
- *      perms = []
- *      a.permutation(n) {|perm| perms.push(perm) }
- *      perms
- *    end
- *
  *  With a block and an in-range positive integer argument +n+ (<tt>0 < n <= self.size</tt>) given,
  *  calls the block with each +n+-tuple permutations of +self+;
  *  returns +self+:
