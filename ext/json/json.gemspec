@@ -54,14 +54,14 @@ Gem::Specification.new do |s|
     "lib/json/pure/parser.rb",
     "lib/json/version.rb",
   ]
-  s.homepage = "https://flori.github.io/json"
+  s.homepage = "https://ruby.github.io/json"
   s.metadata = {
-    'bug_tracker_uri'   => 'https://github.com/flori/json/issues',
-    'changelog_uri'     => 'https://github.com/flori/json/blob/master/CHANGES.md',
-    'documentation_uri' => 'https://flori.github.io/json/doc/index.html',
+    'bug_tracker_uri'   => 'https://github.com/ruby/json/issues',
+    'changelog_uri'     => 'https://github.com/ruby/json/blob/master/CHANGES.md',
+    'documentation_uri' => 'https://ruby.github.io/json/doc/index.html',
     'homepage_uri'      => s.homepage,
-    'source_code_uri'   => 'https://github.com/flori/json',
-    'wiki_uri'          => 'https://github.com/flori/json/wiki'
+    'source_code_uri'   => 'https://github.com/ruby/json',
+    'wiki_uri'          => 'https://github.com/ruby/json/wiki'
   }
 
   s.required_ruby_version = Gem::Requirement.new(">= 2.3")
