@@ -21764,8 +21764,11 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
     // Otherwise we'll look and see if the next token can be parsed as an infix
     // operator. If it can, then we'll parse it using parse_expression_infix.
     pm_binding_powers_t current_binding_powers;
+    pm_token_type_t current_token_type;
+
     while (
-        current_binding_powers = pm_binding_powers[parser->current.type],
+        current_token_type = parser->current.type,
+        current_binding_powers = pm_binding_powers[current_token_type],
         binding_power <= current_binding_powers.left &&
         current_binding_powers.binary
      ) {
@@ -21806,6 +21809,13 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         // If the operator is nonassoc and we should not be able to parse the
         // upcoming infix operator, break.
         if (current_binding_powers.nonassoc) {
+            // If this is a non-assoc operator and we are about to parse the
+            // exact same operator, then we need to add an error.
+            if (match1(parser, current_token_type)) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(current_token_type));
+                break;
+            }
+
             // If this is an endless range, then we need to reject a couple of
             // additional operators because it violates the normal operator
             // precedence rules. Those patterns are:
@@ -21815,7 +21825,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             //
             if (PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL) {
                 if (match4(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_DOT, PM_TOKEN_AMPERSAND_DOT)) {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(parser->previous.type));
+                    PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_type_human(parser->current.type), pm_token_type_human(current_token_type));
                     break;
                 }
 
