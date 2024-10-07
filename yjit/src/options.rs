@@ -27,9 +27,14 @@ pub static mut rb_yjit_cold_threshold: u64 = 200_000;
 #[derive(Debug)]
 #[repr(C)]
 pub struct Options {
-    // Size of the executable memory block to allocate in bytes
-    // Note that the command line argument is expressed in MiB and not bytes
-    pub exec_mem_size: usize,
+    /// Soft limit of all memory used by YJIT in bytes
+    /// VirtualMem avoids allocating new pages if code_region_size + yjit_alloc_size
+    /// is larger than this threshold. Rust may still allocate memory beyond this limit.
+    pub mem_size: usize,
+
+    /// Hard limit of the executable memory block to allocate in bytes
+    /// Note that the command line argument is expressed in MiB and not bytes
+    pub exec_mem_size: Option<usize>,
 
     // Disable the propagation of type information
     pub no_type_prop: bool,
@@ -81,7 +86,8 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 48 * 1024 * 1024,
+    mem_size: 128 * 1024 * 1024,
+    exec_mem_size: None,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -100,8 +106,10 @@ pub static mut OPTIONS: Options = Options {
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 9] = [
-    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 48)."),
+/// Note that --help allows only 80 characters per line, including indentation.   80-character limit --> |
+pub const YJIT_OPTIONS: &'static [(&str, &str)] = &[
+    ("--yjit-mem-size=num",                "Soft limit on YJIT memory usage in MiB (default: 128)."),
+    ("--yjit-exec-mem-size=num",           "Hard limit on executable memory block in MiB."),
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT."),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)."),
     ("--yjit-stats",                       "Enable collecting YJIT statistics."),
@@ -183,6 +191,20 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
     match (opt_name, opt_val) {
         ("", "") => (), // Simply --yjit
 
+        ("mem-size", _) => match opt_val.parse::<usize>() {
+            Ok(n) => {
+                if n == 0 || n > 2 * 1024 * 1024 {
+                    return None
+                }
+
+                // Convert from MiB to bytes internally for convenience
+                unsafe { OPTIONS.mem_size = n * 1024 * 1024 }
+            }
+            Err(_) => {
+                return None;
+            }
+        },
+
         ("exec-mem-size", _) => match opt_val.parse::<usize>() {
             Ok(n) => {
                 if n == 0 || n > 2 * 1024 * 1024 {
@@ -190,7 +212,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 }
 
                 // Convert from MiB to bytes internally for convenience
-                unsafe { OPTIONS.exec_mem_size = n * 1024 * 1024 }
+                unsafe { OPTIONS.exec_mem_size = Some(n * 1024 * 1024) }
             }
             Err(_) => {
                 return None;

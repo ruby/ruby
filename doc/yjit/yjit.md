@@ -166,7 +166,8 @@ The machine code generated for a given method can be printed by adding `puts Rub
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 48 MiB)
+- `--yjit-mem-size=N`: soft limit on YJIT memory usage in MiB (default: 128). Tries to limit `code_region_size + yjit_alloc_size`
+- `--yjit-exec-mem-size=N`: hard limit on executable memory block in MiB. Limits `code_region_size`
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function.
   It defaults to 30, and it's then increased to 120 when the number of ISEQs in the process reaches 40,000.
 - `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not

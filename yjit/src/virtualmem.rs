@@ -5,7 +5,7 @@
 
 use std::ptr::NonNull;
 
-use crate::{utils::IntoUsize, backend::ir::Target};
+use crate::{backend::ir::Target, stats::yjit_alloc_size, utils::IntoUsize};
 
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
@@ -26,8 +26,11 @@ pub struct VirtualMemory<A: Allocator> {
     /// Location of the virtual memory region.
     region_start: NonNull<u8>,
 
-    /// Size of the region in bytes.
+    /// Size of this virtual memory region in bytes.
     region_size_bytes: usize,
+
+    /// mapped_region_bytes + yjit_alloc_size may not increase beyond this limit.
+    memory_limit_bytes: usize,
 
     /// Number of bytes per "page", memory protection permission can only be controlled at this
     /// granularity.
@@ -106,13 +109,20 @@ use WriteError::*;
 
 impl<A: Allocator> VirtualMemory<A> {
     /// Bring a part of the address space under management.
-    pub fn new(allocator: A, page_size: u32, virt_region_start: NonNull<u8>, size_bytes: usize) -> Self {
+    pub fn new(
+        allocator: A,
+        page_size: u32,
+        virt_region_start: NonNull<u8>,
+        region_size_bytes: usize,
+        memory_limit_bytes: usize,
+    ) -> Self {
         assert_ne!(0, page_size);
         let page_size_bytes = page_size.as_usize();
 
         Self {
             region_start: virt_region_start,
-            region_size_bytes: size_bytes,
+            region_size_bytes,
+            memory_limit_bytes,
             page_size_bytes,
             mapped_region_bytes: 0,
             current_write_page: None,
@@ -176,7 +186,8 @@ impl<A: Allocator> VirtualMemory<A> {
                 }
 
                 self.current_write_page = Some(page_addr);
-            } else if (start..whole_region_end).contains(&raw) {
+            } else if (start..whole_region_end).contains(&raw) &&
+                    (page_addr + page_size - start as usize) + yjit_alloc_size() < self.memory_limit_bytes {
                 // Writing to a brand new page
                 let mapped_region_end_addr = mapped_region_end as usize;
                 let alloc_size = page_addr - mapped_region_end_addr + page_size;
@@ -368,6 +379,7 @@ pub mod tests {
             PAGE_SIZE.try_into().unwrap(),
             NonNull::new(mem_start as *mut u8).unwrap(),
             mem_size,
+            128 * 1024 * 1024,
         )
     }
 

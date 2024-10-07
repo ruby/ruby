@@ -10504,11 +10504,11 @@ impl CodegenGlobals {
     /// Initialize the codegen globals
     pub fn init() {
         // Executable memory and code page size in bytes
-        let mem_size = get_option!(exec_mem_size);
+        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size));
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
-            let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(mem_size as u32) };
+            let virt_block: *mut u8 = unsafe { rb_yjit_reserve_addr_space(exec_mem_size as u32) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
             // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
@@ -10530,7 +10530,8 @@ impl CodegenGlobals {
                 SystemAllocator {},
                 page_size,
                 NonNull::new(virt_block).unwrap(),
-                mem_size,
+                exec_mem_size,
+                get_option!(mem_size),
             );
             let mem_block = Rc::new(RefCell::new(mem_block));
 
@@ -10546,9 +10547,9 @@ impl CodegenGlobals {
         // In test mode we're not linking with the C code
         // so we don't allocate executable memory
         #[cfg(test)]
-        let mut cb = CodeBlock::new_dummy(mem_size / 2);
+        let mut cb = CodeBlock::new_dummy(exec_mem_size / 2);
         #[cfg(test)]
-        let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(mem_size / 2));
+        let mut ocb = OutlinedCb::wrap(CodeBlock::new_dummy(exec_mem_size / 2));
 
         let ocb_start_addr = ocb.unwrap().get_write_ptr();
         let leave_exit_code = gen_leave_exit(&mut ocb).unwrap();
