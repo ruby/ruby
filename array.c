@@ -7019,13 +7019,23 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *  returns +self+:
  *
  *    a = [0, 1, 2]
- *    get_perms(a, 1) # => [[0], [1], [2]]
- *    get_perms(a, 2) # => [[0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1]]
- *    get_perms(a, 3) # => [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+ *    perms = []
+ *    a.permutation(1) {|perm| perms.push(perm) }
+ *    perms # => [[0], [1], [2]]
+ *
+ *    perms = []
+ *    a.permutation(2) {|perm| perms.push(perm) }
+ *    perms # => [[0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1]]
+ *
+ *    perms = []
+ *    a.permutation(3) {|perm| perms.push(perm) }
+ *    perms # => [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
  *
  *  When +n+ is zero, calls the block once with a new empty array:
  *
- *    get_perms(a, 0) # => [[]]
+ *    perms = []
+ *    a.permutation(0) {|perm| perms.push(perm) }
+ *    perms # => [[]]
  *
  *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
  *  does not call the block:
