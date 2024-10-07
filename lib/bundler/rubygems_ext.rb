@@ -123,6 +123,13 @@ module Gem
       end
     end
 
+    # Can be removed once RubyGems 3.5.21 support is dropped
+    remove_method :gem_dir if method_defined?(:gem_dir, false)
+
+    def gem_dir
+      full_gem_path
+    end
+
     unless const_defined?(:LATEST_RUBY_WITHOUT_PATCH_VERSIONS)
       LATEST_RUBY_WITHOUT_PATCH_VERSIONS = Gem::Version.new("2.1")
 

@@ -706,6 +706,21 @@ RSpec.describe "Bundler.setup" do
     expect(out).to be_empty
   end
 
+  it "has gem_dir pointing to local repo" do
+    build_lib "foo", "1.0", path: bundled_app
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gemspec
+    G
+
+    run <<-R
+      puts Gem.loaded_specs['foo'].gem_dir
+    R
+
+    expect(out).to eq(bundled_app.to_s)
+  end
+
   it "does not load all gemspecs" do
     install_gemfile <<-G
       source "https://gem.repo1"
