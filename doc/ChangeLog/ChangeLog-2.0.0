@@ -14426,7 +14426,7 @@ Tue May  8 02:34:26 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 Mon May  7 21:19:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json: Merge JSON 1.7.1.
-	 https://github.com/flori/json/commit/e5b9a9465c1159fae533bca320d950b772bcb4ac
+	 https://github.com/ruby/json/commit/e5b9a9465c1159fae533bca320d950b772bcb4ac
 
 Mon May  7 22:54:22 2012  Martin Bosslet  <Martin.Bosslet@googlemail.com>
 

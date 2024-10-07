@@ -2588,7 +2588,7 @@ float_arg(VALUE self)
  * - #as_json: Returns a serialized hash constructed from +self+.
  * - #to_json: Returns a JSON string representing +self+.
  *
- * These methods are provided by the {JSON gem}[https://github.com/flori/json]. To make these methods available:
+ * These methods are provided by the {JSON gem}[https://github.com/ruby/json]. To make these methods available:
  *
  *   require 'json/add/complex'
  *

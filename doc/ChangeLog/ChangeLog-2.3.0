@@ -1211,7 +1211,7 @@ Sun Dec  6 08:39:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 	  upstream changes.
 
 	  https://github.com/ruby/ruby/commit/4d059bf9f5f10f3d3088de49fc87e5555db7770d
-	  https://github.com/flori/json/commit/d4c99de78905d96c3f301f48b2c789943bb3f098
+	  https://github.com/ruby/json/commit/d4c99de78905d96c3f301f48b2c789943bb3f098
 
 	* ext/json/lib/json/version.rb: ditto.
 
@@ -10989,7 +10989,7 @@ Fri Feb 13 21:16:00 2015  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Fri Feb 13 14:19:06 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* ext/json: merge upstream from flori/json
+	* ext/json: merge upstream from ruby/json
 	  change usage of TypedData. [Feature #10739][ruby-core:67564]
 
 Thu Feb 12 18:34:01 2015  multisnow  <infinity.blick.winkel@gmail.com>
@@ -11556,7 +11556,7 @@ Tue Jan 13 21:08:22 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/json, test/json: merge JSON HEAD(259dee6)
 	  separate implementation of Typed_Data macro.
-	  https://github.com/flori/json/compare/v1.8.1...v1.8.2
+	  https://github.com/ruby/json/compare/v1.8.1...v1.8.2
 
 Tue Jan 13 14:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -12009,7 +12009,7 @@ Mon Dec 29 10:37:27 2014  Thiago Lewin  <thiago_lewin@yahoo.com.br>
 Mon Dec 29 07:27:23 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* ext/json, test/json: merge JSON HEAD(17fe8e7)
-	  https://github.com/flori/json/compare/v1.8.1...17fe8e7
+	  https://github.com/ruby/json/compare/v1.8.1...17fe8e7
 
 Sun Dec 28 23:49:37 2014  Michal Papis  <mpapis@gmail.com>
 
