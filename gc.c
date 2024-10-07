@@ -690,9 +690,10 @@ ruby_external_gc_init(void)
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
-        gc_functions.name = dlsym(handle, "rb_gc_impl_" #name); \
+        const char *func_name = "rb_gc_impl_" #name; \
+        gc_functions.name = dlsym(handle, func_name); \
         if (!gc_functions.name) { \
-            fprintf(stderr, "ruby_external_gc_init: " #name " func not exported by library %s\n", gc_so_path); \
+            fprintf(stderr, "ruby_external_gc_init: %s function not exported by library %s\n", func_name, gc_so_path); \
             exit(1); \
         } \
     } \
