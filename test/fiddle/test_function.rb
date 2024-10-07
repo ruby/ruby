@@ -39,7 +39,7 @@ module Fiddle
 
     def test_need_gvl?
       if RUBY_ENGINE == "jruby"
-        omit("rb_str_dup() doesn't exit in JRuby")
+        omit("rb_str_dup() doesn't exist in JRuby")
       end
 
       libruby = Fiddle.dlopen(nil)
