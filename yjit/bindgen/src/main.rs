@@ -378,6 +378,7 @@ fn main() {
         .allowlist_function("rb_attr_get")
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
+        .allowlist_function("rb_mod_name")
 
         // From internal/vm.h
         .allowlist_var("rb_vm_insns_count")

@@ -5135,6 +5135,33 @@ fn jit_rb_mod_eqq(
     return true;
 }
 
+// Substitution for rb_mod_name(). Returns the name of a module/class.
+fn jit_rb_mod_name(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    if argc != 0 {
+        return false;
+    }
+
+    asm_comment!(asm, "Module#name");
+
+    // rb_mod_name() never allocates, so no preparation needed.
+    let name = asm.ccall(rb_mod_name as _, vec![asm.stack_opnd(0)]);
+
+    let _ = asm.stack_pop(1); // pop self
+    // call-seq: mod.name -> string or nil
+    let ret = asm.stack_push(Type::Unknown);
+    asm.mov(ret, name);
+
+    true
+}
+
 // Codegen for rb_obj_equal()
 // object identity comparison
 fn jit_rb_obj_equal(
@@ -10373,6 +10400,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
         yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
         yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
+        yjit_reg_method(rb_cModule, "name", jit_rb_mod_name);
         yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
         yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
         yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
