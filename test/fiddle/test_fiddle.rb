@@ -6,6 +6,10 @@ end
 
 class TestFiddle < Fiddle::TestCase
   def test_nil_true_etc
+    if RUBY_ENGINE == "jruby"
+      omit("Fiddle::Q* aren't supported with JRuby")
+    end
+
     assert_equal Fiddle::Qtrue, Fiddle.dlwrap(true)
     assert_equal Fiddle::Qfalse, Fiddle.dlwrap(false)
     assert_equal Fiddle::Qnil, Fiddle.dlwrap(nil)

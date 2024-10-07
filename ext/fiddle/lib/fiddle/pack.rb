@@ -41,6 +41,12 @@ module Fiddle
     when SIZEOF_LONG
       PACK_MAP[TYPE_BOOL] = PACK_MAP[TYPE_ULONG]
     end
+    if RUBY_ENGINE == "jruby" and WINDOWS and [0].pack("l!").size == 8
+      # JRuby's 'l!' pack string doesn't use 32-bit on Windows.
+      # See https://github.com/jruby/jruby/issues/8357 for details
+      PACK_MAP[TYPE_LONG] = PACK_MAP[TYPE_INT]
+      PACK_MAP[TYPE_ULONG] = PACK_MAP[TYPE_UINT]
+    end
 
     SIZE_MAP = {
       TYPE_VOIDP => SIZEOF_VOIDP,

@@ -290,15 +290,28 @@ module Fiddle
     # Allocates a C struct with the +types+ provided.
     #
     # See Fiddle::Pointer.malloc for memory management issues.
-    def CStructEntity.malloc(types, func = nil, size = size(types), &block)
+    def CStructEntity.malloc(types, func = nil, size = size(types))
+      if block_given? and func.nil?
+        message = "a free function must be supplied to #{self}.malloc " +
+                  "when it is called with a block"
+        raise ArgumentError, message
+      end
+
+      pointer = Pointer.malloc(size)
+      begin
+        struct = new(pointer, types, func)
+      rescue
+        pointer.free = func
+        pointer.call_free
+        raise
+      end
       if block_given?
-        super(size, func) do |struct|
-          struct.set_ctypes types
-          yield struct
+        begin
+          yield(struct)
+        ensure
+          struct.call_free
         end
       else
-        struct = super(size, func)
-        struct.set_ctypes types
         struct
       end
     end
@@ -504,6 +517,14 @@ module Fiddle
     undef_method :size=
     def to_s() # :nodoc:
       super(@size)
+    end
+
+    def +(delta)
+      Pointer.new(to_i + delta, @size - delta)
+    end
+
+    def -(delta)
+      Pointer.new(to_i - delta, @size + delta)
     end
   end
 

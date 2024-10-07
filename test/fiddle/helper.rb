@@ -4,11 +4,19 @@ require 'rbconfig/sizeof'
 require 'test/unit'
 require 'fiddle'
 
+puts("Fiddle::VERSION: #{Fiddle::VERSION}")
+
 # FIXME: this is stolen from DL and needs to be refactored.
 
 libc_so = libm_so = nil
 
-case RUBY_PLATFORM
+if RUBY_ENGINE == "jruby"
+  # "jruby ... [x86_64-linux]" -> "x86_64-linux"
+  ruby_platform = RUBY_DESCRIPTION.split(" ").last[1..-2]
+else
+  ruby_platform = RUBY_PLATFORM
+end
+case ruby_platform
 when /cygwin/
   libc_so = "cygwin1.dll"
   libm_so = "cygwin1.dll"
@@ -147,6 +155,7 @@ unless rigid_path
 end
 
 if !libc_so || !libm_so
+  require "envutil"
   ruby = EnvUtil.rubybin
   # When the ruby binary is 32-bit and the host is 64-bit,
   # `ldd ruby` outputs "not a dynamic executable" message.

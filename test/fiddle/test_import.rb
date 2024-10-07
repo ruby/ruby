@@ -149,11 +149,15 @@ module Fiddle
     def test_unsigned_result()
       d = (2 ** 31) + 1
 
-      r = LIBC.strtoul(d.to_s, 0, 0)
+      r = LIBC.strtoul(d.to_s, nil, 0)
       assert_equal(d, r)
     end
 
     def test_io()
+      if RUBY_ENGINE == "jruby"
+        omit("BUILD_RUBY_PLATFORM doesn't exist in JRuby")
+      end
+
       if( RUBY_PLATFORM != BUILD_RUBY_PLATFORM ) || !defined?(LIBC.fprintf)
         return
       end
@@ -329,11 +333,12 @@ module Fiddle
 
     def test_struct_nested_struct_replace_array_element_hash()
       LIBC::StructNestedStruct.malloc(Fiddle::RUBY_FREE) do |s|
+        s.vertices[0] = nil
         s.vertices[0] = {
           position: {
             x: 10,
             y: 100,
-          }
+          },
         }
         assert_equal({
                        "position" => {
@@ -450,7 +455,7 @@ module Fiddle
         s.buff = "012345\377"
         assert_equal([0,1,2,3,4], s.num)
         assert_equal(?a.ord, s.c)
-        assert_equal([?0.ord,?1.ord,?2.ord,?3.ord,?4.ord,?5.ord,?\377.ord], s.buff)
+        assert_equal([?0.ord,?1.ord,?2.ord,?3.ord,?4.ord,?5.ord,"\xFF".ord], s.buff)
       end
     end
 
@@ -467,6 +472,10 @@ module Fiddle
     end
 
     def test_strcpy()
+      if RUBY_ENGINE == "jruby"
+        omit("Function that returns string doesn't work with JRuby")
+      end
+
       buff = +"000"
       str = LIBC.strcpy(buff, "123")
       assert_equal("123", buff)

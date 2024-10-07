@@ -11,19 +11,22 @@ module Fiddle
     end
 
     def test_can_read_write_memory
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Pointer.{read,write} don't exist in JRuby")
+      end
+
       # Allocate some memory
-      address = Fiddle.malloc(Fiddle::SIZEOF_VOIDP)
+      Fiddle::Pointer.malloc(Fiddle::SIZEOF_VOIDP, Fiddle::RUBY_FREE) do |pointer|
+        address = pointer.to_i
+        bytes_to_write = Fiddle::SIZEOF_VOIDP.times.to_a.pack("C*")
 
-      bytes_to_write = Fiddle::SIZEOF_VOIDP.times.to_a.pack("C*")
+        # Write to the memory
+        Fiddle::Pointer.write(address, bytes_to_write)
 
-      # Write to the memory
-      Fiddle::Pointer.write(address, bytes_to_write)
-
-      # Read the bytes out again
-      bytes = Fiddle::Pointer.read(address, Fiddle::SIZEOF_VOIDP)
-      assert_equal bytes_to_write, bytes
-    ensure
-      Fiddle.free address
+        # Read the bytes out again
+        bytes = Fiddle::Pointer.read(address, Fiddle::SIZEOF_VOIDP)
+        assert_equal bytes_to_write, bytes
+      end
     end
 
     def test_cptr_to_int
@@ -110,6 +113,10 @@ module Fiddle
     end
 
     def test_inspect
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Pointer#inspect is incompatible on JRuby")
+      end
+
       ptr = Pointer.new(0)
       inspect = ptr.inspect
       assert_match(/size=#{ptr.size}/, inspect)
@@ -125,6 +132,10 @@ module Fiddle
     end
 
     def test_to_ptr_io
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Pointer.to_ptr(IO) isn't supported with JRuby")
+      end
+
       Pointer.malloc(10, Fiddle::RUBY_FREE) do |buf|
         File.open(__FILE__, 'r') do |f|
           ptr = Pointer.to_ptr f
@@ -172,6 +183,10 @@ module Fiddle
     end
 
     def test_ref_ptr
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle.dlwrap([]) isn't supported with JRuby")
+      end
+
       ary = [0,1,2,4,5]
       addr = Pointer.new(dlwrap(ary))
       assert_equal addr.to_i, addr.ref.ptr.to_i
@@ -180,6 +195,10 @@ module Fiddle
     end
 
     def test_to_value
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle.dlwrap([]) isn't supported with JRuby")
+      end
+
       ary = [0,1,2,4,5]
       addr = Pointer.new(dlwrap(ary))
       assert_equal ary, addr.to_value

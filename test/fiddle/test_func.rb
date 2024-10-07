@@ -26,6 +26,10 @@ module Fiddle
     end
 
     def test_string
+      if RUBY_ENGINE == "jruby"
+        omit("Function that returns string doesn't work with JRuby")
+      end
+
       under_gc_stress do
         f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
         buff = +"000"
@@ -82,6 +86,8 @@ module Fiddle
         assert_equal("1349", buff, bug4929)
       end
     ensure
+      # We can't use ObjectSpace with JRuby.
+      return if RUBY_ENGINE == "jruby"
       # Ensure freeing all closures.
       # See https://github.com/ruby/fiddle/issues/102#issuecomment-1241763091 .
       not_freed_closures = []
@@ -113,37 +119,36 @@ module Fiddle
                                 :variadic,
                               ],
                               :int)
-      output_buffer = " " * 1024
-      output = Pointer[output_buffer]
+      Pointer.malloc(1024, Fiddle::RUBY_FREE) do |output|
+        written = snprintf.call(output,
+                                output.size,
+                                "int: %d, string: %.*s, const string: %s\n",
+                                :int, -29,
+                                :int, 4,
+                                :voidp, "Hello",
+                                :const_string, "World")
+        assert_equal("int: -29, string: Hell, const string: World\n",
+                     output[0, written])
 
-      written = snprintf.call(output,
-                              output.size,
-                              "int: %d, string: %.*s, const string: %s\n",
-                              :int, -29,
-                              :int, 4,
-                              :voidp, "Hello",
-                              :const_string, "World")
-      assert_equal("int: -29, string: Hell, const string: World\n",
-                   output_buffer[0, written])
+        string_like_class = Class.new do
+          def initialize(string)
+            @string = string
+          end
 
-      string_like_class = Class.new do
-        def initialize(string)
-          @string = string
+          def to_str
+            @string
+          end
         end
-
-        def to_str
-          @string
-        end
+        written = snprintf.call(output,
+                                output.size,
+                                "string: %.*s, const string: %s, uint: %u\n",
+                                :int, 2,
+                                :voidp, "Hello",
+                                :const_string, string_like_class.new("World"),
+                                :int, 29)
+        assert_equal("string: He, const string: World, uint: 29\n",
+                     output[0, written])
       end
-      written = snprintf.call(output,
-                              output.size,
-                              "string: %.*s, const string: %s, uint: %u\n",
-                              :int, 2,
-                              :voidp, "Hello",
-                              :const_string, string_like_class.new("World"),
-                              :int, 29)
-      assert_equal("string: He, const string: World, uint: 29\n",
-                   output_buffer[0, written])
     end
 
     def test_rb_memory_view_available_p

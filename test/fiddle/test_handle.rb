@@ -9,11 +9,19 @@ module Fiddle
     include Fiddle
 
     def test_to_i
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Handle#to_i is unavailable with JRuby")
+      end
+
       handle = Fiddle::Handle.new(LIBC_SO)
       assert_kind_of Integer, handle.to_i
     end
 
     def test_to_ptr
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Handle#to_i is unavailable with JRuby")
+      end
+
       handle = Fiddle::Handle.new(LIBC_SO)
       ptr = handle.to_ptr
       assert_equal ptr.to_i, handle.to_i
@@ -26,6 +34,10 @@ module Fiddle
     end
 
     def test_static_sym
+      if RUBY_ENGINE == "jruby"
+        omit("We can't assume static symbols with JRuby")
+      end
+
       begin
         # Linux / Darwin / FreeBSD
         refute_nil Fiddle::Handle.sym('dlopen')
@@ -90,6 +102,10 @@ module Fiddle
     end
 
     def test_initialize_noargs
+      if RUBY_ENGINE == "jruby"
+        omit("rb_str_new() doesn't exist in JRuby")
+      end
+
       handle = Handle.new
       refute_nil handle['rb_str_new']
     end
@@ -117,6 +133,10 @@ module Fiddle
     end
 
     def test_file_name
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Handle::NEXT doesn't exist with JRuby")
+      end
+
       file_name = Handle.new(LIBC_SO).file_name
       if file_name
         assert_kind_of String, file_name
@@ -135,6 +155,10 @@ module Fiddle
     end
 
     def test_NEXT
+      if RUBY_ENGINE == "jruby"
+        omit("Fiddle::Handle::NEXT doesn't exist with JRuby")
+      end
+
       begin
         # Linux / Darwin
         #
@@ -173,9 +197,13 @@ module Fiddle
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
     def test_DEFAULT
+      if Fiddle::WINDOWS
+        omit("Fiddle::Handle::DEFAULT doesn't have malloc() on Windows")
+      end
+
       handle = Handle::DEFAULT
       refute_nil handle['malloc']
-    end unless /mswin|mingw/ =~ RUBY_PLATFORM
+    end
 
     def test_dlerror
       # FreeBSD (at least 7.2 to 7.2) calls nsdispatch(3) when it calls
