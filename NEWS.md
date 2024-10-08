@@ -67,6 +67,7 @@ Note: We're only listing outstanding class updates.
       [[Feature #20497]]
 
 * win32/sspi.rb
+
     * This library is now extracted from the Ruby repository to `ruby/win32-sspi`.
       [[Feature #20775]]
 
@@ -132,9 +133,11 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 ## Compatibility issues
 
 * Error messages and backtrace displays have been changed.
+
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
     * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
+
         ```
         Old:
         test.rb:1:in `foo': undefined method `time' for an instance of Integer
@@ -146,6 +149,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
         ```
 
 * `Hash#inspect` rendering have been changed. [[Bug #20433]]
+
     * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
     * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
 
