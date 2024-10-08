@@ -134,11 +134,8 @@ extensions will be restored.
 
     say "Restoring gems to pristine condition..."
 
-    specs.each do |spec|
-      if spec.default_gem?
-        say "Skipped #{spec.full_name}, it is a default gem"
-        next
-      end
+    specs.group_by(&:full_name_with_location).values.each do |grouped_specs|
+      spec = grouped_specs.find {|s| !s.default_gem? } || grouped_specs.first
 
       if options.key? :skip
         if options[:skip].include? spec.name
@@ -188,6 +185,7 @@ extensions will be restored.
         env_shebang: env_shebang,
         build_args: spec.build_args,
         bin_dir: bin_dir,
+        install_as_default: spec.default_gem?,
       }
 
       if options[:only_executables]

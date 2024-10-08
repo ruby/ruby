@@ -642,7 +642,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal(
       [
         "Restoring gems to pristine condition...",
-        "Skipped default-2.0.0.0, it is a default gem",
+        "Cached gem for default-2.0.0.0 not found, attempting to fetch...",
+        "Skipped default-2.0.0.0, it was not found from cache and remote sources",
       ],
       @ui.output.split("\n")
     )
