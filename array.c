@@ -5119,17 +5119,19 @@ rb_ary_assoc(VALUE ary, VALUE key)
 
 /*
  *  call-seq:
- *    array.rassoc(obj) -> found_array or nil
+ *    rassoc(object) -> found_array or nil
  *
- *  Returns the first element in +self+ that is an +Array+
- *  whose second element <tt>==</tt> +obj+:
+ *  Returns the first element +ele+ in +self+ such that +ele+ is an array
+ *  and <tt>ele[1] == object</tt>:
  *
  *    a = [{foo: 0}, [2, 4], [4, 5, 6], [4, 5]]
  *    a.rassoc(4) # => [2, 4]
+ *    a.rassoc(5) # => [4, 5, 6]
  *
  *  Returns +nil+ if no such element is found.
  *
- *  Related: #assoc.
+ *  Related: Array#assoc;
+ *  see also {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 VALUE
