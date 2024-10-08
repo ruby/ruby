@@ -438,6 +438,13 @@ EOT
     end
   end
 
+  def test_invalid_encoding_string
+    error = assert_raise(JSON::GeneratorError) do
+      "\x82\xAC\xEF".to_json
+    end
+    assert_includes error.message, "source sequence is illegal/malformed utf-8"
+  end
+
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
     def test_string_ext_included_calls_super
       included = false
