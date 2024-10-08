@@ -66,6 +66,10 @@ Note: We're only listing outstanding class updates.
       So applications don't need to remove the file.
       [[Feature #20497]]
 
+* win32/sspi.rb
+    * This library is now extracted from the Ruby repository to `ruby/win32-sspi`.
+      [[Feature #20775]]
+
 The following default gems are updated.
 
 * RubyGems 3.6.0.dev
@@ -188,3 +192,4 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
+[Feature #20775]: https://bugs.ruby-lang.org/issues/20775
