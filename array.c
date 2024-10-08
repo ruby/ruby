@@ -7369,65 +7369,56 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    array.repeated_combination(n) {|combination| ... } -> self
- *    array.repeated_combination(n) -> new_enumerator
+ *    repeated_combination(size) {|combination| ... } -> self
+ *    repeated_combination(size) -> new_enumerator
  *
- *  Calls the block with each repeated combination of length +n+ of the elements of +self+;
- *  each combination is an +Array+;
+ *  With a block given, calls the block with each repeated combination of length +size+
+ *  of the elements of +self+;
+ *  each combination is an array;
  *  returns +self+. The order of the combinations is indeterminate.
  *
- *  When a block and a positive Integer argument +n+ are given, calls the block with each
- *  +n+-tuple repeated combination of the elements of +self+.
- *  The number of combinations is <tt>(n+1)(n+2)/2</tt>.
+ *  If a positive integer argument +n+ is given,
+ *  calls the block with each +size+-tuple repeated combination of the elements of +self+.
+ *  The number of combinations is <tt>(size+1)(size+2)/2</tt>.
  *
- *  +n+ = 1:
+ *  Examples:
  *
- *    a = [0, 1, 2]
- *    a.repeated_combination(1) {|combination| p combination }
+ *  - +size+ = 1:
  *
- *  Output:
+ *      c = []
+ *      [0, 1, 2].repeated_combination(1) {|combination| c.push(combination) }
+ *      c # => [[0], [1], [2]]
  *
- *    [0]
- *    [1]
- *    [2]
+ *  - +size+ = 2:
  *
- *  +n+ = 2:
+ *      c = []
+ *      [0, 1, 2].repeated_combination(2) {|combination| c.push(combination) }
+ *      c # => [[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]
  *
- *    a.repeated_combination(2) {|combination| p combination }
+ *  If +size+ is zero, calls the block once with an empty array.
  *
- *  Output:
+ *  If +size+ is negative, does not call the block:
  *
- *    [0, 0]
- *    [0, 1]
- *    [0, 2]
- *    [1, 1]
- *    [1, 2]
- *    [2, 2]
- *
- *  If +n+ is zero, calls the block once with an empty +Array+.
- *
- *  If +n+ is negative, does not call the block:
- *
- *    a.repeated_combination(-1) {|combination| fail 'Cannot happen' }
- *
- *  Returns a new Enumerator if no block given:
- *
- *    a = [0, 1, 2]
- *    a.repeated_combination(2) # => #<Enumerator: [0, 1, 2]:combination(2)>
+ *    [0, 1, 2].repeated_combination(-1) {|combination| fail 'Cannot happen' }
  *
  *  Using Enumerators, it's convenient to show the combinations and counts
- *  for some values of +n+:
+ *  for some values of +size+:
  *
- *    e = a.repeated_combination(0)
+ *    e = [0, 1, 2].repeated_combination(0)
  *    e.size # => 1
  *    e.to_a # => [[]]
- *    e = a.repeated_combination(1)
+ *
+ *    e = [0, 1, 2].repeated_combination(1)
  *    e.size # => 3
  *    e.to_a # => [[0], [1], [2]]
- *    e = a.repeated_combination(2)
+ *
+ *    e = [0, 1, 2].repeated_combination(2)
  *    e.size # => 6
  *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]
  *
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 static VALUE
