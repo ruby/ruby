@@ -19555,6 +19555,7 @@ version.$(OBJEXT): $(CCAN_DIR)/str/str.h
 version.$(OBJEXT): $(hdrdir)/ruby.h
 version.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 version.$(OBJEXT): $(hdrdir)/ruby/version.h
+version.$(OBJEXT): $(top_srcdir)/gc/gc.h
 version.$(OBJEXT): $(top_srcdir)/internal/array.h
 version.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 version.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h

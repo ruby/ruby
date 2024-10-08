@@ -11,6 +11,7 @@
 
 #include "internal/cmdlineopt.h"
 #include "internal/parse.h"
+#include "internal/gc.h"
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
@@ -60,6 +61,11 @@ const int ruby_api_version[] = {
 #define YJIT_DESCRIPTION " +YJIT " STRINGIZE(YJIT_SUPPORT)
 #else
 #define YJIT_DESCRIPTION " +YJIT"
+#endif
+#if USE_SHARED_GC
+#define GC_DESCRIPTION " +GC"
+#else
+#define GC_DESCRIPTION ""
 #endif
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_revision[] = RUBY_FULL_REVISION;
@@ -167,6 +173,14 @@ define_ruby_description(const char *const jit_opt)
         + rb_strlen_lit(YJIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         + rb_strlen_lit(" +PRISM")
+#if USE_SHARED_GC
+        + rb_strlen_lit(GC_DESCRIPTION)
+        // Assume the active GC name can not be longer than 20 chars
+        // so that we don't have to use strlen and remove the static
+        // qualifier from desc.
+        + RB_GC_MAX_NAME_LEN + 3
+#endif
+
     ];
 
     int n = ruby_description_opt_point;
@@ -176,6 +190,14 @@ define_ruby_description(const char *const jit_opt)
     RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(YJIT_DESCRIPTION));
     if (ruby_mn_threads_enabled) append(" +MN");
     if (rb_ruby_prism_p()) append(" +PRISM");
+#if USE_SHARED_GC
+    append(GC_DESCRIPTION);
+    if (rb_gc_external_gc_loaded_p()) {
+        append("[");
+        append(rb_gc_active_gc_name());
+        append("]");
+    }
+#endif
     append(ruby_description + ruby_description_opt_point);
 # undef append
 
