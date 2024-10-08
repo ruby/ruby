@@ -22,7 +22,7 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 MAKEFILE = Makefile
 !endif
 CPU = PROCESSOR_LEVEL
-CC = $(CC) -nologo
+CC = $(CC) -nologo -source-charset:utf-8
 CPP = $(CC) -EP
 
 all: -prologue- -generic- -epilogue-
