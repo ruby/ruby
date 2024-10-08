@@ -290,18 +290,16 @@ module Spec
       options = gems.last.is_a?(Hash) ? gems.pop : {}
       install_dir = options.fetch(:path, system_gem_path)
       default = options.fetch(:default, false)
-      with_gem_path_as(install_dir) do
-        gem_repo = options.fetch(:gem_repo, gem_repo1)
-        gems.each do |g|
-          gem_name = g.to_s
-          if gem_name.start_with?("bundler")
-            version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-            with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
-          elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
-            install_gem(gem_name, install_dir, default)
-          else
-            install_gem("#{gem_repo}/gems/#{gem_name}.gem", install_dir, default)
-          end
+      gems.each do |g|
+        gem_name = g.to_s
+        if gem_name.start_with?("bundler")
+          version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
+          with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
+        elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
+          install_gem(gem_name, install_dir, default)
+        else
+          gem_repo = options.fetch(:gem_repo, gem_repo1)
+          install_gem("#{gem_repo}/gems/#{gem_name}.gem", install_dir, default)
         end
       end
     end
