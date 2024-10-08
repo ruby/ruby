@@ -69,7 +69,7 @@ EOT
     assert_equal '{}', dump({}, strict: true)
 
     assert_equal '{"array":[42,4.2,"forty-two",true,false,null]}', dump({
-      "array" => [42, 4.2, "forty-two", true, false, nil] 
+      "array" => [42, 4.2, "forty-two", true, false, nil]
     }, strict: true)
 
     assert_equal '{"int":42,"float":4.2,"string":"forty-two","true":true,"false":false,"nil":null,"hash":{}}', dump({
