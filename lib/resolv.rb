@@ -403,6 +403,8 @@ class Resolv
     end
 
     def use_ipv6? # :nodoc:
+      @config.lazy_initialize unless @config.instance_variable_get(:@initialized)
+
       use_ipv6 = @config.use_ipv6?
       unless use_ipv6.nil?
         return use_ipv6
