@@ -4367,21 +4367,19 @@ rb_ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.reject {|element| ... } -> new_array
- *    array.reject -> new_enumerator
+ *    reject {|element| ... } -> new_array
+ *    reject -> new_enumerator
  *
- *  Returns a new +Array+ whose elements are all those from +self+
+ *  With a block given, returns a new array whose elements are all those from +self+
  *  for which the block returns +false+ or +nil+:
  *
  *    a = [:foo, 'bar', 2, 'bat']
  *    a1 = a.reject {|element| element.to_s.start_with?('b') }
  *    a1 # => [:foo, 2]
  *
- *  Returns a new Enumerator if no block given:
+ *  With no block given, returns a new Enumerator.
  *
- *     a = [:foo, 'bar', 2]
- *     a.reject # => #<Enumerator: [:foo, "bar", 2]:reject>
- *
+ *  Related: {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
@@ -8610,6 +8608,7 @@ rb_ary_deconstruct(VALUE ary)
  *    as determined by a given block.
  *  - #sample: Returns one or more random elements.
  *  - #shuffle: Returns elements in a random order.
+ *  - #reject: Returns an array containing elements not rejected by a given block.
  *
  *  === Methods for Assigning
  *
