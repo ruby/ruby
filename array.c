@@ -7478,7 +7478,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *
  *  With no block given, returns the combinations as an array of arrays:
  *
- *    p = [0, 1,].product([2, 3])
+ *    p = [0, 1].product([2, 3])
  *    # => [[0, 2], [0, 3], [1, 2], [1, 3]]
  *    p.size # => 4
  *    p = [0, 1,].product([2, 3], [4, 5])
