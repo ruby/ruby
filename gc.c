@@ -562,6 +562,8 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 static const char *obj_type_name(VALUE obj);
 #define RB_AMALGAMATED_DEFAULT_GC
 #include "gc/default.c"
+static int external_gc_loaded = FALSE;
+
 
 #if USE_SHARED_GC && !defined(HAVE_DLOPEN)
 # error "Shared GC requires dlopen"
@@ -696,6 +698,7 @@ ruby_external_gc_init(void)
             fprintf(stderr, "ruby_external_gc_init: Shared library %s cannot be opened: %s\n", gc_so_path, dlerror());
             exit(1);
         }
+        external_gc_loaded = TRUE;
     }
 
     rb_gc_function_map_t gc_functions;
@@ -2767,10 +2770,26 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
     rb_gc_impl_copy_attributes(rb_gc_get_objspace(), dest, obj);
 }
 
+int
+rb_gc_external_gc_loaded_p(void) {
+    return external_gc_loaded;
+}
+
 const char *
 rb_gc_active_gc_name(void)
 {
-    return rb_gc_impl_active_gc_name();
+    const char *gc_name = rb_gc_impl_active_gc_name();
+    if (strlen(gc_name) > RB_GC_MAX_NAME_LEN) {
+        char *truncated_gc_name = ruby_xmalloc(RB_GC_MAX_NAME_LEN + 1);
+
+        rb_warn("GC module %s has a name larger than %d chars, it will be truncated\n",
+            gc_name, RB_GC_MAX_NAME_LEN);
+
+        strncpy(truncated_gc_name, gc_name, RB_GC_MAX_NAME_LEN);
+        return (const char *)truncated_gc_name;
+    }
+    return gc_name;
+
 }
 
 // TODO: rearchitect this function to work for a generic GC

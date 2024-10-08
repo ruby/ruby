@@ -176,7 +176,7 @@ class TestRubyOptions < Test::Unit::TestCase
   VERSION_PATTERN_WITH_RJIT =
     case RUBY_ENGINE
     when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?(\+GC)?(\[\w+\]\s|\s)?\[#{q[RUBY_PLATFORM]}\]$/
     else
       VERSION_PATTERN
     end
@@ -304,6 +304,16 @@ class TestRubyOptions < Test::Unit::TestCase
         end
         assert_equal([], e)
       end
+    end
+  end
+
+  def test_enabled_gc
+    omit unless /linux|darwin/ =~ RUBY_PLATFORM
+
+    if RbConfig::CONFIG['shared_gc_dir'].length > 0
+      assert_match(/\+GC/, RUBY_DESCRIPTION)
+    else
+      assert_no_match(/\+GC/, RUBY_DESCRIPTION)
     end
   end
 
