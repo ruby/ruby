@@ -132,7 +132,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 ## Compatibility issues
 
 * Error messages and backtrace displays have been changed.
-  * Use a single quote instead of a backtick as a opening quote. [[Feature #16495]]
+  * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
   * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
   * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
   ```
@@ -142,7 +142,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
   New:
   test.rb:1:in 'Object#foo': undefined method 'time' for an instance of Integer
-          from test.rb:2:in `<main>'
+          from test.rb:2:in '<main>'
   ```
 
 * `Hash#inspect` rendering have been changed. [[Bug #20433]]
@@ -169,7 +169,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
   [[Feature #15554]]
 
 * Redefining some core methods that are specially optimized by the interpreter
-  and JIT like `String.freeze` or `Integer#+` now emits a performance class
+  and JIT like `String#freeze` or `Integer#+` now emits a performance class
   warning (`-W:performance` or `Warning[:performance] = true`).
   [[Feature #20429]]
 
