@@ -389,7 +389,7 @@ module Spec
       path = opts.fetch(:path, system_gem_path)
 
       gems.each do |gem|
-        gem_command "install --no-document --install-dir #{path} #{gem}"
+        gem_command "install --no-document --verbose --install-dir #{path} #{gem}"
       end
     end
 
