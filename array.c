@@ -1682,14 +1682,16 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 
 /*
  *  call-seq:
- *    array.unshift(*objects) -> self
+ *    unshift(*objects) -> self
+ *    prepend(*objects) -> self
  *
  *  Prepends the given +objects+ to +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a.unshift(:bam, :bat) # => [:bam, :bat, :foo, "bar", 2]
  *
- *  Related: #push, #pop, #shift.
+ *  Related: Array#shift;
+ *  see also {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 VALUE
