@@ -47,7 +47,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
 
     for (pos =  0; pos < in_utf8_len;) {
         uint32_t ch;
-        unsigned long ch_len;
+        short ch_len;
         bool should_escape;
 
         /* UTF-8 decoding */
@@ -55,7 +55,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
             ch = in_utf8_str[pos];
             ch_len = 1;
         } else {
-            unsigned long i;
+            short i;
             if      ((in_utf8_str[pos] & 0x80) == 0x00) { ch_len = 1; ch = in_utf8_str[pos];        } /* leading 1 bit is   0b0     */
             else if ((in_utf8_str[pos] & 0xE0) == 0xC0) { ch_len = 2; ch = in_utf8_str[pos] & 0x1F; } /* leading 3 bits are 0b110   */
             else if ((in_utf8_str[pos] & 0xF0) == 0xE0) { ch_len = 3; ch = in_utf8_str[pos] & 0x0F; } /* leading 4 bits are 0b1110  */
@@ -109,7 +109,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
                         scratch[5] = hexdig[ch & 0xf];
                         fbuffer_append(out_buffer, scratch, 6);
                     } else {
-			uint16_t hi, lo;
+                        uint16_t hi, lo;
                         ch -= 0x10000;
                         hi = 0xD800 + (uint16_t)(ch >> 10);
                         lo = 0xDC00 + (uint16_t)(ch & 0x3FF);
