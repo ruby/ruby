@@ -37,25 +37,25 @@ Note: We're only listing outstanding class updates.
 
 * Exception
 
-  * Exception#set_backtrace now accepts arrays of `Thread::Backtrace::Location`.
-    `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [[Feature #13557]]
+    * Exception#set_backtrace now accepts arrays of `Thread::Backtrace::Location`.
+      `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [[Feature #13557]]
 
 * Range
 
-  * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
-  * Range#step now consistently has a semantics of iterating by using `+` operator
-    for all types, not only numerics. [[Feature #18368]]
+    * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
+    * Range#step now consistently has a semantics of iterating by using `+` operator
+      for all types, not only numerics. [[Feature #18368]]
 
-    ```ruby
-    (Time.utc(2022, 2, 24)..).step(24*60*60).take(3)
-    #=> [2022-02-24 00:00:00 UTC, 2022-02-25 00:00:00 UTC, 2022-02-26 00:00:00 UTC]
-    ```
+        ```ruby
+        (Time.utc(2022, 2, 24)..).step(24*60*60).take(3)
+        #=> [2022-02-24 00:00:00 UTC, 2022-02-25 00:00:00 UTC, 2022-02-26 00:00:00 UTC]
+        ```
 
 * RubyVM::AbstractSyntaxTree
 
-  * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
-    associated with the AST node. [[Feature #20624]]
-  * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
+    * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
+      associated with the AST node. [[Feature #20624]]
+    * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
 
 ## Stdlib updates
 
@@ -132,22 +132,22 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 ## Compatibility issues
 
 * Error messages and backtrace displays have been changed.
-  * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
-  * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
-  * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
-  ```
-  Old:
-  test.rb:1:in `foo': undefined method `time' for an instance of Integer
-          from test.rb:2:in `<main>'
+    * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
+    * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
+    * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
+        ```
+        Old:
+        test.rb:1:in `foo': undefined method `time' for an instance of Integer
+                from test.rb:2:in `<main>'
 
-  New:
-  test.rb:1:in 'Object#foo': undefined method 'time' for an instance of Integer
-          from test.rb:2:in '<main>'
-  ```
+        New:
+        test.rb:1:in 'Object#foo': undefined method 'time' for an instance of Integer
+                from test.rb:2:in '<main>'
+        ```
 
 * `Hash#inspect` rendering have been changed. [[Bug #20433]]
-  * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
-  * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
+    * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
+    * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
 
 ## Stdlib compatibility issues
 
