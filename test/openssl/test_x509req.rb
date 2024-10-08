@@ -17,21 +17,21 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     req = OpenSSL::X509::Request.new
     req.version = ver
     req.subject = dn
-    req.public_key = key.public_key
+    req.public_key = key
     req.sign(key, digest)
     req
   end
 
   def test_public_key
     req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
-    assert_equal(@rsa1024.public_key.to_der, req.public_key.to_der)
+    assert_equal(@rsa1024.public_to_der, req.public_key.public_to_der)
     req = OpenSSL::X509::Request.new(req.to_der)
-    assert_equal(@rsa1024.public_key.to_der, req.public_key.to_der)
+    assert_equal(@rsa1024.public_to_der, req.public_key.public_to_der)
 
     req = issue_csr(0, @dn, @dsa512, OpenSSL::Digest.new('SHA256'))
-    assert_equal(@dsa512.public_key.to_der, req.public_key.to_der)
+    assert_equal(@dsa512.public_to_der, req.public_key.public_to_der)
     req = OpenSSL::X509::Request.new(req.to_der)
-    assert_equal(@dsa512.public_key.to_der, req.public_key.to_der)
+    assert_equal(@dsa512.public_to_der, req.public_key.public_to_der)
   end
 
   def test_version
@@ -130,6 +130,21 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
   def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest.new('MD5')) }
+  end
+
+  def test_sign_and_verify_ed25519
+    # Ed25519 is not FIPS-approved.
+    omit_on_fips
+    # See ASN1_item_sign_ctx in ChangeLog for 3.8.1: https://github.com/libressl/portable/blob/master/ChangeLog
+    omit "Ed25519 not supported" unless openssl?(1, 1, 1) || libressl?(3, 8, 1)
+    ed25519 = OpenSSL::PKey::generate_key("ED25519")
+    req = issue_csr(0, @dn, ed25519, nil)
+    assert_equal(false, request_error_returns_false { req.verify(@rsa1024) })
+    assert_equal(false, request_error_returns_false { req.verify(@rsa2048) })
+    assert_equal(false, req.verify(OpenSSL::PKey::generate_key("ED25519")))
+    assert_equal(true, req.verify(ed25519))
+    req.public_key = @rsa1024.public_key
+    assert_equal(false, req.verify(ed25519))
   end
 
   def test_dup
