@@ -2761,7 +2761,18 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
 const char *
 rb_gc_active_gc_name(void)
 {
-    return rb_gc_impl_active_gc_name();
+    const char *gc_name = rb_gc_impl_active_gc_name();
+    if (strlen(gc_name) > RB_GC_MAX_NAME_LEN) {
+        char *truncated_gc_name = ruby_xmalloc(RB_GC_MAX_NAME_LEN + 1);
+
+        rb_warn("GC module %s has a name larger than %d chars, it will be truncated\n",
+            gc_name, RB_GC_MAX_NAME_LEN);
+
+        strncpy(truncated_gc_name, gc_name, RB_GC_MAX_NAME_LEN);
+        return (const char *)truncated_gc_name;
+    }
+    return gc_name;
+
 }
 
 // TODO: rearchitect this function to work for a generic GC
