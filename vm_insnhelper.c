@@ -2309,8 +2309,10 @@ typedef union {
     VALUE (*f15)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
     VALUE (*fm1)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE);
 } __attribute__((__transparent_union__)) cfunc_type;
+# define make_cfunc_type(f) (cfunc_type){.anyargs = (VALUE (*)(ANYARGS))(f)}
 #else
 typedef VALUE (*cfunc_type)(ANYARGS);
+# define make_cfunc_type(f) (cfunc_type)(f)
 #endif
 
 static inline int
@@ -2343,6 +2345,9 @@ vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type f
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(vm_cc_cme(cc), func);
 }
+
+#define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
+#define vm_method_cfunc_is(iseq, cd, recv, func) vm_method_cfunc_is(iseq, cd, recv, make_cfunc_type(func))
 
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
 
