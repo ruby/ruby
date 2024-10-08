@@ -1465,9 +1465,12 @@ rb_ary_pop(VALUE ary)
  *  returns a new array containing the trailing +count+ elements of +self+, as available:
  *
  *    a = [:foo, 'bar', 2]
- *    a.pop(2)  # => ["bar", 2]
+ *    a.pop(2) # => ["bar", 2]
+ *    a        # => [:foo]
+ *
  *    a = [:foo, 'bar', 2]
  *    a.pop(50) # => [:foo, "bar", 2]
+ *    a         # => []
  *
  *  Related: Array#push;
  *  see also {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
