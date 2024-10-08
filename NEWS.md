@@ -68,7 +68,7 @@ Note: We're only listing outstanding class updates.
 
 * win32/sspi.rb
 
-    * This library is now extracted from the Ruby repository to `ruby/win32-sspi`.
+    * This library is now extracted from the Ruby repository to [ruby/win32-sspi].
       [[Feature #20775]]
 
 The following default gems are updated.
@@ -126,7 +126,11 @@ The following bundled gems are promoted from default gems.
 * csv 3.3.0
 * repl_type_completor 0.1.7
 
-See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
+See GitHub releases like [GitHub Releases of Logger] or changelog for
+details of the default gems or bundled gems.
+
+[ruby/win32-sspi]: https://github.com/ruby/win32-sspi
+[GitHub Releases of Logger]: https://github.com/ruby/logger/releases
 
 ## Supported platforms
 
