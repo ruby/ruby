@@ -503,8 +503,8 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                          * to make a 20-bit number, then add 0x10000 to get the
                          * final codepoint.
                          *
-                         * See Unicode 15: §3.8 "Surrogates", §5.3 "Handling
-                         * Surrogate Pairs in UTF-16", and §23.6 "Surrogates
+                         * See Unicode 15: 3.8 "Surrogates", 5.3 "Handling
+                         * Surrogate Pairs in UTF-16", and 23.6 "Surrogates
                          * Area".
                          */
                         if ((ch & 0xFC00) == 0xD800) {
