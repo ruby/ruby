@@ -117,6 +117,21 @@ class TestGc < Test::Unit::TestCase
     GC.start
   end
 
+  def test_gc_config_implementation
+    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+
+    gc_name = (ENV['RUBY_GC_LIBRARY'] || "default")
+    assert_equal gc_name, GC.config[:implementation]
+  end
+
+  def test_gc_config_implementation_is_readonly
+    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+
+    impl = GC.config[:implementation]
+    GC.config(implementation: "somethingelse")
+    assert_equal(impl, GC.config[:implementation])
+  end
+
   def test_start_full_mark
     return unless use_rgengc?
     omit 'stress' if GC.stress
