@@ -1448,33 +1448,32 @@ rb_ary_pop(VALUE ary)
 
 /*
  *  call-seq:
- *    array.pop -> object or nil
- *    array.pop(n) -> new_array
+ *    pop -> object or nil
+ *    pop(count) -> new_array
  *
- *  Removes and returns trailing elements.
+ *  Removes and returns trailing elements of +self+.
  *
- *  When no argument is given and +self+ is not empty,
- *  removes and returns the last element:
+ *  With no argument given, removes and returns the last element, if available;
+ *  otherwise returns +nil+:
  *
  *    a = [:foo, 'bar', 2]
- *    a.pop # => 2
- *    a # => [:foo, "bar"]
+ *    a.pop  # => 2
+ *    a      # => [:foo, "bar"]
+ *    [].pop # => nil
  *
- *  Returns +nil+ if the array is empty.
+ *  With non-negative integer argument +count+ given,
+ *  returns a new array containing the trailing +count+ elements of +self+, as available:
  *
- *  When a non-negative Integer argument +n+ is given and is in range,
- *
- *  removes and returns the last +n+ elements in a new +Array+:
  *    a = [:foo, 'bar', 2]
  *    a.pop(2) # => ["bar", 2]
- *
- *  If +n+ is positive and out of range,
- *  removes and returns all elements:
+ *    a        # => [:foo]
  *
  *    a = [:foo, 'bar', 2]
  *    a.pop(50) # => [:foo, "bar", 2]
+ *    a         # => []
  *
- *  Related: #push, #shift, #unshift.
+ *  Related: Array#push;
+ *  see also {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
