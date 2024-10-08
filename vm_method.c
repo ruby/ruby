@@ -1062,7 +1062,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
     /* check mid */
     if (mid == object_id || mid == id__send__) {
-        if (type == VM_METHOD_TYPE_ISEQ && search_method(klass, mid, 0)) {
+        if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
             rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
         }
     }
