@@ -111,6 +111,18 @@ jobs:
           steps.diff.outputs.update
           }}
 
+      - name: Generate docs
+        id: docs
+        run: |
+          ruby -W0 --disable-gems -I./lib tool/rdoc-srcdir --op html .
+          echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          path: html
+          name: ${{ steps.docs.outputs.htmlout }}
+
       - uses: ./.github/actions/slack
         with:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
