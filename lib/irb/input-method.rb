@@ -67,7 +67,9 @@ module IRB
     #
     # See IO#gets for more information.
     def gets
-      puts if @stdout.tty? # workaround for debug compatibility test
+      # Workaround for debug compatibility test https://github.com/ruby/debug/pull/1100
+      puts if ENV['RUBY_DEBUG_TEST_UI']
+
       print @prompt
       line = @stdin.gets
       @line[@line_no += 1] = line
