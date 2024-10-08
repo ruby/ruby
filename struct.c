@@ -1640,7 +1640,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *
  *
  *  Note that member-less \Data is acceptable and might be a useful technique
- *  for defining several homogenous data classes, like
+ *  for defining several homogeneous data classes, like
  *
  *     class HTTPFetcher
  *       Response = Data.define(:body)

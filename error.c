@@ -1690,7 +1690,7 @@ check_order_keyword(VALUE opt)
  *    "\tfrom t.rb:11:in `foo'",
  *    "\tfrom t.rb:12:in `<main>'"]
  *
- * An overrriding method should be careful with ANSI code enhancements;
+ * An overriding method should be careful with ANSI code enhancements;
  * see {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 
@@ -1774,7 +1774,7 @@ exc_message(VALUE exc)
  * - +:error_highlight+.
  * - +:syntax_suggest+.
  *
- * An overrriding method should also be careful with ANSI code enhancements;
+ * An overriding method should also be careful with ANSI code enhancements;
  * see {Messages}[rdoc-ref:exceptions.md@Messages].
  */
 

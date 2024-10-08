@@ -493,7 +493,7 @@ range_step(int argc, VALUE *argv, VALUE range)
     const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
     // For backward compatibility reasons (conforming to behavior before 3.4), String/Symbol
     // supports both old behavior ('a'..).step(1) and new behavior ('a'..).step('a')
-    // Hence the additional conversion/addional checks.
+    // Hence the additional conversion/additional checks.
     const VALUE str_b = rb_check_string_type(b);
     const VALUE sym_b = SYMBOL_P(b) ? rb_sym2str(b) : Qnil;
 
