@@ -69,7 +69,7 @@ static inline void coroutine_initialize(
     context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
     *--context->stack_pointer = NULL;
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
 
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);

@@ -437,7 +437,7 @@ dln_sym(void *handle, const char *symbol)
 #endif
 }
 
-static void *
+static uintptr_t
 dln_sym_func(void *handle, const char *symbol)
 {
     void *func = dln_sym(handle, symbol);
@@ -453,7 +453,7 @@ dln_sym_func(void *handle, const char *symbol)
 #endif
         dln_loaderror("%s - %s", error, symbol);
     }
-    return func;
+    return (uintptr_t)func;
 }
 
 #define dln_sym_callable(rettype, argtype, handle, symbol) \

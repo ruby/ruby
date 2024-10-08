@@ -9141,7 +9141,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 
         if (cconst) {
             typedef VALUE(*builtin_func0)(void *, VALUE);
-            VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
+            VALUE const_val = (*(builtin_func0)(uintptr_t)bf->func_ptr)(NULL, Qnil);
             ADD_INSN1(ret, line_node, putobject, const_val);
             return COMPILE_OK;
         }

@@ -1760,7 +1760,7 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
     rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
     for (unsigned int i = 0; i < PJOB_TABLE_SIZE; i++) {
         /* Try and set this slot to equal `func` */
-        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i], NULL, (void *)func);
+        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i].func, NULL, (void *)(uintptr_t)func);
         if (existing_func == NULL || existing_func == func) {
             /* Either this slot was NULL, and we set it to func, or, this slot was already equal to func.
              * In either case, clobber the data with our data. Note that concurrent calls to

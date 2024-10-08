@@ -45,7 +45,7 @@ static inline void coroutine_initialize(
     char * top = (char*)stack + size;
     context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
 
     /* Windows Thread Information Block */
     *--context->stack_pointer = (void*)0xFFFFFFFF; /* fs:[0] */

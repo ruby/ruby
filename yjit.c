@@ -272,7 +272,7 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rb_yjit_reserve_addr_space;
+        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_yjit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
         uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
@@ -583,7 +583,7 @@ rb_get_mct_argc(const rb_method_cfunc_t *mct)
 void *
 rb_get_mct_func(const rb_method_cfunc_t *mct)
 {
-    return (void*)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
+    return (void*)(uintptr_t)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
 }
 
 const rb_iseq_t *
@@ -1139,7 +1139,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
 
     // Compile a block version starting at the current instruction
     uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
-    uint8_t *code_ptr = rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
+    uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
     if (jit_exception) {
         iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
