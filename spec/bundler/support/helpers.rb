@@ -186,6 +186,12 @@ module Spec
       env = options[:env] || {}
       env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
+
+      # Sometimes `gem install` commands hang at dns resolution, which has a
+      # default timeout of 60 seconds. When that happens, the timeout for a
+      # command is expired too. So give `gem install` commands a bit more time.
+      options[:timeout] = 120
+
       output = sys_exec("#{Path.gem_bin} #{command}", options)
       stderr = last_command.stderr
       raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr)
