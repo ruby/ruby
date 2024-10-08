@@ -55,7 +55,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
             ch = in_utf8_str[pos];
             ch_len = 1;
         } else {
-            short i;
+            unsigned long i;
             if      ((in_utf8_str[pos] & 0x80) == 0x00) { ch_len = 1; ch = in_utf8_str[pos];        } /* leading 1 bit is   0b0     */
             else if ((in_utf8_str[pos] & 0xE0) == 0xC0) { ch_len = 2; ch = in_utf8_str[pos] & 0x1F; } /* leading 3 bits are 0b110   */
             else if ((in_utf8_str[pos] & 0xF0) == 0xE0) { ch_len = 3; ch = in_utf8_str[pos] & 0x0F; } /* leading 4 bits are 0b1110  */
