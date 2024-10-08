@@ -87,6 +87,7 @@ hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int exi
     return ST_CONTINUE;
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
 gc_ref_update_table_values_only(st_table *tbl)
 {
@@ -97,6 +98,7 @@ gc_ref_update_table_values_only(st_table *tbl)
     }
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static int
 gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
 {
@@ -133,6 +135,7 @@ hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
     return ST_CONTINUE;
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
 gc_update_table_refs(st_table *tbl)
 {
@@ -149,6 +152,7 @@ xmalloc2_size(const size_t count, const size_t elsize)
     return rb_size_mul_or_raise(count, elsize, rb_eArgError);
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static VALUE
 type_sym(size_t type)
 {
