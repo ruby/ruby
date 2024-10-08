@@ -7467,62 +7467,55 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
 
 /*
  *  call-seq:
- *    array.product(*other_arrays) -> new_array
- *    array.product(*other_arrays) {|combination| ... } -> self
+ *    product(*other_arrays) -> new_array
+ *    product(*other_arrays) {|combination| ... } -> self
  *
- *  Computes and returns or yields all combinations of elements from all the Arrays,
+ *  Computes all combinations of elements from all the arrays,
  *  including both +self+ and +other_arrays+:
  *
  *  - The number of combinations is the product of the sizes of all the arrays,
  *    including both +self+ and +other_arrays+.
  *  - The order of the returned combinations is indeterminate.
  *
- *  When no block is given, returns the combinations as an +Array+ of Arrays:
+ *  With no block given, returns the combinations as an array of arrays:
  *
- *    a = [0, 1, 2]
- *    a1 = [3, 4]
- *    a2 = [5, 6]
- *    p = a.product(a1)
- *    p.size # => 6 # a.size * a1.size
- *    p # => [[0, 3], [0, 4], [1, 3], [1, 4], [2, 3], [2, 4]]
- *    p = a.product(a1, a2)
- *    p.size # => 12 # a.size * a1.size * a2.size
- *    p # => [[0, 3, 5], [0, 3, 6], [0, 4, 5], [0, 4, 6], [1, 3, 5], [1, 3, 6], [1, 4, 5], [1, 4, 6], [2, 3, 5], [2, 3, 6], [2, 4, 5], [2, 4, 6]]
+ *    p = [0, 1].product([2, 3])
+ *    # => [[0, 2], [0, 3], [1, 2], [1, 3]]
+ *    p.size # => 4
+ *    p = [0, 1].product([2, 3], [4, 5])
+ *    # => [[0, 2, 4], [0, 2, 5], [0, 3, 4], [0, 3, 5], [1, 2, 4], [1, 2, 5], [1, 3, 4], [1, 3,...
+ *    p.size # => 8
  *
- *  If any argument is an empty +Array+, returns an empty +Array+.
+ *  If +self+ or any argument is empty, returns an empty array:
  *
- *  If no argument is given, returns an +Array+ of 1-element Arrays,
+ *    [].product([2, 3], [4, 5]) # => []
+ *    [0, 1].product([2, 3], []) # => []
+ *
+ *  If no argument is given, returns an array of 1-element arrays,
  *  each containing an element of +self+:
  *
  *    a.product # => [[0], [1], [2]]
  *
- *  When a block is given, yields each combination as an +Array+; returns +self+:
+ *  With a block given, calls the block with each combination; returns +self+:
  *
- *    a.product(a1) {|combination| p combination }
+ *    p = []
+ *    [0, 1].product([2, 3]) {|combination| p.push(combination) }
+ *    p # => [[0, 2], [0, 3], [1, 2], [1, 3]]
  *
- *  Output:
+ *  If +self+ or any argument is empty, does not call the block:
  *
- *    [0, 3]
- *    [0, 4]
- *    [1, 3]
- *    [1, 4]
- *    [2, 3]
- *    [2, 4]
+ *    [].product([2, 3], [4, 5]) {|combination| fail 'Cannot happen' }
+ *    # => []
+ *    [0, 1].product([2, 3], []) {|combination| fail 'Cannot happen' }
+ *    # => [0, 1]
  *
- *  If any argument is an empty +Array+, does not call the block:
+ *  If no argument is given, calls the block with each element of +self+ as a 1-element array:
  *
- *    a.product(a1, a2, []) {|combination| fail 'Cannot happen' }
+ *    p = []
+ *    [0, 1].product {|combination| p.push(combination) }
+ *    p # => [[0], [1]]
  *
- *  If no argument is given, yields each element of +self+ as a 1-element +Array+:
- *
- *    a.product {|combination| p combination }
- *
- *  Output:
- *
- *    [0]
- *    [1]
- *    [2]
- *
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 static VALUE
