@@ -10,12 +10,11 @@
  * one at the bottom of this file */
 
 #define TOKEN_PASTE(x,y) x##y
-#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .text
 
-.globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
-PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+.globl PREFIXED_SYMBOL(coroutine_transfer)
+PREFIXED_SYMBOL(coroutine_transfer):
 
 #if defined(__CET__) && (__CET__ & 0x01) != 0
         /* IBT landing pad */
