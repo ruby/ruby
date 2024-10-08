@@ -182,14 +182,14 @@ class TestStubSpecification < Gem::TestCase
   def stub_with_version
     spec = File.join @gemhome, "specifications", "stub_e-2.gemspec"
     File.open spec, "w" do |io|
-      io.write <<-STUB
-# -*- encoding: utf-8 -*-
-# stub: stub_v 2 ruby lib
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: stub_v 2 ruby lib
 
-Gem::Specification.new do |s|
-  s.name = 'stub_v'
-  s.version = Gem::Version.new '2'
-end
+        Gem::Specification.new do |s|
+          s.name = 'stub_v'
+          s.version = Gem::Version.new '2'
+        end
       STUB
 
       io.flush
@@ -205,14 +205,14 @@ end
   def stub_without_version
     spec = File.join @gemhome, "specifications", "stub-2.gemspec"
     File.open spec, "w" do |io|
-      io.write <<-STUB
-# -*- encoding: utf-8 -*-
-# stub: stub_v ruby lib
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: stub_v ruby lib
 
-Gem::Specification.new do |s|
-  s.name = 'stub_v'
-  s.version = ""
-end
+        Gem::Specification.new do |s|
+          s.name = 'stub_v'
+          s.version = ""
+        end
       STUB
 
       io.flush
@@ -228,17 +228,17 @@ end
   def stub_with_extension
     spec = File.join @gemhome, "specifications", "stub_e-2.gemspec"
     File.open spec, "w" do |io|
-      io.write <<-STUB
-# -*- encoding: utf-8 -*-
-# stub: stub_e 2 ruby lib
-# stub: ext/stub_e/extconf.rb
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: stub_e 2 ruby lib
+        # stub: ext/stub_e/extconf.rb
 
-Gem::Specification.new do |s|
-  s.name = 'stub_e'
-  s.version = Gem::Version.new '2'
-  s.extensions = ['ext/stub_e/extconf.rb']
-  s.installed_by_version = '2.2'
-end
+        Gem::Specification.new do |s|
+          s.name = 'stub_e'
+          s.version = Gem::Version.new '2'
+          s.extensions = ['ext/stub_e/extconf.rb']
+          s.installed_by_version = '2.2'
+        end
       STUB
 
       io.flush
@@ -254,14 +254,14 @@ end
   def stub_without_extension
     spec = File.join @gemhome, "specifications", "stub-2.gemspec"
     File.open spec, "w" do |io|
-      io.write <<-STUB
-# -*- encoding: utf-8 -*-
-# stub: stub 2 ruby lib
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: stub 2 ruby lib
 
-Gem::Specification.new do |s|
-  s.name = 'stub'
-  s.version = Gem::Version.new '2'
-end
+        Gem::Specification.new do |s|
+          s.name = 'stub'
+          s.version = Gem::Version.new '2'
+        end
       STUB
 
       io.flush
