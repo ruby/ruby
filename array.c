@@ -1682,16 +1682,14 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 
 /*
  *  call-seq:
- *    unshift(*objects) -> self
- *    prepend(*objects) -> self
+ *    array.unshift(*objects) -> self
  *
  *  Prepends the given +objects+ to +self+:
  *
  *    a = [:foo, 'bar', 2]
  *    a.unshift(:bam, :bat) # => [:bam, :bat, :foo, "bar", 2]
  *
- *  Related: Array#shift;
- *  see also {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
+ *  Related: #push, #pop, #shift.
  */
 
 VALUE
@@ -7503,12 +7501,10 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *    [0, 1].product([2, 3]) {|combination| p.push(combination) }
  *    p # => [[0, 2], [0, 3], [1, 2], [1, 3]]
  *
- *  If +self+ is empty, returns an empty array:
+ *  If +self+ or any argument is empty, does not call the block:
  *
- *    [].product([2, 3], [4, 5]) # => []
- *
- *  If any argument is empty, does not call the block:
- *
+ *    [].product([2, 3], [4, 5]) {|combination| fail 'Cannot happen' }
+ *    # => []
  *    [0, 1].product([2, 3], []) {|combination| fail 'Cannot happen' }
  *    # => [0, 1]
  *
