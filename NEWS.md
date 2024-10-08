@@ -140,7 +140,7 @@ details of the default gems or bundled gems.
 
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
-    * Kernel#caller, Thread::Backtrace::Location's methods, etc. are also changed accordingly.
+    * Kernel#caller, Thread::Backtrace::Location’s methods, etc. are also changed accordingly.
 
         Old:
         ```
