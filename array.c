@@ -4338,10 +4338,11 @@ ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.reject! {|element| ... } -> self or nil
- *    array.reject! -> new_enumerator
+ *    reject! {|element| ... } -> self or nil
+ *    reject! -> new_enumerator
  *
- *  Removes each element for which the block returns a truthy value.
+ *  With a block given, calls the block with each element of +self+;
+ *  removes each element for which the block returns a truthy value.
  *
  *  Returns +self+ if any elements removed:
  *
@@ -4350,11 +4351,9 @@ ary_reject_bang(VALUE ary)
  *
  *  Returns +nil+ if no elements removed.
  *
- *  Returns a new Enumerator if no block given:
+ *  With no block given, returns a new Enumerator.
  *
- *    a = [:foo, 'bar', 2]
- *    a.reject! # => #<Enumerator: [:foo, "bar", 2]:reject!>
- *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
