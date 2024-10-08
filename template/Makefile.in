@@ -452,9 +452,11 @@ gc_impl.$(OBJEXT): gc/$(BUILTIN_GC).c probes.h
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
+PREFIXED_SYMBOL = name
+_PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 .$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -c $<
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ "-DPREFIXED_SYMBOL(name)=$($(SYMBOL_PREFIX)PREFIXED_SYMBOL)" -c $<
 
 .c.$(ASMEXT):
 	@$(ECHO) translating $<

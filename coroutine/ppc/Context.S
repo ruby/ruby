@@ -9,15 +9,14 @@
 ; To add support for AIX, *BSD or *Linux, please make separate implementations.
 
 #define TOKEN_PASTE(x,y) x##y
-#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .machine ppc7400 ; = G4, Rosetta
 .text
 
-.globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
+.globl PREFIXED_SYMBOL(coroutine_transfer)
 .align 2
 
-PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+PREFIXED_SYMBOL(coroutine_transfer):
 	; Make space on the stack for caller registers
 	; (Should we rather use red zone? See libphobos example.)
 	subi r1,r1,80

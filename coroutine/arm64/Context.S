@@ -6,7 +6,6 @@
 ##
 
 #define TOKEN_PASTE(x,y) x##y
-#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 #if defined(__APPLE__)
 #define x29 fp
@@ -28,8 +27,8 @@
 ## See "Providing protection for complex software" for more details about PAC/BTI
 ## https://developer.arm.com/architectures/learn-the-architecture/providing-protection-for-complex-software
 
-.global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
-PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+.global PREFIXED_SYMBOL(coroutine_transfer)
+PREFIXED_SYMBOL(coroutine_transfer):
 
 #if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
 	# paciasp (it also acts as BTI landing pad, so no need to insert BTI also)
