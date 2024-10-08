@@ -388,10 +388,8 @@ module Spec
       opts = gems.last.is_a?(Hash) ? gems.pop : {}
       path = opts.fetch(:path, system_gem_path)
 
-      with_gem_path_as(path) do
-        gems.each do |gem|
-          gem_command "install --no-document #{gem}"
-        end
+      gems.each do |gem|
+        gem_command "install --no-document --install-dir #{path} #{gem}"
       end
     end
 
