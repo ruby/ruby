@@ -25,7 +25,7 @@ Note that each entry is kept to a minimum, see links for details.
 * Keyword arguments are no longer allowed in index assignment
   (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
-* `GC.config` added to allow setting configuration variables on the Garbage
+* GC.config added to allow setting configuration variables on the Garbage
   Collector. [[Feature #20443]]
 
 * GC configuration parameter `rgengc_allow_full_mark` introduced. When `false`
@@ -37,8 +37,8 @@ Note: We're only listing outstanding class updates.
 
 * Exception
 
-    * Exception#set_backtrace now accepts arrays of `Thread::Backtrace::Location`.
-      `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [[Feature #13557]]
+    * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
+      Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
 
 * Range
 
@@ -53,15 +53,15 @@ Note: We're only listing outstanding class updates.
 
 * RubyVM::AbstractSyntaxTree
 
-    * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
+    * Add RubyVM::AbstractSyntaxTree::Node#locations method which returns location objects
       associated with the AST node. [[Feature #20624]]
-    * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
+    * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
 
 ## Stdlib updates
 
 * Tempfile
 
-    * The keyword argument `anonymous: true` is implemented for `Tempfile.create`.
+    * The keyword argument `anonymous: true` is implemented for Tempfile.create.
       `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
       So applications don't need to remove the file.
       [[Feature #20497]]
@@ -136,7 +136,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
-    * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
+    * Kernel#caller, Thread::Backtrace::Location's methods, etc. are also changed accordingly.
 
         Old:
         ```
@@ -150,7 +150,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
                 from test.rb:2:in '<main>'
         ```
 
-* `Hash#inspect` rendering have been changed. [[Bug #20433]]
+* Hash#inspect rendering have been changed. [[Bug #20433]]
 
     * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
     * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
@@ -164,7 +164,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## Implementation improvements
 
-* `Array#each` is rewritten in Ruby for better performance [[Feature #20182]].
+* Array#each is rewritten in Ruby for better performance [[Feature #20182]].
 
 ## JIT
 
@@ -175,7 +175,7 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
   [[Feature #15554]]
 
 * Redefining some core methods that are specially optimized by the interpreter
-  and JIT like `String#freeze` or `Integer#+` now emits a performance class
+  and JIT like String#freeze or Integer#+ now emits a performance class
   warning (`-W:performance` or `Warning[:performance] = true`).
   [[Feature #20429]]
 
