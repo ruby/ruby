@@ -1113,7 +1113,7 @@ wkmap_inspect(VALUE self)
  *    end
  *
  *  This will result in +make_value+ returning the same object for same set of attributes
- *  always, but the values that aren't needed anymore woudn't be sitting in the cache forever.
+ *  always, but the values that aren't needed anymore wouldn't be sitting in the cache forever.
  */
 
 void
