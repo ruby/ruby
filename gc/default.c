@@ -6156,6 +6156,12 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     rb_gc_impl_copy_finalizer(objspace, dest, obj);
 }
 
+const char *
+rb_gc_impl_active_gc_name(void)
+{
+    return "default";
+}
+
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
