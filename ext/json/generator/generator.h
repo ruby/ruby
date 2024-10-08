@@ -6,12 +6,21 @@
 
 #include "ruby.h"
 
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#else
-/* This is the fallback definition from Ruby 3.0.5. */
-typedef unsigned char _Bool
-#define bool _Bool
+/* This is the fallback definition from Ruby 3.4 */
+#ifndef RBIMPL_STDBOOL_H
+#if defined(__cplusplus)
+# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+#  include <cstdbool>
+# endif
+#elif defined(HAVE_STDBOOL_H)
+# include <stdbool.h>
+#elif !defined(HAVE__BOOL)
+typedef unsigned char _Bool;
+# define bool  _Bool
+# define true  ((_Bool)+1)
+# define false ((_Bool)+0)
+# define __bool_true_false_are_defined
+#endif
 #endif
 
 #ifdef HAVE_RUBY_RE_H
