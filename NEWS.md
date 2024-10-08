@@ -138,12 +138,14 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
     * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
 
-        ```
         Old:
+        ```
         test.rb:1:in `foo': undefined method `time' for an instance of Integer
                 from test.rb:2:in `<main>'
+        ```
 
         New:
+        ```
         test.rb:1:in 'Object#foo': undefined method 'time' for an instance of Integer
                 from test.rb:2:in '<main>'
         ```
