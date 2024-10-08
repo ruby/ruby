@@ -154,7 +154,8 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
     _Pragma("GCC diagnostic push") \
     _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
     __attribute__((__no_sanitize__(x))) y; \
-    _Pragma("GCC diagnostic pop")
+    _Pragma("GCC diagnostic pop") \
+    y
 #endif
 
 #ifndef NO_SANITIZE

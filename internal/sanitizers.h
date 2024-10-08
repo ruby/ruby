@@ -54,10 +54,11 @@
 # include "internal/warnings.h"
 # undef NO_SANITIZE
 # define NO_SANITIZE(x, y) \
-    COMPILER_WARNING_PUSH; \
-    COMPILER_WARNING_IGNORED(-Wattributes); \
+    COMPILER_WARNING_PUSH \
+    COMPILER_WARNING_IGNORED(-Wattributes) \
     __attribute__((__no_sanitize__(x))) y; \
-    COMPILER_WARNING_POP
+    COMPILER_WARNING_POP \
+    y
 #endif
 
 #ifndef NO_SANITIZE
