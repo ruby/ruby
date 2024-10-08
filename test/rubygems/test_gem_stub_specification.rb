@@ -171,6 +171,35 @@ class TestStubSpecification < Gem::TestCase
     assert_same real_foo, @foo.to_spec
   end
 
+  def test_to_spec_default
+    bar_default_spec = File.join(@gemhome, "specifications", "default", "bar-0.0.2.gemspec")
+    File.open bar_default_spec, "w" do |io|
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: bar 0.0.2 ruby lib
+
+        Gem::Specification.new do |s|
+          s.name          = "bar"
+          s.version       = "0.0.2"
+          s.platform      = "ruby"
+          s.require_paths = ["lib"]
+          s.summary       = "A very bar gem"
+        end
+      STUB
+    end
+
+    bar = Gem::StubSpecification.gemspec_stub BAR, @base_dir, @gems_dir
+    bar_default = Gem::StubSpecification.default_gemspec_stub bar_default_spec, @base_dir, @gems_dir
+
+    real_bar = util_spec bar_default.name, bar_default.version
+    real_bar.activate
+
+    assert_equal bar.version, Gem.loaded_specs[bar.name].version,
+                 "sanity check"
+
+    refute_same real_bar, bar_default.to_spec
+  end
+
   def test_to_spec_with_other_specs_loaded_does_not_warn
     real_foo = util_spec @foo.name, @foo.version
     real_foo.activate

@@ -100,7 +100,7 @@ class Gem::BasicSpecification
   end
 
   def default_gem?
-    loaded_from &&
+    !loaded_from.nil? &&
       File.dirname(loaded_from) == Gem.default_specifications_dir
   end
 
