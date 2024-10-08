@@ -3557,7 +3557,7 @@ retry:;
 
     if (cconst) {
         typedef VALUE(*builtin_func0)(void *, VALUE);
-        VALUE const_val = (*(builtin_func0)bf->func_ptr)(NULL, Qnil);
+        VALUE const_val = (*(builtin_func0)(uintptr_t)bf->func_ptr)(NULL, Qnil);
         PUSH_INSN1(ret, *node_location, putobject, const_val);
         return COMPILE_OK;
     }

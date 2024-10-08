@@ -66,7 +66,7 @@ rjit_reserve_addr_space(uint32_t mem_size)
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rjit_reserve_addr_space;
+        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rjit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
         uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);

@@ -36,7 +36,7 @@ static inline void coroutine_initialize(
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
-    context->stack_pointer[0xc0 / 8] = (void*)start;
+    context->stack_pointer[0xc0 / 8] = (void*)(uintptr_t)start;
 }
 
 struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);

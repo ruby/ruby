@@ -86,7 +86,8 @@ static inline void coroutine_initialize(
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
-    context->stack_pointer[0x98 / 8] = ptrauth_sign_instruction_addr((void*)start, (void*)top);
+    void *addr = (void*)(uintptr_t)start;
+    context->stack_pointer[0x98 / 8] = ptrauth_sign_instruction_addr(addr, (void*)top);
 }
 
 struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);

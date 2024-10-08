@@ -15,7 +15,7 @@ struct rb_builtin_function {
 
 #define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) {\
   .name = _i < 0 ? NULL : #_name, \
-  .func_ptr = (void *)_fname, \
+  .func_ptr = (void *)(uintptr_t)_fname, \
   .argc = _arity, \
   .index = _i, \
 }

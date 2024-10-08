@@ -7339,7 +7339,8 @@ vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, 
         for (int i=0; i<bf->argc; i++) {
             ruby_debug_printf(":%s ", rb_id2name(ISEQ_BODY(cfp->iseq)->local_table[i+start_index]));
         }
-        ruby_debug_printf("\n" "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc, bf->func_ptr);
+        ruby_debug_printf("\n" "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc,
+                          (void *)(uintptr_t)bf->func_ptr);
     }
 
     if (bf->argc == 0) {
