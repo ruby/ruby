@@ -86,15 +86,23 @@ impl CompilationLog {
             payload
         };
 
-        if let Some(CompilationLogOutput::File(fd)) = print_compilation_log {
-            use std::os::unix::io::{FromRawFd, IntoRawFd};
-            use std::io::Write;
+        if let Some(output) = print_compilation_log {
+            match output {
+                CompilationLogOutput::Stderr => {
+                    eprintln!("{}", entry);
+                }
 
-            // Write with the fd opened during boot
-            let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
-            writeln!(file, "{}", entry).unwrap();
-            file.flush().unwrap();
-            file.into_raw_fd(); // keep the fd open
+                CompilationLogOutput::File(fd) => {
+                    use std::os::unix::io::{FromRawFd, IntoRawFd};
+                    use std::io::Write;
+
+                    // Write with the fd opened during boot
+                    let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
+                    writeln!(file, "{}", entry).unwrap();
+                    file.flush().unwrap();
+                    file.into_raw_fd(); // keep the fd open
+                }
+            }
         }
 
         Self::get_instance().push(entry);
@@ -195,17 +203,6 @@ impl<'a, T: Copy, const N: usize> Iterator for CircularBufferIterator<'a, T, N> 
 #[no_mangle]
 pub extern "C" fn rb_yjit_compilation_log_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     if get_option!(gen_compilation_log) {
-        return Qtrue;
-    } else {
-        return Qfalse;
-    }
-}
-
-/// Primitive called in yjit.rb
-/// Check if the compilation log should print at exit
-#[no_mangle]
-pub extern "C" fn rb_yjit_print_compilation_log_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if yjit_enabled_p() && get_option!(print_compilation_log) == Some(CompilationLogOutput::Stderr) {
         return Qtrue;
     } else {
         return Qfalse;
