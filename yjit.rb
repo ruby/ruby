@@ -48,7 +48,6 @@ module RubyVM::YJIT
   def self.enable(stats: false, compilation_log: false)
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
-    at_exit { print_compilation_log } if compilation_log
     Primitive.rb_yjit_enable(stats, stats != :quiet, compilation_log, compilation_log != :quiet)
   end
 
@@ -248,10 +247,6 @@ module RubyVM::YJIT
     at_exit { print_and_dump_stats }
   end
 
-  if Primitive.rb_yjit_compilation_log_enabled_p
-    at_exit { print_compilation_log }
-  end
-
   class << self
     # :stopdoc:
     private
@@ -262,16 +257,6 @@ module RubyVM::YJIT
         _print_stats
       end
       _dump_locations
-    end
-
-    # Print the compilation log
-    def print_compilation_log # :nodoc:
-      if Primitive.rb_yjit_print_compilation_log_p
-        $stderr.puts "***YJIT: Printing YJIT compilation log on exit***"
-        RubyVM::YJIT.compilation_log.each do |iseq_path, timestamp|
-          $stderr.puts "%15.6f: %s" % [timestamp.to_f, iseq_path]
-        end
-      end
     end
 
     def _dump_locations # :nodoc:
