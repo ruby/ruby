@@ -28,7 +28,6 @@ use std::ptr;
 use ptr::NonNull;
 use YARVOpnd::*;
 use TempMapping::*;
-use crate::compilation_log::CompilationLog;
 use crate::invariants::*;
 
 // Maximum number of temp value types or registers we keep track of
@@ -3049,10 +3048,6 @@ impl BlockId {
     pub fn dump_src_loc(&self) {
         unsafe { rb_yjit_dump_iseq_loc(self.iseq, self.idx as u32) }
     }
-
-    pub fn iseq_name(&self) -> String {
-        get_iseq_name(self.iseq)
-    }
 }
 
 /// See [gen_block_series_body]. This simply counts compilation failures.
@@ -3233,8 +3228,6 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
 
     // Count the number of entry points we compile
     incr_counter!(compiled_iseq_entry);
-
-    CompilationLog::add_entry_point(blockid);
 
     // Compilation successful and block not empty
     code_ptr.map(|ptr| ptr.raw_ptr(cb))

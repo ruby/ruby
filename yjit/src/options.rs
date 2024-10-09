@@ -83,11 +83,8 @@ pub struct Options {
     /// Enable writing /tmp/perf-{pid}.map for Linux perf
     pub perf_map: Option<PerfMap>,
 
-    // Log compilations
-    pub gen_compilation_log: bool,
-
-    // Print compilation log on exit (when gen_compilation_log is also true)
-    pub print_compilation_log: Option<CompilationLogOutput>,
+    // Where to store the compilation log. `None` disables the log
+    pub compilation_log: Option<CompilationLogOutput>,
 }
 
 // Initialize the options to default values
@@ -109,8 +106,7 @@ pub static mut OPTIONS: Options = Options {
     frame_pointer: false,
     code_gc: false,
     perf_map: None,
-    gen_compilation_log: false,
-    print_compilation_log: None,
+    compilation_log: None,
 };
 
 /// YJIT option descriptions for `ruby --help`.
@@ -139,10 +135,12 @@ pub enum TraceExits {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CompilationLogOutput {
-    // Dump to stderr when the process exits
-    Stderr,
     // Dump to the log file as compilation events occur.
-    File(std::os::unix::io::RawFd)
+    File(std::os::unix::io::RawFd),
+    // Keep the log in memory only
+    MemoryOnly,
+    // Dump to stderr when the process exits
+    Stderr
 }
 
 #[derive(Debug)]
@@ -330,8 +328,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         },
         ("compilation-log", _) => match opt_val {
             "" => unsafe {
-                OPTIONS.gen_compilation_log = true;
-                OPTIONS.print_compilation_log = Some(CompilationLogOutput::Stderr);
+                OPTIONS.compilation_log = Some(CompilationLogOutput::Stderr);
                 CompilationLog::init();
             },
             arg_value => {
@@ -346,11 +343,8 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                         use std::os::unix::io::IntoRawFd;
                         eprintln!("YJIT compilation log: {log_file_path}");
 
-                        unsafe {
-                            OPTIONS.gen_compilation_log = true;
-                            OPTIONS.print_compilation_log = Some(CompilationLogOutput::File(file.into_raw_fd()));
-                            CompilationLog::init();
-                        }
+                        unsafe { OPTIONS.compilation_log = Some(CompilationLogOutput::File(file.into_raw_fd())) }
+                        CompilationLog::init()
                     }
                     Err(err) => panic!("Failed to create {log_file_path}: {err}"),
                 }

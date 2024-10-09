@@ -2,7 +2,6 @@ use crate::core::BlockId;
 use crate::cruby::*;
 use crate::options::*;
 use crate::yjit::yjit_enabled_p;
-use crate::codegen::get_method_name;
 
 use std::fmt::{Display, Formatter};
 use std::os::raw::c_long;
@@ -17,37 +16,6 @@ pub struct CompilationLogEntry {
 
     /// The compilation log message.
     pub message: String,
-}
-
-#[derive(Clone, Debug)]
-pub enum CompilationLogPayload {
-    BlockWithChain(BlockId, u8),
-    CFunc(Option<VALUE>, ID),
-    EntryPoint(BlockId)
-}
-
-impl Display for CompilationLogPayload {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CompilationLogPayload::BlockWithChain(block_id, chain_depth) => {
-                let location = iseq_get_location(block_id.iseq, block_id.idx);
-
-                if *chain_depth > 0 {
-                    write!(f, "{} (chain_depth: {})", location, chain_depth)
-                } else {
-                    write!(f, "{}", location)
-                }
-            }
-
-            CompilationLogPayload::CFunc(class, method_id) => {
-                write!(f, "<cfunc> {}", get_method_name(*class, *method_id))
-            }
-
-            CompilationLogPayload::EntryPoint(block_id) => {
-                write!(f, "<entry> {}", block_id.iseq_name())
-            }
-        }
-    }
 }
 
 impl Display for CompilationLogEntry {
@@ -78,29 +46,25 @@ impl CompilationLog {
         }
     }
 
-    pub fn add_entry_point(block_id: BlockId) {
-        Self::add_payload(CompilationLogPayload::EntryPoint(block_id))
-    }
-
     pub fn add_block_with_chain_depth(block_id: BlockId, chain_depth: u8) {
-        Self::add_payload(CompilationLogPayload::BlockWithChain(block_id, chain_depth))
-    }
-
-    pub fn add_cfunc(class: Option<VALUE>, method_id: ID) {
-        Self::add_payload(CompilationLogPayload::CFunc(class, method_id))
-    }
-
-    fn add_payload(payload: CompilationLogPayload) {
         if !Self::has_instance() {
             return;
         }
 
-        let print_compilation_log = get_option!(print_compilation_log);
+        let print_compilation_log = get_option!(compilation_log);
         let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64();
+
+        let location = iseq_get_location(block_id.iseq, block_id.idx);
+        let index = block_id.idx;
+        let message = if chain_depth > 0 {
+            format!("{} (index: {}, chain_depth: {})", location, index, chain_depth)
+        } else {
+            format!("{} (index: {})", location, index)
+        };
 
         let entry = CompilationLogEntry {
             timestamp,
-            message: payload.to_string()
+            message
         };
 
         if let Some(output) = print_compilation_log {
@@ -119,6 +83,8 @@ impl CompilationLog {
                     file.flush().unwrap();
                     file.into_raw_fd(); // keep the fd open
                 }
+
+                CompilationLogOutput::MemoryOnly => () // Don't print or write anything
             }
         }
 
@@ -219,7 +185,7 @@ impl<'a, T: Clone, const N: usize> Iterator for CircularBufferIterator<'a, T, N>
 /// Check if compilation log generation is enabled
 #[no_mangle]
 pub extern "C" fn rb_yjit_compilation_log_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if get_option!(gen_compilation_log) {
+    if get_option!(compilation_log).is_some() {
         return Qtrue;
     } else {
         return Qfalse;
@@ -234,7 +200,7 @@ pub extern "C" fn rb_yjit_get_compilation_log(_ec: EcPtr, _ruby_self: VALUE) -> 
 }
 
 fn rb_yjit_get_compilation_log_array() -> VALUE {
-    if !yjit_enabled_p() || !get_option!(gen_compilation_log) {
+    if !yjit_enabled_p() || get_option!(compilation_log).is_none() {
         return Qnil;
     }
 
