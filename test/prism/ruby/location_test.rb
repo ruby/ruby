@@ -140,6 +140,52 @@ module Prism
       assert_equal 7, location.end_code_units_column(Encoding::UTF_32LE)
     end
 
+    def test_cached_code_units
+      result = Prism.parse("😀 + 😀\n😍 ||= 😍")
+
+      utf8_cache = result.code_units_cache(Encoding::UTF_8)
+      utf16_cache = result.code_units_cache(Encoding::UTF_16LE)
+      utf32_cache = result.code_units_cache(Encoding::UTF_32LE)
+
+      # first 😀
+      location = result.value.statements.body.first.receiver.location
+
+      assert_equal 0, location.cached_start_code_units_offset(utf8_cache)
+      assert_equal 0, location.cached_start_code_units_offset(utf16_cache)
+      assert_equal 0, location.cached_start_code_units_offset(utf32_cache)
+
+      assert_equal 1, location.cached_end_code_units_offset(utf8_cache)
+      assert_equal 2, location.cached_end_code_units_offset(utf16_cache)
+      assert_equal 1, location.cached_end_code_units_offset(utf32_cache)
+
+      assert_equal 0, location.cached_start_code_units_column(utf8_cache)
+      assert_equal 0, location.cached_start_code_units_column(utf16_cache)
+      assert_equal 0, location.cached_start_code_units_column(utf32_cache)
+
+      assert_equal 1, location.cached_end_code_units_column(utf8_cache)
+      assert_equal 2, location.cached_end_code_units_column(utf16_cache)
+      assert_equal 1, location.cached_end_code_units_column(utf32_cache)
+
+      # second 😀
+      location = result.value.statements.body.first.arguments.arguments.first.location
+
+      assert_equal 4, location.cached_start_code_units_offset(utf8_cache)
+      assert_equal 5, location.cached_start_code_units_offset(utf16_cache)
+      assert_equal 4, location.cached_start_code_units_offset(utf32_cache)
+
+      assert_equal 5, location.cached_end_code_units_offset(utf8_cache)
+      assert_equal 7, location.cached_end_code_units_offset(utf16_cache)
+      assert_equal 5, location.cached_end_code_units_offset(utf32_cache)
+
+      assert_equal 4, location.cached_start_code_units_column(utf8_cache)
+      assert_equal 5, location.cached_start_code_units_column(utf16_cache)
+      assert_equal 4, location.cached_start_code_units_column(utf32_cache)
+
+      assert_equal 5, location.cached_end_code_units_column(utf8_cache)
+      assert_equal 7, location.cached_end_code_units_column(utf16_cache)
+      assert_equal 5, location.cached_end_code_units_column(utf32_cache)
+    end
+
     def test_code_units_binary_valid_utf8
       program = Prism.parse(<<~RUBY).value
         # -*- encoding: binary -*-

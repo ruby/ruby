@@ -120,6 +120,12 @@ module Prism
       end
     end
 
+    # Generate a cache that targets a specific encoding for calculating code
+    # unit offsets.
+    def code_units_cache(encoding)
+      CodeUnitsCache.new(source, encoding)
+    end
+
     # Returns the column number in code units for the given encoding for the
     # given byte offset.
     def code_units_column(byte_offset, encoding)
@@ -146,6 +152,76 @@ module Prism
       end
 
       left - 1
+    end
+  end
+
+  # A cache that can be used to quickly compute code unit offsets from byte
+  # offsets. It purposefully provides only a single #[] method to access the
+  # cache in order to minimize surface area.
+  #
+  # Note that there are some known issues here that may or may not be addressed
+  # in the future:
+  #
+  # * The first is that there are issues when the cache computes values that are
+  #   not on character boundaries. This can result in subsequent computations
+  #   being off by one or more code units.
+  # * The second is that this cache is currently unbounded. In theory we could
+  #   introduce some kind of LRU cache to limit the number of entries, but this
+  #   has not yet been implemented.
+  #
+  class CodeUnitsCache
+    class UTF16Counter # :nodoc:
+      def initialize(source, encoding)
+        @source = source
+        @encoding = encoding
+      end
+
+      def count(byte_offset, byte_length)
+        @source.byteslice(byte_offset, byte_length).encode(@encoding, invalid: :replace, undef: :replace).bytesize / 2
+      end
+    end
+
+    class LengthCounter # :nodoc:
+      def initialize(source, encoding)
+        @source = source
+        @encoding = encoding
+      end
+
+      def count(byte_offset, byte_length)
+        @source.byteslice(byte_offset, byte_length).encode(@encoding, invalid: :replace, undef: :replace).length
+      end
+    end
+
+    private_constant :UTF16Counter, :LengthCounter
+
+    # Initialize a new cache with the given source and encoding.
+    def initialize(source, encoding)
+      @source = source
+      @counter =
+        if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
+          UTF16Counter.new(source, encoding)
+        else
+          LengthCounter.new(source, encoding)
+        end
+
+      @cache = {}
+      @offsets = []
+    end
+
+    # Retrieve the code units offset from the given byte offset.
+    def [](byte_offset)
+      @cache[byte_offset] ||=
+        if (index = @offsets.bsearch_index { |offset| offset > byte_offset }).nil?
+          @offsets << byte_offset
+          @counter.count(0, byte_offset)
+        elsif index == 0
+          @offsets.unshift(byte_offset)
+          @counter.count(0, byte_offset)
+        else
+          @offsets.insert(index, byte_offset)
+          offset = @offsets[index - 1]
+          @cache[offset] + @counter.count(offset, byte_offset - offset)
+        end
     end
   end
 
@@ -176,6 +252,13 @@ module Prism
     # encodings, it is not captured here.
     def code_units_offset(byte_offset, encoding)
       byte_offset
+    end
+
+    # Returns a cache that is the identity function in order to maintain the
+    # same interface. We can do this because code units are always equivalent to
+    # byte offsets for ASCII-only sources.
+    def code_units_cache(encoding)
+      ->(byte_offset) { byte_offset }
     end
 
     # Specialized version of `code_units_column` that does not depend on
@@ -287,6 +370,12 @@ module Prism
       source.code_units_offset(start_offset, encoding)
     end
 
+    # The start offset from the start of the file in code units using the given
+    # cache to fetch or calculate the value.
+    def cached_start_code_units_offset(cache)
+      cache[start_offset]
+    end
+
     # The byte offset from the beginning of the source where this location ends.
     def end_offset
       start_offset + length
@@ -301,6 +390,12 @@ module Prism
     # The offset from the start of the file in code units of the given encoding.
     def end_code_units_offset(encoding = Encoding::UTF_16LE)
       source.code_units_offset(end_offset, encoding)
+    end
+
+    # The end offset from the start of the file in code units using the given
+    # cache to fetch or calculate the value.
+    def cached_end_code_units_offset(cache)
+      cache[end_offset]
     end
 
     # The line number where this location starts.
@@ -337,6 +432,12 @@ module Prism
       source.code_units_column(start_offset, encoding)
     end
 
+    # The start column in code units using the given cache to fetch or calculate
+    # the value.
+    def cached_start_code_units_column(cache)
+      cache[start_offset] - cache[source.line_start(start_offset)]
+    end
+
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
@@ -353,6 +454,12 @@ module Prism
     # ends from the start of the line.
     def end_code_units_column(encoding = Encoding::UTF_16LE)
       source.code_units_column(end_offset, encoding)
+    end
+
+    # The end column in code units using the given cache to fetch or calculate
+    # the value.
+    def cached_end_code_units_column(cache)
+      cache[end_offset] - cache[source.line_start(end_offset)]
     end
 
     # Implement the hash pattern matching interface for Location.
@@ -603,6 +710,11 @@ module Prism
     # not.
     def failure?
       !success?
+    end
+
+    # Create a code units cache for the given encoding.
+    def code_units_cache(encoding)
+      source.code_units_cache(encoding)
     end
   end
 
