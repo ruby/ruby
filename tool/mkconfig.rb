@@ -1,4 +1,5 @@
 #!./miniruby -s
+# frozen-string-literal: true
 
 # This script, which is run when ruby is built, generates rbconfig.rb by
 # parsing information from config.status.  rbconfig.rb contains build
@@ -169,8 +170,8 @@ def vars.expand(val, config = self)
   val.replace(newval) unless newval == val
   val
 end
-prefix = vars.expand(vars["prefix"] ||= "")
-rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
+prefix = vars.expand(vars["prefix"] ||= +"")
+rubyarchdir = vars.expand(vars["rubyarchdir"] ||= +"")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
 
 puts %[\
@@ -257,14 +258,14 @@ end
 v_others.compact!
 
 if $install_name
-  if install_name and vars.expand("$(RUBY_INSTALL_NAME)") == $install_name
+  if install_name and vars.expand(+"$(RUBY_INSTALL_NAME)") == $install_name
     $install_name = install_name
   end
   v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + $install_name + "\"\n"
   v_fast << "  CONFIG[\"RUBY_INSTALL_NAME\"] = \"" + $install_name + "\"\n"
 end
 if $so_name
-  if so_name and vars.expand("$(RUBY_SO_NAME)") == $so_name
+  if so_name and vars.expand(+"$(RUBY_SO_NAME)") == $so_name
     $so_name = so_name
   end
   v_fast << "  CONFIG[\"RUBY_SO_NAME\"] = \"" + $so_name + "\"\n"
