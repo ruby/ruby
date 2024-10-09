@@ -348,6 +348,7 @@ have commit right, others don't.
 #### ext/json
 * NARUSE, Yui (naruse)
 * Hiroshi SHIBATA (hsbt)
+* Jean Boussier (byroot)
 * https://github.com/ruby/json
 * https://rubygems.org/gems/json
 
