@@ -20,10 +20,21 @@ module Prism
     def self.load(input, serialized)
       input = input.dup
       source = Source.for(input)
+
       loader = Loader.new(source, serialized)
       result = loader.load_result
 
       input.force_encoding(loader.encoding)
+
+      # This is an extremely niche use-case where the file was marked as binary
+      # but it contained UTF-8-encoded characters. In that case we will actually
+      # put it back to UTF-8 to give the location APIs the best chance of being
+      # correct.
+      if !input.ascii_only? && input.encoding == Encoding::BINARY
+        input.force_encoding(Encoding::UTF_8)
+        input.force_encoding(Encoding::BINARY) unless input.valid_encoding?
+      end
+
       result
     end
 

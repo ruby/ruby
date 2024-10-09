@@ -12,6 +12,21 @@ module Prism
     def self.for(source, start_line = 1, offsets = [])
       if source.ascii_only?
         ASCIISource.new(source, start_line, offsets)
+      elsif source.encoding == Encoding::BINARY
+        source.force_encoding(Encoding::UTF_8)
+
+        if source.valid_encoding?
+          new(source, start_line, offsets)
+        else
+          # This is an extremely niche use case where the file is marked as
+          # binary, contains multi-byte characters, and those characters are not
+          # valid UTF-8. In this case we'll mark it as binary and fall back to
+          # treating everything as a single-byte character. This _may_ cause
+          # problems when asking for code units, but it appears to be the
+          # cleanest solution at the moment.
+          source.force_encoding(Encoding::BINARY)
+          ASCIISource.new(source, start_line, offsets)
+        end
       else
         new(source, start_line, offsets)
       end
@@ -89,6 +104,12 @@ module Prism
     # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
     # concept of code units that differs from the number of characters in other
     # encodings, it is not captured here.
+    #
+    # We purposefully replace invalid and undefined characters with replacement
+    # characters in this conversion. This happens for two reasons. First, it's
+    # possible that the given byte offset will not occur on a character
+    # boundary. Second, it's possible that the source code will contain a
+    # character that has no equivalent in the given encoding.
     def code_units_offset(byte_offset, encoding)
       byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding, invalid: :replace, undef: :replace)
 
@@ -130,8 +151,12 @@ module Prism
 
   # Specialized version of Prism::Source for source code that includes ASCII
   # characters only. This class is used to apply performance optimizations that
-  # cannot be applied to sources that include multibyte characters. Sources that
-  # include multibyte characters are represented by the Prism::Source class.
+  # cannot be applied to sources that include multibyte characters.
+  #
+  # In the extremely rare case that a source includes multi-byte characters but
+  # is marked as binary because of a magic encoding comment and it cannot be
+  # eagerly converted to UTF-8, this class will be used as well. This is because
+  # at that point we will treat everything as single-byte characters.
   class ASCIISource < Source
     # Return the character offset for the given byte offset.
     def character_offset(byte_offset)

@@ -140,23 +140,36 @@ module Prism
       assert_equal 7, location.end_code_units_column(Encoding::UTF_32LE)
     end
 
-    def test_code_units_handles_binary_encoding_with_multibyte_characters
-      # If the encoding is set to binary and the source contains multibyte
-      # characters, we avoid breaking the code unit offsets, but they will
-      # still be incorrect.
-
+    def test_code_units_binary_valid_utf8
       program = Prism.parse(<<~RUBY).value
         # -*- encoding: binary -*-
 
         😀 + 😀
       RUBY
 
-      # first 😀
-      location = program.statements.body.first.receiver.location
+      receiver = program.statements.body.first.receiver
+      assert_equal "😀".b.to_sym, receiver.name
 
-      assert_equal 4, location.end_code_units_column(Encoding::UTF_8)
-      assert_equal 4, location.end_code_units_column(Encoding::UTF_16LE)
-      assert_equal 4, location.end_code_units_column(Encoding::UTF_32LE)
+      location = receiver.location
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 2, location.end_code_units_column(Encoding::UTF_16LE)
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
+    end
+
+    def test_code_units_binary_invalid_utf8
+      program = Prism.parse(<<~RUBY).value
+        # -*- encoding: binary -*-
+
+        \x90 + \x90
+      RUBY
+
+      receiver = program.statements.body.first.receiver
+      assert_equal "\x90".b.to_sym, receiver.name
+
+      location = receiver.location
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_8)
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_16LE)
+      assert_equal 1, location.end_code_units_column(Encoding::UTF_32LE)
     end
 
     def test_chop
