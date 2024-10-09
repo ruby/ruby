@@ -65,7 +65,7 @@ static ID id_eq;
 static ID id_half;
 
 /* MACRO's to guard objects from GC by keeping them in stack */
-#define ENTER(n) volatile VALUE RB_UNUSED_VAR(vStack[n]);int iStack=0
+#define ENTER(n) volatile VALUE vStack[n];int iStack=0
 #define PUSH(x)  (vStack[iStack++] = (VALUE)(x))
 #define SAVE(p)  PUSH((p)->obj)
 #define GUARD_OBJ(p,y) ((p)=(y), SAVE(p))
