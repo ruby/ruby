@@ -7401,21 +7401,6 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *    [0, 1, 2].repeated_combination(-1) {|combination| fail 'Cannot happen' }
  *
- *  Using Enumerators, it's convenient to show the combinations and counts
- *  for some values of +size+:
- *
- *    e = [0, 1, 2].repeated_combination(0)
- *    e.size # => 1
- *    e.to_a # => [[]]
- *
- *    e = [0, 1, 2].repeated_combination(1)
- *    e.size # => 3
- *    e.to_a # => [[0], [1], [2]]
- *
- *    e = [0, 1, 2].repeated_combination(2)
- *    e.size # => 6
- *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]
- *
  *  With no block given, returns a new Enumerator.
  *
  *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
