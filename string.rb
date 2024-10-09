@@ -418,6 +418,7 @@
 #  - #unicode_normalize!: Unicode-normalizes +self+; returns +self+.
 #  - #scrub!: Replaces each invalid byte with a given character; returns +self+.
 #  - #force_encoding: Changes the encoding to a given encoding; returns +self+.
+#  - #forcible_encoding?: Returns +true+ if the encoding can be forced without breaking the string.
 #
 #  _Deletion_
 #
