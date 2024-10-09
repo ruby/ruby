@@ -57,6 +57,10 @@ VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
+VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
+
+/* error.c */
+void rb_warn_unchilled(VALUE str);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
@@ -124,7 +128,7 @@ static inline void
 CHILLED_STRING_MUTATED(VALUE str)
 {
     FL_UNSET_RAW(str, STR_CHILLED);
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "literal string will be frozen in the future");
+    rb_warn_unchilled(str);
 }
 
 static inline void
