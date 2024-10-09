@@ -11043,7 +11043,7 @@ parser_yylex(struct parser_params *p)
         SET_LEX_STATE(EXPR_BEG);
         if ((c = nextc(p)) == '.') {
             if ((c = nextc(p)) == '.') {
-                if (p->ctxt.in_argdef || IS_LABEL_POSSIBLE() || lambda_beginning_p()) {
+                if (p->ctxt.in_argdef || IS_LABEL_POSSIBLE()) {
                     SET_LEX_STATE(EXPR_ENDARG);
                     return tBDOT3;
                 }
