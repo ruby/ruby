@@ -125,7 +125,7 @@ The following bundled gems are promoted from default gems.
 * syslog 0.1.2
 * csv 3.3.0
 
-The following bundled gems are added.
+The following bundled gem is added.
 
 * repl_type_completor 0.1.7
 
