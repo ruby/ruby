@@ -3123,13 +3123,16 @@ rb_ary_reverse(VALUE ary)
 
 /*
  *  call-seq:
- *    array.reverse! -> self
+ *    reverse! -> self
  *
- *  Reverses +self+ in place:
+ *  Reverses the order of the elements of +self+;
+ *  returns +self+:
  *
- *    a = ['foo', 'bar', 'two']
- *    a.reverse! # => ["two", "bar", "foo"]
+ *    a = [0, 1, 2]
+ *    a.reverse! # => [2, 1, 0]
+ *    a          # => [2, 1, 0]
  *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
