@@ -7389,7 +7389,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *      [0, 1, 2].repeated_combination(1) {|combination| c.push(combination) }
  *      c # => [[0], [1], [2]]
  *
- *  - +size+ = 2:
+ *  - +size+ is 2:
  *
  *      c = []
  *      [0, 1, 2].repeated_combination(2) {|combination| c.push(combination) }
