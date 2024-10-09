@@ -1912,6 +1912,14 @@ class Gem::Specification < Gem::BasicSpecification
     @full_name ||= super
   end
 
+  ##
+  # Work around old bundler versions removing my methods
+  # Can be removed once RubyGems can no longer install Bundler 2.5
+
+  def gem_dir # :nodoc:
+    super
+  end
+
   def gems_dir
     @gems_dir ||= File.join(base_dir, "gems")
   end
