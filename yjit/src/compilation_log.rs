@@ -6,6 +6,7 @@ use crate::codegen::get_method_name;
 
 use std::fmt::{Display, Formatter};
 use std::os::raw::c_long;
+use crate::utils::iseq_get_location;
 
 type Timestamp = f64;
 
@@ -20,18 +21,30 @@ pub struct CompilationLogEntry {
 
 #[derive(Clone, Debug)]
 pub enum CompilationLogPayload {
-    ISeq(BlockId),
-    CFunc(Option<VALUE>, ID)
+    BlockWithChain(BlockId, u8),
+    CFunc(Option<VALUE>, ID),
+    EntryPoint(BlockId)
 }
 
 impl Display for CompilationLogPayload {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompilationLogPayload::ISeq(block_id) => {
-                write!(f, "{}", block_id.iseq_name())
+            CompilationLogPayload::BlockWithChain(block_id, chain_depth) => {
+                let location = iseq_get_location(block_id.iseq, block_id.idx);
+
+                if *chain_depth > 0 {
+                    write!(f, "{} (chain_depth: {})", location, chain_depth)
+                } else {
+                    write!(f, "{}", location)
+                }
             }
+
             CompilationLogPayload::CFunc(class, method_id) => {
                 write!(f, "<cfunc> {}", get_method_name(*class, *method_id))
+            }
+
+            CompilationLogPayload::EntryPoint(block_id) => {
+                write!(f, "<entry> {}", block_id.iseq_name())
             }
         }
     }
@@ -65,8 +78,12 @@ impl CompilationLog {
         }
     }
 
-    pub fn add_iseq(block_id: BlockId) {
-        Self::add_payload(CompilationLogPayload::ISeq(block_id))
+    pub fn add_entry_point(block_id: BlockId) {
+        Self::add_payload(CompilationLogPayload::EntryPoint(block_id))
+    }
+
+    pub fn add_block_with_chain_depth(block_id: BlockId, chain_depth: u8) {
+        Self::add_payload(CompilationLogPayload::BlockWithChain(block_id, chain_depth))
     }
 
     pub fn add_cfunc(class: Option<VALUE>, method_id: ID) {
