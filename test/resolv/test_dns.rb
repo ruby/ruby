@@ -89,7 +89,7 @@ class TestResolvDNS < Test::Unit::TestCase
             u = nil
             retry
           end
-          raise
+          omit "Could not find a free port after 10 retries"
         end
 
         # If we get to this point, we have a valid t & u socket
