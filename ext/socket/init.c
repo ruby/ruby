@@ -719,7 +719,7 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
 #ifdef RSOCK_WAIT_BEFORE_BLOCKING
     rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_READABLE), Qnil);
 #endif
-    peer = (int)BLOCKING_REGION_FD(accept_blocking, &accept_arg);
+    peer = (int)rb_io_blocking_region(fptr, accept_blocking, &accept_arg);
     if (peer < 0) {
         int error = errno;
 
