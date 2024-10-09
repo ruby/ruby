@@ -85,7 +85,7 @@ module Bundler
         cmd = [*Shellwords.shellsplit(bundler_spec_original_cmd), *ARGV]
       else
         cmd = [$PROGRAM_NAME, *ARGV]
-        cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME) || $PROGRAM_NAME.end_with?(".bat")
+        cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
       end
 
       Bundler.with_original_env do
