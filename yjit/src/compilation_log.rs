@@ -9,16 +9,16 @@ use std::os::raw::c_long;
 
 type Timestamp = f64;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct CompilationLogEntry {
     /// The time when the block was compiled.
     pub timestamp: Timestamp,
 
-    /// The compilation event payload.
-    pub payload: CompilationLogPayload,
+    /// The compilation log message.
+    pub message: String,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum CompilationLogPayload {
     ISeq(BlockId),
     CFunc(Option<VALUE>, ID)
@@ -39,7 +39,7 @@ impl Display for CompilationLogPayload {
 
 impl Display for CompilationLogEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:15.6}: {}", self.timestamp, self.payload)
+        write!(f, "{:15.6}: {}", self.timestamp, self.message)
     }
 }
 
@@ -83,7 +83,7 @@ impl CompilationLog {
 
         let entry = CompilationLogEntry {
             timestamp,
-            payload
+            message: payload.to_string()
         };
 
         if let Some(output) = print_compilation_log {
@@ -116,16 +116,16 @@ impl CompilationLog {
 }
 
 pub struct CircularBuffer<T, const N: usize> {
-    buffer: [Option<T>; N],
+    buffer: Vec<Option<T>>,
     head: usize,
     tail: usize,
     size: usize
 }
 
-impl<T: Copy, const N: usize> CircularBuffer<T, N> {
+impl<T: Clone, const N: usize> CircularBuffer<T, N> {
     pub fn new() -> Self {
         Self {
-            buffer: [None; N],
+            buffer: vec![None; N],
             head: 0,
             tail: 0,
             size: 0
@@ -172,13 +172,13 @@ impl<T: Copy, const N: usize> CircularBuffer<T, N> {
     }
 }
 
-pub struct CircularBufferIterator<'a, T: Copy, const N: usize> {
+pub struct CircularBufferIterator<'a, T: Clone, const N: usize> {
     buffer: &'a CircularBuffer<T, N>,
     current: usize,
     count: usize,
 }
 
-impl<'a, T: Copy, const N: usize> Iterator for CircularBufferIterator<'a, T, N> {
+impl<'a, T: Clone, const N: usize> Iterator for CircularBufferIterator<'a, T, N> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -187,7 +187,7 @@ impl<'a, T: Copy, const N: usize> Iterator for CircularBufferIterator<'a, T, N> 
         }
 
         let index = (self.buffer.tail + self.current) % N;
-        let item = self.buffer.buffer[index];
+        let item = self.buffer.buffer[index].clone();
         self.current = (self.current + 1) % N;
         self.count += 1;
 
@@ -228,7 +228,7 @@ fn rb_yjit_get_compilation_log_array() -> VALUE {
         unsafe {
             let entry_array = rb_ary_new_capa(2);
             rb_ary_push(entry_array, rb_float_new(entry.timestamp));
-            rb_ary_push(entry_array, entry.payload.to_string().into());
+            rb_ary_push(entry_array, entry.message.into());
             rb_ary_push(array, entry_array);
         }
     }
