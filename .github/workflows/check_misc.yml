@@ -114,14 +114,24 @@ jobs:
       - name: Generate docs
         id: docs
         run: |
-          ruby -W0 --disable-gems -I./lib tool/rdoc-srcdir --op html .
+          ruby -W0 --disable-gems -I./lib tool/rdoc-srcdir -q --op html .
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
+        # Generate only when document commit/PR
+        if: >-
+          ${{false
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.head_commit.message, 'Document')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.title, 'Document')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
+          }}
 
       - name: Upload docs
         uses: actions/upload-artifact@v4
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}
+        if: ${{ steps.docs.outcome == 'success' }}
 
       - uses: ./.github/actions/slack
         with:
