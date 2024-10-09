@@ -67,6 +67,12 @@ class Logger
 
   private
 
+    # :stopdoc:
+
+    MODE = File::WRONLY | File::APPEND
+    MODE_TO_OPEN = MODE | File::SHARE_DELETE | File::BINARY
+    MODE_TO_CREATE = MODE_TO_OPEN | File::CREAT | File::EXCL
+
     def set_dev(log)
       if log.respond_to?(:write) and log.respond_to?(:close)
         @dev = log
@@ -77,34 +83,54 @@ class Logger
         end
       else
         @dev = open_logfile(log)
-        @dev.sync = true
-        @dev.binmode if @binmode
         @filename = log
+      end
+    end
+
+    if MODE_TO_OPEN == MODE
+      def fixup_mode(dev, filename)
+        dev
+      end
+    else
+      def fixup_mode(dev, filename)
+        return dev if @binmode
+        dev.autoclose = false
+        old_dev = dev
+        dev = File.new(dev.fileno, mode: MODE, path: filename)
+        old_dev.close
+        PathAttr.set_path(dev, filename) if defined?(PathAttr)
+        dev
       end
     end
 
     def open_logfile(filename)
       begin
-        File.open(filename, (File::WRONLY | File::APPEND))
+        dev = File.open(filename, MODE_TO_OPEN)
       rescue Errno::ENOENT
         create_logfile(filename)
+      else
+        dev = fixup_mode(dev, filename)
+        dev.sync = true
+        dev.binmode if @binmode
+        dev
       end
     end
 
     def create_logfile(filename)
       begin
-        logdev = File.open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
+        logdev = File.open(filename, MODE_TO_CREATE)
         logdev.flock(File::LOCK_EX)
+        logdev = fixup_mode(logdev, filename)
         logdev.sync = true
         logdev.binmode if @binmode
         add_log_header(logdev)
         logdev.flock(File::LOCK_UN)
+        logdev
       rescue Errno::EEXIST
         # file is created by another process
-        logdev = open_logfile(filename)
-        logdev.sync = true
+        open_logfile(filename)
       end
-      logdev
+    end
 
     def handle_write_errors(mesg)
       yield
@@ -135,40 +161,33 @@ class Logger
       end
     end
 
-    if /mswin|mingw|cygwin/ =~ RbConfig::CONFIG['host_os']
-      def lock_shift_log
-        yield
-      end
-    else
-      def lock_shift_log
-        retry_limit = 8
-        retry_sleep = 0.1
-        begin
-          File.open(@filename, File::WRONLY | File::APPEND) do |lock|
-            lock.flock(File::LOCK_EX) # inter-process locking. will be unlocked at closing file
-            if File.identical?(@filename, lock) and File.identical?(lock, @dev)
-              yield # log shifting
-            else
-              # log shifted by another process (i-node before locking and i-node after locking are different)
-              @dev.close rescue nil
-              @dev = open_logfile(@filename)
-              @dev.sync = true
-            end
-          end
-        rescue Errno::ENOENT
-          # @filename file would not exist right after #rename and before #create_logfile
-          if retry_limit <= 0
-            warn("log rotation inter-process lock failed. #{$!}")
+    def lock_shift_log
+      retry_limit = 8
+      retry_sleep = 0.1
+      begin
+        File.open(@filename, MODE_TO_OPEN) do |lock|
+          lock.flock(File::LOCK_EX) # inter-process locking. will be unlocked at closing file
+          if File.identical?(@filename, lock) and File.identical?(lock, @dev)
+            yield # log shifting
           else
-            sleep retry_sleep
-            retry_limit -= 1
-            retry_sleep *= 2
-            retry
+            # log shifted by another process (i-node before locking and i-node after locking are different)
+            @dev.close rescue nil
+            @dev = open_logfile(@filename)
           end
         end
-      rescue
-        warn("log rotation inter-process lock failed. #{$!}")
+      rescue Errno::ENOENT
+        # @filename file would not exist right after #rename and before #create_logfile
+        if retry_limit <= 0
+          warn("log rotation inter-process lock failed. #{$!}")
+        else
+          sleep retry_sleep
+          retry_limit -= 1
+          retry_sleep *= 2
+          retry
+        end
       end
+    rescue
+      warn("log rotation inter-process lock failed. #{$!}")
     end
 
     def shift_log_age
@@ -200,6 +219,18 @@ class Logger
       File.rename("#{@filename}", age_file)
       @dev = create_logfile(@filename)
       return true
+    end
+  end
+end
+
+File.open(IO::NULL) do |f|
+  File.new(f.fileno, autoclose: false, path: "").path
+rescue IOError
+  module PathAttr               # :nodoc:
+    attr_reader :path
+
+    def self.set_path(file, path)
+      file.extend(self).instance_variable_set(:@path, path)
     end
   end
 end

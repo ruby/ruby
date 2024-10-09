@@ -452,7 +452,7 @@ class TestLogDevice < Test::Unit::TestCase
     end
   ensure
     logdev0.close
-  end unless /mswin|mingw|cygwin/ =~ RbConfig::CONFIG['host_os']
+  end
 
   def test_shifting_midnight
     Dir.mktmpdir do |tmpdir|
