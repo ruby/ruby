@@ -310,8 +310,16 @@ rb_CFString_class_initialize_before_fork(void)
     const char small_str[] = "/";
     long len = sizeof(small_str) - 1;
     CFStringRef s;
-    CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
-    mutable_CFString_release(m, s);
+    /*
+     * Touch `CFStringCreateWithBytesNoCopy` *twice* because the implementation
+     * shipped with macOS 15.0 24A5331b does not return `NSTaggedPointerString`
+     * instance for the first call (totally not sure why). CoreFoundation
+     * shipped with macOS 15.1 does not have this issue.
+     */
+    for (int i = 0; i < 2; i++) {
+        CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
+        mutable_CFString_release(m, s);
+    }
 }
 # endif /* HAVE_WORKING_FORK */
 
