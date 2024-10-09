@@ -15,13 +15,18 @@ update = ->(list, type, desc = "updated") do
     item[$1 || "* "]
   end
 end
-ARGV.each do |type|
-  last = JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
+
+load_gems_json = ->(type) do
+  JSON.parse(File.read("#{type}_gems.json"))['gems'].filter_map do |g|
     v = g['versions'].values_at(*prevs).compact.first
     g = g['gem']
     g = 'RubyGems' if g == 'rubygems'
     [g, v] if v
   end.to_h
+end
+
+ARGV.each do |type|
+  last = load_gems_json[type]
   changed = File.foreach("gems/#{type}_gems").filter_map do |l|
     next if l.start_with?("#")
     g, v = l.split(" ", 3)
@@ -32,7 +37,13 @@ ARGV.each do |type|
   update[changed, type] or next
   if added and !added.empty?
     if type == 'bundled'
-      update[added, type, 'promoted from default gems'] or next
+      default_gems = load_gems_json['default']
+      promoted = {}
+      added.delete_if do |k, v|
+        default_gems.key?(k) && promoted[k] = v
+      end
+      update[added, type, 'added']
+      update[promoted, type, 'promoted from default gems'] or next
     else
       update[added, type, 'added'] or next
     end
