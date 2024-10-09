@@ -75,7 +75,6 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
-        timeout-minutes: ${{ matrix.timeout }}
         env:
           RUBY_TESTOPTS: ${{ matrix.testopts }}
           EXCLUDES: '../src/test/.excludes-parsey'
