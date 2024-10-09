@@ -30,29 +30,13 @@ class Logger
     end
 
     def write(message)
-      begin
+      handle_write_errors("writing") do
         synchronize do
           if @shift_age and @dev.respond_to?(:stat)
-            begin
-              check_shift_log
-            rescue *@reraise_write_errors
-              raise
-            rescue
-              warn("log shifting failed. #{$!}")
-            end
+            handle_write_errors("shifting") {check_shift_log}
           end
-          begin
-            @dev.write(message)
-          rescue *@reraise_write_errors
-            raise
-          rescue
-            warn("log writing failed. #{$!}")
-          end
+          handle_write_errors("writing") {@dev.write(message)}
         end
-      rescue *@reraise_write_errors
-        raise
-      rescue Exception => ignored
-        warn("log writing failed. #{ignored}")
       end
     end
 
@@ -121,6 +105,13 @@ class Logger
         logdev.sync = true
       end
       logdev
+
+    def handle_write_errors(mesg)
+      yield
+    rescue *@reraise_write_errors
+      raise
+    rescue
+      warn("log #{mesg} failed. #{$!}")
     end
 
     def add_log_header(file)
