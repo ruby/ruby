@@ -20,7 +20,6 @@ mkconfig = File.basename($0)
 
 fast = {'prefix'=>true, 'ruby_install_name'=>true, 'INSTALL'=>true, 'EXEEXT'=>true}
 
-win32 = /mswin/ =~ arch
 universal = /universal.*darwin/ =~ arch
 v_fast = []
 v_others = []
@@ -107,7 +106,6 @@ File.foreach "config.status" do |line|
         end
       end
     end
-    eq = win32 && vars[name] ? '<< "\n"' : '='
     vars[name] = val
     if name == "configure_args"
       val.gsub!(/--with-out-ext/, "--without-ext")
@@ -135,7 +133,7 @@ File.foreach "config.status" do |line|
     when /^includedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
-    v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
+    v = "  CONFIG[\"#{name}\"] = #{val}\n"
     if fast[name]
       v_fast << v
     else
