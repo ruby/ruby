@@ -2670,9 +2670,9 @@ rb_ary_each_index(VALUE ary)
  *  passing, in reverse order, each element to the block;
  *  returns +self+:
  *
- *    symbols = []
- *    ['a', 'b', 'c'].reverse_each {|element| symbols.push(element.to_sym) }
- *    symbols      # => [:c, :b, :a]
+ *    a = []
+ *    [0, 1, 2].reverse_each {|element| a.push(element) }
+ *    a # => [2, 1, 0]
  *
  *  Allows the array to be modified during iteration:
  *
