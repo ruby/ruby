@@ -288,7 +288,7 @@ unix_send_io(VALUE sock, VALUE val)
 #endif
 
     arg.fd = fptr->fd;
-    while ((int)BLOCKING_REGION_FD(sendmsg_blocking, &arg) == -1) {
+    while ((int)rb_io_blocking_region(fptr, sendmsg_blocking, &arg) == -1) {
         if (!rb_io_wait_writable(arg.fd))
             rsock_sys_fail_path("sendmsg(2)", fptr->pathv);
     }
@@ -390,7 +390,7 @@ retry:
 #endif
 
     arg.fd = fptr->fd;
-    while ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1) {
+    while ((int)rb_io_blocking_region(fptr, recvmsg_blocking, &arg) == -1) {
         int e = errno;
         if (e == EMSGSIZE && !(gc_reason & GC_REASON_EMSGSIZE)) {
             /* FreeBSD gets here when we're out of FDs */
