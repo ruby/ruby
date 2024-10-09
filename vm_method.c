@@ -759,6 +759,9 @@ static rb_method_entry_t *
 rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_definition_t *def, bool complement)
 {
     if (def) method_definition_addref(def, complement);
+    VM_ASSERT(!defined_class ||
+              NIL_P(defined_class) || // negative cache
+              RB_TYPE_P(defined_class, T_CLASS) || RB_TYPE_P(defined_class, T_ICLASS));
     rb_method_entry_t *me = IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
     *((rb_method_definition_t **)&me->def) = def;
     me->called_id = called_id;
@@ -874,8 +877,9 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
         rb_vm_check_redefinition_opt_method(me, me->owner);
 
         struct rb_method_entry_struct *orig_me =
-            rb_method_entry_alloc(me->called_id, me->owner,
-                                  me->defined_class ? me->defined_class : owner,
+            rb_method_entry_alloc(me->called_id,
+                                  me->owner,
+                                  me->defined_class,
                                   me->def,
                                   true);
         METHOD_ENTRY_FLAGS_COPY(orig_me, me);
