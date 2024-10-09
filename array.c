@@ -7377,7 +7377,7 @@ rb_ary_repeated_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *  each combination is an array;
  *  returns +self+. The order of the combinations is indeterminate.
  *
- *  If a positive integer argument +n+ is given,
+ *  If a positive integer argument +size+ is given,
  *  calls the block with each +size+-tuple repeated combination of the elements of +self+.
  *  The number of combinations is <tt>(size+1)(size+2)/2</tt>.
  *
