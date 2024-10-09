@@ -849,7 +849,6 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem.clear_paths
 
     Gem.done_installing do |installer, specs|
-      done_installing_ran = true
       refute_nil installer
       assert_equal [@b1], specs
     end
