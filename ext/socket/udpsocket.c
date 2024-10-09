@@ -156,6 +156,7 @@ udp_send_internal(VALUE v)
     struct addrinfo *res;
 
     rb_io_check_closed(fptr = arg->fptr);
+
     for (res = arg->res->ai; res; res = res->ai_next) {
       retry:
         arg->sarg.fd = fptr->fd;
@@ -166,7 +167,7 @@ udp_send_internal(VALUE v)
         rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
 #endif
 
-        ssize_t n = (ssize_t)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
+        ssize_t n = (ssize_t)rb_io_blocking_region(fptr, rsock_sendto_blocking, &arg->sarg);
 
         if (n >= 0) return RB_SSIZE2NUM(n);
 
