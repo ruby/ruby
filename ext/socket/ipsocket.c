@@ -274,16 +274,13 @@ ip_inspect(VALUE sock)
 static VALUE
 ip_addr(int argc, VALUE *argv, VALUE sock)
 {
-    rb_io_t *fptr;
     union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
-    GetOpenFile(sock, fptr);
-
     if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
-        norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
-    if (getsockname(fptr->fd, &addr.addr, &len) < 0)
+        norevlookup = rb_io_mode(sock) & FMODE_NOREVLOOKUP;
+    if (getsockname(rb_io_descriptor(sock), &addr.addr, &len) < 0)
         rb_sys_fail("getsockname(2)");
     return rsock_ipaddr(&addr.addr, len, norevlookup);
 }
@@ -315,16 +312,13 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
 static VALUE
 ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 {
-    rb_io_t *fptr;
     union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
-    GetOpenFile(sock, fptr);
-
     if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
-        norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
-    if (getpeername(fptr->fd, &addr.addr, &len) < 0)
+        norevlookup = rb_io_mode(sock) & FMODE_NOREVLOOKUP;
+    if (getpeername(rb_io_descriptor(sock), &addr.addr, &len) < 0)
         rb_sys_fail("getpeername(2)");
     return rsock_ipaddr(&addr.addr, len, norevlookup);
 }
