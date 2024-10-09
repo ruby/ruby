@@ -6159,7 +6159,7 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     if (RVALUE_WB_UNPROTECTED(objspace, obj)) {
         rb_gc_writebarrier_unprotect(dest);
     }
-    rb_gc_copy_finalizer(dest, obj);
+    rb_gc_impl_copy_finalizer(objspace, dest, obj);
 }
 
 void
