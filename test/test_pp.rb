@@ -34,6 +34,10 @@ class PPTest < Test::Unit::TestCase
     assert_equal("0...1\n", PP.pp(0...1, "".dup))
     assert_equal("0...\n", PP.pp(0..., "".dup))
     assert_equal("...1\n", PP.pp(...1, "".dup))
+    assert_equal("..false\n", PP.pp(..false, "".dup))
+    assert_equal("false..\n", PP.pp(false.., "".dup))
+    assert_equal("false..false\n", PP.pp(false..false, "".dup))
+    assert_equal("nil..nil\n", PP.pp(nil..nil, "".dup))
   end
 end
 

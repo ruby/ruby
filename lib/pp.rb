@@ -488,11 +488,12 @@ end if defined?(Data.define)
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.pp self.begin if self.begin
+    both_nil = self.begin == nil && self.end == nil
+    q.pp self.begin if self.begin != nil || both_nil
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
-    q.pp self.end if self.end
+    q.pp self.end if self.end != nil || both_nil
   end
 end
 
