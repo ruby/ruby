@@ -3140,14 +3140,13 @@ rb_ary_reverse_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.reverse -> new_array
+ *    reverse -> new_array
  *
- *  Returns a new +Array+ with the elements of +self+ in reverse order:
+ *  Returns a new array containing the elements of +self+ in reverse order:
  *
- *    a = ['foo', 'bar', 'two']
- *    a1 = a.reverse
- *    a1 # => ["two", "bar", "foo"]
+ *    [0, 1, 2].reverse # => [2, 1, 0]
  *
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 static VALUE
@@ -8662,6 +8661,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #difference: Returns an array containing all elements of +self+ that are not found
  *    in any of the given arrays..
  *  - #product: Returns or yields all combinations of elements from +self+ and given arrays.
+ *  - #reverse: Returns an array containing all elements of +self+ in reverse order.
  *
  *  === Methods for Iterating
  *
