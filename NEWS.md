@@ -124,6 +124,9 @@ The following bundled gems are promoted from default gems.
 * nkf 0.2.0
 * syslog 0.1.2
 * csv 3.3.0
+
+The following bundled gems are added.
+
 * repl_type_completor 0.1.7
 
 See GitHub releases like [GitHub Releases of Logger] or changelog for
