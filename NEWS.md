@@ -59,6 +59,10 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+The following default gem is added.
+
+* win32-registry 0.0.1
+
 * Tempfile
 
     * The keyword argument `anonymous: true` is implemented for Tempfile.create.
