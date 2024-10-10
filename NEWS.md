@@ -72,7 +72,7 @@ The following default gem is added.
 
 * win32/sspi.rb
 
-    * This library is now extracted from the Ruby repository to [ruby/win32-sspi].
+    * This library is now extracted from the Ruby repository to [ruby/net-http-sspi].
       [[Feature #20775]]
 
 The following default gems are updated.
@@ -136,7 +136,7 @@ The following bundled gem is added.
 See GitHub releases like [GitHub Releases of Logger] or changelog for
 details of the default gems or bundled gems.
 
-[ruby/win32-sspi]: https://github.com/ruby/win32-sspi
+[ruby/net-http-sspi]: https://github.com/ruby/net-http-sspi
 [GitHub Releases of Logger]: https://github.com/ruby/logger/releases
 
 ## Supported platforms
