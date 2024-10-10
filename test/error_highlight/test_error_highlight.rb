@@ -12,6 +12,8 @@ class ErrorHighlightTest < Test::Unit::TestCase
   end
 
   def setup
+    ErrorHighlight::DefaultFormatter.viewport_size = 80
+
     if defined?(DidYouMean)
       @did_you_mean_old_formatter = DidYouMean.formatter
       DidYouMean.formatter = DummyFormatter
@@ -1282,6 +1284,30 @@ undefined method `time' for #{ ONE_RECV_MESSAGE }
 
         load tmp.path
       end
+    end
+  end
+
+  def test_errors_on_small_viewports_when_error_lives_at_the_end
+    assert_error_message(NoMethodError, <<~END) do
+undefined method 'gsuub' for an instance of String
+
+...ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo".gsuub(//, "")
+                                                                 ^^^^^^
+    END
+
+      "fooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo".gsuub(//, "")
+    end
+  end
+
+  def test_errors_on_small_viewports_when_error_lives_at_the_beginning
+    assert_error_message(NoMethodError, <<~END) do
+undefined method 'gsuub' for an instance of Integer
+
+      1.gsuub(//, "fooooooooooooooooooooooooooooooooooooooooooooooooooooooooo...
+       ^^^^^^
+    END
+
+      1.gsuub(//, "fooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo")
     end
   end
 
