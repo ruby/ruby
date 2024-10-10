@@ -5,6 +5,7 @@ typedef VALUE(*target_func)(VALUE);
 
 static target_func rst_any_method;
 
+#define resolve_func(file, name) (target_func)(uintptr_t)rb_ext_resolve_symbol(file, name)
 VALUE
 rsr_any_method(VALUE klass)
 {
@@ -15,7 +16,7 @@ VALUE
 rsr_try_resolve_fname(VALUE klass)
 {
     target_func rst_something_missing =
-        (target_func) rb_ext_resolve_symbol("-test-/load/resolve_symbol_missing", "rst_any_method");
+        resolve_func("-test-/load/resolve_symbol_missing", "rst_any_method");
     if (rst_something_missing == NULL) {
         // This should be done in Init_*, so the error is LoadError
         rb_raise(rb_eLoadError, "symbol not found: missing fname");
@@ -27,7 +28,7 @@ VALUE
 rsr_try_resolve_sname(VALUE klass)
 {
     target_func rst_something_missing =
-        (target_func)rb_ext_resolve_symbol("-test-/load/resolve_symbol_target", "rst_something_missing");
+        resolve_func("-test-/load/resolve_symbol_target", "rst_something_missing");
     if (rst_something_missing == NULL) {
         // This should be done in Init_*, so the error is LoadError
         rb_raise(rb_eLoadError, "symbol not found: missing sname");
@@ -43,7 +44,7 @@ Init_resolve_symbol_resolver(void)
      * If the module and methods are defined before raising LoadError, retrying `require "this.so"` will
      * cause re-defining those methods (and will be warned).
      */
-    rst_any_method = (target_func)rb_ext_resolve_symbol("-test-/load/resolve_symbol_target", "rst_any_method");
+    rst_any_method = resolve_func("-test-/load/resolve_symbol_target", "rst_any_method");
     if (rst_any_method == NULL) {
         rb_raise(rb_eLoadError, "resolve_symbol_target is not loaded");
     }

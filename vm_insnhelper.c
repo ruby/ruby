@@ -3023,7 +3023,8 @@ vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t
 {
     const struct rb_builtin_function *bf = calling->cc->aux_.bf;
     cfp->sp -= (calling->argc + 1);
-    return builtin_invoker0(ec, calling->recv, NULL, (rb_insn_func_t)bf->func_ptr);
+    rb_insn_func_t func_ptr = (rb_insn_func_t)(uintptr_t)bf->func_ptr;
+    return builtin_invoker0(ec, calling->recv, NULL, func_ptr);
 }
 
 VALUE rb_gen_method_name(VALUE owner, VALUE name); // in vm_backtrace.c
@@ -7325,7 +7326,8 @@ invoke_bf(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const struct 
 {
     const bool canary_p = ISEQ_BODY(reg_cfp->iseq)->builtin_attrs & BUILTIN_ATTR_LEAF; // Verify an assumption of `Primitive.attr! :leaf`
     SETUP_CANARY(canary_p);
-    VALUE ret = (*lookup_builtin_invoker(bf->argc))(ec, reg_cfp->self, argv, (rb_insn_func_t)bf->func_ptr);
+    rb_insn_func_t func_ptr = (rb_insn_func_t)(uintptr_t)bf->func_ptr;
+    VALUE ret = (*lookup_builtin_invoker(bf->argc))(ec, reg_cfp->self, argv, func_ptr);
     CHECK_CANARY(canary_p, BIN(invokebuiltin));
     return ret;
 }
