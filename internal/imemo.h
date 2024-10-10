@@ -79,7 +79,12 @@ struct vm_ifunc_argc {
 #endif
 };
 
-/*! IFUNC (Internal FUNCtion) */
+/*! IFUNC (Internal FUNCtion)
+ *
+ * Bookkeeping for converting a C function and some closed-over data into a
+ * block passable to methods. Like Ruby Proc, but not directly accessible at
+ * Ruby level since this is an imemo. See rb_block_call() and friends.
+ */
 struct vm_ifunc {
     VALUE flags;
     VALUE *svar_lep;
