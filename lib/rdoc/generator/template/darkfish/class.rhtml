@@ -72,8 +72,10 @@
       <%- attributes.each do |attrib| -%>
       <div id="<%= attrib.aref %>" class="method-detail">
         <div class="method-heading attribute-method-heading">
-          <span class="method-name"><%= h attrib.name %></span><span
-            class="attribute-access-type">[<%= attrib.rw %>]</span>
+          <a href="#<%= attrib.aref %>" title="Link to this attribute">
+            <span class="method-name"><%= h attrib.name %></span>
+            <span class="attribute-access-type">[<%= attrib.rw %>]</span>
+          </a>
         </div>
 
         <div class="method-description">
@@ -103,21 +105,27 @@
           <%- if (call_seq = method.call_seq) then -%>
             <%- call_seq.strip.split("\n").each_with_index do |call_seq, i| -%>
               <div class="method-heading">
-                <span class="method-callseq">
-                  <%= h(call_seq.strip.
+                <a href="#<%= method.aref %>" title="Link to this method">
+                  <span class="method-callseq">
+                    <%= h(call_seq.strip.
                         gsub( /^\w+\./m, '')).
                         gsub(/(.*)[-=]&gt;/, '\1&rarr;') %>
-                </span>
+                  </span>
+                </a>
               </div>
             <%- end -%>
           <%- elsif method.has_call_seq? then -%>
             <div class="method-heading">
-              <span class="method-name"><%= h method.name %></span>
+              <a href="#<%= method.aref %>" title="Link to this method">
+                <span class="method-name"><%= h method.name %></span>
+              </a>
             </div>
           <%- else -%>
             <div class="method-heading">
-              <span class="method-name"><%= h method.name %></span>
-              <span class="method-args"><%= h method.param_seq %></span>
+              <a href="#<%= method.aref %>" title="Link to this method">
+                <span class="method-name"><%= h method.name %></span>
+                <span class="method-args"><%= h method.param_seq %></span>
+              </a>
             </div>
           <%- end -%>
         </div>

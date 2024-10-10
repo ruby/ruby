@@ -84,7 +84,7 @@ h4:target,
 h5:target,
 h6:target {
   margin-left: -10px;
-  border-left: 10px solid #f1edba;
+  border-left: 10px solid var(--source-code-background-color);
 }
 
 /* 4. Links */
@@ -631,6 +631,18 @@ main .method-heading {
   color: var(--text-color);
 }
 
+main .method-heading::after {
+  content: '¶';
+  position: absolute;
+  visibility: hidden;
+  color: var(--secondary-color);
+  font-size: 0.5em;
+}
+
+main .method-heading:hover::after {
+  visibility: visible;
+}
+
 main .method-controls {
   line-height: 20px;
   float: right;
@@ -663,7 +675,6 @@ main #attribute-method-details .method-detail:hover {
 }
 main .attribute-access-type {
   text-transform: uppercase;
-  padding: 0 1em;
 }
 /* @end */
 
