@@ -4,7 +4,7 @@ require 'rbconfig/sizeof'
 require 'test/unit'
 require 'fiddle'
 
-puts("Fiddle::VERSION: #{Fiddle::VERSION}")
+puts("Fiddle::VERSION: #{Fiddle::VERSION}") if $VERBOSE
 
 # FIXME: this is stolen from DL and needs to be refactored.
 
