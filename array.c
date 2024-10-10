@@ -7213,68 +7213,41 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    array.repeated_permutation(n) {|permutation| ... } -> self
- *    array.repeated_permutation(n) -> new_enumerator
+ *    repeated_permutation(size) {|permutation| ... } -> self
+ *    repeated_permutation(size) -> new_enumerator
  *
- *  Calls the block with each repeated permutation of length +n+ of the elements of +self+;
- *  each permutation is an +Array+;
+ *  With a block given, calls the block with each repeated permutation of length +size+
+ *  of the elements of +self+;
+ *  each permutation is an array;
  *  returns +self+. The order of the permutations is indeterminate.
  *
- *  When a block and a positive Integer argument +n+ are given, calls the block with each
- *  +n+-tuple repeated permutation of the elements of +self+.
+ *  If a positive integer argument +size+ is given,
+ *  calls the block with each +size+-tuple repeated permutation of the elements of +self+.
  *  The number of permutations is <tt>self.size**n</tt>.
  *
- *  +n+ = 1:
+ *  Examples:
  *
- *    a = [0, 1, 2]
- *    a.repeated_permutation(1) {|permutation| p permutation }
+ *  - +size+ is 1:
  *
- *  Output:
+ *      p = []
+ *      [0, 1, 2].repeated_permutation(1) {|permutation| p.push(permutation) }
+ *      p # => [[0], [1], [2]]
  *
- *    [0]
- *    [1]
- *    [2]
+ *  - +size+ is 2:
  *
- *  +n+ = 2:
+ *      p = []
+ *      [0, 1, 2].repeated_permutation(2) {|permutation| p.push(permutation) }
+ *      p # => [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
  *
- *    a.repeated_permutation(2) {|permutation| p permutation }
+ *  If +size+ is zero, calls the block once with an empty array.
  *
- *  Output:
+ *  If +size+ is negative, does not call the block:
  *
- *    [0, 0]
- *    [0, 1]
- *    [0, 2]
- *    [1, 0]
- *    [1, 1]
- *    [1, 2]
- *    [2, 0]
- *    [2, 1]
- *    [2, 2]
+ *    [0, 1, 2].repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
  *
- *  If +n+ is zero, calls the block once with an empty +Array+.
+ *  With no block given, returns a new Enumerator.
  *
- *  If +n+ is negative, does not call the block:
- *
- *    a.repeated_permutation(-1) {|permutation| fail 'Cannot happen' }
- *
- *  Returns a new Enumerator if no block given:
- *
- *    a = [0, 1, 2]
- *    a.repeated_permutation(2) # => #<Enumerator: [0, 1, 2]:permutation(2)>
- *
- *  Using Enumerators, it's convenient to show the permutations and counts
- *  for some values of +n+:
- *
- *    e = a.repeated_permutation(0)
- *    e.size # => 1
- *    e.to_a # => [[]]
- *    e = a.repeated_permutation(1)
- *    e.size # => 3
- *    e.to_a # => [[0], [1], [2]]
- *    e = a.repeated_permutation(2)
- *    e.size # => 9
- *    e.to_a # => [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
- *
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 static VALUE
 rb_ary_repeated_permutation(VALUE ary, VALUE num)
