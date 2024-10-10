@@ -22,6 +22,7 @@
   --link-hover-color: #25a28a;  /* A slightly brighter teal-green */
   --border-color: #e0e0e0;
   --sidebar-text-color: #2c3e50;  /* Dark blue-gray for contrast */
+  --source-code-background-color: #e8f0eb;
 
   /* Font family variables */
   --font-primary: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
@@ -595,6 +596,10 @@ main .method-source-code {
   transition-timing-function: ease-in-out;
 }
 
+main .method-source-code pre {
+  background: var(--source-code-background-color);
+}
+
 main .method-source-code.active-menu {
   visibility: visible;
   max-height: 100vh;
@@ -607,12 +612,15 @@ main .method-description .method-calls-super {
 
 main .method-detail {
   margin-bottom: 2.5em;
-  cursor: pointer;
 }
 
 main .method-detail:target {
   margin-left: -10px;
-  border-left: 10px solid #f1edba;
+  border-left: 10px solid var(--source-code-background-color);
+}
+
+main .method-header {
+  display: inline-block;
 }
 
 main .method-heading {
@@ -622,23 +630,12 @@ main .method-heading {
   font-weight: bold;
   color: var(--text-color);
 }
-main .method-heading :link,
-main .method-heading :visited {
-  color: inherit;
-}
-main .method-click-advice {
-  position: absolute;
-  top: 2px;
-  right: 5px;
-  font-size: 12px;
-  color: #9b9877;
-  visibility: hidden;
-  padding-right: 20px;
+
+main .method-controls {
   line-height: 20px;
-  background: url(../images/zoom.png) no-repeat right top;
-}
-main .method-header:hover .method-click-advice {
-  visibility: visible;
+  float: right;
+  color: var(--secondary-color);
+  cursor: pointer;
 }
 
 main .method-alias .method-heading {
@@ -742,6 +739,11 @@ main .attribute-access-type {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
+  }
+
+  main .method-controls {
+    margin-top: 10px;
+    float: none;
   }
 }
 /* @end */
