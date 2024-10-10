@@ -588,7 +588,7 @@ typedef struct gc_function_map {
     void (*gc_disable)(void *objspace_ptr, bool finish_current_gc);
     bool (*gc_enabled_p)(void *objspace_ptr);
     VALUE (*config_get)(void *objpace_ptr);
-    VALUE (*config_set)(void *objspace_ptr, VALUE hash);
+    void (*config_set)(void *objspace_ptr, VALUE hash);
     void (*stress_set)(void *objspace_ptr, VALUE flag);
     VALUE (*stress_get)(void *objspace_ptr);
     // Object allocation
@@ -3432,7 +3432,11 @@ gc_config_get(rb_execution_context_t *ec, VALUE self)
 static VALUE
 gc_config_set(rb_execution_context_t *ec, VALUE self, VALUE hash)
 {
-    return rb_gc_impl_config_set(rb_gc_get_objspace(), hash);
+    void *objspace = rb_gc_get_objspace();
+
+    rb_gc_impl_config_set(objspace, hash);
+
+    return rb_gc_impl_config_get(objspace);
 }
 
 static VALUE

@@ -7718,17 +7718,16 @@ gc_config_set_key(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
-VALUE
+void
 rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    if(!RB_TYPE_P(hash, T_HASH)) {
+    if (!RB_TYPE_P(hash, T_HASH)) {
         rb_raise(rb_eArgError, "expected keyword arguments");
     }
 
     rb_hash_stlike_foreach(hash, gc_config_set_key, (st_data_t)objspace);
-    return rb_gc_impl_config_get(objspace_ptr);
 }
 
 VALUE
