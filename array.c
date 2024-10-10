@@ -2676,14 +2676,12 @@ rb_ary_each_index(VALUE ary)
  *
  *  Allows the array to be modified during iteration:
  *
- *    symbols = []
- *    a = ['a', 'b', 'c']
- *    a.reverse_each do |element|
- *      symbols.push(element.to_sym)
+ *    a = []
+ *    ['a', 'b', 'c'].reverse_each do |element|
+ *      a.push(element)
  *      a.clear if element.start_with?('b')
  *    end
- *    a       # => []
- *    symbols # => [:c, :b]
+ *    a # => ["a"]
  *
  *  When no block given, returns a new Enumerator.
  *
