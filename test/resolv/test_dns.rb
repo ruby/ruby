@@ -68,35 +68,29 @@ class TestResolvDNS < Test::Unit::TestCase
     if port == 0
       # Automatic port; we might need to retry until we find a port which is free on both UDP _and_ TCP.
       retries_remaining = 10
-      t = nil
-      u = nil
+      ts = []
+      us = []
       begin
         begin
-          u = UDPSocket.new
-          u.bind(host, 0)
-          _, udp_port, _, _ = u.addr
-          t = TCPServer.new(host, udp_port)
-          t.listen(1)
+          us << UDPSocket.new
+          us.last.bind(host, 0)
+          _, udp_port, _, _ = us.last.addr
+          ts << TCPServer.new(host, udp_port)
+          ts.last.listen(1)
         rescue Errno::EADDRINUSE, Errno::EACCES
           # ADDRINUSE is what should get thrown if we try and bind a port which is already bound on UNIXen,
           # but windows can sometimes throw EACCESS.
           # See: https://stackoverflow.com/questions/48478869/cannot-bind-to-some-ports-due-to-permission-denied
           retries_remaining -= 1
-          if retries_remaining > 0
-            t&.close
-            t = nil
-            u&.close
-            u = nil
-            retry
-          end
-          omit "Could not find a free port after 10 retries"
+          retry if retries_remaining > 0
+          raise
         end
 
         # If we get to this point, we have a valid t & u socket
-        yield u, t
+        yield us.last, ts.last
       ensure
-        t&.close
-        u&.close
+        ts.each { _1.close }
+        us.each { _1.close }
       end
     else
       # Explicitly specified port, don't retry the bind.
