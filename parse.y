@@ -2907,6 +2907,15 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 /*
  *	parameterizing rules
  */
+%rule backref_with_rhs(value) <node>
+                : backref tOP_ASGN lex_ctxt value
+                    {
+                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
+                        $$ = NEW_ERROR(&@$);
+                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
+                    }
+                ;
+
 %rule f_opt(value) <node_opt_arg>
                 : f_arg_asgn f_eq value
                     {
@@ -3293,12 +3302,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
                         local_pop(p);
                     }
-                | backref tOP_ASGN lex_ctxt command_rhs
-                    {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
-                        $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
-                    }
+                | backref_with_rhs(command_rhs)
                 ;
 
 endless_command : command
@@ -3871,12 +3875,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         $$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
                     /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
                     }
-                | backref tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
-                        $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
-                    }
+                | backref_with_rhs(arg_rhs)
                 | arg tDOT2 arg
                     {
                         value_expr($1);
