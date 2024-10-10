@@ -2702,6 +2702,17 @@ rb_current_realfilepath(void)
     return Qnil;
 }
 
+// Assert that an internal function is running and return
+// the imemo object that represents it.
+struct vm_ifunc *
+rb_current_ifunc(void)
+{
+    // Search VM_FRAME_MAGIC_IFUNC to see ifunc imemos put on the iseq field.
+    VALUE ifunc = (VALUE)GET_EC()->cfp->iseq;
+    RUBY_ASSERT_ALWAYS(imemo_type_p(ifunc, imemo_ifunc));
+    return (struct vm_ifunc *)ifunc;
+}
+
 void
 Init_vm_eval(void)
 {
