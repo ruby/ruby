@@ -17,6 +17,12 @@ divrem_normal(VALUE klass, VALUE x, VALUE y)
     return rb_big_norm(rb_big_divrem_normal(big(x), big(y)));
 }
 
+static VALUE
+divrem_newton_raphson(VALUE klass, VALUE x, VALUE y)
+{
+    return rb_big_norm(rb_big_divrem_newton_raphson(big(x), big(y)));
+}
+
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 static VALUE
 divrem_gmp(VALUE klass, VALUE x, VALUE y)
@@ -31,5 +37,6 @@ void
 Init_div(VALUE klass)
 {
     rb_define_singleton_method(klass, "big_divrem_normal", divrem_normal, 2);
+    rb_define_singleton_method(klass, "big_divrem_newton_raphson", divrem_newton_raphson, 2);
     rb_define_singleton_method(klass, "big_divrem_gmp", divrem_gmp, 2);
 }
