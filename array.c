@@ -2638,6 +2638,7 @@ rb_ary_each(VALUE ary)
  *
  *    a = [:foo, 'bar', 2]
  *    a.each_index {|index| puts index; a.clear if index > 0 }
+ *    a # => []
  *
  *  Output:
  *
@@ -2676,12 +2677,9 @@ rb_ary_each_index(VALUE ary)
  *
  *  Allows the array to be modified during iteration:
  *
- *    a = []
- *    ['a', 'b', 'c'].reverse_each do |element|
- *      a.push(element)
- *      a.clear if element.start_with?('b')
- *    end
- *    a # => ["a"]
+ *    a = ['a', 'b', 'c']
+ *    a.reverse_each {|element| a.clear if element.start_with?('b') }
+ *    a # => []
  *
  *  When no block given, returns a new Enumerator.
  *
