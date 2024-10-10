@@ -1763,7 +1763,7 @@ pub struct IseqPayload {
     // Basic block versions
     pub version_map: VersionMap,
 
-    // Indexes of code pages used by this this ISEQ
+    // Indexes of code pages used by this ISEQ
     pub pages: HashSet<usize>,
 
     // List of ISEQ entry codes

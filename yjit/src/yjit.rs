@@ -8,6 +8,7 @@ use crate::stats::incr_counter;
 use crate::stats::with_compile_time;
 
 use std::os::raw;
+use crate::compilation_log::CompilationLog;
 
 /// Is YJIT on? The interpreter uses this variable to decide whether to trigger
 /// compilation. See jit_exec() and jit_compile().
@@ -167,7 +168,7 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_compilation_log: VALUE, print_compilation_log: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
         // Initialize and enable YJIT
         if gen_stats.test() {
@@ -176,6 +177,19 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
                 OPTIONS.print_stats = print_stats.test();
             }
         }
+
+        if gen_compilation_log.test() {
+            unsafe {
+                if print_compilation_log.test() {
+                    OPTIONS.compilation_log = Some(CompilationLogOutput::Stderr);
+                } else {
+                    OPTIONS.compilation_log = Some(CompilationLogOutput::MemoryOnly);
+                }
+
+                CompilationLog::init();
+            }
+        }
+
         yjit_init();
 
         // Add "+YJIT" to RUBY_DESCRIPTION

@@ -82,6 +82,9 @@ pub struct Options {
 
     /// Enable writing /tmp/perf-{pid}.map for Linux perf
     pub perf_map: Option<PerfMap>,
+
+    // Where to store the compilation log. `None` disables the log
+    pub compilation_log: Option<CompilationLogOutput>,
 }
 
 // Initialize the options to default values
@@ -103,6 +106,7 @@ pub static mut OPTIONS: Options = Options {
     frame_pointer: false,
     code_gc: false,
     perf_map: None,
+    compilation_log: None,
 };
 
 /// YJIT option descriptions for `ruby --help`.
@@ -113,6 +117,7 @@ pub const YJIT_OPTIONS: &'static [(&str, &str)] = &[
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT."),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)."),
     ("--yjit-stats",                       "Enable collecting YJIT statistics."),
+    ("--yjit-compilation-log[=file|dir]",  "Enable logging of YJIT's compilation activity."),
     ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable."),
     ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit."),
     ("--yjit-perf",                        "Enable frame pointers and perf profiling."),
@@ -126,6 +131,16 @@ pub enum TraceExits {
     All,
     // Trace a specific counter
     Counter(Counter),
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum CompilationLogOutput {
+    // Dump to the log file as compilation events occur.
+    File(std::os::unix::io::RawFd),
+    // Keep the log in memory only
+    MemoryOnly,
+    // Dump to stderr when the process exits
+    Stderr
 }
 
 #[derive(Debug)]
@@ -170,6 +185,7 @@ macro_rules! get_option_ref {
     };
 }
 pub(crate) use get_option_ref;
+use crate::compilation_log::CompilationLog;
 
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
@@ -308,6 +324,30 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             },
             _ => {
                 return None;
+            }
+        },
+        ("compilation-log", _) => match opt_val {
+            "" => unsafe {
+                OPTIONS.compilation_log = Some(CompilationLogOutput::Stderr);
+                CompilationLog::init();
+            },
+            arg_value => {
+                let log_file_path = if std::path::Path::new(arg_value).is_dir() {
+                    format!("{arg_value}/yjit_compilation_{}.log", std::process::id())
+                } else {
+                    arg_value.to_string()
+                };
+
+                match File::options().create(true).write(true).truncate(true).open(&log_file_path) {
+                    Ok(file) => {
+                        use std::os::unix::io::IntoRawFd;
+                        eprintln!("YJIT compilation log: {log_file_path}");
+
+                        unsafe { OPTIONS.compilation_log = Some(CompilationLogOutput::File(file.into_raw_fd())) }
+                        CompilationLog::init()
+                    }
+                    Err(err) => panic!("Failed to create {log_file_path}: {err}"),
+                }
             }
         },
         ("trace-exits", _) => unsafe {
