@@ -80,7 +80,8 @@ rb_digest_make_metadata(const rb_digest_metadata_t *meta)
     typedef VALUE (*wrapper_func_type)(const rb_digest_metadata_t *meta);
     static wrapper_func_type wrapper;
     if (!wrapper) {
-        wrapper = (wrapper_func_type)rb_ext_resolve_symbol("digest.so", "rb_digest_wrap_metadata");
+        wrapper = (wrapper_func_type)(uintptr_t)
+            rb_ext_resolve_symbol("digest.so", "rb_digest_wrap_metadata");
         if (!wrapper) rb_raise(rb_eLoadError, "rb_digest_wrap_metadata not found");
     }
     return wrapper(meta);
