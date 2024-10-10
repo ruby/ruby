@@ -655,6 +655,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @ui.output.split("\n")
     )
     assert_empty(@ui.error)
+
+    refute_includes "ruby_executable_hooks", File.read(exe)
   end
 
   def test_execute_multi_platform
