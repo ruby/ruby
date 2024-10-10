@@ -570,7 +570,7 @@ rb_fiddle_ptr_inspect(VALUE self)
 
     TypedData_Get_Struct(self, struct ptr_data, &fiddle_ptr_data_type, data);
     return rb_sprintf("#<%"PRIsVALUE":%p ptr=%p size=%ld free=%p>",
-		      RB_OBJ_CLASSNAME(self), (void *)data, data->ptr, data->size, (void *)data->free);
+		      RB_OBJ_CLASSNAME(self), (void *)data, data->ptr, data->size, (void *)(VALUE)data->free);
 }
 
 /*

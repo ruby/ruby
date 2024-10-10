@@ -371,7 +371,7 @@ function_call(int argc, VALUE argv[], VALUE self)
         args.values[i_call] = (void *)&generic_args[i_call];
     }
     args.values[i_call] = NULL;
-    args.fn = (void(*)(void))NUM2PTR(cfunc);
+    args.fn = (void(*)(void))(VALUE)NUM2PTR(cfunc);
 
     if (RTEST(need_gvl)) {
         ffi_call(args.cif, args.fn, &(args.retval), args.values);
