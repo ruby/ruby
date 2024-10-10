@@ -154,8 +154,8 @@ module Fiddle
     end
 
     def test_io()
-      if RUBY_ENGINE == "jruby"
-        omit("BUILD_RUBY_PLATFORM doesn't exist in JRuby")
+      if ffi_backend?
+        omit("BUILD_RUBY_PLATFORM doesn't exist in FFI backend")
       end
 
       if( RUBY_PLATFORM != BUILD_RUBY_PLATFORM ) || !defined?(LIBC.fprintf)

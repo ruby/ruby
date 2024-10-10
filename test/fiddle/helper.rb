@@ -183,6 +183,10 @@ module Fiddle
       end
     end
 
+    def ffi_backend?
+      RUBY_ENGINE != 'ruby'
+    end
+
     def under_gc_stress
       stress, GC.stress = GC.stress, true
       yield

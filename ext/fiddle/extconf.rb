@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require 'mkmf'
 
-if RUBY_ENGINE == "jruby"
+unless RUBY_ENGINE == "ruby"
   File.write('Makefile', dummy_makefile("").join)
   return
 end

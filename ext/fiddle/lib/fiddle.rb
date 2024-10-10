@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-require "fiddle/#{RUBY_ENGINE}"
+if RUBY_ENGINE == 'ruby'
+  require 'fiddle.so'
+else
+  require 'fiddle/ffi_backend'
+end
 require 'fiddle/closure'
 require 'fiddle/function'
 require 'fiddle/version'

@@ -9,8 +9,8 @@ module Fiddle
     include Fiddle
 
     def test_to_i
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Handle#to_i is unavailable with JRuby")
+      if ffi_backend?
+        omit("Fiddle::Handle#to_i is unavailable with FFI backend")
       end
 
       handle = Fiddle::Handle.new(LIBC_SO)
@@ -18,8 +18,8 @@ module Fiddle
     end
 
     def test_to_ptr
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Handle#to_i is unavailable with JRuby")
+      if ffi_backend?
+        omit("Fiddle::Handle#to_i is unavailable with FFI backend")
       end
 
       handle = Fiddle::Handle.new(LIBC_SO)
@@ -34,8 +34,8 @@ module Fiddle
     end
 
     def test_static_sym
-      if RUBY_ENGINE == "jruby"
-        omit("We can't assume static symbols with JRuby")
+      if ffi_backend?
+        omit("We can't assume static symbols with FFI backend")
       end
 
       begin
@@ -133,8 +133,8 @@ module Fiddle
     end
 
     def test_file_name
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Handle#file_name doesn't exist in JRuby")
+      if ffi_backend?
+        omit("Fiddle::Handle#file_name doesn't exist in FFI backend")
       end
 
       file_name = Handle.new(LIBC_SO).file_name
@@ -155,8 +155,8 @@ module Fiddle
     end
 
     def test_NEXT
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Handle::NEXT doesn't exist in JRuby")
+      if ffi_backend?
+        omit("Fiddle::Handle::NEXT doesn't exist in FFI backend")
       end
 
       begin

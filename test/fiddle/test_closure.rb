@@ -58,9 +58,9 @@ module Fiddle
     end
 
     def test_const_string
-      if RUBY_ENGINE == "jruby"
+      if ffi_backend?
         omit("Closure with :const_string works but " +
-             "Function with :const_string doesn't work with JRuby")
+             "Function with :const_string doesn't work with FFI backend")
       end
 
       closure_class = Class.new(Closure) do
@@ -119,9 +119,14 @@ module Fiddle
       end
 
       require 'objspace'
+      closure_class = Class.new(Closure) do
+        def call
+          10
+        end
+      end
       n = 10000
       n.times do
-        Closure.create(:int, [:void]) do |closure|
+        closure_class.create(:int, [:void]) do |closure|
           ObjectSpace.memsize_of(closure)
         end
       end

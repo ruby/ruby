@@ -11,8 +11,8 @@ module Fiddle
     end
 
     def test_can_read_write_memory
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Pointer.{read,write} don't exist in JRuby")
+      if ffi_backend?
+        omit("Fiddle::Pointer.{read,write} don't exist in FFI backend")
       end
 
       # Allocate some memory
@@ -113,8 +113,8 @@ module Fiddle
     end
 
     def test_inspect
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Pointer#inspect is incompatible on JRuby")
+      if ffi_backend?
+        omit("Fiddle::Pointer#inspect is incompatible with FFI backend")
       end
 
       ptr = Pointer.new(0)
@@ -132,8 +132,8 @@ module Fiddle
     end
 
     def test_to_ptr_io
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle::Pointer.to_ptr(IO) isn't supported with JRuby")
+      if ffi_backend?
+        omit("Fiddle::Pointer.to_ptr(IO) isn't supported with FFI backend")
       end
 
       Pointer.malloc(10, Fiddle::RUBY_FREE) do |buf|
@@ -183,8 +183,8 @@ module Fiddle
     end
 
     def test_ref_ptr
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle.dlwrap([]) isn't supported with JRuby")
+      if ffi_backend?
+        omit("Fiddle.dlwrap([]) isn't supported with FFI backend")
       end
 
       ary = [0,1,2,4,5]
@@ -195,8 +195,8 @@ module Fiddle
     end
 
     def test_to_value
-      if RUBY_ENGINE == "jruby"
-        omit("Fiddle.dlwrap([]) isn't supported with JRuby")
+      if ffi_backend?
+        omit("Fiddle.dlwrap([]) isn't supported with FFI backend")
       end
 
       ary = [0,1,2,4,5]

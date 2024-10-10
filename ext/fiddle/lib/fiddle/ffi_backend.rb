@@ -1,4 +1,4 @@
-# This is part of JRuby's FFI-based fiddle implementation.
+# This is based on JRuby's FFI-based fiddle implementation.
 
 require 'ffi'
 
@@ -74,7 +74,7 @@ module Fiddle
 
   WINDOWS = FFI::Platform.windows?
 
-  module JRuby
+  module FFIBackend
     FFITypes = {
         'c' => FFI::Type::INT8,
         'h' => FFI::Type::INT16,
@@ -104,16 +104,16 @@ module Fiddle
         Types::VARIADIC => FFI::Type::Builtin::VARARGS,
     }
 
-    def self.__ffi_type__(dl_type)
-      if dl_type.is_a?(Symbol)
-        dl_type = Types.const_get(dl_type.to_s.upcase)
+    def self.to_ffi_type(fiddle_type)
+      if fiddle_type.is_a?(Symbol)
+        fiddle_type = Types.const_get(fiddle_type.to_s.upcase)
       end
-      if !dl_type.is_a?(Integer) && dl_type.respond_to?(:to_int)
-        dl_type = dl_type.to_int
+      if !fiddle_type.is_a?(Integer) && fiddle_type.respond_to?(:to_int)
+        fiddle_type = fiddle_type.to_int
       end
-      ffi_type = FFITypes[dl_type]
-      ffi_type = FFITypes[-dl_type] if ffi_type.nil? && dl_type.is_a?(Integer) && dl_type < 0
-      raise TypeError.new("cannot convert #{dl_type} to ffi") unless ffi_type
+      ffi_type = FFITypes[fiddle_type]
+      ffi_type = FFITypes[-fiddle_type] if ffi_type.nil? && fiddle_type.is_a?(Integer) && fiddle_type < 0
+      raise TypeError.new("cannot convert #{fiddle_type} to ffi") unless ffi_type
       ffi_type
     end
   end
@@ -133,8 +133,8 @@ module Fiddle
       @ptr, @args, @return_type, @abi = ptr, args, return_type, abi
       raise TypeError.new "invalid argument types" unless args.is_a?(Array)
 
-      ffi_return_type = Fiddle::JRuby::__ffi_type__(@return_type)
-      ffi_args = @args.map { |t| Fiddle::JRuby.__ffi_type__(t) }
+      ffi_return_type = Fiddle::FFIBackend.to_ffi_type(@return_type)
+      ffi_args = @args.map { |t| Fiddle::FFIBackend.to_ffi_type(t) }
       pointer = FFI::Pointer.new(ptr.to_i)
       options = {convention: @abi}
       if ffi_args.last == FFI::Type::Builtin::VARARGS
@@ -149,14 +149,25 @@ module Fiddle
       end
     end
 
-    def call(*args, &block);
+    def call(*args, &block)
       if @function.is_a?(FFI::VariadicInvoker)
         n_fixed_args = @args.size - 1
         n_fixed_args.step(args.size - 1, 2) do |i|
           if args[i] == :const_string || args[i] == Types::CONST_STRING
             args[i + 1] = String.try_convert(args[i + 1]) || args[i + 1]
           end
-          args[i] = Fiddle::JRuby.__ffi_type__(args[i])
+          args[i] = Fiddle::FFIBackend.to_ffi_type(args[i])
+        end
+      else
+        args.map! do |arg|
+          if arg.respond_to?(:to_ptr)
+            begin
+              arg = arg.to_ptr
+            end until arg.is_a?(FFI::Pointer) || !arg.respond_to?(:to_ptr)
+            arg
+          else
+            arg
+          end
         end
       end
       result = @function.call(*args, &block)
@@ -170,17 +181,19 @@ module Fiddle
       raise TypeError.new "invalid argument types" unless args.is_a?(Array)
 
       @ctype, @args = ret, args
-      ffi_args = @args.map { |t| Fiddle::JRuby.__ffi_type__(t) }
+      ffi_args = @args.map { |t| Fiddle::FFIBackend.to_ffi_type(t) }
       if ffi_args.size == 1 && ffi_args[0] == FFI::Type::Builtin::VOID
         ffi_args = []
       end
-      @function = FFI::Function.new(
-        Fiddle::JRuby.__ffi_type__(@ctype),
-        ffi_args,
-        self,
-        :convention => abi
-      )
+      return_type = Fiddle::FFIBackend.to_ffi_type(@ctype)
+      raise "#{self.class} must implement #call" unless respond_to?(:call)
+      callable = method(:call)
+      @function = FFI::Function.new(return_type, ffi_args, callable, convention: abi)
       @freed = false
+    end
+
+    def to_ptr
+      @function
     end
 
     def to_i
@@ -550,51 +563,51 @@ module Fiddle
   RUBY_FREE = Fiddle::Pointer::LibC::FREE.address
   NULL = Fiddle::Pointer.new(0)
 
-  ALIGN_VOIDP       = Fiddle::JRuby::FFITypes[Types::VOIDP].alignment
-  ALIGN_CHAR        = Fiddle::JRuby::FFITypes[Types::CHAR].alignment
-  ALIGN_SHORT       = Fiddle::JRuby::FFITypes[Types::SHORT].alignment
-  ALIGN_INT         = Fiddle::JRuby::FFITypes[Types::INT].alignment
-  ALIGN_LONG        = Fiddle::JRuby::FFITypes[Types::LONG].alignment
-  ALIGN_LONG_LONG   = Fiddle::JRuby::FFITypes[Types::LONG_LONG].alignment
-  ALIGN_INT8_T      = Fiddle::JRuby::FFITypes[Types::INT8_T].alignment
-  ALIGN_INT16_T     = Fiddle::JRuby::FFITypes[Types::INT16_T].alignment
-  ALIGN_INT32_T     = Fiddle::JRuby::FFITypes[Types::INT32_T].alignment
-  ALIGN_INT64_T     = Fiddle::JRuby::FFITypes[Types::INT64_T].alignment
-  ALIGN_FLOAT       = Fiddle::JRuby::FFITypes[Types::FLOAT].alignment
-  ALIGN_DOUBLE      = Fiddle::JRuby::FFITypes[Types::DOUBLE].alignment
-  ALIGN_BOOL        = Fiddle::JRuby::FFITypes[Types::BOOL].alignment
-  ALIGN_SIZE_T      = Fiddle::JRuby::FFITypes[Types::SIZE_T].alignment
+  ALIGN_VOIDP       = Fiddle::FFIBackend::FFITypes[Types::VOIDP].alignment
+  ALIGN_CHAR        = Fiddle::FFIBackend::FFITypes[Types::CHAR].alignment
+  ALIGN_SHORT       = Fiddle::FFIBackend::FFITypes[Types::SHORT].alignment
+  ALIGN_INT         = Fiddle::FFIBackend::FFITypes[Types::INT].alignment
+  ALIGN_LONG        = Fiddle::FFIBackend::FFITypes[Types::LONG].alignment
+  ALIGN_LONG_LONG   = Fiddle::FFIBackend::FFITypes[Types::LONG_LONG].alignment
+  ALIGN_INT8_T      = Fiddle::FFIBackend::FFITypes[Types::INT8_T].alignment
+  ALIGN_INT16_T     = Fiddle::FFIBackend::FFITypes[Types::INT16_T].alignment
+  ALIGN_INT32_T     = Fiddle::FFIBackend::FFITypes[Types::INT32_T].alignment
+  ALIGN_INT64_T     = Fiddle::FFIBackend::FFITypes[Types::INT64_T].alignment
+  ALIGN_FLOAT       = Fiddle::FFIBackend::FFITypes[Types::FLOAT].alignment
+  ALIGN_DOUBLE      = Fiddle::FFIBackend::FFITypes[Types::DOUBLE].alignment
+  ALIGN_BOOL        = Fiddle::FFIBackend::FFITypes[Types::BOOL].alignment
+  ALIGN_SIZE_T      = Fiddle::FFIBackend::FFITypes[Types::SIZE_T].alignment
   ALIGN_SSIZE_T     = ALIGN_SIZE_T
-  ALIGN_PTRDIFF_T   = Fiddle::JRuby::FFITypes[Types::PTRDIFF_T].alignment
-  ALIGN_INTPTR_T    = Fiddle::JRuby::FFITypes[Types::INTPTR_T].alignment
-  ALIGN_UINTPTR_T   = Fiddle::JRuby::FFITypes[Types::UINTPTR_T].alignment
+  ALIGN_PTRDIFF_T   = Fiddle::FFIBackend::FFITypes[Types::PTRDIFF_T].alignment
+  ALIGN_INTPTR_T    = Fiddle::FFIBackend::FFITypes[Types::INTPTR_T].alignment
+  ALIGN_UINTPTR_T   = Fiddle::FFIBackend::FFITypes[Types::UINTPTR_T].alignment
 
-  SIZEOF_VOIDP       = Fiddle::JRuby::FFITypes[Types::VOIDP].size
-  SIZEOF_CHAR        = Fiddle::JRuby::FFITypes[Types::CHAR].size
-  SIZEOF_UCHAR       = Fiddle::JRuby::FFITypes[Types::UCHAR].size
-  SIZEOF_SHORT       = Fiddle::JRuby::FFITypes[Types::SHORT].size
-  SIZEOF_USHORT      = Fiddle::JRuby::FFITypes[Types::USHORT].size
-  SIZEOF_INT         = Fiddle::JRuby::FFITypes[Types::INT].size
-  SIZEOF_UINT        = Fiddle::JRuby::FFITypes[Types::UINT].size
-  SIZEOF_LONG        = Fiddle::JRuby::FFITypes[Types::LONG].size
-  SIZEOF_ULONG       = Fiddle::JRuby::FFITypes[Types::ULONG].size
-  SIZEOF_LONG_LONG   = Fiddle::JRuby::FFITypes[Types::LONG_LONG].size
-  SIZEOF_ULONG_LONG  = Fiddle::JRuby::FFITypes[Types::ULONG_LONG].size
-  SIZEOF_INT8_T      = Fiddle::JRuby::FFITypes[Types::INT8_T].size
-  SIZEOF_UINT8_T     = Fiddle::JRuby::FFITypes[Types::UINT8_T].size
-  SIZEOF_INT16_T     = Fiddle::JRuby::FFITypes[Types::INT16_T].size
-  SIZEOF_UINT16_T    = Fiddle::JRuby::FFITypes[Types::UINT16_T].size
-  SIZEOF_INT32_T     = Fiddle::JRuby::FFITypes[Types::INT32_T].size
-  SIZEOF_UINT32_T    = Fiddle::JRuby::FFITypes[Types::UINT32_T].size
-  SIZEOF_INT64_T     = Fiddle::JRuby::FFITypes[Types::INT64_T].size
-  SIZEOF_UINT64_T    = Fiddle::JRuby::FFITypes[Types::UINT64_T].size
-  SIZEOF_FLOAT       = Fiddle::JRuby::FFITypes[Types::FLOAT].size
-  SIZEOF_DOUBLE      = Fiddle::JRuby::FFITypes[Types::DOUBLE].size
-  SIZEOF_BOOL        = Fiddle::JRuby::FFITypes[Types::BOOL].size
-  SIZEOF_SIZE_T      = Fiddle::JRuby::FFITypes[Types::SIZE_T].size
+  SIZEOF_VOIDP       = Fiddle::FFIBackend::FFITypes[Types::VOIDP].size
+  SIZEOF_CHAR        = Fiddle::FFIBackend::FFITypes[Types::CHAR].size
+  SIZEOF_UCHAR       = Fiddle::FFIBackend::FFITypes[Types::UCHAR].size
+  SIZEOF_SHORT       = Fiddle::FFIBackend::FFITypes[Types::SHORT].size
+  SIZEOF_USHORT      = Fiddle::FFIBackend::FFITypes[Types::USHORT].size
+  SIZEOF_INT         = Fiddle::FFIBackend::FFITypes[Types::INT].size
+  SIZEOF_UINT        = Fiddle::FFIBackend::FFITypes[Types::UINT].size
+  SIZEOF_LONG        = Fiddle::FFIBackend::FFITypes[Types::LONG].size
+  SIZEOF_ULONG       = Fiddle::FFIBackend::FFITypes[Types::ULONG].size
+  SIZEOF_LONG_LONG   = Fiddle::FFIBackend::FFITypes[Types::LONG_LONG].size
+  SIZEOF_ULONG_LONG  = Fiddle::FFIBackend::FFITypes[Types::ULONG_LONG].size
+  SIZEOF_INT8_T      = Fiddle::FFIBackend::FFITypes[Types::INT8_T].size
+  SIZEOF_UINT8_T     = Fiddle::FFIBackend::FFITypes[Types::UINT8_T].size
+  SIZEOF_INT16_T     = Fiddle::FFIBackend::FFITypes[Types::INT16_T].size
+  SIZEOF_UINT16_T    = Fiddle::FFIBackend::FFITypes[Types::UINT16_T].size
+  SIZEOF_INT32_T     = Fiddle::FFIBackend::FFITypes[Types::INT32_T].size
+  SIZEOF_UINT32_T    = Fiddle::FFIBackend::FFITypes[Types::UINT32_T].size
+  SIZEOF_INT64_T     = Fiddle::FFIBackend::FFITypes[Types::INT64_T].size
+  SIZEOF_UINT64_T    = Fiddle::FFIBackend::FFITypes[Types::UINT64_T].size
+  SIZEOF_FLOAT       = Fiddle::FFIBackend::FFITypes[Types::FLOAT].size
+  SIZEOF_DOUBLE      = Fiddle::FFIBackend::FFITypes[Types::DOUBLE].size
+  SIZEOF_BOOL        = Fiddle::FFIBackend::FFITypes[Types::BOOL].size
+  SIZEOF_SIZE_T      = Fiddle::FFIBackend::FFITypes[Types::SIZE_T].size
   SIZEOF_SSIZE_T     = SIZEOF_SIZE_T
-  SIZEOF_PTRDIFF_T   = Fiddle::JRuby::FFITypes[Types::PTRDIFF_T].size
-  SIZEOF_INTPTR_T    = Fiddle::JRuby::FFITypes[Types::INTPTR_T].size
-  SIZEOF_UINTPTR_T   = Fiddle::JRuby::FFITypes[Types::UINTPTR_T].size
-  SIZEOF_CONST_STRING = Fiddle::JRuby::FFITypes[Types::VOIDP].size
+  SIZEOF_PTRDIFF_T   = Fiddle::FFIBackend::FFITypes[Types::PTRDIFF_T].size
+  SIZEOF_INTPTR_T    = Fiddle::FFIBackend::FFITypes[Types::INTPTR_T].size
+  SIZEOF_UINTPTR_T   = Fiddle::FFIBackend::FFITypes[Types::UINTPTR_T].size
+  SIZEOF_CONST_STRING = Fiddle::FFIBackend::FFITypes[Types::VOIDP].size
 end
