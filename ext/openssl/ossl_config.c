@@ -305,18 +305,16 @@ static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE, VALUE)
  *
  * Gets the parsable form of the current configuration.
  *
- * Given the following configuration being created:
+ * Given the following configurating file being loaded:
  *
- *   config = OpenSSL::Config.new
- *     #=> #<OpenSSL::Config sections=[]>
- *   config['default'] = {"foo"=>"bar","baz"=>"buz"}
- *     #=> {"foo"=>"bar", "baz"=>"buz"}
+ *   config = OpenSSL::Config.load('baz.cnf')
+ *     #=> #<OpenSSL::Config sections=["default"]>
  *   puts config.to_s
  *     #=> [ default ]
  *     #   foo=bar
  *     #   baz=buz
  *
- * You can parse get the serialized configuration using #to_s and then parse
+ * You can get the serialized configuration using #to_s and then parse
  * it later:
  *
  *   serialized_config = config.to_s
