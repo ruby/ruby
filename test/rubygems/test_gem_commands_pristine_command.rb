@@ -630,8 +630,16 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
   def test_execute_default_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
-                                        nil, "default/gem.rb")
-    install_default_gems(default_gem_spec)
+                                        nil, "exe/executable")
+    default_gem_spec.executables = "executable"
+    install_default_gems default_gem_spec
+
+    exe = File.join @gemhome, "bin", "executable"
+
+    assert_path_exist exe, "default gem's executable not installed"
+
+    content_with_replaced_shebang = File.read(exe).gsub(/^#![^\n]+ruby/, "#!/usr/bin/env ruby_executable_hooks")
+    File.write(exe, content_with_replaced_shebang)
 
     @cmd.options[:args] = %w[default]
 
@@ -642,8 +650,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_equal(
       [
         "Restoring gems to pristine condition...",
-        "Cached gem for default-2.0.0.0 not found, attempting to fetch...",
-        "Skipped default-2.0.0.0, it was not found from cache and remote sources",
+        "Restored default-2.0.0.0",
       ],
       @ui.output.split("\n")
     )
