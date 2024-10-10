@@ -759,9 +759,11 @@ static rb_method_entry_t *
 rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_definition_t *def, bool complement)
 {
     if (def) method_definition_addref(def, complement);
-    VM_ASSERT(!defined_class ||
-              NIL_P(defined_class) || // negative cache
-              RB_TYPE_P(defined_class, T_CLASS) || RB_TYPE_P(defined_class, T_ICLASS));
+    if (RTEST(defined_class)) {
+        // not negative cache
+        VM_ASSERT(RB_TYPE_P(defined_class, T_CLASS) || RB_TYPE_P(defined_class, T_ICLASS),
+                  "defined_class: %s", rb_obj_info(defined_class));
+    }
     rb_method_entry_t *me = IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
     *((rb_method_definition_t **)&me->def) = def;
     me->called_id = called_id;
@@ -1082,8 +1084,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     return me;
 }
-
-static rb_method_entry_t *rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_definition_t *def, bool refined);
 
 static st_table *
 overloaded_cme_table(void)
