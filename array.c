@@ -3240,51 +3240,35 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.rotate -> new_array
- *    array.rotate(count) -> new_array
+ *    rotate(count = 1) -> new_array
  *
- *  Returns a new +Array+ formed from +self+ with elements
+ *  Returns a new array formed from +self+ with elements
  *  rotated from one end to the other.
  *
- *  When no argument given, returns a new +Array+ that is like +self+,
- *  except that the first element has been rotated to the last position:
+ *  With non-negative numeric +count+,
+ *  rotates elements from the beginning to the end:
  *
- *    a = [:foo, 'bar', 2, 'bar']
- *    a1 = a.rotate
- *    a1 # => ["bar", 2, "bar", :foo]
- *
- *  When given a non-negative Integer +count+,
- *  returns a new +Array+ with +count+ elements rotated from the beginning to the end:
- *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.rotate(2)
- *    a1 # => [2, :foo, "bar"]
+ *    [0, 1, 2, 3].rotate(2)   # => [2, 3, 0, 1]
+ *    [0, 1, 2, 3].rotate(2.1) # => [2, 3, 0, 1]
  *
  *  If +count+ is large, uses <tt>count % array.size</tt> as the count:
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.rotate(20)
- *    a1 # => [2, :foo, "bar"]
+ *    [0, 1, 2, 3].rotate(22) # => [2, 3, 0, 1]
  *
- *  If +count+ is zero, returns a copy of +self+, unmodified:
+ *  With a +count+ of zero, rotates no elements:
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.rotate(0)
- *    a1 # => [:foo, "bar", 2]
+ *    [0, 1, 2, 3].rotate(0) # => [0, 1, 2, 3]
  *
- *  When given a negative Integer +count+, rotates in the opposite direction,
- *  from end to beginning:
+ *  With negative numeric +count+, rotates in the opposite direction,
+ *  from the end to the beginning:
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.rotate(-2)
- *    a1 # => ["bar", 2, :foo]
+ *    [0, 1, 2, 3].rotate(-1) # => [3, 0, 1, 2]
  *
  *  If +count+ is small (far from zero), uses <tt>count % array.size</tt> as the count:
  *
- *    a = [:foo, 'bar', 2]
- *    a1 = a.rotate(-5)
- *    a1 # => ["bar", 2, :foo]
+ *    [0, 1, 2, 3].rotate(-21) # => [3, 0, 1, 2]
  *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
