@@ -633,4 +633,54 @@ class TestIOBuffer < Test::Unit::TestCase
       end
     end
   end
+
+  def test_copy_overlapped_fwd
+    buf = IO::Buffer.for('0123456789').dup
+    buf.copy(buf, 3, 7)
+    assert_equal '0120123456', buf.get_string
+  end
+
+  def test_copy_overlapped_bwd
+    buf = IO::Buffer.for('0123456789').dup
+    buf.copy(buf, 0, 7, 3)
+    assert_equal '3456789789', buf.get_string
+  end
+
+  def test_copy_null_destination
+    buf = IO::Buffer.new(0)
+    assert_predicate buf, :null?
+    buf.copy(IO::Buffer.for('a'), 0, 0)
+    assert_predicate buf, :empty?
+  end
+
+  def test_copy_null_source
+    buf = IO::Buffer.for('a').dup
+    src = IO::Buffer.new(0)
+    assert_predicate src, :null?
+    buf.copy(src, 0, 0)
+    assert_equal 'a', buf.get_string
+  end
+
+  def test_set_string_overlapped_fwd
+    str = +'0123456789'
+    IO::Buffer.for(str) do |buf|
+      buf.set_string(str, 3, 7)
+    end
+    assert_equal '0120123456', str
+  end
+
+  def test_set_string_overlapped_bwd
+    str = +'0123456789'
+    IO::Buffer.for(str) do |buf|
+      buf.set_string(str, 0, 7, 3)
+    end
+    assert_equal '3456789789', str
+  end
+
+  def test_set_string_null_destination
+    buf = IO::Buffer.new(0)
+    assert_predicate buf, :null?
+    buf.set_string('a', 0, 0)
+    assert_predicate buf, :empty?
+  end
 end
