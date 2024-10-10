@@ -280,7 +280,7 @@ class Time
     #
     # This method **does not** function as a validator.  If the input
     # string does not match valid formats strictly, you may get a
-    # cryptic result.  Should consider to use `Time.strptime` instead
+    # cryptic result.  Should consider to use Time.strptime instead
     # of this method as possible.
     #
     #     require 'time'
@@ -391,7 +391,7 @@ class Time
     # heuristic to detect the format of the input string, you provide
     # a second argument that describes the format of the string.
     #
-    # Raises `ArgumentError` if the date or format is invalid.
+    # Raises ArgumentError if the date or format is invalid.
     #
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
