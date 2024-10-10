@@ -7223,7 +7223,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  If a positive integer argument +size+ is given,
  *  calls the block with each +size+-tuple repeated permutation of the elements of +self+.
- *  The number of permutations is <tt>self.size**n</tt>.
+ *  The number of permutations is <tt>self.size**size</tt>.
  *
  *  Examples:
  *
