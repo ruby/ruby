@@ -608,6 +608,37 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struc
     return status;
 }
 
+int
+rsock_connect2(VALUE self, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
+{
+    int descriptor = rb_io_descriptor(self);
+    rb_blocking_function_t *func = connect_blocking;
+    struct connect_arg arg = {.fd = descriptor, .sockaddr = sockaddr, .len = len};
+
+    rb_io_t *fptr;
+    RB_IO_POINTER(self, fptr);
+
+#if defined(SOCKS) && !defined(SOCKS5)
+    if (socks) func = socks_connect_blocking;
+#endif
+    int status = (int)rb_io_blocking_region(fptr, func, &arg);
+
+    if (status < 0) {
+        switch (errno) {
+          case EINTR:
+#ifdef ERESTART
+          case ERESTART:
+#endif
+          case EAGAIN:
+#ifdef EINPROGRESS
+          case EINPROGRESS:
+#endif
+            return wait_connectable(descriptor, timeout);
+        }
+    }
+    return status;
+}
+
 void
 rsock_make_fd_nonblock(int fd)
 {
