@@ -2998,7 +2998,8 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *    each_with_index(*args) {|element, i| ..... } -> self
  *    each_with_index(*args)                       -> enumerator
  *
- *  With a block given, calls the block with each element and its index;
+ *  Invoke <tt>self.each</tt> with <tt>*args</tt>.
+ *  With a block given, the block receives each element and its index;
  *  returns +self+:
  *
  *    h = {}
