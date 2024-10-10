@@ -3186,48 +3186,34 @@ rb_ary_rotate(VALUE ary, long cnt)
 
 /*
  *  call-seq:
- *    array.rotate! -> self
- *    array.rotate!(count) -> self
+ *    rotate!(count = 1) -> self
  *
  *  Rotates +self+ in place by moving elements from one end to the other; returns +self+.
  *
- *  When no argument given, rotates the first element to the last position:
- *
- *    a = [:foo, 'bar', 2, 'bar']
- *    a.rotate! # => ["bar", 2, "bar", :foo]
- *
- *  When given a non-negative Integer +count+,
+ *  With non-negative numeric +count+,
  *  rotates +count+ elements from the beginning to the end:
  *
- *    a = [:foo, 'bar', 2]
- *    a.rotate!(2)
- *    a # => [2, :foo, "bar"]
+ *    [0, 1, 2, 3].rotate!(2)   # => [2, 3, 0, 1]
+      [0, 1, 2, 3].rotate!(2.1) # => [2, 3, 0, 1]
  *
  *  If +count+ is large, uses <tt>count % array.size</tt> as the count:
  *
- *    a = [:foo, 'bar', 2]
- *    a.rotate!(20)
- *    a # => [2, :foo, "bar"]
+ *    [0, 1, 2, 3].rotate!(20) # => [0, 1, 2, 3]
  *
- *  If +count+ is zero, returns +self+ unmodified:
+ *  If +count+ is zero, rotates no elements:
  *
- *    a = [:foo, 'bar', 2]
- *    a.rotate!(0)
- *    a # => [:foo, "bar", 2]
+ *    [0, 1, 2, 3].rotate!(0) # => [0, 1, 2, 3]
  *
- *  When given a negative Integer +count+, rotates in the opposite direction,
+ *  With a negative numeric +count+, rotates in the opposite direction,
  *  from end to beginning:
  *
- *    a = [:foo, 'bar', 2]
- *    a.rotate!(-2)
- *    a # => ["bar", 2, :foo]
+ *    [0, 1, 2, 3].rotate!(-1) # => [3, 0, 1, 2]
  *
  *  If +count+ is small (far from zero), uses <tt>count % array.size</tt> as the count:
  *
- *    a = [:foo, 'bar', 2]
- *    a.rotate!(-5)
- *    a # => ["bar", 2, :foo]
+ *    [0, 1, 2, 3].rotate!(-21) # => [3, 0, 1, 2]
  *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
