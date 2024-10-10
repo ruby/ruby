@@ -259,6 +259,8 @@ module Prism
 
       refute_warning("def foo; bar = 1; tap { bar }; end")
       refute_warning("def foo; bar = 1; tap { baz = bar; baz }; end")
+
+      refute_warning("def foo; bar = 1; end", line: -2, compare: false)
     end
 
     def test_void_statements
