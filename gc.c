@@ -659,7 +659,7 @@ ruby_external_gc_init(void)
     char *gc_so_path = NULL;
     void *handle = NULL;
     if (gc_so_file) {
-        /* Check to make sure that gc_so_file matches /[\w-_.]+/ so that it does
+        /* Check to make sure that gc_so_file matches /[\w-_]+/ so that it does
          * not load a shared object outside of the directory. */
         for (size_t i = 0; i < strlen(gc_so_file); i++) {
             char c = gc_so_file[i];
@@ -667,17 +667,27 @@ ruby_external_gc_init(void)
             switch (c) {
               case '-':
               case '_':
-              case '.':
                 break;
               default:
-                fprintf(stderr, "Only alphanumeric, dash, underscore, and period is allowed in "RUBY_GC_LIBRARY"\n");
+                fprintf(stderr, "Only alphanumeric, dash, and underscore is allowed in "RUBY_GC_LIBRARY"\n");
                 exit(1);
             }
         }
 
-        gc_so_path = alloca(strlen(SHARED_GC_DIR) + strlen(gc_so_file) + 1);
-        strcpy(gc_so_path, SHARED_GC_DIR);
-        strcpy(gc_so_path + strlen(SHARED_GC_DIR), gc_so_file);
+        size_t gc_so_path_size = strlen(SHARED_GC_DIR "librubygc." SOEXT) + strlen(gc_so_file) + 1;
+        gc_so_path = alloca(gc_so_path_size);
+        {
+            size_t gc_so_path_idx = 0;
+#define GC_SO_PATH_APPEND(str) do { \
+    gc_so_path_idx += strlcpy(gc_so_path + gc_so_path_idx, str, gc_so_path_size - gc_so_path_idx); \
+} while (0)
+            GC_SO_PATH_APPEND(SHARED_GC_DIR);
+            GC_SO_PATH_APPEND("librubygc.");
+            GC_SO_PATH_APPEND(gc_so_file);
+            GC_SO_PATH_APPEND(SOEXT);
+            GC_ASSERT(gc_so_path_idx == gc_so_path_size - 1);
+#undef GC_SO_PATH_APPEND
+        }
 
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {

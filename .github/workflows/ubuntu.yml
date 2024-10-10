@@ -99,7 +99,7 @@ jobs:
 
       - name: Build shared GC
         run: |
-          echo "RUBY_GC_LIBRARY=librubygc.default.so" >> $GITHUB_ENV
+          echo "RUBY_GC_LIBRARY=default" >> $GITHUB_ENV
           make shared-gc SHARED_GC=default
         if: ${{ matrix.shared_gc }}
 
