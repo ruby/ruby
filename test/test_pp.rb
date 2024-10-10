@@ -199,12 +199,14 @@ class PPSingleLineTest < Test::Unit::TestCase
 
   def test_hash_symbol_colon_key
     omit if RUBY_VERSION < "3.4."
-    no_quote = "{a: 1, a!: 1, a?: 1, \u{3042}: 1}"
+    no_quote = "{a: 1, a!: 1, a?: 1}"
+    unicode_quote = "{\u{3042}: 1}"
     quote0 = '{"": 1}'
     quote1 = '{"0": 1, "!": 1, "%": 1, "&": 1, "*": 1, "+": 1, "-": 1, "/": 1, "<": 1, ">": 1, "^": 1, "`": 1, "|": 1, "~": 1}'
     quote2 = '{"@a": 1, "$a": 1, "+@": 1, "a=": 1, "[]": 1}'
     quote3 = '{"a\"b": 1, "@@a": 1, "<=>": 1, "===": 1, "[]=": 1}'
     assert_equal(no_quote, PP.singleline_pp(eval(no_quote), ''.dup))
+    assert_equal({ "\u3042": 1 }.inspect, PP.singleline_pp(eval(unicode_quote), ''.dup))
     assert_equal(quote0, PP.singleline_pp(eval(quote0), ''.dup))
     assert_equal(quote1, PP.singleline_pp(eval(quote1), ''.dup))
     assert_equal(quote2, PP.singleline_pp(eval(quote2), ''.dup))
