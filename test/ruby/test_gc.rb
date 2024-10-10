@@ -53,22 +53,16 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_full_mark_by_default
-    omit "unsupported platform/GC" unless defined?(GC.config)
-
     config = GC.config
     assert_not_empty(config)
     assert_true(config[:rgengc_allow_full_mark])
   end
 
   def test_gc_config_invalid_args
-    omit "unsupported platform/GC" unless defined?(GC.config)
-
     assert_raise(ArgumentError) { GC.config(0) }
   end
 
   def test_gc_config_setting_returns_updated_config_hash
-    omit "unsupported platform/GC" unless defined?(GC.config)
-
     old_value = GC.config[:rgengc_allow_full_mark]
     assert_true(old_value)
 
@@ -82,8 +76,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_setting_returns_nil_for_missing_keys
-    omit "unsupported platform/GC" unless defined?(GC.config)
-
     missing_value = GC.config(no_such_key: true)[:no_such_key]
     assert_nil(missing_value)
   ensure
@@ -92,8 +84,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_disable_major
-    omit "unsupported platform/GC" unless defined?(GC.config)
-
     GC.enable
     GC.start
 
@@ -116,8 +106,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_disable_major_gc_start_always_works
-    omit "unsupported platform/GC" unless defined?(GC.config)
-
     GC.config(full_mark: false)
 
     major_count = GC.stat[:major_gc_count]
