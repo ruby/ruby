@@ -2633,6 +2633,7 @@ rb_ary_each(VALUE ary)
  *
  *    a = [:foo, 'bar', 2]
  *    a.each_index {|index| puts index; a.clear if index > 0 }
+ *    a # => []
  *
  *  Output:
  *
@@ -2658,47 +2659,26 @@ rb_ary_each_index(VALUE ary)
 
 /*
  *  call-seq:
- *    array.reverse_each {|element| ... } -> self
- *    array.reverse_each -> Enumerator
+ *    reverse_each {|element| ... } -> self
+ *    reverse_each -> Enumerator
  *
- *  Iterates backwards over array elements.
- *
- *  When a block given, passes, in reverse order, each element to the block;
+ *  When a block given, iterates backwards over the elements of +self+,
+ *  passing, in reverse order, each element to the block;
  *  returns +self+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.reverse_each {|element|  puts "#{element.class} #{element}" }
- *
- *  Output:
- *
- *    Integer 2
- *    String bar
- *    Symbol foo
+ *    a = []
+ *    [0, 1, 2].reverse_each {|element| a.push(element) }
+ *    a # => [2, 1, 0]
  *
  *  Allows the array to be modified during iteration:
  *
- *    a = [:foo, 'bar', 2]
- *    a.reverse_each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+ *    a = ['a', 'b', 'c']
+ *    a.reverse_each {|element| a.clear if element.start_with?('b') }
+ *    a # => []
  *
- *  Output:
+ *  When no block given, returns a new Enumerator.
  *
- *    2
- *    bar
- *
- *  When no block given, returns a new Enumerator:
- *
- *    a = [:foo, 'bar', 2]
- *    e = a.reverse_each
- *    e # => #<Enumerator: [:foo, "bar", 2]:reverse_each>
- *    a1 = e.each {|element|  puts "#{element.class} #{element}" }
- *
- *  Output:
- *
- *    Integer 2
- *    String bar
- *    Symbol foo
- *
- *  Related: #each, #each_index.
+ *  Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
  */
 
 static VALUE
