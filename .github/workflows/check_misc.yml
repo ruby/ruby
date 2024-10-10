@@ -119,6 +119,7 @@ jobs:
         # Generate only when document commit/PR
         if: >-
           ${{false
+          || contains(github.event.head_commit.message, '[ruby/rdoc]')
           || contains(github.event.head_commit.message, '[DOC]')
           || contains(github.event.head_commit.message, 'Document')
           || contains(github.event.pull_request.title, '[DOC]')
