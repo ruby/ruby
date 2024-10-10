@@ -42,7 +42,10 @@ uint32_t rb_gc_get_shape(VALUE obj);
 void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
 uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
 size_t rb_obj_memsize_of(VALUE obj);
+const char * rb_gc_active_gc_name(void);
 RUBY_SYMBOL_EXPORT_END
+
+#define RB_GC_MAX_NAME_LEN 20
 
 void rb_ractor_finish_marking(void);
 
@@ -87,6 +90,7 @@ hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int exi
     return ST_CONTINUE;
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
 gc_ref_update_table_values_only(st_table *tbl)
 {
@@ -97,6 +101,7 @@ gc_ref_update_table_values_only(st_table *tbl)
     }
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static int
 gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
 {
@@ -133,6 +138,7 @@ hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
     return ST_CONTINUE;
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static void
 gc_update_table_refs(st_table *tbl)
 {
@@ -149,6 +155,7 @@ xmalloc2_size(const size_t count, const size_t elsize)
     return rb_size_mul_or_raise(count, elsize, rb_eArgError);
 }
 
+RBIMPL_ATTR_MAYBE_UNUSED()
 static VALUE
 type_sym(size_t type)
 {

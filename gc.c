@@ -642,6 +642,8 @@ typedef struct gc_function_map {
     bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
     void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
     void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
+    // GC Identification
+    const char *(*active_gc_name)(void);
 } rb_gc_function_map_t;
 
 static rb_gc_function_map_t rb_gc_functions;
@@ -775,6 +777,8 @@ ruby_external_gc_init(void)
     load_external_gc_func(garbage_object_p);
     load_external_gc_func(set_event_hook);
     load_external_gc_func(copy_attributes);
+    //GC Identification
+    load_external_gc_func(active_gc_name);
 
 # undef load_external_gc_func
 
@@ -854,6 +858,8 @@ ruby_external_gc_init(void)
 # define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
 # define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
 # define rb_gc_impl_copy_attributes rb_gc_functions.copy_attributes
+// GC Identification
+# define rb_gc_impl_active_gc_name rb_gc_functions.active_gc_name
 #endif
 
 static VALUE initial_stress = Qfalse;
@@ -2752,6 +2758,23 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
     rb_gc_impl_copy_attributes(rb_gc_get_objspace(), dest, obj);
 }
 
+const char *
+rb_gc_active_gc_name(void)
+{
+    const char *gc_name = rb_gc_impl_active_gc_name();
+    if (strlen(gc_name) > RB_GC_MAX_NAME_LEN) {
+        char *truncated_gc_name = ruby_xmalloc(RB_GC_MAX_NAME_LEN + 1);
+
+        rb_warn("GC module %s has a name larger than %d chars, it will be truncated\n",
+            gc_name, RB_GC_MAX_NAME_LEN);
+
+        strncpy(truncated_gc_name, gc_name, RB_GC_MAX_NAME_LEN);
+        return (const char *)truncated_gc_name;
+    }
+    return gc_name;
+
+}
+
 // TODO: rearchitect this function to work for a generic GC
 size_t
 rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
@@ -3519,7 +3542,16 @@ gc_disable(rb_execution_context_t *ec, VALUE _)
     return rb_gc_disable();
 }
 
-
+static VALUE
+active_gc_name(rb_execution_context_t *ec, VALUE _) {
+    if (getenv("RUBY_GC_LIBRARY")) {
+        const char *name = rb_gc_active_gc_name();
+        return rb_fstring_new(name, strlen(name));
+    }
+    else {
+        return Qnil;
+    }
+}
 
 // TODO: think about moving ruby_gc_set_params into Init_heap or Init_gc
 void

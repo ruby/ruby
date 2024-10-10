@@ -9,6 +9,7 @@ describe "The -v command line option" do
       ruby_exe(nil, args: '-v').sub("+PRISM ", "").should include(RUBY_DESCRIPTION.sub("+PRISM ", ""))
     end unless (defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?) ||
                (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?) ||
+               (ENV['RUBY_GC_LIBRARY'] && ENV['RUBY_GC_LIBRARY'].length > 0) ||
                (ENV['RUBY_MN_THREADS'] == '1')
   end
 end
