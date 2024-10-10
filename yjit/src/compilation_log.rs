@@ -90,12 +90,6 @@ impl CompilationLog {
 
         Self::get_instance().push(entry);
     }
-
-    pub fn clear() {
-        unsafe {
-            COMPILATION_LOG.as_mut().unwrap().reset()
-        }
-    }
 }
 
 pub struct CircularBuffer<T, const N: usize> {
@@ -139,43 +133,6 @@ impl<T: Clone, const N: usize> CircularBuffer<T, N> {
     pub fn len(&self) -> usize {
         self.size
     }
-
-    pub fn iter(&self) -> CircularBufferIterator<T, N> {
-        CircularBufferIterator {
-            buffer: self,
-            current: 0,
-            count: 0,
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.head = 0;
-        self.tail = 0;
-        self.size = 0;
-    }
-}
-
-pub struct CircularBufferIterator<'a, T: Clone, const N: usize> {
-    buffer: &'a CircularBuffer<T, N>,
-    current: usize,
-    count: usize,
-}
-
-impl<'a, T: Clone, const N: usize> Iterator for CircularBufferIterator<'a, T, N> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.count >= self.buffer.size {
-            return None;
-        }
-
-        let index = (self.buffer.tail + self.current) % N;
-        let item = self.buffer.buffer[index].clone();
-        self.current = (self.current + 1) % N;
-        self.count += 1;
-
-        item
-    }
 }
 
 
@@ -207,7 +164,9 @@ fn rb_yjit_get_compilation_log_array() -> VALUE {
     let log = CompilationLog::get_instance();
     let array = unsafe { rb_ary_new_capa(log.len() as c_long) };
 
-    for entry in log.iter() {
+    while log.len() > 0 {
+        let entry = log.pop().unwrap();
+
         unsafe {
             let entry_array = rb_ary_new_capa(2);
             rb_ary_push(entry_array, rb_float_new(entry.timestamp));
@@ -215,8 +174,6 @@ fn rb_yjit_get_compilation_log_array() -> VALUE {
             rb_ary_push(array, entry_array);
         }
     }
-
-    CompilationLog::clear();
 
     return array;
 }
