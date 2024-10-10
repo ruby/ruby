@@ -2248,11 +2248,11 @@ eom
     conds.each do |cond|
       code = %Q{
         def my_method
-          var = nil
+          var = "there"
           if #{cond}
-            "here"
+            var = "here"
           end
-          raise
+          raise var
         end
         begin
           my_method
