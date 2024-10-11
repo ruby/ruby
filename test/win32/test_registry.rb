@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+require "rbconfig"
+
+if /mswin|mingw|cygwin/ =~ RbConfig::CONFIG['host_os']
   begin
     require 'win32/registry'
   rescue LoadError
