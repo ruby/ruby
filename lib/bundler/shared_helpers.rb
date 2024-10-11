@@ -314,17 +314,35 @@ module Bundler
 
     def bundle_bin_path
       # bundler exe & lib folders have same root folder, typical gem installation
-      exe_file = File.expand_path("../../exe/bundle", __dir__)
+      exe_file = File.join(source_root, "exe/bundle")
 
       # for Ruby core repository testing
-      exe_file = File.expand_path("../../libexec/bundle", __dir__) unless File.exist?(exe_file)
+      exe_file = File.join(source_root, "libexec/bundle") unless File.exist?(exe_file)
 
       # bundler is a default gem, exe path is separate
-      exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
+      exe_file = Gem.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
 
       exe_file
     end
     public :bundle_bin_path
+
+    def gemspec_path
+      # inside a gem repository, typical gem installation
+      gemspec_file = File.join(source_root, "../../specifications/bundler-#{VERSION}.gemspec")
+
+      # for Ruby core repository testing
+      gemspec_file = File.expand_path("bundler.gemspec", __dir__) unless File.exist?(gemspec_file)
+
+      # bundler is a default gem
+      gemspec_file = File.join(Gem.default_specifications_dir, "bundler-#{VERSION}.gemspec") unless File.exist?(gemspec_file)
+
+      gemspec_file
+    end
+    public :gemspec_path
+
+    def source_root
+      File.expand_path("../..", __dir__)
+    end
 
     def set_path
       validate_bundle_path

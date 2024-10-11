@@ -366,7 +366,8 @@ RSpec.describe "Bundler.setup" do
 
       it "removes system gems from Gem.source_index" do
         run "require 'yard'"
-        expect(out).to eq("bundler-#{Bundler::VERSION}\nyard-1.0")
+        expect(out).to include("bundler-#{Bundler::VERSION}").and include("yard-1.0")
+        expect(out).not_to include("activesupport-2.3.5")
       end
 
       context "when the ruby stdlib is a substring of Gem.path" do
