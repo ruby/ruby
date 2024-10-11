@@ -221,11 +221,11 @@ require_relative "irb/pager"
 # *new_filepath*, which becomes the history file for the session.
 #
 # You can change the number of commands saved by adding to your configuration
-# file: `IRB.conf[:SAVE_HISTORY] = *n*`, wheHISTORY_FILEre *n* is one of:
+# file: `IRB.conf[:SAVE_HISTORY] = *n*`, where *n* is one of:
 #
-# *   Positive integer: the number of commands to be saved,
-# *   Zero: all commands are to be saved.
-# *   `nil`: no commands are to be saved,.
+# *   Positive integer: the number of commands to be saved.
+# *   Negative integer: all commands are to be saved.
+# *   Zero or `nil`: no commands are to be saved.
 #
 #
 # During the session, you can use methods `conf.save_history` or
