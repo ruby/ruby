@@ -1533,6 +1533,8 @@ rb_ary_shift(VALUE ary)
  *    a            # => [2, 3]
  *    a.shift(1.1) # => [2]
  *    a            # => [3]
+ *    a.shift(0)   # => []
+ *    a            # => [3]
  *
  *  If +count+ is large,
  *  removes and returns all elements:
