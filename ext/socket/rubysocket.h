@@ -379,7 +379,7 @@ VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
                                 VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
-int rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout);
+int rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, VALUE timeout);
 
 VALUE rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
