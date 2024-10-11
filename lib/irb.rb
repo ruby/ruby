@@ -14,6 +14,7 @@ require_relative "irb/default_commands"
 
 require_relative "irb/ruby-lex"
 require_relative "irb/statement"
+require_relative "irb/history"
 require_relative "irb/input-method"
 require_relative "irb/locale"
 require_relative "irb/color"
@@ -972,7 +973,7 @@ module IRB
       # debugger.
       input = nil
       forced_exit = catch(:IRB_EXIT) do
-        if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
+        if History.save_history? && context.io.support_history_saving?
           # Previous IRB session's history has been saved when `Irb#run` is exited We need
           # to make sure the saved history is not saved again by resetting the counter
           context.io.reset_history_counter
@@ -1003,9 +1004,10 @@ module IRB
       prev_context = conf[:MAIN_CONTEXT]
       conf[:MAIN_CONTEXT] = context
 
-      save_history = !in_nested_session && conf[:SAVE_HISTORY] && context.io.support_history_saving?
+      load_history = !in_nested_session && context.io.support_history_saving?
+      save_history = load_history && History.save_history?
 
-      if save_history
+      if load_history
         context.io.load_history
       end
 

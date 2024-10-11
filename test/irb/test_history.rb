@@ -39,6 +39,21 @@ module TestIRB
       include IRB::HistorySavingAbility
     end
 
+    def test_history_dont_save
+      omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
+      IRB.conf[:SAVE_HISTORY] = nil
+      assert_history(<<~EXPECTED_HISTORY, <<~INITIAL_HISTORY, <<~INPUT)
+        1
+        2
+      EXPECTED_HISTORY
+        1
+        2
+      INITIAL_HISTORY
+        3
+        exit
+      INPUT
+    end
+
     def test_history_save_1
       omit "Skip Editline" if /EditLine/n.match(Readline::VERSION)
       IRB.conf[:SAVE_HISTORY] = 1
@@ -166,7 +181,7 @@ module TestIRB
       IRB.conf[:HISTORY_FILE] = "fake/fake/fake/history_file"
       io = TestInputMethodWithRelineHistory.new
 
-      assert_warn(/history file does not exist/) do
+      assert_warn(/ensure the folder exists/i) do
         io.save_history
       end
 
