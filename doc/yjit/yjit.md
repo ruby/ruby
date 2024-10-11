@@ -64,12 +64,19 @@ You can change how much executable memory is allocated using [YJIT's command-lin
 ### Requirements
 
 You will need to install:
-- A C compiler such as GCC or Clang
-- GNU Make and Autoconf
-- The Rust compiler `rustc` and Cargo (if you want to build in dev/debug mode)
-  - The Rust version must be [>= 1.58.0](../../yjit/Cargo.toml).
 
-To install the Rust build toolchain, we suggest following the [recommended installation method][rust-install]. Rust also provides first class [support][editor-tools] for many source code editors.
+ - All the usual build tools for Ruby. See [Building Ruby](../contributing/building_ruby.md)
+ - The Rust compiler `rustc`
+    - The Rust version must be [>= 1.58.0](../../yjit/Cargo.toml).
+ - Optionally, only if you wish to build in dev/debug mode, Rust's `cargo`
+
+If you don't intend on making code changes to YJIT itself, we recommend
+obtaining `rustc` through your OS's package manager since that
+likely reuses the same vendor which provides the C toolchain.
+
+If you will be changing YJIT's Rust code, we suggest using the
+[first-party installation method][rust-install] for Rust. Rust also provides
+first class [support][editor-tools] for many source code editors.
 
 [rust-install]: https://www.rust-lang.org/tools/install
 [editor-tools]: https://www.rust-lang.org/tools
