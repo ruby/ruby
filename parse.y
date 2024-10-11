@@ -4374,15 +4374,16 @@ mrhs		: args ',' arg_value
                     }
                 ;
 
-%rule %inline inline_primary : literal
-                             | strings
-                             | xstring
-                             | regexp
-                             | words
-                             | qwords
-                             | symbols
-                             | qsymbols
-                             ;
+%rule %inline inline_primary
+                : literal
+                | strings
+                | xstring
+                | regexp
+                | words
+                | qwords
+                | symbols
+                | qsymbols
+                ;
 
 primary         : inline_primary
                 | var_ref
