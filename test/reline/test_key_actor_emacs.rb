@@ -260,7 +260,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_empty(@line_editor.instance_variable_get(:@rendered_screen).lines)
   end
 
-  def test_ed_clear_screen_with_inputed
+  def test_ed_clear_screen_with_inputted
     input_keys('abc')
     input_keys("\C-b", false)
     @line_editor.instance_variable_get(:@rendered_screen).lines = [[]]

@@ -2368,9 +2368,9 @@ class Reline::LineEditor
 
   private def search_next_char(key, arg, need_prev_char: false, inclusive: false)
     if key.instance_of?(String)
-      inputed_char = key
+      inputted_char = key
     else
-      inputed_char = key.chr
+      inputted_char = key.chr
     end
     prev_total = nil
     total = nil
@@ -2382,7 +2382,7 @@ class Reline::LineEditor
         width = Reline::Unicode.get_mbchar_width(mbchar)
         total = [mbchar.bytesize, width]
       else
-        if inputed_char == mbchar
+        if inputted_char == mbchar
           arg -= 1
           if arg.zero?
             found = true
@@ -2420,9 +2420,9 @@ class Reline::LineEditor
 
   private def search_prev_char(key, arg, need_next_char = false)
     if key.instance_of?(String)
-      inputed_char = key
+      inputted_char = key
     else
-      inputed_char = key.chr
+      inputted_char = key.chr
     end
     prev_total = nil
     total = nil
@@ -2434,7 +2434,7 @@ class Reline::LineEditor
         width = Reline::Unicode.get_mbchar_width(mbchar)
         total = [mbchar.bytesize, width]
       else
-        if inputed_char == mbchar
+        if inputted_char == mbchar
           arg -= 1
           if arg.zero?
             found = true
