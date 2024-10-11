@@ -73,6 +73,7 @@ module Prism
 
     callback :pm_parse_stream_fgets_t, [:pointer, :int, :pointer], :pointer
     enum :pm_string_init_result_t, %i[PM_STRING_INIT_SUCCESS PM_STRING_INIT_ERROR_GENERIC PM_STRING_INIT_ERROR_DIRECTORY]
+    enum :pm_string_query_t, [:PM_STRING_QUERY_ERROR, -1, :PM_STRING_QUERY_FALSE, :PM_STRING_QUERY_TRUE]
 
     load_exported_functions_from(
       "prism.h",
@@ -83,6 +84,9 @@ module Prism
       "pm_serialize_lex",
       "pm_serialize_parse_lex",
       "pm_parse_success_p",
+      "pm_string_query_local",
+      "pm_string_query_constant",
+      "pm_string_query_method_name",
       [:pm_parse_stream_fgets_t]
     )
 
@@ -490,6 +494,41 @@ module Prism
       end
 
       values.pack(template)
+    end
+  end
+
+  # Here we are going to patch StringQuery to put in the class-level methods so
+  # that it can maintain a consistent interface
+  class StringQuery
+    class << self
+      # Mirrors the C extension's StringQuery::local? method.
+      def local?(string)
+        query(LibRubyParser.pm_string_query_local(string, string.bytesize, string.encoding.name))
+      end
+
+      # Mirrors the C extension's StringQuery::constant? method.
+      def constant?(string)
+        query(LibRubyParser.pm_string_query_constant(string, string.bytesize, string.encoding.name))
+      end
+
+      # Mirrors the C extension's StringQuery::method_name? method.
+      def method_name?(string)
+        query(LibRubyParser.pm_string_query_method_name(string, string.bytesize, string.encoding.name))
+      end
+
+      private
+
+      # Parse the enum result and return an appropriate boolean.
+      def query(result)
+        case result
+        when :PM_STRING_QUERY_ERROR
+          raise ArgumentError, "Invalid or non ascii-compatible encoding"
+        when :PM_STRING_QUERY_FALSE
+          false
+        when :PM_STRING_QUERY_TRUE
+          true
+        end
+      end
     end
   end
 end

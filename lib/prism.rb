@@ -25,6 +25,7 @@ module Prism
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
   autoload :Serialize, "prism/serialize"
+  autoload :StringQuery, "prism/string_query"
   autoload :Translation, "prism/translation"
   autoload :Visitor, "prism/visitor"
 
@@ -75,13 +76,13 @@ require_relative "prism/parse_result"
 # it's going to require the built library. Otherwise, it's going to require a
 # module that uses FFI to call into the library.
 if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
-  require "prism/prism"
-
   # The C extension is the default backend on CRuby.
   Prism::BACKEND = :CEXT
-else
-  require_relative "prism/ffi"
 
+  require "prism/prism"
+else
   # The FFI backend is used on other Ruby implementations.
   Prism::BACKEND = :FFI
+
+  require_relative "prism/ffi"
 end

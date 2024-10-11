@@ -23,6 +23,7 @@ VALUE rb_cPrismResult;
 VALUE rb_cPrismParseResult;
 VALUE rb_cPrismLexResult;
 VALUE rb_cPrismParseLexResult;
+VALUE rb_cPrismStringQuery;
 
 VALUE rb_cPrismDebugEncoding;
 
@@ -1134,6 +1135,67 @@ parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
 }
 
 /******************************************************************************/
+/* String query methods                                                       */
+/******************************************************************************/
+
+/**
+ * Process the result of a call to a string query method and return an
+ * appropriate value.
+ */
+static VALUE
+string_query(pm_string_query_t result) {
+    switch (result) {
+        case PM_STRING_QUERY_ERROR:
+            rb_raise(rb_eArgError, "Invalid or non ascii-compatible encoding");
+            return Qfalse;
+        case PM_STRING_QUERY_FALSE:
+            return Qfalse;
+        case PM_STRING_QUERY_TRUE:
+            return Qtrue;
+    }
+}
+
+/**
+ * call-seq:
+ *   Prism::StringQuery::local?(string) -> bool
+ *
+ * Returns true if the string constitutes a valid local variable name. Note that
+ * this means the names that can be set through Binding#local_variable_set, not
+ * necessarily the ones that can be set through a local variable assignment.
+ */
+static VALUE
+string_query_local_p(VALUE self, VALUE string) {
+    const uint8_t *source = (const uint8_t *) check_string(string);
+    return string_query(pm_string_query_local(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+}
+
+/**
+ * call-seq:
+ *   Prism::StringQuery::constant?(string) -> bool
+ *
+ * Returns true if the string constitutes a valid constant name. Note that this
+ * means the names that can be set through Module#const_set, not necessarily the
+ * ones that can be set through a constant assignment.
+ */
+static VALUE
+string_query_constant_p(VALUE self, VALUE string) {
+    const uint8_t *source = (const uint8_t *) check_string(string);
+    return string_query(pm_string_query_constant(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+}
+
+/**
+ * call-seq:
+ *   Prism::StringQuery::method_name?(string) -> bool
+ *
+ * Returns true if the string constitutes a valid method name.
+ */
+static VALUE
+string_query_method_name_p(VALUE self, VALUE string) {
+    const uint8_t *source = (const uint8_t *) check_string(string);
+    return string_query(pm_string_query_method_name(source, RSTRING_LEN(string), rb_enc_get(string)->name));
+}
+
+/******************************************************************************/
 /* Initialization of the extension                                            */
 /******************************************************************************/
 
@@ -1170,6 +1232,7 @@ Init_prism(void) {
     rb_cPrismParseResult = rb_define_class_under(rb_cPrism, "ParseResult", rb_cPrismResult);
     rb_cPrismLexResult = rb_define_class_under(rb_cPrism, "LexResult", rb_cPrismResult);
     rb_cPrismParseLexResult = rb_define_class_under(rb_cPrism, "ParseLexResult", rb_cPrismResult);
+    rb_cPrismStringQuery = rb_define_class_under(rb_cPrism, "StringQuery", rb_cObject);
 
     // Intern all of the IDs eagerly that we support so that we don't have to do
     // it every time we parse.
@@ -1210,6 +1273,10 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "dump", dump, -1);
     rb_define_singleton_method(rb_cPrism, "dump_file", dump_file, -1);
 #endif
+
+    rb_define_singleton_method(rb_cPrismStringQuery, "local?", string_query_local_p, 1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "constant?", string_query_constant_p, 1);
+    rb_define_singleton_method(rb_cPrismStringQuery, "method_name?", string_query_method_name_p, 1);
 
     // Next, initialize the other APIs.
     Init_prism_api_node();
