@@ -8,7 +8,7 @@ end
 
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
-    def supports_auto_compact?
+    def supports_compact?
       GC.respond_to?(:compact)
     end
   end
@@ -17,7 +17,7 @@ class TestGCCompact < Test::Unit::TestCase
     include CompactionSupportInspector
 
     def setup
-      omit "autocompact not supported on this platform" unless supports_auto_compact?
+      omit "GC compaction not supported on this platform" unless supports_compact?
       super
     end
   end
@@ -83,7 +83,7 @@ class TestGCCompact < Test::Unit::TestCase
     include CompactionSupportInspector
 
     def assert_not_implemented(method, *args)
-      omit "autocompact is supported on this platform" if supports_auto_compact?
+      omit "autocompact is supported on this platform" if supports_compact?
 
       assert_raise(NotImplementedError) { GC.send(method, *args) }
       refute(GC.respond_to?(method), "GC.#{method} should be defined as rb_f_notimplement")
