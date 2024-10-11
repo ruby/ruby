@@ -18,7 +18,7 @@ The reasons for the difference are religious/political histories.
 - On October 15, 1582, several countries changed
   from the Julian calendar to the Gregorian calendar;
   these included Italy, Poland, Portugal, and Spain.
-  Other contries in the Western world retained the Julian calendar.
+  Other countries in the Western world retained the Julian calendar.
 - On September 14, 1752, most of the British empire
   changed from the Julian calendar to the Gregorian calendar.
 

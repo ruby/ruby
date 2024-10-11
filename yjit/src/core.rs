@@ -4014,7 +4014,7 @@ unsafe fn remove_from_graph(blockref: BlockRef) {
 
 /// Tear down a block and deallocate it.
 /// Caller has to ensure that the code tracked by the block is not
-/// running, as running code may hit [branch_stub_hit] who exepcts
+/// running, as running code may hit [branch_stub_hit] who expects
 /// [Branch] to be live.
 ///
 /// We currently ensure this through the `jit_cont` system in cont.c
