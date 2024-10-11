@@ -578,19 +578,19 @@ socks_connect_blocking(void *data)
 #endif
 
 int
-rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
+rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, struct timeval *timeout)
 {
-    int status;
+    int descriptor = rb_io_descriptor(self);
     rb_blocking_function_t *func = connect_blocking;
-    struct connect_arg arg;
+    struct connect_arg arg = {.fd = descriptor, .sockaddr = sockaddr, .len = len};
 
-    arg.fd = fd;
-    arg.sockaddr = sockaddr;
-    arg.len = len;
+    rb_io_t *fptr;
+    RB_IO_POINTER(self, fptr);
+
 #if defined(SOCKS) && !defined(SOCKS5)
     if (socks) func = socks_connect_blocking;
 #endif
-    status = (int)BLOCKING_REGION_FD(func, &arg);
+    int status = (int)rb_io_blocking_region(fptr, func, &arg);
 
     if (status < 0) {
         switch (errno) {
@@ -602,7 +602,7 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks, struc
 #ifdef EINPROGRESS
           case EINPROGRESS:
 #endif
-            return wait_connectable(fd, timeout);
+            return wait_connectable(descriptor, timeout);
         }
     }
     return status;

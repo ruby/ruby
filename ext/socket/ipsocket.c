@@ -9,16 +9,18 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include <stdio.h>
 
 struct inetsock_arg
 {
-    VALUE sock;
+    VALUE self;
+    VALUE io;
+
     struct {
         VALUE host, serv;
         struct rb_addrinfo *res;
     } remote, local;
     int type;
-    int fd;
     VALUE resolv_timeout;
     VALUE connect_timeout;
 };
@@ -35,8 +37,9 @@ inetsock_cleanup(VALUE v)
         rb_freeaddrinfo(arg->local.res);
         arg->local.res = 0;
     }
-    if (arg->fd >= 0) {
-        close(arg->fd);
+    if (arg->io != Qnil) {
+        rb_io_close(arg->io);
+        arg->io = Qnil;
     }
     return Qnil;
 }
@@ -48,7 +51,7 @@ init_inetsock_internal(VALUE v)
     int error = 0;
     int type = arg->type;
     struct addrinfo *res, *lres;
-    int fd, status = 0, local = 0;
+    int status = 0, local = 0;
     int family = AF_UNSPEC;
     const char *syscall = 0;
     VALUE connect_timeout = arg->connect_timeout;
@@ -74,7 +77,8 @@ init_inetsock_internal(VALUE v)
                                         family, SOCK_STREAM, 0);
     }
 
-    arg->fd = fd = -1;
+    VALUE io = Qnil;
+
     for (res = arg->remote.res->ai; res; res = res->ai_next) {
 #if !defined(INET6) && defined(AF_INET6)
         if (res->ai_family == AF_INET6)
@@ -96,12 +100,14 @@ init_inetsock_internal(VALUE v)
         }
         status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
         syscall = "socket(2)";
-        fd = status;
-        if (fd < 0) {
+        if (status < 0) {
             error = errno;
             continue;
         }
-        arg->fd = fd;
+
+        int fd = status;
+        io = arg->io = rsock_init_sock(arg->self, fd);
+
         if (type == INET_SERVER) {
 #if !defined(_WIN32) && !defined(__CYGWIN__)
             status = 1;
@@ -124,20 +130,22 @@ init_inetsock_internal(VALUE v)
             }
 
             if (status >= 0) {
-                status = rsock_connect(fd, res->ai_addr, res->ai_addrlen,
-                                       (type == INET_SOCKS), tv);
+                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), tv);
                 syscall = "connect(2)";
             }
         }
 
         if (status < 0) {
             error = errno;
-            close(fd);
-            arg->fd = fd = -1;
+            arg->io = Qnil;
+            rb_io_close(io);
+            io = Qnil;
             continue;
-        } else
+        } else {
             break;
+        }
     }
+
     if (status < 0) {
         VALUE host, port;
 
@@ -152,28 +160,28 @@ init_inetsock_internal(VALUE v)
         rsock_syserr_fail_host_port(error, syscall, host, port);
     }
 
-    arg->fd = -1;
+    // Don't close the socket in `inetsock_cleanup` if we are returning it:
+    arg->io = Qnil;
 
-    if (type == INET_SERVER) {
-        status = listen(fd, SOMAXCONN);
+    if (type == INET_SERVER && io != Qnil) {
+        status = listen(rb_io_descriptor(io), SOMAXCONN);
         if (status < 0) {
             error = errno;
-            close(fd);
+            rb_io_close(io);
             rb_syserr_fail(error, "listen(2)");
         }
     }
 
     /* create new instance */
-    return rsock_init_sock(arg->sock, fd);
+    return io;
 }
 
 VALUE
-rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
-                    VALUE local_host, VALUE local_serv, int type,
-                    VALUE resolv_timeout, VALUE connect_timeout)
+rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout)
 {
     struct inetsock_arg arg;
-    arg.sock = sock;
+    arg.self = self;
+    arg.io = Qnil;
     arg.remote.host = remote_host;
     arg.remote.serv = remote_serv;
     arg.remote.res = 0;
@@ -181,7 +189,6 @@ rsock_init_inetsock(VALUE sock, VALUE remote_host, VALUE remote_serv,
     arg.local.serv = local_serv;
     arg.local.res = 0;
     arg.type = type;
-    arg.fd = -1;
     arg.resolv_timeout = resolv_timeout;
     arg.connect_timeout = connect_timeout;
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
