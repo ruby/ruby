@@ -407,7 +407,7 @@ class Time
     # %c :: The preferred local date and time representation
     # %C :: Century (20 in 2009)
     # %d :: Day of the month (01..31)
-    # %D :: Date (%m/%d/%y)
+    # %D :: \Date (%m/%d/%y)
     # %e :: Day of the month, blank-padded ( 1..31)
     # %F :: Equivalent to %Y-%m-%d (the ISO 8601 date format)
     # %g :: The last two digits of the commercial year
