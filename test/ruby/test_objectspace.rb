@@ -208,7 +208,6 @@ End
           main_th.raise(my_error)
         end
         GC.start
-        puts "After GC"
         sleep(10)
         assert(false)
       rescue my_error
