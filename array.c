@@ -3198,7 +3198,7 @@ rb_ary_rotate(VALUE ary, long cnt)
  *
  *  If +count+ is large, uses <tt>count % array.size</tt> as the count:
  *
- *    [0, 1, 2, 3].rotate!(20) # => [0, 1, 2, 3]
+ *    [0, 1, 2, 3].rotate!(21) # => [1, 2, 3, 0]
  *
  *  If +count+ is zero, rotates no elements:
  *
