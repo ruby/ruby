@@ -130,7 +130,7 @@ init_inetsock_internal(VALUE v)
             }
 
             if (status >= 0) {
-                status = rsock_connect2(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), tv);
+                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), tv);
                 syscall = "connect(2)";
             }
         }

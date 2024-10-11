@@ -396,7 +396,7 @@ sock_connect(VALUE sock, VALUE addr)
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
 
-    int result = rsock_connect2(sock, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
+    int result = rsock_connect(sock, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
     if (result < 0) {
         rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
