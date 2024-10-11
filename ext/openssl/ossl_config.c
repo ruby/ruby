@@ -305,7 +305,7 @@ static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE, VALUE)
  *
  * Gets the parsable form of the current configuration.
  *
- * Given the following configurating file being loaded:
+ * Given the following configuration file being loaded:
  *
  *   config = OpenSSL::Config.load('baz.cnf')
  *     #=> #<OpenSSL::Config sections=["default"]>
