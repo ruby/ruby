@@ -4374,14 +4374,17 @@ mrhs		: args ',' arg_value
                     }
                 ;
 
-primary		: literal
-                | strings
-                | xstring
-                | regexp
-                | words
-                | qwords
-                | symbols
-                | qsymbols
+%rule %inline inline_primary : literal
+                             | strings
+                             | xstring
+                             | regexp
+                             | words
+                             | qwords
+                             | symbols
+                             | qsymbols
+                             ;
+
+primary         : inline_primary
                 | var_ref
                 | backref
                 | tFID
@@ -5863,14 +5866,7 @@ p_value 	: p_primitive
                     }
                 ;
 
-p_primitive	: literal
-                | strings
-                | xstring
-                | regexp
-                | words
-                | qwords
-                | symbols
-                | qsymbols
+p_primitive     : inline_primary
                 | keyword_variable
                     {
                         if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
