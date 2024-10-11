@@ -56,7 +56,8 @@ static const rb_data_type_t fiddle_handle_data_type = {
         .dfree = fiddle_handle_free,
         .dsize = fiddle_handle_memsize
     },
-    .flags = RUBY_TYPED_WB_PROTECTED,
+    .flags = FIDDLE_DEFAULT_TYPED_DATA_FLAGS & ~RUBY_TYPED_FREE_IMMEDIATELY,
+    /* keeping while its symbols are referred. */
 };
 
 /*

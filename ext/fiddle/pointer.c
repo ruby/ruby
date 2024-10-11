@@ -94,7 +94,7 @@ static const rb_data_type_t fiddle_ptr_data_type = {
         .dfree = fiddle_ptr_free,
         .dsize = fiddle_ptr_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    .flags = FIDDLE_DEFAULT_TYPED_DATA_FLAGS,
 };
 
 #ifdef HAVE_RUBY_MEMORY_VIEW_H

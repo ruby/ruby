@@ -59,7 +59,7 @@ const rb_data_type_t function_data_type = {
         .dfree = deallocate,
         .dsize = function_memsize
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = FIDDLE_DEFAULT_TYPED_DATA_FLAGS,
 };
 
 static VALUE
@@ -153,6 +153,9 @@ initialize(int argc, VALUE argv[], VALUE self)
         rb_get_kwargs(kwargs, kw, 0, kw_max_, args);
         if (args[kw_name] != Qundef) {
             name = args[kw_name];
+#ifdef HAVE_RB_STR_TO_INTERNED_STR
+            name = rb_str_to_interned_str(name);
+#endif
         }
         if (args[kw_need_gvl] != Qundef) {
             need_gvl = args[kw_need_gvl];

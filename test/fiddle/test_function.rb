@@ -253,6 +253,11 @@ module Fiddle
       end
     end
 
+    def test_ractor_shareable
+      omit("Need Ractor") unless defined?(Ractor)
+      assert_ractor_shareable(Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE))
+    end
+
     private
 
     def perror(m)

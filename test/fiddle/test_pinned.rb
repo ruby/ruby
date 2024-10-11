@@ -23,6 +23,12 @@ module Fiddle
       end
       assert_match "called on", ex.message
     end
+
+    def test_ractor_shareable
+      omit("Need Ractor") unless defined?(Ractor)
+      obj = Object.new
+      assert_ractor_shareable(Pinned.new(obj))
+      assert_predicate(obj, :frozen?)
+    end
   end
 end
-

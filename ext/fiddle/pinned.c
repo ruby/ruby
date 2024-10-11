@@ -24,9 +24,13 @@ pinned_memsize(const void *ptr)
 }
 
 static const rb_data_type_t pinned_data_type = {
-    "fiddle/pinned",
-    {pinned_mark, xfree, pinned_memsize, },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    .wrap_struct_name = "fiddle/pinned",
+    .function = {
+        .dmark = pinned_mark,
+        .dfree = RUBY_TYPED_DEFAULT_FREE,
+        .dsize = pinned_memsize,
+    },
+    .flags = FIDDLE_DEFAULT_TYPED_DATA_FLAGS,
 };
 
 static VALUE

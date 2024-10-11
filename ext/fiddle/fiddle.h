@@ -236,4 +236,14 @@ VALUE rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type);
 typedef void (*rb_fiddle_freefunc_t)(void*);
 VALUE rb_fiddle_ptr_new_wrap(void *ptr, long size, rb_fiddle_freefunc_t func, VALUE wrap0, VALUE wrap1);
 
+enum {
+    FIDDLE_DEFAULT_TYPED_DATA_FLAGS = (
+        RUBY_TYPED_FREE_IMMEDIATELY |
+        RUBY_TYPED_WB_PROTECTED |
+#ifdef RUBY_TYPED_FROZEN_SHAREABLE
+        RUBY_TYPED_FROZEN_SHAREABLE |
+#endif
+        0)
+};
+
 #endif

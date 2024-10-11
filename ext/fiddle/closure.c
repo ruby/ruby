@@ -61,7 +61,7 @@ const rb_data_type_t closure_data_type = {
         .dfree = dealloc,
         .dsize = closure_memsize
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = FIDDLE_DEFAULT_TYPED_DATA_FLAGS,
 };
 
 struct callback_args {
@@ -300,6 +300,7 @@ initialize_body(VALUE user_data)
         cl->argv[i] = rb_fiddle_int_to_ffi_type(NUM2INT(arg));
     }
     cl->argv[argc] = NULL;
+    OBJ_FREEZE_RAW(normalized_args);
 
     ret = rb_fiddle_type_ensure(ret);
     rb_iv_set(data->self, "@ctype", ret);

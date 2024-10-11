@@ -189,5 +189,10 @@ module Fiddle
     ensure
       GC.stress = stress
     end
+
+    def assert_ractor_shareable(object)
+      Ractor.make_shareable(object)
+      assert_operator(Ractor, :shareable?, object)
+    end
   end
 end

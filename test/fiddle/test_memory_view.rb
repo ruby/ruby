@@ -159,5 +159,17 @@ module Fiddle
         mview.release
       end
     end
+
+    def test_ractor_shareable
+      omit("Need Ractor") unless defined?(Ractor)
+      ptr = Pointer["hello world"]
+      mview = MemoryView.new(ptr)
+      begin
+        assert_ractor_shareable(mview)
+        assert_predicate(ptr, :frozen?)
+      ensure
+        mview.release
+      end
+    end
   end
 end

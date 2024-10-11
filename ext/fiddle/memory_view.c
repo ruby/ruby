@@ -64,8 +64,13 @@ fiddle_memview_memsize(const void *ptr)
 }
 
 static const rb_data_type_t fiddle_memview_data_type = {
-    "fiddle/memory_view",
-    {fiddle_memview_mark, fiddle_memview_free, fiddle_memview_memsize,},
+    .wrap_struct_name = "fiddle/memory_view",
+    .function = {
+        .dmark = fiddle_memview_mark,
+        .dfree = fiddle_memview_free,
+        .dsize = fiddle_memview_memsize,
+    },
+    .flags = FIDDLE_DEFAULT_TYPED_DATA_FLAGS,
 };
 
 static VALUE

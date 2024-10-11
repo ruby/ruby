@@ -226,5 +226,10 @@ module Fiddle
         assert_equal(ansi, k["GetFileAttributes"], "should fallback to ANSI version")
       end
     end
+
+    def test_ractor_shareable
+      omit("Need Ractor") unless defined?(Ractor)
+      assert_ractor_shareable(Fiddle::Handle.new(LIBC_SO))
+    end
   end
 end if defined?(Fiddle)

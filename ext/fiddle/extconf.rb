@@ -223,6 +223,8 @@ if libffi
   $LOCAL_LIBS.prepend("#{libffi.a} ").strip! # to exts.mk
   $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
+
+have_func("rb_str_to_interned_str")
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"
