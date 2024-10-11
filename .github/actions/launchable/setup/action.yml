@@ -35,7 +35,7 @@ inputs:
     required: false
     default: ${{ github.workspace }}
     description: >-
-      Directory to (re-)checkout source codes. Launchable retrives the commit information
+      Directory to (re-)checkout source codes. Launchable retrieves the commit information
       from the directory.
 
   launchable-workspace:
