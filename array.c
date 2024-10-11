@@ -1512,7 +1512,7 @@ rb_ary_shift(VALUE ary)
 
 /*
  *  call-seq:
- *    shift -> new_array or nil
+ *    shift -> object or nil
  *    shift(count) -> new_array or nil
  *
  *  Removes and returns leading elements from +self+ in a new array.
