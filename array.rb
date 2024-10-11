@@ -73,8 +73,8 @@ class Array
   end
 
   # call-seq:
-  #   sample(random: Random.new) -> object
-  #   sample(count, random: Random.new) -> new_ary
+  #   sample(random: Random) -> object
+  #   sample(count, random: Random) -> new_ary
   #
   # Returns random elements from +self+,
   # as selected by the object given by keyword argument +random+.
