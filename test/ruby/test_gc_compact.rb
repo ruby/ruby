@@ -9,7 +9,7 @@ end
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
     def supports_auto_compact?
-      GC::OPTS.include?("GC_COMPACTION_SUPPORTED")
+      GC.respond_to?(:compact)
     end
   end
 
