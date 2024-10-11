@@ -2984,13 +2984,12 @@ enum_member(VALUE obj, VALUE val)
 }
 
 static VALUE
-each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
+each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(_, index))
 {
-    struct MEMO *m = MEMO_CAST(memo);
-    VALUE n = imemo_count_value(m);
+    struct vm_ifunc *ifunc = rb_current_ifunc();
+    ifunc->data = (const void *)rb_int_succ(index);
 
-    imemo_count_up(m);
-    return rb_yield_values(2, rb_enum_values_pack(argc, argv), n);
+    return rb_yield_values(2, rb_enum_values_pack(argc, argv), index);
 }
 
 /*
@@ -3024,12 +3023,9 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 static VALUE
 enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo;
-
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
-    memo = MEMO_NEW(0, 0, 0);
-    rb_block_call(obj, id_each, argc, argv, each_with_index_i, (VALUE)memo);
+    rb_block_call(obj, id_each, argc, argv, each_with_index_i, INT2FIX(0));
     return obj;
 }
 
