@@ -131,7 +131,7 @@ udp_bind(VALUE self, VALUE host, VALUE port)
 
     arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0);
 
-    int result = rb_ensure(udp_bind_internal, (VALUE)&arg, rsock_freeaddrinfo, (VALUE)arg.res);
+    VALUE result = rb_ensure(udp_bind_internal, (VALUE)&arg, rsock_freeaddrinfo, (VALUE)arg.res);
     if (!result) {
         rsock_sys_fail_host_port("bind(2)", host, port);
     }
