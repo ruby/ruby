@@ -55,13 +55,6 @@ init_inetsock_internal(VALUE v)
     int family = AF_UNSPEC;
     const char *syscall = 0;
     VALUE connect_timeout = arg->connect_timeout;
-    struct timeval tv_storage;
-    struct timeval *tv = NULL;
-
-    if (!NIL_P(connect_timeout)) {
-        tv_storage = rb_time_interval(connect_timeout);
-        tv = &tv_storage;
-    }
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
                                      family, SOCK_STREAM,
@@ -130,7 +123,7 @@ init_inetsock_internal(VALUE v)
             }
 
             if (status >= 0) {
-                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), tv);
+                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), connect_timeout);
                 syscall = "connect(2)";
             }
         }

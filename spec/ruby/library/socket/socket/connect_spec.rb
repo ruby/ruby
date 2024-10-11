@@ -53,4 +53,18 @@ describe 'Socket#connect' do
       end
     end
   end
+
+  ruby_version_is "3.4" do
+    it "fails with timeout" do
+      # TEST-NET-1 IP address are reserved for documentation and example purposes.
+      address = Socket.pack_sockaddr_in(1, "192.0.2.1")
+
+      client = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
+      client.timeout = 0
+
+      -> {
+        client.connect(address)
+      }.should raise_error(IO::TimeoutError)
+    end
+  end
 end

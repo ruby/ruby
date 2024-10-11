@@ -21,7 +21,7 @@ static VALUE
 unixsock_connect_internal(VALUE a)
 {
     struct unixsock_arg *arg = (struct unixsock_arg *)a;
-    return (VALUE)rsock_connect(arg->io, (struct sockaddr*)arg->sockaddr, arg->sockaddrlen, 0, NULL);
+    return (VALUE)rsock_connect(arg->io, (struct sockaddr*)arg->sockaddr, arg->sockaddrlen, 0, RUBY_IO_TIMEOUT_DEFAULT);
 }
 
 static VALUE

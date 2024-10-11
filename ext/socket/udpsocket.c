@@ -56,7 +56,7 @@ udp_connect_internal(VALUE v)
     struct addrinfo *res;
 
     for (res = arg->res->ai; res; res = res->ai_next) {
-        if (rsock_connect(arg->io, res->ai_addr, res->ai_addrlen, 0, NULL) >= 0) {
+        if (rsock_connect(arg->io, res->ai_addr, res->ai_addrlen, 0, RUBY_IO_TIMEOUT_DEFAULT) >= 0) {
             return Qtrue;
         }
     }

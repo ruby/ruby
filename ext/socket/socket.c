@@ -387,16 +387,15 @@ rsock_sock_s_socketpair(int argc, VALUE *argv, VALUE klass)
  * * connect function in Microsoft's Winsock functions reference
  */
 static VALUE
-sock_connect(VALUE sock, VALUE addr)
+sock_connect(VALUE self, VALUE addr)
 {
     VALUE rai;
-    rb_io_t *fptr;
 
     SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
-    GetOpenFile(sock, fptr);
 
-    int result = rsock_connect(sock, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, NULL);
+    int result = rsock_connect(self, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr), 0, RUBY_IO_TIMEOUT_DEFAULT);
+
     if (result < 0) {
         rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
