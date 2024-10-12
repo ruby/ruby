@@ -1153,6 +1153,7 @@ string_query(pm_string_query_t result) {
         case PM_STRING_QUERY_TRUE:
             return Qtrue;
     }
+    return Qfalse;
 }
 
 /**
