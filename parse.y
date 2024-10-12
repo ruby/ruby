@@ -2766,7 +2766,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_def_temp> defn_head defs_head k_def
 %type <node_exits> block_open k_while k_until k_for allow_exits
 %type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
-%type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
+%type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary
+%type <node> command command_call command_call_value method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
@@ -3246,9 +3247,8 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     /*% ripper: END!($:compstmt) %*/
                     }
                 | command_asgn
-                | mlhs '=' lex_ctxt command_call
+                | mlhs '=' lex_ctxt command_call_value
                     {
-                        value_expr($4);
                         $$ = node_assign(p, (NODE *)$1, $4, $3, &@$);
                     /*% ripper: massign!($:1, $:4) %*/
                     }
@@ -3352,16 +3352,11 @@ endless_command : command
                     }
                 ;
 
-command_rhs	: command_call   %prec tOP_ASGN
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
-                | command_call modifier_rescue after_rescue stmt
+command_rhs	: command_call_value   %prec tOP_ASGN
+                | command_call_value modifier_rescue after_rescue stmt
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
-                        value_expr($1);
                         $$ = NEW_RESCUE($1, NEW_RESBODY(0, 0, remove_begin($4), 0, &loc), 0, &@$);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
@@ -3469,6 +3464,9 @@ expr_value_do	: {COND_PUSH(1);} expr_value do {COND_POP();}
 command_call	: command
                 | block_command
                 ;
+
+command_call_value	: value_expr(command_call)
+                    ;
 
 block_command	: block_call
                 | block_call call_op2 operation2 command_args
