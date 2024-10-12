@@ -2965,6 +2965,14 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
+%rule value_expr(value) <node>
+                : value
+                    {
+                        value_expr($1);
+                        $$ = $1;
+                    }
+                ;
+
 %rule words(begin, word_list) <node>
                 : begin ' '+ word_list tSTRING_END
                     {
@@ -3420,11 +3428,7 @@ defs_head	: k_def singleton dot_or_colon
                     }
                 ;
 
-expr_value	: expr
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+expr_value	: value_expr(expr)
                 | error
                     {
                         $$ = NEW_ERROR(&@$);
@@ -4117,11 +4121,7 @@ after_rescue	: lex_ctxt
                     }
                 ;
 
-arg_value	: arg
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+arg_value	: value_expr(arg)
                 ;
 
 aref_args	: none
@@ -4207,9 +4207,8 @@ opt_call_args	: none
                     }
                 ;
 
-call_args	: command
+call_args	: value_expr(command)
                     {
-                        value_expr($1);
                         $$ = NEW_LIST($1, &@$);
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
@@ -4699,11 +4698,7 @@ primary         : inline_primary
                     }
                 ;
 
-primary_value	: primary
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+primary_value	: value_expr(primary)
                 ;
 
 k_begin		: keyword_begin
@@ -6703,11 +6698,7 @@ opt_f_block_arg	: ',' f_block_arg
                     }
                 ;
 
-singleton	: var_ref
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+singleton	: value_expr(var_ref)
                 | '('
                     {
                         SET_LEX_STATE(EXPR_BEG);
