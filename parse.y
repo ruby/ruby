@@ -2765,8 +2765,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 %type <node_def_temp> defn_head defs_head k_def
 %type <node_exits> block_open k_while k_until k_for allow_exits
-%type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
-%type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary
+%type <node> top_stmts top_stmt begin_block endless_arg endless_command
+%type <node> bodystmt stmts stmt_or_begin stmt expr arg primary
 %type <node> command command_call command_call_value method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
@@ -2928,6 +2928,13 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
+%rule compstmt(stmts) <node>
+                    : stmts terms?
+                        {
+                            void_stmts(p, $$ = $stmts);
+                        }
+                    ;
+
 %rule f_opt(value) <node_opt_arg>
                 : f_arg_asgn f_eq value
                     {
@@ -3013,7 +3020,7 @@ program		:  {
                         /* jumps are possible in the top-level loop. */
                         if (!ifndef_ripper(p->do_loop) + 0) init_block_exit(p);
                     }
-                  top_compstmt
+                  compstmt(top_stmts)
                     {
                         if ($2 && !compile_for_eval) {
                             NODE *node = $2;
@@ -3030,12 +3037,6 @@ program		:  {
                         p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), &@$);
                     /*% ripper[final]: program!($:2) %*/
                         local_pop(p);
-                    }
-                ;
-
-top_compstmt	: top_stmts terms?
-                    {
-                        void_stmts(p, $$ = $1);
                     }
                 ;
 
@@ -3070,7 +3071,7 @@ top_stmt	: stmt
 
 block_open	: '{' {$$ = init_block_exit(p);};
 
-begin_block	: block_open top_compstmt '}'
+begin_block	: block_open compstmt(top_stmts) '}'
                     {
                         restore_block_exit(p, $block_open);
                         p->eval_tree_begin = block_append(p, p->eval_tree_begin,
@@ -3080,7 +3081,7 @@ begin_block	: block_open top_compstmt '}'
                     }
                 ;
 
-bodystmt	: compstmt[body]
+bodystmt	: compstmt(stmts)[body]
                   lex_ctxt[ctxt]
                   opt_rescue
                   k_else
@@ -3088,7 +3089,7 @@ bodystmt	: compstmt[body]
                         if (!$opt_rescue) yyerror1(&@k_else, "else without rescue is useless");
                         next_rescue_context(&p->ctxt, &$ctxt, after_else);
                     }
-                  compstmt[elsebody]
+                  compstmt(stmts)[elsebody]
                     {
                         next_rescue_context(&p->ctxt, &$ctxt, after_ensure);
                     }
@@ -3097,7 +3098,7 @@ bodystmt	: compstmt[body]
                         $$ = new_bodystmt(p, $body, $opt_rescue, $elsebody, $opt_ensure, &@$);
                     /*% ripper: bodystmt!($:body, $:opt_rescue, $:elsebody, $:opt_ensure) %*/
                     }
-                | compstmt[body]
+                | compstmt(stmts)[body]
                   lex_ctxt[ctxt]
                   opt_rescue
                     {
@@ -3107,12 +3108,6 @@ bodystmt	: compstmt[body]
                     {
                         $$ = new_bodystmt(p, $body, $opt_rescue, 0, $opt_ensure, &@$);
                     /*% ripper: bodystmt!($:body, $:opt_rescue, Qnil, $:opt_ensure) %*/
-                    }
-                ;
-
-compstmt	: stmts terms?
-                    {
-                        void_stmts(p, $$ = $1);
                     }
                 ;
 
@@ -3233,7 +3228,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         $$ = NEW_RESCUE(remove_begin($1), resq, 0, &@$);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
-                | k_END allow_exits '{' compstmt '}'
+                | k_END allow_exits '{' compstmt(stmts) '}'
                     {
                         if (p->ctxt.in_def) {
                             rb_warn0("END in method; use at_exit");
@@ -4410,13 +4405,13 @@ primary         : inline_primary
                         nd_set_line($$, @1.end_pos.lineno);
                     /*% ripper: begin!($:3) %*/
                     }
-                | tLPAREN_ARG compstmt {SET_LEX_STATE(EXPR_ENDARG);} ')'
+                | tLPAREN_ARG compstmt(stmts) {SET_LEX_STATE(EXPR_ENDARG);} ')'
                     {
                         if (nd_type_p($2, NODE_SELF)) RNODE_SELF($2)->nd_state = 0;
                         $$ = $2;
                     /*% ripper: paren!($:2) %*/
                     }
-                | tLPAREN compstmt ')'
+                | tLPAREN compstmt(stmts) ')'
                     {
                         if (nd_type_p($2, NODE_SELF)) RNODE_SELF($2)->nd_state = 0;
                         $$ = NEW_BLOCK($2, &@$);
@@ -4493,7 +4488,7 @@ primary         : inline_primary
                     }
                 | lambda
                 | k_if expr_value then
-                  compstmt
+                  compstmt(stmts)
                   if_tail
                   k_end
                     {
@@ -4505,7 +4500,7 @@ primary         : inline_primary
                     /*% ripper: if!($:2, $:4, $:5) %*/
                     }
                 | k_unless expr_value then
-                  compstmt
+                  compstmt(stmts)
                   opt_else
                   k_end
                     {
@@ -4514,7 +4509,7 @@ primary         : inline_primary
                     /*% ripper: unless!($:2, $:4, $:5) %*/
                     }
                 | k_while expr_value_do
-                  compstmt
+                  compstmt(stmts)
                   k_end
                     {
                         restore_block_exit(p, $1);
@@ -4523,7 +4518,7 @@ primary         : inline_primary
                     /*% ripper: while!($:2, $:3) %*/
                     }
                 | k_until expr_value_do
-                  compstmt
+                  compstmt(stmts)
                   k_end
                     {
                         restore_block_exit(p, $1);
@@ -4566,7 +4561,7 @@ primary         : inline_primary
                     /*% ripper: case!($:2, $:4) %*/
                     }
                 | k_for for_var keyword_in expr_value_do
-                  compstmt
+                  compstmt(stmts)
                   k_end
                     {
                         restore_block_exit(p, $1);
@@ -4905,7 +4900,7 @@ do		: term
 
 if_tail		: opt_else
                 | k_elsif expr_value then
-                  compstmt
+                  compstmt(stmts)
                   if_tail
                     {
                         $$ = new_if(p, $2, $4, $5, &@$, &@1, &@3, &NULL_LOC);
@@ -4915,7 +4910,7 @@ if_tail		: opt_else
                 ;
 
 opt_else	: none
-                | k_else compstmt
+                | k_else compstmt(stmts)
                     {
                         $$ = $2;
                     /*% ripper: else!($:2) %*/
@@ -5227,7 +5222,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
                     }
                 ;
 
-lambda_body	: tLAMBEG compstmt '}'
+lambda_body	: tLAMBEG compstmt(stmts) '}'
                     {
                         token_info_pop(p, "}", &@3);
                         $$ = new_locations_lambda_body(p, $2, &@2, &@1, &@3);
@@ -5370,7 +5365,7 @@ brace_block	: '{' brace_body '}'
 
 brace_body	: {$$ = dyna_push(p);}[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] compstmt
+                  opt_block_param[args] compstmt(stmts)
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
@@ -5431,7 +5426,7 @@ case_args	: arg_value
                 ;
 
 case_body	: k_when case_args then
-                  compstmt
+                  compstmt(stmts)
                   cases
                     {
                         $$ = NEW_WHEN($2, $4, $5, &@$, &@1, &@3);
@@ -5463,7 +5458,7 @@ p_case_body	: keyword_in
                         pop_pvtbl(p, $p_pvtbl);
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
                     }
-                  compstmt
+                  compstmt(stmts)
                   p_cases[cases]
                     {
                         $$ = NEW_IN($expr, $compstmt, $cases, &@$);
@@ -5931,7 +5926,7 @@ p_const 	: tCOLON3 cname
                 ;
 
 opt_rescue	: k_rescue exc_list exc_var then
-                  compstmt
+                  compstmt(stmts)
                   opt_rescue
                     {
                         NODE *err = $3;
@@ -6200,7 +6195,7 @@ string_content	: tSTRING_CONTENT
                         $$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }[indent]<num>
-                  compstmt string_dend
+                  compstmt(stmts) string_dend
                     {
                         COND_POP();
                         CMDARG_POP();
