@@ -1521,7 +1521,7 @@ rb_zstream_total_out(VALUE obj)
 }
 
 /*
- * Guesses the type of the data which have been inputed into the stream. The
+ * Guesses the type of the data which have been inputted into the stream. The
  * returned value is either <tt>BINARY</tt>, <tt>ASCII</tt>, or
  * <tt>UNKNOWN</tt>.
  */
@@ -4054,7 +4054,7 @@ rb_gzreader_read(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     gzipreader.readpartial(maxlen [, outbuf]) => string, outbuf
  *
- *  Reads at most <i>maxlen</i> bytes from the gziped stream but
+ *  Reads at most <i>maxlen</i> bytes from the gzipped stream but
  *  it blocks only if <em>gzipreader</em> has no data immediately available.
  *  If the optional <i>outbuf</i> argument is present,
  *  it must reference a String, which will receive the data.
