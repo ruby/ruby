@@ -1512,35 +1512,40 @@ rb_ary_shift(VALUE ary)
 
 /*
  *  call-seq:
- *     array.shift -> object or nil
- *     array.shift(n) -> new_array
+ *    shift -> object or nil
+ *    shift(count) -> new_array or nil
  *
- *  Removes and returns leading elements.
+ *  Removes and returns leading elements from +self+.
  *
- *  When no argument is given, removes and returns the first element:
+ *  With no argument, removes and returns one element, if available,
+ *  or +nil+ otherwise:
  *
- *    a = [:foo, 'bar', 2]
- *    a.shift # => :foo
- *    a # => ['bar', 2]
+ *    a = [0, 1, 2, 3]
+ *    a.shift  # => 0
+ *    a        # => [1, 2, 3]
+ *    [].shift # => nil
  *
- *  Returns +nil+ if +self+ is empty.
+ *  With non-negative numeric argument +count+ given,
+ *  removes and returns the first +count+ elements:
  *
- *  When positive Integer argument +n+ is given, removes the first +n+ elements;
- *  returns those elements in a new +Array+:
+ *    a = [0, 1, 2, 3]
+ *    a.shift(2)   # => [0, 1]
+ *    a            # => [2, 3]
+ *    a.shift(1.1) # => [2]
+ *    a            # => [3]
+ *    a.shift(0)   # => []
+ *    a            # => [3]
  *
- *    a = [:foo, 'bar', 2]
- *    a.shift(2) # => [:foo, 'bar']
- *    a # => [2]
+ *  If +count+ is large,
+ *  removes and returns all elements:
  *
- *  If +n+ is as large as or larger than <tt>self.length</tt>,
- *  removes all elements; returns those elements in a new +Array+:
+ *    a = [0, 1, 2, 3]
+ *    a.shift(50) # => [0, 1, 2, 3]
+ *    a           # => []
  *
- *    a = [:foo, 'bar', 2]
- *    a.shift(3) # => [:foo, 'bar', 2]
+ *  If +self+ is empty, returns a new empty array.
  *
- *  If +n+ is zero, returns a new empty +Array+; +self+ is unmodified.
- *
- *  Related: #push, #pop, #unshift.
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
