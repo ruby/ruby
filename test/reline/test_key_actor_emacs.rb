@@ -920,6 +920,29 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_equal('foo_bar', matched)
   end
 
+  def test_continuous_completion_with_perfect_match
+    @line_editor.completion_proc = proc { |word|
+      word == 'f' ? ['foo'] : %w[foobar foobaz]
+    }
+    input_keys('f')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('foo', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('fooba', '')
+  end
+
+  def test_continuous_completion_disabled_with_perfect_match
+    @line_editor.completion_proc = proc { |word|
+      word == 'f' ? ['foo'] : %w[foobar foobaz]
+    }
+    @line_editor.dig_perfect_match_proc = proc {}
+    input_keys('f')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('foo', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('foo', '')
+  end
+
   def test_completion_with_completion_ignore_case
     @line_editor.completion_proc = proc { |word|
       %w{

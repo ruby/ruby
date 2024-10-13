@@ -846,7 +846,11 @@ class Reline::LineEditor
     when CompletionState::NORMAL
       @completion_state = CompletionState::COMPLETION
     when CompletionState::PERFECT_MATCH
-      @dig_perfect_match_proc&.(@perfect_matched)
+      if @dig_perfect_match_proc
+        @dig_perfect_match_proc.(@perfect_matched)
+      else
+        @completion_state = CompletionState::COMPLETION
+      end
     end
     if just_show_list
       is_menu = true
