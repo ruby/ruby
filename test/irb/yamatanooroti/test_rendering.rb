@@ -461,11 +461,9 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
     write("debug\n")
     write("pp 1")
-    close
-
-    screen = result.join("\n").sub(/\n*\z/, "\n")
     # submitted input shouldn't contain hint
-    assert_include(screen, "irb:rdbg(main):002> pp 1\n")
+    assert_screen(/irb:rdbg\(main\):002> pp 1\n/)
+    close
   ensure
     File.unlink(script) if script
   end
