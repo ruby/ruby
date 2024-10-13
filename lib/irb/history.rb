@@ -5,10 +5,7 @@ module IRB
     class << self
       # Integer representation of <code>IRB.conf[:HISTORY_FILE]</code>.
       def save_history
-        num = IRB.conf[:SAVE_HISTORY].to_i
-        # Bignums cause RangeErrors when slicing arrays.
-        # Treat such values as 'infinite'.
-        (num > save_history_max) ? -1 : num
+        IRB.conf[:SAVE_HISTORY].to_i
       end
 
       def save_history?
@@ -26,13 +23,6 @@ module IRB
         else
           IRB.rc_file("_history")
         end
-      end
-
-      private
-
-      def save_history_max
-        # Max fixnum (32-bit) that can be used without getting RangeError.
-        2**30 - 1
       end
     end
   end
@@ -90,7 +80,8 @@ module IRB
         hist = history.map { |l| l.scrub.split("\n").join("\\\n") }
 
         unless append_history || History.infinite?
-          hist = hist.last(History.save_history)
+          # Check size before slicing because array.last(huge_number) raises RangeError.
+          hist = hist.last(History.save_history) if hist.size > History.save_history
         end
 
         f.puts(hist)
