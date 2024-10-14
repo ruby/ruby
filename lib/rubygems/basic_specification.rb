@@ -71,7 +71,14 @@ class Gem::BasicSpecification
   # Return true if this spec can require +file+.
 
   def contains_requirable_file?(file)
-    return false if ignored?
+    if ignored?
+      if platform == Gem::Platform::RUBY || Gem::Platform.local === platform
+        warn "Ignoring #{full_name} because its extensions are not built. " \
+             "Try: gem pristine #{name} --version #{version}"
+      end
+
+      return false
+    end
 
     is_soext = file.end_with?(".so", ".o")
 
@@ -89,14 +96,6 @@ class Gem::BasicSpecification
     return @ignored unless @ignored.nil?
 
     @ignored = missing_extensions?
-    return false unless @ignored
-
-    if platform == Gem::Platform::RUBY || Gem::Platform.local === platform
-      warn "Ignoring #{full_name} because its extensions are not built. " \
-           "Try: gem pristine #{name} --version #{version}"
-    end
-
-    true
   end
 
   def default_gem?

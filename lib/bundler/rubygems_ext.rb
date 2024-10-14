@@ -384,13 +384,13 @@ module Gem
       end
     end
 
-    remove_method :ignored? if new.respond_to?(:ignored?)
+    # Can be removed once RubyGems 3.5.22 support is dropped
+    unless new.respond_to?(:ignored?)
+      def ignored?
+        return @ignored unless @ignored.nil?
 
-    # Same as RubyGems, but without warnings, because Bundler prints its own warnings
-    def ignored?
-      return @ignored unless @ignored.nil?
-
-      @ignored = missing_extensions?
+        @ignored = missing_extensions?
+      end
     end
   end
 
