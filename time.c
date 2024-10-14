@@ -2211,6 +2211,7 @@ utc_offset_arg(VALUE arg)
         }
         if (sec) {
             if (!have_2digits(sec)) goto invalid_utc_offset;
+            if (sec[0] > '5') goto invalid_utc_offset;
             n += num_from_2digits(sec);
             ASSUME(min);
         }

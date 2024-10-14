@@ -152,6 +152,18 @@ class TestTime < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /can't parse/) {
       Time.new("2020-12-02 00:00:00 ")
     }
+    assert_raise_with_message(ArgumentError, /utc_offset/) {
+      Time.new("2020-12-25 00:00:00 +0960")
+    }
+    assert_raise_with_message(ArgumentError, /utc_offset/) {
+      Time.new("2020-12-25 00:00:00 +09:60")
+    }
+    assert_raise_with_message(ArgumentError, /utc_offset/) {
+      Time.new("2020-12-25 00:00:00 +090060")
+    }
+    assert_raise_with_message(ArgumentError, /utc_offset/) {
+      Time.new("2020-12-25 00:00:00 +09:00:60")
+    }
   end
 
   def test_time_add()

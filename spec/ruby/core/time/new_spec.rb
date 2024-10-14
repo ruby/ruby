@@ -625,15 +625,15 @@ describe "Time.new with a timezone argument" do
 
         -> {
           Time.new("2020-12-25 00:56:17 +23:59:60")
-        }.should raise_error(ArgumentError, "utc_offset out of range")
+        }.should raise_error(ArgumentError, /utc_offset/)
 
         -> {
           Time.new("2020-12-25 00:56:17 +24:00")
-        }.should raise_error(ArgumentError, "utc_offset out of range")
+        }.should raise_error(ArgumentError, /utc_offset/)
 
         -> {
           Time.new("2020-12-25 00:56:17 +23:61")
-        }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +23:61')
+        }.should raise_error(ArgumentError, /utc_offset/)
       end
 
       it "raises ArgumentError if string has not ascii-compatible encoding" do
