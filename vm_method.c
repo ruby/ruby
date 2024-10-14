@@ -239,7 +239,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     if (rb_objspace_garbage_object_p(klass)) return;
 
     RB_VM_LOCK_ENTER();
-    if (LIKELY(RCLASS_SUBCLASSES(klass) == NULL)) {
+    if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
         // no subclasses
         // check only current class
 

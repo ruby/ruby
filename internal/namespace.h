@@ -56,7 +56,9 @@ void rb_namespace_enable_builtin(void);
 void rb_namespace_disable_builtin(void);
 void rb_namespace_push_loading_namespace(const rb_namespace_t *);
 void rb_namespace_pop_loading_namespace(const rb_namespace_t *);
+rb_namespace_t * rb_root_namespace(void);
 rb_namespace_t * rb_main_namespace(void);
+const rb_namespace_t * rb_definition_namespace(void);
 const rb_namespace_t * rb_loading_namespace(void);
 const rb_namespace_t * rb_current_namespace(void);
 VALUE rb_current_namespace_details(VALUE);
@@ -71,5 +73,7 @@ VALUE rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VAL
 VALUE rb_namespace_local_extension(VALUE namespace, VALUE path);
 
 void rb_initialize_main_namespace(void);
+
+bool rb_namespace_debug_mode_p(void);
 
 #endif /* INTERNAL_NAMESPACE_H */

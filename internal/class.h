@@ -27,6 +27,41 @@
 # undef RCLASS_SUPER
 #endif
 
+struct rb_ns_subclasses {
+    long refcount;
+    struct st_table *tbl;
+};
+typedef struct rb_ns_subclasses rb_ns_subclasses_t;
+
+static inline long
+rb_ns_subclasses_ref_count(rb_ns_subclasses_t *ns_sub)
+{
+    return ns_sub->refcount;
+}
+
+static inline rb_ns_subclasses_t *
+rb_ns_subclasses_ref_inc(rb_ns_subclasses_t *ns_sub)
+{
+    ns_sub->refcount++;
+    return ns_sub;
+}
+
+static inline void
+rb_ns_subclasses_ref_dec(rb_ns_subclasses_t *ns_sub)
+{
+    ns_sub->refcount--;
+    if (ns_sub->refcount == 0) {
+        st_free_table(ns_sub->tbl);
+        xfree(ns_sub);
+    }
+}
+
+struct rb_subclass_anchor {
+    rb_ns_subclasses_t *ns_subclasses;
+    struct rb_subclass_entry *head;
+};
+typedef struct rb_subclass_anchor rb_subclass_anchor_t;
+
 struct rb_subclass_entry {
     VALUE klass;
     struct rb_subclass_entry *next;
@@ -42,6 +77,7 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
+    const rb_namespace_t *ns;
     VALUE super;
     VALUE *iv_ptr;
     struct rb_id_table *m_tbl;
@@ -51,14 +87,26 @@ struct rb_classext_struct {
     struct rb_id_table *cvc_tbl;
     size_t superclass_depth;
     VALUE *superclasses;
-    struct rb_subclass_entry *subclasses;
-    struct rb_subclass_entry *subclass_entry;
     /**
-     * In the case that this is an `ICLASS`, `module_subclasses` points to the link
+     * The head of subclasses is a blank (w/o klass) entry to be referred from anchor (and be never deleted).
+     * (anchor -> head -> 1st-entry)
+     */
+    struct rb_subclass_anchor *subclasses;
+    /**
+     * The `ns_super_subclasses` points the `ns_subclasses` struct to retreive the subclasses
+     * of the super class in a specific namespace.
+     * In compaction GCs, collecting a classext should trigger the deletion of a rb_subclass_entry
+     * from the super's subclasses. But it may be prevented by the read barrier.
+     * Fetching the super's subclasses for a ns is to avoid the read barrier in that process.
+     */
+    rb_ns_subclasses_t *ns_super_subclasses;
+    /**
+     * In the case that this is an `ICLASS`, `ns_module_subclasses` points to the link
      * in the module's `subclasses` list that indicates that the klass has been
      * included. Hopefully that makes sense.
      */
-    struct rb_subclass_entry *module_subclass_entry;
+    rb_ns_subclasses_t *ns_module_subclasses;
+
     const VALUE origin_;
     const VALUE refined_class;
     union {
@@ -111,6 +159,7 @@ static inline void RCLASS_SET_CLASSEXT_TABLE(VALUE obj, st_table *tbl);
 static inline void RCLASS_SET_PRIME_CLASSEXT_READWRITE(VALUE obj, bool readable, bool writable);
 
 #define RCLASS_EXT(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
+#define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);
@@ -120,6 +169,7 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 // Raw accessor
 #define RCLASS_CLASSEXT_TBL(klass) (RCLASS(klass)->ns_classext_tbl)
 
+#define RCLASSEXT_NS(ext) (ext->ns)
 #define RCLASSEXT_SUPER(ext) (ext->super)
 #define RCLASSEXT_IV_PTR(ext) (ext->iv_ptr)
 #define RCLASSEXT_M_TBL(ext) (ext->m_tbl)
@@ -130,8 +180,8 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_SUPERCLASS_DEPTH(ext) (ext->superclass_depth)
 #define RCLASSEXT_SUPERCLASSES(ext) (ext->superclasses)
 #define RCLASSEXT_SUBCLASSES(ext) (ext->subclasses)
-#define RCLASSEXT_SUBCLASS_ENTRY(ext) (ext->subclass_entry)
-#define RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext) (ext->module_subclass_entry)
+#define RCLASSEXT_NS_SUPER_SUBCLASSES(ext) (ext->ns_super_subclasses)
+#define RCLASSEXT_NS_MODULE_SUBCLASSES(ext) (ext->ns_module_subclasses)
 #define RCLASSEXT_ORIGIN(ext) (ext->origin_)
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
@@ -151,6 +201,7 @@ static inline void RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE o
 static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer);
 
 /* Prime classext entry accessor for very specific reason */
+#define RCLASS_PRIME_NS(c) (RCLASS_EXT(c)->ns)
 // To invalidate CC by inserting&invalidating method entry into tables containing the target cme
 // See clear_method_cache_by_id_in_class()
 #define RCLASS_PRIME_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
@@ -175,9 +226,8 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_READABLE(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_READABLE(c)->superclasses)
 #define RCLASS_SUPERCLASSES_WITH_SELF_P(c) (RCLASS_EXT_READABLE(c)->superclasses_with_self)
-#define RCLASS_SUBCLASSES(c) (RCLASS_EXT_READABLE(c)->subclasses)
-#define RCLASS_SUBCLASS_ENTRY(c) (RCLASS_EXT_READABLE(c)->subclass_entry)
-#define RCLASS_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT_READABLE(c)->module_subclass_entry)
+#define RCLASS_SUBCLASSES_X(c) (RCLASS_EXT_READABLE(c)->subclasses)
+#define RCLASS_SUBCLASSES_FIRST(c) (RCLASS_EXT_READABLE(c)->subclasses->head->next)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
 #define RCLASS_MAX_IV_COUNT(c) (RCLASS_EXT_READABLE(c)->max_iv_count)
@@ -198,8 +248,6 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_WRITABLE_CC_TBL(c) (RCLASS_EXT_WRITABLE(c)->cc_tbl)
 #define RCLASS_WRITABLE_CVC_TBL(c) (RCLASS_EXT_WRITABLE(c)->cvc_tbl)
 #define RCLASS_WRITABLE_SUBCLASSES(c) (RCLASS_EXT_WRITABLE(c)->subclasses)
-#define RCLASS_WRITABLE_SUBCLASS_ENTRY(c) (RCLASS_EXT_WRITABLE(c)->subclass_entry)
-#define RCLASS_WRITABLE_MODULE_SUBCLASS_ENTRY(c) (RCLASS_EXT_WRITABLE(c)->module_subclass_entry)
 
 static inline void RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_WRITE_SUPER(VALUE klass, VALUE super);
@@ -218,8 +266,10 @@ static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self);
-static inline void RCLASS_WRITE_SUBCLASS_ENTRY(VALUE klass, rb_subclass_entry_t *entry);
-static inline void RCLASS_WRITE_MODULE_SUBCLASS_ENTRY(VALUE klass, rb_subclass_entry_t *entry);
+static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
+static inline void RCLASS_WRITE_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
+static inline void RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
+static inline void RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
 static inline void RCLASS_WRITE_ORIGIN(VALUE klass, VALUE origin);
@@ -257,6 +307,8 @@ RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t
 {
     int tbl_created = 0;
     st_table *tbl = RCLASS_CLASSEXT_TBL(obj);
+    VM_ASSERT(NAMESPACE_USER_P(ns)); // non-prime classext is only for user namespace, with ns_object
+    VM_ASSERT(RCLASSEXT_NS(ext) == ns);
     if (!tbl) {
         RCLASS_CLASSEXT_TBL(obj) = tbl = st_init_numtable_with_size(1);
         tbl_created = 1;
@@ -363,9 +415,6 @@ RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
 }
 
-static volatile int step = 0;
-static volatile bool cmt_initialized = false;
-
 static inline rb_classext_t *
 RCLASS_EXT_WRITABLE(VALUE obj)
 {
@@ -396,15 +445,18 @@ RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer)
 }
 
 /* class.c */
-typedef void rb_class_classext_foreach_callback_func(rb_classext_t *classext, bool prime, VALUE namespace, void *arg);
+typedef void rb_class_classext_foreach_callback_func(rb_classext_t *classext, bool is_prime, VALUE namespace, void *arg);
 void rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg);
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
-void rb_class_classext_remove_from_super_subclasses(rb_classext_t *);
+void rb_class_remove_from_module_subclasses(VALUE);
+void rb_class_classext_free_subclasses(rb_classext_t *, VALUE);
+void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
+void rb_class_detach_subclasses(VALUE);
+void rb_class_detach_module_subclasses(VALUE);
 void rb_class_update_superclasses(VALUE);
 size_t rb_class_superclasses_memsize(VALUE);
 void rb_class_remove_subclass_head(VALUE);
-void rb_class_classext_remove_subclass_head(rb_classext_t *);
 int rb_singleton_class_internal_p(VALUE sklass);
 VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
@@ -414,11 +466,6 @@ void rb_module_set_initialized(VALUE module);
 void rb_module_check_initializable(VALUE module);
 VALUE rb_make_metaclass(VALUE, VALUE);
 VALUE rb_include_class_new(VALUE, VALUE);
-void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
-void rb_class_detach_subclasses(VALUE);
-void rb_class_detach_module_subclasses(VALUE);
-void rb_class_remove_from_module_subclasses(VALUE);
-void rb_class_classext_remove_from_module_subclasses(rb_classext_t *);
 VALUE rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super);
 VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
@@ -643,15 +690,28 @@ RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool o
 }
 
 static inline void
-RCLASS_WRITE_SUBCLASS_ENTRY(VALUE klass, rb_subclass_entry_t *entry)
+RCLASS_SET_SUBCLASSES(VALUE klass, struct rb_subclass_anchor *anchor)
 {
-    RCLASSEXT_SUBCLASS_ENTRY(RCLASS_EXT_WRITABLE(klass)) = entry;
+    rb_classext_t *ext = RCLASS_EXT(klass);
+    RCLASSEXT_SUBCLASSES(ext) = anchor;
 }
 
 static inline void
-RCLASS_WRITE_MODULE_SUBCLASS_ENTRY(VALUE klass, rb_subclass_entry_t *entry)
+RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses)
 {
-    RCLASSEXT_MODULE_SUBCLASS_ENTRY(RCLASS_EXT_WRITABLE(klass)) = entry;
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    if (RCLASSEXT_NS_SUPER_SUBCLASSES(ext))
+        rb_ns_subclasses_ref_dec(RCLASSEXT_NS_SUPER_SUBCLASSES(ext));
+    RCLASSEXT_NS_SUPER_SUBCLASSES(ext) = rb_ns_subclasses_ref_inc(ns_subclasses);
+}
+
+static inline void
+RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses)
+{
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    if (RCLASSEXT_NS_MODULE_SUBCLASSES(ext))
+        rb_ns_subclasses_ref_dec(RCLASSEXT_NS_MODULE_SUBCLASSES(ext));
+    RCLASSEXT_NS_MODULE_SUBCLASSES(ext) = rb_ns_subclasses_ref_inc(ns_subclasses);
 }
 
 static inline void

@@ -33,8 +33,6 @@ static rb_namespace_t * const builtin_namespace = &builtin_namespace_data;
 static rb_namespace_t * main_namespace = 0;
 static char *tmp_dir;
 
-static VALUE namespace_debug_mode;
-
 #define NAMESPACE_TMP_PREFIX "_ruby_ns_"
 
 #ifndef MAXPATHLEN
@@ -106,6 +104,12 @@ rb_namespace_pop_loading_namespace(const rb_namespace_t *ns)
     if (latest != ns->ns_object)
         rb_bug("Inconsistent loading namespace");
     rb_ary_pop(require_stack);
+}
+
+rb_namespace_t *
+rb_root_namespace(void)
+{
+    return root_namespace;
 }
 
 rb_namespace_t *
@@ -217,6 +221,16 @@ rb_loading_namespace(void)
         rb_bug("require_stack is not an array: %s", rb_type_str(BUILTIN_TYPE(require_stack)));
     namespace = RARRAY_AREF(require_stack, len-1);
     return rb_get_namespace_t(namespace);
+}
+
+const rb_namespace_t *
+rb_definition_namespace(void)
+{
+    const rb_namespace_t *ns = current_namespace(true);
+    if (NAMESPACE_BUILTIN_P(ns)) {
+        return root_namespace;
+    }
+    return ns;
 }
 
 VALUE
@@ -1005,13 +1019,6 @@ setup_pushing_loading_namespace(rb_namespace_t *ns)
     rb_namespace_exec(ns, setup_pushing_loading_namespace_include, rb_mNamespaceLoader);
 }
 
-static VALUE
-rb_namespace_debug_mode(VALUE self, VALUE mode)
-{
-    namespace_debug_mode = mode;
-    return Qnil;
-}
-
 static void
 namespace_define_loader_method(VALUE module, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
@@ -1044,7 +1051,6 @@ Init_Namespace(void)
     rb_define_singleton_method(rb_cNamespace, "current_details", rb_current_namespace_details, 0);
     rb_define_singleton_method(rb_cNamespace, "is_builtin?", rb_namespace_s_is_builtin_p, 1);
     rb_define_singleton_method(rb_cNamespace, "force_builtin", rb_namespace_s_force_builtin, 1);
-    rb_define_singleton_method(rb_cNamespace, "debug_mode", rb_namespace_debug_mode, 1);
 
     rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
     rb_define_method(rb_cNamespace, "load", rb_namespace_load, -1);
@@ -1055,5 +1061,4 @@ Init_Namespace(void)
 
     rb_vm_t *vm = GET_VM();
     vm->require_stack = rb_ary_new();
-    namespace_debug_mode = Qnil;
 }

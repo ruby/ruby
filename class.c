@@ -161,50 +161,64 @@ duplicate_classext_superclasses(rb_classext_t *orig, rb_classext_t *copy)
     RCLASSEXT_SUPERCLASSES_WITH_SELF(copy) = RCLASSEXT_SUPERCLASSES_WITH_SELF(orig);
 }
 
-static rb_subclass_entry_t *
-duplicate_classext_subclass_entry(rb_subclass_entry_t *src)
+static VALUE
+namespace_subclasses_tbl_key(const rb_namespace_t *ns)
 {
-    rb_subclass_entry_t *dst;
-
-    if (!src)
-        return NULL;
-
-    dst = ZALLOC(rb_subclass_entry_t);
-    dst->klass = src->klass;
-    dst->prev = src->prev;
-    dst->next = src->next;
-    return dst;
+    if (!ns){
+        return 0;
+    }
+    return (VALUE)ns->ns_id;
 }
 
 static void
 duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
 {
-    rb_subclass_entry_t *head, *cur, *cdr, *entry;
+    rb_subclass_anchor_t *anchor, *orig_anchor;
+    rb_subclass_entry_t *head, *cur, *cdr, *entry, *first = NULL;
+    rb_ns_subclasses_t *ns_subclasses;
+    struct st_table *tbl;
 
-    if (!RCLASSEXT_SUBCLASSES(orig)) {
-        return;
-    }
-    head = ZALLOC(rb_subclass_entry_t);
-    RCLASSEXT_SUBCLASSES(copy) = head;
+    if (RCLASSEXT_SUBCLASSES(orig)) {
+        orig_anchor = RCLASSEXT_SUBCLASSES(orig);
+        ns_subclasses = orig_anchor->ns_subclasses;
+        tbl = ((rb_ns_subclasses_t *)ns_subclasses)->tbl;
 
-    cur = head;
-    entry = RCLASSEXT_SUBCLASSES(orig);
-    RUBY_ASSERT(!entry->klass);
-    // The first entry has NULL klass always. See rb_class_foreach_subclass().
-    entry = entry->next;
-    while (entry) {
-        cdr = ZALLOC(rb_subclass_entry_t);
-        cdr->klass = entry->klass;
-        cdr->prev = cur;
-        cur->next = cdr;
-        cur = cdr;
+        anchor = ZALLOC(rb_subclass_anchor_t);
+        anchor->ns_subclasses = rb_ns_subclasses_ref_inc(ns_subclasses);
+
+        head = ZALLOC(rb_subclass_entry_t);
+        anchor->head = head;
+
+        RCLASSEXT_SUBCLASSES(copy) = anchor;
+
+        cur = head;
+        entry = orig_anchor->head;
+        RUBY_ASSERT(!entry->klass);
+        // The head entry has NULL klass always. See rb_class_foreach_subclass().
         entry = entry->next;
+        while (entry) {
+            if (rb_objspace_garbage_object_p(entry->klass)) {
+                entry = entry->next;
+                continue;
+            }
+            cdr = ZALLOC(rb_subclass_entry_t);
+            cdr->klass = entry->klass;
+            cdr->prev = cur;
+            cur->next = cdr;
+            if (!first) {
+                VALUE ns_id = namespace_subclasses_tbl_key(RCLASSEXT_NS(copy));
+                first = cdr;
+                st_insert(tbl, ns_id, (st_data_t)first);
+            }
+            cur = cdr;
+            entry = entry->next;
+        }
     }
 
-    RCLASSEXT_SUBCLASS_ENTRY(copy) =
-        duplicate_classext_subclass_entry(RCLASSEXT_SUBCLASS_ENTRY(orig));
-    RCLASSEXT_MODULE_SUBCLASS_ENTRY(copy) =
-        duplicate_classext_subclass_entry(RCLASSEXT_MODULE_SUBCLASS_ENTRY(orig));
+    if (RCLASSEXT_NS_SUPER_SUBCLASSES(orig))
+        RCLASSEXT_NS_SUPER_SUBCLASSES(copy) = rb_ns_subclasses_ref_inc(RCLASSEXT_NS_SUPER_SUBCLASSES(orig));
+    if (RCLASSEXT_NS_MODULE_SUBCLASSES(orig))
+        RCLASSEXT_NS_MODULE_SUBCLASSES(copy) = rb_ns_subclasses_ref_inc(RCLASSEXT_NS_MODULE_SUBCLASSES(orig));
 }
 
 static void
@@ -227,6 +241,8 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     ext = ZALLOC(rb_classext_t);
 
+    RCLASSEXT_NS(ext) = ns;
+
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
 
     // See also: rb_include_class_new()
@@ -243,7 +259,7 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
     // RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
     // RCLASSEXT_CC_TBL(ext) = NULL;
 
-    // subclasses, subclass_entry, module_subclass_entry
+    // subclasses, namespace_super_subclasses_tbl, namespace_module_subclasses_tbl
     duplicate_classext_subclasses(src, ext);
 
     RCLASSEXT_SET_ORIGIN(ext, iclass, RCLASSEXT_ORIGIN(src));
@@ -261,27 +277,28 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 rb_classext_t *
 rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace_t *ns)
 {
-    // TODO: optimize this funcation for ICLASS to not copy m_tbl etc for less memory usage & gc load
-    rb_classext_t *copy = ZALLOC(rb_classext_t);
+    rb_classext_t *ext = ZALLOC(rb_classext_t);
     bool dup_iclass = RB_TYPE_P(klass, T_MODULE) ? true : false;
 
-    RCLASSEXT_SUPER(copy) = RCLASSEXT_SUPER(orig);
+    RCLASSEXT_NS(ext) = ns;
 
-    RCLASSEXT_M_TBL(copy) = duplicate_classext_id_table(RCLASSEXT_M_TBL(orig), dup_iclass);
+    RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
+
+    RCLASSEXT_M_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_M_TBL(orig), dup_iclass);
 
     // TODO: consider shapes for performance
     if (RCLASSEXT_IV_PTR(orig)) {
-        RCLASSEXT_IV_PTR(copy) = (VALUE *)st_copy((st_table *)RCLASSEXT_IV_PTR(orig));
+        RCLASSEXT_IV_PTR(ext) = (VALUE *)st_copy((st_table *)RCLASSEXT_IV_PTR(orig));
     } else {
-        RCLASSEXT_IV_PTR(copy) = (VALUE *)st_init_numtable();
+        RCLASSEXT_IV_PTR(ext) = (VALUE *)st_init_numtable();
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
-        RCLASSEXT_CONST_TBL(copy) = RCLASSEXT_CONST_TBL(orig);
-        RCLASSEXT_SHARED_CONST_TBL(copy) = true;
+        RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(orig);
+        RCLASSEXT_SHARED_CONST_TBL(ext) = true;
     } else {
-        RCLASSEXT_CONST_TBL(copy) = duplicate_classext_const_tbl(RCLASSEXT_CONST_TBL(orig), klass);
-        RCLASSEXT_SHARED_CONST_TBL(copy) = false;
+        RCLASSEXT_CONST_TBL(ext) = duplicate_classext_const_tbl(RCLASSEXT_CONST_TBL(orig), klass);
+        RCLASSEXT_SHARED_CONST_TBL(ext) = false;
     }
     /*
      * callable_m_tbl is for `super` chain, and entries will be created when the super chain is called.
@@ -293,49 +310,50 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
      * RCLASSEXT_CC_TBL(copy) = NULL
      */
 
-    RCLASSEXT_CVC_TBL(copy) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
+    RCLASSEXT_CVC_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
 
     // superclass_depth, superclasses
-    duplicate_classext_superclasses(orig, copy);
+    duplicate_classext_superclasses(orig, ext);
 
-    // subclasses, subclass_entry, module_subclass_entry
-    duplicate_classext_subclasses(orig, copy);
+    // subclasses, subclasses_index
+    duplicate_classext_subclasses(orig, ext);
 
-    RCLASSEXT_SET_ORIGIN(copy, klass, RCLASSEXT_ORIGIN(orig));
+    RCLASSEXT_SET_ORIGIN(ext, klass, RCLASSEXT_ORIGIN(orig));
     /*
      * Members not copied to namespace classext values
      * * refined_class
      * * as.class.allocator / as.singleton_class.attached_object
      * * includer
      */
-    RCLASSEXT_MAX_IV_COUNT(copy) = RCLASSEXT_MAX_IV_COUNT(orig);
-    RCLASSEXT_VARIATION_COUNT(copy) = RCLASSEXT_VARIATION_COUNT(orig);
-    RCLASSEXT_PERMANENT_CLASSPATH(copy) = RCLASSEXT_PERMANENT_CLASSPATH(orig);
-    RCLASSEXT_CLONED(copy) = RCLASSEXT_CLONED(orig);
-    RCLASSEXT_CLASSPATH(copy) = RCLASSEXT_CLASSPATH(orig);
+    RCLASSEXT_MAX_IV_COUNT(ext) = RCLASSEXT_MAX_IV_COUNT(orig);
+    RCLASSEXT_VARIATION_COUNT(ext) = RCLASSEXT_VARIATION_COUNT(orig);
+    RCLASSEXT_PERMANENT_CLASSPATH(ext) = RCLASSEXT_PERMANENT_CLASSPATH(orig);
+    RCLASSEXT_CLONED(ext) = RCLASSEXT_CLONED(orig);
+    RCLASSEXT_CLASSPATH(ext) = RCLASSEXT_CLASSPATH(orig);
 
     /* For the usual T_CLASS/T_MODULE, iclass flags are always false */
 
-    if (dup_iclass && RCLASSEXT_SUBCLASSES(copy)) {
+    if (dup_iclass) {
         VALUE iclass;
         /*
          * ICLASS has the same m_tbl/const_tbl/cvc_tbl with the included module.
          * So the module's classext is copied, its tables should be also referred
          * by the ICLASS's classext for the namespace.
          */
-        rb_subclass_entry_t *subclass_entry = RCLASSEXT_SUBCLASSES(copy);
+        rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
+        rb_subclass_entry_t *subclass_entry = anchor->head;
         while (subclass_entry) {
             if (subclass_entry->klass && RB_TYPE_P(subclass_entry->klass, T_ICLASS)) {
                 iclass = subclass_entry->klass;
                 if (RBASIC_CLASS(iclass) == klass) {
-                    class_duplicate_iclass_classext(iclass, copy, ns);
+                    class_duplicate_iclass_classext(iclass, ext, ns);
                 }
             }
             subclass_entry = subclass_entry->next;
         }
     }
 
-    return copy;
+    return ext;
 }
 
 struct class_classext_foreach_arg {
@@ -357,12 +375,12 @@ rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *
 {
     st_table *tbl = RCLASS(klass)->ns_classext_tbl;
     struct class_classext_foreach_arg foreach_arg;
-    func(RCLASS_EXT(klass), true, (VALUE)NULL, arg);
     if (tbl) {
         foreach_arg.func = func;
         foreach_arg.callback_arg = arg;
         rb_st_foreach(tbl, class_classext_foreach_i, (st_data_t)&foreach_arg);
     }
+    func(RCLASS_EXT(klass), true, (VALUE)NULL, arg);
 }
 
 VALUE
@@ -659,7 +677,7 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
         rb_str_cat_cstr(result, "Subclasses: NONE\n");
     } else {
         rb_str_cat_cstr(result, "Subclasses: ");
-        subclass = RCLASSEXT_SUBCLASSES(ext);
+        subclass = RCLASSEXT_SUBCLASSES(ext)->head;
         while (subclass->next) {
             subclass = subclass->next;
             if (subclass->klass) {
@@ -669,19 +687,17 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
         }
         rb_str_cat_cstr(result, ".\n");
     }
-    if (!RCLASSEXT_SUBCLASS_ENTRY(ext)) {
-        rb_str_cat_cstr(result, "Subclass Entry: NONE\n");
+    if (!RCLASSEXT_NS_SUPER_SUBCLASSES(ext)) {
+        rb_str_cat_cstr(result, "Namespace Super Subclass Table: NONE\n");
     } else {
-        rb_str_cat_cstr(result, "Subclass Entry: ");
-        rb_str_concat(result, debug_dump_inspect_or_return_type(RCLASSEXT_SUBCLASS_ENTRY(ext)->klass));
-        rb_str_cat_cstr(result, "\n");
+        snprintf(buf, 2048, "Namespace Super Subclass Table: %p\n", (void *)RCLASSEXT_NS_SUPER_SUBCLASSES(ext));
+        rb_str_cat_cstr(result, buf);
     }
-    if (!RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext)) {
-        rb_str_cat_cstr(result, "Module Subclass Entry: NONE\n");
+    if (!RCLASSEXT_NS_MODULE_SUBCLASSES(ext)) {
+        rb_str_cat_cstr(result, "Namespace Module Subclass Table: NONE\n");
     } else {
-        rb_str_cat_cstr(result, "Module Subclass Entry: ");
-        rb_str_concat(result, debug_dump_inspect_or_return_type(RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext)->klass));
-        rb_str_cat_cstr(result, "\n");
+        snprintf(buf, 2048, "Namespace Module Subclass Table: %p\n", (void *)RCLASSEXT_NS_MODULE_SUBCLASSES(ext));
+        rb_str_cat_cstr(result, buf);
     }
     if (!RCLASSEXT_ORIGIN(ext)) {
         rb_str_cat_cstr(result, "Origin: NONE\n");
@@ -815,178 +831,178 @@ rb_class_variation_count(VALUE klass)
     return RCLASS_VARIATION_COUNT(klass);
 }
 
-static rb_subclass_entry_t *
-push_subclass_entry_to_list(VALUE super, VALUE klass)
+static void
+push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
 {
     rb_subclass_entry_t *entry, *head;
+    rb_subclass_anchor_t *anchor;
+    rb_ns_subclasses_t *ns_subclasses;
+    struct st_table *tbl;
+    const rb_namespace_t *ns = rb_current_namespace();
 
     entry = ZALLOC(rb_subclass_entry_t);
     entry->klass = klass;
 
-    head = RCLASS_WRITABLE_SUBCLASSES(super);
-    if (!head) {
-        head = ZALLOC(rb_subclass_entry_t);
-        RCLASS_WRITABLE_SUBCLASSES(super) = head;
-    }
-    entry->next = head->next;
-    entry->prev = head;
+    anchor = RCLASS_WRITABLE_SUBCLASSES(super);
+    VM_ASSERT(anchor);
+    ns_subclasses = (rb_ns_subclasses_t *)anchor->ns_subclasses;
+    VM_ASSERT(ns_subclasses);
+    tbl = ns_subclasses->tbl;
+    VM_ASSERT(tbl);
 
+    head = anchor->head;
     if (head->next) {
         head->next->prev = entry;
+        entry->next = head->next;
     }
     head->next = entry;
+    entry->prev = head;
+    st_insert(tbl, namespace_subclasses_tbl_key(ns), (st_data_t)entry);
 
-    return entry;
+    if (is_module) {
+        RCLASS_WRITE_NS_MODULE_SUBCLASSES(klass, anchor->ns_subclasses);
+    } else {
+        RCLASS_WRITE_NS_SUPER_SUBCLASSES(klass, anchor->ns_subclasses);
+    }
 }
 
 void
 rb_class_subclass_add(VALUE super, VALUE klass)
 {
     if (super && !UNDEF_P(super)) {
-        rb_subclass_entry_t *entry = push_subclass_entry_to_list(super, klass);
-        RCLASS_WRITE_SUBCLASS_ENTRY(klass, entry);
+        push_subclass_entry_to_list(super, klass, false);
     }
 }
 
 static void
 rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
 {
-    rb_subclass_entry_t *entry = push_subclass_entry_to_list(module, iclass);
-    RCLASS_WRITE_MODULE_SUBCLASS_ENTRY(iclass, entry);
+    if (module && !UNDEF_P(module)) {
+        push_subclass_entry_to_list(module, iclass, true);
+    }
 }
 
 void
 rb_class_remove_subclass_head(VALUE klass) // TODO: check this is still used and required
 {
-    rb_subclass_entry_t *head = RCLASS_SUBCLASSES(klass);
-
-    if (head) {
-        if (head->next) {
-            head->next->prev = NULL;
-        }
-        RCLASS_SUBCLASSES(klass) = NULL;
-        xfree(head);
-    }
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    rb_class_classext_free_subclasses(ext, klass);
 }
 
-void
-rb_class_classext_remove_subclass_head(rb_classext_t *ext)
+static struct rb_subclass_entry *
+class_get_subclasses_for_ns(struct st_table *tbl, VALUE ns_id)
 {
-    rb_subclass_entry_t *head = RCLASSEXT_SUBCLASSES(ext);
+    st_data_t value;
+    if (st_lookup(tbl, (st_data_t)ns_id, &value)) {
+        return (struct rb_subclass_entry *)value;
+    }
+    return NULL;
+}
 
-    if (head) {
-        if (head->next) {
-            head->next->prev = NULL;
+static void
+remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
+{
+    rb_subclass_entry_t *entry = class_get_subclasses_for_ns(tbl, ns_id);
+    bool first_entry = true;
+    while (entry) {
+        if (entry->klass == klass) {
+            rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
+
+            if (prev) {
+                prev->next = next;
+            }
+            if (next) {
+                next->prev = prev;
+            }
+
+            xfree(entry);
+
+            if (first_entry) {
+                if (next) {
+                    st_insert(tbl, ns_id, (st_data_t)next);
+                } else {
+                    // no subclass entries in this ns
+                    st_delete(tbl, &ns_id, NULL);
+                }
+            }
+            break;
+        } else if (first_entry) {
+            first_entry = false;
         }
-        RCLASSEXT_SUBCLASSES(ext) = NULL;
-        xfree(head);
+        entry = entry->next;
     }
 }
 
 void
 rb_class_remove_from_super_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry = RCLASS_WRITABLE_SUBCLASS_ENTRY(klass);
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    rb_ns_subclasses_t *ns_subclasses = RCLASSEXT_NS_SUPER_SUBCLASSES(ext);
 
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
-        xfree(entry);
-    }
-
-    RCLASS_WRITE_SUBCLASS_ENTRY(klass, NULL);
-}
-
-void
-rb_class_classext_remove_from_super_subclasses(rb_classext_t *ext)
-{
-    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASS_ENTRY(ext);
-
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
-        xfree(entry);
-    }
-
-    RCLASSEXT_SUBCLASS_ENTRY(ext) = NULL;
+    if (!ns_subclasses) return;
+    remove_class_from_subclasses(ns_subclasses->tbl, namespace_subclasses_tbl_key(RCLASSEXT_NS(ext)), klass);
+    rb_ns_subclasses_ref_dec(ns_subclasses);
+    RCLASSEXT_NS_SUPER_SUBCLASSES(ext) = 0;
 }
 
 void
 rb_class_remove_from_module_subclasses(VALUE klass)
 {
-    rb_subclass_entry_t *entry = RCLASS_WRITABLE_MODULE_SUBCLASS_ENTRY(klass);
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    rb_ns_subclasses_t *ns_subclasses = RCLASSEXT_NS_MODULE_SUBCLASSES(ext);
 
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
-        xfree(entry);
-    }
-
-    RCLASS_WRITE_MODULE_SUBCLASS_ENTRY(klass, NULL);
+    if (!ns_subclasses) return;
+    remove_class_from_subclasses(ns_subclasses->tbl, namespace_subclasses_tbl_key(RCLASSEXT_NS(ext)), klass);
+    rb_ns_subclasses_ref_dec(ns_subclasses);
+    RCLASSEXT_NS_MODULE_SUBCLASSES(ext) = 0;
 }
 
 void
-rb_class_classext_remove_from_module_subclasses(rb_classext_t *ext)
+rb_class_classext_free_subclasses(rb_classext_t *ext, VALUE klass)
 {
-    rb_subclass_entry_t *entry = RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext);
+    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
+    struct st_table *tbl = anchor->ns_subclasses->tbl;
+    VALUE ns_id = namespace_subclasses_tbl_key(RCLASSEXT_NS(ext));
+    rb_subclass_entry_t *next, *entry = anchor->head;
 
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
+    while (entry) {
+        next = entry->next;
         xfree(entry);
+        entry = next;
     }
+    VM_ASSERT(
+        rb_ns_subclasses_ref_count(anchor->ns_subclasses) > 0,
+        "ns_subclasses refcount (%p) %ld", anchor->ns_subclasses, rb_ns_subclasses_ref_count(anchor->ns_subclasses));
+    st_delete(tbl, &ns_id, NULL);
+    rb_ns_subclasses_ref_dec(anchor->ns_subclasses);
+    xfree(anchor);
 
-    RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext) = NULL;
+    if (RCLASSEXT_NS_SUPER_SUBCLASSES(ext)) {
+        rb_ns_subclasses_t *ns_sub = RCLASSEXT_NS_SUPER_SUBCLASSES(ext);
+        remove_class_from_subclasses(ns_sub->tbl, ns_id, klass);
+        rb_ns_subclasses_ref_dec(ns_sub);
+    }
+    if (RCLASSEXT_NS_MODULE_SUBCLASSES(ext)) {
+        rb_ns_subclasses_t *ns_sub = RCLASSEXT_NS_MODULE_SUBCLASSES(ext);
+        remove_class_from_subclasses(ns_sub->tbl, ns_id, klass);
+        rb_ns_subclasses_ref_dec(ns_sub);
+    }
 }
 
 void
 rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
-    // RCLASS_SUBCLASSES should always point to our head element which has NULL klass
-    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES(klass);
-    // if we have a subclasses list, then the head is a placeholder with no valid
-    // class. So ignore it and use the next element in the list (if one exists)
-    if (cur) {
-        RUBY_ASSERT(!cur->klass);
-        cur = cur->next;
-    }
-
+    rb_subclass_entry_t *tmp;
+    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES_FIRST(klass);
     /* do not be tempted to simplify this loop into a for loop, the order of
        operations is important here if `f` modifies the linked list */
     while (cur) {
         VALUE curklass = cur->klass;
-        cur = cur->next;
+        tmp = cur->next;
         // do not trigger GC during f, otherwise the cur will become
         // a dangling pointer if the subclass is collected
         f(curklass, arg);
+        cur = tmp;
     }
 }
 
@@ -1014,6 +1030,13 @@ rb_class_detach_module_subclasses(VALUE klass)
     rb_class_foreach_subclass(klass, class_detach_module_subclasses, Qnil);
 }
 
+static void
+class_switch_superclass(VALUE super, VALUE klass)
+{
+    class_detach_subclasses(klass, Qnil);
+    rb_class_subclass_add(super, klass);
+}
+
 /**
  * Allocates a struct RClass for a new class.
  *
@@ -1029,7 +1052,9 @@ rb_class_detach_module_subclasses(VALUE klass)
 static VALUE
 class_alloc(VALUE flags, VALUE klass)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
+    rb_ns_subclasses_t *ns_subclasses;
+    rb_subclass_anchor_t *anchor;
+    const rb_namespace_t *ns = rb_definition_namespace();
     size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     flags &= T_MASK;
@@ -1043,11 +1068,9 @@ class_alloc(VALUE flags, VALUE klass)
       RCLASS_M_TBL(obj) = 0;
       RCLASS_IV_INDEX_TBL(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
-      RCLASS_SUBCLASSES(obj) = NULL;
-      RCLASS_PARENT_SUBCLASSES(obj) = NULL;
-      RCLASS_MODULE_SUBCLASSES(obj) = NULL;
      */
 
+    RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in main/local namespaces are
     // writable directly.
     RCLASS_SET_PRIME_CLASSEXT_READWRITE((VALUE)obj, true, NAMESPACE_USER_P(ns) ? true : false);
@@ -1056,15 +1079,23 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
     RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
+    // ns_subclasses = IMEMO_NEW(rb_ns_subclasses_t, imemo_ns_subclasses, klass);
+    ns_subclasses = ZALLOC(rb_ns_subclasses_t);
+    ns_subclasses->refcount = 1;
+    ns_subclasses->tbl = st_init_numtable();
+    anchor = ZALLOC(rb_subclass_anchor_t);
+    anchor->ns_subclasses = ns_subclasses;
+    anchor->head = ZALLOC(rb_subclass_entry_t);
+    RCLASS_SET_SUBCLASSES((VALUE)obj, anchor);
+
     return (VALUE)obj;
 }
 
 static VALUE
 class_associate_super(VALUE klass, VALUE super, bool init)
 {
-    if (super) {
-        rb_class_remove_from_super_subclasses(klass);
-        rb_class_subclass_add(super, klass);
+    if (super && !UNDEF_P(super)) {
+        class_switch_superclass(super, klass);
     }
     if (init) {
         RCLASS_SET_SUPER(klass, super);
@@ -2043,13 +2074,7 @@ rb_include_module(VALUE klass, VALUE module)
         rb_raise(rb_eArgError, "cyclic include detected");
 
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
-        // skip the placeholder subclass entry at the head of the list
-        if (iclass) {
-            RUBY_ASSERT(!iclass->klass);
-            iclass = iclass->next;
-        }
-
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES_FIRST(klass);
         while (iclass) {
             int do_include = 1;
             VALUE check_class = iclass->klass;
@@ -2299,13 +2324,7 @@ rb_prepend_module(VALUE klass, VALUE module)
         rb_vm_check_redefinition_by_prepend(klass);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES(klass);
-        // skip the placeholder subclass entry at the head of the list if it exists
-        if (iclass) {
-            RUBY_ASSERT(!iclass->klass);
-            iclass = iclass->next;
-        }
-
+        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES_FIRST(klass);
         VALUE klass_origin = RCLASS_ORIGIN(klass);
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);

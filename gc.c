@@ -1246,13 +1246,12 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
 
 struct classext_foreach_args {
     VALUE klass;
-    bool is_prime;
     bool obj_too_complex;
     rb_objspace_t *objspace; // used for update_*
 };
 
 static void
-classext_free(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 {
     struct rb_id_table *tbl;
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
@@ -1272,19 +1271,17 @@ classext_free(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
         rb_id_table_foreach_values(tbl, cvar_table_free_i, NULL);
         rb_id_table_free(tbl);
     }
-    rb_class_classext_remove_subclass_head(ext);
-    rb_class_classext_remove_from_module_subclasses(ext);
-    rb_class_classext_remove_from_super_subclasses(ext);
+    rb_class_classext_free_subclasses(ext, args->klass);
     if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
         xfree(RCLASSEXT_SUPERCLASSES(ext));
     }
-    if (!prime) {
+    if (!is_prime) { // the prime classext will be freed with RClass
         xfree(ext);
     }
 }
 
 static void
-classext_iclass_free(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+classext_iclass_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
 
@@ -1297,11 +1294,9 @@ classext_iclass_free(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
     }
     rb_cc_tbl_free(RCLASSEXT_CC_TBL(ext), args->klass);
 
-    rb_class_classext_remove_subclass_head(ext);
-    rb_class_classext_remove_from_module_subclasses(ext);
-    rb_class_classext_remove_from_super_subclasses(ext);
+    rb_class_classext_free_subclasses(ext, args->klass);
 
-    if (!prime) {
+    if (!is_prime) { // the prime classext will be freed with RClass
         xfree(ext);
     }
 }
@@ -1347,6 +1342,10 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         if (RCLASS(obj)->ns_classext_tbl) {
             st_free_table(RCLASS(obj)->ns_classext_tbl);
         }
+        // TODO: TESTING delete this
+        RCLASS(obj)->ns_classext_tbl = NULL;
+        RCLASS(obj)->prime_classext_readable = 0;
+        RCLASS(obj)->prime_classext_writable = 0;
         (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
         (void)RB_DEBUG_COUNTER_INC_IF(obj_class_ptr, BUILTIN_TYPE(obj) == T_CLASS);
         break;
@@ -2035,7 +2034,6 @@ rb_obj_memsize_of(VALUE obj)
         rb_class_classext_foreach(obj, classext_superclasses_memsize, (void *)&size);
         break;
       case T_ICLASS:
-        // TODO: copied classext for iclass
         if (RICLASS_OWNS_M_TBL_P(obj)) {
             if (RCLASS_M_TBL(obj)) {
                 size += rb_id_table_memsize(RCLASS_M_TBL(obj));
@@ -3519,10 +3517,15 @@ update_const_tbl(void *objspace, struct rb_id_table *tbl)
 }
 
 static void
-update_subclass_entries(void *objspace, rb_subclass_entry_t *entry)
+update_subclasses(void *objspace, rb_classext_t *ext)
 {
+    rb_subclass_entry_t *entry;
+    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
+    if (!anchor) return;
+    entry = anchor->head;
     while (entry) {
-        UPDATE_IF_MOVED(objspace, entry->klass);
+        if (entry->klass)
+            UPDATE_IF_MOVED(objspace, entry->klass);
         entry = entry->next;
     }
 }
@@ -3550,7 +3553,7 @@ update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext)
 }
 
 static void
-update_classext(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
     VALUE klass = args->klass;
@@ -3576,14 +3579,14 @@ update_classext(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
     }
     update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
     update_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
-    update_subclass_entries(objspace, RCLASSEXT_SUBCLASSES(ext));
     update_superclasses(objspace, ext);
+    update_subclasses(objspace, ext);
 
     update_classext_values(objspace, ext);
 }
 
 static void
-update_iclass_classext(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
+update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
     rb_objspace_t *objspace = args->objspace;
@@ -3591,12 +3594,10 @@ update_iclass_classext(rb_classext_t *ext, bool prime, VALUE namespace, void *ar
     if (RCLASSEXT_SUPER(ext)) {
         UPDATE_IF_MOVED(objspace, RCLASSEXT_SUPER(ext));
     }
-    if (RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext)) {
-        update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
-    }
+    update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
     update_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
-    update_subclass_entries(objspace, RCLASSEXT_SUBCLASSES(ext));
+    update_subclasses(objspace, ext);
 
     update_classext_values(objspace, ext);
 }
