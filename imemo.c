@@ -177,7 +177,7 @@ cc_table_mark_i(VALUE ccs_ptr, void *data)
     VALUE klass = (VALUE)data;
 
     VALUE lookup_val;
-    VM_ASSERT(rb_id_table_lookup(RCLASS_CC_TBL(klass), ccs->cme->called_id, &lookup_val));
+    VM_ASSERT(rb_id_table_lookup(RCLASS_WRITABLE_CC_TBL(klass), ccs->cme->called_id, &lookup_val));
     VM_ASSERT(lookup_val == ccs_ptr);
 #endif
 
