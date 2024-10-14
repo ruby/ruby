@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require_relative '../lib/timeout'
+require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
 
