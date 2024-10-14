@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'timeout'
+require_relative '../lib/timeout'
 
 class TestTimeout < Test::Unit::TestCase
 
@@ -28,6 +28,12 @@ class TestTimeout < Test::Unit::TestCase
   def test_allows_nil_seconds
     assert_nothing_raised do
       assert_equal :ok, Timeout.timeout(nil){:ok}
+    end
+  end
+
+  def test_raise_for_neg_second
+    assert_raise(ArgumentError) do
+      Timeout.timeout(-1) { sleep(0.01) }
     end
   end
 
