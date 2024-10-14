@@ -2153,6 +2153,9 @@ invalid_utc_offset(VALUE zone)
              zone);
 }
 
+#define have_2digits(ptr) (ISDIGIT((ptr)[0]) && ISDIGIT((ptr)[1]))
+#define num_from_2digits(ptr) ((ptr)[0] * 10 + (ptr)[1] - '0' * 11)
+
 static VALUE
 utc_offset_arg(VALUE arg)
 {
@@ -2207,18 +2210,18 @@ utc_offset_arg(VALUE arg)
             goto invalid_utc_offset;
         }
         if (sec) {
-            if (!ISDIGIT(sec[0]) || !ISDIGIT(sec[1])) goto invalid_utc_offset;
-            n += (sec[0] * 10 + sec[1] - '0' * 11);
+            if (!have_2digits(sec)) goto invalid_utc_offset;
+            n += num_from_2digits(sec);
             ASSUME(min);
         }
         if (min) {
-            if (!ISDIGIT(min[0]) || !ISDIGIT(min[1])) goto invalid_utc_offset;
+            if (!have_2digits(min)) goto invalid_utc_offset;
             if (min[0] > '5') goto invalid_utc_offset;
-            n += (min[0] * 10 + min[1] - '0' * 11) * 60;
+            n += num_from_2digits(min) * 60;
         }
         if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
-        if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
-        n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
+        if (!have_2digits(s+1)) goto invalid_utc_offset;
+        n += num_from_2digits(s+1) * 3600;
         if (s[0] == '-') {
             if (n == 0) return UTC_ZONE;
             n = -n;
@@ -2528,8 +2531,7 @@ static int
 two_digits(const char *ptr, const char *end, const char **endp, const char *name)
 {
     ssize_t len = end - ptr;
-    if (len < 2 || (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) ||
-        ((len > 2) && ISDIGIT(ptr[2]))) {
+    if (len < 2 || !have_2digits(ptr) || ((len > 2) && ISDIGIT(ptr[2]))) {
         VALUE mesg = rb_sprintf("two digits %s is expected", name);
         if (ptr[-1] == '-' || ptr[-1] == ':') {
             rb_str_catf(mesg, " after '%c'", ptr[-1]);
@@ -2538,7 +2540,7 @@ two_digits(const char *ptr, const char *end, const char **endp, const char *name
         rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
     }
     *endp = ptr + 2;
-    return (ptr[0] - '0') * 10 + (ptr[1] - '0');
+    return num_from_2digits(ptr);
 }
 
 static VALUE
