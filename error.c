@@ -3973,13 +3973,25 @@ inspect_frozen_obj(VALUE obj, VALUE mesg, int recur)
     return mesg;
 }
 
+static VALUE
+get_created_info(VALUE obj, int *pline)
+{
+    VALUE info = rb_attr_get(obj, id_debug_created_info);
+
+    if (NIL_P(info)) return Qnil;
+
+    VALUE path = rb_ary_entry(info, 0);
+    VALUE line = rb_ary_entry(info, 1);
+    if (NIL_P(path)) return Qnil;
+    *pline = NUM2INT(line);
+    return StringValue(path);
+}
+
 void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
 
-    VALUE debug_info;
-    const ID created_info = id_debug_created_info;
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
                             CLASS_OF(frozen_obj));
     VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
@@ -3987,13 +3999,44 @@ rb_error_frozen_object(VALUE frozen_obj)
     rb_ivar_set(exc, id_recv, frozen_obj);
     rb_exec_recursive(inspect_frozen_obj, frozen_obj, mesg);
 
-    if (!NIL_P(debug_info = rb_attr_get(frozen_obj, created_info))) {
-        VALUE path = rb_ary_entry(debug_info, 0);
-        VALUE line = rb_ary_entry(debug_info, 1);
-
-        rb_str_catf(mesg, ", created at %"PRIsVALUE":%"PRIsVALUE, path, line);
+    int created_line;
+    VALUE created_path = get_created_info(frozen_obj, &created_line);
+    if (!NIL_P(created_path)) {
+        rb_str_catf(mesg, ", created at %"PRIsVALUE":%d", created_path, created_line);
     }
     rb_exc_raise(exc);
+}
+
+void
+rb_warn_unchilled(VALUE obj)
+{
+    rb_warning_category_t category = RB_WARN_CATEGORY_DEPRECATED;
+    if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(category)) {
+        int line;
+        VALUE file = rb_source_location(&line);
+        VALUE mesg = NIL_P(file) ? rb_str_new(0, 0) : rb_str_dup(file);
+
+        if (!NIL_P(file)) {
+            if (line) rb_str_catf(mesg, ":%d", line);
+            rb_str_cat2(mesg, ": ");
+        }
+        rb_str_cat2(mesg, "warning: literal string will be frozen in the future");
+
+        VALUE str = obj;
+        if (STR_SHARED_P(str)) {
+            str = RSTRING(obj)->as.heap.aux.shared;
+        }
+        VALUE created = get_created_info(str, &line);
+        if (NIL_P(created)) {
+            rb_str_cat2(mesg, " (run with --debug-frozen-string-literal for more information)\n");
+        } else {
+            rb_str_cat2(mesg, "\n");
+            rb_str_append(mesg, created);
+            if (line) rb_str_catf(mesg, ":%d", line);
+            rb_str_cat2(mesg, ": info: the string was created here\n");
+        }
+        rb_warn_category(mesg, rb_warning_category_to_name(category));
+    }
 }
 
 #undef rb_check_frozen
