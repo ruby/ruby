@@ -15,7 +15,7 @@ module Bundler
       definition.validate_runtime!
 
       begin
-        definition.resolve_only_locally!
+        definition.check!
         not_installed = definition.missing_specs
       rescue GemNotFound, GitError, SolveFailure
         Bundler.ui.error "Bundler can't satisfy your Gemfile's dependencies."

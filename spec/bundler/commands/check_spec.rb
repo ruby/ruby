@@ -47,8 +47,8 @@ RSpec.describe "bundle check" do
     expect(bundled_app_lock).not_to exist
   end
 
-  it "prints a generic error if the missing gems are unresolvable" do
-    system_gems ["rails-2.3.2"]
+  it "prints an error that shows missing gems" do
+    system_gems ["rails-2.3.2"], path: default_bundle_path
 
     gemfile <<-G
       source "https://gem.repo1"
@@ -56,10 +56,17 @@ RSpec.describe "bundle check" do
     G
 
     bundle :check, raise_on_error: false
-    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
+    expect(err).to include("The following gems are missing")
+    expect(err).to include(" * rake (13.2.1)")
+    expect(err).to include(" * actionpack (2.3.2)")
+    expect(err).to include(" * activerecord (2.3.2)")
+    expect(err).to include(" * actionmailer (2.3.2)")
+    expect(err).to include(" * activeresource (2.3.2)")
+    expect(err).to include(" * activesupport (2.3.2)")
+    expect(err).to include("Install missing gems with `bundle install`")
   end
 
-  it "prints a generic error if a Gemfile.lock does not exist and a toplevel dependency does not exist" do
+  it "prints an error that shows missing gems if a Gemfile.lock does not exist and a toplevel dependency is missing" do
     gemfile <<-G
       source "https://gem.repo1"
       gem "rails"
@@ -67,7 +74,15 @@ RSpec.describe "bundle check" do
 
     bundle :check, raise_on_error: false
     expect(exitstatus).to be > 0
-    expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
+    expect(err).to include("The following gems are missing")
+    expect(err).to include(" * rails (2.3.2)")
+    expect(err).to include(" * rake (13.2.1)")
+    expect(err).to include(" * actionpack (2.3.2)")
+    expect(err).to include(" * activerecord (2.3.2)")
+    expect(err).to include(" * actionmailer (2.3.2)")
+    expect(err).to include(" * activeresource (2.3.2)")
+    expect(err).to include(" * activesupport (2.3.2)")
+    expect(err).to include("Install missing gems with `bundle install`")
   end
 
   it "prints a generic error if gem git source is not checked out" do
@@ -391,7 +406,7 @@ RSpec.describe "bundle check" do
 
     it "returns success when the Gemfile is satisfied" do
       system_gems "myrack-1.0.0", path: default_bundle_path
-      bundle :check
+      bundle :check, artifice: "compact_index"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
   end
@@ -416,11 +431,11 @@ RSpec.describe "bundle check" do
 
     it "returns success when the Gemfile is satisfied and generates a correct lockfile" do
       system_gems "depends_on_myrack-1.0", "myrack-1.0", gem_repo: gem_repo4, path: default_bundle_path
-      bundle :check
+      bundle :check, artifice: "compact_index"
 
       checksums = checksums_section_when_enabled do |c|
-        c.no_checksum "depends_on_myrack", "1.0"
-        c.no_checksum "myrack", "1.0"
+        c.checksum gem_repo4, "depends_on_myrack", "1.0"
+        c.checksum gem_repo4, "myrack", "1.0"
       end
 
       expect(out).to include("The Gemfile's dependencies are satisfied")
@@ -516,6 +531,60 @@ RSpec.describe "bundle check" do
         BUNDLED WITH
            #{Bundler::VERSION}
       L
+    end
+  end
+
+  context "with scoped and unscoped sources" do
+    it "does not corrupt lockfile" do
+      build_repo2 do
+        build_gem "foo"
+        build_gem "wadus"
+        build_gem("baz") {|s| s.add_dependency "wadus" }
+      end
+
+      build_repo4 do
+        build_gem "bar"
+      end
+
+      bundle "config set path.system true"
+
+      # Add all gems to ensure all gems are installed so that a bundle check
+      # would be successful
+      install_gemfile(<<-G, artifice: "compact_index_extra")
+        source "https://gem.repo2"
+
+        source "https://gem.repo4" do
+          gem "bar"
+        end
+
+        gem "foo"
+        gem "baz"
+      G
+
+      original_lockfile = lockfile
+
+      # Remove "baz" gem from the Gemfile, and bundle install again to generate
+      # a functional lockfile with no "baz" dependency or "wadus" transitive
+      # dependency
+      install_gemfile(<<-G, artifice: "compact_index_extra")
+        source "https://gem.repo2"
+
+        source "https://gem.repo4" do
+          gem "bar"
+        end
+
+        gem "foo"
+      G
+
+      # Add back "baz" gem back to the Gemfile, but _crucially_ we do not perform a
+      # bundle install
+      gemfile(gemfile + 'gem "baz"')
+
+      bundle :check, verbose: true
+
+      # Bundle check should succeed and restore the lockfile to its original
+      # state
+      expect(lockfile).to eq(original_lockfile)
     end
   end
 

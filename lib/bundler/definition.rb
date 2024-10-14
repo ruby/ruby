@@ -163,7 +163,14 @@ module Bundler
       @gem_version_promoter ||= GemVersionPromoter.new
     end
 
-    def resolve_only_locally!
+    def check!
+      # If dependencies have changed, we need to resolve remotely. Otherwise,
+      # since we'll be resolving with a single local source, we may end up
+      # locking gems under the wrong source in the lockfile, and missing lockfile
+      # checksums
+      resolve_remotely! if @dependency_changes
+
+      # Now do a local only resolve, to verify if any gems are missing locally
       sources.local_only!
       resolve
     end
