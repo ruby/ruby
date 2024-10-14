@@ -8621,6 +8621,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}config.h
 io_buffer.$(OBJEXT): {$(VPATH)}defines.h
 io_buffer.$(OBJEXT): {$(VPATH)}encoding.h
 io_buffer.$(OBJEXT): {$(VPATH)}fiber/scheduler.h
+io_buffer.$(OBJEXT): {$(VPATH)}id.h
 io_buffer.$(OBJEXT): {$(VPATH)}intern.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal.h
 io_buffer.$(OBJEXT): {$(VPATH)}internal/abi.h
@@ -16287,6 +16288,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 ruby_parser.$(OBJEXT): {$(VPATH)}config.h
 ruby_parser.$(OBJEXT): {$(VPATH)}defines.h
 ruby_parser.$(OBJEXT): {$(VPATH)}encoding.h
+ruby_parser.$(OBJEXT): {$(VPATH)}id.h
 ruby_parser.$(OBJEXT): {$(VPATH)}intern.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/abi.h
@@ -17618,6 +17620,7 @@ strftime.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 strftime.$(OBJEXT): {$(VPATH)}config.h
 strftime.$(OBJEXT): {$(VPATH)}defines.h
 strftime.$(OBJEXT): {$(VPATH)}encoding.h
+strftime.$(OBJEXT): {$(VPATH)}id.h
 strftime.$(OBJEXT): {$(VPATH)}intern.h
 strftime.$(OBJEXT): {$(VPATH)}internal.h
 strftime.$(OBJEXT): {$(VPATH)}internal/abi.h
