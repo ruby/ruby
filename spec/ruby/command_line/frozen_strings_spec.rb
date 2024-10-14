@@ -57,9 +57,18 @@ end
 
 describe "The --debug flag produces" do
   it "debugging info on attempted frozen string modification" do
-    error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '--debug',  args: "2>&1")
+    error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '--enable-frozen-string-literal --debug',  args: "2>&1")
     error_str.should include("can't modify frozen String")
     error_str.should include("created at")
-    error_str.should include("command_line/fixtures/debug_info.rb:2")
+    error_str.should include("command_line/fixtures/debug_info.rb:1")
+  end
+
+  guard -> { ruby_version_is "3.4" and !"test".frozen? } do
+    it "debugging info on mutating chilled string" do
+      error_str = ruby_exe(fixture(__FILE__, 'debug_info.rb'), options: '-w --debug',  args: "2>&1")
+      error_str.should include("literal string will be frozen in the future")
+      error_str.should include("the string was created here")
+      error_str.should include("command_line/fixtures/debug_info.rb:1")
+    end
   end
 end

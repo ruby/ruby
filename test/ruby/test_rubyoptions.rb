@@ -1262,9 +1262,8 @@ class TestRubyOptions < Test::Unit::TestCase
     code = <<~RUBY
       "foo" << "bar"
     RUBY
-    warning = ["-:1: warning: literal string will be frozen in the future"]
-    assert_in_out_err(["-W:deprecated"], code, [], warning)
-    assert_in_out_err(["-W:deprecated", "--debug-frozen-string-literal"], code, [], warning)
+    assert_in_out_err(["-W:deprecated"], code, [], ["-:1: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)"])
+    assert_in_out_err(["-W:deprecated", "--debug-frozen-string-literal"], code, [], ["-:1: warning: literal string will be frozen in the future", "-:1: info: the string was created here"])
     assert_in_out_err(["-W:deprecated", "--disable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], [])
     assert_in_out_err(["-W:deprecated", "--enable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], ["-:1:in '<main>': can't modify frozen String: \"foo\", created at -:1 (FrozenError)"])
   end

@@ -4726,7 +4726,7 @@ assert_equal '[0, {1 => 1}]', %q{
 }
 
 # Chilled string setivar trigger warning
-assert_equal 'literal string will be frozen in the future', %q{
+assert_match(/literal string will be frozen in the future/, %q{
   Warning[:deprecated] = true
   $VERBOSE = true
   $warning = "no-warning"
@@ -4754,7 +4754,7 @@ assert_equal 'literal string will be frozen in the future', %q{
 
   setivar!("chilled") # Emit warning
   $warning
-}
+})
 
 # arity=-2 cfuncs
 assert_equal '["", "1/2", [0, [:ok, 1]]]', %q{
