@@ -9,7 +9,7 @@ end
 
 class JSONInRactorTest < Test::Unit::TestCase
   def test_generate
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       $VERBOSE = nil
       require "json"
