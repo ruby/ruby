@@ -57,7 +57,6 @@ class Array
   #
   #   a =             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
   #   a.shuffle! # => [0, 1, 1, 1, 1, 0, 0, 0, 1, 0]
-  #   a.shuffle! # => [0, 0, 0, 1, 1, 0, 1, 1, 1, 0]
   #
   # The object given with keyword argument +random+ is used as the random number generator.
   #
