@@ -107,6 +107,10 @@ module Bundler
       def build_base_requirements
         base_requirements = {}
         @base.each do |ls|
+          if ls.source_changed? && ls.source.specs.search(ls.name).empty?
+            raise GemNotFound, "Could not find gem '#{ls.name}' in #{ls.source}"
+          end
+
           req = Gem::Requirement.new(ls.version)
           base_requirements[ls.name] = req
         end

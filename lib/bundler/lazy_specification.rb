@@ -27,9 +27,16 @@ module Bundler
       @dependencies  = []
       @required_ruby_version = Gem::Requirement.default
       @required_rubygems_version = Gem::Requirement.default
-      @platform      = platform || Gem::Platform::RUBY
-      @source        = source
+      @platform = platform || Gem::Platform::RUBY
+
+      @original_source = source
+      @source = source
+
       @force_ruby_platform = default_force_ruby_platform
+    end
+
+    def source_changed?
+      @original_source != source
     end
 
     def full_name

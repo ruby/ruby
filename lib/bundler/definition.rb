@@ -887,8 +887,6 @@ module Bundler
       converged = []
       deps = []
 
-      @specs_that_changed_sources = []
-
       specs.each do |s|
         name = s.name
         dep = @dependencies.find {|d| s.satisfies?(d) }
@@ -897,7 +895,6 @@ module Bundler
         if dep
           gemfile_source = dep.source || default_source
 
-          @specs_that_changed_sources << s if gemfile_source != lockfile_source
           deps << dep if !dep.source || lockfile_source.include?(dep.source)
           @gems_to_unlock << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
 
@@ -979,20 +976,11 @@ module Bundler
         source_requirements["bundler"] = sources.metadata_source # needs to come last to override
       end
 
-      verify_changed_sources!
       source_requirements
     end
 
     def default_source
       sources.default_source
-    end
-
-    def verify_changed_sources!
-      @specs_that_changed_sources.each do |s|
-        if s.source.specs.search(s.name).empty?
-          raise GemNotFound, "Could not find gem '#{s.name}' in #{s.source}"
-        end
-      end
     end
 
     def requested_groups
