@@ -3029,7 +3029,10 @@ iseqw_s_of(VALUE klass, VALUE body)
 {
     const rb_iseq_t *iseq = NULL;
 
-    if (rb_obj_is_proc(body)) {
+    if (rb_frame_info_p(body)) {
+        iseq = rb_get_iseq_from_frame_info(body);
+    }
+    else if (rb_obj_is_proc(body)) {
         iseq = vm_proc_iseq(body);
 
         if (!rb_obj_is_iseq((VALUE)iseq)) {

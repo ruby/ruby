@@ -726,18 +726,24 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_iseq_of
-    [proc{},
-     method(:test_iseq_of),
-     RubyVM::InstructionSequence.compile("p 1", __FILE__)].each{|src|
+    [
+      proc{},
+      method(:test_iseq_of),
+      RubyVM::InstructionSequence.compile("p 1", __FILE__),
+      begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
+    ].each{|src|
       iseq = RubyVM::InstructionSequence.of(src)
       assert_equal __FILE__, iseq.path
     }
   end
 
   def test_iseq_of_twice_for_same_code
-    [proc{},
-     method(:test_iseq_of_twice_for_same_code),
-     RubyVM::InstructionSequence.compile("p 1")].each{|src|
+    [
+      proc{},
+      method(:test_iseq_of_twice_for_same_code),
+      RubyVM::InstructionSequence.compile("p 1"),
+      begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
+    ].each{|src|
       iseq1 = RubyVM::InstructionSequence.of(src)
       iseq2 = RubyVM::InstructionSequence.of(src)
 
