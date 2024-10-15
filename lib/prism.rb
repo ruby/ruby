@@ -24,6 +24,7 @@ module Prism
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
+  autoload :Relocation, "prism/relocation"
   autoload :Serialize, "prism/serialize"
   autoload :StringQuery, "prism/string_query"
   autoload :Translation, "prism/translation"

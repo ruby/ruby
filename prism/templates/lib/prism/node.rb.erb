@@ -12,12 +12,32 @@ module Prism
     # will be consistent across multiple parses of the same source code.
     attr_reader :node_id
 
+    # Save this node using a saved source so that it can be retrieved later.
+    def save(repository)
+      repository.enter(node_id, :itself)
+    end
+
     # A Location instance that represents the location of this node in the
     # source.
     def location
       location = @location
       return location if location.is_a?(Location)
       @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+
+    # Save the location using a saved source so that it can be retrieved later.
+    def save_location(repository)
+      repository.enter(node_id, :location)
+    end
+
+    # Delegates to the start_line of the associated location object.
+    def start_line
+      location.start_line
+    end
+
+    # Delegates to the end_line of the associated location object.
+    def end_line
+      location.end_line
     end
 
     # The start offset of the node in the source. This method is effectively a
@@ -32,6 +52,75 @@ module Prism
     def end_offset
       location = @location
       location.is_a?(Location) ? location.end_offset : ((location >> 32) + (location & 0xFFFFFFFF))
+    end
+
+    # Delegates to the start_character_offset of the associated location object.
+    def start_character_offset
+      location.start_character_offset
+    end
+
+    # Delegates to the end_character_offset of the associated location object.
+    def end_character_offset
+      location.end_character_offset
+    end
+
+    # Delegates to the cached_start_code_units_offset of the associated location
+    # object.
+    def cached_start_code_units_offset(cache)
+      location.cached_start_code_units_offset(cache)
+    end
+
+    # Delegates to the cached_end_code_units_offset of the associated location
+    # object.
+    def cached_end_code_units_offset(cache)
+      location.cached_end_code_units_offset(cache)
+    end
+
+    # Delegates to the start_column of the associated location object.
+    def start_column
+      location.start_column
+    end
+
+    # Delegates to the end_column of the associated location object.
+    def end_column
+      location.end_column
+    end
+
+    # Delegates to the start_character_column of the associated location object.
+    def start_character_column
+      location.start_character_column
+    end
+
+    # Delegates to the end_character_column of the associated location object.
+    def end_character_column
+      location.end_character_column
+    end
+
+    # Delegates to the cached_start_code_units_column of the associated location
+    # object.
+    def cached_start_code_units_column(cache)
+      location.cached_start_code_units_column(cache)
+    end
+
+    # Delegates to the cached_end_code_units_column of the associated location
+    # object.
+    def cached_end_code_units_column(cache)
+      location.cached_end_code_units_column(cache)
+    end
+
+    # Delegates to the leading_comments of the associated location object.
+    def leading_comments
+      location.leading_comments
+    end
+
+    # Delegates to the trailing_comments of the associated location object.
+    def trailing_comments
+      location.trailing_comments
+    end
+
+    # Delegates to the comments of the associated location object.
+    def comments
+      location.comments
     end
 
     # Returns all of the lines of the source code associated with this node.
@@ -318,6 +407,12 @@ module Prism
       return location if location.is_a?(Location)
       @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
     end
+
+    # Save the <%= field.name %> location using the given saved source so that
+    # it can be retrieved later.
+    def save_<%= field.name %>(repository)
+      repository.enter(node_id, :<%= field.name %>)
+    end
     <%- when Prism::Template::OptionalLocationField -%>
     def <%= field.name %>
       location = @<%= field.name %>
@@ -329,6 +424,12 @@ module Prism
       else
         @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
       end
+    end
+
+    # Save the <%= field.name %> location using the given saved source so that
+    # it can be retrieved later.
+    def save_<%= field.name %>(repository)
+      repository.enter(node_id, :<%= field.name %>) unless @<%= field.name %>.nil?
     end
     <%- else -%>
     attr_reader :<%= field.name %>
