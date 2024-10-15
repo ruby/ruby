@@ -2221,45 +2221,67 @@ r_call_max(VALUE r)
     return rb_funcallv(r, rb_intern("max"), 0, 0);
 }
 
+static bool empty_region_p(VALUE beg, VALUE end, int excl);
+
+static int
+r_cover_endpoints_p(VALUE range, VALUE beg, VALUE end, VALUE val, VALUE val_beg, VALUE val_end)
+{
+    VALUE val_max;
+    int cmp_end;
+
+    if (!NIL_P(end) && NIL_P(val_end)) return FALSE;
+    if (!NIL_P(beg) && NIL_P(val_beg)) return FALSE;
+    if (NIL_P(beg) && NIL_P(end)) {
+        return !NIL_P(val_end) || !(EXCL(range) && !EXCL(val));
+    }
+
+    int beg_check_required_p = FALSE, end_check_required_p = FALSE;
+    if (NIL_P(beg)) {
+        end_check_required_p = TRUE;
+    }
+    else {
+        if (NIL_P(val_end) && EXCL(range) && !EXCL(val)) return FALSE;
+        beg_check_required_p = TRUE;
+        end_check_required_p = !NIL_P(end);
+    }
+
+    if (beg_check_required_p) {
+        if (r_less(beg, val_beg) > 0) return FALSE;
+    }
+
+    if (end_check_required_p) {
+        VALUE r_cmp_end = rb_funcall(end, id_cmp, 1, val_end);
+        if (NIL_P(r_cmp_end)) return FALSE;
+        cmp_end = rb_cmpint(r_cmp_end, end, val_end);
+
+        if (EXCL(range) == EXCL(val)) {
+            return cmp_end >= 0;
+        }
+        else if (EXCL(range)) {
+            return cmp_end > 0;
+        }
+        else if (cmp_end >= 0) {
+            return TRUE;
+        }
+
+        val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
+        if (NIL_P(val_max)) return FALSE;
+
+        return r_less(end, val_max) >= 0;
+    }
+
+    return TRUE;
+}
+
 static int
 r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 {
-    VALUE val_beg, val_end, val_max;
-    int cmp_end;
+    VALUE val_beg, val_end;
 
     val_beg = RANGE_BEG(val);
     val_end = RANGE_END(val);
 
-    if (!NIL_P(end) && NIL_P(val_end)) return FALSE;
-    if (!NIL_P(beg) && NIL_P(val_beg)) return FALSE;
-    if (!NIL_P(val_beg) && !NIL_P(val_end) && r_less(val_beg, val_end) > (EXCL(val) ? -1 : 0)) return FALSE;
-    if (!NIL_P(val_beg) && !r_cover_p(range, beg, end, val_beg)) return FALSE;
-
-
-    if (!NIL_P(val_end) && !NIL_P(end)) {
-        VALUE r_cmp_end = rb_funcall(end, id_cmp, 1, val_end);
-        if (NIL_P(r_cmp_end)) return FALSE;
-        cmp_end = rb_cmpint(r_cmp_end, end, val_end);
-    }
-    else {
-        cmp_end = r_less(end, val_end);
-    }
-
-
-    if (EXCL(range) == EXCL(val)) {
-        return cmp_end >= 0;
-    }
-    else if (EXCL(range)) {
-        return cmp_end > 0;
-    }
-    else if (cmp_end >= 0) {
-        return TRUE;
-    }
-
-    val_max = rb_rescue2(r_call_max, val, 0, Qnil, rb_eTypeError, (VALUE)0);
-    if (NIL_P(val_max)) return FALSE;
-
-    return r_less(end, val_max) >= 0;
+    return r_cover_endpoints_p(range, beg, end, val, val_beg, val_end) && !empty_region_p(val_beg, val_end, EXCL(val));
 }
 
 static VALUE
