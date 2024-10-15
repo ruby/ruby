@@ -634,6 +634,12 @@ describe "Time.new with a timezone argument" do
         -> {
           Time.new("2020-12-25 00:56:17 +23:61")
         }.should raise_error(ArgumentError, /utc_offset/)
+
+        ruby_bug '#20797', ''...'3.4' do
+          -> {
+            Time.new("2020-12-25 00:56:17 +00:23:61")
+          }.should raise_error(ArgumentError, /utc_offset/)
+        end
       end
 
       it "raises ArgumentError if string has not ascii-compatible encoding" do
