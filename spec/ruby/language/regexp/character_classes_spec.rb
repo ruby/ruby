@@ -562,6 +562,13 @@ describe "Regexp with character classes" do
     "\u{16EE}".match(/[[:word:]]/).to_a.should == ["\u{16EE}"]
   end
 
+  ruby_bug "#19417", ""..."3.3" do
+    it "matches Unicode join control characters with [[:word:]]" do
+      "\u{200C}".match(/[[:word:]]/).to_a.should == ["\u{200C}"]
+      "\u{200D}".match(/[[:word:]]/).to_a.should == ["\u{200D}"]
+    end
+  end
+
   it "doesn't match Unicode No characters with [[:word:]]" do
     "\u{17F0}".match(/[[:word:]]/).should be_nil
   end
