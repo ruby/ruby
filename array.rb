@@ -45,15 +45,25 @@ class Array
   end
 
   # call-seq:
-  #    array.shuffle!(random: Random) -> array
+  #   shuffle!(random: Random) -> self
   #
-  # Shuffles the elements of +self+ in place.
-  #    a = [1, 2, 3] #=> [1, 2, 3]
-  #    a.shuffle!    #=> [2, 3, 1]
-  #    a             #=> [2, 3, 1]
+  # Shuffles all elements in +self+ into a random order,
+  # as selected by the object given by keyword argument +random+;
+  # returns +self+:
   #
-  # The optional +random+ argument will be used as the random number generator:
-  #    a.shuffle!(random: Random.new(1))  #=> [1, 3, 2]
+  #   a =             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  #   a.shuffle! # => [5, 3, 8, 7, 6, 1, 9, 4, 2, 0]
+  #   a.shuffle! # => [9, 4, 0, 6, 2, 8, 1, 5, 3, 7]
+  #
+  #   Duplicate elements are included:
+  #
+  #   a =             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+  #   a.shuffle! # => [1, 0, 0, 1, 1, 0, 1, 0, 0, 1]
+  #   a.shuffle! # => [0, 1, 0, 1, 1, 0, 1, 0, 1, 0]
+  #
+  # The object given with keyword argument +random+ is used as the random number generator.
+  #
+  # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
   def shuffle!(random: Random)
     Primitive.rb_ary_shuffle_bang(random)
   end
