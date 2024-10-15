@@ -63,7 +63,7 @@ class Array
   #
   # The object given with keyword argument +random+ is used as the random number generator.
   #
-  # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
+  # Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
   def shuffle!(random: Random)
     Primitive.rb_ary_shuffle_bang(random)
   end
