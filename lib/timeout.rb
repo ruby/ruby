@@ -164,8 +164,8 @@ module Timeout
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
-    raise ArgumentError, "Timeout sec must be a positive number" if sec.is_a?(Numeric) && sec < 0
-    return yield(sec) if sec == nil or sec.zero?
+    raise ArgumentError, "Timeout sec must be a positive number" unless sec.is_a?(Numeric) && sec >= 0
+    return yield(sec) if sec.zero?
 
     message ||= "execution expired"
 
