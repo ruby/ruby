@@ -70,14 +70,6 @@ fi
 
 pushd ${builddir}
 
-case "${INPUT_APPEND_CONFIGURE}" in
-*--with-shared-gc*)
-    export RUBY_GC_LIBRARY='librubygc.default.so'
-    mkdir -p /home/runner/shared-gc
-    grouped make shared-gc SHARED_GC=default
-    ;;
-esac
-
 grouped make showflags
 grouped make all
 grouped make test
