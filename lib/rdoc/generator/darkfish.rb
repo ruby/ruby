@@ -780,4 +780,19 @@ class RDoc::Generator::Darkfish
     template
   end
 
+  # Returns an excerpt of the content for usage in meta description tags
+  def excerpt(content)
+    text = content.is_a?(RDoc::Comment) ? content.text : content
+
+    # Match from a capital letter to the first period, discarding any links, so
+    # that we don't end up matching badges in the README
+    first_paragraph_match = text.match(/[A-Z][^\.:\/]+\./)
+    return text[0...150].gsub(/\n/, " ").squeeze(" ") unless first_paragraph_match
+
+    extracted_text = first_paragraph_match[0]
+    second_paragraph = first_paragraph_match.post_match.match(/[A-Z][^\.:\/]+\./)
+    extracted_text << " " << second_paragraph[0] if second_paragraph
+
+    extracted_text[0...150].gsub(/\n/, " ").squeeze(" ")
+  end
 end

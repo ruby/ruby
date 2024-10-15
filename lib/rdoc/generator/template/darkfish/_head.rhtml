@@ -3,6 +3,28 @@
 
 <title><%= h @title %></title>
 
+<%- if defined?(klass) -%>
+  <meta name="keywords" content="ruby,<%= h "#{klass.type},#{klass.full_name}" %>">
+
+  <%- if klass.comment.empty? -%>
+    <meta name="description" content="Documentation for the <%= h "#{klass.full_name} #{klass.type}" %>">
+  <%- else -%>
+    <meta name="description" content="<%= h "#{klass.type} #{klass.full_name}: #{excerpt(klass.comment)}" %>">
+  <%- end -%>
+<%- elsif defined?(file) -%>
+  <meta name="keywords" content="ruby,documentation,<%= h file.page_name %>">
+  <meta name="description" content="<%= h "#{file.page_name}: #{excerpt(file.comment)}" %>">
+<%- elsif @title -%>
+  <meta name="keywords" content="ruby,documentation,<%= h @title %>">
+
+  <%- if @options.main_page and
+      main_page = @files.find { |f| f.full_name == @options.main_page } then %>
+    <meta name="description" content="<%= h "#{@title}: #{excerpt(main_page.comment)}" %>">
+  <%- else -%>
+    <meta name="description" content="Documentation for <%= h @title %>">
+  <%- end -%>
+<%- end -%>
+
 <script type="text/javascript">
   var rdoc_rel_prefix = "<%= h asset_rel_prefix %>/";
   var index_rel_prefix = "<%= h rel_prefix %>/";
