@@ -64,7 +64,7 @@ static ID id_fiber_schedule;
  *
  *  Hook methods are:
  *
- *  * #io_wait, #io_read, #io_write, #io_pread, #io_pwrite, and #io_select, #io_close
+ *  * #io_wait, #io_read, #io_write, #io_pread, #io_pwrite, and #io_select, #close
  *  * #process_wait
  *  * #kernel_sleep
  *  * #timeout_after
