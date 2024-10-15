@@ -391,7 +391,7 @@ class Gem::Specification < Gem::BasicSpecification
   #     "homepage_uri"      => "https://bestgemever.example.io",
   #     "mailing_list_uri"  => "https://groups.example.com/bestgemever",
   #     "source_code_uri"   => "https://example.com/user/bestgemever",
-  #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki"
+  #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
   #     "funding_uri"       => "https://example.com/donate"
   #   }
   #
