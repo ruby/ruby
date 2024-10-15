@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--title", "JSON implementation for Ruby", "--main", "README.md"]
   s.files = [
     "CHANGES.md",
-    "LICENSE",
+    "COPYING",
     "README.md",
     "ext/json/ext/fbuffer/fbuffer.h",
     "ext/json/ext/generator/depend",
