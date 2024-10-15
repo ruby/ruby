@@ -18,6 +18,8 @@ Gem::Specification.new do |s|
   s.files = [
     "CHANGES.md",
     "COPYING",
+    "BSDL",
+    "LEGAL",
     "README.md",
     "ext/json/ext/fbuffer/fbuffer.h",
     "ext/json/ext/generator/depend",
