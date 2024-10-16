@@ -3008,6 +3008,20 @@ rb_gc_location(VALUE value)
 }
 
 void
+rb_gc_prepare_heap_process_object(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+        // Precompute the string coderange. This both save time for when it will be
+        // eventually needed, and avoid mutating heap pages after a potential fork.
+        rb_enc_str_coderange(obj);
+        break;
+      default:
+        break;
+    }
+}
+
+void
 rb_gc_prepare_heap(void)
 {
     rb_gc_impl_prepare_heap(rb_gc_get_objspace());
