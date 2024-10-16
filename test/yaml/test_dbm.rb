@@ -43,4 +43,4 @@ class TestYAMLDBM < Test::Unit::TestCase
     @dbm["key"] = "value"
     assert_equal ["key", "value"], @dbm.shift
   end
-end
+end if defined?(YAML::DBM)

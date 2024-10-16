@@ -1,6 +1,10 @@
 # frozen_string_literal: false
 require 'yaml'
-require 'dbm'
+
+begin
+  require 'dbm'
+rescue LoadError
+end
 
 module YAML
 
@@ -288,4 +292,4 @@ class DBM < ::DBM
     alias :each :each_pair
 end
 
-end
+end if defined?(DBM)
