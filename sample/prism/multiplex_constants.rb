@@ -11,23 +11,23 @@ module Indexer
   # field_name pairs so that they can be written back to the parent process.
   class Repository
     attr_reader :scope, :entries
-  
+
     def initialize
       @scope = []
       @entries = []
     end
-  
+
     def with(next_scope)
       previous_scope = scope
       @scope = scope + next_scope
       yield
       @scope = previous_scope
     end
-  
+
     def empty?
       entries.empty?
     end
-  
+
     def enter(node_id, field_name)
       entries << [scope.join("::"), node_id, field_name]
     end
