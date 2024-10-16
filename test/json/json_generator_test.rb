@@ -446,6 +446,15 @@ EOT
   end
 
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
+    def test_valid_utf8_in_different_encoding
+      utf8_string = "€™"
+      wrong_encoding_string = utf8_string.b
+      # This behavior is historical. Not necessary desirable. We should deprecated it.
+      # The pure and java version of the gem already don't behave this way.
+      assert_equal utf8_string.to_json, wrong_encoding_string.to_json
+      assert_equal JSON.dump(utf8_string), JSON.dump(wrong_encoding_string)
+    end
+
     def test_string_ext_included_calls_super
       included = false
 
