@@ -4184,6 +4184,12 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
  *    a.slice!(-2, 1) # => ["c"]
  *    a               # => ["a", "b", "d"]
  *
+ *  If +start+ is out-of-range, returns +nil+:
+ *
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(5, 1)  # => nil
+ *    a.slice!(-5, 1) # => nil
+ *
  *  If <tt>start + length</tt> exceeds the array size,
  *  removes and returns all elements from offset +start+ to the end:
  *
