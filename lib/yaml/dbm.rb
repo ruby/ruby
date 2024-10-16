@@ -158,7 +158,7 @@ class DBM < ::DBM
     #
     # Returns +self+.
     def each_value # :yields: value
-        super { |v| yield YAML.load( v ) }
+        super { |v| yield YAML.respond_to?(:safe_load) ? YAML.safe_load( v ) : YAML.load( v ) }
         self
     end
 
@@ -167,7 +167,7 @@ class DBM < ::DBM
     #
     # Returns an array of values from the database.
     def values
-        super.collect { |v| YAML.load( v ) }
+        super.collect { |v| YAML.respond_to?(:safe_load) ? YAML.safe_load( v ) : YAML.load( v ) }
     end
 
     # :call-seq:
@@ -213,7 +213,9 @@ class DBM < ::DBM
     # The order in which values are removed/returned is not guaranteed.
     def shift
         a = super
-        a[1] = YAML.load( a[1] ) if a
+        if a
+          a[1] = YAML.respond_to?(:safe_load) ? YAML.safe_load( a[1] ) : YAML.load( a[1] )
+        end
         a
     end
 
