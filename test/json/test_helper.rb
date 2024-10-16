@@ -15,3 +15,8 @@ begin
   require 'byebug'
 rescue LoadError
 end
+
+unless defined?(Test::Unit::CoreAssertions)
+  require "core_assertions"
+  Test::Unit::TestCase.include Test::Unit::CoreAssertions
+end
