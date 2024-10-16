@@ -4145,71 +4145,94 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
 
 /*
  *  call-seq:
- *    array.slice!(n) -> object or nil
- *    array.slice!(start, length) -> new_array or nil
- *    array.slice!(range) -> new_array or nil
+ *    slice!(index) -> object or nil
+ *    slice!(start, length) -> new_array or nil
+ *    slice!(range) -> new_array or nil
  *
  *  Removes and returns elements from +self+.
  *
- *  When the only argument is an Integer +n+,
- *  removes and returns the _nth_ element in +self+:
+ *  With numeric argument +index+ given,
+ *  removes and returns the element at offset +index+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(1) # => "bar"
- *    a # => [:foo, 2]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(2)   # => "c"
+ *    a             # => ["a", "b", "d"]
+ *    a.slice!(2.1) # => "d"
+ *    a             # => ["a", "b"]
  *
- *  If +n+ is negative, counts backwards from the end of +self+:
+ *  If +index+ is negative, counts backwards from the end of +self+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(-1) # => 2
- *    a # => [:foo, "bar"]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(-2) # => "c"
+ *    a            # => ["a", "b", "d"]
  *
- *  If +n+ is out of range, returns +nil+.
+ *  If +index+ is out of range, returns +nil+.
  *
- *  When the only arguments are Integers +start+ and +length+,
- *  removes +length+ elements from +self+ beginning at offset  +start+;
- *  returns the deleted objects in a new +Array+:
+ *  With numeric arguments +start+ and +length+ given,
+ *  removes +length+ elements from +self+ beginning at zero-based offset +start+;
+ *  returns the removed objects in a new array:
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(0, 2) # => [:foo, "bar"]
- *    a # => [2]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(1, 2)     # => ["b", "c"]
+ *    a                  # => ["a", "d"]
+ *    a.slice!(0.1, 1.1) # => ["a"]
+ *    a                  # => ["d"]
+ *
+ *  If +start+ is negative, counts backwards from the end of +self+:
+ *
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(-2, 1) # => ["c"]
+ *    a               # => ["a", "b", "d"]
+ *
+ *  If +start+ is out-of-range, returns +nil+:
+ *
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(5, 1)  # => nil
+ *    a.slice!(-5, 1) # => nil
  *
  *  If <tt>start + length</tt> exceeds the array size,
  *  removes and returns all elements from offset +start+ to the end:
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(1, 50) # => ["bar", 2]
- *    a # => [:foo]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(2, 50) # => ["c", "d"]
+ *    a               # => ["a", "b"]
  *
  *  If <tt>start == a.size</tt> and +length+ is non-negative,
- *  returns a new empty +Array+.
+ *  returns a new empty array.
  *
  *  If +length+ is negative, returns +nil+.
  *
- *  When the only argument is a Range object +range+,
- *  treats <tt>range.min</tt> as +start+ above and <tt>range.size</tt> as +length+ above:
+ *  With Range argument +range+ given,
+ *  treats <tt>range.min</tt> as +start+ (as above)
+ *  and <tt>range.size</tt> as +length+ (as above):
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(1..2) # => ["bar", 2]
- *    a # => [:foo]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(1..2) # => ["b", "c"]
+ *    a              # => ["a", "d"]
  *
- *  If <tt>range.start == a.size</tt>, returns a new empty +Array+.
+ *  If <tt>range.start == a.size</tt>, returns a new empty array:
  *
- *  If <tt>range.start</tt> is larger than the array size, returns +nil+.
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(4..5) # => []
  *
- *  If <tt>range.end</tt> is negative, counts backwards from the end of the array:
+ *  If <tt>range.start</tt> is larger than the array size, returns +nil+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(0..-2) # => [:foo, "bar"]
- *    a # => [2]
+ *    a = ['a', 'b', 'c', 'd']
+      a.slice!(5..6) # => nil
  *
  *  If <tt>range.start</tt> is negative,
- *  calculates the start index backwards from the end of the array:
+ *  calculates the start index by counting backwards from the end of +self+:
  *
- *    a = [:foo, 'bar', 2]
- *    a.slice!(-2..2) # => ["bar", 2]
- *    a # => [:foo]
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(-2..2) # => ["c"]
  *
+ *  If <tt>range.end</tt> is negative,
+ *  calculates the end index by counting backwards from the end of +self+:
+ *
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.slice!(0..-2) # => ["a", "b", "c"]
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 
 static VALUE
