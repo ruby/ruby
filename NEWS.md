@@ -80,7 +80,7 @@ The following default gems are updated.
 * RubyGems 3.6.0.dev
 * bundler 2.6.0.dev
 * erb 4.0.4
-* fiddle 1.1.3.dev
+* fiddle 1.1.4.dev
 * io-console 0.7.2
 * irb 1.14.1
 * json 2.7.2
