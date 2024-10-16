@@ -55,7 +55,13 @@ class DBM < ::DBM
     def fetch( keystr, ifnone = nil )
         begin
             val = super( keystr )
-            return YAML.load( val ) if String === val
+            if String === val
+                if YAML.respond_to?(:safe_load)
+                    return YAML.safe_load( val )
+                else
+                    return YAML.load( val )
+                end
+            end
         rescue IndexError
         end
         if block_given?
@@ -101,7 +107,11 @@ class DBM < ::DBM
     def delete( key )
         v = super( key )
         if String === v
-            v = YAML.load( v )
+            if YAML.respond_to?(:safe_load)
+                v = YAML.safe_load( v )
+            else
+                v = YAML.load( v )
+            end
         end
         v
     end
