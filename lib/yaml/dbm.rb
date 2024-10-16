@@ -16,7 +16,6 @@ module YAML
 #
 # See the documentation for ::DBM and ::YAML for more information.
 class DBM < ::DBM
-    VERSION = "0.1" # :nodoc:
 
     # :call-seq:
     #   ydbm[key] -> value
