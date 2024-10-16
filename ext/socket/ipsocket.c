@@ -972,7 +972,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         if (strcmp(resolved_type, IPV6_HOSTNAME_RESOLVED) == 0) {
                             resolution_store.v6.finished = true;
 
-                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
+                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
+                                arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
                                 last_error.type = RESOLUTION_ERROR;
                                 last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                                 syscall = "getaddrinfo(3)";
