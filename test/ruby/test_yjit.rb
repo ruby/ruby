@@ -1150,6 +1150,8 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_code_gc_with_auto_compact
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
     assert_compiles((code_gc_helpers + <<~'RUBY'), exits: :any, result: :ok, mem_size: 1, code_gc: true)
       # Test ISEQ moves in the middle of code GC
       GC.auto_compact = true
@@ -1278,6 +1280,8 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_gc_compact_cyclic_branch
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
     assert_compiles(<<~'RUBY', result: 2)
       def foo
         i = 0
