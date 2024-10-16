@@ -709,7 +709,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
     }
     else {
         StringValue(pattern);
-        rb_enc_check(p->str, pattern);
+        rb_encoding *enc = rb_enc_check(p->str, pattern);
         if (S_RESTLEN(p) < RSTRING_LEN(pattern)) {
             return Qnil;
         }
@@ -719,9 +719,10 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
                 return Qnil;
             }
             set_registers(p, RSTRING_LEN(pattern));
-        } else {
+        }
+        else {
             long pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
-                                    CURPTR(p), S_RESTLEN(p), rb_enc_get(pattern));
+                                    CURPTR(p), S_RESTLEN(p), enc);
             if (pos == -1) {
                 return Qnil;
             }
