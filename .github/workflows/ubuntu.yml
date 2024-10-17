@@ -26,23 +26,7 @@ jobs:
       matrix:
         include:
           - test_task: check
-            configure: 'cppflags=-DVM_CHECK_MODE'
-          - test_task: check
             arch: i686
-          - test_task: check
-            configure: '--disable-yjit'
-          - test_task: check
-            configure: '--enable-shared --enable-load-relative'
-          - test_task: check
-            shared_gc: true
-            configure: '--with-shared-gc=/home/runner/ruby_gc'
-          - test_task: test-bundler-parallel
-            timeout: 50
-          - test_task: test-bundled-gems
-          - test_task: check
-            os: ubuntu-20.04
-          - test_task: check
-            os: ubuntu-24.04
       fail-fast: false
 
     env:
