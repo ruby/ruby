@@ -136,6 +136,25 @@ class TestGemResolverAPISet < Gem::TestCase
     assert_empty set.find_all(a_dep)
   end
 
+  def test_find_all_not_found
+    spec_fetcher
+
+    @fetcher.data["#{@dep_uri}/a"] =
+      proc do
+        raise Gem::RemoteFetcher::FetchError
+      end
+
+    set = Gem::Resolver::APISet.new @dep_uri
+
+    a_dep = Gem::Resolver::DependencyRequest.new dep("a"), nil
+
+    assert_empty set.find_all(a_dep)
+
+    @fetcher.data.delete "#{@dep_uri}a"
+
+    assert_empty set.find_all(a_dep)
+  end
+
   def test_prefetch
     spec_fetcher
 

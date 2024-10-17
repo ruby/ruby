@@ -438,7 +438,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("You have changed in the Gemfile:\n* myrack from `no specified source` to `git://hubz.com`")
     end
 
-    it "explodes if you change a source" do
+    it "explodes if you change a source from git to the default" do
       build_git "myrack"
 
       install_gemfile <<-G
@@ -459,7 +459,7 @@ RSpec.describe "install in deployment or frozen mode" do
       expect(err).to include("You have changed in the Gemfile:\n* myrack from `#{lib_path("myrack-1.0")}` to `no specified source`")
     end
 
-    it "explodes if you change a source" do
+    it "explodes if you change a source from git to the default, in presence of other git sources" do
       build_lib "foo", path: lib_path("myrack/foo")
       build_git "myrack", path: lib_path("myrack")
 
@@ -479,6 +479,27 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle :install, raise_on_error: false
       expect(err).to include("frozen mode")
       expect(err).to include("You have changed in the Gemfile:\n* myrack from `#{lib_path("myrack")}` to `no specified source`")
+      expect(err).not_to include("You have added to the Gemfile")
+      expect(err).not_to include("You have deleted from the Gemfile")
+    end
+
+    it "explodes if you change a source from path to git" do
+      build_git "myrack", path: lib_path("myrack")
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack", :path => "#{lib_path("myrack")}"
+      G
+
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack", :git => "https:/my-git-repo-for-myrack"
+      G
+
+      bundle "config set --local frozen true"
+      bundle :install, raise_on_error: false
+      expect(err).to include("frozen mode")
+      expect(err).to include("You have changed in the Gemfile:\n* myrack from `#{lib_path("myrack")}` to `https:/my-git-repo-for-myrack`")
       expect(err).not_to include("You have added to the Gemfile")
       expect(err).not_to include("You have deleted from the Gemfile")
     end

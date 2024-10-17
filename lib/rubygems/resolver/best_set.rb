@@ -29,8 +29,6 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
     pick_sets if @remote && @sets.empty?
 
     super
-  rescue Gem::RemoteFetcher::FetchError
-    []
   end
 
   def prefetch(reqs) # :nodoc:
