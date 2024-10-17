@@ -576,12 +576,13 @@ module JSON
     # Sets or returns the default options for the JSON.dump method.
     # Initially:
     #   opts = JSON.dump_default_options
-    #   opts # => {:max_nesting=>false, :allow_nan=>true}
+    #   opts # => {:max_nesting=>false, :allow_nan=>true, :script_safe=>false}
     attr_accessor :dump_default_options
   end
   self.dump_default_options = {
     :max_nesting => false,
     :allow_nan   => true,
+    :script_safe => false,
   }
 
   # :call-seq:
