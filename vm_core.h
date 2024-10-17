@@ -230,6 +230,8 @@ union ic_serial_entry {
     VALUE data[2];
 };
 
+#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
+
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
     VALUE flags;

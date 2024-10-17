@@ -9915,11 +9915,16 @@ fn gen_opt_getconstant_path(
         return Some(EndBlock);
     }
 
-    if !unsafe { (*ice).ic_cref }.is_null() {
+    let is_cref = !unsafe { (*ice).ic_cref }.is_null();
+    let is_shareable = unsafe { rb_yjit_constcache_shareable(ice) };
+    let needs_checks = is_cref || (!is_shareable && !assume_single_ractor_mode(jit, asm));
+
+    if needs_checks {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
         // Call function to verify the cache. It doesn't allocate or call methods.
+        // This includes a check for Ractor safety
         let ret_val = asm.ccall(
             rb_vm_ic_hit_p as *const u8,
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
@@ -9948,12 +9953,6 @@ fn gen_opt_getconstant_path(
         let stack_top = asm.stack_push(Type::Unknown);
         asm.store(stack_top, ic_entry_val);
     } else {
-        // Optimize for single ractor mode.
-        if !assume_single_ractor_mode(jit, asm) {
-            gen_counter_incr(jit, asm, Counter::opt_getconstant_path_multi_ractor);
-            return None;
-        }
-
         // Invalidate output code on any constant writes associated with
         // constants referenced within the current block.
         jit.assume_stable_constant_names(asm, idlist);
