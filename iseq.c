@@ -193,7 +193,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 
         if (body->param.keyword != NULL) {
             if (body->param.keyword->table != &body->local_table[body->param.keyword->bits_start - body->param.keyword->num])
-                ruby_xfree((void *)body->param.keyword->table);
+                rb_bug("keyword->table expected to point into iseq local table");
             if (body->param.keyword->default_values) {
                 ruby_xfree((void *)body->param.keyword->default_values);
             }
