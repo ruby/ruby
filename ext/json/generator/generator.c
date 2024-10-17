@@ -5,16 +5,7 @@
 #define RB_UNLIKELY(cond) (cond)
 #endif
 
-static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
-             mHash, mArray,
-#ifdef RUBY_INTEGER_UNIFICATION
-             mInteger,
-#else
-             mFixnum, mBignum,
-#endif
-             mFloat, mString, mString_Extend,
-             mTrueClass, mFalseClass, mNilClass, eGeneratorError,
-             eNestingError;
+static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError;
 
 static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend;
 
@@ -1192,8 +1183,8 @@ void Init_generator(void)
     rb_require("json/common");
 
     mJSON = rb_define_module("JSON");
-    mExt = rb_define_module_under(mJSON, "Ext");
-    mGenerator = rb_define_module_under(mExt, "Generator");
+    VALUE mExt = rb_define_module_under(mJSON, "Ext");
+    VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
     eGeneratorError = rb_path2class("JSON::GeneratorError");
     eNestingError = rb_path2class("JSON::NestingError");
@@ -1236,36 +1227,46 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, 1);
 
-    mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");
-    mObject = rb_define_module_under(mGeneratorMethods, "Object");
+    VALUE mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");
+
+    VALUE mObject = rb_define_module_under(mGeneratorMethods, "Object");
     rb_define_method(mObject, "to_json", mObject_to_json, -1);
-    mHash = rb_define_module_under(mGeneratorMethods, "Hash");
+
+    VALUE mHash = rb_define_module_under(mGeneratorMethods, "Hash");
     rb_define_method(mHash, "to_json", mHash_to_json, -1);
-    mArray = rb_define_module_under(mGeneratorMethods, "Array");
+
+    VALUE mArray = rb_define_module_under(mGeneratorMethods, "Array");
     rb_define_method(mArray, "to_json", mArray_to_json, -1);
+
 #ifdef RUBY_INTEGER_UNIFICATION
-    mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
+    VALUE mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
     rb_define_method(mInteger, "to_json", mInteger_to_json, -1);
 #else
-    mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
+    VALUE mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
     rb_define_method(mFixnum, "to_json", mFixnum_to_json, -1);
-    mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
+
+    VALUE mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
     rb_define_method(mBignum, "to_json", mBignum_to_json, -1);
 #endif
-    mFloat = rb_define_module_under(mGeneratorMethods, "Float");
+    VALUE mFloat = rb_define_module_under(mGeneratorMethods, "Float");
     rb_define_method(mFloat, "to_json", mFloat_to_json, -1);
-    mString = rb_define_module_under(mGeneratorMethods, "String");
+
+    VALUE mString = rb_define_module_under(mGeneratorMethods, "String");
     rb_define_singleton_method(mString, "included", mString_included_s, 1);
     rb_define_method(mString, "to_json", mString_to_json, -1);
     rb_define_method(mString, "to_json_raw", mString_to_json_raw, -1);
     rb_define_method(mString, "to_json_raw_object", mString_to_json_raw_object, 0);
+
     mString_Extend = rb_define_module_under(mString, "Extend");
     rb_define_method(mString_Extend, "json_create", mString_Extend_json_create, 1);
-    mTrueClass = rb_define_module_under(mGeneratorMethods, "TrueClass");
+
+    VALUE mTrueClass = rb_define_module_under(mGeneratorMethods, "TrueClass");
     rb_define_method(mTrueClass, "to_json", mTrueClass_to_json, -1);
-    mFalseClass = rb_define_module_under(mGeneratorMethods, "FalseClass");
+
+    VALUE mFalseClass = rb_define_module_under(mGeneratorMethods, "FalseClass");
     rb_define_method(mFalseClass, "to_json", mFalseClass_to_json, -1);
-    mNilClass = rb_define_module_under(mGeneratorMethods, "NilClass");
+
+    VALUE mNilClass = rb_define_module_under(mGeneratorMethods, "NilClass");
     rb_define_method(mNilClass, "to_json", mNilClass_to_json, -1);
 
     i_to_s = rb_intern("to_s");
