@@ -117,7 +117,29 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_
     RB_GC_GUARD(in_string);
 }
 
-static void convert_ASCII_to_JSON(FBuffer *out_buffer, VALUE str, bool out_script_safe)
+static const bool escape_table[256] = {
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* '"'  */
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0, /* '\\' */
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+};
+
+static const bool script_safe_escape_table[256] = {
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* '"' and '/' */
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0, /* '\\' */
+    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+};
+
+static void convert_ASCII_to_JSON(FBuffer *out_buffer, VALUE str, const bool escape_table[256])
 {
     const char *hexdig = "0123456789abcdef";
     char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
@@ -129,17 +151,8 @@ static void convert_ASCII_to_JSON(FBuffer *out_buffer, VALUE str, bool out_scrip
 
     for (pos = 0; pos < len;) {
         unsigned char ch = ptr[pos];
-        bool should_escape;
-
-        /* JSON policy */
-        should_escape =
-            (ch < 0x20) ||
-            (ch == '"') ||
-            (ch == '\\') ||
-            (out_script_safe && (ch == '/'));
-
         /* JSON encoding */
-        if (should_escape) {
+        if (escape_table[ch]) {
             if (pos > beg) {
                 fbuffer_append(out_buffer, &ptr[beg], pos - beg);
             }
@@ -717,7 +730,7 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 
     switch(rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
-            convert_ASCII_to_JSON(buffer, obj, state->script_safe);
+            convert_ASCII_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table);
             break;
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(state->ascii_only)) {
