@@ -26,7 +26,7 @@ class TestTimeout < Test::Unit::TestCase
   end
 
   def test_allows_nil_seconds
-    assert_raise(ArgumentError) do
+    assert_nothing_raised do
       assert_equal :ok, Timeout.timeout(nil){:ok}
     end
   end
