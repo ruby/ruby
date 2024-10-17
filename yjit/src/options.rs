@@ -331,6 +331,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                 OPTIONS.compilation_log = Some(CompilationLogOutput::Stderr);
                 CompilationLog::init();
             },
+            "quiet" => unsafe {
+                OPTIONS.compilation_log = Some(CompilationLogOutput::MemoryOnly);
+                CompilationLog::init();
+            },
             arg_value => {
                 let log_file_path = if std::path::Path::new(arg_value).is_dir() {
                     format!("{arg_value}/yjit_compilation_{}.log", std::process::id())
