@@ -1,43 +1,8 @@
-
 #ifndef _FBUFFER_H_
 #define _FBUFFER_H_
 
 #include "ruby.h"
-
-#ifndef RHASH_SIZE
-#define RHASH_SIZE(hsh) (RHASH(hsh)->tbl->num_entries)
-#endif
-
-#ifndef RFLOAT_VALUE
-#define RFLOAT_VALUE(val) (RFLOAT(val)->value)
-#endif
-
-#ifndef RARRAY_LEN
-#define RARRAY_LEN(ARRAY) RARRAY(ARRAY)->len
-#endif
-#ifndef RSTRING_PTR
-#define RSTRING_PTR(string) RSTRING(string)->ptr
-#endif
-#ifndef RSTRING_LEN
-#define RSTRING_LEN(string) RSTRING(string)->len
-#endif
-
-#ifdef PRIsVALUE
-# define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
-# define RB_OBJ_STRING(obj) (obj)
-#else
-# define PRIsVALUE "s"
-# define RB_OBJ_CLASSNAME(obj) rb_obj_classname(obj)
-# define RB_OBJ_STRING(obj) StringValueCStr(obj)
-#endif
-
 #include "ruby/encoding.h"
-#define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
-
-/* We don't need to guard objects for rbx, so let's do nothing at all. */
-#ifndef RB_GC_GUARD
-#define RB_GC_GUARD(object)
-#endif
 
 typedef struct FBufferStruct {
     unsigned long initial_length;
@@ -173,9 +138,8 @@ static void fbuffer_append_long(FBuffer *fb, long number)
 
 static VALUE fbuffer_to_s(FBuffer *fb)
 {
-    VALUE result = rb_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
+    VALUE result = rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
     fbuffer_free(fb);
-    FORCE_UTF8(result);
     return result;
 }
 #endif

@@ -620,9 +620,9 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     if (!allow_nan) {
         if (isinf(value)) {
-            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", tmp);
         } else if (isnan(value)) {
-            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(tmp));
+            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", tmp);
         }
     }
     fbuffer_append_str(buffer, tmp);
@@ -670,7 +670,7 @@ static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *s
             default:
             general:
                 if (state->strict) {
-                    rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(CLASS_OF(obj)));
+                    rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", CLASS_OF(obj));
                 } else if (rb_respond_to(obj, i_to_json)) {
                     tmp = rb_funcall(obj, i_to_json, 1, Vstate);
                     Check_Type(tmp, T_STRING);

@@ -76,6 +76,10 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
           i_leftshift, i_new, i_try_convert, i_freeze, i_uminus;
 
+static int binary_encindex;
+static int utf8_encindex;
+
+
 %%{
     machine JSON_common;
 
@@ -662,18 +666,20 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 static VALUE convert_encoding(VALUE source)
 {
-#ifdef HAVE_RUBY_ENCODING_H
-  rb_encoding *enc = rb_enc_get(source);
-  if (enc == rb_ascii8bit_encoding()) {
+  int encindex = RB_ENCODING_GET(source);
+
+  if (encindex == utf8_encindex) {
+    return source;
+  }
+
+ if (encindex == binary_encindex) {
     if (OBJ_FROZEN(source)) {
       source = rb_str_dup(source);
     }
-    FORCE_UTF8(source);
-  } else {
-    source = rb_str_conv_enc(source, rb_enc_get(source), rb_utf8_encoding());
+    return rb_enc_associate_index(source, utf8_encindex);
   }
-#endif
-    return source;
+
+  return rb_str_conv_enc(source, rb_enc_from_index(encindex), rb_utf8_encoding());
 }
 
 /*
@@ -946,6 +952,9 @@ void Init_parser(void)
     i_try_convert = rb_intern("try_convert");
     i_freeze = rb_intern("freeze");
     i_uminus = rb_intern("-@");
+
+    binary_encindex = rb_ascii8bit_encindex();
+    utf8_encindex = rb_utf8_encindex();
 }
 
 /*
