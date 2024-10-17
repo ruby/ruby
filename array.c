@@ -3465,8 +3465,7 @@ rb_ary_sort_bang(VALUE ary)
  *
  *    [0, 2, 3, 1].sort # => [0, 1, 2, 3]
  *
- *  With a block given, calls the block with each combination of pairs of elements from +self+
- *  (see Array#combination);
+ *  With a block given, calls the block with each combination of pairs of elements from +self+;
  *  for each pair +a+ and +b+, the block should return a numeric:
  *
  *  - Negative when +b+ is to follow +a+.
