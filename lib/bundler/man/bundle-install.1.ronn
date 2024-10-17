@@ -136,8 +136,7 @@ automatically and that requires `bundler` to silently remember them. Since
   This option is deprecated in favor of the `path` setting.
 
 * `--quiet`:
-  Do not print progress information to the standard output. Instead, Bundler
-  will exit using a status code (`$?`).
+  Do not print progress information to the standard output.
 
 * `--retry=[<number>]`:
   Retry failed network or git requests for <number> times.
