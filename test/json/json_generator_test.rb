@@ -479,9 +479,7 @@ EOT
     end
   end
 
-  if defined?(Encoding)
-    def test_nonutf8_encoding
-      assert_equal("\"5\u{b0}\"", "5\xb0".force_encoding("iso-8859-1").to_json)
-    end
+  def test_nonutf8_encoding
+    assert_equal("\"5\u{b0}\"", "5\xb0".force_encoding("iso-8859-1").to_json)
   end
 end
