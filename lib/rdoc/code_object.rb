@@ -97,6 +97,11 @@ class RDoc::CodeObject
   attr_accessor :viewer
 
   ##
+  # When mixed-in to a class, this points to the Context in which it was originally defined.
+
+  attr_accessor :mixin_from
+
+  ##
   # Creates a new CodeObject that will document itself and its children
 
   def initialize
@@ -111,6 +116,7 @@ class RDoc::CodeObject
     @full_name        = nil
     @store            = nil
     @track_visibility = true
+    @mixin_from       = nil
 
     initialize_visibility
   end

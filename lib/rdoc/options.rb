@@ -344,6 +344,11 @@ class RDoc::Options
   # Indicates if files of test suites should be skipped
   attr_accessor :skip_tests
 
+  ##
+  # Embed mixin methods, attributes, and constants into class documentation. Set via
+  # +--[no-]embed-mixins+ (Default is +false+.)
+  attr_accessor :embed_mixins
+
   def initialize loaded_options = nil # :nodoc:
     init_ivars
     override loaded_options if loaded_options
@@ -351,6 +356,7 @@ class RDoc::Options
 
   def init_ivars # :nodoc:
     @dry_run = false
+    @embed_mixins = false
     @exclude = %w[
       ~\z \.orig\z \.rej\z \.bak\z
       \.gemspec\z
@@ -401,6 +407,7 @@ class RDoc::Options
     @encoding = encoding ? Encoding.find(encoding) : encoding
 
     @charset        = map['charset']
+    @embed_mixins   = map['embed_mixins']
     @exclude        = map['exclude']
     @generator_name = map['generator_name']
     @hyperlink_all  = map['hyperlink_all']
@@ -432,6 +439,7 @@ class RDoc::Options
     end
 
     @charset        = map['charset']        if map.has_key?('charset')
+    @embed_mixins   = map['embed_mixins']   if map.has_key?('embed_mixins')
     @exclude        = map['exclude']        if map.has_key?('exclude')
     @generator_name = map['generator_name'] if map.has_key?('generator_name')
     @hyperlink_all  = map['hyperlink_all']  if map.has_key?('hyperlink_all')
@@ -460,11 +468,12 @@ class RDoc::Options
   def == other # :nodoc:
     self.class === other and
       @encoding       == other.encoding       and
+      @embed_mixins   == other.embed_mixins   and
       @generator_name == other.generator_name and
       @hyperlink_all  == other.hyperlink_all  and
       @line_numbers   == other.line_numbers   and
       @locale         == other.locale         and
-      @locale_dir     == other.locale_dir and
+      @locale_dir     == other.locale_dir     and
       @main_page      == other.main_page      and
       @markup         == other.markup         and
       @op_dir         == other.op_dir         and
@@ -838,6 +847,14 @@ Usage: #{opt.program_name} [options] [names...]
              "One of 'public', 'protected' (the default),",
              "'private' or 'nodoc' (show everything)") do |value|
         @visibility = value
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]embed-mixins",
+             "Embed mixin methods, attributes, and constants",
+             "into class documentation. (default false)") do |value|
+        @embed_mixins = value
       end
 
       opt.separator nil

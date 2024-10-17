@@ -1500,4 +1500,140 @@ class TestRDocClassModule < XrefTestCase
     assert_equal [a, c], @c1.extends
   end
 
+  class TestRDocClassModuleMixins < XrefTestCase
+    def setup
+      super
+
+      klass_tl = @store.add_file("klass.rb")
+      @klass = klass_tl.add_class(RDoc::NormalClass, "Klass")
+
+      incmod_tl = @store.add_file("incmod.rb")
+      @incmod = incmod_tl.add_module(RDoc::NormalModule, "Incmod")
+
+      incmod_const = @incmod.add_constant(RDoc::Constant.new("INCMOD_CONST_WITHOUT_A_SECTION", nil, ""))
+      incmod_const = @incmod.add_constant(RDoc::Constant.new("INCMOD_CONST", nil, ""))
+      incmod_const.section = @incmod.add_section("Incmod const section")
+
+      incmod_method = @incmod.add_method(RDoc::AnyMethod.new(nil, "incmod_method_without_a_section"))
+      incmod_method = @incmod.add_method(RDoc::AnyMethod.new(nil, "incmod_method"))
+      incmod_method.section = @incmod.add_section("Incmod method section")
+
+      incmod_attr = @incmod.add_attribute(RDoc::Attr.new(nil, "incmod_attr_without_a_section", "RW", ""))
+      incmod_attr = @incmod.add_attribute(RDoc::Attr.new(nil, "incmod_attr", "RW", ""))
+      incmod_attr.section = @incmod.add_section("Incmod attr section")
+
+      incmod_private_method = @incmod.add_method(RDoc::AnyMethod.new(nil, "incmod_private_method"))
+      incmod_private_method.visibility = :private
+
+      incmod_private_attr = @incmod.add_attribute(RDoc::Attr.new(nil, "incmod_private_attr", "RW", ""))
+      incmod_private_attr.visibility = :private
+
+      extmod_tl = @store.add_file("extmod.rb")
+      @extmod = extmod_tl.add_module(RDoc::NormalModule, "Extmod")
+
+      extmod_method = @extmod.add_method(RDoc::AnyMethod.new(nil, "extmod_method_without_a_section"))
+      extmod_method = @extmod.add_method(RDoc::AnyMethod.new(nil, "extmod_method"))
+      extmod_method.section = @extmod.add_section("Extmod method section")
+
+      extmod_attr = @extmod.add_attribute(RDoc::Attr.new(nil, "extmod_attr_without_a_section", "RW", "", true))
+      extmod_attr = @extmod.add_attribute(RDoc::Attr.new(nil, "extmod_attr", "RW", "", true))
+      extmod_attr.section = @extmod.add_section("Extmod attr section")
+
+      extmod_private_method = @extmod.add_method(RDoc::AnyMethod.new(nil, "extmod_private_method"))
+      extmod_private_method.visibility = :private
+
+      extmod_private_attr = @extmod.add_attribute(RDoc::Attr.new(nil, "extmod_private_attr", "RW", "", true))
+      extmod_private_attr.visibility = :private
+
+      @klass.add_include(RDoc::Include.new("Incmod", nil))
+      @klass.add_extend(RDoc::Include.new("Extmod", nil))
+
+      @klass.add_include(RDoc::Include.new("ExternalInclude", nil))
+      @klass.add_extend(RDoc::Include.new("ExternalExtend", nil))
+    end
+
+    def test_embed_mixin_when_false_does_not_embed_anything
+      assert_false(@klass.options.embed_mixins)
+      @klass.complete(:protected)
+
+      refute_includes(@klass.constants.map(&:name), "INCMOD_CONST")
+      refute_includes(@klass.method_list.map(&:name), "incmod_method")
+      refute_includes(@klass.method_list.map(&:name), "extmod_method")
+      refute_includes(@klass.attributes.map(&:name), "incmod_attr")
+      refute_includes(@klass.attributes.map(&:name), "extmod_attr")
+    end
+
+    def test_embed_mixin_when_true_embeds_methods_and_constants
+      @klass.options.embed_mixins = true
+      @klass.complete(:protected)
+
+      # assert on presence and identity of methods and constants
+      constant = @klass.constants.find { |c| c.name == "INCMOD_CONST" }
+      assert(constant, "constant from included mixin should be present")
+      assert_equal(@incmod, constant.mixin_from)
+
+      instance_method = @klass.method_list.find { |m| m.name == "incmod_method" }
+      assert(instance_method, "instance method from included mixin should be present")
+      refute(instance_method.singleton)
+      assert_equal(@incmod, instance_method.mixin_from)
+
+      instance_attr = @klass.attributes.find { |a| a.name == "incmod_attr" }
+      assert(instance_attr, "instance attr from included mixin should be present")
+      refute(instance_attr.singleton)
+      assert_equal(@incmod, instance_attr.mixin_from)
+
+      refute(@klass.method_list.find { |m| m.name == "incmod_private_method" })
+      refute(@klass.attributes.find { |m| m.name == "incmod_private_attr" })
+
+      class_method = @klass.method_list.find { |m| m.name == "extmod_method" }
+      assert(class_method, "class method from extended mixin should be present")
+      assert(class_method.singleton)
+      assert_equal(@extmod, class_method.mixin_from)
+
+      class_attr = @klass.attributes.find { |a| a.name == "extmod_attr" }
+      assert(class_attr, "class attr from extended mixin should be present")
+      assert(class_attr.singleton)
+      assert_equal(@extmod, class_attr.mixin_from)
+
+      refute(@klass.method_list.find { |m| m.name == "extmod_private_method" })
+      refute(@klass.attributes.find { |m| m.name == "extmod_private_attr" })
+
+      # assert that sections are also imported
+      constant_section = @klass.sections.find { |s| s.title == "Incmod const section" }
+      assert(constant_section, "constant from included mixin should have a section")
+      assert_equal(constant_section, constant.section)
+
+      instance_method_section = @klass.sections.find { |s| s.title == "Incmod method section" }
+      assert(instance_method_section, "instance method from included mixin should have a section")
+      assert_equal(instance_method_section, instance_method.section)
+
+      instance_attr_section = @klass.sections.find { |s| s.title == "Incmod attr section" }
+      assert(instance_attr_section, "instance attr from included mixin should have a section")
+      assert_equal(instance_attr_section, instance_attr.section)
+
+      class_method_section = @klass.sections.find { |s| s.title == "Extmod method section" }
+      assert(class_method_section, "class method from extended mixin should have a section")
+      assert_equal(class_method_section, class_method.section)
+
+      class_attr_section = @klass.sections.find { |s| s.title == "Extmod attr section" }
+      assert(class_attr_section, "class attr from extended mixin should have a section")
+      assert_equal(class_attr_section, class_attr.section)
+
+      # and check that code objects without a section still have no section
+      constant = @klass.constants.find { |c| c.name == "INCMOD_CONST_WITHOUT_A_SECTION" }
+      assert_nil(constant.section.title)
+
+      instance_method = @klass.method_list.find { |c| c.name == "incmod_method_without_a_section" }
+      assert_nil(instance_method.section.title)
+
+      instance_attr = @klass.attributes.find { |c| c.name == "incmod_attr_without_a_section" }
+      assert_nil(instance_attr.section.title)
+
+      class_method = @klass.method_list.find { |c| c.name == "extmod_method_without_a_section" }
+      assert_nil(class_method.section.title)
+
+      class_attr = @klass.attributes.find { |c| c.name == "extmod_attr_without_a_section" }
+      assert_nil(class_attr.section.title)
+    end
+  end
 end

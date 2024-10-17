@@ -670,6 +670,13 @@ main .aliases {
   font-style: italic;
   cursor: default;
 }
+
+main .mixin-from {
+  font-size: 80%;
+  font-style: italic;
+  margin-bottom: 0.75em;
+}
+
 main .method-description ul {
   margin-left: 1.5em;
 }

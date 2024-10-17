@@ -223,6 +223,7 @@ class RDoc::ClassModule < RDoc::Context
   def complete min_visibility
     update_aliases
     remove_nodoc_children
+    embed_mixins
     update_includes
     remove_invisible min_visibility
   end
@@ -798,4 +799,43 @@ class RDoc::ClassModule < RDoc::Context
     extends.uniq!
   end
 
+  def embed_mixins
+    return unless options.embed_mixins
+
+    includes.each do |include|
+      next if String === include.module
+      include.module.method_list.each do |code_object|
+        add_method(prepare_to_embed(code_object))
+      end
+      include.module.constants.each do |code_object|
+        add_constant(prepare_to_embed(code_object))
+      end
+      include.module.attributes.each do |code_object|
+        add_attribute(prepare_to_embed(code_object))
+      end
+    end
+
+    extends.each do |ext|
+      next if String === ext.module
+      ext.module.method_list.each do |code_object|
+        add_method(prepare_to_embed(code_object, true))
+      end
+      ext.module.attributes.each do |code_object|
+        add_attribute(prepare_to_embed(code_object, true))
+      end
+    end
+  end
+
+  private
+
+  def prepare_to_embed(code_object, singleton=false)
+    code_object = code_object.dup
+    code_object.mixin_from = code_object.parent
+    code_object.singleton = true if singleton
+    set_current_section(code_object.section.title, code_object.section.comment)
+    # add_method and add_attribute will reassign self's visibility back to the method/attribute
+    # so we need to sync self's visibility with the object's to properly retain that information
+    self.visibility = code_object.visibility
+    code_object
+  end
 end
