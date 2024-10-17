@@ -7,7 +7,11 @@
 
 static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError;
 
-static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend;
+static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,
+          i_object_nl, i_array_nl, i_max_nesting, i_allow_nan, i_ascii_only,
+          i_pack, i_unpack, i_create_id, i_extend, i_key_p,
+          i_aref, i_send, i_respond_to_p, i_match, i_keys, i_depth,
+          i_buffer_initial_length, i_dup, i_script_safe, i_escape_slash, i_strict;
 
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
@@ -577,10 +581,180 @@ static const rb_data_type_t JSON_Generator_State_type = {
 static VALUE cState_s_allocate(VALUE klass)
 {
     JSON_Generator_State *state;
-    VALUE obj = TypedData_Make_Struct(klass, JSON_Generator_State, &JSON_Generator_State_type, state);
+    return TypedData_Make_Struct(klass, JSON_Generator_State,
+				 &JSON_Generator_State_type, state);
+}
+
+/*
+ * call-seq: configure(opts)
+ *
+ * Configure this State instance with the Hash _opts_, and return
+ * itself.
+ */
+static VALUE cState_configure(VALUE self, VALUE opts)
+{
+    VALUE tmp;
+    GET_STATE(self);
+    tmp = rb_check_convert_type(opts, T_HASH, "Hash", "to_hash");
+    if (NIL_P(tmp)) tmp = rb_convert_type(opts, T_HASH, "Hash", "to_h");
+    opts = tmp;
+    tmp = rb_hash_aref(opts, ID2SYM(i_indent));
+    if (RTEST(tmp)) {
+        unsigned long len;
+        Check_Type(tmp, T_STRING);
+        len = RSTRING_LEN(tmp);
+        state->indent = fstrndup(RSTRING_PTR(tmp), len + 1);
+        state->indent_len = len;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_space));
+    if (RTEST(tmp)) {
+        unsigned long len;
+        Check_Type(tmp, T_STRING);
+        len = RSTRING_LEN(tmp);
+        state->space = fstrndup(RSTRING_PTR(tmp), len + 1);
+        state->space_len = len;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_space_before));
+    if (RTEST(tmp)) {
+        unsigned long len;
+        Check_Type(tmp, T_STRING);
+        len = RSTRING_LEN(tmp);
+        state->space_before = fstrndup(RSTRING_PTR(tmp), len + 1);
+        state->space_before_len = len;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_array_nl));
+    if (RTEST(tmp)) {
+        unsigned long len;
+        Check_Type(tmp, T_STRING);
+        len = RSTRING_LEN(tmp);
+        state->array_nl = fstrndup(RSTRING_PTR(tmp), len + 1);
+        state->array_nl_len = len;
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_object_nl));
+    if (RTEST(tmp)) {
+        unsigned long len;
+        Check_Type(tmp, T_STRING);
+        len = RSTRING_LEN(tmp);
+        state->object_nl = fstrndup(RSTRING_PTR(tmp), len + 1);
+        state->object_nl_len = len;
+    }
+    tmp = ID2SYM(i_max_nesting);
     state->max_nesting = 100;
-    state->buffer_initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
-    return obj;
+    if (option_given_p(opts, tmp)) {
+        VALUE max_nesting = rb_hash_aref(opts, tmp);
+        if (RTEST(max_nesting)) {
+            Check_Type(max_nesting, T_FIXNUM);
+            state->max_nesting = FIX2LONG(max_nesting);
+        } else {
+            state->max_nesting = 0;
+        }
+    }
+    tmp = ID2SYM(i_depth);
+    state->depth = 0;
+    if (option_given_p(opts, tmp)) {
+        VALUE depth = rb_hash_aref(opts, tmp);
+        if (RTEST(depth)) {
+            Check_Type(depth, T_FIXNUM);
+            state->depth = FIX2LONG(depth);
+        } else {
+            state->depth = 0;
+        }
+    }
+    tmp = ID2SYM(i_buffer_initial_length);
+    if (option_given_p(opts, tmp)) {
+        VALUE buffer_initial_length = rb_hash_aref(opts, tmp);
+        if (RTEST(buffer_initial_length)) {
+            long initial_length;
+            Check_Type(buffer_initial_length, T_FIXNUM);
+            initial_length = FIX2LONG(buffer_initial_length);
+            if (initial_length > 0) state->buffer_initial_length = initial_length;
+        }
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_allow_nan));
+    state->allow_nan = RTEST(tmp);
+    tmp = rb_hash_aref(opts, ID2SYM(i_ascii_only));
+    state->ascii_only = RTEST(tmp);
+    tmp = rb_hash_aref(opts, ID2SYM(i_script_safe));
+    state->script_safe = RTEST(tmp);
+    if (!state->script_safe) {
+        tmp = rb_hash_aref(opts, ID2SYM(i_escape_slash));
+        state->script_safe = RTEST(tmp);
+    }
+    tmp = rb_hash_aref(opts, ID2SYM(i_strict));
+    state->strict = RTEST(tmp);
+    return self;
+}
+
+static void set_state_ivars(VALUE hash, VALUE state)
+{
+    VALUE ivars = rb_obj_instance_variables(state);
+    int i = 0;
+    for (i = 0; i < RARRAY_LEN(ivars); i++) {
+        VALUE key = rb_funcall(rb_ary_entry(ivars, i), i_to_s, 0);
+        long key_len = RSTRING_LEN(key);
+        VALUE value = rb_iv_get(state, StringValueCStr(key));
+        rb_hash_aset(hash, rb_str_intern(rb_str_substr(key, 1, key_len - 1)), value);
+    }
+}
+
+/*
+ * call-seq: to_h
+ *
+ * Returns the configuration instance variables as a hash, that can be
+ * passed to the configure method.
+ */
+static VALUE cState_to_h(VALUE self)
+{
+    VALUE result = rb_hash_new();
+    GET_STATE(self);
+    set_state_ivars(result, self);
+    rb_hash_aset(result, ID2SYM(i_indent), rb_str_new(state->indent, state->indent_len));
+    rb_hash_aset(result, ID2SYM(i_space), rb_str_new(state->space, state->space_len));
+    rb_hash_aset(result, ID2SYM(i_space_before), rb_str_new(state->space_before, state->space_before_len));
+    rb_hash_aset(result, ID2SYM(i_object_nl), rb_str_new(state->object_nl, state->object_nl_len));
+    rb_hash_aset(result, ID2SYM(i_array_nl), rb_str_new(state->array_nl, state->array_nl_len));
+    rb_hash_aset(result, ID2SYM(i_allow_nan), state->allow_nan ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_ascii_only), state->ascii_only ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_max_nesting), LONG2FIX(state->max_nesting));
+    rb_hash_aset(result, ID2SYM(i_script_safe), state->script_safe ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_strict), state->strict ? Qtrue : Qfalse);
+    rb_hash_aset(result, ID2SYM(i_depth), LONG2FIX(state->depth));
+    rb_hash_aset(result, ID2SYM(i_buffer_initial_length), LONG2FIX(state->buffer_initial_length));
+    return result;
+}
+
+/*
+* call-seq: [](name)
+*
+* Returns the value returned by method +name+.
+*/
+static VALUE cState_aref(VALUE self, VALUE name)
+{
+    name = rb_funcall(name, i_to_s, 0);
+    if (RTEST(rb_funcall(self, i_respond_to_p, 1, name))) {
+        return rb_funcall(self, i_send, 1, name);
+    } else {
+        return rb_attr_get(self, rb_intern_str(rb_str_concat(rb_str_new2("@"), name)));
+    }
+}
+
+/*
+* call-seq: []=(name, value)
+*
+* Sets the attribute name to value.
+*/
+static VALUE cState_aset(VALUE self, VALUE name, VALUE value)
+{
+    VALUE name_writer;
+
+    name = rb_funcall(name, i_to_s, 0);
+    name_writer = rb_str_cat2(rb_str_dup(name), "=");
+    if (RTEST(rb_funcall(self, i_respond_to_p, 1, name_writer))) {
+        return rb_funcall(self, i_send, 2, name_writer, value);
+    } else {
+        rb_ivar_set(self, rb_intern_str(rb_str_concat(rb_str_new2("@"), name)), value);
+    }
+    return Qnil;
 }
 
 struct hash_foreach_arg {
@@ -903,6 +1077,37 @@ static VALUE cState_generate(VALUE self, VALUE obj)
     GET_STATE(self);
     (void)state;
     return result;
+}
+
+/*
+ * call-seq: new(opts = {})
+ *
+ * Instantiates a new State object, configured by _opts_.
+ *
+ * _opts_ can have the following keys:
+ *
+ * * *indent*: a string used to indent levels (default: ''),
+ * * *space*: a string that is put after, a : or , delimiter (default: ''),
+ * * *space_before*: a string that is put before a : pair delimiter (default: ''),
+ * * *object_nl*: a string that is put at the end of a JSON object (default: ''),
+ * * *array_nl*: a string that is put at the end of a JSON array (default: ''),
+ * * *allow_nan*: true if NaN, Infinity, and -Infinity should be
+ *   generated, otherwise an exception is thrown, if these values are
+ *   encountered. This options defaults to false.
+ * * *ascii_only*: true if only ASCII characters should be generated. This
+ *   option defaults to false.
+ * * *buffer_initial_length*: sets the initial length of the generator's
+ *   internal buffer.
+ */
+static VALUE cState_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE opts;
+    GET_STATE(self);
+    state->max_nesting = 100;
+    state->buffer_initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
+    rb_scan_args(argc, argv, "01", &opts);
+    if (!NIL_P(opts)) cState_configure(self, opts);
+    return self;
 }
 
 /*
@@ -1236,18 +1441,6 @@ static VALUE cState_allow_nan_p(VALUE self)
 }
 
 /*
- * call-seq: allow_nan=(enable)
- *
- * This sets whether or not to serialize NaN, Infinity, and -Infinity
- */
-static VALUE cState_allow_nan_set(VALUE self, VALUE enable)
-{
-    GET_STATE(self);
-    state->allow_nan = RTEST(enable);
-    return Qnil;
-}
-
-/*
  * call-seq: ascii_only?
  *
  * Returns true, if only ASCII characters should be generated. Otherwise
@@ -1257,18 +1450,6 @@ static VALUE cState_ascii_only_p(VALUE self)
 {
     GET_STATE(self);
     return state->ascii_only ? Qtrue : Qfalse;
-}
-
-/*
- * call-seq: ascii_only=(enable)
- *
- * This sets whether only ASCII characters should be generated.
- */
-static VALUE cState_ascii_only_set(VALUE self, VALUE enable)
-{
-    GET_STATE(self);
-    state->ascii_only = RTEST(enable);
-    return Qnil;
 }
 
 /*
@@ -1349,6 +1530,7 @@ void Init_generator(void)
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);
     rb_define_singleton_method(cState, "from_state", cState_from_state_s, 1);
+    rb_define_method(cState, "initialize", cState_initialize, -1);
     rb_define_method(cState, "initialize_copy", cState_init_copy, 1);
     rb_define_method(cState, "indent", cState_indent, 0);
     rb_define_method(cState, "indent=", cState_indent_set, 1);
@@ -1373,13 +1555,17 @@ void Init_generator(void)
     rb_define_method(cState, "strict=", cState_strict_set, 1);
     rb_define_method(cState, "check_circular?", cState_check_circular_p, 0);
     rb_define_method(cState, "allow_nan?", cState_allow_nan_p, 0);
-    rb_define_method(cState, "allow_nan=", cState_allow_nan_set, 1);
     rb_define_method(cState, "ascii_only?", cState_ascii_only_p, 0);
-    rb_define_method(cState, "ascii_only=", cState_ascii_only_set, 1);
     rb_define_method(cState, "depth", cState_depth, 0);
     rb_define_method(cState, "depth=", cState_depth_set, 1);
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
+    rb_define_method(cState, "configure", cState_configure, 1);
+    rb_define_alias(cState, "merge", "configure");
+    rb_define_method(cState, "to_h", cState_to_h, 0);
+    rb_define_alias(cState, "to_hash", "to_h");
+    rb_define_method(cState, "[]", cState_aref, 1);
+    rb_define_method(cState, "[]=", cState_aset, 2);
     rb_define_method(cState, "generate", cState_generate, 1);
 
     VALUE mGeneratorMethods = rb_define_module_under(mGenerator, "GeneratorMethods");
@@ -1427,10 +1613,30 @@ void Init_generator(void)
     i_to_s = rb_intern("to_s");
     i_to_json = rb_intern("to_json");
     i_new = rb_intern("new");
+    i_indent = rb_intern("indent");
+    i_space = rb_intern("space");
+    i_space_before = rb_intern("space_before");
+    i_object_nl = rb_intern("object_nl");
+    i_array_nl = rb_intern("array_nl");
+    i_max_nesting = rb_intern("max_nesting");
+    i_script_safe = rb_intern("script_safe");
+    i_escape_slash = rb_intern("escape_slash");
+    i_strict = rb_intern("strict");
+    i_allow_nan = rb_intern("allow_nan");
+    i_ascii_only = rb_intern("ascii_only");
+    i_depth = rb_intern("depth");
+    i_buffer_initial_length = rb_intern("buffer_initial_length");
     i_pack = rb_intern("pack");
     i_unpack = rb_intern("unpack");
     i_create_id = rb_intern("create_id");
     i_extend = rb_intern("extend");
+    i_key_p = rb_intern("key?");
+    i_aref = rb_intern("[]");
+    i_send = rb_intern("__send__");
+    i_respond_to_p = rb_intern("respond_to?");
+    i_match = rb_intern("match");
+    i_keys = rb_intern("keys");
+    i_dup = rb_intern("dup");
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();
