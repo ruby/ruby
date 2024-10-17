@@ -3455,21 +3455,19 @@ rb_ary_sort_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.sort -> new_array
- *    array.sort {|a, b| ... } -> new_array
+ *    sort -> new_array
+ *    sort {|a, b| ... } -> new_array
  *
- *  Returns a new +Array+ whose elements are those from +self+, sorted.
+ *  Returns a new array containing the elements of +self+, sorted.
  *
- *  With no block, compares elements using operator <tt>#<=></tt>
- *  (see Comparable):
+ *  With no block given, compares elements using operator <tt>#<=></tt>
+ *  (see Object#<=>):
  *
- *    a = 'abcde'.split('').shuffle
- *    a # => ["e", "b", "d", "a", "c"]
- *    a1 = a.sort
- *    a1 # => ["a", "b", "c", "d", "e"]
+ *    a = [0, 1, 2, 3].shuffle # => [0, 2, 3, 1]
+ *    a.sort                   # => [0, 1, 2, 3]
  *
- *  With a block, calls the block with each element pair;
- *  for each element pair +a+ and +b+, the block should return an integer:
+ *  With a block given, calls the block with each #combination of pairs of elements from +self+;
+ *  for each pair +a+ and +b+, the block should return a numeric:
  *
  *  - Negative when +b+ is to follow +a+.
  *  - Zero when +a+ and +b+ are equivalent.
@@ -3477,22 +3475,14 @@ rb_ary_sort_bang(VALUE ary)
  *
  *  Example:
  *
- *    a = 'abcde'.split('').shuffle
- *    a # => ["e", "b", "d", "a", "c"]
- *    a1 = a.sort {|a, b| a <=> b }
- *    a1 # => ["a", "b", "c", "d", "e"]
- *    a2 = a.sort {|a, b| b <=> a }
- *    a2 # => ["e", "d", "c", "b", "a"]
+ *    a = [0, 1, 2, 3].shuffle # => [3, 2, 0, 1]
+ *    a.sort {|a, b| a <=> b } # => [0, 1, 2, 3]
+ *    a.sort {|a, b| b <=> a } # => [3, 2, 1, 0]
  *
  *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
- *  and may be unstable:
+ *  and may be unstable.
  *
- *    a = 'abcde'.split('').shuffle
- *    a # => ["e", "b", "d", "a", "c"]
- *    a1 = a.sort {|a, b| 0 }
- *    a1 # =>  ["c", "e", "b", "d", "a"]
- *
- *  Related: Enumerable#sort_by.
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 VALUE
