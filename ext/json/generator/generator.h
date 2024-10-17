@@ -23,7 +23,6 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
-static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_ascii_only, bool out_script_safe);
 static char *fstrndup(const char *ptr, unsigned long len);
 
 /* ruby api and some helpers */
