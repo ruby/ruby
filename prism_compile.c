@@ -6062,16 +6062,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     //                                                   ^^^^^^^^
     // Keywords create an internal variable on the parse tree
     if (keywords_list && keywords_list->size) {
-        body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+        keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
         keyword->num = (int) keywords_list->size;
 
-        body->param.flags.has_kw = true;
         const VALUE default_values = rb_ary_hidden_new(1);
         const VALUE complex_mark = rb_str_tmp_new(0);
-
-        ID *ids = xcalloc(keywords_list->size, sizeof(ID));
-
-        size_t kw_index = 0;
 
         for (size_t i = 0; i < keywords_list->size; i++) {
             pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
@@ -6091,7 +6086,6 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                     pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                 }
                 local_index++;
-                ids[kw_index++] = local;
             }
         }
 
@@ -6121,14 +6115,10 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
                 else {
                     pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                 }
-                ids[kw_index++] = local;
                 local_index++;
             }
 
         }
-
-        keyword->bits_start = local_index;
-        keyword->table = ids;
 
         if (RARRAY_LEN(default_values)) {
             VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
@@ -6143,9 +6133,13 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         }
 
         // Hidden local for keyword arguments
+        keyword->bits_start = local_index;
         ID local = rb_make_temporary_id(local_index);
         local_table_for_iseq->ids[local_index] = local;
         local_index++;
+
+        body->param.keyword = keyword;
+        body->param.flags.has_kw = true;
     }
 
     if (body->type == ISEQ_TYPE_BLOCK && local_index == 1 && requireds_list && requireds_list->size == 1 && !trailing_comma) {
@@ -6371,6 +6365,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     // FIXME: args?
     iseq_set_local_table(iseq, local_table_for_iseq, 0);
     scope_node->local_table_for_iseq_size = local_table_for_iseq->size;
+
+    if (keyword != NULL) {
+        size_t keyword_start_index = keyword->bits_start - keyword->num;
+        keyword->table = (ID *)&ISEQ_BODY(iseq)->local_table[keyword_start_index];
+    }
 
     //********STEP 5************
     // Goal: compile anything that needed to be compiled
