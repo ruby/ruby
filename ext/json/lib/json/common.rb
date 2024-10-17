@@ -613,26 +613,42 @@ module JSON
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
   def dump(obj, anIO = nil, limit = nil, kwargs = nil)
-    io_limit_opt = [anIO, limit, kwargs].compact
-    kwargs = io_limit_opt.pop if io_limit_opt.last.is_a?(Hash)
-    anIO, limit = io_limit_opt
-    if anIO.respond_to?(:to_io)
-      anIO = anIO.to_io
-    elsif limit.nil? && !anIO.respond_to?(:write)
-      anIO, limit = nil, anIO
+    if kwargs.nil?
+      if limit.nil?
+        if anIO.is_a?(Hash)
+          kwargs = anIO
+          anIO = nil
+        end
+      elsif limit.is_a?(Hash)
+        kwargs = limit
+        limit = nil
+      end
     end
+
+    unless anIO.nil?
+      if anIO.respond_to?(:to_io)
+        anIO = anIO.to_io
+      elsif limit.nil? && !anIO.respond_to?(:write)
+        anIO, limit = nil, anIO
+      end
+    end
+
     opts = JSON.dump_default_options
     opts = opts.merge(:max_nesting => limit) if limit
     opts = merge_dump_options(opts, **kwargs) if kwargs
-    result = generate(obj, opts)
-    if anIO
+
+    result = begin
+      generate(obj, opts)
+    rescue JSON::NestingError
+      raise ArgumentError, "exceed depth limit"
+    end
+
+    if anIO.nil?
+      result
+    else
       anIO.write result
       anIO
-    else
-      result
     end
-  rescue JSON::NestingError
-    raise ArgumentError, "exceed depth limit"
   end
 
   # Encodes string using String.encode.
