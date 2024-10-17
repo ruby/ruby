@@ -2328,6 +2328,12 @@ islettere(int c)
     return (c == 'e' || c == 'E');
 }
 
+inline static int
+isletterr(int c)
+{
+    return (c == 'r' || c == 'R');
+}
+
 static VALUE
 negate_num(VALUE num)
 {
@@ -2377,7 +2383,13 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
         ok = 1;
     }
 
-    if (ok && *s + 1 < end && islettere(**s)) {
+    if (!ok || *s >= end) {
+        /* failed or finish */
+    }
+    else if (isletterr(**s)) {
+        (*s)++;
+    }
+    else if (*s + 1 < end && islettere(**s)) {
         (*s)++;
         expsign = read_sign(s, end);
         exp = rb_int_parse_cstr(*s, end-*s, &e, NULL,
