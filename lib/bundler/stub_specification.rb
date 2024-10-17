@@ -28,6 +28,17 @@ module Bundler
 
     # @!group Stub Delegates
 
+    def ignored?
+      return @ignored unless @ignored.nil?
+
+      @ignored = missing_extensions?
+      return false unless @ignored
+
+      warn "Source #{source} is ignoring #{self} because it is missing extensions"
+
+      true
+    end
+
     def manually_installed?
       # This is for manually installed gems which are gems that were fixed in place after a
       # failed installation. Once the issue was resolved, the user then manually created

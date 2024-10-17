@@ -36,15 +36,14 @@ module Gem
       remove_method :open_file_with_flock if Gem.respond_to?(:open_file_with_flock)
 
       def open_file_with_flock(path, &block)
-        mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+        # read-write mode is used rather than read-only in order to support NFS
+        mode = IO::RDWR | IO::APPEND | IO::CREAT | IO::BINARY
         mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
 
         File.open(path, mode) do |io|
           begin
             io.flock(File::LOCK_EX)
           rescue Errno::ENOSYS, Errno::ENOTSUP
-          rescue Errno::ENOLCK # NFS
-            raise unless Thread.main == Thread.current
           end
           yield io
         end
@@ -267,6 +266,16 @@ module Gem
       end
       out
     end
+
+    if Gem.rubygems_version < Gem::Version.new("3.5.22")
+      module FilterIgnoredSpecs
+        def matching_specs(platform_only = false)
+          super.reject(&:ignored?)
+        end
+      end
+
+      prepend FilterIgnoredSpecs
+    end
   end
 
   # Requirements using lambda operator differentiate trailing zeros since rubygems 3.2.6
@@ -387,6 +396,15 @@ module Gem
           @extensions_dir ||=
             Gem.default_ext_dir_for(base_dir) || File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM, Gem.extension_api_version)
         end
+      end
+    end
+
+    # Can be removed once RubyGems 3.5.22 support is dropped
+    unless new.respond_to?(:ignored?)
+      def ignored?
+        return @ignored unless @ignored.nil?
+
+        @ignored = missing_extensions?
       end
     end
   end

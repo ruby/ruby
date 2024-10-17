@@ -210,7 +210,7 @@ module Bundler
           checkout
         end
 
-        generate_bin_options = { disable_extensions: !Bundler.rubygems.spec_missing_extensions?(spec), build_args: options[:build_args] }
+        generate_bin_options = { disable_extensions: !spec.missing_extensions?, build_args: options[:build_args] }
         generate_bin(spec, generate_bin_options)
 
         requires_checkout? ? spec.post_install_message : nil
@@ -299,7 +299,7 @@ module Bundler
           # The gemspecs we cache should already be evaluated.
           spec = Bundler.load_gemspec(spec_path)
           next unless spec
-          Bundler.rubygems.set_installed_by_version(spec)
+          spec.installed_by_version = Gem::VERSION
           Bundler.rubygems.validate(spec)
           File.open(spec_path, "wb") {|file| file.write(spec.to_ruby) }
         end

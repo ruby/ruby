@@ -130,7 +130,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_dash_i_respects_default_library_extension_priority
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
     pend "not installed yet" unless RbConfig::TOPDIR
 
     dash_i_ext_arg = util_install_extension_file("a")

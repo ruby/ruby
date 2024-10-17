@@ -232,9 +232,14 @@ class Gem::CommandManager
     const_name = command_name.capitalize.gsub(/_(.)/) { $1.upcase } << "Command"
 
     begin
-      require "rubygems/commands/#{command_name}_command"
+      begin
+        require "rubygems/commands/#{command_name}_command"
+      rescue LoadError
+        # it may have been defined from a rubygems_plugin.rb file
+      end
+
       Gem::Commands.const_get(const_name).new
-    rescue StandardError, LoadError => e
+    rescue StandardError => e
       alert_error clean_text("Loading command: #{command_name} (#{e.class})\n\t#{e}")
       ui.backtrace e
     end

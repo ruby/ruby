@@ -57,28 +57,6 @@ module Bundler
       nil
     end
 
-    def set_installed_by_version(spec, installed_by_version = Gem::VERSION)
-      return unless spec.respond_to?(:installed_by_version=)
-      spec.installed_by_version = Gem::Version.create(installed_by_version)
-    end
-
-    def spec_missing_extensions?(spec, default = true)
-      return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
-
-      return false if spec.default_gem?
-      return false if spec.extensions.empty?
-
-      default
-    end
-
-    def spec_matches_for_glob(spec, glob)
-      return spec.matches_for_glob(glob) if spec.respond_to?(:matches_for_glob)
-
-      spec.load_paths.flat_map do |lp|
-        Dir["#{lp}/#{glob}#{suffix_pattern}"]
-      end
-    end
-
     def stub_set_spec(stub, spec)
       stub.instance_variable_set(:@spec, spec)
     end

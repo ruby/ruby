@@ -131,7 +131,7 @@ module Bundler
           Bundler::Index.build do |index|
             files.each do |file|
               next unless spec = Bundler.load_gemspec(file)
-              Bundler.rubygems.set_installed_by_version(spec)
+              spec.installed_by_version = Gem::VERSION
 
               spec.source = self
               Bundler.rubygems.validate(spec)

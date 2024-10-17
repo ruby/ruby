@@ -19,6 +19,8 @@ module Gem::URI
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
+  RFC2396_PARSER = RFC2396_Parser.new
+  Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
   # Gem::URI::Parser.new
   DEFAULT_PARSER = Parser.new
@@ -401,7 +403,7 @@ module Gem::URI
   private_class_method :_decode_uri_component
 
   # Returns a URL-encoded string derived from the given
-  # {Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html#module-Enumerable-label-Enumerable+in+Ruby+Classes]
+  # {Enumerable}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes]
   # +enum+.
   #
   # The result is suitable for use as form data
@@ -470,7 +472,7 @@ module Gem::URI
   # each +key+/+value+ pair is converted to one or more fields:
   #
   # - If +value+ is
-  #   {Array-convertible}[https://docs.ruby-lang.org/en/master/implicit_conversion_rdoc.html#label-Array-Convertible+Objects],
+  #   {Array-convertible}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects],
   #   each element +ele+ in +value+ is paired with +key+ to form a field:
   #
   #     name = Gem::URI.encode_www_form_component(key, enc)
@@ -528,7 +530,7 @@ module Gem::URI
   # each subarray is a name/value pair (both are strings).
   # Each returned string has encoding +enc+,
   # and has had invalid characters removed via
-  # {String#scrub}[https://docs.ruby-lang.org/en/master/String.html#method-i-scrub].
+  # {String#scrub}[rdoc-ref:String#scrub].
   #
   # A simple example:
   #

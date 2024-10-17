@@ -30,7 +30,7 @@ module Gem
     # Returns the list of all specifications in the record
 
     def all
-      @all ||= Gem.loaded_specs.values | stubs.map(&:to_spec)
+      @all ||= stubs.map(&:to_spec)
     end
 
     ##
