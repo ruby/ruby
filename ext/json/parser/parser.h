@@ -3,16 +3,6 @@
 
 #include "ruby.h"
 
-#ifndef HAVE_RUBY_RE_H
-#include "re.h"
-#endif
-
-#ifdef HAVE_RUBY_ST_H
-#include "ruby/st.h"
-#else
-#include "st.h"
-#endif
-
 #ifndef MAYBE_UNUSED
 # define MAYBE_UNUSED(x) x
 #endif
@@ -64,15 +54,6 @@ static void JSON_mark(void *json);
 static void JSON_free(void *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);
 static VALUE cParser_source(VALUE self);
-#ifndef ZALLOC
-#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
-static inline void *ruby_zalloc(size_t n)
-{
-    void *p = ruby_xmalloc(n);
-    memset(p, 0, n);
-    return p;
-}
-#endif
 
 static const rb_data_type_t JSON_Parser_type;
 

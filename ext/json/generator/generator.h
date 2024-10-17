@@ -23,22 +23,6 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
-#ifdef HAVE_RUBY_RE_H
-#include "ruby/re.h"
-#else
-#include "re.h"
-#endif
-
-#ifndef rb_intern_str
-#define rb_intern_str(string) SYM2ID(rb_str_intern(string))
-#endif
-
-#ifndef rb_obj_instance_variables
-#define rb_obj_instance_variables(object) rb_funcall(object, rb_intern("instance_variables"), 0)
-#endif
-
-#define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
-
 static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE in_string, bool out_ascii_only, bool out_script_safe);
 static char *fstrndup(const char *ptr, unsigned long len);
 
@@ -140,15 +124,6 @@ static VALUE cState_script_safe_set(VALUE self, VALUE depth);
 static VALUE cState_strict(VALUE self);
 static VALUE cState_strict_set(VALUE self, VALUE strict);
 static FBuffer *cState_prepare_buffer(VALUE self);
-#ifndef ZALLOC
-#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
-static inline void *ruby_zalloc(size_t n)
-{
-    void *p = ruby_xmalloc(n);
-    memset(p, 0, n);
-    return p;
-}
-#endif
 
 static const rb_data_type_t JSON_Generator_State_type;
 
