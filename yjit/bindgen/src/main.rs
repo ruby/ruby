@@ -61,9 +61,6 @@ fn main() {
         .blocklist_type("size_t")
         .blocklist_type("fpos_t")
 
-        // Prune these types since they are system dependant and we don't use them
-        .blocklist_type("__.*")
-
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
