@@ -85,6 +85,7 @@ h5:target,
 h6:target {
   margin-left: -10px;
   border-left: 10px solid var(--source-code-background-color);
+  scroll-margin-top: 1rem;
 }
 
 /* 4. Links */
