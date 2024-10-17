@@ -74,7 +74,7 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
-          i_object_class, i_array_class, i_decimal_class, i_key_p,
+          i_object_class, i_array_class, i_decimal_class,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
           i_leftshift, i_new, i_try_convert, i_freeze, i_uminus;
 
@@ -2180,7 +2180,6 @@ void Init_parser(void)
     i_decimal_class = rb_intern("decimal_class");
     i_match = rb_intern("match");
     i_match_string = rb_intern("match_string");
-    i_key_p = rb_intern("key?");
     i_deep_const_get = rb_intern("deep_const_get");
     i_aset = rb_intern("[]=");
     i_aref = rb_intern("[]");

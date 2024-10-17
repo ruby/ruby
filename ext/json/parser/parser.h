@@ -7,7 +7,7 @@
 # define MAYBE_UNUSED(x) x
 #endif
 
-#define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
+#define option_given_p(opts, key) (rb_hash_lookup2(opts, key, Qundef) != Qundef)
 
 typedef struct JSON_ParserStruct {
     VALUE Vsource;
