@@ -12897,19 +12897,17 @@ ibf_load_param_keyword(const struct ibf_load *load, ibf_offset_t param_keyword_o
 {
     if (param_keyword_offset) {
         struct rb_iseq_param_keyword *kw = IBF_R(param_keyword_offset, struct rb_iseq_param_keyword, 1);
-        ID *ids = IBF_R(kw->table, ID, kw->num);
         int dv_num = kw->num - kw->required_num;
         VALUE *dvs = dv_num ? IBF_R(kw->default_values, VALUE, dv_num) : NULL;
-        int i;
 
-        for (i=0; i<kw->num; i++) {
-            ids[i] = ibf_load_id(load, ids[i]);
-        }
+        int i;
         for (i=0; i<dv_num; i++) {
             dvs[i] = ibf_load_object(load, dvs[i]);
         }
 
-        kw->table = ids;
+        // Will be set once the local table is loaded.
+        kw->table = NULL;
+
         kw->default_values = dvs;
         return kw;
     }
@@ -13580,6 +13578,13 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->parent_iseq          = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
     load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
     load_body->mandatory_only_iseq  = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+
+    // This must be done after the local table is loaded.
+    if (load_body->param.keyword != NULL) {
+        RUBY_ASSERT(load_body->local_table);
+        struct rb_iseq_param_keyword *keyword = (struct rb_iseq_param_keyword *) load_body->param.keyword;
+        keyword->table = &load_body->local_table[keyword->bits_start - keyword->num];
+    }
 
     ibf_load_code(load, iseq, bytecode_offset, bytecode_size, iseq_size);
 #if VM_INSN_INFO_TABLE_IMPL == 2
