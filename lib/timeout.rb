@@ -141,9 +141,10 @@ module Timeout
   # Perform an operation in a block, raising an error if it takes longer than
   # +sec+ seconds to complete.
   #
-  # +sec+:: Number of seconds to wait for the block to terminate. Any number
-  #         may be used, including Floats to specify fractional seconds. A
+  # +sec+:: Number of seconds to wait for the block to terminate. Any non-negative number
+  #         or nil may be used, including Floats to specify fractional seconds. A
   #         value of 0 or +nil+ will execute the block without any timeout.
+  #         Any negative value will raise the ArgumentError
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
   # +message+:: Error message to raise with Exception Class.
@@ -164,8 +165,8 @@ module Timeout
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil, message = nil, &block)   #:yield: +sec+
-    raise ArgumentError, "Timeout sec must be a positive number" unless sec.is_a?(Numeric) && sec >= 0
-    return yield(sec) if sec.zero?
+    raise ArgumentError, "Timeout sec must be a non-negative number" if sec && !(sec.is_a?(Numeric) && sec >= 0)
+    return yield(sec) if sec == nil or sec.zero?
 
     message ||= "execution expired"
 
