@@ -10,39 +10,39 @@ use crate::utils::iseq_get_location;
 type Timestamp = f64;
 
 #[derive(Clone, Debug)]
-pub struct CompilationLogEntry {
+pub struct LogEntry {
     /// The time when the block was compiled.
     pub timestamp: Timestamp,
 
-    /// The compilation log message.
+    /// The log message.
     pub message: String,
 }
 
-impl Display for CompilationLogEntry {
+impl Display for LogEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:15.6}: {}", self.timestamp, self.message)
     }
 }
 
-pub type CompilationLog = CircularBuffer<CompilationLogEntry, 1024>;
-static mut COMPILATION_LOG : Option<CompilationLog> = None;
+pub type Log = CircularBuffer<LogEntry, 1024>;
+static mut LOG: Option<Log> = None;
 
-impl CompilationLog {
+impl Log {
     pub fn init() {
         unsafe {
-            COMPILATION_LOG = Some(CompilationLog::new());
+            LOG = Some(Log::new());
         }
     }
 
-    pub fn get_instance() -> &'static mut CompilationLog {
+    pub fn get_instance() -> &'static mut Log {
         unsafe {
-            COMPILATION_LOG.as_mut().unwrap()
+            LOG.as_mut().unwrap()
         }
     }
 
     pub fn has_instance() -> bool {
         unsafe {
-            COMPILATION_LOG.as_mut().is_some()
+            LOG.as_mut().is_some()
         }
     }
 
@@ -51,7 +51,7 @@ impl CompilationLog {
             return;
         }
 
-        let print_compilation_log = get_option!(compilation_log);
+        let print_log = get_option!(log);
         let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64();
 
         let location = iseq_get_location(block_id.iseq, block_id.idx);
@@ -62,18 +62,18 @@ impl CompilationLog {
             format!("{} (index: {})", location, index)
         };
 
-        let entry = CompilationLogEntry {
+        let entry = LogEntry {
             timestamp,
             message
         };
 
-        if let Some(output) = print_compilation_log {
+        if let Some(output) = print_log {
             match output {
-                CompilationLogOutput::Stderr => {
+                LogOutput::Stderr => {
                     eprintln!("{}", entry);
                 }
 
-                CompilationLogOutput::File(fd) => {
+                LogOutput::File(fd) => {
                     use std::os::unix::io::{FromRawFd, IntoRawFd};
                     use std::io::Write;
 
@@ -84,7 +84,7 @@ impl CompilationLog {
                     file.into_raw_fd(); // keep the fd open
                 }
 
-                CompilationLogOutput::MemoryOnly => () // Don't print or write anything
+                LogOutput::MemoryOnly => () // Don't print or write anything
             }
         }
 
@@ -139,10 +139,10 @@ impl<T: Clone, const N: usize> CircularBuffer<T, N> {
 //===========================================================================
 
 /// Primitive called in yjit.rb
-/// Check if compilation log generation is enabled
+/// Check if log generation is enabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_compilation_log_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if get_option!(compilation_log).is_some() {
+pub extern "C" fn rb_yjit_log_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    if get_option!(log).is_some() {
         return Qtrue;
     } else {
         return Qfalse;
@@ -150,18 +150,18 @@ pub extern "C" fn rb_yjit_compilation_log_enabled_p(_ec: EcPtr, _ruby_self: VALU
 }
 
 /// Primitive called in yjit.rb.
-/// Export all YJIT compilation log entries as a Ruby array.
+/// Export all YJIT log entries as a Ruby array.
 #[no_mangle]
-pub extern "C" fn rb_yjit_get_compilation_log(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    with_vm_lock(src_loc!(), || rb_yjit_get_compilation_log_array())
+pub extern "C" fn rb_yjit_get_log(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+    with_vm_lock(src_loc!(), || rb_yjit_get_log_array())
 }
 
-fn rb_yjit_get_compilation_log_array() -> VALUE {
-    if !yjit_enabled_p() || get_option!(compilation_log).is_none() {
+fn rb_yjit_get_log_array() -> VALUE {
+    if !yjit_enabled_p() || get_option!(log).is_none() {
         return Qnil;
     }
 
-    let log = CompilationLog::get_instance();
+    let log = Log::get_instance();
     let array = unsafe { rb_ary_new_capa(log.len() as c_long) };
 
     while log.len() > 0 {

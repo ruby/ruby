@@ -1226,12 +1226,12 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_compilation_log_enabled_p(rb_execution_context_t *c, VALUE self);
-VALUE rb_yjit_print_compilation_log_p(rb_execution_context_t *c, VALUE self);
+VALUE rb_yjit_log_enabled_p(rb_execution_context_t *c, VALUE self);
+VALUE rb_yjit_print_log_p(rb_execution_context_t *c, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_get_compilation_log(rb_execution_context_t *ec, VALUE self);
+VALUE rb_yjit_get_log(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);

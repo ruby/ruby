@@ -15,4 +15,4 @@ mod stats;
 mod utils;
 mod yjit;
 mod virtualmem;
-mod compilation_log;
+mod log;
