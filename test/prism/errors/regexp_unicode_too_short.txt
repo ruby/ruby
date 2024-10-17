@@ -1,4 +1,0 @@
-/\u
- ^~ too short escape sequence: \u
-^ unterminated regexp meets end of file; expected a closing delimiter
-

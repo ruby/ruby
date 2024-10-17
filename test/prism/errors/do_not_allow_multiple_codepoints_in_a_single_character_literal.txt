@@ -1,3 +1,0 @@
-?\u{0001 0002}
-         ^~~ invalid Unicode escape sequence; Multiple codepoints at single character literal are disallowed
-

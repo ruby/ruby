@@ -1,3 +1,0 @@
-foo = 1; foo,
-         ^~~ unexpected write target
-

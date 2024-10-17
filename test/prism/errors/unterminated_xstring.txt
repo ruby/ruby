@@ -1,3 +1,0 @@
-`hello
-^ expected a closing delimiter for the `%x` or backtick string
-

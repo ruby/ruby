@@ -1,3 +1,0 @@
-def foo;module A;end;end
-        ^~~~~~ unexpected module definition in method body
-

@@ -1,3 +1,0 @@
-a(**kwargs, *args)
-            ^~~~~ unexpected `*` splat argument after a `**` keyword splat argument
-

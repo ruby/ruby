@@ -1,3 +1,0 @@
-proc { || it }
-          ^~ `it` is not allowed when an ordinary parameter is defined
-

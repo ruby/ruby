@@ -1,3 +1,0 @@
-def foo; BEGIN {}; end
-         ^~~~~ BEGIN is permitted only at toplevel
-

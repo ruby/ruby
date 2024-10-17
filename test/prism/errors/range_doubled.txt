@@ -1,3 +1,0 @@
-p(...1...)
-      ^~~ unexpected range operator; .. and ... are non-associative and cannot be chained
-

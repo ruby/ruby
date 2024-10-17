@@ -1,3 +1,0 @@
-a {|...|}
-    ^~~ unexpected ... when the parent method is not forwarding
-

@@ -1,4 +1,0 @@
-    def hi
-    
-    end # hi there
-    

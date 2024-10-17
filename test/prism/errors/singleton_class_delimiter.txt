@@ -1,3 +1,0 @@
-class <<self rand end
-             ^~~~ unexpected local variable or method; expected a newline or a ';' after the singleton class
-

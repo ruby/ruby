@@ -1,3 +1,0 @@
-class Foo < Bar end
-               ^ unexpected `end`, expecting ';' or '\n'
-

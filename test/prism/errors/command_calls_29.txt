@@ -1,3 +1,0 @@
-begin; rescue a b; end
-               ^ expected a closing delimiter for the `rescue` clause
-

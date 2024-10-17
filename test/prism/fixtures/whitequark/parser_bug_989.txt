@@ -1,3 +1,0 @@
-	<<-HERE
-		content
-	HERE

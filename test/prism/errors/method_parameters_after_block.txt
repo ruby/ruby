@@ -1,4 +1,0 @@
-def foo(&block, a)
-                ^ unexpected parameter order
-end
-

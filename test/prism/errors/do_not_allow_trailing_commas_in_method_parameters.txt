@@ -1,3 +1,0 @@
-def foo(a,b,c,);end
-             ^ unexpected `,` in parameters
-

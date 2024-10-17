@@ -1,5 +1,0 @@
-def foo(**args, a, b:)
-                ^ unexpected parameter order
-                   ^~ unexpected parameter order
-end
-

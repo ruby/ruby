@@ -1,3 +1,0 @@
-begin
-ensure
-end

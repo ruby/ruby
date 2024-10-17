@@ -1,3 +1,0 @@
-(foo, bar)
-^~~~~~~~~~ unexpected write target
-

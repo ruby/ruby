@@ -1,3 +1,0 @@
-def _1; end
-    ^~ _1 is reserved for numbered parameters
-

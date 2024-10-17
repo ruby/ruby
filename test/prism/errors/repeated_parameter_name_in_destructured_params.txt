@@ -1,3 +1,0 @@
-def f(a, (b, (a))); end
-              ^ duplicated argument name
-

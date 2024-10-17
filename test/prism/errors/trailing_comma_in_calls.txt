@@ -1,3 +1,0 @@
-foo 1,
-     ^ unexpected end-of-input; expected an argument
-

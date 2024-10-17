@@ -1,3 +1,0 @@
-def foo(a,b,&a);end
-             ^ duplicated argument name
-

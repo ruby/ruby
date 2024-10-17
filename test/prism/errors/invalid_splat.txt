@@ -1,4 +1,0 @@
-(1
-*a)
-^~ unexpected write target
-

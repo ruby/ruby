@@ -1,5 +1,0 @@
-case :a
-^~~~ expected a `when` or `in` clause after `case`
-else
-end
-

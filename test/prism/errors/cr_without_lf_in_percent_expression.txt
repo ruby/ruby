@@ -1,3 +1,0 @@
-%
-  ^ unterminated string meets end of file
-

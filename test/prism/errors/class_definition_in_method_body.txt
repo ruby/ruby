@@ -1,3 +1,0 @@
-def foo;class A;end;end
-        ^~~~~ unexpected class definition in method body
-

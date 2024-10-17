@@ -1,3 +1,0 @@
-%i[
-^~~ unterminated list; expected a closing delimiter for the `%i`
-

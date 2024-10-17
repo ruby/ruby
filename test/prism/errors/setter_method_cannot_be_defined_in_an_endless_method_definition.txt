@@ -1,3 +1,0 @@
-def a=() = 42
-    ^~ invalid method name; a setter method cannot be defined in an endless method definition
-

@@ -1,3 +1,0 @@
-foo { |a = ~b| }
-           ^ unexpected '~'; unary calls are not allowed in this context
-

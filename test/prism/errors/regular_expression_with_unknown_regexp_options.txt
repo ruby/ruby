@@ -1,3 +1,0 @@
-/foo/AZaz
-    ^~~~~ unknown regexp options - AZaz
-

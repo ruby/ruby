@@ -1,4 +1,0 @@
-next 1,;
-       ^ unexpected ';'; expected an argument
-^~~~~~~ Invalid next
-

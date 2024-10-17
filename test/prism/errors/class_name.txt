@@ -1,3 +1,0 @@
-class 0.X end
-      ^~~ unexpected constant path after `class`; class/module name must be CONSTANT
-

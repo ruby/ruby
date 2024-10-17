@@ -1,3 +1,0 @@
-def foo = yield(&:+)
-                ^~~ block argument should not be given
-

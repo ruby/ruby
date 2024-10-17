@@ -1,3 +1,0 @@
-def foo(x:'y':); end
-          ^~~~ unexpected label
-

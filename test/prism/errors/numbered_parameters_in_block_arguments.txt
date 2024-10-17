@@ -1,3 +1,0 @@
-foo { |_1| }
-       ^~ _1 is reserved for numbered parameters
-

@@ -5,6 +5,8 @@
 #define RB_UNLIKELY(cond) (cond)
 #endif
 
+#define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
+
 static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError;
 
 static ID i_to_s, i_to_json, i_new, i_indent, i_space, i_space_before,

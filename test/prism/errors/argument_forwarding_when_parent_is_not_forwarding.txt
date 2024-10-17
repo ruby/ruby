@@ -1,3 +1,0 @@
-def a(x, y, z); b(...); end
-                  ^~~ unexpected ... when the parent method is not forwarding
-

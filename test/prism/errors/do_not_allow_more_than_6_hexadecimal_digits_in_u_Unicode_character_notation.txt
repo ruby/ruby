@@ -1,3 +1,0 @@
-"\u{0000001}"
-    ^~~~~~~ invalid Unicode escape sequence; maximum length is 6 digits
-

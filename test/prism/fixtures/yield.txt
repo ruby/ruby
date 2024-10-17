@@ -1,7 +1,0 @@
-def foo; yield; end
-
-def foo; yield(); end
-
-def foo; yield(1); end
-
-def foo; yield(1, 2, 3); end

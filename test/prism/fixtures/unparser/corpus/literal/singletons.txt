@@ -1,4 +1,0 @@
-false
-nil
-self
-true

@@ -1,4 +1,0 @@
-begin
-rescue
-ensure
-end

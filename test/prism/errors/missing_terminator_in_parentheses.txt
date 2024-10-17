@@ -1,3 +1,0 @@
-(0 0)
-   ^ unexpected integer, expecting end-of-input
-

@@ -1,3 +1,0 @@
-def foo(...); foo 1, ...; end
-                     ^~~ unexpected `...` in an non-parenthesized call
-

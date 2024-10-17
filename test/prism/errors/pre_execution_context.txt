@@ -1,4 +1,0 @@
-BEGIN { 1 + }
-            ^ unexpected '}'; expected an expression after the operator
-            ^ unexpected '}', assuming it is closing the parent 'BEGIN' block
-

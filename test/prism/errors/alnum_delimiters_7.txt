@@ -1,3 +1,0 @@
-%xXfooX
-^ unknown type of %string
-

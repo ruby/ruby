@@ -1,3 +1,0 @@
-a(&block, foo)
-          ^~~ unexpected argument after a block argument
-

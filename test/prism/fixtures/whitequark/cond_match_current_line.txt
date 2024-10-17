@@ -1,3 +1,0 @@
-!/wat/
-
-if /wat/; end

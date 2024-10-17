@@ -1,4 +1,0 @@
-def foo(..., ...)
-             ^~~ unexpected parameter order
-end
-

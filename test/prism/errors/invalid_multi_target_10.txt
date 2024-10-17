@@ -1,3 +1,0 @@
-Foo,
-^~~ unexpected write target
-

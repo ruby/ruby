@@ -1,4 +1,0 @@
-while 0 0; foo; end; until 0 0; foo; end
-       ^ expected a predicate expression for the `while` statement
-                            ^ expected a predicate expression for the `until` statement
-

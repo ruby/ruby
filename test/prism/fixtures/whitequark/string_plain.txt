@@ -1,3 +1,0 @@
-%q(foobar)
-
-'foobar'

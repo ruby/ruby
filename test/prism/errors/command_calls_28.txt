@@ -1,3 +1,0 @@
-case; in a unless a b; end
-^~~~ expected a predicate for a case matching statement
-
