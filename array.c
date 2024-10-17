@@ -3463,10 +3463,10 @@ rb_ary_sort_bang(VALUE ary)
  *  With no block given, compares elements using operator <tt>#<=></tt>
  *  (see Object#<=>):
  *
- *    a = [0, 1, 2, 3].shuffle # => [0, 2, 3, 1]
- *    a.sort                   # => [0, 1, 2, 3]
+ *    [0, 2, 3, 1].sort # => [0, 1, 2, 3]
  *
- *  With a block given, calls the block with each #combination of pairs of elements from +self+;
+ *  With a block given, calls the block with each combination of pairs of elements from +self+
+ *  (see Array#combination);
  *  for each pair +a+ and +b+, the block should return a numeric:
  *
  *  - Negative when +b+ is to follow +a+.
@@ -3475,7 +3475,7 @@ rb_ary_sort_bang(VALUE ary)
  *
  *  Example:
  *
- *    a = [0, 1, 2, 3].shuffle # => [3, 2, 0, 1]
+ *    a = [3, 2, 0, 1]
  *    a.sort {|a, b| a <=> b } # => [0, 1, 2, 3]
  *    a.sort {|a, b| b <=> a } # => [3, 2, 1, 0]
  *
