@@ -22,23 +22,28 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_index
+    p __callee__
     assert_equal @json, JSON[@hash]
     assert_equal @hash, JSON[@json]
   end
 
   def test_parser
+    p __callee__
     assert_match(/::Parser\z/, JSON.parser.name)
   end
 
   def test_generator
+    p __callee__
     assert_match(/::Generator\z/, JSON.generator.name)
   end
 
   def test_state
+    p __callee__
     assert_match(/::Generator::State\z/, JSON.state.name)
   end
 
   def test_create_id
+    p __callee__
     assert_equal 'json_class', JSON.create_id
     JSON.create_id = 'foo_bar'
     assert_equal 'foo_bar', JSON.create_id
@@ -47,31 +52,38 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_deep_const_get
+    p __callee__
     assert_raise(ArgumentError) { JSON.deep_const_get('Nix::Da') }
     assert_equal File::SEPARATOR, JSON.deep_const_get('File::SEPARATOR')
   end
 
   def test_parse
+    p __callee__
     assert_equal [ 1, 2, 3, ], JSON.parse('[ 1, 2, 3 ]')
   end
 
   def test_parse_bang
+    p __callee__
     assert_equal [ 1, Infinity, 3, ], JSON.parse!('[ 1, Infinity, 3 ]')
   end
 
   def test_generate
+    p __callee__
     assert_equal '[1,2,3]', JSON.generate([ 1, 2, 3 ])
   end
 
   def test_fast_generate
+    p __callee__
     assert_equal '[1,2,3]', JSON.generate([ 1, 2, 3 ])
   end
 
   def test_pretty_generate
+    p __callee__
     assert_equal "[\n  1,\n  2,\n  3\n]", JSON.pretty_generate([ 1, 2, 3 ])
   end
 
   def test_load
+    p __callee__
     assert_equal @hash, JSON.load(@json)
     tempfile = Tempfile.open('@json')
     tempfile.write @json
@@ -87,17 +99,20 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_load_with_options
+    p __callee__
     json  = '{ "foo": NaN }'
     assert JSON.load(json, nil, :allow_nan => true)['foo'].nan?
   end
 
   def test_load_null
+    p __callee__
     assert_equal nil, JSON.load(nil, nil, :allow_blank => true)
     assert_raise(TypeError) { JSON.load(nil, nil, :allow_blank => false) }
     assert_raise(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
   end
 
   def test_dump
+    p __callee__
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     obj = eval(too_deep)
     assert_equal too_deep, dump(obj)
@@ -122,29 +137,35 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_dump_should_modify_defaults
+    p __callee__
     max_nesting = JSON.dump_default_options[:max_nesting]
     dump([], StringIO.new, 10)
     assert_equal max_nesting, JSON.dump_default_options[:max_nesting]
   end
 
   def test_JSON
+    p __callee__
     assert_equal @json, JSON(@hash)
     assert_equal @hash, JSON(@json)
   end
 
   def test_load_file
+    p __callee__
     test_load_shared(:load_file)
   end
 
   def test_load_file!
+    p __callee__
     test_load_shared(:load_file!)
   end
 
   def test_load_file_with_option
+    p __callee__
     test_load_file_with_option_shared(:load_file)
   end
 
   def test_load_file_with_option!
+    p __callee__
     test_load_file_with_option_shared(:load_file!)
   end
 
