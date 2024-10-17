@@ -3556,28 +3556,24 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
 
 /*
  *  call-seq:
- *    array.sort_by! {|element| ... } -> self
- *    array.sort_by! -> new_enumerator
+ *    sort_by! {|element| ... } -> self
+ *    sort_by! -> new_enumerator
  *
- *  Sorts the elements of +self+ in place,
- *  using an ordering determined by the block; returns self.
+ *  With a block given, sorts the elements of +self+ in place;
+ *  returns self.
  *
  *  Calls the block with each successive element;
- *  sorts elements based on the values returned from the block.
- *
- *  For duplicates returned by the block, the ordering is indeterminate, and may be unstable.
- *
- *  This example sorts strings based on their sizes:
+ *  sorts elements based on the values returned from the block:
  *
  *    a = ['aaaa', 'bbb', 'cc', 'd']
  *    a.sort_by! {|element| element.size }
  *    a # => ["d", "cc", "bbb", "aaaa"]
  *
- *  Returns a new Enumerator if no block given:
+ *  For duplicate values returned by the block, the ordering is indeterminate, and may be unstable.
  *
- *    a = ['aaaa', 'bbb', 'cc', 'd']
- *    a.sort_by! # => #<Enumerator: ["aaaa", "bbb", "cc", "d"]:sort_by!>
+ *  With no block given, returns a new Enumerator.
  *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 static VALUE
