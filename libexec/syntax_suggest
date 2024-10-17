@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 
-require_relative "../lib/syntax_suggest/api"
+begin
+  require_relative "../lib/syntax_suggest/api"
+rescue LoadError
+  # for default gems
+  require "syntax_suggest/api"
+end
 
 SyntaxSuggest::Cli.new(
   argv: ARGV
