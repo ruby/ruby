@@ -86,8 +86,6 @@ static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self);
 static void State_free(void *state);
 static VALUE cState_s_allocate(VALUE klass);
-static VALUE cState_configure(VALUE self, VALUE opts);
-static VALUE cState_to_h(VALUE self);
 static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
@@ -103,7 +101,6 @@ static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static VALUE cState_partial_generate(VALUE self, VALUE obj);
 static VALUE cState_generate(VALUE self, VALUE obj);
-static VALUE cState_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
 static VALUE cState_indent(VALUE self);
 static VALUE cState_indent_set(VALUE self, VALUE indent);

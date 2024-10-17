@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'json/common'
 
 module JSON
@@ -13,6 +15,9 @@ module JSON
     else
       require 'json/ext/parser'
       require 'json/ext/generator'
+      unless RUBY_ENGINE == 'jruby'
+        require 'json/ext/generator/state'
+      end
       $DEBUG and warn "Using Ext extension for JSON."
       JSON.parser = Parser
       JSON.generator = Generator
