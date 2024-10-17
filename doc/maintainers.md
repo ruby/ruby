@@ -199,7 +199,8 @@ have commit right, others don't.
 
 #### lib/prism.rb
 * Kevin Newton (kddnewton)
-* Jemma Issroff (jemmaissroff)
+* Eileen Uchitelle (eileencodes)
+* Aaron Patterson (tenderlove)
 * https://github.com/ruby/prism
 * https://rubygems.org/gems/prism
 
