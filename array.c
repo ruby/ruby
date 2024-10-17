@@ -3352,43 +3352,12 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
 /*
  *  call-seq:
- *    array.sort! -> self
- *    array.sort! {|a, b| ... } -> self
+ *    sort! -> self
+ *    sort! {|a, b| ... } -> self
  *
- *  Returns +self+ with its elements sorted in place.
+ *  Like Array#sort, but returns +self+ with its elements sorted in place.
  *
- *  With no block, compares elements using operator <tt>#<=></tt>
- *  (see Comparable):
- *
- *    a = 'abcde'.split('').shuffle
- *    a # => ["e", "b", "d", "a", "c"]
- *    a.sort!
- *    a # => ["a", "b", "c", "d", "e"]
- *
- *  With a block, calls the block with each element pair;
- *  for each element pair +a+ and +b+, the block should return an integer:
- *
- *  - Negative when +b+ is to follow +a+.
- *  - Zero when +a+ and +b+ are equivalent.
- *  - Positive when +a+ is to follow +b+.
- *
- *  Example:
- *
- *    a = 'abcde'.split('').shuffle
- *    a # => ["e", "b", "d", "a", "c"]
- *    a.sort! {|a, b| a <=> b }
- *    a # => ["a", "b", "c", "d", "e"]
- *    a.sort! {|a, b| b <=> a }
- *    a # => ["e", "d", "c", "b", "a"]
- *
- *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
- *  and may be unstable:
- *
- *    a = 'abcde'.split('').shuffle
- *    a # => ["e", "b", "d", "a", "c"]
- *    a.sort! {|a, b| 0 }
- *    a # => ["d", "e", "c", "a", "b"]
- *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
  */
 
 VALUE
