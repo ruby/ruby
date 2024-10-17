@@ -458,6 +458,7 @@ macro_rules! perf_call {
 }
 
 use crate::codegen::JCCKinds::*;
+use crate::log::Log;
 
 #[allow(non_camel_case_types, unused)]
 pub enum JCCKinds {
@@ -1222,6 +1223,8 @@ pub fn gen_single_block(
         asm_comment!(asm, "Block: {} {}", iseq_get_location(blockid.iseq, blockid_idx), chain_depth);
         asm_comment!(asm, "reg_mapping: {:?}", asm.ctx.get_reg_mapping());
     }
+
+    Log::add_block_with_chain_depth(blockid, asm.ctx.get_chain_depth());
 
     // Mark the start of an ISEQ for --yjit-perf
     jit_perf_symbol_push!(jit, &mut asm, &get_iseq_name(iseq), PerfMap::ISEQ);

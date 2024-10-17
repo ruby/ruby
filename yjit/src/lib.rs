@@ -15,3 +15,4 @@ mod stats;
 mod utils;
 mod yjit;
 mod virtualmem;
+mod log;

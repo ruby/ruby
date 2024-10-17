@@ -18,6 +18,11 @@ module RubyVM::YJIT
     Primitive.rb_yjit_stats_enabled_p
   end
 
+  # Check if `--yjit-log` is used.
+  def self.log_enabled?
+    Primitive.rb_yjit_log_enabled_p
+  end
+
   # Check if rb_yjit_trace_exit_locations_enabled_p is enabled.
   def self.trace_exit_locations_enabled? # :nodoc:
     Primitive.rb_yjit_trace_exit_locations_enabled_p
@@ -28,15 +33,22 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not.
+  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `compilation_log` decides
+  # whether to enable \YJIT compilation logging or not.
   #
+  # `stats`:
   # * `false`: Disable stats.
   # * `true`: Enable stats. Print stats at exit.
   # * `:quiet`: Enable stats. Do not print stats at exit.
-  def self.enable(stats: false)
+  #
+  # `log`:
+  # * `false`: Don't enable the log.
+  # * `true`: Enable the log. Print log at exit.
+  # * `:quiet`: Enable the log. Do not print log at exit.
+  def self.enable(stats: false, log: false)
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
-    Primitive.rb_yjit_enable(stats, stats != :quiet)
+    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -171,6 +183,16 @@ module RubyVM::YJIT
     strio = StringIO.new
     _print_stats(out: strio)
     strio.string
+  end
+
+  # Return an array of log entries.
+  # Return `nil` when option is not passed or unavailable.
+  def self.log
+    return nil unless log_enabled?
+
+    Primitive.rb_yjit_get_log.map do |timestamp, path|
+      [Time.at(timestamp), path]
+    end
   end
 
   # Produce disassembly for an iseq. This requires a `--enable-yjit=dev` build.
