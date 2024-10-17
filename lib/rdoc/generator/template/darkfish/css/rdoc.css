@@ -429,6 +429,10 @@ main sup {
   font-size: 0.8em;
 }
 
+main .anchor-link:target {
+  scroll-margin-top: 20px;
+}
+
 /* The heading with the class name */
 main h1[class] {
   margin-top: 0;
