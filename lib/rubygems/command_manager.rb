@@ -230,18 +230,11 @@ class Gem::CommandManager
   def load_and_instantiate(command_name)
     command_name = command_name.to_s
     const_name = command_name.capitalize.gsub(/_(.)/) { $1.upcase } << "Command"
-    load_error = nil
 
     begin
-      begin
-        require "rubygems/commands/#{command_name}_command"
-      rescue LoadError => e
-        load_error = e
-      end
+      require "rubygems/commands/#{command_name}_command"
       Gem::Commands.const_get(const_name).new
-    rescue StandardError => e
-      e = load_error if load_error
-
+    rescue StandardError, LoadError => e
       alert_error clean_text("Loading command: #{command_name} (#{e.class})\n\t#{e}")
       ui.backtrace e
     end

@@ -45,8 +45,8 @@ module Bundler
       true
     end
 
-    def activated
-      stub.activated
+    def activated?
+      stub.activated?
     end
 
     def activated=(activated)

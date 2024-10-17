@@ -102,6 +102,8 @@ RSpec.describe "bundle install with force_ruby_platform DSL option", :jruby do
     end
 
     it "reinstalls the ruby variant when a platform specific variant is already installed, the lockile has only ruby platform, and :force_ruby_platform is used in the Gemfile" do
+      skip "Can't simulate platform reliably on JRuby, installing a platform specific gem fails to activate io-wait because only the -java version is present, and we're simulating a different platform" if RUBY_ENGINE == "jruby"
+
       lockfile <<-L
         GEM
           remote: https://gem.repo4

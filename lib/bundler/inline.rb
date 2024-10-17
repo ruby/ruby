@@ -39,7 +39,11 @@ def gemfile(install = false, options = {}, &gemfile)
   Bundler.ui = ui
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
-  Bundler.with_unbundled_env do
+  old_gemfile = ENV["BUNDLE_GEMFILE"]
+
+  Bundler.unbundle_env!
+
+  begin
     Bundler.instance_variable_set(:@bundle_path, Pathname.new(Gem.dir))
     Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", "Gemfile"
 
@@ -80,9 +84,11 @@ def gemfile(install = false, options = {}, &gemfile)
 
       runtime.require
     end
-  end
-
-  if ENV["BUNDLE_GEMFILE"].nil?
-    ENV["BUNDLE_GEMFILE"] = ""
+  ensure
+    if old_gemfile
+      ENV["BUNDLE_GEMFILE"] = old_gemfile
+    else
+      ENV["BUNDLE_GEMFILE"] = ""
+    end
   end
 end

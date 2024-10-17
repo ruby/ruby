@@ -168,20 +168,22 @@ class TestGemSpecFetcher < Gem::TestCase
   def test_suggest_gems_from_name_latest
     spec_fetcher do|fetcher|
       fetcher.spec "example", 1
-      fetcher.spec "other-example", 1
+      fetcher.spec "an-example", 1
       fetcher.spec "examp", 1
+      fetcher.spec "other-example", 1
     end
 
     suggestions = @sf.suggest_gems_from_name("examplw", :latest, 1)
     assert_equal ["example"], suggestions
 
-    suggestions = @sf.suggest_gems_from_name("other")
-    assert_equal ["other-example"], suggestions
+    suggestions = @sf.suggest_gems_from_name("anexample")
+    assert_equal ["an-example"], suggestions
 
-    suggestions = @sf.suggest_gems_from_name("exam")
-    assert suggestions.any? { ["examp"] }
-    assert suggestions.any? { ["example"] }
-    assert suggestions.any? { ["other-example"] }
+    suggestions = @sf.suggest_gems_from_name("xample")
+    assert_equal ["example"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("other-apple")
+    assert_equal ["other-example"], suggestions
   end
 
   def test_suggest_gems_from_name_prerelease

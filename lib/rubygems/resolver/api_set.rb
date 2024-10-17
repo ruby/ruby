@@ -104,16 +104,21 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     end
 
     uri = @dep_uri + name
-    str = Gem::RemoteFetcher.fetcher.fetch_path uri
 
-    lines(str).each do |ver|
-      number, platform, dependencies, requirements = parse_gem(ver)
+    begin
+      str = Gem::RemoteFetcher.fetcher.fetch_path uri
+    rescue Gem::RemoteFetcher::FetchError
+      @data[name] = []
+    else
+      lines(str).each do |ver|
+        number, platform, dependencies, requirements = parse_gem(ver)
 
-      platform ||= "ruby"
-      dependencies = dependencies.map {|dep_name, reqs| [dep_name, reqs.join(", ")] }
-      requirements = requirements.map {|req_name, reqs| [req_name.to_sym, reqs] }.to_h
+        platform ||= "ruby"
+        dependencies = dependencies.map {|dep_name, reqs| [dep_name, reqs.join(", ")] }
+        requirements = requirements.map {|req_name, reqs| [req_name.to_sym, reqs] }.to_h
 
-      @data[name] << { name: name, number: number, platform: platform, dependencies: dependencies, requirements: requirements }
+        @data[name] << { name: name, number: number, platform: platform, dependencies: dependencies, requirements: requirements }
+      end
     end
 
     @data[name]
