@@ -691,6 +691,16 @@ etc_getgrent(VALUE obj)
 VALUE rb_w32_special_folder(int type);
 UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+#elif defined(LOAD_RELATIVE)
+static inline VALUE
+rbconfig(void)
+{
+    VALUE config;
+    rb_require("rbconfig");
+    config = rb_const_get(rb_path2class("RbConfig"), rb_intern("CONFIG"));
+    Check_Type(config, T_HASH);
+    return config;
+}
 #endif
 
 /* call-seq:
@@ -710,6 +720,8 @@ etc_sysconfdir(VALUE obj)
 {
 #ifdef _WIN32
     return rb_w32_special_folder(CSIDL_COMMON_APPDATA);
+#elif defined(LOAD_RELATIVE)
+    return rb_hash_aref(rbconfig(), rb_str_new_lit("sysconfdir"));
 #else
     return rb_filesystem_str_new_cstr(SYSCONFDIR);
 #endif
