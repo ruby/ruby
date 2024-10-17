@@ -12,6 +12,8 @@ module Bundler
     end
 
     def run
+      Bundler.ui.level = "warn" if options[:quiet]
+
       validate_options!
       inject_dependencies
       perform_bundle_install unless options["skip-install"]

@@ -5,7 +5,7 @@ bundle-add(1) -- Add gem to the Gemfile and run bundle install
 
 `bundle add` <GEM_NAME> [--group=GROUP] [--version=VERSION] [--source=SOURCE]
            [--path=PATH] [--git=GIT|--github=GITHUB] [--branch=BRANCH] [--ref=REF]
-           [--skip-install] [--strict|--optimistic]
+           [--quiet] [--skip-install] [--strict|--optimistic]
 
 ## DESCRIPTION
 
@@ -40,6 +40,9 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 
 * `--ref`:
   Specify the git ref for the added gem.
+
+* `--quiet`:
+  Do not print progress information to the standard output.
 
 * `--skip-install`:
   Adds the gem to the Gemfile but does not install it.

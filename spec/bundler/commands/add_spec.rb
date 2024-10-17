@@ -284,6 +284,38 @@ RSpec.describe "bundle add" do
     end
   end
 
+  describe "with --quiet option" do
+    it "is quiet when there are no warnings" do
+      bundle "add 'foo' --quiet"
+      expect(out).to be_empty
+      expect(err).to be_empty
+    end
+
+    it "still displays warning and errors" do
+      create_file("add_with_warning.rb", <<~RUBY)
+        require "#{lib_dir}/bundler"
+        require "#{lib_dir}/bundler/cli"
+        require "#{lib_dir}/bundler/cli/add"
+
+        module RunWithWarning
+          def run
+            super
+          rescue
+            Bundler.ui.warn "This is a warning"
+            raise
+          end
+        end
+
+        Bundler::CLI::Add.prepend(RunWithWarning)
+      RUBY
+
+      bundle "add 'non-existing-gem' --quiet", raise_on_error: false, env: { "RUBYOPT" => "-r#{bundled_app("add_with_warning.rb")}" }
+      expect(out).to be_empty
+      expect(err).to include("Could not find gem 'non-existing-gem'")
+      expect(err).to include("This is a warning")
+    end
+  end
+
   describe "with --strict option" do
     it "adds strict version" do
       bundle "add 'foo' --strict"
