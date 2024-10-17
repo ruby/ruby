@@ -43,24 +43,34 @@ module JSON
             end
           end
 
-          self.indent = opts[:indent] if opts.key?(:indent)
-          self.space = opts[:space] if opts.key?(:space)
-          self.space_before = opts[:space_before] if opts.key?(:space_before)
-          self.array_nl = opts[:array_nl] if opts.key?(:array_nl)
-          self.object_nl = opts[:object_nl] if opts.key?(:object_nl)
-          self.max_nesting = opts[:max_nesting] || 0 if opts.key?(:max_nesting)
-          self.depth = opts[:depth] if opts.key?(:depth)
-          self.buffer_initial_length = opts[:buffer_initial_length] if opts.key?(:buffer_initial_length)
-          self.allow_nan = opts[:allow_nan] if opts.key?(:allow_nan)
-          self.ascii_only = opts[:ascii_only] if opts.key?(:ascii_only)
-
-          if opts.key?(:script_safe)
-            self.script_safe = opts[:script_safe]
-          elsif opts.key?(:escape_slash)
-            self.script_safe = opts[:escape_slash]
+          opts.each do |key, value|
+            case key
+            when :indent
+              self.indent = value
+            when :space
+              self.space = value
+            when :space_before
+              self.space_before = value
+            when :array_nl
+              self.array_nl = value
+            when :object_nl
+              self.object_nl = value
+            when :max_nesting
+              self.max_nesting = value || 0
+            when :depth
+              self.depth = value
+            when :buffer_initial_length
+              self.buffer_initial_length = value
+            when :allow_nan
+              self.allow_nan = value
+            when :ascii_only
+              self.ascii_only = value
+            when :script_safe, :escape_slash
+              self.script_safe = value
+            when :strict
+              self.strict = value
+            end
           end
-
-          self.strict = opts[:strict] if opts[:strict]
 
           self
         end
