@@ -19,6 +19,8 @@ module Bundler::URI
   Parser = RFC2396_Parser
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
+  RFC2396_PARSER = RFC2396_Parser.new
+  Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
   # Bundler::URI::Parser.new
   DEFAULT_PARSER = Parser.new
