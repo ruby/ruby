@@ -2762,7 +2762,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_def_temp> defn_head defs_head k_def
 %type <node_exits> block_open k_while k_until k_for allow_exits
 %type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
-%type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
+%type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary
+%type <node> command command_call command_call_value method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
@@ -2790,7 +2791,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg p_rest
-%type <node> p_value p_primitive p_variable p_var_ref p_expr_ref p_const
+%type <node> p_value p_primitive p_primitive_value p_variable p_var_ref p_expr_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
@@ -2956,6 +2957,14 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     {
                         $$ = new_args_tail(p, 0, 0, 0, &@0);
                     /*% ripper: [Qnil, Qnil, Qnil] %*/
+                    }
+                ;
+
+%rule value_expr(value) <node>
+                : value
+                    {
+                        value_expr($1);
+                        $$ = $1;
                     }
                 ;
 
@@ -3208,9 +3217,8 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     /*% ripper: END!($:compstmt) %*/
                     }
                 | command_asgn
-                | mlhs '=' lex_ctxt command_call
+                | mlhs '=' lex_ctxt command_call_value
                     {
-                        value_expr($4);
                         $$ = node_assign(p, (NODE *)$1, $4, $3, &@$);
                     /*% ripper: massign!($:1, $:4) %*/
                     }
@@ -3319,16 +3327,11 @@ endless_command : command
                     }
                 ;
 
-command_rhs	: command_call   %prec tOP_ASGN
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
-                | command_call modifier_rescue after_rescue stmt
+command_rhs	: command_call_value   %prec tOP_ASGN
+                | command_call_value modifier_rescue after_rescue stmt
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
                         YYLTYPE loc = code_loc_gen(&@2, &@4);
-                        value_expr($1);
                         $$ = NEW_RESCUE($1, NEW_RESBODY(0, 0, remove_begin($4), 0, &loc), 0, &@$);
                     /*% ripper: rescue_mod!($:1, $:4) %*/
                     }
@@ -3420,11 +3423,7 @@ defs_head	: k_def singleton dot_or_colon
                     }
                 ;
 
-expr_value	: expr
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+expr_value	: value_expr(expr)
                 | error
                     {
                         $$ = NEW_ERROR(&@$);
@@ -3441,6 +3440,9 @@ expr_value_do	: {COND_PUSH(1);} expr_value do {COND_POP();}
 command_call	: command
                 | block_command
                 ;
+
+command_call_value	: value_expr(command_call)
+                    ;
 
 block_command	: block_call
                 | block_call call_op2 operation2 command_args
@@ -4134,11 +4136,7 @@ after_rescue	: lex_ctxt
                     }
                 ;
 
-arg_value	: arg
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+arg_value	: value_expr(arg)
                 ;
 
 aref_args	: none
@@ -4224,9 +4222,8 @@ opt_call_args	: none
                     }
                 ;
 
-call_args	: command
+call_args	: value_expr(command)
                     {
-                        value_expr($1);
                         $$ = NEW_LIST($1, &@$);
                     /*% ripper: args_add!(args_new!, $:1) %*/
                     }
@@ -4709,11 +4706,7 @@ primary		: literal
                     }
                 ;
 
-primary_value	: primary
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+primary_value	: value_expr(primary)
                 ;
 
 k_begin		: keyword_begin
@@ -5820,44 +5813,36 @@ p_any_kwrest	: p_kwrest
                 ;
 
 p_value 	: p_primitive
-                | p_primitive tDOT2 p_primitive
+                | p_primitive_value tDOT2 p_primitive_value
                     {
-                        value_expr($1);
-                        value_expr($3);
                         $$ = NEW_DOT2($1, $3, &@$);
                     /*% ripper: dot2!($:1, $:3) %*/
                     }
-                | p_primitive tDOT3 p_primitive
+                | p_primitive_value tDOT3 p_primitive_value
                     {
-                        value_expr($1);
-                        value_expr($3);
                         $$ = NEW_DOT3($1, $3, &@$);
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
-                | p_primitive tDOT2
+                | p_primitive_value tDOT2
                     {
-                        value_expr($1);
                         $$ = NEW_DOT2($1, new_nil_at(p, &@2.end_pos), &@$);
                     /*% ripper: dot2!($:1, Qnil) %*/
                     }
-                | p_primitive tDOT3
+                | p_primitive_value tDOT3
                     {
-                        value_expr($1);
                         $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$);
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
                 | p_var_ref
                 | p_expr_ref
                 | p_const
-                | tBDOT2 p_primitive
+                | tBDOT2 p_primitive_value
                     {
-                        value_expr($2);
                         $$ = NEW_DOT2(new_nil_at(p, &@1.beg_pos), $2, &@$);
                     /*% ripper: dot2!(Qnil, $:2) %*/
                     }
-                | tBDOT3 p_primitive
+                | tBDOT3 p_primitive_value
                     {
-                        value_expr($2);
                         $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$);
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
@@ -5878,6 +5863,10 @@ p_primitive	: literal
                     }
                 | lambda
                 ;
+
+
+p_primitive_value	: value_expr(p_primitive)
+                    ;
 
 p_variable	: tIDENTIFIER
                     {
@@ -6715,11 +6704,7 @@ opt_f_block_arg	: ',' f_block_arg
                     }
                 ;
 
-singleton	: var_ref
-                    {
-                        value_expr($1);
-                        $$ = $1;
-                    }
+singleton	: value_expr(var_ref)
                 | '('
                     {
                         SET_LEX_STATE(EXPR_BEG);
