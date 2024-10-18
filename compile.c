@@ -10929,6 +10929,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             VALUE lit = get_string_value(node);
             switch (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
               case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+                if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
+                    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
+                    lit = rb_str_dup(lit);
+                    rb_ivar_set(lit, id_debug_created_info, rb_ary_freeze(debug_info));
+                    lit = rb_str_freeze(lit);
+                }
                 ADD_INSN1(ret, node, putchilledstring, lit);
                 RB_OBJ_WRITTEN(iseq, Qundef, lit);
                 break;

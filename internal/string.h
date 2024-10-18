@@ -14,6 +14,7 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "id.h"                 /* for id_debug_created_info */
 
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
@@ -123,8 +124,28 @@ CHILLED_STRING_P(VALUE obj)
 static inline void
 CHILLED_STRING_MUTATED(VALUE str)
 {
+    bool rb_warning_category_enabled_p(rb_warning_category_t category);
+
     FL_UNSET_RAW(str, STR_CHILLED);
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "literal string will be frozen in the future");
+
+    if (RB_UNLIKELY(rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED))) {
+        VALUE debug_info = rb_attr_get(str, id_debug_created_info);
+        if (NIL_P(debug_info)) {
+            rb_category_warn(
+                RB_WARN_CATEGORY_DEPRECATED,
+                "literal string will be frozen in the future "
+                "(run with --debug-frozen-string-literal for more information)");
+        } else {
+            VALUE path = rb_ary_entry(debug_info, 0);
+            VALUE line = rb_ary_entry(debug_info, 1);
+
+            rb_category_warn(
+               RB_WARN_CATEGORY_DEPRECATED,
+               "literal string will be frozen in the future\n%"PRIsVALUE":%"PRIsVALUE": the string was created here",
+               path,
+               line);
+        }
+    }
 }
 
 static inline void
