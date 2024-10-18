@@ -348,9 +348,15 @@ module IRB
           if show_easter_egg
             IRB.__send__(:easter_egg)
           else
+            # RDoc::RI::Driver#display_names uses pager command internally.
+            # Some pager command like `more` doesn't use alternate screen
+            # so we need to turn on and off alternate screen manually.
             begin
+              print "\e[?1049h"
               driver.display_names([name])
             rescue RDoc::RI::Driver::NotFoundError
+            ensure
+              print "\e[?1049l"
             end
           end
         end
