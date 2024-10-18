@@ -10469,9 +10469,8 @@ fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
         panic!("undefined optimized method!: {mid_str}");
     }
 
-    // For now, only cfuncs are supported
-    //RUBY_ASSERT(me && me->def);
-    //RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
+    // For now, only cfuncs are supported (me->cme cast fine since it's just me->def->type).
+    debug_assert_eq!(VM_METHOD_TYPE_CFUNC, unsafe { get_cme_def_type(me.cast()) });
 
     let method_serial = unsafe {
         let def = (*me).def;
