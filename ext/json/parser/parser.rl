@@ -67,7 +67,15 @@ static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
     return len;
 }
 
-static VALUE mJSON, mExt, cParser, eParserError, eNestingError;
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_parse_error(const char *format, const char *start)
+{
+    rb_enc_raise(rb_utf8_encoding(), rb_path2class("JSON::ParserError"), format, start);
+}
+
+static VALUE mJSON, mExt, cParser, eNestingError;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
@@ -206,14 +214,14 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (json->allow_nan) {
             *result = CNaN;
         } else {
-            rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p - 2);
+            raise_parse_error("unexpected token at '%s'", p - 2);
         }
     }
     action parse_infinity {
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p - 7);
+            raise_parse_error("unexpected token at '%s'", p - 7);
         }
     }
     action parse_string {
@@ -229,7 +237,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 fexec p + 10;
                 fhold; fbreak;
             } else {
-                rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p);
+                raise_parse_error("unexpected token at '%s'", p);
             }
         }
         np = JSON_parse_float(json, fpc, pe, result);
@@ -431,7 +439,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     if(cs >= JSON_array_first_final) {
         return p + 1;
     } else {
-        rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p);
+        raise_parse_error("unexpected token at '%s'", p);
         return NULL;
     }
 }
@@ -494,10 +502,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
                         ruby_xfree(bufferStart);
                       }
-                      rb_enc_raise(
-                        rb_utf8_encoding(), eParserError,
-                        "incomplete unicode character escape sequence at '%s'", p
-                      );
+                      raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
                     } else {
                         uint32_t ch = unescape_unicode((unsigned char *) ++pe);
                         pe += 3;
@@ -517,10 +522,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                               if (bufferSize > MAX_STACK_BUFFER_SIZE) {
                                 ruby_xfree(bufferStart);
                               }
-                              rb_enc_raise(
-                                rb_utf8_encoding(), eParserError,
-                                "incomplete surrogate pair at '%s'", p
-                                );
+                              raise_parse_error("incomplete surrogate pair at '%s'", p);
                             }
                             if (pe[0] == '\\' && pe[1] == 'u') {
                                 uint32_t sur = unescape_unicode((unsigned char *) pe + 2);
@@ -844,22 +846,22 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
  */
 static VALUE cParser_parse(VALUE self)
 {
-  char *p, *pe;
-  int cs = EVIL;
-  VALUE result = Qnil;
-  GET_PARSER;
+    char *p, *pe;
+    int cs = EVIL;
+    VALUE result = Qnil;
+    GET_PARSER;
 
-  %% write init;
-  p = json->source;
-  pe = p + json->len;
-  %% write exec;
+    %% write init;
+    p = json->source;
+    pe = p + json->len;
+    %% write exec;
 
-  if (cs >= JSON_first_final && p == pe) {
-    return result;
-  } else {
-    rb_enc_raise(rb_utf8_encoding(), eParserError, "unexpected token at '%s'", p);
-    return Qnil;
-  }
+    if (cs >= JSON_first_final && p == pe) {
+        return result;
+    } else {
+        raise_parse_error("unexpected token at '%s'", p);
+        return Qnil;
+    }
 }
 
 static void JSON_mark(void *ptr)
@@ -924,9 +926,7 @@ void Init_parser(void)
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
-    eParserError = rb_path2class("JSON::ParserError");
     eNestingError = rb_path2class("JSON::NestingError");
-    rb_gc_register_mark_object(eParserError);
     rb_gc_register_mark_object(eNestingError);
     rb_define_alloc_func(cParser, cJSON_parser_s_allocate);
     rb_define_method(cParser, "initialize", cParser_initialize, -1);
