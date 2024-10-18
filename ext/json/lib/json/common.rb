@@ -221,8 +221,12 @@ module JSON
   #   # Raises JSON::ParserError (783: unexpected token at ''):
   #   JSON.parse('')
   #
-  def parse(source, opts = {})
-    Parser.new(source, **(opts||{})).parse
+  def parse(source, opts = nil)
+    if opts.nil?
+      Parser.new(source).parse
+    else
+      Parser.new(source, opts).parse
+    end
   end
 
   # :call-seq:
@@ -543,15 +547,23 @@ module JSON
   #      #<Admin:0x00000000064c41f8
   #      @attributes={"type"=>"Admin", "password"=>"0wn3d"}>}
   #
-  def load(source, proc = nil, options = {})
-    opts = load_default_options.merge options
-    if source.respond_to? :to_str
-      source = source.to_str
-    elsif source.respond_to? :to_io
-      source = source.to_io.read
-    elsif source.respond_to?(:read)
-      source = source.read
+  def load(source, proc = nil, options = nil)
+    opts = if options.nil?
+      load_default_options
+    else
+      load_default_options.merge(options)
     end
+
+    unless source.is_a?(String)
+      if source.respond_to? :to_str
+        source = source.to_str
+      elsif source.respond_to? :to_io
+        source = source.to_io.read
+      elsif source.respond_to?(:read)
+        source = source.read
+      end
+    end
+
     if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
