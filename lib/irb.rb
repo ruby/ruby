@@ -1132,7 +1132,7 @@ module IRB
         return Statement::EmptyInput.new
       end
 
-      code.force_encoding(@context.io.encoding)
+      code = code.dup.force_encoding(@context.io.encoding)
       if (command, arg = @context.parse_command(code))
         command_class = Command.load_command(command)
         Statement::Command.new(code, command_class, arg)
