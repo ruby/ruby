@@ -319,10 +319,7 @@ parse_static_literal_string(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, 
 
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
         int line_number = pm_node_line_number(scope_node->parser, node);
-        VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line_number));
-        value = rb_str_dup(value);
-        rb_ivar_set(value, id_debug_created_info, rb_ary_freeze(debug_info));
-        rb_str_freeze(value);
+        value = rb_str_with_debug_created_info(value, rb_iseq_path(iseq), line_number);
     }
 
     return value;
@@ -726,9 +723,7 @@ static VALUE
 pm_static_literal_string(rb_iseq_t *iseq, VALUE string, int line_number)
 {
     if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-        VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line_number));
-        rb_ivar_set(string, id_debug_created_info, rb_ary_freeze(debug_info));
-        return rb_str_freeze(string);
+        return rb_str_with_debug_created_info(string, rb_iseq_path(iseq), line_number);
     }
     else {
         return rb_fstring(string);
