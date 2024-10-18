@@ -1438,6 +1438,39 @@ dummy
       assert_locations(node.children[-1].children[1].children[0].children[0].locations, [[1, 13, 1, 15], [1, 13, 1, 14]])
     end
 
+    def test_sym_locations
+      node = ast_parse(":foo")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 0, 1, 1], [1, 1, 1, 4], nil])
+
+      node = ast_parse(":'foo'")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 2], [1, 2, 1, 5], [1, 5, 1, 6]])
+
+      node = ast_parse("%i[foo]")
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 6], nil, [1, 3, 1, 6], nil])
+
+      node = ast_parse("{a: :b}")
+      assert_locations(node.children[-1].children[0].children[0].locations, [[1, 1, 1, 3], nil, [1, 1, 1, 3], [1, 2, 1, 3]])
+      assert_locations(node.children[-1].children[0].children[1].locations, [[1, 4, 1, 6], [1, 4, 1, 5], [1, 5, 1, 6], nil])
+
+      node = ast_parse("{'a': :'b'}")
+      assert_locations(node.children[-1].children[0].children[0].locations, [[1, 1, 1, 5], [1, 1, 1, 2], [1, 2, 1, 3], [1, 3, 1, 5]])
+      assert_locations(node.children[-1].children[0].children[1].locations, [[1, 6, 1, 10], [1, 6, 1, 8], [1, 8, 1, 9], [1, 9, 1, 10]])
+
+      node = ast_parse("case a; in 'k': :'v'; end")
+      assert_locations(node.children[-1].children[-1].children[0].children[1].children[0].children[0].locations, [[1, 9, 1, 13], [1, 9, 1, 10], [1, 11, 1, 12], [1, 12, 1, 13]])
+      assert_locations(node.children[-1].children[-1].children[0].children[1].children[0].children[1].locations, [[1, 14, 1, 16], [1, 14, 1, 15], [1, 15, 1, 16], nil])
+
+      node = ast_parse("case a; in k: :v; end")
+      assert_locations(node.children[-1].children[-1].children[0].children[1].children[0].children[0].locations, [[1, 11, 1, 13], nil, [1, 11, 1, 13], [1, 12, 1, 13]])
+      assert_locations(node.children[-1].children[-1].children[0].children[1].children[0].children[1].locations, [[1, 14, 1, 16], [1, 14, 1, 15], [1, 15, 1, 16], nil])
+
+      node = ast_parse("case a; in k:; end")
+      assert_locations(node.children[-1].children[-1].children[0].children[1].children[0].children[0].locations, [[1, 9, 1, 13], [1, 9, 1, 10], [1, 11, 1, 12], [1, 12, 1, 13]])
+
+      node = ast_parse("m(k: :v)")
+      assert_locations(node.children[-1].children[0].children[0].locations, [[1, 2, 1, 6], [1, 2, 1, 3], [1, 4, 1, 5], [1, 6, 1, 7]])
+    end
+
     def test_unless_locations
       node = ast_parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
