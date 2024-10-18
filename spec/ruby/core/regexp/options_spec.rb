@@ -28,8 +28,10 @@ describe "Regexp#options" do
     /abc/.options.should == 0
   end
 
-  it "raises a TypeError on an uninitialized Regexp" do
-    -> { Regexp.allocate.options }.should raise_error(TypeError)
+  ruby_version_is ""..."3.3" do
+    it "raises a TypeError on an uninitialized Regexp" do
+      -> { Regexp.allocate.options }.should raise_error(TypeError)
+    end
   end
 
   it "includes Regexp::FIXEDENCODING for a Regexp literal with the 'u' option" do
