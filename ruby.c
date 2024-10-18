@@ -518,6 +518,8 @@ translit_char_bin(char *p, int from, int to)
 #endif
 
 #ifdef _WIN32
+# undef chdir
+# define chdir rb_w32_uchdir
 # define UTF8_PATH 1
 #endif
 
