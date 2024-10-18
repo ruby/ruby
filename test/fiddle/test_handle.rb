@@ -8,6 +8,15 @@ module Fiddle
   class TestHandle < TestCase
     include Fiddle
 
+    def test_library_unavailable
+      assert_raise(DLError) do
+        Fiddle::Handle.new("does-not-exist-library")
+      end
+      assert_raise(DLError) do
+        Fiddle::Handle.new("/does/not/exist/library.#{RbConfig::CONFIG['SOEXT']}")
+      end
+    end
+
     def test_to_i
       if ffi_backend?
         omit("Fiddle::Handle#to_i is unavailable with FFI backend")

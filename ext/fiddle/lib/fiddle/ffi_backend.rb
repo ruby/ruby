@@ -475,8 +475,11 @@ module Fiddle
     RTLD_NOW = FFI::DynamicLibrary::RTLD_NOW
 
     def initialize(libname = nil, flags = RTLD_LAZY | RTLD_GLOBAL)
-      @lib = FFI::DynamicLibrary.open(libname, flags) rescue LoadError
-      raise DLError.new("Could not open #{libname}") unless @lib
+      begin
+        @lib = FFI::DynamicLibrary.open(libname, flags)
+      rescue LoadError, RuntimeError # LoadError for JRuby, RuntimeError for TruffleRuby
+        raise DLError, "Could not open #{libname}"
+      end
 
       @open = true
 
