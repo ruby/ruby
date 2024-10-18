@@ -61,9 +61,6 @@ fn main() {
         .blocklist_type("size_t")
         .blocklist_type("fpos_t")
 
-        // Prune these types since they are system dependant and we don't use them
-        .blocklist_type("__.*")
-
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
@@ -327,6 +324,7 @@ fn main() {
         .allowlist_function("rb_yjit_vm_unlock")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
+        .allowlist_function("rb_yjit_constcache_shareable")
         .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_yjit_dump_iseq_loc")
         .allowlist_function("rb_yjit_for_each_iseq")

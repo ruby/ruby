@@ -1062,6 +1062,12 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
     return IMEMO_TYPE_P(imemo, imemo_type);
 }
 
+bool
+rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+{
+    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+}
+
 void
 rb_assert_cme_handle(VALUE handle)
 {
