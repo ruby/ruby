@@ -226,11 +226,7 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
     x.args = args;
     x.ctx = ctx;
 
-    if (ruby_thread_has_gvl_p()) {
-	(void)with_gvl_callback(&x);
-    } else {
 	(void)rb_thread_call_with_gvl(with_gvl_callback, &x);
-    }
 }
 
 static VALUE
