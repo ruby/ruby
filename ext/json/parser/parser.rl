@@ -719,7 +719,15 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (json->Vsource) {
         rb_raise(rb_eTypeError, "already initialized instance");
     }
-    rb_scan_args(argc, argv, "1:", &source, &opts);
+
+    rb_check_arity(argc, 1, 2);
+    source = argv[0];
+    opts = Qnil;
+    if (argc == 2) {
+        opts = argv[1];
+        Check_Type(opts, T_HASH);
+    }
+
     if (!NIL_P(opts)) {
 	VALUE tmp = ID2SYM(i_max_nesting);
 	if (option_given_p(opts, tmp)) {
