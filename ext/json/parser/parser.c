@@ -1136,29 +1136,31 @@ case 7:
     if (cs >= JSON_float_first_final) {
         VALUE mod = Qnil;
         ID method_id = 0;
-        if (rb_respond_to(json->decimal_class, i_try_convert)) {
-            mod = json->decimal_class;
-            method_id = i_try_convert;
-        } else if (rb_respond_to(json->decimal_class, i_new)) {
-            mod = json->decimal_class;
-            method_id = i_new;
-        } else if (RB_TYPE_P(json->decimal_class, T_CLASS)) {
-            VALUE name = rb_class_name(json->decimal_class);
-            const char *name_cstr = RSTRING_PTR(name);
-            const char *last_colon = strrchr(name_cstr, ':');
-            if (last_colon) {
-                const char *mod_path_end = last_colon - 1;
-                VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
-                mod = rb_path_to_class(mod_path);
+        if (!NIL_P(json->decimal_class)) {
+            if (rb_respond_to(json->decimal_class, i_try_convert)) {
+                mod = json->decimal_class;
+                method_id = i_try_convert;
+            } else if (rb_respond_to(json->decimal_class, i_new)) {
+                mod = json->decimal_class;
+                method_id = i_new;
+            } else if (RB_TYPE_P(json->decimal_class, T_CLASS)) {
+                VALUE name = rb_class_name(json->decimal_class);
+                const char *name_cstr = RSTRING_PTR(name);
+                const char *last_colon = strrchr(name_cstr, ':');
+                if (last_colon) {
+                    const char *mod_path_end = last_colon - 1;
+                    VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
+                    mod = rb_path_to_class(mod_path);
 
-                const char *method_name_beg = last_colon + 1;
-                long before_len = method_name_beg - name_cstr;
-                long len = RSTRING_LEN(name) - before_len;
-                VALUE method_name = rb_str_substr(name, before_len, len);
-                method_id = SYM2ID(rb_str_intern(method_name));
-            } else {
-                mod = rb_mKernel;
-                method_id = SYM2ID(rb_str_intern(name));
+                    const char *method_name_beg = last_colon + 1;
+                    long before_len = method_name_beg - name_cstr;
+                    long len = RSTRING_LEN(name) - before_len;
+                    VALUE method_name = rb_str_substr(name, before_len, len);
+                    method_id = SYM2ID(rb_str_intern(method_name));
+                } else {
+                    mod = rb_mKernel;
+                    method_id = SYM2ID(rb_str_intern(name));
+                }
             }
         }
 
@@ -1182,7 +1184,7 @@ case 7:
 
 
 
-#line 1186 "parser.c"
+#line 1188 "parser.c"
 enum {JSON_array_start = 1};
 enum {JSON_array_first_final = 17};
 enum {JSON_array_error = 0};
@@ -1190,7 +1192,7 @@ enum {JSON_array_error = 0};
 enum {JSON_array_en_main = 1};
 
 
-#line 434 "parser.rl"
+#line 436 "parser.rl"
 
 
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
@@ -1204,14 +1206,14 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     *result = NIL_P(array_class) ? rb_ary_new() : rb_class_new_instance(0, 0, array_class);
 
 
-#line 1208 "parser.c"
+#line 1210 "parser.c"
 	{
 	cs = JSON_array_start;
 	}
 
-#line 447 "parser.rl"
+#line 449 "parser.rl"
 
-#line 1215 "parser.c"
+#line 1217 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1250,7 +1252,7 @@ case 2:
 		goto st2;
 	goto st0;
 tr2:
-#line 411 "parser.rl"
+#line 413 "parser.rl"
 	{
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, p, pe, &v, current_nesting);
@@ -1270,7 +1272,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 1274 "parser.c"
+#line 1276 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -1370,14 +1372,14 @@ case 12:
 		goto st3;
 	goto st12;
 tr4:
-#line 426 "parser.rl"
+#line 428 "parser.rl"
 	{ p--; {p++; cs = 17; goto _out;} }
 	goto st17;
 st17:
 	if ( ++p == pe )
 		goto _test_eof17;
 case 17:
-#line 1381 "parser.c"
+#line 1383 "parser.c"
 	goto st0;
 st13:
 	if ( ++p == pe )
@@ -1433,7 +1435,7 @@ case 16:
 	_out: {}
 	}
 
-#line 448 "parser.rl"
+#line 450 "parser.rl"
 
     if(cs >= JSON_array_first_final) {
         return p + 1;
@@ -1594,7 +1596,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
 }
 
 
-#line 1598 "parser.c"
+#line 1600 "parser.c"
 enum {JSON_string_start = 1};
 enum {JSON_string_first_final = 8};
 enum {JSON_string_error = 0};
@@ -1602,7 +1604,7 @@ enum {JSON_string_error = 0};
 enum {JSON_string_en_main = 1};
 
 
-#line 626 "parser.rl"
+#line 628 "parser.rl"
 
 
 static int
@@ -1623,15 +1625,15 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     VALUE match_string;
 
 
-#line 1627 "parser.c"
+#line 1629 "parser.c"
 	{
 	cs = JSON_string_start;
 	}
 
-#line 646 "parser.rl"
+#line 648 "parser.rl"
     json->memo = p;
 
-#line 1635 "parser.c"
+#line 1637 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1656,7 +1658,7 @@ case 2:
 		goto st0;
 	goto st2;
 tr2:
-#line 613 "parser.rl"
+#line 615 "parser.rl"
 	{
         *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
@@ -1666,14 +1668,14 @@ tr2:
             {p = (( p + 1))-1;}
         }
     }
-#line 623 "parser.rl"
+#line 625 "parser.rl"
 	{ p--; {p++; cs = 8; goto _out;} }
 	goto st8;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 1677 "parser.c"
+#line 1679 "parser.c"
 	goto st0;
 st3:
 	if ( ++p == pe )
@@ -1749,7 +1751,7 @@ case 7:
 	_out: {}
 	}
 
-#line 648 "parser.rl"
+#line 650 "parser.rl"
 
     if (json->create_additions && RTEST(match_string = json->match_string)) {
           VALUE klass;
@@ -1842,82 +1844,85 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     opts = Qnil;
     if (argc == 2) {
         opts = argv[1];
-        Check_Type(opts, T_HASH);
+        Check_Type(argv[1], T_HASH);
+        if (RHASH_SIZE(argv[1]) > 0) {
+            opts = argv[1];
+        }
     }
 
     if (!NIL_P(opts)) {
-    VALUE tmp = ID2SYM(i_max_nesting);
-    if (option_given_p(opts, tmp)) {
-        VALUE max_nesting = rb_hash_aref(opts, tmp);
-        if (RTEST(max_nesting)) {
-            Check_Type(max_nesting, T_FIXNUM);
-            json->max_nesting = FIX2INT(max_nesting);
+        VALUE tmp = ID2SYM(i_max_nesting);
+        if (option_given_p(opts, tmp)) {
+            VALUE max_nesting = rb_hash_aref(opts, tmp);
+            if (RTEST(max_nesting)) {
+                Check_Type(max_nesting, T_FIXNUM);
+                json->max_nesting = FIX2INT(max_nesting);
+            } else {
+                json->max_nesting = 0;
+            }
         } else {
-            json->max_nesting = 0;
+            json->max_nesting = 100;
         }
-    } else {
-        json->max_nesting = 100;
-    }
-    tmp = ID2SYM(i_allow_nan);
-    if (option_given_p(opts, tmp)) {
-        json->allow_nan = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-    } else {
-        json->allow_nan = 0;
-    }
-    tmp = ID2SYM(i_symbolize_names);
-    if (option_given_p(opts, tmp)) {
-        json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-    } else {
-        json->symbolize_names = 0;
-    }
-    tmp = ID2SYM(i_freeze);
-    if (option_given_p(opts, tmp)) {
-        json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-    } else {
-        json->freeze = 0;
-    }
-    tmp = ID2SYM(i_create_additions);
-    if (option_given_p(opts, tmp)) {
-        json->create_additions = RTEST(rb_hash_aref(opts, tmp));
-    } else {
-        json->create_additions = 0;
-    }
-    if (json->symbolize_names && json->create_additions) {
-        rb_raise(rb_eArgError,
-            "options :symbolize_names and :create_additions cannot be "
-            " used in conjunction");
-    }
-    tmp = ID2SYM(i_create_id);
-    if (option_given_p(opts, tmp)) {
-        json->create_id = rb_hash_aref(opts, tmp);
-    } else {
-        json->create_id = rb_funcall(mJSON, i_create_id, 0);
-    }
-    tmp = ID2SYM(i_object_class);
-    if (option_given_p(opts, tmp)) {
-        json->object_class = rb_hash_aref(opts, tmp);
-    } else {
-        json->object_class = Qnil;
-    }
-    tmp = ID2SYM(i_array_class);
-    if (option_given_p(opts, tmp)) {
-        json->array_class = rb_hash_aref(opts, tmp);
-    } else {
-        json->array_class = Qnil;
-    }
-    tmp = ID2SYM(i_decimal_class);
-    if (option_given_p(opts, tmp)) {
-        json->decimal_class = rb_hash_aref(opts, tmp);
-    } else {
-        json->decimal_class = Qnil;
-    }
-    tmp = ID2SYM(i_match_string);
-    if (option_given_p(opts, tmp)) {
-        VALUE match_string = rb_hash_aref(opts, tmp);
-        json->match_string = RTEST(match_string) ? match_string : Qnil;
-    } else {
-        json->match_string = Qnil;
-    }
+        tmp = ID2SYM(i_allow_nan);
+        if (option_given_p(opts, tmp)) {
+            json->allow_nan = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+        } else {
+            json->allow_nan = 0;
+        }
+        tmp = ID2SYM(i_symbolize_names);
+        if (option_given_p(opts, tmp)) {
+            json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+        } else {
+            json->symbolize_names = 0;
+        }
+        tmp = ID2SYM(i_freeze);
+        if (option_given_p(opts, tmp)) {
+            json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
+        } else {
+            json->freeze = 0;
+        }
+        tmp = ID2SYM(i_create_additions);
+        if (option_given_p(opts, tmp)) {
+            json->create_additions = RTEST(rb_hash_aref(opts, tmp));
+        } else {
+            json->create_additions = 0;
+        }
+        if (json->symbolize_names && json->create_additions) {
+            rb_raise(rb_eArgError,
+                "options :symbolize_names and :create_additions cannot be "
+                " used in conjunction");
+        }
+        tmp = ID2SYM(i_create_id);
+        if (option_given_p(opts, tmp)) {
+            json->create_id = rb_hash_aref(opts, tmp);
+        } else {
+            json->create_id = rb_funcall(mJSON, i_create_id, 0);
+        }
+        tmp = ID2SYM(i_object_class);
+        if (option_given_p(opts, tmp)) {
+            json->object_class = rb_hash_aref(opts, tmp);
+        } else {
+            json->object_class = Qnil;
+        }
+        tmp = ID2SYM(i_array_class);
+        if (option_given_p(opts, tmp)) {
+            json->array_class = rb_hash_aref(opts, tmp);
+        } else {
+            json->array_class = Qnil;
+        }
+        tmp = ID2SYM(i_decimal_class);
+        if (option_given_p(opts, tmp)) {
+            json->decimal_class = rb_hash_aref(opts, tmp);
+        } else {
+            json->decimal_class = Qnil;
+        }
+        tmp = ID2SYM(i_match_string);
+        if (option_given_p(opts, tmp)) {
+            VALUE match_string = rb_hash_aref(opts, tmp);
+            json->match_string = RTEST(match_string) ? match_string : Qnil;
+        } else {
+            json->match_string = Qnil;
+        }
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
@@ -1936,7 +1941,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 1940 "parser.c"
+#line 1945 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -1944,7 +1949,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 848 "parser.rl"
+#line 853 "parser.rl"
 
 
 /*
@@ -1962,16 +1967,16 @@ static VALUE cParser_parse(VALUE self)
     GET_PARSER;
 
 
-#line 1966 "parser.c"
+#line 1971 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 865 "parser.rl"
+#line 870 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1975 "parser.c"
+#line 1980 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -2005,7 +2010,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 840 "parser.rl"
+#line 845 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result, 0);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -2015,7 +2020,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 2019 "parser.c"
+#line 2024 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2104,7 +2109,7 @@ case 9:
 	_out: {}
 	}
 
-#line 868 "parser.rl"
+#line 873 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
