@@ -1213,7 +1213,7 @@ static int
 do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super, bool check_cyclic)
 {
     VALUE p, iclass, origin_stack = 0;
-    int method_changed = 0, add_subclass;
+    int method_changed = 0;
     long origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
@@ -1277,7 +1277,6 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
         iclass = rb_include_class_new(module, super_class);
         c = RCLASS_SET_SUPER(c, iclass);
         RCLASS_SET_INCLUDER(iclass, klass);
-        add_subclass = TRUE;
         if (module != RCLASS_ORIGIN(module)) {
             if (!origin_stack) origin_stack = rb_ary_hidden_new(2);
             VALUE origin[2] = {iclass, RCLASS_ORIGIN(module)};
@@ -1288,14 +1287,11 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
             RCLASS_SET_ORIGIN(RARRAY_AREF(origin_stack, (origin_len -= 2)), iclass);
             RICLASS_SET_ORIGIN_SHARED_MTBL(iclass);
             rb_ary_resize(origin_stack, origin_len);
-            add_subclass = FALSE;
         }
 
-        if (add_subclass) {
-            VALUE m = module;
-            if (BUILTIN_TYPE(m) == T_ICLASS) m = METACLASS_OF(m);
-            rb_module_add_to_subclasses_list(m, iclass);
-        }
+        VALUE m = module;
+        if (BUILTIN_TYPE(m) == T_ICLASS) m = METACLASS_OF(m);
+        rb_module_add_to_subclasses_list(m, iclass);
 
         if (BUILTIN_TYPE(klass) == T_MODULE && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
             VALUE refined_class =

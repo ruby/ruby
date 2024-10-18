@@ -605,6 +605,35 @@ class TestSuper < Test::Unit::TestCase
     }
   end
 
+  def test_super_with_included_prepended_module_method_caching_bug_20716
+    a = Module.new do
+      def test(*args)
+        super
+      end
+    end
+
+    b = Module.new do
+      def test(a)
+        a
+      end
+    end
+
+    c = Class.new
+
+    b.prepend(a)
+    c.include(b)
+
+    assert_equal(1, c.new.test(1))
+
+    b.class_eval do
+      def test
+        :test
+      end
+    end
+
+    assert_equal(:test, c.new.test)
+  end
+
   class TestFor_super_with_modified_rest_parameter_base
     def foo *args
       args
