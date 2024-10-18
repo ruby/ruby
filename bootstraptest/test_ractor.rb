@@ -1121,6 +1121,20 @@ values = r.take
 values.join
 }
 
+# send embedded array with move: true
+assert_equal 'true', %q{
+r = Ractor.new {
+  inner_ary = receive
+  { equal: (inner_ary == ["",{},2,3,4,5,6]) }
+}
+ary = ["",{},2,3,4,5,6]
+r.send(ary, move: true)
+r_values = r.take
+[
+  r_values[:equal],
+].join(',')
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
