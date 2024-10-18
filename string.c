@@ -11372,6 +11372,41 @@ rb_str_valid_encoding_p(VALUE str)
 
 /*
  *  call-seq:
+ *    forcible_encoding?(encoding) -> true or false
+ *
+ *  Returns +true+ if when +self+ is forced into the given encoding it will be
+ *  encoded correctly, +false+ otherwise:
+ *
+ *    "\xc2\xa1".forcible_encoding?("UTF-8") # => true
+ *    "\xc2".forcible_encoding?("UTF-8")     # => false
+ *    "\x80".forcible_encoding?("UTF-8")     # => false
+ */
+
+static VALUE
+rb_str_forcible_encoding_p(VALUE str, VALUE enc)
+{
+    rb_encoding *encoding = rb_to_encoding(enc);
+    int idx = rb_enc_to_index(encoding);
+
+    // If the encoding is the same as the receiver's encoding then this is
+    // forcible by identity.
+    if (ENCODING_GET(str) == idx) {
+        return rb_str_valid_encoding_p(str);
+    }
+
+    // If the coderange was 7bit and the new encoding is ASCII-compatible then
+    // this is forcible by definition.
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT && encoding && rb_enc_asciicompat(encoding)) {
+        return Qtrue;
+    }
+
+    // Otherwise, scan through the string and check if it would not result in a
+    // broken string.
+    return RBOOL(rb_enc_str_coderange_scan(str, encoding) != ENC_CODERANGE_BROKEN);
+}
+
+/*
+ *  call-seq:
  *    ascii_only? -> true or false
  *
  *  Returns +true+ if +self+ contains only ASCII characters,
@@ -12659,6 +12694,7 @@ Init_String(void)
 
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
+    rb_define_method(rb_cString, "forcible_encoding?", rb_str_forcible_encoding_p, 1);
     rb_define_method(rb_cString, "b", rb_str_b, 0);
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
