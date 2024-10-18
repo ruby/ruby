@@ -28,7 +28,7 @@ module SyntaxSuggest
       @is_end = false
       @is_kw = false
       return if type != :on_kw
-      #
+
       return if last_lex && last_lex.fname? # https://github.com/ruby/ruby/commit/776759e300e4659bb7468e2b97c8c2d4359a2953
 
       case token

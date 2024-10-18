@@ -157,7 +157,7 @@ module SyntaxSuggest
       end
     end
 
-    # Managable rspec errors
+    # Manageable rspec errors
     def inspect
       "#<SyntaxSuggest::CodeBlock:0x0000123843lol >"
     end

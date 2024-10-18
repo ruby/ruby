@@ -139,7 +139,7 @@ module SyntaxSuggest
       source = <<~'EOM'
         context "timezones workaround" do
           it "should receive a time in UTC format and return the time with the"\
-            "office's UTC offset substracted from it" do
+            "office's UTC offset subtracted from it" do
             travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
               office = build(:office)
             end
@@ -155,7 +155,7 @@ module SyntaxSuggest
       ).to eq(<<~'EOM'.indent(2))
         1  context "timezones workaround" do
         2    it "should receive a time in UTC format and return the time with the"\
-        3      "office's UTC offset substracted from it" do
+        3      "office's UTC offset subtracted from it" do
         4      travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
         5        office = build(:office)
         6      end
@@ -171,7 +171,7 @@ module SyntaxSuggest
       ).to eq(<<~'EOM')
           1  context "timezones workaround" do
         > 2    it "should receive a time in UTC format and return the time with the"\
-        > 3      "office's UTC offset substracted from it" do
+        > 3      "office's UTC offset subtracted from it" do
           4      travel_to DateTime.new(2020, 10, 1, 10, 0, 0) do
           5        office = build(:office)
           6      end

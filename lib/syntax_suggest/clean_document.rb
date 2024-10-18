@@ -267,7 +267,7 @@ module SyntaxSuggest
       groups.each do |lines|
         line = lines.first
 
-        # Handle the case of multiple groups in a a row
+        # Handle the case of multiple groups in a row
         # if one is already replaced, move on
         next if @document[line.index].empty?
 

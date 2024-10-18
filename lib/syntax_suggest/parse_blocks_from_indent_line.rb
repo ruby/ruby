@@ -8,7 +8,7 @@ module SyntaxSuggest
   # grabbing one that contains only an "end". In this example:
   #
   #   def dog
-  #     begonn # mispelled `begin`
+  #     begonn # misspelled `begin`
   #     puts "bark"
   #     end
   #   end
