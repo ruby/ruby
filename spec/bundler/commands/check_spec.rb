@@ -86,11 +86,16 @@ RSpec.describe "bundle check" do
   end
 
   it "prints a generic error if gem git source is not checked out" do
-    gemfile <<-G
+    build_git "foo", path: lib_path("foo")
+
+    bundle "config path vendor/bundle"
+
+    install_gemfile <<-G
       source "https://gem.repo1"
-      gem "rails", git: "git@github.com:rails/rails.git"
+      gem "foo", git: "#{lib_path("foo")}"
     G
 
+    FileUtils.rm_rf bundled_app("vendor/bundle")
     bundle :check, raise_on_error: false
     expect(exitstatus).to eq 1
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
