@@ -701,8 +701,15 @@ static VALUE convert_encoding(VALUE source)
  * * *create_additions*: If set to false, the Parser doesn't create
  *   additions even if a matching class and create_id was found. This option
  *   defaults to false.
- * * *object_class*: Defaults to Hash
- * * *array_class*: Defaults to Array
+ * * *object_class*: Defaults to Hash. If another type is provided, it will be used
+ *   instead of Hash to represent JSON objects. The type must respond to
+ *   +new+ without arguments, and return an object that respond to +[]=+.
+ * * *array_class*: Defaults to Array If another type is provided, it will be used
+ *   instead of Hash to represent JSON arrays. The type must respond to
+ *   +new+ without arguments, and return an object that respond to +<<+.
+ * * *decimal_class*: Specifies which class to use instead of the default
+ *    (Float) when parsing decimal numbers. This class must accept a single
+ *    string argument in its constructor.
  */
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 {

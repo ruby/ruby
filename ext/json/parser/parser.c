@@ -1806,8 +1806,15 @@ static VALUE convert_encoding(VALUE source)
  * * *create_additions*: If set to false, the Parser doesn't create
  *   additions even if a matching class and create_id was found. This option
  *   defaults to false.
- * * *object_class*: Defaults to Hash
- * * *array_class*: Defaults to Array
+ * * *object_class*: Defaults to Hash. If another type is provided, it will be used
+ *   instead of Hash to represent JSON objects. The type must respond to
+ *   +new+ without arguments, and return an object that respond to +[]=+.
+ * * *array_class*: Defaults to Array If another type is provided, it will be used
+ *   instead of Hash to represent JSON arrays. The type must respond to
+ *   +new+ without arguments, and return an object that respond to +<<+.
+ * * *decimal_class*: Specifies which class to use instead of the default
+ *    (Float) when parsing decimal numbers. This class must accept a single
+ *    string argument in its constructor.
  */
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -1909,7 +1916,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 1913 "parser.c"
+#line 1920 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -1917,7 +1924,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 821 "parser.rl"
+#line 828 "parser.rl"
 
 
 /*
@@ -1935,16 +1942,16 @@ static VALUE cParser_parse(VALUE self)
   GET_PARSER;
 
 
-#line 1939 "parser.c"
+#line 1946 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 838 "parser.rl"
+#line 845 "parser.rl"
   p = json->source;
   pe = p + json->len;
 
-#line 1948 "parser.c"
+#line 1955 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1978,7 +1985,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 813 "parser.rl"
+#line 820 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result, 0);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -1988,7 +1995,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1992 "parser.c"
+#line 1999 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2077,7 +2084,7 @@ case 9:
 	_out: {}
 	}
 
-#line 841 "parser.rl"
+#line 848 "parser.rl"
 
   if (cs >= JSON_first_final && p == pe) {
     return result;
