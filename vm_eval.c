@@ -445,18 +445,8 @@ scope_to_ci(call_type scope, ID mid, int argc, struct rb_callinfo *ci)
 }
 
 static inline const struct rb_callcache *
-gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
+gccct_method_search_klass(rb_execution_context_t *ec, VALUE klass, ID mid, const struct rb_callinfo *ci)
 {
-    VALUE klass;
-
-    if (!SPECIAL_CONST_P(recv)) {
-        klass = RBASIC_CLASS(recv);
-        if (UNLIKELY(!klass)) uncallable_object(recv, mid);
-    }
-    else {
-        klass = CLASS_OF(recv);
-    }
-
     // search global method cache
     unsigned int index = (unsigned int)(gccct_hash(klass, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
@@ -480,7 +470,24 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
     }
 
     RB_DEBUG_COUNTER_INC(gccct_miss);
+
     return gccct_method_search_slowpath(vm, klass, index, ci);
+}
+
+static inline const struct rb_callcache *
+gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
+{
+    VALUE klass;
+
+    if (!SPECIAL_CONST_P(recv)) {
+        klass = RBASIC_CLASS(recv);
+        if (UNLIKELY(!klass)) uncallable_object(recv, mid);
+    }
+    else {
+        klass = CLASS_OF(recv);
+    }
+
+    return gccct_method_search_klass(ec, klass, mid, ci);
 }
 
 /**
