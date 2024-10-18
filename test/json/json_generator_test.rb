@@ -90,10 +90,17 @@ EOT
 
   def test_generate_pretty
     json = pretty_generate({})
+    assert_equal('{}', json)
+
+    json = pretty_generate({1=>{}, 2=>[], 3=>4})
     assert_equal(<<'EOT'.chomp, json)
 {
+  "1": {},
+  "2": [],
+  "3": 4
 }
 EOT
+
     json = pretty_generate(@hash)
     # hashes aren't (insertion) ordered on every ruby implementation
     # assert_equal(@json3, json)
