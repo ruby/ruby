@@ -9915,9 +9915,9 @@ fn gen_opt_getconstant_path(
         return Some(EndBlock);
     }
 
-    let is_cref = !unsafe { (*ice).ic_cref }.is_null();
+    let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
     let is_shareable = unsafe { rb_yjit_constcache_shareable(ice) };
-    let needs_checks = is_cref || (!is_shareable && !assume_single_ractor_mode(jit, asm));
+    let needs_checks = cref_sensitive || (!is_shareable && !assume_single_ractor_mode(jit, asm));
 
     if needs_checks {
         // Cache is keyed on a certain lexical scope. Use the interpreter's cache.
