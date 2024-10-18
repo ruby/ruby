@@ -118,7 +118,7 @@ module SyntaxSuggest
     end
 
     # Scanning is intentionally conservative because
-    # we have no way of rolling back an agressive block (at this time)
+    # we have no way of rolling back an aggressive block (at this time)
     #
     # If a block was stopped for some trivial reason, (like an empty line)
     # but the next line would have caused it to be balanced then we
@@ -224,7 +224,7 @@ module SyntaxSuggest
       @scanner.lines
     end
 
-    # Managable rspec errors
+    # Manageable rspec errors
     def inspect
       "#<#{self.class}:0x0000123843lol >"
     end

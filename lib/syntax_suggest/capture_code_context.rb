@@ -26,7 +26,7 @@ module SyntaxSuggest
   # they can't add extra data that's not present.
   #
   # In the case of known ambiguious cases, this class adds context
-  # back to the ambiguitiy so the programmer has full information.
+  # back to the ambiguity so the programmer has full information.
   #
   # Beyond handling these ambiguities, it also captures surrounding
   # code context information:
