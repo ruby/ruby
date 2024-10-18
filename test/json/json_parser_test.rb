@@ -506,6 +506,16 @@ EOT
     )
   end
 
+  def test_parse_error_message_length
+    # Error messages aren't consistent across backends, but we can at least
+    # enforce that if they include fragments of the source it should be of
+    # reasonable size.
+    error = assert_raise(JSON::ParserError) do
+      JSON.parse('{"foo": ' + ('A' * 500) + '}')
+    end
+    assert_operator 60, :>, error.message.bytesize
+  end
+
   private
 
   def string_deduplication_available?

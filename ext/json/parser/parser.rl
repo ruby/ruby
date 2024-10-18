@@ -67,12 +67,22 @@ static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
     return len;
 }
 
+#define PARSE_ERROR_FRAGMENT_LEN 32
 #ifdef RBIMPL_ATTR_NORETURN
 RBIMPL_ATTR_NORETURN()
 #endif
 static void raise_parse_error(const char *format, const char *start)
 {
-    rb_enc_raise(rb_utf8_encoding(), rb_path2class("JSON::ParserError"), format, start);
+    size_t len = strnlen(start, PARSE_ERROR_FRAGMENT_LEN);
+    const char *ptr = start;
+    if (len == PARSE_ERROR_FRAGMENT_LEN) {
+        char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
+        MEMCPY(buffer, start, char, PARSE_ERROR_FRAGMENT_LEN);
+        buffer[PARSE_ERROR_FRAGMENT_LEN] = '\0';
+        ptr = buffer;
+    }
+
+    rb_enc_raise(rb_utf8_encoding(), rb_path2class("JSON::ParserError"), format, ptr);
 }
 
 static VALUE mJSON, mExt, cParser, eNestingError;
