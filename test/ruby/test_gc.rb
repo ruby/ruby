@@ -860,4 +860,16 @@ class TestGc < Test::Unit::TestCase
       assert_include ObjectSpace.dump(young_obj), '"old":true'
     end
   end
+
+  def test_active_gc_name
+    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+
+    gc_name = (ENV['RUBY_GC_LIBRARY'] || "").split('.')[1]
+
+    if RbConfig::CONFIG['shared_gc_dir'].length > 0
+      assert_equal gc_name, GC.active_gc_name
+    else
+      assert_nil GC.active_gc_name
+    end
+  end
 end
