@@ -1914,6 +1914,12 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
     RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
     VALUE new_str = ec_str_duplicate(ec, rb_cString, str);
     if (chilled) {
+        if (RB_UNLIKELY(FL_TEST_RAW(str, FL_EXIVAR))) {
+            VALUE debug_info = rb_ivar_get(str, id_debug_created_info);
+            if (!NIL_P(debug_info)) {
+                rb_ivar_set(new_str, id_debug_created_info, debug_info);
+            }
+        }
         STR_CHILL_RAW(new_str);
     }
     return new_str;
