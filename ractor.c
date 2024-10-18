@@ -3638,7 +3638,7 @@ ractor_local_storage_mark_i(st_data_t key, st_data_t val, st_data_t dmy)
 }
 
 static enum rb_id_table_iterator_result
-idkey_local_storage_mark_i(ID id, VALUE val, void *dmy)
+idkey_local_storage_mark_i(VALUE val, void *dmy)
 {
     rb_gc_mark(val);
     return ID_TABLE_CONTINUE;
@@ -3661,7 +3661,7 @@ ractor_local_storage_mark(rb_ractor_t *r)
     }
 
     if (r->idkey_local_storage) {
-        rb_id_table_foreach(r->idkey_local_storage, idkey_local_storage_mark_i, NULL);
+        rb_id_table_foreach_values(r->idkey_local_storage, idkey_local_storage_mark_i, NULL);
     }
 }
 
