@@ -107,6 +107,25 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     tempfile.close!
   end
 
+  def test_load_with_proc
+    visited = []
+    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o) })
+
+    expected = [
+      '"foo"',
+      '1',
+      '2',
+      '3',
+      '[1,2,3]',
+      '"bar"',
+      '"baz"',
+      '"plop"',
+      '{"baz":"plop"}',
+      '{"foo":[1,2,3],"bar":{"baz":"plop"}}',
+    ]
+    assert_equal expected, visited
+  end
+
   def test_load_with_options
     json  = '{ "foo": NaN }'
     assert JSON.load(json, nil, :allow_nan => true)['foo'].nan?
