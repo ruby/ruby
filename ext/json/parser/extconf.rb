@@ -29,4 +29,6 @@ rescue NoMethodError
   $CFLAGS << ' -DSTR_UMINUS_DEDUPE_FROZEN=0 '
 end
 
+append_cflags("-std=c99")
+
 create_makefile 'json/ext/parser'
