@@ -59,11 +59,9 @@ end
 benchmark_encoding "small nested array", [[1,2,3,4,5]]*10
 benchmark_encoding "small hash", { "username" => "jhawthorn", "id" => 123, "event" => "wrote json serializer" }
 
-# On this one we're a bit slower (~25%).
-benchmark_encoding "mostly utf8", ([("€" * 3333)] * 2000), except: %i(json_state)
-
-# On these three benchmarks we perform well. Either on par or very closely faster/slower
-benchmark_encoding "mixed utf8", ([("a" * 5000) + "€" + ("a" * 5000)] * 2000), except: %i(json_state)
+# On these benchmarks we perform well. Either on par or very closely faster/slower
+benchmark_encoding "mixed utf8", ([("a" * 5000) + "€" + ("a" * 5000)] * 500), except: %i(json_state)
+benchmark_encoding "mostly utf8", ([("€" * 3333)] * 500), except: %i(json_state)
 benchmark_encoding "twitter.json", JSON.load_file("#{__dir__}/data/twitter.json"), except: %i(json_state)
 benchmark_encoding "citm_catalog.json", JSON.load_file("#{__dir__}/data/citm_catalog.json"), except: %i(json_state)
 
