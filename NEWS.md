@@ -82,6 +82,7 @@ The following default gems are updated.
 * erb 4.0.4
 * fiddle 1.1.4.dev
 * io-console 0.7.2
+* ipaddr 1.2.7
 * irb 1.14.1
 * json 2.7.2
 * logger 1.6.1
