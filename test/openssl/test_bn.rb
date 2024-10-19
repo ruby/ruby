@@ -365,6 +365,8 @@ class OpenSSL::TestBN < OpenSSL::TestCase
       assert_include(128..255, Ractor.new { OpenSSL::BN.rand(8)}.take)
       assert_include(0...2**32, Ractor.new { OpenSSL::BN.generate_prime(32) }.take)
       assert_equal(0, Ractor.new { OpenSSL::BN.new(999).get_flags(OpenSSL::BN::CONSTTIME) }.take)
+      # test if shareable when frozen
+      assert Ractor.shareable?(@e1.freeze)
     end
   end
 end

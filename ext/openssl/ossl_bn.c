@@ -37,7 +37,7 @@ static const rb_data_type_t ossl_bn_type = {
     {
 	0, ossl_bn_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 /*
@@ -259,6 +259,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(rb_eArgError, "invalid argument");
     }
 
+    rb_check_frozen(self);
     if (RB_INTEGER_TYPE_P(str)) {
 	GetBN(self, bn);
 	integer_to_bnptr(str, bn);
@@ -689,6 +690,7 @@ BIGNUM_3c(mod_exp)
     ossl_bn_##func(VALUE self, VALUE bit)		\
     {							\
 	BIGNUM *bn;					\
+	rb_check_frozen(self);				\
 	GetBN(self, bn);				\
 	if (BN_##func(bn, NUM2INT(bit)) <= 0) {		\
 	    ossl_raise(eBNError, NULL);			\
@@ -778,6 +780,7 @@ BIGNUM_SHIFT(rshift)
     {							\
 	BIGNUM *bn;					\
 	int b;						\
+	rb_check_frozen(self);				\
 	b = NUM2INT(bits);				\
 	GetBN(self, bn);				\
 	if (BN_##func(bn, bn, b) <= 0)			\
@@ -1187,6 +1190,7 @@ ossl_bn_set_flags(VALUE self, VALUE arg)
     BIGNUM *bn;
     GetBN(self, bn);
 
+    rb_check_frozen(self);
     BN_set_flags(bn, NUM2INT(arg));
     return Qnil;
 }
