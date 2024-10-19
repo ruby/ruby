@@ -2963,43 +2963,76 @@ autoload_apply_constants(VALUE _arguments)
     return Qtrue;
 }
 
+struct autoload_feature_require_data {
+    struct autoload_load_arguments *arguments;
+    VALUE receiver;
+    VALUE feature;
+};
+
+static VALUE
+autoload_feature_require_in_builtin(VALUE arg)
+{
+    struct autoload_feature_require_data *data = (struct autoload_feature_require_data *)arg;
+
+    VALUE result = rb_funcall(data->receiver, rb_intern("require"), 1, data->feature);
+    if (RTEST(result)) {
+        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, (VALUE)data->arguments);
+    }
+    return Qnil;
+}
+
+static VALUE
+autoload_feature_require_ensure_in_builtin(VALUE _arg)
+{
+    /*
+     * The gccct should be cleared again after the rb_funcall() to remove
+     * the inconsistent cache entry against the current namespace.
+     */
+    rb_gccct_clear_table(Qnil);
+    rb_namespace_disable_builtin();
+    return Qnil;
+}
+
 static VALUE
 autoload_feature_require(VALUE _arguments)
 {
-    VALUE rvalue;
     VALUE receiver = rb_vm_top_self();
 
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     struct autoload_const *autoload_const = arguments->autoload_const;
     VALUE autoload_namespace = autoload_const->namespace;
-    bool using_builtin = false;
 
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
     if (NIL_P(autoload_namespace)) {
-        using_builtin = true;
         rb_namespace_enable_builtin();
-        // builtin namespace, to be loaded into the builtin namespace
-    } else if (RTEST(autoload_namespace)) {
+        /*
+         * Clear the global cc cache table because the require method can be different from the current
+         * namespace's one and it may cause inconsistent cc-cme states.
+         * For example, the assertion below may fail in gccct_method_search();
+         * VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)))
+         */
+        rb_gccct_clear_table(Qnil);
+        struct autoload_feature_require_data data = {
+            .arguments = arguments,
+            .receiver = receiver,
+            .feature = arguments->autoload_data->feature,
+        };
+        return rb_ensure(autoload_feature_require_in_builtin, (VALUE)&data,
+                         autoload_feature_require_ensure_in_builtin, Qnil);
+    }
+
+    if (RTEST(autoload_namespace)) {
         receiver = autoload_const->namespace;
     }
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
 
     if (RTEST(result)) {
-        rvalue = rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
-        if (using_builtin) {
-            rb_namespace_disable_builtin();
-        }
-        return rvalue;
+        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
     }
-
-    if (using_builtin) {
-        rb_namespace_disable_builtin();
-    }
-
     return result;
 }
 

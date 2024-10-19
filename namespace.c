@@ -69,6 +69,9 @@ rb_namespace_available()
     return 0;
 }
 
+static void namespace_push(rb_thread_t *th, VALUE namespace);
+static VALUE namespace_pop(VALUE th_value);
+
 void
 rb_namespace_enable_builtin(void)
 {
@@ -76,14 +79,17 @@ rb_namespace_enable_builtin(void)
     if (require_stack) {
         rb_ary_push(require_stack, Qnil);
     }
+    namespace_push(GET_THREAD(), builtin_namespace->ns_object);
 }
 
 void
 rb_namespace_disable_builtin(void)
 {
     VALUE require_stack = GET_VM()->require_stack;
-    if (require_stack)
+    if (require_stack) {
         rb_ary_pop(require_stack);
+    }
+    namespace_pop((VALUE)GET_THREAD());
 }
 
 void
@@ -995,7 +1001,7 @@ rb_namespace_user_loading_func(int argc, VALUE *argv, VALUE _self)
     const rb_namespace_t *ns;
     rb_vm_t *vm = GET_VM();
     if (!vm->require_stack)
-        rb_bug("require_stack is not ready but the user namespace loading func is called");
+        rb_bug("require_stack is not ready but require/load is called in user namespaces");
     ns = rb_current_namespace();
     rb_namespace_push_loading_namespace(ns);
     struct refiner_calling_super_data data = {
