@@ -257,7 +257,7 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, cons
                     }
 
                     for (short i = 1; i < ch_len; i++) {
-                        wchar = (wchar<<6) | (ptr[pos+i] & 0x3F);
+                        wchar = (wchar << 6) | (ptr[pos+i] & 0x3F);
                     }
 
                     FLUSH_POS(ch_len);
