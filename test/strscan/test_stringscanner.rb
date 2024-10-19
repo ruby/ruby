@@ -325,6 +325,9 @@ module StringScannerTests
     s = create_string_scanner(str, false)
     matched = s.scan('str')
     assert_equal 'str', matched
+
+    s = create_string_scanner("str")
+    assert_equal nil, s.scan("str\0\0")
   end
 
   def test_skip
@@ -710,6 +713,9 @@ module StringScannerTests
     assert_equal(nil, s.skip_until("Qux"))
     assert_equal("\u0000Baz", s.scan_until("Baz"))
     assert_equal(11, s.pos)
+
+    s = create_string_scanner("str")
+    assert_equal nil, s.scan_until("str\0\0")
   end
 
   def test_skip_until
