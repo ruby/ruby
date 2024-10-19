@@ -199,73 +199,80 @@ static void convert_ASCII_to_JSON(FBuffer *out_buffer, VALUE str, const char esc
     RB_GC_GUARD(str);
 }
 
-static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE in_string, bool out_script_safe)
+static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, const char escape_table[256], bool out_script_safe)
 {
     const char *hexdig = "0123456789abcdef";
     char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
 
-    const char *in_utf8_str = RSTRING_PTR(in_string);
-    unsigned long in_utf8_len = RSTRING_LEN(in_string);
+    const char *ptr = RSTRING_PTR(str);
+    unsigned long len = RSTRING_LEN(str);
 
-    unsigned long beg = 0, pos;
+    unsigned long beg = 0, pos = 0;
 
-    for (pos =  0; pos < in_utf8_len;) {
-        uint32_t ch;
-        short ch_len;
-        bool should_escape;
+#define FLUSH_POS(bytes) if (pos > beg) { fbuffer_append(out_buffer, &ptr[beg], pos - beg); } pos += bytes; beg = pos;
 
-        /* UTF-8 decoding */
-        short i;
-        if      ((in_utf8_str[pos] & 0x80) == 0x00) { ch_len = 1; ch = in_utf8_str[pos];        } /* leading 1 bit is   0b0     */
-        else if ((in_utf8_str[pos] & 0xE0) == 0xC0) { ch_len = 2; ch = in_utf8_str[pos] & 0x1F; } /* leading 3 bits are 0b110   */
-        else if ((in_utf8_str[pos] & 0xF0) == 0xE0) { ch_len = 3; ch = in_utf8_str[pos] & 0x0F; } /* leading 4 bits are 0b1110  */
-        else if ((in_utf8_str[pos] & 0xF8) == 0xF0) { ch_len = 4; ch = in_utf8_str[pos] & 0x07; } /* leading 5 bits are 0b11110 */
-        else {
-            rb_raise(rb_path2class("JSON::GeneratorError"), "source sequence is illegal/malformed utf-8");
-        }
+    while (pos < len) {
+        unsigned char ch = ptr[pos];
+        unsigned char ch_len = escape_table[ch];
 
-        for (i = 1; i < ch_len; i++) {
-            ch = (ch<<6) | (in_utf8_str[pos+i] & 0x3F);
-        }
+        if (RB_UNLIKELY(ch_len)) {
+            switch (ch_len) {
+                case 0:
+                    pos++;
+                    break;
+                case 1: {
+                    FLUSH_POS(1);
+                    switch (ch) {
+                        case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
+                        case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
+                        case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
+                        case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
+                        case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
+                        case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
+                        case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
+                        case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
+                        default: {
+                            scratch[2] = hexdig[ch >> 12];
+                            scratch[3] = hexdig[(ch >> 8) & 0xf];
+                            scratch[4] = hexdig[(ch >> 4) & 0xf];
+                            scratch[5] = hexdig[ch & 0xf];
+                            fbuffer_append(out_buffer, scratch, 6);
+                            break;
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    uint32_t wchar = 0;
+                    switch(ch_len) {
+                        case 2:
+                            wchar = ptr[pos] & 0x1F;
+                            break;
+                        case 3:
+                            wchar = ptr[pos] & 0x0F;
+                            break;
+                        case 4:
+                            wchar = ptr[pos] & 0x07;
+                            break;
+                    }
 
-        /* JSON policy */
-        should_escape =
-            (ch < 0x20) ||
-            (ch == '"') ||
-            (ch == '\\') ||
-            (ch > 0x7F) ||
-            (out_script_safe && (ch == '/')) ||
-            (out_script_safe && (ch == 0x2028)) ||
-            (out_script_safe && (ch == 0x2029));
+                    for (short i = 1; i < ch_len; i++) {
+                        wchar = (wchar<<6) | (ptr[pos+i] & 0x3F);
+                    }
 
-        /* JSON encoding */
-        if (should_escape) {
-            if (pos > beg) {
-                fbuffer_append(out_buffer, &in_utf8_str[beg], pos - beg);
-            }
+                    FLUSH_POS(ch_len);
 
-            beg = pos + ch_len;
-            switch (ch) {
-                case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
-                case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
-                case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
-                case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
-                case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
-                case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
-                case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
-                case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
-                default:
-                    if (ch <= 0xFFFF) {
-                        scratch[2] = hexdig[ch >> 12];
-                        scratch[3] = hexdig[(ch >> 8) & 0xf];
-                        scratch[4] = hexdig[(ch >> 4) & 0xf];
-                        scratch[5] = hexdig[ch & 0xf];
+                    if (wchar <= 0xFFFF) {
+                        scratch[2] = hexdig[wchar >> 12];
+                        scratch[3] = hexdig[(wchar >> 8) & 0xf];
+                        scratch[4] = hexdig[(wchar >> 4) & 0xf];
+                        scratch[5] = hexdig[wchar & 0xf];
                         fbuffer_append(out_buffer, scratch, 6);
                     } else {
                         uint16_t hi, lo;
-                        ch -= 0x10000;
-                        hi = 0xD800 + (uint16_t)(ch >> 10);
-                        lo = 0xDC00 + (uint16_t)(ch & 0x3FF);
+                        wchar -= 0x10000;
+                        hi = 0xD800 + (uint16_t)(wchar >> 10);
+                        lo = 0xDC00 + (uint16_t)(wchar & 0x3FF);
 
                         scratch[2] = hexdig[hi >> 12];
                         scratch[3] = hexdig[(hi >> 8) & 0xf];
@@ -279,17 +286,21 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE in_string
 
                         fbuffer_append(out_buffer, scratch, 12);
                     }
+
+                    break;
+                }
             }
+        } else {
+            pos++;
         }
+    }
+#undef FLUSH_POS
 
-        pos += ch_len;
+    if (beg < len) {
+        fbuffer_append(out_buffer, &ptr[beg], len - beg);
     }
 
-    if (beg < in_utf8_len) {
-        fbuffer_append(out_buffer, &in_utf8_str[beg], in_utf8_len - beg);
-    }
-
-    RB_GC_GUARD(in_string);
+    RB_GC_GUARD(str);
 }
 
 static char *fstrndup(const char *ptr, unsigned long len) {
@@ -747,7 +758,7 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
             break;
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(buffer, obj, state->script_safe);
+                convert_UTF8_to_ASCII_only_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table, state->script_safe);
             } else {
                 convert_UTF8_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table, state->script_safe);
             }
