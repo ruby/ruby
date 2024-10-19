@@ -239,8 +239,8 @@ class IPAddr
   end
 
   # Returns a json string containing the IP address representation.
-  def to_json(*)
-    format("\"%s\"", as_json)
+  def to_json(*a)
+    %Q{"#{as_json(*a)}"}
   end
 
   # Returns a string containing the IP address representation in
