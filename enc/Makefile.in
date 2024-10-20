@@ -51,7 +51,7 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@
 CCDLFLAGS = @CCDLFLAGS@
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir) @incflags@
 DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @LDFLAGS@
