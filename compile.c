@@ -4873,10 +4873,8 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
       case NODE_FILE:
       case NODE_STR:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-            VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX((int)nd_line(node)));
-            VALUE lit = rb_str_dup(get_string_value(node));
-            rb_ivar_set(lit, id_debug_created_info, rb_ary_freeze(debug_info));
-            return rb_str_freeze(lit);
+            VALUE lit = get_string_value(node);
+            return rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), (int)nd_line(node));
         }
         else {
             return get_string_value(node);
@@ -10927,28 +10925,25 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         debugp_param("nd_lit", get_string_value(node));
         if (!popped) {
             VALUE lit = get_string_value(node);
-            switch (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
+            const rb_compile_option_t *option = ISEQ_COMPILE_DATA(iseq)->option;
+            if ((option->debug_frozen_string_literal || RTEST(ruby_debug)) &&
+                option->frozen_string_literal != ISEQ_FROZEN_STRING_LITERAL_DISABLED) {
+                lit = rb_str_with_debug_created_info(lit, rb_iseq_path(iseq), line);
+            }
+            switch (option->frozen_string_literal) {
               case ISEQ_FROZEN_STRING_LITERAL_UNSET:
                 ADD_INSN1(ret, node, putchilledstring, lit);
-                RB_OBJ_WRITTEN(iseq, Qundef, lit);
                 break;
               case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
                 ADD_INSN1(ret, node, putstring, lit);
-                RB_OBJ_WRITTEN(iseq, Qundef, lit);
                 break;
               case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
-                if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-                    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
-                    lit = rb_str_dup(lit);
-                    rb_ivar_set(lit, id_debug_created_info, rb_ary_freeze(debug_info));
-                    lit = rb_str_freeze(lit);
-                }
                 ADD_INSN1(ret, node, putobject, lit);
-                RB_OBJ_WRITTEN(iseq, Qundef, lit);
                 break;
               default:
                 rb_bug("invalid frozen_string_literal");
             }
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
         break;
       }
