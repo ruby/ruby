@@ -158,6 +158,9 @@ OPTFLAGS = -O2b2xg-
 OPTFLAGS = -O2sy-
 !endif
 !endif
+!if !defined(incflags)
+incflags =
+!endif
 !if !defined(PLATFORM)
 PLATFORM = mswin32
 !endif
@@ -970,6 +973,7 @@ s,@WERRORFLAG@,$(WERRORFLAG),;t t
 s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
+s,@incflags@,$(incflags),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,$(LDFLAGS),;t t
 s,@LIBS@,user32.lib,;t t
