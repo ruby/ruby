@@ -89,6 +89,7 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
+incflags = @incflags@
 RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
 _RUBY_DEVEL_enabled = $(RUBY_DEVEL:no=)
 XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1)
