@@ -2251,6 +2251,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     return cc;
 }
 
+static inline const struct rb_callcache * gccct_method_search_klass(rb_execution_context_t *ec, VALUE klass, ID mid, const struct rb_callinfo *ci); // vm_eval.c
 ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass));
 static const struct rb_callcache *
 vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
@@ -2272,6 +2273,10 @@ vm_search_method_fastpath(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     }
     else {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_klass);
+
+        if (vm_ci_mid(cd->ci) == idInitialize) {
+            return gccct_method_search_klass(GET_EC(), klass, idInitialize, cd->ci);
+        }
     }
 #endif
 
