@@ -3388,6 +3388,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_ARRAY:
         {
             rb_ary_cancel_sharing(obj);
+            bool replaced_is_embedded = ARY_EMBED_P(obj) && ARY_EMBED_P(replacement);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
                 VALUE e = rb_ary_entry(obj, i);
@@ -3395,8 +3396,12 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (obj_traverse_replace_i(e, data)) {
                     return 1;
                 }
-                else if (e != data->replacement) {
-                    RARRAY_ASET(obj, i, data->replacement);
+                else {
+                    if (data->move && replaced_is_embedded) {
+                        RARRAY_ASET(replacement, i, data->replacement);
+                    } else if (e != data->replacement) {
+                        RARRAY_ASET(obj, i, data->replacement);
+                    }
                 }
             }
             RB_GC_GUARD(obj);
@@ -3541,8 +3546,13 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        VALUE moved = rb_obj_alloc(RBASIC_CLASS(obj));
-        rb_shape_set_shape(moved, rb_shape_get_shape(obj));
+        VALUE moved;
+        if (RB_TYPE_P(obj, T_ARRAY) && ARY_EMBED_P(obj)) {
+            moved = rb_ary_new_capa_with_klass(RBASIC_CLASS(obj), RARRAY_LEN(obj));
+        } else {
+            moved = rb_obj_alloc(RBASIC_CLASS(obj));
+        }
+        rb_shape_set_shape((VALUE)moved, rb_shape_get_shape((VALUE)obj));
         data->replacement = moved;
         return traverse_cont;
     }
@@ -3559,9 +3569,12 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     dst->flags = (dst->flags & ~fl_users) | (src->flags & fl_users);
 
-    dst->v1 = src->v1;
-    dst->v2 = src->v2;
-    dst->v3 = src->v3;
+    if (RB_TYPE_P((VALUE)dst, T_ARRAY) && ARY_EMBED_P((VALUE)dst)) {
+    } else {
+        dst->v1 = src->v1;
+        dst->v2 = src->v2;
+        dst->v3 = src->v3;
+    }
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(v, obj);
