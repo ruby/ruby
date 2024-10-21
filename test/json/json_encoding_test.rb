@@ -6,23 +6,14 @@ class JSONEncodingTest < Test::Unit::TestCase
 
   def setup
     @utf_8      = '"© ≠ €!"'
-    @ascii_8bit = @utf_8.dup.force_encoding('ascii-8bit')
+    @ascii_8bit = @utf_8.b
     @parsed     = "© ≠ €!"
     @generated  = '"\u00a9 \u2260 \u20ac!"'
-    if String.method_defined?(:encode)
-      @utf_16_data = @parsed.encode('utf-16be', 'utf-8')
-      @utf_16be = @utf_8.encode('utf-16be', 'utf-8')
-      @utf_16le = @utf_8.encode('utf-16le', 'utf-8')
-      @utf_32be = @utf_8.encode('utf-32be', 'utf-8')
-      @utf_32le = @utf_8.encode('utf-32le', 'utf-8')
-    else
-      require 'iconv'
-      @utf_16_data, = Iconv.iconv('utf-16be', 'utf-8', @parsed)
-      @utf_16be, = Iconv.iconv('utf-16be', 'utf-8', @utf_8)
-      @utf_16le, = Iconv.iconv('utf-16le', 'utf-8', @utf_8)
-      @utf_32be, = Iconv.iconv('utf-32be', 'utf-8', @utf_8)
-      @utf_32le, = Iconv.iconv('utf-32le', 'utf-8', @utf_8)
-    end
+    @utf_16_data = @parsed.encode(Encoding::UTF_16BE, Encoding::UTF_8)
+    @utf_16be = @utf_8.encode(Encoding::UTF_16BE, Encoding::UTF_8)
+    @utf_16le = @utf_8.encode(Encoding::UTF_16LE, Encoding::UTF_8)
+    @utf_32be = @utf_8.encode(Encoding::UTF_32BE, Encoding::UTF_8)
+    @utf_32le = @utf_8.encode(Encoding::UTF_32LE, Encoding::UTF_8)
   end
 
   def test_parse
