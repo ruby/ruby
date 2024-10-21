@@ -96,7 +96,7 @@ module Bundler
     #   given block
     #
     # @example
-    #   filesystem_access("vendor/cache", :write) do
+    #   filesystem_access("vendor/cache", :create) do
     #     FileUtils.mkdir_p("vendor/cache")
     #   end
     #

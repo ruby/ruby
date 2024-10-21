@@ -121,12 +121,13 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
     end
 
-    context "when it's not possible to write to the file" do
+    context "when it's not possible to create the settings directory" do
       it "raises an PermissionError with explanation" do
-        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings.send(:local_config_file).dirname).
-          and_raise(Errno::EACCES)
+        settings_dir = settings.send(:local_config_file).dirname
+        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings_dir).
+          and_raise(Errno::EACCES.new(settings_dir.to_s))
         expect { settings.set_local :frozen, "1" }.
-          to raise_error(Bundler::PermissionError, /config/)
+          to raise_error(Bundler::PermissionError, /#{settings_dir}/)
       end
     end
   end
@@ -164,12 +165,13 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   end
 
   describe "#set_global" do
-    context "when it's not possible to write to the file" do
+    context "when it's not possible to write to create the settings directory" do
       it "raises an PermissionError with explanation" do
-        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings.send(:global_config_file).dirname).
-          and_raise(Errno::EACCES)
+        settings_dir = settings.send(:global_config_file).dirname
+        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings_dir).
+          and_raise(Errno::EACCES.new(settings_dir.to_s))
         expect { settings.set_global(:frozen, "1") }.
-          to raise_error(Bundler::PermissionError, %r{\.bundle/config})
+          to raise_error(Bundler::PermissionError, /#{settings_dir}/)
       end
     end
   end

@@ -493,7 +493,7 @@ module Bundler
     end
 
     def mkdir_p(path)
-      SharedHelpers.filesystem_access(path, :write) do |p|
+      SharedHelpers.filesystem_access(path, :create) do |p|
         FileUtils.mkdir_p(p)
       end
     end
