@@ -458,7 +458,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     context "system throws Errno::EACESS" do
-      let(:file_op_block) { proc {|_path| raise Errno::EACCES } }
+      let(:file_op_block) { proc {|_path| raise Errno::EACCES.new("/path") } }
 
       it "raises a PermissionError" do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(

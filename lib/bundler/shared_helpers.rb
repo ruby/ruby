@@ -103,7 +103,9 @@ module Bundler
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
       yield(path.dup)
-    rescue Errno::EACCES
+    rescue Errno::EACCES => e
+      raise unless e.message.include?(path.to_s) || action == :create
+
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
       raise TemporaryResourceError.new(path, action)
