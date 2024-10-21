@@ -1,7 +1,8 @@
 require "benchmark/ips"
 require "json"
 require "oj"
-require "rapidjson"
+
+Oj.default_options = Oj.default_options.merge(mode: :compat)
 
 if ENV["ONLY"]
   RUN = ENV["ONLY"].split(/[,: ]/).map{|x| [x.to_sym, true] }.to_h
@@ -15,12 +16,10 @@ end
 
 def implementations(ruby_obj)
   state = JSON::State.new(JSON.dump_default_options)
-
   {
     json_state: ["json (reuse)", proc { state.generate(ruby_obj) }],
     json: ["json", proc { JSON.dump(ruby_obj) }],
     oj: ["oj", proc { Oj.dump(ruby_obj) }],
-    rapidjson: ["rapidjson", proc { RapidJSON.dump(ruby_obj) }],
   }
 end
 
@@ -38,6 +37,11 @@ def benchmark_encoding(benchmark_name, ruby_obj, check_expected: true, except: [
         result = block.call
         if check_expected && expected != result
           puts "#{name} does not match expected output. Skipping"
+          puts "Expected:" + '-' * 40
+          puts expected
+          puts "Actual:" + '-' * 40
+          puts result
+          puts '-' * 40
           next
         end
       rescue => error
@@ -67,12 +71,13 @@ benchmark_encoding "citm_catalog.json", JSON.load_file("#{__dir__}/data/citm_cat
 
 # This benchmark spent the overwhelming majority of its time in `ruby_dtoa`. We rely on Ruby's implementation
 # which uses a relatively old version of dtoa.c from David M. Gay.
-# Oj is noticeably faster here because it limits the precision of floats, breaking roundtriping. That's not
-# something we should emulate.
+# Oj in `compat` mode is ~10% slower than `json`, but in its default mode is noticeably faster here because
+# it limits the precision of floats, breaking roundtriping.  That's not something we should emulate.
+#
 # Since a few years there are now much faster float to string implementations such as Ryu, Dragonbox, etc,
 # but all these are implemented in C++11 or newer, making it hard if not impossible to include them.
 # Short of a pure C99 implementation of these newer algorithms, there isn't much that can be done to match
 # Oj speed without losing precision.
 benchmark_encoding "canada.json", JSON.load_file("#{__dir__}/data/canada.json"), check_expected: false, except: %i(json_state)
 
-benchmark_encoding "many #to_json calls", [{Object.new => Object.new, 12 => 54.3, Integer => Float, Time.now => Date.today}] * 20, except: %i(json_state)
+benchmark_encoding "many #to_json calls", [{object: Object.new, int: 12, float: 54.3, class: Float, time: Time.now, date: Date.today}] * 20, except: %i(json_state)
