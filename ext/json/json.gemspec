@@ -50,6 +50,7 @@ Gem::Specification.new do |s|
     "lib/json/add/time.rb",
     "lib/json/common.rb",
     "lib/json/ext.rb",
+    "lib/json/ext/generator/state.rb",
     "lib/json/generic_object.rb",
     "lib/json/pure.rb",
     "lib/json/pure/generator.rb",
