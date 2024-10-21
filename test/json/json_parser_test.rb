@@ -514,6 +514,15 @@ EOT
     assert_operator 60, :>, error.message.bytesize
   end
 
+  def test_parse_error_incomplete_hash
+    error = assert_raise(JSON::ParserError) do
+      JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
+    end
+    if RUBY_ENGINE == "ruby" && defined?(JSON::Ext)
+      assert_equal %(unexpected token at '{"input":{"firstName":"Bob","las'), error.message
+    end
+  end
+
   private
 
   def string_deduplication_available?
