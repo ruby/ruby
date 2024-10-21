@@ -513,7 +513,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "raises a GenericSystemCallError" do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(
-          Bundler::GenericSystemCallError, /error accessing.+underlying.+Shields down/m
+          Bundler::GenericSystemCallError, /error creating.+underlying.+Shields down/m
         )
       end
     end

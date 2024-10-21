@@ -116,7 +116,7 @@ module Bundler
     rescue Errno::EEXIST, Errno::ENOENT
       raise
     rescue SystemCallError => e
-      raise GenericSystemCallError.new(e, "There was an error accessing `#{path}`.")
+      raise GenericSystemCallError.new(e, "There was an error #{[:create, :write].include?(action) ? "creating" : "accessing"} `#{path}`.")
     end
 
     def major_deprecation(major_version, message, removed_message: nil, print_caller_location: false)
