@@ -924,6 +924,36 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when there's an empty install folder (like with default gems) without cd permissions", :permissions do
+    let(:full_gem_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems/myrack-1.0.0") }
+
+    before do
+      FileUtils.mkdir_p(full_gem_path)
+      gemfile <<-G
+        source "https://gem.repo1"
+        gem 'myrack'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      FileUtils.chmod("-x", full_gem_path)
+      bundle "config set --local path vendor"
+
+      begin
+        bundle :install, raise_on_error: false
+      ensure
+        FileUtils.chmod("+x", full_gem_path)
+      end
+
+      expect(err).not_to include("ERROR REPORT TEMPLATE")
+
+      expect(err).to include(
+        "There was an error while trying to write to `#{full_gem_path}`. " \
+        "It is likely that you need to grant write permissions for that path."
+      )
+    end
+  end
+
   describe "when bundle bin dir does not have cd permission", :permissions do
     let(:bin_dir) { bundled_app("vendor/#{Bundler.ruby_scope}/bin") }
 

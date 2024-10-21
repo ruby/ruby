@@ -23,7 +23,9 @@ module Bundler
         FileUtils.mkdir_p gem_dir, mode: 0o755
       end
 
-      extract_files
+      SharedHelpers.filesystem_access(gem_dir, :write) do
+        extract_files
+      end
 
       build_extensions if spec.extensions.any?
       write_build_info_file
