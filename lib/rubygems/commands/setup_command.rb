@@ -361,9 +361,15 @@ By default, this RubyGems will install gem as:
   def install_default_bundler_gem(bin_dir)
     current_default_spec = Gem::Specification.default_stubs.find {|s| s.name == "bundler" }
     specs_dir = if current_default_spec && default_dir == Gem.default_dir
+      all_specs_current_version = Gem::Specification.stubs.select {|s| s.full_name == current_default_spec.full_name }
+
       Gem::Specification.remove_spec current_default_spec
       loaded_from = current_default_spec.loaded_from
       File.delete(loaded_from)
+
+      # Remove previous default gem executables if they were not shadowed by a regular gem
+      FileUtils.rm_rf current_default_spec.full_gem_path if all_specs_current_version.size == 1
+
       File.dirname(loaded_from)
     else
       target_specs_dir = File.join(default_dir, "specifications", "default")
