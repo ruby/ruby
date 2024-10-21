@@ -6347,7 +6347,8 @@ fn jit_thread_s_current(
     true
 }
 
-// Check if we know how to codegen for a particular cfunc method
+/// Check if we know how to codegen for a particular cfunc method
+/// See also: [reg_method_codegen].
 fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenFn> {
     let method_serial = unsafe { get_def_method_serial(def) };
     let table = unsafe { METHOD_CODEGEN_TABLE.as_ref().unwrap() };
@@ -10368,9 +10369,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
     }
 }
 
-// Return true when the codegen function generates code.
-// known_recv_class has Some value when the caller has used jit_guard_known_klass().
-// See yjit_reg_method().
+/// Return true when the codegen function generates code.
+/// known_recv_class has Some value when the caller has used jit_guard_known_klass().
+/// See [reg_method_codegen]
 type MethodGenFn = fn(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10390,77 +10391,80 @@ pub fn yjit_reg_method_codegen_fns() {
         assert!(METHOD_CODEGEN_TABLE.is_none());
         METHOD_CODEGEN_TABLE = Some(HashMap::default());
 
-        // Specialization for C methods. See yjit_reg_method() for details.
-        yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
+        // Specialization for C methods. See the function's docs for details.
+        reg_method_codegen(rb_cBasicObject, "!", jit_rb_obj_not);
 
-        yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
-        yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
-        yjit_reg_method(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
-        yjit_reg_method(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
-        yjit_reg_method(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
+        reg_method_codegen(rb_cNilClass, "nil?", jit_rb_true);
+        reg_method_codegen(rb_mKernel, "nil?", jit_rb_false);
+        reg_method_codegen(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
+        reg_method_codegen(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
+        reg_method_codegen(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
 
-        yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
-        yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
-        yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
-        yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
-        yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
-        yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
-        yjit_reg_method(rb_cModule, "name", jit_rb_mod_name);
-        yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
-        yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
-        yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
-        yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
+        reg_method_codegen(rb_cBasicObject, "==", jit_rb_obj_equal);
+        reg_method_codegen(rb_cBasicObject, "equal?", jit_rb_obj_equal);
+        reg_method_codegen(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
+        reg_method_codegen(rb_mKernel, "eql?", jit_rb_obj_equal);
+        reg_method_codegen(rb_cModule, "==", jit_rb_obj_equal);
+        reg_method_codegen(rb_cModule, "===", jit_rb_mod_eqq);
+        reg_method_codegen(rb_cModule, "name", jit_rb_mod_name);
+        reg_method_codegen(rb_cSymbol, "==", jit_rb_obj_equal);
+        reg_method_codegen(rb_cSymbol, "===", jit_rb_obj_equal);
+        reg_method_codegen(rb_cInteger, "==", jit_rb_int_equal);
+        reg_method_codegen(rb_cInteger, "===", jit_rb_int_equal);
 
-        yjit_reg_method(rb_cInteger, "succ", jit_rb_int_succ);
-        yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
-        yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
-        yjit_reg_method(rb_cInteger, ">>", jit_rb_int_rshift);
-        yjit_reg_method(rb_cInteger, "^", jit_rb_int_xor);
-        yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
+        reg_method_codegen(rb_cInteger, "succ", jit_rb_int_succ);
+        reg_method_codegen(rb_cInteger, "/", jit_rb_int_div);
+        reg_method_codegen(rb_cInteger, "<<", jit_rb_int_lshift);
+        reg_method_codegen(rb_cInteger, ">>", jit_rb_int_rshift);
+        reg_method_codegen(rb_cInteger, "^", jit_rb_int_xor);
+        reg_method_codegen(rb_cInteger, "[]", jit_rb_int_aref);
 
-        yjit_reg_method(rb_cFloat, "+", jit_rb_float_plus);
-        yjit_reg_method(rb_cFloat, "-", jit_rb_float_minus);
-        yjit_reg_method(rb_cFloat, "*", jit_rb_float_mul);
-        yjit_reg_method(rb_cFloat, "/", jit_rb_float_div);
+        reg_method_codegen(rb_cFloat, "+", jit_rb_float_plus);
+        reg_method_codegen(rb_cFloat, "-", jit_rb_float_minus);
+        reg_method_codegen(rb_cFloat, "*", jit_rb_float_mul);
+        reg_method_codegen(rb_cFloat, "/", jit_rb_float_div);
 
-        yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
-        yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
-        yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
-        yjit_reg_method(rb_cString, "length", jit_rb_str_length);
-        yjit_reg_method(rb_cString, "size", jit_rb_str_length);
-        yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-        yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
-        yjit_reg_method(rb_cString, "setbyte", jit_rb_str_setbyte);
-        yjit_reg_method(rb_cString, "byteslice", jit_rb_str_byteslice);
-        yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
-        yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+        reg_method_codegen(rb_cString, "empty?", jit_rb_str_empty_p);
+        reg_method_codegen(rb_cString, "to_s", jit_rb_str_to_s);
+        reg_method_codegen(rb_cString, "to_str", jit_rb_str_to_s);
+        reg_method_codegen(rb_cString, "length", jit_rb_str_length);
+        reg_method_codegen(rb_cString, "size", jit_rb_str_length);
+        reg_method_codegen(rb_cString, "bytesize", jit_rb_str_bytesize);
+        reg_method_codegen(rb_cString, "getbyte", jit_rb_str_getbyte);
+        reg_method_codegen(rb_cString, "setbyte", jit_rb_str_setbyte);
+        reg_method_codegen(rb_cString, "byteslice", jit_rb_str_byteslice);
+        reg_method_codegen(rb_cString, "<<", jit_rb_str_concat);
+        reg_method_codegen(rb_cString, "+@", jit_rb_str_uplus);
 
-        yjit_reg_method(rb_cNilClass, "===", jit_rb_case_equal);
-        yjit_reg_method(rb_cTrueClass, "===", jit_rb_case_equal);
-        yjit_reg_method(rb_cFalseClass, "===", jit_rb_case_equal);
+        reg_method_codegen(rb_cNilClass, "===", jit_rb_case_equal);
+        reg_method_codegen(rb_cTrueClass, "===", jit_rb_case_equal);
+        reg_method_codegen(rb_cFalseClass, "===", jit_rb_case_equal);
 
-        yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
-        yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);
-        yjit_reg_method(rb_cArray, "size", jit_rb_ary_length);
-        yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
+        reg_method_codegen(rb_cArray, "empty?", jit_rb_ary_empty_p);
+        reg_method_codegen(rb_cArray, "length", jit_rb_ary_length);
+        reg_method_codegen(rb_cArray, "size", jit_rb_ary_length);
+        reg_method_codegen(rb_cArray, "<<", jit_rb_ary_push);
 
-        yjit_reg_method(rb_cHash, "empty?", jit_rb_hash_empty_p);
+        reg_method_codegen(rb_cHash, "empty?", jit_rb_hash_empty_p);
 
-        yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
-        yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
+        reg_method_codegen(rb_mKernel, "respond_to?", jit_obj_respond_to);
+        reg_method_codegen(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
 
-        yjit_reg_method(rb_cClass, "superclass", jit_rb_class_superclass);
+        reg_method_codegen(rb_cClass, "superclass", jit_rb_class_superclass);
 
-        yjit_reg_method(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
+        reg_method_codegen(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
     }
 }
 
-// Register a specialized codegen function for a particular method. Note that
-// if the function returns true, the code it generates runs without a
-// control frame and without interrupt checks. To avoid creating observable
-// behavior changes, the codegen function should only target simple code paths
-// that do not allocate and do not make method calls.
-fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
+/// Register a specialized codegen function for a particular method. Note that
+/// if the function returns true, the code it generates runs without a
+/// control frame and without interrupt checks, completely substituting the
+/// original implementation of the method. To avoid creating observable
+/// behavior changes, prefer targeting simple code paths that do not allocate
+/// and do not make method calls.
+///
+/// See also: [lookup_cfunc_codegen].
+fn reg_method_codegen(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
     let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
     let mid = unsafe { rb_intern(id_string.as_ptr()) };
     let me = unsafe { rb_method_entry_at(klass, mid) };
@@ -10469,9 +10473,8 @@ fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
         panic!("undefined optimized method!: {mid_str}");
     }
 
-    // For now, only cfuncs are supported
-    //RUBY_ASSERT(me && me->def);
-    //RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
+    // For now, only cfuncs are supported (me->cme cast fine since it's just me->def->type).
+    debug_assert_eq!(VM_METHOD_TYPE_CFUNC, unsafe { get_cme_def_type(me.cast()) });
 
     let method_serial = unsafe {
         let def = (*me).def;
