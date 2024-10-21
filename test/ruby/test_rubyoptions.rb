@@ -1072,19 +1072,11 @@ class TestRubyOptions < Test::Unit::TestCase
 
     def test_command_line_progname_nonascii
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
-      name = expected = nil
-      unless (0x80..0x10000).any? {|c|
-               name = c.chr(Encoding::UTF_8)
-               expected = name.encode("locale") rescue nil
-             }
-        omit "can't make locale name"
-      end
-      name << ".rb"
-      expected << ".rb"
+      name = "\u{20ac}.rb"
       with_tmpchdir do |dir|
         open(name, "w") {|f| f.puts "puts File.basename($0)"}
-        assert_in_out_err([name], "", [expected], [],
-                          bug10555, encoding: "locale")
+        assert_in_out_err([name], "", [name], [],
+                          bug10555, encoding: "utf-8")
       end
     end
 
