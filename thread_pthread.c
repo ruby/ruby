@@ -1942,6 +1942,10 @@ reserve_stack(volatile char *limit, size_t size)
 # endif
     struct rlimit rl;
     volatile char buf[0x100];
+    char *bufaddr = (char *)buf;
+#ifdef RUBY_ASAN_ENABLED
+    bufaddr = asan_get_real_stack_addr((void *)bufaddr);
+#endif
     enum {stack_check_margin = 0x1000}; /* for -fstack-check */
 
     STACK_GROW_DIR_DETECTION;
@@ -1954,7 +1958,7 @@ reserve_stack(volatile char *limit, size_t size)
 
     size -= sizeof(buf); /* margin */
     if (IS_STACK_DIR_UPPER()) {
-        const volatile char *end = buf + sizeof(buf);
+        const volatile char *end = bufaddr + sizeof(buf);
         limit += size;
         if (limit > end) {
             /* |<-bottom (=limit(a))                                     top->|
@@ -1971,7 +1975,7 @@ reserve_stack(volatile char *limit, size_t size)
     }
     else {
         limit -= size;
-        if (buf > limit) {
+        if (bufaddr > limit) {
             /* |<-top (=limit(a))                                     bottom->|
              * | .. | 256B buf->|                               | stack check |
              * |  256B  |              =size=                   | margin (4KB)|
@@ -1979,7 +1983,7 @@ reserve_stack(volatile char *limit, size_t size)
              * |                |       alloca(sz)     |        |             |
              * | .. |      buf->|           limit(c)-><0>       |             |
              */
-            size_t sz = buf - limit;
+            size_t sz = bufaddr - limit;
             limit = alloca(sz);
             limit[0] = 0;
         }
