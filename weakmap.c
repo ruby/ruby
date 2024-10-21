@@ -146,25 +146,43 @@ wmap_memsize(const void *ptr)
     return size;
 }
 
-static int
-wmap_compact_table_i(struct weakmap_entry *entry, st_data_t data)
-{
-    st_table *table = (st_table *)data;
+struct wmap_compact_table_data {
+    st_table *table;
+    struct weakmap_entry *dead_entry;
+};
 
-    VALUE new_key = rb_gc_location(entry->key);
+static int
+wmap_compact_table_i(st_data_t key, st_data_t val, st_data_t d)
+{
+    struct wmap_compact_table_data *data = (struct wmap_compact_table_data *)d;
+    if (data->dead_entry != NULL) {
+        ruby_sized_xfree(data->dead_entry, sizeof(struct weakmap_entry));
+        data->dead_entry = NULL;
+    }
+
+    struct weakmap_entry *entry = (struct weakmap_entry *)key;
 
     entry->val = rb_gc_location(entry->val);
+
+    VALUE new_key = rb_gc_location(entry->key);
 
     /* If the key object moves, then we must reinsert because the hash is
      * based on the pointer rather than the object itself. */
     if (entry->key != new_key) {
-        entry->key = new_key;
-
         DURING_GC_COULD_MALLOC_REGION_START();
         {
-            st_insert(table, (st_data_t)&entry->key, (st_data_t)&entry->val);
+            struct weakmap_entry *new_entry = xmalloc(sizeof(struct weakmap_entry));
+            new_entry->key = new_key;
+            new_entry->val = entry->val;
+            st_insert(data->table, (st_data_t)&new_entry->key, (st_data_t)&new_entry->val);
         }
         DURING_GC_COULD_MALLOC_REGION_END();
+
+        /* We cannot free the weakmap_entry here because the ST_DELETE could
+         * hash the key which would read the weakmap_entry and would cause a
+         * use-after-free. Instead, we store this entry and free it on the next
+         * iteration. */
+        data->dead_entry = entry;
 
         return ST_DELETE;
     }
@@ -178,7 +196,14 @@ wmap_compact(void *ptr)
     struct weakmap *w = ptr;
 
     if (w->table) {
-        wmap_foreach(w, wmap_compact_table_i, (st_data_t)w->table);
+        struct wmap_compact_table_data compact_data = {
+            .table = w->table,
+            .dead_entry = NULL,
+        };
+
+        st_foreach(w->table, wmap_compact_table_i, (st_data_t)&compact_data);
+
+        ruby_sized_xfree(compact_data.dead_entry, sizeof(struct weakmap_entry));
     }
 }
 
