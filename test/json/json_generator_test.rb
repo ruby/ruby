@@ -480,6 +480,6 @@ EOT
   end
 
   def test_nonutf8_encoding
-    assert_equal("\"5\u{b0}\"", "5\xb0".force_encoding("iso-8859-1").to_json)
+    assert_equal("\"5\u{b0}\"", "5\xb0".dup.force_encoding(Encoding::ISO_8859_1).to_json)
   end
 end
