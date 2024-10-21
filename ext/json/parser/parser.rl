@@ -73,10 +73,12 @@ RBIMPL_ATTR_NORETURN()
 #endif
 static void raise_parse_error(const char *format, const char *start)
 {
+    char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
+
     size_t len = strnlen(start, PARSE_ERROR_FRAGMENT_LEN);
     const char *ptr = start;
+
     if (len == PARSE_ERROR_FRAGMENT_LEN) {
-        char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
         MEMCPY(buffer, start, char, PARSE_ERROR_FRAGMENT_LEN);
         buffer[PARSE_ERROR_FRAGMENT_LEN] = '\0';
         ptr = buffer;
