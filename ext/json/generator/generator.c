@@ -5,9 +5,9 @@
 #define RB_UNLIKELY(cond) (cond)
 #endif
 
-static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError;
+static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError, Encoding_UTF_8;
 
-static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend;
+static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
 
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
@@ -735,20 +735,41 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     fbuffer_append_char(buffer, ']');
 }
 
-static int usascii_encindex, utf8_encindex;
+static int usascii_encindex, utf8_encindex, binary_encindex;
 
-static int enc_utf8_compatible_p(int enc_idx)
+static inline int enc_utf8_compatible_p(int enc_idx)
 {
     if (enc_idx == usascii_encindex) return 1;
     if (enc_idx == utf8_encindex) return 1;
     return 0;
 }
 
+static inline VALUE ensure_valid_encoding(VALUE str)
+{
+    int encindex = RB_ENCODING_GET(str);
+    VALUE utf8_string;
+    if (RB_UNLIKELY(!enc_utf8_compatible_p(encindex))) {
+        if (encindex == binary_encindex) {
+            // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
+            // TODO: Deprecate in 2.8.0
+            // TODO: Remove in 3.0.0
+            utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
+            switch (rb_enc_str_coderange(utf8_string)) {
+                case ENC_CODERANGE_7BIT:
+                case ENC_CODERANGE_VALID:
+                    return utf8_string;
+                    break;
+            }
+        }
+
+        str = rb_funcall(str, i_encode, 1, Encoding_UTF_8);
+    }
+    return str;
+}
+
 static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
-    if (!enc_utf8_compatible_p(RB_ENCODING_GET(obj))) {
-        obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
-    }
+    obj = ensure_valid_encoding(obj);
 
     fbuffer_append_char(buffer, '"');
 
@@ -1462,6 +1483,9 @@ void Init_generator(void)
     VALUE mNilClass = rb_define_module_under(mGeneratorMethods, "NilClass");
     rb_define_method(mNilClass, "to_json", mNilClass_to_json, -1);
 
+    rb_global_variable(&Encoding_UTF_8);
+    Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
+
     i_to_s = rb_intern("to_s");
     i_to_json = rb_intern("to_json");
     i_new = rb_intern("new");
@@ -1469,7 +1493,9 @@ void Init_generator(void)
     i_unpack = rb_intern("unpack");
     i_create_id = rb_intern("create_id");
     i_extend = rb_intern("extend");
+    i_encode = rb_intern("encode");
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();
+    binary_encindex = rb_ascii8bit_encindex();
 }

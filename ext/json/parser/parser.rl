@@ -689,6 +689,9 @@ static VALUE convert_encoding(VALUE source)
   }
 
  if (encindex == binary_encindex) {
+    // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
+    // TODO: Deprecate in 2.8.0
+    // TODO: Remove in 3.0.0
     return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
   }
 
