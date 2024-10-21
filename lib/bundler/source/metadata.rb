@@ -24,7 +24,7 @@ module Bundler
               s.bindir   = "exe"
               s.homepage = "https://bundler.io"
               s.summary  = "The best way to manage your application's dependencies"
-              s.executables = %w[bundle]
+              s.executables = %w[bundle bundler]
               s.loaded_from = SharedHelpers.gemspec_path
             end
           end

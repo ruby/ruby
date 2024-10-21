@@ -1200,6 +1200,23 @@ __FILE__: #{path.to_s.inspect}
         expect(err).to be_empty
         expect(out).to eq("6.1.0")
       end
+
+      it "can still find gems after a nested subprocess when using bundler (with a final r) executable" do
+        script = bundled_app("bin/myscript")
+
+        create_file(script, <<~RUBY)
+          #!#{Gem.ruby}
+
+          puts `bundler exec rails`
+        RUBY
+
+        script.chmod(0o777)
+
+        bundle "exec #{script}"
+
+        expect(err).to be_empty
+        expect(out).to eq("6.1.0")
+      end
     end
 
     context "with a system gem that shadows a default gem" do
