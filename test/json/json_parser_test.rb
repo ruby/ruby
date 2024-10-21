@@ -133,23 +133,21 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(["éé"], JSON.parse("[\"\\u00e9é\"]"))
   end
 
-  if Array.method_defined?(:permutation)
-    def test_parse_more_complex_arrays
-      a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
-      a.permutation.each do |perm|
-        json = pretty_generate(perm)
-        assert_equal perm, parse(json)
-      end
+  def test_parse_more_complex_arrays
+    a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
+    a.permutation.each do |perm|
+      json = pretty_generate(perm)
+      assert_equal perm, parse(json)
     end
+  end
 
-    def test_parse_complex_objects
-      a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
-      a.permutation.each do |perm|
-        s = "a"
-        orig_obj = perm.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
-        json = pretty_generate(orig_obj)
-        assert_equal orig_obj, parse(json)
-      end
+  def test_parse_complex_objects
+    a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
+    a.permutation.each do |perm|
+      s = "a"
+      orig_obj = perm.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
+      json = pretty_generate(orig_obj)
+      assert_equal orig_obj, parse(json)
     end
   end
 
