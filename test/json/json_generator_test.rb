@@ -443,6 +443,23 @@ EOT
       "\x82\xAC\xEF".to_json
     end
     assert_includes error.message, "source sequence is illegal/malformed utf-8"
+
+    error = assert_raise(JSON::GeneratorError) do
+      JSON.dump("\x82\xAC\xEF")
+    end
+    assert_includes error.message, "source sequence is illegal/malformed utf-8"
+
+    # These pass on the pure-Ruby generator but not with the native extension
+    # https://github.com/ruby/json/issues/634
+    if defined?(JSON::Pure)
+      assert_raise(Encoding::UndefinedConversionError) do
+        "\x82\xAC\xEF".b.to_json
+      end
+
+      assert_raise(Encoding::UndefinedConversionError) do
+        JSON.dump("\x82\xAC\xEF".b)
+      end
+    end
   end
 
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
