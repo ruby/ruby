@@ -183,6 +183,9 @@ Here are a couple of useful query methods:
   s = "\xc2".force_encoding("UTF-8")     # => "\xC2"
   s.valid_encoding?                      # => false
 
+  s = "\xc2\xa1".b              # "\xc2\xa1"
+  s.forcible_encoding?("UTF-8") # => true
+
 == \Symbol and \Regexp Encodings
 
 The string stored in a Symbol or Regexp object also has an encoding;
