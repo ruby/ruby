@@ -1212,6 +1212,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(srcdir)/yjit.rb \
+		$(srcdir)/yjit_hook.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
@@ -10642,6 +10643,7 @@ miniinit.$(OBJEXT): {$(VPATH)}vm_core.h
 miniinit.$(OBJEXT): {$(VPATH)}vm_opts.h
 miniinit.$(OBJEXT): {$(VPATH)}warning.rb
 miniinit.$(OBJEXT): {$(VPATH)}yjit.rb
+miniinit.$(OBJEXT): {$(VPATH)}yjit_hook.rb
 node.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 node.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 node.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -20002,6 +20004,7 @@ vm.$(OBJEXT): {$(VPATH)}vm_opts.h
 vm.$(OBJEXT): {$(VPATH)}vm_sync.h
 vm.$(OBJEXT): {$(VPATH)}vmtc.inc
 vm.$(OBJEXT): {$(VPATH)}yjit.h
+vm.$(OBJEXT): {$(VPATH)}yjit_hook.rbinc
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/list/list.h

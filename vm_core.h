@@ -372,6 +372,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_SINGLE_NOARG_LEAF = 0x02,
     // This attribute signals JIT to duplicate the iseq for each block iseq so that its `yield` will be monomorphic.
     BUILTIN_ATTR_INLINE_BLOCK = 0x04,
+    // The iseq acts like a C method in backtraces.
+    BUILTIN_ATTR_C_TRACE = 0x08,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);

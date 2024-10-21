@@ -448,7 +448,8 @@ location_to_str(rb_backtrace_location_t *loc)
     VALUE file, owner = Qnil, name;
     int lineno;
 
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (loc->cme && (loc->cme->def->type == VM_METHOD_TYPE_CFUNC || (loc->cme->def->type == VM_METHOD_TYPE_ISEQ
+                    && (loc->cme->def->body.iseq.iseqptr->body->builtin_attrs & BUILTIN_ATTR_C_TRACE) != 0))) {
         if (loc->iseq && loc->pc) {
             file = rb_iseq_path(loc->iseq);
             lineno = calc_lineno(loc->iseq, loc->pc);
@@ -684,13 +685,20 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                         const VALUE *pc = cfp->pc;
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-                        RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
-                        loc->pc = pc;
-                        bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
-                        if (do_yield) {
-                            bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                        if ((cfp->iseq->body->builtin_attrs & BUILTIN_ATTR_C_TRACE) != 0) {
+                            loc->iseq = NULL;
+                            loc->pc = NULL;
+                            cfunc_counter++;
                         }
-                        cfunc_counter = 0;
+                        else {
+                            RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
+                            loc->pc = pc;
+                            bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                            if (do_yield) {
+                                bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                            }
+                            cfunc_counter = 0;
+                        }
                     }
                     skip_next_frame = is_rescue_or_ensure_frame(cfp);
                 }
