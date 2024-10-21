@@ -1,16 +1,20 @@
 # frozen_string_literal: true
 
-# Allows for declaring a Gemfile inline in a ruby script, optionally installing
-# any gems that aren't already installed on the user's system.
+# Allows for declaring a Gemfile inline in a ruby script, installing any gems
+# that aren't already installed on the user's system.
 #
 # @note Every gem that is specified in this 'Gemfile' will be `require`d, as if
 #       the user had manually called `Bundler.require`. To avoid a requested gem
 #       being automatically required, add the `:require => false` option to the
 #       `gem` dependency declaration.
 #
-# @param install [Boolean] whether gems that aren't already installed on the
-#                          user's system should be installed.
-#                          Defaults to `false`.
+# @param force_latest_compatible [Boolean] Force installing the *latest*
+#                                          compatible versions of the gems,
+#                                          even if compatible versions are
+#                                          already installed locally.
+#                                          This also logs output if the
+#                                          `:quiet` option is not set.
+#                                          Defaults to `false`.
 #
 # @param gemfile [Proc]    a block that is evaluated as a `Gemfile`.
 #
@@ -29,13 +33,13 @@
 #
 #          puts Pod::VERSION # => "0.34.4"
 #
-def gemfile(install = false, options = {}, &gemfile)
+def gemfile(force_latest_compatible = false, options = {}, &gemfile)
   require_relative "../bundler"
   Bundler.reset!
 
   opts = options.dup
   ui = opts.delete(:ui) { Bundler::UI::Shell.new }
-  ui.level = "silent" if opts.delete(:quiet) || !install
+  ui.level = "silent" if opts.delete(:quiet) || !force_latest_compatible
   Bundler.ui = ui
   raise ArgumentError, "Unknown options: #{opts.keys.join(", ")}" unless opts.empty?
 
@@ -55,7 +59,7 @@ def gemfile(install = false, options = {}, &gemfile)
       definition = builder.to_definition(nil, true)
       definition.validate_runtime!
 
-      if install || definition.missing_specs?
+      if force_latest_compatible || definition.missing_specs?
         Bundler.settings.temporary(inline: true, no_install: false) do
           installer = Bundler::Installer.install(Bundler.root, definition, system: true)
           installer.post_install_messages.each do |name, message|
