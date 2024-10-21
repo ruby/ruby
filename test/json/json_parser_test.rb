@@ -1,5 +1,4 @@
-# encoding: utf-8
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
@@ -36,7 +35,8 @@ class JSONParserTest < Test::Unit::TestCase
     pend if RUBY_ENGINE == 'truffleruby'
 
     bug10705 = '[ruby-core:67386] [Bug #10705]'
-    json = ".\"\xE2\x88\x9A\"".force_encoding(Encoding::UTF_8)
+    json = ".\"\xE2\x88\x9A\""
+    assert_equal(Encoding::UTF_8, json.encoding)
     e = assert_raise(JSON::ParserError) {
       JSON::Ext::Parser.new(json).parse
     }

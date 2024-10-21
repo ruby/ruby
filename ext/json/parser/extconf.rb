@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'mkmf'
 
 have_func("rb_enc_raise", "ruby.h")
