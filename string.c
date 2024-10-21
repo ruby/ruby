@@ -4548,9 +4548,9 @@ static void*
 memrchr(const char *search_str, int chr, long search_len)
 {
     const char *ptr = search_str + search_len;
-    do {
+    while (ptr > search_str) {
         if ((unsigned char)*(--ptr) == chr) return (void *)ptr;
-    } while (ptr >= search_str);
+    }
 
     return ((void *)0);
 }
