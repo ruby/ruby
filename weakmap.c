@@ -156,7 +156,7 @@ wmap_compact_table_i(struct weakmap_entry *entry, st_data_t data)
     entry->val = rb_gc_location(entry->val);
 
     /* If the key object moves, then we must reinsert because the hash is
-        * based on the pointer rather than the object itself. */
+     * based on the pointer rather than the object itself. */
     if (entry->key != new_key) {
         entry->key = new_key;
 
