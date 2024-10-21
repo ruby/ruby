@@ -1,4 +1,4 @@
-#frozen_string_literal: false
+#frozen_string_literal: true
 require 'json/version'
 
 module JSON
@@ -117,23 +117,17 @@ module JSON
     attr_accessor :state
   end
 
-  DEFAULT_CREATE_ID = 'json_class'.freeze
-  private_constant :DEFAULT_CREATE_ID
-
-  CREATE_ID_TLS_KEY = "JSON.create_id".freeze
-  private_constant :CREATE_ID_TLS_KEY
-
   # Sets create identifier, which is used to decide if the _json_create_
   # hook of a class should be called; initial value is +json_class+:
   #   JSON.create_id # => 'json_class'
   def self.create_id=(new_value)
-    Thread.current[CREATE_ID_TLS_KEY] = new_value.dup.freeze
+    Thread.current[:"JSON.create_id"] = new_value.dup.freeze
   end
 
   # Returns the current create identifier.
   # See also JSON.create_id=.
   def self.create_id
-    Thread.current[CREATE_ID_TLS_KEY] || DEFAULT_CREATE_ID
+    Thread.current[:"JSON.create_id"] || 'json_class'
   end
 
   NaN           = 0.0/0
@@ -415,7 +409,7 @@ module JSON
   self.load_default_options = {
     :max_nesting      => false,
     :allow_nan        => true,
-    :allow_blank       => true,
+    :allow_blank      => true,
     :create_additions => true,
   }
 

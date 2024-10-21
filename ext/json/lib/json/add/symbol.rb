@@ -1,5 +1,4 @@
-
-#frozen_string_literal: false
+# frozen_string_literal: true
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end

@@ -1,4 +1,4 @@
-#frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'test_helper'
 require 'json/add/core'
 require 'json/add/complex'
@@ -114,8 +114,7 @@ class JSONAdditionTest < Test::Unit::TestCase
   end
 
   def test_raw_strings
-    raw = ''
-    raw.respond_to?(:encode!) and raw.encode!(Encoding::ASCII_8BIT)
+    raw = ''.b
     raw_array = []
     for i in 0..255
       raw << i

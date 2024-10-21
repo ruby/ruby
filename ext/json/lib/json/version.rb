@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module JSON
   # JSON version
   VERSION         = '2.7.2'
