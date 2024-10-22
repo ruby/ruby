@@ -2958,6 +2958,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 /*
  *  call-seq:
  *    inspect -> new_string
+ *    to_s -> new_string
  *
  *  Returns the new string formed by calling method <tt>#inspect</tt>
  *  on each array element:
