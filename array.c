@@ -3011,27 +3011,27 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
- *    array.to_h -> new_hash
- *    array.to_h {|item| ... } -> new_hash
+ *    to_h -> new_hash
+ *    to_h {|element| ... } -> new_hash
  *
- *  Returns a new Hash formed from +self+.
+ *  Returns a new hash formed from +self+.
  *
- *  When a block is given, calls the block with each array element;
- *  the block must return a 2-element +Array+ whose two elements
- *  form a key-value pair in the returned Hash:
+ *  With no block given, each element of +self+ must be a 2-element sub-array;
+ *  forms each sub-array into a key-value pair in the new hash:
+ *
+ *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
+ *    a.to_h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
+ *    [].to_h # => {}
+ *
+ *  With a block given, the block must return a 2-element array;
+ *  calls the block with each element of +self+;
+ *  forms each returned array into a key-value pair in the returned hash:
  *
  *    a = ['foo', :bar, 1, [2, 3], {baz: 4}]
- *    h = a.to_h {|item| [item, item] }
- *    h # => {"foo"=>"foo", :bar=>:bar, 1=>1, [2, 3]=>[2, 3], {:baz=>4}=>{:baz=>4}}
+ *    a.to_h {|element| [element, element.class] }
+ *    # => {"foo"=>String, :bar=>Symbol, 1=>Integer, [2, 3]=>Array, {:baz=>4}=>Hash}
  *
- *  When no block is given, +self+ must be an +Array+ of 2-element sub-arrays,
- *  each sub-array is formed into a key-value pair in the new Hash:
- *
- *    [].to_h # => {}
- *    a = [['foo', 'zero'], ['bar', 'one'], ['baz', 'two']]
- *    h = a.to_h
- *    h # => {"foo"=>"zero", "bar"=>"one", "baz"=>"two"}
- *
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
