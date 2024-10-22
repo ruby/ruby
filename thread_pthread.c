@@ -1933,62 +1933,6 @@ space_size(size_t stack_size)
     }
 }
 
-#ifdef __linux__
-static __attribute__((noinline)) void
-reserve_stack(volatile char *limit, size_t size)
-{
-# ifdef C_ALLOCA
-#   error needs alloca()
-# endif
-    struct rlimit rl;
-    volatile char buf[0x100];
-    enum {stack_check_margin = 0x1000}; /* for -fstack-check */
-
-    STACK_GROW_DIR_DETECTION;
-
-    if (!getrlimit(RLIMIT_STACK, &rl) && rl.rlim_cur == RLIM_INFINITY)
-        return;
-
-    if (size < stack_check_margin) return;
-    size -= stack_check_margin;
-
-    size -= sizeof(buf); /* margin */
-    if (IS_STACK_DIR_UPPER()) {
-        const volatile char *end = buf + sizeof(buf);
-        limit += size;
-        if (limit > end) {
-            /* |<-bottom (=limit(a))                                     top->|
-             * | .. |<-buf 256B |<-end                          | stack check |
-             * |  256B  |              =size=                   | margin (4KB)|
-             * |              =size=         limit(b)->|  256B  |             |
-             * |                |       alloca(sz)     |        |             |
-             * | .. |<-buf      |<-limit(c)    [sz-1]->0>       |             |
-             */
-            size_t sz = limit - end;
-            limit = alloca(sz);
-            limit[sz-1] = 0;
-        }
-    }
-    else {
-        limit -= size;
-        if (buf > limit) {
-            /* |<-top (=limit(a))                                     bottom->|
-             * | .. | 256B buf->|                               | stack check |
-             * |  256B  |              =size=                   | margin (4KB)|
-             * |              =size=         limit(b)->|  256B  |             |
-             * |                |       alloca(sz)     |        |             |
-             * | .. |      buf->|           limit(c)-><0>       |             |
-             */
-            size_t sz = buf - limit;
-            limit = alloca(sz);
-            limit[0] = 0;
-        }
-    }
-}
-#else
-# define reserve_stack(limit, size) ((void)(limit), (void)(size))
-#endif
-
 static void
 native_thread_init_main_thread_stack(void *addr)
 {
@@ -2005,7 +1949,6 @@ native_thread_init_main_thread_stack(void *addr)
         if (get_main_stack(&stackaddr, &size) == 0) {
             native_main_thread.stack_maxsize = size;
             native_main_thread.stack_start = stackaddr;
-            reserve_stack(stackaddr, size);
             goto bound_check;
         }
     }
