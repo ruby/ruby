@@ -7493,7 +7493,7 @@ ns_to_ms(uint64_t ns)
     return ns / (1000 * 1000);
 }
 
-size_t
+VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = objspace_ptr;
@@ -7513,7 +7513,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 
 #define SET(name, attr) \
     if (key == gc_stat_symbols[gc_stat_sym_##name]) \
-        return attr; \
+        return SIZET2NUM(attr); \
     else if (hash != Qnil) \
         rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
@@ -7577,7 +7577,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     }
 #endif
 
-    return 0;
+    return hash;
 }
 
 enum gc_stat_heap_sym {

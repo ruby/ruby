@@ -634,7 +634,7 @@ typedef struct gc_function_map {
     unsigned long long (*get_total_time)(void *objspace_ptr);
     size_t (*gc_count)(void *objspace_ptr);
     VALUE (*latest_gc_info)(void *objspace_ptr, VALUE key);
-    size_t (*stat)(void *objspace_ptr, VALUE hash_or_sym);
+    VALUE (*stat)(void *objspace_ptr, VALUE hash_or_sym);
     size_t (*stat_heap)(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym);
     // Miscellaneous
     size_t (*obj_flags)(void *objspace_ptr, VALUE obj, ID* flags, size_t max);
@@ -3418,14 +3418,7 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || has
         arg = rb_hash_new();
     }
 
-    size_t val = rb_gc_impl_stat(rb_gc_get_objspace(), arg);
-
-    if (SYMBOL_P(arg)) {
-        return SIZET2NUM(val);
-    }
-    else {
-        return arg;
-    }
+    return rb_gc_impl_stat(rb_gc_get_objspace(), arg);
 }
 
 size_t
