@@ -1,3 +1,3 @@
 module Fiddle
-  VERSION = "1.1.4.dev"
+  VERSION = "1.1.5.dev"
 end
