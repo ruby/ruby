@@ -2985,21 +2985,17 @@ rb_ary_to_s(VALUE ary)
  *  call-seq:
  *    to_a -> self or new_array
  *
- *  When +self+ is an instance of +Array+, returns +self+:
+ *  When +self+ is an instance of +Array+, returns +self+.
  *
- *    a = [:foo, 'bar', 2]
- *    a.to_a # => [:foo, "bar", 2]
- *
- *  Otherwise, returns a new +Array+ containing the elements of +self+:
+ *  Otherwise, returns a new array containing the elements of +self+:
  *
  *    class MyArray < Array; end
- *    a = MyArray.new(['foo', 'bar', 'two'])
- *    a.instance_of?(Array) # => false
- *    a.kind_of?(Array) # => true
- *    a1 = a.to_a
- *    a1 # => ["foo", "bar", "two"]
- *    a1.class # => Array # Not MyArray
+ *    my_a = MyArray.new(['foo', 'bar', 'two'])
+ *    a = my_a.to_a
+ *    a # => ["foo", "bar", "two"]
+ *    a.class # => Array # Not MyArray.
  *
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
