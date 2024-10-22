@@ -3461,7 +3461,29 @@ gc_stat_heap(rb_execution_context_t *ec, VALUE self, VALUE heap_name, VALUE arg)
         arg = rb_hash_new();
     }
 
-    return rb_gc_impl_stat_heap(rb_gc_get_objspace(), heap_name, arg);
+    if (NIL_P(heap_name)) {
+        if (!RB_TYPE_P(arg, T_HASH)) {
+            rb_raise(rb_eTypeError, "non-hash given");
+        }
+    }
+    else if (FIXNUM_P(heap_name)) {
+        if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
+            rb_raise(rb_eTypeError, "non-hash or symbol given");
+        }
+    }
+    else {
+        rb_raise(rb_eTypeError, "heap_name must be nil or an Integer");
+    }
+
+    VALUE ret = rb_gc_impl_stat_heap(rb_gc_get_objspace(), heap_name, arg);
+
+    if (ret == Qundef) {
+        GC_ASSERT(SYMBOL_P(arg));
+
+        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(arg));
+    }
+
+    return ret;
 }
 
 static VALUE
