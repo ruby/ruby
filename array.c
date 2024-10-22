@@ -7481,20 +7481,20 @@ done:
 
 /*
  *  call-seq:
- *    array.take(n) -> new_array
+ *    take(count) -> new_array
  *
- *  Returns a new +Array+ containing the first +n+ element of +self+,
- *  where +n+ is a non-negative Integer;
- *  does not modify +self+.
+ *  Returns a new array containing the first +count+ element of +self+
+ *  (as available);
+ *  +count+ must be a non-negative numeric;
+ *  does not modify +self+:
  *
- *  Examples:
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.take(2)   # => ["a", "b"]
+ *    a.take(2.1) # => ["a", "b"]
+ *    a.take(50)  # => ["a", "b", "c", "d"]
+ *    a.take(0)   # => []
  *
- *    a = [0, 1, 2, 3, 4, 5]
- *    a.take(1) # => [0]
- *    a.take(2) # => [0, 1]
- *    a.take(50) # => [0, 1, 2, 3, 4, 5]
- *    a # => [0, 1, 2, 3, 4, 5]
- *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
