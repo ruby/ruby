@@ -7508,7 +7508,7 @@ done:
 
 /*
  *  call-seq:
- *    take(count-> new_array
+ *    take(count) -> new_array
  *
  *  Returns a new array containing the first +count+ element of +self+
  *  (as available);
