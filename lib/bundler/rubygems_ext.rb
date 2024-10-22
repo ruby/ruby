@@ -329,10 +329,6 @@ module Gem
         without_gnu_nor_abi_modifiers
       end
     end
-
-    if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
-      REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
-    end
   end
 
   Platform.singleton_class.module_eval do
