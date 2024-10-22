@@ -7550,6 +7550,8 @@ rb_ary_take(VALUE obj, VALUE n)
  *
  *  With no block given, returns a new Enumerator.
  *
+ *  Does not modify +self+.
+ *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
