@@ -7536,25 +7536,21 @@ rb_ary_take(VALUE obj, VALUE n)
 
 /*
  *  call-seq:
- *    array.take_while {|element| ... } -> new_array
- *    array.take_while -> new_enumerator
- *
- *  Returns a new +Array+ containing zero or more leading elements of +self+;
- *  does not modify +self+.
+ *    take_while {|element| ... } -> new_array
+ *    take_while -> new_enumerator
  *
  *  With a block given, calls the block with each successive element of +self+;
- *  stops if the block returns +false+ or +nil+;
- *  returns a new +Array+ containing those elements for which the block returned a truthy value:
+ *  stops iterating if the block returns +false+ or +nil+;
+ *  returns a new array containing those elements for which the block returned a truthy value:
  *
  *    a = [0, 1, 2, 3, 4, 5]
  *    a.take_while {|element| element < 3 } # => [0, 1, 2]
- *    a.take_while {|element| true } # => [0, 1, 2, 3, 4, 5]
- *    a # => [0, 1, 2, 3, 4, 5]
+ *    a.take_while {|element| true }        # => [0, 1, 2, 3, 4, 5]
+ *    a.take_while {|element| false }       # => []
  *
- *  With no block given, returns a new Enumerator:
+ *  With no block given, returns a new Enumerator.
  *
- *    [0, 1].take_while # => #<Enumerator: [0, 1]:take_while>
- *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
