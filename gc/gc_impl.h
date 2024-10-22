@@ -90,7 +90,7 @@ GC_IMPL_FN unsigned long long rb_gc_impl_get_total_time(void *objspace_ptr);
 GC_IMPL_FN size_t rb_gc_impl_gc_count(void *objspace_ptr);
 GC_IMPL_FN VALUE rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key);
 GC_IMPL_FN VALUE rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym);
-GC_IMPL_FN size_t rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym);
+GC_IMPL_FN VALUE rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym);
 // Miscellaneous
 GC_IMPL_FN size_t rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max);
 GC_IMPL_FN bool rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr);

@@ -7612,12 +7612,12 @@ setup_gc_stat_heap_symbols(void)
     }
 }
 
-static size_t
+static VALUE
 stat_one_heap(rb_heap_t *heap, VALUE hash, VALUE key)
 {
 #define SET(name, attr) \
     if (key == gc_stat_heap_symbols[gc_stat_heap_sym_##name]) \
-        return attr; \
+        return SIZET2NUM(attr); \
     else if (hash != Qnil) \
         rb_hash_aset(hash, gc_stat_heap_symbols[gc_stat_heap_sym_##name], SIZET2NUM(attr));
 
@@ -7635,10 +7635,10 @@ stat_one_heap(rb_heap_t *heap, VALUE hash, VALUE key)
         rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
     }
 
-    return 0;
+    return hash;
 }
 
-size_t
+VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = objspace_ptr;
@@ -7681,7 +7681,7 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
         rb_raise(rb_eTypeError, "heap_name must be nil or an Integer");
     }
 
-    return 0;
+    return hash_or_sym;
 }
 
 /* I could include internal.h for this, but doing so undefines some Array macros
