@@ -30,13 +30,13 @@ require "rubygems/remote_fetcher"
 # See RubyGems' tests for more examples of FakeFetcher.
 
 class Gem::FakeFetcher
-  attr_reader :data
-  attr_reader :last_request
+  attr_reader :data, :requests
   attr_accessor :paths
 
   def initialize
     @data = {}
     @paths = []
+    @requests = []
   end
 
   def find_data(path)
@@ -99,9 +99,13 @@ class Gem::FakeFetcher
     create_response(uri)
   end
 
+  def last_request
+    @requests.last
+  end
+
   def request(uri, request_class, last_modified = nil)
-    @last_request = request_class.new uri.request_uri
-    yield @last_request if block_given?
+    @requests << request_class.new(uri.request_uri)
+    yield last_request if block_given?
 
     create_response(uri)
   end

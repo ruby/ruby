@@ -62,6 +62,10 @@ module Gem::GemcutterUtilities
     options[:otp] || ENV["GEM_HOST_OTP_CODE"]
   end
 
+  def webauthn_enabled?
+    options[:webauthn]
+  end
+
   ##
   # The host to connect to either from the RUBYGEMS_HOST environment variable
   # or from the user's configuration
@@ -249,6 +253,8 @@ module Gem::GemcutterUtilities
       req["OTP"] = otp if otp
       block.call(req)
     end
+  ensure
+    options[:otp] = nil if webauthn_enabled?
   end
 
   def fetch_otp(credentials)
@@ -268,6 +274,8 @@ module Gem::GemcutterUtilities
         alert_error error.message
         terminate_interaction(1)
       end
+
+      options[:webauthn] = true
 
       say "You are verified with a security device. You may close the browser window."
       otp_thread[:otp]

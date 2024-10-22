@@ -496,6 +496,47 @@ EOF
     assert_match response_success, @stub_ui.output
   end
 
+  def test_add_owners_no_api_key_webauthn_enabled_does_not_reuse_otp_codes
+    response_profile = "mfa: ui_and_api\n"
+    response_mfa_enabled = "You have enabled multifactor authentication but no OTP code provided. Please fill it and retry."
+    response_not_found = "Owner could not be found."
+    Gem.configuration.rubygems_api_key = nil
+
+    path_token = "odow34b93t6aPCdY"
+    webauthn_url = "#{Gem.host}/webauthn_verification/#{path_token}"
+
+    @stub_fetcher.data["#{Gem.host}/api/v1/profile/me.yaml"] = HTTPResponseFactory.create(body: response_profile, code: 200, msg: "OK")
+    @stub_fetcher.data["#{Gem.host}/api/v1/api_key"] = [
+      HTTPResponseFactory.create(body: response_mfa_enabled, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: "", code: 200, msg: "OK"),
+    ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification"] = Gem::HTTPResponseFactory.create(body: webauthn_url, code: 200, msg: "OK")
+    @stub_fetcher.data["#{Gem.host}/api/v1/webauthn_verification/#{path_token}/status.json"] = [
+      Gem::HTTPResponseFactory.create(body: { status: "success", code: "Uvh6T57tkWuUnWYo" }.to_json, code: 200, msg: "OK"),
+      Gem::HTTPResponseFactory.create(body: { status: "success", code: "Uvh6T57tkWuUnWYz" }.to_json, code: 200, msg: "OK"),
+    ]
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [
+      HTTPResponseFactory.create(body: response_mfa_enabled, code: 401, msg: "Unauthorized"),
+      HTTPResponseFactory.create(body: response_not_found, code: 404, msg: "Not Found"),
+    ]
+    @cmd.handle_options %W[--add some@example freewill]
+
+    @stub_ui = Gem::MockGemUi.new "some@mail.com\npass\n"
+
+    server = Gem::MockTCPServer.new
+
+    assert_raise Gem::MockGemUi::TermError do
+      TCPServer.stub(:new, server) do
+        use_ui @stub_ui do
+          @cmd.execute
+        end
+      end
+    end
+
+    reused_otp_codes = @stub_fetcher.requests.filter_map {|req| req["OTP"] }.tally.filter_map {|el, count| el if count > 1 }
+    assert_empty reused_otp_codes
+  end
+
   def test_add_owners_unathorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Owner added successfully."
