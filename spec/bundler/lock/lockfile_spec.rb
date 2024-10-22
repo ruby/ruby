@@ -84,7 +84,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", rubygems: ">= 3.3.0.a" do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version" do
     version = "2.3.0"
 
     build_repo4 do
@@ -130,61 +130,6 @@ RSpec.describe "the lockfile format" do
       DEPENDENCIES
         myrack
 
-      BUNDLED WITH
-         #{version}
-    G
-  end
-
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", rubygems: "< 3.3.0.a" do
-    version = "#{Bundler::VERSION.split(".").first}.0.0.a"
-
-    build_repo4 do
-      build_gem "myrack", "1.0.0"
-
-      build_bundler version
-    end
-
-    checksums = checksums_section do |c|
-      c.checksum(gem_repo4, "myrack", "1.0.0")
-    end
-
-    lockfile <<-L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          myrack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        myrack
-      #{checksums}
-      BUNDLED WITH
-         #{version}
-    L
-
-    install_gemfile <<-G, verbose: true
-      source "https://gem.repo4"
-
-      gem "myrack"
-    G
-
-    expect(out).not_to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{version}.")
-    expect(out).to include("Using bundler #{Bundler::VERSION}")
-
-    expect(lockfile).to eq <<~G
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          myrack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        myrack
-      #{checksums}
       BUNDLED WITH
          #{version}
     G

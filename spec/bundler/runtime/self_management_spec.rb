@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "Self management", rubygems: ">= 3.3.0.dev" do
+RSpec.describe "Self management" do
   describe "auto switching" do
     let(:previous_minor) do
       "2.3.0"
