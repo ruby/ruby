@@ -3846,6 +3846,7 @@ impl Assembler
     }
 }
 
+#[must_use]
 pub fn gen_branch(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -3854,17 +3855,17 @@ pub fn gen_branch(
     target1: Option<BlockId>,
     ctx1: Option<&Context>,
     gen_fn: BranchGenFn,
-) {
+) -> Option<()> {
     let branch = new_pending_branch(jit, gen_fn);
 
     // Get the branch targets or stubs
-    let target0_addr = branch.set_target(0, target0, ctx0, jit);
+    let target0_addr = branch.set_target(0, target0, ctx0, jit)?;
     let target1_addr = if let Some(ctx) = ctx1 {
         let addr = branch.set_target(1, target1.unwrap(), ctx, jit);
         if addr.is_none() {
             // target1 requested but we're out of memory.
             // Avoid unwrap() in gen_fn()
-            return;
+            return None;
         }
 
         addr
@@ -3872,10 +3873,10 @@ pub fn gen_branch(
 
     // Call the branch generation function
     asm.mark_branch_start(&branch);
-    if let Some(dst_addr) = target0_addr {
-        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), target1_addr.map(|addr| Target::CodePtr(addr)));
-    }
+    branch.gen_fn.call(asm, Target::CodePtr(target0_addr), target1_addr.map(|addr| Target::CodePtr(addr)));
     asm.mark_branch_end(&branch);
+
+    Some(())
 }
 
 pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
