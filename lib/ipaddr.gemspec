@@ -32,5 +32,5 @@ Both IPv4 and IPv6 are supported.
   spec.files         = ["LICENSE.txt", "README.md", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 2.3"
+  spec.required_ruby_version = ">= 2.4"
 end
