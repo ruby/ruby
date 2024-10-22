@@ -4076,7 +4076,8 @@ AS_CASE(["$target_os"],
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
 	],
     [darwin*], [
-	RUBY_APPEND_OPTION(CFLAGS, -pipe)
+	RUBY_TRY_CFLAGS(-pipe, [pipe_opt=yes], [pipe_opt=no])
+	AS_IF([test $pipe_opt = yes], [RUBY_APPEND_OPTION(CFLAGS, -pipe)])
         AC_MSG_CHECKING([whether Security framework is needed])
 	AC_COMPILE_IFELSE([
 	    AC_LANG_BOOL_COMPILE_TRY([
