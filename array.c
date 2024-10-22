@@ -4494,14 +4494,17 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.transpose -> new_array
+ *    transpose -> new_array
  *
- *  Transposes the rows and columns in an +Array+ of Arrays;
- *  the nested Arrays must all be the same size:
+ *  Returns a new array that is +self+
+ *  as a {transposed matrix}[https://en.wikipedia.org/wiki/Transpose]:
  *
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
  *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
  *
+ *  The elements of +self+ must all be the same size.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
