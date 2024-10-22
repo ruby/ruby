@@ -3398,7 +3398,17 @@ gc_count(rb_execution_context_t *ec, VALUE self)
 VALUE
 rb_gc_latest_gc_info(VALUE key)
 {
-    return rb_gc_impl_latest_gc_info(rb_gc_get_objspace(), key);
+    if (!SYMBOL_P(key) && !RB_TYPE_P(key, T_HASH)) {
+        rb_raise(rb_eTypeError, "non-hash or symbol given");
+    }
+
+    VALUE val = rb_gc_impl_latest_gc_info(rb_gc_get_objspace(), key);
+
+    if (val == Qundef) {
+        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    }
+
+    return val;
 }
 
 static VALUE

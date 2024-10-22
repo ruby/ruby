@@ -7287,7 +7287,7 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
         hash = hash_or_key;
     }
     else {
-        rb_raise(rb_eTypeError, "non-hash or symbol given");
+        rb_bug("gc_info_decode: non-hash or symbol given");
     }
 
     if (NIL_P(sym_major_by)) {
@@ -7373,8 +7373,9 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
     SET(retained_weak_references_count, LONG2FIX(objspace->profile.retained_weak_references_count));
 #undef SET
 
-    if (!NIL_P(key)) {/* matched key should return above */
-        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    if (!NIL_P(key)) {
+        // Matched key should return above
+        return Qundef;
     }
 
     return hash;
