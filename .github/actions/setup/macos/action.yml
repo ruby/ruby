@@ -18,11 +18,12 @@ runs:
     - name: Set ENV
       shell: bash
       run: |
-        for lib in gmp; do
-          ruby_configure_args="${ruby_configure_args:+$ruby_configure_args }--with-${lib%@*}-dir=$(brew --prefix $lib)"
-        done
-        for lib in openssl@3; do
-          CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
-        done
-        echo ruby_configure_args="${ruby_configure_args}" >> $GITHUB_ENV
-        echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV
+        dir_config() {
+          local args=() lib var="$1"; shift
+          for lib in "$@"; do
+            args+="--with-${lib%@*}-dir=$(brew --prefix $lib)"
+          done
+          echo "$var=${args[*]}" >> $GITHUB_ENV
+        }
+        dir_config ruby_configure_args gmp
+        dir_config CONFIGURE_ARGS openssl@3
