@@ -2966,7 +2966,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    a = [:foo, 'bar', 2]
  *    a.inspect # => "[:foo, \"bar\", 2]"
  *
- *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
