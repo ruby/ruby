@@ -27,6 +27,9 @@ jobs:
         include:
           - test_task: check
             os: macos-14
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gcc=gcc-14'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-14
@@ -89,7 +92,7 @@ jobs:
         continue-on-error: true
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} ${{ matrix.configure_args }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
