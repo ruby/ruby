@@ -5658,18 +5658,25 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *    array.union(*other_arrays) -> new_array
+ *    union(*other_arrays) -> new_array
  *
- *  Returns a new +Array+ that is the union of +self+ and all given Arrays +other_arrays+;
- *  duplicates are removed;  order is preserved;  items are compared using <tt>eql?</tt>:
+ *  Returns a new array that is the union of the elements of +self+
+ *  and all given arrays +other_arrays+;
+ *  items are compared using <tt>eql?</tt>:
  *
  *    [0, 1, 2, 3].union([4, 5], [6, 7]) # => [0, 1, 2, 3, 4, 5, 6, 7]
+ *
+ *  Removes duplicates (preserving the first found):
+ *
  *    [0, 1, 1].union([2, 1], [3, 1]) # => [0, 1, 2, 3]
- *    [0, 1, 2, 3].union([3, 2], [1, 0]) # => [0, 1, 2, 3]
  *
- *  Returns a copy of +self+ if no arguments given.
+ *  Preserves order (preserving the position of the first found):
  *
- *  Related: Array#|.
+ *    [3, 2, 1, 0].union([5, 3], [4, 2]) # => [3, 2, 1, 0, 5, 4]
+ *
+ *  With no arguments given, returns a copy of +self+.
+ *
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 static VALUE
