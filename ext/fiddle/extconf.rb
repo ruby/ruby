@@ -1,10 +1,18 @@
 # frozen_string_literal: true
-require 'mkmf'
+
+require "rbconfig"
 
 unless RUBY_ENGINE == "ruby"
-  File.write('Makefile', dummy_makefile("").join)
+  File.write('Makefile', <<-MAKEFILE)
+all install clean:
+	#{RbConfig::CONFIG["NULLCMD"]}
+
+.PHONY: all install clean
+  MAKEFILE
   return
 end
+
+require 'mkmf'
 
 # :stopdoc:
 
