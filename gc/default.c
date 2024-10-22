@@ -7631,8 +7631,9 @@ stat_one_heap(rb_heap_t *heap, VALUE hash, VALUE key)
     SET(total_freed_objects, heap->total_freed_objects);
 #undef SET
 
-    if (!NIL_P(key)) { /* matched key should return above */
-        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    if (!NIL_P(key)) {
+        // Matched key should return above
+        return Qundef;
     }
 
     return hash;
@@ -7647,7 +7648,7 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 
     if (NIL_P(heap_name)) {
         if (!RB_TYPE_P(hash_or_sym, T_HASH)) {
-            rb_raise(rb_eTypeError, "non-hash given");
+            rb_bug("non-hash given");
         }
 
         for (int i = 0; i < HEAP_COUNT; i++) {
@@ -7674,11 +7675,11 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
             return stat_one_heap(&heaps[heap_idx], hash_or_sym, Qnil);
         }
         else {
-            rb_raise(rb_eTypeError, "non-hash or symbol given");
+            rb_bug("non-hash or symbol given");
         }
     }
     else {
-        rb_raise(rb_eTypeError, "heap_name must be nil or an Integer");
+        rb_bug("heap_name must be nil or an Integer");
     }
 
     return hash_or_sym;
