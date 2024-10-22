@@ -2958,6 +2958,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 /*
  *  call-seq:
  *    inspect -> new_string
+ *    to_s -> new_string
  *
  *  Returns the new string formed by calling method <tt>#inspect</tt>
  *  on each array element:
@@ -2965,7 +2966,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
  *    a = [:foo, 'bar', 2]
  *    a.inspect # => "[:foo, \"bar\", 2]"
  *
- *  Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
