@@ -7508,7 +7508,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
         key = hash_or_sym;
     }
     else {
-        rb_raise(rb_eTypeError, "non-hash or symbol given");
+        rb_bug("non-hash or symbol given");
     }
 
 #define SET(name, attr) \
@@ -7562,8 +7562,9 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 #endif /* RGENGC_PROFILE */
 #undef SET
 
-    if (!NIL_P(key)) { /* matched key should return above */
-        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(key));
+    if (!NIL_P(key)) {
+        // Matched key should return above
+        return Qundef;
     }
 
 #if defined(RGENGC_PROFILE) && RGENGC_PROFILE >= 2

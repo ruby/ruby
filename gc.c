@@ -3417,18 +3417,40 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || has
     if (NIL_P(arg)) {
         arg = rb_hash_new();
     }
+    else if (!RB_TYPE_P(arg, T_HASH) && !SYMBOL_P(arg)) {
+        rb_raise(rb_eTypeError, "non-hash or symbol given");
+    }
 
-    return rb_gc_impl_stat(rb_gc_get_objspace(), arg);
+    VALUE ret = rb_gc_impl_stat(rb_gc_get_objspace(), arg);
+
+    if (ret == Qundef) {
+        GC_ASSERT(SYMBOL_P(arg));
+
+        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(arg));
+    }
+
+    return ret;
 }
 
 size_t
-rb_gc_stat(VALUE key)
+rb_gc_stat(VALUE arg)
 {
-    if (SYMBOL_P(key)) {
-        return rb_gc_impl_stat(rb_gc_get_objspace(), key);
+    if (!RB_TYPE_P(arg, T_HASH) && !SYMBOL_P(arg)) {
+        rb_raise(rb_eTypeError, "non-hash or symbol given");
+    }
+
+    VALUE ret = rb_gc_impl_stat(rb_gc_get_objspace(), arg);
+
+    if (ret == Qundef) {
+        GC_ASSERT(SYMBOL_P(arg));
+
+        rb_raise(rb_eArgError, "unknown key: %"PRIsVALUE, rb_sym2str(arg));
+    }
+
+    if (SYMBOL_P(arg)) {
+        return NUM2SIZET(ret);
     }
     else {
-        rb_gc_impl_stat(rb_gc_get_objspace(), key);
         return 0;
     }
 }
