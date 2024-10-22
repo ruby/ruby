@@ -6347,21 +6347,6 @@ fn jit_thread_s_current(
     true
 }
 
-fn jit_numeric_dup(
-    _jit: &mut JITState,
-    _asm: &mut Assembler,
-    _ci: *const rb_callinfo,
-    _cme: *const rb_callable_method_entry_t,
-    _block: Option<BlockHandler>,
-    _argc: i32,
-    _known_recv_class: Option<VALUE>,
-) -> bool {
-    // Numeric#dup has arity=0 and is the identity function.
-    // Our caller already did argument count check, so this is
-    // no-op to return the receiver that is already on the stack.
-    true
-}
-
 /// Specialization for rb_obj_dup() (Kernel#dup)
 fn jit_rb_obj_dup(
     _jit: &mut JITState,
@@ -10459,8 +10444,6 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cFloat, "-", jit_rb_float_minus);
         reg_method_codegen(rb_cFloat, "*", jit_rb_float_mul);
         reg_method_codegen(rb_cFloat, "/", jit_rb_float_div);
-
-        reg_method_codegen(rb_cNumeric, "dup", jit_numeric_dup);
 
         reg_method_codegen(rb_cString, "empty?", jit_rb_str_empty_p);
         reg_method_codegen(rb_cString, "to_s", jit_rb_str_to_s);

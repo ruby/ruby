@@ -1,4 +1,14 @@
 class Numeric
+  #  call-seq:
+  #    dup -> self
+  #
+  #  Returns +self+.
+  #
+  #  Related: Numeric#clone.
+  #
+  def dup
+    self
+  end
 
   #  call-seq:
   #    real? -> true or false
@@ -70,6 +80,15 @@ class Numeric
   end
 
   alias conj conjugate
+
+  #  call-seq:
+  #    +self -> self
+  #
+  #  Returns +self+.
+  #
+  def +@
+    self
+  end
 end
 
 class Integer
