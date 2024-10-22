@@ -16,7 +16,7 @@ class Reline::LineEditor
 
     def setup
       verbose, $VERBOSE = $VERBOSE, nil
-      @line_editor = Reline::LineEditor.new(nil, Encoding::UTF_8)
+      @line_editor = Reline::LineEditor.new(nil)
       @original_iogate = Reline::IOGate
       @output = StringIO.new
       @line_editor.instance_variable_set(:@screen_size, [24, 80])

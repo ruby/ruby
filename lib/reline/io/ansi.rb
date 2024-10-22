@@ -41,7 +41,7 @@ class Reline::ANSI < Reline::IO
   end
 
   def encoding
-    Encoding.default_external
+    @input.external_encoding || Encoding.default_external
   end
 
   def set_default_key_bindings(config, allow_terminfo: true)

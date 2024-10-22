@@ -9,8 +9,8 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     Reline::HISTORY.instance_variable_set(:@config, @config)
     Reline::HISTORY.clear
     @encoding = Reline.core.encoding
-    @line_editor = Reline::LineEditor.new(@config, @encoding)
-    @line_editor.reset(@prompt, encoding: @encoding)
+    @line_editor = Reline::LineEditor.new(@config)
+    @line_editor.reset(@prompt)
   end
 
   def teardown

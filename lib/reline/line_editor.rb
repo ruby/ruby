@@ -72,15 +72,19 @@ class Reline::LineEditor
 
   MINIMUM_SCROLLBAR_HEIGHT = 1
 
-  def initialize(config, encoding)
+  def initialize(config)
     @config = config
     @completion_append_character = ''
     @screen_size = [0, 0] # Should be initialized with actual winsize in LineEditor#reset
-    reset_variables(encoding: encoding)
+    reset_variables
   end
 
   def io_gate
     Reline::IOGate
+  end
+
+  def encoding
+    io_gate.encoding
   end
 
   def set_pasting_state(in_pasting)
@@ -136,9 +140,9 @@ class Reline::LineEditor
     end
   end
 
-  def reset(prompt = '', encoding:)
+  def reset(prompt = '')
     @screen_size = Reline::IOGate.get_screen_size
-    reset_variables(prompt, encoding: encoding)
+    reset_variables(prompt)
     @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
     if ENV.key?('RELINE_ALT_SCROLLBAR')
       @full_block = '::'
@@ -150,7 +154,7 @@ class Reline::LineEditor
       @upper_half_block = '▀'
       @lower_half_block = '▄'
       @block_elem_width = 1
-    elsif @encoding == Encoding::UTF_8
+    elsif encoding == Encoding::UTF_8
       @full_block = '█'
       @upper_half_block = '▀'
       @lower_half_block = '▄'
@@ -219,10 +223,9 @@ class Reline::LineEditor
     @eof
   end
 
-  def reset_variables(prompt = '', encoding:)
+  def reset_variables(prompt = '')
     @prompt = prompt.gsub("\n", "\\n")
     @mark_pointer = nil
-    @encoding = encoding
     @is_multiline = false
     @finished = false
     @history_pointer = nil
@@ -239,7 +242,7 @@ class Reline::LineEditor
     @searching_prompt = nil
     @just_cursor_moving = false
     @eof = false
-    @continuous_insertion_buffer = String.new(encoding: @encoding)
+    @continuous_insertion_buffer = String.new(encoding: encoding)
     @scroll_partial_screen = 0
     @drop_terminate_spaces = false
     @in_pasting = false
@@ -259,7 +262,7 @@ class Reline::LineEditor
 
   def reset_line
     @byte_pointer = 0
-    @buffer_of_lines = [String.new(encoding: @encoding)]
+    @buffer_of_lines = [String.new(encoding: encoding)]
     @line_index = 0
     @cache.clear
     @line_backup_in_history = nil
@@ -275,7 +278,7 @@ class Reline::LineEditor
   end
 
   private def insert_new_line(cursor_line, next_line)
-    @buffer_of_lines.insert(@line_index + 1, String.new(next_line, encoding: @encoding))
+    @buffer_of_lines.insert(@line_index + 1, String.new(next_line, encoding: encoding))
     @buffer_of_lines[@line_index] = cursor_line
     @line_index += 1
     @byte_pointer = 0
@@ -298,7 +301,7 @@ class Reline::LineEditor
   end
 
   private def split_by_width(str, max_width, offset: 0)
-    Reline::Unicode.split_by_width(str, max_width, @encoding, offset: offset)
+    Reline::Unicode.split_by_width(str, max_width, encoding, offset: offset)
   end
 
   def current_byte_pointer_cursor
@@ -882,8 +885,8 @@ class Reline::LineEditor
         perform_completion(list, true) if @config.show_all_if_ambiguous
       end
       if not just_show_list and target < completed
-        @buffer_of_lines[@line_index] = (preposing + completed + completion_append_character.to_s + postposing).split("\n")[@line_index] || String.new(encoding: @encoding)
-        line_to_pointer = (preposing + completed + completion_append_character.to_s).split("\n")[@line_index] || String.new(encoding: @encoding)
+        @buffer_of_lines[@line_index] = (preposing + completed + completion_append_character.to_s + postposing).split("\n")[@line_index] || String.new(encoding: encoding)
+        line_to_pointer = (preposing + completed + completion_append_character.to_s).split("\n")[@line_index] || String.new(encoding: encoding)
         @byte_pointer = line_to_pointer.bytesize
       end
     end
@@ -1058,8 +1061,8 @@ class Reline::LineEditor
   private def normal_char(key)
     @multibyte_buffer << key.combined_char
     if @multibyte_buffer.size > 1
-      if @multibyte_buffer.dup.force_encoding(@encoding).valid_encoding?
-        process_key(@multibyte_buffer.dup.force_encoding(@encoding), nil)
+      if @multibyte_buffer.dup.force_encoding(encoding).valid_encoding?
+        process_key(@multibyte_buffer.dup.force_encoding(encoding), nil)
         @multibyte_buffer.clear
       else
         # invalid
@@ -1317,7 +1320,7 @@ class Reline::LineEditor
     if (lines.size - 1) > @line_index
       postposing = postposing + "\n" + lines[(@line_index + 1)..-1].join("\n")
     end
-    [preposing.encode(@encoding), target.encode(@encoding), postposing.encode(@encoding)]
+    [preposing.encode(encoding), target.encode(encoding), postposing.encode(encoding)]
   end
 
   def confirm_multiline_termination
@@ -1329,7 +1332,7 @@ class Reline::LineEditor
     save_old_buffer
     pre = @buffer_of_lines[@line_index].byteslice(0, @byte_pointer)
     post = @buffer_of_lines[@line_index].byteslice(@byte_pointer..)
-    lines = (pre + Reline::Unicode.safe_encode(text, @encoding).gsub(/\r\n?/, "\n") + post).split("\n", -1)
+    lines = (pre + Reline::Unicode.safe_encode(text, encoding).gsub(/\r\n?/, "\n") + post).split("\n", -1)
     lines << '' if lines.empty?
     @buffer_of_lines[@line_index, 1] = lines
     @line_index += lines.size - 1
@@ -1374,7 +1377,7 @@ class Reline::LineEditor
       last += current_line.bytesize if last < 0
       first += current_line.bytesize if first < 0
       range = range.exclude_end? ? first...last : first..last
-      line = current_line.bytes.reject.with_index{ |c, i| range.include?(i) }.map{ |c| c.chr(Encoding::ASCII_8BIT) }.join.force_encoding(@encoding)
+      line = current_line.bytes.reject.with_index{ |c, i| range.include?(i) }.map{ |c| c.chr(Encoding::ASCII_8BIT) }.join.force_encoding(encoding)
       set_current_line(line)
     else
       set_current_line(current_line.byteslice(0, start))
@@ -1585,7 +1588,7 @@ class Reline::LineEditor
   alias_method :end_of_line, :ed_move_to_end
 
   private def generate_searcher(search_key)
-    search_word = String.new(encoding: @encoding)
+    search_word = String.new(encoding: encoding)
     multibyte_buf = String.new(encoding: 'ASCII-8BIT')
     hit_pointer = nil
     lambda do |key|
@@ -1602,8 +1605,8 @@ class Reline::LineEditor
         search_key = key
       else
         multibyte_buf << key
-        if multibyte_buf.dup.force_encoding(@encoding).valid_encoding?
-          search_word << multibyte_buf.dup.force_encoding(@encoding)
+        if multibyte_buf.dup.force_encoding(encoding).valid_encoding?
+          search_word << multibyte_buf.dup.force_encoding(encoding)
           multibyte_buf.clear
         end
       end
@@ -1763,7 +1766,7 @@ class Reline::LineEditor
       @history_pointer = history_pointer
     end
     @buffer_of_lines = buf.split("\n")
-    @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+    @buffer_of_lines = [String.new(encoding: encoding)] if @buffer_of_lines.empty?
     @line_index = line == :start ? 0 : line == :end ? @buffer_of_lines.size - 1 : line
     @byte_pointer = cursor == :start ? 0 : cursor == :end ? current_line.bytesize : cursor
   end
@@ -2288,7 +2291,7 @@ class Reline::LineEditor
     }
     system("#{ENV['EDITOR']} #{path}")
     @buffer_of_lines = File.read(path).split("\n")
-    @buffer_of_lines = [String.new(encoding: @encoding)] if @buffer_of_lines.empty?
+    @buffer_of_lines = [String.new(encoding: encoding)] if @buffer_of_lines.empty?
     @line_index = 0
     finish
   end

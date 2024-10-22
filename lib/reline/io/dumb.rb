@@ -21,7 +21,7 @@ class Reline::Dumb < Reline::IO
     elsif RUBY_PLATFORM =~ /mswin|mingw/
       Encoding::UTF_8
     else
-      Encoding::default_external
+      @input.external_encoding || Encoding::default_external
     end
   end
 
