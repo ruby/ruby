@@ -1914,7 +1914,7 @@ shared-gc: probes.h
 	fi
 	$(ECHO) generating $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT)
 	$(Q) $(MAKEDIRS) $(shared_gc_dir)
-	$(Q) $(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) $(XDLDFLAGS) $(cflags) -DBUILDING_SHARED_GC -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c
+	$(Q) $(LDSHARED) -I$(srcdir)/include -I$(srcdir) -I$(arch_hdrdir) $(XDLDFLAGS) $(CFLAGS) $(CPPFLAGS) -DBUILDING_SHARED_GC -fPIC -o $(shared_gc_dir)librubygc.$(SHARED_GC).$(SOEXT) $(srcdir)/gc/$(SHARED_GC).c
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
