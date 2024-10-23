@@ -136,7 +136,6 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:put, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth identifier, password
-      request["OTP"] = otp if otp
       request.body = Gem::URI.encode_www_form({ api_key: api_key }.merge(update_scope_params))
     end
 
@@ -176,7 +175,6 @@ module Gem::GemcutterUtilities
     response = rubygems_api_request(:post, "api/v1/api_key",
                                     sign_in_host, credentials: credentials, scope: scope) do |request|
       request.basic_auth identifier, password
-      request["OTP"] = otp if otp
       request.body = Gem::URI.encode_www_form({ name: key_name }.merge(all_params))
     end
 
