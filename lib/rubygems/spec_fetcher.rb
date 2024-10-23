@@ -193,7 +193,8 @@ class Gem::SpecFetcher
       next unless n.match_platform?
 
       # The candidate name, normalized the same as gem_name.
-      normalized_name = n.name.downcase.tr("_-", "")
+      normalized_name = n.name.downcase
+      normalized_name.tr!("_-", "")
 
       # If we found an exact match (after stripping underscores and hyphens),
       # that's our most likely candidate.
