@@ -172,9 +172,9 @@ class Gem::SpecFetcher
   def suggest_gems_from_name(gem_name, type = :latest, num_results = 5)
     gem_name = gem_name.downcase.tr("_-", "")
 
-    # All results for 3-character (minus hyphens/underscores) gem names
-    # get rejected, so we just return an empty array immediately instead.
-    return [] if gem_name.length < 3
+    # All results for 3-character-or-shorter (minus hyphens/underscores) gem
+    # names get rejected, so we just return an empty array immediately instead.
+    return [] if gem_name.length <= 3
 
     max   = gem_name.size / 2
     names = available_specs(type).first.values.flatten(1)
