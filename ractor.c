@@ -12,6 +12,7 @@
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/thread.h"

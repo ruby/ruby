@@ -13472,6 +13472,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/hash.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/ractor.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/serial.h
