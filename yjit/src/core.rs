@@ -1594,6 +1594,7 @@ impl PendingBranch {
         }
 
         branch.assert_layout();
+        incr_counter!(compiled_branch_count);
 
         branchref
     }
@@ -3449,8 +3450,6 @@ fn new_pending_branch(jit: &mut JITState, gen_fn: BranchGenFn) -> PendingBranchR
         end_addr: Cell::new(None),
         targets: [Cell::new(None), Cell::new(None)],
     });
-
-    incr_counter!(compiled_branch_count); // TODO not true. count at finalize time
 
     // Add to the list of outgoing branches for the block
     jit.queue_outgoing_branch(branch.clone());
