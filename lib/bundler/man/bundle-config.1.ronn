@@ -282,13 +282,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `without` (`BUNDLE_WITHOUT`):
    A `:`-separated list of groups whose gems bundler should not install.
 
-In general, you should set these settings per-application by using the applicable
-flag to the [bundle install(1)](bundle-install.1.html) or [bundle cache(1)](bundle-cache.1.html) command.
-
-You can set them globally either via environment variables or `bundle config`,
-whichever is preferable for your setup. If you use both, environment variables
-will take preference over global settings.
-
 ## LOCAL GIT REPOS
 
 Bundler also allows you to work against a git repository locally
