@@ -247,8 +247,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
 #define update_coderange(partial) do { \
-        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen \
-            && rb_enc_to_index(enc) /* != ENCINDEX_ASCII_8BIT */) { \
+        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) { \
             int cr = coderange; \
             scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr); \
             ENC_CODERANGE_SET(result, \
