@@ -1521,6 +1521,7 @@ impl std::fmt::Debug for Branch {
 impl PendingBranch {
     /// Set up a branch target at `target_idx`. Find an existing block to branch to
     /// or generate a stub for one.
+    #[must_use]
     fn set_target(
         &self,
         target_idx: u32,
