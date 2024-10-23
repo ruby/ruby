@@ -12,13 +12,13 @@ module ErrorHighlight
       ellipsis     = "..."
 
       # truncate snippet to fit in the viewport
-      if snippet_max_width && snippet.size > snippet_max_width
-        available_width = snippet_max_width - ellipsis.size
-        center          = first_column - snippet_max_width / 2
+      if max_snippet_width && snippet.size > max_snippet_width
+        available_width = max_snippet_width - ellipsis.size
+        center          = first_column - max_snippet_width / 2
 
         visible_start  = last_column < available_width ? 0 : [center, 0].max
-        visible_end    = visible_start + snippet_max_width
-        visible_start  = snippet.size - snippet_max_width if visible_end > snippet.size
+        visible_end    = visible_start + max_snippet_width
+        visible_start  = snippet.size - max_snippet_width if visible_end > snippet.size
 
         prefix = visible_start.positive?    ? ellipsis : ""
         suffix = visible_end < snippet.size ? ellipsis : ""
@@ -36,19 +36,19 @@ module ErrorHighlight
       "\n\n#{ snippet }#{ marker }"
     end
 
-    def self.snippet_max_width
+    def self.max_snippet_width
       return if Ractor.current[:__error_highlight_max_snippet_width__] == :disabled
 
       Ractor.current[:__error_highlight_max_snippet_width__] ||= terminal_width
     end
 
-    def self.snippet_max_width=(width)
+    def self.max_snippet_width=(width)
       return Ractor.current[:__error_highlight_max_snippet_width__] = :disabled if width.nil?
 
       width = width.to_i
 
       if width < MIN_SNIPPET_WIDTH
-        warn "'snippet_max_width' adjusted to minimum value of #{MIN_SNIPPET_WIDTH}."
+        warn "'max_snippet_width' adjusted to minimum value of #{MIN_SNIPPET_WIDTH}."
         width = MIN_SNIPPET_WIDTH
       end
 
@@ -56,7 +56,7 @@ module ErrorHighlight
     end
 
     def self.terminal_width
-      # lazy load io/console, so it's not loaded when snippet_max_width is set
+      # lazy load io/console, so it's not loaded when 'max_snippet_width' is set
       require "io/console"
       STDERR.winsize[1] if STDERR.tty?
     rescue LoadError, NoMethodError, SystemCallError
