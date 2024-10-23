@@ -856,37 +856,6 @@ rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc)
     return enc_coderange_scan(str, enc);
 }
 
-char *coderange_name(enum ruby_coderange_type cached_cr) {
-    switch(cached_cr) {
-        case ENC_CODERANGE_UNKNOWN:
-            return "unknown";
-        case ENC_CODERANGE_7BIT:
-            return "7bit";
-        case ENC_CODERANGE_VALID:
-            return "valid";
-        case ENC_CODERANGE_BROKEN:
-            return "broken";
-    }
-}
-
-void
-check_str_coderange_valid(VALUE str)
-{
-    enum ruby_coderange_type cached_cr = ENC_CODERANGE(str);
-    if (cached_cr != ENC_CODERANGE_UNKNOWN) {
-        enum ruby_coderange_type actual_cr = enc_coderange_scan(str, get_encoding(str));
-        if (cached_cr != actual_cr) {
-            fprintf(stderr, "encoding is %s\n", rb_enc_inspect_name(get_encoding(str)));
-            fprintf(stderr, "coderanges don't match: %x != %x\n", cached_cr, actual_cr);
-            fprintf(stderr, "coderanges don't match: %s (cached) != %s (actual)\n", coderange_name(cached_cr), coderange_name(actual_cr));
-            enc_coderange_scan(str, get_encoding(str));
-            enc_coderange_scan(str, get_encoding(str));
-            enc_coderange_scan(str, get_encoding(str));
-        }
-        RUBY_ASSERT_ALWAYS(cached_cr == actual_cr);
-    }
-}
-
 int
 rb_enc_str_coderange(VALUE str)
 {
@@ -3320,10 +3289,7 @@ rb_str_resize(VALUE str, long len)
     long slen = RSTRING_LEN(str);
     const int termlen = TERM_LEN(str);
 
-    check_str_coderange_valid(str);
-
-    if ((slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) ||
-            (termlen != 1 && slen < len)) {
+    if (slen > len || (termlen != 1 && slen < len)) {
         ENC_CODERANGE_CLEAR(str);
     }
 
