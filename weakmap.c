@@ -221,7 +221,15 @@ static const rb_data_type_t weakmap_type = {
 static int
 wmap_cmp(st_data_t x, st_data_t y)
 {
-    return *(VALUE *)x != *(VALUE *)y;
+    VALUE x_obj = *(VALUE *)x;
+    VALUE y_obj = *(VALUE *)y;
+
+    if (!wmap_live_p(x_obj) && !wmap_live_p(y_obj)) {
+        return x != y;
+    }
+    else {
+        return x_obj != y_obj;
+    }
 }
 
 static st_index_t
