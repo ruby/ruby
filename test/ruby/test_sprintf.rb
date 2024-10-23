@@ -546,4 +546,12 @@ class TestSprintf < Test::Unit::TestCase
       sprintf("%*s", RbConfig::LIMITS["INT_MIN"], "")
     end
   end
+
+  def test_binary_format_coderange
+    1.upto(500) do |i|
+      str = sprintf("%*s".b, i, "\xe2".b)
+      refute_predicate str, :ascii_only?
+      assert_equal i, str.bytesize
+    end
+  end
 end
