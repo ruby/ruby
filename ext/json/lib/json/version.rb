@@ -1,9 +1,5 @@
 # frozen_string_literal: true
+
 module JSON
-  # JSON version
-  VERSION         = '2.7.2'
-  VERSION_ARRAY   = VERSION.split(/\./).map { |x| x.to_i } # :nodoc:
-  VERSION_MAJOR   = VERSION_ARRAY[0] # :nodoc:
-  VERSION_MINOR   = VERSION_ARRAY[1] # :nodoc:
-  VERSION_BUILD   = VERSION_ARRAY[2] # :nodoc:
+  VERSION = '2.7.3.rc1'
 end
