@@ -11,9 +11,11 @@
 # https://github.com/ruby/ruby/wiki/CI-Servers#travis-ci
 
 # We enable Travis on the specific branches or forked repositories here.
+# https://docs.travis-ci.com/user/conditions-v1
 if: >-
-  (repo != ruby/ruby OR branch = master OR branch =~ /^ruby_\d_\d$/)
-  AND (commit_message !~ /\[DOC\]/)
+  (fork OR branch = master OR branch =~ /^ruby_\d_\d$/)
+  AND (commit_message !~ /(\[DOC\]|Document)/)
+  AND NOT (type = 'push' AND sender =~ /\[bot\]/)
 
 language: c
 
