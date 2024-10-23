@@ -118,6 +118,12 @@ pub struct JITState<'a> {
 
     /// When true, this block is the first block compiled by gen_block_series().
     first_block: bool,
+
+    /// A killswitch for bailing out of compilation. Used in rare situations where we need to fail
+    /// compilation deep in the stack (e.g. codegen failed for some jump target, but not due to
+    /// OOM). Because these situations are so rare it's not worth it to check and propogate at each
+    /// site. Instead, we check this once at the end.
+    block_abandoned: bool,
 }
 
 impl<'a> JITState<'a> {
@@ -145,6 +151,7 @@ impl<'a> JITState<'a> {
             perf_map: Rc::default(),
             perf_stack: vec![],
             first_block,
+            block_abandoned: false,
         }
     }
 
@@ -1349,6 +1356,12 @@ pub fn gen_single_block(
     // We currently can't handle cases where the request is for a block that
     // doesn't go to the next instruction in the same iseq.
     assert!(!jit.record_boundary_patch_point);
+
+    // Bail when requested to.
+    if jit.block_abandoned {
+        incr_counter!(abandoned_block_count);
+        return Err(());
+    }
 
     // Pad the block if it has the potential to be invalidated
     if jit.block_entry_exit.is_some() {
@@ -2705,7 +2718,10 @@ fn jit_chain_guard(
             idx: jit.insn_idx,
         };
 
-        gen_branch(jit, asm, bid, &deeper, None, None, target0_gen_fn);
+        // Bail if we can't generate the branch
+        if gen_branch(jit, asm, bid, &deeper, None, None, target0_gen_fn).is_none() {
+            jit.block_abandoned = true;
+        }
     } else {
         target0_gen_fn.call(asm, Target::side_exit(counter), None);
     }
@@ -4564,7 +4580,7 @@ fn gen_branchif(
             Some(next_block),
             Some(&ctx),
             BranchGenFn::BranchIf(Cell::new(BranchShape::Default)),
-        );
+        )?;
     }
 
     Some(EndBlock)
@@ -4618,7 +4634,7 @@ fn gen_branchunless(
             Some(next_block),
             Some(&ctx),
             BranchGenFn::BranchUnless(Cell::new(BranchShape::Default)),
-        );
+        )?;
     }
 
     Some(EndBlock)
@@ -4669,7 +4685,7 @@ fn gen_branchnil(
             Some(next_block),
             Some(&ctx),
             BranchGenFn::BranchNil(Cell::new(BranchShape::Default)),
-        );
+        )?;
     }
 
     Some(EndBlock)
@@ -7988,7 +8004,7 @@ fn gen_send_iseq(
     return_asm.ctx.set_as_return_landing();
 
     // Write the JIT return address on the callee frame
-    gen_branch(
+    if gen_branch(
         jit,
         asm,
         return_block,
@@ -7996,7 +8012,11 @@ fn gen_send_iseq(
         None,
         None,
         BranchGenFn::JITReturn,
-    );
+    ).is_none() {
+        // Returning None here would have send_dynamic() code following incomplete
+        // send code. Abandon the block instead.
+        jit.block_abandoned = true;
+    }
 
     // ec->cfp is updated after cfp->jit_return for rb_profile_frames() safety
     asm_comment!(asm, "switch to new CFP");

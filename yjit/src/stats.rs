@@ -561,6 +561,7 @@ make_counters! {
     compiled_branch_count,
     compile_time_ns,
     compilation_failure,
+    abandoned_block_count,
     block_next_count,
     defer_count,
     defer_empty_count,
