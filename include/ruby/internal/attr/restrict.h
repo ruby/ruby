@@ -28,7 +28,7 @@
  * `__has_declspec_attribute()` which involves macro substitution. */
 
 /** Wraps (or simulates) `__declspec(restrict)` */
-#if RBIMPL_COMPILER_SINCE(MSVC, 14, 0, 0)
+#if RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_ATTR_RESTRICT() __declspec(re ## strict)
 
 #elif RBIMPL_HAS_ATTRIBUTE(malloc)
