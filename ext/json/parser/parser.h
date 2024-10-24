@@ -15,17 +15,17 @@ typedef struct JSON_ParserStruct {
     long len;
     char *memo;
     VALUE create_id;
-    int max_nesting;
-    int allow_nan;
-    int parsing_name;
-    int symbolize_names;
-    int freeze;
     VALUE object_class;
     VALUE array_class;
     VALUE decimal_class;
-    int create_additions;
     VALUE match_string;
     FBuffer *fbuffer;
+    int max_nesting;
+    char allow_nan;
+    char parsing_name;
+    char symbolize_names;
+    char freeze;
+    char create_additions;
 } JSON_Parser;
 
 #define GET_PARSER                          \
