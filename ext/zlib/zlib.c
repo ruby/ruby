@@ -1100,6 +1100,12 @@ zstream_run_try(VALUE value_arg)
     int err;
     VALUE old_input = Qnil;
 
+    /* Cannot start zstream while it is in progress. */
+    if (z->flags & ZSTREAM_IN_PROGRESS) {
+	rb_raise(cInProgressError, "zlib stream is in progress");
+    }
+    z->flags |= ZSTREAM_IN_PROGRESS;
+
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = (Bytef*)"";
 	z->stream.avail_in = 0;
@@ -1167,9 +1173,6 @@ loop:
 	rb_str_resize(old_input, 0);
     }
 
-    if (args->jump_state)
-	rb_jump_tag(args->jump_state);
-
     return Qnil;
 }
 
@@ -1177,25 +1180,11 @@ static VALUE
 zstream_run_ensure(VALUE value_arg)
 {
     struct zstream_run_args *args = (struct zstream_run_args *)value_arg;
+    struct zstream *z = args->z;
 
     /* Remove ZSTREAM_IN_PROGRESS flag to signal that this zstream is not in use. */
-    args->z->flags &= ~ZSTREAM_IN_PROGRESS;
-
-    return Qnil;
-}
-
-static VALUE
-zstream_run_synchronized(VALUE value_arg)
-{
-    struct zstream_run_args *args = (struct zstream_run_args *)value_arg;
-
-    /* Cannot start zstream while it is in progress. */
-    if (args->z->flags & ZSTREAM_IN_PROGRESS) {
-        rb_raise(cInProgressError, "zlib stream is in progress");
-    }
-    args->z->flags |= ZSTREAM_IN_PROGRESS;
-
-    rb_ensure(zstream_run_try, value_arg, zstream_run_ensure, value_arg);
+    z->flags &= ~ZSTREAM_IN_PROGRESS;
+    rb_mutex_unlock(z->mutex);
 
     return Qnil;
 }
@@ -1212,7 +1201,10 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
         .jump_state = 0,
         .stream_output = !ZSTREAM_IS_GZFILE(z) && rb_block_given_p(),
     };
-    rb_mutex_synchronize(z->mutex, zstream_run_synchronized, (VALUE)&args);
+    rb_mutex_lock(z->mutex);
+    rb_ensure(zstream_run_try, (VALUE)&args, zstream_run_ensure, (VALUE)&args);
+    if (args.jump_state)
+	rb_jump_tag(args.jump_state);
 }
 
 static VALUE
