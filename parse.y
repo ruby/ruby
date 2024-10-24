@@ -522,7 +522,7 @@ struct parser_params {
     int line_count;
     int ruby_sourceline;	/* current line no. */
     const char *ruby_sourcefile; /* current source file */
-    VALUE ruby_sourcefile_string;
+    rb_parser_string_t *ruby_sourcefile_string;
     rb_encoding *enc;
     token_info *token_info;
     st_table *case_labels;
@@ -7536,7 +7536,7 @@ yycompile0(VALUE arg)
     struct parser_params *p = (struct parser_params *)arg;
     int cov = FALSE;
 
-    if (!compile_for_eval && !NIL_P(p->ruby_sourcefile_string) && !e_option_supplied(p)) {
+    if (!compile_for_eval && p->ruby_sourcefile_string != NULL && !e_option_supplied(p)) {
         cov = TRUE;
     }
 
@@ -7595,11 +7595,11 @@ yycompile(struct parser_params *p, VALUE fname, int line)
 {
     rb_ast_t *ast;
     if (NIL_P(fname)) {
-        p->ruby_sourcefile_string = Qnil;
+        p->ruby_sourcefile_string = NULL;
         p->ruby_sourcefile = "(none)";
     }
     else {
-        p->ruby_sourcefile_string = rb_str_to_interned_str(fname);
+        p->ruby_sourcefile_string = rb_str_to_parser_string(p, fname);
         p->ruby_sourcefile = StringValueCStr(fname);
     }
     p->ruby_sourceline = line - 1;
@@ -9385,6 +9385,8 @@ parser_encode_length(struct parser_params *p, const char *name, long len)
     return len;
 }
 
+#define RB_SOURCEFILE_STRING rb_str_new_parser_string(p->ruby_sourcefile_string)
+
 static void
 parser_set_encode(struct parser_params *p, const char *name)
 {
@@ -9407,7 +9409,7 @@ parser_set_encode(struct parser_params *p, const char *name)
       error:
         excargs[0] = rb_eArgError;
         excargs[2] = rb_make_backtrace();
-        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string, p->ruby_sourceline));
+        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string == NULL ? Qnil : RB_SOURCEFILE_STRING, p->ruby_sourceline));
         VALUE exc = rb_make_exception(3, excargs);
         ruby_show_error_line(p, exc, &(YYLTYPE)RUBY_INIT_YYLLOC(), p->ruby_sourceline, p->lex.lastline);
 
@@ -13021,9 +13023,14 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         return NEW_FALSE(loc);
       case keyword__FILE__:
         {
-            VALUE file = p->ruby_sourcefile_string;
-            if (NIL_P(file))
-                file = rb_str_new(0, 0);
+            VALUE file;
+
+	    if (p->ruby_sourcefile_string == NULL) {
+	        file = rb_str_new(0, 0);
+	    } else {
+		file = RB_SOURCEFILE_STRING;
+	    }
+
             node = NEW_FILE(file, loc);
         }
         return node;
@@ -15567,7 +15574,7 @@ parser_initialize(struct parser_params *p)
 {
     /* note: we rely on TypedData_Make_Struct to set most fields to 0 */
     p->command_start = TRUE;
-    p->ruby_sourcefile_string = Qnil;
+    p->ruby_sourcefile_string = NULL;
     p->lex.lpar_beg = -1; /* make lambda_beginning_p() == FALSE at first */
     string_buffer_init(p);
     p->node_id = 0;
@@ -15602,7 +15609,6 @@ rb_ruby_parser_mark(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
 
-    rb_gc_mark(p->ruby_sourcefile_string);
 #ifndef RIPPER
     rb_gc_mark(p->error_buffer);
 #else
@@ -15826,7 +15832,7 @@ rb_ruby_parser_ripper_initialize(rb_parser_t *p, rb_parser_lex_gets_func *gets, 
     p->lex.gets = gets;
     p->lex.input = input;
     p->eofp = 0;
-    p->ruby_sourcefile_string = sourcefile_string;
+    p->ruby_sourcefile_string = rb_str_to_parser_string(p, sourcefile_string);
     p->ruby_sourcefile = sourcefile;
     p->ruby_sourceline = sourceline;
 }
@@ -15846,7 +15852,10 @@ rb_ruby_parser_enc(rb_parser_t *p)
 VALUE
 rb_ruby_parser_ruby_sourcefile_string(rb_parser_t *p)
 {
-    return p->ruby_sourcefile_string;
+    if (p->ruby_sourcefile_string == NULL) {
+        return Qnil;
+    }
+    return RB_SOURCEFILE_STRING;
 }
 
 int
@@ -15969,7 +15978,7 @@ parser_compile_error(struct parser_params *p, const rb_code_location_t *loc, con
     va_start(ap, fmt);
     p->error_buffer =
         rb_syntax_error_append(p->error_buffer,
-                               p->ruby_sourcefile_string,
+                               p->ruby_sourcefile_string == NULL ? Qnil : rb_str_new_parser_string(p->ruby_sourcefile_string),
                                lineno, column,
                                p->enc, fmt, ap);
     va_end(ap);
