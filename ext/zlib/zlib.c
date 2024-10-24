@@ -4229,6 +4229,7 @@ gzreader_skip_linebreaks(struct gzfile *gz)
     while (n++, *(p++) == '\n') {
 	if (n >= ZSTREAM_BUF_FILLED(&gz->z)) {
 	    str = zstream_detach_buffer(&gz->z);
+	    ASSUME(!NIL_P(str));
 	    gzfile_calc_crc(gz, str);
 	    while (ZSTREAM_BUF_FILLED(&gz->z) == 0) {
 		if (GZFILE_IS_FINISHED(gz)) return;
@@ -4637,6 +4638,7 @@ zlib_gunzip_run(VALUE arg)
 
     gzfile_read_header(gz, Qnil);
     dst = zstream_detach_buffer(&gz->z);
+    ASSUME(!NIL_P(dst));
     gzfile_calc_crc(gz, dst);
     if (!ZSTREAM_IS_FINISHED(&gz->z)) {
 	rb_raise(cGzError, "unexpected end of file");
