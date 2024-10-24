@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 version = File.foreach(File.join(__dir__, "lib/json/version.rb")) do |line|
   /^\s*VERSION\s*=\s*'(.*)'/ =~ line and break $1
 end rescue nil
@@ -19,7 +21,7 @@ spec = Gem::Specification.new do |s|
     'wiki_uri'          => 'https://github.com/ruby/json/wiki'
   }
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.3")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.7")
 
   if java_ext
     s.description = "A JSON implementation as a JRuby extension."
