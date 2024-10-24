@@ -1579,6 +1579,20 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(TypeError){ ''.force_encoding(nil) }
   end
 
+  def test_forcible_encoding
+    a = -"\xC3"
+    assert_not_operator(a, :forcible_encoding?, Encoding::UTF_8)
+
+    a = -"\xC3\xB6"
+    assert_operator(a, :forcible_encoding?, Encoding::UTF_8)
+
+    a = -"\x80\x00"
+    assert_operator(a, :forcible_encoding?, Encoding::UTF_16LE)
+
+    a = -"\xc2A"
+    assert_not_operator(a, :forcible_encoding?, Encoding::UTF_8)
+  end
+
   def test_combchar_codepoint
     assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
     assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
