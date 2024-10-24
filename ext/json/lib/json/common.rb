@@ -195,17 +195,17 @@ module JSON
   # {Parsing \JSON}[#module-JSON-label-Parsing+JSON].
   #
   # Parses nested JSON objects:
-  #   source = <<-EOT
-  #   {
-  #   "name": "Dave",
-  #     "age" :40,
-  #     "hats": [
-  #       "Cattleman's",
-  #       "Panama",
-  #       "Tophat"
-  #     ]
-  #   }
-  #   EOT
+  #   source = <<~JSON
+  #     {
+  #     "name": "Dave",
+  #       "age" :40,
+  #       "hats": [
+  #         "Cattleman's",
+  #         "Panama",
+  #         "Tophat"
+  #       ]
+  #     }
+  #   JSON
   #   ruby = JSON.parse(source)
   #   ruby # => {"name"=>"Dave", "age"=>40, "hats"=>["Cattleman's", "Panama", "Tophat"]}
   #
@@ -445,17 +445,17 @@ module JSON
   # <tt>parse(source, opts)</tt>;  see #parse.
   #
   # Source for following examples:
-  #   source = <<-EOT
-  #   {
-  #   "name": "Dave",
-  #     "age" :40,
-  #     "hats": [
-  #       "Cattleman's",
-  #       "Panama",
-  #       "Tophat"
-  #     ]
-  #   }
-  #   EOT
+  #   source = <<~JSON
+  #     {
+  #       "name": "Dave",
+  #       "age" :40,
+  #       "hats": [
+  #         "Cattleman's",
+  #         "Panama",
+  #         "Tophat"
+  #       ]
+  #     }
+  #   JSON
   #
   # Load a \String:
   #   ruby = JSON.load(source)
