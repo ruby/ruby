@@ -9,8 +9,9 @@ class TestBignum_Big2str < Test::Unit::TestCase
   BDIGMAX = (1 << BITSPERDIG) - 1
 
   def test_big2str_generic
-    x = 10**1000
-    assert_equal("1" + "0" * 1000, Bug::Bignum.big2str_generic(x, 10))
+    e = BITSPERDIG * 1000
+    x = 2 * 10**e - 1
+    assert_equal("1" + "9" * e, Bug::Bignum.big2str_generic(x, 10))
   end
 
   def test_big2str_poweroftwo
