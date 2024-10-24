@@ -1519,16 +1519,22 @@ copy_compare_by_id(VALUE hash, VALUE basis)
 }
 
 VALUE
-rb_hash_new_with_size(st_index_t size)
+rb_hash_new_with_size_and_klass(VALUE klass, st_index_t size)
 {
     bool st = size > RHASH_AR_TABLE_MAX_SIZE;
-    VALUE ret = hash_alloc_flags(rb_cHash, 0, Qnil, st);
+    VALUE ret = hash_alloc_flags(klass, 0, Qnil, st);
 
     if (st) {
         hash_st_table_init(ret, &objhash, size);
     }
 
     return ret;
+}
+
+VALUE
+rb_hash_new_with_size(st_index_t size)
+{
+    return rb_hash_new_with_size_and_klass(rb_cHash, size);
 }
 
 VALUE
