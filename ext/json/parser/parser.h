@@ -26,6 +26,7 @@ typedef struct JSON_ParserStruct {
     char symbolize_names;
     char freeze;
     char create_additions;
+    char deprecated_create_additions;
 } JSON_Parser;
 
 #define GET_PARSER                          \

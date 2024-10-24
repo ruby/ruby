@@ -196,6 +196,9 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
             if (!NIL_P(klassname)) {
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
                 if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
+                    if (json->deprecated_create_additions) {
+                        rb_warn("JSON.load implicit support for `create_additions: true` is deprecated and will be removed in 3.0, use JSON.unsafe_load or explicitly pass `create_additions: true`");
+                    }
                     *result = rb_funcall(klass, i_json_create, 1, *result);
                 }
             }
@@ -783,10 +786,16 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         }
         tmp = ID2SYM(i_create_additions);
         if (option_given_p(opts, tmp)) {
-            json->create_additions = RTEST(rb_hash_aref(opts, tmp));
-        } else {
-            json->create_additions = 0;
+            tmp = rb_hash_aref(opts, tmp);
+            if (NIL_P(tmp)) {
+                json->create_additions = 1;
+                json->deprecated_create_additions = 1;
+            } else {
+                json->create_additions = RTEST(tmp);
+                json->deprecated_create_additions = 0;
+            }
         }
+
         if (json->symbolize_names && json->create_additions) {
             rb_raise(rb_eArgError,
                 "options :symbolize_names and :create_additions cannot be "
