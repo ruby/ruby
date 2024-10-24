@@ -3095,9 +3095,6 @@ stmts		: none
                 ;
 
 stmt_or_begin	: stmt
-                    {
-                        $$ = $1;
-                    }
                 | keyword_BEGIN
                     {
                         yyerror1(&@1, "BEGIN is permitted only at toplevel");
@@ -4076,9 +4073,6 @@ arg		: lhs '=' lex_ctxt arg_rhs
                         local_pop(p);
                     }
                 | primary
-                    {
-                        $$ = $1;
-                    }
                 ;
 
 endless_arg	: arg %prec modifier_rescue
@@ -4143,9 +4137,6 @@ arg_value	: arg
 
 aref_args	: none
                 | args trailer
-                    {
-                        $$ = $1;
-                    }
                 | args ',' assocs trailer
                     {
                         $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
@@ -4209,9 +4200,6 @@ opt_paren_args	: none
 opt_call_args	: none
                 | call_args
                 | args ','
-                    {
-                        $$ = $1;
-                    }
                 | args ',' assocs ','
                     {
                         $$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
@@ -5670,9 +5658,6 @@ p_args		: p_expr
                 ;
 
 p_args_head	: p_arg ','
-                    {
-                        $$ = $1;
-                    }
                 | p_args_head p_arg ','
                     {
                         $$ = list_concat($1, $2);
