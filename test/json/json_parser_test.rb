@@ -19,14 +19,14 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal 'test', parser.source
   end
 
-  def test_argument_encoding
-    source = "{}".encode("UTF-16")
+  def test_argument_encoding_unmodified
+    source = "{}".encode(Encoding::UTF_16)
     JSON::Parser.new(source)
     assert_equal Encoding::UTF_16, source.encoding
   end
 
-  def test_argument_encoding_for_binary
-    source = "{}".encode("ASCII-8BIT")
+  def test_argument_encoding_for_binary_unmodified
+    source = "{}".b
     JSON::Parser.new(source)
     assert_equal Encoding::ASCII_8BIT, source.encoding
   end
