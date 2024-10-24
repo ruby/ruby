@@ -89,6 +89,11 @@ VALUE rb_ary_new(void);
 VALUE rb_ary_new_capa(long capa);
 
 /**
+ * Identical to rb_ary_new_capa(), except it additionally specifies a klass
+ */
+VALUE rb_ary_new_capa_with_klass(VALUE klass, long capa);
+
+/**
  * Constructs an array from the passed objects.
  *
  * @param[in]  n    Number of passed objects.
