@@ -132,10 +132,8 @@ class Reline::Unicode
       case
       when non_printing_start
         in_zero_width = true
-        lines.last << NON_PRINTING_START
       when non_printing_end
         in_zero_width = false
-        lines.last << NON_PRINTING_END
       when csi
         lines.last << csi
         unless in_zero_width
@@ -147,7 +145,7 @@ class Reline::Unicode
         end
       when osc
         lines.last << osc
-        seq << osc
+        seq << osc unless in_zero_width
       when gc
         unless in_zero_width
           mbchar_width = get_mbchar_width(gc)
@@ -170,6 +168,10 @@ class Reline::Unicode
     [lines, height]
   end
 
+  def self.strip_non_printing_start_end(prompt)
+    prompt.gsub(/\x01([^\x02]*)(?:\x02|\z)/) { $1 }
+  end
+
   # Take a chunk of a String cut by width with escape sequences.
   def self.take_range(str, start_col, max_width)
     take_mbchar_range(str, start_col, max_width).first
@@ -189,10 +191,8 @@ class Reline::Unicode
       case
       when non_printing_start
         in_zero_width = true
-        chunk << NON_PRINTING_START
       when non_printing_end
         in_zero_width = false
-        chunk << NON_PRINTING_END
       when csi
         has_csi = true
         chunk << csi

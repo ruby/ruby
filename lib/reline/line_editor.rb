@@ -464,7 +464,7 @@ class Reline::LineEditor
   def render_finished
     render_differential([], 0, 0)
     lines = @buffer_of_lines.size.times.map do |i|
-      line = prompt_list[i] + modified_lines[i]
+      line = Reline::Unicode.strip_non_printing_start_end(prompt_list[i]) + modified_lines[i]
       wrapped_lines, = split_by_width(line, screen_width)
       wrapped_lines.last.empty? ? "#{line} " : line
     end
@@ -473,7 +473,7 @@ class Reline::LineEditor
 
   def print_nomultiline_prompt
     # Readline's test `TestRelineAsReadline#test_readline` requires first output to be prompt, not cursor reset escape sequence.
-    @output.write @prompt if @prompt && !@is_multiline
+    @output.write Reline::Unicode.strip_non_printing_start_end(@prompt) if @prompt && !@is_multiline
   end
 
   def render
