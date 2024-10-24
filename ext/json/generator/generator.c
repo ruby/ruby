@@ -46,6 +46,8 @@ static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *dat
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
 
+static int usascii_encindex, utf8_encindex, binary_encindex;
+
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
  *
@@ -535,7 +537,7 @@ static VALUE mString_to_json_raw_object(VALUE self)
     VALUE result = rb_hash_new();
     rb_hash_aset(result, rb_funcall(mJSON, i_create_id, 0), rb_class_name(rb_obj_class(self)));
     ary = rb_funcall(self, i_unpack, 1, rb_str_new2("C*"));
-    rb_hash_aset(result, rb_str_new2("raw"), ary);
+    rb_hash_aset(result, rb_utf8_str_new_lit("raw"), ary);
     return result;
 }
 
@@ -822,8 +824,6 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
     fbuffer_append_char(buffer, ']');
 }
 
-static int usascii_encindex, utf8_encindex, binary_encindex;
-
 static inline int enc_utf8_compatible_p(int enc_idx)
 {
     if (enc_idx == usascii_encindex) return 1;
@@ -837,13 +837,14 @@ static inline VALUE ensure_valid_encoding(VALUE str)
     VALUE utf8_string;
     if (RB_UNLIKELY(!enc_utf8_compatible_p(encindex))) {
         if (encindex == binary_encindex) {
-            // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
-            // TODO: Deprecate in 2.8.0
-            // TODO: Remove in 3.0.0
             utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
             switch (rb_enc_str_coderange(utf8_string)) {
                 case ENC_CODERANGE_7BIT:
+                    return utf8_string;
                 case ENC_CODERANGE_VALID:
+                    // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
+                    // TODO: Raise in 3.0.0
+                    rb_warn("JSON.generate: UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0");
                     return utf8_string;
                     break;
             }

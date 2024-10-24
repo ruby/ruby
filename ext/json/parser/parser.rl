@@ -693,9 +693,12 @@ static VALUE convert_encoding(VALUE source)
 
  if (encindex == binary_encindex) {
     // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
-    // TODO: Deprecate in 2.8.0
-    // TODO: Remove in 3.0.0
-    return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
+    VALUE utf8_string = rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
+    switch (rb_enc_str_coderange(utf8_string)) {
+      case ENC_CODERANGE_7BIT:
+      case ENC_CODERANGE_VALID:
+        return utf8_string;
+    }
   }
 
   return rb_str_conv_enc(source, rb_enc_from_index(encindex), rb_utf8_encoding());

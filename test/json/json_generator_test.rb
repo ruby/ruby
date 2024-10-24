@@ -507,8 +507,13 @@ class JSONGeneratorTest < Test::Unit::TestCase
       wrong_encoding_string = utf8_string.b
       # This behavior is historical. Not necessary desirable. We should deprecated it.
       # The pure and java version of the gem already don't behave this way.
-      assert_equal utf8_string.to_json, wrong_encoding_string.to_json
-      assert_equal JSON.dump(utf8_string), JSON.dump(wrong_encoding_string)
+      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
+        assert_equal utf8_string.to_json, wrong_encoding_string.to_json
+      end
+
+      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
+        assert_equal JSON.dump(utf8_string), JSON.dump(wrong_encoding_string)
+      end
     end
 
     def test_string_ext_included_calls_super
