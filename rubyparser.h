@@ -1194,7 +1194,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*attr_get)(VALUE obj, ID id);
 
     /* Array */
-    VALUE (*ary_new)(void);
     VALUE (*ary_push)(VALUE ary, VALUE elem);
     VALUE (*ary_new_from_args)(long n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);

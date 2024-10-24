@@ -86,7 +86,6 @@
 
 #define rb_attr_get p->config->attr_get
 
-#define rb_ary_new           p->config->ary_new
 #define rb_ary_push          p->config->ary_push
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
