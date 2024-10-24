@@ -162,6 +162,12 @@ class JSONAdditionTest < Test::Unit::TestCase
     assert_equal(/foo/i, JSON(JSON(/foo/i), :create_additions => true))
   end
 
+  def test_deprecated_load_create_additions
+    assert_warning(/use JSON\.unsafe_load/) do
+      JSON.load(JSON.dump(Time.now))
+    end
+  end
+
   def test_utc_datetime
     now = Time.now
     d = DateTime.parse(now.to_s) # usual case
