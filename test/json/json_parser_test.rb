@@ -247,50 +247,50 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_comments
-    json = <<EOT
-{
-  "key1":"value1", // eol comment
-  "key2":"value2"  /* multi line
-                    *  comment */,
-  "key3":"value3"  /* multi line
-                    // nested eol comment
-                    *  comment */
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1", // eol comment
+        "key2":"value2"  /* multi line
+                          *  comment */,
+        "key3":"value3"  /* multi line
+                          // nested eol comment
+                          *  comment */
+      }
+    JSON
     assert_equal(
       { "key1" => "value1", "key2" => "value2", "key3" => "value3" },
       parse(json))
-    json = <<EOT
-{
-  "key1":"value1"  /* multi line
-                    // nested eol comment
-                    /* illegal nested multi line comment */
-                    *  comment */
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1"  /* multi line
+                          // nested eol comment
+                          /* illegal nested multi line comment */
+                          *  comment */
+      }
+    JSON
     assert_raise(ParserError) { parse(json) }
-    json = <<EOT
-{
-  "key1":"value1"  /* multi line
-                    // nested eol comment
-                    /* legal nested multi line comment start sequence */
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1"  /* multi line
+                          // nested eol comment
+                          /* legal nested multi line comment start sequence */
+      }
+    JSON
     assert_equal({ "key1" => "value1" }, parse(json))
-    json = <<EOT
-{
-  "key1":"value1"  /* multi line
-                   // nested eol comment
-                   closed multi comment */
-                   and again, throw an Error */
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1"  /* multi line
+                         // nested eol comment
+                         closed multi comment */
+                         and again, throw an Error */
+      }
+    JSON
     assert_raise(ParserError) { parse(json) }
-    json = <<EOT
-{
-  "key1":"value1"  /*/*/
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1"  /*/*/
+      }
+    JSON
     assert_equal({ "key1" => "value1" }, parse(json))
   end
 

@@ -19,24 +19,24 @@ class JSONGeneratorTest < Test::Unit::TestCase
     }
     @json2 = '{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},' +
       '"g":"\\"\\u0000\\u001f","h":1000.0,"i":0.001}'
-    @json3 = <<'EOT'.chomp
-{
-  "a": 2,
-  "b": 3.141,
-  "c": "c",
-  "d": [
-    1,
-    "b",
-    3.14
-  ],
-  "e": {
-    "foo": "bar"
-  },
-  "g": "\"\u0000\u001f",
-  "h": 1000.0,
-  "i": 0.001
-}
-EOT
+    @json3 = <<~'JSON'.chomp
+      {
+        "a": 2,
+        "b": 3.141,
+        "c": "c",
+        "d": [
+          1,
+          "b",
+          3.14
+        ],
+        "e": {
+          "foo": "bar"
+        },
+        "g": "\"\u0000\u001f",
+        "h": 1000.0,
+        "i": 0.001
+      }
+    JSON
   end
 
   def silence
@@ -93,13 +93,13 @@ EOT
     assert_equal('{}', json)
 
     json = pretty_generate({1=>{}, 2=>[], 3=>4})
-    assert_equal(<<'EOT'.chomp, json)
-{
-  "1": {},
-  "2": [],
-  "3": 4
-}
-EOT
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+        "1": {},
+        "2": [],
+        "3": 4
+      }
+    JSON
 
     json = pretty_generate(@hash)
     # hashes aren't (insertion) ordered on every ruby implementation
@@ -108,11 +108,11 @@ EOT
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = pretty_generate({1=>2})
-    assert_equal(<<'EOT'.chomp, json)
-{
-  "1": 2
-}
-EOT
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+        "1": 2
+      }
+    JSON
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
     assert_equal '666', pretty_generate(666)
@@ -121,14 +121,14 @@ EOT
   def test_generate_custom
     state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
     json = generate({1=>{2=>3,4=>[5,6]}}, state)
-    assert_equal(<<'EOT'.chomp, json)
-{
-<i>"1" :   {
-<i><i>"2" :   3,
-<i><i>"4" :   [<a_nl><i><i><i>5,<a_nl><i><i><i>6<a_nl><i><i>]
-<i>}
-}
-EOT
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+      <i>"1" :   {
+      <i><i>"2" :   3,
+      <i><i>"4" :   [<a_nl><i><i><i>5,<a_nl><i><i><i>6<a_nl><i><i>]
+      <i>}
+      }
+    JSON
   end
 
   def test_fast_generate
