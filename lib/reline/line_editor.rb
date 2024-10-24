@@ -800,7 +800,7 @@ class Reline::LineEditor
 
   private def complete_internal_proc(list, is_menu)
     preposing, target, postposing = retrieve_completion_block
-    list = list.select { |i|
+    candidates = list.select { |i|
       if i and not Encoding.compatible?(target.encoding, i.encoding)
         raise Encoding::CompatibilityError, "#{target.encoding.name} is not compatible with #{i.encoding.name}"
       end
@@ -811,10 +811,10 @@ class Reline::LineEditor
       end
     }.uniq
     if is_menu
-      menu(target, list)
+      menu(target, candidates)
       return nil
     end
-    completed = list.inject { |memo, item|
+    completed = candidates.inject { |memo, item|
       begin
         memo_mbchars = memo.unicode_normalize.grapheme_clusters
         item_mbchars = item.unicode_normalize.grapheme_clusters
@@ -841,7 +841,8 @@ class Reline::LineEditor
       end
       result
     }
-    [target, preposing, completed, postposing]
+
+    [target, preposing, completed, postposing, candidates]
   end
 
   private def perform_completion(list, just_show_list)
@@ -869,24 +870,26 @@ class Reline::LineEditor
       @completion_state = CompletionState::PERFECT_MATCH
     end
     return if result.nil?
-    target, preposing, completed, postposing = result
+    target, preposing, completed, postposing, candidates = result
     return if completed.nil?
     if target <= completed and (@completion_state == CompletionState::COMPLETION)
-      if list.include?(completed)
-        if list.one?
+      append_character = ''
+      if candidates.include?(completed)
+        if candidates.one?
+          append_character = completion_append_character.to_s
           @completion_state = CompletionState::PERFECT_MATCH
         else
           @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
-          perform_completion(list, true) if @config.show_all_if_ambiguous
+          perform_completion(candidates, true) if @config.show_all_if_ambiguous
         end
         @perfect_matched = completed
       else
         @completion_state = CompletionState::MENU
-        perform_completion(list, true) if @config.show_all_if_ambiguous
+        perform_completion(candidates, true) if @config.show_all_if_ambiguous
       end
-      if not just_show_list and target < completed
-        @buffer_of_lines[@line_index] = (preposing + completed + completion_append_character.to_s + postposing).split("\n")[@line_index] || String.new(encoding: encoding)
-        line_to_pointer = (preposing + completed + completion_append_character.to_s).split("\n")[@line_index] || String.new(encoding: encoding)
+      unless just_show_list
+        @buffer_of_lines[@line_index] = (preposing + completed + append_character + postposing).split("\n")[@line_index] || String.new(encoding: encoding)
+        line_to_pointer = (preposing + completed + append_character).split("\n")[@line_index] || String.new(encoding: encoding)
         @byte_pointer = line_to_pointer.bytesize
       end
     end
