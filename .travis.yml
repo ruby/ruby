@@ -28,8 +28,6 @@ env:
   global:
     - NPROC="$(nproc)"
     - JOBS="-j${NPROC}"
-    # SETARCH are overridden when necessary. See below.
-    - SETARCH=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
@@ -72,52 +70,17 @@ env:
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
       - DFLTCC=0
-  - &arm32-linux
-    name: arm32-linux
-    arch: arm64
-    # https://packages.ubuntu.com/jammy/crossbuild-essential-armhf
-    compiler: arm-linux-gnueabihf-gcc
-    env:
-      - SETARCH='setarch linux32 --verbose --32bit'
-      # Still keep the -O1 for only arm32, while we want to test with the
-      # default optflags -O3.
-      # Because bootstraptest/test_ractor.rb fails with segfualt with the
-      # default -O3.
-      # https://bugs.ruby-lang.org/issues/19981
-      - optflags=-O1
-    before_install:
-      - sudo dpkg --add-architecture armhf
-      - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
-      - >-
-        tool/travis_retry.sh sudo -E apt-get $travis_apt_get_options install
-        crossbuild-essential-armhf
-        libc6:armhf
-        libstdc++-10-dev:armhf
-        libffi-dev:armhf
-        libncurses-dev:armhf
-        libncursesw5-dev:armhf
-        libreadline-dev:armhf
-        libssl-dev:armhf
-        libyaml-dev:armhf
-        linux-libc-dev:armhf
-        zlib1g-dev:armhf
 
 matrix:
   include:
     - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
-    # FIXME: lib/rubygems/util.rb:104 glob_files_in_dir -
-    # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
-    # https://github.com/rubygems/rubygems/issues/7132
-    - <<: *arm32-linux
   allow_failures:
     # The arm64 is very slow to start the jobs.
     - name: arm64-linux
     - name: ppc64le-linux
     - name: s390x-linux
-    # The arm64 is very slow to start the jobs.
-    - name: arm32-linux
   fast_finish: true
 
 before_script:
@@ -125,18 +88,18 @@ before_script:
   - ./autogen.sh
   - mkdir build
   - cd build
-  - $SETARCH ../configure -C --disable-install-doc --prefix=$(pwd)/install
-  - $SETARCH make -s $JOBS
+  - ../configure -C --disable-install-doc --prefix=$(pwd)/install
+  - make -s $JOBS
   - make -s $JOBS install
   # Useful info to report issues to the Ruby.
-  - $SETARCH $(pwd)/install/bin/ruby -v
+  - $(pwd)/install/bin/ruby -v
   # Useful info To report issues to the RubyGems.
-  - $SETARCH $(pwd)/install/bin/gem env
+  - $(pwd)/install/bin/gem env
 
 script:
-  - $SETARCH make -s test
-  - ../tool/travis_wait.sh $SETARCH make -s test-all RUBYOPT="-w"
-  - ../tool/travis_wait.sh $SETARCH make -s test-spec
+  - make -s test
+  - ../tool/travis_wait.sh make -s test-all RUBYOPT="-w"
+  - ../tool/travis_wait.sh make -s test-spec
 
 # We want to be notified when something happens.
 notifications:
