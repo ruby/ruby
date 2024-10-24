@@ -1275,10 +1275,7 @@ ensure_class_or_module(VALUE obj)
 static VALUE
 hidden_identity_hash_new(void)
 {
-    VALUE hash = rb_ident_hash_new();
-
-    RBASIC_CLEAR_CLASS(hash); /* hide from ObjectSpace */
-    return hash;
+    return rb_obj_hide(rb_ident_hash_new());
 }
 
 static VALUE
