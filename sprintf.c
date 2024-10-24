@@ -67,7 +67,8 @@ sign_bits(int base, const char *p)
 
 #define CHECK(l) do {\
     int cr = ENC_CODERANGE(result);\
-    while ((l) >= bsiz - blen) {\
+    RUBY_ASSERT(bsiz >= blen); \
+    while ((l) > bsiz - blen) {\
         bsiz*=2;\
         if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
     }\
