@@ -84,6 +84,7 @@ static struct strscanner *check_strscan _((VALUE obj));
 static void strscan_mark _((void *p));
 static void strscan_free _((void *p));
 static size_t strscan_memsize _((const void *p));
+static void strscan_compact _((void *p));
 static VALUE strscan_s_allocate _((VALUE klass));
 static VALUE strscan_initialize _((int argc, VALUE *argv, VALUE self));
 static VALUE strscan_init_copy _((VALUE vself, VALUE vorig));
@@ -175,8 +176,8 @@ static void
 strscan_mark(void *ptr)
 {
     struct strscanner *p = ptr;
-    rb_gc_mark(p->str);
-    rb_gc_mark(p->regex);
+    rb_gc_mark_movable(p->str);
+    rb_gc_mark_movable(p->regex);
 }
 
 static void
@@ -184,7 +185,6 @@ strscan_free(void *ptr)
 {
     struct strscanner *p = ptr;
     onig_region_free(&(p->regs), 0);
-    ruby_xfree(p);
 }
 
 static size_t
@@ -198,10 +198,18 @@ strscan_memsize(const void *ptr)
     return size;
 }
 
+static void
+strscan_compact(void *ptr)
+{
+    struct strscanner *p = ptr;
+    p->str = rb_gc_location(p->str);
+    p->regex = rb_gc_location(p->regex);
+}
+
 static const rb_data_type_t strscanner_type = {
     "StringScanner",
-    {strscan_mark, strscan_free, strscan_memsize},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    {strscan_mark, strscan_free, strscan_memsize, strscan_compact},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -266,7 +274,7 @@ strscan_initialize(int argc, VALUE *argv, VALUE self)
         p->fixed_anchor_p = false;
     }
     StringValue(str);
-    p->str = str;
+    RB_OBJ_WRITE(self, &p->str, str);
 
     return self;
 }
@@ -296,7 +304,7 @@ strscan_init_copy(VALUE vself, VALUE vorig)
     orig = check_strscan(vorig);
     if (self != orig) {
 	self->flags = orig->flags;
-	self->str = orig->str;
+	RB_OBJ_WRITE(vself, &self->str, orig->str);
 	self->prev = orig->prev;
 	self->curr = orig->curr;
 	if (rb_reg_region_copy(&self->regs, &orig->regs))
@@ -460,7 +468,7 @@ strscan_set_string(VALUE self, VALUE str)
     struct strscanner *p = check_strscan(self);
 
     StringValue(str);
-    p->str = str;
+    RB_OBJ_WRITE(self, &p->str, str);
     p->curr = 0;
     CLEAR_MATCH_STATUS(p);
     return str;
@@ -694,7 +702,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
     }
 
     if (RB_TYPE_P(pattern, T_REGEXP)) {
-        p->regex = pattern;
+        RB_OBJ_WRITE(self, &p->regex, pattern);
         OnigPosition ret = rb_reg_onig_match(pattern,
                                              p->str,
                                              headonly ? strscan_match : strscan_search,
