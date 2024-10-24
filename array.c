@@ -4495,6 +4495,7 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 /*
  *  call-seq:
  *    array.transpose -> new_array
+ *    array.transpose(size) -> new_array
  *
  *  Transposes the rows and columns in an +Array+ of Arrays;
  *  the nested Arrays must all be the same size:
@@ -4502,26 +4503,43 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
  *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
  *    a.transpose # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
  *
+ *  With non-negative \Integer argument +size+, ensures the
+ *  resulting Array has that size:
+ *
+ *    a = [[:a0, :a1], [:b0, :b1], [:c0, :c1]]
+ *    a.transpose(2) # => [[:a0, :b0, :c0], [:a1, :b1, :c1]]
+ *    a.transpose(3)
+ *    # IndexError (element size differs (2 should be 3))
+ *
+ *    a = []
+ *    a.transpose(2) # => [[], []]
+ *    a.transpose(3) # => [[], [], []]
+ *
  */
 
 static VALUE
-rb_ary_transpose(VALUE ary)
+rb_ary_transpose(int argc, VALUE *argv, VALUE ary)
 {
     long elen = -1, alen, i, j;
     VALUE tmp, result = 0;
 
     alen = RARRAY_LEN(ary);
-    if (alen == 0) return rb_ary_dup(ary);
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
+        elen = NUM2INT(argv[0]);
+        if (alen > 0) tmp = to_ary(rb_ary_elt(ary, 0));
+    } else {
+        if (alen == 0) return rb_ary_dup(ary);
+        tmp = to_ary(rb_ary_elt(ary, 0));
+        elen = RARRAY_LEN(tmp);
+    }
+    result = rb_ary_new2(elen);
+    for (i=0; i<elen; i++) {
+        rb_ary_store(result, i, rb_ary_new2(alen));
+    }
+
     for (i=0; i<alen; i++) {
-        tmp = to_ary(rb_ary_elt(ary, i));
-        if (elen < 0) {		/* first element */
-            elen = RARRAY_LEN(tmp);
-            result = rb_ary_new2(elen);
-            for (j=0; j<elen; j++) {
-                rb_ary_store(result, j, rb_ary_new2(alen));
-            }
-        }
-        else if (elen != RARRAY_LEN(tmp)) {
+        if (i > 0) tmp = to_ary(rb_ary_elt(ary, i));
+        if (elen != RARRAY_LEN(tmp)) {
             rb_raise(rb_eIndexError, "element size differs (%ld should be %ld)",
                      RARRAY_LEN(tmp), elen);
         }
@@ -8655,7 +8673,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "reject", rb_ary_reject, 0);
     rb_define_method(rb_cArray, "reject!", rb_ary_reject_bang, 0);
     rb_define_method(rb_cArray, "zip", rb_ary_zip, -1);
-    rb_define_method(rb_cArray, "transpose", rb_ary_transpose, 0);
+    rb_define_method(rb_cArray, "transpose", rb_ary_transpose, -1);
     rb_define_method(rb_cArray, "replace", rb_ary_replace, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);
     rb_define_method(rb_cArray, "fill", rb_ary_fill, -1);
