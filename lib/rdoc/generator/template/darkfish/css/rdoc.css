@@ -258,6 +258,10 @@ nav ul li details > summary {
   position: relative; /* So that the open/close triangle can position itself absolutely inside */
 }
 
+nav ul li details > summary::-webkit-details-marker {
+  display: none;  /* Removes the default marker, in Safari 18. */
+}
+
 nav ul li details > summary::after {
   content: '▶';  /* Unicode right-pointing triangle */
   position: absolute;
