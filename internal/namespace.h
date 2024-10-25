@@ -57,6 +57,7 @@ void rb_namespace_disable_builtin(void);
 void rb_namespace_push_loading_namespace(const rb_namespace_t *);
 void rb_namespace_pop_loading_namespace(const rb_namespace_t *);
 rb_namespace_t * rb_root_namespace(void);
+const rb_namespace_t *rb_builtin_namespace(void);
 rb_namespace_t * rb_main_namespace(void);
 const rb_namespace_t * rb_definition_namespace(void);
 const rb_namespace_t * rb_loading_namespace(void);

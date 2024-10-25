@@ -2582,6 +2582,69 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
+struct autoload_copy_table_data {
+    VALUE dst_tbl_value;
+    struct st_table *dst_tbl;
+    const rb_namespace_t *ns;
+};
+
+static int
+autoload_copy_table_for_namespace_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    struct autoload_const *autoload_const;
+    struct autoload_copy_table_data *data = (struct autoload_copy_table_data *)arg;
+    struct st_table *tbl = data->dst_tbl;
+    VALUE tbl_value = data->dst_tbl_value;
+    const rb_namespace_t *ns = data->ns;
+
+    VALUE src_value = (VALUE)value;
+    struct autoload_const *src_const = rb_check_typeddata(src_value, &autoload_const_type);
+    // autoload_data can be shared between copies because the feature is equal between copies.
+    VALUE autoload_data_value = src_const->autoload_data_value;
+    struct autoload_data *autoload_data = rb_check_typeddata(autoload_data_value, &autoload_data_type);
+
+    VALUE new_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
+    autoload_const->namespace = rb_get_namespace_object((rb_namespace_t *)ns);
+    autoload_const->module = src_const->module;
+    autoload_const->name = src_const->name;
+    autoload_const->value = src_const->value;
+    autoload_const->flag = src_const->flag;
+    autoload_const->autoload_data_value = autoload_data_value;
+    ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
+
+    st_insert(tbl, (st_data_t)autoload_const->name, (st_data_t)new_value);
+    RB_OBJ_WRITTEN(tbl_value, Qundef, new_value);
+
+    return ST_CONTINUE;
+}
+
+void
+rb_autoload_copy_table_for_namespace(st_table *iv_ptr, const rb_namespace_t *ns)
+{
+    struct st_table *src_tbl, *dst_tbl;
+    VALUE src_tbl_value, dst_tbl_value;
+    if (!rb_st_lookup(iv_ptr, (st_data_t)autoload, (st_data_t *)&src_tbl_value)) {
+        // the class has no autoload table yet.
+        return;
+    }
+    if (!RTEST(src_tbl_value) || !(src_tbl = check_autoload_table(src_tbl_value))) {
+        // the __autoload__ ivar value isn't autoload table value.
+        return;
+    }
+    src_tbl = check_autoload_table(src_tbl_value);
+
+    dst_tbl_value = TypedData_Wrap_Struct(0, &autoload_table_type, NULL);
+    RTYPEDDATA_DATA(dst_tbl_value) = dst_tbl = st_init_numtable();
+
+    struct autoload_copy_table_data data = {
+        .dst_tbl_value = dst_tbl_value,
+        .dst_tbl = dst_tbl,
+        .ns = ns,
+    };
+
+    st_foreach(src_tbl, autoload_copy_table_for_namespace_i, (st_data_t)&data);
+}
+
 void
 rb_autoload(VALUE module, ID name, const char *feature)
 {
@@ -2994,6 +3057,13 @@ autoload_feature_require_ensure_in_builtin(VALUE _arg)
 }
 
 static VALUE
+autoload_feature_require_in_builtin_wrap(VALUE arg)
+{
+    return rb_ensure(autoload_feature_require_in_builtin, arg,
+                     autoload_feature_require_ensure_in_builtin, Qnil);
+}
+
+static VALUE
 autoload_feature_require(VALUE _arguments)
 {
     VALUE receiver = rb_vm_top_self();
@@ -3020,8 +3090,7 @@ autoload_feature_require(VALUE _arguments)
             .receiver = receiver,
             .feature = arguments->autoload_data->feature,
         };
-        return rb_ensure(autoload_feature_require_in_builtin, (VALUE)&data,
-                         autoload_feature_require_ensure_in_builtin, Qnil);
+        return rb_namespace_exec(rb_builtin_namespace(), autoload_feature_require_in_builtin_wrap, (VALUE)&data);
     }
 
     if (RTEST(autoload_namespace)) {

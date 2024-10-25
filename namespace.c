@@ -79,7 +79,6 @@ rb_namespace_enable_builtin(void)
     if (require_stack) {
         rb_ary_push(require_stack, Qnil);
     }
-    namespace_push(GET_THREAD(), builtin_namespace->ns_object);
 }
 
 void
@@ -89,7 +88,6 @@ rb_namespace_disable_builtin(void)
     if (require_stack) {
         rb_ary_pop(require_stack);
     }
-    namespace_pop((VALUE)GET_THREAD());
 }
 
 void
@@ -116,6 +114,12 @@ rb_namespace_t *
 rb_root_namespace(void)
 {
     return root_namespace;
+}
+
+const rb_namespace_t *
+rb_builtin_namespace(void)
+{
+    return (const rb_namespace_t *)builtin_namespace;
 }
 
 rb_namespace_t *
@@ -438,6 +442,8 @@ rb_get_namespace_t(VALUE namespace)
     VALUE entry;
     ID id_namespace_entry;
 
+    if (!namespace)
+        return root_namespace;
     if (NIL_P(namespace))
         return builtin_namespace;
 

@@ -289,6 +289,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
     // TODO: consider shapes for performance
     if (RCLASSEXT_IV_PTR(orig)) {
         RCLASSEXT_IV_PTR(ext) = (VALUE *)st_copy((st_table *)RCLASSEXT_IV_PTR(orig));
+        rb_autoload_copy_table_for_namespace((st_table *)RCLASSEXT_IV_PTR(ext), ns);
     } else {
         RCLASSEXT_IV_PTR(ext) = (VALUE *)st_init_numtable();
     }
