@@ -219,7 +219,12 @@ module JSON
     if opts.nil?
       Parser.new(source).parse
     else
-      Parser.new(source, opts).parse
+      # NB: The ** shouldn't be required, but we have to deal with
+      # different versions of the `json` and `json_pure` gems being
+      # loaded concurrently.
+      # Prior to 2.7.3, `JSON::Ext::Parser` would only take kwargs.
+      # Ref: https://github.com/ruby/json/issues/650
+      Parser.new(source, **opts).parse
     end
   end
 
