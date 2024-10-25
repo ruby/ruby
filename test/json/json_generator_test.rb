@@ -268,19 +268,19 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_gc
-    if respond_to?(:assert_in_out_err) && !(RUBY_PLATFORM =~ /java/)
-      assert_in_out_err(%w[-rjson -Ilib -Iext], <<-EOS, [], [])
-        bignum_too_long_to_embed_as_string = 1234567890123456789012345
-        expect = bignum_too_long_to_embed_as_string.to_s
-        GC.stress = true
+    pid = fork do
+      bignum_too_long_to_embed_as_string = 1234567890123456789012345
+      expect = bignum_too_long_to_embed_as_string.to_s
+      GC.stress = true
 
-        10.times do |i|
-          tmp = bignum_too_long_to_embed_as_string.to_json
-          raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
-        end
-      EOS
+      10.times do |i|
+        tmp = bignum_too_long_to_embed_as_string.to_json
+        raise "#{expect}' is expected, but '#{tmp}'" unless tmp == expect
+      end
     end
-  end if GC.respond_to?(:stress=)
+    _, status = Process.waitpid2(pid)
+    assert_predicate status, :success?
+  end if GC.respond_to?(:stress=) && Process.respond_to?(:fork)
 
   def test_configure_using_configure_and_merge
     numbered_state = {
