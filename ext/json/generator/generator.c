@@ -1521,4 +1521,6 @@ void Init_generator(void)
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();
     binary_encindex = rb_ascii8bit_encindex();
+
+    rb_require("json/ext/generator/state");
 }
