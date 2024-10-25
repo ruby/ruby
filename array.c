@@ -3743,17 +3743,76 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
 
 /*
  *  call-seq:
- *    array.values_at(*indexes) -> new_array
+ *    values_at(*specifiers) -> new_array
  *
- *  Returns a new +Array+ whose elements are the elements
- *  of +self+ at the given Integer or Range +indexes+.
+ *  Returns elements from +self+; does not modify +self+.
  *
- *  For each positive +index+, returns the element at offset +index+:
+ *  In brief:
  *
- *    a = [:foo, 'bar', 2]
- *    a.values_at(0, 2) # => [:foo, 2]
- *    a.values_at(0..1) # => [:foo, "bar"]
+ *    a = ['a', 'b', 'c', 'd']
  *
+ *    # Index arguments.
+ *    a.values_at(2, 0, 2, 50)    # => ["c", "a", "c", nil]
+ *    a.values_at(-4, -3, -2, -1) # => ["a", "b", "c", "d"]
+ *    a.values_at(-50, 50)        # => [nil, nil]
+ *
+ *    # Range arguments.
+ *    a.values_at(1..3)       # => ["b", "c", "d"]
+ *    a.values_at(1...3)      # => ["b", "c"]
+ *    a.values_at(3..1)       # => []
+ *    a.values_at(2..3, 0..1) # => ["c", "d", "a", "b"]
+ *
+ *    # Negative range.start.
+ *    a.values_at(-3..3)  # => ["b", "c", "d"]
+ *    a.values_at(-50..3) # Raises RangeError.
+ *
+ *    # Negative range.end.
+ *    a.values_at(1..-2)  # => ["b", "c"]
+ *    a.values_at(1..-50) # => []
+ *
+ *    # Mixture of arguments.
+ *    a.values_at(2..3, 3, 0..1, 0) # => ["c", "d", "d", "a", "b", "a"]
+ *
+ *  Returns a new array whose elements are the elements
+ *  of +self+ at the given +specifiers+,
+ *  each of which must be a numeric index or a Range.
+ *
+ *  With no arguments given, returns a new empty array.
+ *
+ *  For each non-negative numeric specifier +index+ that is in-range (less than <tt>self.size</tt>),
+ *  returns the element at offset +index+:
+ *
+ *    a = ['a', 'b', 'c', 'd']
+ *    a.values_at(0, 2)     # => ["a", "c"]
+ *    a.values_at(0.1, 2.9) # => ["a", "c"]
+ *
+ *  For each negative numeric +index+ that is in-range (greater than <tt>- self.size</tt>),
+ *  counts backwards from the end of +self+:
+ *
+ *    a.values_at(-1, -4) # => ["d", "a"]
+ *
+ *  Assigns +nil+ for an +index+ that is out-of-range:
+ *
+ *    a.values_at(4, -5) # => [nil, nil]
+ *
+ *  For each Range specifier +range+, returns elements
+ *  according to <tt>range.begin</tt> and <tt>range.end</tt>:
+ *
+ *  - If both are non-negative and in-range (less than <tt>self.size</tt>),
+ *    returns elements from index <tt>range.begin</tt>
+ *    through <tt>range.end</tt> (if <tt>range.exclude_end?</tt> is +false+),
+ *    or through <tt>range.end - 1</tt> (otherwise):
+ *
+ *      a.values_at(1..2)  # => ["b", "c"]
+ *      a.values_at(1...2) # => ["b"]
+ *
+ *  - If <tt>range.begin</tt> is negative and in-range (greater than <tt>- self.size</tt>),
+ *
+ *  - If <tt>range.begin</tt> is negative and out-of-range, raises RangeError.
+ *
+ *  - If <tt>range.end</tt> is negative and
+ *
+ *      a.values_at(-3..2) # => ["b", "c"]
  *  The given +indexes+ may be in any order, and may repeat:
  *
  *    a = [:foo, 'bar', 2]
@@ -3764,8 +3823,6 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *
  *    a = [:foo, 'bar', 2]
  *    a.values_at(0, 3, 1, 3) # => [:foo, nil, "bar", nil]
- *
- *  Returns a new empty +Array+ if no arguments given.
  *
  *  For each negative +index+, counts backward from the end of the array:
  *
