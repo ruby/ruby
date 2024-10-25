@@ -189,7 +189,7 @@ invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID
             rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
         }
         rb_id_table_delete(tbl, mid);
-        // vm_cme_invalidate((rb_callable_method_entry_t *) cme); // TODO: check this is needed or not
+        vm_cme_invalidate((rb_callable_method_entry_t *) cme);
         RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_callable);
     }
 }
@@ -300,7 +300,6 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 }
 
                 if (cme->def->iseq_overload) {
-                    // TODO: check this feature
                     rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
                     if (monly_cme) {
                         vm_cme_invalidate(monly_cme);
@@ -1451,7 +1450,7 @@ rb_method_entry(VALUE klass, ID id)
 static inline const rb_callable_method_entry_t *
 prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_t * const me, int create)
 {
-    struct rb_id_table *mtbl, *prime_mtbl;
+    struct rb_id_table *mtbl;
     const rb_callable_method_entry_t *cme;
     VALUE cme_data;
     int cme_found = 0;
@@ -1466,13 +1465,6 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
             if (mtbl && rb_id_table_lookup(mtbl, id, &cme_data)) {
                 cme = (rb_callable_method_entry_t *)cme_data;
                 cme_found = 1;
-            } else {
-                /* the called method may be defined in the root namespace and it must be the prime classext */
-                prime_mtbl = RCLASS_PRIME_CALLABLE_M_TBL(defined_class);
-                if (prime_mtbl && rb_id_table_lookup(prime_mtbl, id, &cme_data)) {
-                    cme = (rb_callable_method_entry_t *)cme_data;
-                    cme_found = 1;
-                }
             }
             if (cme_found) {
                 RB_DEBUG_COUNTER_INC(mc_cme_complement_hit);
