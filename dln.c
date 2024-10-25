@@ -284,7 +284,7 @@ dln_incompatible_func(void *handle, const char *funcname, void *const fp, const 
     void *ex = dlsym(handle, funcname);
     if (!ex) return false;
     if (ex == fp) return false;
-#  if defined(HAVE_DLADDR)
+#  if defined(HAVE_DLADDR) && !defined(__CYGWIN__)
     Dl_info dli;
     if (dladdr(ex, &dli)) {
         *libname = dli.dli_fname;
