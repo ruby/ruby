@@ -6155,32 +6155,30 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
 
 /*
  *  call-seq:
- *    array.uniq! -> self or nil
- *    array.uniq! {|element| ... } -> self or nil
+ *    uniq! -> self or nil
+ *    uniq! {|element| ... } -> self or nil
  *
  *  Removes duplicate elements from +self+, the first occurrence always being retained;
  *  returns +self+ if any elements removed, +nil+ otherwise.
  *
  *  With no block given, identifies and removes elements using method <tt>eql?</tt>
- *  to compare.
- *
- *  Returns +self+ if any elements removed:
+ *  to compare elements:
  *
  *    a = [0, 0, 1, 1, 2, 2]
  *    a.uniq! # => [0, 1, 2]
- *
- *  Returns +nil+ if no elements removed.
+ *    a.uniq! # => nil
  *
  *  With a block given, calls the block for each element;
- *  identifies (using method <tt>eql?</tt>) and removes
- *  elements for which the block returns duplicate values.
- *
- *  Returns +self+ if any elements removed:
+ *  identifies and omits "duplicate" elements using method <tt>eql?</tt>
+ *  to compare <i>block return values</i>;
+ *  that is, an element is a duplicate if its block return value
+ *  is the same as that of a previous element:
  *
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
- *    a.uniq! {|element| element.size } # => ['a', 'aa', 'aaa']
+ *    a.uniq! {|element| element.size } # => ["a", "aa", "aaa"]
+ *    a.uniq! {|element| element.size } # => nil
  *
- *  Returns +nil+ if no elements removed.
+ *  Related: see {Methods for Deleting}[rdoc-ref:Array@Methods+for+Deleting].
  */
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
