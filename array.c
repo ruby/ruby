@@ -6235,7 +6235,7 @@ rb_ary_uniq_bang(VALUE ary)
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
  *    a.uniq {|element| element.size } # => ["a", "aa", "aaa"]
  *
- *  Related: {Methos for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
+ *  Related: {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
