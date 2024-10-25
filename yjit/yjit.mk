@@ -33,9 +33,9 @@ else ifeq ($(YJIT_SUPPORT),$(filter dev dev_nodebug stats,$(YJIT_SUPPORT)))
 $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT ($(YJIT_SUPPORT) mode)'
 	+$(Q)$(CHDIR) $(top_srcdir)/yjit && \
-	        CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
-	        CARGO_TERM_PROGRESS_WHEN='never' \
-	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
+			CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
+			CARGO_TERM_PROGRESS_WHEN='never' \
+			$(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
 	$(YJIT_LIB_TOUCH)
 else
 endif
