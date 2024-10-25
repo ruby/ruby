@@ -1,12 +1,12 @@
 case ENV['JSON']
 when 'pure'
-  $:.unshift File.join(__dir__, '../../lib')
+  $LOAD_PATH.unshift(File.expand_path('../../../lib', __FILE__))
   require 'json/pure'
 when 'ext'
-  $:.unshift File.join(__dir__, '../../ext'), File.join(__dir__, '../../lib')
+  $LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
   require 'json/ext'
 else
-  $:.unshift File.join(__dir__, '../../ext'), File.join(__dir__, '../../lib')
+  $LOAD_PATH.unshift(File.expand_path('../../../ext', __FILE__), File.expand_path('../../../lib', __FILE__))
   require 'json'
 end
 
