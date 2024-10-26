@@ -4422,6 +4422,8 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
     bool existing = false;
     rb_check_frozen(obj);
 
+    rb_class_ensure_writable(obj);
+
     RB_VM_LOCK_ENTER();
     {
         existing = general_ivar_set(obj, id, val, NULL,

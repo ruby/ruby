@@ -301,6 +301,7 @@ void rb_class_debug_print_classext(const char *label, const char *opt, VALUE kla
 
 /* class.c */
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_namespace_t *ns);
+void rb_class_ensure_writable(VALUE obj);
 
 static inline int
 RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)

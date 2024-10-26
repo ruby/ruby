@@ -277,6 +277,8 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 rb_classext_t *
 rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace_t *ns)
 {
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+
     rb_classext_t *ext = ZALLOC(rb_classext_t);
     bool dup_iclass = RB_TYPE_P(klass, T_MODULE) ? true : false;
 
@@ -355,6 +357,13 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
     }
 
     return ext;
+}
+
+void
+rb_class_ensure_writable(VALUE klass)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    RCLASS_EXT_WRITABLE(klass);
 }
 
 struct class_classext_foreach_arg {
