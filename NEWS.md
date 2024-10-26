@@ -80,11 +80,11 @@ The following default gems are updated.
 * RubyGems 3.6.0.dev
 * bundler 2.6.0.dev
 * erb 4.0.4
-* fiddle 1.1.4.dev
+* fiddle 1.1.5.dev
 * io-console 0.7.2
 * ipaddr 1.2.7
 * irb 1.14.1
-* json 2.7.2
+* json 2.8.0.alpha1
 * logger 1.6.1
 * net-http 0.4.1
 * optparse 0.5.0
