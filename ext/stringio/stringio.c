@@ -961,6 +961,7 @@ strio_ungetc(VALUE self, VALUE c)
     }
     else {
 	StringValue(c);
+	if (RSTRING_LEN(c) == 0) return Qnil;
 	enc = rb_enc_get(ptr->string);
 	enc2 = rb_enc_get(c);
 	if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
