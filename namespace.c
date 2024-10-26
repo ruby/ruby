@@ -128,7 +128,7 @@ rb_main_namespace(void)
     return main_namespace;
 }
 
-bool
+static bool
 namespace_ignore_builtin_primitive_methods_p(const rb_namespace_t *ns, rb_method_definition_t *def)
 {
     if (!NAMESPACE_BUILTIN_P(ns)) {
