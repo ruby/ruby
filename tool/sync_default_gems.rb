@@ -197,7 +197,7 @@ module SyncDefaultGems
       cp_r("#{upstream}/lib", "ext/json")
       cp_r("#{upstream}/json.gemspec", "ext/json")
       rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
-      `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
+      `git checkout ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
     when "psych"
       rm_rf(%w[ext/psych test/psych])
       cp_r("#{upstream}/ext/psych", "ext")
