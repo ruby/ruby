@@ -957,7 +957,7 @@ strio_ungetc(VALUE self, VALUE c)
 	return strio_unget_bytes(ptr, buf, len);
     }
     else {
-	SafeStringValue(c);
+	StringValue(c);
 	enc = rb_enc_get(ptr->string);
 	enc2 = rb_enc_get(c);
 	if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
@@ -992,7 +992,7 @@ strio_ungetbyte(VALUE self, VALUE c)
     }
     else {
 	long cl;
-	SafeStringValue(c);
+	StringValue(c);
 	cl = RSTRING_LEN(c);
 	if (cl > 0) {
 	    strio_unget_bytes(ptr, RSTRING_PTR(c), cl);
