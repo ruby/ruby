@@ -842,6 +842,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_match(/\Ab+\z/, s.string)
   end
 
+  def test_ungetc_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
+  end
+
   def test_ungetbyte_pos
     b = '\\b00010001 \\B00010001 \\b1 \\B1 \\b000100011'
     s = StringIO.new( b )
@@ -874,6 +885,17 @@ class TestStringIO < Test::Unit::TestCase
     s.ungetbyte('b' * (count * 5))
     assert_equal((count * 5), s.string.size)
     assert_match(/\Ab+\z/, s.string)
+  end
+
+  def test_ungetbyte_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetbyte(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
   end
 
   def test_frozen

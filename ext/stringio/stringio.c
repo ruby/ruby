@@ -930,6 +930,18 @@ strio_extend(struct StringIO *ptr, long pos, long len)
     }
 }
 
+static void
+strio_unget_string(struct StringIO *ptr, VALUE c)
+{
+    const char *cp = NULL;
+    long cl = RSTRING_LEN(c);
+    if (cl > 0) {
+	if (c != ptr->string) cp = RSTRING_PTR(c);
+	strio_unget_bytes(ptr, cp, cl);
+	RB_GC_GUARD(c);
+    }
+}
+
 /*
  * call-seq:
  *   ungetc(character) -> nil
@@ -967,8 +979,7 @@ strio_ungetc(VALUE self, VALUE c)
 	if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
 	    c = rb_str_conv_enc(c, enc2, enc);
 	}
-	strio_unget_bytes(ptr, RSTRING_PTR(c), RSTRING_LEN(c));
-	RB_GC_GUARD(c);
+	strio_unget_string(ptr, c);
 	return Qnil;
     }
 }
@@ -995,13 +1006,8 @@ strio_ungetbyte(VALUE self, VALUE c)
 	strio_unget_bytes(ptr, &cc, 1);
     }
     else {
-	long cl;
 	StringValue(c);
-	cl = RSTRING_LEN(c);
-	if (cl > 0) {
-	    strio_unget_bytes(ptr, RSTRING_PTR(c), cl);
-	    RB_GC_GUARD(c);
-	}
+	strio_unget_string(ptr, c);
     }
     return Qnil;
 }
@@ -1032,7 +1038,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 	if (rest > cl) memset(s + len, 0, rest - cl);
 	pos -= cl;
     }
-    memcpy(s + pos, cp, cl);
+    memcpy(s + pos, (cp ? cp : s), cl);
     ptr->pos = pos;
     return Qnil;
 }
