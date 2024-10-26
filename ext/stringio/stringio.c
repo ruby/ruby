@@ -952,7 +952,10 @@ strio_ungetc(VALUE self, VALUE c)
 
 	enc = rb_enc_get(ptr->string);
 	len = rb_enc_codelen(cc, enc);
-	if (len <= 0) rb_enc_uint_chr(cc, enc);
+	if (len <= 0) {
+	    rb_enc_uint_chr(cc, enc); /* to raise an exception */
+	    UNREACHABLE;
+	}
 	rb_enc_mbcput(cc, buf, enc);
 	return strio_unget_bytes(ptr, buf, len);
     }
