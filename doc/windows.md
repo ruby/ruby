@@ -68,6 +68,7 @@ make
 
 3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
     to run required commands properly from the command line.
+    These are set properly by `vcvarall*.bat` usually.
 
     **Note** building ruby requires following commands.
 
