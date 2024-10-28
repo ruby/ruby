@@ -8,7 +8,7 @@ class TestHung < Test::Unit::TestCase
 
   def test_hungup_at_worker
     if on_parallel_worker?
-      sleep 10
+      sleep EnvUtil.apply_timeout_scale(10)
     end
     assert true
   end
