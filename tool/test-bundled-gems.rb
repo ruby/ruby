@@ -22,20 +22,19 @@ failed = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
-  next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
-  # 93(bright yellow) is copied from .github/workflows/mingw.yml
-  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
+  next unless ARGV.empty? or ARGV.any? {|pat| File.fnmatch?(pat, gem)}
+  next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
   first_timeout = 600 # 10min
 
   toplib = gem
-  case gem
-  when "resolv-replace"
-    # Skip test suite
-    next
-  when "typeprof"
+  unless File.exist?("#{gem_dir}/src/#{gem}/lib/#{toplib}.rb")
+    toplib = gem.tr("-", "/")
+    next unless File.exist?("#{gem_dir}/src/#{gem}/lib/#{toplib}.rb")
+  end
 
+  case gem
   when "rbs"
     # TODO: We should skip test file instead of test class/methods
     skip_test_files = %w[
@@ -58,9 +57,6 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "test-unit"
     test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
 
-  when /\Anet-/
-    toplib = gem.tr("-", "/")
-
   end
 
   if load_path
@@ -72,6 +68,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     ENV["RUBYLIB"] = rubylib
   end
 
+  # 93(bright yellow) is copied from .github/workflows/mingw.yml
+  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
   print "[command]" if github_actions
   puts test_command
   pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
