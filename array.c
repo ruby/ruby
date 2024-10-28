@@ -6212,25 +6212,28 @@ rb_ary_uniq_bang(VALUE ary)
 
 /*
  *  call-seq:
- *    array.uniq -> new_array
- *    array.uniq {|element| ... } -> new_array
+ *    uniq -> new_array
+ *    uniq {|element| ... } -> new_array
  *
- *  Returns a new +Array+ containing those elements from +self+ that are not duplicates,
+ *  Returns a new array containing those elements from +self+ that are not duplicates,
  *  the first occurrence always being retained.
  *
- *  With no block given, identifies and omits duplicates using method <tt>eql?</tt>
- *  to compare:
+ *  With no block given, identifies and omits duplicate elements using method <tt>eql?</tt>
+ *  to compare elements:
  *
  *    a = [0, 0, 1, 1, 2, 2]
  *    a.uniq # => [0, 1, 2]
  *
  *  With a block given, calls the block for each element;
- *  identifies (using method <tt>eql?</tt>) and omits duplicate values,
- *  that is, those elements for which the block returns the same value:
+ *  identifies and omits "duplicate" elements using method <tt>eql?</tt>
+ *  to compare <i>block return values</i>;
+ *  that is, an element is a duplicate if its block return value
+ *  is the same as that of a previous element:
  *
  *    a = ['a', 'aa', 'aaa', 'b', 'bb', 'bbb']
  *    a.uniq {|element| element.size } # => ["a", "aa", "aaa"]
  *
+ *  Related: {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
