@@ -199,7 +199,8 @@ put_situation(scanner)
 #   pos:       8
 #   charpos:   6
 #   rest:      "んにちは"
-#   rest_size: 12```
+#   rest_size: 12
+```
 
 ## Target Substring
 
