@@ -197,10 +197,27 @@ module Psych
             s
           end
 
-        when /^!ruby\/data(?::(.*))?$/
-          data = register(o, resolve_class($1).allocate) if $1
+        when /^!ruby\/data(-with-ivars)?(?::(.*))?$/
+          data = register(o, resolve_class($2).allocate) if $2
           members = {}
-          revive_data_members(members, o)
+
+          if $1 # data-with-ivars
+            ivars   = {}
+            o.children.each_slice(2) do |type, vars|
+              case accept(type)
+              when 'members'
+                revive_data_members(members, vars)
+                data ||= allocate_anon_data(o, members)
+              when 'ivars'
+                revive_hash(ivars, vars)
+              end
+            end
+            ivars.each do |ivar, v|
+              data.instance_variable_set ivar, v
+            end
+          else
+            revive_data_members(members, o)
+          end
           data ||= allocate_anon_data(o, members)
           data.send(:initialize, **members)
           data
