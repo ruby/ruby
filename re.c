@@ -3398,6 +3398,32 @@ rb_reg_alloc(void)
     return rb_reg_s_alloc(rb_cRegexp);
 }
 
+/* This method accept 2 values and returns a Regular Expressions
+ * s       -> type -> ruby string -> expresion
+ * options -> type -> int         -> expresion flags
+ *
+ * acceptable options value and uses:
+ * rb_reg_new_str(rb_str_new_cstr("test"), 0);
+ * #=> /test/
+ * rb_reg_new_str(rb_str_new_cstr("test"), 1);
+ * #=> /test/i
+ * rb_reg_new_str(rb_str_new_cstr("test"), 2);
+ * #=> /test/x
+ * rb_reg_new_str(rb_str_new_cstr("test"), 3);
+ * #=> /test/ix
+ * rb_reg_new_str(rb_str_new_cstr("test"), 4);
+ * #=> /test/m
+ * rb_reg_new_str(rb_str_new_cstr("test"), 5);
+ * #=> /test/mi
+ * rb_reg_new_str(rb_str_new_cstr("test"), 6);
+ * #=> /test/mx
+ * rb_reg_new_str(rb_str_new_cstr("test"), 7);
+ * #=> /test/mix
+ * rb_reg_new_str(rb_str_new_cstr("test"), 8);
+ * #=> /test/
+ * rb_reg_new_str(rb_str_new_cstr("test"), 9);
+ * #=> /test/i
+ * ...*/
 VALUE
 rb_reg_new_str(VALUE s, int options)
 {
