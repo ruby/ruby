@@ -1358,8 +1358,18 @@ undefined method `time' for #{ ONE_RECV_MESSAGE }
   def test_errors_on_terminal_window_smaller_than_min_width
     custom_max_width = 5
     original_max_width = ErrorHighlight::DefaultFormatter.max_snippet_width
+    min_snippet_width = ErrorHighlight::DefaultFormatter::MIN_SNIPPET_WIDTH
 
-    ErrorHighlight::DefaultFormatter.max_snippet_width = custom_max_width
+    warning = nil
+    original_warn = Warning.method(:warn)
+    Warning.define_singleton_method(:warn) {|s| warning = s}
+    begin
+      ErrorHighlight::DefaultFormatter.max_snippet_width = custom_max_width
+    ensure
+      Warning.singleton_class.remove_method(:warn)
+      Warning.define_singleton_method(:warn, original_warn)
+    end
+    assert_match "'max_snippet_width' adjusted to minimum value of #{min_snippet_width}", warning
 
     assert_error_message(NoMethodError, <<~END) do
 undefined method `time' for #{ ONE_RECV_MESSAGE }
