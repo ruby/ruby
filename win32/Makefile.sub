@@ -190,9 +190,6 @@ ruby_version = $(MAJOR).$(MINOR).0
 !if defined(ABI_VERSION)
 ruby_version = $(ruby_version)+$(ABI_VERSION)
 !endif
-!if !defined(RUBY_VERSION_NAME)
-RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
-!endif
 RUBY_PROGRAM_VERSION = $(MAJOR).$(MINOR).$(TEENY)
 
 !ifndef RUBY_SO_NAME
@@ -1131,6 +1128,11 @@ s,@TEENY@,$(TEENY),;t t
 s,@ruby_version@,$(ruby_version),;t t
 s,@RUBY_PROGRAM_VERSION@,$$(MAJOR).$$(MINOR).$$(TEENY),;t t
 s,@RUBY_API_VERSION@,$$(MAJOR).$$(MINOR),;t t
+!if defined(RUBY_VERSION_NAME)
+s,@RUBY_VERSION_NAME@,$(RUBY_VERSION_NAME),;t t
+!else
+s,@RUBY_VERSION_NAME@,$$(RUBY_BASE_NAME)-$$(ruby_version),;t t
+!endif
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
@@ -1140,7 +1142,7 @@ s,@sitelibdir@,$${sitedir}/$${ruby_version},;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
 s,@vendorarchdir@,$${vendorlibdir}/$${sitearch},;t t
 s,@vendorlibdir@,$${vendordir}/$${ruby_version},;t t
-s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
+s,@rubyhdrdir@,$$(includedir)/$$(RUBY_VERSION_NAME),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
 s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
 s,@rubyarchhdrdir@,$$(rubyhdrdir)/$${arch},;t t
