@@ -46,15 +46,15 @@ module JSON
           opts.each do |key, value|
             case key
             when :indent
-              self.indent = value
+              self.indent = value || ''
             when :space
-              self.space = value
+              self.space = value || ''
             when :space_before
-              self.space_before = value
+              self.space_before = value || ''
             when :array_nl
-              self.array_nl = value
+              self.array_nl = value || ''
             when :object_nl
-              self.object_nl = value
+              self.object_nl = value || ''
             when :max_nesting
               self.max_nesting = value || 0
             when :depth

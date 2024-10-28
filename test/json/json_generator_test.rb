@@ -174,6 +174,27 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert s[:check_circular?]
   end
 
+  def test_falsy_state
+    object = { foo: [1, 2], bar: { egg: :spam }}
+    expected_json = JSON.generate(
+      object,
+      array_nl:     "",
+      indent:       "",
+      object_nl:    "",
+      space:        "",
+      space_before: "",
+    )
+
+    assert_equal expected_json, JSON.generate(
+      object,
+      array_nl:     nil,
+      indent:       nil,
+      object_nl:    nil,
+      space:        nil,
+      space_before: nil,
+    )
+  end
+
   def test_pretty_state
     state = JSON.create_pretty_state
     assert_equal({
