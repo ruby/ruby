@@ -108,13 +108,15 @@ make
     You can also specify the install directory.
     For example, run `configure --prefix=<install_directory>`
     Default of the install directory is `/usr` .
-    The default _PLATFORM_ is `i386-mswin32_`_MSRTVERSION_ on 32-bit
-    platforms, or `x64-mswin64_`_MSRTVERSION_ on x64 platforms.
-    _MSRTVERSION_ is the 2- or 3-digits version of the Microsoft
-    Runtime Library.
 
-2.  Change _RUBY_INSTALL_NAME_ and _RUBY_SO_NAME_ in `Makefile`
-    if you want to change the name of the executable files.
+2.  If you want to change the name of the executable files and the DLL
+    file, you can specify `--program-prefix` and `--program-suffix`,
+    like `win32\configure.bat --program-suffix=-$(MAJOR)$(MINOR)`.
+
+    Also `--install-name` and `--so-name` options affect the whole
+    name executable files and the DLL file respectively, like
+    `win32\configure.bat --install-name=$(RUBY_BASE_NAME)-$(MAJOR)$(MINOR)`.
+
     And add _RUBYW_INSTALL_NAME_ to change the name of the
     executable without console window if also you want.
 
