@@ -1677,6 +1677,20 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_option_uses_array_each_in_ruby
+    assert_separately(["--yjit"], <<~'RUBY')
+      # Array#each should be implemented in Ruby for YJIT
+      assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
+
+      # The backtrace, however, should not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:11:in 'Array#each'", e.backtrace[1]
+      end
+    RUBY
+  end
+
   def test_yjit_enable_replaces_array_each
     assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
       # Array#each should be implemented in C for the interpreter
