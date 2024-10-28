@@ -6,6 +6,7 @@ require_relative 'helper'
 # [ruby-core:01946]
 module Psych_Tests
     StructTest = Struct::new( :c )
+    DataTest   = Data.define( :c ) unless RUBY_VERSION < "3.2"
 end
 
 class Psych_Unit_Tests < Psych::TestCase
@@ -1070,6 +1071,44 @@ EOY
 
         assert_to_yaml( Psych_Tests::StructTest.new( 123 ), <<EOY )
 --- !ruby/struct:Psych_Tests::StructTest
+c: 123
+EOY
+
+    end
+
+    def test_ruby_data
+        omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+        Object.remove_const :MyBookData if Object.const_defined?(:MyBookData)
+        # Ruby Data value objects
+        book_class = Data.define(:author, :title, :year, :isbn)
+        Object.const_set(:MyBookData, book_class)
+        assert_to_yaml(
+            [ book_class.new( "Yukihiro Matsumoto", "Ruby in a Nutshell", 2002, "0-596-00214-9" ),
+              book_class.new( [ 'Dave Thomas', 'Andy Hunt' ], "The Pickaxe", 2002,
+                book_class.new( "This should be the ISBN", "but I have more data here", 2002, "None" )
+              )
+            ], <<EOY
+- !ruby/data:MyBookData
+  author: Yukihiro Matsumoto
+  title: Ruby in a Nutshell
+  year: 2002
+  isbn: 0-596-00214-9
+- !ruby/data:MyBookData
+  author:
+    - Dave Thomas
+    - Andy Hunt
+  title: The Pickaxe
+  year: 2002
+  isbn: !ruby/data:MyBookData
+    author: This should be the ISBN
+    title: but I have more data here
+    year: 2002
+    isbn: None
+EOY
+        )
+
+        assert_to_yaml( Psych_Tests::DataTest.new( 123 ), <<EOY )
+--- !ruby/data:Psych_Tests::DataTest
 c: 123
 EOY
 

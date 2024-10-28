@@ -197,6 +197,14 @@ module Psych
             s
           end
 
+        when /^!ruby\/data(?::(.*))?$/
+          data = register(o, resolve_class($1).allocate) if $1
+          members = {}
+          revive_data_members(members, o)
+          data ||= allocate_anon_data(o, members)
+          data.send(:initialize, **members)
+          data
+
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
 
@@ -338,6 +346,20 @@ module Psych
         list = register(object, [])
         object.children.each { |c| list.push accept c }
         list
+      end
+
+      def allocate_anon_data node, members
+        klass = class_loader.data.define(*members.keys)
+        register(node, klass.allocate)
+      end
+
+      def revive_data_members hash, o
+        o.children.each_slice(2) do |k,v|
+          name  = accept(k)
+          value = accept(v)
+          hash[class_loader.symbolize(name)] = value
+        end
+        hash
       end
 
       def revive_hash hash, o, tagged= false

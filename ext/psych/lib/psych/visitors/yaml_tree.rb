@@ -162,6 +162,16 @@ module Psych
 
       alias :visit_Delegator :visit_Object
 
+      def visit_Data o
+        tag = ['!ruby/data', o.class.name].compact.join(':')
+        register o, @emitter.start_mapping(nil, tag, false, Nodes::Mapping::BLOCK)
+        o.members.each do |member|
+          @emitter.scalar member.to_s, nil, nil, true, false, Nodes::Scalar::ANY
+          accept o.send member
+        end
+        @emitter.end_mapping
+      end
+
       def visit_Struct o
         tag = ['!ruby/struct', o.class.name].compact.join(':')
 
