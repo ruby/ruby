@@ -107,33 +107,25 @@ static void fbuffer_append_char(FBuffer *fb, char newchr)
 }
 
 #ifdef JSON_GENERATOR
-static void freverse(char *start, char *end)
-{
-    char c;
-
-    while (end > start) {
-        c = *end, *end-- = *start, *start++ = c;
-    }
-}
-
 static long fltoa(long number, char *buf)
 {
-    static char digits[] = "0123456789";
+    static const char digits[] = "0123456789";
     long sign = number;
     char* tmp = buf;
 
     if (sign < 0) number = -number;
-    do *tmp++ = digits[number % 10]; while (number /= 10);
-    if (sign < 0) *tmp++ = '-';
-    freverse(buf, tmp - 1);
-    return tmp - buf;
+    do *tmp-- = digits[number % 10]; while (number /= 10);
+    if (sign < 0) *tmp-- = '-';
+    return buf - tmp;
 }
 
+#define LONG_BUFFER_SIZE 20
 static void fbuffer_append_long(FBuffer *fb, long number)
 {
-    char buf[20];
-    unsigned long len = fltoa(number, buf);
-    fbuffer_append(fb, buf, len);
+    char buf[LONG_BUFFER_SIZE];
+    char *buffer_end = buf + LONG_BUFFER_SIZE;
+    long len = fltoa(number, buffer_end - 1);
+    fbuffer_append(fb, buffer_end - len, len);
 }
 
 static VALUE fbuffer_to_s(FBuffer *fb)

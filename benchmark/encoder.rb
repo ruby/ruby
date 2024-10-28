@@ -64,6 +64,7 @@ benchmark_encoding "small nested array", [[1,2,3,4,5]]*10
 benchmark_encoding "small hash", { "username" => "jhawthorn", "id" => 123, "event" => "wrote json serializer" }
 
 # On these benchmarks we perform well. Either on par or very closely faster/slower
+benchmark_encoding "integers", (1_000_000..1_001_000).to_a, except: %i(json_state)
 benchmark_encoding "mixed utf8", ([("a" * 5000) + "€" + ("a" * 5000)] * 500), except: %i(json_state)
 benchmark_encoding "mostly utf8", ([("€" * 3333)] * 500), except: %i(json_state)
 benchmark_encoding "twitter.json", JSON.load_file("#{__dir__}/data/twitter.json"), except: %i(json_state)
