@@ -42,37 +42,7 @@ module JSON
               raise TypeError, "can't convert #{opts.class} into Hash"
             end
           end
-
-          opts.each do |key, value|
-            case key
-            when :indent
-              self.indent = value || ''
-            when :space
-              self.space = value || ''
-            when :space_before
-              self.space_before = value || ''
-            when :array_nl
-              self.array_nl = value || ''
-            when :object_nl
-              self.object_nl = value || ''
-            when :max_nesting
-              self.max_nesting = value || 0
-            when :depth
-              self.depth = value
-            when :buffer_initial_length
-              self.buffer_initial_length = value
-            when :allow_nan
-              self.allow_nan = value
-            when :ascii_only
-              self.ascii_only = value
-            when :script_safe, :escape_slash
-              self.script_safe = value
-            when :strict
-              self.strict = value
-            end
-          end
-
-          self
+          _configure(opts)
         end
 
         alias_method :merge, :configure
