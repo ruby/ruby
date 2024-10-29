@@ -42,14 +42,6 @@ typedef struct JSON_Generator_StateStruct {
     bool strict;
 } JSON_Generator_State;
 
-#define GET_STATE_TO(self, state) \
-    TypedData_Get_Struct(self, JSON_Generator_State, &JSON_Generator_State_type, state)
-
-#define GET_STATE(self)                       \
-    JSON_Generator_State *state;              \
-    GET_STATE_TO(self, state)
-
-
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self);
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -70,20 +62,7 @@ static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self);
 static void State_free(void *state);
 static VALUE cState_s_allocate(VALUE klass);
-static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_null(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_false(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_true(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-#ifdef RUBY_INTEGER_UNIFICATION
-static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-#endif
-static void generate_json_fixnum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static VALUE cState_partial_generate(VALUE self, VALUE obj, void (*func)(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj));
+
 static VALUE cState_generate(VALUE self, VALUE obj);
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
 static VALUE cState_indent(VALUE self);

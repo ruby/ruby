@@ -60,6 +60,7 @@ end
 # The performance difference is mostly more time spent in GC because of this extra pressure.
 # If we re-use the same `JSON::State` instance, we're faster than Oj on the array benchmark, and much closer
 # on the Hash one.
+benchmark_encoding "small mixed", [1, "string", { a: 1, b: 2 }, [3, 4, 5]]
 benchmark_encoding "small nested array", [[1,2,3,4,5]]*10
 benchmark_encoding "small hash", { "username" => "jhawthorn", "id" => 123, "event" => "wrote json serializer" }
 

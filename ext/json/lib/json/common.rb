@@ -307,11 +307,10 @@ module JSON
   #
   def generate(obj, opts = nil)
     if State === opts
-      state = opts
+      opts.generate(obj)
     else
-      state = State.new(opts)
+      State.generate(obj, opts)
     end
-    state.generate(obj)
   end
 
   # :stopdoc:

@@ -486,6 +486,21 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_to_json_called_with_state_object
+    object = Object.new
+    called = false
+    argument = nil
+    object.singleton_class.define_method(:to_json) do |state|
+      called = true
+      argument = state
+      "<hello>"
+    end
+
+    assert_equal "<hello>", JSON.dump(object)
+    assert called, "#to_json wasn't called"
+    assert_instance_of JSON::State, argument
+  end
+
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
     def test_valid_utf8_in_different_encoding
       utf8_string = "€™"
