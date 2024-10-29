@@ -691,21 +691,12 @@ static VALUE
 ossl_ts_resp_get_token(VALUE self)
 {
     TS_RESP *resp;
-    PKCS7 *p7, *copy;
-    VALUE obj;
+    PKCS7 *p7;
 
     GetTSResponse(self, resp);
     if (!(p7 = TS_RESP_get_token(resp)))
         return Qnil;
-
-    obj = NewPKCS7(cPKCS7);
-
-    if (!(copy = PKCS7_dup(p7)))
-        ossl_raise(eTimestampError, NULL);
-
-    SetPKCS7(obj, copy);
-
-    return obj;
+    return ossl_pkcs7_new(p7);
 }
 
 /*
