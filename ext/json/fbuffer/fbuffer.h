@@ -13,12 +13,11 @@ typedef struct FBufferStruct {
 
 #define FBUFFER_INITIAL_LENGTH_DEFAULT 1024
 
-#define FBUFFER_PTR(fb) (fb->ptr)
-#define FBUFFER_LEN(fb) (fb->len)
-#define FBUFFER_CAPA(fb) (fb->capa)
+#define FBUFFER_PTR(fb) ((fb)->ptr)
+#define FBUFFER_LEN(fb) ((fb)->len)
+#define FBUFFER_CAPA(fb) ((fb)->capa)
 #define FBUFFER_PAIR(fb) FBUFFER_PTR(fb), FBUFFER_LEN(fb)
 
-static FBuffer *fbuffer_alloc(unsigned long initial_length);
 static void fbuffer_free(FBuffer *fb);
 #ifndef JSON_GENERATOR
 static void fbuffer_clear(FBuffer *fb);
@@ -36,20 +35,14 @@ static VALUE fbuffer_to_s(FBuffer *fb);
 #define RB_UNLIKELY(expr) expr
 #endif
 
-static FBuffer *fbuffer_alloc(unsigned long initial_length)
+static void fbuffer_init(FBuffer *fb, unsigned long initial_length)
 {
-    FBuffer *fb;
-    if (initial_length <= 0) initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
-    fb = ALLOC(FBuffer);
-    memset((void *) fb, 0, sizeof(FBuffer));
-    fb->initial_length = initial_length;
-    return fb;
+    fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
 }
 
 static void fbuffer_free(FBuffer *fb)
 {
     if (fb->ptr) ruby_xfree(fb->ptr);
-    ruby_xfree(fb);
 }
 
 #ifndef JSON_GENERATOR

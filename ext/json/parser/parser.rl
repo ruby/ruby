@@ -324,10 +324,10 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
 
     if (cs >= JSON_integer_first_final) {
         long len = p - json->memo;
-        fbuffer_clear(json->fbuffer);
-        fbuffer_append(json->fbuffer, json->memo, len);
-        fbuffer_append_char(json->fbuffer, '\0');
-        *result = rb_cstr2inum(FBUFFER_PTR(json->fbuffer), 10);
+        fbuffer_clear(&json->fbuffer);
+        fbuffer_append(&json->fbuffer, json->memo, len);
+        fbuffer_append_char(&json->fbuffer, '\0');
+        *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
         return p + 1;
     } else {
         return NULL;
@@ -388,15 +388,15 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         }
 
         long len = p - json->memo;
-        fbuffer_clear(json->fbuffer);
-        fbuffer_append(json->fbuffer, json->memo, len);
-        fbuffer_append_char(json->fbuffer, '\0');
+        fbuffer_clear(&json->fbuffer);
+        fbuffer_append(&json->fbuffer, json->memo, len);
+        fbuffer_append_char(&json->fbuffer, '\0');
 
         if (method_id) {
-            VALUE text = rb_str_new2(FBUFFER_PTR(json->fbuffer));
+            VALUE text = rb_str_new2(FBUFFER_PTR(&json->fbuffer));
             *result = rb_funcallv(mod, method_id, 1, &text);
         } else {
-            *result = DBL2NUM(rb_cstr_to_dbl(FBUFFER_PTR(json->fbuffer), 1));
+            *result = DBL2NUM(rb_cstr_to_dbl(FBUFFER_PTR(&json->fbuffer), 1));
         }
 
         return p + 1;
@@ -898,14 +898,14 @@ static void JSON_mark(void *ptr)
 static void JSON_free(void *ptr)
 {
     JSON_Parser *json = ptr;
-    fbuffer_free(json->fbuffer);
+    fbuffer_free(&json->fbuffer);
     ruby_xfree(json);
 }
 
 static size_t JSON_memsize(const void *ptr)
 {
     const JSON_Parser *json = ptr;
-    return sizeof(*json) + FBUFFER_CAPA(json->fbuffer);
+    return sizeof(*json) + FBUFFER_CAPA(&json->fbuffer);
 }
 
 static const rb_data_type_t JSON_Parser_type = {
@@ -919,7 +919,7 @@ static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
     JSON_Parser *json;
     VALUE obj = TypedData_Make_Struct(klass, JSON_Parser, &JSON_Parser_type, json);
-    json->fbuffer = fbuffer_alloc(0);
+    fbuffer_init(&json->fbuffer, 0);
     return obj;
 }
 

@@ -55,16 +55,16 @@ typedef struct JSON_Generator_StateStruct {
     GET_STATE_TO(self, state)
 
 #define GENERATE_JSON(type)                                                                     \
-    FBuffer *buffer;                                                                            \
     VALUE Vstate;                                                                               \
     JSON_Generator_State *state;                                                                \
                                                                                                 \
     rb_scan_args(argc, argv, "01", &Vstate);                                                    \
     Vstate = cState_from_state_s(cState, Vstate);                                               \
     TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state);      \
-    buffer = cState_prepare_buffer(Vstate);                                                     \
-    generate_json_##type(buffer, Vstate, state, self);                                          \
-    return fbuffer_to_s(buffer)
+    FBuffer buffer = {0};                                                                       \
+    fbuffer_init(&buffer, state->buffer_initial_length);                                        \
+    generate_json_##type(&buffer, Vstate, state, self);                                         \
+    return fbuffer_to_s(&buffer)
 
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self);
@@ -122,7 +122,6 @@ static VALUE cState_script_safe(VALUE self);
 static VALUE cState_script_safe_set(VALUE self, VALUE depth);
 static VALUE cState_strict(VALUE self);
 static VALUE cState_strict_set(VALUE self, VALUE strict);
-static FBuffer *cState_prepare_buffer(VALUE self);
 
 static const rb_data_type_t JSON_Generator_State_type;
 

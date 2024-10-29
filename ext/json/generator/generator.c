@@ -911,15 +911,6 @@ static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *s
     }
 }
 
-static FBuffer *cState_prepare_buffer(VALUE self)
-{
-    FBuffer *buffer;
-    GET_STATE(self);
-    buffer = fbuffer_alloc(state->buffer_initial_length);
-
-    return buffer;
-}
-
 struct generate_json_data {
     FBuffer *buffer;
     VALUE vstate;
@@ -948,18 +939,20 @@ static VALUE generate_json_rescue(VALUE d, VALUE exc)
 
 static VALUE cState_partial_generate(VALUE self, VALUE obj)
 {
-    FBuffer *buffer = cState_prepare_buffer(self);
     GET_STATE(self);
 
+    FBuffer buffer = {0};
+    fbuffer_init(&buffer, state->buffer_initial_length);
+
     struct generate_json_data data = {
-        .buffer = buffer,
+        .buffer = &buffer,
         .vstate = self,
         .state = state,
         .obj = obj
     };
     rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
 
-    return fbuffer_to_s(buffer);
+    return fbuffer_to_s(&buffer);
 }
 
 /*

@@ -19,7 +19,7 @@ typedef struct JSON_ParserStruct {
     VALUE array_class;
     VALUE decimal_class;
     VALUE match_string;
-    FBuffer *fbuffer;
+    FBuffer fbuffer;
     int max_nesting;
     char allow_nan;
     char parsing_name;
