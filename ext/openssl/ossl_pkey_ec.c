@@ -174,7 +174,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_EC) {
         EVP_PKEY_free(pkey);
-        rb_raise(eDSAError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+        rb_raise(eECError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
