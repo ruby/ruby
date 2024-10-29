@@ -835,7 +835,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     source = convert_encoding(StringValue(source));
     StringValue(source);
     json->len = RSTRING_LEN(source);
-    json->source = RSTRING_PTR(source);;
+    json->source = RSTRING_PTR(source);
     json->Vsource = source;
     return self;
 }
