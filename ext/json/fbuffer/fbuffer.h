@@ -4,13 +4,20 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
+enum fbuffer_type {
+    HEAP = 0,
+    STACK = 1,
+};
+
 typedef struct FBufferStruct {
+    enum fbuffer_type type;
     unsigned long initial_length;
-    char *ptr;
     unsigned long len;
     unsigned long capa;
+    char *ptr;
 } FBuffer;
 
+#define FBUFFER_STACK_SIZE 512
 #define FBUFFER_INITIAL_LENGTH_DEFAULT 1024
 
 #define FBUFFER_PTR(fb) ((fb)->ptr)
@@ -35,14 +42,21 @@ static VALUE fbuffer_to_s(FBuffer *fb);
 #define RB_UNLIKELY(expr) expr
 #endif
 
-static void fbuffer_init(FBuffer *fb, unsigned long initial_length)
+static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
 {
     fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
+    if (stack_buffer) {
+        fb->type = STACK;
+        fb->ptr = stack_buffer;
+        fb->capa = stack_buffer_size;
+    }
 }
 
 static void fbuffer_free(FBuffer *fb)
 {
-    if (fb->ptr) ruby_xfree(fb->ptr);
+    if (fb->ptr && fb->type == HEAP) {
+        ruby_xfree(fb->ptr);
+    }
 }
 
 #ifndef JSON_GENERATOR
@@ -65,7 +79,14 @@ static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
         for (required = fb->capa; requested > required - fb->len; required <<= 1);
 
         if (required > fb->capa) {
-            REALLOC_N(fb->ptr, char, required);
+            if (fb->type == STACK) {
+                const char *old_buffer = fb->ptr;
+                fb->ptr = ALLOC_N(char, required);
+                fb->type = HEAP;
+                MEMCPY(fb->ptr, old_buffer, char, fb->len);
+            } else {
+                REALLOC_N(fb->ptr, char, required);
+            }
             fb->capa = required;
         }
     }

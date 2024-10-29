@@ -954,8 +954,9 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, void (*func)(FBuffer
 {
     GET_STATE(self);
 
+    char stack_buffer[FBUFFER_STACK_SIZE];
     FBuffer buffer = {0};
-    fbuffer_init(&buffer, state->buffer_initial_length);
+    fbuffer_stack_init(&buffer, state->buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
 
     struct generate_json_data data = {
         .buffer = &buffer,

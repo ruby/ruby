@@ -54,6 +54,7 @@ typedef struct JSON_Generator_StateStruct {
     JSON_Generator_State *state;              \
     GET_STATE_TO(self, state)
 
+
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self);
 #ifdef RUBY_INTEGER_UNIFICATION
