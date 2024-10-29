@@ -44,9 +44,6 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
 
         if (RB_UNLIKELY(ch_len)) {
             switch (ch_len) {
-                case 0:
-                    pos++;
-                    break;
                 case 1: {
                     FLUSH_POS(1);
                     switch (ch) {
@@ -217,9 +214,6 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, cons
 
         if (RB_UNLIKELY(ch_len)) {
             switch (ch_len) {
-                case 0:
-                    pos++;
-                    break;
                 case 1: {
                     FLUSH_POS(1);
                     switch (ch) {
