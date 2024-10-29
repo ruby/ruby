@@ -23,28 +23,23 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
-static char *fstrndup(const char *ptr, unsigned long len);
-
 /* ruby api and some helpers */
 
 typedef struct JSON_Generator_StateStruct {
-    char *indent;
-    long indent_len;
-    char *space;
-    long space_len;
-    char *space_before;
-    long space_before_len;
-    char *object_nl;
-    long object_nl_len;
-    char *array_nl;
-    long array_nl_len;
+    VALUE indent;
+    VALUE space;
+    VALUE space_before;
+    VALUE object_nl;
+    VALUE array_nl;
+
     long max_nesting;
-    char allow_nan;
-    char ascii_only;
-    char script_safe;
-    char strict;
     long depth;
     long buffer_initial_length;
+
+    bool allow_nan;
+    bool ascii_only;
+    bool script_safe;
+    bool strict;
 } JSON_Generator_State;
 
 #define GET_STATE_TO(self, state) \

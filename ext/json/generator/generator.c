@@ -297,14 +297,6 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, cons
     RB_GC_GUARD(str);
 }
 
-static char *fstrndup(const char *ptr, unsigned long len) {
-  char *result;
-  if (len <= 0) return NULL;
-  result = ALLOC_N(char, len);
-  memcpy(result, ptr, len);
-  return result;
-}
-
 /*
  * Document-module: JSON::Ext::Generator
  *
@@ -587,27 +579,35 @@ static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
     return cState_partial_generate(state, string, generate_json_string);
 }
 
+static void State_mark(void *ptr)
+{
+    JSON_Generator_State *state = ptr;
+    rb_gc_mark_movable(state->indent);
+    rb_gc_mark_movable(state->space);
+    rb_gc_mark_movable(state->space_before);
+    rb_gc_mark_movable(state->object_nl);
+    rb_gc_mark_movable(state->array_nl);
+}
+
+static void State_compact(void *ptr)
+{
+    JSON_Generator_State *state = ptr;
+    state->indent = rb_gc_location(state->indent);
+    state->space = rb_gc_location(state->space);
+    state->space_before = rb_gc_location(state->space_before);
+    state->object_nl = rb_gc_location(state->object_nl);
+    state->array_nl = rb_gc_location(state->array_nl);
+}
+
 static void State_free(void *ptr)
 {
     JSON_Generator_State *state = ptr;
-    if (state->indent) ruby_xfree(state->indent);
-    if (state->space) ruby_xfree(state->space);
-    if (state->space_before) ruby_xfree(state->space_before);
-    if (state->object_nl) ruby_xfree(state->object_nl);
-    if (state->array_nl) ruby_xfree(state->array_nl);
     ruby_xfree(state);
 }
 
 static size_t State_memsize(const void *ptr)
 {
-    const JSON_Generator_State *state = ptr;
-    size_t size = sizeof(*state);
-    if (state->indent) size += state->indent_len + 1;
-    if (state->space) size += state->space_len + 1;
-    if (state->space_before) size += state->space_before_len + 1;
-    if (state->object_nl) size += state->object_nl_len + 1;
-    if (state->array_nl) size += state->array_nl_len + 1;
-    return size;
+    return sizeof(JSON_Generator_State);
 }
 
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
@@ -617,7 +617,12 @@ static size_t State_memsize(const void *ptr)
 
 static const rb_data_type_t JSON_Generator_State_type = {
     "JSON/Generator/State",
-    {NULL, State_free, State_memsize,},
+    {
+        .dmark = State_mark,
+        .dfree = State_free,
+        .dsize = State_memsize,
+        .dcompact = State_compact,
+    },
     0, 0,
     RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
 };
@@ -651,11 +656,11 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
 
     if (arg->iter > 0) fbuffer_append_char(buffer, ',');
     if (RB_UNLIKELY(state->object_nl)) {
-        fbuffer_append(buffer, state->object_nl, state->object_nl_len);
+        fbuffer_append_str(buffer, state->object_nl);
     }
     if (RB_UNLIKELY(state->indent)) {
         for (j = 0; j < depth; j++) {
-            fbuffer_append(buffer, state->indent, state->indent_len);
+            fbuffer_append_str(buffer, state->indent);
         }
     }
 
@@ -673,9 +678,9 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     }
 
     generate_json_string(buffer, Vstate, state, key_to_s);
-    if (RB_UNLIKELY(state->space_before)) fbuffer_append(buffer, state->space_before, state->space_before_len);
+    if (RB_UNLIKELY(state->space_before)) fbuffer_append_str(buffer, state->space_before);
     fbuffer_append_char(buffer, ':');
-    if (RB_UNLIKELY(state->space)) fbuffer_append(buffer, state->space, state->space_len);
+    if (RB_UNLIKELY(state->space)) fbuffer_append_str(buffer, state->space);
     generate_json(buffer, Vstate, state, val);
 
     arg->iter++;
@@ -709,10 +714,10 @@ static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 
     depth = --state->depth;
     if (RB_UNLIKELY(state->object_nl)) {
-        fbuffer_append(buffer, state->object_nl, state->object_nl_len);
+        fbuffer_append_str(buffer, state->object_nl);
         if (RB_UNLIKELY(state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, state->indent, state->indent_len);
+                fbuffer_append_str(buffer, state->indent);
             }
         }
     }
@@ -735,25 +740,25 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     }
 
     fbuffer_append_char(buffer, '[');
-    if (RB_UNLIKELY(state->array_nl)) fbuffer_append(buffer, state->array_nl, state->array_nl_len);
+    if (RB_UNLIKELY(state->array_nl)) fbuffer_append_str(buffer, state->array_nl);
     for(i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
-            if (RB_UNLIKELY(state->array_nl)) fbuffer_append(buffer, state->array_nl, state->array_nl_len);
+            if (RB_UNLIKELY(state->array_nl)) fbuffer_append_str(buffer, state->array_nl);
         }
         if (RB_UNLIKELY(state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, state->indent, state->indent_len);
+                fbuffer_append_str(buffer, state->indent);
             }
         }
         generate_json(buffer, Vstate, state, RARRAY_AREF(obj, i));
     }
     state->depth = --depth;
     if (RB_UNLIKELY(state->array_nl)) {
-        fbuffer_append(buffer, state->array_nl, state->array_nl_len);
+        fbuffer_append_str(buffer, state->array_nl);
         if (RB_UNLIKELY(state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, state->indent, state->indent_len);
+                fbuffer_append_str(buffer, state->indent);
             }
         }
     }
@@ -1007,11 +1012,11 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
     if (!objState) rb_raise(rb_eArgError, "unallocated JSON::State");
 
     MEMCPY(objState, origState, JSON_Generator_State, 1);
-    objState->indent = fstrndup(origState->indent, origState->indent_len);
-    objState->space = fstrndup(origState->space, origState->space_len);
-    objState->space_before = fstrndup(origState->space_before, origState->space_before_len);
-    objState->object_nl = fstrndup(origState->object_nl, origState->object_nl_len);
-    objState->array_nl = fstrndup(origState->array_nl, origState->array_nl_len);
+    objState->indent = origState->indent;
+    objState->space = origState->space;
+    objState->space_before = origState->space_before;
+    objState->object_nl = origState->object_nl;
+    objState->array_nl = origState->array_nl;
     return obj;
 }
 
@@ -1041,7 +1046,7 @@ static VALUE cState_from_state_s(VALUE self, VALUE opts)
 static VALUE cState_indent(VALUE self)
 {
     GET_STATE(self);
-    return state->indent ? rb_str_new(state->indent, state->indent_len) : rb_str_new2("");
+    return state->indent ? state->indent : rb_str_freeze(rb_utf8_str_new("", 0));
 }
 
 /*
@@ -1051,20 +1056,12 @@ static VALUE cState_indent(VALUE self)
  */
 static VALUE cState_indent_set(VALUE self, VALUE indent)
 {
-    unsigned long len;
     GET_STATE(self);
     Check_Type(indent, T_STRING);
-    len = RSTRING_LEN(indent);
-    if (len == 0) {
-        if (state->indent) {
-            ruby_xfree(state->indent);
-            state->indent = NULL;
-            state->indent_len = 0;
-        }
+    if (RSTRING_LEN(indent)) {
+        state->indent = RB_OBJ_FROZEN(indent) ? indent : rb_str_freeze(rb_str_dup(indent));
     } else {
-        if (state->indent) ruby_xfree(state->indent);
-        state->indent = fstrndup(RSTRING_PTR(indent), len);
-        state->indent_len = len;
+        state->indent = Qfalse;
     }
     return Qnil;
 }
@@ -1078,7 +1075,7 @@ static VALUE cState_indent_set(VALUE self, VALUE indent)
 static VALUE cState_space(VALUE self)
 {
     GET_STATE(self);
-    return state->space ? rb_str_new(state->space, state->space_len) : rb_str_new2("");
+    return state->space ? state->space : rb_str_freeze(rb_utf8_str_new("", 0));
 }
 
 /*
@@ -1089,20 +1086,12 @@ static VALUE cState_space(VALUE self)
  */
 static VALUE cState_space_set(VALUE self, VALUE space)
 {
-    unsigned long len;
     GET_STATE(self);
     Check_Type(space, T_STRING);
-    len = RSTRING_LEN(space);
-    if (len == 0) {
-        if (state->space) {
-            ruby_xfree(state->space);
-            state->space = NULL;
-            state->space_len = 0;
-        }
+    if (RSTRING_LEN(space)) {
+        state->space = RB_OBJ_FROZEN(space) ? space : rb_str_freeze(rb_str_dup(space));
     } else {
-        if (state->space) ruby_xfree(state->space);
-        state->space = fstrndup(RSTRING_PTR(space), len);
-        state->space_len = len;
+        state->space = Qfalse;
     }
     return Qnil;
 }
@@ -1115,7 +1104,7 @@ static VALUE cState_space_set(VALUE self, VALUE space)
 static VALUE cState_space_before(VALUE self)
 {
     GET_STATE(self);
-    return state->space_before ? rb_str_new(state->space_before, state->space_before_len) : rb_str_new2("");
+    return state->space_before ? state->space_before : rb_str_freeze(rb_utf8_str_new("", 0));
 }
 
 /*
@@ -1125,20 +1114,12 @@ static VALUE cState_space_before(VALUE self)
  */
 static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 {
-    unsigned long len;
     GET_STATE(self);
     Check_Type(space_before, T_STRING);
-    len = RSTRING_LEN(space_before);
-    if (len == 0) {
-        if (state->space_before) {
-            ruby_xfree(state->space_before);
-            state->space_before = NULL;
-            state->space_before_len = 0;
-        }
+    if (RSTRING_LEN(space_before)) {
+        state->space_before = RB_OBJ_FROZEN(space_before) ? space_before : rb_str_freeze(rb_str_dup(space_before));
     } else {
-        if (state->space_before) ruby_xfree(state->space_before);
-        state->space_before = fstrndup(RSTRING_PTR(space_before), len);
-        state->space_before_len = len;
+        state->space_before = Qfalse;
     }
     return Qnil;
 }
@@ -1152,7 +1133,7 @@ static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 static VALUE cState_object_nl(VALUE self)
 {
     GET_STATE(self);
-    return state->object_nl ? rb_str_new(state->object_nl, state->object_nl_len) : rb_str_new2("");
+    return state->object_nl ? state->object_nl : rb_str_freeze(rb_utf8_str_new("", 0));
 }
 
 /*
@@ -1163,19 +1144,12 @@ static VALUE cState_object_nl(VALUE self)
  */
 static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 {
-    unsigned long len;
     GET_STATE(self);
     Check_Type(object_nl, T_STRING);
-    len = RSTRING_LEN(object_nl);
-    if (len == 0) {
-        if (state->object_nl) {
-            ruby_xfree(state->object_nl);
-            state->object_nl = NULL;
-        }
+    if (RSTRING_LEN(object_nl)) {
+        state->object_nl = RB_OBJ_FROZEN(object_nl) ? object_nl : rb_str_freeze(rb_str_dup(object_nl));
     } else {
-        if (state->object_nl) ruby_xfree(state->object_nl);
-        state->object_nl = fstrndup(RSTRING_PTR(object_nl), len);
-        state->object_nl_len = len;
+        state->object_nl = Qfalse;
     }
     return Qnil;
 }
@@ -1188,7 +1162,7 @@ static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 static VALUE cState_array_nl(VALUE self)
 {
     GET_STATE(self);
-    return state->array_nl ? rb_str_new(state->array_nl, state->array_nl_len) : rb_str_new2("");
+    return state->array_nl ? state->array_nl : rb_str_freeze(rb_utf8_str_new("", 0));
 }
 
 /*
@@ -1198,19 +1172,12 @@ static VALUE cState_array_nl(VALUE self)
  */
 static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 {
-    unsigned long len;
     GET_STATE(self);
     Check_Type(array_nl, T_STRING);
-    len = RSTRING_LEN(array_nl);
-    if (len == 0) {
-        if (state->array_nl) {
-            ruby_xfree(state->array_nl);
-            state->array_nl = NULL;
-        }
+    if (RSTRING_LEN(array_nl)) {
+        state->array_nl = RB_OBJ_FROZEN(array_nl) ? array_nl : rb_str_freeze(rb_str_dup(array_nl));
     } else {
-        if (state->array_nl) ruby_xfree(state->array_nl);
-        state->array_nl = fstrndup(RSTRING_PTR(array_nl), len);
-        state->array_nl_len = len;
+        state->array_nl = Qfalse;
     }
     return Qnil;
 }
