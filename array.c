@@ -3745,100 +3745,105 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *  call-seq:
  *    values_at(*specifiers) -> new_array
  *
- *  Returns elements from +self+; does not modify +self+.
+ *  Returns elements from +self+ in a new array; does not modify +self+.
+ *
+ *  The objects included in the returned array are the elements of +self+
+ *  selected by the given +specifiers+,
+ *  each of which must be a numeric index or a Range.
  *
  *  In brief:
  *
  *    a = ['a', 'b', 'c', 'd']
  *
- *    # Index arguments.
- *    a.values_at(2, 0, 2, 50)    # => ["c", "a", "c", nil]
- *    a.values_at(-4, -3, -2, -1) # => ["a", "b", "c", "d"]
- *    a.values_at(-50, 50)        # => [nil, nil]
+ *    # Index specifiers.
+ *    a.values_at(2, 0, 2, 0)     # => ["c", "a", "c", "a"] # May repeat.
+ *    a.values_at(-4, -3, -2, -1) # => ["a", "b", "c", "d"] # Counts backwards if negative.
+ *    a.values_at(-50, 50)        # => [nil, nil]           # Outside of self.
  *
- *    # Range arguments.
- *    a.values_at(1..3)       # => ["b", "c", "d"]
- *    a.values_at(1...3)      # => ["b", "c"]
- *    a.values_at(3..1)       # => []
- *    a.values_at(2..3, 0..1) # => ["c", "d", "a", "b"]
+ *    # Range specifiers.
+ *    a.values_at(1..3)       # => ["b", "c", "d"] # From range.begin to range.end.
+ *    a.values_at(1...3)      # => ["b", "c"]      # End excluded.
+ *    a.values_at(3..1)       # => []              # No such elements.
  *
- *    # Negative range.start.
- *    a.values_at(-3..3)  # => ["b", "c", "d"]
- *    a.values_at(-50..3) # Raises RangeError.
+ *    a.values_at(-3..3)  # => ["b", "c", "d"]     # Negative range.begin counts backwards.
+ *    a.values_at(-50..3)                          # Raises RangeError.
  *
- *    # Negative range.end.
- *    a.values_at(1..-2)  # => ["b", "c"]
- *    a.values_at(1..-50) # => []
+ *    a.values_at(1..-2)  # => ["b", "c"]          # Negative range.end counts backwards.
+ *    a.values_at(1..-50) # => []                  # No such elements.
  *
- *    # Mixture of arguments.
+ *    # Mixture of specifiers.
  *    a.values_at(2..3, 3, 0..1, 0) # => ["c", "d", "d", "a", "b", "a"]
  *
- *  Returns a new array whose elements are the elements
- *  of +self+ at the given +specifiers+,
- *  each of which must be a numeric index or a Range.
- *
- *  With no arguments given, returns a new empty array.
- *
- *  For each non-negative numeric specifier +index+ that is in-range (less than <tt>self.size</tt>),
- *  returns the element at offset +index+:
+ *  With no +specifiers+ given, returns a new empty array:
  *
  *    a = ['a', 'b', 'c', 'd']
- *    a.values_at(0, 2)     # => ["a", "c"]
- *    a.values_at(0.1, 2.9) # => ["a", "c"]
+ *    a.values_at # => []
  *
- *  For each negative numeric +index+ that is in-range (greater than <tt>- self.size</tt>),
- *  counts backwards from the end of +self+:
+ *  For each numeric specifier +index+, includes an element:
  *
- *    a.values_at(-1, -4) # => ["d", "a"]
+ *  - For each non-negative numeric specifier +index+ that is in-range (less than <tt>self.size</tt>),
+ *    includes the element at offset +index+:
  *
- *  Assigns +nil+ for an +index+ that is out-of-range:
+ *      a.values_at(0, 2)     # => ["a", "c"]
+ *      a.values_at(0.1, 2.9) # => ["a", "c"]
+ *
+ *  - For each negative numeric +index+ that is in-range (greater than <tt>- self.size</tt>),
+ *    counts backwards from the end of +self+:
+ *
+ *      a.values_at(-1, -4) # => ["d", "a"]
+ *
+ *  The given indexes may be in any order, and may repeat:
+ *
+ *    a.values_at(2, 0, 1, 0, 2) # => ["c", "a", "b", "a", "c"]
+ *
+ *  For each +index+ that is out-of-range, includes +nil+:
  *
  *    a.values_at(4, -5) # => [nil, nil]
  *
- *  For each Range specifier +range+, returns elements
+ *  For each Range specifier +range+, includes elements
  *  according to <tt>range.begin</tt> and <tt>range.end</tt>:
  *
- *  - If both are non-negative and in-range (less than <tt>self.size</tt>),
- *    returns elements from index <tt>range.begin</tt>
+ *  - If both <tt>range.begin</tt> and <tt>range.end</tt>
+ *    are non-negative and in-range (less than <tt>self.size</tt>),
+ *    includes elements from index <tt>range.begin</tt>
  *    through <tt>range.end</tt> (if <tt>range.exclude_end?</tt> is +false+),
  *    or through <tt>range.end - 1</tt> (otherwise):
  *
  *      a.values_at(1..2)  # => ["b", "c"]
  *      a.values_at(1...2) # => ["b"]
  *
- *  - If <tt>range.begin</tt> is negative and in-range (greater than <tt>- self.size</tt>),
+ *  - If <tt>range.begin</tt> is negative and in-range (greater than <tt>- self.size</tt>):
  *
- *  - If <tt>range.begin</tt> is negative and out-of-range, raises RangeError.
+ *      a.values_at(-2..3) # => ["c", "d"]
  *
- *  - If <tt>range.end</tt> is negative and
+ *  - If <tt>range.begin</tt> is negative and out-of-range, raises an exception:
  *
- *      a.values_at(-3..2) # => ["b", "c"]
- *  The given +indexes+ may be in any order, and may repeat:
+ *      a.values_at(-5..3) 3 Raises RangeError.
  *
- *    a = [:foo, 'bar', 2]
- *    a.values_at(2, 0, 1, 0, 2) # => [2, :foo, "bar", :foo, 2]
- *    a.values_at(1, 0..2) # => ["bar", :foo, "bar", 2]
+ *  - If <tt>range.end</tt> is positive and out-of-range,
+ *    extends the returned array with +nil+ elements:
  *
- *  Assigns +nil+ for an +index+ that is too large:
+ *      a.values_at(1..5) # => ["b", "c", "d", nil, nil]
  *
- *    a = [:foo, 'bar', 2]
- *    a.values_at(0, 3, 1, 3) # => [:foo, nil, "bar", nil]
+ *  - If <tt>range.end</tt> is negative and in-range,
+ *    counts backwards from the end of +self+:
  *
- *  For each negative +index+, counts backward from the end of the array:
+ *      a.values_at(1..-2) # => ["b", "c"]
  *
- *    a = [:foo, 'bar', 2]
- *    a.values_at(-1, -3) # => [2, :foo]
+ *  - If <tt>range.end</tt> is negative and out-of-range,
+ *    returns an empty array:
  *
- *  Assigns +nil+ for an +index+ that is too small:
+ *      a.values_at(1..-5) # => []
  *
- *    a = [:foo, 'bar', 2]
- *    a.values_at(0, -5, 1, -6, 2) # => [:foo, nil, "bar", nil, 2]
+ *  The given ranges may be in any order and may repeat:
  *
- *  The given +indexes+ may have a mixture of signs:
+ *    a.values_at(2..3, 0..1, 2..3) # => ["c", "d", "a", "b", "c", "d"]
  *
- *    a = [:foo, 'bar', 2]
- *    a.values_at(0, -2, 1, -1) # => [:foo, "bar", "bar", 2]
+ *  The given specifiers may be any mixture of indexes and ranges:
  *
+ *    a.values_at(3, 1..2, 0, 2..3) # => ["d", "b", "c", "a", "c", "d"]
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
 static VALUE
