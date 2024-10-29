@@ -4376,25 +4376,26 @@ take_items(VALUE obj, long n)
  *    zip(*objects) -> new_array
  *    zip(*objects) {|other_array| ... } -> nil
  *
- *  Operates on a collection of +operands+, each of which is an array:
+ *  Operates on a collection of +operands+, each of which is an array
+ *  based on one of the given +objects+.
  *
- *  - For each object in *objects* that is an array,
- *    the operand is the array itself.
- *  _ For each object <tt>object</tt> that is not an array,
- *    the operand is the array <tt>object.each.to_a</tt>.
+ *  In a common case, all the +objects+ are arrays;
+ *  see below for other cases.
  *
  *  With no block given, returns a new array of size <tt>self.size</tt>
  *  each of whose elements is a new array.
  *
- *  Each nested array is of size <tt>objects.size+1</tt>
- *  (that is, the count of +objects+ plus one),
- *  and contains:
+ *  Each nested array is of size <tt>objects.size + 1</tt>
+ *  (that is, the count of +operands+ plus one), and contains:
  *
  *  - The _nth_ element of +self+.
  *  - The _nth_ element of each of the operands, if available.
  *
  *  For +operands+ that are all the same size as +self+,
- *  includes exactly all the elements of all the arrays:
+ *  returns an array of sub-arrays;
+ *  the nested sub-arrays that are a rearrangement exactly
+ *  of the elements of all the arrays
+ *  (with no omissions or additions):
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
@@ -4407,8 +4408,8 @@ take_items(VALUE obj, long n)
  *     [:a2, :b2, :c2],
  *     [:a3, :b3, :c3]]
  *
- *  If an operand is smaller than +self+,
- *  fills the corresponding subarray with +nil+ elements:
+ *  For an operand that is smaller than +self+,
+ *  pads the corresponding sub-array with +nil+ elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2]
@@ -4421,7 +4422,7 @@ take_items(VALUE obj, long n)
  *     [:a2, :b2, nil],
  *     [:a3, nil, nil]]
  *
- *  If an operand is larger than +self+,
+ *  For an operand that is larger than +self+,
  *  ignores(!) its trailing elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
@@ -4435,30 +4436,39 @@ take_items(VALUE obj, long n)
  *     [:a2, :b2, :c2],
  *     [:a3, :b3, :c3]]
  *
- *  If an argument *object* is not an array,
- *  the corresponding operand is <tt>object.each.to_a</tt>:
+ *  For an *object* that is _not_ an array,
+ *  forms the the corresponding operand as <tt>object.each.to_a</tt>:
  *
- *    a = [:a0, :a1, :a2, :a2]
- *    r = 1..4
+ *    a = [:a, :b, :c, :d]
+ *    r = 'A'..'D'
+ *    r.each.to_a # => ["A", "B", "C", "D"] # The actual operand.
+ *    a.zip(r)    # => [[:a, "A"], [:b, "B"], [:c, "C"], [:d, "D"]]
  *
- *    c = a.zip(r)
- *    c # => [[:a0, 1], [:a1, 2], [:a2, 3], [:a2, 4]]
+ *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
+ *    h.each.to_a s# => [[:foo, 0], [:bar, 1], [:baz, 2], [:bat, 3]]
+ *    pp a.zip(h)
+ *    # =>
+ *    [[:a, [:foo, 0]],
+ *     [:b, [:bar, 1]],
+ *     [:c, [:baz, 2]],
+ *     [:d, [:bat, 3]]]
  *
  *  With a block given, calls the block with each of the operands;
  *  returns +nil+:
  *
+ *    d = []
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
  *    c = [:c0, :c1, :c2, :c3]
- *    a.zip(b, c) {|sub_array| p sub_array} # => nil
+ *    a.zip(b, c) {|sub_array| d.push(sub_array.reverse) } # => nil
+ *    pp d
+ *    # =>
+ *    [[:c0, :b0, :a0],
+ *     [:c1, :b1, :a1],
+ *     [:c2, :b2, :a2],
+ *     [:c3, :b3, :a3]]
  *
- *  Output:
- *
- *    [:a0, :b0, :c0]
- *    [:a1, :b1, :c1]
- *    [:a2, :b2, :c2]
- *    [:a3, :b3, :c3]
- *
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
