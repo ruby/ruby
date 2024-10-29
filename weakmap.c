@@ -463,7 +463,7 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
     else {
         struct weakmap_entry *entry = xmalloc(sizeof(struct weakmap_entry));
 
-        *key = (st_data_t)&entry->key;;
+        *key = (st_data_t)&entry->key;
         *val = (st_data_t)&entry->val;
     }
 
