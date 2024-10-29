@@ -4373,52 +4373,79 @@ take_items(VALUE obj, long n)
 
 /*
  *  call-seq:
- *    array.zip(*other_arrays) -> new_array
- *    array.zip(*other_arrays) {|other_array| ... } -> nil
+ *    zip(*objects) -> new_array
+ *    zip(*objects) {|other_array| ... } -> nil
  *
- *  When no block given, returns a new +Array+ +new_array+ of size <tt>self.size</tt>
- *  whose elements are Arrays.
+ *  Operates on a collection of +operands+, each of which is an array:
  *
- *  Each nested array <tt>new_array[n]</tt> is of size <tt>other_arrays.size+1</tt>,
+ *  - For each object in *objects* that is an array,
+ *    the operand is the array itself.
+ *  _ For each object <tt>object</tt> that is not an array,
+ *    the operand is the array <tt>object.each.to_a</tt>.
+ *
+ *  With no block given, returns a new array of size <tt>self.size</tt>
+ *  each of whose elements is a new array.
+ *
+ *  Each nested array is of size <tt>objects.size+1</tt>
+ *  (that is, the count of +objects+ plus one),
  *  and contains:
  *
  *  - The _nth_ element of +self+.
- *  - The _nth_ element of each of the +other_arrays+.
+ *  - The _nth_ element of each of the operands, if available.
  *
- *  If all +other_arrays+ and +self+ are the same size:
+ *  For +operands+ that are all the same size as +self+,
+ *  includes exactly all the elements of all the arrays:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
  *    c = [:c0, :c1, :c2, :c3]
  *    d = a.zip(b, c)
- *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *    pp d
+ *    # =>
+ *    [[:a0, :b0, :c0],
+ *     [:a1, :b1, :c1],
+ *     [:a2, :b2, :c2],
+ *     [:a3, :b3, :c3]]
  *
- *  If any array in +other_arrays+ is smaller than +self+,
- *  fills to <tt>self.size</tt> with +nil+:
+ *  If an operand is smaller than +self+,
+ *  fills the corresponding subarray with +nil+ elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2]
  *    c = [:c0, :c1]
  *    d = a.zip(b, c)
- *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, nil], [:a3, nil, nil]]
+ *    pp d
+ *    # =>
+ *    [[:a0, :b0, :c0],
+ *     [:a1, :b1, :c1],
+ *     [:a2, :b2, nil],
+ *     [:a3, nil, nil]]
  *
- *  If any array in +other_arrays+ is larger than +self+,
- *  its trailing elements are ignored:
+ *  If an operand is larger than +self+,
+ *  ignores(!) its trailing elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3, :b4]
  *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
  *    d = a.zip(b, c)
- *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *    pp d
+ *    # =>
+ *    [[:a0, :b0, :c0],
+ *     [:a1, :b1, :c1],
+ *     [:a2, :b2, :c2],
+ *     [:a3, :b3, :c3]]
  *
- *  If an argument is not an array, it extracts the values by calling #each:
+ *  If an argument *object* is not an array,
+ *  the corresponding operand is <tt>object.each.to_a</tt>:
  *
  *    a = [:a0, :a1, :a2, :a2]
- *    b = 1..4
- *    c = a.zip(b)
+ *    r = 1..4
+ *
+ *    c = a.zip(r)
  *    c # => [[:a0, 1], [:a1, 2], [:a2, 3], [:a2, 4]]
  *
- *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns +nil+:
+ *  With a block given, calls the block with each of the operands;
+ *  returns +nil+:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
