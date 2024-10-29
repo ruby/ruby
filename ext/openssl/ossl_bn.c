@@ -49,7 +49,7 @@ VALUE cBN;
  *
  * Generic Error for all of OpenSSL::BN (big num)
  */
-VALUE eBNError;
+static VALUE eBNError;
 
 /*
  * Public
@@ -152,19 +152,19 @@ ossl_bn_value_ptr(volatile VALUE *ptr)
  */
 
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-void
+static void
 ossl_bn_ctx_free(void *ptr)
 {
     BN_CTX *ctx = (BN_CTX *)ptr;
     BN_CTX_free(ctx);
 }
 
-struct rb_ractor_local_storage_type ossl_bn_ctx_key_type = {
+static struct rb_ractor_local_storage_type ossl_bn_ctx_key_type = {
     NULL, // mark
     ossl_bn_ctx_free,
 };
 
-rb_ractor_local_key_t ossl_bn_ctx_key;
+static rb_ractor_local_key_t ossl_bn_ctx_key;
 
 BN_CTX *
 ossl_bn_ctx_get(void)

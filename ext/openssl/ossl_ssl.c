@@ -35,7 +35,7 @@
 
 VALUE mSSL;
 static VALUE eSSLError;
-VALUE cSSLContext;
+static VALUE cSSLContext;
 VALUE cSSLSocket;
 
 static VALUE eSSLErrorWaitReadable;

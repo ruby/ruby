@@ -27,8 +27,8 @@
 /*
  * Classes
  */
-VALUE cX509CRL;
-VALUE eX509CRLError;
+static VALUE cX509CRL;
+static VALUE eX509CRLError;
 
 static void
 ossl_x509crl_free(void *ptr)

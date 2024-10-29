@@ -9,8 +9,8 @@
  */
 #include "ossl.h"
 
-VALUE mRandom;
-VALUE eRandomError;
+static VALUE mRandom;
+static VALUE eRandomError;
 
 /*
  *  call-seq:

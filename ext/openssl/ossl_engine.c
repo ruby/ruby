@@ -37,12 +37,12 @@
  *
  * See also, https://www.openssl.org/docs/crypto/engine.html
  */
-VALUE cEngine;
+static VALUE cEngine;
 /* Document-class: OpenSSL::Engine::EngineError
  *
  * This is the generic exception for OpenSSL::Engine related errors
  */
-VALUE eEngineError;
+static VALUE eEngineError;
 
 /*
  * Private

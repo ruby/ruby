@@ -28,7 +28,7 @@
  * Classes
  */
 VALUE cX509Attr;
-VALUE eX509AttrError;
+static VALUE eX509AttrError;
 
 static void
 ossl_x509attr_free(void *ptr)

@@ -30,8 +30,8 @@
 /*
  * Classes
  */
-VALUE cCipher;
-VALUE eCipherError;
+static VALUE cCipher;
+static VALUE eCipherError;
 static ID id_auth_tag_len, id_key_set;
 
 static VALUE ossl_cipher_alloc(VALUE klass);

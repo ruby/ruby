@@ -27,9 +27,9 @@
 /*
  * Classes
  */
-VALUE mNetscape;
-VALUE cSPKI;
-VALUE eSPKIError;
+static VALUE mNetscape;
+static VALUE cSPKI;
+static VALUE eSPKIError;
 
 /*
  * Public functions

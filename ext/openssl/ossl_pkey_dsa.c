@@ -41,7 +41,7 @@ DSA_PRIVATE(VALUE obj, OSSL_3_const DSA *dsa)
  * Classes
  */
 VALUE cDSA;
-VALUE eDSAError;
+static VALUE eDSAError;
 
 /*
  * Private

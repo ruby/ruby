@@ -42,7 +42,7 @@ RSA_PRIVATE(VALUE obj, OSSL_3_const RSA *rsa)
  * Classes
  */
 VALUE cRSA;
-VALUE eRSAError;
+static VALUE eRSAError;
 
 /*
  * Private

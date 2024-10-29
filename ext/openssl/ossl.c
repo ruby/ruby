@@ -355,7 +355,7 @@ ossl_clear_error(void)
  * Any errors you see here are probably due to a bug in Ruby's OpenSSL
  * implementation.
  */
-VALUE
+static VALUE
 ossl_get_errors(VALUE _)
 {
     VALUE ary;

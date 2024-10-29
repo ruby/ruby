@@ -27,8 +27,8 @@
 /*
  * Classes
  */
-VALUE cX509Req;
-VALUE eX509ReqError;
+static VALUE cX509Req;
+static VALUE eX509ReqError;
 
 static void
 ossl_x509req_free(void *ptr)

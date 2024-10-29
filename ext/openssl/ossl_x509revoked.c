@@ -28,7 +28,7 @@
  * Classes
  */
 VALUE cX509Rev;
-VALUE eX509RevError;
+static VALUE eX509RevError;
 
 static void
 ossl_x509rev_free(void *ptr)

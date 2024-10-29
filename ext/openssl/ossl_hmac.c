@@ -21,8 +21,8 @@
 /*
  * Classes
  */
-VALUE cHMAC;
-VALUE eHMACError;
+static VALUE cHMAC;
+static VALUE eHMACError;
 
 /*
  * Public

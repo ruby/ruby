@@ -41,11 +41,11 @@ static const rb_data_type_t ossl_ec_point_type;
 } while (0)
 
 VALUE cEC;
-VALUE eECError;
-VALUE cEC_GROUP;
-VALUE eEC_GROUP;
-VALUE cEC_POINT;
-VALUE eEC_POINT;
+static VALUE eECError;
+static VALUE cEC_GROUP;
+static VALUE eEC_GROUP;
+static VALUE cEC_POINT;
+static VALUE eEC_POINT;
 
 static ID s_GFp, s_GF2m;
 

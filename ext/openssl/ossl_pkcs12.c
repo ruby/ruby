@@ -27,8 +27,8 @@
 /*
  * Classes
  */
-VALUE cPKCS12;
-VALUE ePKCS12Error;
+static VALUE cPKCS12;
+static VALUE ePKCS12Error;
 
 /*
  * Private

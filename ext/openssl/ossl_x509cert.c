@@ -28,7 +28,7 @@
  * Classes
  */
 VALUE cX509Cert;
-VALUE eX509CertError;
+static VALUE eX509CertError;
 
 static void
 ossl_x509_free(void *ptr)

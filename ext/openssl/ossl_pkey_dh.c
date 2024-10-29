@@ -27,7 +27,7 @@
  * Classes
  */
 VALUE cDH;
-VALUE eDHError;
+static VALUE eDHError;
 
 /*
  * Private

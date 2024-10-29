@@ -108,9 +108,9 @@ ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
 /*
  * Classes
  */
-VALUE cX509Store;
-VALUE cX509StoreContext;
-VALUE eX509StoreError;
+static VALUE cX509Store;
+static VALUE cX509StoreContext;
+static VALUE eX509StoreError;
 
 static void
 ossl_x509store_mark(void *ptr)

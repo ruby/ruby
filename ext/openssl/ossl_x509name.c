@@ -32,8 +32,8 @@
 /*
  * Classes
  */
-VALUE cX509Name;
-VALUE eX509NameError;
+static VALUE cX509Name;
+static VALUE eX509NameError;
 
 static void
 ossl_x509name_free(void *ptr)

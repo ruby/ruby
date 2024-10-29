@@ -67,13 +67,13 @@
     if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
 } while (0)
 
-VALUE mOCSP;
-VALUE eOCSPError;
-VALUE cOCSPReq;
-VALUE cOCSPRes;
-VALUE cOCSPBasicRes;
-VALUE cOCSPSingleRes;
-VALUE cOCSPCertId;
+static VALUE mOCSP;
+static VALUE eOCSPError;
+static VALUE cOCSPReq;
+static VALUE cOCSPRes;
+static VALUE cOCSPBasicRes;
+static VALUE cOCSPSingleRes;
+static VALUE cOCSPCertId;
 
 static void
 ossl_ocsp_request_free(void *ptr)

@@ -19,8 +19,8 @@
 /*
  * Classes
  */
-VALUE cDigest;
-VALUE eDigestError;
+static VALUE cDigest;
+static VALUE eDigestError;
 
 static VALUE ossl_digest_alloc(VALUE klass);
 
@@ -96,7 +96,7 @@ ossl_digest_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
 }
 
-VALUE ossl_digest_update(VALUE, VALUE);
+static VALUE ossl_digest_update(VALUE, VALUE);
 
 /*
  *  call-seq:
@@ -225,7 +225,7 @@ ossl_digest_reset(VALUE self)
  *   result = digest.digest
  *
  */
-VALUE
+static VALUE
 ossl_digest_update(VALUE self, VALUE data)
 {
     EVP_MD_CTX *ctx;
