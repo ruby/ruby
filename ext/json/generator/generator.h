@@ -54,18 +54,6 @@ typedef struct JSON_Generator_StateStruct {
     JSON_Generator_State *state;              \
     GET_STATE_TO(self, state)
 
-#define GENERATE_JSON(type)                                                                     \
-    VALUE Vstate;                                                                               \
-    JSON_Generator_State *state;                                                                \
-                                                                                                \
-    rb_scan_args(argc, argv, "01", &Vstate);                                                    \
-    Vstate = cState_from_state_s(cState, Vstate);                                               \
-    TypedData_Get_Struct(Vstate, JSON_Generator_State, &JSON_Generator_State_type, state);      \
-    FBuffer buffer = {0};                                                                       \
-    fbuffer_init(&buffer, state->buffer_initial_length);                                        \
-    generate_json_##type(&buffer, Vstate, state, self);                                         \
-    return fbuffer_to_s(&buffer)
-
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self);
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -99,7 +87,7 @@ static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_
 static void generate_json_fixnum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
-static VALUE cState_partial_generate(VALUE self, VALUE obj);
+static VALUE cState_partial_generate(VALUE self, VALUE obj, void (*func)(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj));
 static VALUE cState_generate(VALUE self, VALUE obj);
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
 static VALUE cState_indent(VALUE self);
