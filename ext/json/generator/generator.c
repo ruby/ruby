@@ -8,6 +8,8 @@
 static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError, Encoding_UTF_8;
 
 static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
+static ID sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan,
+          sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict;
 
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
@@ -1049,6 +1051,17 @@ static VALUE cState_indent(VALUE self)
     return state->indent ? state->indent : rb_str_freeze(rb_utf8_str_new("", 0));
 }
 
+static VALUE string_config(VALUE config)
+{
+    if (RTEST(config)) {
+        Check_Type(config, T_STRING);
+        if (RSTRING_LEN(config)) {
+            return RB_OBJ_FROZEN(config) ? config : rb_str_freeze(rb_str_dup(config));
+        }
+    }
+    return Qfalse;
+}
+
 /*
  * call-seq: indent=(indent)
  *
@@ -1057,12 +1070,7 @@ static VALUE cState_indent(VALUE self)
 static VALUE cState_indent_set(VALUE self, VALUE indent)
 {
     GET_STATE(self);
-    Check_Type(indent, T_STRING);
-    if (RSTRING_LEN(indent)) {
-        state->indent = RB_OBJ_FROZEN(indent) ? indent : rb_str_freeze(rb_str_dup(indent));
-    } else {
-        state->indent = Qfalse;
-    }
+    state->indent = string_config(indent);
     return Qnil;
 }
 
@@ -1087,12 +1095,7 @@ static VALUE cState_space(VALUE self)
 static VALUE cState_space_set(VALUE self, VALUE space)
 {
     GET_STATE(self);
-    Check_Type(space, T_STRING);
-    if (RSTRING_LEN(space)) {
-        state->space = RB_OBJ_FROZEN(space) ? space : rb_str_freeze(rb_str_dup(space));
-    } else {
-        state->space = Qfalse;
-    }
+    state->space = string_config(space);
     return Qnil;
 }
 
@@ -1115,12 +1118,7 @@ static VALUE cState_space_before(VALUE self)
 static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 {
     GET_STATE(self);
-    Check_Type(space_before, T_STRING);
-    if (RSTRING_LEN(space_before)) {
-        state->space_before = RB_OBJ_FROZEN(space_before) ? space_before : rb_str_freeze(rb_str_dup(space_before));
-    } else {
-        state->space_before = Qfalse;
-    }
+    state->space_before = string_config(space_before);
     return Qnil;
 }
 
@@ -1145,12 +1143,7 @@ static VALUE cState_object_nl(VALUE self)
 static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 {
     GET_STATE(self);
-    Check_Type(object_nl, T_STRING);
-    if (RSTRING_LEN(object_nl)) {
-        state->object_nl = RB_OBJ_FROZEN(object_nl) ? object_nl : rb_str_freeze(rb_str_dup(object_nl));
-    } else {
-        state->object_nl = Qfalse;
-    }
+    state->object_nl = string_config(object_nl);
     return Qnil;
 }
 
@@ -1173,12 +1166,7 @@ static VALUE cState_array_nl(VALUE self)
 static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 {
     GET_STATE(self);
-    Check_Type(array_nl, T_STRING);
-    if (RSTRING_LEN(array_nl)) {
-        state->array_nl = RB_OBJ_FROZEN(array_nl) ? array_nl : rb_str_freeze(rb_str_dup(array_nl));
-    } else {
-        state->array_nl = Qfalse;
-    }
+    state->array_nl = string_config(array_nl);
     return Qnil;
 }
 
@@ -1207,6 +1195,11 @@ static VALUE cState_max_nesting(VALUE self)
     return LONG2FIX(state->max_nesting);
 }
 
+static long long_config(VALUE num)
+{
+    return RTEST(num) ? FIX2LONG(num) : 0;
+}
+
 /*
  * call-seq: max_nesting=(depth)
  *
@@ -1216,8 +1209,7 @@ static VALUE cState_max_nesting(VALUE self)
 static VALUE cState_max_nesting_set(VALUE self, VALUE depth)
 {
     GET_STATE(self);
-    Check_Type(depth, T_FIXNUM);
-    state->max_nesting = FIX2LONG(depth);
+    state->max_nesting = long_config(depth);
     return Qnil;
 }
 
@@ -1345,8 +1337,7 @@ static VALUE cState_depth(VALUE self)
 static VALUE cState_depth_set(VALUE self, VALUE depth)
 {
     GET_STATE(self);
-    Check_Type(depth, T_FIXNUM);
-    state->depth = FIX2LONG(depth);
+    state->depth = long_config(depth);
     return Qnil;
 }
 
@@ -1361,6 +1352,15 @@ static VALUE cState_buffer_initial_length(VALUE self)
     return LONG2FIX(state->buffer_initial_length);
 }
 
+static void buffer_initial_length_set(JSON_Generator_State *state, VALUE buffer_initial_length)
+{
+    Check_Type(buffer_initial_length, T_FIXNUM);
+    long initial_length = FIX2LONG(buffer_initial_length);
+    if (initial_length > 0) {
+        state->buffer_initial_length = initial_length;
+    }
+}
+
 /*
  * call-seq: buffer_initial_length=(length)
  *
@@ -1369,14 +1369,49 @@ static VALUE cState_buffer_initial_length(VALUE self)
  */
 static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_length)
 {
-    long initial_length;
     GET_STATE(self);
-    Check_Type(buffer_initial_length, T_FIXNUM);
-    initial_length = FIX2LONG(buffer_initial_length);
-    if (initial_length > 0) {
-        state->buffer_initial_length = initial_length;
-    }
+    buffer_initial_length_set(state, buffer_initial_length);
     return Qnil;
+}
+
+static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
+{
+    JSON_Generator_State *state = (JSON_Generator_State *)_arg;
+
+         if (key == sym_indent)                { state->indent = string_config(val); }
+    else if (key == sym_space)                 { state->space = string_config(val); }
+    else if (key == sym_space_before)          { state->space_before = string_config(val); }
+    else if (key == sym_object_nl)             { state->object_nl = string_config(val); }
+    else if (key == sym_array_nl)              { state->array_nl = string_config(val); }
+    else if (key == sym_max_nesting)           { state->max_nesting = long_config(val); }
+    else if (key == sym_allow_nan)             { state->allow_nan = RTEST(val); }
+    else if (key == sym_ascii_only)            { state->ascii_only = RTEST(val); }
+    else if (key == sym_depth)                 { state->depth = long_config(val); }
+    else if (key == sym_buffer_initial_length) { buffer_initial_length_set(state, val); }
+    else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
+    else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
+    else if (key == sym_strict)                { state->strict = RTEST(val); }
+    return ST_CONTINUE;
+}
+
+static void configure_state(JSON_Generator_State *state, VALUE config)
+{
+    if (!RTEST(config)) return;
+
+    Check_Type(config, T_HASH);
+
+    if (!RHASH_SIZE(config)) return;
+
+    // We assume in most cases few keys are set so it's faster to go over
+    // the provided keys than to check all possible keys.
+    rb_hash_foreach(config, configure_state_i, (VALUE)state);
+}
+
+static VALUE cState_configure(VALUE self, VALUE opts)
+{
+    GET_STATE(self);
+    configure_state(state, opts);
+    return self;
 }
 
 /*
@@ -1405,6 +1440,7 @@ void Init_generator(void)
     rb_define_singleton_method(cState, "from_state", cState_from_state_s, 1);
     rb_define_method(cState, "initialize", cState_initialize, -1);
     rb_define_alias(cState, "initialize", "initialize"); // avoid method redefinition warnings
+    rb_define_private_method(cState, "_configure", cState_configure, 1);
 
     rb_define_method(cState, "initialize_copy", cState_init_copy, 1);
     rb_define_method(cState, "indent", cState_indent, 0);
@@ -1492,6 +1528,20 @@ void Init_generator(void)
     i_create_id = rb_intern("create_id");
     i_extend = rb_intern("extend");
     i_encode = rb_intern("encode");
+
+    sym_indent = ID2SYM(rb_intern("indent"));
+    sym_space = ID2SYM(rb_intern("space"));
+    sym_space_before = ID2SYM(rb_intern("space_before"));
+    sym_object_nl = ID2SYM(rb_intern("object_nl"));
+    sym_array_nl = ID2SYM(rb_intern("array_nl"));
+    sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
+    sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
+    sym_ascii_only = ID2SYM(rb_intern("ascii_only"));
+    sym_depth = ID2SYM(rb_intern("depth"));
+    sym_buffer_initial_length = ID2SYM(rb_intern("buffer_initial_length"));
+    sym_script_safe = ID2SYM(rb_intern("script_safe"));
+    sym_escape_slash = ID2SYM(rb_intern("escape_slash"));
+    sym_strict = ID2SYM(rb_intern("strict"));
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();
