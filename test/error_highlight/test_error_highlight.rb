@@ -1362,12 +1362,12 @@ undefined method `time' for #{ ONE_RECV_MESSAGE }
 
     warning = nil
     original_warn = Warning.method(:warn)
-    Warning.define_singleton_method(:warn) {|s| warning = s}
+    Warning.define_method(:warn) {|s| warning = s}
     begin
       ErrorHighlight::DefaultFormatter.max_snippet_width = custom_max_width
     ensure
-      Warning.singleton_class.remove_method(:warn)
-      Warning.define_singleton_method(:warn, original_warn)
+      Warning.remove_method(:warn)
+      Warning.define_method(:warn, original_warn)
     end
     assert_match "'max_snippet_width' adjusted to minimum value of #{min_snippet_width}", warning
 
