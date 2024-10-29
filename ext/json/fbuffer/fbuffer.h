@@ -33,7 +33,7 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
 #ifdef JSON_GENERATOR
 static void fbuffer_append_long(FBuffer *fb, long number);
 #endif
-static void fbuffer_append_char(FBuffer *fb, char newchr);
+static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 #ifdef JSON_GENERATOR
 static VALUE fbuffer_to_s(FBuffer *fb);
 #endif
@@ -66,29 +66,34 @@ static void fbuffer_clear(FBuffer *fb)
 }
 #endif
 
+static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
+{
+    unsigned long required;
+
+    if (RB_UNLIKELY(!fb->ptr)) {
+        fb->ptr = ALLOC_N(char, fb->initial_length);
+        fb->capa = fb->initial_length;
+    }
+
+    for (required = fb->capa; requested > required - fb->len; required <<= 1);
+
+    if (required > fb->capa) {
+        if (fb->type == STACK) {
+            const char *old_buffer = fb->ptr;
+            fb->ptr = ALLOC_N(char, required);
+            fb->type = HEAP;
+            MEMCPY(fb->ptr, old_buffer, char, fb->len);
+        } else {
+            REALLOC_N(fb->ptr, char, required);
+        }
+        fb->capa = required;
+    }
+}
+
 static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
 {
     if (RB_UNLIKELY(requested > fb->capa - fb->len)) {
-        unsigned long required;
-
-        if (RB_UNLIKELY(!fb->ptr)) {
-            fb->ptr = ALLOC_N(char, fb->initial_length);
-            fb->capa = fb->initial_length;
-        }
-
-        for (required = fb->capa; requested > required - fb->len; required <<= 1);
-
-        if (required > fb->capa) {
-            if (fb->type == STACK) {
-                const char *old_buffer = fb->ptr;
-                fb->ptr = ALLOC_N(char, required);
-                fb->type = HEAP;
-                MEMCPY(fb->ptr, old_buffer, char, fb->len);
-            } else {
-                REALLOC_N(fb->ptr, char, required);
-            }
-            fb->capa = required;
-        }
+        fbuffer_do_inc_capa(fb, requested);
     }
 }
 
@@ -113,7 +118,7 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
 }
 #endif
 
-static void fbuffer_append_char(FBuffer *fb, char newchr)
+static inline void fbuffer_append_char(FBuffer *fb, char newchr)
 {
     fbuffer_inc_capa(fb, 1);
     *(fb->ptr + fb->len) = newchr;
