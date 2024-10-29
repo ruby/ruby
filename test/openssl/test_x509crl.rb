@@ -204,6 +204,23 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal(false, crl.verify(@dsa512))
   end
 
+  def test_sign_and_verify_ed25519
+    # Ed25519 is not FIPS-approved.
+    omit_on_fips
+    # See ASN1_item_sign_ctx in ChangeLog for 3.8.1: https://github.com/libressl/portable/blob/master/ChangeLog
+    omit "Ed25519 not supported" unless openssl?(1, 1, 1) || libressl?(3, 8, 1)
+    ed25519 = OpenSSL::PKey::generate_key("ED25519")
+    cert = issue_cert(@ca, ed25519, 1, [], nil, nil, digest: nil)
+    crl = issue_crl([], 1, Time.now, Time.now+1600, [],
+                    cert, ed25519, nil)
+    assert_equal(false, crl_error_returns_false { crl.verify(@rsa1024) })
+    assert_equal(false, crl_error_returns_false { crl.verify(@rsa2048) })
+    assert_equal(false, crl.verify(OpenSSL::PKey::generate_key("ED25519")))
+    assert_equal(true,  crl.verify(ed25519))
+    crl.version = 0
+    assert_equal(false, crl.verify(ed25519))
+  end
+
   def test_revoked_to_der
     # revokedCertificates     SEQUENCE OF SEQUENCE  {
     #      userCertificate         CertificateSerialNumber,
