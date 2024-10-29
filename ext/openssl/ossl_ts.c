@@ -161,8 +161,11 @@ get_asn1obj(ASN1_OBJECT *obj)
         ret = rb_str_new2(OBJ_nid2sn(nid));
     else{
         if (!(out = BIO_new(BIO_s_mem())))
-            ossl_raise(eX509AttrError, NULL);
-        i2a_ASN1_OBJECT(out, obj);
+            ossl_raise(eTimestampError, "BIO_new(BIO_s_mem())");
+        if (i2a_ASN1_OBJECT(out, obj) <= 0) {
+            BIO_free(out);
+            ossl_raise(eTimestampError, "i2a_ASN1_OBJECT");
+        }
         ret = ossl_membio2str(out);
     }
 
