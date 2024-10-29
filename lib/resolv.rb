@@ -998,13 +998,13 @@ class Resolv
             next unless keyword
             case keyword
             when 'nameserver'
-              nameserver.concat(args)
+              nameserver.concat(args.each(&:freeze))
             when 'domain'
               next if args.empty?
-              search = [args[0]]
+              search = [args[0].freeze]
             when 'search'
               next if args.empty?
-              search = args
+              search = args.each(&:freeze)
             when 'options'
               args.each {|arg|
                 case arg
@@ -1015,22 +1015,22 @@ class Resolv
             end
           }
         }
-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
+        return { :nameserver => nameserver.freeze, :search => search.freeze, :ndots => ndots.freeze }.freeze
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
         if File.exist? filename
-          config_hash = Config.parse_resolv_conf(filename)
+          Config.parse_resolv_conf(filename)
+        elsif WINDOWS
+          require 'win32/resolv' unless defined?(Win32::Resolv)
+          search, nameserver = Win32::Resolv.get_resolv_info
+          config_hash = {}
+          config_hash[:nameserver] = nameserver if nameserver
+          config_hash[:search] = [search].flatten if search
+          config_hash
         else
-          if WINDOWS
-            require 'win32/resolv' unless defined?(Win32::Resolv)
-            search, nameserver = Win32::Resolv.get_resolv_info
-            config_hash = {}
-            config_hash[:nameserver] = nameserver if nameserver
-            config_hash[:search] = [search].flatten if search
-          end
+          {}
         end
-        config_hash || {}
       end
 
       def lazy_initialize
