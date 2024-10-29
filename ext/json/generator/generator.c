@@ -397,7 +397,9 @@ static char *fstrndup(const char *ptr, unsigned long len) {
  */
 static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(object);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_object);
 }
 
 /*
@@ -409,7 +411,9 @@ static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
  * produced JSON string output further.
  */
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
-    GENERATE_JSON(array);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_array);
 }
 
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -420,7 +424,9 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
  */
 static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(integer);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_integer);
 }
 
 #else
@@ -431,7 +437,9 @@ static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mFixnum_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(fixnum);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_fixnum);
 }
 
 /*
@@ -441,7 +449,9 @@ static VALUE mFixnum_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(bignum);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_bignum);
 }
 #endif
 
@@ -452,7 +462,9 @@ static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(float);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_float);
 }
 
 /*
@@ -475,7 +487,9 @@ static VALUE mString_included_s(VALUE self, VALUE modul) {
  */
 static VALUE mString_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(string);
+    rb_check_arity(argc, 0, 1);
+    VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
+    return cState_partial_generate(Vstate, self, generate_json_string);
 }
 
 /*
@@ -530,7 +544,8 @@ static VALUE mString_Extend_json_create(VALUE self, VALUE o)
  */
 static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(true);
+    rb_check_arity(argc, 0, 1);
+    return rb_utf8_str_new("true", 4);
 }
 
 /*
@@ -540,7 +555,8 @@ static VALUE mTrueClass_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(false);
+    rb_check_arity(argc, 0, 1);
+    return rb_utf8_str_new("false", 5);
 }
 
 /*
@@ -550,7 +566,8 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self)
 {
-    GENERATE_JSON(null);
+    rb_check_arity(argc, 0, 1);
+    return rb_utf8_str_new("null", 4);
 }
 
 /*
@@ -567,7 +584,7 @@ static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "01", &state);
     Check_Type(string, T_STRING);
     state = cState_from_state_s(cState, state);
-    return cState_partial_generate(state, string);
+    return cState_partial_generate(state, string, generate_json_string);
 }
 
 static void State_free(void *ptr)
@@ -834,6 +851,7 @@ static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_
         generate_json_bignum(buffer, Vstate, state, obj);
 }
 #endif
+
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     double value = RFLOAT_VALUE(obj);
@@ -910,13 +928,14 @@ struct generate_json_data {
     VALUE vstate;
     JSON_Generator_State *state;
     VALUE obj;
+    void (*func)(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj);
 };
 
 static VALUE generate_json_try(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
 
-    generate_json(data->buffer, data->vstate, data->state, data->obj);
+    data->func(data->buffer, data->vstate, data->state, data->obj);
 
     return Qnil;
 }
@@ -931,7 +950,7 @@ static VALUE generate_json_rescue(VALUE d, VALUE exc)
     return Qundef;
 }
 
-static VALUE cState_partial_generate(VALUE self, VALUE obj)
+static VALUE cState_partial_generate(VALUE self, VALUE obj, void (*func)(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj))
 {
     GET_STATE(self);
 
@@ -942,7 +961,8 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj)
         .buffer = &buffer,
         .vstate = self,
         .state = state,
-        .obj = obj
+        .obj = obj,
+        .func = func
     };
     rb_rescue(generate_json_try, (VALUE)&data, generate_json_rescue, (VALUE)&data);
 
@@ -958,7 +978,7 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj)
  */
 static VALUE cState_generate(VALUE self, VALUE obj)
 {
-    VALUE result = cState_partial_generate(self, obj);
+    VALUE result = cState_partial_generate(self, obj, generate_json);
     GET_STATE(self);
     (void)state;
     return result;
