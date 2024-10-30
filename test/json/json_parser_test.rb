@@ -196,20 +196,21 @@ class JSONParserTest < Test::Unit::TestCase
     )
   end
 
-  def test_parse_broken_string
-    # https://github.com/ruby/json/issues/138
-    s = parse(%{["\x80"]})[0]
-    assert_equal("\x80", s)
-    assert_equal Encoding::UTF_8, s.encoding
-    assert_equal false, s.valid_encoding?
+  if RUBY_ENGINE != "jruby" # https://github.com/ruby/json/issues/138
+    def test_parse_broken_string
+      s = parse(%{["\x80"]})[0]
+      assert_equal("\x80", s)
+      assert_equal Encoding::UTF_8, s.encoding
+      assert_equal false, s.valid_encoding?
 
-    s = parse(%{["\x80"]}.b)[0]
-    assert_equal("\x80", s)
-    assert_equal Encoding::UTF_8, s.encoding
-    assert_equal false, s.valid_encoding?
+      s = parse(%{["\x80"]}.b)[0]
+      assert_equal("\x80", s)
+      assert_equal Encoding::UTF_8, s.encoding
+      assert_equal false, s.valid_encoding?
 
-    input = %{["\x80"]}.dup.force_encoding(Encoding::US_ASCII)
-    assert_raise(Encoding::InvalidByteSequenceError) { parse(input) }
+      input = %{["\x80"]}.dup.force_encoding(Encoding::US_ASCII)
+      assert_raise(Encoding::InvalidByteSequenceError) { parse(input) }
+    end
   end
 
   def test_parse_big_integers
