@@ -3819,7 +3819,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *
  *  - If <tt>range.begin</tt> is negative and out-of-range, raises an exception:
  *
- *      a.values_at(-5..3) 3 Raises RangeError.
+ *      a.values_at(-5..3) # Raises RangeError.
  *
  *  - If <tt>range.end</tt> is positive and out-of-range,
  *    extends the returned array with +nil+ elements:
