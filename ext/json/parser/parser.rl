@@ -87,14 +87,14 @@ static void raise_parse_error(const char *format, const char *start)
     rb_enc_raise(rb_utf8_encoding(), rb_path2class("JSON::ParserError"), format, ptr);
 }
 
-static VALUE mJSON, mExt, cParser, eNestingError;
+static VALUE mJSON, mExt, cParser, eNestingError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
           i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
           i_object_class, i_array_class, i_decimal_class,
           i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
-          i_leftshift, i_new, i_try_convert, i_freeze, i_uminus;
+          i_leftshift, i_new, i_try_convert, i_freeze, i_uminus, i_encode;
 
 static int binary_encindex;
 static int utf8_encindex;
@@ -692,16 +692,11 @@ static VALUE convert_encoding(VALUE source)
   }
 
  if (encindex == binary_encindex) {
-    // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
-    VALUE utf8_string = rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
-    switch (rb_enc_str_coderange(utf8_string)) {
-      case ENC_CODERANGE_7BIT:
-      case ENC_CODERANGE_VALID:
-        return utf8_string;
-    }
+    // For historical reason, we silently reinterpret binary strings as UTF-8
+    return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
   }
 
-  return rb_str_conv_enc(source, rb_enc_from_index(encindex), rb_utf8_encoding());
+  return rb_funcall(source, i_encode, 1, Encoding_UTF_8);
 }
 
 /*
@@ -974,6 +969,9 @@ void Init_parser(void)
     CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
     rb_gc_register_mark_object(CMinusInfinity);
 
+    rb_global_variable(&Encoding_UTF_8);
+    Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
+
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
     i_create_id = rb_intern("create_id");
@@ -995,6 +993,7 @@ void Init_parser(void)
     i_try_convert = rb_intern("try_convert");
     i_freeze = rb_intern("freeze");
     i_uminus = rb_intern("-@");
+    i_encode = rb_intern("encode");
 
     binary_encindex = rb_ascii8bit_encindex();
     utf8_encindex = rb_utf8_encindex();
