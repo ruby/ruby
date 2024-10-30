@@ -4376,26 +4376,23 @@ take_items(VALUE obj, long n)
  *    zip(*objects) -> new_array
  *    zip(*objects) {|other_array| ... } -> nil
  *
- *  Operates on a collection of +operands+, each of which is an array
- *  based on one of the given +objects+.
+ *  With no block given, combines +self+ with a collection of other arrays;
+ *  returns a new array of sub-arrays.
  *
- *  In a common case, all the +objects+ are arrays;
- *  see below for other cases.
+ *  In a common case, all the +objects+ are arrays,
+ *  and so the "other arrays" are just the +objects+ themselves;
+ *  for other cases (see below), each non-array object is converted to an array
+ *  that becomes one of the "other arrays."
  *
- *  With no block given, returns a new array of size <tt>self.size</tt>
- *  each of whose elements is a new array.
- *
- *  Each nested array is of size <tt>objects.size + 1</tt>
- *  (that is, the count of +operands+ plus one), and contains:
+ *  The returned object is an array of size <tt>objects.size + 1</tt>
+ *  (that is, the count of other arrays plus one), and contains:
  *
  *  - The _nth_ element of +self+.
- *  - The _nth_ element of each of the operands, if available.
+ *  - The _nth_ element of each of the other arrays, as available.
  *
- *  For +operands+ that are all the same size as +self+,
- *  returns an array of sub-arrays;
- *  the nested sub-arrays that are a rearrangement exactly
- *  of the elements of all the arrays
- *  (with no omissions or additions):
+ *  When the other arrays are all the same size as +self+,
+ *  the returned sub-arrays are a rearrangement containing exactly elements of all the arrays
+ *  (including +self+), with no omissions or additions:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
@@ -4408,7 +4405,7 @@ take_items(VALUE obj, long n)
  *     [:a2, :b2, :c2],
  *     [:a3, :b3, :c3]]
  *
- *  For an operand that is smaller than +self+,
+ *  When one of the other arrays is smaller than +self+,
  *  pads the corresponding sub-array with +nil+ elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
@@ -4422,7 +4419,7 @@ take_items(VALUE obj, long n)
  *     [:a2, :b2, nil],
  *     [:a3, nil, nil]]
  *
- *  For an operand that is larger than +self+,
+ *  When one of the other arrays is larger than +self+,
  *  ignores(!) its trailing elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
@@ -4437,11 +4434,11 @@ take_items(VALUE obj, long n)
  *     [:a3, :b3, :c3]]
  *
  *  For an *object* that is _not_ an array,
- *  forms the the corresponding operand as <tt>object.each.to_a</tt>:
+ *  forms the the "other array" as <tt>object.each.to_a</tt>:
  *
  *    a = [:a, :b, :c, :d]
  *    r = 'A'..'D'
- *    r.each.to_a # => ["A", "B", "C", "D"] # The actual operand.
+ *    r.each.to_a # => ["A", "B", "C", "D"] # The "other array."
  *    a.zip(r)    # => [[:a, "A"], [:b, "B"], [:c, "C"], [:d, "D"]]
  *
  *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
@@ -4453,7 +4450,7 @@ take_items(VALUE obj, long n)
  *     [:c, [:baz, 2]],
  *     [:d, [:bat, 3]]]
  *
- *  With a block given, calls the block with each of the operands;
+ *  With a block given, calls the block with each of the other arrays;
  *  returns +nil+:
  *
  *    d = []
