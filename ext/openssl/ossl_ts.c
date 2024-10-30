@@ -1589,5 +1589,9 @@ Init_ossl_ts(void)
     rb_attr(cTimestampFactory, rb_intern_const("additional_certs"), 1, 1, 0);
     rb_define_method(cTimestampFactory, "create_timestamp", ossl_tsfac_create_ts, 3);
 }
-
+#else /* OPENSSL_NO_TS */
+void
+Init_ossl_ts(void)
+{
+}
 #endif
