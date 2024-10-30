@@ -3787,7 +3787,7 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *      a.values_at(0, 2)     # => ["a", "c"]
  *      a.values_at(0.1, 2.9) # => ["a", "c"]
  *
- *  - For each negative numeric +index+ that is in-range (greater than <tt>- self.size</tt>),
+ *  - For each negative numeric +index+ that is in-range (greater than or equal to <tt>- self.size</tt>),
  *    counts backwards from the end of +self+:
  *
  *      a.values_at(-1, -4) # => ["d", "a"]
