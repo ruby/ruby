@@ -222,7 +222,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 else {
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
-                    VM_ASSERT(BUILTIN_TYPE(owner) == T_CLASS);
+                    VM_ASSERT(RB_TYPE_P(owner, T_CLASS), "owner: %s", rb_obj_info(owner));
                     VALUE klass_housing_cme;
                     if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
                         klass_housing_cme = owner;
