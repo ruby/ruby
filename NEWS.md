@@ -110,10 +110,10 @@ The following bundled gems are updated.
 * power_assert 2.0.4
 * rake 13.2.1
 * test-unit 3.6.2
-* rexml 3.3.8
+* rexml 3.3.9
 * rss 0.3.1
 * net-ftp 0.3.8
-* net-imap 0.4.17
+* net-imap 0.5.0
 * net-smtp 0.5.0
 * rbs 3.6.1
 * typeprof 0.21.11
