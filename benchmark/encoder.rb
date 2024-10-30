@@ -18,7 +18,7 @@ def implementations(ruby_obj)
   state = JSON::State.new(JSON.dump_default_options)
   {
     json_state: ["json (reuse)", proc { state.generate(ruby_obj) }],
-    json: ["json", proc { JSON.dump(ruby_obj) }],
+    json: ["json", proc { JSON.generate(ruby_obj) }],
     oj: ["oj", proc { Oj.dump(ruby_obj) }],
   }
 end
