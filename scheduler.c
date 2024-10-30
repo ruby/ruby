@@ -13,6 +13,9 @@
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
 
+#include "ruby/thread.h"
+
+// For `ruby_thread_has_gvl_p`.
 #include "internal/thread.h"
 
 static ID id_close;
@@ -32,6 +35,8 @@ static ID id_io_select;
 static ID id_io_close;
 
 static ID id_address_resolve;
+
+static ID id_blocking_region;
 
 static ID id_fiber_schedule;
 
@@ -108,6 +113,8 @@ Init_Fiber_Scheduler(void)
     id_io_close = rb_intern_const("io_close");
 
     id_address_resolve = rb_intern_const("address_resolve");
+
+    id_blocking_region = rb_intern_const("blocking_region");
 
     id_fiber_schedule = rb_intern_const("fiber");
 
@@ -691,6 +698,62 @@ rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname)
     };
 
     return rb_check_funcall(scheduler, id_address_resolve, 1, arguments);
+}
+
+struct rb_blocking_region_arguments {
+    void *(*function)(void *);
+    void *data;
+    rb_unblock_function_t *unblock_function;
+    void *data2;
+    int flags;
+
+    struct rb_fiber_scheduler_blocking_region_state *state;
+};
+
+static VALUE
+rb_fiber_scheduler_blocking_region_proc(RB_BLOCK_CALL_FUNC_ARGLIST(value, _arguments))
+{
+    struct rb_blocking_region_arguments *arguments = (struct rb_blocking_region_arguments*)_arguments;
+
+    if (arguments->state == NULL) {
+        rb_raise(rb_eRuntimeError, "Blocking function was already invoked!");
+    }
+
+    arguments->state->result = rb_nogvl(arguments->function, arguments->data, arguments->unblock_function, arguments->data2, arguments->flags);
+    arguments->state->saved_errno = rb_errno();
+
+    // Make sure it's only invoked once.
+    arguments->state = NULL;
+
+    return Qnil;
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#blocking_region
+ *  call-seq: blocking_region(work)
+ *
+ *  Invoked by Ruby's core methods to run a blocking operation in a non-blocking way.
+ *
+ *  Minimal suggested implementation is:
+ *
+ *     def blocking_region(work)
+ *       Thread.new(&work).join
+ *     end
+ */
+VALUE rb_fiber_scheduler_blocking_region(VALUE scheduler, void* (*function)(void *), void *data, rb_unblock_function_t *unblock_function, void *data2, int flags, struct rb_fiber_scheduler_blocking_region_state *state)
+{
+    struct rb_blocking_region_arguments arguments = {
+        .function = function,
+        .data = data,
+        .unblock_function = unblock_function,
+        .data2 = data2,
+        .flags = flags,
+        .state = state
+    };
+
+    VALUE proc = rb_proc_new(rb_fiber_scheduler_blocking_region_proc, (VALUE)&arguments);
+
+    return rb_check_funcall(scheduler, id_blocking_region, 1, &proc);
 }
 
 /*

@@ -57,6 +57,11 @@ Note: We're only listing outstanding class updates.
       associated with the AST node. [[Feature #20624]]
     * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
 
+* Fiber::Scheduler
+
+    * An optional `Fiber::Scheduler#blocking_region` hook allows blocking operations to be moved out of the event loop
+      in order to reduce latency and improve multi-core processor utilization. [[Feature #20855]]
+
 ## Stdlib updates
 
 * Tempfile
@@ -212,3 +217,4 @@ details of the default gems or bundled gems.
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
+[Feature #20855]: https://bugs.ruby-lang.org/issues/20855

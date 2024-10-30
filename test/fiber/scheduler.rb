@@ -309,6 +309,10 @@ class Scheduler
       Addrinfo.getaddrinfo(hostname, nil).map(&:ip_address).uniq
     end.value
   end
+
+  def blocking_region(work)
+    Thread.new(&work).join
+  end
 end
 
 # This scheduler class implements `io_read` and `io_write` hooks which require
@@ -321,8 +325,7 @@ class IOBufferScheduler < Scheduler
     io.nonblock = true
 
     while true
-      maximum_size = buffer.size - offset
-      result = blocking{buffer.read(io, maximum_size, offset)}
+      result = blocking{buffer.read(io, 0, offset)}
 
       if result > 0
         total += result
@@ -349,8 +352,7 @@ class IOBufferScheduler < Scheduler
     io.nonblock = true
 
     while true
-      maximum_size = buffer.size - offset
-      result = blocking{buffer.write(io, maximum_size, offset)}
+      result = blocking{buffer.write(io, 0, offset)}
 
       if result > 0
         total += result
@@ -377,8 +379,7 @@ class IOBufferScheduler < Scheduler
     io.nonblock = true
 
     while true
-      maximum_size = buffer.size - offset
-      result = blocking{buffer.pread(io, from, maximum_size, offset)}
+      result = blocking{buffer.pread(io, from, 0, offset)}
 
       if result > 0
         total += result
@@ -406,8 +407,7 @@ class IOBufferScheduler < Scheduler
     io.nonblock = true
 
     while true
-      maximum_size = buffer.size - offset
-      result = blocking{buffer.pwrite(io, from, maximum_size, offset)}
+      result = blocking{buffer.pwrite(io, from, 0, offset)}
 
       if result > 0
         total += result

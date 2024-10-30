@@ -21,7 +21,8 @@ class TestFiberIOBuffer < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        message = i.read(20)
+        # We add 1 here, to force the read to block (testing that specific code path).
+        message = i.read(MESSAGE.bytesize + 1)
         i.close
       end
 
