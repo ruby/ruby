@@ -1573,6 +1573,35 @@ test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: main
 no-test-bundled-gems-precheck:
 
+update-default-gemspecs: main
+	$(ACTIONS_GROUP)
+	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
+	@$(XRUBY) -W0 -C "$(srcdir)" -rrubygems \
+	    -e "destdir = ARGV.shift" \
+	    -e "ARGV.each do |basedir|" \
+	    -e   "Dir.glob(basedir+'/**/*.gemspec') do |g|" \
+	    -e     "dir, base = File.split(g)" \
+	    -e     "spec = Dir.chdir(dir) {Gem::Specification.load(base)} ||" \
+	    -e         "Gem::Specification.load(g)" \
+	    -e     "unless spec" \
+	    -e       "puts %[Ignoring #{g}]" \
+	    -e       "next" \
+	    -e     "end" \
+	    -e     "spec.files.clear" \
+	    -e     "spec.extensions.clear" \
+	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), spec.to_ruby)" \
+	    -e   "end" \
+	    -e "end" \
+	    -- .bundle/specifications lib ext
+	$(ACTIONS_ENDGROUP)
+
+install-for-test-bundled-gems: update-default-gemspecs
+	$(ACTIONS_GROUP)
+	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
+		install --no-document --conservative \
+		"hoe" "json-schema" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json"
+	$(ACTIONS_ENDGROUP)
+
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch:
 	$(ACTIONS_GROUP)
@@ -1582,12 +1611,9 @@ no-test-bundled-gems-fetch:
 
 test-bundled-gems-prepare: $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch
 test-bundled-gems-prepare: $(TEST_RUNNABLE)-test-bundled-gems-prepare
-no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
-yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
-	$(ACTIONS_GROUP)
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "hoe" "json-schema" "test-unit-rr" "simplecov"
-	$(ACTIONS_ENDGROUP)
+no-test-bundled-gems-prepare: no-test-bundled-gems-precheck no-test-bundled-gems-fetch
+yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck yes-test-bundled-gems-fetch
+yes-test-bundled-gems-prepare: install-for-test-bundled-gems
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
