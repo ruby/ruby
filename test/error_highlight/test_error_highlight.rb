@@ -1361,7 +1361,7 @@ undefined method `time' for #{ ONE_RECV_MESSAGE }
     min_snippet_width = ErrorHighlight::DefaultFormatter::MIN_SNIPPET_WIDTH
 
     warning = nil
-    original_warn = Warning.method(:warn)
+    original_warn = Warning.instance_method(:warn)
     Warning.class_eval do
       remove_method(:warn)
       define_method(:warn) {|str| warning = str}
