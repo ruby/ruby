@@ -61,7 +61,6 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   if load_path
     libs = IO.popen([ruby, "-e", "old = $:.dup; require '#{toplib}'; puts $:-old"], &:read)
     next unless $?.success?
-    puts libs
     ENV["RUBYLIB"] = [libs.split("\n"), rubylib].join(File::PATH_SEPARATOR)
   else
     ENV["RUBYLIB"] = rubylib
