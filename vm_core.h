@@ -1489,22 +1489,13 @@ VM_ENV_ESCAPED_P(const VALUE *ep)
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
-#if VM_CHECK_MODE > 0
-static inline int
-vm_assert_env(VALUE obj)
-{
-    VM_ASSERT(obj == Qundef || imemo_type_p(obj, imemo_env));
-    return 1;
-}
-#endif
-
 RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
     VALUE envval = ep[VM_ENV_DATA_INDEX_ENV];
     VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    VM_ASSERT(vm_assert_env(envval));
+    VM_ASSERT(envval == Qundef || imemo_type_p(envval, imemo_env));
     return envval;
 }
 
