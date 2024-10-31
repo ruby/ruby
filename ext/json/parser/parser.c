@@ -1476,10 +1476,8 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
-static const size_t MAX_STACK_BUFFER_SIZE = 128;
 static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bool symbolize)
 {
-    VALUE result = Qnil;
     size_t bufferSize = stringEnd - string;
     char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
@@ -1490,19 +1488,9 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
         return build_string(string, stringEnd, intern, symbolize);
     }
 
-    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-# ifdef HAVE_RB_ENC_INTERNED_STR
-      bufferStart = buffer = ALLOC_N(char, bufferSize ? bufferSize : 1);
-# else
-      bufferStart = buffer = ALLOC_N(char, bufferSize);
-# endif
-    } else {
-# ifdef HAVE_RB_ENC_INTERNED_STR
-      bufferStart = buffer = ALLOCA_N(char, bufferSize ? bufferSize : 1);
-# else
-      bufferStart = buffer = ALLOCA_N(char, bufferSize);
-# endif
-    }
+    VALUE result = rb_str_buf_new(bufferSize);
+    rb_enc_associate_index(result, utf8_encindex);
+    buffer = bufferStart = RSTRING_PTR(result);
 
     while (pe < stringEnd) {
         if (*pe == '\\') {
@@ -1536,9 +1524,6 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
-                      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                        ruby_xfree(bufferStart);
-                      }
                       raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
                     } else {
                         uint32_t ch = unescape_unicode((unsigned char *) ++pe);
@@ -1556,9 +1541,6 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
                         if ((ch & 0xFC00) == 0xD800) {
                             pe++;
                             if (pe > stringEnd - 6) {
-                              if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                                ruby_xfree(bufferStart);
-                              }
                               raise_parse_error("incomplete surrogate pair at '%s'", p);
                             }
                             if (pe[0] == '\\' && pe[1] == 'u') {
@@ -1591,18 +1573,19 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
       MEMCPY(buffer, p, char, pe - p);
       buffer += pe - p;
     }
+    rb_str_set_len(result, buffer - bufferStart);
 
-    result = build_string(bufferStart, buffer, intern, symbolize);
-
-    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-      ruby_xfree(bufferStart);
+    if (symbolize) {
+        result = rb_str_intern(result);
+    } else if (intern) {
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
     }
 
     return result;
 }
 
 
-#line 1606 "parser.c"
+#line 1589 "parser.c"
 enum {JSON_string_start = 1};
 enum {JSON_string_first_final = 8};
 enum {JSON_string_error = 0};
@@ -1610,7 +1593,7 @@ enum {JSON_string_error = 0};
 enum {JSON_string_en_main = 1};
 
 
-#line 634 "parser.rl"
+#line 617 "parser.rl"
 
 
 static int
@@ -1631,15 +1614,15 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     VALUE match_string;
 
 
-#line 1635 "parser.c"
+#line 1618 "parser.c"
 	{
 	cs = JSON_string_start;
 	}
 
-#line 654 "parser.rl"
+#line 637 "parser.rl"
     json->memo = p;
 
-#line 1643 "parser.c"
+#line 1626 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1664,7 +1647,7 @@ case 2:
 		goto st0;
 	goto st2;
 tr2:
-#line 621 "parser.rl"
+#line 604 "parser.rl"
 	{
         *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
@@ -1674,14 +1657,14 @@ tr2:
             {p = (( p + 1))-1;}
         }
     }
-#line 631 "parser.rl"
+#line 614 "parser.rl"
 	{ p--; {p++; cs = 8; goto _out;} }
 	goto st8;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 1685 "parser.c"
+#line 1668 "parser.c"
 	goto st0;
 st3:
 	if ( ++p == pe )
@@ -1757,7 +1740,7 @@ case 7:
 	_out: {}
 	}
 
-#line 656 "parser.rl"
+#line 639 "parser.rl"
 
     if (json->create_additions && RTEST(match_string = json->match_string)) {
           VALUE klass;
@@ -1954,7 +1937,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 1958 "parser.c"
+#line 1941 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -1962,7 +1945,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 866 "parser.rl"
+#line 849 "parser.rl"
 
 
 /*
@@ -1980,16 +1963,16 @@ static VALUE cParser_parse(VALUE self)
     GET_PARSER;
 
 
-#line 1984 "parser.c"
+#line 1967 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 883 "parser.rl"
+#line 866 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1993 "parser.c"
+#line 1976 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -2023,7 +2006,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 858 "parser.rl"
+#line 841 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result, 0);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -2033,7 +2016,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 2037 "parser.c"
+#line 2020 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2122,7 +2105,7 @@ case 9:
 	_out: {}
 	}
 
-#line 886 "parser.rl"
+#line 869 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;

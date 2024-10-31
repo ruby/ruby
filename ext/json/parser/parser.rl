@@ -487,10 +487,8 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
-static const size_t MAX_STACK_BUFFER_SIZE = 128;
 static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bool symbolize)
 {
-    VALUE result = Qnil;
     size_t bufferSize = stringEnd - string;
     char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
@@ -501,19 +499,9 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
         return build_string(string, stringEnd, intern, symbolize);
     }
 
-    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-# ifdef HAVE_RB_ENC_INTERNED_STR
-      bufferStart = buffer = ALLOC_N(char, bufferSize ? bufferSize : 1);
-# else
-      bufferStart = buffer = ALLOC_N(char, bufferSize);
-# endif
-    } else {
-# ifdef HAVE_RB_ENC_INTERNED_STR
-      bufferStart = buffer = ALLOCA_N(char, bufferSize ? bufferSize : 1);
-# else
-      bufferStart = buffer = ALLOCA_N(char, bufferSize);
-# endif
-    }
+    VALUE result = rb_str_buf_new(bufferSize);
+    rb_enc_associate_index(result, utf8_encindex);
+    buffer = bufferStart = RSTRING_PTR(result);
 
     while (pe < stringEnd) {
         if (*pe == '\\') {
@@ -547,9 +535,6 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
-                      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                        ruby_xfree(bufferStart);
-                      }
                       raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
                     } else {
                         uint32_t ch = unescape_unicode((unsigned char *) ++pe);
@@ -567,9 +552,6 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
                         if ((ch & 0xFC00) == 0xD800) {
                             pe++;
                             if (pe > stringEnd - 6) {
-                              if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                                ruby_xfree(bufferStart);
-                              }
                               raise_parse_error("incomplete surrogate pair at '%s'", p);
                             }
                             if (pe[0] == '\\' && pe[1] == 'u') {
@@ -602,11 +584,12 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
       MEMCPY(buffer, p, char, pe - p);
       buffer += pe - p;
     }
+    rb_str_set_len(result, buffer - bufferStart);
 
-    result = build_string(bufferStart, buffer, intern, symbolize);
-
-    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-      ruby_xfree(bufferStart);
+    if (symbolize) {
+        result = rb_str_intern(result);
+    } else if (intern) {
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
     }
 
     return result;
