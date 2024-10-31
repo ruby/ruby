@@ -164,8 +164,8 @@ class TestProc < Test::Unit::TestCase
       block
     end
 
-   procs = Array.new(1000){capture{:foo }}
-   assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
+    procs = Array.new(1000){capture{:foo }}
+    assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
   end
 
   def test_block_par
