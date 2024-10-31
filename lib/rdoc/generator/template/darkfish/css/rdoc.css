@@ -25,9 +25,9 @@
   --table-td-background-color: #f5f4f6;
 
   /* Font family variables */
-  --font-primary: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-  --font-heading: 'Helvetica Neue', Arial, sans-serif;
-  --font-code: 'Source Code Pro', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  --font-primary: 'Segoe UI', 'Verdana', 'Arial', sans-serif;
+  --font-heading: 'Helvetica', 'Arial', sans-serif;
+  --font-code: monospace;
 }
 
 /* 2. Global Styles */
