@@ -4546,7 +4546,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 
     /* If we are in a minor GC and the other object is old, then obj should
      * already be marked and cannot be reclaimed in this GC cycle so we don't
-     * need to add it to the weak refences list. */
+     * need to add it to the weak references list. */
     if (!is_full_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
         GC_ASSERT(RVALUE_MARKED(objspace, obj));
         GC_ASSERT(!objspace->flags.during_compacting);
