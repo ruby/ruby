@@ -244,7 +244,7 @@ ossl_bn_alloc(VALUE klass)
  *     number.
  *   - +10+ - Decimal number representation, with a leading '-' for a negative
  *     number.
- *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *   - +16+ - Hexadecimal number representation, with a leading '-' for a
  *     negative number.
  */
 static VALUE
@@ -326,7 +326,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
  *     the bignum is ignored.
  *   - +10+ - Decimal number representation, with a leading '-' for a negative
  *     bignum.
- *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *   - +16+ - Hexadecimal number representation, with a leading '-' for a
  *     negative bignum.
  */
 static VALUE
