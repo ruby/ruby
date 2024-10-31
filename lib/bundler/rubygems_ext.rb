@@ -433,4 +433,18 @@ module Gem
       end
     end
   end
+
+  unless Gem.rubygems_version >= Gem::Version.new("3.5.23")
+    class Package; end
+    require "rubygems/package/tar_reader"
+    require "rubygems/package/tar_reader/entry"
+
+    module FixFullNameEncoding
+      def full_name
+        super.force_encoding(Encoding::UTF_8)
+      end
+    end
+
+    Package::TarReader::Entry.prepend(FixFullNameEncoding)
+  end
 end

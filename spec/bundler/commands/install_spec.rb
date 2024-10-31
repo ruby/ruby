@@ -1218,6 +1218,35 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when configured path is UTF-8 and a file inside a gem package too" do
+    let(:app_path) do
+      path = tmp("♥")
+      FileUtils.mkdir_p(path)
+      path
+    end
+
+    let(:path) do
+      root.join("vendor/bundle")
+    end
+
+    before do
+      build_repo4 do
+        build_gem "mygem" do |s|
+          s.write "spec/fixtures/_posts/2016-04-01-错误.html"
+        end
+      end
+    end
+
+    it "works" do
+      bundle "config path #{app_path}/vendor/bundle", dir: app_path
+
+      install_gemfile app_path.join("Gemfile"),<<~G, dir: app_path
+        source "https://gem.repo4"
+        gem "mygem", "1.0"
+      G
+    end
+  end
+
   context "after installing with --standalone" do
     before do
       install_gemfile <<-G

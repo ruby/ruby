@@ -228,6 +228,17 @@ class Gem::Package::TarHeader
     @checksum = oct calculate_checksum(header), 6
   end
 
+  ##
+  # Header's full name, including prefix
+
+  def full_name
+    if prefix != ""
+      File.join prefix, name
+    else
+      name
+    end
+  end
+
   private
 
   def calculate_checksum(header)
