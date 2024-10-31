@@ -186,6 +186,18 @@ class TestProc < Test::Unit::TestCase
 
     procs = Array.new(1000){capture{:foo }}
     assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
+
+    # iseq backed proc
+    unique_hashes = 1000.times.map { proc {}.hash }.uniq
+    assert_operator(unique_hashes.size, :>=, 500)
+
+    # ifunc backed proc
+    unique_hashes = 1000.times.map { {}.to_proc.hash }.uniq
+    assert_operator(unique_hashes.size, :>=, 500)
+
+    # symbol backed proc
+    unique_hashes = 1000.times.map { |i| :"test#{i}".to_proc.hash }.uniq
+    assert_operator(unique_hashes.size, :>=, 500)
   end
 
   def test_hash_does_not_change_after_compaction
