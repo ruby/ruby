@@ -687,6 +687,11 @@ static void vstate_spill(struct generate_json_data *data)
     MEMCPY(state, data->state, JSON_Generator_State, 1);
     data->state = state;
     data->vstate = vstate;
+    RB_OBJ_WRITTEN(vstate, Qundef, state->indent);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->space);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->space_before);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->object_nl);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->array_nl);
 }
 
 static inline VALUE vstate_get(struct generate_json_data *data)
@@ -1122,7 +1127,7 @@ static VALUE string_config(VALUE config)
 static VALUE cState_indent_set(VALUE self, VALUE indent)
 {
     GET_STATE(self);
-    state->indent = string_config(indent);
+    RB_OBJ_WRITE(self, &state->indent, string_config(indent));
     return Qnil;
 }
 
@@ -1147,7 +1152,7 @@ static VALUE cState_space(VALUE self)
 static VALUE cState_space_set(VALUE self, VALUE space)
 {
     GET_STATE(self);
-    state->space = string_config(space);
+    RB_OBJ_WRITE(self, &state->space, string_config(space));
     return Qnil;
 }
 
@@ -1170,7 +1175,7 @@ static VALUE cState_space_before(VALUE self)
 static VALUE cState_space_before_set(VALUE self, VALUE space_before)
 {
     GET_STATE(self);
-    state->space_before = string_config(space_before);
+    RB_OBJ_WRITE(self, &state->space_before, string_config(space_before));
     return Qnil;
 }
 
@@ -1195,7 +1200,7 @@ static VALUE cState_object_nl(VALUE self)
 static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
 {
     GET_STATE(self);
-    state->object_nl = string_config(object_nl);
+    RB_OBJ_WRITE(self, &state->object_nl, string_config(object_nl));
     return Qnil;
 }
 
@@ -1218,7 +1223,7 @@ static VALUE cState_array_nl(VALUE self)
 static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 {
     GET_STATE(self);
-    state->array_nl = string_config(array_nl);
+    RB_OBJ_WRITE(self, &state->array_nl, string_config(array_nl));
     return Qnil;
 }
 
