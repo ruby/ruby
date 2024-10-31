@@ -182,19 +182,30 @@ class Gem::SpecFetcher
     min_length = gem_name.length - max
     max_length = gem_name.length + max
 
+    gem_name_with_postfix = "#{gem_name}ruby"
+    gem_name_with_prefix = "ruby#{gem_name}"
+
     matches = names.filter_map do |n|
       len = n.name.length
-      # If the length is min_length or shorter, we've done `max` deletions.
-      # If the length is max_length or longer, we've done `max` insertions.
-      # These would both be rejected later, so we skip early for performance.
-      next if len <= min_length || len >= max_length
-
       # If the gem doesn't support the current platform, bail early.
       next unless n.match_platform?
+
+      # If the length is min_length or shorter, we've done `max` deletions.
+      # This would be rejected later, so we skip it for performance.
+      next if len <= min_length
 
       # The candidate name, normalized the same as gem_name.
       normalized_name = n.name.downcase
       normalized_name.tr!("_-", "")
+
+      # If the gem is "{NAME}-ruby" and "ruby-{NAME}", we want to return it.
+      # But we already removed hyphens, so we check "{NAME}ruby" and "ruby{NAME}".
+      next [n.name, 0] if normalized_name == gem_name_with_postfix
+      next [n.name, 0] if normalized_name == gem_name_with_prefix
+
+      # If the length is max_length or longer, we've done `max` insertions.
+      # This would be rejected later, so we skip it for performance.
+      next if len >= max_length
 
       # If we found an exact match (after stripping underscores and hyphens),
       # that's our most likely candidate.

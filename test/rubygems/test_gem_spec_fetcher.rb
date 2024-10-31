@@ -199,6 +199,33 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal ["example"], suggestions
   end
 
+  def test_suggest_gems_from_name_prefix_or_suffix
+    spec_fetcher do|fetcher|
+      fetcher.spec "example-one-ruby", 1
+      fetcher.spec "example-one-rrrr", 1
+      fetcher.spec "ruby-example-two", 1
+      fetcher.spec "rrrr-example-two", 1
+    end
+
+    suggestions = @sf.suggest_gems_from_name("example-one")
+    assert_equal ["example-one-ruby"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("example-two")
+    assert_equal ["ruby-example-two"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("exampleone")
+    assert_equal ["example-one-ruby"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("exampletwo")
+    assert_equal ["ruby-example-two"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("example---one")
+    assert_equal ["example-one-ruby"], suggestions
+
+    suggestions = @sf.suggest_gems_from_name("example---two")
+    assert_equal ["ruby-example-two"], suggestions
+  end
+
   def test_available_specs_latest
     spec_fetcher do |fetcher|
       fetcher.spec "a", 1
