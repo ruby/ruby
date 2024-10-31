@@ -3,6 +3,23 @@
 
 #include "ruby.h"
 
+/* This is the fallback definition from Ruby 3.4 */
+#ifndef RBIMPL_STDBOOL_H
+#if defined(__cplusplus)
+# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+#  include <cstdbool>
+# endif
+#elif defined(HAVE_STDBOOL_H)
+# include <stdbool.h>
+#elif !defined(HAVE__BOOL)
+typedef unsigned char _Bool;
+# define bool  _Bool
+# define true  ((_Bool)+1)
+# define false ((_Bool)+0)
+# define __bool_true_false_are_defined
+#endif
+#endif
+
 #ifndef MAYBE_UNUSED
 # define MAYBE_UNUSED(x) x
 #endif
@@ -46,7 +63,7 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
-static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize);
+static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bool symbolize);
 static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static VALUE convert_encoding(VALUE source);
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self);

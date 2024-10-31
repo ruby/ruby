@@ -461,7 +461,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 }
 
-static inline VALUE build_string(const char *buffer, const char *bufferStart, bool intern, bool symbolize)
+static inline VALUE build_string(const char *start, const char *end, bool intern, bool symbolize)
 {
     if (symbolize) {
         intern = true;
@@ -469,12 +469,12 @@ static inline VALUE build_string(const char *buffer, const char *bufferStart, bo
     VALUE result;
 # ifdef HAVE_RB_ENC_INTERNED_STR
     if (intern) {
-      result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
+      result = rb_enc_interned_str(start, (long)(end - start), rb_utf8_encoding());
     } else {
-      result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+      result = rb_utf8_str_new(start, (long)(end - start));
     }
 # else
-    result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+    result = rb_utf8_str_new(start, (long)(end - start));
     if (intern) {
   # if STR_UMINUS_DEDUPE_FROZEN
     // Starting from MRI 3.0 it is preferable to freeze the string
@@ -499,13 +499,18 @@ static inline VALUE build_string(const char *buffer, const char *bufferStart, bo
 }
 
 static const size_t MAX_STACK_BUFFER_SIZE = 128;
-static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize)
+static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bool symbolize)
 {
     VALUE result = Qnil;
     size_t bufferSize = stringEnd - string;
     char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
     char buf[4];
+
+    pe = memchr(p, '\\', bufferSize);
+    if (RB_LIKELY(pe == NULL)) {
+        return build_string(string, stringEnd, intern, symbolize);
+    }
 
     if (bufferSize > MAX_STACK_BUFFER_SIZE) {
 # ifdef HAVE_RB_ENC_INTERNED_STR
@@ -609,7 +614,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
       buffer += pe - p;
     }
 
-    result = build_string(buffer, bufferStart, intern, symbolize);
+    result = build_string(bufferStart, buffer, intern, symbolize);
 
     if (bufferSize > MAX_STACK_BUFFER_SIZE) {
       ruby_xfree(bufferStart);
