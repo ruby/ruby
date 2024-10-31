@@ -377,6 +377,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_dup_clone
+    # iseq backed proc
     b = proc {|x| x + "bar" }
     class << b; attr_accessor :foo; end
 
@@ -389,6 +390,24 @@ class TestProc < Test::Unit::TestCase
     assert_equal("foobar", bc.call("foo"))
     bc.foo = :foo
     assert_equal(:foo, bc.foo)
+
+    # ifunc backed proc
+    b = {foo: "bar"}.to_proc
+
+    bd = b.dup
+    assert_equal("bar", bd.call(:foo))
+
+    bc = b.clone
+    assert_equal("bar", bc.call(:foo))
+
+    # symbol backed proc
+    b = :to_s.to_proc
+
+    bd = b.dup
+    assert_equal("testing", bd.call(:testing))
+
+    bc = b.clone
+    assert_equal("testing", bc.call(:testing))
   end
 
   def test_dup_subclass
