@@ -476,19 +476,8 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
 # else
     result = rb_utf8_str_new(start, (long)(end - start));
     if (intern) {
-  # if STR_UMINUS_DEDUPE_FROZEN
-    // Starting from MRI 3.0 it is preferable to freeze the string
-    // before deduplication so that it can be interned directly
-    // otherwise it would be duplicated first which is wasteful.
-    result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
-  # elif STR_UMINUS_DEDUPE
-     // MRI 2.5 and older do not deduplicate strings that are already
-     // frozen.
-     result = rb_funcall(result, i_uminus, 0);
-  # else
-     result = rb_str_freeze(result);
-  # endif
-      }
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+    }
 # endif
 
     if (symbolize) {
