@@ -1493,7 +1493,7 @@ VM_ENV_ESCAPED_P(const VALUE *ep)
 static inline int
 vm_assert_env(VALUE obj)
 {
-    VM_ASSERT(imemo_type_p(obj, imemo_env));
+    VM_ASSERT(obj == Qundef || imemo_type_p(obj, imemo_env));
     return 1;
 }
 #endif
