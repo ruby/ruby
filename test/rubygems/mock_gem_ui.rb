@@ -16,7 +16,7 @@ class Gem::MockGemUi < Gem::StreamUI
     end
   end
 
-  class TermError < RuntimeError
+  class TermError < SystemExit
     attr_reader :exit_code
 
     def initialize(exit_code)

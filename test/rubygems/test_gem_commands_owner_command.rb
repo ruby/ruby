@@ -176,8 +176,10 @@ EOF
     response = "You don't have permission to push to this gem"
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 403, msg: "Forbidden")
 
-    use_ui @stub_ui do
-      @cmd.add_owners("freewill", ["user-new1@example.com"])
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
     end
 
     assert_match response, @stub_ui.output
@@ -196,8 +198,10 @@ EOF
       headers: { "location" => redirected_uri }
     )
 
-    use_ui @stub_ui do
-      @cmd.add_owners("freewill", ["user-new1@example.com"])
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
     end
 
     response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
@@ -255,8 +259,10 @@ EOF
     response = "You don't have permission to push to this gem"
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 403, msg: "Forbidden")
 
-    use_ui @stub_ui do
-      @cmd.remove_owners("freewill", ["user-remove1@example.com"])
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        @cmd.remove_owners("freewill", ["user-remove1@example.com"])
+      end
     end
 
     assert_match response, @stub_ui.output
@@ -274,8 +280,10 @@ EOF
       headers: { "location" => redirected_uri }
     )
 
-    use_ui @stub_ui do
-      @cmd.remove_owners("freewill", ["user-remove1@example.com"])
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        @cmd.remove_owners("freewill", ["user-remove1@example.com"])
+      end
     end
 
     response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
@@ -291,8 +299,10 @@ EOF
       headers: { "location" => redirected_uri }
     )
 
-    use_ui @stub_ui do
-      @cmd.add_owners("freewill", ["user-new1@example.com"])
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
     end
 
     response = "The request has redirected permanently to #{redirected_uri}. Please check your defined push host URL."
@@ -317,8 +327,10 @@ EOF
     response = "Owner could not be found."
     @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = HTTPResponseFactory.create(body: response, code: 404, msg: "Not Found")
 
-    use_ui @stub_ui do
-      @cmd.remove_owners("freewill", ["missing@example"])
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @stub_ui do
+        @cmd.remove_owners("freewill", ["missing@example"])
+      end
     end
 
     assert_equal "Removing missing@example: #{response}\n", @stub_ui.output
@@ -346,8 +358,11 @@ EOF
       HTTPResponseFactory.create(body: "You don't have any security devices", code: 422, msg: "Unprocessable Entity")
 
     @otp_ui = Gem::MockGemUi.new "111111\n"
-    use_ui @otp_ui do
-      @cmd.add_owners("freewill", ["user-new1@example.com"])
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @otp_ui do
+        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      end
     end
 
     assert_match response, @otp_ui.output
@@ -389,8 +404,10 @@ EOF
 
     TCPServer.stub(:new, server) do
       Gem::GemcutterUtilities::WebauthnListener.stub(:listener_thread, Thread.new { Thread.current[:error] = error }) do
-        use_ui @stub_ui do
-          @cmd.add_owners("freewill", ["user-new1@example.com"])
+        assert_raise Gem::MockGemUi::TermError do
+          use_ui @stub_ui do
+            @cmd.add_owners("freewill", ["user-new1@example.com"])
+          end
         end
       end
     end
@@ -438,8 +455,10 @@ EOF
     @stub_fetcher.respond_with_webauthn_polling_failure
 
     TCPServer.stub(:new, server) do
-      use_ui @stub_ui do
-        @cmd.add_owners("freewill", ["user-new1@example.com"])
+      assert_raise Gem::MockGemUi::TermError do
+        use_ui @stub_ui do
+          @cmd.add_owners("freewill", ["user-new1@example.com"])
+        end
       end
     end
 
