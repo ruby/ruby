@@ -159,7 +159,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(*m_nest{}, "[ruby-core:84583] Feature #14627")
   end
 
-  def test_hash
+  def test_hash_uniqueness
     def self.capture(&block)
       block
     end
