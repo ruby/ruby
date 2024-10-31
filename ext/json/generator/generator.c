@@ -737,7 +737,11 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             break;
     }
 
-    generate_json_string(buffer, data, state, key_to_s);
+    if (RB_LIKELY(RBASIC_CLASS(key_to_s) == rb_cString)) {
+        generate_json_string(buffer, data, state, key_to_s);
+    } else {
+        generate_json(buffer, data, state, key_to_s);
+    }
     if (RB_UNLIKELY(state->space_before)) fbuffer_append_str(buffer, state->space_before);
     fbuffer_append_char(buffer, ':');
     if (RB_UNLIKELY(state->space)) fbuffer_append_str(buffer, state->space);

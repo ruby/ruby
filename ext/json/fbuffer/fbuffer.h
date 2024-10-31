@@ -42,6 +42,10 @@ static VALUE fbuffer_to_s(FBuffer *fb);
 #define RB_UNLIKELY(expr) expr
 #endif
 
+#ifndef RB_LIKELY
+#define RB_LIKELY(expr) expr
+#endif
+
 static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
 {
     fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
