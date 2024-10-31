@@ -461,6 +461,43 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 }
 
+static inline VALUE build_string(const char *buffer, const char *bufferStart, bool intern, bool symbolize)
+{
+    if (symbolize) {
+        intern = true;
+    }
+    VALUE result;
+# ifdef HAVE_RB_ENC_INTERNED_STR
+    if (intern) {
+      result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
+    } else {
+      result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+    }
+# else
+    result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+    if (intern) {
+  # if STR_UMINUS_DEDUPE_FROZEN
+    // Starting from MRI 3.0 it is preferable to freeze the string
+    // before deduplication so that it can be interned directly
+    // otherwise it would be duplicated first which is wasteful.
+    result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+  # elif STR_UMINUS_DEDUPE
+     // MRI 2.5 and older do not deduplicate strings that are already
+     // frozen.
+     result = rb_funcall(result, i_uminus, 0);
+  # else
+     result = rb_str_freeze(result);
+  # endif
+      }
+# endif
+
+    if (symbolize) {
+      result = rb_str_intern(result);
+    }
+
+    return result;
+}
+
 static const size_t MAX_STACK_BUFFER_SIZE = 128;
 static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int symbolize)
 {
@@ -572,40 +609,10 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
       buffer += pe - p;
     }
 
-# ifdef HAVE_RB_ENC_INTERNED_STR
-      if (intern) {
-        result = rb_enc_interned_str(bufferStart, (long)(buffer - bufferStart), rb_utf8_encoding());
-      } else {
-        result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
-      }
-      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-        ruby_xfree(bufferStart);
-      }
-# else
-      result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
+    result = build_string(buffer, bufferStart, intern, symbolize);
 
-      if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-        ruby_xfree(bufferStart);
-      }
-
-      if (intern) {
-  # if STR_UMINUS_DEDUPE_FROZEN
-        // Starting from MRI 2.8 it is preferable to freeze the string
-        // before deduplication so that it can be interned directly
-        // otherwise it would be duplicated first which is wasteful.
-        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
-  # elif STR_UMINUS_DEDUPE
-        // MRI 2.5 and older do not deduplicate strings that are already
-        // frozen.
-        result = rb_funcall(result, i_uminus, 0);
-  # else
-        result = rb_str_freeze(result);
-  # endif
-      }
-# endif
-
-    if (symbolize) {
-      result = rb_str_intern(result);
+    if (bufferSize > MAX_STACK_BUFFER_SIZE) {
+      ruby_xfree(bufferStart);
     }
 
     return result;
