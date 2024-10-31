@@ -171,7 +171,7 @@ vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
         if (!UNDEF_P(envval)) {
             const rb_env_t *env = (const rb_env_t *)envval;
 
-            VM_ASSERT(vm_assert_env(envval));
+            VM_ASSERT(imemo_type_p(envval, imemo_env));
             VM_ASSERT(VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
             VM_ASSERT(env->ep == ep);
         }
