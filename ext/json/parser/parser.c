@@ -1465,19 +1465,8 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
 # else
     result = rb_utf8_str_new(start, (long)(end - start));
     if (intern) {
-  # if STR_UMINUS_DEDUPE_FROZEN
-    // Starting from MRI 3.0 it is preferable to freeze the string
-    // before deduplication so that it can be interned directly
-    // otherwise it would be duplicated first which is wasteful.
-    result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
-  # elif STR_UMINUS_DEDUPE
-     // MRI 2.5 and older do not deduplicate strings that are already
-     // frozen.
-     result = rb_funcall(result, i_uminus, 0);
-  # else
-     result = rb_str_freeze(result);
-  # endif
-      }
+        result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
+    }
 # endif
 
     if (symbolize) {
@@ -1613,7 +1602,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
 }
 
 
-#line 1617 "parser.c"
+#line 1606 "parser.c"
 enum {JSON_string_start = 1};
 enum {JSON_string_first_final = 8};
 enum {JSON_string_error = 0};
@@ -1621,7 +1610,7 @@ enum {JSON_string_error = 0};
 enum {JSON_string_en_main = 1};
 
 
-#line 645 "parser.rl"
+#line 634 "parser.rl"
 
 
 static int
@@ -1642,15 +1631,15 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     VALUE match_string;
 
 
-#line 1646 "parser.c"
+#line 1635 "parser.c"
 	{
 	cs = JSON_string_start;
 	}
 
-#line 665 "parser.rl"
+#line 654 "parser.rl"
     json->memo = p;
 
-#line 1654 "parser.c"
+#line 1643 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1675,7 +1664,7 @@ case 2:
 		goto st0;
 	goto st2;
 tr2:
-#line 632 "parser.rl"
+#line 621 "parser.rl"
 	{
         *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
@@ -1685,14 +1674,14 @@ tr2:
             {p = (( p + 1))-1;}
         }
     }
-#line 642 "parser.rl"
+#line 631 "parser.rl"
 	{ p--; {p++; cs = 8; goto _out;} }
 	goto st8;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 1696 "parser.c"
+#line 1685 "parser.c"
 	goto st0;
 st3:
 	if ( ++p == pe )
@@ -1768,7 +1757,7 @@ case 7:
 	_out: {}
 	}
 
-#line 667 "parser.rl"
+#line 656 "parser.rl"
 
     if (json->create_additions && RTEST(match_string = json->match_string)) {
           VALUE klass;
@@ -1965,7 +1954,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 1969 "parser.c"
+#line 1958 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -1973,7 +1962,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 877 "parser.rl"
+#line 866 "parser.rl"
 
 
 /*
@@ -1991,16 +1980,16 @@ static VALUE cParser_parse(VALUE self)
     GET_PARSER;
 
 
-#line 1995 "parser.c"
+#line 1984 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 894 "parser.rl"
+#line 883 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 2004 "parser.c"
+#line 1993 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -2034,7 +2023,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 869 "parser.rl"
+#line 858 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result, 0);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -2044,7 +2033,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 2048 "parser.c"
+#line 2037 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2133,7 +2122,7 @@ case 9:
 	_out: {}
 	}
 
-#line 897 "parser.rl"
+#line 886 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
