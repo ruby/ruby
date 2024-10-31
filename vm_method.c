@@ -173,7 +173,7 @@ static const rb_callable_method_entry_t *lookup_overloaded_cme(const rb_callable
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 {
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
     if (rb_objspace_garbage_object_p(klass)) return;
 
     RB_VM_LOCK_ENTER();
@@ -222,7 +222,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 else {
                     // invalidate cc by invalidating cc->cme
                     VALUE owner = cme->owner;
-                    VM_ASSERT(RB_TYPE_P(owner, T_CLASS), "owner: %s", rb_obj_info(owner));
+                    VM_ASSERT_TYPE(owner, T_CLASS);
                     VALUE klass_housing_cme;
                     if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
                         klass_housing_cme = owner;
@@ -276,7 +276,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 static void
 clear_iclass_method_cache_by_id(VALUE iclass, VALUE d)
 {
-    VM_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+    VM_ASSERT_TYPE(iclass, T_ICLASS);
     ID mid = (ID)d;
     clear_method_cache_by_id_in_class(iclass, mid);
 }
@@ -456,7 +456,7 @@ rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, con
     if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
         table_owner = RBASIC(table_owner)->klass;
     }
-    VM_ASSERT(RB_TYPE_P(table_owner, T_CLASS) || RB_TYPE_P(table_owner, T_ICLASS) || RB_TYPE_P(table_owner, T_MODULE));
+    VM_ASSERT_TYPE3(table_owner, T_CLASS, T_ICLASS, T_MODULE);
     VM_ASSERT(table == RCLASS_M_TBL(table_owner));
     rb_id_table_insert(table, method_id, (VALUE)me);
     RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
@@ -761,8 +761,7 @@ rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_
     if (def) method_definition_addref(def, complement);
     if (RTEST(defined_class)) {
         // not negative cache
-        VM_ASSERT(RB_TYPE_P(defined_class, T_CLASS) || RB_TYPE_P(defined_class, T_ICLASS),
-                  "defined_class: %s", rb_obj_info(defined_class));
+        VM_ASSERT_TYPE2(defined_class, T_CLASS, T_ICLASS);
     }
     rb_method_entry_t *me = IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
     *((rb_method_definition_t **)&me->def) = def;
@@ -850,7 +849,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
         rb_method_definition_set(me, def, (void *)refined_orig_me);
     }
 
-    VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
+    VM_ASSERT_TYPE(me->owner, T_MODULE);
 
     return (rb_callable_method_entry_t *)me;
 }
@@ -1191,7 +1190,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&
         (!(vm_ci_flag(ci) & VM_CALL_FORWARDING)) &&
         (int)vm_ci_argc(ci) == ISEQ_BODY(method_entry_iseqptr(cme))->param.lead_num) {
-        VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ); // iseq_overload is marked only on ISEQ methods
+        VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ, "type: %d", cme->def->type); // iseq_overload is marked only on ISEQ methods
 
         cme = get_overloaded_cme(cme);
 
@@ -1363,8 +1362,8 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     if (me) {
         if (me->defined_class == 0) {
             RB_DEBUG_COUNTER_INC(mc_cme_complement);
-            VM_ASSERT(RB_TYPE_P(defined_class, T_ICLASS) || RB_TYPE_P(defined_class, T_MODULE));
-            VM_ASSERT(me->defined_class == 0);
+            VM_ASSERT_TYPE2(defined_class, T_ICLASS, T_MODULE);
+            VM_ASSERT(me->defined_class == 0, "me->defined_class: %s", rb_obj_info(me->defined_class));
 
             mtbl = RCLASS_CALLABLE_M_TBL(defined_class);
 
@@ -1482,7 +1481,7 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
     RB_VM_LOCK_ENTER();
     {
         cme = cached_callable_method_entry(klass, mid);
@@ -1786,7 +1785,7 @@ method_boundp(VALUE klass, ID id, int ex)
 {
     const rb_callable_method_entry_t *cme;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
+    VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
     if (ex & BOUND_RESPONDS) {
         cme = rb_callable_method_entry_with_refinements(klass, id, NULL);
