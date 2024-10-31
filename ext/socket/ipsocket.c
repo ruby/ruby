@@ -301,7 +301,8 @@ cancel_fast_fallback(void *ptr)
     rb_nativethread_lock_lock(arg->lock);
     {
         *arg->cancelled = true;
-        if ((write(arg->notify, SELECT_CANCELLED, strlen(SELECT_CANCELLED))) < 0) {
+        char notification = SELECT_CANCELLED;
+        if ((write(arg->notify, &notification, 1)) < 0) {
             rb_syserr_fail(errno, "write(2)");
         }
     }
@@ -368,7 +369,8 @@ add_ts_to_tv(struct timeval tv, struct timespec ts)
     return tv;
 }
 
-VALUE tv_to_seconds(struct timeval *timeout) {
+static VALUE
+tv_to_seconds(struct timeval *timeout) {
     if (timeout == NULL) return Qnil;
 
     double seconds = (double)timeout->tv_sec + (double)timeout->tv_usec / 1000000.0;
@@ -983,7 +985,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     if (resolved_type_size > 0) {
                         resolved_type[resolved_type_size] = '\0';
 
-                        if (strcmp(resolved_type, IPV6_HOSTNAME_RESOLVED) == 0) {
+                        if (resolved_type[0] == IPV6_HOSTNAME_RESOLVED) {
                             resolution_store.v6.finished = true;
 
                             if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
@@ -1001,7 +1003,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
                             }
-                        } else if (strcmp(resolved_type, IPV4_HOSTNAME_RESOLVED) == 0) {
+                        } else if (resolved_type[0] == IPV4_HOSTNAME_RESOLVED) {
                             resolution_store.v4.finished = true;
 
                             if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
@@ -1170,25 +1172,13 @@ fast_fallback_inetsock_cleanup(VALUE v)
 VALUE
 rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE fast_fallback, VALUE test_mode_settings)
 {
-    struct inetsock_arg arg;
-    arg.self = self;
-    arg.io = Qnil;
-    arg.remote.host = remote_host;
-    arg.remote.serv = remote_serv;
-    arg.remote.res = 0;
-    arg.local.host = local_host;
-    arg.local.serv = local_serv;
-    arg.local.res = 0;
-    arg.type = type;
-    arg.resolv_timeout = resolv_timeout;
-    arg.connect_timeout = connect_timeout;
-
     if (type == INET_CLIENT && FAST_FALLBACK_INIT_INETSOCK_IMPL == 1 && RTEST(fast_fallback)) {
+        struct rb_addrinfo *local_res = NULL;
         char *hostp, *portp;
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int additional_flags = 0;
-        hostp = host_str(arg.remote.host, hbuf, sizeof(hbuf), &additional_flags);
-        portp = port_str(arg.remote.serv, pbuf, sizeof(pbuf), &additional_flags);
+        hostp = host_str(remote_host, hbuf, sizeof(hbuf), &additional_flags);
+        portp = port_str(remote_serv, pbuf, sizeof(pbuf), &additional_flags);
 
         if (!is_specified_ip_address(hostp)) {
             int target_families[2] = { 0, 0 };
@@ -1197,16 +1187,16 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
             /*
              * Maybe also accept a local address
              */
-            if (!NIL_P(arg.local.host) || !NIL_P(arg.local.serv)) {
-                arg.local.res = rsock_addrinfo(
-                    arg.local.host,
-                    arg.local.serv,
+            if (!NIL_P(local_host) || !NIL_P(local_serv)) {
+                local_res = rsock_addrinfo(
+                    local_host,
+                    local_serv,
                     AF_UNSPEC,
                     SOCK_STREAM,
                     0
                 );
 
-                struct addrinfo *tmp_p = arg.local.res->ai;
+                struct addrinfo *tmp_p = local_res->ai;
                 for (tmp_p; tmp_p != NULL; tmp_p = tmp_p->ai_next) {
                     if (target_families[0] == 0 && tmp_p->ai_family == AF_INET6) {
                         target_families[0] = AF_INET6;
@@ -1226,17 +1216,17 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
             struct fast_fallback_inetsock_arg fast_fallback_arg;
             memset(&fast_fallback_arg, 0, sizeof(fast_fallback_arg));
 
-            fast_fallback_arg.self = arg.self;
-            fast_fallback_arg.io = arg.io;
-            fast_fallback_arg.remote.host = arg.remote.host;
-            fast_fallback_arg.remote.serv = arg.remote.serv;
-            fast_fallback_arg.remote.res = arg.remote.res;
-            fast_fallback_arg.local.host = arg.local.host;
-            fast_fallback_arg.local.serv = arg.local.serv;
-            fast_fallback_arg.local.res = arg.local.res;
-            fast_fallback_arg.type = arg.type;
-            fast_fallback_arg.resolv_timeout = arg.resolv_timeout;
-            fast_fallback_arg.connect_timeout = arg.connect_timeout;
+            fast_fallback_arg.self = self;
+            fast_fallback_arg.io = Qnil;
+            fast_fallback_arg.remote.host = remote_host;
+            fast_fallback_arg.remote.serv = remote_serv;
+            fast_fallback_arg.remote.res = 0;
+            fast_fallback_arg.local.host = local_host;
+            fast_fallback_arg.local.serv = local_serv;
+            fast_fallback_arg.local.res = local_res;
+            fast_fallback_arg.type = type;
+            fast_fallback_arg.resolv_timeout = resolv_timeout;
+            fast_fallback_arg.connect_timeout = connect_timeout;
             fast_fallback_arg.hostp = hostp;
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
@@ -1258,6 +1248,19 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
                              fast_fallback_inetsock_cleanup, (VALUE)&fast_fallback_arg);
         }
     }
+
+    struct inetsock_arg arg;
+    arg.self = self;
+    arg.io = Qnil;
+    arg.remote.host = remote_host;
+    arg.remote.serv = remote_serv;
+    arg.remote.res = 0;
+    arg.local.host = local_host;
+    arg.local.serv = local_serv;
+    arg.local.res = 0;
+    arg.type = type;
+    arg.resolv_timeout = resolv_timeout;
+    arg.connect_timeout = connect_timeout;
 
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
                      inetsock_cleanup, (VALUE)&arg);

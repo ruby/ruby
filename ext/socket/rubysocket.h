@@ -422,9 +422,9 @@ char *port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
 #  else
 #    include "ruby/thread_native.h"
 #    define FAST_FALLBACK_INIT_INETSOCK_IMPL 1
-#    define IPV6_HOSTNAME_RESOLVED "1"
-#    define IPV4_HOSTNAME_RESOLVED "2"
-#    define SELECT_CANCELLED "3"
+#    define IPV6_HOSTNAME_RESOLVED '1'
+#    define IPV4_HOSTNAME_RESOLVED '2'
+#    define SELECT_CANCELLED '3'
 
 struct fast_fallback_getaddrinfo_shared
 {

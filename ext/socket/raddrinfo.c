@@ -3099,10 +3099,10 @@ do_fast_fallback_getaddrinfo(void *ptr)
                 entry->ai = NULL;
             }
         } else {
-            const char *notification = entry->family == AF_INET6 ?
+            const char notification = entry->family == AF_INET6 ?
             IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
-            if ((write(shared->notify, notification, strlen(notification))) < 0) {
+            if ((write(shared->notify, &notification, strlen(&notification))) < 0) {
                 entry->err = errno;
                 entry->has_syserr = true;
             }
