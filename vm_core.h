@@ -70,7 +70,30 @@
 #define RUBY_ASSERT_MUTEX_OWNED(mutex) VM_ASSERT(rb_mutex_owned_p(mutex))
 
 #if defined(RUBY_ASSERT_CRITICAL_SECTION)
-// TODO add documentation
+/*
+# Critical Section Assertions
+
+These assertions are used to ensure that context switching does not occur between two points in the code. In theory,
+such code should already be protected by a mutex, but these assertions are used to ensure that the mutex is held.
+
+The specific case where it can be useful is where a mutex is held further up the call stack, and the code in question
+may not directly hold the mutex. In this case, the critical section assertions can be used to ensure that the mutex is
+held by someone else.
+
+These assertions are only enabled when RUBY_ASSERT_CRITICAL_SECTION is defined, which is only defined if VM_CHECK_MODE
+is set.
+
+## Example Usage
+
+```c
+RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+// ... some code which does not invoke rb_vm_check_ints() ...
+RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
+```
+
+If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTER()` and
+`RUBY_ASSERT_CRITICAL_SECTION_LEAVE()`, a failed assertion will result.
+*/
 extern int ruby_assert_critical_section_entered;
 #define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
 #define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
