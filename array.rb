@@ -215,7 +215,7 @@ class Array
   end
 
   with_yjit do
-    if Array.instance_method(:each).source_location == nil # preserve monkey patches
+    if Primitive.rb_builtin_basic_definition_p(:each)
       undef :each
 
       def each # :nodoc:
