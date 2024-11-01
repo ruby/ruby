@@ -32,8 +32,6 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_error_message_encoding
-    pend if RUBY_ENGINE == 'truffleruby'
-
     bug10705 = '[ruby-core:67386] [Bug #10705]'
     json = ".\"\xE2\x88\x9A\""
     assert_equal(Encoding::UTF_8, json.encoding)
