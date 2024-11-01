@@ -1,4 +1,4 @@
-name: Ubuntu
+name: ModGC
 on:
   push:
     paths-ignore:
@@ -21,32 +21,28 @@ permissions:
   contents: read
 
 jobs:
-  make:
+  check:
     strategy:
       matrix:
+        gc:
+          - name: default
+          - name: mmtk
+            mmtk_plan: MarkSweep
+            mmtk_build: release
+          - name: mmtk
+            mmtk_plan: MarkSweep
+            mmtk_build: debug
+            timeout: 60
+        os: [macos-latest, ubuntu-latest]
         include:
           - test_task: check
-            configure: 'cppflags=-DVM_CHECK_MODE'
-          - test_task: check
-            arch: i686
-          - test_task: check
-            configure: '--disable-yjit'
-          - test_task: check
-            configure: '--enable-shared --enable-load-relative'
-          - test_task: test-bundler-parallel
-            timeout: 50
-          - test_task: test-bundled-gems
-          - test_task: check
-            os: ubuntu-20.04
-          - test_task: check
-            os: ubuntu-24.04
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
-    runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
+    runs-on: ${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -64,14 +60,19 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
 
-      - uses: ./.github/actions/setup/ubuntu
-        with:
-          arch: ${{ matrix.arch }}
+      - name: Install libraries (macOS)
+        uses: ./.github/actions/setup/macos
+        if: ${{ contains(matrix.os, 'macos') }}
+
+      - name: Install libraries (Ubuntu)
+        uses: ./.github/actions/setup/ubuntu
+        if: ${{ contains(matrix.os, 'ubuntu') }}
 
       - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
           ruby-version: '3.0'
           bundler: none
+        if: ${{ contains(matrix.os, 'ubuntu') }}
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -83,16 +84,71 @@ jobs:
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
+      - name: make sure that kern.coredump=1
+        run: |
+          sysctl -n kern.coredump
+          sudo sysctl -w kern.coredump=1
+          sudo chmod -R +rwx /cores/
+        if: ${{ contains(matrix.os, 'macos') }}
+
+      - name: Delete unused SDKs
+        # To free up disk space to not run out during the run
+        run: |
+          sudo rm -rf ~/.dotnet
+          sudo rm -rf /Library/Android
+          sudo rm -rf /Library/Developer/CoreSimulator
+        continue-on-error: true
+        if: ${{ contains(matrix.os, 'macos') }}
+
+      - name: Setup Ruby GC Directory
+        run: |
+          if [ "${{ contains(matrix.os, 'macos') }}" == "true" ]; then
+            echo "SHARED_GC_DIR=/Users/runner/ruby_gc" >> $GITHUB_ENV
+          else
+            echo "SHARED_GC_DIR=/home/runner/ruby_gc" >> $GITHUB_ENV
+          fi
+
       - name: Run configure
         env:
           arch: ${{ matrix.arch }}
-          configure: ${{ matrix.configure }}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
+          $SETARCH ../src/configure -C --disable-install-doc --with-shared-gc=${{ env.SHARED_GC_DIR }}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
-      - run: $SETARCH make prepare-gems
-        if: ${{ matrix.test_task == 'test-bundled-gems' }}
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build MMTK Ruby lib
+        run: |
+          cd ../src/gc/mmtk
+          if [[ ${{ matrix.gc.mmtk_build }} == release ]]; then
+            cargo build --release
+          else
+            cargo build
+            # Debug builds run much slower so we should increase the timeout
+            echo 'RUBY_TEST_TIMEOUT_SCALE=10' >> $GITHUB_ENV
+            # SYNTAX_SUGGEST_TIMEOUT defaults to 1 second
+            echo 'SYNTAX_SUGGEST_TIMEOUT=60' >> $GITHUB_ENV
+          fi
+          echo 'RUST_LOG=' >> $GITHUB_ENV
+          echo 'MMTK_PLAN=${{ matrix.gc.mmtk_plan }}' >> $GITHUB_ENV
+          echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
+          echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
+        if: ${{ matrix.gc.name == 'mmtk' }}
+
+      - name: Build shared GC
+        run: |
+          echo "RUBY_GC_LIBRARY=${{ matrix.gc.name }}" >> $GITHUB_ENV
+          make shared-gc SHARED_GC=${{ matrix.gc.name }} MMTK_BUILD=${{ matrix.gc.mmtk_build }}
+
+      - name: Verify MMTk bindgen
+        run: |
+          cd ../src/gc/mmtk
+          cargo install --force cbindgen
+          cbindgen --config cbindgen.toml --output ../mmtk.h
+          if read -n1 -d '' < <(git diff ../mmtk.h); then
+            git diff ../mmtk.h
+            exit 1
+          fi
+        if: ${{ matrix.gc.name == 'mmtk' }}
 
       - run: $SETARCH make
 
@@ -130,7 +186,7 @@ jobs:
           $SETARCH make -s ${{ matrix.test_task }}
           ${TESTS:+TESTS="$TESTS"}
           ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
-        timeout-minutes: ${{ matrix.timeout || 40 }}
+        timeout-minutes: ${{ matrix.gc.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
@@ -155,7 +211,7 @@ jobs:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
     runs-on: ubuntu-latest
-    needs: [make]
+    needs: [check]
     steps:
       - run: exit 1
         working-directory:

@@ -1940,7 +1940,7 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
         VM_ASSERT(r == ruby_single_main_ractor);
     }
     else {
-        r->newobj_cache = rb_gc_ractor_cache_alloc();
+        r->newobj_cache = rb_gc_ractor_cache_alloc(r);
     }
 }
 
@@ -2041,7 +2041,7 @@ rb_ractor_main_alloc(void)
     r->loc = Qnil;
     r->name = Qnil;
     r->pub.self = Qnil;
-    r->newobj_cache = rb_gc_ractor_cache_alloc();
+    r->newobj_cache = rb_gc_ractor_cache_alloc(r);
     ruby_single_main_ractor = r;
 
     return r;

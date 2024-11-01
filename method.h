@@ -237,6 +237,7 @@ st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
 VALUE rb_method_entry_location(const rb_method_entry_t *me);
 
+void rb_free_method_entry_vm_weak_references(const rb_method_entry_t *me);
 void rb_free_method_entry(const rb_method_entry_t *me);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);

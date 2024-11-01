@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use atomic_refcell::AtomicRefCell;
 use mmtk::scheduler::{GCWork, GCWorker, WorkBucketStage};
 
+use sysinfo::System;
 use crate::Ruby;
 
 pub struct ChunkedVecCollector<T> {
@@ -84,5 +85,79 @@ impl AfterAll {
             };
             worker.scheduler().work_buckets[self.stage].bulk_add(packets);
         }
+    }
+}
+
+pub fn default_heap_max() -> usize {
+    let mut s = System::new();
+    s.refresh_memory();
+    s.total_memory()
+        .checked_mul(80)
+        .and_then(|v| v.checked_div(100))
+        .expect("Invalid Memory size") as usize
+}
+
+pub fn parse_capacity(input: &String, default: usize) -> usize {
+    let trimmed = input.trim();
+
+    const KIBIBYTE: usize = 1024;
+    const MEBIBYTE: usize = 1024 * KIBIBYTE;
+    const GIBIBYTE: usize = 1024 * MEBIBYTE;
+
+    let (val, suffix) = if let Some(pos) = trimmed.find(|c: char| !c.is_numeric()) {
+        (&trimmed[..pos], &trimmed[pos..])
+    } else {
+        (trimmed, "")
+    };
+
+    // 1MiB is the default heap size
+    match (val, suffix) {
+        (number, "GiB") => number.parse::<usize>()
+            .and_then(|v| Ok(v * GIBIBYTE))
+            .unwrap_or(default),
+        (number, "MiB") => number.parse::<usize>()
+            .and_then(|v| Ok(v * MEBIBYTE))
+            .unwrap_or(default),
+        (number, "KiB") => number.parse::<usize>()
+            .and_then(|v| Ok(v * KIBIBYTE))
+            .unwrap_or(default),
+        (number, suffix) if suffix.is_empty() => number.parse::<usize>().unwrap_or(default),
+        (_, _) => default
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_capacity_parses_bare_bytes() {
+        assert_eq!(1234, parse_capacity(&String::from("1234"), 0));
+    }
+
+    #[test]
+    fn test_parse_capacity_parses_kibibytes() {
+        assert_eq!(10240, parse_capacity(&String::from("10KiB"), 0))
+    }
+
+    #[test]
+    fn test_parse_capacity_parses_mebibytes() {
+        assert_eq!(10485760, parse_capacity(&String::from("10MiB"), 0))
+    }
+
+    #[test]
+    fn test_parse_capacity_parses_gibibytes() {
+        assert_eq!(10737418240, parse_capacity(&String::from("10GiB"), 0))
+    }
+
+    #[test]
+    fn test_parses_nonsense_value_as_default_max() {
+        let default = 100;
+
+        assert_eq!(default, parse_capacity(&String::from("notanumber"), default));
+        assert_eq!(default, parse_capacity(&String::from("5tartswithanumber"), default));
+        assert_eq!(default, parse_capacity(&String::from("number1nthemiddle"), default));
+        assert_eq!(default, parse_capacity(&String::from("numberattheend111"), default));
+        assert_eq!(default, parse_capacity(&String::from("mult1pl3numb3r5"), default));
     }
 }

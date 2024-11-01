@@ -3023,6 +3023,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
             VALUE vp = (VALUE)p;
             asan_unpoisoning_object(vp) {
                 if (RB_BUILTIN_TYPE(vp) != T_NONE) {
+                    rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
                         RBASIC(vp)->flags = 0;
                     }
@@ -3097,6 +3098,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
             VALUE vp = (VALUE)p;
             asan_unpoisoning_object(vp) {
                 if (rb_gc_shutdown_call_finalizer_p(vp)) {
+                    rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
                         RBASIC(vp)->flags = 0;
                     }
@@ -3526,6 +3528,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                 rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
 
                 bool has_object_id = FL_TEST(vp, FL_SEEN_OBJ_ID);
+                rb_gc_obj_free_vm_weak_references(vp);
                 if (rb_gc_obj_free(objspace, vp)) {
                     if (has_object_id) {
                         obj_free_object_id(objspace, vp);
@@ -4605,6 +4608,7 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
 
+    rb_gc_save_machine_context();
     rb_gc_mark_roots(objspace, categoryp);
 }
 
@@ -6211,7 +6215,7 @@ rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max)
 }
 
 void *
-rb_gc_impl_ractor_cache_alloc(void *objspace_ptr)
+rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
@@ -9279,6 +9283,9 @@ gc_malloc_allocations(VALUE self)
     return UINT2NUM(rb_objspace.malloc_params.allocations);
 }
 #endif
+
+void rb_gc_impl_before_fork(void *objspace_ptr) { /* no-op */ }
+void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid) { /* no-op */ }
 
 void *
 rb_gc_impl_objspace_alloc(void)

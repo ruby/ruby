@@ -1059,6 +1059,12 @@ generic_ivtbl_no_ractor_check(VALUE obj)
     return generic_ivtbl(obj, 0, false);
 }
 
+struct st_table *
+rb_generic_ivtbl_get(void)
+{
+    return generic_iv_tbl_;
+}
+
 int
 rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl)
 {

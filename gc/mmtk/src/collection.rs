@@ -13,23 +13,22 @@ pub struct VMCollection {}
 
 impl Collection<Ruby> for VMCollection {
     fn is_collection_enabled() -> bool {
-        crate::BINDING_FAST.gc_enabled.load(Ordering::Relaxed)
+        crate::CONFIGURATION.gc_enabled.load(Ordering::Relaxed)
     }
 
-    fn stop_all_mutators<F>(tls: VMWorkerThread, mut mutator_visitor: F)
+    fn stop_all_mutators<F>(_tls: VMWorkerThread, mut mutator_visitor: F)
     where
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
     {
-        (upcalls().stop_the_world)(tls);
-        crate::binding().ppp_registry.pin_ppp_children(tls);
+        (upcalls().stop_the_world)();
         (upcalls().get_mutators)(
             Self::notify_mutator_ready::<F>,
             &mut mutator_visitor as *mut F as *mut _,
         );
     }
 
-    fn resume_mutators(tls: VMWorkerThread) {
-        (upcalls().resume_mutators)(tls);
+    fn resume_mutators(_tls: VMWorkerThread) {
+        (upcalls().resume_mutators)();
     }
 
     fn block_for_gc(tls: VMMutatorThread) {
