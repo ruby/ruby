@@ -19,10 +19,6 @@
 # include "wasm/machine.h"
 #endif
 
-#define TIME_QUANTUM_MSEC (100)
-#define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
-#define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
-
 // Do nothing for GVL
 static void
 thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
