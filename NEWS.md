@@ -104,6 +104,7 @@ The following default gems are updated.
 * syntax_suggest 2.0.1
 * time 0.4.0
 * uri 0.13.1
+* win32ole 1.9.0
 * zlib 3.1.1
 
 The following bundled gem is added.
