@@ -264,12 +264,8 @@ module RubyVM::YJIT
     def call_yjit_hooks
       # Skip using builtin methods in Ruby if --yjit-c-builtin is given
       return if Primitive.yjit_c_builtin_p
-
-      # Unset GET_VM()->running to give METHOD_ENTRY_BASIC flag to methods defined by the hooks
-      Primitive.cexpr! 'GET_VM()->running = 0'
       @yjit_hooks.each(&:call)
       @yjit_hooks.clear
-      Primitive.cexpr! 'GET_VM()->running = 1'
     end
 
     # Print stats and dump exit locations
