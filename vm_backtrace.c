@@ -265,10 +265,26 @@ retry:
     }
 }
 
+// Return true if a given location is a C method or supposed to behave like one.
+static inline bool
+location_cfunc_p(rb_backtrace_location_t *loc)
+{
+    if (!loc->cme) return false;
+
+    switch (loc->cme->def->type) {
+      case VM_METHOD_TYPE_CFUNC:
+        return true;
+      case VM_METHOD_TYPE_ISEQ:
+        return rb_iseq_attr_p(loc->cme->def->body.iseq.iseqptr, BUILTIN_ATTR_C_TRACE);
+      default:
+        return false;
+    }
+}
+
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
@@ -314,7 +330,7 @@ location_label_m(VALUE self)
 static VALUE
 location_base_label(rb_backtrace_location_t *loc)
 {
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         return rb_id2str(loc->cme->def->original_id);
     }
 
@@ -448,9 +464,7 @@ location_to_str(rb_backtrace_location_t *loc)
     VALUE file, owner = Qnil, name;
     int lineno;
 
-    if (loc->cme && (loc->cme->def->type == VM_METHOD_TYPE_CFUNC || (loc->cme->def->type == VM_METHOD_TYPE_ISEQ
-                    // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
-                    && (loc->cme->def->body.iseq.iseqptr->body->builtin_attrs & BUILTIN_ATTR_C_TRACE) != 0))) {
+    if (location_cfunc_p(loc)) {
         if (loc->iseq && loc->pc) {
             file = rb_iseq_path(loc->iseq);
             lineno = calc_lineno(loc->iseq, loc->pc);

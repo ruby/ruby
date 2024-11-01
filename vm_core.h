@@ -583,6 +583,12 @@ rb_iseq_check(const rb_iseq_t *iseq)
     return iseq;
 }
 
+static inline bool
+rb_iseq_attr_p(const rb_iseq_t *iseq, enum rb_builtin_attr attr)
+{
+    return (ISEQ_BODY(iseq)->builtin_attrs & attr) == attr;
+}
+
 static inline const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
