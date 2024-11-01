@@ -88,6 +88,7 @@ The following default gems are updated.
 * erb 4.0.4
 * etc 1.4.4
 * fiddle 1.1.5.dev
+* fileutils 1.7.3
 * io-console 0.7.2
 * ipaddr 1.2.7
 * irb 1.14.1
