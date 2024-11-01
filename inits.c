@@ -104,6 +104,7 @@ rb_call_builtin_inits(void)
     BUILTIN(marshal);
     BUILTIN(rjit_c);
     BUILTIN(rjit);
+    BUILTIN(base64);
     Init_builtin_prelude();
 }
 #undef CALL

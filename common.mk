@@ -1212,6 +1212,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/prelude.rb \
 		$(srcdir)/gem_prelude.rb \
 		$(srcdir)/yjit.rb \
+		$(srcdir)/base64.rb \
 		$(empty)
 BUILTIN_RB_INCS = $(BUILTIN_RB_SRCS:.rb=.rbinc)
 
@@ -10474,6 +10475,7 @@ miniinit.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+miniinit.$(OBJEXT): {$(VPATH)}base64.rb
 miniinit.$(OBJEXT): {$(VPATH)}builtin.h
 miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}constant.h
@@ -11345,6 +11347,7 @@ object.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 object.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 object.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 object.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+object.$(OBJEXT): {$(VPATH)}base64.rbinc
 object.$(OBJEXT): {$(VPATH)}builtin.h
 object.$(OBJEXT): {$(VPATH)}config.h
 object.$(OBJEXT): {$(VPATH)}constant.h

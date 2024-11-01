@@ -4570,6 +4570,7 @@ InitVM_Object(void)
 
 #include "kernel.rbinc"
 #include "nilclass.rbinc"
+#include "base64.rbinc"
 
 void
 Init_Object(void)
