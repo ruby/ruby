@@ -30,7 +30,7 @@ permissions:
 # Each job is split so that they roughly take 30min to run through.
 jobs:
   compile-if:
-    name: 'omnibus condition'
+    name: 'omnibus compilations, trigger'
     runs-on: ubuntu-latest
     if: >-
       ${{!(false
@@ -62,13 +62,6 @@ jobs:
           with_gcc: 'clang-18 -flto=auto'
           optflags: '-O2'
           enable_shared: false
-      - name: 'GCC 13 LTO'
-        uses: './.github/actions/compilers'
-        with:
-          tag: gcc-13
-          with_gcc: 'gcc-13 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
-          optflags: '-O2'
-          enable_shared: false
 
   compile2:
     name: 'omnibus compilations, #2'
@@ -80,6 +73,13 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - name: 'GCC 13 LTO'
+        uses: './.github/actions/compilers'
+        with:
+          tag: gcc-13
+          with_gcc: 'gcc-13 -flto=auto -ffat-lto-objects -Werror=lto-type-mismatch'
+          optflags: '-O2'
+          enable_shared: false
       - { uses: './.github/actions/compilers', name: 'GCC 13', with: { tag: 'gcc-13' } }
       - { uses: './.github/actions/compilers', name: 'GCC 12', with: { tag: 'gcc-12' } }
       - { uses: './.github/actions/compilers', name: 'GCC 11', with: { tag: 'gcc-11' } }
@@ -106,7 +106,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'clang 15', with: { tag: 'clang-15' } }
       - { uses: './.github/actions/compilers', name: 'clang 14', with: { tag: 'clang-14' } }
       - { uses: './.github/actions/compilers', name: 'clang 13', with: { tag: 'clang-13' } }
-      - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' } }
 
   compile4:
     name: 'omnibus compilations, #4'
@@ -118,6 +117,7 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' } }
       - { uses: './.github/actions/compilers', name: 'clang 11', with: { tag: 'clang-11' } }
       - { uses: './.github/actions/compilers', name: 'clang 10', with: { tag: 'clang-10' } }
         # llvm-objcopy<=9 doesn't have --wildcard. It compiles, but leaves Rust symbols in libyjit.o.
@@ -125,7 +125,7 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'clang 8',  with: { tag: 'clang-8',   append_configure: '--disable-yjit' } }
       - { uses: './.github/actions/compilers', name: 'clang 7',  with: { tag: 'clang-7',   append_configure: '--disable-yjit' } }
       - { uses: './.github/actions/compilers', name: 'clang 6',  with: { tag: 'clang-6.0', append_configure: '--disable-yjit' } }
-      - { uses: './.github/actions/compilers', name: 'ext/Setup', with: { static_exts: 'etc json/* */escape' } }
+      - { uses: './.github/actions/compilers', name: 'C99',      with: { CFLAGS: '-std=c99 -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
 
   compile5:
     name: 'omnibus compilations, #5'
@@ -143,7 +143,6 @@ jobs:
       # warning generates a lot of noise from use of ANYARGS in
       # rb_define_method() and friends.
       # See: https://github.com/llvm/llvm-project/commit/11da1b53d8cd3507959022cd790d5a7ad4573d94
-      - { uses: './.github/actions/compilers', name: 'C99',   with: { CFLAGS:   '-std=c99   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
       - { uses: './.github/actions/compilers', name: 'C11',   with: { CFLAGS:   '-std=c11   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
       - { uses: './.github/actions/compilers', name: 'C17',   with: { CFLAGS:   '-std=c17   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
       - { uses: './.github/actions/compilers', name: 'C23',   with: { CFLAGS:   '-std=c2x   -Werror=pedantic -pedantic-errors -Wno-strict-prototypes' } }
@@ -152,8 +151,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'C++14', with: { CXXFLAGS: '-std=c++14 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++17', with: { CXXFLAGS: '-std=c++17 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-      - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
-      - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
 
   compile6:
     name: 'omnibus compilations, #6'
@@ -165,6 +162,8 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
+      - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: '-O0', with: { optflags: '-O0 -march=x86-64 -mtune=generic' } }
       # - { uses: './.github/actions/compilers', name: '-O3', with: { optflags: '-O3 -march=x86-64 -mtune=generic', check: true } }
       - { uses: './.github/actions/compilers', name: 'gmp',                 with: { append_configure: '--with-gmp', check: 'ruby/test_bignum.rb', mspecopt: "/github/workspace/src/spec/ruby/core/integer" } }
@@ -210,8 +209,6 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'CPDEBUG=-1',                     with: { cppflags: '-DCPDEBUG=-1' } }
       - { uses: './.github/actions/compilers', name: 'ENC_DEBUG',                      with: { cppflags: '-DENC_DEBUG' } }
       - { uses: './.github/actions/compilers', name: 'GC_DEBUG',                       with: { cppflags: '-DGC_DEBUG' } }
-      - { uses: './.github/actions/compilers', name: 'HASH_DEBUG',                     with: { cppflags: '-DHASH_DEBUG' } }
-      - { uses: './.github/actions/compilers', name: 'ID_TABLE_DEBUG',                 with: { cppflags: '-DID_TABLE_DEBUG' } }
 
   compile9:
     name: 'omnibus compilations, #9'
@@ -223,15 +220,14 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/compilers', name: 'HASH_DEBUG',                     with: { cppflags: '-DHASH_DEBUG' } }
+      - { uses: './.github/actions/compilers', name: 'ID_TABLE_DEBUG',                 with: { cppflags: '-DID_TABLE_DEBUG' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_DEBUG=-1',                with: { cppflags: '-DRGENGC_DEBUG=-1' } }
       - { uses: './.github/actions/compilers', name: 'SYMBOL_DEBUG',                   with: { cppflags: '-DSYMBOL_DEBUG' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_CHECK_MODE',              with: { cppflags: '-DRGENGC_CHECK_MODE' } }
       - { uses: './.github/actions/compilers', name: 'VM_CHECK_MODE',                  with: { cppflags: '-DVM_CHECK_MODE' } }
       - { uses: './.github/actions/compilers', name: 'USE_EMBED_CI=0',                 with: { cppflags: '-DUSE_EMBED_CI=0' } }
       - { uses: './.github/actions/compilers', name: 'USE_FLONUM=0',                   with: { cppflags: '-DUSE_FLONUM=0', append_configure: '--disable-yjit' } }
-      - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' } }
-      - { uses: './.github/actions/compilers', name: 'USE_SYMBOL_GC=0',                with: { cppflags: '-DUSE_SYMBOL_GC=0' } }
-      - { uses: './.github/actions/compilers', name: 'USE_THREAD_CACHE=0',             with: { cppflags: '-DUSE_THREAD_CACHE=0' } }
 
   compileX:
     name: 'omnibus compilations, #10'
@@ -243,14 +239,14 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' } }
+      - { uses: './.github/actions/compilers', name: 'USE_SYMBOL_GC=0',                with: { cppflags: '-DUSE_SYMBOL_GC=0' } }
+      - { uses: './.github/actions/compilers', name: 'USE_THREAD_CACHE=0',             with: { cppflags: '-DUSE_THREAD_CACHE=0' } }
       - { uses: './.github/actions/compilers', name: 'USE_RUBY_DEBUG_LOG=1',           with: { cppflags: '-DUSE_RUBY_DEBUG_LOG=1' } }
       - { uses: './.github/actions/compilers', name: 'USE_DEBUG_COUNTER',              with: { cppflags: '-DUSE_DEBUG_COUNTER=1' } }
       - { uses: './.github/actions/compilers', name: 'SHARABLE_MIDDLE_SUBSTRING',      with: { cppflags: '-DSHARABLE_MIDDLE_SUBSTRING=1' } }
       - { uses: './.github/actions/compilers', name: 'DEBUG_FIND_TIME_NUMGUESS',       with: { cppflags: '-DDEBUG_FIND_TIME_NUMGUESS' } }
       - { uses: './.github/actions/compilers', name: 'DEBUG_INTEGER_PACK',             with: { cppflags: '-DDEBUG_INTEGER_PACK' } }
-      - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
-      - { uses: './.github/actions/compilers', name: 'GC_ENABLE_LAZY_SWEEP=0',         with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
-      - { uses: './.github/actions/compilers', name: 'GC_PROFILE_DETAIL_MEMORY',       with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' } }
 
   compileB:
     name: 'omnibus compilations, #11'
@@ -262,14 +258,15 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
+      - { uses: './.github/actions/compilers', name: 'GC_ENABLE_LAZY_SWEEP=0',         with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
+      - { uses: './.github/actions/compilers', name: 'GC_PROFILE_DETAIL_MEMORY',       with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' } }
       - { uses: './.github/actions/compilers', name: 'GC_PROFILE_MORE_DETAIL',         with: { cppflags: '-DGC_PROFILE_MORE_DETAIL' } }
       - { uses: './.github/actions/compilers', name: 'MALLOC_ALLOCATED_SIZE_CHECK',    with: { cppflags: '-DMALLOC_ALLOCATED_SIZE_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_ESTIMATE_OLDMALLOC',      with: { cppflags: '-DRGENGC_ESTIMATE_OLDMALLOC' } }
       # - { uses: './.github/actions/compilers', name: 'RGENGC_FORCE_MAJOR_GC',          with: { cppflags: '-DRGENGC_FORCE_MAJOR_GC' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_OBJ_INFO',                with: { cppflags: '-DRGENGC_OBJ_INFO' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_PROFILE',                 with: { cppflags: '-DRGENGC_PROFILE' } }
-      - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
-      - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
 
   compileC:
     name: 'omnibus compilations, #12'
@@ -281,11 +278,14 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
+      - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
       - { uses: './.github/actions/compilers', name: 'enable-yjit',                    with: { append_configure: '--enable-yjit --disable-rjit' } }
       - { uses: './.github/actions/compilers', name: 'enable-rjit',                    with: { append_configure: '--enable-rjit --disable-yjit' } }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' } }
       - { uses: './.github/actions/compilers', name: 'RJIT_FORCE_ENABLE',              with: { cppflags: '-DRJIT_FORCE_ENABLE' } }
       - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' } }
+      - { uses: './.github/actions/compilers', name: 'ext/Setup',                      with: { static_exts: 'etc json/* */escape' } }
 
   compilemax:
     name: 'omnibus compilations, result'
