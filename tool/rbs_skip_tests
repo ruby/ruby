@@ -81,3 +81,6 @@ test_of(RubyVM::AbstractSyntaxTreeSingletonTest)
 # Pathname#mkpath and #rmtree https://github.com/ruby/ruby/pull/3705
 test_mkpath(PathnameInstanceTest)
 test_rmtree(PathnameInstanceTest)
+
+# https://github.com/ruby/ruby/actions/runs/11623300558/job/32370124549?pr=11974#step:13:278
+test_deep_const_get(JSONSingletonTest)
