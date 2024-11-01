@@ -2799,7 +2799,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <id>   keyword_variable user_variable sym operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
-%type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
+%type <id>   p_kwrest p_kwnorest p_any_kwrest
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var def_name
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
 %type <ctxt> p_in_kwarg
@@ -5701,37 +5701,71 @@ p_kwarg 	: p_kw
                     }
                 ;
 
-p_kw		: p_kw_label p_expr
+p_kw		: tLABEL p_expr
                     {
                         error_duplicate_pattern_key(p, $1, &@1);
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &@1, &NULL_LOC), &@$), $2);
+                        YYLTYPE value_loc = @1;
+                        YYLTYPE closing_loc = @1;
+                        value_loc.end_pos.column = value_loc.end_pos.column - 1;
+                        closing_loc.beg_pos.column = closing_loc.end_pos.column - 1;
+                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), $2);
                     /*% ripper: [$:1, $:2] %*/
                     }
-                | p_kw_label
+                | tLABEL
                     {
                         error_duplicate_pattern_key(p, $1, &@1);
                         if ($1 && !is_local_id($1)) {
                             yyerror1(&@1, "key must be valid as local variables");
                         }
                         error_duplicate_pattern_variable(p, $1, &@1);
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@$, &NULL_LOC, &@1, &NULL_LOC), &@$), assignable(p, $1, 0, &@$));
+                        YYLTYPE value_loc = @1;
+                        YYLTYPE closing_loc = @1;
+                        value_loc.end_pos.column = value_loc.end_pos.column - 1;
+                        closing_loc.beg_pos.column = closing_loc.end_pos.column - 1;
+                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), assignable(p, $1, 0, &@$));
                     /*% ripper: [$:1, Qnil] %*/
                     }
-                ;
-
-p_kw_label	: tLABEL
-                | tSTRING_BEG string_contents tLABEL_END
+                | tSTRING_BEG string_contents tLABEL_END p_expr
                     {
+                        ID id = rb_intern_str(STR_NEW0());
                         YYLTYPE loc = code_loc_gen(&@1, &@3);
+                        NODE *sym = NULL;
                         if (!$2 || nd_type_p($2, NODE_STR)) {
                             NODE *node = dsym_node(p, $2, &loc, &@1, &@2, &@3);
-                            $$ = rb_sym2id(rb_node_sym_string_val(node));
+                            id = rb_sym2id(rb_node_sym_string_val(node));
+                            sym = NEW_SYM(rb_id2str(id), &@$, &@1, &@2, &@3);
                         }
                         else {
+                            sym = NEW_SYM(rb_id2str(id), &@$, &@1, &@2, &@3);
                             yyerror1(&loc, "symbol literal with interpolation is not allowed");
-                            $$ = rb_intern_str(STR_NEW0());
                         }
-                    /*% ripper: $:2 %*/
+
+                        error_duplicate_pattern_key(p, id, &@1);
+                        $$ = list_append(p, NEW_LIST(sym, &@$), $4);
+                    /*% ripper: [$:2, $:4] %*/
+                    }
+                | tSTRING_BEG string_contents tLABEL_END
+                    {
+                        ID id = rb_intern_str(STR_NEW0());
+                        YYLTYPE loc = code_loc_gen(&@1, &@3);
+                        NODE *sym = NULL;
+                        if (!$2 || nd_type_p($2, NODE_STR)) {
+                            NODE *node = dsym_node(p, $2, &loc, &@1, &@2, &@3);
+                            id = rb_sym2id(rb_node_sym_string_val(node));
+                            sym = NEW_SYM(rb_id2str(id), &@$, &@1, &@2, &@3);
+                        }
+                        else {
+                            sym = NEW_SYM(rb_id2str(id), &@$, &@1, &@2, &@3);
+                            yyerror1(&loc, "symbol literal with interpolation is not allowed");
+                        }
+
+                        error_duplicate_pattern_key(p, id, &loc);
+                        if (id && !is_local_id(id)) {
+                            yyerror1(&loc, "key must be valid as local variables");
+                        }
+                        error_duplicate_pattern_variable(p, id, &loc);
+                        $$ = list_append(p, NEW_LIST(sym, &@$), assignable(p, id, 0, &@$));
+                    /*% ripper: [$:2, Qnil] %*/
                     }
                 ;
 
@@ -6641,14 +6675,22 @@ assoc		: arg_value tASSOC arg_value
                     }
                 | tLABEL arg_value
                     {
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &@1, &NULL_LOC), &@$), $2);
+                        YYLTYPE value_loc = @1;
+                        YYLTYPE closing_loc = @1;
+                        value_loc.end_pos.column = value_loc.end_pos.column - 1;
+                        closing_loc.beg_pos.column = closing_loc.end_pos.column - 1;
+                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), $2);
                     /*% ripper: assoc_new!($:1, $:2) %*/
                     }
                 | tLABEL
                     {
                         NODE *val = gettable(p, $1, &@$);
                         if (!val) val = NEW_ERROR(&@$);
-                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &@1, &NULL_LOC), &@$), val);
+                        YYLTYPE value_loc = @1;
+                        YYLTYPE closing_loc = @1;
+                        value_loc.end_pos.column = value_loc.end_pos.column - 1;
+                        closing_loc.beg_pos.column = closing_loc.end_pos.column - 1;
+                        $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@1, &NULL_LOC, &value_loc, &closing_loc), &@$), val);
                     /*% ripper: assoc_new!($:1, Qnil) %*/
                     }
                 | tSTRING_BEG string_contents tLABEL_END arg_value
