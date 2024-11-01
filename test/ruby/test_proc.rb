@@ -201,6 +201,8 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_hash_does_not_change_after_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
     # [Bug #20853]
     [
       "proc {}", # iseq backed proc
