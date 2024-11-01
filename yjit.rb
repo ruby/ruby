@@ -255,7 +255,7 @@ module RubyVM::YJIT
     # :stopdoc:
     private
 
-    # Lazily call a given block when YJIT is enabled
+    # Register a block to be called when YJIT is enabled
     def add_yjit_hook(hook)
       @yjit_hooks << hook
     end
