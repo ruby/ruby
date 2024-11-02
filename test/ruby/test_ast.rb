@@ -1412,6 +1412,14 @@ dummy
       assert_locations(node.children[-1].children[1].locations, [[1, 0, 1, 5], [1, 1, 1, 2], nil])
     end
 
+    def test_flip2_locations
+      node = ast_parse("if 'a'..'z'; foo; end")
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 11], [1, 6, 1, 8]])
+
+      node = ast_parse('if 1..5; foo; end')
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 7], [1, 4, 1, 6]])
+    end
+
     def test_lambda_locations
       node = ast_parse("-> (a, b) { foo }")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 2], [1, 10, 1, 11], [1, 16, 1, 17]])
