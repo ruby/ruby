@@ -820,6 +820,10 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_EVSTR(node)->opening_loc),
                                     location_new(&RNODE_EVSTR(node)->closing_loc));
+      case NODE_FLIP2:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_FLIP2(node)->operator_loc));
       case NODE_LAMBDA:
         return rb_ary_new_from_args(4,
                                     location_new(nd_code_loc(node)),
