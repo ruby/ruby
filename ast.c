@@ -868,6 +868,12 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_OP_ASGN2(node)->call_operator_loc),
                                     location_new(&RNODE_OP_ASGN2(node)->message_loc),
                                     location_new(&RNODE_OP_ASGN2(node)->binary_operator_loc));
+      case NODE_POSTEXE:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_POSTEXE(node)->keyword_loc),
+                                    location_new(&RNODE_POSTEXE(node)->opening_loc),
+                                    location_new(&RNODE_POSTEXE(node)->closing_loc));
       case NODE_REDO:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
