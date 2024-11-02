@@ -437,6 +437,13 @@ struct local_vars {
     NODE *it;
 };
 
+typedef struct rb_locations_lambda_body_t {
+    NODE *node;
+    YYLTYPE loc;
+    YYLTYPE opening_loc;
+    YYLTYPE closing_loc;
+} rb_locations_lambda_body_t;
+
 enum {
     ORDINAL_PARAM = -1,
     NO_PARAM = 0,
@@ -1155,7 +1162,7 @@ static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_
 static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
 static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
-static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
@@ -1263,7 +1270,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_SYM(str,loc) (NODE *)rb_node_sym_new(p,str,loc)
 #define NEW_DSYM(s,l,n,loc) (NODE *)rb_node_dsym_new(p,s,l,n,loc)
 #define NEW_ATTRASGN(r,m,a,loc) (NODE *)rb_node_attrasgn_new(p,r,m,a,loc)
-#define NEW_LAMBDA(a,b,loc) (NODE *)rb_node_lambda_new(p,a,b,loc)
+#define NEW_LAMBDA(a,b,loc,op_loc,o_loc,c_loc) (NODE *)rb_node_lambda_new(p,a,b,loc,op_loc,o_loc,c_loc)
 #define NEW_ARYPTN(pre,r,post,loc) (NODE *)rb_node_aryptn_new(p,pre,r,post,loc)
 #define NEW_HSHPTN(c,kw,kwrest,loc) (NODE *)rb_node_hshptn_new(p,c,kw,kwrest,loc)
 #define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
@@ -1485,6 +1492,8 @@ static int literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
 static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
+
+static rb_locations_lambda_body_t* new_locations_lambda_body(struct parser_params *p, NODE *node, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
 
 #ifdef RIPPER
 #define get_value(idx) (rb_ary_entry(p->s_value_stack, idx))
@@ -2670,6 +2679,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
     rb_node_masgn_t *node_masgn;
     rb_node_def_temp_t *node_def_temp;
     rb_node_exits_t *node_exits;
+    struct rb_locations_lambda_body_t *locations_lambda_body;
     ID id;
     int num;
     st_table *tbl;
@@ -2776,7 +2786,8 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_args> block_param opt_block_param block_param_def
 %type <node_kw_arg> f_kw f_block_kw
 %type <id> bv_decls opt_bv_decl bvar
-%type <node> lambda lambda_body brace_body do_body
+%type <node> lambda brace_body do_body
+%type <locations_lambda_body> lambda_body
 %type <node_args> f_larglist
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs_head mlhs_item mlhs_node mlhs_post
@@ -5183,7 +5194,7 @@ lambda		: tLAMBDA[lpar]
                         $args = args_with_numbered(p, $args, max_numparam, it_id);
                         {
                             YYLTYPE loc = code_loc_gen(&@args, &@body);
-                            $$ = NEW_LAMBDA($args, $body, &loc);
+                            $$ = NEW_LAMBDA($args, $body->node, &loc, &@lpar, &$body->opening_loc, &$body->closing_loc);
                             nd_set_line(RNODE_LAMBDA($$)->nd_body, @body.end_pos.lineno);
                             nd_set_line($$, @args.end_pos.lineno);
                             nd_set_first_loc($$, @1.beg_pos);
@@ -5213,7 +5224,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 lambda_body	: tLAMBEG compstmt '}'
                     {
                         token_info_pop(p, "}", &@3);
-                        $$ = $2;
+                        $$ = new_locations_lambda_body(p, $2, &@2, &@1, &@3);
                     /*% ripper: $:2 %*/
                     }
                 | keyword_do_LAMBDA
@@ -5222,7 +5233,7 @@ lambda_body	: tLAMBEG compstmt '}'
                     }
                   bodystmt k_end
                     {
-                        $$ = $3;
+                        $$ = new_locations_lambda_body(p, $3, &@3, &@1, &@4);
                     /*% ripper: $:3 %*/
                     }
                 ;
@@ -11588,12 +11599,15 @@ rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body
 }
 
 static rb_node_lambda_t *
-rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc)
+rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
 {
     /* Keep the order of node creation */
     NODE *scope = NEW_SCOPE(nd_args, nd_body, loc);
     rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, loc);
     n->nd_body = scope;
+    n->operator_loc = *operator_loc;
+    n->opening_loc = *opening_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -12892,6 +12906,17 @@ new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *a
     if (block) ret = method_add_block(p, ret, block, loc);
     fixpos(ret, recv);
     return ret;
+}
+
+static rb_locations_lambda_body_t*
+new_locations_lambda_body(struct parser_params* p, NODE *node, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc)
+{
+    rb_locations_lambda_body_t *body = xcalloc(1, sizeof(rb_locations_lambda_body_t));
+    body->node = node;
+    body->loc = *loc;
+    body->opening_loc = *opening_loc;
+    body->closing_loc = *closing_loc;
+    return body;
 }
 
 #define nd_once_body(node) (nd_type_p((node), NODE_ONCE) ? RNODE_ONCE(node)->nd_body : node)
