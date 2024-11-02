@@ -811,6 +811,10 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_DOT2(node)->operator_loc));
+      case NODE_DOT3:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_DOT3(node)->operator_loc));
       case NODE_EVSTR:
         return rb_ary_new_from_args(3,
                                     location_new(nd_code_loc(node)),
