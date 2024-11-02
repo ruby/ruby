@@ -1049,8 +1049,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: if (x==1)...(x==5); foo; end");
       dot:
         F_NODE(nd_beg, RNODE_DOT2, "begin");
-        LAST_NODE;
         F_NODE(nd_end, RNODE_DOT2, "end");
+        LAST_NODE;
+        F_LOC(operator_loc, RNODE_DOT2);
         return;
 
       case NODE_SELF:
