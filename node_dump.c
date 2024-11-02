@@ -1038,6 +1038,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: ::[nd_mid]");
         ANN("example: ::Object");
         F_ID(nd_mid, RNODE_COLON3, "constant name");
+        F_LOC(delimiter_loc, RNODE_COLON3);
+        F_LOC(name_loc, RNODE_COLON3);
         return;
 
       case NODE_DOT2:

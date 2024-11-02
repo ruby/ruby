@@ -817,6 +817,11 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_COLON2(node)->delimiter_loc),
                                     location_new(&RNODE_COLON2(node)->name_loc));
+      case NODE_COLON3:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_COLON3(node)->delimiter_loc),
+                                    location_new(&RNODE_COLON3(node)->name_loc));
       case NODE_DOT2:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
