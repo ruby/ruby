@@ -1397,6 +1397,15 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 0, 1, 5], [1, 8, 1, 9], [1, 13, 1, 16]])
     end
 
+    def test_colon2_locations
+      node = ast_parse("A::B")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3], [1, 3, 1, 4]])
+
+      node = ast_parse("A::B::C")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 4, 1, 6], [1, 6, 1, 7]])
+      assert_locations(node.children[-1].children[0].locations, [[1, 0, 1, 4], [1, 1, 1, 3], [1, 3, 1, 4]])
+    end
+
     def test_dot2_locations
       node = ast_parse("1..2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])
