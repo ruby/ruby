@@ -923,6 +923,8 @@ typedef struct RNode_COLON3 {
     NODE node;
 
     ID nd_mid;
+    rb_code_location_t delimiter_loc;
+    rb_code_location_t name_loc;
 } rb_node_colon3_t;
 
 /* NODE_DOT2, NODE_DOT3, NODE_FLIP2, NODE_FLIP3 */
