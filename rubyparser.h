@@ -915,6 +915,7 @@ typedef struct RNode_DOTS {
 
     struct RNode *nd_beg;
     struct RNode *nd_end;
+    rb_code_location_t operator_loc;
 } rb_node_dot2_t, rb_node_dot3_t, rb_node_flip2_t, rb_node_flip3_t;
 
 typedef struct RNode_SELF {
