@@ -968,6 +968,9 @@ typedef struct RNode_LAMBDA {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t operator_loc;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_lambda_t;
 
 typedef struct RNode_ARYPTN {
