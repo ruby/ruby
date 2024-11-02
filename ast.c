@@ -120,8 +120,8 @@ setup_vparser(VALUE keep_script_lines, VALUE error_tolerant, VALUE keep_tokens)
 {
     VALUE vparser = ast_parse_new();
     if (RTEST(keep_script_lines)) rb_parser_set_script_lines(vparser);
-    if (RTEST(error_tolerant))  rb_parser_error_tolerant(vparser);
-    if (RTEST(keep_tokens))  rb_parser_keep_tokens(vparser);
+    if (RTEST(error_tolerant)) rb_parser_error_tolerant(vparser);
+    if (RTEST(keep_tokens)) rb_parser_keep_tokens(vparser);
     return vparser;
 }
 
