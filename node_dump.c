@@ -1027,8 +1027,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_head]::[nd_mid]");
         ANN("example: M::C");
         F_ID(nd_mid, RNODE_COLON2, "constant name");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_COLON2, "receiver");
+        F_LOC(delimiter_loc, RNODE_COLON2);
+        LAST_NODE;
+        F_LOC(name_loc, RNODE_COLON2);
         return;
 
       case NODE_COLON3:

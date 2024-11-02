@@ -915,6 +915,8 @@ typedef struct RNode_COLON2 {
 
     struct RNode *nd_head;
     ID nd_mid;
+    rb_code_location_t delimiter_loc;
+    rb_code_location_t name_loc;
 } rb_node_colon2_t;
 
 typedef struct RNode_COLON3 {
