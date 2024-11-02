@@ -1151,7 +1151,7 @@ static rb_node_sclass_t *rb_node_sclass_new(struct parser_params *p, NODE *nd_re
 static rb_node_colon2_t *rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc);
 static rb_node_colon3_t *rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc);
 static rb_node_dot2_t *rb_node_dot2_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc, const YYLTYPE *operator_loc);
-static rb_node_dot3_t *rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc);
+static rb_node_dot3_t *rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_self_t *rb_node_self_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_nil_t *rb_node_nil_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_true_t *rb_node_true_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1259,7 +1259,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_COLON2(c,i,loc) (NODE *)rb_node_colon2_new(p,c,i,loc)
 #define NEW_COLON3(i,loc) (NODE *)rb_node_colon3_new(p,i,loc)
 #define NEW_DOT2(b,e,loc,op_loc) (NODE *)rb_node_dot2_new(p,b,e,loc,op_loc)
-#define NEW_DOT3(b,e,loc) (NODE *)rb_node_dot3_new(p,b,e,loc)
+#define NEW_DOT3(b,e,loc,op_loc) (NODE *)rb_node_dot3_new(p,b,e,loc,op_loc)
 #define NEW_SELF(loc) (NODE *)rb_node_self_new(p,loc)
 #define NEW_NIL(loc) (NODE *)rb_node_nil_new(p,loc)
 #define NEW_TRUE(loc) (NODE *)rb_node_true_new(p,loc)
@@ -3874,7 +3874,7 @@ arg		: asgn(lhs, arg_rhs)
                     {
                         value_expr($1);
                         value_expr($3);
-                        $$ = NEW_DOT3($1, $3, &@$);
+                        $$ = NEW_DOT3($1, $3, &@$, &@2);
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
                 | arg tDOT2
@@ -3886,7 +3886,7 @@ arg		: asgn(lhs, arg_rhs)
                 | arg tDOT3
                     {
                         value_expr($1);
-                        $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$);
+                        $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$, &@2);
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
                 | tBDOT2 arg
@@ -3898,7 +3898,7 @@ arg		: asgn(lhs, arg_rhs)
                 | tBDOT3 arg
                     {
                         value_expr($2);
-                        $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$);
+                        $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$, &@1);
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
                 | arg '+' arg
@@ -5791,7 +5791,7 @@ p_value 	: p_primitive
                     }
                 | p_primitive_value tDOT3 p_primitive_value
                     {
-                        $$ = NEW_DOT3($1, $3, &@$);
+                        $$ = NEW_DOT3($1, $3, &@$, &@2);
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
                 | p_primitive_value tDOT2
@@ -5801,7 +5801,7 @@ p_value 	: p_primitive
                     }
                 | p_primitive_value tDOT3
                     {
-                        $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$);
+                        $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$, &@2);
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
                 | p_var_ref
@@ -5814,7 +5814,7 @@ p_value 	: p_primitive
                     }
                 | tBDOT3 p_primitive_value
                     {
-                        $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$);
+                        $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$, &@1);
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
                 ;
@@ -11650,11 +11650,12 @@ rb_node_dot2_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLT
 }
 
 static rb_node_dot3_t *
-rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc)
+rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc, const YYLTYPE *operator_loc)
 {
     rb_node_dot3_t *n = NODE_NEWNODE(NODE_DOT3, rb_node_dot3_t, loc);
     n->nd_beg = nd_beg;
     n->nd_end = nd_end;
+    n->operator_loc = *operator_loc;
 
     return n;
 }
