@@ -2115,6 +2115,19 @@ case 9:
     }
 }
 
+#ifndef HAVE_RB_GC_MARK_LOCATIONS
+// For TruffleRuby
+void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
+{
+    VALUE *value = start;
+
+    while (value < end) {
+        rb_gc_mark(*value);
+        value++;
+    }
+}
+#endif
+
 static void JSON_mark(void *ptr)
 {
     JSON_Parser *json = ptr;
@@ -2124,6 +2137,8 @@ static void JSON_mark(void *ptr)
     rb_gc_mark(json->array_class);
     rb_gc_mark(json->decimal_class);
     rb_gc_mark(json->match_string);
+    const VALUE *name_cache_entries = &json->name_cache.entries[0];
+    rb_gc_mark_locations(name_cache_entries, name_cache_entries + json->name_cache.length);
 }
 
 static void JSON_free(void *ptr)
