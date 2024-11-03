@@ -27,6 +27,26 @@ class JSONExtParserTest < Test::Unit::TestCase
       assert_equal "unexpected token at 'NaN'", ex.message
     end
 
+    if GC.respond_to?(:stress=)
+      def test_gc_stress_parser_new
+        payload = JSON.dump([{ foo: 1, bar: 2, baz: 3, egg: { spam: 4 } }] * 10)
+
+        previous_stress = GC.stress
+        JSON::Parser.new(payload).parse
+      ensure
+        GC.stress = previous_stress
+      end
+
+      def test_gc_stress
+        payload = JSON.dump([{ foo: 1, bar: 2, baz: 3, egg: { spam: 4 } }] * 10)
+
+        previous_stress = GC.stress
+        JSON.parse(payload)
+      ensure
+        GC.stress = previous_stress
+      end
+    end
+
     def parse(json)
       JSON::Ext::Parser.new(json).parse
     end
