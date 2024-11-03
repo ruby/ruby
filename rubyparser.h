@@ -891,6 +891,9 @@ typedef struct RNode_CLASS {
     struct RNode *nd_cpath;
     struct RNode *nd_body;
     struct RNode *nd_super;
+    rb_code_location_t class_keyword_loc;
+    rb_code_location_t inheritance_operator_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_class_t;
 
 typedef struct RNode_MODULE {
