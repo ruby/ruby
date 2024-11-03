@@ -1113,7 +1113,7 @@ static VALUE string_config(VALUE config)
     if (RTEST(config)) {
         Check_Type(config, T_STRING);
         if (RSTRING_LEN(config)) {
-            return RB_OBJ_FROZEN(config) ? config : rb_str_freeze(rb_str_dup(config));
+            return rb_str_new_frozen(config);
         }
     }
     return Qfalse;
