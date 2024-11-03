@@ -1376,6 +1376,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
     end
 
+    def test_class_locations
+      node = ast_parse("class A end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 0, 1, 5], nil, [1, 8, 1, 11]])
+
+      node = ast_parse("class A < B; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 0, 1, 5], [1, 8, 1, 9], [1, 13, 1, 16]])
+    end
+
     def test_dot2_locations
       node = ast_parse("1..2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])

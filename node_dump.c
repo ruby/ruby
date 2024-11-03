@@ -997,8 +997,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: class C2 < C; ..; end");
         F_NODE(nd_cpath, RNODE_CLASS, "class path");
         F_NODE(nd_super, RNODE_CLASS, "superclass");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_CLASS, "class definition");
+        F_LOC(class_keyword_loc, RNODE_CLASS);
+        F_LOC(inheritance_operator_loc, RNODE_CLASS);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_CLASS);
         return;
 
       case NODE_MODULE:
