@@ -3491,6 +3491,8 @@ thread_mark(void *ptr)
 
     rb_gc_mark(th->scheduler);
 
+    rb_threadptr_interrupt_exec_task_mark(th);
+
     RUBY_MARK_LEAVE("thread");
 }
 
@@ -3643,6 +3645,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->name = Qnil;
     th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
+
+    ccan_list_head_init(&th->interrupt_exec_tasks);
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
