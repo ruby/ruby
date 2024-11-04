@@ -3806,8 +3806,8 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
  *  - If both <tt>range.begin</tt> and <tt>range.end</tt>
  *    are non-negative and in-range (less than <tt>self.size</tt>),
  *    includes elements from index <tt>range.begin</tt>
- *    through <tt>range.end</tt> (if <tt>range.exclude_end?</tt> is +false+),
- *    or through <tt>range.end - 1</tt> (otherwise):
+ *    through <tt>range.end - 1</tt> (if <tt>range.exclude_end?</tt>),
+ *    or through <tt>range.end</tt> (otherwise):
  *
  *      a.values_at(1..2)  # => ["b", "c"]
  *      a.values_at(1...2) # => ["b"]
