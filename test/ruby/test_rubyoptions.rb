@@ -366,7 +366,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
 
-    Dir.mktmpdir(d) do |base|
+    Dir.mktmpdir(nil, d) do |base|
       # "test" in Japanese and N'Ko
       test = base + "/\u{30c6 30b9 30c8}_\u{7e1 7ca 7dd 7cc 7df 7cd 7eb}"
       Dir.mkdir(test)
