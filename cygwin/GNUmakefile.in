@@ -2,6 +2,8 @@ gnumake = yes
 
 include Makefile
 
+override EXE_LDFLAGS += -municode
+
 DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
 ifeq (@USE_LLVM_WINDRES@,yes) # USE_LLVM_WINDRES
 	# llvm-windres fails when preprocessor options are added
@@ -69,7 +71,7 @@ $(PROGRAM): $(RUBY_INSTALL_NAME).res.$(OBJEXT)
 $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.$(OBJEXT)
 	@rm -f $@
 	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
+	$(Q) $(PURIFY) $(CC) -municode -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 $(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.$(OBJEXT)
 

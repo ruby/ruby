@@ -57,3 +57,7 @@ main(int argc, char **argv)
     ruby_sysinit(&argc, &argv);
     return rb_main(argc, argv);
 }
+
+#ifdef _WIN32
+int wmain(void) {return main(0, NULL);}
+#endif
