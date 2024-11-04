@@ -1682,7 +1682,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     int scopes_count = 0;
     do {
         scopes_count++;
-    } while ((iseq = ISEQ_BODY(iseq)->parent_iseq) && (ISEQ_BODY(iseq)->type != ISEQ_TYPE_TOP));
+    } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
     pm_options_scopes_init(&result.options, scopes_count + 1);
 
     // Walk over the scope tree, adding known locals at the correct depths. The
