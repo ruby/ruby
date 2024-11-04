@@ -168,6 +168,24 @@ class TestProc < Test::Unit::TestCase
    assert_operator(procs.map(&:hash).uniq.size, :>=, 500)
   end
 
+  def test_hash_does_not_change_after_compaction
+    # [Bug #20853]
+    [
+      "proc {}", # iseq backed proc
+      "{}.to_proc", # ifunc backed proc
+      ":hello.to_proc", # symbol backed proc
+    ].each do |proc|
+      assert_separately([], <<~RUBY)
+        p1 = #{proc}
+        hash = p1.hash
+
+        GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+        assert_equal(hash, p1.hash, "proc is `#{proc}`")
+      RUBY
+    end
+  end
+
   def test_block_par
     assert_equal(10, Proc.new{|&b| b.call(10)}.call {|x| x})
     assert_equal(12, Proc.new{|a,&b| b.call(a)}.call(12) {|x| x})
