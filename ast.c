@@ -807,6 +807,11 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_CASE3(node)->case_keyword_loc),
                                     location_new(&RNODE_CASE3(node)->end_keyword_loc));
+      case NODE_EVSTR:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_EVSTR(node)->opening_loc),
+                                    location_new(&RNODE_EVSTR(node)->closing_loc));
       case NODE_IF:
         return rb_ary_new_from_args(4,
                                     location_new(nd_code_loc(node)),

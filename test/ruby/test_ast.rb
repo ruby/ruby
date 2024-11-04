@@ -1376,6 +1376,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
     end
 
+    def test_evstr_locations
+      node = ast_parse('"#{foo}"')
+      assert_locations(node.children[-1].children[1].locations, [[1, 0, 1, 8], [1, 1, 1, 3], [1, 6, 1, 7]])
+
+      node = ast_parse('"#$1"')
+      assert_locations(node.children[-1].children[1].locations, [[1, 0, 1, 5], [1, 1, 1, 2], nil])
+    end
+
     def test_if_locations
       node = ast_parse("if cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 25], [1, 0, 1, 2], [1, 8, 1, 12], [1, 22, 1, 25]])
