@@ -62,6 +62,10 @@ main(int argc, char **argv)
     return rb_main(argc, argv);
 }
 
+#ifdef _WIN32
+int wmain(void) {return main(0, NULL);}
+#endif
+
 #ifdef RUBY_ASAN_ENABLED
 /* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
  * that even tests which fork ruby with a clean environment will run ASAN with the right
