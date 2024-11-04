@@ -90,6 +90,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   def test_ed25519
     # Ed25519 is not FIPS-approved.
     omit_on_fips
+    # See EVP_PKEY_sign in Changelog for 3.7.0: https://github.com/libressl/portable/blob/master/ChangeLog
+    omit "Ed25519 not supported" unless openssl?(1, 1, 1) || libressl?(3, 7, 0)
 
     # Test vector from RFC 8032 Section 7.1 TEST 2
     priv_pem = <<~EOF
@@ -102,15 +104,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     MCowBQYDK2VwAyEAPUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw=
     -----END PUBLIC KEY-----
     EOF
-    begin
-      priv = OpenSSL::PKey.read(priv_pem)
-      pub = OpenSSL::PKey.read(pub_pem)
-    rescue OpenSSL::PKey::PKeyError => e
-      # OpenSSL < 1.1.1
-      pend "Ed25519 is not implemented" unless openssl?(1, 1, 1)
-
-      raise e
-    end
+    priv = OpenSSL::PKey.read(priv_pem)
+    pub = OpenSSL::PKey.read(pub_pem)
     assert_instance_of OpenSSL::PKey::PKey, priv
     assert_instance_of OpenSSL::PKey::PKey, pub
     assert_equal priv_pem, priv.private_to_pem
