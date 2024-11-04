@@ -843,7 +843,8 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 static inline void
 io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t *size)
 {
-    if (buffer->flags & RB_IO_BUFFER_READONLY) {
+    if (buffer->flags & RB_IO_BUFFER_READONLY ||
+        (!NIL_P(buffer->source) && OBJ_FROZEN(buffer->source))) {
         rb_raise(rb_eIOBufferAccessError, "Buffer is not writable!");
     }
 
