@@ -265,10 +265,26 @@ retry:
     }
 }
 
+// Return true if a given location is a C method or supposed to behave like one.
+static inline bool
+location_cfunc_p(rb_backtrace_location_t *loc)
+{
+    if (!loc->cme) return false;
+
+    switch (loc->cme->def->type) {
+      case VM_METHOD_TYPE_CFUNC:
+        return true;
+      case VM_METHOD_TYPE_ISEQ:
+        return rb_iseq_attr_p(loc->cme->def->body.iseq.iseqptr, BUILTIN_ATTR_C_TRACE);
+      default:
+        return false;
+    }
+}
+
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
@@ -314,7 +330,7 @@ location_label_m(VALUE self)
 static VALUE
 location_base_label(rb_backtrace_location_t *loc)
 {
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         return rb_id2str(loc->cme->def->original_id);
     }
 
@@ -448,7 +464,7 @@ location_to_str(rb_backtrace_location_t *loc)
     VALUE file, owner = Qnil, name;
     int lineno;
 
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         if (loc->iseq && loc->pc) {
             file = rb_iseq_path(loc->iseq);
             lineno = calc_lineno(loc->iseq, loc->pc);
@@ -684,13 +700,21 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                         const VALUE *pc = cfp->pc;
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-                        RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
-                        loc->pc = pc;
-                        bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
-                        if (do_yield) {
-                            bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                        // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
+                        if (rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
+                            loc->iseq = NULL;
+                            loc->pc = NULL;
+                            cfunc_counter++;
                         }
-                        cfunc_counter = 0;
+                        else {
+                            RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
+                            loc->pc = pc;
+                            bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                            if (do_yield) {
+                                bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                            }
+                            cfunc_counter = 0;
+                        }
                     }
                     skip_next_frame = is_rescue_or_ensure_frame(cfp);
                 }

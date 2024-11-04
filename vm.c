@@ -4437,6 +4437,9 @@ Init_vm_objects(void)
 void Init_builtin_yjit(void) {}
 #endif
 
+// Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
+#include "yjit_hook.rbinc"
+
 // Stub for builtin function when not building RJIT units
 #if !USE_RJIT
 void Init_builtin_rjit(void) {}

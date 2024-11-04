@@ -1677,6 +1677,71 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_option_uses_array_each_in_ruby
+    assert_separately(["--yjit"], <<~'RUBY')
+      # Array#each should be implemented in Ruby for YJIT
+      assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
+
+      # The backtrace, however, should not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:11:in 'Array#each'", e.backtrace[1]
+      end
+    RUBY
+  end
+
+  def test_yjit_enable_replaces_array_each
+    assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
+      # Array#each should be implemented in C for the interpreter
+      assert_nil Array.instance_method(:each).source_location
+
+      # The backtrace should not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:11:in 'Array#each'", e.backtrace[1]
+      end
+
+      RubyVM::YJIT.enable
+
+      # Array#each should be implemented in Ruby for YJIT
+      assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
+
+      # However, the backtrace should still not be `from <internal:array>:XX:in 'Array#each'`
+      begin
+        [nil].each { raise }
+      rescue => e
+        assert_equal "-:23:in 'Array#each'", e.backtrace[1]
+      end
+    RUBY
+  end
+
+  def test_yjit_enable_preserves_array_each_monkey_patch
+    assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
+      # Array#each should be implemented in C initially
+      assert_nil Array.instance_method(:each).source_location
+
+      # Override Array#each
+      $called = false
+      Array.prepend(Module.new {
+        def each
+          $called = true
+          super
+        end
+      })
+
+      RubyVM::YJIT.enable
+
+      # The monkey-patch should still be alive
+      [].each {}
+      assert_true $called
+
+      # YJIT should not replace Array#each with the "<internal:array>" one
+      assert_equal "-", Array.instance_method(:each).source_location.first
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

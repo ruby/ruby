@@ -641,6 +641,11 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                 /* setup iseq first (before invoking GC) */
                 RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, iseq);
 
+                // Methods defined in `with_yjit` should be considered METHOD_ENTRY_BASIC
+                if (rb_iseq_attr_p(iseq, BUILTIN_ATTR_C_TRACE)) {
+                    METHOD_ENTRY_BASIC_SET((rb_method_entry_t *)me, TRUE);
+                }
+
                 if (ISEQ_BODY(iseq)->mandatory_only_iseq) def->iseq_overload = 1;
 
                 if (0) vm_cref_dump("rb_method_definition_create", cref);

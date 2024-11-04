@@ -290,4 +290,12 @@ module Kernel
       Primitive.rb_f_integer(arg, base, exception);
     end
   end
+
+  # Internal helper for builtin inits to define methods only when YJIT is enabled.
+  # This method is removed in yjit_hook.rb.
+  def with_yjit(&block) # :nodoc:
+    if defined?(RubyVM::YJIT)
+      RubyVM::YJIT.send(:add_yjit_hook, block)
+    end
+  end
 end

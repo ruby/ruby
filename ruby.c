@@ -1816,6 +1816,10 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_yjit_init(opt->yjit);
 #endif
 
+    // Call yjit_hook.rb after rb_yjit_init() to use `RubyVM::YJIT.enabled?`
+    void Init_builtin_yjit_hook();
+    Init_builtin_yjit_hook();
+
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
 }

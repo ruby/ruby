@@ -2604,6 +2604,39 @@ ary_fetch_next(VALUE self, VALUE *index, VALUE *value)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *    each {|element| ... } -> self
+ *    each -> new_enumerator
+ *
+ *  With a block given, iterates over the elements of +self+,
+ *  passing each element to the block;
+ *  returns +self+:
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a.each {|element|  puts "#{element.class} #{element}" }
+ *
+ *  Output:
+ *
+ *    Symbol foo
+ *    String bar
+ *    Integer 2
+ *
+ *  Allows the array to be modified during iteration:
+ *
+ *    a = [:foo, 'bar', 2]
+ *    a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+ *
+ *  Output:
+ *
+ *    foo
+ *    bar
+ *
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
+ */
+
 VALUE
 rb_ary_each(VALUE ary)
 {
@@ -8634,6 +8667,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
     rb_define_alias(rb_cArray,  "prepend", "unshift");
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
+    rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);

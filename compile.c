@@ -8960,6 +8960,10 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
             iseq_set_use_block(iseq);
         }
+        else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
+            // Let the iseq act like a C method in backtraces
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
+        }
         else {
             goto unknown_arg;
         }

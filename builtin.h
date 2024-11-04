@@ -106,6 +106,12 @@ rb_vm_lvar(rb_execution_context_t *ec, int index)
 #endif
 }
 
+static inline VALUE
+rb_builtin_basic_definition_p(rb_execution_context_t *ec, VALUE klass, VALUE id_sym)
+{
+    return rb_method_basic_definition_p(klass, rb_sym2id(id_sym)) ? Qtrue : Qfalse;
+}
+
 #define LOCAL_PTR(local) local ## __ptr
 
 // dump/load

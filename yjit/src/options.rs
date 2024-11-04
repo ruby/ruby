@@ -1,5 +1,5 @@
 use std::{ffi::{CStr, CString}, ptr::null, fs::File};
-use crate::{backend::current::TEMP_REGS, stats::Counter};
+use crate::{backend::current::TEMP_REGS, cruby::*, stats::Counter};
 use std::os::raw::{c_char, c_int, c_uint};
 
 // Call threshold for small deployments and command-line apps
@@ -45,6 +45,9 @@ pub struct Options {
 
     // The number of registers allocated for stack temps
     pub num_temp_regs: usize,
+
+    // Disable Ruby builtin methods defined by `with_yjit` hooks, e.g. Array#each in Ruby
+    pub c_builtin: bool,
 
     // Capture stats
     pub gen_stats: bool,
@@ -94,6 +97,7 @@ pub static mut OPTIONS: Options = Options {
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
+    c_builtin: false,
     gen_stats: false,
     trace_exits: None,
     print_stats: true,
@@ -270,6 +274,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         },
 
+        ("c-builtin", _) => unsafe {
+            OPTIONS.c_builtin = true;
+        },
+
         ("code-gc", _) => unsafe {
             OPTIONS.code_gc = true;
         },
@@ -411,5 +419,15 @@ pub extern "C" fn rb_yjit_show_usage(help: c_int, highlight: c_int, width: c_uin
         let name = CString::new(name).unwrap();
         let description = CString::new(description).unwrap();
         unsafe { ruby_show_usage_line(name.as_ptr(), null(), description.as_ptr(), help, highlight, width, columns) }
+    }
+}
+
+/// Return true if --yjit-c-builtin is given
+#[no_mangle]
+pub extern "C" fn rb_yjit_c_builtin_p(_ec: EcPtr, _self: VALUE) -> VALUE {
+    if get_option!(c_builtin) {
+        Qtrue
+    } else {
+        Qfalse
     }
 }
