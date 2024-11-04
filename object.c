@@ -3489,6 +3489,7 @@ rb_str_to_dbl_raise(VALUE str, int badcheck, int raise, int *error)
     VALUE v = 0;
 
     StringValue(str);
+    rb_must_asciicompat(str);
     s = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     if (s) {
