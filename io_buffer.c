@@ -1532,6 +1532,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     struct rb_io_buffer *slice = NULL;
     TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, slice);
 
+    slice->flags |= (buffer->flags & RB_IO_BUFFER_READONLY);
     slice->base = (char*)buffer->base + offset;
     slice->size = length;
 
