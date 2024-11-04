@@ -879,8 +879,10 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("interpolation expression");
         ANN("format: \"..#{ [nd_body] }..\"");
         ANN("example: \"foo#{ bar }baz\"");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_EVSTR, "body");
+        F_LOC(opening_loc, RNODE_EVSTR);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_EVSTR);
         return;
 
       case NODE_ARGSCAT:

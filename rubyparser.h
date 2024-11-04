@@ -722,6 +722,8 @@ typedef struct RNode_EVSTR {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_evstr_t;
 
 typedef struct RNode_REGX {     /* also RNode_MATCH */
