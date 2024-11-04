@@ -835,11 +835,13 @@ class Ractor
   end
 
   # get a value from ractor-local storage of current Ractor
+  # Obsolete and use Ractor.[] instead.
   def [](sym)
     Primitive.ractor_local_value(sym)
   end
 
   # set a value in ractor-local storage of current Ractor
+  # Obsolete and use Ractor.[]= instead.
   def []=(sym, val)
     Primitive.ractor_local_value_set(sym, val)
   end
@@ -866,5 +868,33 @@ class Ractor
     __builtin_cexpr! %q{
       GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec)
     }
+  end
+
+  # internal method
+  def self._require feature
+    if main?
+      super feature
+    else
+      Primitive.ractor_require feature
+    end
+  end
+
+  class << self
+    private
+
+    # internal method that is called when the first "Ractor.new" is called
+    def _activated
+      Kernel.prepend Module.new{|m|
+        m.set_temporary_name '<RactorRequire>'
+
+        def require feature
+          if Ractor.main?
+            super
+          else
+            Ractor._require feature
+          end
+        end
+      }
+    end
   end
 end

@@ -1969,6 +1969,8 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
     }
 }
 
+NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
+
 static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
