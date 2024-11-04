@@ -834,13 +834,23 @@ class Ractor
     end
   end
 
-  # get a value from ractor-local storage
+  # get a value from ractor-local storage of current Ractor
   def [](sym)
     Primitive.ractor_local_value(sym)
   end
 
-  # set a value in ractor-local storage
+  # set a value in ractor-local storage of current Ractor
   def []=(sym, val)
+    Primitive.ractor_local_value_set(sym, val)
+  end
+
+  # get a value from ractor-local storage of current Ractor
+  def self.[](sym)
+    Primitive.ractor_local_value(sym)
+  end
+
+  # set a value in ractor-local storage of current Ractor
+  def self.[]=(sym, val)
     Primitive.ractor_local_value_set(sym, val)
   end
 
