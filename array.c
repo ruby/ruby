@@ -4376,13 +4376,12 @@ take_items(VALUE obj, long n)
  *    zip(*objects) -> new_array
  *    zip(*objects) {|other_array| ... } -> nil
  *
- *  With no block given, combines +self+ with a collection of other arrays;
- *  returns a new array of sub-arrays.
+ *  For an *object* in *objects* that is not an array,
+ *  forms the the "other array" as <tt>object.to_ary</tt>, if defined,
+ *  or as <tt>object.each.to_a</tt> otherwise.
  *
- *  In a common case, all the +objects+ are arrays,
- *  and so the "other arrays" are just the +objects+ themselves;
- *  for other cases (see below), each non-array object is converted to an array
- *  that becomes one of the "other arrays."
+ *  With no block given, combines +self+ with the collection of other arrays;
+ *  returns a new array of sub-arrays.
  *
  *  The returned object is an array of size <tt>objects.size + 1</tt>
  *  (that is, the count of other arrays plus one), and contains:
@@ -4420,7 +4419,7 @@ take_items(VALUE obj, long n)
  *     [:a3, nil, nil]]
  *
  *  When one of the other arrays is larger than +self+,
- *  ignores(!) its trailing elements:
+ *  _ignores_ its trailing elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3, :b4]
@@ -4432,23 +4431,6 @@ take_items(VALUE obj, long n)
  *     [:a1, :b1, :c1],
  *     [:a2, :b2, :c2],
  *     [:a3, :b3, :c3]]
- *
- *  For an *object* that is _not_ an array,
- *  forms the the "other array" as <tt>object.each.to_a</tt>:
- *
- *    a = [:a, :b, :c, :d]
- *    r = 'A'..'D'
- *    r.each.to_a # => ["A", "B", "C", "D"] # The "other array."
- *    a.zip(r)    # => [[:a, "A"], [:b, "B"], [:c, "C"], [:d, "D"]]
- *
- *    h = {foo: 0, bar: 1, baz: 2, bat: 3}
- *    h.each.to_a s# => [[:foo, 0], [:bar, 1], [:baz, 2], [:bat, 3]]
- *    pp a.zip(h)
- *    # =>
- *    [[:a, [:foo, 0]],
- *     [:b, [:bar, 1]],
- *     [:c, [:baz, 2]],
- *     [:d, [:bat, 3]]]
  *
  *  With a block given, calls the block with each of the other arrays;
  *  returns +nil+:
