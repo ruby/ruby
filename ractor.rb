@@ -850,4 +850,11 @@ class Ractor
       rb_ractor_self(GET_VM()->ractor.main_ractor);
     }
   end
+
+  # return true if the current ractor is main ractor
+  def self.main?
+    __builtin_cexpr! %q{
+      GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec)
+    }
+  end
 end
