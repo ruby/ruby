@@ -556,7 +556,7 @@ RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
 
-// no-inline decl on thread_pthread.h
+// no-inline decl on vm_core.h
 rb_execution_context_t *
 rb_current_ec_noinline(void)
 {
@@ -580,6 +580,14 @@ rb_current_ec(void)
 #endif
 #else
 native_tls_key_t ruby_current_ec_key;
+
+// no-inline decl on vm_core.h
+rb_execution_context_t *
+rb_current_ec_noinline(void)
+{
+    return native_tls_get(ruby_current_ec_key);
+}
+
 #endif
 
 rb_event_flag_t ruby_vm_event_flags;

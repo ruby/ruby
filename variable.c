@@ -2994,7 +2994,7 @@ rb_autoload_load(VALUE module, ID name)
 
     // At this point, we assume there might be autoloading, so fail if it's ractor:
     if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(name));
+        return rb_ractor_autoload_load(module, name);
     }
 
     // This state is stored on the stack and is used during the autoload process.
