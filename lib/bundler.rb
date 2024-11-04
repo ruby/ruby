@@ -10,7 +10,6 @@ require_relative "bundler/plugin"
 require_relative "bundler/rubygems_ext"
 require_relative "bundler/rubygems_integration"
 require_relative "bundler/version"
-require_relative "bundler/constants"
 require_relative "bundler/current_ruby"
 require_relative "bundler/build_metadata"
 
@@ -52,6 +51,7 @@ module Bundler
   autoload :Env,                    File.expand_path("bundler/env", __dir__)
   autoload :Fetcher,                File.expand_path("bundler/fetcher", __dir__)
   autoload :FeatureFlag,            File.expand_path("bundler/feature_flag", __dir__)
+  autoload :FREEBSD,                File.expand_path("bundler/constants", __dir__)
   autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
   autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
@@ -62,6 +62,7 @@ module Bundler
   autoload :LazySpecification,      File.expand_path("bundler/lazy_specification", __dir__)
   autoload :LockfileParser,         File.expand_path("bundler/lockfile_parser", __dir__)
   autoload :MatchRemoteMetadata,    File.expand_path("bundler/match_remote_metadata", __dir__)
+  autoload :NULL,                   File.expand_path("bundler/constants", __dir__)
   autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
   autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
@@ -80,6 +81,7 @@ module Bundler
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
   autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
+  autoload :WINDOWS,                File.expand_path("bundler/constants", __dir__)
   autoload :SafeMarshal,            File.expand_path("bundler/safe_marshal", __dir__)
 
   class << self

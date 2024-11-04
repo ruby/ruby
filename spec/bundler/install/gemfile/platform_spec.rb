@@ -74,6 +74,7 @@ RSpec.describe "bundle install across platforms" do
     G
 
     expect(the_bundle).to include_gems "platform_specific 1.0 ruby"
+    expect(err).to be_empty
   end
 
   context "on universal Rubies" do
