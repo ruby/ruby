@@ -7,6 +7,7 @@ class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
     omit "flaky with RJIT" if JITSupport.rjit_enabled?
     description = RUBY_DESCRIPTION
+    description = description.sub(/\+PRISM /, '') unless EnvUtil.invoke_ruby(["-v"], "", true, false)[0].include?("+PRISM")
     description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,
