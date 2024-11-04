@@ -7684,7 +7684,7 @@ pm_loop_modifier_block_exits(pm_parser_t *parser, pm_statements_node_t *statemen
  * Allocate a new UntilNode node.
  */
 static pm_until_node_t *
-pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
+pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *do_keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_until_node_t *node = PM_NODE_ALLOC(parser, pm_until_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
@@ -7699,6 +7699,7 @@ pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
             },
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
+        .do_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(do_keyword),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
         .predicate = predicate,
         .statements = statements
@@ -7727,6 +7728,7 @@ pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
             },
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
+        .do_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .predicate = predicate,
         .statements = statements
@@ -7794,7 +7796,7 @@ pm_when_node_statements_set(pm_when_node_t *node, pm_statements_node_t *statemen
  * Allocate a new WhileNode node.
  */
 static pm_while_node_t *
-pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
+pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *do_keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_while_node_t *node = PM_NODE_ALLOC(parser, pm_while_node_t);
     pm_conditional_predicate(parser, predicate, PM_CONDITIONAL_PREDICATE_TYPE_CONDITIONAL);
 
@@ -7809,6 +7811,7 @@ pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
             },
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
+        .do_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(do_keyword),
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
         .predicate = predicate,
         .statements = statements
@@ -7837,6 +7840,7 @@ pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm
             },
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
+        .do_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .closing_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .predicate = predicate,
         .statements = statements
@@ -7859,6 +7863,7 @@ pm_while_node_synthesized_create(pm_parser_t *parser, pm_node_t *predicate, pm_s
             .location = PM_LOCATION_NULL_VALUE(parser)
         },
         .keyword_loc = PM_LOCATION_NULL_VALUE(parser),
+        .do_keyword_loc = PM_LOCATION_NULL_VALUE(parser),
         .closing_loc = PM_LOCATION_NULL_VALUE(parser),
         .predicate = predicate,
         .statements = statements
@@ -13154,19 +13159,6 @@ accept2(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2) {
 }
 
 /**
- * If the current token is any of the three given types, lex forward by one
- * token and return true. Otherwise return false.
- */
-static inline bool
-accept3(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3) {
-    if (match3(parser, type1, type2, type3)) {
-        parser_lex(parser);
-        return true;
-    }
-    return false;
-}
-
-/**
  * This function indicates that the parser expects a token in a specific
  * position. For example, if you're parsing a BEGIN block, you know that a { is
  * expected immediately after the keyword. In that case you would call this
@@ -13195,20 +13187,6 @@ expect1(pm_parser_t *parser, pm_token_type_t type, pm_diagnostic_id_t diag_id) {
 static void
 expect2(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_diagnostic_id_t diag_id) {
     if (accept2(parser, type1, type2)) return;
-
-    const uint8_t *location = parser->previous.end;
-    pm_parser_err(parser, location, location, diag_id);
-
-    parser->previous.start = location;
-    parser->previous.type = PM_TOKEN_MISSING;
-}
-
-/**
- * This function is the same as expect2, but it expects one of three token types.
- */
-static void
-expect3(pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_diagnostic_id_t diag_id) {
-    if (accept3(parser, type1, type2, type3)) return;
 
     const uint8_t *location = parser->previous.end;
     pm_parser_err(parser, location, location, diag_id);
@@ -19860,9 +19838,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_do_loop_stack_pop(parser);
             context_pop(parser);
 
-            expect3(parser, PM_TOKEN_KEYWORD_DO_LOOP, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
-            pm_statements_node_t *statements = NULL;
+            pm_token_t do_keyword;
+            if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
+                do_keyword = parser->previous;
+            } else {
+                do_keyword = not_provided(parser);
+                expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_UNTIL_PREDICATE);
+            }
 
+            pm_statements_node_t *statements = NULL;
             if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, PM_CONTEXT_UNTIL, (uint16_t) (depth + 1));
@@ -19873,7 +19857,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_UNTIL_TERM);
 
-            return (pm_node_t *) pm_until_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
+            return (pm_node_t *) pm_until_node_create(parser, &keyword, &do_keyword, &parser->previous, predicate, statements, 0);
         }
         case PM_TOKEN_KEYWORD_WHILE: {
             size_t opening_newline_index = token_newline_index(parser);
@@ -19888,9 +19872,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_do_loop_stack_pop(parser);
             context_pop(parser);
 
-            expect3(parser, PM_TOKEN_KEYWORD_DO_LOOP, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
-            pm_statements_node_t *statements = NULL;
+            pm_token_t do_keyword;
+            if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
+                do_keyword = parser->previous;
+            } else {
+                do_keyword = not_provided(parser);
+                expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CONDITIONAL_WHILE_PREDICATE);
+            }
 
+            pm_statements_node_t *statements = NULL;
             if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
                 pm_accepts_block_stack_push(parser, true);
                 statements = parse_statements(parser, PM_CONTEXT_WHILE, (uint16_t) (depth + 1));
@@ -19901,7 +19891,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_warn_indentation_mismatch(parser, opening_newline_index, &keyword, false, false);
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_WHILE_TERM);
 
-            return (pm_node_t *) pm_while_node_create(parser, &keyword, &parser->previous, predicate, statements, 0);
+            return (pm_node_t *) pm_while_node_create(parser, &keyword, &do_keyword, &parser->previous, predicate, statements, 0);
         }
         case PM_TOKEN_PERCENT_LOWER_I: {
             parser_lex(parser);

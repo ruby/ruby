@@ -4381,6 +4381,8 @@ nodes:
     fields:
       - name: keyword_loc
         type: location
+      - name: do_keyword_loc
+        type: location?
       - name: closing_loc
         type: location?
       - name: predicate
@@ -4422,6 +4424,8 @@ nodes:
     fields:
       - name: keyword_loc
         type: location
+      - name: do_keyword_loc
+        type: location?
       - name: closing_loc
         type: location?
       - name: predicate

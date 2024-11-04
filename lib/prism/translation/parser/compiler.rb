@@ -733,8 +733,8 @@ module Prism
             visit(node.index),
             token(node.in_keyword_loc),
             visit(node.collection),
-            if node.do_keyword_loc
-              token(node.do_keyword_loc)
+            if (do_keyword_loc = node.do_keyword_loc)
+              token(do_keyword_loc)
             else
               srange_find(node.collection.location.end_offset, (node.statements&.location || node.end_keyword_loc).start_offset, [";"])
             end,
@@ -865,8 +865,8 @@ module Prism
             builder.condition(
               token(node.if_keyword_loc),
               visit(node.predicate),
-              if node.then_keyword_loc
-                token(node.then_keyword_loc)
+              if (then_keyword_loc = node.then_keyword_loc)
+                token(then_keyword_loc)
               else
                 srange_find(node.predicate.location.end_offset, (node.statements&.location || node.subsequent&.location || node.end_keyword_loc).start_offset, [";"])
               end,
@@ -1781,8 +1781,8 @@ module Prism
             builder.condition(
               token(node.keyword_loc),
               visit(node.predicate),
-              if node.then_keyword_loc
-                token(node.then_keyword_loc)
+              if (then_keyword_loc = node.then_keyword_loc)
+                token(then_keyword_loc)
               else
                 srange_find(node.predicate.location.end_offset, (node.statements&.location || node.else_clause&.location || node.end_keyword_loc).start_offset, [";"])
               end,
@@ -1812,7 +1812,11 @@ module Prism
               :until,
               token(node.keyword_loc),
               visit(node.predicate),
-              srange_find(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset, [";", "do"]),
+              if (do_keyword_loc = node.do_keyword_loc)
+                token(do_keyword_loc)
+              else
+                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset, [";"])
+              end,
               visit(node.statements),
               token(node.closing_loc)
             )
@@ -1832,8 +1836,8 @@ module Prism
           builder.when(
             token(node.keyword_loc),
             visit_all(node.conditions),
-            if node.then_keyword_loc
-              token(node.then_keyword_loc)
+            if (then_keyword_loc = node.then_keyword_loc)
+              token(then_keyword_loc)
             else
               srange_find(node.conditions.last.location.end_offset, node.statements&.location&.start_offset, [";"])
             end,
@@ -1852,7 +1856,11 @@ module Prism
               :while,
               token(node.keyword_loc),
               visit(node.predicate),
-              srange_find(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset, [";", "do"]),
+              if (do_keyword_loc = node.do_keyword_loc)
+                token(do_keyword_loc)
+              else
+                srange_find(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset, [";"])
+              end,
               visit(node.statements),
               token(node.closing_loc)
             )
