@@ -1279,6 +1279,12 @@ class TestRDocClassModule < XrefTestCase
     assert_equal @c3_h1, @c3_h2.superclass
   end
 
+  def test_super_classes
+    rdoc_c3_h1 = @xref_data.find_module_named('C3::H1')
+    rdoc_object = @xref_data.find_module_named('Object')
+    assert_equal [rdoc_c3_h1, rdoc_object, "BasicObject"], @c3_h2.super_classes
+  end
+
   def test_update_aliases_class
     n1 = @xref_data.add_module RDoc::NormalClass, 'N1'
     n1_k2 = n1.add_module RDoc::NormalClass, 'N2'

@@ -795,4 +795,22 @@ class RDoc::Generator::Darkfish
 
     extracted_text[0...150].gsub(/\n/, " ").squeeze(" ")
   end
+
+  def generate_ancestor_list(ancestors, klass)
+    return '' if ancestors.empty?
+
+    ancestor = ancestors.shift
+    content = +'<ul><li>'
+
+    if ancestor.is_a?(RDoc::NormalClass)
+      content << "<a href=\"#{klass.aref_to ancestor.path}\">#{ancestor.full_name}</a>"
+    else
+      content << ancestor.to_s
+    end
+
+    # Recursively call the method for the remaining ancestors
+    content << generate_ancestor_list(ancestors, klass)
+
+    content << '</li></ul>'
+  end
 end
