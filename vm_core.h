@@ -1156,6 +1156,7 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
+    struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
 
