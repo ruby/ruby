@@ -47,3 +47,7 @@ main(int argc, char **argv)
 	return ruby_run_node(ruby_options(argc, argv));
     }
 }
+
+#ifdef _WIN32
+int wmain(void) {return main(0, NULL);}
+#endif
