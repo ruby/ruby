@@ -350,9 +350,14 @@ mustnot_wchar(VALUE str)
 
 static int fstring_cmp(VALUE a, VALUE b);
 
-static VALUE register_fstring(VALUE str, bool copy, bool precompute_hash);
+static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
+#define PRECOMPUTED_FAKESTR_HASH 1
+#else
+#endif
+
+#ifdef PRECOMPUTED_FAKESTR_HASH
 static st_index_t
 fstring_hash(VALUE str)
 {
@@ -367,6 +372,7 @@ fstring_hash(VALUE str)
 #else
 #define fstring_hash rb_str_hash
 #endif
+
 const struct st_hash_type rb_fstring_hash_type = {
     fstring_cmp,
     fstring_hash,
@@ -407,7 +413,7 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
 struct fstr_update_arg {
     VALUE fstr;
     bool copy;
-    bool precompute_hash;
+    bool force_precompute_hash;
 };
 
 static int
@@ -436,7 +442,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                 long capa = len + sizeof(st_index_t);
                 int term_len = TERM_LEN(str);
 
-                if (arg->precompute_hash && STR_EMBEDDABLE_P(capa, term_len)) {
+                if (arg->force_precompute_hash && STR_EMBEDDABLE_P(capa, term_len)) {
                     new_str = str_alloc_embed(rb_cString, capa + term_len);
                     memcpy(RSTRING_PTR(new_str), RSTRING_PTR(str), len);
                     STR_SET_LEN(new_str, RSTRING_LEN(str));
@@ -447,6 +453,11 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                 else {
                     new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
                     rb_enc_copy(new_str, str);
+#ifdef PRECOMPUTED_FAKESTR_HASH
+                    if (rb_str_capacity(new_str) >= RSTRING_LEN(str) + term_len + sizeof(st_index_t)) {
+                        str_store_precomputed_hash(new_str, (st_index_t)RSTRING(str)->as.heap.aux.capa);
+                    }
+#endif
                 }
                 str = new_str;
             }
@@ -515,11 +526,11 @@ rb_fstring(VALUE str)
 }
 
 static VALUE
-register_fstring(VALUE str, bool copy, bool precompute_hash)
+register_fstring(VALUE str, bool copy, bool force_precompute_hash)
 {
     struct fstr_update_arg args = {
         .copy = copy,
-        .precompute_hash = precompute_hash
+        .force_precompute_hash = force_precompute_hash
     };
 
 #if SIZEOF_VOIDP == SIZEOF_LONG
