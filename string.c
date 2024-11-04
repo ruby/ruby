@@ -352,9 +352,24 @@ static int fstring_cmp(VALUE a, VALUE b);
 
 static VALUE register_fstring(VALUE str, bool copy, bool precompute_hash);
 
+#if SIZEOF_LONG == SIZEOF_VOIDP
+static st_index_t
+fstring_hash(VALUE str)
+{
+    if (FL_TEST_RAW(str, STR_FAKESTR)) {
+        // register_fstring precomputes the hash and stores it in capa for fake strings
+        return (st_index_t)RSTRING(str)->as.heap.aux.capa;
+    }
+    else {
+        return rb_str_hash(str);
+    }
+}
+#else
+#define fstring_hash rb_str_hash
+#endif
 const struct st_hash_type rb_fstring_hash_type = {
     fstring_cmp,
-    rb_str_hash,
+    fstring_hash,
 };
 
 #define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
@@ -371,7 +386,7 @@ str_do_hash(VALUE str)
 }
 
 static VALUE
-str_precompute_hash(VALUE str)
+str_store_precomputed_hash(VALUE str, st_index_t hash)
 {
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_PRECOMPUTED_HASH));
     RUBY_ASSERT(STR_EMBED_P(str));
@@ -382,7 +397,6 @@ str_precompute_hash(VALUE str)
     RUBY_ASSERT(free_bytes >= sizeof(st_index_t));
 #endif
 
-    st_index_t hash = str_do_hash(str);
     memcpy(RSTRING_END(str) + TERM_LEN(str), &hash, sizeof(hash));
 
     FL_SET(str, STR_PRECOMPUTED_HASH);
@@ -399,7 +413,6 @@ struct fstr_update_arg {
 static int
 fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
-
     struct fstr_update_arg *arg = (struct fstr_update_arg *)data;
     VALUE str = (VALUE)*key;
 
@@ -429,7 +442,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                     STR_SET_LEN(new_str, RSTRING_LEN(str));
                     TERM_FILL(RSTRING_END(new_str), TERM_LEN(str));
                     rb_enc_copy(new_str, str);
-                    str_precompute_hash(new_str);
+                    str_store_precomputed_hash(new_str, fstring_hash(str));
                 }
                 else {
                     new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
@@ -509,6 +522,14 @@ register_fstring(VALUE str, bool copy, bool precompute_hash)
         .precompute_hash = precompute_hash
     };
 
+#if SIZEOF_VOIDP == SIZEOF_LONG
+    if (FL_TEST_RAW(str, STR_FAKESTR)) {
+        // if the string hasn't been interned, we'll need the hash twice, so we
+        // compute it once and store it in capa
+        RSTRING(str)->as.heap.aux.capa = (long)str_do_hash(str);
+    }
+#endif
+
     RB_VM_LOCK_ENTER();
     {
         st_table *frozen_strings = rb_vm_fstring_table();
@@ -531,7 +552,6 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
-    /* SHARED to be allocated by the callback */
 
     if (!name) {
         RUBY_ASSERT_ALWAYS(len == 0);
