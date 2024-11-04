@@ -536,6 +536,72 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_instance_of JSON::State, argument
   end
 
+  module CustomToJSON
+    def to_json(*)
+      %{"#{self.class.name}#to_json"}
+    end
+  end
+
+  module CustomToS
+    def to_s
+      "#{self.class.name}#to_s"
+    end
+  end
+
+  class ArrayWithToJSON < Array
+    include CustomToJSON
+  end
+
+  def test_array_subclass_with_to_json
+    assert_equal '["JSONGeneratorTest::ArrayWithToJSON#to_json"]', JSON.generate([ArrayWithToJSON.new])
+    assert_equal '{"[]":1}', JSON.generate(ArrayWithToJSON.new => 1)
+  end
+
+  class ArrayWithToS < Array
+    include CustomToS
+  end
+
+  def test_array_subclass_with_to_s
+    assert_equal '[[]]', JSON.generate([ArrayWithToS.new])
+    assert_equal '{"JSONGeneratorTest::ArrayWithToS#to_s":1}', JSON.generate(ArrayWithToS.new => 1)
+  end
+
+  class HashWithToJSON < Hash
+    include CustomToJSON
+  end
+
+  def test_hash_subclass_with_to_json
+    assert_equal '["JSONGeneratorTest::HashWithToJSON#to_json"]', JSON.generate([HashWithToJSON.new])
+    assert_equal '{"{}":1}', JSON.generate(HashWithToJSON.new => 1)
+  end
+
+  class HashWithToS < Hash
+    include CustomToS
+  end
+
+  def test_hash_subclass_with_to_s
+    assert_equal '[{}]', JSON.generate([HashWithToS.new])
+    assert_equal '{"JSONGeneratorTest::HashWithToS#to_s":1}', JSON.generate(HashWithToS.new => 1)
+  end
+
+  class StringWithToJSON < String
+    include CustomToJSON
+  end
+
+  def test_string_subclass_with_to_json
+    assert_equal '["JSONGeneratorTest::StringWithToJSON#to_json"]', JSON.generate([StringWithToJSON.new])
+    assert_equal '{"":1}', JSON.generate(StringWithToJSON.new => 1)
+  end
+
+  class StringWithToS < String
+    include CustomToS
+  end
+
+  def test_string_subclass_with_to_s
+    assert_equal '[""]', JSON.generate([StringWithToS.new])
+    assert_equal '{"JSONGeneratorTest::StringWithToS#to_s":1}', JSON.generate(StringWithToS.new => 1)
+  end
+
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
     def test_valid_utf8_in_different_encoding
       utf8_string = "€™"
