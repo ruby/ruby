@@ -753,7 +753,7 @@ ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_racto
 
     RACTOR_LOCK(cr);
     {
-        while (ractor_queue_empty_p(cr, rq)) {
+        while (ractor_queue_empty_p(cr, rq) && !cr->sync.incoming_port_closed) {
             ractor_sleep(ec, cr, wait_receiving);
         }
     }
@@ -1364,6 +1364,9 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_q
 
         return true;
     }
+    else if (cr->sync.outgoing_port_closed) {
+        rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
+    }
     else {
         RUBY_DEBUG_LOG("no take basket");
         return false;
@@ -1375,7 +1378,7 @@ ractor_wait_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_
 {
     RACTOR_LOCK_SELF(cr);
     {
-        while (!ractor_check_take_basket(cr, ts)) {
+        while (!ractor_check_take_basket(cr, ts) && !cr->sync.outgoing_port_closed) {
             ractor_sleep(ec, cr, wait_yielding);
         }
     }
