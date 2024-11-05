@@ -503,18 +503,7 @@ module Bundler
     end
 
     def check_rubygems_source_safety
-      if @sources.implicit_global_source?
-        implicit_global_source_warning
-      elsif @sources.aggregate_global_source?
-        multiple_global_source_warning
-      end
-    end
-
-    def implicit_global_source_warning
-      Bundler::SharedHelpers.major_deprecation 2, "This Gemfile does not include an explicit global source. " \
-        "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run. " \
-        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\"."
+      multiple_global_source_warning if @sources.aggregate_global_source?
     end
 
     def multiple_global_source_warning

@@ -340,15 +340,36 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems "myrack 1.2", "activesupport 1.2.3"
     end
 
-    it "gives a useful error if no sources are set" do
+    it "gives useful errors if no global sources are set, and gems not installed locally, with and without a lockfile" do
       install_gemfile <<-G, raise_on_error: false
         gem "myrack"
       G
 
-      expect(err).to include("This Gemfile does not include an explicit global source. " \
-        "Not using an explicit global source may result in a different lockfile being generated depending on " \
-        "the gems you have installed locally before bundler is run. " \
-        "Instead, define a global source in your Gemfile like this: source \"https://rubygems.org\".")
+      expect(err).to eq("Could not find gem 'myrack' in locally installed gems.")
+
+      lockfile <<~L
+        GEM
+          specs:
+            myrack (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install", raise_on_error: false
+
+      expect(err).to include(
+        "Because your Gemfile specifies no global remote source, your bundle is locked to " \
+        "myrack (1.0.0) from locally installed gems. However, myrack (1.0.0) is not installed. " \
+        "You'll need to either add a global remote source to your Gemfile or make sure myrack (1.0.0) " \
+        "is available locally before rerunning Bundler."
+      )
     end
 
     it "creates a Gemfile.lock on a blank Gemfile" do
