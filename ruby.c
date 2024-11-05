@@ -398,6 +398,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("deprecated",   "", "Deprecated features."),
         M("experimental", "", "Experimental features."),
         M("performance",  "", "Performance issues."),
+        M("strict_unused_block", "", "Warning unused block strictly"),
     };
 #if USE_RJIT
     extern const struct ruby_opt_message rb_rjit_option_messages[];
@@ -1232,6 +1233,9 @@ proc_W_option(ruby_cmdline_options_t *opt, const char *s, int *warning)
         }
         else if (NAME_MATCH_P("performance", s, len)) {
             bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
+        }
+        else if (NAME_MATCH_P("strict_unused_block", s, len)) {
+            bits = 1U << RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK;
         }
         else {
             rb_warn("unknown warning category: '%s'", s);
