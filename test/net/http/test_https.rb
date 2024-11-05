@@ -169,6 +169,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
     omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 3.2.')
     omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 3.3.')
+    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
 
     http = Net::HTTP.new(HOST, config("port"))
     http.use_ssl = true
