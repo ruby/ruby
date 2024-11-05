@@ -38,6 +38,8 @@ jobs:
           - test_task: test-bundled-gems
             os: macos-14
           - test_task: check
+            os: macos-15
+          - test_task: check
             os: macos-13
       fail-fast: false
 
