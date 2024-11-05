@@ -19,6 +19,52 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "still installs the platform specific variant when locked only to ruby, and the platform specific variant has different dependencies" do
+    simulate_platform "x86_64-darwin-15" do
+      build_repo4 do
+        build_gem("sass-embedded", "1.72.0") do |s|
+          s.add_dependency "rake"
+        end
+
+        build_gem("sass-embedded", "1.72.0") do |s|
+          s.platform = "x86_64-darwin-15"
+        end
+
+        build_gem "rake"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "sass-embedded"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            rake (1.0)
+            sass-embedded (1.72.0)
+              rake
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+          sass-embedded
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install --verbose"
+
+      expect(out).to include("Installing sass-embedded 1.72.0 (x86_64-darwin-15)")
+
+      expect(the_bundle).to include_gem("sass-embedded 1.72.0 x86_64-darwin-15")
+    end
+  end
+
   it "understands that a non-platform specific gem in a old lockfile doesn't necessarily mean installing the non-specific variant" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
