@@ -4,9 +4,40 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
+/* shims */
+/* This is the fallback definition from Ruby 3.4 */
+
+#ifndef RBIMPL_STDBOOL_H
+#if defined(__cplusplus)
+# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+#  include <cstdbool>
+# endif
+#elif defined(HAVE_STDBOOL_H)
+# include <stdbool.h>
+#elif !defined(HAVE__BOOL)
+typedef unsigned char _Bool;
+# define bool  _Bool
+# define true  ((_Bool)+1)
+# define false ((_Bool)+0)
+# define __bool_true_false_are_defined
+#endif
+#endif
+
+#ifndef RB_UNLIKELY
+#define RB_UNLIKELY(expr) expr
+#endif
+
+#ifndef RB_LIKELY
+#define RB_LIKELY(expr) expr
+#endif
+
+#ifndef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x
+#endif
+
 enum fbuffer_type {
-    HEAP = 0,
-    STACK = 1,
+    FBUFFER_HEAP_ALLOCATED = 0,
+    FBUFFER_STACK_ALLOCATED = 1,
 };
 
 typedef struct FBufferStruct {
@@ -38,19 +69,11 @@ static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 static VALUE fbuffer_to_s(FBuffer *fb);
 #endif
 
-#ifndef RB_UNLIKELY
-#define RB_UNLIKELY(expr) expr
-#endif
-
-#ifndef RB_LIKELY
-#define RB_LIKELY(expr) expr
-#endif
-
 static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
 {
     fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
     if (stack_buffer) {
-        fb->type = STACK;
+        fb->type = FBUFFER_STACK_ALLOCATED;
         fb->ptr = stack_buffer;
         fb->capa = stack_buffer_size;
     }
@@ -58,7 +81,7 @@ static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *
 
 static void fbuffer_free(FBuffer *fb)
 {
-    if (fb->ptr && fb->type == HEAP) {
+    if (fb->ptr && fb->type == FBUFFER_HEAP_ALLOCATED) {
         ruby_xfree(fb->ptr);
     }
 }
@@ -82,10 +105,10 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
     for (required = fb->capa; requested > required - fb->len; required <<= 1);
 
     if (required > fb->capa) {
-        if (fb->type == STACK) {
+        if (fb->type == FBUFFER_STACK_ALLOCATED) {
             const char *old_buffer = fb->ptr;
             fb->ptr = ALLOC_N(char, required);
-            fb->type = HEAP;
+            fb->type = FBUFFER_HEAP_ALLOCATED;
             MEMCPY(fb->ptr, old_buffer, char, fb->len);
         } else {
             REALLOC_N(fb->ptr, char, required);

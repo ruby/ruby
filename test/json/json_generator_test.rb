@@ -343,27 +343,25 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '2', state.indent
   end
 
-  if defined?(JSON::Ext::Generator)
-    def test_broken_bignum # [ruby-core:38867]
-      pid = fork do
-        x = 1 << 64
-        x.class.class_eval do
-          def to_s
-          end
-        end
-        begin
-          JSON::Ext::Generator::State.new.generate(x)
-          exit 1
-        rescue TypeError
-          exit 0
+  def test_broken_bignum # [ruby-core:38867]
+    pid = fork do
+      x = 1 << 64
+      x.class.class_eval do
+        def to_s
         end
       end
-      _, status = Process.waitpid2(pid)
-      assert status.success?
-    rescue NotImplementedError
-      # forking to avoid modifying core class of a parent process and
-      # introducing race conditions of tests are run in parallel
+      begin
+        JSON::Ext::Generator::State.new.generate(x)
+        exit 1
+      rescue TypeError
+        exit 0
+      end
     end
+    _, status = Process.waitpid2(pid)
+    assert status.success?
+  rescue NotImplementedError
+    # forking to avoid modifying core class of a parent process and
+    # introducing race conditions of tests are run in parallel
   end
 
   def test_hash_likeness_set_symbol
@@ -477,12 +475,20 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
     assert_includes error.message, "source sequence is illegal/malformed utf-8"
 
-    assert_raise(Encoding::UndefinedConversionError) do
+    assert_raise(JSON::GeneratorError) do
+      JSON.dump("\x82\xAC\xEF".b)
+    end
+
+    assert_raise(JSON::GeneratorError) do
       "\x82\xAC\xEF".b.to_json
     end
 
-    assert_raise(Encoding::UndefinedConversionError) do
-      JSON.dump("\x82\xAC\xEF".b)
+    assert_raise(JSON::GeneratorError) do
+      ["\x82\xAC\xEF".b].to_json
+    end
+
+    assert_raise(JSON::GeneratorError) do
+      { foo: "\x82\xAC\xEF".b }.to_json
     end
   end
 

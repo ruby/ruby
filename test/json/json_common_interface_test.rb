@@ -52,11 +52,11 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_generator
-    assert_match(/::Generator\z/, JSON.generator.name)
+    assert_match(/::(TruffleRuby)?Generator\z/, JSON.generator.name)
   end
 
   def test_state
-    assert_match(/::Generator::State\z/, JSON.state.name)
+    assert_match(/::(TruffleRuby)?Generator::State\z/, JSON.state.name)
   end
 
   def test_create_id

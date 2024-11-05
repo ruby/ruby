@@ -40,7 +40,7 @@ class JSONParserTest < Test::Unit::TestCase
     }
     assert_equal(Encoding::UTF_8, e.message.encoding, bug10705)
     assert_include(e.message, json, bug10705)
-  end if defined?(JSON::Ext::Parser)
+  end
 
   def test_parsing
     parser = JSON::Parser.new('"test"')
@@ -180,7 +180,93 @@ class JSONParserTest < Test::Unit::TestCase
     assert parse('NaN', :allow_nan => true).nan?
     assert parse('Infinity', :allow_nan => true).infinite?
     assert parse('-Infinity', :allow_nan => true).infinite?
-    assert_raise(JSON::ParserError) { parse('[ 1, ]') }
+  end
+
+  def test_parse_arrays_with_allow_trailing_comma
+    assert_equal([], parse('[]', allow_trailing_comma: true))
+    assert_equal([], parse('[]', allow_trailing_comma: false))
+    assert_raise(JSON::ParserError) { parse('[,]', allow_trailing_comma: true) }
+    assert_raise(JSON::ParserError) { parse('[,]', allow_trailing_comma: false) }
+
+    assert_equal([1], parse('[1]', allow_trailing_comma: true))
+    assert_equal([1], parse('[1]', allow_trailing_comma: false))
+    assert_equal([1], parse('[1,]', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('[1,]', allow_trailing_comma: false) }
+
+    assert_equal([1, 2, 3], parse('[1,2,3]', allow_trailing_comma: true))
+    assert_equal([1, 2, 3], parse('[1,2,3]', allow_trailing_comma: false))
+    assert_equal([1, 2, 3], parse('[1,2,3,]', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('[1,2,3,]', allow_trailing_comma: false) }
+
+    assert_equal([1, 2, 3], parse('[  1  ,  2  ,  3  ]', allow_trailing_comma: true))
+    assert_equal([1, 2, 3], parse('[  1  ,  2  ,  3  ]', allow_trailing_comma: false))
+    assert_equal([1, 2, 3], parse('[  1  ,  2  ,  3  ,  ]', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('[  1  ,  2  ,  3  ,  ]', allow_trailing_comma: false) }
+
+    assert_equal({'foo' => [1, 2, 3]}, parse('{ "foo": [1,2,3] }', allow_trailing_comma: true))
+    assert_equal({'foo' => [1, 2, 3]}, parse('{ "foo": [1,2,3] }', allow_trailing_comma: false))
+    assert_equal({'foo' => [1, 2, 3]}, parse('{ "foo": [1,2,3,] }', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('{ "foo": [1,2,3,] }', allow_trailing_comma: false) }
+  end
+
+  def test_parse_object_with_allow_trailing_comma
+    assert_equal({}, parse('{}', allow_trailing_comma: true))
+    assert_equal({}, parse('{}', allow_trailing_comma: false))
+    assert_raise(JSON::ParserError) { parse('{,}', allow_trailing_comma: true) }
+    assert_raise(JSON::ParserError) { parse('{,}', allow_trailing_comma: false) }
+    
+    assert_equal({'foo'=>'bar'}, parse('{"foo":"bar"}', allow_trailing_comma: true))
+    assert_equal({'foo'=>'bar'}, parse('{"foo":"bar"}', allow_trailing_comma: false))
+    assert_equal({'foo'=>'bar'}, parse('{"foo":"bar",}', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('{"foo":"bar",}', allow_trailing_comma: false) }
+    
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{"foo":"bar","baz":"qux","quux":"garply"}', allow_trailing_comma: true)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{"foo":"bar","baz":"qux","quux":"garply"}', allow_trailing_comma: false)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{"foo":"bar","baz":"qux","quux":"garply",}', allow_trailing_comma: true)
+    )
+    assert_raise(JSON::ParserError) {
+      parse('{"foo":"bar","baz":"qux","quux":"garply",}', allow_trailing_comma: false)
+    }
+    
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  }', allow_trailing_comma: true)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  }', allow_trailing_comma: false)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  ,  }', allow_trailing_comma: true)
+    )
+    assert_raise(JSON::ParserError) {
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  ,  }', allow_trailing_comma: false)
+    }
+    
+    assert_equal(
+      [{'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'}],
+      parse('[{"foo":"bar","baz":"qux","quux":"garply"}]', allow_trailing_comma: true)
+    )
+    assert_equal(
+      [{'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'}],
+      parse('[{"foo":"bar","baz":"qux","quux":"garply"}]', allow_trailing_comma: false)
+    )
+    assert_equal(
+      [{'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'}],
+      parse('[{"foo":"bar","baz":"qux","quux":"garply",}]', allow_trailing_comma: true)
+    )
+    assert_raise(JSON::ParserError) {
+      parse('[{"foo":"bar","baz":"qux","quux":"garply",}]', allow_trailing_comma: false)
+    }
   end
 
   def test_parse_some_strings
@@ -533,7 +619,7 @@ class JSONParserTest < Test::Unit::TestCase
     error = assert_raise(JSON::ParserError) do
       JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
     end
-    if RUBY_ENGINE == "ruby" && defined?(JSON::Ext)
+    if RUBY_ENGINE == "ruby"
       assert_equal %(unexpected token at '{"input":{"firstName":"Bob","las'), error.message
     end
   end

@@ -32,9 +32,7 @@ module JSON
       JSON.generate(object, opts)
     end
 
-    # Returns the JSON parser class that is used by JSON. This is either
-    # JSON::Ext::Parser or JSON::Pure::Parser:
-    #   JSON.parser # => JSON::Ext::Parser
+    # Returns the JSON parser class that is used by JSON.
     attr_reader :parser
 
     # Set the JSON parser class _parser_ to be used by JSON.
@@ -97,14 +95,10 @@ module JSON
       )
     end
 
-    # Returns the JSON generator module that is used by JSON. This is
-    # either JSON::Ext::Generator or JSON::Pure::Generator:
-    #   JSON.generator # => JSON::Ext::Generator
+    # Returns the JSON generator module that is used by JSON.
     attr_reader :generator
 
-    # Sets or Returns the JSON generator state class that is used by JSON. This is
-    # either JSON::Ext::Generator::State or JSON::Pure::Generator::State:
-    #   JSON.state # => JSON::Ext::Generator::State
+    # Sets or Returns the JSON generator state class that is used by JSON.
     attr_accessor :state
   end
 
@@ -207,16 +201,7 @@ module JSON
   #   JSON.parse('')
   #
   def parse(source, opts = nil)
-    if opts.nil?
-      Parser.new(source).parse
-    else
-      # NB: The ** shouldn't be required, but we have to deal with
-      # different versions of the `json` and `json_pure` gems being
-      # loaded concurrently.
-      # Prior to 2.7.3, `JSON::Ext::Parser` would only take kwargs.
-      # Ref: https://github.com/ruby/json/issues/650
-      Parser.new(source, **opts).parse
-    end
+    Parser.parse(source, opts)
   end
 
   # :call-seq:
