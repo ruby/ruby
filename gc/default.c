@@ -255,13 +255,6 @@ int ruby_rgengc_debug;
 # define RGENGC_ESTIMATE_OLDMALLOC 1
 #endif
 
-/* RGENGC_FORCE_MAJOR_GC
- * Force major/full GC if this macro is not 0.
- */
-#ifndef RGENGC_FORCE_MAJOR_GC
-# define RGENGC_FORCE_MAJOR_GC 0
-#endif
-
 #ifndef GC_PROFILE_MORE_DETAIL
 # define GC_PROFILE_MORE_DETAIL 0
 #endif
@@ -5479,9 +5472,6 @@ gc_marks_finish(rb_objspace_t *objspace)
         if (objspace->rgengc.old_objects > objspace->rgengc.old_objects_limit) {
             gc_needs_major_flags |= GPR_FLAG_MAJOR_BY_OLDGEN;
         }
-        if (RGENGC_FORCE_MAJOR_GC) {
-            gc_needs_major_flags = GPR_FLAG_MAJOR_BY_FORCE;
-        }
 
         gc_report(1, objspace, "gc_marks_finish (marks %"PRIdSIZE" objects, "
                   "old %"PRIdSIZE" objects, total %"PRIdSIZE" slots, "
@@ -6387,10 +6377,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     if (gc_needs_major_flags) {
         reason |= gc_needs_major_flags;
-        do_full_mark = TRUE;
-    }
-    else if (RGENGC_FORCE_MAJOR_GC) {
-        reason = GPR_FLAG_MAJOR_BY_FORCE;
         do_full_mark = TRUE;
     }
 
