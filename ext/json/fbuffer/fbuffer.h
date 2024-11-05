@@ -46,9 +46,11 @@ typedef struct FBufferStruct {
     unsigned long len;
     unsigned long capa;
     char *ptr;
+    VALUE io;
 } FBuffer;
 
 #define FBUFFER_STACK_SIZE 512
+#define FBUFFER_IO_BUFFER_SIZE (16384 - 1)
 #define FBUFFER_INITIAL_LENGTH_DEFAULT 1024
 
 #define FBUFFER_PTR(fb) ((fb)->ptr)
@@ -66,7 +68,7 @@ static void fbuffer_append_long(FBuffer *fb, long number);
 #endif
 static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 #ifdef JSON_GENERATOR
-static VALUE fbuffer_to_s(FBuffer *fb);
+static VALUE fbuffer_finalize(FBuffer *fb);
 #endif
 
 static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
@@ -86,24 +88,19 @@ static void fbuffer_free(FBuffer *fb)
     }
 }
 
-#ifndef JSON_GENERATOR
 static void fbuffer_clear(FBuffer *fb)
 {
     fb->len = 0;
 }
-#endif
 
-static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
+static void fbuffer_flush(FBuffer *fb)
 {
-    unsigned long required;
+    rb_io_write(fb->io, rb_utf8_str_new(fb->ptr, fb->len));
+    fbuffer_clear(fb);
+}
 
-    if (RB_UNLIKELY(!fb->ptr)) {
-        fb->ptr = ALLOC_N(char, fb->initial_length);
-        fb->capa = fb->initial_length;
-    }
-
-    for (required = fb->capa; requested > required - fb->len; required <<= 1);
-
+static void fbuffer_realloc(FBuffer *fb, unsigned long required)
+{
     if (required > fb->capa) {
         if (fb->type == FBUFFER_STACK_ALLOCATED) {
             const char *old_buffer = fb->ptr;
@@ -115,6 +112,32 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
         }
         fb->capa = required;
     }
+}
+
+static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
+{
+    if (RB_UNLIKELY(fb->io)) {
+        if (fb->capa < FBUFFER_IO_BUFFER_SIZE) {
+            fbuffer_realloc(fb, FBUFFER_IO_BUFFER_SIZE);
+        } else {
+            fbuffer_flush(fb);
+        }
+
+        if (RB_LIKELY(requested < fb->capa)) {
+            return;
+        }
+    }
+
+    unsigned long required;
+
+    if (RB_UNLIKELY(!fb->ptr)) {
+        fb->ptr = ALLOC_N(char, fb->initial_length);
+        fb->capa = fb->initial_length;
+    }
+
+    for (required = fb->capa; requested > required - fb->len; required <<= 1);
+
+    fbuffer_realloc(fb, required);
 }
 
 static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
@@ -174,11 +197,18 @@ static void fbuffer_append_long(FBuffer *fb, long number)
     fbuffer_append(fb, buffer_end - len, len);
 }
 
-static VALUE fbuffer_to_s(FBuffer *fb)
+static VALUE fbuffer_finalize(FBuffer *fb)
 {
-    VALUE result = rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
-    fbuffer_free(fb);
-    return result;
+    if (fb->io) {
+        fbuffer_flush(fb);
+        fbuffer_free(fb);
+        rb_io_flush(fb->io);
+        return fb->io;
+    } else {
+        VALUE result = rb_utf8_str_new(FBUFFER_PTR(fb), FBUFFER_LEN(fb));
+        fbuffer_free(fb);
+        return result;
+    }
 }
 #endif
 #endif

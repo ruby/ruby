@@ -162,6 +162,17 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_equal too_deep, dump(obj, strict: false)
   end
 
+  def test_dump_in_io
+    io = StringIO.new
+    assert_same io, JSON.dump([1], io)
+    assert_equal "[1]", io.string
+
+    big_object = ["a" * 10, "b" * 40, { foo: 1.23 }] * 5000
+    io.rewind
+    assert_same io, JSON.dump(big_object, io)
+    assert_equal JSON.dump(big_object), io.string
+  end
+
   def test_dump_should_modify_defaults
     max_nesting = JSON.dump_default_options[:max_nesting]
     dump([], StringIO.new, 10)
