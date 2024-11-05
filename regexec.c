@@ -4217,9 +4217,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   return ONIGERR_UNEXPECTED_BYTECODE;
 
  timeout:
+  STACK_SAVE;
   xfree(xmalloc_base);
-  if (stk_base != stk_alloc || IS_NOT_NULL(msa->stack_p))
-      xfree(stk_base);
   return ONIGERR_TIMEOUT;
 }
 
