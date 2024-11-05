@@ -4478,8 +4478,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
 {
     VALUE vstr, vcomp, hash, opt;
 
-    rb_scan_args(argc, argv, "11:", &vstr, &vcomp, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "11:", &vstr, &vcomp, &opt);
     check_limit(vstr, opt);
     StringValue(vstr);
     if (!rb_enc_str_asciicompat_p(vstr))
@@ -4566,8 +4565,7 @@ date_s_parse(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, comp, sg, opt;
 
-    rb_scan_args(argc, argv, "03:", &str, &comp, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "03:", &str, &comp, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4646,8 +4644,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4717,8 +4714,7 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4786,8 +4782,7 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4857,7 +4852,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4925,7 +4920,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -4997,8 +4992,7 @@ date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8423,8 +8417,7 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, comp, sg, opt;
 
-    rb_scan_args(argc, argv, "03:", &str, &comp, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "03:", &str, &comp, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8470,8 +8463,7 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8510,8 +8502,7 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8550,8 +8541,7 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8591,8 +8581,7 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8631,8 +8620,7 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
@@ -8676,8 +8664,7 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 {
     VALUE str, sg, opt;
 
-    rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
-    if (!NIL_P(opt)) argc--;
+    argc = rb_scan_args(argc, argv, "02:", &str, &sg, &opt);
 
     switch (argc) {
       case 0:
