@@ -47,6 +47,17 @@ module JSON
 
         alias_method :merge, :configure
 
+        # call-seq:
+        #   generate(obj) -> String
+        #   generate(obj, anIO) -> anIO
+        #
+        # Generates a valid JSON document from object +obj+ and returns the
+        # result. If no valid JSON document can be created this method raises a
+        # GeneratorError exception.
+        def generate(obj, io = nil)
+          _generate(obj, io)
+        end
+
         # call-seq: to_h
         #
         # Returns the configuration instance variables as a hash, that can be

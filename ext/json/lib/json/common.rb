@@ -286,7 +286,7 @@ module JSON
     if State === opts
       opts.generate(obj)
     else
-      State.generate(obj, opts)
+      State.generate(obj, opts, nil)
     end
   end
 
@@ -801,17 +801,14 @@ module JSON
     opts = opts.merge(:max_nesting => limit) if limit
     opts = merge_dump_options(opts, **kwargs) if kwargs
 
-    result = begin
-      generate(obj, opts)
+    begin
+      if State === opts
+        opts.generate(obj, anIO)
+      else
+        State.generate(obj, opts, anIO)
+      end
     rescue JSON::NestingError
       raise ArgumentError, "exceed depth limit"
-    end
-
-    if anIO.nil?
-      result
-    else
-      anIO.write result
-      anIO
     end
   end
 
