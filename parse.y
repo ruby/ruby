@@ -1129,7 +1129,7 @@ static rb_node_dstr_t *rb_node_dstr_new(struct parser_params *p, rb_parser_strin
 static rb_node_xstr_t *rb_node_xstr_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc);
 static rb_node_dxstr_t *rb_node_dxstr_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_evstr_t *rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc);
-static rb_node_regx_t *rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc);
+static rb_node_regx_t *rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc);
 static rb_node_once_t *rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_args_t *rb_node_args_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, int nd_plen, const YYLTYPE *loc);
@@ -1237,7 +1237,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_XSTR(s,loc) (NODE *)rb_node_xstr_new(p,s,loc)
 #define NEW_DXSTR(s,l,n,loc) (NODE *)rb_node_dxstr_new(p,s,l,n,loc)
 #define NEW_EVSTR(n,loc,o_loc,c_loc) (NODE *)rb_node_evstr_new(p,n,loc,o_loc,c_loc)
-#define NEW_REGX(str,opts,loc) (NODE *)rb_node_regx_new(p,str,opts,loc)
+#define NEW_REGX(str,opts,loc,o_loc,ct_loc,c_loc) (NODE *)rb_node_regx_new(p,str,opts,loc,o_loc,ct_loc,c_loc)
 #define NEW_ONCE(b,loc) (NODE *)rb_node_once_new(p,b,loc)
 #define NEW_ARGS(loc) rb_node_args_new(p,loc)
 #define NEW_ARGS_AUX(r,b,loc) rb_node_args_aux_new(p,r,b,loc)
@@ -1473,7 +1473,7 @@ static NODE *new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLT
 
 static NODE *new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc);
 
-static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *);
+static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *, const YYLTYPE *, const YYLTYPE *, const YYLTYPE *);
 
 #define make_list(list, loc) ((list) ? (nd_set_loc(list, loc), list) : NEW_ZLIST(loc))
 
@@ -6037,7 +6037,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 
 regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
                     {
-                        $$ = new_regexp(p, $2, $3, &@$);
+                        $$ = new_regexp(p, $2, $3, &@$, &@1, &@2, &@3);
                     /*% ripper: regexp_literal!($:2, $:3) %*/
                     }
                 ;
@@ -12163,11 +12163,14 @@ rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, co
 }
 
 static rb_node_regx_t *
-rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc)
+rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc)
 {
     rb_node_regx_t *n = NODE_NEWNODE(NODE_REGX, rb_node_regx_t, loc);
     n->string = string;
     n->options = options & RE_OPTION_MASK;
+    n->opening_loc = *opening_loc;
+    n->content_loc = *content_loc;
+    n->closing_loc = *closing_loc;
 
     return n;
 }
@@ -12822,12 +12825,16 @@ str2dstr(struct parser_params *p, NODE *node)
 }
 
 static NODE *
-str2regx(struct parser_params *p, NODE *node, int options)
+str2regx(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc)
 {
     NODE *new_node = (NODE *)NODE_NEW_INTERNAL(NODE_REGX, rb_node_regx_t);
     nd_copy_flag(new_node, node);
     RNODE_REGX(new_node)->string = RNODE_STR(node)->string;
     RNODE_REGX(new_node)->options = options;
+    nd_set_loc(new_node, loc);
+    RNODE_REGX(new_node)->opening_loc = *opening_loc;
+    RNODE_REGX(new_node)->content_loc = *content_loc;
+    RNODE_REGX(new_node)->closing_loc = *closing_loc;
     RNODE_STR(node)->string = 0;
 
     return new_node;
@@ -13209,13 +13216,13 @@ dregex_fragment_setenc(struct parser_params *p, rb_node_dregx_t *const dreg, int
 }
 
 static NODE *
-new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
+new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc, const YYLTYPE *opening_loc, const YYLTYPE *content_loc, const YYLTYPE *closing_loc)
 {
     if (!node) {
         /* Check string is valid regex */
         rb_parser_string_t *str = STRING_NEW0();
         reg_compile(p, str, options);
-        node = NEW_REGX(str, options, loc);
+        node = NEW_REGX(str, options, loc, opening_loc, content_loc, closing_loc);
         return node;
     }
     switch (nd_type(node)) {
@@ -13223,7 +13230,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
         {
             /* Check string is valid regex */
             reg_compile(p, RNODE_STR(node)->string, options);
-            node = str2regx(p, node, options);
+            node = str2regx(p, node, options, loc, opening_loc, content_loc, closing_loc);
         }
         break;
       default:
