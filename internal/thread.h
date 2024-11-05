@@ -66,6 +66,8 @@ struct rb_io_close_wait_list {
 int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
 void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
+void rb_ec_check_ints(struct rb_execution_context_struct *ec);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/socket/raddrinfo.c */

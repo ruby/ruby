@@ -602,7 +602,7 @@ ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_clea
                 enum ruby_tag_type state;
                 EC_PUSH_TAG(ec);
                 if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-                    rb_thread_check_ints();
+                    rb_ec_check_ints(ec);
                 }
                 EC_POP_TAG();
 
@@ -612,7 +612,7 @@ ractor_check_ints(rb_execution_context_t *ec, rb_ractor_t *cr, ractor_sleep_clea
                 }
             }
             else {
-                rb_thread_check_ints();
+                rb_ec_check_ints(ec);
             }
         }
 
