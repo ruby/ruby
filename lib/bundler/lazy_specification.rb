@@ -137,6 +137,10 @@ module Bundler
       if search.nil? && fallback_to_non_installable
         search = candidates.last
       elsif search && search.full_name == full_name
+        # We don't validate locally installed dependencies but accept what's in
+        # the lockfile instead for performance, since loading locally installed
+        # dependencies would mean evaluating all gemspecs, which would affect
+        # `bundler/setup` performance
         if search.is_a?(StubSpecification)
           search.dependencies = dependencies
         elsif !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
