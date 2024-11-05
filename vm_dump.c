@@ -1141,7 +1141,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 "---------------------------------------------------\n");
         kprintf("Total ractor count: %u\n", vm->ractor.cnt);
         kprintf("Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
-        if (rb_fiber_scheduler_current() != Qnil) {
+        if (rb_fiber_scheduler_get() != Qnil) {
             kprintf("Note that the Fiber scheduler is enabled\n");
         }
         kputs("\n");
