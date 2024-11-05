@@ -636,8 +636,19 @@ class TestGc < Test::Unit::TestCase
       # Warmup to make sure heap stabilizes
       1_000_000.times { Object.new }
 
-      before_stats = GC.stat
+      # We need to pre-allocate all the hashes for GC.stat calls, because
+      # otherwise the call to GC.stat/GC.stat_heap itself could cause a new
+      # page to be allocated and the before/after assertions will fail
+      before_stats = {}
+      after_stats = {}
+      # stat_heap needs a hash of hashes for each heap; easiest way to get the
+      # right shape for that is just to call stat_heap with no argument
       before_stat_heap = GC.stat_heap
+      after_stat_heap = GC.stat_heap
+
+      # Now collect the actual stats
+      GC.stat before_stats
+      GC.stat_heap nil, before_stat_heap
 
       1_000_000.times { Object.new }
 
@@ -645,8 +656,8 @@ class TestGc < Test::Unit::TestCase
       # running a minor GC here will guarantee that GC will be complete
       GC.start(full_mark: false)
 
-      after_stats = GC.stat
-      after_stat_heap = GC.stat_heap
+      GC.stat after_stats
+      GC.stat_heap nil, after_stat_heap
 
       # Debugging output to for failures in trunk-repeat50@phosphorus-docker
       debug_msg = "before_stats: #{before_stats}\nbefore_stat_heap: #{before_stat_heap}\nafter_stats: #{after_stats}\nafter_stat_heap: #{after_stat_heap}"
