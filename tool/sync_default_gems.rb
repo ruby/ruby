@@ -196,7 +196,7 @@ module SyncDefaultGems
       rm_rf("test/json/lib")
       cp_r("#{upstream}/lib", "ext/json")
       cp_r("#{upstream}/json.gemspec", "ext/json")
-      rm_rf(%w[ext/json/lib/json/pure.rb ext/json/lib/json/pure])
+      rm_rf(%w[ext/json/lib/json/pure.rb ext/json/lib/json/pure ext/json/lib/json/truffle_ruby/])
       json_files = Dir.glob("ext/json/lib/json/ext/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
       rm_rf(json_files - Dir.glob("ext/json/lib/json/ext/**/*.rb"))
       `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend benchmark/`
