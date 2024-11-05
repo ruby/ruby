@@ -248,6 +248,11 @@ f_negative_p(VALUE x)
 #define date_sg_t double
 #endif
 
+#define JULIAN_EPOCH_DATE "-4712-01-01"
+#define JULIAN_EPOCH_DATETIME JULIAN_EPOCH_DATE "T00:00:00+00:00"
+#define JULIAN_EPOCH_DATETIME_RFC3339 "Mon, 1 Jan -4712 00:00:00 +0000"
+#define JULIAN_EPOCH_DATETIME_HTTPDATE "Mon, 01 Jan -4712 00:00:00 GMT"
+
 /* A set of nth, jd, df and sf denote ajd + 1/2.  Each ajd begin at
  * noon of GMT (assume equal to UTC).  However, this begins at
  * midnight.
@@ -4425,7 +4430,7 @@ date_s_strptime(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01");
+	str = rb_str_new2(JULIAN_EPOCH_DATE);
       case 1:
 	fmt = rb_str_new2("%F");
       case 2:
@@ -4569,7 +4574,7 @@ date_s_parse(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01");
+	str = rb_str_new2(JULIAN_EPOCH_DATE);
       case 1:
 	comp = Qtrue;
       case 2:
@@ -4648,7 +4653,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01");
+	str = rb_str_new2(JULIAN_EPOCH_DATE);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4718,7 +4723,7 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4786,7 +4791,7 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01");
+	str = rb_str_new2(JULIAN_EPOCH_DATE);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4856,7 +4861,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("Mon, 1 Jan -4712 00:00:00 +0000");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME_RFC3339);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4924,7 +4929,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("Mon, 01 Jan -4712 00:00:00 GMT");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME_HTTPDATE);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4996,7 +5001,7 @@ date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01");
+	str = rb_str_new2(JULIAN_EPOCH_DATE);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8369,7 +8374,7 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	fmt = rb_str_new2("%FT%T%z");
       case 2:
@@ -8421,7 +8426,7 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	comp = Qtrue;
       case 2:
@@ -8467,7 +8472,7 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8506,7 +8511,7 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8545,7 +8550,7 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8585,7 +8590,7 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("Mon, 1 Jan -4712 00:00:00 +0000");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME_RFC3339);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8624,7 +8629,7 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("Mon, 01 Jan -4712 00:00:00 GMT");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME_HTTPDATE);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8668,7 +8673,7 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
 
     switch (argc) {
       case 0:
-	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	str = rb_str_new2(JULIAN_EPOCH_DATETIME);
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
