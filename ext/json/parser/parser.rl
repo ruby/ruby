@@ -1,5 +1,308 @@
+#include "ruby.h"
 #include "../fbuffer/fbuffer.h"
-#include "parser.h"
+
+static VALUE mJSON, mExt, cParser, eNestingError, Encoding_UTF_8;
+static VALUE CNaN, CInfinity, CMinusInfinity;
+
+static ID i_json_creatable_p, i_json_create, i_create_id,
+          i_chr, i_deep_const_get, i_match, i_aset, i_aref,
+          i_leftshift, i_new, i_try_convert, i_uminus, i_encode;
+
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
+             sym_create_additions, sym_create_id, sym_object_class, sym_array_class,
+             sym_decimal_class, sym_match_string;
+
+static int binary_encindex;
+static int utf8_encindex;
+
+#ifndef HAVE_RB_GC_MARK_LOCATIONS
+// For TruffleRuby
+void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
+{
+    VALUE *value = start;
+
+    while (value < end) {
+        rb_gc_mark(*value);
+        value++;
+    }
+}
+#endif
+
+#ifndef HAVE_RB_HASH_BULK_INSERT
+// For TruffleRuby
+void rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
+{
+    long index = 0;
+    while (index < count) {
+        VALUE name = pairs[index++];
+        VALUE value = pairs[index++];
+        rb_hash_aset(hash, name, value);
+    }
+    RB_GC_GUARD(hash);
+}
+#endif
+
+/* name cache */
+
+#include <string.h>
+#include <ctype.h>
+
+// Object names are likely to be repeated, and are frozen.
+// As such we can re-use them if we keep a cache of the ones we've seen so far,
+// and save much more expensive lookups into the global fstring table.
+// This cache implementation is deliberately simple, as we're optimizing for compactness,
+// to be able to fit safely on the stack.
+// As such, binary search into a sorted array gives a good tradeoff between compactness and
+// performance.
+#define JSON_RVALUE_CACHE_CAPA 63
+typedef struct rvalue_cache_struct {
+    int length;
+    VALUE entries[JSON_RVALUE_CACHE_CAPA];
+} rvalue_cache;
+
+static rb_encoding *enc_utf8;
+
+#define JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH 55
+
+static inline VALUE build_interned_string(const char *str, const long length)
+{
+# ifdef HAVE_RB_ENC_INTERNED_STR
+    return rb_enc_interned_str(str, length, enc_utf8);
+# else
+    VALUE rstring = rb_utf8_str_new(str, length);
+    return rb_funcall(rb_str_freeze(rstring), i_uminus, 0);
+# endif
+}
+
+static inline VALUE build_symbol(const char *str, const long length)
+{
+    return rb_str_intern(build_interned_string(str, length));
+}
+
+static void rvalue_cache_insert_at(rvalue_cache *cache, int index, VALUE rstring)
+{
+    MEMMOVE(&cache->entries[index + 1], &cache->entries[index], VALUE, cache->length - index);
+    cache->length++;
+    cache->entries[index] = rstring;
+}
+
+static inline int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
+{
+    long rstring_length = RSTRING_LEN(rstring);
+    if (length == rstring_length) {
+        return memcmp(str, RSTRING_PTR(rstring), length);
+    } else {
+        return (int)(length - rstring_length);
+    }
+}
+
+static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+{
+    if (RB_UNLIKELY(length > JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH)) {
+        // Common names aren't likely to be very long. So we just don't
+        // cache names above an arbitrary threshold.
+        return Qfalse;
+    }
+
+    if (RB_UNLIKELY(!isalpha(str[0]))) {
+        // Simple heuristic, if the first character isn't a letter,
+        // we're much less likely to see this string again.
+        // We mostly want to cache strings that are likely to be repeated.
+        return Qfalse;
+    }
+
+    int low = 0;
+    int high = cache->length - 1;
+    int mid = 0;
+    int last_cmp = 0;
+
+    while (low <= high) {
+        mid = (high + low) >> 1;
+        VALUE entry = cache->entries[mid];
+        last_cmp = rstring_cache_cmp(str, length, entry);
+
+        if (last_cmp == 0) {
+            return entry;
+        } else if (last_cmp > 0) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    if (RB_UNLIKELY(memchr(str, '\\', length))) {
+        // We assume the overwhelming majority of names don't need to be escaped.
+        // But if they do, we have to fallback to the slow path.
+        return Qfalse;
+    }
+
+    VALUE rstring = build_interned_string(str, length);
+
+    if (cache->length < JSON_RVALUE_CACHE_CAPA) {
+        if (last_cmp > 0) {
+            mid += 1;
+        }
+
+        rvalue_cache_insert_at(cache, mid, rstring);
+    }
+    return rstring;
+}
+
+static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const long length)
+{
+    if (RB_UNLIKELY(length > JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH)) {
+        // Common names aren't likely to be very long. So we just don't
+        // cache names above an arbitrary threshold.
+        return Qfalse;
+    }
+
+    if (RB_UNLIKELY(!isalpha(str[0]))) {
+        // Simple heuristic, if the first character isn't a letter,
+        // we're much less likely to see this string again.
+        // We mostly want to cache strings that are likely to be repeated.
+        return Qfalse;
+    }
+
+    int low = 0;
+    int high = cache->length - 1;
+    int mid = 0;
+    int last_cmp = 0;
+
+    while (low <= high) {
+        mid = (high + low) >> 1;
+        VALUE entry = cache->entries[mid];
+        last_cmp = rstring_cache_cmp(str, length, rb_sym2str(entry));
+
+        if (last_cmp == 0) {
+            return entry;
+        } else if (last_cmp > 0) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    if (RB_UNLIKELY(memchr(str, '\\', length))) {
+        // We assume the overwhelming majority of names don't need to be escaped.
+        // But if they do, we have to fallback to the slow path.
+        return Qfalse;
+    }
+
+    VALUE rsymbol = build_symbol(str, length);
+
+    if (cache->length < JSON_RVALUE_CACHE_CAPA) {
+        if (last_cmp > 0) {
+            mid += 1;
+        }
+
+        rvalue_cache_insert_at(cache, mid, rsymbol);
+    }
+    return rsymbol;
+}
+
+/* rvalue stack */
+
+#define RVALUE_STACK_INITIAL_CAPA 128
+
+enum rvalue_stack_type {
+    RVALUE_STACK_HEAP_ALLOCATED = 0,
+    RVALUE_STACK_STACK_ALLOCATED = 1,
+};
+
+typedef struct rvalue_stack_struct {
+    enum rvalue_stack_type type;
+    long capa;
+    long head;
+    VALUE *ptr;
+} rvalue_stack;
+
+static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref);
+
+static rvalue_stack *rvalue_stack_grow(rvalue_stack *stack, VALUE *handle, rvalue_stack **stack_ref)
+{
+    long required = stack->capa * 2;
+
+    if (stack->type == RVALUE_STACK_STACK_ALLOCATED) {
+        stack = rvalue_stack_spill(stack, handle, stack_ref);
+    } else {
+        REALLOC_N(stack->ptr, VALUE, required);
+        stack->capa = required;
+    }
+    return stack;
+}
+
+static void rvalue_stack_push(rvalue_stack *stack, VALUE value, VALUE *handle, rvalue_stack **stack_ref)
+{
+    if (RB_UNLIKELY(stack->head >= stack->capa)) {
+        stack = rvalue_stack_grow(stack, handle, stack_ref);
+    }
+    stack->ptr[stack->head] = value;
+    stack->head++;
+}
+
+static inline VALUE *rvalue_stack_peek(rvalue_stack *stack, long count)
+{
+    return stack->ptr + (stack->head - count);
+}
+
+static inline void rvalue_stack_pop(rvalue_stack *stack, long count)
+{
+    stack->head -= count;
+}
+
+static void rvalue_stack_mark(void *ptr)
+{
+    rvalue_stack *stack = (rvalue_stack *)ptr;
+    rb_gc_mark_locations(stack->ptr, stack->ptr + stack->head);
+}
+
+static void rvalue_stack_free(void *ptr)
+{
+    rvalue_stack *stack = (rvalue_stack *)ptr;
+    if (stack) {
+        ruby_xfree(stack->ptr);
+        ruby_xfree(stack);
+    }
+}
+
+static size_t rvalue_stack_memsize(const void *ptr)
+{
+    const rvalue_stack *stack = (const rvalue_stack *)ptr;
+    return sizeof(rvalue_stack) + sizeof(VALUE) * stack->capa;
+}
+
+static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
+    "JSON::Ext::Parser/rvalue_stack",
+    {
+        .dmark = rvalue_stack_mark,
+        .dfree = rvalue_stack_free,
+        .dsize = rvalue_stack_memsize,
+    },
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
+{
+    rvalue_stack *stack;
+    *handle = TypedData_Make_Struct(0, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
+    *stack_ref = stack;
+    MEMCPY(stack, old_stack, rvalue_stack, 1);
+
+    stack->capa = old_stack->capa << 1;
+    stack->ptr = ALLOC_N(VALUE, stack->capa);
+    stack->type = RVALUE_STACK_HEAP_ALLOCATED;
+    MEMCPY(stack->ptr, old_stack->ptr, VALUE, old_stack->head);
+    return stack;
+}
+
+static void rvalue_stack_eagerly_release(VALUE handle)
+{
+    rvalue_stack *stack;
+    TypedData_Get_Struct(handle, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
+    RTYPEDDATA_DATA(handle) = NULL;
+    rvalue_stack_free(stack);
+}
 
 /* unicode */
 
@@ -67,6 +370,50 @@ static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
     return len;
 }
 
+typedef struct JSON_ParserStruct {
+    VALUE Vsource;
+    char *source;
+    long len;
+    char *memo;
+    VALUE create_id;
+    VALUE object_class;
+    VALUE array_class;
+    VALUE decimal_class;
+    VALUE match_string;
+    FBuffer fbuffer;
+    int max_nesting;
+    bool allow_nan;
+    bool allow_trailing_comma;
+    bool parsing_name;
+    bool symbolize_names;
+    bool freeze;
+    bool create_additions;
+    bool deprecated_create_additions;
+    rvalue_cache name_cache;
+    rvalue_stack *stack;
+    VALUE stack_handle;
+} JSON_Parser;
+
+#define GET_PARSER                          \
+    GET_PARSER_INIT;                        \
+    if (!json->Vsource) rb_raise(rb_eTypeError, "uninitialized instance")
+
+#define GET_PARSER_INIT                     \
+    JSON_Parser *json;                      \
+    TypedData_Get_Struct(self, JSON_Parser, &JSON_Parser_type, json)
+
+#define MinusInfinity "-Infinity"
+#define EVIL 0x666
+
+static const rb_data_type_t JSON_Parser_type;
+static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
+static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
+static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
+
+
 #define PARSE_ERROR_FRAGMENT_LEN 32
 #ifdef RBIMPL_ATTR_NORETURN
 RBIMPL_ATTR_NORETURN()
@@ -84,20 +431,8 @@ static void raise_parse_error(const char *format, const char *start)
         ptr = buffer;
     }
 
-    rb_enc_raise(rb_utf8_encoding(), rb_path2class("JSON::ParserError"), format, ptr);
+    rb_enc_raise(enc_utf8, rb_path2class("JSON::ParserError"), format, ptr);
 }
-
-static VALUE mJSON, mExt, cParser, eNestingError, Encoding_UTF_8;
-static VALUE CNaN, CInfinity, CMinusInfinity;
-
-static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
-          i_chr, i_max_nesting, i_allow_nan, i_symbolize_names,
-          i_object_class, i_array_class, i_decimal_class,
-          i_deep_const_get, i_match, i_match_string, i_aset, i_aref,
-          i_leftshift, i_new, i_try_convert, i_freeze, i_uminus, i_encode;
-
-static int binary_encindex;
-static int utf8_encindex;
 
 
 %%{
@@ -135,27 +470,25 @@ static int utf8_encindex;
     write data;
 
     action parse_value {
-        VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v, current_nesting);
+        char *np = JSON_parse_value(json, fpc, pe, result, current_nesting);
         if (np == NULL) {
             fhold; fbreak;
         } else {
-            if (NIL_P(json->object_class)) {
-                OBJ_FREEZE(last_name);
-                rb_hash_aset(*result, last_name, v);
-            } else {
-                rb_funcall(*result, i_aset, 2, last_name, v);
-            }
             fexec np;
         }
     }
 
+    action allow_trailing_comma { json->allow_trailing_comma }
+
     action parse_name {
         char *np;
-        json->parsing_name = 1;
-        np = JSON_parse_string(json, fpc, pe, &last_name);
-        json->parsing_name = 0;
-        if (np == NULL) { fhold; fbreak; } else fexec np;
+        json->parsing_name = true;
+        np = JSON_parse_string(json, fpc, pe, result);
+        json->parsing_name = false;
+        if (np == NULL) { fhold; fbreak; } else {
+            PUSH(*result);
+            fexec np;
+         }
     }
 
     action exit { fhold; fbreak; }
@@ -165,33 +498,57 @@ static int utf8_encindex;
 
     main := (
       begin_object
-      (pair (next_pair)*)? ignore*
+      (pair (next_pair)*((ignore* value_separator) when allow_trailing_comma)?)? ignore*
       end_object
     ) @exit;
 }%%
 
+#define PUSH(result) rvalue_stack_push(json->stack, result, &json->stack_handle, &json->stack)
+
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
-    VALUE last_name = Qnil;
-    VALUE object_class = json->object_class;
 
     if (json->max_nesting && current_nesting > json->max_nesting) {
         rb_raise(eNestingError, "nesting of %d is too deep", current_nesting);
     }
 
-    *result = NIL_P(object_class) ? rb_hash_new() : rb_class_new_instance(0, 0, object_class);
+    long stack_head = json->stack->head;
 
     %% write init;
     %% write exec;
 
     if (cs >= JSON_object_first_final) {
-        if (json->create_additions) {
+        long count = json->stack->head - stack_head;
+
+        if (RB_UNLIKELY(json->object_class)) {
+            VALUE object = rb_class_new_instance(0, 0, json->object_class);
+            long index = 0;
+            VALUE *items = rvalue_stack_peek(json->stack, count);
+            while (index < count) {
+                VALUE name = items[index++];
+                VALUE value = items[index++];
+                rb_funcall(object, i_aset, 2, name, value);
+            }
+            *result = object;
+        } else {
+            VALUE hash;
+#ifdef HAVE_RB_HASH_NEW_CAPA
+            hash = rb_hash_new_capa(count >> 1);
+#else
+            hash = rb_hash_new();
+#endif
+            rb_hash_bulk_insert(count, rvalue_stack_peek(json->stack, count), hash);
+            *result = hash;
+        }
+        rvalue_stack_pop(json->stack, count);
+
+        if (RB_UNLIKELY(json->create_additions)) {
             VALUE klassname;
-            if (NIL_P(json->object_class)) {
-              klassname = rb_hash_aref(*result, json->create_id);
+            if (json->object_class) {
+                klassname = rb_funcall(*result, i_aref, 1, json->create_id);
             } else {
-              klassname = rb_funcall(*result, i_aref, 1, json->create_id);
+                klassname = rb_hash_aref(*result, json->create_id);
             }
             if (!NIL_P(klassname)) {
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
@@ -208,7 +565,6 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         return NULL;
     }
 }
-
 
 %%{
     machine JSON_value;
@@ -241,7 +597,12 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
     }
     action parse_string {
         char *np = JSON_parse_string(json, fpc, pe, result);
-        if (np == NULL) { fhold; fbreak; } else fexec np;
+        if (np == NULL) {
+            fhold;
+            fbreak;
+        } else {
+            fexec np;
+        }
     }
 
     action parse_number {
@@ -256,9 +617,13 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
             }
         }
         np = JSON_parse_float(json, fpc, pe, result);
-        if (np != NULL) fexec np;
+        if (np != NULL) {
+            fexec np;
+        }
         np = JSON_parse_integer(json, fpc, pe, result);
-        if (np != NULL) fexec np;
+        if (np != NULL) {
+            fexec np;
+        }
         fhold; fbreak;
     }
 
@@ -301,6 +666,7 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
     }
 
     if (cs >= JSON_value_first_final) {
+        PUSH(*result);
         return p;
     } else {
         return NULL;
@@ -362,7 +728,7 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
     if (cs >= JSON_float_first_final) {
         VALUE mod = Qnil;
         ID method_id = 0;
-        if (!NIL_P(json->decimal_class)) {
+        if (json->decimal_class) {
             if (rb_respond_to(json->decimal_class, i_try_convert)) {
                 mod = json->decimal_class;
                 method_id = i_try_convert;
@@ -421,14 +787,11 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
         if (np == NULL) {
             fhold; fbreak;
         } else {
-            if (NIL_P(json->array_class)) {
-                rb_ary_push(*result, v);
-            } else {
-                rb_funcall(*result, i_leftshift, 1, v);
-            }
             fexec np;
         }
     }
+
+    action allow_trailing_comma { json->allow_trailing_comma }
 
     action exit { fhold; fbreak; }
 
@@ -436,24 +799,39 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
     main := begin_array ignore*
           ((begin_value >parse_value ignore*)
-           (ignore* next_element ignore*)*)?
+          (ignore* next_element ignore*)*((value_separator ignore*) when allow_trailing_comma)?)?
           end_array @exit;
 }%%
 
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
-    VALUE array_class = json->array_class;
 
     if (json->max_nesting && current_nesting > json->max_nesting) {
         rb_raise(eNestingError, "nesting of %d is too deep", current_nesting);
     }
-    *result = NIL_P(array_class) ? rb_ary_new() : rb_class_new_instance(0, 0, array_class);
+    long stack_head = json->stack->head;
 
     %% write init;
     %% write exec;
 
     if(cs >= JSON_array_first_final) {
+        long count = json->stack->head - stack_head;
+
+        if (RB_UNLIKELY(json->array_class)) {
+            VALUE array = rb_class_new_instance(0, 0, json->array_class);
+            VALUE *items = rvalue_stack_peek(json->stack, count);
+            long index;
+            for (index = 0; index < count; index++) {
+                rb_funcall(array, i_leftshift, 1, items[index]);
+            }
+            *result = array;
+        } else {
+            VALUE array = rb_ary_new_from_values(count, rvalue_stack_peek(json->stack, count));
+            *result = array;
+        }
+        rvalue_stack_pop(json->stack, count);
+
         return p + 1;
     } else {
         raise_parse_error("unexpected token at '%s'", p);
@@ -469,7 +847,7 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     VALUE result;
 # ifdef HAVE_RB_ENC_INTERNED_STR
     if (intern) {
-      result = rb_enc_interned_str(start, (long)(end - start), rb_utf8_encoding());
+      result = rb_enc_interned_str(start, (long)(end - start), enc_utf8);
     } else {
       result = rb_utf8_str_new(start, (long)(end - start));
     }
@@ -487,12 +865,25 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
-static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bool symbolize)
+static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
     char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
     char buf[4];
+
+    if (is_name) {
+        VALUE cached_key;
+        if (RB_UNLIKELY(symbolize)) {
+            cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
+        } else {
+            cached_key = rstring_cache_fetch(&json->name_cache, string, bufferSize);
+        }
+
+        if (RB_LIKELY(cached_key)) {
+            return cached_key;
+        }
+    }
 
     pe = memchr(p, '\\', bufferSize);
     if (RB_LIKELY(pe == NULL)) {
@@ -602,7 +993,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, bool intern, bo
     write data;
 
     action parse_string {
-        *result = json_string_unescape(json->memo + 1, p, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        *result = json_string_unescape(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         if (NIL_P(*result)) {
             fhold;
             fbreak;
@@ -671,7 +1062,7 @@ static VALUE convert_encoding(VALUE source)
 {
   int encindex = RB_ENCODING_GET(source);
 
-  if (encindex == utf8_encindex) {
+  if (RB_LIKELY(encindex == utf8_encindex)) {
     return source;
   }
 
@@ -681,6 +1072,68 @@ static VALUE convert_encoding(VALUE source)
   }
 
   return rb_funcall(source, i_encode, 1, Encoding_UTF_8);
+}
+
+static int configure_parser_i(VALUE key, VALUE val, VALUE data)
+{
+    JSON_Parser *json = (JSON_Parser *)data;
+
+         if (key == sym_max_nesting)          { json->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
+    else if (key == sym_allow_nan)            { json->allow_nan = RTEST(val); }
+    else if (key == sym_allow_trailing_comma) { json->allow_trailing_comma = RTEST(val); }
+    else if (key == sym_symbolize_names)      { json->symbolize_names = RTEST(val); }
+    else if (key == sym_freeze)               { json->freeze = RTEST(val); }
+    else if (key == sym_create_id)            { json->create_id = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_object_class)         { json->object_class = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_array_class)          { json->array_class = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_decimal_class)        { json->decimal_class = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_match_string)         { json->match_string = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_create_additions)     {
+        if (NIL_P(val)) {
+            json->create_additions = true;
+            json->deprecated_create_additions = true;
+        } else {
+            json->create_additions = RTEST(val);
+            json->deprecated_create_additions = false;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+static void parser_init(JSON_Parser *json, VALUE source, VALUE opts)
+{
+    if (json->Vsource) {
+        rb_raise(rb_eTypeError, "already initialized instance");
+    }
+
+    json->fbuffer.initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
+    json->max_nesting = 100;
+
+    if (!NIL_P(opts)) {
+        Check_Type(opts, T_HASH);
+        if (RHASH_SIZE(opts) > 0) {
+            // We assume in most cases few keys are set so it's faster to go over
+            // the provided keys than to check all possible keys.
+            rb_hash_foreach(opts, configure_parser_i, (VALUE)json);
+
+            if (json->symbolize_names && json->create_additions) {
+                rb_raise(rb_eArgError,
+                    "options :symbolize_names and :create_additions cannot be "
+                    " used in conjunction");
+            }
+
+            if (json->create_additions && !json->create_id) {
+                json->create_id = rb_funcall(mJSON, i_create_id, 0);
+            }
+        }
+
+    }
+    source = convert_encoding(StringValue(source));
+    StringValue(source);
+    json->len = RSTRING_LEN(source);
+    json->source = RSTRING_PTR(source);
+    json->Vsource = source;
 }
 
 /*
@@ -717,117 +1170,11 @@ static VALUE convert_encoding(VALUE source)
  */
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE source, opts;
     GET_PARSER_INIT;
 
-    if (json->Vsource) {
-        rb_raise(rb_eTypeError, "already initialized instance");
-    }
-
     rb_check_arity(argc, 1, 2);
-    source = argv[0];
-    opts = Qnil;
-    if (argc == 2) {
-        opts = argv[1];
-        Check_Type(argv[1], T_HASH);
-        if (RHASH_SIZE(argv[1]) > 0) {
-            opts = argv[1];
-        }
-    }
 
-    if (!NIL_P(opts)) {
-        VALUE tmp = ID2SYM(i_max_nesting);
-        if (option_given_p(opts, tmp)) {
-            VALUE max_nesting = rb_hash_aref(opts, tmp);
-            if (RTEST(max_nesting)) {
-                Check_Type(max_nesting, T_FIXNUM);
-                json->max_nesting = FIX2INT(max_nesting);
-            } else {
-                json->max_nesting = 0;
-            }
-        } else {
-            json->max_nesting = 100;
-        }
-        tmp = ID2SYM(i_allow_nan);
-        if (option_given_p(opts, tmp)) {
-            json->allow_nan = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-        } else {
-            json->allow_nan = 0;
-        }
-        tmp = ID2SYM(i_symbolize_names);
-        if (option_given_p(opts, tmp)) {
-            json->symbolize_names = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-        } else {
-            json->symbolize_names = 0;
-        }
-        tmp = ID2SYM(i_freeze);
-        if (option_given_p(opts, tmp)) {
-            json->freeze = RTEST(rb_hash_aref(opts, tmp)) ? 1 : 0;
-        } else {
-            json->freeze = 0;
-        }
-        tmp = ID2SYM(i_create_additions);
-        if (option_given_p(opts, tmp)) {
-            tmp = rb_hash_aref(opts, tmp);
-            if (NIL_P(tmp)) {
-                json->create_additions = 1;
-                json->deprecated_create_additions = 1;
-            } else {
-                json->create_additions = RTEST(tmp);
-                json->deprecated_create_additions = 0;
-            }
-        }
-
-        if (json->symbolize_names && json->create_additions) {
-            rb_raise(rb_eArgError,
-                "options :symbolize_names and :create_additions cannot be "
-                " used in conjunction");
-        }
-        tmp = ID2SYM(i_create_id);
-        if (option_given_p(opts, tmp)) {
-            json->create_id = rb_hash_aref(opts, tmp);
-        } else {
-            json->create_id = rb_funcall(mJSON, i_create_id, 0);
-        }
-        tmp = ID2SYM(i_object_class);
-        if (option_given_p(opts, tmp)) {
-            json->object_class = rb_hash_aref(opts, tmp);
-        } else {
-            json->object_class = Qnil;
-        }
-        tmp = ID2SYM(i_array_class);
-        if (option_given_p(opts, tmp)) {
-            json->array_class = rb_hash_aref(opts, tmp);
-        } else {
-            json->array_class = Qnil;
-        }
-        tmp = ID2SYM(i_decimal_class);
-        if (option_given_p(opts, tmp)) {
-            json->decimal_class = rb_hash_aref(opts, tmp);
-        } else {
-            json->decimal_class = Qnil;
-        }
-        tmp = ID2SYM(i_match_string);
-        if (option_given_p(opts, tmp)) {
-            VALUE match_string = rb_hash_aref(opts, tmp);
-            json->match_string = RTEST(match_string) ? match_string : Qnil;
-        } else {
-            json->match_string = Qnil;
-        }
-    } else {
-        json->max_nesting = 100;
-        json->allow_nan = 0;
-        json->create_additions = 0;
-        json->create_id = Qnil;
-        json->object_class = Qnil;
-        json->array_class = Qnil;
-        json->decimal_class = Qnil;
-    }
-    source = convert_encoding(StringValue(source));
-    StringValue(source);
-    json->len = RSTRING_LEN(source);
-    json->source = RSTRING_PTR(source);
-    json->Vsource = source;
+    parser_init(json, argv[0], argc == 2 ? argv[1] : Qnil);
     return self;
 }
 
@@ -862,10 +1209,25 @@ static VALUE cParser_parse(VALUE self)
     VALUE result = Qnil;
     GET_PARSER;
 
+    char stack_buffer[FBUFFER_STACK_SIZE];
+    fbuffer_stack_init(&json->fbuffer, FBUFFER_INITIAL_LENGTH_DEFAULT, stack_buffer, FBUFFER_STACK_SIZE);
+
+    VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
+    rvalue_stack stack = {
+        .type = RVALUE_STACK_STACK_ALLOCATED,
+        .ptr = rvalue_stack_buffer,
+        .capa = RVALUE_STACK_INITIAL_CAPA,
+    };
+    json->stack = &stack;
+
     %% write init;
     p = json->source;
     pe = p + json->len;
     %% write exec;
+
+    if (json->stack_handle) {
+        rvalue_stack_eagerly_release(json->stack_handle);
+    }
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
@@ -875,18 +1237,43 @@ static VALUE cParser_parse(VALUE self)
     }
 }
 
-#ifndef HAVE_RB_GC_MARK_LOCATIONS
-// For TruffleRuby
-void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
+static VALUE cParser_m_parse(VALUE klass, VALUE source, VALUE opts)
 {
-    VALUE *value = start;
+    char *p, *pe;
+    int cs = EVIL;
+    VALUE result = Qnil;
 
-    while (value < end) {
-        rb_gc_mark(*value);
-        value++;
+    JSON_Parser _parser = {0};
+    JSON_Parser *json = &_parser;
+    parser_init(json, source, opts);
+
+    char stack_buffer[FBUFFER_STACK_SIZE];
+    fbuffer_stack_init(&json->fbuffer, FBUFFER_INITIAL_LENGTH_DEFAULT, stack_buffer, FBUFFER_STACK_SIZE);
+
+    VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
+    rvalue_stack stack = {
+        .type = RVALUE_STACK_STACK_ALLOCATED,
+        .ptr = rvalue_stack_buffer,
+        .capa = RVALUE_STACK_INITIAL_CAPA,
+    };
+    json->stack = &stack;
+
+    %% write init;
+    p = json->source;
+    pe = p + json->len;
+    %% write exec;
+
+    if (json->stack_handle) {
+        rvalue_stack_eagerly_release(json->stack_handle);
+    }
+
+    if (cs >= JSON_first_final && p == pe) {
+        return result;
+    } else {
+        raise_parse_error("unexpected token at '%s'", p);
+        return Qnil;
     }
 }
-#endif
 
 static void JSON_mark(void *ptr)
 {
@@ -897,6 +1284,8 @@ static void JSON_mark(void *ptr)
     rb_gc_mark(json->array_class);
     rb_gc_mark(json->decimal_class);
     rb_gc_mark(json->match_string);
+    rb_gc_mark(json->stack_handle);
+
     const VALUE *name_cache_entries = &json->name_cache.entries[0];
     rb_gc_mark_locations(name_cache_entries, name_cache_entries + json->name_cache.length);
 }
@@ -959,6 +1348,8 @@ void Init_parser(void)
     rb_define_method(cParser, "parse", cParser_parse, 0);
     rb_define_method(cParser, "source", cParser_source, 0);
 
+    rb_define_singleton_method(cParser, "parse", cParser_m_parse, 2);
+
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
     rb_gc_register_mark_object(CNaN);
 
@@ -971,31 +1362,35 @@ void Init_parser(void)
     rb_global_variable(&Encoding_UTF_8);
     Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
 
+    sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
+    sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
+    sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
+    sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
+    sym_freeze = ID2SYM(rb_intern("freeze"));
+    sym_create_additions = ID2SYM(rb_intern("create_additions"));
+    sym_create_id = ID2SYM(rb_intern("create_id"));
+    sym_object_class = ID2SYM(rb_intern("object_class"));
+    sym_array_class = ID2SYM(rb_intern("array_class"));
+    sym_decimal_class = ID2SYM(rb_intern("decimal_class"));
+    sym_match_string = ID2SYM(rb_intern("match_string"));
+
+    i_create_id = rb_intern("create_id");
     i_json_creatable_p = rb_intern("json_creatable?");
     i_json_create = rb_intern("json_create");
-    i_create_id = rb_intern("create_id");
-    i_create_additions = rb_intern("create_additions");
     i_chr = rb_intern("chr");
-    i_max_nesting = rb_intern("max_nesting");
-    i_allow_nan = rb_intern("allow_nan");
-    i_symbolize_names = rb_intern("symbolize_names");
-    i_object_class = rb_intern("object_class");
-    i_array_class = rb_intern("array_class");
-    i_decimal_class = rb_intern("decimal_class");
     i_match = rb_intern("match");
-    i_match_string = rb_intern("match_string");
     i_deep_const_get = rb_intern("deep_const_get");
     i_aset = rb_intern("[]=");
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
     i_new = rb_intern("new");
     i_try_convert = rb_intern("try_convert");
-    i_freeze = rb_intern("freeze");
     i_uminus = rb_intern("-@");
     i_encode = rb_intern("encode");
 
     binary_encindex = rb_ascii8bit_encindex();
     utf8_encindex = rb_utf8_encindex();
+    enc_utf8 = rb_utf8_encoding();
 }
 
 /*
