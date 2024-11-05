@@ -190,13 +190,15 @@ module SyncDefaultGems
       cp_r("#{upstream}/man/irb.1", "man/irb.1")
       cp_r("#{upstream}/doc/irb", "doc")
     when "json"
-      rm_rf(%w[ext/json test/json])
+      rm_rf(%w[ext/json lib/json test/json])
       cp_r("#{upstream}/ext/json/ext", "ext/json")
       cp_r("#{upstream}/test/json", "test/json")
       rm_rf("test/json/lib")
       cp_r("#{upstream}/lib", "ext/json")
       cp_r("#{upstream}/json.gemspec", "ext/json")
-      rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
+      rm_rf(%w[ext/json/lib/json/pure.rb ext/json/lib/json/pure])
+      json_files = Dir.glob("ext/json/lib/json/ext/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
+      rm_rf(json_files - Dir.glob("ext/json/lib/json/ext/**/*.rb"))
       `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend benchmark/`
     when "psych"
       rm_rf(%w[ext/psych test/psych])
