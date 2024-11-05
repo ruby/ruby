@@ -35,6 +35,7 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
   end
 
   def test_version
+    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
     req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest.new('SHA256'))
     assert_equal(0, req.version)
     req = OpenSSL::X509::Request.new(req.to_der)
