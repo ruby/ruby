@@ -2007,7 +2007,7 @@ iseq_set_use_block(rb_iseq_t *iseq)
 
         rb_vm_t *vm = GET_VM();
 
-        if (!vm->unused_block_warning_strict) {
+        if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK)) {
             st_data_t key = (st_data_t)rb_intern_str(body->location.label); // String -> ID
             st_insert(vm->unused_block_warning_table, key, 1);
         }
