@@ -105,6 +105,7 @@ The following default gems are updated.
 * stringio 3.1.2.dev
 * strscan 3.1.1.dev
 * syntax_suggest 2.0.1
+* tempfile 0.3.0
 * time 0.4.0
 * uri 0.13.1
 * win32ole 1.9.0
