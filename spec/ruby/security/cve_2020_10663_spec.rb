@@ -29,7 +29,14 @@ guard -> {
 
       JSON.parse(json, create_additions: true).class.should == JSONSpecs::MyClass
       JSON(json, create_additions: true).class.should == JSONSpecs::MyClass
-      JSON.load(json).class.should == JSONSpecs::MyClass
+      if version_is(JSON::VERSION, '2.8.0')
+        warning = /\Wcreate_additions:\s*true\W\s+is\s+deprecated/
+      else
+        warning = ''
+      end
+      -> {
+        JSON.load(json).class.should == JSONSpecs::MyClass
+      }.should output_to_fd(warning, STDERR)
 
       JSON.parse(json).class.should == Hash
       JSON.parse(json, nil).class.should == Hash
