@@ -2,12 +2,8 @@ gnumake = yes
 
 include Makefile
 
-ifeq ($(target_os),cygwin)
-MUNICODE_FLAG =
-else
-override EXE_LDFLAGS += -municode
-MUNICODE_FLAG = -municode
-endif
+MUNICODE_FLAG = $(if $(filter mingw%,$(target_os)),-municode)
+override EXE_LDFLAGS += $(MUNICODE_FLAG)
 
 ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
