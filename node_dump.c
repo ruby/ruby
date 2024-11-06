@@ -694,8 +694,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("yield invocation");
         ANN("format: yield [nd_head]");
         ANN("example: yield 1");
-        LAST_NODE;
         F_NODE(nd_head, RNODE_YIELD, "arguments");
+        F_LOC(keyword_loc, RNODE_YIELD);
+        F_LOC(lparen_loc, RNODE_YIELD);
+        LAST_NODE;
+        F_LOC(rparen_loc, RNODE_YIELD);
         return;
 
       case NODE_LVAR:

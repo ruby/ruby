@@ -875,6 +875,12 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_UNTIL(node)->keyword_loc),
                                     location_new(&RNODE_UNTIL(node)->closing_loc));
+      case NODE_YIELD:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_YIELD(node)->keyword_loc),
+                                    location_new(&RNODE_YIELD(node)->lparen_loc),
+                                    location_new(&RNODE_YIELD(node)->rparen_loc));
       case NODE_ARGS_AUX:
       case NODE_LAST:
         break;

@@ -1101,7 +1101,7 @@ static rb_node_list_t *rb_node_list_new2(struct parser_params *p, NODE *nd_head,
 static rb_node_zlist_t *rb_node_zlist_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_hash_t *rb_node_hash_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_return_t *rb_node_return_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc);
-static rb_node_yield_t *rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
+static rb_node_yield_t *rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_node_lvar_t *rb_node_lvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_node_dvar_t *rb_node_dvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
 static rb_node_gvar_t *rb_node_gvar_new(struct parser_params *p, ID nd_vid, const YYLTYPE *loc);
@@ -1209,7 +1209,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ZLIST(loc) (NODE *)rb_node_zlist_new(p,loc)
 #define NEW_HASH(a,loc) (NODE *)rb_node_hash_new(p,a,loc)
 #define NEW_RETURN(s,loc,k_loc) (NODE *)rb_node_return_new(p,s,loc,k_loc)
-#define NEW_YIELD(a,loc) (NODE *)rb_node_yield_new(p,a,loc)
+#define NEW_YIELD(a,loc,k_loc,l_loc,r_loc) (NODE *)rb_node_yield_new(p,a,loc,k_loc,l_loc,r_loc)
 #define NEW_LVAR(v,loc) (NODE *)rb_node_lvar_new(p,v,loc)
 #define NEW_DVAR(v,loc) (NODE *)rb_node_dvar_new(p,v,loc)
 #define NEW_GVAR(v,loc) (NODE *)rb_node_gvar_new(p,v,loc)
@@ -1438,7 +1438,7 @@ static rb_node_args_t *args_with_numbered(struct parser_params*,rb_node_args_t*,
 static NODE* negate_lit(struct parser_params*, NODE*);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
-static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*);
+static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *dsym_node(struct parser_params*,NODE*,const YYLTYPE*);
 
 static NODE *gettable(struct parser_params*,ID,const YYLTYPE*);
@@ -3515,7 +3515,7 @@ command		: fcall command_args       %prec tLOWEST
                     }
                 | k_yield command_args
                     {
-                        $$ = new_yield(p, $2, &@$);
+                        $$ = new_yield(p, $2, &@$, &@1, &NULL_LOC, &NULL_LOC);
                         fixpos($$, $2);
                     /*% ripper: yield!($:2) %*/
                     }
@@ -4429,17 +4429,17 @@ primary         : inline_primary
                     }
                 | k_yield '(' call_args rparen
                     {
-                        $$ = new_yield(p, $3, &@$);
+                        $$ = new_yield(p, $3, &@$, &@1, &@2, &@4);
                     /*% ripper: yield!(paren!($:3)) %*/
                     }
                 | k_yield '(' rparen
                     {
-                        $$ = NEW_YIELD(0, &@$);
+                        $$ = NEW_YIELD(0, &@$, &@1, &@2, &@3);
                     /*% ripper: yield!(paren!(args_new!)) %*/
                     }
                 | k_yield
                     {
-                        $$ = NEW_YIELD(0, &@$);
+                        $$ = NEW_YIELD(0, &@$, &@1, &NULL_LOC, &NULL_LOC);
                     /*% ripper: yield0! %*/
                     }
                 | keyword_defined '\n'? '(' begin_defined expr rparen
@@ -11494,10 +11494,13 @@ rb_node_return_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, c
 }
 
 static rb_node_yield_t *
-rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
+rb_node_yield_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc)
 {
     rb_node_yield_t *n = NODE_NEWNODE(NODE_YIELD, rb_node_yield_t, loc);
     n->nd_head = nd_head;
+    n->keyword_loc = *keyword_loc;
+    n->lparen_loc = *lparen_loc;
+    n->rparen_loc = *rparen_loc;
 
     return n;
 }
@@ -14378,11 +14381,11 @@ ret_args(struct parser_params *p, NODE *node)
 }
 
 static NODE *
-new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc)
+new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc)
 {
     if (node) no_blockarg(p, node);
 
-    return NEW_YIELD(node, loc);
+    return NEW_YIELD(node, loc, keyword_loc, lparen_loc, rparen_loc);
 }
 
 static NODE*
