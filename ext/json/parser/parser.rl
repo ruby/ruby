@@ -658,10 +658,10 @@ main := ignore* (
               Vtrue @parse_true |
               VNaN @parse_nan |
               VInfinity @parse_infinity |
-              begin_number >parse_number |
-              begin_string >parse_string |
-              begin_array >parse_array |
-              begin_object >parse_object
+              begin_number @parse_number |
+              begin_string @parse_string |
+              begin_array @parse_array |
+              begin_object @parse_object
         ) ignore* %*exit;
 }%%
 
@@ -876,6 +876,26 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
+static VALUE json_string_fastpath(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
+{
+    size_t bufferSize = stringEnd - string;
+
+    if (is_name) {
+        VALUE cached_key;
+        if (RB_UNLIKELY(symbolize)) {
+            cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
+        } else {
+            cached_key = rstring_cache_fetch(&json->name_cache, string, bufferSize);
+        }
+
+        if (RB_LIKELY(cached_key)) {
+            return cached_key;
+        }
+    }
+
+    return build_string(string, stringEnd, intern, symbolize);
+}
+
 static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
@@ -897,7 +917,7 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
     }
 
     pe = memchr(p, '\\', bufferSize);
-    if (RB_LIKELY(pe == NULL)) {
+    if (RB_UNLIKELY(pe == NULL)) {
         return build_string(string, stringEnd, intern, symbolize);
     }
 
@@ -1003,19 +1023,31 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
 
     write data;
 
-    action parse_string {
+    action parse_complex_string {
         *result = json_string_unescape(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
-        if (NIL_P(*result)) {
-            fhold;
-            fbreak;
-        } else {
-            fexec p + 1;
-        }
+        fexec p + 1;
+        fhold;
+        fbreak;
     }
 
-    action exit { fhold; fbreak; }
+    action parse_simple_string {
+        *result = json_string_fastpath(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        fexec p + 1;
+        fhold;
+        fbreak;
+    }
 
-    main := '"' ((^([\"\\] | 0..0x1f) | '\\'[\"\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | '\\'^([\"\\/bfnrtu]|0..0x1f))* %parse_string) '"' @exit;
+    double_quote = '"';
+    escape = '\\';
+    control = 0..0x1f;
+    simple = any - escape - double_quote - control;
+
+    main := double_quote (
+         (simple*)(
+            (double_quote) @parse_simple_string |
+            ((^([\"\\] | control) | escape[\"\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | escape^([\"\\/bfnrtu]|0..0x1f))* double_quote) @parse_complex_string
+         )
+    );
 }%%
 
 static int
