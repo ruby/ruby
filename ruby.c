@@ -326,7 +326,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("-a",		   "",                     "Split each input line ($_) into fields ($F)."),
         M("-c",		   "",			   "Check syntax (no execution)."),
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
-        M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) to true."),
+        M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) and $VERBOSE to true."),
         M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
         M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings."),
         M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
