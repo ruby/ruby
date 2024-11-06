@@ -42,7 +42,7 @@ describe "Fiber#raise" do
     -> { FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error' }.should raise_error(FiberSpecs::CustomError, 'test error')
   end
 
-  it 'accepts error class with with error message and backtrace information' do
+  it 'accepts error class with error message and backtrace information' do
     -> {
       FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error', ['foo', 'boo']
     }.should raise_error(FiberSpecs::CustomError) { |e|

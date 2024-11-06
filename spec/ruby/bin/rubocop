@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'bundler/inline'
+
+gemfile do
+  source 'https://rubygems.org'
+
+  gem 'rubocop', '1.66.1'
+end
+
+exec(Gem.bin_path('rubocop', 'rubocop'), *ARGV)

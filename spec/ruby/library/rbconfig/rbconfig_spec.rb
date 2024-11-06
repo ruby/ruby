@@ -9,6 +9,13 @@ describe 'RbConfig::CONFIG' do
     end
   end
 
+  it 'has MAJOR, MINOR, TEENY, and PATCHLEVEL matching RUBY_VERSION and RUBY_PATCHLEVEL' do
+    major, minor, teeny = RUBY_VERSION.split('.')
+    RbConfig::CONFIG.values_at("MAJOR", "MINOR", "TEENY", "PATCHLEVEL").should == [
+      major, minor, teeny, RUBY_PATCHLEVEL.to_s
+    ]
+  end
+
   # These directories have no meanings before the installation.
   guard -> { RbConfig::TOPDIR } do
     it "['rubylibdir'] returns the directory containing Ruby standard libraries" do

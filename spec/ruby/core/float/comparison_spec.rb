@@ -72,7 +72,7 @@ describe "Float#<=>" do
     (-Float::MAX.to_i*2 <=> -infinity_value).should == 1
   end
 
-  it "returns 0 when self is Infinity and other other is infinite?=1" do
+  it "returns 0 when self is Infinity and other is infinite?=1" do
     obj = Object.new
     def obj.infinite?
       1

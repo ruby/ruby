@@ -2,20 +2,20 @@ require_relative '../../spec_helper'
 require 'bigdecimal'
 
 describe "BigDecimal#fix" do
-    before :each do
-      @zero = BigDecimal("0")
-      @mixed = BigDecimal("1.23456789")
-      @pos_int = BigDecimal("2E5555")
-      @neg_int = BigDecimal("-2E5555")
-      @pos_frac = BigDecimal("2E-9999")
-      @neg_frac = BigDecimal("-2E-9999")
+  before :each do
+    @zero = BigDecimal("0")
+    @mixed = BigDecimal("1.23456789")
+    @pos_int = BigDecimal("2E5555")
+    @neg_int = BigDecimal("-2E5555")
+    @pos_frac = BigDecimal("2E-9999")
+    @neg_frac = BigDecimal("-2E-9999")
 
-      @infinity = BigDecimal("Infinity")
-      @infinity_neg = BigDecimal("-Infinity")
-      @nan = BigDecimal("NaN")
-      @zero_pos = BigDecimal("+0")
-      @zero_neg = BigDecimal("-0")
-    end
+    @infinity = BigDecimal("Infinity")
+    @infinity_neg = BigDecimal("-Infinity")
+    @nan = BigDecimal("NaN")
+    @zero_pos = BigDecimal("+0")
+    @zero_neg = BigDecimal("-0")
+  end
 
   it "returns a BigDecimal" do
     BigDecimal("2E100000000").fix.kind_of?(BigDecimal).should == true

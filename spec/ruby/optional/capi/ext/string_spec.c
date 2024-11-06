@@ -117,6 +117,10 @@ VALUE string_spec_rb_str_cmp(VALUE self, VALUE str1, VALUE str2) {
   return INT2NUM(rb_str_cmp(str1, str2));
 }
 
+VALUE string_spec_rb_str_strlen(VALUE self, VALUE str) {
+  return LONG2NUM(rb_str_strlen(str));
+}
+
 VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
   rb_encoding* from_enc;
   rb_encoding* to_enc;
@@ -600,6 +604,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_cat_cstr", string_spec_rb_str_cat_cstr, 2);
   rb_define_method(cls, "rb_str_cat_cstr_constant", string_spec_rb_str_cat_cstr_constant, 1);
   rb_define_method(cls, "rb_str_cmp", string_spec_rb_str_cmp, 2);
+  rb_define_method(cls, "rb_str_strlen", string_spec_rb_str_strlen, 1);
   rb_define_method(cls, "rb_str_conv_enc", string_spec_rb_str_conv_enc, 3);
   rb_define_method(cls, "rb_str_conv_enc_opts", string_spec_rb_str_conv_enc_opts, 5);
   rb_define_method(cls, "rb_str_drop_bytes", string_spec_rb_str_drop_bytes, 2);

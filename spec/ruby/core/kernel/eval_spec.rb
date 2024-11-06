@@ -274,6 +274,26 @@ describe "Kernel#eval" do
     eval("").should == nil
   end
 
+  context "with shebang" do
+    it "ignores shebang with ruby interpreter" do
+      pid = eval(<<~CODE.b)
+        #!/usr/bin/env ruby
+        Process.pid
+      CODE
+
+      pid.should == Process.pid
+    end
+
+    it "ignores shebang with non-ruby interpreter" do
+      pid = eval(<<~CODE.b)
+        #!/usr/bin/env puma
+        Process.pid
+      CODE
+
+      pid.should == Process.pid
+    end
+  end
+
   # See language/magic_comment_spec.rb for more magic comments specs
   describe "with a magic encoding comment" do
     it "uses the magic comment encoding for the encoding of literal strings" do

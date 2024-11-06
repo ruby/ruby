@@ -460,6 +460,10 @@ describe :regexp_new_string, shared: true do
       -> { Regexp.send(@method, "\\" + "u{}") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode list: /\\u{}/")))
     end
 
+    it "raises a RegexpError if the \\u{} escape contains non hexadecimal digits" do
+      -> { Regexp.send(@method, "\\" + "u{abcX}") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode list: /\\u{abcX}/")))
+    end
+
     it "raises a RegexpError if more than six hexadecimal digits are given" do
       -> { Regexp.send(@method, "\\" + "u{0ffffff}") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode range: /\\u{0ffffff}/")))
     end

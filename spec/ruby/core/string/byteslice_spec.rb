@@ -17,7 +17,7 @@ describe "String#byteslice with Range" do
   it_behaves_like :string_slice_range, :byteslice
 end
 
-describe "String#byteslice on on non ASCII strings" do
+describe "String#byteslice on non ASCII strings" do
   it "returns byteslice of unicode strings" do
     "\u3042".byteslice(1).should == "\x81".dup.force_encoding("UTF-8")
     "\u3042".byteslice(1, 2).should == "\x81\x82".dup.force_encoding("UTF-8")

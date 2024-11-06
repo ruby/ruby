@@ -21,16 +21,16 @@ describe "Enumerator#each_with_index" do
 
   it "passes on the given block's return value" do
     arr = [1,2,3]
-    arr.delete_if.with_index { |a,b| false }
+    arr.delete_if.each_with_index { |a,b| false }
     arr.should == [1,2,3]
   end
 
   it "returns the iterator's return value" do
-    [1,2,3].select.with_index { |a,b| false }.should == []
+    [1,2,3].select.each_with_index { |a,b| false }.should == []
+    [1,2,3].select.each_with_index { |a,b| true }.should == [1,2,3]
   end
 
   it "returns the correct value if chained with itself" do
     [:a].each_with_index.each_with_index.to_a.should == [[[:a,0],0]]
-    [:a].each.with_index.with_index.to_a.should == [[[:a,0],0]]
   end
 end

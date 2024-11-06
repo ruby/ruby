@@ -3,9 +3,17 @@ require_relative 'fixtures/kernel'
 
 kernel_path = load_extension("kernel")
 
+class CApiKernelSpecs::Exc < StandardError
+end
+exception_class = CApiKernelSpecs::Exc
+
 describe "C-API Kernel function" do
   before :each do
     @s = CApiKernelSpecs.new
+  end
+
+  after :each do
+    @s.rb_errinfo.should == nil
   end
 
   describe "rb_block_given_p" do
@@ -77,6 +85,22 @@ describe "C-API Kernel function" do
       h = {}
       -> { @s.rb_raise(h) }.should raise_error(TypeError)
       h[:stage].should == :before
+    end
+
+    it "re-raises a rescued exception" do
+      -> do
+        begin
+          raise StandardError, "aaa"
+        rescue Exception
+          begin
+            @s.rb_raise({})
+          rescue TypeError
+          end
+
+          # should raise StandardError "aaa"
+          raise
+        end
+      end.should raise_error(StandardError, "aaa")
     end
   end
 
@@ -295,7 +319,7 @@ describe "C-API Kernel function" do
     it "will allow cleanup code to run after a raise" do
       proof = [] # Hold proof of work performed after the yield.
       -> do
-        @s.rb_protect_yield(77, proof) { |x| raise NameError}
+        @s.rb_protect_yield(77, proof) { |x| raise NameError }
       end.should raise_error(NameError)
       proof[0].should == 23
     end
@@ -303,7 +327,7 @@ describe "C-API Kernel function" do
     it "will return nil if an error was raised" do
       proof = [] # Hold proof of work performed after the yield.
       -> do
-        @s.rb_protect_yield(77, proof) { |x| raise NameError}
+        @s.rb_protect_yield(77, proof) { |x| raise NameError }
       end.should raise_error(NameError)
       proof[0].should == 23
       proof[1].should == nil
@@ -311,14 +335,21 @@ describe "C-API Kernel function" do
 
     it "accepts NULL as status and returns nil if it failed" do
       @s.rb_protect_null_status(42) { |x| x + 1 }.should == 43
-      @s.rb_protect_null_status(42) { |x| raise }.should == nil
+      @s.rb_protect_null_status(42) { |x| raise NameError }.should == nil
+      @s.rb_errinfo().should.is_a? NameError
+    ensure
+      @s.rb_set_errinfo(nil)
     end
 
-    it "populates errinfo with the captured exception" do
+    it "populates rb_errinfo() with the captured exception" do
       proof = []
-      @s.rb_protect_errinfo(77, proof) { |x| raise NameError }.class.should == NameError
+      @s.rb_protect_ignore_status(77, proof) { |x| raise NameError }
+      @s.rb_errinfo().should.is_a? NameError
+      # Note: on CRuby $! is the NameError here, but not clear if that is desirable or bug
       proof[0].should == 23
       proof[1].should == nil
+    ensure
+      @s.rb_set_errinfo(nil)
     end
 
   end
@@ -382,9 +413,21 @@ describe "C-API Kernel function" do
       -> { @s.rb_rescue(@std_error_proc, nil, @std_error_proc, nil) }.should raise_error(StandardError)
     end
 
-    it "makes $! available only during the 'rescue function' execution" do
-      @s.rb_rescue(@std_error_proc, nil, -> *_ { $! }, nil).class.should == StandardError
+    it "sets $! and rb_errinfo() during the 'rescue function' execution" do
+      @s.rb_rescue(-> *_ { raise exception_class, '' }, nil, -> _, exc {
+        exc.should.is_a?(exception_class)
+        $!.should.equal?(exc)
+        @s.rb_errinfo.should.equal?(exc)
+      }, nil)
+
+      @s.rb_rescue(-> _ { @s.rb_raise({}) }, nil, -> _, exc {
+        exc.should.is_a?(TypeError)
+        $!.should.equal?(exc)
+        @s.rb_errinfo.should.equal?(exc)
+      }, nil)
+
       $!.should == nil
+      @s.rb_errinfo.should == nil
     end
 
     it "returns the break value if the passed function yields to a block with a break" do
@@ -402,7 +445,7 @@ describe "C-API Kernel function" do
 
   describe "rb_rescue2" do
     it "only rescues if one of the passed exceptions is raised" do
-      proc = -> x { x }
+      proc = -> x, _exc { x }
       arg_error_proc = -> *_ { raise ArgumentError, '' }
       run_error_proc = -> *_ { raise RuntimeError, '' }
       type_error_proc = -> *_ { raise Exception, 'custom error' }
@@ -417,6 +460,23 @@ describe "C-API Kernel function" do
       -> {
         @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
       }.should raise_error(TypeError, /class or module required/)
+    end
+
+    it "sets $! and rb_errinfo() during the 'rescue function' execution" do
+      @s.rb_rescue2(-> *_ { raise exception_class, '' }, :no_exc, -> _, exc {
+        exc.should.is_a?(exception_class)
+        $!.should.equal?(exc)
+        @s.rb_errinfo.should.equal?(exc)
+      }, :exc, exception_class, ScriptError)
+
+      @s.rb_rescue2(-> *_ { @s.rb_raise({}) }, :no_exc, -> _, exc {
+        exc.should.is_a?(TypeError)
+        $!.should.equal?(exc)
+        @s.rb_errinfo.should.equal?(exc)
+      }, :exc, TypeError, ArgumentError)
+
+      $!.should == nil
+      @s.rb_errinfo.should == nil
     end
   end
 
@@ -486,10 +546,31 @@ describe "C-API Kernel function" do
 
     it "executes passed 'ensure function' when an exception is raised" do
       foo = nil
-      raise_proc = -> { raise '' }
+      raise_proc = -> _ { raise exception_class }
       ensure_proc = -> x { foo = x }
-      @s.rb_ensure(raise_proc, nil, ensure_proc, :foo) rescue nil
+      -> {
+        @s.rb_ensure(raise_proc, nil, ensure_proc, :foo)
+      }.should raise_error(exception_class)
       foo.should == :foo
+    end
+
+    it "sets $! and rb_errinfo() during the 'ensure function' execution" do
+      -> {
+        @s.rb_ensure(-> _ { raise exception_class }, nil, -> _ {
+          $!.should.is_a?(exception_class)
+          @s.rb_errinfo.should.is_a?(exception_class)
+        }, nil)
+      }.should raise_error(exception_class)
+
+      -> {
+        @s.rb_ensure(-> _ { @s.rb_raise({}) }, nil, -> _ {
+          $!.should.is_a?(TypeError)
+          @s.rb_errinfo.should.is_a?(TypeError)
+        }, nil)
+      }.should raise_error(TypeError)
+
+      $!.should == nil
+      @s.rb_errinfo.should == nil
     end
 
     it "raises the same exception raised inside passed function" do

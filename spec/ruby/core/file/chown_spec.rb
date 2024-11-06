@@ -78,15 +78,15 @@ describe "File.chown" do
 end
 
 describe "File#chown" do
-    before :each do
-      @fname = tmp('file_chown_test')
-      @file = File.open(@fname, 'w')
-    end
+  before :each do
+    @fname = tmp('file_chown_test')
+    @file = File.open(@fname, 'w')
+  end
 
-    after :each do
-      @file.close unless @file.closed?
-      rm_r @fname
-    end
+  after :each do
+    @file.close unless @file.closed?
+    rm_r @fname
+  end
 
   as_superuser do
     platform_is :windows do
