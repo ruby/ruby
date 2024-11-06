@@ -309,6 +309,16 @@ class Scheduler
       Addrinfo.getaddrinfo(hostname, nil).map(&:ip_address).uniq
     end.value
   end
+
+  def blocking_operation_wait(work)
+    thread = Thread.new(&work)
+
+    thread.join
+
+    thread = nil
+  ensure
+    thread&.kill
+  end
 end
 
 # This scheduler class implements `io_read` and `io_write` hooks which require

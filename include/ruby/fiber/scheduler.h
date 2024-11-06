@@ -391,6 +391,26 @@ VALUE rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io);
  */
 VALUE rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname);
 
+struct rb_fiber_scheduler_blocking_operation_state {
+    void *result;
+    int saved_errno;
+};
+
+/**
+ * Defer the execution of the passed function to the scheduler.
+ *
+ * @param[in]  scheduler         Target scheduler.
+ * @param[in]  function          The function to run.
+ * @param[in]  data              The data to pass to the function.
+ * @param[in]  unblock_function  The unblock function to use to interrupt the operation.
+ * @param[in]  data2             The data to pass to the unblock function.
+ * @param[in]  flags             Flags passed to `rb_nogvl`.
+ * @param[out] state             The result and errno of the operation.
+ * @retval     RUBY_Qundef       `scheduler` doesn't have `#blocking_operation_wait`.
+ * @return     otherwise         What `scheduler.blocking_operation_wait` returns.
+ */
+VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*function)(void *), void *data, rb_unblock_function_t *unblock_function, void *data2, int flags, struct rb_fiber_scheduler_blocking_operation_state *state);
+
 /**
  * Create and schedule a non-blocking fiber.
  *

@@ -1539,6 +1539,20 @@ rb_nogvl(void *(*func)(void *), void *data1,
          rb_unblock_function_t *ubf, void *data2,
          int flags)
 {
+    if (flags & RB_NOGVL_OFFLOAD_SAFE) {
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            struct rb_fiber_scheduler_blocking_operation_state state;
+
+            VALUE result = rb_fiber_scheduler_blocking_operation_wait(scheduler, func, data1, ubf, data2, flags, &state);
+
+            if (!UNDEF_P(result)) {
+                rb_errno_set(state.saved_errno);
+                return state.result;
+            }
+        }
+    }
+
     void *val = 0;
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
