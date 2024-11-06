@@ -118,8 +118,8 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
                         case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
                         case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
                         default: {
-                            scratch[2] = hexdig[ch >> 12];
-                            scratch[3] = hexdig[(ch >> 8) & 0xf];
+                            scratch[2] = '0';
+                            scratch[3] = '0';
                             scratch[4] = hexdig[(ch >> 4) & 0xf];
                             scratch[5] = hexdig[ch & 0xf];
                             fbuffer_append(out_buffer, scratch, 6);
@@ -240,8 +240,8 @@ static void convert_ASCII_to_JSON(FBuffer *out_buffer, VALUE str, const char esc
                 case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
                 case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
                 default:
-                    scratch[2] = hexdig[ch >> 12];
-                    scratch[3] = hexdig[(ch >> 8) & 0xf];
+                    scratch[2] = '0';
+                    scratch[3] = '0';
                     scratch[4] = hexdig[(ch >> 4) & 0xf];
                     scratch[5] = hexdig[ch & 0xf];
                     fbuffer_append(out_buffer, scratch, 6);
@@ -288,8 +288,8 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, cons
                         case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
                         case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
                         default: {
-                            scratch[2] = hexdig[ch >> 12];
-                            scratch[3] = hexdig[(ch >> 8) & 0xf];
+                            scratch[2] = '0';
+                            scratch[3] = '0';
                             scratch[4] = hexdig[(ch >> 4) & 0xf];
                             scratch[5] = hexdig[ch & 0xf];
                             fbuffer_append(out_buffer, scratch, 6);
