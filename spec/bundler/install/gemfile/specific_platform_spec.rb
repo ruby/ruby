@@ -881,7 +881,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "automatically fixes the lockfile if locked only to ruby, and some locked specs don't meed locked dependencies" do
+  it "automatically fixes the lockfile if locked only to ruby, and some locked specs don't meet locked dependencies" do
     simulate_platform "x86_64-linux" do
       build_repo4 do
         build_gem("ibandit", "0.7.0") do |s|
