@@ -120,7 +120,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
                     // Write with the fd opened during boot
                     let mut file = unsafe { std::fs::File::from_raw_fd(*fd) };
                     file.write_all(disasm.as_bytes()).unwrap();
-                    file.into_raw_fd(); // keep the fd open
+                    let _ = file.into_raw_fd(); // keep the fd open
                 }
             };
         }

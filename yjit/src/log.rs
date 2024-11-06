@@ -81,7 +81,7 @@ impl Log {
                     let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
                     writeln!(file, "{}", entry).unwrap();
                     file.flush().unwrap();
-                    file.into_raw_fd(); // keep the fd open
+                    let _ = file.into_raw_fd(); // keep the fd open
                 }
 
                 LogOutput::MemoryOnly => () // Don't print or write anything
