@@ -15,6 +15,17 @@ static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbo
 static int binary_encindex;
 static int utf8_encindex;
 
+#ifdef HAVE_RB_CATEGORY_WARN
+# define json_deprecated(message) rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, message)
+#else
+# define json_deprecated(message) rb_warn(message)
+#endif
+
+static const char deprecated_create_additions_warning[] =
+    "JSON.load implicit support for `create_additions: true` is deprecated "
+    "and will be removed in 3.0, use JSON.unsafe_load or explicitly "
+    "pass `create_additions: true`";
+
 #ifndef HAVE_RB_GC_MARK_LOCATIONS
 // For TruffleRuby
 void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
@@ -554,7 +565,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
                 if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
                     if (json->deprecated_create_additions) {
-                        rb_warn("JSON.load implicit support for `create_additions: true` is deprecated and will be removed in 3.0, use JSON.unsafe_load or explicitly pass `create_additions: true`");
+                        json_deprecated(deprecated_create_additions_warning);
                     }
                     *result = rb_funcall(klass, i_json_create, 1, *result);
                 }
