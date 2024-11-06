@@ -19,9 +19,10 @@ module Bundler
       :ruby_version,
       :lockfile,
       :gemfiles,
-      :locked_checksums,
       :sources
     )
+
+    attr_accessor :locked_checksums
 
     # Given a gemfile and lockfile creates a Bundler definition
     #

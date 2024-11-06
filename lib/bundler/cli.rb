@@ -604,6 +604,7 @@ module Bundler
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
+    method_option "add-checksums", type: :boolean, default: false, banner: "Adds checksums to the lockfile"
     method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
     method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
     method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
