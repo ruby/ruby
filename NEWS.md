@@ -95,6 +95,7 @@ The following default gems are updated.
 * json 2.8.0.alpha1
 * logger 1.6.1
 * net-http 0.4.1
+* open-uri 0.5.0
 * optparse 0.5.0
 * pathname 0.4.0
 * prism 1.0.0
