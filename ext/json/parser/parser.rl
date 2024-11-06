@@ -694,6 +694,28 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
     main := '-'? ('0' | [1-9][0-9]*) (^[0-9]? @exit);
 }%%
 
+#define MAX_FAST_INTEGER_SIZE 18
+static inline VALUE fast_parse_integer(char *p, char *pe)
+{
+    bool negative = false;
+    if (*p == '-') {
+        negative = true;
+        p++;
+    }
+
+    long long memo = 0;
+    while (p < pe) {
+        memo *= 10;
+        memo += *p - '0';
+        p++;
+    }
+
+    if (negative) {
+        memo = -memo;
+    }
+    return LL2NUM(memo);
+}
+
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
@@ -704,10 +726,14 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
 
     if (cs >= JSON_integer_first_final) {
         long len = p - json->memo;
-        fbuffer_clear(&json->fbuffer);
-        fbuffer_append(&json->fbuffer, json->memo, len);
-        fbuffer_append_char(&json->fbuffer, '\0');
-        *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+        if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
+            *result = fast_parse_integer(json->memo, p);
+        } else {
+            fbuffer_clear(&json->fbuffer);
+            fbuffer_append(&json->fbuffer, json->memo, len);
+            fbuffer_append_char(&json->fbuffer, '\0');
+            *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+        }
         return p + 1;
     } else {
         return NULL;
