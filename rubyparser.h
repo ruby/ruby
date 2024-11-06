@@ -593,6 +593,9 @@ typedef struct RNode_YIELD {
     NODE node;
 
     struct RNode *nd_head;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
 } rb_node_yield_t;
 
 typedef struct RNode_LVAR {

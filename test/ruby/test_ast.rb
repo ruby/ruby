@@ -1517,6 +1517,20 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
     end
 
+    def test_yield_locations
+      node = ast_parse("def foo; yield end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 14], [1, 9, 1, 14], nil, nil])
+
+      node = ast_parse("def foo; yield() end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 16], [1, 9, 1, 14], [1, 14, 1, 15], [1, 15, 1, 16]])
+
+      node = ast_parse("def foo; yield 1, 2 end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 19], [1, 9, 1, 14], nil, nil])
+
+      node = ast_parse("def foo; yield(1, 2) end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
+  end
+
     private
     def ast_parse(src, **options)
       begin
