@@ -96,6 +96,7 @@ The following default gems are updated.
 * logger 1.6.1
 * net-http 0.4.1
 * optparse 0.5.0
+* pathname 0.4.0
 * prism 1.0.0
 * psych 5.2.0.beta1
 * rdoc 6.7.0
