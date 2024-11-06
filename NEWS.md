@@ -87,7 +87,7 @@ The following default gems are updated.
 * io-console 0.7.2
 * ipaddr 1.2.7
 * irb 1.14.1
-* json 2.8.0.alpha1
+* json 2.8.0
 * logger 1.6.1
 * net-http 0.4.1
 * open-uri 0.5.0
