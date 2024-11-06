@@ -64,7 +64,7 @@ jobs:
       - name: Set ENV
         run: |
           echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
-          echo "PATH="/usr/local/opt/bison/bin:$PATH"" >> $GITHUB_ENV
+          echo "PATH="/usr/local/opt/bison/bin:/opt/homebrew/opt/bison/bin:$PATH"" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
       - name: Run configure
