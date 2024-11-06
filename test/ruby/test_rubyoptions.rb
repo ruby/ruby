@@ -306,6 +306,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_chdir
+    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
     assert_in_out_err(%w(-C), "", [], /Can't chdir/)
 
     assert_in_out_err(%w(-C test_ruby_test_rubyoptions_foobarbazqux), "", [], /Can't chdir/)
@@ -973,6 +974,7 @@ class TestRubyOptions < Test::Unit::TestCase
     # Since the codepage is shared all processes per conhost.exe, do
     # not chcp, or parallel test may break.
     def test_locale_codepage
+      omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
       locale = Encoding.find("locale")
       list = %W"\u{c7} \u{452} \u{3066 3059 3068}"
       list.each do |s|

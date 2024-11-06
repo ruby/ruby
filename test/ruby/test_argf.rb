@@ -267,6 +267,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_inplace_nonascii
+    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
     ext = Encoding.default_external or
       omit "no default external encoding"
     t = nil
