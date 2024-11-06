@@ -2,7 +2,12 @@ gnumake = yes
 
 include Makefile
 
+ifeq ($(target_os),cygwin)
+MUNICODE_FLAG =
+else
 override EXE_LDFLAGS += -municode
+MUNICODE_FLAG = -municode
+endif
 
 DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
 windres-cpp := $(CPP) -xc
@@ -65,7 +70,7 @@ $(PROGRAM): $(RUBY_INSTALL_NAME).res.$(OBJEXT)
 $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.$(OBJEXT)
 	@rm -f $@
 	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) -municode -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
+	$(Q) $(PURIFY) $(CC) $(MUNICODE_FLAG) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 $(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.$(OBJEXT)
 
