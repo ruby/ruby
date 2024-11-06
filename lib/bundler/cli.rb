@@ -482,12 +482,10 @@ module Bundler
       Open.new(options, name).run
     end
 
-    unless Bundler.feature_flag.bundler_3_mode?
-      desc "console [GROUP]", "Opens an IRB session with the bundle pre-loaded"
-      def console(group = nil)
-        require_relative "cli/console"
-        Console.new(options, group).run
-      end
+    desc "console [GROUP]", "Opens an IRB session with the bundle pre-loaded"
+    def console(group = nil)
+      require_relative "cli/console"
+      Console.new(options, group).run
     end
 
     desc "version", "Prints Bundler version information"
