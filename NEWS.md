@@ -103,6 +103,7 @@ The following default gems are updated.
 * rdoc 6.7.0
 * reline 0.5.10
 * resolv 0.4.0
+* shellwords 0.2.1
 * stringio 3.1.2.dev
 * strscan 3.1.1.dev
 * syntax_suggest 2.0.1
