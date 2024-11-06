@@ -309,10 +309,6 @@ class Scheduler
       Addrinfo.getaddrinfo(hostname, nil).map(&:ip_address).uniq
     end.value
   end
-
-  def blocking_region(work)
-    Thread.new(&work).join
-  end
 end
 
 # This scheduler class implements `io_read` and `io_write` hooks which require
