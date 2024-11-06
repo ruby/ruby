@@ -172,6 +172,7 @@ ossl.o: $(hdrdir)/ruby/io.h
 ossl.o: $(hdrdir)/ruby/missing.h
 ossl.o: $(hdrdir)/ruby/onigmo.h
 ossl.o: $(hdrdir)/ruby/oniguruma.h
+ossl.o: $(hdrdir)/ruby/ractor.h
 ossl.o: $(hdrdir)/ruby/ruby.h
 ossl.o: $(hdrdir)/ruby/st.h
 ossl.o: $(hdrdir)/ruby/subst.h
@@ -367,6 +368,7 @@ ossl_asn1.o: $(hdrdir)/ruby/io.h
 ossl_asn1.o: $(hdrdir)/ruby/missing.h
 ossl_asn1.o: $(hdrdir)/ruby/onigmo.h
 ossl_asn1.o: $(hdrdir)/ruby/oniguruma.h
+ossl_asn1.o: $(hdrdir)/ruby/ractor.h
 ossl_asn1.o: $(hdrdir)/ruby/ruby.h
 ossl_asn1.o: $(hdrdir)/ruby/st.h
 ossl_asn1.o: $(hdrdir)/ruby/subst.h
@@ -562,6 +564,7 @@ ossl_bio.o: $(hdrdir)/ruby/io.h
 ossl_bio.o: $(hdrdir)/ruby/missing.h
 ossl_bio.o: $(hdrdir)/ruby/onigmo.h
 ossl_bio.o: $(hdrdir)/ruby/oniguruma.h
+ossl_bio.o: $(hdrdir)/ruby/ractor.h
 ossl_bio.o: $(hdrdir)/ruby/ruby.h
 ossl_bio.o: $(hdrdir)/ruby/st.h
 ossl_bio.o: $(hdrdir)/ruby/subst.h
@@ -953,6 +956,7 @@ ossl_cipher.o: $(hdrdir)/ruby/io.h
 ossl_cipher.o: $(hdrdir)/ruby/missing.h
 ossl_cipher.o: $(hdrdir)/ruby/onigmo.h
 ossl_cipher.o: $(hdrdir)/ruby/oniguruma.h
+ossl_cipher.o: $(hdrdir)/ruby/ractor.h
 ossl_cipher.o: $(hdrdir)/ruby/ruby.h
 ossl_cipher.o: $(hdrdir)/ruby/st.h
 ossl_cipher.o: $(hdrdir)/ruby/subst.h
@@ -1148,6 +1152,7 @@ ossl_config.o: $(hdrdir)/ruby/io.h
 ossl_config.o: $(hdrdir)/ruby/missing.h
 ossl_config.o: $(hdrdir)/ruby/onigmo.h
 ossl_config.o: $(hdrdir)/ruby/oniguruma.h
+ossl_config.o: $(hdrdir)/ruby/ractor.h
 ossl_config.o: $(hdrdir)/ruby/ruby.h
 ossl_config.o: $(hdrdir)/ruby/st.h
 ossl_config.o: $(hdrdir)/ruby/subst.h
@@ -1343,6 +1348,7 @@ ossl_digest.o: $(hdrdir)/ruby/io.h
 ossl_digest.o: $(hdrdir)/ruby/missing.h
 ossl_digest.o: $(hdrdir)/ruby/onigmo.h
 ossl_digest.o: $(hdrdir)/ruby/oniguruma.h
+ossl_digest.o: $(hdrdir)/ruby/ractor.h
 ossl_digest.o: $(hdrdir)/ruby/ruby.h
 ossl_digest.o: $(hdrdir)/ruby/st.h
 ossl_digest.o: $(hdrdir)/ruby/subst.h
@@ -1538,6 +1544,7 @@ ossl_engine.o: $(hdrdir)/ruby/io.h
 ossl_engine.o: $(hdrdir)/ruby/missing.h
 ossl_engine.o: $(hdrdir)/ruby/onigmo.h
 ossl_engine.o: $(hdrdir)/ruby/oniguruma.h
+ossl_engine.o: $(hdrdir)/ruby/ractor.h
 ossl_engine.o: $(hdrdir)/ruby/ruby.h
 ossl_engine.o: $(hdrdir)/ruby/st.h
 ossl_engine.o: $(hdrdir)/ruby/subst.h
@@ -1733,6 +1740,7 @@ ossl_hmac.o: $(hdrdir)/ruby/io.h
 ossl_hmac.o: $(hdrdir)/ruby/missing.h
 ossl_hmac.o: $(hdrdir)/ruby/onigmo.h
 ossl_hmac.o: $(hdrdir)/ruby/oniguruma.h
+ossl_hmac.o: $(hdrdir)/ruby/ractor.h
 ossl_hmac.o: $(hdrdir)/ruby/ruby.h
 ossl_hmac.o: $(hdrdir)/ruby/st.h
 ossl_hmac.o: $(hdrdir)/ruby/subst.h
@@ -1928,6 +1936,7 @@ ossl_kdf.o: $(hdrdir)/ruby/io.h
 ossl_kdf.o: $(hdrdir)/ruby/missing.h
 ossl_kdf.o: $(hdrdir)/ruby/onigmo.h
 ossl_kdf.o: $(hdrdir)/ruby/oniguruma.h
+ossl_kdf.o: $(hdrdir)/ruby/ractor.h
 ossl_kdf.o: $(hdrdir)/ruby/ruby.h
 ossl_kdf.o: $(hdrdir)/ruby/st.h
 ossl_kdf.o: $(hdrdir)/ruby/subst.h
@@ -2123,6 +2132,7 @@ ossl_ns_spki.o: $(hdrdir)/ruby/io.h
 ossl_ns_spki.o: $(hdrdir)/ruby/missing.h
 ossl_ns_spki.o: $(hdrdir)/ruby/onigmo.h
 ossl_ns_spki.o: $(hdrdir)/ruby/oniguruma.h
+ossl_ns_spki.o: $(hdrdir)/ruby/ractor.h
 ossl_ns_spki.o: $(hdrdir)/ruby/ruby.h
 ossl_ns_spki.o: $(hdrdir)/ruby/st.h
 ossl_ns_spki.o: $(hdrdir)/ruby/subst.h
@@ -2318,6 +2328,7 @@ ossl_ocsp.o: $(hdrdir)/ruby/io.h
 ossl_ocsp.o: $(hdrdir)/ruby/missing.h
 ossl_ocsp.o: $(hdrdir)/ruby/onigmo.h
 ossl_ocsp.o: $(hdrdir)/ruby/oniguruma.h
+ossl_ocsp.o: $(hdrdir)/ruby/ractor.h
 ossl_ocsp.o: $(hdrdir)/ruby/ruby.h
 ossl_ocsp.o: $(hdrdir)/ruby/st.h
 ossl_ocsp.o: $(hdrdir)/ruby/subst.h
@@ -2513,6 +2524,7 @@ ossl_pkcs12.o: $(hdrdir)/ruby/io.h
 ossl_pkcs12.o: $(hdrdir)/ruby/missing.h
 ossl_pkcs12.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkcs12.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkcs12.o: $(hdrdir)/ruby/ractor.h
 ossl_pkcs12.o: $(hdrdir)/ruby/ruby.h
 ossl_pkcs12.o: $(hdrdir)/ruby/st.h
 ossl_pkcs12.o: $(hdrdir)/ruby/subst.h
@@ -2708,6 +2720,7 @@ ossl_pkcs7.o: $(hdrdir)/ruby/io.h
 ossl_pkcs7.o: $(hdrdir)/ruby/missing.h
 ossl_pkcs7.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkcs7.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkcs7.o: $(hdrdir)/ruby/ractor.h
 ossl_pkcs7.o: $(hdrdir)/ruby/ruby.h
 ossl_pkcs7.o: $(hdrdir)/ruby/st.h
 ossl_pkcs7.o: $(hdrdir)/ruby/subst.h
@@ -2903,6 +2916,7 @@ ossl_pkey.o: $(hdrdir)/ruby/io.h
 ossl_pkey.o: $(hdrdir)/ruby/missing.h
 ossl_pkey.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkey.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkey.o: $(hdrdir)/ruby/ractor.h
 ossl_pkey.o: $(hdrdir)/ruby/ruby.h
 ossl_pkey.o: $(hdrdir)/ruby/st.h
 ossl_pkey.o: $(hdrdir)/ruby/subst.h
@@ -3098,6 +3112,7 @@ ossl_pkey_dh.o: $(hdrdir)/ruby/io.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/missing.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkey_dh.o: $(hdrdir)/ruby/ractor.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/ruby.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/st.h
 ossl_pkey_dh.o: $(hdrdir)/ruby/subst.h
@@ -3293,6 +3308,7 @@ ossl_pkey_dsa.o: $(hdrdir)/ruby/io.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/missing.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkey_dsa.o: $(hdrdir)/ruby/ractor.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/ruby.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/st.h
 ossl_pkey_dsa.o: $(hdrdir)/ruby/subst.h
@@ -3488,6 +3504,7 @@ ossl_pkey_ec.o: $(hdrdir)/ruby/io.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/missing.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkey_ec.o: $(hdrdir)/ruby/ractor.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/ruby.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/st.h
 ossl_pkey_ec.o: $(hdrdir)/ruby/subst.h
@@ -3683,6 +3700,7 @@ ossl_pkey_rsa.o: $(hdrdir)/ruby/io.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/missing.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/onigmo.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/oniguruma.h
+ossl_pkey_rsa.o: $(hdrdir)/ruby/ractor.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/ruby.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/st.h
 ossl_pkey_rsa.o: $(hdrdir)/ruby/subst.h
@@ -3878,6 +3896,7 @@ ossl_provider.o: $(hdrdir)/ruby/io.h
 ossl_provider.o: $(hdrdir)/ruby/missing.h
 ossl_provider.o: $(hdrdir)/ruby/onigmo.h
 ossl_provider.o: $(hdrdir)/ruby/oniguruma.h
+ossl_provider.o: $(hdrdir)/ruby/ractor.h
 ossl_provider.o: $(hdrdir)/ruby/ruby.h
 ossl_provider.o: $(hdrdir)/ruby/st.h
 ossl_provider.o: $(hdrdir)/ruby/subst.h
@@ -4073,6 +4092,7 @@ ossl_rand.o: $(hdrdir)/ruby/io.h
 ossl_rand.o: $(hdrdir)/ruby/missing.h
 ossl_rand.o: $(hdrdir)/ruby/onigmo.h
 ossl_rand.o: $(hdrdir)/ruby/oniguruma.h
+ossl_rand.o: $(hdrdir)/ruby/ractor.h
 ossl_rand.o: $(hdrdir)/ruby/ruby.h
 ossl_rand.o: $(hdrdir)/ruby/st.h
 ossl_rand.o: $(hdrdir)/ruby/subst.h
@@ -4268,6 +4288,7 @@ ossl_ssl.o: $(hdrdir)/ruby/io.h
 ossl_ssl.o: $(hdrdir)/ruby/missing.h
 ossl_ssl.o: $(hdrdir)/ruby/onigmo.h
 ossl_ssl.o: $(hdrdir)/ruby/oniguruma.h
+ossl_ssl.o: $(hdrdir)/ruby/ractor.h
 ossl_ssl.o: $(hdrdir)/ruby/ruby.h
 ossl_ssl.o: $(hdrdir)/ruby/st.h
 ossl_ssl.o: $(hdrdir)/ruby/subst.h
@@ -4463,6 +4484,7 @@ ossl_ssl_session.o: $(hdrdir)/ruby/io.h
 ossl_ssl_session.o: $(hdrdir)/ruby/missing.h
 ossl_ssl_session.o: $(hdrdir)/ruby/onigmo.h
 ossl_ssl_session.o: $(hdrdir)/ruby/oniguruma.h
+ossl_ssl_session.o: $(hdrdir)/ruby/ractor.h
 ossl_ssl_session.o: $(hdrdir)/ruby/ruby.h
 ossl_ssl_session.o: $(hdrdir)/ruby/st.h
 ossl_ssl_session.o: $(hdrdir)/ruby/subst.h
@@ -4658,6 +4680,7 @@ ossl_ts.o: $(hdrdir)/ruby/io.h
 ossl_ts.o: $(hdrdir)/ruby/missing.h
 ossl_ts.o: $(hdrdir)/ruby/onigmo.h
 ossl_ts.o: $(hdrdir)/ruby/oniguruma.h
+ossl_ts.o: $(hdrdir)/ruby/ractor.h
 ossl_ts.o: $(hdrdir)/ruby/ruby.h
 ossl_ts.o: $(hdrdir)/ruby/st.h
 ossl_ts.o: $(hdrdir)/ruby/subst.h
@@ -4853,6 +4876,7 @@ ossl_x509.o: $(hdrdir)/ruby/io.h
 ossl_x509.o: $(hdrdir)/ruby/missing.h
 ossl_x509.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509.o: $(hdrdir)/ruby/ractor.h
 ossl_x509.o: $(hdrdir)/ruby/ruby.h
 ossl_x509.o: $(hdrdir)/ruby/st.h
 ossl_x509.o: $(hdrdir)/ruby/subst.h
@@ -5048,6 +5072,7 @@ ossl_x509attr.o: $(hdrdir)/ruby/io.h
 ossl_x509attr.o: $(hdrdir)/ruby/missing.h
 ossl_x509attr.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509attr.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509attr.o: $(hdrdir)/ruby/ractor.h
 ossl_x509attr.o: $(hdrdir)/ruby/ruby.h
 ossl_x509attr.o: $(hdrdir)/ruby/st.h
 ossl_x509attr.o: $(hdrdir)/ruby/subst.h
@@ -5243,6 +5268,7 @@ ossl_x509cert.o: $(hdrdir)/ruby/io.h
 ossl_x509cert.o: $(hdrdir)/ruby/missing.h
 ossl_x509cert.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509cert.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509cert.o: $(hdrdir)/ruby/ractor.h
 ossl_x509cert.o: $(hdrdir)/ruby/ruby.h
 ossl_x509cert.o: $(hdrdir)/ruby/st.h
 ossl_x509cert.o: $(hdrdir)/ruby/subst.h
@@ -5438,6 +5464,7 @@ ossl_x509crl.o: $(hdrdir)/ruby/io.h
 ossl_x509crl.o: $(hdrdir)/ruby/missing.h
 ossl_x509crl.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509crl.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509crl.o: $(hdrdir)/ruby/ractor.h
 ossl_x509crl.o: $(hdrdir)/ruby/ruby.h
 ossl_x509crl.o: $(hdrdir)/ruby/st.h
 ossl_x509crl.o: $(hdrdir)/ruby/subst.h
@@ -5633,6 +5660,7 @@ ossl_x509ext.o: $(hdrdir)/ruby/io.h
 ossl_x509ext.o: $(hdrdir)/ruby/missing.h
 ossl_x509ext.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509ext.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509ext.o: $(hdrdir)/ruby/ractor.h
 ossl_x509ext.o: $(hdrdir)/ruby/ruby.h
 ossl_x509ext.o: $(hdrdir)/ruby/st.h
 ossl_x509ext.o: $(hdrdir)/ruby/subst.h
@@ -5828,6 +5856,7 @@ ossl_x509name.o: $(hdrdir)/ruby/io.h
 ossl_x509name.o: $(hdrdir)/ruby/missing.h
 ossl_x509name.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509name.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509name.o: $(hdrdir)/ruby/ractor.h
 ossl_x509name.o: $(hdrdir)/ruby/ruby.h
 ossl_x509name.o: $(hdrdir)/ruby/st.h
 ossl_x509name.o: $(hdrdir)/ruby/subst.h
@@ -6023,6 +6052,7 @@ ossl_x509req.o: $(hdrdir)/ruby/io.h
 ossl_x509req.o: $(hdrdir)/ruby/missing.h
 ossl_x509req.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509req.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509req.o: $(hdrdir)/ruby/ractor.h
 ossl_x509req.o: $(hdrdir)/ruby/ruby.h
 ossl_x509req.o: $(hdrdir)/ruby/st.h
 ossl_x509req.o: $(hdrdir)/ruby/subst.h
@@ -6218,6 +6248,7 @@ ossl_x509revoked.o: $(hdrdir)/ruby/io.h
 ossl_x509revoked.o: $(hdrdir)/ruby/missing.h
 ossl_x509revoked.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509revoked.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509revoked.o: $(hdrdir)/ruby/ractor.h
 ossl_x509revoked.o: $(hdrdir)/ruby/ruby.h
 ossl_x509revoked.o: $(hdrdir)/ruby/st.h
 ossl_x509revoked.o: $(hdrdir)/ruby/subst.h
@@ -6413,6 +6444,7 @@ ossl_x509store.o: $(hdrdir)/ruby/io.h
 ossl_x509store.o: $(hdrdir)/ruby/missing.h
 ossl_x509store.o: $(hdrdir)/ruby/onigmo.h
 ossl_x509store.o: $(hdrdir)/ruby/oniguruma.h
+ossl_x509store.o: $(hdrdir)/ruby/ractor.h
 ossl_x509store.o: $(hdrdir)/ruby/ruby.h
 ossl_x509store.o: $(hdrdir)/ruby/st.h
 ossl_x509store.o: $(hdrdir)/ruby/subst.h
