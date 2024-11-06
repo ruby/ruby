@@ -870,6 +870,7 @@ make_pch(void)
 {
     const char *rest_args[] = {
 # ifdef __clang__
+        "-Xclang",
         "-emit-pch",
         "-c",
 # endif
