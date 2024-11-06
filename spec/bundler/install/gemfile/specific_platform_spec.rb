@@ -69,12 +69,10 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
 
-      system_gems "bundler-2.1.4"
-
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle"
 
-      install_gemfile(google_protobuf, env: { "BUNDLER_VERSION" => "2.1.4" })
+      install_gemfile(google_protobuf)
 
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
@@ -90,11 +88,11 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
 
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
       # force strict usage of the lock file by setting frozen mode
-      bundle "config set --local frozen true", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local frozen true"
 
       # make sure the platform that got actually installed with the old bundler is used
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
@@ -105,10 +103,8 @@ RSpec.describe "bundle install with specific platforms" do
     simulate_platform "x86_64-darwin-15" do
       setup_multiplatform_gem
 
-      system_gems "bundler-2.1.4"
-
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle"
 
       gemfile google_protobuf
 
@@ -130,10 +126,10 @@ RSpec.describe "bundle install with specific platforms" do
           google-protobuf
         #{checksums}
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
-      bundle "update", env: { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update"
 
       checksums.checksum gem_repo2, "google-protobuf", "3.0.0.alpha.5.0.5.1"
 
@@ -216,10 +212,8 @@ RSpec.describe "bundle install with specific platforms" do
         end
       end
 
-      system_gems "bundler-2.1.4"
-
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle"
 
       gemfile <<-G
         source "https://gem.repo2"
@@ -240,10 +234,10 @@ RSpec.describe "bundle install with specific platforms" do
           libv8
 
         BUNDLED WITH
-           2.1.4
+           #{Bundler::VERSION}
       L
 
-      bundle "install --verbose", env: { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "install --verbose"
       expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
 
       bundle "add mini_racer --verbose"
