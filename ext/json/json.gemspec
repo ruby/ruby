@@ -50,6 +50,7 @@ spec = Gem::Specification.new do |s|
 
   if java_ext
     s.platform = 'java'
+    s.files += Dir["lib/json/ext/**/*.jar"]
   else
     s.extensions = Dir["ext/json/**/extconf.rb"]
     s.files += Dir["ext/json/**/*.{c,h,rl}"]
