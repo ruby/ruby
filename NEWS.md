@@ -90,7 +90,7 @@ The following default gems are updated.
 * irb 1.14.1
 * json 2.8.0
 * logger 1.6.1
-* net-http 0.4.1
+* net-http 0.5.0
 * open-uri 0.5.0
 * optparse 0.5.0
 * pathname 0.4.0
