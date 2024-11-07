@@ -451,13 +451,25 @@ class Data # :nodoc:
     class_name = PP.mcall(self, Kernel, :class).name
     class_name = " #{class_name}" if class_name
     q.group(1, "#<data#{class_name}", '>') {
-      q.seplist(PP.mcall(self, Kernel, :class).members, lambda { q.text "," }) {|member|
+
+      members = PP.mcall(self, Kernel, :class).members
+      values = []
+      members.select! do |member|
+        value = begin
+          values << __send__(member)
+          true
+        rescue NoMethodError
+          false
+        end
+      end
+
+      q.seplist(members.zip(values), lambda { q.text "," }) {|(member, value)|
         q.breakable
         q.text member.to_s
         q.text '='
         q.group(1) {
           q.breakable ''
-          q.pp public_send(member)
+          q.pp value
         }
       }
     }
