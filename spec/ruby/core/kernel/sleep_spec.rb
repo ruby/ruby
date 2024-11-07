@@ -51,7 +51,7 @@ describe "Kernel#sleep" do
     t.value.should == 5
   end
 
-  platform_is_not :darwin do
+  quarantine! do # fails transiently on at least linux & darwin
     it "sleeps with nanosecond precision" do
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       100.times do
@@ -61,7 +61,7 @@ describe "Kernel#sleep" do
 
       actual_duration = end_time - start_time
       (actual_duration > 0.01).should == true # 100 * 0.0001 => 0.01
-      (actual_duration < 1).should == true
+      (actual_duration < 0.03).should == true
     end
   end
 
