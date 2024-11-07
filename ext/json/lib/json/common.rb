@@ -1,4 +1,5 @@
-#frozen_string_literal: true
+# frozen_string_literal: true
+
 require 'json/version'
 
 module JSON
@@ -230,8 +231,8 @@ module JSON
   #   parse(File.read(path), opts)
   #
   # See method #parse.
-  def load_file(filespec, opts = {})
-    parse(File.read(filespec), opts)
+  def load_file(filespec, opts = nil)
+    parse(File.read(filespec, encoding: Encoding::UTF_8), opts)
   end
 
   # :call-seq:
@@ -242,7 +243,7 @@ module JSON
   #
   # See method #parse!
   def load_file!(filespec, opts = {})
-    parse!(File.read(filespec), opts)
+    parse!(File.read(filespec, encoding: Encoding::UTF_8), opts)
   end
 
   # :call-seq:

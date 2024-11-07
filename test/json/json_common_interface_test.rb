@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
@@ -189,7 +190,29 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     test_load_file_with_option_shared(:load_file!)
   end
 
+  def test_load_file_with_bad_default_external_encoding
+    data = { "key" => "€" }
+    temp_file_containing(JSON.dump(data)) do |path|
+      loaded_data = with_external_encoding(Encoding::US_ASCII) do
+        JSON.load_file(path)
+      end
+      assert_equal data, loaded_data
+    end
+  end
+
   private
+
+  def with_external_encoding(encoding)
+    verbose = $VERBOSE
+    $VERBOSE = nil
+    previous_encoding = Encoding.default_external
+    Encoding.default_external = encoding
+    yield
+  ensure
+    verbose = $VERBOSE
+    Encoding.default_external = previous_encoding
+    $VERBOSE = verbose
+  end
 
   def test_load_shared(method_name)
     temp_file_containing(@json) do |filespec|
