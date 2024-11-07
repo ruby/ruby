@@ -83,6 +83,7 @@ The following default gems are updated.
 * delegate 0.4.0
 * erb 4.0.4
 * etc 1.4.4
+* fcntl 1.2.0
 * fiddle 1.1.5.dev
 * fileutils 1.7.3
 * io-console 0.7.2
