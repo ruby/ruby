@@ -75,6 +75,19 @@ jobs:
           NEEDED_TOOLS: >-
             patch.exe
 
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg install
+        working-directory: src
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+        continue-on-error: true
+
+      - name: cat logs
+        run: |
+          type C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-out.log
+          type C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-err.log
+
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
         with:
@@ -143,19 +156,6 @@ jobs:
       - name: volume info
         run: Get-Volume
         shell: pwsh
-
-      - name: Install libraries with vcpkg
-        run: |
-          vcpkg install
-        working-directory: src
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-        continue-on-error: true
-
-      - name: cat logs
-        run: |
-          type C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-out.log
-          type C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-err.log
 
 
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
