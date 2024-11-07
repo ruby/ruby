@@ -7,7 +7,7 @@ use crate::stats::YjitExitLocations;
 use crate::stats::incr_counter;
 use crate::stats::with_compile_time;
 
-use std::os::raw;
+use std::os::raw::{c_char, c_int};
 use crate::log::Log;
 
 /// Is YJIT on? The interpreter uses this variable to decide whether to trigger
@@ -19,7 +19,7 @@ pub static mut rb_yjit_enabled_p: bool = false;
 /// Parse one command-line option.
 /// This is called from ruby.c
 #[no_mangle]
-pub extern "C" fn rb_yjit_parse_option(str_ptr: *const raw::c_char) -> bool {
+pub extern "C" fn rb_yjit_parse_option(str_ptr: *const c_char) -> bool {
     return parse_option(str_ptr).is_some();
 }
 
@@ -102,7 +102,10 @@ fn rb_bug_panic_hook() {
         env::set_var("RUST_BACKTRACE", "1");
         previous_hook(panic_info);
 
-        unsafe { rb_bug(b"YJIT panicked\0".as_ref().as_ptr() as *const raw::c_char); }
+        // Abort with rb_bug(). It has a length limit on the message.
+        let panic_message = &format!("{}", panic_info)[..];
+        let len = std::cmp::min(0x100, panic_message.len()) as c_int;
+        unsafe { rb_bug(b"YJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
     }));
 }
 
