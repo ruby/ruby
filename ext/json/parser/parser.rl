@@ -420,7 +420,7 @@ static const rb_data_type_t JSON_Parser_type;
 static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
-static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 
 
@@ -626,7 +626,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 raise_parse_error("unexpected token at '%s'", p);
             }
         }
-        np = JSON_parse_float(json, fpc, pe, result);
+        np = JSON_parse_number(json, fpc, pe, result);
         if (np != NULL) {
             fexec np;
         }
@@ -741,7 +741,7 @@ static char *JSON_decode_integer(JSON_Parser *json, char *p, VALUE *result)
               ) (^[0-9Ee.\-]? @exit ));
 }%%
 
-static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
     bool is_float = false;
