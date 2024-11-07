@@ -3152,6 +3152,12 @@ rb_str_substr(VALUE str, long beg, long len)
     return str_substr(str, beg, len, TRUE);
 }
 
+VALUE
+rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty)
+{
+    return str_substr(str, NUM2LONG(beg), NUM2LONG(len), empty);
+}
+
 static VALUE
 str_substr(VALUE str, long beg, long len, int empty)
 {
@@ -5680,9 +5686,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
             return rb_str_subpat(str, argv[0], argv[1]);
         }
         else {
-            long beg = NUM2LONG(argv[0]);
-            long len = NUM2LONG(argv[1]);
-            return rb_str_substr(str, beg, len);
+            return rb_str_substr_two_fixnums(str, argv[0], argv[1], TRUE);
         }
     }
     rb_check_arity(argc, 1, 2);

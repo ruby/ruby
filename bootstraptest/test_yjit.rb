@@ -5229,3 +5229,43 @@ assert_equal '[true, true]', <<~'RUBY'
 
   [pack, with_buffer]
 RUBY
+
+assert_equal 'ok', <<~'RUBY'
+  def error(klass)
+    yield
+  rescue klass
+    true
+  end
+
+  def test
+    str = "こんにちは"
+    substr = "にち"
+    failures = []
+
+    # Use many small statements to keep context for each slice call smaller than MAX_CTX_TEMPS
+
+    str[1] == "ん" && str.slice(4) == "は" || failures << :index
+    str[5].nil? && str.slice(5).nil? || failures << :index_end
+
+    str[1, 2] == "んに" && str.slice(2, 1) == "に" || failures << :beg_len
+    str[5, 1] == "" && str.slice(5, 1) == "" || failures << :beg_len_end
+
+    str[1..2] == "んに" && str.slice(2..2) == "に" || failures << :range
+
+    str[/に./] == "にち" && str.slice(/に./) == "にち" || failures << :regexp
+
+    str[/に./, 0] == "にち" && str.slice(/に./, 0) == "にち" || failures << :regexp_cap0
+
+    str[/に(.)/, 1] == "ち" && str.slice(/に(.)/, 1) == "ち" || failures << :regexp_cap1
+
+    str[substr] == substr && str.slice(substr) == substr || failures << :substr
+
+    error(TypeError) { str[Object.new] } && error(TypeError) { str.slice(Object.new, 1) } || failures << :type_error
+    error(RangeError) { str[Float::INFINITY] } && error(RangeError) { str.slice(Float::INFINITY) } || failures << :range_error
+
+    return "ok" if failures.empty?
+    {failures: failures}
+  end
+
+  test
+RUBY
