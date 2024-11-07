@@ -8326,6 +8326,7 @@ io_reopen(VALUE io, VALUE nfile)
 
     /* copy rb_io_t structure */
     fptr->mode = orig->mode | (fptr->mode & FMODE_EXTERNAL);
+    fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
