@@ -75,11 +75,11 @@ env:
 
 matrix:
   include:
-    - <<: *arm64-linux
+    # Arm64 jobs are not starting.
+    # - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
-    # The arm64 is very slow to start the jobs.
     - name: arm64-linux
     - name: ppc64le-linux
     - name: s390x-linux
