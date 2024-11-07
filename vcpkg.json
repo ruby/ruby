@@ -3,7 +3,7 @@
   "dependencies": [
     {
       "name": "gmp",
-      "version>=": "6.2.1"
+      "version>=": "6.2.1#21"
     },
     "libffi",
     "libyaml",
