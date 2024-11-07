@@ -4373,18 +4373,14 @@ take_items(VALUE obj, long n)
 
 /*
  *  call-seq:
- *    zip(*objects) -> new_array
- *    zip(*objects) {|other_array| ... } -> nil
+ *    zip(*other_arrays) -> new_array
+ *    zip(*other_arrays) {|other_array| ... } -> nil
  *
- *  For an *object* in *objects* that is not an array,
- *  forms the the "other array" as <tt>object.to_ary</tt>, if defined,
- *  or as <tt>object.each.to_a</tt> otherwise.
- *
- *  With no block given, combines +self+ with the collection of other arrays;
+ *  With no block given, combines +self+ with the collection of +other_arrays+;
  *  returns a new array of sub-arrays.
  *
- *  The returned object is an array of size <tt>objects.size + 1</tt>
- *  (that is, the count of other arrays plus one), and contains:
+ *  Returns an array of size <tt>other_arrays.size + 1</tt>
+ *  (that is, the count of other arrays plus one), that contains:
  *
  *  - The _nth_ element of +self+.
  *  - The _nth_ element of each of the other arrays, as available.
@@ -4446,6 +4442,10 @@ take_items(VALUE obj, long n)
  *     [:c1, :b1, :a1],
  *     [:c2, :b2, :a2],
  *     [:c3, :b3, :a3]]
+ *
+ *  For an *object* in *other_arrays* that is not actually an array,
+ *  forms the the "other array" as <tt>object.to_ary</tt>, if defined,
+ *  or as <tt>object.each.to_a</tt> otherwise.
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
