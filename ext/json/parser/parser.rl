@@ -420,7 +420,6 @@ static const rb_data_type_t JSON_Parser_type;
 static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
-static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 
@@ -631,10 +630,6 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (np != NULL) {
             fexec np;
         }
-        np = JSON_parse_integer(json, fpc, pe, result);
-        if (np != NULL) {
-            fexec np;
-        }
         fhold; fbreak;
     }
 
@@ -716,15 +711,8 @@ static inline VALUE fast_parse_integer(char *p, char *pe)
     return LL2NUM(memo);
 }
 
-static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_decode_integer(JSON_Parser *json, char *p, VALUE *result)
 {
-    int cs = EVIL;
-
-    %% write init;
-    json->memo = p;
-    %% write exec;
-
-    if (cs >= JSON_integer_first_final) {
         long len = p - json->memo;
         if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
             *result = fast_parse_integer(json->memo, p);
@@ -735,9 +723,6 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
             *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
         }
         return p + 1;
-    } else {
-        return NULL;
-    }
 }
 
 %%{
@@ -747,22 +732,28 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
     write data;
 
     action exit { fhold; fbreak; }
+    action isFloat {  is_float = true; }
 
     main := '-'? (
-              (('0' | [1-9][0-9]*) '.' [0-9]+ ([Ee] [+\-]?[0-9]+)?)
-              | (('0' | [1-9][0-9]*) ([Ee] [+\-]?[0-9]+))
-             )  (^[0-9Ee.\-]? @exit );
+              (('0' | [1-9][0-9]*)
+                ((('.' [0-9]+ ([Ee] [+\-]?[0-9]+)?) |
+                 ([Ee] [+\-]?[0-9]+)) > isFloat)?
+              ) (^[0-9Ee.\-]? @exit ));
 }%%
 
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
+    bool is_float = false;
 
     %% write init;
     json->memo = p;
     %% write exec;
 
     if (cs >= JSON_float_first_final) {
+        if (!is_float) {
+            return JSON_decode_integer(json, p, result);
+        }
         VALUE mod = Qnil;
         ID method_id = 0;
         if (json->decimal_class) {
