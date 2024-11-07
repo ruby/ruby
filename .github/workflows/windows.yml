@@ -99,7 +99,7 @@ jobs:
         working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-        continue-on-error: true
+        shell: pwsh
 
       - name: cat logs
         run: |
