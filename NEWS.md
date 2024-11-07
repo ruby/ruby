@@ -80,6 +80,7 @@ The following default gems are updated.
 * RubyGems 3.6.0.dev
 * bundler 2.6.0.dev
 * date 3.4.0
+* delegate 0.4.0
 * erb 4.0.4
 * etc 1.4.4
 * fiddle 1.1.5.dev
@@ -87,9 +88,9 @@ The following default gems are updated.
 * io-console 0.7.2
 * ipaddr 1.2.7
 * irb 1.14.1
-* json 2.8.0.alpha1
+* json 2.8.0
 * logger 1.6.1
-* net-http 0.4.1
+* net-http 0.5.0
 * open-uri 0.5.0
 * optparse 0.5.0
 * pathname 0.4.0
