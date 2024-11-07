@@ -1272,7 +1272,7 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(ENC_HEADERS) \
       $(srcs_vpath)prism/ast.h $(srcs_vpath)prism/diagnostic.h \
-      {$(VPATH)}id.h {$(VPATH)}probes.dmyh
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh {$(VPATH)}probes.h
 
 insns: $(INSNS)
 
