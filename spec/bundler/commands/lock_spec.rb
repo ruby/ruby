@@ -1832,6 +1832,48 @@ RSpec.describe "bundle lock" do
     L
   end
 
+  it "generates checksums by default if configured to do so" do
+    build_repo4 do
+      build_gem "nokogiri", "1.14.2"
+      build_gem "nokogiri", "1.14.2" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    bundle "config lockfile_checksums true"
+
+    simulate_platform "x86_64-linux" do
+      install_gemfile <<-G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+    end
+
+    checksums = checksums_section do |c|
+      c.checksum gem_repo4, "nokogiri", "1.14.2"
+      c.checksum gem_repo4, "nokogiri", "1.14.2", "x86_64-linux"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          nokogiri (1.14.2)
+          nokogiri (1.14.2-x86_64-linux)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        nokogiri
+      #{checksums}
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   context "when re-resolving to include prereleases" do
     before do
       build_repo4 do

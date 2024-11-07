@@ -33,6 +33,7 @@ module Bundler
     settings_flag(:default_install_uses_path) { bundler_3_mode? }
     settings_flag(:forget_cli_options) { bundler_3_mode? }
     settings_flag(:global_gem_cache) { bundler_3_mode? }
+    settings_flag(:lockfile_checksums) { bundler_3_mode? }
     settings_flag(:path_relative_to_cwd) { bundler_3_mode? }
     settings_flag(:plugins) { @bundler_version >= Gem::Version.new("1.14") }
     settings_flag(:print_only_version_number) { bundler_3_mode? }

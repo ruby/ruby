@@ -217,6 +217,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `jobs` (`BUNDLE_JOBS`):
    The number of gems Bundler can install in parallel. Defaults to the number of
    available processors.
+* `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
+   Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
