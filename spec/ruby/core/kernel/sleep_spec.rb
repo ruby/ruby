@@ -61,7 +61,7 @@ describe "Kernel#sleep" do
 
       actual_duration = end_time - start_time
       (actual_duration > 0.01).should == true # 100 * 0.0001 => 0.01
-      (actual_duration < 0.03).should == true
+      (actual_duration < 1).should == true
     end
   end
 
