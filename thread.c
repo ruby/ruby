@@ -1529,7 +1529,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
-    VALUE ubf_th = Qfalse;
 
     if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
         ubf = ubf_select;
@@ -1552,10 +1551,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
 
     if ((flags & RB_NOGVL_INTR_FAIL) == 0) {
         RUBY_VM_CHECK_INTS_BLOCKING(ec);
-    }
-
-    if (ubf_th != Qfalse) {
-        thread_value(rb_thread_kill(ubf_th));
     }
 
     rb_errno_set(saved_errno);
