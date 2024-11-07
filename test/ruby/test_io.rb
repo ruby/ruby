@@ -350,6 +350,19 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_ungetc_with_seek
+    make_tempfile {|t|
+      t.open
+      t.write('0123456789')
+      t.rewind
+
+      t.ungetc('a')
+      t.seek(2, :SET)
+
+      assert_equal('2', t.getc)
+    }
+  end
+
   def test_ungetbyte
     make_tempfile {|t|
       t.open
@@ -370,6 +383,19 @@ class TestIO < Test::Unit::TestCase
       t.ungetbyte("\xe7\xb4\x85")
       assert_equal(-2, t.pos)
       assert_equal("\u7d05\u7389bar\n", t.gets)
+    }
+  end
+
+  def test_ungetbyte_with_seek
+    make_tempfile {|t|
+      t.open
+      t.write('0123456789')
+      t.rewind
+
+      t.ungetbyte('a'.ord)
+      t.seek(2, :SET)
+
+      assert_equal('2'.ord, t.getbyte)
     }
   end
 
