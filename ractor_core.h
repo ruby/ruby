@@ -180,6 +180,7 @@ struct rb_ractor_struct {
 
     st_table *local_storage;
     struct rb_id_table *idkey_local_storage;
+    VALUE idkey_init_lock;
 
     VALUE r_stdin;
     VALUE r_stdout;

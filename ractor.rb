@@ -834,6 +834,10 @@ class Ractor
     end
   end
 
+  def self.local_storage_init(sym)
+    Primitive.ractor_local_storage_init(sym)
+  end
+
   # get a value from ractor-local storage
   def [](sym)
     Primitive.ractor_local_value(sym)
