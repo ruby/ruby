@@ -589,7 +589,7 @@ class TestM17NComb < Test::Unit::TestCase
       #puts "#{encdump(s1)}.casecmp(#{encdump(s2)})"
       next unless s1.valid_encoding? && s2.valid_encoding? && Encoding.compatible?(s1, s2)
       r = s1.casecmp(s2)
-      assert_equal(s1.upcase <=> s2.upcase, r)
+      assert_equal(s1.upcase <=> s2.upcase, r, proc {"#{encdump s1}.casecmp(#{encdump s2})"})
     }
   end
 
