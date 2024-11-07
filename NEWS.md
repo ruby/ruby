@@ -96,7 +96,7 @@ The following default gems are updated.
 * optparse 0.5.0
 * pathname 0.4.0
 * prism 1.0.0
-* psych 5.2.0.beta2
+* psych 5.2.0.beta3
 * rdoc 6.7.0
 * reline 0.5.10
 * resolv 0.4.0
