@@ -108,7 +108,7 @@ The following default gems are updated.
 * time 0.4.0
 * timeout 0.4.2
 * tmpdir 0.3.0
-* uri 0.13.1
+* uri 1.0.0
 * win32ole 1.9.0
 * yaml 0.4.0
 * zlib 3.1.1
