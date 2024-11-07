@@ -1,7 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "dependencies": [
-    "gmp",
+    {
+      "name": "gmp",
+      "version-semver": "6.2.1"
+    },
     "libffi",
     "libyaml",
     "openssl",
