@@ -235,10 +235,6 @@ module Spec
         FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
       end
-
-      if rake_path.nil?
-        abort "Your test gems are missing! Run `rm -rf #{tmp}` and try again."
-      end
     end
 
     def update_repo(path, build_compact_index: true)
