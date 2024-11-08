@@ -40,6 +40,7 @@ module Bundler
 
       Bundler.settings.temporary(frozen: false) do
         definition = Bundler.definition(update, file)
+        definition.locked_checksums = true if options["add-checksums"]
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 

@@ -9,6 +9,10 @@ module Bundler
       spec
     end
 
+    def insecurely_materialized?
+      false
+    end
+
     attr_reader :checksum
     attr_accessor :stub, :ignored
 

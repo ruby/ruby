@@ -25,8 +25,8 @@ begin
         config_file = Tempfile.create(%w{face_config- .rb})
         config_file.write face_config
         block.call(config_name, config_file)
-        config_file.close
       ensure
+        config_file.close
         File.delete(config_file)
       end
     end
@@ -1065,7 +1065,7 @@ begin
 
     def test_simple_dialog_with_scroll_screen
       iterate_over_face_configs do |config_name, config_file|
-        start_terminal(5, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+        start_terminal(5, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: /prompt>/)
         write("if 1\n  2\n  3\n  4\n  5\n  6")
         write("\C-p\C-n\C-p\C-p\C-p#")
         close
@@ -1796,6 +1796,7 @@ begin
     end
 
     def test_stop_continue
+      omit if Reline.core.io_gate.win?
       pidfile = Tempfile.create('pidfile')
       rubyfile = Tempfile.create('rubyfile')
       rubyfile.write <<~RUBY
@@ -1816,6 +1817,7 @@ begin
       close
     ensure
       File.delete(rubyfile.path) if rubyfile
+      pidfile.close if pidfile
       File.delete(pidfile.path) if pidfile
     end
 

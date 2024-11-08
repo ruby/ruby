@@ -9309,6 +9309,8 @@ load.$(OBJEXT): {$(VPATH)}prism/version.h
 load.$(OBJEXT): {$(VPATH)}prism_compile.h
 load.$(OBJEXT): {$(VPATH)}probes.dmyh
 load.$(OBJEXT): {$(VPATH)}probes.h
+load.$(OBJEXT): {$(VPATH)}ractor.h
+load.$(OBJEXT): {$(VPATH)}ractor_core.h
 load.$(OBJEXT): {$(VPATH)}ruby_assert.h
 load.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 load.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -9319,6 +9321,7 @@ load.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 load.$(OBJEXT): {$(VPATH)}thread_native.h
 load.$(OBJEXT): {$(VPATH)}util.h
 load.$(OBJEXT): {$(VPATH)}vm_core.h
+load.$(OBJEXT): {$(VPATH)}vm_debug.h
 load.$(OBJEXT): {$(VPATH)}vm_opts.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/version.h

@@ -472,8 +472,11 @@ class Reline::LineEditor
   end
 
   def print_nomultiline_prompt
+    Reline::IOGate.disable_auto_linewrap(true) if Reline::IOGate.win?
     # Readline's test `TestRelineAsReadline#test_readline` requires first output to be prompt, not cursor reset escape sequence.
     @output.write Reline::Unicode.strip_non_printing_start_end(@prompt) if @prompt && !@is_multiline
+  ensure
+    Reline::IOGate.disable_auto_linewrap(false) if Reline::IOGate.win?
   end
 
   def render
@@ -509,6 +512,7 @@ class Reline::LineEditor
   # by calculating the difference from the previous render.
 
   private def render_differential(new_lines, new_cursor_x, new_cursor_y)
+    Reline::IOGate.disable_auto_linewrap(true) if Reline::IOGate.win?
     rendered_lines = @rendered_screen.lines
     cursor_y = @rendered_screen.cursor_y
     if new_lines != rendered_lines
@@ -539,6 +543,8 @@ class Reline::LineEditor
     Reline::IOGate.move_cursor_column new_cursor_x
     Reline::IOGate.move_cursor_down new_cursor_y - cursor_y
     @rendered_screen.cursor_y = new_cursor_y
+  ensure
+    Reline::IOGate.disable_auto_linewrap(false) if Reline::IOGate.win?
   end
 
   private def clear_rendered_screen_cache
