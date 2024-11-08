@@ -94,7 +94,7 @@ The following default gems are updated.
 * logger 1.6.1
 * net-http 0.5.0
 * open-uri 0.5.0
-* optparse 0.5.0
+* optparse 0.6.0
 * ostruct 0.6.1
 * pathname 0.4.0
 * prism 1.0.0
