@@ -845,7 +845,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
     ASSERT_thread_sched_locked(sched, th);
-    VM_ASSERT(th == GET_THREAD());
+    VM_ASSERT(th == rb_ec_thread_ptr(rb_current_ec_noinline()));
 
     if (th != sched->running) {
         // already deleted from running threads
@@ -900,12 +900,12 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                     thread_sched_set_lock_owner(sched, th);
                 }
 
-                VM_ASSERT(GET_EC() == th->ec);
+                VM_ASSERT(rb_current_ec_noinline() == th->ec);
             }
         }
 
         VM_ASSERT(th->nt != NULL);
-        VM_ASSERT(GET_EC() == th->ec);
+        VM_ASSERT(rb_current_ec_noinline() == th->ec);
         VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
 
         // add th to running threads

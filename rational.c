@@ -1048,8 +1048,7 @@ rb_rational_pow(VALUE self, VALUE other)
         }
     }
     else if (RB_BIGNUM_TYPE_P(other)) {
-        rb_warn("in a**b, b may be too big");
-        return rb_float_pow(nurat_to_f(self), other);
+        rb_raise(rb_eArgError, "exponent is too large");
     }
     else if (RB_FLOAT_TYPE_P(other) || RB_TYPE_P(other, T_RATIONAL)) {
         return rb_float_pow(nurat_to_f(self), other);

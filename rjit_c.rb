@@ -1483,6 +1483,7 @@ module RubyVM::RJIT # :nodoc: all
       unblock: [self.rb_unblock_callback, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), unblock)")],
       locking_mutex: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), locking_mutex)")],
       keeping_mutexes: [CType::Pointer.new { self.rb_mutex_struct }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), keeping_mutexes)")],
+      interrupt_exec_tasks: [self.ccan_list_head, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), interrupt_exec_tasks)")],
       join_list: [CType::Pointer.new { self.rb_waiting_list }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), join_list)")],
       invoke_arg: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_thread_struct *)NULL)->invoke_arg)"),
@@ -1649,6 +1650,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_mutex_struct
     CType::Stub.new(:rb_mutex_struct)
+  end
+
+  def C.ccan_list_head
+    CType::Stub.new(:ccan_list_head)
   end
 
   def C.rb_waiting_list

@@ -19,9 +19,10 @@ module Bundler
       :ruby_version,
       :lockfile,
       :gemfiles,
-      :locked_checksums,
       :sources
     )
+
+    attr_accessor :locked_checksums
 
     # Given a gemfile and lockfile creates a Bundler definition
     #
@@ -210,7 +211,7 @@ module Bundler
     end
 
     def missing_specs
-      resolve.materialize(requested_dependencies).missing_specs
+      resolve.materialize(requested_dependencies, most_specific_locked_platform).missing_specs
     end
 
     def missing_specs?
@@ -592,7 +593,7 @@ module Bundler
       incorrect_spec = nil
 
       specs = begin
-        resolve.materialize(dependencies)
+        resolve.materialize(dependencies, most_specific_locked_platform)
       rescue IncorrectLockfileDependencies => e
         spec = e.spec
         raise "Infinite loop while fixing lockfile dependencies" if incorrect_spec == spec
@@ -638,7 +639,7 @@ module Bundler
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
         sources.remote!
         reresolve_without(incomplete_specs)
-        specs = resolve.materialize(dependencies)
+        specs = resolve.materialize(dependencies, most_specific_locked_platform)
 
         still_incomplete_specs = specs.incomplete_specs
 
@@ -648,6 +649,15 @@ module Bundler
         end
 
         incomplete_specs = still_incomplete_specs
+      end
+
+      insecurely_materialized_specs = specs.insecurely_materialized_specs
+
+      if insecurely_materialized_specs.any?
+        Bundler.ui.warn "The following platform specific gems are getting installed, yet the lockfile includes only their generic ruby version:\n" \
+                        " * #{insecurely_materialized_specs.map(&:full_name).join("\n * ")}\n" \
+                        "Please run `bundle lock --normalize-platforms` and commit the resulting lockfile.\n" \
+                        "Alternatively, you may run `bundle lock --add-platform <list-of-platforms-that-you-want-to-support>`"
       end
 
       bundler = sources.metadata_source.specs.search(["bundler", Bundler.gem_version]).last

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |spec|
   spec.name = "win32-registry"
-  spec.version = "0.0.1"
+  spec.version = "0.1.0"
   spec.authors = ["U.Nakamura"]
   spec.email = ["usa@garbagecollect.jp"]
 

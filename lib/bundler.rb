@@ -255,12 +255,6 @@ module Bundler
         end
     end
 
-    def most_specific_locked_platform?(platform)
-      return false unless defined?(@definition) && @definition
-
-      definition.most_specific_locked_platform == platform
-    end
-
     def ruby_scope
       "#{Bundler.rubygems.ruby_engine}/#{RbConfig::CONFIG["ruby_version"]}"
     end

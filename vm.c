@@ -556,7 +556,7 @@ RB_THREAD_LOCAL_SPECIFIER rb_execution_context_t *ruby_current_ec;
 RB_THREAD_LOCAL_SPECIFIER rb_atomic_t ruby_nt_serial;
 #endif
 
-// no-inline decl on thread_pthread.h
+// no-inline decl on vm_core.h
 rb_execution_context_t *
 rb_current_ec_noinline(void)
 {
@@ -580,6 +580,14 @@ rb_current_ec(void)
 #endif
 #else
 native_tls_key_t ruby_current_ec_key;
+
+// no-inline decl on vm_core.h
+rb_execution_context_t *
+rb_current_ec_noinline(void)
+{
+    return native_tls_get(ruby_current_ec_key);
+}
+
 #endif
 
 rb_event_flag_t ruby_vm_event_flags;
@@ -3491,6 +3499,8 @@ thread_mark(void *ptr)
 
     rb_gc_mark(th->scheduler);
 
+    rb_threadptr_interrupt_exec_task_mark(th);
+
     RUBY_MARK_LEAVE("thread");
 }
 
@@ -3643,6 +3653,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->name = Qnil;
     th->report_on_exception = vm->thread_report_on_exception;
     th->ext_config.ractor_safe = true;
+
+    ccan_list_head_init(&th->interrupt_exec_tasks);
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;

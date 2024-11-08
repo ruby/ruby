@@ -19,6 +19,6 @@ Gem::Specification.new do |spec|
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
   spec.required_ruby_version = ">= 2.5.0"
 
-  spec.files         = [".gitignore", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "ostruct.gemspec"]
+  spec.files         = [".gitignore", "Gemfile", "COPYING", "BSDL", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "ostruct.gemspec"]
   spec.require_paths = ["lib"]
 end
