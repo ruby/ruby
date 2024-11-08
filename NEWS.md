@@ -109,7 +109,7 @@ The following default gems are updated.
 * strscan 3.1.1.dev
 * syntax_suggest 2.0.1
 * tempfile 0.3.0
-* time 0.4.0
+* time 0.4.1
 * timeout 0.4.2
 * tmpdir 0.3.0
 * uri 1.0.0
