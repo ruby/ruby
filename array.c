@@ -4469,65 +4469,95 @@ take_items(VALUE obj, long n)
 
 /*
  *  call-seq:
- *    array.zip(*other_arrays) -> new_array
- *    array.zip(*other_arrays) {|other_array| ... } -> nil
+ *    zip(*other_arrays) -> new_array
+ *    zip(*other_arrays) {|other_array| ... } -> nil
  *
- *  When no block given, returns a new +Array+ +new_array+ of size <tt>self.size</tt>
- *  whose elements are Arrays.
+ *  With no block given, combines +self+ with the collection of +other_arrays+;
+ *  returns a new array of sub-arrays:
  *
- *  Each nested array <tt>new_array[n]</tt> is of size <tt>other_arrays.size+1</tt>,
- *  and contains:
+ *    [0, 1].zip(['zero', 'one'], [:zero, :one])
+ *    # => [[0, "zero", :zero], [1, "one", :one]]
  *
- *  - The _nth_ element of +self+.
- *  - The _nth_ element of each of the +other_arrays+.
+ *  Returned:
  *
- *  If all +other_arrays+ and +self+ are the same size:
+ *  - The outer array is of size <tt>self.size</tt>.
+ *  - Each sub-array is of size <tt>other_arrays.size + 1</tt>.
+ *  - The _nth_ sub-array contains (in order):
+ *
+ *    - The _nth_ element of +self+.
+ *    - The _nth_ element of each of the other arrays, as available.
+ *
+ *  Example:
+ *
+ *    a = [0, 1]
+ *    zipped = a.zip(['zero', 'one'], [:zero, :one])
+ *    # => [[0, "zero", :zero], [1, "one", :one]]
+ *    zipped.size       # => 2 # Same size as a.
+ *    zipped.first.size # => 3 # Size of other arrays plus 1.
+ *
+ *  When the other arrays are all the same size as +self+,
+ *  the returned sub-arrays are a rearrangement containing exactly elements of all the arrays
+ *  (including +self+), with no omissions or additions:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
  *    c = [:c0, :c1, :c2, :c3]
  *    d = a.zip(b, c)
- *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *    pp d
+ *    # =>
+ *    [[:a0, :b0, :c0],
+ *     [:a1, :b1, :c1],
+ *     [:a2, :b2, :c2],
+ *     [:a3, :b3, :c3]]
  *
- *  If any array in +other_arrays+ is smaller than +self+,
- *  fills to <tt>self.size</tt> with +nil+:
+ *  When one of the other arrays is smaller than +self+,
+ *  pads the corresponding sub-array with +nil+ elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2]
  *    c = [:c0, :c1]
  *    d = a.zip(b, c)
- *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, nil], [:a3, nil, nil]]
+ *    pp d
+ *    # =>
+ *    [[:a0, :b0, :c0],
+ *     [:a1, :b1, :c1],
+ *     [:a2, :b2, nil],
+ *     [:a3, nil, nil]]
  *
- *  If any array in +other_arrays+ is larger than +self+,
- *  its trailing elements are ignored:
+ *  When one of the other arrays is larger than +self+,
+ *  _ignores_ its trailing elements:
  *
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3, :b4]
  *    c = [:c0, :c1, :c2, :c3, :c4, :c5]
  *    d = a.zip(b, c)
- *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
+ *    pp d
+ *    # =>
+ *    [[:a0, :b0, :c0],
+ *     [:a1, :b1, :c1],
+ *     [:a2, :b2, :c2],
+ *     [:a3, :b3, :c3]]
  *
- *  If an argument is not an array, it extracts the values by calling #each:
+ *  With a block given, calls the block with each of the other arrays;
+ *  returns +nil+:
  *
- *    a = [:a0, :a1, :a2, :a2]
- *    b = 1..4
- *    c = a.zip(b)
- *    c # => [[:a0, 1], [:a1, 2], [:a2, 3], [:a2, 4]]
- *
- *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns +nil+:
- *
+ *    d = []
  *    a = [:a0, :a1, :a2, :a3]
  *    b = [:b0, :b1, :b2, :b3]
  *    c = [:c0, :c1, :c2, :c3]
- *    a.zip(b, c) {|sub_array| p sub_array} # => nil
+ *    a.zip(b, c) {|sub_array| d.push(sub_array.reverse) } # => nil
+ *    pp d
+ *    # =>
+ *    [[:c0, :b0, :a0],
+ *     [:c1, :b1, :a1],
+ *     [:c2, :b2, :a2],
+ *     [:c3, :b3, :a3]]
  *
- *  Output:
+ *  For an *object* in *other_arrays* that is not actually an array,
+ *  forms the the "other array" as <tt>object.to_ary</tt>, if defined,
+ *  or as <tt>object.each.to_a</tt> otherwise.
  *
- *    [:a0, :b0, :c0]
- *    [:a1, :b1, :c1]
- *    [:a2, :b2, :c2]
- *    [:a3, :b3, :c3]
- *
+ *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
 
 static VALUE
