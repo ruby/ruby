@@ -5914,6 +5914,8 @@ bigsq(VALUE x)
     BDIGIT *xds, *zds;
 
     xn = BIGNUM_LEN(x);
+    if (MUL_OVERFLOW_LONG_P(2, xn))
+        rb_raise(rb_eArgError, "square overflow");
     zn = 2 * xn;
 
     z = bignew(zn, 1);
@@ -5942,6 +5944,8 @@ bigmul0(VALUE x, VALUE y)
 
     xn = BIGNUM_LEN(x);
     yn = BIGNUM_LEN(y);
+    if (ADD_OVERFLOW_LONG_P(xn, yn))
+        rb_raise(rb_eArgError, "multiplication overflow");
     zn = xn + yn;
 
     z = bignew(zn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
