@@ -3916,10 +3916,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
 }
 
 /// Create a stub to force the code up to this point to be executed
-pub fn defer_compilation(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-) {
+pub fn defer_compilation(jit: &mut JITState, asm: &mut Assembler) -> Result<(), ()> {
     if asm.ctx.is_deferred() {
         panic!("Double defer!");
     }
@@ -3936,7 +3933,7 @@ pub fn defer_compilation(
     };
 
     // Likely a stub since the context is marked as deferred().
-    let target0_address = branch.set_target(0, blockid, &next_ctx, jit);
+    let dst_addr = branch.set_target(0, blockid, &next_ctx, jit).ok_or(())?;
 
     // Pad the block if it has the potential to be invalidated. This must be
     // done before gen_fn() in case the jump is overwritten by a fallthrough.
@@ -3947,9 +3944,7 @@ pub fn defer_compilation(
     // Call the branch generation function
     asm_comment!(asm, "defer_compilation");
     asm.mark_branch_start(&branch);
-    if let Some(dst_addr) = target0_address {
-        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);
-    }
+    branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);
     asm.mark_branch_end(&branch);
 
     // If the block we're deferring from is empty
@@ -3958,6 +3953,8 @@ pub fn defer_compilation(
     }
 
     incr_counter!(defer_count);
+
+    Ok(())
 }
 
 /// Remove a block from the live control flow graph.

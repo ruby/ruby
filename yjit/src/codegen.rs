@@ -195,6 +195,34 @@ impl<'a> JITState<'a> {
         self.outlined_code_block
     }
 
+    /// Leave a code stub to re-enter the compiler at runtime when the compiling program point is
+    /// reached. Should always be used in tail position like `return jit.defer_compilation(asm);`.
+    #[must_use]
+    fn defer_compilation(&mut self, asm: &mut Assembler) -> Option<CodegenStatus> {
+        if crate::core::defer_compilation(self, asm).is_err() {
+            // If we can't leave a stub, the block isn't usable and we have to bail.
+            self.block_abandoned = true;
+        }
+        Some(EndBlock)
+    }
+
+    /// Generate a branch with either end possibly stubbed out
+    fn gen_branch(
+        &mut self,
+        asm: &mut Assembler,
+        target0: BlockId,
+        ctx0: &Context,
+        target1: Option<BlockId>,
+        ctx1: Option<&Context>,
+        gen_fn: BranchGenFn,
+    ) {
+        if crate::core::gen_branch(self, asm, target0, ctx0, target1, ctx1, gen_fn).is_none() {
+            // If we can't meet the request for a branch, the code is
+            // essentially corrupt and we have to discard the block.
+            self.block_abandoned = true;
+        }
+    }
+
     /// Return true if the current ISEQ could escape an environment.
     ///
     /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
@@ -1538,8 +1566,7 @@ fn fuse_putobject_opt_ltlt(
             return None;
         }
         if !jit.at_compile_target() {
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
 
         let lhs = jit.peek_at_stack(&asm.ctx, 0);
@@ -1661,8 +1688,7 @@ fn gen_opt_plus(
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -1802,8 +1828,7 @@ fn gen_splatkw(
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime hash operand
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let comptime_hash = jit.peek_at_stack(&asm.ctx, 1);
@@ -2176,8 +2201,7 @@ fn gen_expandarray(
 
     // Defer compilation so we can specialize on a runtime `self`
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let comptime_recv = jit.peek_at_stack(&asm.ctx, 0);
@@ -2718,10 +2742,7 @@ fn jit_chain_guard(
             idx: jit.insn_idx,
         };
 
-        // Bail if we can't generate the branch
-        if gen_branch(jit, asm, bid, &deeper, None, None, target0_gen_fn).is_none() {
-            jit.block_abandoned = true;
-        }
+        jit.gen_branch(asm, bid, &deeper, None, None, target0_gen_fn);
     } else {
         target0_gen_fn.call(asm, Target::side_exit(counter), None);
     }
@@ -2895,8 +2916,7 @@ fn gen_getinstancevariable(
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let ivar_name = jit.get_arg(0).as_u64();
@@ -2959,8 +2979,7 @@ fn gen_setinstancevariable(
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let ivar_name = jit.get_arg(0).as_u64();
@@ -3270,8 +3289,7 @@ fn gen_definedivar(
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize base on a runtime receiver
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let ivar_name = jit.get_arg(0).as_u64();
@@ -3500,8 +3518,7 @@ fn gen_fixnum_cmp(
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize based on a runtime receiver
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -3680,8 +3697,7 @@ fn gen_opt_eq(
         Some(specialized) => specialized,
         None => {
             // Defer compilation so we can specialize base on a runtime receiver
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -3718,8 +3734,7 @@ fn gen_opt_aref(
 
     // Defer compilation so we can specialize base on a runtime receiver
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     // Specialize base on compile time values
@@ -3819,8 +3834,7 @@ fn gen_opt_aset(
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on a runtime `self`
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let comptime_recv = jit.peek_at_stack(&asm.ctx, 2);
@@ -3951,8 +3965,7 @@ fn gen_opt_and(
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -3990,8 +4003,7 @@ fn gen_opt_or(
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -4029,8 +4041,7 @@ fn gen_opt_minus(
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -4069,8 +4080,7 @@ fn gen_opt_mult(
     let two_fixnums = match asm.ctx.two_fixnums_on_stack(jit) {
         Some(two_fixnums) => two_fixnums,
         None => {
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -4121,8 +4131,7 @@ fn gen_opt_mod(
         Some(two_fixnums) => two_fixnums,
         None => {
             // Defer compilation so we can specialize on a runtime `self`
-            defer_compilation(jit, asm);
-            return Some(EndBlock);
+            return jit.defer_compilation(asm);
         }
     };
 
@@ -4459,8 +4468,7 @@ fn gen_opt_case_dispatch(
     // hash lookup, at least for small hashes, but it's worth revisiting this
     // assumption in the future.
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let case_hash = jit.get_arg(0);
@@ -4572,15 +4580,14 @@ fn gen_branchif(
 
         // Generate the branch instructions
         let ctx = asm.ctx;
-        gen_branch(
-            jit,
+        jit.gen_branch(
             asm,
             jump_block,
             &ctx,
             Some(next_block),
             Some(&ctx),
             BranchGenFn::BranchIf(Cell::new(BranchShape::Default)),
-        )?;
+        );
     }
 
     Some(EndBlock)
@@ -4626,15 +4633,14 @@ fn gen_branchunless(
 
         // Generate the branch instructions
         let ctx = asm.ctx;
-        gen_branch(
-            jit,
+        jit.gen_branch(
             asm,
             jump_block,
             &ctx,
             Some(next_block),
             Some(&ctx),
             BranchGenFn::BranchUnless(Cell::new(BranchShape::Default)),
-        )?;
+        );
     }
 
     Some(EndBlock)
@@ -4677,15 +4683,14 @@ fn gen_branchnil(
         asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
         // Generate the branch instructions
         let ctx = asm.ctx;
-        gen_branch(
-            jit,
+        jit.gen_branch(
             asm,
             jump_block,
             &ctx,
             Some(next_block),
             Some(&ctx),
             BranchGenFn::BranchNil(Cell::new(BranchShape::Default)),
-        )?;
+        );
     }
 
     Some(EndBlock)
@@ -8004,19 +8009,14 @@ fn gen_send_iseq(
     return_asm.ctx.set_as_return_landing();
 
     // Write the JIT return address on the callee frame
-    if gen_branch(
-        jit,
+    jit.gen_branch(
         asm,
         return_block,
         &return_asm.ctx,
         None,
         None,
         BranchGenFn::JITReturn,
-    ).is_none() {
-        // Returning None here would have send_dynamic() code following incomplete
-        // send code. Abandon the block instead.
-        jit.block_abandoned = true;
-    }
+    );
 
     // ec->cfp is updated after cfp->jit_return for rb_profile_frames() safety
     asm_comment!(asm, "switch to new CFP");
@@ -8711,8 +8711,7 @@ fn gen_send_general(
 
     // Defer compilation so we can specialize on class of receiver
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let ci_flags = unsafe { vm_ci_flag(ci) };
@@ -9275,8 +9274,7 @@ fn gen_invokeblock_specialized(
     cd: *const rb_call_data,
 ) -> Option<CodegenStatus> {
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
@@ -9438,8 +9436,7 @@ fn gen_invokesuper_specialized(
 ) -> Option<CodegenStatus> {
     // Defer compilation so we can specialize on class of receiver
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     // Handle the last two branches of vm_caller_setup_arg_block
@@ -9672,8 +9669,7 @@ fn gen_objtostring(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     let recv = asm.stack_opnd(0);
@@ -10014,8 +10010,7 @@ fn gen_getblockparamproxy(
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
     if !jit.at_compile_target() {
-        defer_compilation(jit, asm);
-        return Some(EndBlock);
+        return jit.defer_compilation(asm);
     }
 
     // EP level
