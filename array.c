@@ -4377,13 +4377,27 @@ take_items(VALUE obj, long n)
  *    zip(*other_arrays) {|other_array| ... } -> nil
  *
  *  With no block given, combines +self+ with the collection of +other_arrays+;
- *  returns a new array of sub-arrays.
+ *  returns a new array of sub-arrays:
  *
- *  Returns an array of size <tt>other_arrays.size + 1</tt>
- *  (that is, the count of other arrays plus one), that contains:
+ *    [0, 1].zip(['zero', 'one'], [:zero, :one])
+ *    # => [[0, "zero", :zero], [1, "one", :one]]
  *
- *  - The _nth_ element of +self+.
- *  - The _nth_ element of each of the other arrays, as available.
+ *  Returned:
+ *
+ *  - The outer array is of size <tt>self.size</tt>.
+ *  - Each sub-array is of size <tt>other_arrays.size + 1</tt>.
+ *  - The _nth_ sub-array contains (in order):
+ *
+ *    - The _nth_ element of +self+.
+ *    - The _nth_ element of each of the other arrays, as available.
+ *
+ *  Example:
+ *
+ *    a = [0, 1]
+ *    zipped = a.zip(['zero', 'one'], [:zero, :one])
+ *    # => [[0, "zero", :zero], [1, "one", :one]]
+ *    zipped.size       # => 2 # Same size as a.
+ *    zipped.first.size # => 3 # Size of other arrays plus 1.
  *
  *  When the other arrays are all the same size as +self+,
  *  the returned sub-arrays are a rearrangement containing exactly elements of all the arrays
