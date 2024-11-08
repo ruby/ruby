@@ -5750,9 +5750,9 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
 
 /*
  *  call-seq:
- *    array | other_array -> new_array
+ *    self | other_array -> new_array
  *
- *  Returns the union of +array+ and +Array+ +other_array+;
+ *  Returns the union of +self+ and +other_array+;
  *  duplicates are removed; order is preserved;
  *  items are compared using <tt>eql?</tt>:
  *
@@ -5760,7 +5760,7 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
  *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 2] | [3, 2, 1, 0] # => [0, 1, 2, 3]
  *
- *  Related: Array#union.
+ *  Related: see {Methods for Combining}[rdoc-ref:Array@Methods+for+Combining].
  */
 
 static VALUE
