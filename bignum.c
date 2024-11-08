@@ -6311,6 +6311,7 @@ rb_big_pow(VALUE x, VALUE y)
 
             if (xbits == (size_t)-1 ||
                 (xbits > BIGLEN_LIMIT) ||
+                MUL_OVERFLOW_LONG_P(yy, xbits) ||
                 (xbits * yy > BIGLEN_LIMIT)) {
                 rb_raise(rb_eArgError, "exponent is too large");
             }
