@@ -7,11 +7,5 @@
     "openssl",
     "zlib"
   ],
-  "builtin-baseline": "a4275b7eee79fb24ec2e135481ef5fce8b41c339",
-  "overrides": [
-    {
-        "name": "gmp",
-        "version": "6.2.1#21"
-    }
-  ]
+  "builtin-baseline": "10b7a178346f3f0abef60cecd5130e295afd8da4"
 }
