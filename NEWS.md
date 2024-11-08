@@ -100,7 +100,7 @@ The following default gems are updated.
 * prism 1.0.0
 * psych 5.2.0.beta3
 * rdoc 6.7.0
-* reline 0.5.10
+* reline 0.5.11
 * resolv 0.4.0
 * shellwords 0.2.1
 * stringio 3.1.2.dev
