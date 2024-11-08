@@ -98,6 +98,7 @@ The following default gems are updated.
 * ostruct 0.6.1
 * pathname 0.4.0
 * prism 1.0.0
+* pstore 0.1.4
 * psych 5.2.0.beta3
 * rdoc 6.7.0
 * reline 0.5.11
