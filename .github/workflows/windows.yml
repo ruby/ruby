@@ -146,7 +146,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install
+          ruby -e "r = system('vcpkg install'); puts File.read('C:/vcpkg/buildtrees/gmp/build-x64-windows-dbg-out.log'); puts File.read('C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-err.log'); raise unless r"
         working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
