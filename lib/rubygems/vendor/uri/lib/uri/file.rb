@@ -70,17 +70,17 @@ module Gem::URI
 
     # raise InvalidURIError
     def check_userinfo(user)
-      raise Gem::URI::InvalidURIError, "can not set userinfo for file Gem::URI"
+      raise Gem::URI::InvalidURIError, "cannot set userinfo for file Gem::URI"
     end
 
     # raise InvalidURIError
     def check_user(user)
-      raise Gem::URI::InvalidURIError, "can not set user for file Gem::URI"
+      raise Gem::URI::InvalidURIError, "cannot set user for file Gem::URI"
     end
 
     # raise InvalidURIError
     def check_password(user)
-      raise Gem::URI::InvalidURIError, "can not set password for file Gem::URI"
+      raise Gem::URI::InvalidURIError, "cannot set password for file Gem::URI"
     end
 
     # do nothing

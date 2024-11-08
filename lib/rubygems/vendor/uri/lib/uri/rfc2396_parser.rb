@@ -140,11 +140,11 @@ module Gem::URI
 
         if !scheme
           raise InvalidURIError,
-            "bad Gem::URI(absolute but no scheme): #{uri}"
+            "bad Gem::URI (absolute but no scheme): #{uri}"
         end
         if !opaque && (!path && (!host && !registry))
           raise InvalidURIError,
-            "bad Gem::URI(absolute but no path): #{uri}"
+            "bad Gem::URI (absolute but no path): #{uri}"
         end
 
       when @regexp[:REL_URI]
@@ -173,7 +173,7 @@ module Gem::URI
         # server        = [ [ userinfo "@" ] hostport ]
 
       else
-        raise InvalidURIError, "bad Gem::URI(is not Gem::URI?): #{uri}"
+        raise InvalidURIError, "bad Gem::URI (is not Gem::URI?): #{uri}"
       end
 
       path = '' if !path && !opaque # (see RFC2396 Section 5.2)

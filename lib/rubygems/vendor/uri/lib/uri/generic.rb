@@ -82,7 +82,7 @@ module Gem::URI
         if args.kind_of?(Array)
           return self.build(args.collect{|x|
             if x.is_a?(String)
-              DEFAULT_PARSER.escape(x)
+              Gem::URI::RFC2396_PARSER.escape(x)
             else
               x
             end
@@ -91,7 +91,7 @@ module Gem::URI
           tmp = {}
           args.each do |key, value|
             tmp[key] = if value
-                DEFAULT_PARSER.escape(value)
+                Gem::URI::RFC2396_PARSER.escape(value)
               else
                 value
               end
@@ -393,7 +393,7 @@ module Gem::URI
     def check_user(v)
       if @opaque
         raise InvalidURIError,
-          "can not set user with opaque"
+          "cannot set user with opaque"
       end
 
       return v unless v
@@ -417,7 +417,7 @@ module Gem::URI
     def check_password(v, user = @user)
       if @opaque
         raise InvalidURIError,
-          "can not set password with opaque"
+          "cannot set password with opaque"
       end
       return v unless v
 
@@ -596,7 +596,7 @@ module Gem::URI
 
       if @opaque
         raise InvalidURIError,
-          "can not set host with registry or opaque"
+          "cannot set host with registry or opaque"
       elsif parser.regexp[:HOST] !~ v
         raise InvalidComponentError,
           "bad component(expected host component): #{v}"
@@ -685,7 +685,7 @@ module Gem::URI
 
       if @opaque
         raise InvalidURIError,
-          "can not set port with registry or opaque"
+          "cannot set port with registry or opaque"
       elsif !v.kind_of?(Integer) && parser.regexp[:PORT] !~ v
         raise InvalidComponentError,
           "bad component(expected port component): #{v.inspect}"
@@ -733,17 +733,17 @@ module Gem::URI
     end
 
     def check_registry(v) # :nodoc:
-      raise InvalidURIError, "can not set registry"
+      raise InvalidURIError, "cannot set registry"
     end
     private :check_registry
 
     def set_registry(v) #:nodoc:
-      raise InvalidURIError, "can not set registry"
+      raise InvalidURIError, "cannot set registry"
     end
     protected :set_registry
 
     def registry=(v)
-      raise InvalidURIError, "can not set registry"
+      raise InvalidURIError, "cannot set registry"
     end
 
     #
@@ -866,7 +866,7 @@ module Gem::URI
       # hier_part     = ( net_path | abs_path ) [ "?" query ]
       if @host || @port || @user || @path  # userinfo = @user + ':' + @password
         raise InvalidURIError,
-          "can not set opaque with host, port, userinfo or path"
+          "cannot set opaque with host, port, userinfo or path"
       elsif v && parser.regexp[:OPAQUE] !~ v
         raise InvalidComponentError,
           "bad component(expected opaque component): #{v}"
@@ -945,7 +945,7 @@ module Gem::URI
     # == Description
     #
     # Gem::URI has components listed in order of decreasing significance from left to right,
-    # see RFC3986 https://tools.ietf.org/html/rfc3986 1.2.3.
+    # see RFC3986 https://www.rfc-editor.org/rfc/rfc3986 1.2.3.
     #
     # == Usage
     #
@@ -1235,7 +1235,7 @@ module Gem::URI
         return rel, rel
       end
 
-      # you can modify `rel', but can not `oth'.
+      # you can modify `rel', but cannot `oth'.
       return oth, rel
     end
     private :route_from0
@@ -1260,7 +1260,7 @@ module Gem::URI
     #   #=> #<Gem::URI::Generic /main.rbx?page=1>
     #
     def route_from(oth)
-      # you can modify `rel', but can not `oth'.
+      # you can modify `rel', but cannot `oth'.
       begin
         oth, rel = route_from0(oth)
       rescue
@@ -1364,6 +1364,9 @@ module Gem::URI
           str << ':'
           str << @port.to_s
         end
+        if (@host || @port) && !@path.empty? && !@path.start_with?('/')
+          str << '/'
+        end
         str << @path
         if @query
           str << '?'
@@ -1398,19 +1401,6 @@ module Gem::URI
       parser == oth.parser &&
       self.component_ary.eql?(oth.component_ary)
     end
-
-=begin
-
---- Gem::URI::Generic#===(oth)
-
-=end
-#    def ===(oth)
-#      raise NotImplementedError
-#    end
-
-=begin
-=end
-
 
     # Returns an Array of the components defined from the COMPONENT Array.
     def component_ary
