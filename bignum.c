@@ -6287,8 +6287,7 @@ rb_big_pow(VALUE x, VALUE y)
         y = bignorm(y);
         if (FIXNUM_P(y))
             goto again;
-        rb_warn("in a**b, b may be too big");
-        d = rb_big2dbl(y);
+        rb_raise(rb_eArgError, "exponent is too large");
     }
     else if (FIXNUM_P(y)) {
         yy = FIX2LONG(y);
@@ -6304,13 +6303,16 @@ rb_big_pow(VALUE x, VALUE y)
             VALUE z = 0;
             SIGNED_VALUE mask;
             const size_t xbits = rb_absint_numwords(x, 1, NULL);
-            const size_t BIGLEN_LIMIT = 32*1024*1024;
+#if SIZEOF_SIZE_T == 4
+            const size_t BIGLEN_LIMIT = 1ULL << 31; // 2 GB
+#else // SIZEOF_SIZE_T == 8
+            const size_t BIGLEN_LIMIT = 1ULL << 34; // 16 GB
+#endif
 
             if (xbits == (size_t)-1 ||
                 (xbits > BIGLEN_LIMIT) ||
                 (xbits * yy > BIGLEN_LIMIT)) {
-                rb_warn("in a**b, b may be too big");
-                d = (double)yy;
+                rb_raise(rb_eArgError, "exponent is too large");
             }
             else {
                 for (mask = FIXNUM_MAX + 1; mask; mask >>= 1) {
