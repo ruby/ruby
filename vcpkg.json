@@ -1,14 +1,17 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "dependencies": [
-    {
-      "name": "gmp",
-      "version>=": "6.2.1#21"
-    },
+    "gmp",
     "libffi",
     "libyaml",
     "openssl",
     "zlib"
   ],
-  "builtin-baseline": "a4275b7eee79fb24ec2e135481ef5fce8b41c339"
+  "builtin-baseline": "a4275b7eee79fb24ec2e135481ef5fce8b41c339",
+  "overrides": [
+    {
+        "name": "gmp",
+        "version": "6.2.1#21"
+    }
+  ]
 }
