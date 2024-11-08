@@ -2780,13 +2780,8 @@ rb_gc_active_gc_name(void)
 {
     const char *gc_name = rb_gc_impl_active_gc_name();
     if (strlen(gc_name) > RB_GC_MAX_NAME_LEN) {
-        char *truncated_gc_name = ruby_xmalloc(RB_GC_MAX_NAME_LEN + 1);
-
-        rb_warn("GC module %s has a name larger than %d chars, it will be truncated\n",
-            gc_name, RB_GC_MAX_NAME_LEN);
-
-        strncpy(truncated_gc_name, gc_name, RB_GC_MAX_NAME_LEN);
-        return (const char *)truncated_gc_name;
+        rb_bug("GC should have a name shorter than %d chars. Currently: %lu (%s)\n",
+            RB_GC_MAX_NAME_LEN, strlen(gc_name), gc_name);
     }
     return gc_name;
 
