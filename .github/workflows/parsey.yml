@@ -69,7 +69,7 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG
+        run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG --with-praser=parse.y
 
       - run: make
 

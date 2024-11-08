@@ -16,27 +16,27 @@ describe "BasicSocket#send" do
     @socket.close
   end
 
-   it "sends a message to another socket and returns the number of bytes sent" do
-     data = +""
-     t = Thread.new do
-       client = @server.accept
-       loop do
-         got = client.recv(5)
-         break if got.nil? || got.empty?
-         data << got
-       end
-       client.close
-     end
-     Thread.pass while t.status and t.status != "sleep"
-     t.status.should_not be_nil
+  it "sends a message to another socket and returns the number of bytes sent" do
+    data = +""
+    t = Thread.new do
+      client = @server.accept
+      loop do
+        got = client.recv(5)
+        break if got.nil? || got.empty?
+        data << got
+      end
+      client.close
+    end
+    Thread.pass while t.status and t.status != "sleep"
+    t.status.should_not be_nil
 
-     @socket.send('hello', 0).should == 5
-     @socket.shutdown(1) # indicate, that we are done sending
-     @socket.recv(10)
+    @socket.send('hello', 0).should == 5
+    @socket.shutdown(1) # indicate, that we are done sending
+    @socket.recv(10)
 
-     t.join
-     data.should == 'hello'
-   end
+    t.join
+    data.should == 'hello'
+  end
 
   platform_is_not :solaris, :windows do
     it "accepts flags to specify unusual sending behaviour" do

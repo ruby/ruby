@@ -541,7 +541,8 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #endif
 
 static int io_fflush(rb_io_t *);
-static rb_io_t *flush_before_seek(rb_io_t *fptr);
+static rb_io_t *flush_before_seek(rb_io_t *fptr, bool discard_rbuf);
+static void clear_codeconv(rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
 
@@ -626,7 +627,7 @@ rb_sys_fail_on_write(rb_io_t *fptr)
  * IO unread with taking care of removed '\r' in text mode.
  */
 static void
-io_unread(rb_io_t *fptr)
+io_unread(rb_io_t *fptr, bool discard_rbuf)
 {
     rb_off_t r, pos;
     ssize_t read_size;
@@ -647,19 +648,17 @@ io_unread(rb_io_t *fptr)
         if (r < 0 && errno) {
             if (errno == ESPIPE)
                 fptr->mode |= FMODE_DUPLEX;
-            return;
+            if (!discard_rbuf) return;
         }
 
-        fptr->rbuf.off = 0;
-        fptr->rbuf.len = 0;
-        return;
+        goto end;
     }
 
     pos = lseek(fptr->fd, 0, SEEK_CUR);
     if (pos < 0 && errno) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
-        return;
+        if (!discard_rbuf) goto end;
     }
 
     /* add extra offset for removed '\r' in rbuf */
@@ -700,8 +699,10 @@ io_unread(rb_io_t *fptr)
         }
     }
     free(buf);
+  end:
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
+    clear_codeconv(fptr);
     return;
 }
 
@@ -720,7 +721,7 @@ set_binary_mode_with_seek_cur(rb_io_t *fptr)
     if (fptr->rbuf.len == 0 || fptr->mode & FMODE_DUPLEX) {
         return setmode(fptr->fd, O_BINARY);
     }
-    flush_before_seek(fptr);
+    flush_before_seek(fptr, false);
     return setmode(fptr->fd, O_BINARY);
 }
 #define SET_BINARY_MODE_WITH_SEEK_CUR(fptr) set_binary_mode_with_seek_cur(fptr)
@@ -916,7 +917,7 @@ rb_io_s_try_convert(VALUE dummy, VALUE io)
 
 #if !RUBY_CRLF_ENVIRONMENT
 static void
-io_unread(rb_io_t *fptr)
+io_unread(rb_io_t *fptr, bool discard_rbuf)
 {
     rb_off_t r;
     rb_io_check_closed(fptr);
@@ -928,10 +929,11 @@ io_unread(rb_io_t *fptr)
     if (r < 0 && errno) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
-        return;
+        if (!discard_rbuf) return;
     }
     fptr->rbuf.off = 0;
     fptr->rbuf.len = 0;
+    clear_codeconv(fptr);
     return;
 }
 #endif
@@ -972,17 +974,17 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
 }
 
 static rb_io_t *
-flush_before_seek(rb_io_t *fptr)
+flush_before_seek(rb_io_t *fptr, bool discard_rbuf)
 {
     if (io_fflush(fptr) < 0)
         rb_sys_fail_on_write(fptr);
-    io_unread(fptr);
+    io_unread(fptr, discard_rbuf);
     errno = 0;
     return fptr;
 }
 
-#define io_seek(fptr, ofs, whence) (errno = 0, lseek(flush_before_seek(fptr)->fd, (ofs), (whence)))
-#define io_tell(fptr) lseek(flush_before_seek(fptr)->fd, 0, SEEK_CUR)
+#define io_seek(fptr, ofs, whence) (errno = 0, lseek(flush_before_seek(fptr, true)->fd, (ofs), (whence)))
+#define io_tell(fptr) lseek(flush_before_seek(fptr, false)->fd, 0, SEEK_CUR)
 
 #ifndef SEEK_CUR
 # define SEEK_SET 0
@@ -1050,7 +1052,7 @@ rb_io_check_writable(rb_io_t *fptr)
         rb_raise(rb_eIOError, "not opened for writing");
     }
     if (fptr->rbuf.len) {
-        io_unread(fptr);
+        io_unread(fptr, true);
     }
 }
 
@@ -2376,7 +2378,7 @@ rb_io_flush_raw(VALUE io, int sync)
             rb_sys_fail_on_write(fptr);
     }
     if (fptr->mode & FMODE_READABLE) {
-        io_unread(fptr);
+        io_unread(fptr, true);
     }
 
     return io;
@@ -5471,7 +5473,6 @@ maygvl_fclose(FILE *file, int keepgvl)
 }
 
 static void free_io_buffer(rb_io_buffer_t *buf);
-static void clear_codeconv(rb_io_t *fptr);
 
 static void
 fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
@@ -8314,7 +8315,7 @@ io_reopen(VALUE io, VALUE nfile)
             rb_sys_fail_on_write(fptr);
     }
     else {
-        flush_before_seek(fptr);
+        flush_before_seek(fptr, true);
     }
     if (orig->mode & FMODE_READABLE) {
         pos = io_tell(orig);
@@ -8326,6 +8327,7 @@ io_reopen(VALUE io, VALUE nfile)
 
     /* copy rb_io_t structure */
     fptr->mode = orig->mode | (fptr->mode & FMODE_EXTERNAL);
+    fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
@@ -15068,6 +15070,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  A new stream has position zero (and line number zero);
  *  method +rewind+ resets the position (and line number) to zero.
  *
+ *  These methods discard {buffers}[rdoc-ref:IO@Buffering] and the
+ *  Encoding::Converter instances used for that \IO.
+ *
  *  The relevant methods:
  *
  *  - IO#tell (aliased as +#pos+): Returns the current position (in bytes) in the stream.
@@ -15374,6 +15379,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  - IO#putc: Writes a character to the stream.
  *  - IO#each_char: Reads each remaining character in the stream,
  *    passing the character to the given block.
+ *
  *  == Byte \IO
  *
  *  You can process an \IO stream byte-by-byte using these methods:

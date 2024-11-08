@@ -37,6 +37,17 @@ describe "Thread#[]" do
     t2["value"].should == 2
   end
 
+  it "converts a key that is neither String nor Symbol with #to_str" do
+    key = mock('value')
+    key.should_receive(:to_str).and_return('value')
+
+    th = Thread.new do
+      Thread.current[:value] = 1
+    end.join
+
+    th[key].should == 1
+  end
+
   it "raises exceptions on the wrong type of keys" do
     -> { Thread.current[nil] }.should raise_error(TypeError)
     -> { Thread.current[5] }.should raise_error(TypeError)

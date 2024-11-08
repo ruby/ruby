@@ -1173,23 +1173,27 @@ void
 rb_assert_failure_detail(const char *file, int line, const char *name, const char *expr,
                          const char *fmt, ...)
 {
-    FILE *out = stderr;
-    fprintf(out, "Assertion Failed: %s:%d:", file, line);
-    if (name) fprintf(out, "%s:", name);
-    fputs(expr, out);
+    rb_pid_t pid = -1;
+    FILE *out = bug_report_file(file, line, &pid);
+    if (out) {
+        fputs("Assertion Failed: ", out);
+        if (name) fprintf(out, "%s:", name);
+        fputs(expr, out);
 
-    if (fmt && *fmt) {
-        va_list args;
-        va_start(args, fmt);
-        fputs(": ", out);
-        vfprintf(out, fmt, args);
-        va_end(args);
+        if (fmt && *fmt) {
+            va_list args;
+            va_start(args, fmt);
+            fputs(": ", out);
+            vfprintf(out, fmt, args);
+            va_end(args);
+        }
+        fprintf(out, "\n%s\n\n", rb_dynamic_description);
+
+        preface_dump(out);
+        rb_vm_bugreport(NULL, out);
+        bug_report_end(out, pid);
     }
-    fprintf(out, "\n%s\n\n", rb_dynamic_description);
 
-    preface_dump(out);
-    rb_vm_bugreport(NULL, out);
-    bug_report_end(out, -1);
     die();
 }
 

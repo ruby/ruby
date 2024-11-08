@@ -79,13 +79,17 @@ module Gem
     include ::Bundler::MatchMetadata
     include ::Bundler::MatchPlatform
 
-    attr_accessor :remote, :location, :relative_loaded_from
+    attr_accessor :remote, :relative_loaded_from
 
-    remove_method :source
-    attr_writer :source
-    def source
-      (defined?(@source) && @source) || Gem::Source::Installed.new
+    module AllowSettingSource
+      attr_writer :source
+
+      def source
+        (defined?(@source) && @source) || super
+      end
     end
+
+    prepend AllowSettingSource
 
     alias_method :rg_full_gem_path, :full_gem_path
     alias_method :rg_loaded_from,   :loaded_from
@@ -144,6 +148,10 @@ module Gem
           end
         end
       end
+    end
+
+    def insecurely_materialized?
+      false
     end
 
     def groups

@@ -7,14 +7,10 @@
 extern "C" {
 #endif
 
-VALUE kernel_spec_call_proc(VALUE arg_array) {
+static VALUE kernel_spec_call_proc(VALUE arg_array) {
   VALUE arg = rb_ary_pop(arg_array);
   VALUE proc = rb_ary_pop(arg_array);
   return rb_funcall(proc, rb_intern("call"), 1, arg);
-}
-
-VALUE kernel_spec_call_proc_raise(VALUE arg_array, VALUE raised_exc) {
-  return kernel_spec_call_proc(arg_array);
 }
 
 static VALUE kernel_spec_rb_block_given_p(VALUE self) {
@@ -134,7 +130,16 @@ VALUE kernel_spec_rb_throw_obj(VALUE self, VALUE obj, VALUE result) {
   return ID2SYM(rb_intern("rb_throw_failed"));
 }
 
-VALUE kernel_spec_call_proc_with_raised_exc(VALUE arg_array, VALUE raised_exc) {
+VALUE kernel_spec_rb_errinfo(VALUE self) {
+  return rb_errinfo();
+}
+
+VALUE kernel_spec_rb_set_errinfo(VALUE self, VALUE exc) {
+  rb_set_errinfo(exc);
+  return Qnil;
+}
+
+static VALUE kernel_spec_call_proc_with_raised_exc(VALUE arg_array, VALUE raised_exc) {
   VALUE argv[2];
   int argc;
 
@@ -181,7 +186,7 @@ VALUE kernel_spec_rb_rescue2(int argc, VALUE *args, VALUE self) {
   rb_ary_push(raise_array, args[3]);
 
   return rb_rescue2(kernel_spec_call_proc, main_array,
-      kernel_spec_call_proc_raise, raise_array, args[4], args[5], (VALUE)0);
+      kernel_spec_call_proc_with_raised_exc, raise_array, args[4], args[5], (VALUE)0);
 }
 
 static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
@@ -195,7 +200,7 @@ static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
   return res;
 }
 
-static VALUE kernel_spec_rb_protect_errinfo(VALUE self, VALUE obj, VALUE ary) {
+static VALUE kernel_spec_rb_protect_ignore_status(VALUE self, VALUE obj, VALUE ary) {
   int status = 0;
   VALUE res = rb_protect(rb_yield, obj, &status);
   rb_ary_store(ary, 0, INT2NUM(23));
@@ -382,10 +387,13 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_raise", kernel_spec_rb_raise, 1);
   rb_define_method(cls, "rb_throw", kernel_spec_rb_throw, 1);
   rb_define_method(cls, "rb_throw_obj", kernel_spec_rb_throw_obj, 2);
+  rb_define_method(cls, "rb_errinfo", kernel_spec_rb_errinfo, 0);
+  rb_define_method(cls, "rb_set_errinfo", kernel_spec_rb_set_errinfo, 1);
+  rb_define_method(cls, "rb_rescue", kernel_spec_rb_rescue, 4);
   rb_define_method(cls, "rb_rescue", kernel_spec_rb_rescue, 4);
   rb_define_method(cls, "rb_rescue2", kernel_spec_rb_rescue2, -1);
   rb_define_method(cls, "rb_protect_yield", kernel_spec_rb_protect_yield, 2);
-  rb_define_method(cls, "rb_protect_errinfo", kernel_spec_rb_protect_errinfo, 2);
+  rb_define_method(cls, "rb_protect_ignore_status", kernel_spec_rb_protect_ignore_status, 2);
   rb_define_method(cls, "rb_protect_null_status", kernel_spec_rb_protect_null_status, 1);
   rb_define_method(cls, "rb_eval_string_protect", kernel_spec_rb_eval_string_protect, 2);
   rb_define_method(cls, "rb_catch", kernel_spec_rb_catch, 2);

@@ -121,7 +121,7 @@ describe "Warning.warn" do
     end
   end
 
-  ruby_bug '#19530', ''...'3.4' do
+  ruby_bug '#20573', ''...'3.4' do
     it "isn't called by Kernel.warn when category is :deprecated but Warning[:deprecated] is false" do
       warn_deprecated = Warning[:deprecated]
       begin

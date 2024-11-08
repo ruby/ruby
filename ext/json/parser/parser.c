@@ -17,6 +17,17 @@ static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbo
 static int binary_encindex;
 static int utf8_encindex;
 
+#ifdef HAVE_RB_CATEGORY_WARN
+# define json_deprecated(message) rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, message)
+#else
+# define json_deprecated(message) rb_warn(message)
+#endif
+
+static const char deprecated_create_additions_warning[] =
+    "JSON.load implicit support for `create_additions: true` is deprecated "
+    "and will be removed in 3.0, use JSON.unsafe_load or explicitly "
+    "pass `create_additions: true`";
+
 #ifndef HAVE_RB_GC_MARK_LOCATIONS
 // For TruffleRuby
 void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
@@ -438,11 +449,11 @@ static void raise_parse_error(const char *format, const char *start)
 
 
 
-#line 464 "parser.rl"
+#line 475 "parser.rl"
 
 
 
-#line 446 "parser.c"
+#line 457 "parser.c"
 enum {JSON_object_start = 1};
 enum {JSON_object_first_final = 32};
 enum {JSON_object_error = 0};
@@ -450,7 +461,7 @@ enum {JSON_object_error = 0};
 enum {JSON_object_en_main = 1};
 
 
-#line 504 "parser.rl"
+#line 515 "parser.rl"
 
 
 #define PUSH(result) rvalue_stack_push(json->stack, result, &json->stack_handle, &json->stack)
@@ -466,14 +477,14 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
     long stack_head = json->stack->head;
 
 
-#line 470 "parser.c"
+#line 481 "parser.c"
 	{
 	cs = JSON_object_start;
 	}
 
-#line 519 "parser.rl"
+#line 530 "parser.rl"
 
-#line 477 "parser.c"
+#line 488 "parser.c"
 	{
 	short _widec;
 	if ( p == pe )
@@ -502,7 +513,7 @@ case 2:
 		goto st2;
 	goto st0;
 tr2:
-#line 483 "parser.rl"
+#line 494 "parser.rl"
 	{
         char *np;
         json->parsing_name = true;
@@ -518,7 +529,7 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 522 "parser.c"
+#line 533 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st3;
 		case 32: goto st3;
@@ -585,7 +596,7 @@ case 8:
 		goto st8;
 	goto st0;
 tr11:
-#line 472 "parser.rl"
+#line 483 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, result, current_nesting);
         if (np == NULL) {
@@ -599,20 +610,20 @@ st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 603 "parser.c"
+#line 614 "parser.c"
 	_widec = (*p);
 	if ( (*p) < 13 ) {
 		if ( (*p) > 9 ) {
 			if ( 10 <= (*p) && (*p) <= 10 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else if ( (*p) >= 9 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 13 ) {
@@ -620,26 +631,26 @@ case 9:
 			if ( 32 <= (*p) && (*p) <= 32 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else if ( (*p) > 44 ) {
 			if ( 47 <= (*p) && (*p) <= 47 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -660,14 +671,14 @@ case 9:
 		goto st10;
 	goto st0;
 tr4:
-#line 494 "parser.rl"
+#line 505 "parser.rl"
 	{ p--; {p++; cs = 32; goto _out;} }
 	goto st32;
 st32:
 	if ( ++p == pe )
 		goto _test_eof32;
 case 32:
-#line 671 "parser.c"
+#line 682 "parser.c"
 	goto st0;
 st10:
 	if ( ++p == pe )
@@ -769,13 +780,13 @@ case 20:
 		if ( 47 <= (*p) && (*p) <= 47 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) >= 42 ) {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -794,20 +805,20 @@ case 21:
 		if ( (*p) <= 41 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 42 ) {
 		if ( 43 <= (*p) )
  {			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -830,13 +841,13 @@ case 22:
 			if ( 42 <= (*p) && (*p) <= 42 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 46 ) {
@@ -844,19 +855,19 @@ case 22:
 			if ( 48 <= (*p) )
  {				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else if ( (*p) >= 47 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -880,20 +891,20 @@ case 23:
 		if ( (*p) <= 9 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 10 ) {
 		if ( 11 <= (*p) )
  {			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 481 "parser.rl"
+#line 492 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -1007,7 +1018,7 @@ case 31:
 	_out: {}
 	}
 
-#line 520 "parser.rl"
+#line 531 "parser.rl"
 
     if (cs >= JSON_object_first_final) {
         long count = json->stack->head - stack_head;
@@ -1045,7 +1056,7 @@ case 31:
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
                 if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
                     if (json->deprecated_create_additions) {
-                        rb_warn("JSON.load implicit support for `create_additions: true` is deprecated and will be removed in 3.0, use JSON.unsafe_load or explicitly pass `create_additions: true`");
+                        json_deprecated(deprecated_create_additions_warning);
                     }
                     *result = rb_funcall(klass, i_json_create, 1, *result);
                 }
@@ -1058,7 +1069,7 @@ case 31:
 }
 
 
-#line 1062 "parser.c"
+#line 1073 "parser.c"
 enum {JSON_value_start = 1};
 enum {JSON_value_first_final = 29};
 enum {JSON_value_error = 0};
@@ -1066,7 +1077,7 @@ enum {JSON_value_error = 0};
 enum {JSON_value_en_main = 1};
 
 
-#line 655 "parser.rl"
+#line 666 "parser.rl"
 
 
 static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
@@ -1074,14 +1085,14 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
     int cs = EVIL;
 
 
-#line 1078 "parser.c"
+#line 1089 "parser.c"
 	{
 	cs = JSON_value_start;
 	}
 
-#line 662 "parser.rl"
+#line 673 "parser.rl"
 
-#line 1085 "parser.c"
+#line 1096 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1115,7 +1126,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 598 "parser.rl"
+#line 609 "parser.rl"
 	{
         char *np = JSON_parse_string(json, p, pe, result);
         if (np == NULL) {
@@ -1127,7 +1138,7 @@ tr2:
     }
 	goto st29;
 tr3:
-#line 608 "parser.rl"
+#line 619 "parser.rl"
 	{
         char *np;
         if(pe > p + 8 && !strncmp(MinusInfinity, p, 9)) {
@@ -1151,7 +1162,7 @@ tr3:
     }
 	goto st29;
 tr7:
-#line 630 "parser.rl"
+#line 641 "parser.rl"
 	{
         char *np;
         np = JSON_parse_array(json, p, pe, result, current_nesting + 1);
@@ -1159,7 +1170,7 @@ tr7:
     }
 	goto st29;
 tr11:
-#line 636 "parser.rl"
+#line 647 "parser.rl"
 	{
         char *np;
         np =  JSON_parse_object(json, p, pe, result, current_nesting + 1);
@@ -1167,7 +1178,7 @@ tr11:
     }
 	goto st29;
 tr25:
-#line 591 "parser.rl"
+#line 602 "parser.rl"
 	{
         if (json->allow_nan) {
             *result = CInfinity;
@@ -1177,7 +1188,7 @@ tr25:
     }
 	goto st29;
 tr27:
-#line 584 "parser.rl"
+#line 595 "parser.rl"
 	{
         if (json->allow_nan) {
             *result = CNaN;
@@ -1187,19 +1198,19 @@ tr27:
     }
 	goto st29;
 tr31:
-#line 578 "parser.rl"
+#line 589 "parser.rl"
 	{
         *result = Qfalse;
     }
 	goto st29;
 tr34:
-#line 575 "parser.rl"
+#line 586 "parser.rl"
 	{
         *result = Qnil;
     }
 	goto st29;
 tr37:
-#line 581 "parser.rl"
+#line 592 "parser.rl"
 	{
         *result = Qtrue;
     }
@@ -1208,9 +1219,9 @@ st29:
 	if ( ++p == pe )
 		goto _test_eof29;
 case 29:
-#line 642 "parser.rl"
+#line 653 "parser.rl"
 	{ p--; {p++; cs = 29; goto _out;} }
-#line 1214 "parser.c"
+#line 1225 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st29;
 		case 32: goto st29;
@@ -1451,7 +1462,7 @@ case 28:
 	_out: {}
 	}
 
-#line 663 "parser.rl"
+#line 674 "parser.rl"
 
     if (json->freeze) {
         OBJ_FREEZE(*result);
@@ -1466,7 +1477,7 @@ case 28:
 }
 
 
-#line 1470 "parser.c"
+#line 1481 "parser.c"
 enum {JSON_integer_start = 1};
 enum {JSON_integer_first_final = 3};
 enum {JSON_integer_error = 0};
@@ -1474,23 +1485,45 @@ enum {JSON_integer_error = 0};
 enum {JSON_integer_en_main = 1};
 
 
-#line 684 "parser.rl"
+#line 695 "parser.rl"
 
+
+#define MAX_FAST_INTEGER_SIZE 18
+static inline VALUE fast_parse_integer(char *p, char *pe)
+{
+    bool negative = false;
+    if (*p == '-') {
+        negative = true;
+        p++;
+    }
+
+    long long memo = 0;
+    while (p < pe) {
+        memo *= 10;
+        memo += *p - '0';
+        p++;
+    }
+
+    if (negative) {
+        memo = -memo;
+    }
+    return LL2NUM(memo);
+}
 
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
 
 
-#line 1486 "parser.c"
+#line 1519 "parser.c"
 	{
 	cs = JSON_integer_start;
 	}
 
-#line 691 "parser.rl"
+#line 724 "parser.rl"
     json->memo = p;
 
-#line 1494 "parser.c"
+#line 1527 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1524,14 +1557,14 @@ case 3:
 		goto st0;
 	goto tr4;
 tr4:
-#line 681 "parser.rl"
+#line 692 "parser.rl"
 	{ p--; {p++; cs = 4; goto _out;} }
 	goto st4;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 1535 "parser.c"
+#line 1568 "parser.c"
 	goto st0;
 st5:
 	if ( ++p == pe )
@@ -1550,14 +1583,18 @@ case 5:
 	_out: {}
 	}
 
-#line 693 "parser.rl"
+#line 726 "parser.rl"
 
     if (cs >= JSON_integer_first_final) {
         long len = p - json->memo;
-        fbuffer_clear(&json->fbuffer);
-        fbuffer_append(&json->fbuffer, json->memo, len);
-        fbuffer_append_char(&json->fbuffer, '\0');
-        *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+        if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
+            *result = fast_parse_integer(json->memo, p);
+        } else {
+            fbuffer_clear(&json->fbuffer);
+            fbuffer_append(&json->fbuffer, json->memo, len);
+            fbuffer_append_char(&json->fbuffer, '\0');
+            *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+        }
         return p + 1;
     } else {
         return NULL;
@@ -1565,7 +1602,7 @@ case 5:
 }
 
 
-#line 1569 "parser.c"
+#line 1606 "parser.c"
 enum {JSON_float_start = 1};
 enum {JSON_float_first_final = 8};
 enum {JSON_float_error = 0};
@@ -1573,7 +1610,7 @@ enum {JSON_float_error = 0};
 enum {JSON_float_en_main = 1};
 
 
-#line 718 "parser.rl"
+#line 755 "parser.rl"
 
 
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result)
@@ -1581,15 +1618,15 @@ static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *resul
     int cs = EVIL;
 
 
-#line 1585 "parser.c"
+#line 1622 "parser.c"
 	{
 	cs = JSON_float_start;
 	}
 
-#line 725 "parser.rl"
+#line 762 "parser.rl"
     json->memo = p;
 
-#line 1593 "parser.c"
+#line 1630 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1647,14 +1684,14 @@ case 8:
 		goto st0;
 	goto tr9;
 tr9:
-#line 712 "parser.rl"
+#line 749 "parser.rl"
 	{ p--; {p++; cs = 9; goto _out;} }
 	goto st9;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 1658 "parser.c"
+#line 1695 "parser.c"
 	goto st0;
 st5:
 	if ( ++p == pe )
@@ -1715,7 +1752,7 @@ case 7:
 	_out: {}
 	}
 
-#line 727 "parser.rl"
+#line 764 "parser.rl"
 
     if (cs >= JSON_float_first_final) {
         VALUE mod = Qnil;
@@ -1768,7 +1805,7 @@ case 7:
 
 
 
-#line 1772 "parser.c"
+#line 1809 "parser.c"
 enum {JSON_array_start = 1};
 enum {JSON_array_first_final = 22};
 enum {JSON_array_error = 0};
@@ -1776,7 +1813,7 @@ enum {JSON_array_error = 0};
 enum {JSON_array_en_main = 1};
 
 
-#line 804 "parser.rl"
+#line 841 "parser.rl"
 
 
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
@@ -1789,14 +1826,14 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     long stack_head = json->stack->head;
 
 
-#line 1793 "parser.c"
+#line 1830 "parser.c"
 	{
 	cs = JSON_array_start;
 	}
 
-#line 816 "parser.rl"
+#line 853 "parser.rl"
 
-#line 1800 "parser.c"
+#line 1837 "parser.c"
 	{
 	short _widec;
 	if ( p == pe )
@@ -1836,7 +1873,7 @@ case 2:
 		goto st2;
 	goto st0;
 tr2:
-#line 784 "parser.rl"
+#line 821 "parser.rl"
 	{
         VALUE v = Qnil;
         char *np = JSON_parse_value(json, p, pe, &v, current_nesting);
@@ -1851,12 +1888,12 @@ st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 1855 "parser.c"
+#line 1892 "parser.c"
 	_widec = (*p);
 	if ( 44 <= (*p) && (*p) <= 44 ) {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -1903,14 +1940,14 @@ case 7:
 		goto st3;
 	goto st7;
 tr4:
-#line 796 "parser.rl"
+#line 833 "parser.rl"
 	{ p--; {p++; cs = 22; goto _out;} }
 	goto st22;
 st22:
 	if ( ++p == pe )
 		goto _test_eof22;
 case 22:
-#line 1914 "parser.c"
+#line 1951 "parser.c"
 	goto st0;
 st8:
 	if ( ++p == pe )
@@ -1978,13 +2015,13 @@ case 13:
 			if ( 10 <= (*p) && (*p) <= 10 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else if ( (*p) >= 9 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 13 ) {
@@ -1992,19 +2029,19 @@ case 13:
 			if ( 47 <= (*p) && (*p) <= 47 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else if ( (*p) >= 32 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -2043,13 +2080,13 @@ case 14:
 		if ( 47 <= (*p) && (*p) <= 47 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) >= 42 ) {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -2068,20 +2105,20 @@ case 15:
 		if ( (*p) <= 41 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 42 ) {
 		if ( 43 <= (*p) )
  {			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -2104,13 +2141,13 @@ case 16:
 			if ( 42 <= (*p) && (*p) <= 42 ) {
 				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 46 ) {
@@ -2118,19 +2155,19 @@ case 16:
 			if ( 48 <= (*p) )
  {				_widec = (short)(128 + ((*p) - -128));
 				if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 			}
 		} else if ( (*p) >= 47 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -2154,20 +2191,20 @@ case 17:
 		if ( (*p) <= 9 ) {
 			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else if ( (*p) > 10 ) {
 		if ( 11 <= (*p) )
  {			_widec = (short)(128 + ((*p) - -128));
 			if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 		}
 	} else {
 		_widec = (short)(128 + ((*p) - -128));
 		if (
-#line 794 "parser.rl"
+#line 831 "parser.rl"
  json->allow_trailing_comma  ) _widec += 256;
 	}
 	switch( _widec ) {
@@ -2239,7 +2276,7 @@ case 21:
 	_out: {}
 	}
 
-#line 817 "parser.rl"
+#line 854 "parser.rl"
 
     if(cs >= JSON_array_first_final) {
         long count = json->stack->head - stack_head;
@@ -2291,6 +2328,26 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
+static VALUE json_string_fastpath(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
+{
+    size_t bufferSize = stringEnd - string;
+
+    if (is_name) {
+        VALUE cached_key;
+        if (RB_UNLIKELY(symbolize)) {
+            cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
+        } else {
+            cached_key = rstring_cache_fetch(&json->name_cache, string, bufferSize);
+        }
+
+        if (RB_LIKELY(cached_key)) {
+            return cached_key;
+        }
+    }
+
+    return build_string(string, stringEnd, intern, symbolize);
+}
+
 static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
@@ -2312,7 +2369,7 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
     }
 
     pe = memchr(p, '\\', bufferSize);
-    if (RB_LIKELY(pe == NULL)) {
+    if (RB_UNLIKELY(pe == NULL)) {
         return build_string(string, stringEnd, intern, symbolize);
     }
 
@@ -2413,15 +2470,15 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
 }
 
 
-#line 2417 "parser.c"
+#line 2474 "parser.c"
 enum {JSON_string_start = 1};
-enum {JSON_string_first_final = 8};
+enum {JSON_string_first_final = 9};
 enum {JSON_string_error = 0};
 
 enum {JSON_string_en_main = 1};
 
 
-#line 1008 "parser.rl"
+#line 1077 "parser.rl"
 
 
 static int
@@ -2442,15 +2499,15 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
     VALUE match_string;
 
 
-#line 2446 "parser.c"
+#line 2503 "parser.c"
 	{
 	cs = JSON_string_start;
 	}
 
-#line 1028 "parser.rl"
+#line 1097 "parser.rl"
     json->memo = p;
 
-#line 2454 "parser.c"
+#line 2511 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -2475,47 +2532,56 @@ case 2:
 		goto st0;
 	goto st2;
 tr2:
-#line 995 "parser.rl"
+#line 1059 "parser.rl"
+	{
+        *result = json_string_fastpath(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        {p = (( p + 1))-1;}
+        p--;
+        {p++; cs = 9; goto _out;}
+    }
+#line 1052 "parser.rl"
 	{
         *result = json_string_unescape(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
-        if (NIL_P(*result)) {
-            p--;
-            {p++; cs = 8; goto _out;}
-        } else {
-            {p = (( p + 1))-1;}
-        }
+        {p = (( p + 1))-1;}
+        p--;
+        {p++; cs = 9; goto _out;}
     }
-#line 1005 "parser.rl"
-	{ p--; {p++; cs = 8; goto _out;} }
-	goto st8;
-st8:
+	goto st9;
+tr6:
+#line 1052 "parser.rl"
+	{
+        *result = json_string_unescape(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        {p = (( p + 1))-1;}
+        p--;
+        {p++; cs = 9; goto _out;}
+    }
+	goto st9;
+st9:
 	if ( ++p == pe )
-		goto _test_eof8;
-case 8:
-#line 2496 "parser.c"
+		goto _test_eof9;
+case 9:
+#line 2564 "parser.c"
 	goto st0;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
 	if ( (*p) == 117 )
-		goto st4;
+		goto st5;
 	if ( 0 <= (signed char)(*(p)) && (*(p)) <= 31 )
 		goto st0;
-	goto st2;
+	goto st4;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-	if ( (*p) < 65 ) {
-		if ( 48 <= (*p) && (*p) <= 57 )
-			goto st5;
-	} else if ( (*p) > 70 ) {
-		if ( 97 <= (*p) && (*p) <= 102 )
-			goto st5;
-	} else
-		goto st5;
-	goto st0;
+	switch( (*p) ) {
+		case 34: goto tr6;
+		case 92: goto st3;
+	}
+	if ( 0 <= (signed char)(*(p)) && (*(p)) <= 31 )
+		goto st0;
+	goto st4;
 st5:
 	if ( ++p == pe )
 		goto _test_eof5;
@@ -2548,27 +2614,41 @@ st7:
 case 7:
 	if ( (*p) < 65 ) {
 		if ( 48 <= (*p) && (*p) <= 57 )
-			goto st2;
+			goto st8;
 	} else if ( (*p) > 70 ) {
 		if ( 97 <= (*p) && (*p) <= 102 )
-			goto st2;
+			goto st8;
 	} else
-		goto st2;
+		goto st8;
+	goto st0;
+st8:
+	if ( ++p == pe )
+		goto _test_eof8;
+case 8:
+	if ( (*p) < 65 ) {
+		if ( 48 <= (*p) && (*p) <= 57 )
+			goto st4;
+	} else if ( (*p) > 70 ) {
+		if ( 97 <= (*p) && (*p) <= 102 )
+			goto st4;
+	} else
+		goto st4;
 	goto st0;
 	}
 	_test_eof2: cs = 2; goto _test_eof;
-	_test_eof8: cs = 8; goto _test_eof;
+	_test_eof9: cs = 9; goto _test_eof;
 	_test_eof3: cs = 3; goto _test_eof;
 	_test_eof4: cs = 4; goto _test_eof;
 	_test_eof5: cs = 5; goto _test_eof;
 	_test_eof6: cs = 6; goto _test_eof;
 	_test_eof7: cs = 7; goto _test_eof;
+	_test_eof8: cs = 8; goto _test_eof;
 
 	_test_eof: {}
 	_out: {}
 	}
 
-#line 1030 "parser.rl"
+#line 1099 "parser.rl"
 
     if (json->create_additions && RTEST(match_string = json->match_string)) {
           VALUE klass;
@@ -2721,7 +2801,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 2725 "parser.c"
+#line 2805 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -2729,7 +2809,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 1196 "parser.rl"
+#line 1265 "parser.rl"
 
 
 /*
@@ -2758,16 +2838,16 @@ static VALUE cParser_parse(VALUE self)
     json->stack = &stack;
 
 
-#line 2762 "parser.c"
+#line 2842 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 1224 "parser.rl"
+#line 1293 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 2771 "parser.c"
+#line 2851 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -2801,7 +2881,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 1188 "parser.rl"
+#line 1257 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result, 0);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -2811,7 +2891,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 2815 "parser.c"
+#line 2895 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2900,7 +2980,7 @@ case 9:
 	_out: {}
 	}
 
-#line 1227 "parser.rl"
+#line 1296 "parser.rl"
 
     if (json->stack_handle) {
         rvalue_stack_eagerly_release(json->stack_handle);
@@ -2936,16 +3016,16 @@ static VALUE cParser_m_parse(VALUE klass, VALUE source, VALUE opts)
     json->stack = &stack;
 
 
-#line 2940 "parser.c"
+#line 3020 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 1262 "parser.rl"
+#line 1331 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 2949 "parser.c"
+#line 3029 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -2979,7 +3059,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 1188 "parser.rl"
+#line 1257 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result, 0);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -2989,7 +3069,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 2993 "parser.c"
+#line 3073 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -3078,7 +3158,7 @@ case 9:
 	_out: {}
 	}
 
-#line 1265 "parser.rl"
+#line 1334 "parser.rl"
 
     if (json->stack_handle) {
         rvalue_stack_eagerly_release(json->stack_handle);

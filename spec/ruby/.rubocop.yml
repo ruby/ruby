@@ -5,8 +5,12 @@ AllCops:
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
+    - core/exception/fixtures/syntax_error.rb
   DisabledByDefault: true
   NewCops: disable
+
+Layout/IndentationConsistency:
+  Enabled: true
 
 Layout/TrailingWhitespace:
   Enabled: true
@@ -43,7 +47,21 @@ Lint/InterpolationCheck:
 Lint/LiteralAsCondition:
   Enabled: false
 
+# Required to support Ruby 3.0
+Lint/RedundantRequireStatement:
+  Exclude:
+    - core/fiber/**/*.rb
+    - library/fiber/**/*.rb
+    - optional/capi/fiber_spec.rb
+
+Lint/RedundantSafeNavigation:
+  Exclude:
+    - language/safe_navigator_spec.rb
+
 Lint/RedundantSplatExpansion:
+  Enabled: false
+
+Lint/RescueException:
   Enabled: false
 
 Lint/UnifiedInteger:

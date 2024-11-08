@@ -1066,11 +1066,10 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_power_overflow
-    bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
-    x = EnvUtil.suppress_warning {4r**40000000}
-    assert_predicate x, :infinite?, bug
-    x = EnvUtil.suppress_warning {(1/4r)**40000000}
-    assert_equal 0, x, bug
+    assert_raise(ArgumentError) { 4r**400000000000000000000 }
+    exp = 4**40000000
+    assert_equal exp, 4r**40000000
+    assert_equal 1r/exp, (1/4r)**40000000
   end
 
   def test_positive_p

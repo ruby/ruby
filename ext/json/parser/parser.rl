@@ -15,6 +15,17 @@ static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbo
 static int binary_encindex;
 static int utf8_encindex;
 
+#ifdef HAVE_RB_CATEGORY_WARN
+# define json_deprecated(message) rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, message)
+#else
+# define json_deprecated(message) rb_warn(message)
+#endif
+
+static const char deprecated_create_additions_warning[] =
+    "JSON.load implicit support for `create_additions: true` is deprecated "
+    "and will be removed in 3.0, use JSON.unsafe_load or explicitly "
+    "pass `create_additions: true`";
+
 #ifndef HAVE_RB_GC_MARK_LOCATIONS
 // For TruffleRuby
 void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
@@ -554,7 +565,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
                 if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
                     if (json->deprecated_create_additions) {
-                        rb_warn("JSON.load implicit support for `create_additions: true` is deprecated and will be removed in 3.0, use JSON.unsafe_load or explicitly pass `create_additions: true`");
+                        json_deprecated(deprecated_create_additions_warning);
                     }
                     *result = rb_funcall(klass, i_json_create, 1, *result);
                 }
@@ -647,10 +658,10 @@ main := ignore* (
               Vtrue @parse_true |
               VNaN @parse_nan |
               VInfinity @parse_infinity |
-              begin_number >parse_number |
-              begin_string >parse_string |
-              begin_array >parse_array |
-              begin_object >parse_object
+              begin_number @parse_number |
+              begin_string @parse_string |
+              begin_array @parse_array |
+              begin_object @parse_object
         ) ignore* %*exit;
 }%%
 
@@ -683,6 +694,28 @@ static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *resul
     main := '-'? ('0' | [1-9][0-9]*) (^[0-9]? @exit);
 }%%
 
+#define MAX_FAST_INTEGER_SIZE 18
+static inline VALUE fast_parse_integer(char *p, char *pe)
+{
+    bool negative = false;
+    if (*p == '-') {
+        negative = true;
+        p++;
+    }
+
+    long long memo = 0;
+    while (p < pe) {
+        memo *= 10;
+        memo += *p - '0';
+        p++;
+    }
+
+    if (negative) {
+        memo = -memo;
+    }
+    return LL2NUM(memo);
+}
+
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
@@ -693,10 +726,14 @@ static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *res
 
     if (cs >= JSON_integer_first_final) {
         long len = p - json->memo;
-        fbuffer_clear(&json->fbuffer);
-        fbuffer_append(&json->fbuffer, json->memo, len);
-        fbuffer_append_char(&json->fbuffer, '\0');
-        *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+        if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
+            *result = fast_parse_integer(json->memo, p);
+        } else {
+            fbuffer_clear(&json->fbuffer);
+            fbuffer_append(&json->fbuffer, json->memo, len);
+            fbuffer_append_char(&json->fbuffer, '\0');
+            *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+        }
         return p + 1;
     } else {
         return NULL;
@@ -865,6 +902,26 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
+static VALUE json_string_fastpath(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
+{
+    size_t bufferSize = stringEnd - string;
+
+    if (is_name) {
+        VALUE cached_key;
+        if (RB_UNLIKELY(symbolize)) {
+            cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
+        } else {
+            cached_key = rstring_cache_fetch(&json->name_cache, string, bufferSize);
+        }
+
+        if (RB_LIKELY(cached_key)) {
+            return cached_key;
+        }
+    }
+
+    return build_string(string, stringEnd, intern, symbolize);
+}
+
 static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
@@ -886,7 +943,7 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
     }
 
     pe = memchr(p, '\\', bufferSize);
-    if (RB_LIKELY(pe == NULL)) {
+    if (RB_UNLIKELY(pe == NULL)) {
         return build_string(string, stringEnd, intern, symbolize);
     }
 
@@ -992,19 +1049,31 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
 
     write data;
 
-    action parse_string {
+    action parse_complex_string {
         *result = json_string_unescape(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
-        if (NIL_P(*result)) {
-            fhold;
-            fbreak;
-        } else {
-            fexec p + 1;
-        }
+        fexec p + 1;
+        fhold;
+        fbreak;
     }
 
-    action exit { fhold; fbreak; }
+    action parse_simple_string {
+        *result = json_string_fastpath(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        fexec p + 1;
+        fhold;
+        fbreak;
+    }
 
-    main := '"' ((^([\"\\] | 0..0x1f) | '\\'[\"\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | '\\'^([\"\\/bfnrtu]|0..0x1f))* %parse_string) '"' @exit;
+    double_quote = '"';
+    escape = '\\';
+    control = 0..0x1f;
+    simple = any - escape - double_quote - control;
+
+    main := double_quote (
+         (simple*)(
+            (double_quote) @parse_simple_string |
+            ((^([\"\\] | control) | escape[\"\\/bfnrt] | '\\u'[0-9a-fA-F]{4} | escape^([\"\\/bfnrtu]|0..0x1f))* double_quote) @parse_complex_string
+         )
+    );
 }%%
 
 static int

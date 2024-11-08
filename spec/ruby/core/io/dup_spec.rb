@@ -25,27 +25,27 @@ describe "IO#dup" do
     @i.fileno.should_not == @f.fileno
   end
 
-quarantine! do # This does not appear to be consistent across platforms
-  it "shares the original stream between the two IOs" do
-    start = @f.pos
-    @i.pos.should == start
+  quarantine! do # This does not appear to be consistent across platforms
+    it "shares the original stream between the two IOs" do
+      start = @f.pos
+      @i.pos.should == start
 
-    s =  "Hello, wo.. wait, where am I?\n"
-    s2 = "<evil voice>       Muhahahaa!"
+      s =  "Hello, wo.. wait, where am I?\n"
+      s2 = "<evil voice>       Muhahahaa!"
 
-    @f.write s
-    @i.pos.should == @f.pos
+      @f.write s
+      @i.pos.should == @f.pos
 
-    @i.rewind
-    @i.gets.should == s
+      @i.rewind
+      @i.gets.should == s
 
-    @i.rewind
-    @i.write s2
+      @i.rewind
+      @i.write s2
 
-    @f.rewind
-    @f.gets.should == "#{s2}\n"
+      @f.rewind
+      @f.gets.should == "#{s2}\n"
+    end
   end
-end
 
   it "allows closing the new IO without affecting the original" do
     @i.close

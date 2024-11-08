@@ -654,8 +654,13 @@ class TestSuper < Test::Unit::TestCase
     assert_equal(1, c.new.test(1))
 
     b.class_eval do
-      def test
-        :test
+      begin
+        verbose_bak, $VERBOSE = $VERBOSE, nil
+        def test
+          :test
+        end
+      ensure
+        $VERBOSE = verbose_bak
       end
     end
 

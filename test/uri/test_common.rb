@@ -13,8 +13,12 @@ class URI::TestCommon < Test::Unit::TestCase
   def test_fallback_constants
     orig_verbose = $VERBOSE
     $VERBOSE = nil
-    assert URI::ABS_URI
+
     assert_raise(NameError) { URI::FOO }
+
+    assert_equal URI::ABS_URI, URI::RFC2396_PARSER.regexp[:ABS_URI]
+    assert_equal URI::PATTERN, URI::RFC2396_Parser::PATTERN
+    assert_equal URI::REGEXP, URI::RFC2396_REGEXP
   ensure
     $VERBOSE = orig_verbose
   end

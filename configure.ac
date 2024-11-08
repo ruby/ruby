@@ -20,6 +20,7 @@ RUBY_M4_INCLUDE([colorize_result.m4])dnl
 RUBY_M4_INCLUDE([ruby_append_option.m4])dnl
 RUBY_M4_INCLUDE([ruby_append_options.m4])dnl
 RUBY_M4_INCLUDE([ruby_check_builtin_func.m4])dnl
+RUBY_M4_INCLUDE([ruby_check_builtin_overflow.m4])dnl
 RUBY_M4_INCLUDE([ruby_check_builtin_setjmp.m4])dnl
 RUBY_M4_INCLUDE([ruby_check_header.m4])dnl
 RUBY_M4_INCLUDE([ruby_check_printf_prefix.m4])dnl
@@ -2297,10 +2298,6 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_ctz, [__builtin_ctz(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_ctzll, [__builtin_ctzll(0)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_add_overflow, [int x;__builtin_add_overflow(0,0,&x)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_sub_overflow, [int x;__builtin_sub_overflow(0,0,&x)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_mul_overflow, [int x;__builtin_mul_overflow(0,0,&x)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_mul_overflow_p, [__builtin_mul_overflow_p(0,0,(int)0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_constant_p, [__builtin_constant_p(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [
     [int x[__extension__(__builtin_choose_expr(1, 1, -1))]];
@@ -2316,26 +2313,9 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_types_compatible_p, [__builtin_types_compatibl
 RUBY_CHECK_BUILTIN_FUNC(__builtin_trap, [__builtin_trap()])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(0, 0)])
 
-AS_IF([test "$rb_cv_builtin___builtin_mul_overflow" != no], [
-  AC_CACHE_CHECK(for __builtin_mul_overflow with long long arguments, rb_cv_use___builtin_mul_overflow_long_long, [
-    AC_LINK_IFELSE([AC_LANG_SOURCE([[
-#pragma clang optimize off
-
-int
-main(void)
-{
-    long long x = 0, y;
-    __builtin_mul_overflow(x, x, &y);
-
-    return 0;
-}
-]])],
-	rb_cv_use___builtin_mul_overflow_long_long=yes,
-	rb_cv_use___builtin_mul_overflow_long_long=no)])
-])
-AS_IF([test "$rb_cv_use___builtin_mul_overflow_long_long" = yes], [
-  AC_DEFINE(USE___BUILTIN_MUL_OVERFLOW_LONG_LONG, 1)
-])
+RUBY_CHECK_BUILTIN_OVERFLOW(add)
+RUBY_CHECK_BUILTIN_OVERFLOW(sub)
+RUBY_CHECK_BUILTIN_OVERFLOW(mul)
 
 AS_IF([test "$ac_cv_func_qsort_r" != no], [
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,

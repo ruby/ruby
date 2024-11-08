@@ -539,8 +539,6 @@ module Bundler
       end
     end
 
-    old_gem = instance_method(:gem)
-
     desc "gem NAME [OPTIONS]", "Creates a skeleton for creating a rubygem"
     method_option :exe, type: :boolean, default: false, aliases: ["--bin", "-b"], desc: "Generate a binary executable for your library."
     method_option :coc, type: :boolean, desc: "Generate a code of conduct file. Set a default with `bundle config set --global gem.coc true`."
@@ -564,29 +562,12 @@ module Bundler
     method_option :github_username, type: :string, default: Bundler.settings["gem.github_username"], banner: "Set your username on GitHub", desc: "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
 
     def gem(name)
+      require_relative "cli/gem"
+      cmd_args = args + [self]
+      cmd_args.unshift(options)
+
+      Gem.new(*cmd_args).run
     end
-
-    commands["gem"].tap do |gem_command|
-      def gem_command.run(instance, args = [])
-        arity = 1 # name
-
-        require_relative "cli/gem"
-        cmd_args = args + [instance]
-        cmd_args.unshift(instance.options)
-
-        cmd = begin
-          Gem.new(*cmd_args)
-        rescue ArgumentError => e
-          instance.class.handle_argument_error(self, e, args, arity)
-        end
-
-        cmd.run
-      end
-    end
-
-    undef_method(:gem)
-    define_method(:gem, old_gem)
-    private :gem
 
     def self.source_root
       File.expand_path("templates", __dir__)
@@ -623,6 +604,7 @@ module Bundler
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
+    method_option "add-checksums", type: :boolean, default: false, banner: "Adds checksums to the lockfile"
     method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
     method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
     method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"

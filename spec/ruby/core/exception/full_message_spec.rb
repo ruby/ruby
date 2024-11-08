@@ -79,6 +79,24 @@ describe "Exception#full_message" do
         err.full_message(highlight: true).should !~ /unhandled exception/
         err.full_message(highlight: false).should !~ /unhandled exception/
       end
+
+      it "adds escape sequences to highlight some strings if the message is not specified and :highlight option is specified" do
+        e = RuntimeError.new("")
+
+        full_message = e.full_message(highlight: true, order: :top).lines
+        full_message[0].should.end_with? "\e[1;4munhandled exception\e[m\n"
+
+        full_message = e.full_message(highlight: true, order: :bottom).lines
+        full_message[0].should == "\e[1mTraceback\e[m (most recent call last):\n"
+        full_message[-1].should.end_with? "\e[1;4munhandled exception\e[m\n"
+
+        full_message = e.full_message(highlight: false, order: :top).lines
+        full_message[0].should.end_with? "unhandled exception\n"
+
+        full_message = e.full_message(highlight: false, order: :bottom).lines
+        full_message[0].should == "Traceback (most recent call last):\n"
+        full_message[-1].should.end_with? "unhandled exception\n"
+      end
     end
 
     describe "generic Error" do

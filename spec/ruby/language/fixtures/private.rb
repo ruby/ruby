@@ -43,17 +43,17 @@ module Private
     end
   end
 
-   class E
-     include D
-   end
+  class E
+    include D
+  end
 
-   class G
-     def foo
-       "foo"
-     end
-   end
+  class G
+    def foo
+      "foo"
+    end
+  end
 
-   class H < A
-     private :foo
-   end
+  class H < A
+    private :foo
+  end
 end

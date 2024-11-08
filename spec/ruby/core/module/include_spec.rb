@@ -581,6 +581,29 @@ describe "Module#include" do
     c2.include(m)
     c2.new.foo.should == [:c2, :m1]
   end
+
+  it "update a module when a nested module is updated and includes a module on its own" do
+    m1 = Module.new
+    m2 = Module.new do
+      def m2; [:m2]; end
+    end
+    m3 = Module.new do
+      def m3; [:m3]; end
+    end
+    m4 = Module.new do
+      def m4; [:m4]; end
+    end
+    c = Class.new
+
+    c.include(m1)
+    m1.include(m2)
+    m2.include(m3)
+    m3.include(m4)
+
+    c.new.m2.should == [:m2]
+    c.new.m3.should == [:m3]
+    c.new.m4.should == [:m4]
+  end
 end
 
 describe "Module#include?" do

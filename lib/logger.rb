@@ -381,7 +381,7 @@ class Logger
 
   # Logging severity threshold (e.g. <tt>Logger::INFO</tt>).
   def level
-    level_override[Fiber.current] || @level
+    level_override[level_key] || @level
   end
 
   # Sets the log level; returns +severity+.
@@ -406,14 +406,14 @@ class Logger
   #     logger.debug { "Hello" }
   #   end
   def with_level(severity)
-    prev, level_override[Fiber.current] = level, Severity.coerce(severity)
+    prev, level_override[level_key] = level, Severity.coerce(severity)
     begin
       yield
     ensure
       if prev
-        level_override[Fiber.current] = prev
+        level_override[level_key] = prev
       else
-        level_override.delete(Fiber.current)
+        level_override.delete(level_key)
       end
     end
   end
@@ -749,6 +749,10 @@ private
   # Guarantee the existence of this ivar even when subclasses don't call the superclass constructor.
   def level_override
     @level_override ||= {}
+  end
+
+  def level_key
+    Fiber.current
   end
 
   def format_message(severity, datetime, progname, msg)

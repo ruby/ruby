@@ -393,7 +393,9 @@ module Bundler
     def download_gem(spec, uri, cache_dir, fetcher)
       require "rubygems/remote_fetcher"
       uri = Bundler.settings.mirror_for(uri)
-      Bundler::Retry.new("download gem from #{uri}").attempts do
+      redacted_uri = Gem::Uri.redact(uri)
+
+      Bundler::Retry.new("download gem from #{redacted_uri}").attempts do
         gem_file_name = spec.file_name
         local_gem_path = File.join cache_dir, gem_file_name
         return if File.exist? local_gem_path
@@ -415,7 +417,7 @@ module Bundler
         end
       end
     rescue Gem::RemoteFetcher::FetchError => e
-      raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
+      raise Bundler::HTTPError, "Could not download gem from #{redacted_uri} due to underlying error <#{e.message}>"
     end
 
     def build(spec, skip_validation = false)

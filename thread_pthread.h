@@ -132,7 +132,6 @@ struct rb_thread_sched {
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
-  NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
 
   # ifdef __APPLE__
     // on Darwin, TLS can not be accessed across .so
