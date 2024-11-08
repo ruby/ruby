@@ -4,7 +4,9 @@ require "rubygems/remote_fetcher"
 
 RSpec.describe Bundler::Fetcher::Index do
   let(:downloader)  { nil }
-  let(:remote)      { nil }
+  let(:remote)      { double(:remote, uri: remote_uri) }
+  let(:remote_uri)  { Gem::URI("http://#{userinfo}remote-uri.org") }
+  let(:userinfo)    { "" }
   let(:display_uri) { "http://sample_uri.com" }
   let(:rubygems)    { double(:rubygems) }
   let(:gem_names)   { %w[foo bar] }
@@ -20,10 +22,8 @@ RSpec.describe Bundler::Fetcher::Index do
   end
 
   context "error handling" do
-    let(:remote_uri) { Gem::URI("http://remote-uri.org") }
     before do
       allow(rubygems).to receive(:fetch_all_remote_specs) { raise Gem::RemoteFetcher::FetchError.new(error_message, display_uri) }
-      allow(subject).to receive(:remote_uri).and_return(remote_uri)
     end
 
     context "when certificate verify failed" do
@@ -38,25 +38,17 @@ RSpec.describe Bundler::Fetcher::Index do
     context "when a 401 response occurs" do
       let(:error_message) { "401" }
 
-      before do
-        allow(remote_uri).to receive(:userinfo).and_return(userinfo)
+      it "should raise a Bundler::Fetcher::AuthenticationRequiredError" do
+        expect { subject.specs(gem_names) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
+          %r{Authentication is required for http://remote-uri.org})
       end
 
       context "and there was userinfo" do
-        let(:userinfo) { double(:userinfo) }
+        let(:userinfo) { "user:pass@" }
 
         it "should raise a Bundler::Fetcher::BadAuthenticationError" do
           expect { subject.specs(gem_names) }.to raise_error(Bundler::Fetcher::BadAuthenticationError,
-            %r{Bad username or password for http://remote-uri.org})
-        end
-      end
-
-      context "and there was no userinfo" do
-        let(:userinfo) { nil }
-
-        it "should raise a Bundler::Fetcher::AuthenticationRequiredError" do
-          expect { subject.specs(gem_names) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
-            %r{Authentication is required for http://remote-uri.org})
+            %r{Bad username or password for http://user@remote-uri.org})
         end
       end
     end
