@@ -95,6 +95,11 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
+          [collections.arraylist]$path = $env:path -split ';'
+          echo $path
+          $path.remove('C:\msys64\usr\bin')
+          $env:Path = $path -join ';'
+          echo $env:Path
           vcpkg install
         working-directory: src
         env:
@@ -105,6 +110,7 @@ jobs:
         run: |
           type C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-out.log
           type C:\vcpkg\buildtrees\gmp\build-x64-windows-dbg-err.log
+          false
 
       - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
         id: setup-msys2
