@@ -371,7 +371,7 @@ if CONFIG["libdirname"] == "archlibdir"
   unless libexecdir.sub!(/\$\(lib\K(?=dir\))/) {"exec"}
     libexecdir = "$(libexecdir)/$(arch)"
   end
-  archbindir = RbConfig.expand(libexecdir) + "/bin"
+  archbindir = RbConfig.expand(libexecdir)
 end
 libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
 rubyhdrdir = CONFIG["rubyhdrdir", true]
