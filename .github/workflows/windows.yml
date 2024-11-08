@@ -97,7 +97,8 @@ jobs:
         run: |
           [collections.arraylist]$path = $env:path -split ';'
           echo $path
-          $path.remove('C:\msys64\usr\bin')
+          $path.remove('C:\Program Files\Git\mingw64\bin')
+          $path.remove('C:\mingw64\bin')
           $env:Path = $path -join ';'
           echo $env:Path
           vcpkg install
