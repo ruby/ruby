@@ -87,8 +87,6 @@ RSpec.configure do |config|
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
 
-    Spec::Helpers.install_dev_bundler unless ENV["CI"]
-
     extend(Spec::Builders)
 
     check_test_gems!

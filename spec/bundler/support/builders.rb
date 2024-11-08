@@ -235,6 +235,8 @@ module Spec
         FileUtils.rm_rf(base_system_gems)
         Spec::Rubygems.install_test_deps
       end
+
+      Helpers.install_dev_bundler unless pristine_system_gem_path.exist?
     end
 
     def update_repo(path, build_compact_index: true)
