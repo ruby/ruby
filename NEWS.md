@@ -78,6 +78,7 @@ The following default gem is added.
 The following default gems are updated.
 
 * RubyGems 3.6.0.dev
+* benchmark 0.4.0
 * bundler 2.6.0.dev
 * date 3.4.0
 * delegate 0.4.0
