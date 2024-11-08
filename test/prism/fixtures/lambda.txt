@@ -9,3 +9,15 @@
 -> foo = bar do end
 
 -> foo: bar do end
+
+p{|a:
+b|}
+
+->(a:
+b){}
+
+->a:
+b{}
+
+->a:
+{}
