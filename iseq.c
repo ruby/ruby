@@ -897,12 +897,12 @@ rb_iseq_new_top(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, c
  * The main entry-point into the prism compiler when a file is required.
  */
 rb_iseq_t *
-pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
+pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state)
 {
     iseq_new_setup_coverage(path, (int) (node->parser->newline_list.size - 1));
 
     return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
-                                ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT);
+                                ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT, error_state);
 }
 
 rb_iseq_t *
@@ -921,13 +921,13 @@ rb_iseq_new_main(const VALUE ast_value, VALUE path, VALUE realpath, const rb_ise
  * main file in the program.
  */
 rb_iseq_t *
-pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt)
+pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state)
 {
     iseq_new_setup_coverage(path, (int) (node->parser->newline_list.size - 1));
 
     return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
-                                parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE);
+                                parent, 0, ISEQ_TYPE_MAIN, opt ? &COMPILE_OPTION_DEFAULT : &COMPILE_OPTION_FALSE, error_state);
 }
 
 rb_iseq_t *
@@ -947,7 +947,7 @@ rb_iseq_new_eval(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, 
 
 rb_iseq_t *
 pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
-                     int first_lineno, const rb_iseq_t *parent, int isolated_depth)
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth, int *error_state)
 {
     if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
         VALUE coverages = rb_get_coverages();
@@ -957,7 +957,7 @@ pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     }
 
     return pm_iseq_new_with_opt(node, name, path, realpath, first_lineno,
-                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT, error_state);
 }
 
 static inline rb_iseq_t *
@@ -1013,6 +1013,25 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
     return iseq_translate(iseq);
 }
 
+struct pm_iseq_new_with_opt_data {
+    rb_iseq_t *iseq;
+    pm_scope_node_t *node;
+};
+
+VALUE
+pm_iseq_new_with_opt_try(VALUE d)
+{
+    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
+
+    // This can compile child iseqs, which can raise syntax errors
+    pm_iseq_compile_node(data->iseq, data->node);
+
+    // This raises an exception if there is a syntax error
+    finish_iseq_build(data->iseq);
+
+    return Qundef;
+}
+
 /**
  * This is a step in the prism compiler that is called once all of the various
  * options have been established. It is called from one of the pm_iseq_new_*
@@ -1028,7 +1047,7 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                     enum rb_iseq_type type, const rb_compile_option_t *option)
+                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
 {
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
@@ -1054,8 +1073,13 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, -1,
                        parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
 
-    pm_iseq_compile_node(iseq, node);
-    finish_iseq_build(iseq);
+    struct pm_iseq_new_with_opt_data data = {
+        .iseq = iseq,
+        .node = node
+    };
+    rb_protect(pm_iseq_new_with_opt_try, (VALUE)&data, error_state);
+
+    if (*error_state) return NULL;
 
     return iseq_translate(iseq);
 }
@@ -1313,8 +1337,15 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     }
 
     if (error == Qnil) {
-        iseq = pm_iseq_new_with_opt(&result.node, name, file, realpath, ln, NULL, 0, ISEQ_TYPE_TOP, &option);
+        int error_state;
+        iseq = pm_iseq_new_with_opt(&result.node, name, file, realpath, ln, NULL, 0, ISEQ_TYPE_TOP, &option, &error_state);
+
         pm_parse_result_free(&result);
+
+        if (error_state) {
+            RUBY_ASSERT(iseq == NULL);
+            rb_jump_tag(error_state);
+        }
     }
     else {
         pm_parse_result_free(&result);
@@ -1771,11 +1802,20 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     if (error == Qnil) {
         make_compile_option(&option, opt);
 
-        ret = iseqw_new(pm_iseq_new_with_opt(&result.node, rb_fstring_lit("<main>"),
-                                            file,
-                                            rb_realpath_internal(Qnil, file, 1),
-                                            1, NULL, 0, ISEQ_TYPE_TOP, &option));
+        int error_state;
+        rb_iseq_t *iseq = pm_iseq_new_with_opt(&result.node, rb_fstring_lit("<main>"),
+                                               file,
+                                               rb_realpath_internal(Qnil, file, 1),
+                                               1, NULL, 0, ISEQ_TYPE_TOP, &option, &error_state);
+
         pm_parse_result_free(&result);
+
+        if (error_state) {
+            RUBY_ASSERT(iseq == NULL);
+            rb_jump_tag(error_state);
+        }
+
+        ret = iseqw_new(iseq);
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);
         return ret;

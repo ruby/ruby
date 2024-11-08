@@ -1766,7 +1766,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 
-    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0);
+    int error_state;
+    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0, &error_state);
 
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
@@ -1778,6 +1779,13 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     }
 
     pm_parse_result_free(&result);
+
+    // If there was an error, raise it after memory has been cleaned up
+    if (error_state) {
+        RUBY_ASSERT(iseq == NULL);
+        rb_jump_tag(error_state);
+    }
+
     rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
 
     return iseq;

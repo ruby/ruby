@@ -612,4 +612,28 @@ class TestEval < Test::Unit::TestCase
     x = orphan_lambda
     assert_equal(:ok, x.call)
   end
+
+  def test_syntax_error_no_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    begin;
+      100_000.times do
+        eval("/[/=~s")
+      rescue SyntaxError
+      else
+        raise "Expected SyntaxError to be raised"
+      end
+    end;
+
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    begin;
+      a = 1
+
+      100_000.times do
+        eval("if a in [0, 0] | [0, a]; end")
+      rescue SyntaxError
+      else
+        raise "Expected SyntaxError to be raised"
+      end
+    end;
+  end
 end
