@@ -94,6 +94,7 @@ The following default gems are updated.
 * net-http 0.5.0
 * open-uri 0.5.0
 * optparse 0.5.0
+* ostruct 0.6.1
 * pathname 0.4.0
 * prism 1.0.0
 * psych 5.2.0.beta3
