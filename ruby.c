@@ -2609,8 +2609,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
         if (!result.ast) {
             pm_parse_result_t *pm = &result.prism;
-            iseq = pm_iseq_new_main(&pm->node, opt->script_name, path, parent, optimize);
+            int error_state;
+            iseq = pm_iseq_new_main(&pm->node, opt->script_name, path, parent, optimize, &error_state);
+
             pm_parse_result_free(pm);
+
+            if (error_state) {
+                RUBY_ASSERT(iseq == NULL);
+                rb_jump_tag(error_state);
+            }
         }
         else {
             rb_ast_t *ast = result.ast;

@@ -90,10 +90,10 @@ VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, V
 VALUE pm_parse_stdin(pm_parse_result_t *result);
 void pm_parse_result_free(pm_parse_result_t *result);
 
-rb_iseq_t *pm_iseq_new(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type);
-rb_iseq_t *pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent);
-rb_iseq_t *pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt);
-rb_iseq_t *pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
-rb_iseq_t *pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t*);
+rb_iseq_t *pm_iseq_new(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type, int *error_state);
+rb_iseq_t *pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state);
+rb_iseq_t *pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state);
+rb_iseq_t *pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, int *error_state);
+rb_iseq_t *pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t *option, int *error_state);
 
 VALUE pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node);

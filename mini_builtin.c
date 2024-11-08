@@ -63,10 +63,16 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
         pm_prelude_load(&result, name_str, code, start_line);
 
         vm->builtin_function_table = table;
-        iseq = pm_iseq_new_with_opt(&result.node, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization);
+        int error_state;
+        iseq = pm_iseq_new_with_opt(&result.node, name_str, name_str, Qnil, 0, NULL, 0, ISEQ_TYPE_TOP, &optimization, &error_state);
 
         vm->builtin_function_table = NULL;
         pm_parse_result_free(&result);
+
+        if (error_state) {
+            RUBY_ASSERT(iseq == NULL);
+            rb_jump_tag(error_state);
+        }
     }
     else {
         VALUE ast_value = prelude_ast_value(name_str, code, start_line);

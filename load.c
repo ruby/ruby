@@ -752,8 +752,15 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             VALUE error = pm_load_parse_file(&result, fname, NULL);
 
             if (error == Qnil) {
-                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL);
+                int error_state;
+                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL, &error_state);
+
                 pm_parse_result_free(&result);
+
+                if (error_state) {
+                    RUBY_ASSERT(iseq == NULL);
+                    rb_jump_tag(error_state);
+                }
             }
             else {
                 rb_vm_pop_frame(ec);
