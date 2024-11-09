@@ -367,7 +367,7 @@ goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
 if CONFIG["libdirname"] == "archlibdir"
-  archbindir = bindir.sub(%r[/\K(?=[^/]+\z)]) {CONFIG["target"] + "/"}
+  archbindir = bindir.sub(%r[/\K(?=[^/]+\z)]) {CONFIG["config_target"] + "/"}
 end
 libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
 rubyhdrdir = CONFIG["rubyhdrdir", true]
