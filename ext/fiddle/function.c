@@ -154,7 +154,9 @@ initialize(int argc, VALUE argv[], VALUE self)
         if (args[kw_name] != Qundef) {
             name = args[kw_name];
 #ifdef HAVE_RB_STR_TO_INTERNED_STR
-            name = rb_str_to_interned_str(name);
+            if (RB_TYPE_P(name, RUBY_T_STRING)) {
+              name = rb_str_to_interned_str(name);
+            }
 #endif
         }
         if (args[kw_need_gvl] != Qundef) {

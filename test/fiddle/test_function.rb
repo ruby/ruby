@@ -37,6 +37,11 @@ module Fiddle
       assert_equal 'sin', func.name
     end
 
+    def test_name_symbol
+      func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE, name: :sin)
+      assert_equal :sin, func.name
+    end
+
     def test_need_gvl?
       if RUBY_ENGINE == "jruby"
         omit("rb_str_dup() doesn't exist in JRuby")
@@ -261,7 +266,25 @@ module Fiddle
 
     def test_ractor_shareable
       omit("Need Ractor") unless defined?(Ractor)
-      assert_ractor_shareable(Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE))
+      assert_ractor_shareable(Function.new(@libm["sin"],
+                                           [TYPE_DOUBLE],
+                                           TYPE_DOUBLE))
+    end
+
+    def test_ractor_shareable_name
+      omit("Need Ractor") unless defined?(Ractor)
+      assert_ractor_shareable(Function.new(@libm["sin"],
+                                           [TYPE_DOUBLE],
+                                           TYPE_DOUBLE,
+                                           name: "sin"))
+    end
+
+    def test_ractor_shareable_name_symbol
+      omit("Need Ractor") unless defined?(Ractor)
+      assert_ractor_shareable(Function.new(@libm["sin"],
+                                           [TYPE_DOUBLE],
+                                           TYPE_DOUBLE,
+                                           name: :sin))
     end
 
     private
