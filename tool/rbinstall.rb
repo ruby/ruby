@@ -367,11 +367,7 @@ goruby_install_name = "go" + ruby_install_name
 
 bindir = CONFIG["bindir", true]
 if CONFIG["libdirname"] == "archlibdir"
-  libexecdir = MAKEFILE_CONFIG["archlibdir"].dup
-  unless libexecdir.sub!(/\$\(lib\K(?=dir\))/) {"exec"}
-    libexecdir = "$(libexecdir)/$(arch)"
-  end
-  archbindir = RbConfig.expand(libexecdir)
+  archbindir = bindir.sub(%r[/\K(?=[^/]+\z)]) {CONFIG["target"] + "/"}
 end
 libdir = CONFIG[CONFIG.fetch("libdirname", "libdir"), true]
 rubyhdrdir = CONFIG["rubyhdrdir", true]
