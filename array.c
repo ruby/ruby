@@ -8220,43 +8220,50 @@ rb_ary_deconstruct(VALUE ary)
 }
 
 /*
- *  An +Array+ is an ordered, integer-indexed collection of objects, called _elements_.
+ *  An array is an ordered, integer-indexed collection of objects, called _elements_.
  *  Any object (even another array) may be an array element,
  *  and an array can contain objects of different types.
  *
- *  == +Array+ Indexes
+ *  == \Array Indexes
  *
- *  +Array+ indexing starts at 0, as in C or Java.
+ *  \Array indexing begins at zero, as in C or Java.
  *
- *  A positive index is an offset from the first element:
+ *  A non-negative index is an offset from the beginning of the array:
  *
- *  - Index 0 indicates the first element.
- *  - Index 1 indicates the second element.
- *  - ...
+ *    a = ['a', 'b', 'c', 'd']
+ *    a[0] # => "a"
+ *    a[1] # => "b"
  *
  *  A negative index is an offset, backwards, from the end of the array:
  *
- *  - Index -1 indicates the last element.
- *  - Index -2 indicates the next-to-last element.
- *  - ...
+ *    a[-1] # => "d"
+ *    a[-2] # => "c"
  *
- *  A non-negative index is <i>in range</i> if and only if it is smaller than
- *  the size of the array.  For a 3-element array:
+ *  === \Range of an \Array
  *
- *  - Indexes 0 through 2 are in range.
- *  - Index 3 is out of range.
+ *  A non-negative index is <i>in-range</i> if it is smaller than the size of the array,
+ *  <i>out-of-range</i> otherwise:
  *
- *  A negative index is <i>in range</i> if and only if its absolute value is
- *  not larger than the size of the array.  For a 3-element array:
+ *    a.size # => 4
+ *    a[3]   # => "d"
+ *    a[4]   # => nil
  *
- *  - Indexes -1 through -3 are in range.
- *  - Index -4 is out of range.
+ *  A negative index is <i>in-range</i> if its absolute value is
+ *  not larger than the size of the array,
+ *  <i>out-of-range</i> otherwise:
+ *
+ *    a[-4] # => "a"
+ *    a[-5] # => nil
+ *
+ *  === Effective Index
  *
  *  Although the effective index into an array is always an integer,
  *  some methods (both within and outside of class +Array+)
- *  accept one or more non-integer arguments that are
- *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  accept non-integer arguments that are
+ *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
  *
+ *    a[1.9]  # => "b"
+ *    a[-1.9] # => "d"
  *
  *  == Creating Arrays
  *
