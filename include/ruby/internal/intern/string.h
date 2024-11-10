@@ -1689,7 +1689,7 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * @return     An integer  constant expression that represents  `str`'s length,
  *             in bytes, not including the terminating NUL character.
  */
-#define rb_strlen_lit(str) (sizeof(str "") - 1)
+#define rb_strlen_lit(str) ((sizeof(str "") / sizeof(str ""[0])) - 1)
 
 /**
  * Identical to rb_str_new_static(), except it cannot take string variables.

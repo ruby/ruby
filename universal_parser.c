@@ -23,7 +23,7 @@
 # define FALSE   0
 #endif
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
-#define rb_strlen_lit(str) (sizeof(str "") - 1)
+#define rb_strlen_lit(str) ((sizeof(str "") / sizeof(str ""[0])) - 1)
 #undef FIXNUM_MAX
 #define FIXNUM_MAX (LONG_MAX / 2)
 
