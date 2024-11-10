@@ -15,6 +15,7 @@
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/symbol.h"
@@ -1464,8 +1465,24 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 {
     rb_proc_t *proc;
     GetProcPtr(prc, proc);
-    hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.code.val);
-    hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
+
+    switch (vm_block_type(&proc->block)) {
+      case block_type_iseq:
+        hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.iseq->body);
+        break;
+      case block_type_ifunc:
+        hash = rb_st_hash_uint(hash, (st_index_t)proc->block.as.captured.code.ifunc->func);
+        break;
+      case block_type_symbol:
+        hash = rb_st_hash_uint(hash, rb_any_hash(proc->block.as.symbol));
+        break;
+      case block_type_proc:
+        hash = rb_st_hash_uint(hash, rb_any_hash(proc->block.as.proc));
+        break;
+      default:
+        rb_bug("rb_hash_proc: unknown block type %d", vm_block_type(&proc->block));
+    }
+
     return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
 }
 
