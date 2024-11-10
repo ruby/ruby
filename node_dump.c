@@ -338,15 +338,22 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("method call with block");
         ANN("format: [nd_iter] { [nd_body] }");
         ANN("example: 3.times { foo }");
-        goto iter;
+        F_NODE(nd_iter, RNODE_ITER, "iteration receiver");
+        LAST_NODE;
+        F_NODE(nd_body, RNODE_ITER, "body");
+        return;
+
       case NODE_FOR:
         ANN("for statement");
         ANN("format: for * in [nd_iter] do [nd_body] end");
         ANN("example: for i in 1..3 do foo end");
-      iter:
-        F_NODE(nd_iter, RNODE_ITER, "iteration receiver");
+        F_NODE(nd_iter, RNODE_FOR, "iteration receiver");
+        F_NODE(nd_body, RNODE_FOR, "body");
+        F_LOC(for_keyword_loc, RNODE_FOR);
+        F_LOC(in_keyword_loc, RNODE_FOR);
+        F_LOC(do_keyword_loc, RNODE_FOR);
         LAST_NODE;
-        F_NODE(nd_body, RNODE_ITER, "body");
+        F_LOC(end_keyword_loc, RNODE_FOR);
         return;
 
       case NODE_FOR_MASGN:
