@@ -807,6 +807,13 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_CASE3(node)->case_keyword_loc),
                                     location_new(&RNODE_CASE3(node)->end_keyword_loc));
+      case NODE_FOR:
+        return rb_ary_new_from_args(5,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_FOR(node)->for_keyword_loc),
+                                    location_new(&RNODE_FOR(node)->in_keyword_loc),
+                                    location_new(&RNODE_FOR(node)->do_keyword_loc),
+                                    location_new(&RNODE_FOR(node)->end_keyword_loc));
       case NODE_NEXT:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
