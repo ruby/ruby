@@ -811,7 +811,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 if (FIXNUM_P(num)) {
                     if ((SIGNED_VALUE)num < 0) {
                         long n = -FIX2LONG(num);
-                        num = LONG2FIX(n);
+                        num = LONG2NUM(n);
                         sign = -1;
                     }
                 }

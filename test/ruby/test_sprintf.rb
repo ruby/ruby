@@ -227,6 +227,10 @@ class TestSprintf < Test::Unit::TestCase
 
     bug11766 = '[ruby-core:71806] [Bug #11766]'
     assert_equal("x"*10+"     1.0", sprintf("x"*10+"%8.1f", 1r), bug11766)
+
+    require 'rbconfig/sizeof'
+    fmin, fmax = RbConfig::LIMITS.values_at("FIXNUM_MIN", "FIXNUM_MAX")
+    assert_match(/\A-\d+\.\d+\z/, sprintf("%f", Rational(fmin, fmax)))
   end
 
   def test_rational_precision
