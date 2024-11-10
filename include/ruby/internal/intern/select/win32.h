@@ -253,7 +253,7 @@ rb_fd_max(const rb_fdset_t *f)
     const fd_set *p = f->fdset;
 
     RBIMPL_ASSERT_OR_ASSUME(p);
-    return p->fd_count;
+    return RBIMPL_CAST((int)p->fd_count);
 }
 
 #endif /* RBIMPL_INTERN_SELECT_WIN32_H */
