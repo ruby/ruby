@@ -221,7 +221,7 @@ obj_any_hash(VALUE obj)
     return FIX2LONG(hval);
 }
 
-static st_index_t
+st_index_t
 rb_any_hash(VALUE a)
 {
     return any_hash(a, obj_any_hash);

@@ -73,6 +73,7 @@ VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
+st_index_t rb_any_hash(VALUE a);
 VALUE rb_to_hash_type(VALUE obj);
 VALUE rb_hash_key_str(VALUE);
 VALUE rb_hash_values(VALUE hash);
