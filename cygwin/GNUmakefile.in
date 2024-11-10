@@ -2,7 +2,7 @@ gnumake = yes
 
 include Makefile
 
-MUNICODE_FLAG = $(if $(filter mingw%,$(target_os)),-municode)
+MUNICODE_FLAG := $(if $(filter mingw%,$(target_os)),-municode)
 override EXE_LDFLAGS += $(MUNICODE_FLAG)
 
 DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
