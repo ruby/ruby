@@ -13,7 +13,15 @@ module Prism
 
     # Define the library that we will be pulling functions from. Note that this
     # must align with the build shared library from make/rake.
-    ffi_lib File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
+    libprism_in_build = File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
+    libprism_in_libdir = "#{RbConfig::CONFIG["libdir"]}/prism/libprism.#{RbConfig::CONFIG["SOEXT"]}"
+    if File.exist? libprism_in_build
+      INCLUDE_DIR = File.expand_path("../../include", __dir__)
+      ffi_lib libprism_in_build
+    else
+      INCLUDE_DIR = "#{RbConfig::CONFIG["libdir"]}/prism/include"
+      ffi_lib libprism_in_libdir
+    end
 
     # Convert a native C type declaration into a symbol that FFI understands.
     # For example:
@@ -38,7 +46,7 @@ module Prism
     # given functions. For each one, define a function with the same name and
     # signature as the C function.
     def self.load_exported_functions_from(header, *functions, callbacks)
-      File.foreach(File.expand_path("../../include/#{header}", __dir__)) do |line|
+      File.foreach("#{INCLUDE_DIR}/#{header}") do |line|
         # We only want to attempt to load exported functions.
         next unless line.start_with?("PRISM_EXPORTED_FUNCTION ")
 
