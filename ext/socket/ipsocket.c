@@ -272,6 +272,28 @@ allocate_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int
     hints->ai_flags |= additional_flags;
 }
 
+static int*
+allocate_connection_attempt_fds(int additional_capacity)
+{
+    int *fds = (int *)malloc(additional_capacity * sizeof(int));
+    if (!fds) rb_syserr_fail(errno, "malloc(3)");
+    for (int i = 0; i < additional_capacity; i++) fds[i] = -1;
+    return fds;
+}
+
+static int
+reallocate_connection_attempt_fds(int *fds, int current_capacity, int additional_capacity)
+{
+    int new_capacity = current_capacity + additional_capacity;
+
+    if (realloc(fds, new_capacity * sizeof(int)) == NULL) {
+        rb_syserr_fail(errno, "realloc(3)");
+    }
+
+    for (int i = current_capacity; i < new_capacity; i++) fds[i] = -1;
+    return new_capacity;
+}
+
 struct wait_fast_fallback_arg
 {
     int status, nfds;
@@ -493,12 +515,26 @@ socket_nonblock_set(int fd)
 }
 
 static int
-in_progress_fds(const int *fds, int fds_size)
+in_progress_fds(int fds_size)
 {
-    for (int i = 0; i < fds_size; i++) {
-        if (fds[i] > 0) return true;
+    return fds_size > 0;
+}
+
+static void
+remove_connection_attempt_fd(int *fds, int *fds_size, int removing_fd) {
+    int i, j;
+
+    for (i = 0; i < *fds_size; i++) {
+        if (fds[i] != removing_fd) continue;
+
+        for (j = i; j < *fds_size - 1; j++) {
+            fds[j] = fds[j + 1];
+        }
+
+        (*fds_size)--;
+        fds[*fds_size] = -1;
+        break;
     }
-    return false;
 }
 
 struct fast_fallback_error
@@ -551,10 +587,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     int last_family = 0;
 
-    int initial_capacity = 10;
-    int current_capacity = initial_capacity;
-    arg->connection_attempt_fds = (int *)malloc(initial_capacity * sizeof(int));
-    if (!arg->connection_attempt_fds) rb_syserr_fail(errno, "malloc(3)");
+    int additional_capacity = 10;
+    int current_capacity = additional_capacity;
+    arg->connection_attempt_fds = allocate_connection_attempt_fds(additional_capacity);
     arg->connection_attempt_fds_size = 0;
 
     struct timeval resolution_delay_storage;
@@ -604,8 +639,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared();
         if (!arg->getaddrinfo_shared) rb_syserr_fail(errno, "calloc(3)");
 
-        arg->getaddrinfo_shared->lock = malloc(sizeof(rb_nativethread_lock_t));
-        if (!arg->getaddrinfo_shared->lock) rb_syserr_fail(errno, "malloc(3)");
+        arg->getaddrinfo_shared->lock = calloc(1, sizeof(rb_nativethread_lock_t));
+        if (!arg->getaddrinfo_shared->lock) rb_syserr_fail(errno, "calloc(3)");
         rb_nativethread_lock_initialize(arg->getaddrinfo_shared->lock);
 
         arg->getaddrinfo_shared->node = arg->hostp ? strdup(arg->hostp) : NULL;
@@ -686,7 +721,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 #if !defined(INET6) && defined(AF_INET6)
                 if (remote_ai->ai_family == AF_INET6) {
                     if (any_addrinfos(&resolution_store)) continue;
-                    if (!in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size)) break;
+                    if (!in_progress_fds(arg->connection_attempt_fds_size)) break;
                     if (resolution_store.is_all_finised) break;
 
                     if (local_status < 0) {
@@ -712,7 +747,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     }
                     if (!local_ai) {
                         if (any_addrinfos(&resolution_store)) continue;
-                        if (in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size)) break;
+                        if (in_progress_fds(arg->connection_attempt_fds_size)) break;
                         if (!resolution_store.is_all_finised) break;
 
                         /* Use a different family local address if no choice, this
@@ -729,7 +764,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     last_error.ecode = errno;
 
                     if (any_addrinfos(&resolution_store)) continue;
-                    if (in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size)) break;
+                    if (in_progress_fds(arg->connection_attempt_fds_size)) break;
                     if (!resolution_store.is_all_finised) break;
 
                     if (local_status < 0) {
@@ -765,7 +800,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         close(fd);
 
                         if (any_addrinfos(&resolution_store)) continue;
-                        if (in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size)) break;
+                        if (in_progress_fds(arg->connection_attempt_fds_size)) break;
                         if (!resolution_store.is_all_finised) break;
 
                         if (local_status < 0) {
@@ -786,7 +821,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 syscall = "connect(2)";
 
                 if (any_addrinfos(&resolution_store) ||
-                    in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size) ||
+                    in_progress_fds(arg->connection_attempt_fds_size) ||
                     !resolution_store.is_all_finised) {
                     socket_nonblock_set(fd);
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
@@ -811,13 +846,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                 if (errno == EINPROGRESS) {
                     if (current_capacity == arg->connection_attempt_fds_size) {
-                        int new_capacity = current_capacity + initial_capacity;
-                        arg->connection_attempt_fds = (int*)realloc(
+                        current_capacity = reallocate_connection_attempt_fds(
                             arg->connection_attempt_fds,
-                            new_capacity * sizeof(int)
+                            current_capacity,
+                            additional_capacity
                         );
-                        if (!arg->connection_attempt_fds) rb_syserr_fail(errno, "realloc(3)");
-                        current_capacity = new_capacity;
                     }
                     arg->connection_attempt_fds[arg->connection_attempt_fds_size] = fd;
                     (arg->connection_attempt_fds_size)++;
@@ -849,7 +882,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
 
                 if (any_addrinfos(&resolution_store)) continue;
-                if (in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size)) break;
+                if (in_progress_fds(arg->connection_attempt_fds_size)) break;
                 if (!resolution_store.is_all_finised) break;
 
                 if (local_status < 0) {
@@ -894,6 +927,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
             if (n > 0) n++;
             wait_arg.nfds = n;
+        } else {
+            wait_arg.writefds = NULL;
         }
 
         FD_ZERO(wait_arg.readfds);
@@ -935,15 +970,23 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                 if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) == 0) {
                     if (err == 0) { /* success */
-                        arg->connection_attempt_fds[i] = -1;
+                        remove_connection_attempt_fd(
+                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds_size,
+                            fd
+                        );
                         connected_fd = fd;
                         break;
-                    }
+                    };
 
                     /* fail */
                     errno = err;
                     close(fd);
-                    arg->connection_attempt_fds[i] = -1;
+                    remove_connection_attempt_fd(
+                        arg->connection_attempt_fds,
+                        &arg->connection_attempt_fds_size,
+                        fd
+                    );
                     continue;
                 }
             }
@@ -953,9 +996,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             last_error.ecode = errno;
 
             if (any_addrinfos(&resolution_store) ||
-                in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size) ||
+                in_progress_fds(arg->connection_attempt_fds_size) ||
                 !resolution_store.is_all_finised) {
-                if (!in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size)) {
+                if (!in_progress_fds(arg->connection_attempt_fds_size)) {
                     user_specified_connect_timeout_at = NULL;
                 }
             } else {
@@ -1044,7 +1087,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
 
         if (!any_addrinfos(&resolution_store)) {
-            if (!in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size) &&
+            if (!in_progress_fds(arg->connection_attempt_fds_size) &&
                 resolution_store.is_all_finised) {
                 if (local_status < 0) {
                     host = arg->local.host;
@@ -1063,7 +1106,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             if ((is_timeout_tv(user_specified_resolv_timeout_at, now) ||
                 resolution_store.is_all_finised) &&
                 (is_timeout_tv(user_specified_connect_timeout_at, now) ||
-                !in_progress_fds(arg->connection_attempt_fds, arg->connection_attempt_fds_size))) {
+                !in_progress_fds(arg->connection_attempt_fds_size))) {
                 VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
                 VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
                 rb_raise(etimedout_error, "user specified timeout");
