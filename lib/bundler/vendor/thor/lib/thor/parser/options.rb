@@ -250,7 +250,8 @@ class Bundler::Thor
       @parsing_options
     end
 
-    # Parse boolean values which can be given as --foo=true, --foo or --no-foo.
+    # Parse boolean values which can be given as --foo=true or --foo for true values, or
+    # --foo=false, --no-foo or --skip-foo for false values.
     #
     def parse_boolean(switch)
       if current_is_value?

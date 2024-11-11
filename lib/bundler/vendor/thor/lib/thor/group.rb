@@ -211,6 +211,17 @@ class Bundler::Thor::Group
       raise error, msg
     end
 
+    # Checks if a specified command exists.
+    #
+    # ==== Parameters
+    # command_name<String>:: The name of the command to check for existence.
+    #
+    # ==== Returns
+    # Boolean:: +true+ if the command exists, +false+ otherwise.
+    def command_exists?(command_name) #:nodoc:
+      commands.keys.include?(command_name)
+    end
+
   protected
 
     # The method responsible for dispatching given the args.

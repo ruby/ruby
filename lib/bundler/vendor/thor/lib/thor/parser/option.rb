@@ -89,8 +89,8 @@ class Bundler::Thor
 
       sample = "[#{sample}]".dup unless required?
 
-      if boolean?
-        sample << ", [#{dasherize('no-' + human_name)}]" unless (name == "force") || name.match(/\Ano[\-_]/)
+      if boolean? && name != "force" && !name.match(/\A(no|skip)[\-_]/)
+        sample << ", [#{dasherize('no-' + human_name)}], [#{dasherize('skip-' + human_name)}]"
       end
 
       aliases_for_usage.ljust(padding) + sample
