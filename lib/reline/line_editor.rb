@@ -36,7 +36,6 @@ class Reline::LineEditor
 
   module CompletionState
     NORMAL = :normal
-    COMPLETION = :completion
     MENU = :menu
     MENU_WITH_PERFECT_MATCH = :menu_with_perfect_match
     PERFECT_MATCH = :perfect_match
@@ -800,105 +799,74 @@ class Reline::LineEditor
     @config.editing_mode
   end
 
-  private def menu(_target, list)
+  private def menu(list)
     @menu_info = MenuInfo.new(list)
   end
 
-  private def complete_internal_proc(list, is_menu)
-    preposing, target, postposing = retrieve_completion_block
-    candidates = list.select { |i|
-      if i and not Encoding.compatible?(target.encoding, i.encoding)
-        raise Encoding::CompatibilityError, "#{target.encoding.name} is not compatible with #{i.encoding.name}"
-      end
-      if @config.completion_ignore_case
-        i&.downcase&.start_with?(target.downcase)
-      else
-        i&.start_with?(target)
-      end
-    }.uniq
-    if is_menu
-      menu(target, candidates)
-      return nil
-    end
-    completed = candidates.inject { |memo, item|
-      begin
-        memo_mbchars = memo.unicode_normalize.grapheme_clusters
-        item_mbchars = item.unicode_normalize.grapheme_clusters
-      rescue Encoding::CompatibilityError
-        memo_mbchars = memo.grapheme_clusters
-        item_mbchars = item.grapheme_clusters
-      end
-      size = [memo_mbchars.size, item_mbchars.size].min
-      result = +''
-      size.times do |i|
-        if @config.completion_ignore_case
-          if memo_mbchars[i].casecmp?(item_mbchars[i])
-            result << memo_mbchars[i]
-          else
-            break
-          end
-        else
-          if memo_mbchars[i] == item_mbchars[i]
-            result << memo_mbchars[i]
-          else
-            break
-          end
-        end
-      end
-      result
-    }
+  private def filter_normalize_candidates(target, list)
+    target = target.downcase if @config.completion_ignore_case
+    list.select do |item|
+      next unless item
 
-    [target, preposing, completed, postposing, candidates]
+      unless Encoding.compatible?(target.encoding, item.encoding)
+        # Crash with Encoding::CompatibilityError is required by readline-ext/test/readline/test_readline.rb
+        # TODO: fix the test
+        raise Encoding::CompatibilityError, "#{target.encoding.name} is not compatible with #{item.encoding.name}"
+      end
+
+      if @config.completion_ignore_case
+        item.downcase.start_with?(target)
+      else
+        item.start_with?(target)
+      end
+    end.map do |item|
+      item.unicode_normalize
+    rescue Encoding::CompatibilityError
+      item
+    end.uniq
   end
 
-  private def perform_completion(list, just_show_list)
+  private def perform_completion(list)
+    preposing, target, postposing = retrieve_completion_block
+    candidates = filter_normalize_candidates(target, list)
+
     case @completion_state
-    when CompletionState::NORMAL
-      @completion_state = CompletionState::COMPLETION
     when CompletionState::PERFECT_MATCH
       if @dig_perfect_match_proc
-        @dig_perfect_match_proc.(@perfect_matched)
-      else
-        @completion_state = CompletionState::COMPLETION
+        @dig_perfect_match_proc.call(@perfect_matched)
+        return
       end
-    end
-    if just_show_list
-      is_menu = true
-    elsif @completion_state == CompletionState::MENU
-      is_menu = true
-    elsif @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
-      is_menu = true
-    else
-      is_menu = false
-    end
-    result = complete_internal_proc(list, is_menu)
-    if @completion_state == CompletionState::MENU_WITH_PERFECT_MATCH
+    when CompletionState::MENU
+      menu(candidates)
+      return
+    when CompletionState::MENU_WITH_PERFECT_MATCH
+      menu(candidates)
       @completion_state = CompletionState::PERFECT_MATCH
+      return
     end
-    return if result.nil?
-    target, preposing, completed, postposing, candidates = result
-    return if completed.nil?
-    if target <= completed and (@completion_state == CompletionState::COMPLETION)
-      append_character = ''
-      if candidates.include?(completed)
-        if candidates.one?
-          append_character = completion_append_character.to_s
-          @completion_state = CompletionState::PERFECT_MATCH
-        else
-          @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
-          perform_completion(candidates, true) if @config.show_all_if_ambiguous
-        end
-        @perfect_matched = completed
+
+    completed = Reline::Unicode.common_prefix(candidates, ignore_case: @config.completion_ignore_case)
+    return if completed.empty?
+
+    append_character = ''
+    if candidates.include?(completed)
+      if candidates.one?
+        append_character = completion_append_character.to_s
+        @completion_state = CompletionState::PERFECT_MATCH
+      elsif @config.show_all_if_ambiguous
+        menu(candidates)
+        @completion_state = CompletionState::PERFECT_MATCH
       else
-        @completion_state = CompletionState::MENU
-        perform_completion(candidates, true) if @config.show_all_if_ambiguous
+        @completion_state = CompletionState::MENU_WITH_PERFECT_MATCH
       end
-      unless just_show_list
-        @buffer_of_lines[@line_index] = (preposing + completed + append_character + postposing).split("\n")[@line_index] || String.new(encoding: encoding)
-        line_to_pointer = (preposing + completed + append_character).split("\n")[@line_index] || String.new(encoding: encoding)
-        @byte_pointer = line_to_pointer.bytesize
-      end
+      @perfect_matched = completed
+    else
+      @completion_state = CompletionState::MENU
+      menu(candidates) if @config.show_all_if_ambiguous
     end
+    @buffer_of_lines[@line_index] = (preposing + completed + append_character + postposing).split("\n")[@line_index] || String.new(encoding: encoding)
+    line_to_pointer = (preposing + completed + append_character).split("\n")[@line_index] || String.new(encoding: encoding)
+    @byte_pointer = line_to_pointer.bytesize
   end
 
   def dialog_proc_scope_completion_journey_data
@@ -1463,7 +1431,7 @@ class Reline::LineEditor
       result = call_completion_proc
       if result.is_a?(Array)
         @completion_occurs = true
-        perform_completion(result, false)
+        perform_completion(result)
       end
     end
   end
@@ -1929,7 +1897,9 @@ class Reline::LineEditor
     elsif !@config.autocompletion # show completed list
       result = call_completion_proc
       if result.is_a?(Array)
-        perform_completion(result, true)
+        _preposing, target = retrieve_completion_block
+        candidates = filter_normalize_candidates(target, result)
+        menu(candidates)
       end
     end
   end

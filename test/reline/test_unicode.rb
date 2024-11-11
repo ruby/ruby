@@ -107,6 +107,16 @@ class Reline::Unicode::Test < Reline::TestCase
     assert_equal ["\e[41m \e[42mい\e[43m ", 1, 4], Reline::Unicode.take_mbchar_range("\e[41mあ\e[42mい\e[43mう", 1, 4, padding: true)
   end
 
+  def test_common_prefix
+    assert_equal('', Reline::Unicode.common_prefix([]))
+    assert_equal('abc', Reline::Unicode.common_prefix(['abc']))
+    assert_equal('12', Reline::Unicode.common_prefix(['123', '123️⃣']))
+    assert_equal('', Reline::Unicode.common_prefix(['abc', 'xyz']))
+    assert_equal('ab', Reline::Unicode.common_prefix(['abcd', 'abc', 'abx', 'abcd']))
+    assert_equal('A', Reline::Unicode.common_prefix(['AbcD', 'ABC', 'AbX', 'AbCD']))
+    assert_equal('Ab', Reline::Unicode.common_prefix(['AbcD', 'ABC', 'AbX', 'AbCD'], ignore_case: true))
+  end
+
   def test_encoding_conversion
     texts = [
       String.new("invalid\xFFutf8", encoding: 'utf-8'),

@@ -986,6 +986,9 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     input_keys('b')
     input_keys("\C-i", false)
     assert_line_around_cursor('foo_ba', '')
+    input_keys('Z')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('Foo_baz', '')
   end
 
   def test_completion_in_middle_of_line

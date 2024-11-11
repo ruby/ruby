@@ -633,6 +633,19 @@ class Reline::Unicode
     byte_size
   end
 
+  def self.common_prefix(list, ignore_case: false)
+    return '' if list.empty?
+
+    common_prefix_gcs = list.first.grapheme_clusters
+    list.each do |item|
+      gcs = item.grapheme_clusters
+      common_prefix_gcs = common_prefix_gcs.take_while.with_index do |gc, i|
+        ignore_case ? gc.casecmp?(gcs[i]) : gc == gcs[i]
+      end
+    end
+    common_prefix_gcs.join
+  end
+
   def self.vi_first_print(line)
     byte_size = 0
     while (line.bytesize - 1) > byte_size
