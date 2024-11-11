@@ -127,9 +127,7 @@ class TestGc < Test::Unit::TestCase
   def test_gc_config_implementation_is_readonly
     omit unless /darwin|linux/.match(RUBY_PLATFORM)
 
-    impl = GC.config[:implementation]
-    GC.config(implementation: "somethingelse")
-    assert_equal(impl, GC.config[:implementation])
+    assert_raise(ArgumentError) { GC.config(implementation: "somethingelse") }
   end
 
   def test_start_full_mark
