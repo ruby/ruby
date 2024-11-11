@@ -1509,6 +1509,11 @@ dummy
       assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 17], [1, 13, 1, 15], nil, nil])
     end
 
+    def test_masgn_locations
+      node = ast_parse("a, (b, c) = 1, 2, 3")
+      assert_locations(node.children[-1].children[1].children[1].locations, [[1, 3, 1, 9], [1, 3, 1, 4], [1, 8, 1, 9]])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])

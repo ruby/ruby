@@ -416,6 +416,8 @@ typedef struct RNode_MASGN {
     struct RNode *nd_head;
     struct RNode *nd_value;
     struct RNode *nd_args;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
 } rb_node_masgn_t;
 
 typedef struct RNode_LASGN {

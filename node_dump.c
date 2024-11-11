@@ -468,12 +468,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_value, RNODE_MASGN, "rhsn");
         F_NODE(nd_head, RNODE_MASGN, "lhsn");
         if (NODE_NAMED_REST_P(RNODE_MASGN(node)->nd_args)) {
-            LAST_NODE;
             F_NODE(nd_args, RNODE_MASGN, "splatn");
         }
         else {
             F_MSG(nd_args, "splatn", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
+        F_LOC(lparen_loc, RNODE_MASGN);
+        LAST_NODE;
+        F_LOC(rparen_loc, RNODE_MASGN);
         return;
 
       case NODE_LASGN:
