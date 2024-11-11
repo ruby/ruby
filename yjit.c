@@ -294,8 +294,11 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
                 break;
             }
 
-            // +4MB
-            req_addr += 4 * 1024 * 1024;
+            // -4MiB. Downwards to probe away from the heap. (On x86/A64 Linux
+            // main_code_addr < heap_addr, and in case we are in a shared
+            // library mapped higher than the heap, downwards is still better
+            // since it's towards the end of the heap rather than the stack.)
+            req_addr -= 4 * 1024 * 1024;
         } while (req_addr < probe_region_end);
 
     // On MacOS and other platforms
