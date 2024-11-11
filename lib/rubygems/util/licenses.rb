@@ -212,6 +212,8 @@ class Gem::Licenses
     DRL-1.0
     DRL-1.1
     DSDP
+    DocBook-Schema
+    DocBook-XML
     Dotseqn
     ECL-1.0
     ECL-2.0
@@ -275,6 +277,7 @@ class Gem::Licenses
     Glulxe
     Graphics-Gems
     Gutmann
+    HIDAPI
     HP-1986
     HP-1989
     HPND
@@ -285,6 +288,7 @@ class Gem::Licenses
     HPND-Kevlin-Henney
     HPND-MIT-disclaimer
     HPND-Markus-Kuhn
+    HPND-Netrek
     HPND-Pbmplus
     HPND-UC
     HPND-UC-export-US
@@ -418,7 +422,6 @@ class Gem::Licenses
     NTP
     NTP-0
     Naumen
-    Net-SNMP
     NetCDF
     Newsletr
     Nokia
@@ -500,6 +503,7 @@ class Gem::Licenses
     RSCPL
     Rdisc
     Ruby
+    Ruby-pty
     SAX-PD
     SAX-PD-2.0
     SCEA
@@ -556,6 +560,7 @@ class Gem::Licenses
     UMich-Merit
     UPL-1.0
     URT-RLE
+    Ubuntu-font-1.0
     Unicode-3.0
     Unicode-DFS-2015
     Unicode-DFS-2016
@@ -574,6 +579,7 @@ class Gem::Licenses
     Wsuipa
     X11
     X11-distribute-modifications-variant
+    X11-swapped
     XFree86-1.1
     XSkat
     Xdebug-1.03
@@ -671,6 +677,7 @@ class Gem::Licenses
     LGPL-2.1+
     LGPL-3.0
     LGPL-3.0+
+    Net-SNMP
     Nunit
     StandardML-NJ
     bzip2-1.0.5
@@ -738,6 +745,7 @@ class Gem::Licenses
     WxWindows-exception-3.1
     cryptsetup-OpenSSL-exception
     eCos-exception-2.0
+    erlang-otp-linking-exception
     fmt-exception
     freertos-exception-2.0
     gnu-javamail-exception
@@ -745,6 +753,7 @@ class Gem::Licenses
     libpri-OpenH323-exception
     mif-exception
     openvpn-openssl-exception
+    romic-exception
     stunnel-exception
     u-boot-exception-2.0
     vsftpd-openssl-exception
