@@ -37,8 +37,9 @@ module Bundler
     # This is the error raised when a source is HTTPS and OpenSSL didn't load
     class SSLError < HTTPError
       def initialize(msg = nil)
-        super msg || "Could not load OpenSSL.\n" \
-            "You must recompile Ruby with OpenSSL support."
+        super "Could not load OpenSSL.\n" \
+          "You must recompile Ruby with OpenSSL support.\n" \
+          "original error: #{msg}\n"
       end
     end
 
@@ -251,7 +252,13 @@ module Bundler
         needs_ssl = remote_uri.scheme == "https" ||
                     Bundler.settings[:ssl_verify_mode] ||
                     Bundler.settings[:ssl_client_cert]
-        raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
+        if needs_ssl
+          begin
+            require "openssl"
+          rescue StandardError, LoadError => e
+            raise SSLError.new(e.message)
+          end
+        end
 
         con = Gem::Net::HTTP::Persistent.new name: "bundler", proxy: :ENV
         if gem_proxy = Gem.configuration[:http_proxy]

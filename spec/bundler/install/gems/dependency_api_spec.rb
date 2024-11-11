@@ -707,14 +707,14 @@ RSpec.describe "gemcutter's dependency API" do
       end
     end
 
-    it "explains what to do to get it" do
+    it "explains what to do to get it, and includes original error" do
       gemfile <<-G
         source "#{source_uri.gsub(/http/, "https")}"
         gem "myrack"
       G
 
       bundle :install, artifice: "fail", env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false
-      expect(err).to include("OpenSSL")
+      expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end
 
