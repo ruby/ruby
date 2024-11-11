@@ -6486,8 +6486,7 @@ f_norm_arg	: f_bad_arg
 
 f_arg_asgn	: f_norm_arg
                     {
-                        ID id = $1;
-                        arg_var(p, id);
+                        arg_var(p, $1);
                         $$ = $1;
                     }
                 ;
