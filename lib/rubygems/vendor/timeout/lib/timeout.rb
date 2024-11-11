@@ -4,7 +4,7 @@
 # == Synopsis
 #
 #   require 'rubygems/vendor/timeout/lib/timeout'
-#   status = Gem::Timeout::timeout(5) {
+#   status = Gem::Timeout.timeout(5) {
 #     # Something that should be interrupted if it takes more than 5 seconds...
 #   }
 #
@@ -13,28 +13,25 @@
 # Gem::Timeout provides a way to auto-terminate a potentially long-running
 # operation if it hasn't finished in a fixed amount of time.
 #
-# Previous versions didn't use a module for namespacing, however
-# #timeout is provided for backwards compatibility.  You
-# should prefer Gem::Timeout.timeout instead.
-#
 # == Copyright
 #
 # Copyright:: (C) 2000  Network Applied Communication Laboratory, Inc.
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Gem::Timeout
-  VERSION = "0.4.1"
+  # The version
+  VERSION = "0.4.2"
 
   # Internal error raised to when a timeout is triggered.
   class ExitException < Exception
-    def exception(*)
+    def exception(*) # :nodoc:
       self
     end
   end
 
   # Raised by Gem::Timeout.timeout when the block times out.
   class Error < RuntimeError
-    def self.handle_timeout(message)
+    def self.handle_timeout(message) # :nodoc:
       exc = ExitException.new(message)
 
       begin
