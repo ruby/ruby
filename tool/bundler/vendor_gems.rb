@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "fileutils", "1.7.2"
+gem "fileutils", "1.7.3"
 gem "molinillo", github: "cocoapods/molinillo"
 gem "net-http", "0.4.1"
 gem "net-http-persistent", "4.0.4"
