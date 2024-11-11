@@ -158,6 +158,11 @@ pm_regexp_parse_range_quantifier(pm_regexp_parser_t *parser) {
     } state = PM_REGEXP_RANGE_QUANTIFIER_STATE_START;
 
     while (1) {
+        if (parser->cursor >= parser->end) {
+            parser->cursor = savepoint;
+            return true;
+        }
+
         switch (state) {
             case PM_REGEXP_RANGE_QUANTIFIER_STATE_START:
                 switch (*parser->cursor) {
