@@ -209,7 +209,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     Encoding.default_external = encoding
     yield
   ensure
-    verbose = $VERBOSE
     Encoding.default_external = previous_encoding
     $VERBOSE = verbose
   end
