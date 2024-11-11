@@ -226,6 +226,14 @@ VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
     return rb_fiber_scheduler_current_for_threadptr(rb_thread_ptr(thread));
 }
 
+void
+rb_fiber_scheduler_at_fork(void)
+{
+    rb_thread_t *thread = GET_THREAD();
+    thread->blocking = 0;
+    thread->scheduler = Qnil;
+}
+
 /*
  *
  *  Document-method: Fiber::Scheduler#close

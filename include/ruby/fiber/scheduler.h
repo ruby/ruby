@@ -116,6 +116,11 @@ VALUE rb_fiber_scheduler_set(VALUE scheduler);
 VALUE rb_fiber_scheduler_current(void);
 
 /**
+ * Invoked in the child process to ensure the fiber scheduler is cleared.
+ */
+void rb_fiber_scheduler_at_fork();
+
+/**
  * Identical to rb_fiber_scheduler_current(), except it queries for that of the
  * passed thread instead of the implicit current one.
  *

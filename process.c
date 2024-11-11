@@ -4117,6 +4117,7 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
         pid = rb_fork();
 #endif
         if (pid == 0) {/* fork succeed, child process */
+            rb_fiber_scheduler_at_fork();
             int ret;
             close(ep[0]);
             ret = disable_child_handler_fork_child(&old, errmsg, errmsg_buflen); /* async-signal-safe */
