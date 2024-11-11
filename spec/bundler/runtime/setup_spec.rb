@@ -1554,7 +1554,7 @@ end
       RUBY
 
       expect(last_command.stdboth).not_to include "FAIL"
-      expect(err).to include "private method `gem'"
+      expect(err).to match(/private method [`']gem'/)
     end
 
     it "keeps Kernel#require private" do
