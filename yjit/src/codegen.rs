@@ -10521,6 +10521,10 @@ fn reg_method_codegen(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
     unsafe { METHOD_CODEGEN_TABLE.as_mut().unwrap().insert(method_serial, gen_fn); }
 }
 
+pub fn yjit_shutdown_free_codegen_table() {
+    unsafe { METHOD_CODEGEN_TABLE = None; };
+}
+
 /// Global state needed for code generation
 pub struct CodegenGlobals {
     /// Flat vector of bits to store compressed context data
