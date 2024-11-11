@@ -41,7 +41,7 @@ require_relative 'random/formatter'
 module Gem::SecureRandom
 
   # The version
-  VERSION = "0.3.1"
+  VERSION = "0.3.2"
 
   class << self
     # Returns a random binary string containing +size+ bytes.
