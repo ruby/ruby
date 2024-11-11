@@ -5927,14 +5927,11 @@ literal		: numeric
 
 strings		: string
                     {
-                        NODE *node = $1;
-                        if (!node) {
-                            node = NEW_STR(STRING_NEW0(), &@$);
+                        if (!$1) {
+                            $$ = NEW_STR(STRING_NEW0(), &@$);
+                        } else {
+                            $$ = evstr2dstr(p, $1);
                         }
-                        else {
-                            node = evstr2dstr(p, node);
-                        }
-                        $$ = node;
                     /*% ripper: $:1 %*/
                     }
                 ;
