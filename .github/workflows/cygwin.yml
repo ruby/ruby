@@ -47,7 +47,7 @@ jobs:
       - name: Setup Cygwin
         uses: cygwin/cygwin-install-action@master
         with:
-          packages: ruby gcc-core make autoconf libtool openssl-devel libffi-devel zlib-devel
+          packages: ruby gcc-core make autoconf libtool libssl-devel libyaml-devel libffi-devel zlib-devel
 
       - name: configure
         run: |
