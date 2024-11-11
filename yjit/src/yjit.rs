@@ -78,6 +78,11 @@ fn yjit_init() {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn rb_yjit_free_at_exit() {
+    yjit_shutdown_free_codegen_table();
+}
+
 /// At the moment, we abort in all cases we panic.
 /// To aid with getting diagnostics in the wild without requiring
 /// people to set RUST_BACKTRACE=1, register a panic hook that crash using rb_bug().
