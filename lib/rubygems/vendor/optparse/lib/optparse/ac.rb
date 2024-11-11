@@ -1,7 +1,11 @@
 # frozen_string_literal: false
 require_relative '../optparse'
 
+#
+# autoconf-like options.
+#
 class Gem::OptionParser::AC < Gem::OptionParser
+  # :stopdoc:
   private
 
   def _check_ac_args(name, block)
@@ -14,6 +18,7 @@ class Gem::OptionParser::AC < Gem::OptionParser
   end
 
   ARG_CONV = proc {|val| val.nil? ? true : val}
+  private_constant :ARG_CONV
 
   def _ac_arg_enable(prefix, name, help_string, block)
     _check_ac_args(name, block)
@@ -29,16 +34,27 @@ class Gem::OptionParser::AC < Gem::OptionParser
     enable
   end
 
+  # :startdoc:
+
   public
 
+  # Define <tt>--enable</tt> / <tt>--disable</tt> style option
+  #
+  # Appears as <tt>--enable-<i>name</i></tt> in help message.
   def ac_arg_enable(name, help_string, &block)
     _ac_arg_enable("enable", name, help_string, block)
   end
 
+  # Define <tt>--enable</tt> / <tt>--disable</tt> style option
+  #
+  # Appears as <tt>--disable-<i>name</i></tt> in help message.
   def ac_arg_disable(name, help_string, &block)
     _ac_arg_enable("disable", name, help_string, block)
   end
 
+  # Define <tt>--with</tt> / <tt>--without</tt> style option
+  #
+  # Appears as <tt>--with-<i>name</i></tt> in help message.
   def ac_arg_with(name, help_string, &block)
     _check_ac_args(name, block)
 
