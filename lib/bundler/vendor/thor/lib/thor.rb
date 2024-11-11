@@ -439,6 +439,17 @@ class Bundler::Thor
       command && disable_required_check.include?(command.name.to_sym)
     end
 
+    # Checks if a specified command exists.
+    #
+    # ==== Parameters
+    # command_name<String>:: The name of the command to check for existence.
+    #
+    # ==== Returns
+    # Boolean:: +true+ if the command exists, +false+ otherwise.
+    def command_exists?(command_name) #:nodoc:
+      commands.keys.include?(normalize_command_name(command_name))
+    end
+
   protected
 
     # Returns this class exclusive options array set.
