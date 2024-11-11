@@ -5262,8 +5262,11 @@ block_call	: command do_block
                     }
                 | block_call call_op2 operation2 opt_paren_args
                     {
-                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        if (NODE_EMPTY_ARGS_P($4)) {
+                            $$ = new_qcall(p, $2, $1, $3, 0, &@3, &@$);
+                        } else {
+                            $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        }
                     /*% ripper: call!($:1, $:2, $:3) %*/
                         if ($4) {
                         /*% ripper: method_add_arg!($:$, $:4) %*/
@@ -5294,8 +5297,11 @@ method_call	: fcall paren_args
                     }
                 | primary_value call_op operation2 opt_paren_args
                     {
-                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        if (NODE_EMPTY_ARGS_P($4)) {
+                            $$ = new_qcall(p, $2, $1, $3, 0, &@3, &@$);
+                        } else {
+                            $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        }
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                         if ($4) {
