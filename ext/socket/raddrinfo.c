@@ -470,7 +470,7 @@ cancel_getaddrinfo(void *ptr)
 }
 
 int
-do_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
+raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
     do {
@@ -505,7 +505,7 @@ start:
     }
 
     pthread_t th;
-    if (do_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
@@ -726,7 +726,7 @@ start:
     }
 
     pthread_t th;
-    if (do_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
