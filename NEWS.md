@@ -103,6 +103,7 @@ The following default gems are updated.
 * rdoc 6.7.0
 * reline 0.5.11
 * resolv 0.5.0
+* securerandom 0.3.2
 * shellwords 0.2.1
 * singleton 0.3.0
 * stringio 3.1.2.dev
