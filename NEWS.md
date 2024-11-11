@@ -85,12 +85,12 @@ The following default gems are updated.
 * erb 4.0.4
 * etc 1.4.4
 * fcntl 1.2.0
-* fiddle 1.1.5.dev
+* fiddle 1.1.6.dev
 * fileutils 1.7.3
 * io-console 0.7.2
 * ipaddr 1.2.7
 * irb 1.14.1
-* json 2.8.0
+* json 2.8.1
 * logger 1.6.1
 * net-http 0.5.0
 * open-uri 0.5.0
@@ -99,7 +99,7 @@ The following default gems are updated.
 * pathname 0.4.0
 * prism 1.0.0
 * pstore 0.1.4
-* psych 5.2.0.beta3
+* psych 5.2.0
 * rdoc 6.7.0
 * reline 0.5.11
 * resolv 0.4.0
