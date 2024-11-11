@@ -57,5 +57,5 @@ jobs:
 
       - name: make all
         timeout-minutes: 30
-        run: make
+        run: make -j2 V=1
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
