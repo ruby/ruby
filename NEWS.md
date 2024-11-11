@@ -102,7 +102,7 @@ The following default gems are updated.
 * psych 5.2.0
 * rdoc 6.7.0
 * reline 0.5.11
-* resolv 0.4.0
+* resolv 0.5.0
 * shellwords 0.2.1
 * singleton 0.3.0
 * stringio 3.1.2.dev
