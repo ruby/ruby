@@ -124,6 +124,11 @@ end
 # - {Idempotent}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Idempotent_methods]: yes.
 # - {Cacheable}[https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Cacheable_methods]: no.
 #
+# Related:
+#
+# - Gem::Net::HTTP.put: sends +PUT+ request, returns response object.
+# - Gem::Net::HTTP#put: sends +PUT+ request, returns response object.
+#
 class Gem::Net::HTTP::Put < Gem::Net::HTTPRequest
   METHOD = 'PUT'
   REQUEST_HAS_BODY = true
