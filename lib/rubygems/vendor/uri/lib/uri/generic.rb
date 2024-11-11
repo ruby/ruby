@@ -1536,7 +1536,7 @@ module Gem::URI
         else
           unless proxy_uri = env[name]
             if proxy_uri = env[name.upcase]
-              warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
+              warn 'The environment variable HTTP_PROXY is discouraged.  Please use http_proxy instead.', uplevel: 1
             end
           end
         end
