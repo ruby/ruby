@@ -547,9 +547,8 @@ dump_object(VALUE obj, struct dump_config *dc)
         if (dc->cur_obj_klass) {
             VALUE mod_name = rb_mod_name(obj);
             if (!NIL_P(mod_name)) {
-                dump_append(dc, ", \"name\":\"");
-                dump_append(dc, RSTRING_PTR(mod_name));
-                dump_append(dc, "\"");
+                dump_append(dc, ", \"name\":");
+                dump_append_string_value(dc, mod_name);
             }
             else {
                 VALUE real_mod_name = rb_mod_name(rb_class_real(obj));
