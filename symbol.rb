@@ -15,6 +15,20 @@ class Symbol
   alias id2name to_s
 
   # call-seq:
+  #   name -> string
+  #
+  # Returns a frozen string representation of +self+ (not including the leading colon):
+  #
+  #   :foo.name         # => "foo"
+  #   :foo.name.frozen? # => true
+  #
+  # Related: Symbol#to_s, Symbol#inspect.
+  def name
+    Primitive.attr! :leaf
+    Primitive.cexpr! 'rb_sym2str(self)'
+  end
+
+  # call-seq:
   #   to_sym -> self
   #
   # Returns +self+.
