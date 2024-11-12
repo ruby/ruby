@@ -9,13 +9,6 @@ on:
       - '**/.document'
       - '.*.yml'
   pull_request:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man/*'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
   merge_group:
 
 concurrency:
