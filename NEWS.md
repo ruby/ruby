@@ -87,7 +87,7 @@ The following default gems are updated.
 * fcntl 1.2.0
 * fiddle 1.1.6.dev
 * fileutils 1.7.3
-* io-console 0.7.2
+* io-console 0.8.0.beta1
 * ipaddr 1.2.7
 * irb 1.14.1
 * json 2.8.1
