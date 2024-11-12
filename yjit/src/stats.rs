@@ -462,6 +462,7 @@ make_counters! {
     guard_send_not_fixnum_or_flonum,
     guard_send_not_string,
     guard_send_respond_to_mid_mismatch,
+    guard_send_str_aref_not_fixnum,
 
     guard_send_cfunc_bad_splat_vargs,
 

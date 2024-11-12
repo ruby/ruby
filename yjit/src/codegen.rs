@@ -5815,7 +5815,24 @@ fn jit_rb_str_aref_m(
             Type::Fixnum => {},
             // Besides Fixnum this could also be a Range or a RegExp which are handled by separate c funcs.
             // Other types will raise.
-            _ => { return false },
+            _ => {
+                // If the context doesn't have the type info we try a little harder.
+                let comptime_arg = jit.peek_at_stack(&asm.ctx, 0);
+                let arg0 = asm.stack_opnd(0);
+                if comptime_arg.fixnum_p() {
+                    asm.test(arg0, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+                    jit_chain_guard(
+                        JCC_JZ,
+                        jit,
+                        asm,
+                        SEND_MAX_DEPTH,
+                        Counter::guard_send_str_aref_not_fixnum,
+                    );
+                } else {
+                    return false
+                }
+            },
         }
     } else {
         return false
