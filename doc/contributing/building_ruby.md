@@ -28,10 +28,20 @@
     * [rustc] - 1.58.0 or later, if you wish to build
       [YJIT](rdoc-ref:RubyVM::YJIT).
 
-    If you installed the libraries needed for extensions (openssl, readline,
-    libyaml, zlib) into other than the OS default place, typically using
-    Homebrew on macOS, add `--with-EXTLIB-dir` options to `CONFIGURE_ARGS`
-    environment variable.
+    If you want to link the libraries (e.g., gmp) installed into other than
+    the OS default place, typically using Homebrew on macOS, pass the
+    `--with-opt-dir` (or `--with-gmp-dir` for gmp) option to `configure`.
+
+    ``` shell
+    configure --with-opt-dir=$(brew --prefix gmp):$(brew --prefix jemalloc)
+    ```
+
+    As for the libraries needed for particular extensions only and not for
+    Ruby (openssl, readline, libyaml, zlib), you can add `--with-EXTLIB-dir`
+    options to the command line or to `CONFIGURE_ARGS` environment variable.
+    The command line options will be embedded in `rbconfig.rb`, while the
+    latter environment variable is not embedded and is only used when
+    building the extension libraries.
 
     ``` shell
     export CONFIGURE_ARGS=""
