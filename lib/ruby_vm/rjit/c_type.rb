@@ -31,8 +31,8 @@ module RubyVM::RJIT
       def self.new(fiddle_type)
         name = Fiddle.constants.find do |const|
           const.start_with?('TYPE_') && Fiddle.const_get(const) == fiddle_type.abs
-        end&.to_s
-        name.delete_prefix!('TYPE_')
+        end&.name
+        name = name.delete_prefix('TYPE_')
         if fiddle_type.negative?
           name.prepend('U')
         end
