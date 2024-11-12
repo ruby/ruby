@@ -15,8 +15,8 @@
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
 
+#define STR_SHARED       FL_USER0 /* = ELTS_SHARED */
 #define STR_NOEMBED      FL_USER1
-#define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
 #define STR_CHILLED      FL_USER3
 
 enum ruby_rstring_private_flags {

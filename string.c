@@ -80,13 +80,13 @@ VALUE rb_cSymbol;
 
 /* Flags of RString
  *
+ * 0:     STR_SHARED (equal to ELTS_SHARED)
+ *            The string is shared. The buffer this string points to is owned by
+ *            another string (the shared root).
  * 1:     RSTRING_NOEMBED
  *            The string is not embedded. When a string is embedded, the contents
  *            follow the header. When a string is not embedded, the contents is
  *            on a separately allocated buffer.
- * 2:     STR_SHARED (equal to ELTS_SHARED)
- *            The string is shared. The buffer this string points to is owned by
- *            another string (the shared root).
  * 3:     STR_CHILLED (will be frozen in a future version)
  *            The string appears frozen but can be mutated with a warning.
  * 4:     STR_PRECOMPUTED_HASH

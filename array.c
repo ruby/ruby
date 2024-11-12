@@ -42,12 +42,12 @@ VALUE rb_cArray_empty_frozen;
 
 /* Flags of RArray
  *
+ * 0:   RARRAY_SHARED_FLAG (equal to ELTS_SHARED)
+ *          The array is shared. The buffer this array points to is owned by
+ *          another array (the shared root).
  * 1:   RARRAY_EMBED_FLAG
  *          The array is embedded (its contents follow the header, rather than
  *          being on a separately allocated buffer).
- * 2:   RARRAY_SHARED_FLAG (equal to ELTS_SHARED)
- *          The array is shared. The buffer this array points to is owned by
- *          another array (the shared root).
  * 3-9: RARRAY_EMBED_LEN
  *          The length of the array when RARRAY_EMBED_FLAG is set.
  * 12:  RARRAY_SHARED_ROOT_FLAG
