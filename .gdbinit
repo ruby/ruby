@@ -1,21 +1,7 @@
-define hook-run
-  set $color_type = 0
-  set $color_highlite = 0
-  set $color_end = 0
-end
-
 define ruby_gdb_init
-  if !$color_type
-    set $color_type = "\033[31m"
-  end
-  if !$color_highlite
-    set $color_highlite = "\033[36m"
-  end
-  if !$color_end
-    set $color_end = "\033[m"
-  end
-  if ruby_dummy_gdb_enums.special_consts
-  end
+  init-if-undefined $color_type = "\033[31m"
+  init-if-undefined $color_highlite = "\033[36m"
+  init-if-undefined $color_end = "\033[m"
 end
 
 # set prompt \033[36m(gdb)\033[m\040
