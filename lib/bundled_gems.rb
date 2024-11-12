@@ -49,10 +49,6 @@ module Gem::BUNDLED_GEMS
     "syslog" => true,
   }.freeze
 
-  OPTIONAL = {
-    "fiddle" => true,
-  }.freeze
-
   WARNED = {}                   # unfrozen
 
   conf = ::RbConfig::CONFIG
@@ -70,30 +66,15 @@ module Gem::BUNDLED_GEMS
     [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
-
-        message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
-        begin
-          result = kernel_class.send(:no_warning_require, name)
-        rescue LoadError => e
-          result = e
-        end
-
-        # Don't warn if the gem is optional dependency and not found in the Bundler environment.
-        if !(result.is_a?(LoadError) && OPTIONAL[name]) && message
+        if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
           if ::Gem::BUNDLED_GEMS.uplevel > 0
             Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
           else
             Kernel.warn message
           end
         end
-
-        if result.is_a?(LoadError)
-          raise result
-        else
-          result
-        end
+        kernel_class.send(:no_warning_require, name)
       end
-
       if kernel_class == ::Kernel
         kernel_class.send(:private, :require)
       else
