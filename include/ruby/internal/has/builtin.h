@@ -48,6 +48,7 @@
 # /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66970 */
 # define RBIMPL_HAS_BUILTIN(_) (RBIMPL_HAS_BUILTIN_ ## _)
 # define RBIMPL_HAS_BUILTIN___builtin_add_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
+# define RBIMPL_HAS_BUILTIN___builtin_add_overflow_p    RBIMPL_COMPILER_SINCE(GCC, 7, 0, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_alloca            RBIMPL_COMPILER_SINCE(GCC, 0, 0, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_alloca_with_align RBIMPL_COMPILER_SINCE(GCC, 6, 1, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_assume            0
@@ -75,6 +76,7 @@
 # define RBIMPL_HAS_BUILTIN___builtin_rotateright32     0
 # define RBIMPL_HAS_BUILTIN___builtin_rotateright64     0
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      RBIMPL_COMPILER_SINCE(GCC, 5, 1, 0)
+# define RBIMPL_HAS_BUILTIN___builtin_sub_overflow_p    RBIMPL_COMPILER_SINCE(GCC, 7, 0, 0)
 # define RBIMPL_HAS_BUILTIN___builtin_unreachable       RBIMPL_COMPILER_SINCE(GCC, 4, 5, 0)
 # /* Note that "0, 0, 0" might be inaccurate. */
 
@@ -82,6 +84,7 @@
 # /* Take config.h definition when available */
 # define RBIMPL_HAS_BUILTIN(_) ((RBIMPL_HAS_BUILTIN_ ## _)+0)
 # define RBIMPL_HAS_BUILTIN___builtin_add_overflow      HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+# define RBIMPL_HAS_BUILTIN___builtin_add_overflow_p    HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW_P
 # define RBIMPL_HAS_BUILTIN___builtin_alloca            0
 # define RBIMPL_HAS_BUILTIN___builtin_alloca_with_align HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
 # define RBIMPL_HAS_BUILTIN___builtin_assume            0
@@ -107,6 +110,7 @@
 # define RBIMPL_HAS_BUILTIN___builtin_rotateright64     0
 # define RBIMPL_HAS_BUILTIN___builtin_popcountll        HAVE_BUILTIN___BUILTIN_POPCOUNTLL
 # define RBIMPL_HAS_BUILTIN___builtin_sub_overflow      HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
+# define RBIMPL_HAS_BUILTIN___builtin_sub_overflow_p    HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW_P
 # if defined(HAVE___BUILTIN_UNREACHABLE)
 #  define RBIMPL_HAS_BUILTIN___builtin_unreachable 1
 # else
