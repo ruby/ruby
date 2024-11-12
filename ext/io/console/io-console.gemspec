@@ -23,7 +23,8 @@ Gem::Specification.new do |s|
   s.require_path = %[lib]
   s.files = %w[
     .document
-    LICENSE.txt
+    BSDL
+    COPYING
     README.md
     ext/io/console/console.c
     ext/io/console/extconf.rb
