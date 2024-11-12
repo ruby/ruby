@@ -459,7 +459,7 @@ class Data # :nodoc:
       members = PP.mcall(self, Kernel, :class).members
       values = []
       members.select! do |member|
-        value = begin
+        begin
           values << __send__(member)
           true
         rescue NoMethodError
