@@ -1838,6 +1838,13 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_bug_20886
+    re = Regexp.new("d()*+|a*a*bc", timeout: 0.02)
+    assert_raise(Regexp::TimeoutError) do
+      re === "b" + "a" * 1000
+    end
+  end
+
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
       global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
