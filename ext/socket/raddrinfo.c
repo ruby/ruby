@@ -469,8 +469,8 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
-static int
-do_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
+int
+raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
     do {
@@ -505,7 +505,7 @@ start:
     }
 
     pthread_t th;
-    if (do_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
@@ -726,7 +726,7 @@ start:
     }
 
     pthread_t th;
-    if (do_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
@@ -822,7 +822,7 @@ str_is_number(const char *p)
     ((ptr)[0] == name[0] && \
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
 
-static char*
+char*
 host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 {
     if (NIL_P(host)) {
@@ -861,7 +861,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
     }
 }
 
-static char*
+char*
 port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
 {
     if (NIL_P(port)) {
@@ -3023,6 +3023,106 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 
     UNREACHABLE_RETURN(Qnil);
 }
+
+#if FAST_FALLBACK_INIT_INETSOCK_IMPL == 1
+
+void
+free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared)
+{
+    free((*shared)->node);
+    (*shared)->node = NULL;
+    free((*shared)->service);
+    (*shared)->service = NULL;
+    close((*shared)->notify);
+    close((*shared)->wait);
+    rb_nativethread_lock_destroy((*shared)->lock);
+    free(*shared);
+    *shared = NULL;
+}
+
+void
+free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry)
+{
+    if ((*entry)->ai) {
+        freeaddrinfo((*entry)->ai);
+        (*entry)->ai = NULL;
+    }
+    free(*entry);
+    *entry = NULL;
+}
+
+void *
+do_fast_fallback_getaddrinfo(void *ptr)
+{
+    struct fast_fallback_getaddrinfo_entry *entry = (struct fast_fallback_getaddrinfo_entry *)ptr;
+    struct fast_fallback_getaddrinfo_shared *shared = entry->shared;
+    int err = 0, need_free = 0, shared_need_free = 0;
+
+    err = numeric_getaddrinfo(shared->node, shared->service, &entry->hints, &entry->ai);
+
+    if (err != 0) {
+        err = getaddrinfo(shared->node, shared->service, &entry->hints, &entry->ai);
+       #ifdef __linux__
+       /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
+        * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
+        */
+       if (err == EAI_SYSTEM && errno == ENOENT)
+           err = EAI_NONAME;
+       #endif
+    }
+
+    /* for testing HEv2 */
+    if (entry->test_sleep_ms > 0) {
+        struct timespec sleep_ts;
+        sleep_ts.tv_sec = entry->test_sleep_ms / 1000;
+        sleep_ts.tv_nsec = (entry->test_sleep_ms % 1000) * 1000000L;
+        if (sleep_ts.tv_nsec >= 1000000000L) {
+            sleep_ts.tv_sec += sleep_ts.tv_nsec / 1000000000L;
+            sleep_ts.tv_nsec = sleep_ts.tv_nsec % 1000000000L;
+        }
+        nanosleep(&sleep_ts, NULL);
+    }
+    if (entry->test_ecode != 0) {
+        err = entry->test_ecode;
+        if (entry->ai) {
+            freeaddrinfo(entry->ai);
+            entry->ai = NULL;
+        }
+    }
+
+    rb_nativethread_lock_lock(shared->lock);
+    {
+        entry->err = err;
+        if (*shared->cancelled) {
+            if (entry->ai) {
+                freeaddrinfo(entry->ai);
+                entry->ai = NULL;
+            }
+        } else {
+            const char notification = entry->family == AF_INET6 ?
+            IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
+
+            if ((write(shared->notify, &notification, strlen(&notification))) < 0) {
+                entry->err = errno;
+                entry->has_syserr = true;
+            }
+        }
+        if (--(entry->refcount) == 0) need_free = 1;
+        if (--(shared->refcount) == 0) shared_need_free = 1;
+    }
+    rb_nativethread_lock_unlock(shared->lock);
+
+    if (need_free && entry) {
+        free_fast_fallback_getaddrinfo_entry(&entry);
+    }
+    if (shared_need_free && shared) {
+        free_fast_fallback_getaddrinfo_shared(&shared);
+    }
+
+    return 0;
+}
+
+#endif
 
 /*
  * Addrinfo class
