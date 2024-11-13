@@ -756,7 +756,7 @@ dump_thread(void *arg)
                     frame.AddrFrame.Offset = context.Rbp;
                     frame.AddrStack.Mode = AddrModeFlat;
                     frame.AddrStack.Offset = context.Rsp;
-#elif defined(__aarch64__)
+#elif defined(_M_ARM64) || defined(__aarch64__)
                     mac = IMAGE_FILE_MACHINE_ARM64;
                     frame.AddrPC.Mode = AddrModeFlat;
                     frame.AddrPC.Offset = context.Pc;
