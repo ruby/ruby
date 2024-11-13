@@ -435,6 +435,9 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
         return ST_STOP;
     }
     else {
+        // Unless the string is empty or binary, its coderange has been precomputed.
+        int coderange = ENC_CODERANGE(str);
+
         if (FL_TEST_RAW(str, STR_FAKESTR)) {
             if (arg->copy) {
                 VALUE new_str;
@@ -481,6 +484,8 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                 str = str_new_frozen(rb_cString, str);
             }
         }
+
+        ENC_CODERANGE_SET(str, coderange);
         RBASIC(str)->flags |= RSTRING_FSTR;
 
         *key = *value = arg->fstr = str;
