@@ -2,7 +2,6 @@
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
-require 'date'
 
 require 'psych'
 

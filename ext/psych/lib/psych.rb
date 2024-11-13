@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require 'date'
+
 require_relative 'psych/versions'
 case RUBY_ENGINE
 when 'jruby'

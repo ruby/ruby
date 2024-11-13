@@ -75,6 +75,8 @@ DESCRIPTION
     s.add_dependency 'stringio'
   end
 
+  s.add_dependency 'date'
+
   s.metadata['msys2_mingw_dependencies'] = 'libyaml'
   s.metadata['changelog_uri'] = s.homepage + '/releases'
 end
