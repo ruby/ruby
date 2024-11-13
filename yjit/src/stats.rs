@@ -282,6 +282,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
     Counter::max_inline_versions,
+    Counter::inline_block_count,
     Counter::num_contexts_encoded,
     Counter::context_cache_hits,
 
@@ -570,6 +571,7 @@ make_counters! {
     branch_insn_count,
     branch_known_count,
     max_inline_versions,
+    inline_block_count,
     num_contexts_encoded,
 
     freed_iseq_count,
