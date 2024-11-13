@@ -5792,6 +5792,82 @@ fn jit_rb_str_byteslice(
     true
 }
 
+fn jit_rb_str_aref_m(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    // In yjit-bench the most common usages by far are single fixnum or two fixnums.
+    // rb_str_substr should be leaf if indexes are fixnums
+    if argc == 2 {
+        match (asm.ctx.get_opnd_type(StackOpnd(0)), asm.ctx.get_opnd_type(StackOpnd(1))) {
+            (Type::Fixnum, Type::Fixnum) => {},
+            // There is a two-argument form of (RegExp, Fixnum) which needs a different c func.
+            // Other types will raise.
+            _ => { return false },
+        }
+    } else if argc == 1 {
+        match asm.ctx.get_opnd_type(StackOpnd(0)) {
+            Type::Fixnum => {},
+            // Besides Fixnum this could also be a Range or a RegExp which are handled by separate c funcs.
+            // Other types will raise.
+            _ => {
+                // If the context doesn't have the type info we try a little harder.
+                let comptime_arg = jit.peek_at_stack(&asm.ctx, 0);
+                let arg0 = asm.stack_opnd(0);
+                if comptime_arg.fixnum_p() {
+                    asm.test(arg0, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+                    jit_chain_guard(
+                        JCC_JZ,
+                        jit,
+                        asm,
+                        SEND_MAX_DEPTH,
+                        Counter::guard_send_str_aref_not_fixnum,
+                    );
+                } else {
+                    return false
+                }
+            },
+        }
+    } else {
+        return false
+    }
+
+    asm_comment!(asm, "String#[]");
+
+    // rb_str_substr allocates a substring
+    jit_prepare_call_with_gc(jit, asm);
+
+    // Get stack operands after potential SP change
+
+    // The "empty" arg distinguishes between the normal "one arg" behavior
+    // and the "two arg" special case that returns an empty string
+    // when the begin index is the length of the string.
+    // See the usages of rb_str_substr in string.c for more information.
+    let (beg_idx, empty, len) = if argc == 2 {
+        (1, Opnd::Imm(1), asm.stack_opnd(0))
+    } else {
+        // If there is only one arg, the length will be 1.
+        (0, Opnd::Imm(0), VALUE::fixnum_from_usize(1).into())
+    };
+
+    let beg = asm.stack_opnd(beg_idx);
+    let recv = asm.stack_opnd(beg_idx + 1);
+
+    let ret_opnd = asm.ccall(rb_str_substr_two_fixnums as *const u8, vec![recv, beg, len, empty]);
+    asm.stack_pop(beg_idx as usize + 2);
+
+    let out_opnd = asm.stack_push(Type::Unknown);
+    asm.mov(out_opnd, ret_opnd);
+
+    true
+}
+
 fn jit_rb_str_getbyte(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10469,6 +10545,8 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cString, "getbyte", jit_rb_str_getbyte);
         reg_method_codegen(rb_cString, "setbyte", jit_rb_str_setbyte);
         reg_method_codegen(rb_cString, "byteslice", jit_rb_str_byteslice);
+        reg_method_codegen(rb_cString, "[]", jit_rb_str_aref_m);
+        reg_method_codegen(rb_cString, "slice", jit_rb_str_aref_m);
         reg_method_codegen(rb_cString, "<<", jit_rb_str_concat);
         reg_method_codegen(rb_cString, "+@", jit_rb_str_uplus);
 
