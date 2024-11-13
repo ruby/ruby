@@ -511,7 +511,7 @@ module Bundler
     end
 
     def most_specific_locked_platform
-      @platforms.min_by do |bundle_platform|
+      @locked_platforms.min_by do |bundle_platform|
         platform_specificity_match(bundle_platform, local_platform)
       end
     end
