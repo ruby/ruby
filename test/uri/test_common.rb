@@ -10,6 +10,10 @@ class URI::TestCommon < Test::Unit::TestCase
   def teardown
   end
 
+  class Foo
+    include URI::REGEXP::PATTERN
+  end
+
   def test_fallback_constants
     orig_verbose = $VERBOSE
     $VERBOSE = nil
@@ -19,6 +23,8 @@ class URI::TestCommon < Test::Unit::TestCase
     assert_equal URI::ABS_URI, URI::RFC2396_PARSER.regexp[:ABS_URI]
     assert_equal URI::PATTERN, URI::RFC2396_Parser::PATTERN
     assert_equal URI::REGEXP, URI::RFC2396_REGEXP
+    assert_equal URI::REGEXP::PATTERN, URI::RFC2396_REGEXP::PATTERN
+    assert_equal Foo::IPV4ADDR, URI::RFC2396_REGEXP::PATTERN::IPV4ADDR
   ensure
     $VERBOSE = orig_verbose
   end

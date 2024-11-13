@@ -536,4 +536,11 @@ module URI
     end
 
   end # class Parser
+
+  # Backward compatibility for URI::REGEXP::PATTERN::*
+  RFC2396_Parser.new.pattern.each_pair do |sym, str|
+    unless RFC2396_REGEXP::PATTERN.const_defined?(sym)
+      RFC2396_REGEXP::PATTERN.const_set(sym, str)
+    end
+  end
 end # module URI
