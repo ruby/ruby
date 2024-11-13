@@ -108,14 +108,14 @@ module Bundler
         end
       else
         @unlock         = {}
-        @platforms      = []
         @locked_gems    = nil
+        @locked_platforms = []
+        @platforms      = []
         @locked_deps    = {}
         @locked_specs   = SpecSet.new([])
         @originally_locked_deps = {}
         @originally_locked_specs = @locked_specs
         @locked_sources = []
-        @locked_platforms = []
         @locked_checksums = Bundler.feature_flag.lockfile_checksums?
       end
 
