@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
   gemspec = File.basename(__FILE__)
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
     `git ls-files -z 2>#{IO::NULL}`.split("\x0").reject do |file|
-      (file == gemspec) || file.start_with?(*%w[bin/ test/ .github/ .gitignore Gemfile Rakefile])
+      (file == gemspec) || file.start_with?(*%w[bin/ test/ rakelib/ .github/ .gitignore Gemfile Rakefile])
     end
   end
   spec.bindir        = "exe"
