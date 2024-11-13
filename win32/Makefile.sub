@@ -339,6 +339,7 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
+!elseif "$(ARCH)" == "arm64"
 !else
 COROUTINE_OBJ = coroutine/copy/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
