@@ -1664,9 +1664,21 @@ range_max(int argc, VALUE *argv, VALUE range)
 
     VALUE b = RANGE_BEG(range);
 
-    if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
+    if (rb_block_given_p()) {
         if (NIL_P(b)) {
             rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
+        }
+        return rb_call_super(argc, argv);
+    }
+    else if (EXCL(range) && !nm) {
+        if (NIL_P(b)) {
+            rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with an exclusive non-numeric end value");
+        }
+        return rb_call_super(argc, argv);
+    }
+    else if (argc) {
+        if (NIL_P(b)) {
+            rb_raise(rb_eRangeError, "cannot get the maximum values of beginless range");
         }
         return rb_call_super(argc, argv);
     }
