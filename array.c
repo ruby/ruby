@@ -6867,6 +6867,12 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
 }
 
 static VALUE
+ary_sized_alloc(rb_execution_context_t *ec, VALUE self)
+{
+    return rb_ary_new2(RARRAY_LEN(self));
+}
+
+static VALUE
 ary_sample0(rb_execution_context_t *ec, VALUE ary)
 {
     return ary_sample(ec, ary, rb_cRandom, Qfalse, Qfalse);
