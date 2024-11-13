@@ -89,6 +89,7 @@ module Bundler
         @lockfile_contents = Bundler.read_file(lockfile)
         @locked_gems = LockfileParser.new(@lockfile_contents)
         @locked_platforms = @locked_gems.platforms
+        @most_specific_locked_platform = @locked_gems.most_specific_locked_platform
         @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
@@ -110,6 +111,7 @@ module Bundler
         @unlock         = {}
         @locked_gems    = nil
         @locked_platforms = []
+        @most_specific_locked_platform = nil
         @platforms      = []
         @locked_deps    = {}
         @locked_specs   = SpecSet.new([])
@@ -239,7 +241,7 @@ module Bundler
     end
 
     def missing_specs
-      resolve.materialize(requested_dependencies, most_specific_locked_platform).missing_specs
+      resolve.materialize(requested_dependencies).missing_specs
     end
 
     def missing_specs?
@@ -510,12 +512,6 @@ module Bundler
       raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
     end
 
-    def most_specific_locked_platform
-      @locked_platforms.min_by do |bundle_platform|
-        platform_specificity_match(bundle_platform, local_platform)
-      end
-    end
-
     def nothing_changed?
       return false unless lockfile_exists?
 
@@ -598,7 +594,7 @@ module Bundler
     end
 
     def resolver
-      @resolver ||= Resolver.new(resolution_packages, gem_version_promoter)
+      @resolver ||= Resolver.new(resolution_packages, gem_version_promoter, @most_specific_locked_platform)
     end
 
     def expanded_dependencies
@@ -633,7 +629,7 @@ module Bundler
       incorrect_spec = nil
 
       specs = begin
-        resolve.materialize(dependencies, most_specific_locked_platform)
+        resolve.materialize(dependencies)
       rescue IncorrectLockfileDependencies => e
         spec = e.spec
         raise "Infinite loop while fixing lockfile dependencies" if incorrect_spec == spec
@@ -679,7 +675,7 @@ module Bundler
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform though, Bundler will still re-resolve dependencies")
         sources.remote!
         reresolve_without(incomplete_specs)
-        specs = resolve.materialize(dependencies, most_specific_locked_platform)
+        specs = resolve.materialize(dependencies)
 
         still_incomplete_specs = specs.incomplete_specs
 
@@ -756,7 +752,7 @@ module Bundler
     def find_most_specific_locked_ruby_platform
       return unless generic_local_platform_is_ruby? && current_platform_locked?
 
-      most_specific_locked_platform
+      @most_specific_locked_platform
     end
 
     def change_reason

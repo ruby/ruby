@@ -15,10 +15,11 @@ module Bundler
 
     include GemHelpers
 
-    def initialize(base, gem_version_promoter)
+    def initialize(base, gem_version_promoter, most_specific_locked_platform = nil)
       @source_requirements = base.source_requirements
       @base = base
       @gem_version_promoter = gem_version_promoter
+      @most_specific_locked_platform = most_specific_locked_platform
     end
 
     def start
@@ -79,7 +80,7 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      resolved_specs = result.flat_map {|package, version| version.to_specs(package) }
+      resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
       resolved_specs |= @base.specs_compatible_with(SpecSet.new(resolved_specs))
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility

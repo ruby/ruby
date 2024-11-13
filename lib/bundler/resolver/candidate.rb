@@ -34,10 +34,10 @@ module Bundler
         @spec_group.dependencies
       end
 
-      def to_specs(package)
+      def to_specs(package, most_specific_locked_platform)
         return [] if package.meta?
 
-        @spec_group.to_specs(package.force_ruby_platform?)
+        @spec_group.to_specs(package.force_ruby_platform?, most_specific_locked_platform)
       end
 
       def prerelease?
