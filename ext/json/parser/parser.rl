@@ -392,6 +392,7 @@ typedef struct JSON_ParserStruct {
     VALUE decimal_class;
     VALUE match_string;
     FBuffer fbuffer;
+    int in_array;
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
@@ -635,7 +636,9 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     action parse_array {
         char *np;
+        json->in_array++;
         np = JSON_parse_array(json, fpc, pe, result, current_nesting + 1);
+        json->in_array--;
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
@@ -897,7 +900,7 @@ static VALUE json_string_fastpath(JSON_Parser *json, char *string, char *stringE
 {
     size_t bufferSize = stringEnd - string;
 
-    if (is_name) {
+    if (is_name && json->in_array) {
         VALUE cached_key;
         if (RB_UNLIKELY(symbolize)) {
             cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
@@ -920,7 +923,7 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
     int unescape_len;
     char buf[4];
 
-    if (is_name) {
+    if (is_name && json->in_array) {
         VALUE cached_key;
         if (RB_UNLIKELY(symbolize)) {
             cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
