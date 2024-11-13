@@ -4016,7 +4016,7 @@ rb_error_frozen_object(VALUE frozen_obj)
 }
 
 void
-rb_warn_unchilled(VALUE obj)
+rb_warn_unchilled_literal(VALUE obj)
 {
     rb_warning_category_t category = RB_WARN_CATEGORY_DEPRECATED;
     if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(category)) {
@@ -4045,6 +4045,15 @@ rb_warn_unchilled(VALUE obj)
         }
         rb_warn_category(mesg, rb_warning_category_to_name(category));
     }
+}
+
+void
+rb_warn_unchilled_symbol_to_s(VALUE obj)
+{
+    rb_category_warn(
+        RB_WARN_CATEGORY_DEPRECATED,
+        "warning: string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
+    );
 }
 
 #undef rb_check_frozen

@@ -80,15 +80,19 @@ VALUE rb_cSymbol;
 
 /* Flags of RString
  *
+ * 0:     STR_SHARED (equal to ELTS_SHARED)
+ *            The string is shared. The buffer this string points to is owned by
+ *            another string (the shared root).
  * 1:     RSTRING_NOEMBED
  *            The string is not embedded. When a string is embedded, the contents
  *            follow the header. When a string is not embedded, the contents is
  *            on a separately allocated buffer.
- * 2:     STR_SHARED (equal to ELTS_SHARED)
- *            The string is shared. The buffer this string points to is owned by
- *            another string (the shared root).
- * 3:     STR_CHILLED (will be frozen in a future version)
- *            The string appears frozen but can be mutated with a warning.
+ * 2:     STR_CHILLED_LITERAL (will be frozen in a future version)
+ *            The string was allocated as a literal in a file without an explicit `frozen_string_literal` comment.
+ *            It emits a deprecation warning when mutated for the first time.
+ * 3:     STR_CHILLED_SYMBOL_TO_S (will be frozen in a future version)
+ *            The string was allocated by the `Symbol#to_s` method.
+ *            It emits a deprecation warning when mutated for the first time.
  * 4:     STR_PRECOMPUTED_HASH
  *            The string is embedded and has its precomputed hascode stored
  *            after the terminator.
@@ -1959,7 +1963,7 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
         str_duplicate_setup_heap(klass, str, new_str);
     }
     if (chilled) {
-        STR_CHILL_RAW(new_str);
+        FL_SET_RAW(new_str, STR_CHILLED_LITERAL);
     }
     return new_str;
 }
@@ -1970,7 +1974,7 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
     VALUE debug_info = rb_ary_new_from_args(2, path, INT2FIX(line));
     if (OBJ_FROZEN_RAW(str)) str = rb_str_dup(str);
     rb_ivar_set(str, id_debug_created_info, rb_ary_freeze(debug_info));
-    STR_CHILL_RAW(str);
+    FL_SET_RAW(str, STR_CHILLED_LITERAL);
     return rb_str_freeze(str);
 }
 
@@ -12142,7 +12146,9 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    return str_new_shared(rb_cString, rb_sym2str(sym));
+    VALUE str = str_new_shared(rb_cString, rb_sym2str(sym));
+    FL_SET_RAW(str, STR_CHILLED_SYMBOL_TO_S);
+    return str;
 }
 
 VALUE

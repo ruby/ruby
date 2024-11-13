@@ -80,6 +80,8 @@
  * here is at least incomplete.
  */
 enum ruby_rarray_flags {
+    /* RUBY_FL_USER0 is for ELTS_SHARED */
+
     /**
      * This flag  has something to do  with memory footprint.  If  the array is
      * "small"  enough, ruby  tries to  be creative  to abuse  padding bits  of
@@ -98,8 +100,6 @@ enum ruby_rarray_flags {
      * store array elements.  It was a bad idea to expose this to them.
      */
     RARRAY_EMBED_FLAG      = RUBY_FL_USER1,
-
-    /* RUBY_FL_USER2 is for ELTS_SHARED */
 
     /**
      * When an array employs embedded strategy (see ::RARRAY_EMBED_FLAG), these
