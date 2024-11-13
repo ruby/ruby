@@ -40,6 +40,7 @@ class URI::TestCommon < Test::Unit::TestCase
     assert defined?(URI::REGEXP)
     assert defined?(URI::PATTERN)
     assert defined?(URI::PATTERN::ESCAPED)
+    assert defined?(URI::REGEXP::PATTERN::IPV6ADDR)
 
     URI.parser = URI::RFC3986_PARSER
 

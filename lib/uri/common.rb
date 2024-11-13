@@ -31,11 +31,6 @@ module URI
     if Parser == RFC2396_Parser
       const_set("REGEXP", URI::RFC2396_REGEXP)
       const_set("PATTERN", URI::RFC2396_REGEXP::PATTERN)
-      Parser.new.pattern.each_pair do |sym, str|
-        unless REGEXP::PATTERN.const_defined?(sym)
-          REGEXP::PATTERN.const_set(sym, str)
-        end
-      end
     end
 
     Parser.new.regexp.each_pair do |sym, str|
