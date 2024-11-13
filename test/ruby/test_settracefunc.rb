@@ -658,7 +658,7 @@ CODE
     1: set_trace_func(lambda{|event, file, line, id, binding, klass|
     2:   events << [event, line, file, klass, id, binding&.eval('self'), binding&.eval("_local_var")] if file == 'xyzzy'
     3: })
-    4: [1].map{|;_local_var| _local_var = :inner
+    4: [1].map!{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
@@ -1062,7 +1062,7 @@ CODE
         /return/ =~ tp.event ? tp.return_value : nil
       ]
     }.enable{
-      [1].map{
+      [1].map!{
         3
       }
       method_for_test_tracepoint_block{
@@ -1072,10 +1072,10 @@ CODE
     # pp events
     # expected_events =
     [[:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
-     [:c_call, :map, Array, Array, nil],
+     [:c_call, :map!, Array, Array, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 3],
-     [:c_return, :map, Array, Array, [3]],
+     [:c_return, :map!, Array, Array, [3]],
      [:call, :method_for_test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 4],
@@ -1382,7 +1382,7 @@ CODE
       events << tp.event
       log << "| event:#{ tp.event } method_id:#{ tp.method_id } #{ tp.path }:#{ tp.lineno }"
     }.enable{
-      [1].map{
+      [1].map!{
         3
       }
       method_for_test_tracepoint_block{
@@ -1406,7 +1406,7 @@ CODE
       events << tp.event
       log << "| event:#{ tp.event } method_id:#{ tp.method_id } #{ tp.path }:#{ tp.lineno }"
     }.enable{
-      [1].map{
+      [1].map!{
         3
       }
       method_for_test_tracepoint_block{

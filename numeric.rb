@@ -338,6 +338,7 @@ class Integer
           yield from
           from = from.pred
         end
+        self
       end
     end
   end

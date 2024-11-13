@@ -2749,6 +2749,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         disasm_builtin_attr(str, iseq, LEAF);
         disasm_builtin_attr(str, iseq, SINGLE_NOARG_LEAF);
         disasm_builtin_attr(str, iseq, INLINE_BLOCK);
+        disasm_builtin_attr(str, iseq, C_TRACE);
     }
     rb_str_cat2(str, "\n");
 
