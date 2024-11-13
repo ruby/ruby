@@ -14,7 +14,7 @@ module Bundler
       @incomplete_specs = incomplete_specs
     end
 
-    def for(dependencies, check = false, platforms = [nil], most_specific_locked_platform = nil)
+    def for(dependencies, check = false, platforms = [nil])
       handled = ["bundler"].product(platforms).map {|k| [k, true] }.to_h
       deps = dependencies.product(platforms)
       specs = []
@@ -31,7 +31,7 @@ module Bundler
 
         handled[key] = true
 
-        specs_for_dep = specs_for_dependency(*dep, most_specific_locked_platform)
+        specs_for_dep = specs_for_dependency(*dep)
         if specs_for_dep.any?
           specs.concat(specs_for_dep)
           deps.concat(specs_for_dep.first.runtime_dependencies.map {|d| [d, platform] })
@@ -125,8 +125,8 @@ module Bundler
       lookup.dup
     end
 
-    def materialize(deps, most_specific_locked_platform = nil)
-      materialized = self.for(deps, true, [nil], most_specific_locked_platform)
+    def materialize(deps)
+      materialized = self.for(deps, true)
 
       SpecSet.new(materialized, incomplete_specs)
     end
@@ -290,14 +290,14 @@ module Bundler
       @specs.sort_by(&:name).each {|s| yield s }
     end
 
-    def specs_for_dependency(dep, platform, most_specific_locked_platform)
+    def specs_for_dependency(dep, platform)
       specs_for_name = lookup[dep.name]
       return [] unless specs_for_name
 
       if platform
         GemHelpers.select_best_platform_match(specs_for_name, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform, most_specific_locked_platform: most_specific_locked_platform)
+        GemHelpers.select_best_local_platform_match(specs_for_name, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
       end
     end
 
