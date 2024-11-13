@@ -201,7 +201,9 @@ del %0 & exit
 
 -generic-: nul
 	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
-#if defined _M_X64
+#if defined _M_ARM64
+MACHINE = arm64
+#elif defined _M_X64
 MACHINE = x64
 #else
 MACHINE = x86
@@ -217,6 +219,8 @@ MACHINE = x86
 	@echo MACHINE = x64>>$(MAKEFILE)
 -ix86-: -osname32-
 	@echo MACHINE = x86>>$(MAKEFILE)
+-arm64-: -osname64-
+	@echo MACHINE = arm64>>$(MAKEFILE)
 
 -i386-: -ix86-
 	@echo $(CPU) = 3>>$(MAKEFILE)
