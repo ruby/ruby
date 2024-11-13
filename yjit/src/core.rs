@@ -2309,7 +2309,9 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
 
         return generic_ctx;
     }
-    incr_counter_to!(max_inline_versions, next_versions);
+    if ctx.inline() {
+        incr_counter_to!(max_inline_versions, next_versions);
+    }
 
     return *ctx;
 }
@@ -2367,6 +2369,9 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     }
 
     incr_counter!(compiled_block_count);
+    if Context::decode(block.ctx).inline() {
+        incr_counter!(inline_block_count);
+    }
 
     // Mark code pages for code GC
     let iseq_payload = get_iseq_payload(block.iseq.get()).unwrap();
