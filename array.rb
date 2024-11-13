@@ -233,6 +233,31 @@ class Array
       end
     end
 
+    if Primitive.rb_builtin_basic_definition_p(:map)
+      undef :map
+
+      def map # :nodoc:
+        Primitive.attr! :inline_block, :c_trace
+
+        unless defined?(yield)
+          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+        end
+
+        _i = 0
+        value = nil
+        result = Primitive.ary_sized_alloc
+        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
+          result << yield(value)
+        end
+        result
+      end
+
+      if Primitive.rb_builtin_basic_definition_p(:collect)
+        undef :collect
+        alias collect map
+      end
+    end
+
     if Primitive.rb_builtin_basic_definition_p(:select)
       undef :select
 
