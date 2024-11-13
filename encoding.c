@@ -968,6 +968,21 @@ enc_set_index(VALUE obj, int idx)
 }
 
 void
+rb_enc_raw_set(VALUE obj, rb_encoding *enc)
+{
+    RUBY_ASSERT(enc_capable(obj));
+
+    int idx = enc ? ENC_TO_ENCINDEX(enc) : 0;
+
+    if (idx < ENCODING_INLINE_MAX) {
+        ENCODING_SET_INLINED(obj, idx);
+        return;
+    }
+    ENCODING_SET_INLINED(obj, ENCODING_INLINE_MAX);
+    rb_ivar_set(obj, rb_id_encoding(), INT2NUM(idx));
+}
+
+void
 rb_enc_set_index(VALUE obj, int idx)
 {
     rb_check_frozen(obj);

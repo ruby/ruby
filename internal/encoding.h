@@ -28,6 +28,8 @@ int rb_encdb_dummy(const char *name);
 void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
+void rb_enc_raw_set(VALUE obj, rb_encoding *enc);
+
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
 
 /* vm.c */
