@@ -163,12 +163,6 @@ module Bundler
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
     end
 
-    def specs_compatible_with(other)
-      select do |spec|
-        other.valid?(spec)
-      end
-    end
-
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
 
