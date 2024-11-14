@@ -5277,6 +5277,35 @@ fn jit_rb_int_succ(
     true
 }
 
+fn jit_rb_int_pred(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    // Guard the receiver is fixnum
+    let recv_type = asm.ctx.get_opnd_type(StackOpnd(0));
+    let recv = asm.stack_pop(1);
+    if recv_type != Type::Fixnum {
+        asm_comment!(asm, "guard object is fixnum");
+        asm.test(recv, Opnd::Imm(RUBY_FIXNUM_FLAG as i64));
+        asm.jz(Target::side_exit(Counter::send_pred_not_fixnum));
+    }
+
+    asm_comment!(asm, "Integer#pred");
+    let out_val = asm.sub(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
+    asm.jo(Target::side_exit(Counter::send_pred_underflow));
+
+    // Push the output onto the stack
+    let dst = asm.stack_push(Type::Fixnum);
+    asm.mov(dst, out_val);
+
+    true
+}
+
 fn jit_rb_int_div(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10525,6 +10554,7 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cInteger, "===", jit_rb_int_equal);
 
         reg_method_codegen(rb_cInteger, "succ", jit_rb_int_succ);
+        reg_method_codegen(rb_cInteger, "pred", jit_rb_int_pred);
         reg_method_codegen(rb_cInteger, "/", jit_rb_int_div);
         reg_method_codegen(rb_cInteger, "<<", jit_rb_int_lshift);
         reg_method_codegen(rb_cInteger, ">>", jit_rb_int_rshift);

@@ -420,6 +420,8 @@ make_counters! {
     send_bmethod_ractor,
     send_bmethod_block_arg,
     send_optimized_block_arg,
+    send_pred_not_fixnum,
+    send_pred_underflow,
 
     invokesuper_defined_class_mismatch,
     invokesuper_forwarding,
