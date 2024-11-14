@@ -52,7 +52,11 @@ module Gem::BUNDLED_GEMS
   WARNED = {}                   # unfrozen
 
   conf = ::RbConfig::CONFIG
-  LIBDIR = (conf["rubylibdir"] + "/").freeze
+  if !File.exist?(conf["rubylibdir"])
+    LIBDIR = (File.expand_path(File.join(__dir__, "..", "lib")) + "/").freeze
+  else
+    LIBDIR = (conf["rubylibdir"] + "/").freeze
+  end
   ARCHDIR = (conf["rubyarchdir"] + "/").freeze
   dlext = [conf["DLEXT"], "so"].uniq
   DLEXT = /\.#{Regexp.union(dlext)}\z/

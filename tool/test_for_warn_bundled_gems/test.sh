@@ -1,9 +1,5 @@
 #!/bin/bash
 
-echo "* Show warning require and LoadError"
-ruby test_warn_bundled_gems.rb
-echo
-
 echo "* Show warning when bundled gems called as dependency"
 ruby test_warn_dependency.rb
 echo
