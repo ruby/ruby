@@ -3366,7 +3366,7 @@ rb_mod_const_of(VALUE mod, void *data)
         data = rb_mod_const_at(tmp, data);
         tmp = RCLASS_SUPER(tmp);
         if (!tmp) break;
-        if (tmp == rb_cObject && mod != rb_cObject) break;
+        if (tmp == rb_cObject) break;
     }
     return data;
 }
