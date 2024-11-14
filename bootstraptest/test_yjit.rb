@@ -212,6 +212,15 @@ assert_equal 'Sub', %q{
   call(Sub.new('o')).class
 }
 
+# String#dup with FL_EXIVAR
+assert_equal '["str", "ivar"]', %q{
+  def str_dup(str) = str.dup
+  str = "str"
+  str.instance_variable_set(:@ivar, "ivar")
+  str = str_dup(str)
+  [str, str.instance_variable_get(:@ivar)]
+}
+
 # test splat filling required and feeding rest
 assert_equal '[0, 1, 2, [3, 4]]', %q{
   public def lead_rest(a, b, *rest)

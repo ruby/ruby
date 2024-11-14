@@ -6017,6 +6017,36 @@ fn jit_rb_str_to_s(
     false
 }
 
+fn jit_rb_str_dup(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    known_recv_class: Option<VALUE>,
+) -> bool {
+    // We specialize only the BARE_STRING_P case. Otherwise it's not leaf.
+    if unsafe { known_recv_class != Some(rb_cString) } {
+        return false;
+    }
+    asm_comment!(asm, "String#dup");
+
+    // Check !FL_ANY_RAW(str, FL_EXIVAR), which is part of BARE_STRING_P.
+    let recv_opnd = asm.stack_pop(1);
+    let recv_opnd = asm.load(recv_opnd);
+    let flags_opnd = Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS);
+    asm.test(flags_opnd, Opnd::Imm(RUBY_FL_EXIVAR as i64));
+    asm.jnz(Target::side_exit(Counter::send_str_dup_exivar));
+
+    // Call rb_str_dup
+    let stack_ret = asm.stack_push(Type::CString);
+    let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
+    asm.mov(stack_ret, ret_opnd);
+
+    true
+}
+
 // Codegen for rb_str_empty_p()
 fn jit_rb_str_empty_p(
     _jit: &mut JITState,
@@ -10566,6 +10596,7 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cFloat, "*", jit_rb_float_mul);
         reg_method_codegen(rb_cFloat, "/", jit_rb_float_div);
 
+        reg_method_codegen(rb_cString, "dup", jit_rb_str_dup);
         reg_method_codegen(rb_cString, "empty?", jit_rb_str_empty_p);
         reg_method_codegen(rb_cString, "to_s", jit_rb_str_to_s);
         reg_method_codegen(rb_cString, "to_str", jit_rb_str_to_s);

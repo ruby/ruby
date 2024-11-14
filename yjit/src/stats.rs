@@ -422,6 +422,7 @@ make_counters! {
     send_optimized_block_arg,
     send_pred_not_fixnum,
     send_pred_underflow,
+    send_str_dup_exivar,
 
     invokesuper_defined_class_mismatch,
     invokesuper_forwarding,
