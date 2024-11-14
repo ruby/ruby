@@ -2779,7 +2779,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> f_marg f_marg_list f_rest_marg
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
-%type <node_args> block_param opt_block_param block_param_def
+%type <node_args> block_param block_param_def
 %type <node_kw_arg> f_kw f_block_kw
 %type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
@@ -2945,6 +2945,11 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
                 ;
+
+// override the default parameterizing rule: https://github.com/ruby/lrama/blob/ea5306ca8f123e3a214715a2a788f6011a167de8/lib/lrama/grammar/stdlib.y#L14-L25
+%rule option(X): none
+               | X
+               ;
 
 %rule opt_args_tail(tail) <node_args>
                 : ',' tail
@@ -5105,13 +5110,6 @@ block_param	: f_arg ',' f_optarg(primary_value) ',' f_rest_arg opt_args_tail(blo
                     }
                 ;
 
-opt_block_param	: none
-                | block_param_def
-                    {
-                        p->command_start = TRUE;
-                    }
-                ;
-
 block_param_def	: '|' opt_bv_decl '|'
                     {
                         p->max_numparam = ORDINAL_PARAM;
@@ -5362,12 +5360,14 @@ brace_block	: '{' brace_body '}'
 
 brace_body	: {$$ = dyna_push(p);}[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] compstmt
+                  block_param_def?[args]<node_args> compstmt
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
                         p->max_numparam = $max_numparam;
                         p->it_id = $it_id;
+                        if($args) p->command_start = TRUE;
+
                         $args = args_with_numbered(p, $args, max_numparam, it_id);
                         $$ = NEW_ITER($args, $compstmt, &@$);
                     /*% ripper: brace_block!($:args, $:compstmt) %*/
@@ -5382,12 +5382,14 @@ do_body 	:   {
                         CMDARG_PUSH(0);
                     }[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] bodystmt
+                  block_param_def?[args]<node_args> bodystmt
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
                         p->max_numparam = $max_numparam;
                         p->it_id = $it_id;
+                        if($args) p->command_start = TRUE;
+
                         $args = args_with_numbered(p, $args, max_numparam, it_id);
                         $$ = NEW_ITER($args, $bodystmt, &@$);
                     /*% ripper: do_block!($:args, $:bodystmt) %*/
