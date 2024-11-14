@@ -557,52 +557,42 @@ ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 static VALUE ossl_sslctx_setup(VALUE self);
 
 static VALUE
-ossl_call_servername_cb(VALUE ary)
+ossl_call_servername_cb(VALUE arg)
 {
-    VALUE ssl_obj, sslctx_obj, cb, ret_obj;
+    SSL *ssl = (void *)arg;
+    const char *servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+    if (!servername)
+        return Qnil;
 
-    Check_Type(ary, T_ARRAY);
-    ssl_obj = rb_ary_entry(ary, 0);
+    VALUE ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    VALUE sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
+    VALUE cb = rb_attr_get(sslctx_obj, id_i_servername_cb);
+    VALUE ary = rb_assoc_new(ssl_obj, rb_str_new_cstr(servername));
 
-    sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
-    cb = rb_attr_get(sslctx_obj, id_i_servername_cb);
-    if (NIL_P(cb)) return Qnil;
-
-    ret_obj = rb_funcallv(cb, id_call, 1, &ary);
+    VALUE ret_obj = rb_funcallv(cb, id_call, 1, &ary);
     if (rb_obj_is_kind_of(ret_obj, cSSLContext)) {
-        SSL *ssl;
         SSL_CTX *ctx2;
-
         ossl_sslctx_setup(ret_obj);
-        GetSSL(ssl_obj, ssl);
         GetSSLCTX(ret_obj, ctx2);
-        SSL_set_SSL_CTX(ssl, ctx2);
+        if (!SSL_set_SSL_CTX(ssl, ctx2))
+            ossl_raise(eSSLError, "SSL_set_SSL_CTX");
         rb_ivar_set(ssl_obj, id_i_context, ret_obj);
     } else if (!NIL_P(ret_obj)) {
 	ossl_raise(rb_eArgError, "servername_cb must return an "
 		   "OpenSSL::SSL::SSLContext object or nil");
     }
 
-    return ret_obj;
+    return Qnil;
 }
 
 static int
 ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 {
-    VALUE ary, ssl_obj;
-    int state = 0;
-    const char *servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+    int state;
 
-    if (!servername)
-        return SSL_TLSEXT_ERR_OK;
-
-    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    ary = rb_ary_new2(2);
-    rb_ary_push(ary, ssl_obj);
-    rb_ary_push(ary, rb_str_new2(servername));
-
-    rb_protect(ossl_call_servername_cb, ary, &state);
+    rb_protect(ossl_call_servername_cb, (VALUE)ssl, &state);
     if (state) {
+        VALUE ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
         rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
         return SSL_TLSEXT_ERR_ALERT_FATAL;
     }
