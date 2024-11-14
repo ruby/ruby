@@ -116,6 +116,10 @@ module Bundler
       stub.raw_require_paths
     end
 
+    def inspect
+      "#<#{self.class} @name=\"#{name}\" (#{full_name.delete_prefix("#{name}-")})>"
+    end
+
     private
 
     def _remote_specification

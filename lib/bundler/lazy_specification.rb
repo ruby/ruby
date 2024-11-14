@@ -161,6 +161,10 @@ module Bundler
       search
     end
 
+    def inspect
+      "#<#{self.class} @name=\"#{name}\" (#{full_name.delete_prefix("#{name}-")})>"
+    end
+
     def to_s
       lock_name
     end
