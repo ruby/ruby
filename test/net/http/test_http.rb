@@ -568,8 +568,8 @@ module TestNetHTTP_version_1_1_methods
       conn.open_timeout = EnvUtil.apply_timeout_scale(0.1)
 
       th = Thread.new do
-        err = !windows? ? [Net::WriteTimeout, Net::OpenTimeout] : Net::ReadTimeout
-        assert_raise(*err) do
+        err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
+        assert_raise(err) do
           assert_warning(/Content-Type did not set/) do
             conn.post('/', "a"*50_000_000)
           end
@@ -600,7 +600,7 @@ module TestNetHTTP_version_1_1_methods
       req.body_stream = StringIO.new(data)
 
       th = Thread.new do
-        assert_raise(Net::WriteTimeout, Net::OpenTimeout) { conn.request(req) }
+        assert_raise(Net::WriteTimeout) { conn.request(req) }
       end
       assert th.join(10)
     }
