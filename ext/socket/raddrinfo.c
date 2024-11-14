@@ -3102,7 +3102,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
             const char notification = entry->family == AF_INET6 ?
             IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
-            if ((write(shared->notify, &notification, strlen(&notification))) < 0) {
+            if ((write(shared->notify, &notification, 1)) < 0) {
                 entry->err = errno;
                 entry->has_syserr = true;
             }
