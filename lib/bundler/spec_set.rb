@@ -37,7 +37,6 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            incomplete = true if d.name != "bundler" && lookup[d.name].nil?
             deps << [d, platform]
           end
         else
