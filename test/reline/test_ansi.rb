@@ -1,11 +1,11 @@
 require_relative 'helper'
 require 'reline'
 
-class Reline::ANSI::WithoutTerminfoTest < Reline::TestCase
+class Reline::ANSITest < Reline::TestCase
   def setup
     Reline.send(:test_mode, ansi: true)
     @config = Reline::Config.new
-    Reline.core.io_gate.set_default_key_bindings(@config, allow_terminfo: false)
+    Reline.core.io_gate.set_default_key_bindings(@config)
   end
 
   def teardown
@@ -50,7 +50,7 @@ class Reline::ANSI::WithoutTerminfoTest < Reline::TestCase
     assert_key_binding("\eOD", :ed_prev_char)
   end
 
-  # Ctrl+arrow and Meta+arrow; always mapped regardless of terminfo enabled or not
+  # Ctrl+arrow and Meta+arrow
   def test_extended
     assert_key_binding("\e[1;5C", :em_next_word) # Ctrl+→
     assert_key_binding("\e[1;5D", :ed_prev_word) # Ctrl+←
@@ -60,12 +60,11 @@ class Reline::ANSI::WithoutTerminfoTest < Reline::TestCase
     assert_key_binding("\e\e[D", :ed_prev_word) # Meta+←
   end
 
-  # Shift-Tab; always mapped regardless of terminfo enabled or not
   def test_shift_tab
     assert_key_binding("\e[Z", :completion_journey_up, [:emacs, :vi_insert])
   end
 
-  # A few emacs bindings that are always mapped regardless of terminfo enabled or not
+  # A few emacs bindings that are always mapped
   def test_more_emacs
     assert_key_binding("\e ", :em_set_mark, [:emacs])
     assert_key_binding("\C-x\C-x", :em_exchange_mark, [:emacs])

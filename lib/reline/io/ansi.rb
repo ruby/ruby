@@ -29,10 +29,6 @@ class Reline::ANSI < Reline::IO
     'H' => [:ed_move_to_beg, {}],
   }
 
-  if Reline::Terminfo.enabled?
-    Reline::Terminfo.setupterm(0, 2)
-  end
-
   def initialize
     @input = STDIN
     @output = STDOUT
@@ -44,14 +40,10 @@ class Reline::ANSI < Reline::IO
     @input.external_encoding || Encoding.default_external
   end
 
-  def set_default_key_bindings(config, allow_terminfo: true)
+  def set_default_key_bindings(config)
     set_bracketed_paste_key_bindings(config)
     set_default_key_bindings_ansi_cursor(config)
-    if allow_terminfo && Reline::Terminfo.enabled?
-      set_default_key_bindings_terminfo(config)
-    else
-      set_default_key_bindings_comprehensive_list(config)
-    end
+    set_default_key_bindings_comprehensive_list(config)
     {
       [27, 91, 90] => :completion_journey_up, # S-Tab
     }.each_pair do |key, func|
@@ -95,23 +87,6 @@ class Reline::ANSI < Reline::IO
         config.add_default_key_binding_by_keymap(:vi_insert, key, func)
         config.add_default_key_binding_by_keymap(:vi_command, key, func)
       end
-    end
-  end
-
-  def set_default_key_bindings_terminfo(config)
-    key_bindings = CAPNAME_KEY_BINDINGS.map do |capname, key_binding|
-      begin
-        key_code = Reline::Terminfo.tigetstr(capname)
-        [ key_code.bytes, key_binding ]
-      rescue Reline::Terminfo::TerminfoError
-        # capname is undefined
-      end
-    end.compact.to_h
-
-    key_bindings.each_pair do |key, func|
-      config.add_default_key_binding_by_keymap(:emacs, key, func)
-      config.add_default_key_binding_by_keymap(:vi_insert, key, func)
-      config.add_default_key_binding_by_keymap(:vi_command, key, func)
     end
   end
 
@@ -281,27 +256,11 @@ class Reline::ANSI < Reline::IO
   end
 
   def hide_cursor
-    seq = "\e[?25l"
-    if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
-      begin
-        seq = Reline::Terminfo.tigetstr('civis')
-      rescue Reline::Terminfo::TerminfoError
-        # civis is undefined
-      end
-    end
-    @output.write seq
+    @output.write "\e[?25l"
   end
 
   def show_cursor
-    seq = "\e[?25h"
-    if Reline::Terminfo.enabled? && Reline::Terminfo.term_supported?
-      begin
-        seq = Reline::Terminfo.tigetstr('cnorm')
-      rescue Reline::Terminfo::TerminfoError
-        # cnorm is undefined
-      end
-    end
-    @output.write seq
+    @output.write "\e[?25h"
   end
 
   def erase_after_cursor
