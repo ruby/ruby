@@ -173,7 +173,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 
 #define THREAD_BLOCKING_END(th) \
   thread_sched_to_running((sched), (th)); \
-  rb_ractor_thread_switch(th->ractor, th); \
+  rb_ractor_thread_switch(th->ractor, th, false); \
 } while(0)
 
 #ifdef __GNUC__
@@ -1470,7 +1470,7 @@ rb_thread_schedule_limits(uint32_t limits_us)
 
             RB_VM_SAVE_MACHINE_CONTEXT(th);
             thread_sched_yield(TH_SCHED(th), th);
-            rb_ractor_thread_switch(th->ractor, th);
+            rb_ractor_thread_switch(th->ractor, th, true);
 
             RUBY_DEBUG_LOG("switch %s", "done");
         }
@@ -1518,7 +1518,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     unregister_ubf_list(th);
 
     thread_sched_to_running(TH_SCHED(th), th);
-    rb_ractor_thread_switch(th->ractor, th);
+    rb_ractor_thread_switch(th->ractor, th, false);
 
     th->blocking_region_buffer = 0;
     rb_ractor_blocking_threads_dec(th->ractor, __FILE__, __LINE__);

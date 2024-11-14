@@ -859,7 +859,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
 
                 RUBY_DEBUG_LOG("(nt) wakeup %s", sched->running == th ? "success" : "failed");
                 if (th == sched->running) {
-                    rb_ractor_thread_switch(th->ractor, th);
+                    rb_ractor_thread_switch(th->ractor, th, false);
                 }
             }
             else {
