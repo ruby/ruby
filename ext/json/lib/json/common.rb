@@ -26,7 +26,7 @@ module JSON
       elsif object.respond_to?(:to_str)
         str = object.to_str
         if str.is_a?(String)
-          return JSON.parse(object.to_str, opts)
+          return JSON.parse(str, opts)
         end
       end
 
