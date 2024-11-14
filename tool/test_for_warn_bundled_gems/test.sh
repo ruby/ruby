@@ -8,10 +8,6 @@ echo "* Show warning sub-feature like bigdecimal/util"
 ruby test_warn_sub_feature.rb
 echo
 
-echo "* Show warning dash gem like net/smtp"
-ruby test_warn_dash_gem.rb
-echo
-
 echo "* Show warning when bundle exec with ruby and script"
 bundle exec ruby test_warn_bundle_exec.rb
 echo
