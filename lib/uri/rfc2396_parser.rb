@@ -539,7 +539,7 @@ module URI
 
   # Backward compatibility for URI::REGEXP::PATTERN::*
   RFC2396_Parser.new.pattern.each_pair do |sym, str|
-    unless RFC2396_REGEXP::PATTERN.const_defined?(sym)
+    unless RFC2396_REGEXP::PATTERN.const_defined?(sym, false)
       RFC2396_REGEXP::PATTERN.const_set(sym, str)
     end
   end

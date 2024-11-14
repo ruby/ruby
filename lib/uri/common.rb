@@ -34,7 +34,7 @@ module URI
     end
 
     Parser.new.regexp.each_pair do |sym, str|
-      remove_const(sym) if const_defined?(sym)
+      remove_const(sym) if const_defined?(sym, false)
       const_set(sym, str)
     end
   end
