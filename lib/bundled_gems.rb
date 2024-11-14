@@ -52,7 +52,7 @@ module Gem::BUNDLED_GEMS
   WARNED = {}                   # unfrozen
 
   conf = ::RbConfig::CONFIG
-  if !File.exist?(conf["rubylibdir"])
+  if ENV["TEST_BUNDLED_GEMS"]
     LIBDIR = (File.expand_path(File.join(__dir__, "..", "lib")) + "/").freeze
   else
     LIBDIR = (conf["rubylibdir"] + "/").freeze

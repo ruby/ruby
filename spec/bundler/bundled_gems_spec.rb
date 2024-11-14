@@ -1,6 +1,8 @@
 require "bundled_gems"
 
 RSpec.describe "bundled_gems.rb" do
+  ENV["TEST_BUNDLED_GEMS"] = "true"
+
   def script(code, options = {})
     options[:artifice] ||= "compact_index"
     ruby("require 'bundler/inline'\n\n" + code, options)
