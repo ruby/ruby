@@ -63,7 +63,7 @@ require 'prettyprint'
 
 class PP < PrettyPrint
 
-  VERSION = "0.6.0"
+  VERSION = "0.6.1"
 
   # Returns the usable width for +out+.
   # As the width of +out+:
