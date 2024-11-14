@@ -103,9 +103,20 @@ class Gem::FakeFetcher
     @requests.last
   end
 
+  class FakeSocket < StringIO
+    def continue_timeout
+      1
+    end
+  end
+
   def request(uri, request_class, last_modified = nil)
     @requests << request_class.new(uri.request_uri)
     yield last_request if block_given?
+
+    # Ensure multipart request bodies are generated
+    socket = FakeSocket.new
+    last_request.exec socket.binmode, "1.1", last_request.path
+    _, last_request.body = socket.string.split("\r\n\r\n", 2)
 
     create_response(uri)
   end
