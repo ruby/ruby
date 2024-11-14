@@ -34,11 +34,7 @@ module Bundler
         specs_for_dep = specs_for_dependency(*dep, most_specific_locked_platform)
         if specs_for_dep.any?
           specs.concat(specs_for_dep)
-
-          specs_for_dep.first.dependencies.each do |d|
-            next if d.type == :development
-            deps << [d, platform]
-          end
+          deps.concat(specs_for_dep.first.runtime_dependencies.map {|d| [d, platform] })
         else
           incomplete = true
         end
