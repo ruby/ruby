@@ -964,19 +964,7 @@ module Bundler
 
         # Path sources have special logic
         if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
-          new_specs = begin
-            s.source.specs
-          rescue PathError
-            # if we won't need the source (according to the lockfile),
-            # don't error if the path source isn't available
-            next if specs.
-                    for(requested_dependencies, false).
-                    none? {|locked_spec| locked_spec.source == s.source }
-
-            raise
-          end
-
-          new_spec = new_specs[s].first
+          new_spec = s.source.specs[s].first
           if new_spec
             s.dependencies.replace(new_spec.dependencies)
           else
