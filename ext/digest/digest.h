@@ -76,7 +76,17 @@ rb_id_metadata(void)
 static inline VALUE
 rb_digest_make_metadata(const rb_digest_metadata_t *meta)
 {
-#ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+#if EXTSTATIC
+  // The extension is built as a static library, so safe to refer to
+  // rb_digest_wrap_metadata directly.
+  extern VALUE rb_digest_wrap_metadata(const rb_digest_metadata_t *meta);
+  return rb_digest_wrap_metadata(meta);
+#else
+  // The extension is built as a shared library, so we can't refer to
+  // rb_digest_wrap_metadata directly.
+# ifdef DIGEST_USE_RB_EXT_RESOLVE_SYMBOL
+    // If rb_ext_resolve_symbol() is available, use it to get the address of
+    // rb_digest_wrap_metadata.
     typedef VALUE (*wrapper_func_type)(const rb_digest_metadata_t *meta);
     static wrapper_func_type wrapper;
     if (!wrapper) {
@@ -85,9 +95,11 @@ rb_digest_make_metadata(const rb_digest_metadata_t *meta)
         if (!wrapper) rb_raise(rb_eLoadError, "rb_digest_wrap_metadata not found");
     }
     return wrapper(meta);
-#else
-#undef RUBY_UNTYPED_DATA_WARNING
-#define RUBY_UNTYPED_DATA_WARNING 0
+# else
+    // If rb_ext_resolve_symbol() is not available, keep using untyped data.
+# undef RUBY_UNTYPED_DATA_WARNING
+# define RUBY_UNTYPED_DATA_WARNING 0
     return rb_obj_freeze(Data_Wrap_Struct(0, 0, 0, (void *)meta));
+# endif
 #endif
 }
