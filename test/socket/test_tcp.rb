@@ -142,7 +142,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -171,7 +171,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_hostname_resolved_earlier
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -196,7 +196,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -226,7 +226,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -254,7 +254,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -284,7 +284,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -309,7 +309,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -331,7 +331,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
@@ -356,7 +356,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_connection_failure_after_hostname_resolution_failure
-    return # TODO To suppress the output of test failure logs in CI temporarily
+    pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
     opts = %w[-rsocket -W1]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
