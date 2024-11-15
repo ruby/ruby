@@ -193,6 +193,36 @@ RSpec.describe "bundled_gems.rb" do
     # test_warn_bootsnap_rubyarchdir_gem.rb:14: warning: ...
   end
 
+  it "Show warning with bootsnap and some gem in Gemfile" do
+    build_lib "childprocess", "5.0.0" do |s|
+      # bootsnap expand required feature to full path
+      # require 'logger'
+      rubylibpath = File.expand_path(File.join(__dir__, "..", "..", "lib"))
+      s.write "lib/childprocess.rb", "require '#{rubylibpath}/logger'"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "https://rubygems.org"
+        # gem "bootsnap", require: false
+        path "#{lib_path}" do
+          gem "childprocess", "5.0.0"
+        end
+      end
+
+      # require 'bootsnap'
+      # Bootsnap.setup(cache_dir: 'tmp/cache')
+
+      # bootsnap expand required feature to full path
+      # require 'childprocess'
+      require Gem.loaded_specs["childprocess"].full_gem_path + '/lib/childprocess'
+    RUBY
+
+    expect(err).to include(/logger was loaded from (.*) from Ruby 3.5.0/)
+    # TODO: We should assert caller location like below:
+    # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
+  end
+
   it "Don't show warning fiddle/import when fiddle on Gemfile" do
     build_lib "fiddle", "1.0.0" do |s|
       s.write "lib/fiddle.rb", "puts 'fiddle'"
