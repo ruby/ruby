@@ -1,9 +1,5 @@
 #!/bin/bash
 
-echo "* Show warning when bundled gems called as dependency"
-ruby test_warn_dependency.rb
-echo
-
 echo "* Show warning sub-feature like bigdecimal/util"
 ruby test_warn_sub_feature.rb
 echo

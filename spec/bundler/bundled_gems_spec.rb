@@ -25,6 +25,27 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
   end
 
+  it "Show warning when bundled gems called as dependency" do
+    build_lib "activesupport", "7.0.7.2" do |s|
+      s.write "lib/active_support/all.rb", "require 'ostruct'"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      gemfile do
+        source "https://gem.repo1"
+        path "#{lib_path}" do
+          gem "activesupport", "7.0.7.2"
+        end
+      end
+
+      require "active_support/all"
+    RUBY
+
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    # TODO: We should assert caller location like below:
+    # $GEM_HOME/gems/activesupport-7.0.7.2/lib/active_support/core_ext/big_decimal.rb:3: warning: bigdecimal ...
+  end
+
   it "Show warning dash gem like net/smtp" do
     script <<-RUBY
       gemfile do
