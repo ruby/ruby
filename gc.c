@@ -2771,7 +2771,8 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
 }
 
 int
-rb_gc_external_gc_loaded_p(void) {
+rb_gc_external_gc_loaded_p(void)
+{
     return external_gc_loaded;
 }
 
@@ -2780,7 +2781,7 @@ rb_gc_active_gc_name(void)
 {
     const char *gc_name = rb_gc_impl_active_gc_name();
     if (strlen(gc_name) > RB_GC_MAX_NAME_LEN) {
-        rb_bug("GC should have a name shorter than %d chars. Currently: %lu (%s)\n",
+        rb_bug("GC should have a name shorter than %d chars. Currently: %lu (%s)",
             RB_GC_MAX_NAME_LEN, strlen(gc_name), gc_name);
     }
     return gc_name;
