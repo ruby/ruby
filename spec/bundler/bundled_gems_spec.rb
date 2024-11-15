@@ -74,6 +74,20 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
   end
 
+  it "Show warning when bundle exec with shebang's script" do
+    code = <<-RUBY
+      #!/usr/bin/env ruby
+      require "ostruct"
+    RUBY
+    create_file("script.rb", code)
+    FileUtils.chmod(0o777, bundled_app("script.rb"))
+    create_file("Gemfile", "source 'https://rubygems.org'")
+
+    bundle "exec ./script.rb"
+
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+  end
+
   it "Show warning when warn is not the standard one in the current scope" do
     script <<-RUBY
       module My
