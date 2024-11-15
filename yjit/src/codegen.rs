@@ -8136,53 +8136,16 @@ fn gen_send_iseq(
         pc: None, // We are calling into jitted code, which will set the PC as necessary
     }));
 
-    // Create a context for the callee
-    let mut callee_ctx = Context::default();
-
-    // Transfer some stack temp registers to the callee's locals for arguments.
-    let mapped_temps = if !forwarding {
-        asm.map_temp_regs_to_args(&mut callee_ctx, argc)
-    } else {
-        // When forwarding, the callee's local table has only a callinfo,
-        // so we can't map the actual arguments to the callee's locals.
-        vec![]
-    };
-
-    // Spill stack temps and locals that are not used by the callee.
-    // This must be done before changing the SP register.
-    asm.spill_regs_except(&mapped_temps);
-
-    // Saving SP before calculating ep avoids a dependency on a register
-    // However this must be done after referencing frame.recv, which may be SP-relative
-    asm.mov(SP, callee_sp);
-
-    // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
-    // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
-    if get_option!(gen_stats) {
-        // Protect caller-saved registers in case they're used for arguments
-        asm.cpush_all();
-
-        // Assemble the ISEQ name string
-        let name_str = get_iseq_name(iseq);
-
-        // Get an index for this ISEQ name
-        let iseq_idx = get_iseq_idx(&name_str);
-
-        // Increment the counter for this cfunc
-        asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
-        asm.cpop_all();
-    }
-
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
     // mov(cb, REG0, const_ptr_opnd(start_pc));
     // mov(cb, member_opnd(REG_CFP, rb_control_frame_t, pc), REG0);
 
-    // Stub so we can return to JITted code
-    let return_block = BlockId {
-        iseq: jit.iseq,
-        idx: jit.next_insn_idx(),
-    };
+    // Create a blockid for the callee
+    let callee_blockid = BlockId { iseq, idx: start_pc_offset };
+
+    // Create a context for the callee
+    let mut callee_ctx = Context::default();
 
     // If the callee has :inline_block annotation and the callsite has a block ISEQ,
     // duplicate a callee block for each block ISEQ to make its `yield` monomorphic.
@@ -8211,27 +8174,88 @@ fn gen_send_iseq(
     };
     callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type);
 
-    // Now that callee_ctx is prepared, discover a block that can be reused if we move some registers.
-    // If there's such a block, move registers accordingly to avoid creating a new block.
-    let blockid = BlockId { iseq, idx: start_pc_offset };
-    if !mapped_temps.is_empty() {
-        // Discover a block that have the same things in different (or same) registers
-        if let Some(block_ctx) = find_block_ctx_with_same_regs(blockid, &callee_ctx) {
-            // List pairs of moves for making the register mappings compatible
+    // Spill or preserve argument registers
+    if forwarding {
+        // When forwarding, the callee's local table has only a callinfo,
+        // so we can't map the actual arguments to the callee's locals.
+        asm.spill_regs();
+    } else {
+        // Discover stack temp registers that can be used as the callee's locals
+        let mapped_temps = asm.map_temp_regs_to_args(&mut callee_ctx, argc);
+
+        // Spill stack temps and locals that are not used by the callee.
+        // This must be done before changing the SP register.
+        asm.spill_regs_except(&mapped_temps);
+
+        // If the callee block has been compiled before, spill/move registers to reuse the existing block
+        // for minimizing the number of blocks we need to compile.
+        if let Some(existing_reg_mapping) = find_most_compatible_reg_mapping(callee_blockid, &callee_ctx) {
+            asm_comment!(asm, "reuse maps: {:?} -> {:?}", callee_ctx.get_reg_mapping(), existing_reg_mapping);
+
+            // Spill registers that are not used by the existing block
+            for &reg_opnd in callee_ctx.get_reg_mapping().get_reg_opnds().iter() {
+                if existing_reg_mapping.get_reg(reg_opnd).is_none() {
+                    match reg_opnd {
+                        RegOpnd::Local(local_idx) => {
+                            let spilled_temp = asm.stack_opnd(argc - local_idx as i32 - 1);
+                            asm.spill_reg(spilled_temp);
+                            callee_ctx.dealloc_reg(reg_opnd);
+                        }
+                        RegOpnd::Stack(_) => unreachable!("callee {:?} should have been spilled", reg_opnd),
+                    }
+                }
+            }
+            assert!(callee_ctx.get_reg_mapping().get_reg_opnds().len() <= existing_reg_mapping.get_reg_opnds().len());
+
+            // Load registers that are currently not used but used by the existing block
+            for &reg_opnd in existing_reg_mapping.get_reg_opnds().iter() {
+                if callee_ctx.get_reg_mapping().get_reg(reg_opnd).is_none() {
+                    match reg_opnd {
+                        RegOpnd::Local(local_idx) => {
+                            callee_ctx.alloc_reg(reg_opnd);
+                            let loaded_reg = TEMP_REGS[callee_ctx.get_reg_mapping().get_reg(reg_opnd).unwrap()];
+                            let loaded_temp = asm.stack_opnd(argc - local_idx as i32 - 1);
+                            asm.load_into(Opnd::Reg(loaded_reg), loaded_temp);
+                        }
+                        RegOpnd::Stack(_) => unreachable!("diff_allowing_reg_mismatch should not leave {:?}", reg_opnd),
+                    }
+                }
+            }
+            assert_eq!(callee_ctx.get_reg_mapping().get_reg_opnds().len(), existing_reg_mapping.get_reg_opnds().len());
+
+            // Shuffle registers to make the register mappings compatible
             let mut moves = vec![];
             for &reg_opnd in callee_ctx.get_reg_mapping().get_reg_opnds().iter() {
                 let old_reg = TEMP_REGS[callee_ctx.get_reg_mapping().get_reg(reg_opnd).unwrap()];
-                let new_reg = TEMP_REGS[block_ctx.get_reg_mapping().get_reg(reg_opnd).unwrap()];
+                let new_reg = TEMP_REGS[existing_reg_mapping.get_reg(reg_opnd).unwrap()];
                 moves.push((new_reg, Opnd::Reg(old_reg)));
             }
-
-            // Shuffle them to break cycles and generate the moves
-            let moves = Assembler::reorder_reg_moves(&moves);
-            for (reg, opnd) in moves {
+            for (reg, opnd) in Assembler::reorder_reg_moves(&moves) {
                 asm.load_into(Opnd::Reg(reg), opnd);
             }
-            callee_ctx.set_reg_mapping(block_ctx.get_reg_mapping());
+            callee_ctx.set_reg_mapping(existing_reg_mapping);
         }
+    }
+
+    // Update SP register for the callee. This must be done after referencing frame.recv,
+    // which may be SP-relative.
+    asm.mov(SP, callee_sp);
+
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
+    // We also do this after spill_regs() to avoid doubly spilling the same thing on asm.ccall().
+    if get_option!(gen_stats) {
+        // Protect caller-saved registers in case they're used for arguments
+        asm.cpush_all();
+
+        // Assemble the ISEQ name string
+        let name_str = get_iseq_name(iseq);
+
+        // Get an index for this ISEQ name
+        let iseq_idx = get_iseq_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
+        asm.cpop_all();
     }
 
     // The callee might change locals through Kernel#binding and other means.
@@ -8245,6 +8269,12 @@ fn gen_send_iseq(
     return_asm.ctx.set_sp_offset(0); // We set SP on the caller's frame above
     return_asm.ctx.reset_chain_depth_and_defer();
     return_asm.ctx.set_as_return_landing();
+
+    // Stub so we can return to JITted code
+    let return_block = BlockId {
+        iseq: jit.iseq,
+        idx: jit.next_insn_idx(),
+    };
 
     // Write the JIT return address on the callee frame
     jit.gen_branch(
@@ -8266,7 +8296,7 @@ fn gen_send_iseq(
     gen_direct_jump(
         jit,
         &callee_ctx,
-        blockid,
+        callee_blockid,
         asm,
     );
 
