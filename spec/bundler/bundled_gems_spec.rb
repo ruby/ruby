@@ -223,6 +223,25 @@ RSpec.describe "bundled_gems.rb" do
     # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
   end
 
+  it "Show warning with zeitwerk" do
+    libpath = Dir[Spec::Path.base_system_gem_path.join("gems/{zeitwerk}-*/lib")].map(&:to_s).first
+    code = <<-RUBY
+      $LOAD_PATH.unshift("#{libpath}")
+      require "zeitwerk"
+      loader = Zeitwerk::Loader.for_gem(warn_on_extra_files: false)
+      loader.setup
+
+      require 'ostruct'
+    RUBY
+    create_file("script.rb", code)
+    create_file("Gemfile", "source 'https://rubygems.org'")
+    bundle "exec ruby script.rb"
+
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    # TODO: We should assert caller location like below:
+    # test_warn_zeitwerk.rb:15: warning: ...
+  end
+
   it "Don't show warning fiddle/import when fiddle on Gemfile" do
     build_lib "fiddle", "1.0.0" do |s|
       s.write "lib/fiddle.rb", "puts 'fiddle'"
