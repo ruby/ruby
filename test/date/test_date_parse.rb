@@ -589,10 +589,13 @@ class TestDateParse < Test::Unit::TestCase
   end
 
   def test__parse_too_long_year
-    str = "Jan 1" + "0" * 100_000
-    h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
-    assert_equal(100_000, Math.log10(h[:year]))
-    assert_equal(1, h[:mon])
+    # Math.log10 does not support so big numbers like 10^100_000 on TruffleRuby
+    unless RUBY_ENGINE == 'truffleruby'
+      str = "Jan 1" + "0" * 100_000
+      h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
+      assert_equal(100_000, Math.log10(h[:year]))
+      assert_equal(1, h[:mon])
+    end
 
     str = "Jan - 1" + "0" * 100_000
     h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
