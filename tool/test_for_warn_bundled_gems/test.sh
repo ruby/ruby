@@ -1,9 +1,5 @@
 #!/bin/bash
 
-echo "* Show warning sub-feature like bigdecimal/util"
-ruby test_warn_sub_feature.rb
-echo
-
 echo "* Show warning with bootsnap"
 ruby test_warn_bootsnap.rb
 echo
