@@ -173,6 +173,26 @@ RSpec.describe "bundled_gems.rb" do
     # test_warn_bootsnap.rb:14: warning: ...
   end
 
+  it "Show warning with bootsnap for gem with native extension" do
+    script <<-RUBY
+      gemfile do
+        source "https://rubygems.org"
+        # gem "bootsnap", require: false
+      end
+
+      # require 'bootsnap'
+      # Bootsnap.setup(cache_dir: 'tmp/cache')
+
+      # bootsnap expand required feature to full path
+      # require 'fiddle'
+      require Gem::BUNDLED_GEMS::ARCHDIR + "fiddle"
+    RUBY
+
+    expect(err).to include(/fiddle was loaded from (.*) from Ruby 3.5.0/)
+    # TODO: We should assert caller location like below:
+    # test_warn_bootsnap_rubyarchdir_gem.rb:14: warning: ...
+  end
+
   it "Don't show warning fiddle/import when fiddle on Gemfile" do
     build_lib "fiddle", "1.0.0" do |s|
       s.write "lib/fiddle.rb", "puts 'fiddle'"
