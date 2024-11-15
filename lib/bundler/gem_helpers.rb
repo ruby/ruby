@@ -68,6 +68,8 @@ module Bundler
     module_function :select_best_local_platform_match
 
     def sort_best_platform_match(matching, platform)
+      return matching if matching.one?
+
       exact = matching.select {|spec| spec.platform == platform }
       return exact if exact.any?
 
