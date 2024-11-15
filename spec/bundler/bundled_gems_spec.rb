@@ -153,6 +153,26 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to be_empty
   end
 
+  it "Don't show warning fiddle/import when fiddle on Gemfile" do
+    build_lib "fiddle", "1.0.0" do |s|
+      s.write "lib/fiddle.rb", "puts 'fiddle'"
+      s.write "lib/fiddle/import.rb", "puts 'fiddle/import'"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      gemfile do
+        source "https://gem.repo1"
+        path "#{lib_path}" do
+          gem "fiddle"
+        end
+      end
+
+      require "fiddle/import"
+    RUBY
+
+    expect(err).to be_empty
+  end
+
   it "Don't show warning with net/smtp when net-smtp on Gemfile" do
     build_lib "net-smtp", "1.0.0" do |s|
       s.write "lib/net/smtp.rb", "puts 'net-smtp'"
