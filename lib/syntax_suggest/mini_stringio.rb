@@ -5,6 +5,10 @@ module SyntaxSuggest
   #
   # Acts like a StringIO with reduced API, but without having to require that
   # class.
+  #
+  # The original codebase emitted directly to $stderr, but now SyntaxError#detailed_message
+  # needs a string output. To accomplish that we kept the original print infrastructure in place and
+  # added this class to accumulate the print output into a string.
   class MiniStringIO
     EMPTY_ARG = Object.new
 
