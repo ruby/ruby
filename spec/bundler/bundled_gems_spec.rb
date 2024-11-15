@@ -63,4 +63,23 @@ RSpec.describe "bundled_gems.rb" do
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
   end
+
+  it "Don't show warning with net/smtp when net-smtp on Gemfile" do
+    build_lib "net-smtp", "1.0.0" do |s|
+      s.write "lib/net/smtp.rb", "puts 'net-smtp'"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      gemfile do
+        source "https://gem.repo1"
+        path "#{lib_path}" do
+          gem "net-smtp"
+        end
+      end
+
+      require "net/smtp"
+    RUBY
+
+    expect(err).to be_empty
+  end
 end
