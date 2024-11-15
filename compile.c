@@ -4172,6 +4172,51 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         }
     }
 
+    /*
+     * duparray [...]
+     * some insn for the arg...
+     * send     <calldata!mid:include?, argc:1, ARGS_SIMPLE>, nil
+     * =>
+     * arg insn...
+     * opt_duparray_send [...], :include?, 1
+     */
+    if (IS_INSN_ID(iobj, duparray) && iobj->link.next && IS_INSN(iobj->link.next)) {
+        INSN *niobj = (INSN *)iobj->link.next;
+        if ((IS_INSN_ID(niobj, getlocal) ||
+             IS_INSN_ID(niobj, getinstancevariable) ||
+             IS_INSN_ID(niobj, putself)) &&
+            IS_NEXT_INSN_ID(&niobj->link, send)) {
+
+            LINK_ELEMENT *sendobj = &(niobj->link); // Below we call ->next;
+            const struct rb_callinfo *ci;
+            // Allow any number (0 or more) of simple method calls on the argument
+            // (as in `[...].include?(arg.method1.method2)`.
+            do {
+                sendobj = sendobj->next;
+                ci = (struct rb_callinfo *)OPERAND_AT(sendobj, 0);
+            } while (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && IS_NEXT_INSN_ID(sendobj, send));
+
+            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idIncludeP) {
+                // Move the array arg from duparray to opt_duparray_send.
+                VALUE ary = iobj->operands[0];
+                rb_obj_reveal(ary, rb_cArray);
+
+                INSN *sendins = (INSN *)sendobj;
+                sendins->insn_id = BIN(opt_duparray_send);
+                sendins->operand_size = insn_len(sendins->insn_id) - 1;;
+                sendins->operands = compile_data_calloc2(iseq, sendins->operand_size, sizeof(VALUE));
+                sendins->operands[0] = ary;
+                sendins->operands[1] = rb_id2sym(idIncludeP);
+                sendins->operands[2] = INT2FIX(1);
+
+                // Remove the duparray insn.
+                ELEM_REMOVE(&iobj->link);
+                return COMPILE_OK;
+            }
+        }
+    }
+
+
     if (IS_INSN_ID(iobj, send)) {
         const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT(iobj, 0);
         const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);

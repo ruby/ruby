@@ -6153,6 +6153,29 @@ vm_opt_str_freeze(VALUE str, int bop, ID id)
 #define id_cmp idCmp
 
 static VALUE
+vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE target)
+{
+    if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_includes(ary, target);
+    }
+    else {
+        VALUE args[1] = {target};
+
+        // duparray
+        RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
+        VALUE dupary = rb_ary_resurrect(ary);
+
+        return rb_vm_call_with_refinements(ec, dupary, idIncludeP, 1, args, RB_NO_KEYWORDS);
+    }
+}
+
+VALUE
+rb_vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE target)
+{
+    return vm_opt_duparray_include_p(ec, ary, target);
+}
+
+static VALUE
 vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_MAX, ARRAY_REDEFINED_OP_FLAG)) {

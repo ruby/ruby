@@ -214,6 +214,17 @@ tests = [
     'true'.freeze
   },
 
+  [ 'opt_duparray_send', %q{ x = :a; [:a, :b].include?(x) }, ],
+  [ 'opt_duparray_send', <<-'},', ], # {
+    class Array
+      def include?(i)
+        i == 1
+      end
+    end
+    x = 1
+    [:a, :b].include?(x)
+  },
+
   [ 'opt_newarray_send', %q{ ![ ].hash.nil? }, ],
 
   [ 'opt_newarray_send', %q{ [ ].max.nil? }, ],

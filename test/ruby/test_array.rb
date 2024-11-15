@@ -1114,6 +1114,33 @@ class TestArray < Test::Unit::TestCase
     assert_not_include(a, [1,2])
   end
 
+  def test_monkey_patch_include?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      $-w = false
+      class Array
+        alias :old_include? :include?
+        def include? x
+          return true if x == :always
+          old_include?(x)
+        end
+      end
+      def test
+        a, c, always = :a, :c, :always
+        [
+          [:a, :b].include?(a),
+          [:a, :b].include?(c),
+          [:a, :b].include?(always),
+        ]
+      end
+      v = test
+      class Array
+        alias :include? :old_include?
+      end
+      assert_equal [true, false, true], v
+    end;
+  end
+
   def test_intersect?
     a = @cls[ 1, 2, 3]
     assert_send([a, :intersect?, [3]])
