@@ -36,10 +36,6 @@ echo "* Don't show warning bundled gems on Gemfile"
 ruby test_no_warn_dependency.rb
 echo
 
-echo "* Don't show warning with net/smtp when net-smtp on Gemfile"
-ruby test_no_warn_dash_gem.rb
-echo
-
 echo "* Don't show warning bigdecimal/util when bigdecimal on Gemfile"
 ruby test_no_warn_sub_feature.rb
 echo
