@@ -62,6 +62,18 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include("You can add net-smtp")
   end
 
+  it "Show warning sub-feature like fiddle/import" do
+    script <<-RUBY
+      gemfile do
+        source "https://rubygems.org"
+      end
+
+      require "fiddle/import"
+    RUBY
+
+    expect(err).to include(/fiddle was loaded from (.*) from Ruby 3.5.0/)
+  end
+
   it "Show warning when bundle exec with ruby and script" do
     code = <<-RUBY
       require "ostruct"
