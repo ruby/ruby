@@ -80,9 +80,6 @@ module Bundler
         if resolve_if_needed(options)
           ensure_specs_are_compatible!
           Bundler.load_plugins(@definition)
-          options.delete(:jobs)
-        else
-          options[:jobs] = 1 # to avoid the overhead of Bundler::Worker
         end
         install(options)
 
@@ -197,18 +194,14 @@ module Bundler
       standalone = options[:standalone]
       force = options[:force]
       local = options[:local]
-      jobs = installation_parallelization(options)
+      jobs = installation_parallelization
       spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
     end
 
-    def installation_parallelization(options)
-      if jobs = options.delete(:jobs)
-        return jobs
-      end
-
+    def installation_parallelization
       if jobs = Bundler.settings[:jobs]
         return jobs
       end
@@ -233,7 +226,8 @@ module Bundler
     def resolve_if_needed(options)
       @definition.prefer_local! if options[:"prefer-local"]
 
-      if options[:local] || (@definition.no_resolve_needed? && !@definition.missing_specs?)
+      if options[:local] || @definition.no_install_needed?
+        Bundler.settings.set_command_option(:jobs, 1) if @definition.no_install_needed? # to avoid the overhead of Bundler::Worker
         @definition.resolve_with_cache!
         false
       else

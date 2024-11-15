@@ -503,6 +503,10 @@ module Bundler
         !@locked_spec_with_invalid_deps
     end
 
+    def no_install_needed?
+      no_resolve_needed? && !missing_specs?
+    end
+
     def no_resolve_needed?
       !unlocking? && nothing_changed?
     end
