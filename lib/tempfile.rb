@@ -593,9 +593,7 @@ private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
-File.open(IO::NULL) do |f|
-  File.new(f.fileno, autoclose: false, path: "").path
-rescue IOError
+if RUBY_VERSION < "3.2"
   module PathAttr               # :nodoc:
     attr_reader :path
 
