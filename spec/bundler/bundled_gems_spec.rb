@@ -62,6 +62,18 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include("You can add net-smtp")
   end
 
+  it "Show warning when bundle exec with ruby and script" do
+    code = <<-RUBY
+      require "ostruct"
+    RUBY
+    create_file("script.rb", code)
+    create_file("Gemfile", "source 'https://rubygems.org'")
+
+    bundle "exec ruby script.rb"
+
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+  end
+
   it "Show warning when warn is not the standard one in the current scope" do
     script <<-RUBY
       module My
