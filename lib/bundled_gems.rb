@@ -55,7 +55,8 @@ module Gem::BUNDLED_GEMS
   conf = ::RbConfig::CONFIG
   if ENV["TEST_BUNDLED_GEMS"]
     LIBDIR = (File.expand_path(File.join(__dir__, "..", "lib")) + "/").freeze
-    ARCHDIR = (File.expand_path(File.join(__dir__, "..", ".ext/common")) + "/").freeze
+    rubyarchdir = $LOAD_PATH.find{|path| path.include?(".ext/common") }
+    ARCHDIR = (File.expand_path(rubyarchdir) + "/").freeze
   else
     LIBDIR = (conf["rubylibdir"] + "/").freeze
     ARCHDIR = (conf["rubyarchdir"] + "/").freeze
