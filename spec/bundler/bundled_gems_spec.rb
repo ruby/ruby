@@ -85,6 +85,29 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
   end
 
+  it "Show warning when bundled gems called as dependency" do
+    build_lib "activesupport", "7.0.7.2" do |s|
+      s.write "lib/active_support/all.rb", "require 'ostruct'"
+    end
+    build_lib "ostruct", "1.0.0" do |s|
+      s.write "lib/ostruct.rb", "puts 'ostruct'"
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+      gemfile do
+        source "https://gem.repo1"
+        path "#{lib_path}" do
+          gem "activesupport", "7.0.7.2"
+          gem "ostruct"
+        end
+      end
+
+      require "active_support/all"
+    RUBY
+
+    expect(err).to be_empty
+  end
+
   it "Don't show warning with net/smtp when net-smtp on Gemfile" do
     build_lib "net-smtp", "1.0.0" do |s|
       s.write "lib/net/smtp.rb", "puts 'net-smtp'"

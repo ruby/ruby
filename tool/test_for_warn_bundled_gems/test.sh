@@ -28,10 +28,6 @@ echo "* Show warning with zeitwerk"
 ruby test_warn_zeitwerk.rb
 echo
 
-echo "* Don't show warning bundled gems on Gemfile"
-ruby test_no_warn_dependency.rb
-echo
-
 echo "* Don't show warning bigdecimal/util when bigdecimal on Gemfile"
 ruby test_no_warn_sub_feature.rb
 echo
