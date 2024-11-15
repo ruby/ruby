@@ -824,6 +824,7 @@ pub(crate) mod ids {
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
         name: eq                 content: b"=="
+        name: include_p          content: b"include?"
     }
 }
 
