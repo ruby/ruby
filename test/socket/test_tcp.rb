@@ -156,7 +156,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       server_thread = Thread.new { server.accept }
       port = server.addr[1]
 
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 1000 } })
+      socket = TCPSocket.new(
+        "localhost",
+        port,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 1000 } }
+      )
       assert_true(socket.remote_address.ipv6?)
       server_thread.value.close
       server.close
@@ -174,7 +179,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       port = server.addr[1]
 
       server_thread = Thread.new { server.accept }
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv6: 1000 } })
+      socket = TCPSocket.new(
+        "localhost",
+        port,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv6: 1000 } }
+      )
 
       assert_true(socket.remote_address.ipv4?)
       server_thread.value.close
@@ -199,7 +209,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       delay_time = 25 # Socket::RESOLUTION_DELAY (private) is 50ms
 
       server_thread = Thread.new { server.accept }
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv6: delay_time } })
+      socket = TCPSocket.new(
+        "localhost",
+        port,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv6: delay_time } }
+      )
       assert_true(socket.remote_address.ipv6?)
       server_thread.value.close
       server.close
@@ -219,7 +234,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       port = ipv4_server.connect_address.ip_port
 
       ipv4_server_thread = Thread.new { ipv4_server.listen(1); ipv4_server.accept }
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 10 } })
+      socket = TCPSocket.new(
+        "localhost",
+        port,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 10 } }
+      )
       assert_equal(ipv4_address, socket.remote_address.ip_address)
 
       accepted, _ = ipv4_server_thread.value
@@ -240,7 +260,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       port = ipv4_server.connect_address.ip_port
 
       ipv4_server_thread = Thread.new { ipv4_server.listen(1); ipv4_server.accept }
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv6: 25 } })
+      socket = TCPSocket.new(
+        "localhost",
+        port,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv6: 25 } }
+      )
 
       assert_equal(
         socket.remote_address.ipv4?,
@@ -263,7 +288,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       port = server.addr[1]
 
       server_thread = Thread.new { server.accept }
-      socket = TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 10 }, error: { ipv6: Socket::EAI_FAIL } })
+      socket = TCPSocket.new(
+        "localhost",
+        port,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 10 }, error: { ipv6: Socket::EAI_FAIL } }
+      )
 
       assert_true(socket.remote_address.ipv4?)
       server_thread.value.close
@@ -282,7 +312,13 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
 
     begin;
       assert_raise(Errno::ETIMEDOUT) do
-        TCPSocket.new("localhost", port, resolv_timeout: 0.01, test_mode_settings: { delay: { ipv4: 1000 } })
+        TCPSocket.new(
+          "localhost",
+          port,
+          resolv_timeout: 0.01,
+          fast_fallback: true,
+          test_mode_settings: { delay: { ipv4: 1000 } }
+        )
       end
     end;
   end
@@ -301,7 +337,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
 
     begin;
       assert_raise(Socket::ResolutionError) do
-        TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 100 }, error: { ipv4: Socket::EAI_FAIL } })
+        TCPSocket.new(
+          "localhost",
+          port,
+          fast_fallback: true,
+          test_mode_settings: { delay: { ipv4: 100 }, error: { ipv4: Socket::EAI_FAIL } }
+        )
       end
     end;
   end
@@ -316,7 +357,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
 
     begin;
       assert_raise(Errno::ECONNREFUSED) do
-        TCPSocket.new("localhost", port, test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_FAIL } })
+        TCPSocket.new(
+          "localhost",
+          port,
+          fast_fallback: true,
+          test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_FAIL } }
+        )
       end
     end;
   end
