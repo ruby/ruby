@@ -47,6 +47,7 @@ module Gem::BUNDLED_GEMS
     "drb" => true,
     "rinda" => true,
     "syslog" => true,
+    "fiddle" => true,
   }.freeze
 
   WARNED = {}                   # unfrozen
