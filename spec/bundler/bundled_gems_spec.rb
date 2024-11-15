@@ -153,6 +153,26 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to be_empty
   end
 
+  it "Show warning with bootsnap cases" do
+    script <<-RUBY
+      gemfile do
+        source "https://rubygems.org"
+        # gem "bootsnap", require: false
+      end
+
+      # require 'bootsnap'
+      # Bootsnap.setup(cache_dir: 'tmp/cache')
+
+      # bootsnap expand required feature to full path
+      # require 'csv'
+      require Gem::BUNDLED_GEMS::LIBDIR + 'ostruct'
+    RUBY
+
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    # TODO: We should assert caller location like below:
+    # test_warn_bootsnap.rb:14: warning: ...
+  end
+
   it "Don't show warning fiddle/import when fiddle on Gemfile" do
     build_lib "fiddle", "1.0.0" do |s|
       s.write "lib/fiddle.rb", "puts 'fiddle'"
