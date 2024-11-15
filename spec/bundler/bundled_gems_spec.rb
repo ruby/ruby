@@ -88,6 +88,13 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
   end
 
+  it "Show warning when bundle exec with -r option" do
+    create_file("Gemfile", "source 'https://rubygems.org'")
+    bundle "exec ruby -rostruct -e ''"
+
+    expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+  end
+
   it "Show warning when warn is not the standard one in the current scope" do
     script <<-RUBY
       module My
@@ -151,5 +158,13 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to be_empty
+  end
+
+  it "Don't show warning for reline when using irb from standard library" do
+    create_file("Gemfile", "source 'https://rubygems.org'")
+    bundle "exec ruby -rirb -e ''"
+
+    expect(err).to include(/irb was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to_not include(/reline was loaded from (.*) from Ruby 3.5.0/)
   end
 end

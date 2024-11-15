@@ -4,10 +4,6 @@ echo "* Show warning sub-feature like bigdecimal/util"
 ruby test_warn_sub_feature.rb
 echo
 
-echo "* Show warning when bundle exec with -r option"
-bundle exec ruby -rostruct -e ''
-echo
-
 echo "* Show warning with bootsnap"
 ruby test_warn_bootsnap.rb
 echo
@@ -26,8 +22,4 @@ echo
 
 echo "* Show warning with bootsnap and some gem in Gemfile"
 ruby test_warn_bootsnap_and_gem.rb
-echo
-
-echo "* Don't show warning for reline when using irb from standard library"
-bundle exec ruby -rirb -e ''
 echo
