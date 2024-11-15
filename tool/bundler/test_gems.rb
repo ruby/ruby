@@ -13,3 +13,6 @@ gem "rake", "~> 13.1"
 gem "builder", "~> 3.2"
 gem "rb_sys"
 gem "rubygems-generate_index", "~> 1.1"
+
+# for bundled_gems_spec.rb
+gem "zeitwerk", "~> 2.7"
