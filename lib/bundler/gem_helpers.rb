@@ -63,7 +63,7 @@ module Bundler
     module_function :select_best_platform_match
 
     def select_best_local_platform_match(specs, force_ruby: false)
-      select_best_platform_match(specs, local_platform, force_ruby: force_ruby).filter_map(&:materialize_for_installation)
+      select_best_platform_match(specs, local_platform, force_ruby: force_ruby).filter_map(&:materialized_for_installation)
     end
     module_function :select_best_local_platform_match
 

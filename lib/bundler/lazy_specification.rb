@@ -8,7 +8,7 @@ module Bundler
     include MatchPlatform
     include ForcePlatform
 
-    attr_reader :name, :version, :platform
+    attr_reader :name, :version, :platform, :materialization
     attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version
 
     #
@@ -46,6 +46,15 @@ module Bundler
 
       @force_ruby_platform = default_force_ruby_platform
       @most_specific_locked_platform = nil
+      @materialization = nil
+    end
+
+    def missing?
+      @materialization == self
+    end
+
+    def incomplete?
+      @materialization.nil?
     end
 
     def source_changed?
@@ -119,6 +128,12 @@ module Bundler
       return self if matching_specs.empty?
 
       __materialize__(matching_specs)
+    end
+
+    def materialized_for_installation
+      @materialization = materialize_for_installation
+
+      self unless incomplete?
     end
 
     def materialize_for_installation
