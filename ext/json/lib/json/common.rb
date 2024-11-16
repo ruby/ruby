@@ -411,6 +411,10 @@ module JSON
   #
   # Returns the Ruby objects created by parsing the given +source+.
   #
+  # BEWARE: This method is meant to serialise data from trusted user input,
+  # like from your own database server or clients under your control, it could
+  # be dangerous to allow untrusted users to pass JSON sources into it.
+  #
   # - Argument +source+ must be, or be convertible to, a \String:
   #   - If +source+ responds to instance method +to_str+,
   #     <tt>source.to_str</tt> becomes the source.
@@ -425,9 +429,6 @@ module JSON
   # - Argument +proc+, if given, must be a \Proc that accepts one argument.
   #   It will be called recursively with each result (depth-first order).
   #   See details below.
-  #   BEWARE: This method is meant to serialise data from trusted user input,
-  #   like from your own database server or clients under your control, it could
-  #   be dangerous to allow untrusted users to pass JSON sources into it.
   # - Argument +opts+, if given, contains a \Hash of options for the parsing.
   #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
   #   The default options can be changed via method JSON.unsafe_load_default_options=.
@@ -564,6 +565,16 @@ module JSON
   #
   # Returns the Ruby objects created by parsing the given +source+.
   #
+  # BEWARE: This method is meant to serialise data from trusted user input,
+  # like from your own database server or clients under your control, it could
+  # be dangerous to allow untrusted users to pass JSON sources into it.
+  # If you must use it, use JSON.unsafe_load instead to make it clear.
+  #
+  # Since JSON version 2.8.0, `load` emits a deprecation warning when a
+  # non native type is deserialized, without `create_additions` being explicitly
+  # enabled, and in JSON version 3.0, `load` will have `create_additions` disabled
+  # by default.
+  #
   # - Argument +source+ must be, or be convertible to, a \String:
   #   - If +source+ responds to instance method +to_str+,
   #     <tt>source.to_str</tt> becomes the source.
@@ -578,10 +589,6 @@ module JSON
   # - Argument +proc+, if given, must be a \Proc that accepts one argument.
   #   It will be called recursively with each result (depth-first order).
   #   See details below.
-  #   BEWARE: This method is meant to serialise data from trusted user input,
-  #   like from your own database server or clients under your control, it could
-  #   be dangerous to allow untrusted users to pass JSON sources into it.
-  #   If you must use it, use JSON.unsafe_load instead to make it clear.
   # - Argument +opts+, if given, contains a \Hash of options for the parsing.
   #   See {Parsing Options}[#module-JSON-label-Parsing+Options].
   #   The default options can be changed via method JSON.load_default_options=.
