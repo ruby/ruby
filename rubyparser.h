@@ -362,6 +362,8 @@ typedef struct RNode_BEGIN {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t begin_keyword_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_begin_t;
 
 typedef struct RNode_RESCUE {
