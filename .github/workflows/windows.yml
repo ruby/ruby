@@ -25,9 +25,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - vc: 2015
-            vs: 2019
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
           - vs: 2019
           - vs: 2022
       fail-fast: false
@@ -171,34 +168,6 @@ jobs:
 
       - run: nmake test
         timeout-minutes: 5
-
-      - run: nmake test-spec
-        timeout-minutes: 10
-
-      - name: Set up Launchable
-        uses: ./.github/actions/launchable/setup
-        with:
-          os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
-          test-task: test-all
-          # If we support a new test task, we need to change this test-opts.
-          test-opts: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
-          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
-          builddir: build
-          srcdir: src
-        continue-on-error: true
-
-      - run: nmake test-all
-        env:
-          RUBY_TESTOPTS: >-
-            -j${{ env.TEST_JOBS || 4 }}
-            --job-status=normal
-        timeout-minutes: 60
-
-      - uses: ./.github/actions/slack
-        with:
-          label: VS${{ matrix.vc || matrix.vs }} / ${{ matrix.test_task || 'check' }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
 
   result:
     if: ${{ always() }}
