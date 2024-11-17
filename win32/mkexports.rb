@@ -123,7 +123,6 @@ class Exports::Mswin < Exports
           elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
           end
-          next if /\A_?ucrt_/ =~ l
         when /DLL/
           next unless l.sub!(/^\s*\d+\s+[[:xdigit:]]+\s+[[:xdigit:]]+\s+/, '')
         else
