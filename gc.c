@@ -2780,9 +2780,10 @@ const char *
 rb_gc_active_gc_name(void)
 {
     const char *gc_name = rb_gc_impl_active_gc_name();
-    if (strlen(gc_name) > RB_GC_MAX_NAME_LEN) {
-        rb_bug("GC should have a name shorter than %d chars. Currently: %lu (%s)",
-            RB_GC_MAX_NAME_LEN, strlen(gc_name), gc_name);
+    const size_t len = strlen(gc_name);
+    if (len > RB_GC_MAX_NAME_LEN) {
+        rb_bug("GC should have a name no more than %d chars long. Currently: %zu (%s)",
+               RB_GC_MAX_NAME_LEN, len, gc_name);
     }
     return gc_name;
 
