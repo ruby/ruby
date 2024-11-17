@@ -226,7 +226,6 @@ struct fast_fallback_inetsock_arg
     int *families;
     int family_size;
     int additional_flags;
-    int cancelled;
     rb_nativethread_lock_t *lock;
     struct fast_fallback_getaddrinfo_entry *getaddrinfo_entries[2];
     struct fast_fallback_getaddrinfo_shared *getaddrinfo_shared;
@@ -322,7 +321,7 @@ cancel_fast_fallback(void *ptr)
 
     rb_nativethread_lock_lock(arg->lock);
     {
-        *arg->cancelled = true;
+        arg->cancelled = true;
         char notification = SELECT_CANCELLED;
         if ((write(arg->notify, &notification, 1)) < 0) {
             rb_syserr_fail(errno, "write(2)");
@@ -649,8 +648,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared->wait = hostname_resolution_waiter;
         arg->getaddrinfo_shared->connection_attempt_fds = arg->connection_attempt_fds;
         arg->getaddrinfo_shared->connection_attempt_fds_size = arg->connection_attempt_fds_size;
-        arg->getaddrinfo_shared->cancelled = &arg->cancelled;
-        wait_arg.cancelled = &arg->cancelled;
+        arg->getaddrinfo_shared->cancelled = false;
+        wait_arg.cancelled = false;
 
         for (int i = 0; i < arg->family_size; i++) {
             arg->getaddrinfo_entries[i] = allocate_fast_fallback_getaddrinfo_entry();
@@ -944,7 +943,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_shared
         );
         rb_thread_check_ints();
-        if (errno == EINTR || arg->cancelled) break;
+        if (errno == EINTR || arg->getaddrinfo_shared->cancelled) break;
 
         status = wait_arg.status;
         syscall = "select(2)";
@@ -1272,7 +1271,6 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
             fast_fallback_arg.hostp = hostp;
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
-            fast_fallback_arg.cancelled = false;
 
             int resolving_families[resolving_family_size];
             int resolving_family_index = 0;

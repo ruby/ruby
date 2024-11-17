@@ -429,7 +429,8 @@ char *port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
 struct fast_fallback_getaddrinfo_shared
 {
     int wait, notify, refcount, connection_attempt_fds_size;
-    int *connection_attempt_fds, *cancelled;
+    int cancelled;
+    int *connection_attempt_fds;
     char *node, *service;
     rb_nativethread_lock_t *lock;
 };
