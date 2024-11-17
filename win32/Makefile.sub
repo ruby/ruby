@@ -158,6 +158,9 @@ OPTFLAGS = -O2b2xg-
 OPTFLAGS = -O2sy-
 !endif
 !endif
+!if $(MSC_VER) >= 1900
+OPTFLAGS = $(OPTFLAGS) -Zc:inline
+!endif
 !if !defined(incflags)
 incflags =
 !endif
