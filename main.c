@@ -48,6 +48,12 @@ int rb_wasm_rt_start(int (main)(int argc, char **argv), int argc, char **argv);
 #define rb_main(argc, argv) rb_wasm_rt_start(rb_main, argc, argv)
 #endif
 
+#ifdef _WIN32
+#define main(argc, argv) w32_main(argc, argv)
+static int main(int argc, char **argv);
+int wmain(void) {return main(0, NULL);}
+#endif
+
 int
 main(int argc, char **argv)
 {
@@ -61,10 +67,6 @@ main(int argc, char **argv)
     ruby_sysinit(&argc, &argv);
     return rb_main(argc, argv);
 }
-
-#ifdef _WIN32
-int wmain(void) {return main(0, NULL);}
-#endif
 
 #ifdef RUBY_ASAN_ENABLED
 /* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
