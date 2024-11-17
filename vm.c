@@ -3070,7 +3070,7 @@ thread_alloc(VALUE klass)
     return obj;
 }
 
-inline void
+void
 rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 {
     ec->vm_stack = stack;
