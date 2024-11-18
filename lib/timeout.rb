@@ -144,7 +144,7 @@ module Timeout
   # +sec+:: Number of seconds to wait for the block to terminate. Any non-negative number
   #         or nil may be used, including Floats to specify fractional seconds. A
   #         value of 0 or +nil+ will execute the block without any timeout.
-  #         Any negative value will raise the ArgumentError
+  #         Any negative number will raise an ArgumentError.
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
   # +message+:: Error message to raise with Exception Class.
