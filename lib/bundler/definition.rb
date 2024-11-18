@@ -152,7 +152,7 @@ module Bundler
         @gems_to_unlock = @explicit_unlocks.any? ? @explicit_unlocks : @dependencies.map(&:name)
       else
         eager_unlock = @explicit_unlocks.map {|name| Dependency.new(name, ">= 0") }
-        @gems_to_unlock = @locked_specs.for(eager_unlock, false, platforms).map(&:name).uniq
+        @gems_to_unlock = @locked_specs.for(eager_unlock, platforms).map(&:name).uniq
       end
 
       @dependency_changes = converge_dependencies
@@ -495,7 +495,7 @@ module Bundler
     def normalize_platforms
       @platforms = resolve.normalize_platforms!(current_dependencies, platforms)
 
-      @resolve = SpecSet.new(resolve.for(current_dependencies, false, @platforms))
+      @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
     end
 
     def add_platform(platform)
@@ -620,7 +620,7 @@ module Bundler
     end
 
     def filter_specs(specs, deps)
-      SpecSet.new(specs).for(deps, false, platforms)
+      SpecSet.new(specs).for(deps, platforms)
     end
 
     def materialize(dependencies)
@@ -726,7 +726,7 @@ module Bundler
 
       @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
 
-      SpecSet.new(result.for(dependencies, false, @platforms))
+      SpecSet.new(result.for(dependencies, @platforms))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
