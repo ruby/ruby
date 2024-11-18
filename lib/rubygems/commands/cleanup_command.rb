@@ -113,9 +113,9 @@ If no gems are named all gems in GEM_HOME are cleaned.
     @candidate_gems = if options[:args].empty?
       Gem::Specification.to_a
     else
-      options[:args].map do |gem_name|
+      options[:args].flat_map do |gem_name|
         Gem::Specification.find_all_by_name gem_name
-      end.flatten
+      end
     end
   end
 

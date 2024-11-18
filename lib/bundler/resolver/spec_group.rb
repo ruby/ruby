@@ -38,9 +38,9 @@ module Bundler
       end
 
       def dependencies
-        @dependencies ||= @specs.map do |spec|
+        @dependencies ||= @specs.flat_map do |spec|
           __dependencies(spec) + metadata_dependencies(spec)
-        end.flatten.uniq.sort
+        end.uniq.sort
       end
 
       def ==(other)

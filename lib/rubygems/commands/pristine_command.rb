@@ -120,9 +120,9 @@ extensions will be restored.
     elsif options[:only_missing_extensions]
       specification_record.select(&:missing_extensions?)
     else
-      get_all_gem_names.sort.map do |gem_name|
+      get_all_gem_names.sort.flat_map do |gem_name|
         specification_record.find_all_by_name(gem_name, options[:version]).reverse
-      end.flatten
+      end
     end
 
     specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }

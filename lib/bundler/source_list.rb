@@ -91,7 +91,7 @@ module Bundler
     end
 
     def rubygems_remotes
-      rubygems_sources.map(&:remotes).flatten.uniq
+      rubygems_sources.flat_map(&:remotes).uniq
     end
 
     def all_sources

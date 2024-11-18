@@ -345,7 +345,7 @@ module Bundler
     end
 
     def groups
-      dependencies.map(&:groups).flatten.uniq
+      dependencies.flat_map(&:groups).uniq
     end
 
     def lock(file_or_preserve_unknown_sections = false, preserve_unknown_sections_or_unused = false)

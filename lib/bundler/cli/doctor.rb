@@ -89,11 +89,11 @@ module Bundler
 
       if broken_links.any?
         message = "The following gems are missing OS dependencies:"
-        broken_links.map do |spec, paths|
+        broken_links.flat_map do |spec, paths|
           paths.uniq.map do |path|
             "\n * #{spec.name}: #{path}"
           end
-        end.flatten.sort.each {|m| message += m }
+        end.sort.each {|m| message += m }
         raise ProductionError, message
       elsif !permissions_valid
         Bundler.ui.info "No issues found with the installed bundle"
