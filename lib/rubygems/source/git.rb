@@ -201,7 +201,7 @@ class Gem::Source::Git < Gem::Source
     return [] unless install_dir
 
     Dir.chdir install_dir do
-      Dir["{,*,*/*}.gemspec"].map do |spec_file|
+      Dir["{,*,*/*}.gemspec"].filter_map do |spec_file|
         directory = File.dirname spec_file
         file      = File.basename spec_file
 
@@ -218,7 +218,7 @@ class Gem::Source::Git < Gem::Source
           end
           spec
         end
-      end.compact
+      end
     end
   end
 

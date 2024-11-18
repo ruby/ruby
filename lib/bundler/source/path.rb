@@ -214,7 +214,7 @@ module Bundler
 
         # Some gem authors put absolute paths in their gemspec
         # and we have to save them from themselves
-        spec.files = spec.files.map do |path|
+        spec.files = spec.files.filter_map do |path|
           next path unless /\A#{Pathname::SEPARATOR_PAT}/o.match?(path)
           next if File.directory?(path)
           begin
@@ -222,7 +222,7 @@ module Bundler
           rescue ArgumentError
             path
           end
-        end.compact
+        end
 
         installer = Path::Installer.new(
           spec,

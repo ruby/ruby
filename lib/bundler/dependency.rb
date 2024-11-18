@@ -62,7 +62,7 @@ module Bundler
     end
 
     def expanded_platforms
-      @expanded_platforms ||= @platforms.map {|pl| PLATFORM_MAP[pl] }.compact.flatten.uniq
+      @expanded_platforms ||= @platforms.filter_map {|pl| PLATFORM_MAP[pl] }.flatten.uniq
     end
 
     def should_include?

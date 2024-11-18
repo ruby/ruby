@@ -32,11 +32,11 @@ module Bundler
 
     def dylibs_ldd(path)
       output = `/usr/bin/ldd #{path.shellescape}`.chomp
-      output.split("\n").map do |l|
+      output.split("\n").filter_map do |l|
         match = l.match(LDD_REGEX)
         next if match.nil?
         match.captures[0]
-      end.compact
+      end
     end
 
     def dylibs(path)

@@ -102,7 +102,7 @@ prefix or only the files that are requireable.
   end
 
   def files_in_default_gem(spec)
-    spec.files.map do |file|
+    spec.files.filter_map do |file|
       if file.start_with?("#{spec.bindir}/")
         [RbConfig::CONFIG["bindir"], file.delete_prefix("#{spec.bindir}/")]
       else
@@ -119,7 +119,7 @@ prefix or only the files that are requireable.
 
         [resolve.delete_suffix(requirable_part), requirable_part]
       end
-    end.compact
+    end
   end
 
   def gem_contents(name)

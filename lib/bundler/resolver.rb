@@ -417,7 +417,7 @@ module Bundler
     end
 
     def prepare_dependencies(requirements, packages)
-      to_dependency_hash(requirements, packages).map do |dep_package, dep_constraint|
+      to_dependency_hash(requirements, packages).filter_map do |dep_package, dep_constraint|
         name = dep_package.name
 
         next [dep_package, dep_constraint] if name == "bundler"
@@ -443,7 +443,7 @@ module Bundler
         next unless dep_package.current_platform?
 
         raise_not_found!(dep_package)
-      end.compact.to_h
+      end.to_h
     end
 
     def select_sorted_versions(package, range)
