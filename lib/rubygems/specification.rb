@@ -1014,7 +1014,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.unresolved_specs
-    unresolved_deps.values.map(&:to_specs).flatten
+    unresolved_deps.values.flat_map(&:to_specs)
   end
   private_class_method :unresolved_specs
 
@@ -1073,7 +1073,7 @@ class Gem::Specification < Gem::BasicSpecification
       result[spec.name] = spec
     end
 
-    result.map(&:last).flatten.sort_by(&:name)
+    result.flat_map(&:last).sort_by(&:name)
   end
 
   ##
@@ -1770,7 +1770,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns all specs that matches this spec's runtime dependencies.
 
   def dependent_specs
-    runtime_dependencies.map(&:to_specs).flatten
+    runtime_dependencies.flat_map(&:to_specs)
   end
 
   ##

@@ -65,11 +65,11 @@ class Gem::Resolver::IndexSet < Gem::Resolver::Set
 
       q.breakable
 
-      names = @all.values.map do |tuples|
+      names = @all.values.flat_map do |tuples|
         tuples.map do |_, tuple|
           tuple.full_name
         end
-      end.flatten
+      end
 
       q.seplist names do |name|
         q.text name

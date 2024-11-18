@@ -79,7 +79,7 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      resolved_specs = result.map {|package, version| version.to_specs(package) }.flatten
+      resolved_specs = result.flat_map {|package, version| version.to_specs(package) }
       resolved_specs |= @base.specs_compatible_with(SpecSet.new(resolved_specs))
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility

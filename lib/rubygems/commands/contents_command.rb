@@ -189,8 +189,8 @@ prefix or only the files that are requireable.
   end
 
   def specification_directories # :nodoc:
-    options[:specdirs].map do |i|
+    options[:specdirs].flat_map do |i|
       [i, File.join(i, "specifications")]
-    end.flatten
+    end
   end
 end
