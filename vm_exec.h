@@ -71,18 +71,33 @@ error !
 #define ELABEL(x)
 #define LABEL_PTR(x) &LABEL(x)
 
+#if defined __has_attribute
+#if __has_attribute (preserve_none)
+#define HAS_PRESERVE_NONE 1
+#endif
+#endif
+#ifndef HAS_PRESERVE_NONE
+#define HAS_PRESERVE_NONE 0
+#endif
+
+#if HAS_PRESERVE_NONE
+#define INSN_FUNC_CONV __attribute__((preserve_none))
+#else
+#define INSN_FUNC_CONV
+#endif
+
 #define INSN_FUNC_RET rb_control_frame_t *
 #define INSN_FUNC_PARAMS rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *reg_pc
 #define INSN_FUNC_ARGS ec, reg_cfp, reg_pc
 
-typedef INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
+typedef INSN_FUNC_CONV INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
 
 #define INSN_FUNC_ATTRIBUTES \
     __attribute__((no_stack_protector))
 
 #define INSN_ENTRY(insn) \
   static INSN_FUNC_RET \
-    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) INSN_FUNC_ATTRIBUTES {
+    INSN_FUNC_CONV FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) INSN_FUNC_ATTRIBUTES {
 
 #define TC_DISPATCH(insn) \
   MUSTTAIL return (*(rb_insn_tailcall_func_t *)GET_CURRENT_INSN())(INSN_FUNC_ARGS);
