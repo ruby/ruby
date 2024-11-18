@@ -126,7 +126,7 @@ RSpec.describe "Running bin/* commands" do
     expect(bundled_app("bin/myrackup")).to exist
   end
 
-  it "rewrites bins on binstubs (to maintain backwards compatibility)" do
+  it "rewrites bins on binstubs with --force option" do
     install_gemfile <<-G
       source "https://gem.repo1"
       gem "myrack"
@@ -134,9 +134,9 @@ RSpec.describe "Running bin/* commands" do
 
     create_file("bin/myrackup", "OMG")
 
-    bundle "binstubs myrack"
+    bundle "binstubs myrack", { force: true }
 
-    expect(bundled_app("bin/myrackup").read).to_not eq("OMG")
+    expect(bundled_app("bin/myrackup").read.strip).to_not eq("OMG")
   end
 
   it "use BUNDLE_GEMFILE gemfile for binstub" do
