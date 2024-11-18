@@ -235,6 +235,7 @@ lcov*.info
 # for `make test-bundler`
 /.rspec_status
 /tool/bundler/*.lock
+!tool/bundler/test_gems.rb.lock
 
 # /tool/
 /tool/config.guess

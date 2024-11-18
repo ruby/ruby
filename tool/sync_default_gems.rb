@@ -147,6 +147,7 @@ module SyncDefaultGems
       %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
         cp_r("#{upstream}/tool/bundler/#{gemfile}.rb", "tool/bundler")
       end
+      cp_r("#{upstream}/tool/bundler/test_gems.rb.lock", "tool/bundler")
       rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
     when "rdoc"
