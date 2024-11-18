@@ -263,10 +263,10 @@ module Bundler
 
     def setup_manpath
       # Add man/ subdirectories from activated bundles to MANPATH for man(1)
-      manuals = $LOAD_PATH.map do |path|
+      manuals = $LOAD_PATH.filter_map do |path|
         man_subdir = path.sub(/lib$/, "man")
         man_subdir unless Dir[man_subdir + "/man?/"].empty?
-      end.compact
+      end
 
       return if manuals.empty?
       Bundler::SharedHelpers.set_env "MANPATH", manuals.concat(

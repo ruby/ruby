@@ -183,7 +183,7 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.map(&:payload).compact
+    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.filter_map(&:payload)
   rescue Gem::Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)

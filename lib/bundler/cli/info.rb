@@ -73,11 +73,11 @@ module Bundler
     end
 
     def gem_dependencies
-      @gem_dependencies ||= Bundler.definition.specs.map do |spec|
+      @gem_dependencies ||= Bundler.definition.specs.filter_map do |spec|
         dependency = spec.dependencies.find {|dep| dep.name == gem_name }
         next unless dependency
         "#{spec.name} (#{spec.version}) depends on #{gem_name} (#{dependency.requirements_list.join(", ")})"
-      end.compact.sort
+      end.sort
     end
   end
 end

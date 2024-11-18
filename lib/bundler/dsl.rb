@@ -66,7 +66,7 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).map {|g| Bundler.load_gemspec(g) }.compact
+      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
       gemspecs.reject! {|s| s.name != name } if name
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
 

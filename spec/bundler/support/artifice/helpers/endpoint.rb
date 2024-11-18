@@ -66,7 +66,7 @@ class Endpoint < Sinatra::Base
         Marshal.load(File.binread(gem_repo.join(filename)))
       end.inject(:+)
 
-      all_specs.map do |name, version, platform|
+      all_specs.filter_map do |name, version, platform|
         spec = load_spec(name, version, platform, gem_repo)
         next unless gem_names.include?(spec.name)
         {
@@ -77,7 +77,7 @@ class Endpoint < Sinatra::Base
             [dep.name, dep.requirement.requirements.map {|a| a.join(" ") }.join(", ")]
           end,
         }
-      end.compact
+      end
     end
 
     def load_spec(name, version, platform, gem_repo)
