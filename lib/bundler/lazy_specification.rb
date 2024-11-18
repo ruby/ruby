@@ -15,7 +15,7 @@ module Bundler
 
     def self.from_spec(s)
       lazy_spec = new(s.name, s.version, s.platform, s.source)
-      lazy_spec.dependencies = s.dependencies
+      lazy_spec.dependencies = s.runtime_dependencies
       lazy_spec.required_ruby_version = s.required_ruby_version
       lazy_spec.required_rubygems_version = s.required_rubygems_version
       lazy_spec
