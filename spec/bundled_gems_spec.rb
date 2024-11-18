@@ -1,6 +1,56 @@
 require "bundled_gems"
 
+require "bundler"
+require "fileutils"
+
+require_relative "bundler/support/builders"
+require_relative "bundler/support/build_metadata"
+require_relative "bundler/support/helpers"
+require_relative "bundler/support/path"
+
+module Gem
+  def self.ruby=(ruby)
+    @ruby = ruby
+  end
+end
+
+RSpec.configure do |config|
+  config.include Spec::Builders
+  config.include Spec::Helpers
+  config.include Spec::Path
+
+  config.before(:suite) do
+    require_relative "bundler/support/rubygems_ext"
+    Spec::Rubygems.test_setup
+    Spec::Helpers.install_dev_bundler
+  end
+
+  config.around(:each) do |example|
+    FileUtils.cp_r Spec::Path.pristine_system_gem_path, Spec::Path.system_gem_path
+
+    with_gem_path_as(system_gem_path) do
+      Bundler.ui.silence { example.run }
+
+      all_output = all_commands_output
+      if example.exception && !all_output.empty?
+        message = all_output + "\n" + example.exception.message
+        (class << example.exception; self; end).send(:define_method, :message) do
+          message
+        end
+      end
+    end
+  ensure
+    reset!
+  end
+
+  config.after :suite do
+    FileUtils.rm_rf Spec::Path.pristine_system_gem_path
+  end
+end
+
 RSpec.describe "bundled_gems.rb" do
+
+  Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
   ENV["TEST_BUNDLED_GEMS"] = "true"
 
   def script(code, options = {})

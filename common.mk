@@ -1601,7 +1601,7 @@ no-install-for-test-bundled-gems: no-update-default-gemspecs
 yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
 		install --no-document --conservative \
-		"hoe" "json-schema" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json"
+		"hoe" "json-schema" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json" "rspec"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch:
@@ -1621,9 +1621,10 @@ yes-test-bundled-gems-precheck: Preparing-test-bundled-gems
 yes-install-for-test-bundled-gems: Preparing-test-bundled-gems
 yes-test-bundled-gems-fetch: Preparing-test-bundled-gems
 
-
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
-test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
+test-bundled-gems:
+	$(XRUBY) -C $(srcdir) .bundle/bin/rspec $(RSPECOPTS) spec/bundled_gems_spec.rb
+	$(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
 yes-test-bundled-gems: test-bundled-gems-run
 no-test-bundled-gems:
 
