@@ -9172,8 +9172,8 @@ literal_split_pattern(VALUE spat, split_type_t default_type)
 
 /*
  *  call-seq:
- *    split(field_sep = $;, limit = nil) -> array
- *    split(field_sep = $;, limit = nil) {|substring| ... } -> self
+ *    split(field_sep = $;, limit = 0) -> array
+ *    split(field_sep = $;, limit = 0) {|substring| ... } -> self
  *
  *  :include: doc/string/split.rdoc
  *
