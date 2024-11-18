@@ -1624,7 +1624,7 @@ yes-test-bundled-gems-fetch: Preparing-test-bundled-gems
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
-bundled_gems_spec-run:
+bundled_gems_spec-run: $(PREPARE_BUNDLED_GEMS)
 	$(XRUBY) -C $(srcdir) .bundle/bin/rspec $(RSPECOPTS) spec/bundled_gems_spec.rb
 yes-test-bundled-gems: bundled_gems_spec-run $(DOT_WAIT) test-bundled-gems-run
 no-test-bundled-gems:
