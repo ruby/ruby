@@ -1621,11 +1621,12 @@ yes-test-bundled-gems-precheck: Preparing-test-bundled-gems
 yes-install-for-test-bundled-gems: Preparing-test-bundled-gems
 yes-test-bundled-gems-fetch: Preparing-test-bundled-gems
 
+
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
-test-bundled-gems:
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
+bundled_gems_spec-run:
 	$(XRUBY) -C $(srcdir) .bundle/bin/rspec $(RSPECOPTS) spec/bundled_gems_spec.rb
-	$(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
-yes-test-bundled-gems: test-bundled-gems-run
+yes-test-bundled-gems: bundled_gems_spec-run $(DOT_WAIT) test-bundled-gems-run
 no-test-bundled-gems:
 
 # Override this to allow failure of specific gems on CI
