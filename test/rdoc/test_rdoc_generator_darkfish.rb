@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'helper'
 
-class TestRDocGeneratorDarkfish < RDoc::TestCase
+class RDocGeneratorDarkfishTest < RDoc::TestCase
 
   def setup
     super
@@ -348,7 +348,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     )
   end
 
-  def test_meta_tags_for_pages
+  def test_meta_tags_for_rdoc_files
     top_level = @store.add_file("CONTRIBUTING.rdoc", parser: RDoc::Parser::Simple)
     top_level.comment = <<~RDOC
       = Contributing
@@ -364,6 +364,52 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
       content,
       "<meta name=\"description\" content=\"CONTRIBUTING: Contributing Here are the instructions for contributing." \
       " Begin by installing Ruby.\">",
+    )
+  end
+
+  def test_meta_tags_for_markdown_files
+    top_level = @store.add_file("MyPage.md", parser: RDoc::Parser::Markdown)
+    top_level.comment = <<~MARKDOWN
+      # MyPage
+
+      This is a comment
+    MARKDOWN
+
+    @g.generate
+
+    content = File.binread("MyPage_md.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,MyPage">')
+    assert_include(
+      content,
+      '<meta name="description" content="MyPage: # MyPage This is a comment">',
+    )
+  end
+
+  def test_meta_tags_for_raw_pages
+    top_level = @store.add_file("MyPage", parser: RDoc::Parser::Simple)
+    top_level.comment = RDoc::Markup::Document.new(RDoc::Markup::Paragraph.new('this is a comment'))
+
+    @g.generate
+
+    content = File.binread("MyPage.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,MyPage">')
+    assert_include(
+      content,
+      '<meta name="description" content="MyPage: this is a comment ">',
+    )
+  end
+
+  def test_meta_tags_for_empty_document
+    top_level = @store.add_file("MyPage", parser: RDoc::Parser::Simple)
+    top_level.comment = RDoc::Markup::Document.new
+
+    @g.generate
+
+    content = File.binread("MyPage.html")
+    assert_include(content, '<meta name="keywords" content="ruby,documentation,MyPage">')
+    assert_include(
+      content,
+      '<meta name="description" content="MyPage: ">',
     )
   end
 

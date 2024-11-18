@@ -782,7 +782,19 @@ class RDoc::Generator::Darkfish
 
   # Returns an excerpt of the content for usage in meta description tags
   def excerpt(content)
-    text = content.is_a?(RDoc::Comment) ? content.text : content
+    text = case content
+    when RDoc::Comment
+      content.text
+    when RDoc::Markup::Document
+      # This case is for page files that are not markdown nor rdoc
+      # We convert them to markdown for now as it's easier to extract the text
+      formatter = RDoc::Markup::ToMarkdown.new
+      formatter.start_accepting
+      formatter.accept_document(content)
+      formatter.end_accepting
+    else
+      content
+    end
 
     # Match from a capital letter to the first period, discarding any links, so
     # that we don't end up matching badges in the README
