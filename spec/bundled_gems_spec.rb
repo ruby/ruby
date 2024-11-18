@@ -247,7 +247,7 @@ RSpec.describe "bundled_gems.rb" do
     build_lib "childprocess", "5.0.0" do |s|
       # bootsnap expand required feature to full path
       # require 'logger'
-      rubylibpath = File.expand_path(File.join(__dir__, "..", "..", "lib"))
+      rubylibpath = File.expand_path(File.join(__dir__, "..", "lib"))
       s.write "lib/childprocess.rb", "require '#{rubylibpath}/logger'"
     end
 
@@ -274,7 +274,7 @@ RSpec.describe "bundled_gems.rb" do
   end
 
   it "Show warning with zeitwerk" do
-    libpath = Dir[File.expand_path(File.join(__dir__, "..", "..", ".bundle", "gems/{zeitwerk}-*/lib"))].map(&:to_s).first
+    libpath = Dir[File.expand_path("../.bundle/gems/{zeitwerk}-*/lib", __dir__)].map(&:to_s).first
     code = <<-RUBY
       $LOAD_PATH.unshift("#{libpath}")
       require "zeitwerk"
