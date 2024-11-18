@@ -1002,7 +1002,7 @@ module Bundler
         if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec) || (source.instance_of?(Source::Git) && !@gems_to_unlock.include?(name) && deps.include?(dep))
           new_spec = source.specs[s].first
           if new_spec
-            s.dependencies.replace(new_spec.dependencies)
+            s.runtime_dependencies.replace(new_spec.runtime_dependencies)
           else
             # If the spec is no longer in the path source, unlock it. This
             # commonly happens if the version changed in the gemspec
