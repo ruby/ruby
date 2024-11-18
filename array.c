@@ -8226,54 +8226,73 @@ rb_ary_deconstruct(VALUE ary)
 }
 
 /*
- *  An array is an ordered, integer-indexed collection of objects, called _elements_.
- *  Any object (even another array) may be an array element,
- *  and an array can contain objects of different types.
+ *  An \Array object is an ordered, integer-indexed collection of objects,
+ *  called _elements_;
+ *  the object represents
+ *  an {array data structure}[https://en.wikipedia.org/wiki/Array_(data_structure)].
+ *
+ *  An element may be any object (even another array);
+ *  elements may be any mixture of objects of different types.
+ *
+ *  Important data structures that use arrays include:
+ *
+ *  - {Coordinate vector}[https://en.wikipedia.org/wiki/Coordinate_vector].
+ *  - {Matrix}[https://en.wikipedia.org/wiki/Matrix_(mathematics)].
+ *  - {Heap}[https://en.wikipedia.org/wiki/Heap_(data_structure)].
+ *  - {Hash table}[https://en.wikipedia.org/wiki/Hash_table].
+ *  - {Deque (double-ended queue)}[https://en.wikipedia.org/wiki/Double-ended_queue].
+ *  - {Queue}[https://en.wikipedia.org/wiki/Queue_(abstract_data_type)].
+ *  - {Stack}[https://en.wikipedia.org/wiki/Stack_(abstract_data_type)].
+ *
+ *  There are also array-like data structures:
+ *
+ *  - {Associative array}[https://en.wikipedia.org/wiki/Associative_array] (see Hash).
+ *  - {Directory}[https://en.wikipedia.org/wiki/Directory_(computing)] (see Dir).
+ *  - {Environment}[https://en.wikipedia.org/wiki/Environment_variable] (see ENV).
+ *  - {Set}[https://en.wikipedia.org/wiki/Set_(abstract_data_type)] (see Set).
+ *  - {String}[https://en.wikipedia.org/wiki/String_(computer_science)] (see String).
  *
  *  == \Array Indexes
  *
- *  \Array indexing begins at zero, as in C or Java.
+ *  \Array indexing starts at 0, as in C or Java.
  *
- *  A non-negative index is an offset from the beginning of the array:
+ *  A non-negative index is an offset from the first element:
  *
- *    a = ['a', 'b', 'c', 'd']
- *    a[0] # => "a"
- *    a[1] # => "b"
+ *  - Index 0 indicates the first element.
+ *  - Index 1 indicates the second element.
+ *  - ...
  *
  *  A negative index is an offset, backwards, from the end of the array:
  *
- *    a[-1] # => "d"
- *    a[-2] # => "c"
+ *  - Index -1 indicates the last element.
+ *  - Index -2 indicates the next-to-last element.
+ *  - ...
  *
- *  === \Range of an \Array
  *
- *  A non-negative index is <i>in-range</i> if it is smaller than the size of the array,
- *  <i>out-of-range</i> otherwise:
+ *  === In-Range and Out-of-Range Indexes
  *
- *    a.size # => 4
- *    a[3]   # => "d"
- *    a[4]   # => nil
+ *  A non-negative index is <i>in range</i> if and only if it is smaller than
+ *  the size of the array.  For a 3-element array:
  *
- *  A negative index is <i>in-range</i> if its absolute value is
- *  not larger than the size of the array,
- *  <i>out-of-range</i> otherwise:
+ *  - Indexes 0 through 2 are in range.
+ *  - Index 3 is out of range.
  *
- *    a[-4] # => "a"
- *    a[-5] # => nil
+ *  A negative index is <i>in range</i> if and only if its absolute value is
+ *  not larger than the size of the array.  For a 3-element array:
+ *
+ *  - Indexes -1 through -3 are in range.
+ *  - Index -4 is out of range.
  *
  *  === Effective Index
  *
  *  Although the effective index into an array is always an integer,
- *  some methods (both within and outside of class +Array+)
- *  accept non-integer arguments that are
- *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
- *
- *    a[1.9]  # => "b"
- *    a[-1.9] # => "d"
+ *  some methods (both within class \Array and elsewhere)
+ *  accept one or more non-integer arguments that are
+ *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  == Creating Arrays
  *
- *  You can create an +Array+ object explicitly with:
+ *  You can create an \Array object explicitly with:
  *
  *  - An {array literal}[rdoc-ref:literals.rdoc@Array+Literals]:
  *
