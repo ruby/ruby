@@ -20,6 +20,9 @@ RSpec.configure do |config|
   config.include Spec::Path
 
   config.before(:suite) do
+    Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
+    ENV["TEST_BUNDLED_GEMS"] = "true"
+
     require_relative "bundler/support/rubygems_ext"
     Spec::Rubygems.test_setup
     Spec::Helpers.install_dev_bundler
@@ -54,10 +57,6 @@ RSpec.configure do |config|
 end
 
 RSpec.describe "bundled_gems.rb" do
-
-  Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
-  ENV["TEST_BUNDLED_GEMS"] = "true"
-
   def script(code, options = {})
     options[:artifice] ||= "compact_index"
     ruby("require 'bundler/inline'\n\n" + code, options)
