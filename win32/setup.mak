@@ -261,4 +261,4 @@ AS = $(AS) -nologo
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
-	@echo "type `nmake' to make ruby."
+	@echo type 'nmake' to make ruby.
