@@ -224,7 +224,7 @@ RSpec.describe "bundled_gems.rb" do
   end
 
   it "Show warning with zeitwerk" do
-    libpath = Dir[Spec::Path.base_system_gem_path.join("gems/{zeitwerk}-*/lib")].map(&:to_s).first
+    libpath = Dir[File.expand_path(File.join(__dir__, "..", "..", ".bundle", "gems/{zeitwerk}-*/lib"))].map(&:to_s).first
     code = <<-RUBY
       $LOAD_PATH.unshift("#{libpath}")
       require "zeitwerk"
