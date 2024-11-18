@@ -33,10 +33,16 @@ module Bundler
     end
 
     def materialized_spec
-      specs.first&.materialization
+      specs.reject(&:missing?).first&.materialization
     end
 
-    def missing_specs
+    def completely_missing_specs
+      return [] unless specs.all?(&:missing?)
+
+      specs
+    end
+
+    def partially_missing_specs
       specs.select(&:missing?)
     end
 

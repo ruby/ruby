@@ -501,6 +501,55 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
+      context "when locked generic variant supports current Ruby, but locked specific variant does not" do
+        let(:original_lockfile) do
+          <<~L
+            GEM
+              remote: https://gem.repo4/
+              specs:
+                nokogiri (1.16.3)
+                nokogiri (1.16.3-x86_64-linux)
+
+            PLATFORMS
+              ruby
+              x86_64-linux
+
+            DEPENDENCIES
+              nokogiri
+
+            BUNDLED WITH
+               #{Bundler::VERSION}
+          L
+        end
+
+        before do
+          build_repo4 do
+            build_gem "nokogiri", "1.16.3"
+            build_gem "nokogiri", "1.16.3" do |s|
+              s.required_ruby_version = "< #{Gem.ruby_version}"
+              s.platform = "x86_64-linux"
+            end
+          end
+
+          gemfile <<~G
+            source "https://gem.repo4"
+
+            gem "nokogiri"
+          G
+
+          lockfile original_lockfile
+        end
+
+        it "keeps both variants in the lockfile, and uses the generic one since it's compatible" do
+          simulate_platform "x86_64-linux" do
+            bundle "install --verbose"
+
+            expect(lockfile).to eq(original_lockfile)
+            expect(the_bundle).to include_gems("nokogiri 1.16.3")
+          end
+        end
+      end
+
       it "gives a meaningful error on ruby version mismatches between dependencies" do
         build_repo4 do
           build_gem "requires-old-ruby" do |s|
