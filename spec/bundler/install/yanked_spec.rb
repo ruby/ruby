@@ -77,7 +77,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     end
 
     it "reports the yanked gem properly when the old index is used" do
-      bundle "install", artifice: "endpoint", raise_on_error: false, verbose: true
+      bundle "install", artifice: "endpoint", raise_on_error: false
 
       expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
     end
