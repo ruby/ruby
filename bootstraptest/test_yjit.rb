@@ -5297,3 +5297,15 @@ assert_equal '[true, false]', <<~'RUBY'
     test(:c),
   ]
 RUBY
+
+# opt_newarray_send :include?
+assert_equal '[true, false]', <<~'RUBY'
+  def test(x)
+    [Object.new, :a, :b].include?(x.to_sym)
+  end
+
+  [
+    test("b"),
+    test("c"),
+  ]
+RUBY

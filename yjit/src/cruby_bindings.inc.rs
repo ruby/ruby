@@ -608,6 +608,7 @@ pub const VM_OPT_NEWARRAY_SEND_MIN: vm_opt_newarray_send_type = 2;
 pub const VM_OPT_NEWARRAY_SEND_HASH: vm_opt_newarray_send_type = 3;
 pub const VM_OPT_NEWARRAY_SEND_PACK: vm_opt_newarray_send_type = 4;
 pub const VM_OPT_NEWARRAY_SEND_PACK_BUFFER: vm_opt_newarray_send_type = 5;
+pub const VM_OPT_NEWARRAY_SEND_INCLUDE_P: vm_opt_newarray_send_type = 6;
 pub type vm_opt_newarray_send_type = u32;
 pub const VM_SPECIAL_OBJECT_VMCORE: vm_special_object_type = 1;
 pub const VM_SPECIAL_OBJECT_CBASE: vm_special_object_type = 2;
