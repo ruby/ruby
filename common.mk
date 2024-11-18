@@ -1659,6 +1659,8 @@ test-bundler-prepare: $(TEST_RUNNABLE)-test-bundler-prepare
 no-test-bundler-prepare: no-test-bundler-precheck
 yes-test-bundler-prepare: yes-test-bundler-precheck
 	$(ACTIONS_GROUP)
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
+		--install-dir .bundle --conservative "zeitwerk"
 	$(XRUBY) -C $(srcdir) -Ilib \
 		-e 'ENV["GEM_HOME"] = File.expand_path(".bundle")' \
 		-e 'ENV["BUNDLE_APP_CONFIG"] = File.expand_path(".bundle")' \
