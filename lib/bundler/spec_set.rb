@@ -140,7 +140,11 @@ module Bundler
     end
 
     def missing_specs
-      @materializations.flat_map(&:missing_specs)
+      @materializations.flat_map(&:completely_missing_specs)
+    end
+
+    def partially_missing_specs
+      @materializations.flat_map(&:partially_missing_specs)
     end
 
     def incomplete_specs

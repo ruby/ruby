@@ -668,6 +668,14 @@ module Bundler
         raise GemNotFound, "Could not find #{missing_specs_list.join(" nor ")}"
       end
 
+      partially_missing_specs = resolve.partially_missing_specs
+
+      if partially_missing_specs.any? && !sources.local_mode?
+        Bundler.ui.warn "Some locked specs have possibly been yanked (#{partially_missing_specs.map(&:full_name).join(", ")}). Ignoring them..."
+
+        resolve.delete(partially_missing_specs)
+      end
+
       incomplete_specs = resolve.incomplete_specs
       loop do
         break if incomplete_specs.empty?
