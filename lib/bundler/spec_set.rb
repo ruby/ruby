@@ -11,7 +11,18 @@ module Bundler
       @specs = specs
     end
 
-    def for(dependencies, check = false, platforms = [nil])
+    def for(dependencies, platforms_or_legacy_check = [nil], legacy_platforms = [nil])
+      platforms = if [true, false].include?(platforms_or_legacy_check)
+        Bundler::SharedHelpers.major_deprecation 2,
+          "SpecSet#for received a `check` parameter, but that's no longer used and deprecated. " \
+          "SpecSet#for always implicitly performs validation. Please remove this parameter",
+          print_caller_location: true
+
+        legacy_platforms
+      else
+        platforms_or_legacy_check
+      end
+
       materialize_dependencies(dependencies, platforms)
 
       @materializations.flat_map(&:specs).uniq
@@ -117,7 +128,7 @@ module Bundler
       return false if @specs.empty?
 
       validation_set = self.class.new(@specs)
-      validation_set.for(deps, true, [platform])
+      validation_set.for(deps, [platform])
 
       validation_set.incomplete_specs.any?
     end
