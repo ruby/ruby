@@ -50,14 +50,14 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       end
 
       gemfile <<~G
-        source "#{source_uri}"
+        source "https://gem.repo4"
         gem "foo", "1.0.1"
         gem "actiontext", "6.1.6"
       G
 
       lockfile <<~L
         GEM
-          remote: #{source_uri}/
+          remote: https://gem.repo4/
           specs:
             actiontext (6.1.6)
               nokogiri (>= 1.8)
@@ -76,24 +76,16 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       L
     end
 
-    context "and the old index is used" do
-      let(:source_uri) { "https://gem.repo4" }
+    it "reports the yanked gem properly when the old index is used" do
+      bundle "install", artifice: "endpoint", raise_on_error: false, verbose: true
 
-      it "reports the yanked gem properly" do
-        bundle "install", artifice: "endpoint", raise_on_error: false, verbose: true
-
-        expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
-      end
+      expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
     end
 
-    context "and the compact index API is used" do
-      let(:source_uri) { "https://gem.repo4" }
+    it "reports the yanked gem properly when the compact index API is used" do
+      bundle "install", artifice: "compact_index", raise_on_error: false
 
-      it "reports the yanked gem properly" do
-        bundle "install", artifice: "compact_index", raise_on_error: false
-
-        expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
-      end
+      expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
     end
   end
 
