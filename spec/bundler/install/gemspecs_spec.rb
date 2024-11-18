@@ -30,7 +30,7 @@ RSpec.describe "bundle install" do
 
   it "should use gemspecs in the system cache when available" do
     gemfile <<-G
-      source "http://localtestserver.gem"
+      source "http://localgemserver.test"
       gem 'myrack'
     G
 
