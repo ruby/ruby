@@ -12,7 +12,7 @@ When +field_sep+ is <tt>$;</tt>:
   the split occurs just as if +field_sep+ were given as that string
   (see below).
 
-When +field_sep+ is <tt>' '</tt> and +limit+ is +nil+,
+When +field_sep+ is <tt>' '</tt> and +limit+ is +0+ (its default value),
 the split occurs at each sequence of whitespace:
 
   'abc def ghi'.split(' ')         => ["abc", "def", "ghi"]
@@ -21,7 +21,7 @@ the split occurs at each sequence of whitespace:
   ''.split(' ')                    => []
 
 When +field_sep+ is a string different from <tt>' '</tt>
-and +limit+ is +nil+,
+and +limit+ is +0+,
 the split occurs at each occurrence of +field_sep+;
 trailing empty substrings are not returned:
 
@@ -33,7 +33,7 @@ trailing empty substrings are not returned:
   'тест'.split('т')          => ["", "ес"]
   'こんにちは'.split('に')     => ["こん", "ちは"]
 
-When +field_sep+ is a Regexp and +limit+ is +nil+,
+When +field_sep+ is a Regexp and +limit+ is +0+,
 the split occurs at each occurrence of a match;
 trailing empty substrings are not returned:
 
@@ -47,12 +47,10 @@ in the returned array:
 
   '1:2:3'.split(/(:)()()/, 2) # => ["1", ":", "", "", "2:3"]
 
-As seen above, if +limit+ is +nil+,
-trailing empty substrings are not returned;
-the same is true if +limit+ is zero:
+As seen above, if +limit+ is +0+,
+trailing empty substrings are not returned:
 
   'aaabcdaaa'.split('a')   => ["", "", "", "bcd"]
-  'aaabcdaaa'.split('a', 0) # => ["", "", "", "bcd"]
 
 If +limit+ is positive integer +n+, no more than <tt>n - 1-</tt>
 splits occur, so that at most +n+ substrings are returned,
@@ -67,7 +65,7 @@ and trailing empty substrings are included:
 Note that if +field_sep+ is a \Regexp containing groups,
 their matches are in the returned array, but do not count toward the limit.
 
-If +limit+ is negative, it behaves the same as if +limit+ was +nil+,
+If +limit+ is negative, it behaves the same as if +limit+ was zero,
 meaning that there is no limit,
 and trailing empty substrings are included:
 
