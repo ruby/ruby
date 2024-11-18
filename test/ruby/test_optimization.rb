@@ -1161,4 +1161,59 @@ class TestRubyOptimization < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_opt_newarray_send_include_p
+    [
+      'b = :b; [:a, b].include?(:b)',
+      # Use Object.new to ensure that we get newarray rather than duparray.
+      'value = 1; [Object.new, true, "true", 1].include?(value)',
+      'value = 1; [Object.new, "1"].include?(value.to_s)',
+      '[Object.new, "1"].include?(self) == false',
+    ].each do |code|
+      iseq = RubyVM::InstructionSequence.compile(code)
+      insn = iseq.disasm
+      assert_match(/opt_newarray_send/, insn)
+      assert_no_match(/\bnewarray\b/, insn)
+      assert_equal(true, eval(code))
+    end
+
+    x, y = :b, :c
+    assert_equal(true,  [:a, x].include?(x))
+    assert_equal(false, [:a, x].include?(y))
+
+    assert_in_out_err([], <<~RUBY, ["1,3", "3,3", "1,4", "4,4"])
+      class Array
+        prepend(Module.new do
+          def include?(i)
+            puts self.join(",")
+            # Modify self to prove that we are operating on a copy.
+            map! { i }
+            puts self.join(",")
+          end
+        end)
+      end
+      def x(i)
+        [1, i].include?(i)
+      end
+      x(3)
+      x(4)
+    RUBY
+
+    # Ensure raises happen correctly.
+    assert_in_out_err([], <<~RUBY, ["will raise", "int 1 not 3"])
+      class Integer
+        undef_method :==
+        def == x
+          raise "int \#{self} not \#{x}"
+        end
+      end
+      x = 3
+      puts "will raise"
+      begin
+        p [1, x].include?(x)
+      rescue
+        puts $!
+      end
+    RUBY
+  end
 end

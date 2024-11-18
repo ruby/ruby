@@ -1313,6 +1313,7 @@ enum vm_opt_newarray_send_type {
     VM_OPT_NEWARRAY_SEND_HASH = 3,
     VM_OPT_NEWARRAY_SEND_PACK = 4,
     VM_OPT_NEWARRAY_SEND_PACK_BUFFER = 5,
+    VM_OPT_NEWARRAY_SEND_INCLUDE_P = 6,
 };
 
 enum vm_special_object_type {
