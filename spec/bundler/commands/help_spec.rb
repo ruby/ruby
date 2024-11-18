@@ -30,8 +30,8 @@ RSpec.describe "bundle help" do
   end
 
   it "still outputs the old help for commands that do not have man pages yet" do
-    bundle "help fund"
-    expect(out).to include("Lists information about gems seeking funding assistance")
+    bundle "help issue"
+    expect(out).to include("Learn how to report an issue in Bundler")
   end
 
   it "looks for a binary and executes it with --help option if it's named bundler-<task>" do

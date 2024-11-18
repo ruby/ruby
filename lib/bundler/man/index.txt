@@ -9,6 +9,7 @@ bundle-config(1)      bundle-config.1
 bundle-console(1)     bundle-console.1
 bundle-doctor(1)      bundle-doctor.1
 bundle-exec(1)        bundle-exec.1
+bundle-fund(1)        bundle-fund.1
 bundle-gem(1)         bundle-gem.1
 bundle-help(1)        bundle-help.1
 bundle-info(1)        bundle-info.1
