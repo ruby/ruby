@@ -260,6 +260,7 @@ RUBY_SYMBOL_EXPORT_END
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
+void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 

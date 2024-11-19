@@ -74,6 +74,12 @@
 #include <emscripten.h>
 #endif
 
+/* For ruby_annotate_mmap */
+#ifdef __linux__
+#include <linux/prctl.h>
+#include <sys/prctl.h>
+#endif
+
 #undef LIST_HEAD /* ccan/list conflicts with BSD-origin sys/queue.h. */
 
 #include "constant.h"
@@ -4493,4 +4499,37 @@ Init_GC(void)
     rb_define_module_function(rb_mObjSpace, "count_objects", count_objects, -1);
 
     rb_gc_impl_init();
+}
+
+// Set a name for the anonymous virtual memory area. `addr` is the starting
+// address of the area and `size` is its length in bytes. `name` is a
+// NUL-terminated human-readable string.
+//
+// This function is usually called after calling `mmap()`.  The human-readable
+// annotation helps developers identify the call site of `mmap()` that created
+// the memory mapping.
+//
+// This function currently only works on Linux 5.17 or higher.  After calling
+// this function, we can see annotations in the form of "[anon:...]" in
+// `/proc/self/maps`, where `...` is the content of `name`.  This function has
+// no effect when called on other platforms.
+void
+ruby_annotate_mmap(const void *addr, unsigned long size, const char *name)
+{
+#if defined(__linux__) && defined(PR_SET_VMA) && defined(PR_SET_VMA_ANON_NAME)
+    // The name length cannot exceed 80 (including the '\0').
+    RUBY_ASSERT(strlen(name) < 80);
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, (unsigned long)addr, size, name);
+    // We ignore errors in prctl. prctl may set errno to EINVAL for several
+    // reasons.
+    // 1. The attr (PR_SET_VMA_ANON_NAME) is not a valid attribute.
+    // 2. addr is an invalid address.
+    // 3. The string pointed by name is too long.
+    // The first error indicates PR_SET_VMA_ANON_NAME is not available, and may
+    // happen if we run the compiled binary on an old kernel.  In theory, all
+    // other errors should result in a failure.  But since EINVAL cannot tell
+    // the first error from others, and this function is mainly used for
+    // debugging, we silently ignore the error.
+    errno = 0;
+#endif
 }
