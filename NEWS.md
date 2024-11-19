@@ -105,7 +105,7 @@ The following default gems are updated.
 * prism 1.0.0
 * pstore 0.1.4
 * psych 5.2.0
-* rdoc 6.8.0
+* rdoc 6.8.1
 * reline 0.5.11
 * resolv 0.5.0
 * securerandom 0.3.2
