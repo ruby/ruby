@@ -975,7 +975,7 @@ module Bundler
         end
 
         if dep.nil? && requested_dependencies.find {|d| name == d.name }
-          @gems_to_unlock << s.name
+          @gems_to_unlock << name
         else
           converged << s
         end
