@@ -44,6 +44,15 @@ describe "Module#deprecate_constant" do
     end
   end
 
+  ruby_bug '#20900', ''...'3.4' do
+    describe "when removing the deprecated module" do
+      it "warns with a message" do
+        @module.deprecate_constant :PUBLIC1
+        -> { @module.module_eval {remove_const :PUBLIC1} }.should complain(/warning: constant .+::PUBLIC1 is deprecated/)
+      end
+    end
+  end
+
   it "accepts multiple symbols and strings as constant names" do
     @module.deprecate_constant "PUBLIC1", :PUBLIC2
 

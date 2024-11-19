@@ -2148,9 +2148,8 @@ class TestModule < Test::Unit::TestCase
       Warning[:deprecated] = false
       Class.new(c)::FOO
     end
-    assert_warn('') do
-      Warning[:deprecated] = false
-      c.class_eval "FOO"
+    assert_warn(/deprecated/) do
+      c.class_eval {remove_const "FOO"}
     end
   end
 

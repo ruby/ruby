@@ -3280,6 +3280,7 @@ rb_const_remove(VALUE mod, ID id)
         undefined_constant(mod, ID2SYM(id));
     }
 
+    rb_const_warn_if_deprecated(ce, mod, id);
     rb_clear_constant_cache_for_id(id);
 
     val = ce->value;
