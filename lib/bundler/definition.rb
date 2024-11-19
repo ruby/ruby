@@ -951,7 +951,6 @@ module Bundler
           gemfile_source = dep.source || default_source
 
           deps << dep if !dep.source || lockfile_source.include?(dep.source)
-          @gems_to_unlock << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
 
           # Replace the locked dependency's source with the equivalent source from the Gemfile
           s.source = gemfile_source
@@ -964,7 +963,7 @@ module Bundler
         next if @sources_to_unlock.include?(source.name)
 
         # Path sources have special logic
-        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec)
+        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec) || (source.instance_of?(Source::Git) && !@gems_to_unlock.include?(name) && deps.include?(dep))
           new_spec = source.specs[s].first
           if new_spec
             s.dependencies.replace(new_spec.dependencies)
