@@ -960,11 +960,12 @@ module Bundler
           s.source = default_source unless sources.get(lockfile_source)
         end
 
-        next if @sources_to_unlock.include?(s.source.name)
+        source = s.source
+        next if @sources_to_unlock.include?(source.name)
 
         # Path sources have special logic
-        if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
-          new_spec = s.source.specs[s].first
+        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec)
+          new_spec = source.specs[s].first
           if new_spec
             s.dependencies.replace(new_spec.dependencies)
           else
