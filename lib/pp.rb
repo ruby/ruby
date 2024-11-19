@@ -686,7 +686,7 @@ module Kernel
 
   # prints arguments in pretty form.
   #
-  # pp returns argument(s).
+  # +#pp+ returns argument(s).
   def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)
