@@ -156,7 +156,8 @@ module IRB
         end
 
         def eval_class_constants
-          ::Module.instance_method(:constants).bind(eval("self.class")).call
+          klass = ::Object.instance_method(:class).bind_call(receiver)
+          ::Module.instance_method(:constants).bind_call(klass)
         end
       end
     }

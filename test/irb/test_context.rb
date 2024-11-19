@@ -652,6 +652,13 @@ module TestIRB
       assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
     end
 
+    def test_prompt_main_basic_object
+      main = BasicObject.new
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_match(/irb\(#<BasicObject:.+\)/, irb.send(:format_prompt, 'irb(%m)>', nil, 1, 1))
+      assert_match(/irb\(#<BasicObject:.+\)/, irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
+    end
+
     def test_prompt_main_raise
       main = Object.new
       def main.to_s; raise TypeError; end

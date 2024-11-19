@@ -4,8 +4,6 @@
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
-require "delegate"
-
 require_relative "helper_method"
 
 IRB::TOPLEVEL_BINDING = binding
@@ -16,7 +14,7 @@ module IRB # :nodoc:
     # set self to main if specified, otherwise
     # inherit main from TOPLEVEL_BINDING.
     def initialize(*main)
-      if main[0].kind_of?(Binding)
+      if Binding === main[0]
         @binding = main.shift
       elsif IRB.conf[:SINGLE_IRB]
         @binding = TOPLEVEL_BINDING
@@ -70,35 +68,14 @@ EOF
       unless main.empty?
         case @main
         when Module
-          @binding = eval("IRB.conf[:__MAIN__].module_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
+          @binding = eval("::IRB.conf[:__MAIN__].module_eval('::Kernel.binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
         else
           begin
-            @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
+            @binding = eval("::IRB.conf[:__MAIN__].instance_eval('::Kernel.binding', __FILE__, __LINE__)", @binding, __FILE__, __LINE__)
           rescue TypeError
             fail CantChangeBinding, @main.inspect
           end
         end
-      end
-
-      case @main
-      when Object
-        use_delegator = @main.frozen?
-      else
-        use_delegator = true
-      end
-
-      if use_delegator
-        @main = SimpleDelegator.new(@main)
-        IRB.conf[:__MAIN__] = @main
-        @main.singleton_class.class_eval do
-          private
-          define_method(:binding, Kernel.instance_method(:binding))
-          define_method(:local_variables, Kernel.instance_method(:local_variables))
-          # Define empty method to avoid delegator warning, will be overridden.
-          define_method(:exit) {|*a, &b| }
-          define_method(:exit!) {|*a, &b| }
-        end
-        @binding = eval("IRB.conf[:__MAIN__].instance_eval('binding', __FILE__, __LINE__)", @binding, *@binding.source_location)
       end
 
       @binding.local_variable_set(:_, nil)
@@ -111,6 +88,9 @@ EOF
     attr_reader :main
 
     def load_helper_methods_to_main
+      # Do not load helper methods to frozen objects and BasicObject
+      return unless Object === @main && !@main.frozen?
+
       ancestors = class<<main;ancestors;end
       main.extend ExtendCommandBundle if !ancestors.include?(ExtendCommandBundle)
       main.extend HelpersContainer if !ancestors.include?(HelpersContainer)

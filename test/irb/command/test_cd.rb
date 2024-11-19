@@ -19,6 +19,12 @@ module TestIRB
           end
         end
 
+        class BO < BasicObject
+          def baz
+            "this is baz"
+          end
+        end
+
         binding.irb
       RUBY
     end
@@ -38,6 +44,19 @@ module TestIRB
       assert_match(/irb\(Foo::Bar\):004>/, out)
       assert_match(/Bar#methods: bar/, out)
       assert_match(/irb\(Foo\):006>/, out)
+    end
+
+    def test_cd_basic_object_or_frozen
+      out = run_ruby_file do
+        type "cd BO.new"
+        type "cd 1"
+        type "cd Object.new.freeze"
+        type "exit"
+      end
+
+      assert_match(/irb\(#<BO:.+\):002>/, out)
+      assert_match(/irb\(1\):003>/, out)
+      assert_match(/irb\(#<Object:.+\):004>/, out)
     end
 
     def test_cd_moves_top_level_with_no_args
