@@ -51,6 +51,10 @@ Note: We're only listing outstanding class updates.
         #=> [2022-02-24 00:00:00 UTC, 2022-02-25 00:00:00 UTC, 2022-02-26 00:00:00 UTC]
         ```
 
+* Refinement
+
+    * Removed deprecated method Refinement#refined_class. [[Feature #19714]]
+
 * RubyVM::AbstractSyntaxTree
 
     * Add RubyVM::AbstractSyntaxTree::Node#locations method which returns location objects

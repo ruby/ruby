@@ -1403,21 +1403,6 @@ rb_refinement_module_get_refined_class(VALUE module)
     return rb_attr_get(module, id_refined_class);
 }
 
-/*
- *  call-seq:
- *     refined_class    -> class
- *
- *  Deprecated; prefer #target.
- *
- *  Return the class refined by the receiver.
- */
-static VALUE
-rb_refinement_refined_class(VALUE module)
-{
-    rb_warn_deprecated_to_remove("3.4", "Refinement#refined_class", "Refinement#target");
-    return rb_refinement_module_get_refined_class(module);
-}
-
 static void
 add_activated_refinement(VALUE activated_refinements,
                          VALUE klass, VALUE refinement)
@@ -2131,7 +2116,6 @@ Init_eval(void)
     rb_undef_method(rb_cClass, "refine");
     rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
     rb_define_method(rb_cRefinement, "target", rb_refinement_module_get_refined_class, 0);
-    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_refined_class, 0);
     rb_undef_method(rb_cRefinement, "append_features");
     rb_undef_method(rb_cRefinement, "prepend_features");
     rb_undef_method(rb_cRefinement, "extend_object");
