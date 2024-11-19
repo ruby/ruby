@@ -3369,9 +3369,7 @@ fn gen_definedivar(
     jit_putobject(asm, result);
 
     // Jump to next instruction. This allows guard chains to share the same successor.
-    jump_to_next_insn(jit, asm);
-
-    return Some(EndBlock);
+    return jump_to_next_insn(jit, asm);
 }
 
 fn gen_checktype(
@@ -3717,8 +3715,7 @@ fn gen_opt_eq(
     };
 
     if specialized {
-        jump_to_next_insn(jit, asm);
-        Some(EndBlock)
+        jump_to_next_insn(jit, asm)
     } else {
         gen_opt_send_without_block(jit, asm)
     }
@@ -3798,8 +3795,7 @@ fn gen_opt_aref(
         }
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        jump_to_next_insn(jit, asm);
-        return Some(EndBlock);
+        return jump_to_next_insn(jit, asm);
     } else if comptime_recv.class_of() == unsafe { rb_cHash } {
         if !assume_bop_not_redefined(jit, asm, HASH_REDEFINED_OP_FLAG, BOP_AREF) {
             return None;
@@ -3835,8 +3831,7 @@ fn gen_opt_aref(
         asm.mov(stack_ret, val);
 
         // Jump to next instruction. This allows guard chains to share the same successor.
-        jump_to_next_insn(jit, asm);
-        Some(EndBlock)
+        jump_to_next_insn(jit, asm)
     } else {
         // General case. Call the [] method.
         gen_opt_send_without_block(jit, asm)
@@ -3904,8 +3899,7 @@ fn gen_opt_aset(
         let stack_ret = asm.stack_push(Type::Unknown);
         asm.mov(stack_ret, val);
 
-        jump_to_next_insn(jit, asm);
-        return Some(EndBlock);
+        return jump_to_next_insn(jit, asm)
     } else if comptime_recv.class_of() == unsafe { rb_cHash } {
         // Guard receiver is a Hash
         jit_guard_known_klass(
@@ -3933,8 +3927,7 @@ fn gen_opt_aset(
         let stack_ret = asm.stack_push(Type::Unknown);
         asm.mov(stack_ret, ret);
 
-        jump_to_next_insn(jit, asm);
-        Some(EndBlock)
+        jump_to_next_insn(jit, asm)
     } else {
         gen_opt_send_without_block(jit, asm)
     }
@@ -6795,8 +6788,7 @@ fn gen_send_cfunc(
                 gen_counter_incr(jit, asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
-                jump_to_next_insn(jit, asm);
-                return Some(EndBlock);
+                return jump_to_next_insn(jit, asm);
             }
         }
     }
@@ -7088,8 +7080,7 @@ fn gen_send_cfunc(
 
     // Jump (fall through) to the call continuation block
     // We do this to end the current block after the call
-    jump_to_next_insn(jit, asm);
-    Some(EndBlock)
+    jump_to_next_insn(jit, asm)
 }
 
 // Generate RARRAY_LEN. For array_opnd, use Opnd::Reg to reduce memory access,
@@ -7628,8 +7619,7 @@ fn gen_send_iseq(
             // Seems like a safe assumption.
 
             // Let guard chains share the same successor
-            jump_to_next_insn(jit, asm);
-            return Some(EndBlock);
+            return jump_to_next_insn(jit, asm);
         }
     }
 
@@ -7667,8 +7657,7 @@ fn gen_send_iseq(
         }
 
         // Let guard chains share the same successor
-        jump_to_next_insn(jit, asm);
-        return Some(EndBlock);
+        return jump_to_next_insn(jit, asm);
     }
 
     // Stack overflow check
@@ -8744,8 +8733,7 @@ fn gen_struct_aref(
     let ret = asm.stack_push(Type::Unknown);
     asm.mov(ret, val);
 
-    jump_to_next_insn(jit, asm);
-    Some(EndBlock)
+    jump_to_next_insn(jit, asm)
 }
 
 fn gen_struct_aset(
@@ -8791,8 +8779,7 @@ fn gen_struct_aset(
     let ret = asm.stack_push(Type::Unknown);
     asm.mov(ret, val);
 
-    jump_to_next_insn(jit, asm);
-    Some(EndBlock)
+    jump_to_next_insn(jit, asm)
 }
 
 // Generate code that calls a method with dynamic dispatch
@@ -8834,8 +8821,7 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
 
     // End the current block for invalidationg and sharing the same successor
-    jump_to_next_insn(jit, asm);
-    Some(EndBlock)
+    jump_to_next_insn(jit, asm)
 }
 
 fn gen_send_general(
@@ -9538,8 +9524,7 @@ fn gen_invokeblock_specialized(
         asm.clear_local_types();
 
         // Share the successor with other chains
-        jump_to_next_insn(jit, asm);
-        Some(EndBlock)
+        jump_to_next_insn(jit, asm)
     } else if comptime_handler.symbol_p() {
         gen_counter_incr(jit, asm, Counter::invokeblock_symbol);
         None
@@ -10099,8 +10084,7 @@ fn gen_opt_getconstant_path(
         let stack_top = asm.stack_push(Type::Unknown);
         asm.store(stack_top, val);
 
-        jump_to_next_insn(jit, asm);
-        return Some(EndBlock);
+        return jump_to_next_insn(jit, asm);
     }
 
     let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
@@ -10148,8 +10132,7 @@ fn gen_opt_getconstant_path(
         jit_putobject(asm, unsafe { (*ice).value });
     }
 
-    jump_to_next_insn(jit, asm);
-    Some(EndBlock)
+    jump_to_next_insn(jit, asm)
 }
 
 // Push the explicit block parameter onto the temporary stack. Part of the
@@ -10274,9 +10257,7 @@ fn gen_getblockparamproxy(
         unreachable!("absurd given initial filtering");
     }
 
-    jump_to_next_insn(jit, asm);
-
-    Some(EndBlock)
+    jump_to_next_insn(jit, asm)
 }
 
 fn gen_getblockparam(
