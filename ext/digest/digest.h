@@ -76,7 +76,7 @@ rb_id_metadata(void)
 static inline VALUE
 rb_digest_make_metadata(const rb_digest_metadata_t *meta)
 {
-#if EXTSTATIC
+#if defined(EXTSTATIC) && EXTSTATIC
     /* The extension is built as a static library, so safe to refer to
      * rb_digest_wrap_metadata directly. */
     extern VALUE rb_digest_wrap_metadata(const rb_digest_metadata_t *meta);
