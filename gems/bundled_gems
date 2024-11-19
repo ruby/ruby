@@ -1,5 +1,5 @@
 # gem-name version-to-bundle repository-url [optional-commit-hash-to-test-or-defaults-to-v-version]
-minitest        5.16.3  https://github.com/seattlerb/minitest
+minitest        5.25.1  https://github.com/seattlerb/minitest
 power_assert    2.0.3   https://github.com/ruby/power_assert
 rake            13.0.6  https://github.com/ruby/rake
 test-unit       3.5.7   https://github.com/test-unit/test-unit
