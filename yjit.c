@@ -291,6 +291,7 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
 
             // If we succeeded, stop
             if (mem_block != MAP_FAILED) {
+                ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_yjit_reserve_addr_space");
                 break;
             }
 
@@ -325,6 +326,10 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
             -1,
             0
         );
+
+        if (mem_block != MAP_FAILED) {
+            ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_yjit_reserve_addr_space:fallback");
+        }
     }
 
     // Check that the memory mapping was successful

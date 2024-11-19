@@ -16,6 +16,7 @@
 #include "internal/array.h"
 #include "internal/bits.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/io.h"
@@ -83,6 +84,8 @@ io_buffer_map_memory(size_t size, int flags)
     if (base == MAP_FAILED) {
         rb_sys_fail("io_buffer_map_memory:mmap");
     }
+
+    ruby_annotate_mmap(base, size, "Ruby:io_buffer_map_memory");
 #endif
 
     return base;

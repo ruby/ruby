@@ -194,6 +194,8 @@ nt_alloc_thread_stack_chunk(void)
         return NULL;
     }
 
+    ruby_annotate_mmap(m, MSTACK_CHUNK_SIZE, "Ruby:nt_alloc_thread_stack_chunk");
+
     size_t msz = nt_thread_stack_size();
     int header_page_cnt = 1;
     int stack_count = ((MSTACK_CHUNK_PAGE_NUM - header_page_cnt) * MSTACK_PAGE_SIZE) / msz;

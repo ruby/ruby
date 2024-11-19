@@ -475,18 +475,20 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
         }
 #else
         errno = 0;
-        void * base = mmap(NULL, (*count)*stride, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
+        size_t mmap_size = (*count)*stride;
+        void * base = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 
         if (base == MAP_FAILED) {
             // If the allocation fails, count = count / 2, and try again.
             *count = (*count) >> 1;
         }
         else {
+            ruby_annotate_mmap(base, mmap_size, "Ruby:fiber_pool_allocate_memory");
 #if defined(MADV_FREE_REUSE)
             // On Mac MADV_FREE_REUSE is necessary for the task_info api
             // to keep the accounting accurate as possible when a page is marked as reusable
             // it can possibly not occurring at first call thus re-iterating if necessary.
-            while (madvise(base, (*count)*stride, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
+            while (madvise(base, mmap_size, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
 #endif
             return base;
         }

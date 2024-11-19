@@ -1232,10 +1232,14 @@ Init_default_shapes(void)
     rb_shape_tree_ptr = xcalloc(1, sizeof(rb_shape_tree_t));
 
 #ifdef HAVE_MMAP
-    rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError),
+    size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
+    rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (GET_SHAPE_TREE()->shape_list == MAP_FAILED) {
         GET_SHAPE_TREE()->shape_list = 0;
+    }
+    else {
+        ruby_annotate_mmap(rb_shape_tree_ptr->shape_list, shape_list_mmap_size, "Ruby:Init_default_shapes:shape_list");
     }
 #else
     GET_SHAPE_TREE()->shape_list = xcalloc(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t));
@@ -1249,7 +1253,8 @@ Init_default_shapes(void)
     id_t_object = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
-    rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError),
+    size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
+    rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     rb_shape_tree_ptr->cache_size = 0;
 
@@ -1259,6 +1264,9 @@ Init_default_shapes(void)
     if (GET_SHAPE_TREE()->shape_cache == MAP_FAILED) {
         GET_SHAPE_TREE()->shape_cache = 0;
         GET_SHAPE_TREE()->cache_size = REDBLACK_CACHE_SIZE;
+    }
+    else {
+        ruby_annotate_mmap(rb_shape_tree_ptr->shape_cache, shape_cache_mmap_size, "Ruby:Init_default_shapes:shape_cache");
     }
 #endif
 

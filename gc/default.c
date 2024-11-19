@@ -5,6 +5,10 @@
 #ifndef _WIN32
 # include <sys/mman.h>
 # include <unistd.h>
+# ifdef __linux__
+#  include <linux/prctl.h>
+#  include <sys/prctl.h>
+# endif
 #endif
 
 #if !defined(PAGE_SIZE) && defined(HAVE_SYS_USER_H)
@@ -1859,11 +1863,22 @@ heap_page_body_allocate(void)
 #ifdef HAVE_MMAP
         GC_ASSERT(HEAP_PAGE_ALIGN % sysconf(_SC_PAGE_SIZE) == 0);
 
-        char *ptr = mmap(NULL, HEAP_PAGE_ALIGN + HEAP_PAGE_SIZE,
+        size_t mmap_size = HEAP_PAGE_ALIGN + HEAP_PAGE_SIZE;
+        char *ptr = mmap(NULL, mmap_size,
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (ptr == MAP_FAILED) {
             return NULL;
         }
+
+        // If we are building `default.c` as part of the ruby executable, we
+        // may just call `ruby_annotate_mmap`.  But if we are building
+        // `default.c` as a shared library, we will not have access to private
+        // symbols, and we have to either call prctl directly or make our own
+        // wrapper.
+#if defined(__linux__) && defined(PR_SET_VMA) && defined(PR_SET_VMA_ANON_NAME)
+        prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, ptr, mmap_size, "Ruby:GC:default:heap_page_body_allocate");
+        errno = 0;
+#endif
 
         char *aligned = ptr + HEAP_PAGE_ALIGN;
         aligned -= ((VALUE)aligned & (HEAP_PAGE_ALIGN - 1));
