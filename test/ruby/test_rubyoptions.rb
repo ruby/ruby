@@ -347,7 +347,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_chdir
-    omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
     assert_in_out_err(%w(-C), "", [], /Can't chdir/)
 
     assert_in_out_err(%w(-C test_ruby_test_rubyoptions_foobarbazqux), "", [], /Can't chdir/)
@@ -1044,7 +1043,6 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     def test_command_line_progname_nonascii
-      omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
       name = expected = nil
       unless (0x80..0x10000).any? {|c|
@@ -1096,7 +1094,6 @@ class TestRubyOptions < Test::Unit::TestCase
     # Since the codepage is shared all processes per conhost.exe, do
     # not chcp, or parallel test may break.
     def test_locale_codepage
-      omit "not working on MinGW" if /mingw/ =~ RUBY_PLATFORM
       locale = Encoding.find("locale")
       list = %W"\u{c7} \u{452} \u{3066 3059 3068}"
       list.each do |s|
