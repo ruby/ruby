@@ -223,6 +223,17 @@ impl<'a> JITState<'a> {
         }
     }
 
+    /// Wrapper for [self::gen_outlined_exit] with error handling.
+    fn gen_outlined_exit(&mut self, exit_pc: *mut VALUE, ctx: &Context) -> Option<CodePtr> {
+        let result = gen_outlined_exit(exit_pc, self.num_locals(), ctx, self.get_ocb());
+        if result.is_none() {
+            // When we can't have the exits, the code is incomplete and we have to bail.
+            self.block_abandoned = true;
+        }
+
+        result
+    }
+
     /// Return true if the current ISEQ could escape an environment.
     ///
     /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
@@ -879,6 +890,10 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
 /// moment, so there is one unique side exit for each context. Note that
 /// it's incorrect to jump to the side exit after any ctx stack push operations
 /// since they change the logic required for reconstructing interpreter state.
+///
+/// If you're in [the codegen module][self], use [JITState::gen_outlined_exit]
+/// instead of calling this directly.
+#[must_use]
 pub fn gen_outlined_exit(exit_pc: *mut VALUE, num_locals: u32, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut cb = ocb.unwrap();
     let mut asm = Assembler::new(num_locals);
@@ -943,7 +958,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler) -> O
         jit.block_entry_exit = Some(entry_exit?);
     } else {
         let block_entry_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, jit.starting_insn_idx.into()) };
-        jit.block_entry_exit = Some(gen_outlined_exit(block_entry_pc, jit.num_locals(), block_starting_context, jit.get_ocb())?);
+        jit.block_entry_exit = Some(jit.gen_outlined_exit(block_entry_pc, block_starting_context)?);
     }
 
     Some(())
@@ -1201,7 +1216,7 @@ fn end_block_with_jump(
     if jit.record_boundary_patch_point {
         jit.record_boundary_patch_point = false;
         let exit_pc = unsafe { rb_iseq_pc_at_idx(jit.iseq, continuation_insn_idx.into())};
-        let exit_pos = gen_outlined_exit(exit_pc, jit.num_locals(), &reset_depth, jit.get_ocb());
+        let exit_pos = jit.gen_outlined_exit(exit_pc, &reset_depth);
         record_global_inval_patch(asm, exit_pos?);
     }
 
@@ -1310,7 +1325,7 @@ pub fn gen_single_block(
         // If previous instruction requested to record the boundary
         if jit.record_boundary_patch_point {
             // Generate an exit to this instruction and record it
-            let exit_pos = gen_outlined_exit(jit.pc, jit.num_locals(), &asm.ctx, jit.get_ocb()).ok_or(())?;
+            let exit_pos = jit.gen_outlined_exit(jit.pc, &asm.ctx).ok_or(())?;
             record_global_inval_patch(&mut asm, exit_pos);
             jit.record_boundary_patch_point = false;
         }
