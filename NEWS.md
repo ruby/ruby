@@ -138,6 +138,7 @@ The following bundled gems are updated.
 * net-ftp 0.3.8
 * net-imap 0.5.1
 * net-smtp 0.5.0
+* prime 0.1.3
 * rbs 3.6.1
 * typeprof 0.21.11
 * debug 1.9.2
