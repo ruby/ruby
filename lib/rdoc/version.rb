@@ -5,6 +5,6 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '6.8.0'
+  VERSION = '6.8.1'
 
 end
