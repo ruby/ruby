@@ -738,6 +738,12 @@ module Net   #:nodoc:
     rescue LoadError
       HAVE_ZLIB=false
     end
+
+    # for backward compatibility until Ruby 3.5
+    # https://bugs.ruby-lang.org/issues/20900
+    # https://github.com/bblimke/webmock/pull/1081
+    HTTPSession = HTTP
+    deprecate_constant :HTTPSession
     # :startdoc:
 
     # Returns +true+; retained for compatibility.
