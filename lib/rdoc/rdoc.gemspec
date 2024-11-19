@@ -92,6 +92,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     "lib/rdoc/generator/template/darkfish/_sidebar_search.rhtml",
     "lib/rdoc/generator/template/darkfish/_sidebar_sections.rhtml",
     "lib/rdoc/generator/template/darkfish/_sidebar_table_of_contents.rhtml",
+    "lib/rdoc/generator/template/darkfish/_sidebar_toggle.rhtml",
     "lib/rdoc/generator/template/darkfish/class.rhtml",
     "lib/rdoc/generator/template/darkfish/css/fonts.css",
     "lib/rdoc/generator/template/darkfish/css/rdoc.css",
