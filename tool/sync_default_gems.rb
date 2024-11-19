@@ -38,6 +38,7 @@ module SyncDefaultGems
     irb: 'ruby/irb',
     json: 'ruby/json',
     logger: 'ruby/logger',
+    mmtk: 'ruby/mmtk',
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
@@ -404,6 +405,9 @@ module SyncDefaultGems
       cp_r("#{upstream}/lib/win32/registry.rb", "ext/win32/lib/win32")
       cp_r("#{upstream}/test/win32/test_registry.rb", "test/win32")
       cp_r("#{upstream}/win32-registry.gemspec", "ext/win32")
+    when "mmtk"
+      rm_rf("gc/mmtk")
+      cp_r("#{upstream}/gc/mmtk", "gc")
     else
       sync_lib gem, upstream
     end
@@ -417,6 +421,7 @@ module SyncDefaultGems
 
   def check_prerelease_version(gem)
     return if gem == "rubygems"
+    return if gem == "mmtk"
 
     gem = gem.downcase
 
