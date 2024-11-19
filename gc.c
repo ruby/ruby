@@ -616,7 +616,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 
 static const char *obj_type_name(VALUE obj);
 #define RB_AMALGAMATED_DEFAULT_GC
-#include "gc/default.c"
+#include "gc/default/default.c"
 static int external_gc_loaded = FALSE;
 
 
@@ -736,7 +736,7 @@ ruby_external_gc_init(void)
             }
         }
 
-        size_t gc_so_path_size = strlen(SHARED_GC_DIR "librubygc." SOEXT) + strlen(gc_so_file) + 1;
+        size_t gc_so_path_size = strlen(SHARED_GC_DIR "librubygc." DLEXT) + strlen(gc_so_file) + 1;
         gc_so_path = alloca(gc_so_path_size);
         {
             size_t gc_so_path_idx = 0;
@@ -746,7 +746,7 @@ ruby_external_gc_init(void)
             GC_SO_PATH_APPEND(SHARED_GC_DIR);
             GC_SO_PATH_APPEND("librubygc.");
             GC_SO_PATH_APPEND(gc_so_file);
-            GC_SO_PATH_APPEND(SOEXT);
+            GC_SO_PATH_APPEND(DLEXT);
             GC_ASSERT(gc_so_path_idx == gc_so_path_size - 1);
 #undef GC_SO_PATH_APPEND
         }
