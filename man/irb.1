@@ -180,7 +180,7 @@ The default value is 16.
 .El
 .Pp
 .Sh ENVIRONMENT
-.Bl -tag -compact -width "XDG_CONFIG_HOME"
+.Bl -tag -compact -width "IRB_USE_AUTOCOMPLETE"
 .It Ev IRB_LANG
 The locale used for
 .Nm .
@@ -190,9 +190,42 @@ The path to the personal initialization file.
 .Pp
 .It Ev XDG_CONFIG_HOME
 .Nm
-respects XDG_CONFIG_HOME. If this is set, load
+respects XDG_CONFIG_HOME. If it is set and
+.Ev IRBRC
+is unset, load
 .Pa $XDG_CONFIG_HOME/irb/irbrc
 as a personal initialization file.
+.Pp
+.It Ev RI_PAGER
+The command specified would be used as a pager.
+.Pp
+.It Ev PAGER
+The command specified would be used as a pager if
+.Ev RI_PAGER
+is unset.
+.Pp
+.It Ev VISUAL
+Its value would be used to open files by the edit command.
+.Pp
+.It Ev EDITOR
+Its value would be used to open files by the edit command if
+.Ev VISUAL
+is unset.
+.Pp
+.It Ev NO_COLOR
+Assigning a value to it disables colorization.
+.Pp
+.It Ev IRB_USE_AUTOCOMPLETE
+Assigning
+.Sy false
+to it disables autocompletion.
+.Pp
+.It Ev IRB_COMPLETOR
+Autocompletion behavior. Allowed values are
+.Sy regexp
+or
+.Sy type
+.
 .Pp
 .El
 .Pp
