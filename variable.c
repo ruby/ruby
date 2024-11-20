@@ -453,15 +453,27 @@ struct rb_global_entry {
     bool ractor_local;
 };
 
+static void
+free_global_variable(struct rb_global_variable *var)
+{
+    RUBY_ASSERT(var->counter == 0);
+
+    struct trace_var *trace = var->trace;
+    while (trace) {
+        struct trace_var *next = trace->next;
+        xfree(trace);
+        trace = next;
+    }
+    xfree(var);
+}
+
 static enum rb_id_table_iterator_result
 free_global_entry_i(VALUE val, void *arg)
 {
     struct rb_global_entry *entry = (struct rb_global_entry *)val;
-    if (entry->var->counter == 1) {
-        ruby_xfree(entry->var);
-    }
-    else {
-        entry->var->counter--;
+    entry->var->counter--;
+    if (entry->var->counter == 0) {
+        free_global_variable(entry->var);
     }
     ruby_xfree(entry);
     return ID_TABLE_DELETE;
@@ -1007,13 +1019,7 @@ rb_alias_variable(ID name1, ID name2)
         }
         var->counter--;
         if (var->counter == 0) {
-            struct trace_var *trace = var->trace;
-            while (trace) {
-                struct trace_var *next = trace->next;
-                xfree(trace);
-                trace = next;
-            }
-            xfree(var);
+            free_global_variable(var);
         }
     }
     else {
