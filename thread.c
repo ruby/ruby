@@ -1937,11 +1937,6 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
 
 /*
  * ruby_thread_has_gvl_p - check if current native thread has GVL.
- *
- ***
- *** This API is EXPERIMENTAL!
- *** We do not guarantee that this API remains in ruby 1.9.2 or later.
- ***
  */
 
 int
