@@ -151,7 +151,7 @@ The following bundled gems are updated.
 
 The following bundled gems are promoted from default gems.
 
-* mutex_m 0.2.0
+* mutex_m 0.3.0
 * getoptlong 0.2.1
 * base64 0.2.0
 * bigdecimal 3.1.8
