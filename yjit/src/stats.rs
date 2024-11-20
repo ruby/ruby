@@ -281,6 +281,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::deleted_defer_block_count,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
+    Counter::compilation_failure,
     Counter::max_inline_versions,
     Counter::inline_block_count,
     Counter::num_contexts_encoded,
