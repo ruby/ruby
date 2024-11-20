@@ -3630,6 +3630,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             const uint8_t *end_cursor = cursors[0];
             end_cursor = (end_cursor == NULL || cursors[1] == NULL) ? cursors[1] : (end_cursor > cursors[1] ? end_cursor : cursors[1]);
             end_cursor = (end_cursor == NULL || cursors[2] == NULL) ? cursors[2] : (end_cursor > cursors[2] ? end_cursor : cursors[2]);
+            if (!end_cursor) end_cursor = call_node->closing_loc.end;
 
             const pm_line_column_t start_location = PM_NODE_START_LINE_COLUMN(scope_node->parser, call_node);
             const pm_line_column_t end_location = pm_newline_list_line_column(&scope_node->parser->newline_list, end_cursor, scope_node->parser->start_line);
