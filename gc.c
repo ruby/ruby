@@ -173,6 +173,13 @@ rb_gc_vm_barrier(void)
     rb_vm_barrier();
 }
 
+#if USE_SHARED_GC
+void *
+rb_gc_get_ractor_newobj_cache(void)
+{
+    return GET_RACTOR()->newobj_cache;
+}
+
 void
 rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
 {
@@ -215,6 +222,7 @@ rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context)
     native_tls_set(ruby_current_ec_key, NULL);
 #endif
 }
+#endif
 
 bool
 rb_gc_event_hook_required_p(rb_event_flag_t event)
@@ -239,11 +247,6 @@ rb_gc_get_objspace(void)
     return GET_VM()->gc.objspace;
 }
 
-void *
-rb_gc_get_ractor_newobj_cache(void)
-{
-    return GET_RACTOR()->newobj_cache;
-}
 
 void
 rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data)
@@ -3280,6 +3283,7 @@ update_superclasses(void *objspace, VALUE obj)
 extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
 
+#if USE_SHARED_GC
 struct global_vm_table_foreach_data {
     vm_table_foreach_callback_func callback;
     vm_table_update_callback_func update_callback;
@@ -3413,6 +3417,7 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         rb_bug("rb_gc_vm_weak_table_foreach: unknown table %d", table);
     }
 }
+#endif
 
 void
 rb_gc_update_vm_references(void *objspace)
