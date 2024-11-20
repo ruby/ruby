@@ -2791,6 +2791,19 @@ AC_DEFINE_UNQUOTED(COROUTINE_H, ["$COROUTINE_H"])
 AC_SUBST(X_COROUTINE_H, [$COROUTINE_H])
 AC_SUBST(X_COROUTINE_SRC, [$COROUTINE_SRC])
 
+AC_CACHE_CHECK(for x86 control-flow protection, rb_cv_control_flow_protection,
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
+    void *shadow_stack_pointer = 0;
+    asm("rdsspq %0\n" : "=r" (shadow_stack_pointer));
+    ]])],
+    rb_cv_control_flow_protection=yes,
+    rb_cv_control_flow_protection=no
+)])
+
+AS_IF([test "$rb_cv_control_flow_protection" = yes], [
+    AC_DEFINE(COROUTINE_CONTROL_FLOW_PROTECTION)
+])
+
 AS_IF([test "$THREAD_MODEL" = pthread], [
     AC_CACHE_CHECK([whether pthread_t is scalar type], [rb_cv_scalar_pthread_t], [
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
@@ -4720,6 +4733,7 @@ config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with thread"         "$THREAD_MODEL"
 config_summary "with coroutine"      "$coroutine_type"
+config_summary "with c-f protection" "$rb_cv_control_flow_protection"
 config_summary "with shared GC"      "$shared_gc_summary"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
