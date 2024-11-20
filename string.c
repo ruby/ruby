@@ -94,7 +94,7 @@ VALUE rb_cSymbol;
  *            The string was allocated by the `Symbol#to_s` method.
  *            It emits a deprecation warning when mutated for the first time.
  * 4:     STR_PRECOMPUTED_HASH
- *            The string is embedded and has its precomputed hascode stored
+ *            The string is embedded and has its precomputed hashcode stored
  *            after the terminator.
  * 5:     STR_SHARED_ROOT
  *            Other strings may point to the contents of this string. When this
