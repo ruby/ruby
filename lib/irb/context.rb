@@ -13,6 +13,9 @@ module IRB
   # A class that wraps the current state of the irb session, including the
   # configuration of IRB.conf.
   class Context
+    KERNEL_PUBLIC_METHOD = ::Kernel.instance_method(:public_method)
+    KERNEL_METHOD = ::Kernel.instance_method(:method)
+
     ASSIGN_OPERATORS_REGEXP = Regexp.union(%w[= += -= *= /= %= **= &= |= &&= ||= ^= <<= >>=])
     # Creates a new IRB context.
     #
@@ -648,8 +651,8 @@ module IRB
       return if local_variables.include?(command)
 
       # Check visibility
-      public_method = !!Kernel.instance_method(:public_method).bind_call(main, command) rescue false
-      private_method = !public_method && !!Kernel.instance_method(:method).bind_call(main, command) rescue false
+      public_method = !!KERNEL_PUBLIC_METHOD.bind_call(main, command) rescue false
+      private_method = !public_method && !!KERNEL_METHOD.bind_call(main, command) rescue false
       if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
         [command, arg]
       end

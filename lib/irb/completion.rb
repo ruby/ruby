@@ -137,27 +137,33 @@ module IRB
   end
 
   class RegexpCompletor < BaseCompletor # :nodoc:
+    KERNEL_METHODS = ::Kernel.instance_method(:methods)
+    KERNEL_PRIVATE_METHODS = ::Kernel.instance_method(:private_methods)
+    KERNEL_INSTANCE_VARIABLES = ::Kernel.instance_method(:instance_variables)
+    OBJECT_CLASS_INSTANCE_METHOD = ::Object.instance_method(:class)
+    MODULE_CONSTANTS_INSTANCE_METHOD = ::Module.instance_method(:constants)
+
     using Module.new {
       refine ::Binding do
         def eval_methods
-          ::Kernel.instance_method(:methods).bind(eval("self")).call
+          KERNEL_METHODS.bind_call(receiver)
         end
 
         def eval_private_methods
-          ::Kernel.instance_method(:private_methods).bind(eval("self")).call
+          KERNEL_PRIVATE_METHODS.bind_call(receiver)
         end
 
         def eval_instance_variables
-          ::Kernel.instance_method(:instance_variables).bind(eval("self")).call
+          KERNEL_INSTANCE_VARIABLES.bind_call(receiver)
         end
 
         def eval_global_variables
-          ::Kernel.instance_method(:global_variables).bind(eval("self")).call
+          ::Kernel.global_variables
         end
 
         def eval_class_constants
-          klass = ::Object.instance_method(:class).bind_call(receiver)
-          ::Module.instance_method(:constants).bind_call(klass)
+          klass = OBJECT_CLASS_INSTANCE_METHOD.bind_call(receiver)
+          MODULE_CONSTANTS_INSTANCE_METHOD.bind_call(klass)
         end
       end
     }
