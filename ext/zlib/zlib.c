@@ -1042,6 +1042,11 @@ zstream_unblock_func(void *ptr)
     args->interrupt = 1;
 }
 
+#ifndef RB_NOGVL_OFFLOAD_SAFE
+// Default to no-op if it's not defined:
+#define RB_NOGVL_OFFLOAD_SAFE 0
+#endif
+
 static VALUE
 zstream_run_once_begin(VALUE _arguments)
 {
@@ -1053,7 +1058,7 @@ zstream_run_once_begin(VALUE _arguments)
 #ifndef RB_NOGVL_UBF_ASYNC_SAFE
     return (VALUE)rb_thread_call_without_gvl(zstream_run_once, (void *)arguments, zstream_unblock_func, (void *)arguments);
 #else
-    return (VALUE)rb_nogvl(zstream_run_once, (void *)arguments, zstream_unblock_func, (void *)arguments, RB_NOGVL_UBF_ASYNC_SAFE);
+    return (VALUE)rb_nogvl(zstream_run_once, (void *)arguments, zstream_unblock_func, (void *)arguments, RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_OFFLOAD_SAFE);
 #endif
 }
 
