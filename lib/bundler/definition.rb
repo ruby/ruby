@@ -13,6 +13,7 @@ module Bundler
 
     attr_reader(
       :dependencies,
+      :locked_checksums,
       :locked_deps,
       :locked_gems,
       :platforms,
@@ -21,8 +22,6 @@ module Bundler
       :gemfiles,
       :sources
     )
-
-    attr_accessor :locked_checksums
 
     # Given a gemfile and lockfile creates a Bundler definition
     #
@@ -182,7 +181,7 @@ module Bundler
     #
     # @return [Boolean] Whether fetching remote information will be necessary or not
     #
-    def setup_domain!(options)
+    def setup_domain!(options = {})
       prefer_local! if options[:"prefer-local"]
 
       if options[:local] || no_install_needed?
@@ -545,6 +544,14 @@ module Bundler
     end
 
     attr_writer :source_requirements
+
+    def add_checksums
+      @locked_checksums = true
+
+      setup_domain!
+
+      specs # force materialization to real specifications, so that checksums are fetched
+    end
 
     private
 
