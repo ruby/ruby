@@ -704,5 +704,10 @@ module IRB
     def local_variables # :nodoc:
       workspace.binding.local_variables
     end
+
+    def safe_method_call_on_main(method_name)
+      main_object = main
+      Object === main_object ? main_object.__send__(method_name) : Object.instance_method(method_name).bind_call(main_object)
+    end
   end
 end

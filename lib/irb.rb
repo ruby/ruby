@@ -1463,21 +1463,16 @@ module IRB
       end
     end
 
-    def basic_object_safe_main_call(method)
-      main = @context.main
-      Object === main ? main.__send__(method) : Object.instance_method(method).bind_call(main)
-    end
-
     def format_prompt(format, ltype, indent, line_no) # :nodoc:
       format.gsub(/%([0-9]+)?([a-zA-Z%])/) do
         case $2
         when "N"
           @context.irb_name
         when "m"
-          main_str = basic_object_safe_main_call(:to_s) rescue "!#{$!.class}"
+          main_str = @context.safe_method_call_on_main(:to_s) rescue "!#{$!.class}"
           truncate_prompt_main(main_str)
         when "M"
-          main_str = basic_object_safe_main_call(:inspect) rescue "!#{$!.class}"
+          main_str = @context.safe_method_call_on_main(:inspect) rescue "!#{$!.class}"
           truncate_prompt_main(main_str)
         when "l"
           ltype
