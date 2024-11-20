@@ -41,7 +41,7 @@ module Bundler
 
         # resolve to see if the new deps broke anything
         @definition = builder.to_definition(lockfile_path, {})
-        @definition.resolve_remotely!
+        @definition.remotely!
 
         # since nothing broke, we can add those gems to the gemfile
         append_to(gemfile_path, build_gem_lines(@options[:conservative_versioning])) if @deps.any?

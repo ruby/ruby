@@ -228,10 +228,10 @@ module Bundler
 
       if options[:local] || @definition.no_install_needed?
         Bundler.settings.set_command_option(:jobs, 1) if @definition.no_install_needed? # to avoid the overhead of Bundler::Worker
-        @definition.resolve_with_cache!
+        @definition.with_cache!
         false
       else
-        @definition.resolve_remotely!
+        @definition.remotely!
         true
       end
     end

@@ -177,15 +177,25 @@ module Bundler
     end
 
     def resolve_with_cache!
-      sources.local!
-      sources.cached!
+      with_cache!
+
       resolve
     end
 
+    def with_cache!
+      sources.local!
+      sources.cached!
+    end
+
     def resolve_remotely!
+      remotely!
+
+      resolve
+    end
+
+    def remotely!
       sources.cached!
       sources.remote!
-      resolve
     end
 
     def prefer_local!

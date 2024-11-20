@@ -61,7 +61,7 @@ module Bundler
           raise InvalidOption, "Removing all platforms from the bundle is not allowed"
         end
 
-        definition.resolve_remotely! unless options[:local]
+        definition.remotely! unless options[:local]
 
         if options["normalize-platforms"]
           definition.normalize_platforms

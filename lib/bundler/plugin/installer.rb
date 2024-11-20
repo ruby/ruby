@@ -34,7 +34,7 @@ module Bundler
       # @return [Hash] map of names to their specs they are installed with
       def install_definition(definition)
         def definition.lock(*); end
-        definition.resolve_remotely!
+        definition.remotely!
         specs = definition.specs
 
         install_from_specs specs
