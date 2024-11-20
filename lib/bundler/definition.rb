@@ -176,6 +176,25 @@ module Bundler
       resolve
     end
 
+    #
+    # Setup sources according to the given options and the state of the
+    # definition.
+    #
+    # @return [Boolean] Whether fetching remote information will be necessary or not
+    #
+    def setup_domain!(options)
+      prefer_local! if options[:"prefer-local"]
+
+      if options[:local] || no_install_needed?
+        Bundler.settings.set_command_option(:jobs, 1) if no_install_needed? # to avoid the overhead of Bundler::Worker
+        with_cache!
+        false
+      else
+        remotely!
+        true
+      end
+    end
+
     def resolve_with_cache!
       with_cache!
 
