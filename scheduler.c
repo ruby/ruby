@@ -140,10 +140,10 @@ Init_Fiber_Scheduler(void)
 VALUE
 rb_fiber_scheduler_get(void)
 {
-    VM_ASSERT(ruby_thread_has_gvl_p());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
 
     rb_thread_t *thread = GET_THREAD();
-    VM_ASSERT(thread);
+    RUBY_ASSERT(thread);
 
     return thread->scheduler;
 }
@@ -186,10 +186,10 @@ fiber_scheduler_close_ensure(VALUE _thread)
 VALUE
 rb_fiber_scheduler_set(VALUE scheduler)
 {
-    VM_ASSERT(ruby_thread_has_gvl_p());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
 
     rb_thread_t *thread = GET_THREAD();
-    VM_ASSERT(thread);
+    RUBY_ASSERT(thread);
 
     if (scheduler != Qnil) {
         verify_interface(scheduler);
@@ -212,7 +212,7 @@ rb_fiber_scheduler_set(VALUE scheduler)
 static VALUE
 rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 {
-    VM_ASSERT(thread);
+    RUBY_ASSERT(thread);
 
     if (thread->blocking == 0) {
         return thread->scheduler;
@@ -246,7 +246,7 @@ VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 VALUE
 rb_fiber_scheduler_close(VALUE scheduler)
 {
-    VM_ASSERT(ruby_thread_has_gvl_p());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
 
     VALUE result;
 
@@ -408,7 +408,7 @@ rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
 VALUE
 rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
-    VM_ASSERT(rb_obj_is_fiber(fiber));
+    RUBY_ASSERT(rb_obj_is_fiber(fiber));
 
     return rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
 }
