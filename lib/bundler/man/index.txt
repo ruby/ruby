@@ -16,6 +16,7 @@ bundle-info(1)        bundle-info.1
 bundle-init(1)        bundle-init.1
 bundle-inject(1)      bundle-inject.1
 bundle-install(1)     bundle-install.1
+bundle-issue(1)       bundle-issue.1
 bundle-list(1)        bundle-list.1
 bundle-lock(1)        bundle-lock.1
 bundle-open(1)        bundle-open.1

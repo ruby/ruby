@@ -29,11 +29,6 @@ RSpec.describe "bundle help" do
     expect(out).to match(/bundle-install/)
   end
 
-  it "still outputs the old help for commands that do not have man pages yet" do
-    bundle "help issue"
-    expect(out).to include("Learn how to report an issue in Bundler")
-  end
-
   it "looks for a binary and executes it with --help option if it's named bundler-<task>" do
     skip "Could not find command testtasks, probably because not a windows friendly executable" if Gem.win_platform?
 
