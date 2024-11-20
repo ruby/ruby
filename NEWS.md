@@ -66,6 +66,10 @@ Note: We're only listing outstanding class updates.
     * An optional `Fiber::Scheduler#blocking_operation_wait` hook allows blocking operations to be moved out of the
       event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
 
+* IO::Buffer
+
+    * `IO::Buffer#copy` can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
+
 ## Stdlib updates
 
 * Tempfile
@@ -242,3 +246,4 @@ details of the default gems or bundled gems.
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
+[Feature #20902]: https://bugs.ruby-lang.org/issues/20902

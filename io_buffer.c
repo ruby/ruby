@@ -9,6 +9,9 @@
 #include "ruby/io/buffer.h"
 #include "ruby/fiber/scheduler.h"
 
+// For `rb_nogvl`.
+#include "ruby/thread.h"
+
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/bits.h"
@@ -2327,6 +2330,30 @@ io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values
     return SIZET2NUM(offset);
 }
 
+static size_t IO_BUFFER_BLOCKING_SIZE = 1024*1024;
+
+struct io_buffer_memmove_arguments {
+    unsigned char * destination;
+    const unsigned char * source;
+    size_t length;
+};
+
+static void *
+io_buffer_memmove_blocking(void *data)
+{
+    struct io_buffer_memmove_arguments *arguments = (struct io_buffer_memmove_arguments *)data;
+
+    memmove(arguments->destination, arguments->source, arguments->length);
+
+    return NULL;
+}
+
+static void
+io_buffer_memmove_unblock(void *data)
+{
+    // No safe way to interrupt.
+}
+
 static void
 io_buffer_memmove(struct rb_io_buffer *buffer, size_t offset, const void *source_base, size_t source_offset, size_t source_size, size_t length)
 {
@@ -2340,8 +2367,16 @@ io_buffer_memmove(struct rb_io_buffer *buffer, size_t offset, const void *source
         rb_raise(rb_eArgError, "The computed source range exceeds the size of the source buffer!");
     }
 
-    if (length != 0) {
-        memmove((unsigned char*)base+offset, (const unsigned char*)source_base+source_offset, length);
+    struct io_buffer_memmove_arguments arguments = {
+        .destination = (unsigned char*)base+offset,
+        .source = (unsigned char*)source_base+source_offset,
+        .length = length
+    };
+
+    if (arguments.length >= IO_BUFFER_BLOCKING_SIZE) {
+        rb_nogvl(io_buffer_memmove_blocking, &arguments, io_buffer_memmove_unblock, &arguments, RB_NOGVL_OFFLOAD_SAFE);
+    } else if (arguments.length != 0) {
+        memmove(arguments.destination, arguments.source, arguments.length);
     }
 }
 
