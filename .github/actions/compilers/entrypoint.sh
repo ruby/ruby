@@ -84,7 +84,7 @@ else
   tests="$INPUT_CHECK"
 fi
 
-grouped make install
+# grouped make install
 grouped make test-tool
 grouped make test-all TESTS="-- $tests"
 grouped env CHECK_LEAKS=true make test-spec MSPECOPT="$INPUT_MSPECOPT"

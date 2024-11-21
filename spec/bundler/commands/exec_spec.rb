@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle exec" do
-  let(:system_gems_to_install) { %w[myrack-1.0.0 myrack-0.9.1] }
-
   it "works with --gemfile flag" do
-    system_gems(system_gems_to_install, path: default_bundle_path)
+    system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
 
     gemfile "CustomGemfile", <<-G
       source "https://gem.repo1"
@@ -16,7 +14,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "activates the correct gem" do
-    system_gems(system_gems_to_install, path: default_bundle_path)
+    system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
 
     gemfile <<-G
       source "https://gem.repo1"
@@ -28,7 +26,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "works and prints no warnings when HOME is not writable" do
-    system_gems(system_gems_to_install, path: default_bundle_path)
+    system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
 
     gemfile <<-G
       source "https://gem.repo1"
@@ -386,7 +384,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "raises a helpful error when exec'ing to something outside of the bundle" do
-    system_gems(system_gems_to_install, path: default_bundle_path)
+    system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
 
     bundle "config set clean false" # want to keep the myrackup binstub
     install_gemfile <<-G
@@ -725,7 +723,7 @@ RSpec.describe "bundle exec" do
     RUBY
 
     before do
-      system_gems(system_gems_to_install, path: default_bundle_path)
+      system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
 
       bundled_app(path).open("w") {|f| f << executable }
       bundled_app(path).chmod(0o755)

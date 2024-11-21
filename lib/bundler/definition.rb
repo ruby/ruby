@@ -503,6 +503,10 @@ module Bundler
         !@locked_spec_with_invalid_deps
     end
 
+    def no_install_needed?
+      no_resolve_needed? && !missing_specs?
+    end
+
     def no_resolve_needed?
       !unlocking? && nothing_changed?
     end
@@ -946,8 +950,7 @@ module Bundler
         if dep
           gemfile_source = dep.source || default_source
 
-          deps << dep if !dep.source || lockfile_source.include?(dep.source)
-          @gems_to_unlock << name if lockfile_source.include?(dep.source) && lockfile_source != gemfile_source
+          deps << dep if !dep.source || lockfile_source.include?(dep.source) || new_deps.include?(dep)
 
           # Replace the locked dependency's source with the equivalent source from the Gemfile
           s.source = gemfile_source
@@ -956,23 +959,12 @@ module Bundler
           s.source = default_source unless sources.get(lockfile_source)
         end
 
-        next if @sources_to_unlock.include?(s.source.name)
+        source = s.source
+        next if @sources_to_unlock.include?(source.name)
 
         # Path sources have special logic
-        if s.source.instance_of?(Source::Path) || s.source.instance_of?(Source::Gemspec)
-          new_specs = begin
-            s.source.specs
-          rescue PathError
-            # if we won't need the source (according to the lockfile),
-            # don't error if the path source isn't available
-            next if specs.
-                    for(requested_dependencies, false).
-                    none? {|locked_spec| locked_spec.source == s.source }
-
-            raise
-          end
-
-          new_spec = new_specs[s].first
+        if source.instance_of?(Source::Path) || source.instance_of?(Source::Gemspec) || (source.instance_of?(Source::Git) && !@gems_to_unlock.include?(name) && deps.include?(dep))
+          new_spec = source.specs[s].first
           if new_spec
             s.dependencies.replace(new_spec.dependencies)
           else
@@ -983,7 +975,7 @@ module Bundler
         end
 
         if dep.nil? && requested_dependencies.find {|d| name == d.name }
-          @gems_to_unlock << s.name
+          @gems_to_unlock << name
         else
           converged << s
         end
