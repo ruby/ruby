@@ -150,7 +150,7 @@ module Spec
         ENV["BUNDLE_PATH__SYSTEM"] = "true"
       end
 
-      puts `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install --verbose`
+      puts `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install --quiet`
       raise unless $?.success?
     ensure
       if path
