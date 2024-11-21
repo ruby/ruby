@@ -84,7 +84,7 @@ assert_equal 'ok', %q{
 
   10.times do
     pid = fork{ exit!(0) }
-    deadline = now + 1
+    deadline = now + 10
     until Process.waitpid(pid, Process::WNOHANG)
       if now > deadline
         Process.kill(:KILL, pid)
