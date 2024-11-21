@@ -3577,14 +3577,16 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
         if let Some(payload) = get_iseq_payload(src_iseq) {
             let t = rb_yjit_get_cpu_time() as u32;
-            let dt = t - payload.comp_time_start;
 
-            // If we are past the branch timeout
-            if dt > get_option!(branch_timeout) {
-                // Bail because the branch is old and probably very
-                // infrequently executed, so not worth compiling
-                incr_counter!(branch_stub_old);
-                return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+            // In rare cases the CPU time measure can decrease
+            if t > payload.comp_time_start {
+                // If we are past the branch timeout
+                if t - payload.comp_time_start > get_option!(branch_timeout) {
+                    // Bail because the branch is old and probably very
+                    // infrequently executed, so not worth compiling
+                    incr_counter!(branch_stub_old);
+                    return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+                }
             }
         }
 
