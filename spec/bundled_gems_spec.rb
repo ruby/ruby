@@ -4,7 +4,6 @@ require "bundler"
 require "fileutils"
 
 require_relative "bundler/support/builders"
-require_relative "bundler/support/build_metadata"
 require_relative "bundler/support/helpers"
 require_relative "bundler/support/path"
 
