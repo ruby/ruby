@@ -100,7 +100,7 @@ pub static mut OPTIONS: Options = Options {
     exec_mem_size: None,
     no_type_prop: false,
     max_versions: 4,
-    branch_timeout: 30.0,
+    branch_timeout: 45.0,
     num_temp_regs: 5,
     c_builtin: false,
     gen_stats: false,
