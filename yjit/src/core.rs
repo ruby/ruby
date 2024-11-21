@@ -3581,8 +3581,6 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
 
             // If we are past the branch timeout
             if dt > get_option!(branch_timeout) {
-                println!("old branch, dt=", dt);
-
                 // Bail because the branch is old and probably very
                 // infrequently executed, so not worth compiling
                 return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
