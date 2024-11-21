@@ -11,7 +11,7 @@ module Bundler
       @specs = specs
     end
 
-    def for(dependencies, platforms_or_legacy_check = [nil], legacy_platforms = [nil])
+    def for(dependencies, platforms_or_legacy_check = [nil], legacy_platforms = [nil], skips: [])
       platforms = if [true, false].include?(platforms_or_legacy_check)
         Bundler::SharedHelpers.major_deprecation 2,
           "SpecSet#for received a `check` parameter, but that's no longer used and deprecated. " \
@@ -23,7 +23,7 @@ module Bundler
         platforms_or_legacy_check
       end
 
-      materialize_dependencies(dependencies, platforms)
+      materialize_dependencies(dependencies, platforms, skips: skips)
 
       @materializations.flat_map(&:specs).uniq
     end
@@ -212,7 +212,7 @@ module Bundler
 
     private
 
-    def materialize_dependencies(dependencies, platforms = [nil])
+    def materialize_dependencies(dependencies, platforms = [nil], skips: [])
       handled = ["bundler"].product(platforms).map {|k| [k, true] }.to_h
       deps = dependencies.product(platforms)
       @materializations = []
@@ -233,7 +233,7 @@ module Bundler
 
         deps.concat(materialization.dependencies) if materialization.complete?
 
-        @materializations << materialization
+        @materializations << materialization unless skips.include?(name)
       end
 
       @materializations
