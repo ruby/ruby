@@ -154,35 +154,39 @@ RSpec.describe Bundler::Fetcher::Downloader do
         context "that contains cgi escaped characters" do
           let(:uri) { Gem::URI("http://username:password%24@www.uri-to-fetch.com/api/v2/endpoint") }
 
-          it "should request basic authentication with the username and password" do
+          it "should request basic authentication with the username and password, and log the HTTP GET request to debug, without the password" do
             expect(net_http_get).to receive(:basic_auth).with("username", "password$")
+            expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://username@www.uri-to-fetch.com/api/v2/endpoint")
             subject.request(uri, options)
           end
         end
 
         context "that is all unescaped characters" do
           let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
-          it "should request basic authentication with the username and proper cgi compliant password" do
+          it "should request basic authentication with the username and proper cgi compliant password, and log the HTTP GET request to debug, without the password" do
             expect(net_http_get).to receive(:basic_auth).with("username", "password")
+            expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://username@www.uri-to-fetch.com/api/v2/endpoint")
             subject.request(uri, options)
           end
         end
       end
 
-      context "and there is no password provided" do
+      context "and it's used as the authentication token" do
         let(:uri) { Gem::URI("http://username@www.uri-to-fetch.com/api/v2/endpoint") }
 
-        it "should request basic authentication with just the user" do
+        it "should request basic authentication with just the user, and log the HTTP GET request to debug, without the token" do
           expect(net_http_get).to receive(:basic_auth).with("username", nil)
+          expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://www.uri-to-fetch.com/api/v2/endpoint")
           subject.request(uri, options)
         end
       end
 
-      context "that contains cgi escaped characters" do
+      context "and it's used as the authentication token, and contains cgi escaped characters" do
         let(:uri) { Gem::URI("http://username%24@www.uri-to-fetch.com/api/v2/endpoint") }
 
-        it "should request basic authentication with the proper cgi compliant password user" do
+        it "should request basic authentication with the proper cgi compliant password user, and log the HTTP GET request to debug, without the token" do
           expect(net_http_get).to receive(:basic_auth).with("username$", nil)
+          expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP GET http://www.uri-to-fetch.com/api/v2/endpoint")
           subject.request(uri, options)
         end
       end
