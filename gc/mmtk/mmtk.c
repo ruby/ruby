@@ -7,7 +7,7 @@
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
-#include "gc/mmtk.h"
+#include "gc/mmtk/mmtk.h"
 
 #include "ccan/list/list.h"
 #include "darray.h"
