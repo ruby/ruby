@@ -2,16 +2,15 @@ extern crate libc;
 extern crate mmtk;
 #[macro_use]
 extern crate log;
-#[macro_use]
 extern crate probe;
 
 use std::collections::HashSet;
-use std::panic::PanicInfo;
+use std::panic::PanicHookInfo;
 use std::sync::Mutex;
 use std::thread::ThreadId;
 
 use abi::RubyUpcalls;
-use binding::{RubyBinding, RubyBindingFast, RubyBindingFastMut};
+use binding::{RubyBinding, RubyBindingFast, RubyConfiguration};
 use mmtk::vm::slot::{SimpleSlot, UnimplementedMemorySlice};
 use mmtk::vm::VMBinding;
 use mmtk::MMTK;
@@ -23,7 +22,6 @@ pub mod api;
 pub mod binding;
 pub mod collection;
 pub mod object_model;
-pub mod ppp;
 pub mod reference_glue;
 pub mod scanning;
 pub mod utils;
@@ -57,11 +55,11 @@ impl VMBinding for Ruby {
 pub static BINDING: OnceCell<RubyBinding> = OnceCell::new();
 
 /// Some data needs to be accessed fast.
-pub static BINDING_FAST: RubyBindingFast = RubyBindingFast::new();
+/// We sacrifice safety for speed using unsynchronized global variables.
+pub static mut BINDING_FAST: RubyBindingFast = RubyBindingFast::new();
 
 /// Some data needs to be accessed fast.
-/// We sacrifice safety for speed using unsynchronized global variables.
-pub static mut BINDING_FAST_MUT: RubyBindingFastMut = RubyBindingFastMut::new();
+pub static CONFIGURATION: RubyConfiguration = RubyConfiguration::new();
 
 pub fn binding<'b>() -> &'b RubyBinding {
     BINDING
@@ -94,7 +92,7 @@ pub(crate) fn is_gc_thread(thread_id: ThreadId) -> bool {
     gc_threads.contains(&thread_id)
 }
 
-fn handle_gc_thread_panic(panic_info: &PanicInfo) {
+fn handle_gc_thread_panic(panic_info: &PanicHookInfo) {
     eprintln!("ERROR: An MMTk GC thread panicked.  This is a bug.");
     eprintln!("{panic_info}");
 

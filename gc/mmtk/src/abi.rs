@@ -1,5 +1,6 @@
 use crate::api::RubyMutator;
-use crate::{upcalls, Ruby};
+use crate::Ruby;
+use libc::c_int;
 use mmtk::scheduler::GCWorker;
 use mmtk::util::{Address, ObjectReference, VMMutatorThread, VMWorkerThread};
 
@@ -105,42 +106,11 @@ impl RubyObjectAccess {
 
     pub fn suffix_size() -> usize {
         // In RACTOR_CHECK_MODE, Ruby hides a field after each object to hold the Ractor ID.
-        unsafe { crate::BINDING_FAST_MUT.suffix_size }
+        unsafe { crate::BINDING_FAST.suffix_size }
     }
 
     pub fn object_size(&self) -> usize {
         Self::prefix_size() + self.payload_size() + Self::suffix_size()
-    }
-
-    pub fn get_givtbl(&self) -> *mut libc::c_void {
-        if self.has_moved_givtbl() {
-            let moved_givtbl = crate::binding().moved_givtbl.lock().unwrap();
-            moved_givtbl
-                .get(&self.objref)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "Object {} has HAS_MOVED_GIVTBL flag but not an entry in `moved_givtbl`",
-                        self.objref
-                    )
-                })
-                .gen_ivtbl
-        } else {
-            self.get_original_givtbl().unwrap_or_else(|| {
-                panic!(
-                    "Object {} does not have HAS_MOVED_GIVTBL flag or original givtbl",
-                    self.objref
-                )
-            })
-        }
-    }
-
-    pub fn get_original_givtbl(&self) -> Option<*mut libc::c_void> {
-        let addr = (upcalls().get_original_givtbl)(self.objref);
-        if addr.is_null() {
-            None
-        } else {
-            Some(addr)
-        }
     }
 }
 
@@ -285,17 +255,6 @@ impl GCThreadTLS {
         unsafe { std::mem::transmute(ptr) }
     }
 
-    /// Get a ref to `GCThreadTLS` from C-level thread-local storage, with assertion for null
-    /// pointer.
-    ///
-    /// # Safety
-    ///
-    /// Has undefined behavior if the pointer held in C-level TLS is invalid.
-    pub unsafe fn from_upcall_check() -> &'static mut GCThreadTLS {
-        let ptr = (upcalls().get_gc_thread_tls)();
-        Self::check_cast(ptr)
-    }
-
     pub fn worker<'w>(&mut self) -> &'w mut GCWorker<Ruby> {
         // NOTE: The returned ref points to the worker which does not have the same lifetime as self.
         assert!(self.kind == GC_THREAD_KIND_WORKER);
@@ -345,60 +304,27 @@ pub struct RubyBindingOptions {
 #[derive(Clone)]
 pub struct RubyUpcalls {
     pub init_gc_worker_thread: extern "C" fn(gc_worker_tls: *mut GCThreadTLS),
-    pub get_gc_thread_tls: extern "C" fn() -> *mut GCThreadTLS,
     pub is_mutator: extern "C" fn() -> bool,
-    pub stop_the_world: extern "C" fn(tls: VMWorkerThread),
-    pub resume_mutators: extern "C" fn(tls: VMWorkerThread),
+    pub stop_the_world: extern "C" fn(),
+    pub resume_mutators: extern "C" fn(),
     pub block_for_gc: extern "C" fn(tls: VMMutatorThread),
     pub number_of_mutators: extern "C" fn() -> usize,
     pub get_mutators: extern "C" fn(
         visit_mutator: extern "C" fn(*mut RubyMutator, *mut libc::c_void),
         data: *mut libc::c_void,
     ),
-    pub scan_vm_roots: extern "C" fn(),
-    pub scan_finalizer_tbl_roots: extern "C" fn(),
-    pub scan_end_proc_roots: extern "C" fn(),
-    pub scan_global_tbl_roots: extern "C" fn(),
-    pub scan_obj_to_id_tbl_roots: extern "C" fn(),
-    pub scan_misc_roots: extern "C" fn(),
-    pub scan_final_jobs_roots: extern "C" fn(),
+    pub scan_gc_roots: extern "C" fn(),
+    pub scan_objspace: extern "C" fn(),
     pub scan_roots_in_mutator_thread:
         extern "C" fn(mutator_tls: VMMutatorThread, worker_tls: VMWorkerThread),
     pub scan_object_ruby_style: extern "C" fn(object: ObjectReference),
     pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
     pub call_obj_free: extern "C" fn(object: ObjectReference),
-    pub cleanup_generic_iv_tbl: extern "C" fn(),
-    pub get_original_givtbl: extern "C" fn(object: ObjectReference) -> *mut libc::c_void,
-    pub move_givtbl: extern "C" fn(old_objref: ObjectReference, new_objref: ObjectReference),
     pub vm_live_bytes: extern "C" fn() -> usize,
-    pub update_frozen_strings_table: extern "C" fn(),
+    pub update_global_tables: extern "C" fn(tbl_idx: c_int),
+    pub global_tables_count: extern "C" fn() -> c_int,
     pub update_finalizer_table: extern "C" fn(),
     pub update_obj_id_tables: extern "C" fn(),
-    pub update_global_symbols_table: extern "C" fn(),
-    pub update_overloaded_cme_table: extern "C" fn(),
-    pub update_ci_table: extern "C" fn(),
-    pub get_frozen_strings_table: extern "C" fn() -> *mut st_table,
-    pub get_finalizer_table: extern "C" fn() -> *mut st_table,
-    pub get_obj_id_tables: extern "C" fn() -> *mut st_table,
-    pub get_global_symbols_table: extern "C" fn() -> *mut st_table,
-    pub get_overloaded_cme_table: extern "C" fn() -> *mut st_table,
-    pub get_ci_table: extern "C" fn() -> *mut st_table,
-    pub st_get_size_info: extern "C" fn(
-        table: *const st_table,
-        entries_start: *mut libc::size_t,
-        entries_bound: *mut libc::size_t,
-        bins_num: *mut libc::size_t,
-    ),
-    pub st_update_entries_range: extern "C" fn(
-        table: *mut st_table,
-        begin: libc::size_t,
-        end: libc::size_t,
-        weak_keys: bool,
-        weak_records: bool,
-        forward: bool,
-    ),
-    pub st_update_bins_range:
-        extern "C" fn(table: *mut st_table, begin: libc::size_t, end: libc::size_t),
 }
 
 unsafe impl Sync for RubyUpcalls {}
