@@ -1741,4 +1741,60 @@ RSpec.describe "bundle install with gem sources" do
     expected_executables << vendored_gems("bin/myrackup.bat").to_s if Gem.win_platform?
     expect(Dir.glob(vendored_gems("bin/*"))).to eq(expected_executables)
   end
+
+  it "preserves lockfile versions conservatively" do
+    build_repo4 do
+      build_gem "mypsych", "4.0.6" do |s|
+        s.add_dependency "mystringio"
+      end
+
+      build_gem "mypsych", "5.1.2" do |s|
+        s.add_dependency "mystringio"
+      end
+
+      build_gem "mystringio", "3.1.0"
+      build_gem "mystringio", "3.1.1"
+    end
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          mypsych (4.0.6)
+            mystringio
+          mystringio (3.1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        mypsych (~> 4.0)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<~G
+      source "https://gem.repo4"
+      gem "mypsych", "~> 5.0"
+    G
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          mypsych (5.1.2)
+            mystringio
+          mystringio (3.1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        mypsych (~> 5.0)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
 end
