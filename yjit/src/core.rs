@@ -1775,13 +1775,13 @@ pub struct IseqPayload {
     pub dead_blocks: Vec<BlockRef>,
 
     // Process CPU time when compilation started for this ISEQ
-    pub comp_time_start: f64,
+    pub comp_time_start: u32,
 }
 
 impl IseqPayload {
     pub fn new() -> Self {
         // Log the time when compilation started for this ISEQ
-        let comp_time_start = unsafe { rb_yjit_get_cpu_time() };
+        let comp_time_start = unsafe { rb_yjit_get_cpu_time() } as u32;
 
         Self {
             version_map: VersionMap::default(),
@@ -3576,7 +3576,7 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
         let src_iseq = src_block.get_blockid().iseq;
 
         if let Some(payload) = get_iseq_payload(src_iseq) {
-            let t = rb_yjit_get_cpu_time();
+            let t = rb_yjit_get_cpu_time() as u32;
             let dt = t - payload.comp_time_start;
 
             // If we are past the branch timeout

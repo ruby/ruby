@@ -45,7 +45,7 @@ pub struct Options {
 
     // CPU time since the start of compilation after which we consider
     // a branch to be "cold" and not worth compiling
-    pub branch_timeout: f64,
+    pub branch_timeout: u32,
 
     // The number of registers allocated for stack temps
     pub num_temp_regs: usize,
@@ -100,7 +100,7 @@ pub static mut OPTIONS: Options = Options {
     exec_mem_size: None,
     no_type_prop: false,
     max_versions: 4,
-    branch_timeout: 45.0,
+    branch_timeout: 80,
     num_temp_regs: 5,
     c_builtin: false,
     gen_stats: false,
