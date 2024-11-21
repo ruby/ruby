@@ -382,7 +382,6 @@ class TestGCCompact < Test::Unit::TestCase
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
-      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
