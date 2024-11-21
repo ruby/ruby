@@ -281,15 +281,18 @@ allocate_connection_attempt_fds(int additional_capacity)
 }
 
 static int
-reallocate_connection_attempt_fds(int *fds, int current_capacity, int additional_capacity)
+reallocate_connection_attempt_fds(int **fds, int current_capacity, int additional_capacity)
 {
     int new_capacity = current_capacity + additional_capacity;
+    int *new_fds;
 
-    if (realloc(fds, new_capacity * sizeof(int)) == NULL) {
+    new_fds = realloc(*fds, new_capacity * sizeof(int));
+    if (new_fds == NULL) {
         rb_syserr_fail(errno, "realloc(3)");
     }
+    *fds = new_fds;
 
-    for (int i = current_capacity; i < new_capacity; i++) fds[i] = -1;
+    for (int i = current_capacity; i < new_capacity; i++) (*fds)[i] = -1;
     return new_capacity;
 }
 
@@ -845,7 +848,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (errno == EINPROGRESS) {
                     if (current_capacity == arg->connection_attempt_fds_size) {
                         current_capacity = reallocate_connection_attempt_fds(
-                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds,
                             current_capacity,
                             additional_capacity
                         );
