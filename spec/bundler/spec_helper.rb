@@ -16,7 +16,6 @@ require "rspec/mocks"
 require "rspec/support/differ"
 
 require_relative "support/builders"
-require_relative "support/build_metadata"
 require_relative "support/checksums"
 require_relative "support/filters"
 require_relative "support/helpers"

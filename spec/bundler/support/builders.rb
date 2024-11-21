@@ -3,6 +3,8 @@
 require "bundler/shared_helpers"
 require "shellwords"
 
+require_relative "build_metadata"
+
 module Spec
   module Builders
     def self.extended(mod)
