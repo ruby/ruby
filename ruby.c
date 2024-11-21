@@ -2566,7 +2566,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (dump & DUMP_BIT(syntax)) {
         printf("Syntax OK\n");
         dump &= ~DUMP_BIT(syntax);
-        if (!dump) return Qtrue;
+        if (!dump) {
+            dispose_result();
+            return Qtrue;
+        }
     }
 
     if (dump & DUMP_BIT(parsetree)) {
