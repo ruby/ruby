@@ -39,6 +39,8 @@ esac
 
 pushd ${builddir}
 
+grouped git config --global --add safe.directory ${srcdir}
+
 grouped ${srcdir}/configure        \
     -C                             \
     --with-gcc="${INPUT_WITH_GCC}" \
