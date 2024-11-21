@@ -1,0 +1,42 @@
+[package]
+name = "mmtk_ruby"
+version = "0.1.0"
+authors = []
+edition = "2021"
+
+# Metadata for the Ruby repository
+[package.metadata.ci-repos.ruby]
+repo = "ruby/ruby"
+rev = "c9ff790aa7692fc941757cd9ca1d2e64e63cb9b6"
+
+[lib]
+name = "mmtk_ruby"
+crate-type = ["cdylib", "staticlib"]
+
+[profile.release]
+lto = true
+
+[dependencies]
+libc = "0.2"
+lazy_static = "1.1"
+log = "0.4.14"
+env_logger = "0.11.3"
+once_cell = "1.17.0"
+atomic_refcell = "0.1.9"
+probe = "0.5"
+
+[dependencies.mmtk]
+features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery"]
+
+# Uncomment the following lines to use mmtk-core from the official repository.
+git = "https://github.com/wks/mmtk-core.git"
+rev = "7d3f79d4e50dacec881252562c8c7946e2513e55"
+
+# Uncomment the following line to use mmtk-core from a local repository.
+# path = "../../mmtk-core"
+
+[features]
+default = []
+
+# When moving an object, clear its original copy.
+clear_old_copy = []
