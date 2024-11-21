@@ -3495,6 +3495,8 @@ c_callable! {
 /// Called by the generated code when a branch stub is executed
 /// Triggers compilation of branches and code patching
 fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -> *const u8 {
+    incr_counter!(branch_stub_hit);
+
     if get_option!(dump_insns) {
         println!("branch_stub_hit");
     }
@@ -3569,8 +3571,6 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
         }
 
-
-
         // Get the source ISEQ this branch is located in
         let src_block = branch.block.get().as_ref();
         let src_iseq = src_block.get_blockid().iseq;
@@ -3583,14 +3583,10 @@ fn branch_stub_hit_body(branch_ptr: *const c_void, target_idx: u32, ec: EcPtr) -
             if dt > get_option!(branch_timeout) {
                 // Bail because the branch is old and probably very
                 // infrequently executed, so not worth compiling
+                incr_counter!(branch_stub_old);
                 return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
             }
         }
-
-
-
-
-
 
         (cfp, original_interp_sp)
     };

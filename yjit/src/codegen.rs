@@ -805,7 +805,7 @@ fn gen_stub_exit(ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let ocb = ocb.unwrap();
     let mut asm = Assembler::new_without_iseq();
 
-    gen_counter_incr_without_pc(&mut asm, Counter::exit_from_branch_stub);
+    gen_counter_incr_without_pc(&mut asm, Counter::branch_stub_exit);
 
     asm_comment!(asm, "exit from branch stub");
     asm.cpop_into(SP);
