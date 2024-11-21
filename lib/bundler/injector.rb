@@ -184,7 +184,7 @@ module Bundler
     # @param [Array] gems            Array of names of gems to be removed.
     # @param [Pathname] gemfile_path The Gemfile from which to remove dependencies.
     def remove_gems_from_gemfile(gems, gemfile_path)
-      patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2\)/
+      patterns = /gem\s+(['"])#{Regexp.union(gems)}\1|gem\s*\((['"])#{Regexp.union(gems)}\2.*\)/
       new_gemfile = []
       multiline_removal = false
       File.readlines(gemfile_path).each do |line|
