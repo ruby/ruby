@@ -1152,6 +1152,66 @@ rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
     return str_new_static(rb_cString, ptr, len, rb_enc_to_index(enc));
 }
 
+struct enc_str_adopt_args {
+    char *ptr;
+    long len;
+    long capa;
+    rb_encoding *enc;
+};
+
+static VALUE
+enc_str_adopt_safe(VALUE _args)
+{
+    struct enc_str_adopt_args *args = (struct enc_str_adopt_args *)_args;
+
+    if (args->len < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+
+    rb_encoding *enc = args->enc;
+    if (enc == NULL) {
+        enc = rb_ascii8bit_encoding();
+    }
+
+    int termlen = rb_enc_mbminlen(enc);
+
+    if (args->len + termlen > args->capa) {
+        rb_raise(rb_eArgError, "string capacity smaller than string length + terminator");
+    }
+
+    RUBY_DTRACE_CREATE_HOOK(STRING, args->len);
+
+    VALUE str = str_alloc_heap(rb_cString);
+    RSTRING(str)->as.heap.aux.capa = args->capa - termlen;
+    RSTRING(str)->as.heap.ptr = args->ptr;
+    STR_SET_LEN(str, args->len);
+    rb_enc_raw_set(str, enc);
+    TERM_FILL(RSTRING_PTR(str) + args->len, termlen);
+
+    return str;
+}
+
+VALUE
+rb_enc_str_adopt(char *ptr, long len, long capa, rb_encoding *enc)
+{
+    int state;
+    struct enc_str_adopt_args args = {
+        .ptr = ptr,
+        .len = len,
+        .capa = capa,
+        .enc = enc,
+    };
+
+    VALUE str = rb_protect(enc_str_adopt_safe, (VALUE)&args, &state);
+
+    if (state) {
+        ruby_xfree(ptr);
+        rb_jump_tag(state);
+    }
+
+    return str;
+}
+
 static VALUE str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
                                    rb_encoding *from, rb_encoding *to,
                                    int ecflags, VALUE ecopts);
