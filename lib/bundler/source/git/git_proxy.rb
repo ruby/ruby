@@ -84,12 +84,6 @@ module Bundler
           end
         end
 
-        def not_a_repository?
-          _, status = git_null("rev-parse", "--resolve-git-dir", path.to_s, dir: path)
-
-          !status.success?
-        end
-
         def contains?(commit)
           allowed_with_path do
             result, status = git_null("branch", "--contains", commit, dir: path)

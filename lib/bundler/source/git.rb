@@ -188,12 +188,10 @@ module Bundler
       end
 
       def specs(*)
-        set_up_app_cache!(app_cache_path) if use_app_cache?
+        set_cache_path!(app_cache_path) if use_app_cache?
 
         if requires_checkout? && !@copied
-          FileUtils.rm_rf(app_cache_path) if use_app_cache? && git_proxy.not_a_repository?
-
-          fetch
+          fetch unless use_app_cache?
           checkout
         end
 
@@ -225,9 +223,7 @@ module Bundler
         cached!
         FileUtils.rm_rf(app_cache_path)
         git_proxy.checkout if requires_checkout?
-        FileUtils.cp_r("#{cache_path}/.", app_cache_path)
-        FileUtils.touch(app_cache_path.join(".bundlecache"))
-        FileUtils.rm_rf(Dir.glob(app_cache_path.join("hooks/*.sample")))
+        git_proxy.copy_to(app_cache_path, @submodules)
       end
 
       def load_spec_files
@@ -273,7 +269,14 @@ module Bundler
 
       def checkout
         Bundler.ui.debug "  * Checking out revision: #{ref}"
-        git_proxy.copy_to(install_path, submodules)
+        if use_app_cache?
+          SharedHelpers.filesystem_access(install_path.dirname) do |p|
+            FileUtils.mkdir_p(p)
+          end
+          FileUtils.cp_r("#{app_cache_path}/.", install_path)
+        else
+          git_proxy.copy_to(install_path, submodules)
+        end
         serialize_gemspecs_in(install_path)
         @copied = true
       end
@@ -319,11 +322,6 @@ module Bundler
       def set_install_path!(path)
         @local_specs = nil
         @install_path = path
-      end
-
-      def set_up_app_cache!(path)
-        FileUtils.mkdir_p(path.join("refs"))
-        set_cache_path!(path)
       end
 
       def has_app_cache?
