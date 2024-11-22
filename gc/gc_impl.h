@@ -28,7 +28,7 @@
 GC_IMPL_FN void *rb_gc_impl_objspace_alloc(void);
 GC_IMPL_FN void rb_gc_impl_objspace_init(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_free(void *objspace_ptr);
-GC_IMPL_FN void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr);
+GC_IMPL_FN void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor);
 GC_IMPL_FN void rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache);
 GC_IMPL_FN void rb_gc_impl_set_params(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_init(void);

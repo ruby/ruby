@@ -97,13 +97,13 @@ jobs:
       - run: $SETARCH make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
+      - run: $SETARCH make
+
       - name: Build shared GC
         run: |
           echo "RUBY_GC_LIBRARY=default" >> $GITHUB_ENV
           make shared-gc SHARED_GC=default
         if: ${{ matrix.shared_gc }}
-
-      - run: $SETARCH make
 
       - run: |
           $SETARCH make golf

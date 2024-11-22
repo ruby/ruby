@@ -566,7 +566,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 
 static const char *obj_type_name(VALUE obj);
 #define RB_AMALGAMATED_DEFAULT_GC
-#include "gc/default.c"
+#include "gc/default/default.c"
 static int external_gc_loaded = FALSE;
 
 
@@ -580,7 +580,7 @@ typedef struct gc_function_map {
     void *(*objspace_alloc)(void);
     void (*objspace_init)(void *objspace_ptr);
     void (*objspace_free)(void *objspace_ptr);
-    void *(*ractor_cache_alloc)(void *objspace_ptr);
+    void *(*ractor_cache_alloc)(void *objspace_ptr, void *ractor);
     void (*ractor_cache_free)(void *objspace_ptr, void *cache);
     void (*set_params)(void *objspace_ptr);
     void (*init)(void);
@@ -635,6 +635,9 @@ typedef struct gc_function_map {
     // Object ID
     VALUE (*object_id)(void *objspace_ptr, VALUE obj);
     VALUE (*object_id_to_ref)(void *objspace_ptr, VALUE object_id);
+    // Forking
+    void (*before_fork)(void *objspace_ptr);
+    void (*after_fork)(void *objspace_ptr, rb_pid_t pid);
     // Statistics
     void (*set_measure_total_time)(void *objspace_ptr, VALUE flag);
     bool (*get_measure_total_time)(void *objspace_ptr);
@@ -683,7 +686,7 @@ ruby_external_gc_init(void)
             }
         }
 
-        size_t gc_so_path_size = strlen(SHARED_GC_DIR "librubygc." SOEXT) + strlen(gc_so_file) + 1;
+        size_t gc_so_path_size = strlen(SHARED_GC_DIR "librubygc." DLEXT) + strlen(gc_so_file) + 1;
         gc_so_path = alloca(gc_so_path_size);
         {
             size_t gc_so_path_idx = 0;
@@ -693,7 +696,7 @@ ruby_external_gc_init(void)
             GC_SO_PATH_APPEND(SHARED_GC_DIR);
             GC_SO_PATH_APPEND("librubygc.");
             GC_SO_PATH_APPEND(gc_so_file);
-            GC_SO_PATH_APPEND(SOEXT);
+            GC_SO_PATH_APPEND(DLEXT);
             GC_ASSERT(gc_so_path_idx == gc_so_path_size - 1);
 #undef GC_SO_PATH_APPEND
         }
@@ -781,6 +784,9 @@ ruby_external_gc_init(void)
     // Object ID
     load_external_gc_func(object_id);
     load_external_gc_func(object_id_to_ref);
+    // Forking
+    load_external_gc_func(before_fork);
+    load_external_gc_func(after_fork);
     // Statistics
     load_external_gc_func(set_measure_total_time);
     load_external_gc_func(get_measure_total_time);
@@ -862,6 +868,9 @@ ruby_external_gc_init(void)
 // Object ID
 # define rb_gc_impl_object_id rb_gc_functions.object_id
 # define rb_gc_impl_object_id_to_ref rb_gc_functions.object_id_to_ref
+// Forking
+# define rb_gc_impl_before_fork rb_gc_functions.before_fork
+# define rb_gc_impl_after_fork rb_gc_functions.after_fork
 // Statistics
 # define rb_gc_impl_set_measure_total_time rb_gc_functions.set_measure_total_time
 # define rb_gc_impl_get_measure_total_time rb_gc_functions.get_measure_total_time
@@ -915,7 +924,7 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
 {
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
 
-    if (UNLIKELY(ruby_vm_event_flags & RUBY_INTERNAL_EVENT_NEWOBJ)) {
+    if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         unsigned int lev;
         RB_VM_LOCK_ENTER_CR_LEV(cr, &lev);
         {
@@ -1102,6 +1111,44 @@ rb_data_free(void *objspace, VALUE obj)
     }
 
     return true;
+}
+
+void
+rb_gc_obj_free_vm_weak_references(VALUE obj)
+{
+    if (FL_TEST(obj, FL_EXIVAR)) {
+        rb_free_generic_ivar((VALUE)obj);
+        FL_UNSET(obj, FL_EXIVAR);
+    }
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+        if (FL_TEST(obj, RSTRING_FSTR)) {
+            st_data_t fstr = (st_data_t)obj;
+            st_delete(rb_vm_fstring_table(), &fstr, NULL);
+            RB_DEBUG_COUNTER_INC(obj_str_fstr);
+
+            FL_UNSET(obj, RSTRING_FSTR);
+        }
+        break;
+      case T_SYMBOL:
+        rb_gc_free_dsymbol(obj);
+        break;
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_callinfo:
+            rb_vm_ci_free((const struct rb_callinfo *)obj);
+            break;
+          case imemo_ment:
+            rb_free_method_entry_vm_weak_references((const rb_method_entry_t *)obj);
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
 }
 
 bool

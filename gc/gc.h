@@ -29,6 +29,7 @@ size_t rb_size_mul_or_raise(size_t x, size_t y, VALUE exc);
 void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
 void rb_gc_set_pending_interrupt(void);
 void rb_gc_unset_pending_interrupt(void);
+void rb_gc_obj_free_vm_weak_references(VALUE obj);
 bool rb_gc_obj_free(void *objspace, VALUE obj);
 void rb_gc_mark_roots(void *objspace, const char **categoryp);
 void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
