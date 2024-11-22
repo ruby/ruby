@@ -541,11 +541,16 @@ rb_method_definition_release(rb_method_definition_t *def)
 static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
 
 void
-rb_free_method_entry(const rb_method_entry_t *me)
+rb_free_method_entry_vm_weak_references(const rb_method_entry_t *me)
 {
     if (me->def && me->def->iseq_overload) {
         delete_overloaded_cme((const rb_callable_method_entry_t *)me);
     }
+}
+
+void
+rb_free_method_entry(const rb_method_entry_t *me)
+{
     rb_method_definition_release(me->def);
 }
 

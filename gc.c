@@ -178,10 +178,67 @@ rb_gc_vm_barrier(void)
     rb_vm_barrier();
 }
 
+#if USE_SHARED_GC
+void *
+rb_gc_get_ractor_newobj_cache(void)
+{
+    return GET_RACTOR()->newobj_cache;
+}
+
+void
+rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
+{
+    rb_native_mutex_initialize(&context->lock);
+    context->ec = GET_EC();
+}
+
+void
+rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context)
+{
+    rb_native_mutex_lock(&context->lock);
+
+    GC_ASSERT(rb_current_execution_context(false) == NULL);
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+# ifdef __APPLE__
+    rb_current_ec_set(context->ec);
+# else
+    ruby_current_ec = context->ec;
+# endif
+#else
+    native_tls_set(ruby_current_ec_key, context->ec);
+#endif
+}
+
+void
+rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context)
+{
+    rb_native_mutex_unlock(&context->lock);
+
+    GC_ASSERT(rb_current_execution_context(true) == context->ec);
+
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+# ifdef __APPLE__
+    rb_current_ec_set(NULL);
+# else
+    ruby_current_ec = NULL;
+# endif
+#else
+    native_tls_set(ruby_current_ec_key, NULL);
+#endif
+}
+#endif
+
+bool
+rb_gc_event_hook_required_p(rb_event_flag_t event)
+{
+    return ruby_vm_event_flags & event;
+}
+
 void
 rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 {
-    if (LIKELY(!(ruby_vm_event_flags & event))) return;
+    if (LIKELY(!rb_gc_event_hook_required_p(event))) return;
 
     rb_execution_context_t *ec = GET_EC();
     if (!ec->cfp) return;
@@ -194,6 +251,7 @@ rb_gc_get_objspace(void)
 {
     return GET_VM()->gc.objspace;
 }
+
 
 void
 rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data)
@@ -1167,11 +1225,6 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
     }
 
-    if (FL_TEST(obj, FL_EXIVAR)) {
-        rb_free_generic_ivar((VALUE)obj);
-        FL_UNSET(obj, FL_EXIVAR);
-    }
-
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
@@ -1355,10 +1408,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
 
       case T_SYMBOL:
-        {
-            rb_gc_free_dsymbol(obj);
-            RB_DEBUG_COUNTER_INC(obj_symbol);
-        }
+        RB_DEBUG_COUNTER_INC(obj_symbol);
         break;
 
       case T_IMEMO:
@@ -2361,10 +2411,16 @@ rb_mark_locations(void *begin, void *end)
     rb_stack_range_tmp[1] = end;
 }
 
+void
+rb_gc_save_machine_context(void)
+{
+    // no-op
+}
+
 # if defined(__EMSCRIPTEN__)
 
 static void
-mark_current_machine_context(rb_execution_context_t *ec)
+mark_current_machine_context(const rb_execution_context_t *ec)
 {
     emscripten_scan_stack(rb_mark_locations);
     each_location_ptr(rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_each_location, NULL);
@@ -2375,7 +2431,7 @@ mark_current_machine_context(rb_execution_context_t *ec)
 # else // use Asyncify version
 
 static void
-mark_current_machine_context(rb_execution_context_t *ec)
+mark_current_machine_context(const rb_execution_context_t *ec)
 {
     VALUE *stack_start, *stack_end;
     SET_STACK_END;
@@ -2390,35 +2446,19 @@ mark_current_machine_context(rb_execution_context_t *ec)
 
 #else // !defined(__wasm__)
 
-static void
-mark_current_machine_context(rb_execution_context_t *ec)
+void
+rb_gc_save_machine_context(void)
 {
-    union {
-        rb_jmp_buf j;
-        VALUE v[sizeof(rb_jmp_buf) / (sizeof(VALUE))];
-    } save_regs_gc_mark;
-    VALUE *stack_start, *stack_end;
+    rb_thread_t *thread = GET_THREAD();
 
-    FLUSH_REGISTER_WINDOWS;
-    memset(&save_regs_gc_mark, 0, sizeof(save_regs_gc_mark));
-    /* This assumes that all registers are saved into the jmp_buf (and stack) */
-    rb_setjmp(save_regs_gc_mark.j);
+    RB_VM_SAVE_MACHINE_CONTEXT(thread);
+}
 
-    /* SET_STACK_END must be called in this function because
-     * the stack frame of this function may contain
-     * callee save registers and they should be marked. */
-    SET_STACK_END;
-    GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
-    void *data =
-#ifdef RUBY_ASAN_ENABLED
-        ec;
-#else
-        NULL;
-#endif
-
-    each_location(save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe, data);
-    each_location_ptr(stack_start, stack_end, gc_mark_machine_stack_location_maybe, data);
+static void
+mark_current_machine_context(const rb_execution_context_t *ec)
+{
+    rb_gc_mark_machine_context(ec);
 }
 #endif
 
@@ -2526,9 +2566,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     rb_vm_mark(vm);
     if (vm->self) gc_mark_internal(vm->self);
 
-    MARK_CHECKPOINT("machine_context");
-    mark_current_machine_context(ec);
-
     MARK_CHECKPOINT("end_proc");
     rb_mark_end_proc();
 
@@ -2544,7 +2581,11 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     }
 #endif
 
+    MARK_CHECKPOINT("machine_context");
+    mark_current_machine_context(ec);
+
     MARK_CHECKPOINT("finish");
+
 #undef MARK_CHECKPOINT
 }
 
@@ -2832,13 +2873,14 @@ const char *
 rb_gc_active_gc_name(void)
 {
     const char *gc_name = rb_gc_impl_active_gc_name();
+
     const size_t len = strlen(gc_name);
     if (len > RB_GC_MAX_NAME_LEN) {
         rb_bug("GC should have a name no more than %d chars long. Currently: %zu (%s)",
                RB_GC_MAX_NAME_LEN, len, gc_name);
     }
-    return gc_name;
 
+    return gc_name;
 }
 
 // TODO: rearchitect this function to work for a generic GC
@@ -2851,9 +2893,9 @@ rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
 /* GC */
 
 void *
-rb_gc_ractor_cache_alloc(void)
+rb_gc_ractor_cache_alloc(rb_ractor_t *ractor)
 {
-    return rb_gc_impl_ractor_cache_alloc(rb_gc_get_objspace());
+    return rb_gc_impl_ractor_cache_alloc(rb_gc_get_objspace(), ractor);
 }
 
 void
@@ -3245,6 +3287,142 @@ update_superclasses(void *objspace, VALUE obj)
 
 extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
+
+#if USE_SHARED_GC
+struct global_vm_table_foreach_data {
+    vm_table_foreach_callback_func callback;
+    vm_table_update_callback_func update_callback;
+    void *data;
+};
+
+static int
+vm_weak_table_foreach_key(st_data_t key, st_data_t value, st_data_t data, int error)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    return iter_data->callback((VALUE)key, iter_data->data);
+}
+
+static int
+vm_weak_table_foreach_update_key(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    return iter_data->update_callback((VALUE *)key, iter_data->data);
+}
+
+static int
+vm_weak_table_str_sym_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    if (STATIC_SYM_P(value)) {
+        return ST_CONTINUE;
+    }
+    else {
+        return iter_data->callback((VALUE)value, iter_data->data);
+    }
+}
+
+static int
+vm_weak_table_foreach_update_value(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    return iter_data->update_callback((VALUE *)value, iter_data->data);
+}
+
+static int
+vm_weak_table_gen_ivar_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
+{
+    int retval = vm_weak_table_foreach_key(key, value, data, error);
+    if (retval == ST_DELETE) {
+        FL_UNSET((VALUE)key, FL_EXIVAR);
+    }
+    return retval;
+}
+
+static int
+vm_weak_table_frozen_strings_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
+{
+    GC_ASSERT(RB_TYPE_P((VALUE)key, T_STRING));
+
+    int retval = vm_weak_table_foreach_key(key, value, data, error);
+    if (retval == ST_DELETE) {
+        FL_UNSET((VALUE)key, RSTRING_FSTR);
+    }
+    return retval;
+}
+
+struct st_table *rb_generic_ivtbl_get(void);
+
+void
+rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
+                            vm_table_update_callback_func update_callback,
+                            void *data,
+                            enum rb_gc_vm_weak_tables table)
+{
+    rb_vm_t *vm = GET_VM();
+
+    struct global_vm_table_foreach_data foreach_data = {
+        .callback = callback,
+        .update_callback = update_callback,
+        .data = data
+    };
+
+    switch (table) {
+      case RB_GC_VM_CI_TABLE: {
+        st_foreach_with_replace(
+            vm->ci_table,
+            vm_weak_table_foreach_key,
+            vm_weak_table_foreach_update_key,
+            (st_data_t)&foreach_data
+        );
+        break;
+      }
+      case RB_GC_VM_OVERLOADED_CME_TABLE: {
+        st_foreach_with_replace(
+            vm->overloaded_cme_table,
+            vm_weak_table_foreach_key,
+            vm_weak_table_foreach_update_key,
+            (st_data_t)&foreach_data
+        );
+        break;
+      }
+      case RB_GC_VM_GLOBAL_SYMBOLS_TABLE: {
+        st_foreach_with_replace(
+            global_symbols.str_sym,
+            vm_weak_table_str_sym_foreach,
+            vm_weak_table_foreach_update_value,
+            (st_data_t)&foreach_data
+        );
+        break;
+      }
+      case RB_GC_VM_GENERIC_IV_TABLE: {
+        st_table *generic_iv_tbl = rb_generic_ivtbl_get();
+        st_foreach_with_replace(
+            generic_iv_tbl,
+            vm_weak_table_gen_ivar_foreach,
+            vm_weak_table_foreach_update_key,
+            (st_data_t)&foreach_data
+        );
+        break;
+      }
+      case RB_GC_VM_FROZEN_STRINGS_TABLE: {
+        st_table *frozen_strings = GET_VM()->frozen_strings;
+        st_foreach_with_replace(
+            frozen_strings,
+            vm_weak_table_frozen_strings_foreach,
+            vm_weak_table_foreach_update_key,
+            (st_data_t)&foreach_data
+        );
+        break;
+      }
+      default:
+        rb_bug("rb_gc_vm_weak_table_foreach: unknown table %d", table);
+    }
+}
+#endif
 
 void
 rb_gc_update_vm_references(void *objspace)
@@ -3727,7 +3905,8 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
     };
 
     vm->gc.mark_func_data = &mfd;
-    rb_gc_mark_roots(rb_gc_get_objspace(), &data.category);
+    rb_gc_save_machine_context();
+    rb_gc_mark_roots(vm->gc.objspace, &data.category);
     vm->gc.mark_func_data = prev_mfd;
 }
 
@@ -4471,6 +4650,18 @@ rb_obj_info_dump_loc(VALUE obj, const char *file, int line, const char *func)
 {
     char buff[0x100];
     fprintf(stderr, "<OBJ_INFO:%s@%s:%d> %s\n", func, file, line, rb_raw_obj_info(buff, 0x100, obj));
+}
+
+void
+rb_gc_before_fork(void)
+{
+    rb_gc_impl_before_fork(rb_gc_get_objspace());
+}
+
+void
+rb_gc_after_fork(rb_pid_t pid)
+{
+    rb_gc_impl_after_fork(rb_gc_get_objspace(), pid);
 }
 
 /*
