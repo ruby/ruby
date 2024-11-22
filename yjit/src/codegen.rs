@@ -2797,35 +2797,6 @@ fn gen_get_ivar(
     recv: Opnd,
     recv_opnd: YARVOpnd,
 ) -> Option<CodegenStatus> {
-
-
-    /*
-    // If the shape is known at compile time
-    if let Some(shape_id) = asm.ctx.get_opnd_shape(recv_opnd) {
-        let ivar_index = unsafe {
-            let shape = rb_shape_get_shape_by_id(shape_id);
-            let mut ivar_index: u32 = 0;
-            if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
-                Some(ivar_index as usize)
-            } else {
-                None
-            }
-        };
-
-        // If the ivar is not defined on this shape
-        if ivar_index == None {
-            let out_opnd = asm.stack_push(Type::Nil);
-            asm.mov(out_opnd, Qnil.into());
-
-            jump_to_next_insn(jit, asm);
-            return Some(EndBlock);
-        }
-    }
-    */
-
-
-
-
     let comptime_val_klass = comptime_receiver.class_of();
 
     // If recv isn't already a register, load it.
@@ -3130,7 +3101,23 @@ fn gen_set_ivar(
     // NOTE: we could be smarter, more selective here.
     // If the shape being changed doesn't match the known self shape, then we know it can't be the same object,
     // and so no shape clearing is necessary
-    asm.clear_self_shape();
+    //asm.clear_self_shape();
+
+
+    // If the shape id being changed doesn't match the self shape id, then we
+    // know this object cannot be self, and so we don't need to clear the self shape
+    if let Some(self_shape_id) = asm.ctx.get_opnd_shape(SelfOpnd) {
+        let shape_id = comptime_receiver.shape_id_of();
+        if shape_id == self_shape_id {
+            asm.clear_self_shape();
+        }
+    }
+
+
+
+
+
+
 
 
 
