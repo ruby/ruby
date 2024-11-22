@@ -411,6 +411,7 @@ module SyncDefaultGems
     when "mmtk"
       rm_rf("gc/mmtk")
       cp_r("#{upstream}/gc/mmtk", "gc")
+      rm("gc/mmtk/Cargo.lock")
     else
       sync_lib gem, upstream
     end
