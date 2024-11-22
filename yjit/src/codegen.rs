@@ -8068,9 +8068,9 @@ fn gen_send_iseq(
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
-    let recv = match captured_opnd {
-        Some(captured_opnd) => asm.load(Opnd::mem(64, captured_opnd, 0)), // captured->self
-        _ => asm.stack_opnd(argc),
+    let (recv, recv_shape) = match captured_opnd {
+        Some(captured_opnd) => (asm.load(Opnd::mem(64, captured_opnd, 0)), None), // captured->self
+        _ => (asm.stack_opnd(argc), asm.ctx.get_opnd_shape(StackOpnd(argc.try_into().unwrap()))),
     };
     let captured_self = captured_opnd.is_some();
     let sp_offset = argc + if captured_self { 0 } else { 1 };
@@ -8193,10 +8193,16 @@ fn gen_send_iseq(
     };
     callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type);
 
+
+
     // If we know the shape of self, pass it along to the callee
-    if let Some(self_shape) = asm.ctx.get_opnd_shape(SelfOpnd) {
-        callee_ctx.set_opnd_shape(SelfOpnd, self_shape);
+    if let Some(recv_shape) = recv_shape {
+        callee_ctx.set_opnd_shape(SelfOpnd, recv_shape);
     }
+
+
+
+
 
     // Now that callee_ctx is prepared, discover a block that can be reused if we move some registers.
     // If there's such a block, move registers accordingly to avoid creating a new block.
