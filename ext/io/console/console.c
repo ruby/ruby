@@ -824,7 +824,14 @@ console_winsize(VALUE io)
 {
     rb_console_size_t ws;
     int fd = GetWriteFD(io);
+#if defined TIOCGWINSZ
+    // temporal debugging code
+    int ret = ioctl(fd, TIOCGWINSZ, &ws);
+    if (ret == -1) sys_fail(io);
+    if (ret != 0) rb_bug("ioctl(TIOCGWINSZ) returned %d", ret);
+#else
     if (!getwinsize(fd, &ws)) sys_fail(io);
+#endif
     return rb_assoc_new(INT2NUM(winsize_row(&ws)), INT2NUM(winsize_col(&ws)));
 }
 
