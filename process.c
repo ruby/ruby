@@ -1676,12 +1676,15 @@ after_exec(void)
 static void
 before_fork_ruby(void)
 {
+    rb_gc_before_fork();
     before_exec();
 }
 
 static void
 after_fork_ruby(rb_pid_t pid)
 {
+    rb_gc_after_fork(pid);
+
     if (pid == 0) {
         // child
         clear_pid_cache();
