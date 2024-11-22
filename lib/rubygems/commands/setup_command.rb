@@ -107,15 +107,6 @@ class Gem::Commands::SetupCommand < Gem::Command
     @verbose = nil
   end
 
-  def check_ruby_version
-    required_version = Gem::Requirement.new ">= 2.6.0"
-
-    unless required_version.satisfied_by? Gem.ruby_version
-      alert_error "Expected Ruby version #{required_version}, is #{Gem.ruby_version}"
-      terminate_interaction 1
-    end
-  end
-
   def defaults_str # :nodoc:
     "--format-executable --document ri --regenerate-binstubs"
   end
@@ -147,8 +138,6 @@ By default, this RubyGems will install gem as:
 
   def execute
     @verbose = Gem.configuration.really_verbose
-
-    check_ruby_version
 
     require "fileutils"
     if Gem.configuration.really_verbose
