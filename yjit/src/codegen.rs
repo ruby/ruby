@@ -8193,6 +8193,11 @@ fn gen_send_iseq(
     };
     callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type);
 
+    // If we know the shape of self, pass it along to the callee
+    if let Some(self_shape) = asm.ctx.get_opnd_shape(SelfOpnd) {
+        callee_ctx.set_opnd_shape(SelfOpnd, self_shape);
+    }
+
     // Now that callee_ctx is prepared, discover a block that can be reused if we move some registers.
     // If there's such a block, move registers accordingly to avoid creating a new block.
     let blockid = BlockId { iseq, idx: start_pc_offset };
