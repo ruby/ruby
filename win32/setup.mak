@@ -277,5 +277,5 @@ $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
 	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
-	@ren $(MAKEFILE) $(MAKEFILE_NEW)
+	@move /y $(MAKEFILE) $(MAKEFILE_NEW) > nul
 	@echo type 'nmake' to make ruby.

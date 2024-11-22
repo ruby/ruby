@@ -743,6 +743,12 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
     AS_CASE([ $CFLAGS ], [*" -save-temps="*|*" -save-temps "*], [], [
 	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
     ])
+    AS_CASE([$target_os], [mingw*], [
+	# 64bit Windows is IL32P64; shorten-64-to-32 causes tons of warnigs
+	extra_warnflags="$extra_warnflags -Wno-shorten-64-to-32"
+    ], [
+	extra_warnflags="$extra_warnflags -Werror=shorten-64-to-32"
+    ])
 
     # ICC doesn't support -Werror=
     AS_IF([test $icc_version -gt 0], [
@@ -756,7 +762,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
 		 -Werror=pointer-arith \
-		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
 		 -Werror=old-style-definition \
 		 -Wimplicit-fallthrough=0 \
