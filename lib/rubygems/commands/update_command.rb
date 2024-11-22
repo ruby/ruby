@@ -323,10 +323,6 @@ command to remove old versions.
   #
   def oldest_supported_version
     @oldest_supported_version ||=
-      if Gem.ruby_version > Gem::Version.new("3.1.a")
-        Gem::Version.new("3.3.3")
-      else
-        Gem::Version.new("3.2.3")
-      end
+      Gem::Version.new("3.3.3")
   end
 end
