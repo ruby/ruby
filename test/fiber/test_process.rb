@@ -73,4 +73,19 @@ class TestFiberProcess < Test::Unit::TestCase
       end
     end.join
   end
+
+  def test_fork_missing_command
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+
+    Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        result = system("missing_command")
+
+        assert_not_predicate $?, :success?
+      end
+    end.join
+  end
 end
