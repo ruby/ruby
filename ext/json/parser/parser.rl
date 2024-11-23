@@ -26,19 +26,6 @@ static const char deprecated_create_additions_warning[] =
     "and will be removed in 3.0, use JSON.unsafe_load or explicitly "
     "pass `create_additions: true`";
 
-#ifndef HAVE_RB_GC_MARK_LOCATIONS
-// For TruffleRuby
-void rb_gc_mark_locations(const VALUE *start, const VALUE *end)
-{
-    VALUE *value = start;
-
-    while (value < end) {
-        rb_gc_mark(*value);
-        value++;
-    }
-}
-#endif
-
 #ifndef HAVE_RB_HASH_BULK_INSERT
 // For TruffleRuby
 void rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
@@ -264,7 +251,10 @@ static inline void rvalue_stack_pop(rvalue_stack *stack, long count)
 static void rvalue_stack_mark(void *ptr)
 {
     rvalue_stack *stack = (rvalue_stack *)ptr;
-    rb_gc_mark_locations(stack->ptr, stack->ptr + stack->head);
+    long index;
+    for (index = 0; index < stack->head; index++) {
+        rb_gc_mark(stack->ptr[index]);
+    }
 }
 
 static void rvalue_stack_free(void *ptr)
@@ -1349,8 +1339,10 @@ static void JSON_mark(void *ptr)
     rb_gc_mark(json->match_string);
     rb_gc_mark(json->stack_handle);
 
-    const VALUE *name_cache_entries = &json->name_cache.entries[0];
-    rb_gc_mark_locations(name_cache_entries, name_cache_entries + json->name_cache.length);
+    long index;
+    for (index = 0; index < json->name_cache.length; index++) {
+        rb_gc_mark(json->name_cache.entries[index]);
+    }
 }
 
 static void JSON_free(void *ptr)
