@@ -411,7 +411,7 @@ class TracePoint
   # Returns the compiled instruction sequence represented by a RubyVM::InstructionSequence instance
   # on the +:script_compiled+ event.
   #
-  # Note that this method is MRI-specific.
+  # Note that this method is CRuby-specific.
   def instruction_sequence
     Primitive.tracepoint_attr_instruction_sequence
   end
