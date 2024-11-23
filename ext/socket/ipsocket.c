@@ -971,18 +971,40 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     int err;
                     socklen_t len = sizeof(err);
 
-                    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) == 0) {
-                        if (err == 0) { /* success */
-                            remove_connection_attempt_fd(
-                                arg->connection_attempt_fds,
-                                &arg->connection_attempt_fds_size,
-                                fd
-                            );
-                            connected_fd = fd;
-                            break;
-                        };
+                    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len);
 
-                        /* fail */
+                    if (status < 0) {
+                        last_error.type = SYSCALL_ERROR;
+                        last_error.ecode = errno;
+                        close(fd);
+
+                        if (any_addrinfos(&resolution_store)) continue;
+                        if (in_progress_fds(arg->connection_attempt_fds_size)) break;
+                        if (!resolution_store.is_all_finised) break;
+
+                        if (local_status < 0) {
+                            host = arg->local.host;
+                            serv = arg->local.serv;
+                        } else {
+                            host = arg->remote.host;
+                            serv = arg->remote.serv;
+                        }
+                        if (last_error.type == RESOLUTION_ERROR) {
+                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                        } else {
+                            rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
+                        }
+                    }
+
+                    if (err == 0) { /* success */
+                        remove_connection_attempt_fd(
+                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds_size,
+                            fd
+                        );
+                        connected_fd = fd;
+                        break;
+                    } else { /* fail */
                         close(fd);
                         remove_connection_attempt_fd(
                             arg->connection_attempt_fds,
