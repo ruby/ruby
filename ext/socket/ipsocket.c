@@ -918,7 +918,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
 
         wait_arg.nfds = 0;
-        if (arg->connection_attempt_fds_size) {
+        if (in_progress_fds(arg->connection_attempt_fds_size)) {
             FD_ZERO(wait_arg.writefds);
             int n = 0;
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
