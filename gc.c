@@ -200,11 +200,7 @@ rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context)
     GC_ASSERT(rb_current_execution_context(false) == NULL);
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-# ifdef __APPLE__
     rb_current_ec_set(context->ec);
-# else
-    ruby_current_ec = context->ec;
-# endif
 #else
     native_tls_set(ruby_current_ec_key, context->ec);
 #endif
@@ -218,11 +214,7 @@ rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context)
     GC_ASSERT(rb_current_execution_context(true) == context->ec);
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-# ifdef __APPLE__
     rb_current_ec_set(NULL);
-# else
-    ruby_current_ec = NULL;
-# endif
 #else
     native_tls_set(ruby_current_ec_key, NULL);
 #endif
