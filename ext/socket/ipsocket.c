@@ -1087,6 +1087,48 @@ init_fast_fallback_inetsock_internal(VALUE v)
             status = wait_arg.status = 0;
         }
 
+        if (!resolution_store.is_all_finised) {
+            if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
+                resolution_store.v6.finished = true;
+
+                if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
+                    last_error.type = RESOLUTION_ERROR;
+                    last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
+                    syscall = "getaddrinfo(3)";
+                    resolution_store.v6.has_error = true;
+                } else {
+                    resolution_store.v6.ai = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->ai;
+                }
+
+                if (resolution_store.v4.finished) {
+                    resolution_store.is_all_finised = true;
+                    resolution_delay_expires_at = NULL;
+                    user_specified_resolv_timeout_at = NULL;
+                }
+            }
+            if (!resolution_store.v4.finished && arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr) {
+                resolution_store.v4.finished = true;
+
+                if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
+                    last_error.type = RESOLUTION_ERROR;
+                    last_error.ecode = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err;
+                    syscall = "getaddrinfo(3)";
+                    resolution_store.v4.has_error = true;
+                } else {
+                    resolution_store.v4.ai = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->ai;
+                }
+
+                if (resolution_store.v6.finished) {
+                    resolution_store.is_all_finised = true;
+                    resolution_delay_expires_at = NULL;
+                    user_specified_resolv_timeout_at = NULL;
+                } else {
+                    set_timeout_tv(&resolution_delay_storage, 50, now);
+                    resolution_delay_expires_at = &resolution_delay_storage;
+                }
+            }
+        }
+
         if (!any_addrinfos(&resolution_store)) {
             if (!in_progress_fds(arg->connection_attempt_fds_size) &&
                 resolution_store.is_all_finised) {
@@ -1111,34 +1153,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
                 VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
                 rb_raise(etimedout_error, "user specified timeout");
-            }
-        }
-
-        if (!resolution_store.is_all_finised) {
-            if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
-                resolution_store.v6.ai = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->ai;
-                resolution_store.v6.finished = true;
-
-                if (resolution_store.v4.finished) {
-                    resolution_store.is_all_finised = true;
-                    wait_arg.readfds = NULL;
-                    resolution_delay_expires_at = NULL;
-                    user_specified_resolv_timeout_at = NULL;
-                }
-            }
-            if (!resolution_store.v4.finished && arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr) {
-                resolution_store.v4.ai = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->ai;
-                resolution_store.v4.finished = true;
-
-                if (resolution_store.v6.finished) {
-                    resolution_store.is_all_finised = true;
-                    wait_arg.readfds = NULL;
-                    resolution_delay_expires_at = NULL;
-                    user_specified_resolv_timeout_at = NULL;
-                } else {
-                    set_timeout_tv(&resolution_delay_storage, 50, now);
-                    resolution_delay_expires_at = &resolution_delay_storage;
-                }
             }
         }
     }
