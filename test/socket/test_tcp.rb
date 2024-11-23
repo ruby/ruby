@@ -287,7 +287,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
-    server = TCPServer.new("::1", 0)
+    begin
+      server = TCPServer.new("::1", 0)
+    rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      exit
+    end
+
     port = server.connect_address.ip_port
     server.close
 
