@@ -574,7 +574,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     struct wait_fast_fallback_arg wait_arg;
     struct timeval *ends_at = NULL;
     struct timeval delay = (struct timeval){ -1, -1 };
-    wait_arg.writefds = NULL;
+    wait_arg.writefds = &writefds;
     wait_arg.status = 0;
 
     struct hostname_resolution_store resolution_store;
@@ -855,7 +855,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     }
                     arg->connection_attempt_fds[arg->connection_attempt_fds_size] = fd;
                     (arg->connection_attempt_fds_size)++;
-                    wait_arg.writefds = &writefds;
 
                     set_timeout_tv(&connection_attempt_delay_strage, 250, now);
                     connection_attempt_delay_expires_at = &connection_attempt_delay_strage;
@@ -918,8 +917,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
 
         wait_arg.nfds = 0;
+        FD_ZERO(wait_arg.writefds);
         if (in_progress_fds(arg->connection_attempt_fds_size)) {
-            FD_ZERO(wait_arg.writefds);
             int n = 0;
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                 int cfd = arg->connection_attempt_fds[i];
@@ -929,8 +928,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
             if (n > 0) n++;
             wait_arg.nfds = n;
-        } else {
-            wait_arg.writefds = NULL;
         }
 
         FD_ZERO(wait_arg.readfds);
