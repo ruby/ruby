@@ -75,8 +75,7 @@
 #endif
 
 /* For ruby_annotate_mmap */
-#ifdef __linux__
-#include <linux/prctl.h>
+#ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
 
@@ -4516,7 +4515,7 @@ Init_GC(void)
 void
 ruby_annotate_mmap(const void *addr, unsigned long size, const char *name)
 {
-#if defined(__linux__) && defined(PR_SET_VMA) && defined(PR_SET_VMA_ANON_NAME)
+#if defined(HAVE_SYS_PRCTL_H) && defined(PR_SET_VMA) && defined(PR_SET_VMA_ANON_NAME)
     // The name length cannot exceed 80 (including the '\0').
     RUBY_ASSERT(strlen(name) < 80);
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, (unsigned long)addr, size, name);

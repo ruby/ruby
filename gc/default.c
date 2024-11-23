@@ -5,8 +5,7 @@
 #ifndef _WIN32
 # include <sys/mman.h>
 # include <unistd.h>
-# ifdef __linux__
-#  include <linux/prctl.h>
+# ifdef HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 # endif
 #endif
@@ -1875,7 +1874,7 @@ heap_page_body_allocate(void)
         // `default.c` as a shared library, we will not have access to private
         // symbols, and we have to either call prctl directly or make our own
         // wrapper.
-#if defined(__linux__) && defined(PR_SET_VMA) && defined(PR_SET_VMA_ANON_NAME)
+#if defined(HAVE_SYS_PRCTL_H) && defined(PR_SET_VMA) && defined(PR_SET_VMA_ANON_NAME)
         prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, ptr, mmap_size, "Ruby:GC:default:heap_page_body_allocate");
         errno = 0;
 #endif
