@@ -222,6 +222,8 @@ have commit right, others don't.
 #### lib/rdoc.rb, lib/rdoc/*
 * Eric Hodel (drbrain)
 * Hiroshi SHIBATA (hsbt)
+* Stan Lo (st0012)
+* Colby Swandale (colby-swandale)
 * https://github.com/ruby/rdoc
 * https://rubygems.org/gems/rdoc
 
