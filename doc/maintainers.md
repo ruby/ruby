@@ -30,15 +30,15 @@ have commit right, others don't.
 
 ### Language core features including security
 
-* Yukihiro Matsumoto (matz)
+* Yukihiro Matsumoto ([matz](https://github.com/matz))
 
 ### Evaluator
 
-* Koichi Sasada (ko1)
+* Koichi Sasada ([ko1](https://github.com/ko1))
 
 ### Core classes
 
-* Yukihiro Matsumoto (matz)
+* Yukihiro Matsumoto ([matz](https://github.com/matz))
 
 ## Standard Library Maintainers
 
@@ -50,8 +50,8 @@ have commit right, others don't.
 
 #### lib/rubygems.rb, lib/rubygems/*
 
-* Eric Hodel (drbrain)
-* Hiroshi SHIBATA (hsbt)
+* Eric Hodel ([drbrain](https://github.com/drbrain))
+* Hiroshi SHIBATA ([hsbt](https://github.com/hsbt))
 * https://github.com/rubygems/rubygems
 
 #### lib/unicode_normalize.rb, lib/unicode_normalize/*
@@ -62,19 +62,19 @@ have commit right, others don't.
 
 #### ext/continuation
 
-* Koichi Sasada (ko1)
+* Koichi Sasada ([ko1](https://github.com/ko1))
 
 #### ext/coverage
 
-* Yusuke Endoh (mame)
+* Yusuke Endoh ([mame](https://github.com/mame))
 
 #### ext/fiber
 
-* Koichi Sasada (ko1)
+* Koichi Sasada ([ko1](https://github.com/ko1))
 
 #### ext/monitor
 
-* Koichi Sasada (ko1)
+* Koichi Sasada ([ko1](https://github.com/ko1))
 
 #### ext/objspace
 
@@ -90,12 +90,12 @@ have commit right, others don't.
 
 #### ext/socket
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * API change needs matz's approval
 
 #### ext/win32
 
-* NAKAMURA Usaku (usa)
+* NAKAMURA Usaku ([unak](https://github.com/unak))
 
 ## Default gems Maintainers
 
@@ -109,7 +109,7 @@ have commit right, others don't.
 
 #### lib/bundler.rb, lib/bundler/*
 
-* Hiroshi SHIBATA (hsbt)
+* Hiroshi SHIBATA ([hsbt](https://github.com/hsbt))
 * https://github.com/rubygems/rubygems
 * https://rubygems.org/gems/bundler
 
@@ -133,26 +133,26 @@ have commit right, others don't.
 
 #### lib/did_you_mean.rb
 
-* Yuki Nishijima (yuki24)
+* Yuki Nishijima ([yuki24](https://github.com/yuki24))
 * https://github.com/ruby/did_you_mean
 * https://rubygems.org/gems/did_you_mean
 
 #### ext/digest, ext/digest/*
 
-* Akinori MUSHA (knu)
+* Akinori MUSHA ([knu](https://github.com/knu))
 * https://github.com/ruby/digest
 * https://rubygems.org/gems/digest
 
 #### lib/erb.rb
 
-* Masatoshi SEKI (seki)
-* Takashi Kokubun (k0kubun)
+* Masatoshi SEKI ([seki](https://github.com/seki))
+* Takashi Kokubun ([k0kubun](https://github.com/k0kubun))
 * https://github.com/ruby/erb
 * https://rubygems.org/gems/erb
 
 #### lib/error_highlight.rb, lib/error_highlight/*
 
-* Yusuke Endoh (mame)
+* Yusuke Endoh ([mame](https://github.com/mame))
 * https://github.com/ruby/error_highlight
 * https://rubygems.org/gems/error_highlight
 
@@ -164,7 +164,7 @@ have commit right, others don't.
 
 #### lib/find.rb
 
-* Kazuki Tsujimoto (ktsj)
+* Kazuki Tsujimoto ([k-tsj](https://github.com/k-tsj))
 * https://github.com/ruby/find
 * https://rubygems.org/gems/find
 
@@ -176,33 +176,33 @@ have commit right, others don't.
 
 #### lib/ipaddr.rb
 
-* Akinori MUSHA (knu)
+* Akinori MUSHA ([knu](https://github.com/knu))
 * https://github.com/ruby/ipaddr
 * https://rubygems.org/gems/ipaddr
 
 #### lib/irb.rb, lib/irb/*
 
-* Stan Lo (st0012)
-* Tomoya Ishida (tompng)
-* Mari Imaizumi (ima1zumi)
-* Hitoshi Hasumi (hasumikin)
+* Stan Lo ([st0012](https://github.com/st0012))
+* Tomoya Ishida ([tompng](https://github.com/tompng))
+* Mari Imaizumi ([ima1zumi](https://github.com/ima1zumi))
+* Hitoshi Hasumi ([hasumikin](https://github.com/hasumikin))
 * https://github.com/ruby/irb
 * https://rubygems.org/gems/irb
 
 #### lib/optparse.rb, lib/optparse/*
 
-* Nobuyuki Nakada (nobu)
+* Nobuyuki Nakada ([nobu](https://github.com/nobu))
 * https://github.com/ruby/optparse
 
 #### lib/logger.rb
 
-* Naotoshi Seo (sonots)
+* Naotoshi Seo ([sonots](https://github.com/sonots))
 * https://github.com/ruby/logger
 * https://rubygems.org/gems/logger
 
 #### lib/net/http.rb, lib/net/https.rb
 
-* NARUSE, Yui (naruse)
+* NARUSE, Yui ([nurse](https://github.com/nurse))
 * https://github.com/ruby/net-http
 * https://rubygems.org/gems/net-http
 
@@ -220,32 +220,32 @@ have commit right, others don't.
 
 #### lib/open-uri.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/open-uri
 
 #### lib/ostruct.rb
 
-* Marc-André Lafortune (marcandre)
+* Marc-André Lafortune ([marcandre](https://github.com/marcandre))
 * https://github.com/ruby/ostruct
 * https://rubygems.org/gems/ostruct
 
 #### lib/pp.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/pp
 * https://rubygems.org/gems/pp
 
 #### lib/prettyprint.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/prettyprint
 * https://rubygems.org/gems/prettyprint
 
 #### lib/prism.rb
 
-* Kevin Newton (kddnewton)
-* Eileen Uchitelle (eileencodes)
-* Aaron Patterson (tenderlove)
+* Kevin Newton ([kddnewton](https://github.com/kddnewton))
+* Eileen Uchitelle ([eileencodes](https://github.com/eileencodes))
+* Aaron Patterson ([tenderlove](https://github.com/tenderlove))
 * https://github.com/ruby/prism
 * https://rubygems.org/gems/prism
 
@@ -263,49 +263,49 @@ have commit right, others don't.
 
 #### lib/resolv.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/resolv
 * https://rubygems.org/gems/resolv
 
 #### lib/rdoc.rb, lib/rdoc/*
 
-* Eric Hodel (drbrain)
-* Hiroshi SHIBATA (hsbt)
-* Stan Lo (st0012)
-* Colby Swandale (colby-swandale)
+* Eric Hodel ([drbrain](https://github.com/drbrain))
+* Hiroshi SHIBATA ([hsbt](https://github.com/hsbt))
+* Stan Lo ([st0012](https://github.com/st0012))
+* Colby Swandale ([colby-swandale](https://github.com/colby-swandale))
 * https://github.com/ruby/rdoc
 * https://rubygems.org/gems/rdoc
 
 #### lib/reline.rb, lib/reline/*
 
-* Tomoya Ishida (tompng)
-* Mari Imaizumi (ima1zumi)
-* Stan Lo (st0012)
-* Hitoshi Hasumi (hasumikin)
+* Tomoya Ishida ([tompng](https://github.com/tompng))
+* Mari Imaizumi ([ima1zumi](https://github.com/ima1zumi))
+* Stan Lo ([st0012](https://github.com/st0012))
+* Hitoshi Hasumi ([hasumikin](https://github.com/hasumikin))
 * https://github.com/ruby/reline
 * https://rubygems.org/gems/reline
 
 #### lib/securerandom.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/securerandom
 * https://rubygems.org/gems/securerandom
 
 #### lib/set.rb
 
-* Akinori MUSHA (knu)
+* Akinori MUSHA ([knu](https://github.com/knu))
 * https://github.com/ruby/set
 * https://rubygems.org/gems/set
 
 #### lib/shellwords.rb
 
-* Akinori MUSHA (knu)
+* Akinori MUSHA ([knu](https://github.com/knu))
 * https://github.com/ruby/shellwords
 * https://rubygems.org/gems/shellwords
 
 #### lib/singleton.rb
 
-* Yukihiro Matsumoto (matz)
+* Yukihiro Matsumoto ([matz](https://github.com/matz))
 * https://github.com/ruby/singleton
 * https://rubygems.org/gems/singleton
 
@@ -317,13 +317,13 @@ have commit right, others don't.
 
 #### lib/time.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/time
 * https://rubygems.org/gems/time
 
 #### lib/timeout.rb
 
-* Yukihiro Matsumoto (matz)
+* Yukihiro Matsumoto ([matz](https://github.com/matz))
 * https://github.com/ruby/timeout
 * https://rubygems.org/gems/timeout
 
@@ -341,26 +341,26 @@ have commit right, others don't.
 
 #### lib/tsort.rb
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/tsort
 * https://rubygems.org/gems/tsort
 
 #### lib/un.rb
 
-* WATANABE Hirofumi (eban)
+* WATANABE Hirofumi ([eban](https://github.com/eban))
 * https://github.com/ruby/un
 * https://rubygems.org/gems/un
 
 #### lib/uri.rb, lib/uri/*
 
-* NARUSE, Yui (naruse)
+* NARUSE, Yui ([nurse](https://github.com/nurse))
 * https://github.com/ruby/uri
 * https://rubygems.org/gems/uri
 
 #### lib/yaml.rb, lib/yaml/*
 
-* Aaron Patterson (tenderlove)
-* Hiroshi SHIBATA (hsbt)
+* Aaron Patterson ([tenderlove](https://github.com/tenderlove))
+* Hiroshi SHIBATA ([hsbt](https://github.com/hsbt))
 * https://github.com/ruby/yaml
 * https://rubygems.org/gems/yaml
 
@@ -374,7 +374,7 @@ have commit right, others don't.
 
 #### ext/cgi
 
-* Nobuyoshi Nakada (nobu)
+* Nobuyoshi Nakada ([nobu](https://github.com/nobu))
 * https://github.com/ruby/cgi
 * https://rubygems.org/gems/cgi
 
@@ -398,64 +398,64 @@ have commit right, others don't.
 
 #### ext/fiddle
 
-* Aaron Patterson (tenderlove)
+* Aaron Patterson ([tenderlove](https://github.com/tenderlove))
 * https://github.com/ruby/fiddle
 * https://rubygems.org/gems/fiddle
 
 #### ext/io/console
 
-* Nobuyuki Nakada (nobu)
+* Nobuyuki Nakada ([nobu](https://github.com/nobu))
 * https://github.com/ruby/io-console
 * https://rubygems.org/gems/io-console
 
 #### ext/io/nonblock
 
-* Nobuyuki Nakada (nobu)
+* Nobuyuki Nakada ([nobu](https://github.com/nobu))
 * https://github.com/ruby/io-nonblock
 * https://rubygems.org/gems/io-nonblock
 
 #### ext/io/wait
 
-* Nobuyuki Nakada (nobu)
+* Nobuyuki Nakada ([nobu](https://github.com/nobu))
 * https://github.com/ruby/io-wait
 * https://rubygems.org/gems/io-wait
 
 #### ext/json
 
-* NARUSE, Yui (naruse)
-* Hiroshi SHIBATA (hsbt)
-* Jean Boussier (byroot)
+* NARUSE, Yui ([nurse](https://github.com/nurse))
+* Hiroshi SHIBATA ([hsbt](https://github.com/hsbt))
+* Jean Boussier ([byroot](https://github.com/byroot))
 * https://github.com/ruby/json
 * https://rubygems.org/gems/json
 
 #### ext/openssl
 
-* Kazuki Yamaguchi (rhe)
+* Kazuki Yamaguchi ([rhenium](https://github.com/rhenium))
 * https://github.com/ruby/openssl
 * https://rubygems.org/gems/openssl
 
 #### ext/pathname
 
-* Tanaka Akira (akr)
+* Tanaka Akira ([akr](https://github.com/akr))
 * https://github.com/ruby/pathname
 * https://rubygems.org/gems/pathname
 
 #### ext/psych
 
-* Aaron Patterson (tenderlove)
-* Hiroshi SHIBATA (hsbt)
+* Aaron Patterson ([tenderlove](https://github.com/tenderlove))
+* Hiroshi SHIBATA ([hsbt](https://github.com/hsbt))
 * https://github.com/ruby/psych
 * https://rubygems.org/gems/psych
 
 #### ext/stringio
 
-* Nobuyuki Nakada (nobu)
+* Nobuyuki Nakada ([nobu](https://github.com/nobu))
 * https://github.com/ruby/stringio
 * https://rubygems.org/gems/stringio
 
 #### ext/strscan
 
-* Kouhei Sutou (kou)
+* Kouhei Sutou ([kou](https://github.com/kou))
 * https://github.com/ruby/strscan
 * https://rubygems.org/gems/strscan
 
@@ -467,7 +467,7 @@ have commit right, others don't.
 
 #### ext/zlib
 
-* NARUSE, Yui (naruse)
+* NARUSE, Yui ([nurse](https://github.com/nurse))
 * https://github.com/ruby/zlib
 * https://rubygems.org/gems/zlib
 
@@ -589,11 +589,11 @@ have commit right, others don't.
 
 ### mswin64 (Microsoft Windows)
 
-* NAKAMURA Usaku (usa)
+* NAKAMURA Usaku ([unak](https://github.com/unak))
 
 ### mingw32 (Minimalist GNU for Windows)
 
-* Nobuyoshi Nakada (nobu)
+* Nobuyoshi Nakada ([nobu](https://github.com/nobu))
 
 ### AIX
 
@@ -601,23 +601,23 @@ have commit right, others don't.
 
 ### FreeBSD
 
-* Akinori MUSHA (knu)
+* Akinori MUSHA ([knu](https://github.com/knu))
 
 ### Solaris
 
-* Naohisa Goto (ngoto)
+* Naohisa Goto ([ngoto](https://github.com/ngoto))
 
 ### RHEL, CentOS
 
-* KOSAKI Motohiro (kosaki)
+* KOSAKI Motohiro ([kosaki](https://github.com/kosaki))
 
 ### macOS
 
-* Kenta Murata (mrkn)
+* Kenta Murata ([mrkn](https://github.com/mrkn))
 
 ### OpenBSD
 
-* Jeremy Evans (jeremyevans0)
+* Jeremy Evans ([jeremyevans](https://github.com/jeremyevans))
 
 ### cygwin, ...
 
@@ -625,4 +625,4 @@ have commit right, others don't.
 
 ### WebAssembly/WASI
 
-* Yuta Saito (katei)
+* Yuta Saito ([kateinoigakukun](https://github.com/kateinoigakukun))
