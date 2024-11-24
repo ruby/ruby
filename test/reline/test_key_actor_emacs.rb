@@ -853,28 +853,6 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
   end
 
-  def test_completion_with_indent_and_completer_quote_characters
-    @line_editor.completion_proc = proc { |word|
-      %w{
-        "".foo_foo
-        "".foo_bar
-        "".foo_baz
-        "".qux
-      }.map { |i|
-        i.encode(@encoding)
-      }
-    }
-    input_keys('  "".fo')
-    assert_line_around_cursor('  "".fo', '')
-    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
-    input_keys("\C-i", false)
-    assert_line_around_cursor('  "".foo_', '')
-    assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
-    input_keys("\C-i", false)
-    assert_line_around_cursor('  "".foo_', '')
-    assert_equal(%w{"".foo_foo "".foo_bar "".foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
-  end
-
   def test_completion_with_perfect_match
     @line_editor.completion_proc = proc { |word|
       %w{

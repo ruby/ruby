@@ -1225,70 +1225,35 @@ class Reline::LineEditor
   end
 
   def retrieve_completion_block(set_completion_quote_character = false)
-    if Reline.completer_word_break_characters.empty?
-      word_break_regexp = nil
-    else
-      word_break_regexp = /\A[#{Regexp.escape(Reline.completer_word_break_characters)}]/
-    end
-    if Reline.completer_quote_characters.empty?
-      quote_characters_regexp = nil
-    else
-      quote_characters_regexp = /\A[#{Regexp.escape(Reline.completer_quote_characters)}]/
-    end
-    before = current_line.byteslice(0, @byte_pointer)
-    rest = nil
-    break_pointer = nil
+    quote_characters = Reline.completer_quote_characters
+    before = current_line.byteslice(0, @byte_pointer).grapheme_clusters
     quote = nil
-    closing_quote = nil
-    escaped_quote = nil
-    i = 0
-    while i < @byte_pointer do
-      slice = current_line.byteslice(i, @byte_pointer - i)
-      unless slice.valid_encoding?
-        i += 1
-        next
-      end
-      if quote and slice.start_with?(closing_quote)
-        quote = nil
-        i += 1
-        rest = nil
-      elsif quote and slice.start_with?(escaped_quote)
-        # skip
-        i += 2
-      elsif quote_characters_regexp and slice =~ quote_characters_regexp # find new "
-        rest = $'
-        quote = $&
-        closing_quote = /(?!\\)#{Regexp.escape(quote)}/
-        escaped_quote = /\\#{Regexp.escape(quote)}/
-        i += 1
-        break_pointer = i - 1
-      elsif word_break_regexp and not quote and slice =~ word_break_regexp
-        rest = $'
-        i += 1
-        before = current_line.byteslice(i, @byte_pointer - i)
-        break_pointer = i
-      else
-        i += 1
-      end
-    end
-    postposing = current_line.byteslice(@byte_pointer, current_line.bytesize - @byte_pointer)
-    if rest
-      preposing = current_line.byteslice(0, break_pointer)
-      target = rest
-      if set_completion_quote_character and quote
-        Reline.core.instance_variable_set(:@completion_quote_character, quote)
-        if postposing !~ /(?!\\)#{Regexp.escape(quote)}/ # closing quote
-          insert_text(quote)
+    unless quote_characters.empty?
+      escaped = false
+      before.each do |c|
+        if escaped
+          escaped = false
+          next
+        elsif c == '\\'
+          escaped = true
+        elsif quote
+          quote = nil if c == quote
+        elsif quote_characters.include?(c)
+          quote = c
         end
       end
-    else
-      preposing = ''
-      if break_pointer
-        preposing = current_line.byteslice(0, break_pointer)
-      else
-        preposing = ''
+    end
+    word_break_characters = quote_characters + Reline.completer_word_break_characters
+    break_index = before.rindex { |c| word_break_characters.include?(c) || quote_characters.include?(c) } || -1
+    preposing = before.take(break_index + 1).join
+    target = before.drop(break_index + 1).join
+    postposing = current_line.byteslice(@byte_pointer, current_line.bytesize - @byte_pointer)
+    if target
+      if set_completion_quote_character and quote
+        Reline.core.instance_variable_set(:@completion_quote_character, quote)
+        insert_text(quote) # FIXME: should not be here
+        target += quote
       end
-      target = before
     end
     lines = whole_lines
     if @line_index > 0
