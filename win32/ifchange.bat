@@ -62,7 +62,7 @@ set src=%src:/=\%
 
 if exist %dest% (
     if not exist %src% goto :nt_unchanged1
-    if "%empty%" == "" for %%I in (%src%) do if %%~zI == 0 goto :nt_unchanged
+    if not "%empty%" == "" for %%I in (%src%) do if %%~zI == 0 goto :nt_unchanged
     fc.exe %dest% %src% > nul && (
       :nt_unchanged
 	del %src%
