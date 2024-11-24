@@ -1916,7 +1916,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
     int ilen;
-    VALUE len, str;
+    VALUE len, str, cb_state;
     VALUE opts = Qnil;
 
     if (nonblock) {
@@ -1949,6 +1949,14 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     rb_str_locktmp(str);
     for (;;) {
         int nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
+
+        cb_state = rb_attr_get(self, ID_callback_state);
+        if (!NIL_P(cb_state)) {
+            rb_ivar_set(self, ID_callback_state, Qnil);
+            ossl_clear_error();
+            rb_jump_tag(NUM2INT(cb_state));
+        }
+
         switch (ssl_get_error(ssl, nread)) {
           case SSL_ERROR_NONE:
             rb_str_unlocktmp(str);
@@ -2038,7 +2046,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
     SSL *ssl;
     rb_io_t *fptr;
     int num, nonblock = opts != Qfalse;
-    VALUE tmp;
+    VALUE tmp, cb_state;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
@@ -2055,6 +2063,14 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 
     for (;;) {
         int nwritten = SSL_write(ssl, RSTRING_PTR(tmp), num);
+
+        cb_state = rb_attr_get(self, ID_callback_state);
+        if (!NIL_P(cb_state)) {
+            rb_ivar_set(self, ID_callback_state, Qnil);
+            ossl_clear_error();
+            rb_jump_tag(NUM2INT(cb_state));
+        }
+
         switch (ssl_get_error(ssl, nwritten)) {
           case SSL_ERROR_NONE:
             return INT2NUM(nwritten);
