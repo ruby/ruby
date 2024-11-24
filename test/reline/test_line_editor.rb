@@ -8,7 +8,7 @@ class Reline::LineEditor
     def setup
       @original_quote_characters = Reline.completer_quote_characters
       @original_word_break_characters = Reline.completer_word_break_characters
-      @line_editor = Reline::LineEditor.new(nil, Encoding::UTF_8)
+      @line_editor = Reline::LineEditor.new(nil)
     end
 
     def retrieve_completion_block(lines, line_index, byte_pointer)
