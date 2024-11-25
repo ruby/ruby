@@ -3,10 +3,11 @@
 require "mkmf"
 
 srcdir = File.join(__dir__, "..")
-$CFLAGS << " -I#{srcdir}"
+$INCFLAGS << " -I#{srcdir}"
 
-$CFLAGS << " -DBUILDING_SHARED_GC"
-$CFLAGS << " -fPIC"
+$CPPFLAGS << " -DBUILDING_SHARED_GC"
+
+append_cflags("-fPIC")
 
 def create_gc_makefile(name)
   create_makefile("librubygc.#{name}")
