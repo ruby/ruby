@@ -39,6 +39,7 @@ __EOD__
     assert_equal("[ default ]\n\n", c.to_s)
     c = OpenSSL::Config.parse(@it.to_s)
     assert_equal(['CA_default', 'ca', 'default'], c.sections.sort)
+    assert_predicate(c, :frozen?)
   end
 
   def test_s_parse_format
@@ -188,6 +189,7 @@ __EOC__
     c = OpenSSL::Config.new
     assert_equal("", c.to_s)
     assert_equal([], c.sections)
+    assert_predicate(c, :frozen?)
   end
 
   def test_initialize_with_empty_file
@@ -268,8 +270,10 @@ __EOC__
   def test_dup
     assert_equal(['CA_default', 'ca', 'default'], @it.sections.sort)
     c1 = @it.dup
+    assert_predicate(c1, :frozen?)
     assert_equal(@it.sections.sort, c1.sections.sort)
     c2 = @it.clone
+    assert_predicate(c2, :frozen?)
     assert_equal(@it.sections.sort, c2.sections.sort)
   end
 

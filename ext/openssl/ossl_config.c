@@ -87,6 +87,7 @@ config_s_parse(VALUE klass, VALUE str)
 
     bio = ossl_obj2bio(&str);
     config_load_bio(conf, bio); /* Consumes BIO */
+    rb_obj_freeze(obj);
     return obj;
 }
 
@@ -144,6 +145,7 @@ config_initialize(int argc, VALUE *argv, VALUE self)
             ossl_raise(eConfigError, "BIO_new_file");
         config_load_bio(conf, bio); /* Consumes BIO */
     }
+    rb_obj_freeze(self);
     return self;
 }
 
@@ -158,6 +160,7 @@ config_initialize_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     bio = ossl_obj2bio(&str);
     config_load_bio(conf, bio); /* Consumes BIO */
+    rb_obj_freeze(self);
     return self;
 }
 
