@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/logger"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
 
-  spec.files         = Dir.glob("lib/**/*.rb") + ["logger.gemspec"]
+  spec.files         = Dir.glob("lib/**/*.rb") + ["logger.gemspec", "BSDL", "COPYING"]
   spec.require_paths = ["lib"]
 
   spec.required_ruby_version = ">= 2.5.0"
