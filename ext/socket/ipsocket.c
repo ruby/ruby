@@ -235,29 +235,16 @@ struct fast_fallback_inetsock_arg
 };
 
 static struct fast_fallback_getaddrinfo_shared *
-allocate_fast_fallback_getaddrinfo_shared(void)
+allocate_fast_fallback_getaddrinfo_shared(int family_size)
 {
     struct fast_fallback_getaddrinfo_shared *shared;
 
     shared = (struct fast_fallback_getaddrinfo_shared *)calloc(
         1,
-        sizeof(struct fast_fallback_getaddrinfo_shared)
+        sizeof(struct fast_fallback_getaddrinfo_shared) + (family_size == 1 ? 0 : 2) * sizeof(struct fast_fallback_getaddrinfo_entry)
     );
 
     return shared;
-}
-
-static struct fast_fallback_getaddrinfo_entry *
-allocate_fast_fallback_getaddrinfo_entry(void)
-{
-    struct fast_fallback_getaddrinfo_entry *entry;
-
-    entry = (struct fast_fallback_getaddrinfo_entry *)calloc(
-        1,
-        sizeof(struct fast_fallback_getaddrinfo_entry)
-    );
-
-    return entry;
 }
 
 static void
@@ -604,7 +591,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     hostname_resolution_notifier = pipefd[1];
     wait_arg.readfds = &readfds;
 
-    arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared();
+    arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared(arg->family_size);
     if (!arg->getaddrinfo_shared) rb_syserr_fail(errno, "calloc(3)");
 
     arg->getaddrinfo_shared->lock = calloc(1, sizeof(rb_nativethread_lock_t));
@@ -659,8 +646,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared->refcount = arg->family_size + 1;
 
         for (int i = 0; i < arg->family_size; i++) {
-            arg->getaddrinfo_entries[i] = allocate_fast_fallback_getaddrinfo_entry();
-            if (!(arg->getaddrinfo_entries[i])) rb_syserr_fail(errno, "calloc(3)");
+            arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
             arg->getaddrinfo_entries[i]->shared = arg->getaddrinfo_shared;
 
             struct addrinfo getaddrinfo_hints[arg->family_size];

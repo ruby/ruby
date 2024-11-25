@@ -3047,7 +3047,6 @@ free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **en
         freeaddrinfo((*entry)->ai);
         (*entry)->ai = NULL;
     }
-    free(*entry);
     *entry = NULL;
 }
 
