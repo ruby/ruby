@@ -616,7 +616,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     arg->getaddrinfo_shared->connection_attempt_fds = arg->connection_attempt_fds;
     arg->getaddrinfo_shared->connection_attempt_fds_size = arg->connection_attempt_fds_size;
     arg->getaddrinfo_shared->cancelled = false;
-    wait_arg.cancelled = false;
+    wait_arg.cancelled = &arg->getaddrinfo_shared->cancelled;
 
     struct timeval resolution_delay_storage;
     struct timeval *resolution_delay_expires_at = NULL;
