@@ -1955,6 +1955,12 @@ shared-gc: probes.h shared-gc-precheck
 	$(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./
 	$(CP) gc/$(SHARED_GC)/librubygc.$(SHARED_GC).$(DLEXT) $(shared_gc_dir)
 
+clean-shared-gc:
+	- $(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)
+distclean-shared-gc: clean-shared-gc
+	- $(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)
+	$(RMDIRS) gc/$(SHARED_GC)
+
 help: PHONY
 	$(MESSAGE_BEGIN) \
 	"                Makefile of Ruby" \
