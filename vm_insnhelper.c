@@ -2339,6 +2339,12 @@ check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
 }
 
 static inline int
+check_method_basic_definition(const rb_callable_method_entry_t *me)
+{
+    return me && METHOD_ENTRY_BASIC(me);
+}
+
+static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
     VM_ASSERT(iseq != NULL);
@@ -6072,7 +6078,7 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 
     switch (type) {
       case T_SYMBOL:
-        if (check_cfunc(vm_cc_cme(cc), rb_sym_to_s)) {
+        if (check_method_basic_definition(vm_cc_cme(cc))) {
             // rb_sym_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
