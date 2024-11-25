@@ -15,16 +15,12 @@ class Reline::LineEditor
       @line_editor.instance_variable_set(:@buffer_of_lines, lines)
       @line_editor.instance_variable_set(:@line_index, line_index)
       @line_editor.instance_variable_set(:@byte_pointer, byte_pointer)
-      @line_editor.retrieve_completion_block(false)
+      @line_editor.retrieve_completion_block
     end
 
     def retrieve_completion_quote(line)
-      retrieve_completion_block([line], 0, line.bytesize)
-      _, target = @line_editor.retrieve_completion_block(false)
-      _, target2 = @line_editor.retrieve_completion_block(true)
-      # This is a hack to get the quoted character.
-      # retrieve_completion_block should be refactored to return the quoted character.
-      target2.chars.last if target2 != target
+      _, _, _, quote = retrieve_completion_block([line], 0, line.bytesize)
+      quote
     end
 
     def teardown
@@ -35,20 +31,20 @@ class Reline::LineEditor
     def test_retrieve_completion_block
       Reline.completer_word_break_characters = ' ([{'
       Reline.completer_quote_characters = ''
-      assert_equal(['', '', 'foo'], retrieve_completion_block(['foo'], 0, 0))
-      assert_equal(['', 'f', 'oo'], retrieve_completion_block(['foo'], 0, 1))
-      assert_equal(['foo ', 'ba', 'r baz'], retrieve_completion_block(['foo bar baz'], 0, 6))
-      assert_equal(['foo([', 'b', 'ar])baz'], retrieve_completion_block(['foo([bar])baz'], 0, 6))
-      assert_equal(['foo([{', '', '}])baz'], retrieve_completion_block(['foo([{}])baz'], 0, 6))
-      assert_equal(["abc\nfoo ", 'ba', "r baz\ndef"], retrieve_completion_block(['abc', 'foo bar baz', 'def'], 1, 6))
+      assert_equal(['', '', 'foo', nil], retrieve_completion_block(['foo'], 0, 0))
+      assert_equal(['', 'f', 'oo', nil], retrieve_completion_block(['foo'], 0, 1))
+      assert_equal(['foo ', 'ba', 'r baz', nil], retrieve_completion_block(['foo bar baz'], 0, 6))
+      assert_equal(['foo([', 'b', 'ar])baz', nil], retrieve_completion_block(['foo([bar])baz'], 0, 6))
+      assert_equal(['foo([{', '', '}])baz', nil], retrieve_completion_block(['foo([{}])baz'], 0, 6))
+      assert_equal(["abc\nfoo ", 'ba', "r baz\ndef", nil], retrieve_completion_block(['abc', 'foo bar baz', 'def'], 1, 6))
     end
 
     def test_retrieve_completion_block_with_quote_characters
       Reline.completer_word_break_characters = ' ([{'
       Reline.completer_quote_characters = ''
-      assert_equal(['"" ', '"wo', 'rd'], retrieve_completion_block(['"" "word'], 0, 6))
+      assert_equal(['"" ', '"wo', 'rd', nil], retrieve_completion_block(['"" "word'], 0, 6))
       Reline.completer_quote_characters = '"'
-      assert_equal(['"" "', 'wo', 'rd'], retrieve_completion_block(['"" "word'], 0, 6))
+      assert_equal(['"" "', 'wo', 'rd', nil], retrieve_completion_block(['"" "word'], 0, 6))
     end
 
     def test_retrieve_completion_quote

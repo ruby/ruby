@@ -135,6 +135,13 @@ class Reline::TestCase < Test::Unit::TestCase
     end
   end
 
+  def set_line_around_cursor(before, after)
+    input_keys("\C-a\C-k")
+    input_keys(after)
+    input_keys("\C-a")
+    input_keys(before)
+  end
+
   def assert_line_around_cursor(before, after)
     before = convert_str(before)
     after = convert_str(after)

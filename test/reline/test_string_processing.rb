@@ -29,40 +29,18 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
 
     @line_editor.instance_variable_set(:@is_multiline, true)
     @line_editor.instance_variable_set(:@buffer_of_lines, buf)
-    @line_editor.instance_variable_set(:@byte_pointer, 3)
-    @line_editor.instance_variable_set(:@line_index, 1)
-    @line_editor.instance_variable_set(:@completion_proc, proc { |target|
-      assert_equal('p', target)
-    })
-    @line_editor.__send__(:call_completion_proc)
-
-    @line_editor.instance_variable_set(:@is_multiline, true)
-    @line_editor.instance_variable_set(:@buffer_of_lines, buf)
     @line_editor.instance_variable_set(:@byte_pointer, 6)
     @line_editor.instance_variable_set(:@line_index, 1)
+    completion_proc_called = false
     @line_editor.instance_variable_set(:@completion_proc, proc { |target, pre, post|
       assert_equal('puts', target)
       assert_equal("def hoge\n  ", pre)
       assert_equal(" :aaa\nend", post)
+      completion_proc_called = true
     })
-    @line_editor.__send__(:call_completion_proc)
 
-    @line_editor.instance_variable_set(:@byte_pointer, 6)
-    @line_editor.instance_variable_set(:@line_index, 0)
-    @line_editor.instance_variable_set(:@completion_proc, proc { |target, pre, post|
-      assert_equal('ho', target)
-      assert_equal('def ', pre)
-      assert_equal("ge\n  puts :aaa\nend", post)
-    })
-    @line_editor.__send__(:call_completion_proc)
-
-    @line_editor.instance_variable_set(:@byte_pointer, 1)
-    @line_editor.instance_variable_set(:@line_index, 2)
-    @line_editor.instance_variable_set(:@completion_proc, proc { |target, pre, post|
-      assert_equal('e', target)
-      assert_equal("def hoge\n  puts :aaa\n", pre)
-      assert_equal('nd', post)
-    })
-    @line_editor.__send__(:call_completion_proc)
+    assert_equal(["def hoge\n  ", 'puts', " :aaa\nend", nil], @line_editor.retrieve_completion_block)
+    @line_editor.__send__(:call_completion_proc, "def hoge\n  ", 'puts', " :aaa\nend", nil)
+    assert(completion_proc_called)
   end
 end

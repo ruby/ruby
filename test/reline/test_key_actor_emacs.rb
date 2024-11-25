@@ -933,6 +933,30 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_line_around_cursor('foo_fooX foo_barX', '')
   end
 
+  def test_completion_with_quote_append
+    @line_editor.completion_proc = proc { |word|
+      %w[foo bar baz].select { |s| s.start_with? word }
+    }
+    set_line_around_cursor('x = "b', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('x = "ba', '')
+    set_line_around_cursor('x = "f', ' ')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('x = "foo', ' ')
+    set_line_around_cursor("x = 'f", '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor("x = 'foo'", '')
+    set_line_around_cursor('"a "f', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('"a "foo', '')
+    set_line_around_cursor('"a\\" "f', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('"a\\" "foo', '')
+    set_line_around_cursor('"a" "f', '')
+    input_keys("\C-i", false)
+    assert_line_around_cursor('"a" "foo"', '')
+  end
+
   def test_completion_with_completion_ignore_case
     @line_editor.completion_proc = proc { |word|
       %w{

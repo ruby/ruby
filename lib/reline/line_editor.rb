@@ -578,8 +578,9 @@ class Reline::LineEditor
       @context
     end
 
-    def retrieve_completion_block(set_completion_quote_character = false)
-      @line_editor.retrieve_completion_block(set_completion_quote_character)
+    def retrieve_completion_block(_unused = false)
+      preposing, target, postposing, _quote = @line_editor.retrieve_completion_block
+      [preposing, target, postposing]
     end
 
     def call_completion_proc_with_checking_args(pre, target, post)
@@ -826,8 +827,7 @@ class Reline::LineEditor
     end.uniq
   end
 
-  private def perform_completion(list)
-    preposing, target, postposing = retrieve_completion_block
+  private def perform_completion(preposing, target, postposing, quote, list)
     candidates = filter_normalize_candidates(target, list)
 
     case @completion_state
@@ -851,7 +851,7 @@ class Reline::LineEditor
     append_character = ''
     if candidates.include?(completed)
       if candidates.one?
-        append_character = completion_append_character.to_s
+        append_character = quote || completion_append_character.to_s
         @completion_state = CompletionState::PERFECT_MATCH
       elsif @config.show_all_if_ambiguous
         menu(candidates)
@@ -895,8 +895,8 @@ class Reline::LineEditor
   end
 
   private def retrieve_completion_journey_state
-    preposing, target, postposing = retrieve_completion_block
-    list = call_completion_proc
+    preposing, target, postposing, quote = retrieve_completion_block
+    list = call_completion_proc(preposing, target, postposing, quote)
     return unless list.is_a?(Array)
 
     candidates = list.select{ |item| item.start_with?(target) }
@@ -1146,9 +1146,8 @@ class Reline::LineEditor
     end
   end
 
-  def call_completion_proc
-    result = retrieve_completion_block(true)
-    pre, target, post = result
+  def call_completion_proc(pre, target, post, quote)
+    Reline.core.instance_variable_set(:@completion_quote_character, quote)
     result = call_completion_proc_with_checking_args(pre, target, post)
     Reline.core.instance_variable_set(:@completion_quote_character, nil)
     result
@@ -1224,11 +1223,12 @@ class Reline::LineEditor
     process_auto_indent
   end
 
-  def retrieve_completion_block(set_completion_quote_character = false)
+  def retrieve_completion_block
     quote_characters = Reline.completer_quote_characters
     before = current_line.byteslice(0, @byte_pointer).grapheme_clusters
     quote = nil
-    unless quote_characters.empty?
+    # Calcualte closing quote when cursor is at the end of the line
+    if current_line.bytesize == @byte_pointer && !quote_characters.empty?
       escaped = false
       before.each do |c|
         if escaped
@@ -1243,18 +1243,12 @@ class Reline::LineEditor
         end
       end
     end
+
     word_break_characters = quote_characters + Reline.completer_word_break_characters
     break_index = before.rindex { |c| word_break_characters.include?(c) || quote_characters.include?(c) } || -1
     preposing = before.take(break_index + 1).join
     target = before.drop(break_index + 1).join
     postposing = current_line.byteslice(@byte_pointer, current_line.bytesize - @byte_pointer)
-    if target
-      if set_completion_quote_character and quote
-        Reline.core.instance_variable_set(:@completion_quote_character, quote)
-        insert_text(quote) # FIXME: should not be here
-        target += quote
-      end
-    end
     lines = whole_lines
     if @line_index > 0
       preposing = lines[0..(@line_index - 1)].join("\n") + "\n" + preposing
@@ -1262,7 +1256,7 @@ class Reline::LineEditor
     if (lines.size - 1) > @line_index
       postposing = postposing + "\n" + lines[(@line_index + 1)..-1].join("\n")
     end
-    [preposing.encode(encoding), target.encode(encoding), postposing.encode(encoding)]
+    [preposing.encode(encoding), target.encode(encoding), postposing.encode(encoding), quote&.encode(encoding)]
   end
 
   def confirm_multiline_termination
@@ -1393,10 +1387,11 @@ class Reline::LineEditor
       @completion_occurs = move_completed_list(:down)
     else
       @completion_journey_state = nil
-      result = call_completion_proc
+      pre, target, post, quote = retrieve_completion_block
+      result = call_completion_proc(pre, target, post, quote)
       if result.is_a?(Array)
         @completion_occurs = true
-        perform_completion(result)
+        perform_completion(pre, target, post, quote, result)
       end
     end
   end
@@ -1860,9 +1855,9 @@ class Reline::LineEditor
     if current_line.empty? or @byte_pointer < current_line.bytesize
       em_delete(key)
     elsif !@config.autocompletion # show completed list
-      result = call_completion_proc
+      pre, target, post, quote = retrieve_completion_block
+      result = call_completion_proc(pre, target, post, quote)
       if result.is_a?(Array)
-        _preposing, target = retrieve_completion_block
         candidates = filter_normalize_candidates(target, result)
         menu(candidates)
       end
