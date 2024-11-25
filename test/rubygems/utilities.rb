@@ -115,6 +115,7 @@ class Gem::FakeFetcher
 
     # Ensure multipart request bodies are generated
     socket = FakeSocket.new
+    last_request.content_type ||= "application/x-www-form-urlencoded"
     last_request.exec socket.binmode, "1.1", last_request.path
     _, last_request.body = socket.string.split("\r\n\r\n", 2)
 
