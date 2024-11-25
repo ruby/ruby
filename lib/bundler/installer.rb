@@ -77,7 +77,7 @@ module Bundler
           return
         end
 
-        if resolve_if_needed(options)
+        if @definition.setup_domain!(options)
           ensure_specs_are_compatible!
           Bundler.load_plugins(@definition)
         end
@@ -219,20 +219,6 @@ module Bundler
           raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
             "which is incompatible with the current version, #{Gem.rubygems_version}"
         end
-      end
-    end
-
-    # returns whether or not a re-resolve was needed
-    def resolve_if_needed(options)
-      @definition.prefer_local! if options[:"prefer-local"]
-
-      if options[:local] || @definition.no_install_needed?
-        Bundler.settings.set_command_option(:jobs, 1) if @definition.no_install_needed? # to avoid the overhead of Bundler::Worker
-        @definition.resolve_with_cache!
-        false
-      else
-        @definition.resolve_remotely!
-        true
       end
     end
 

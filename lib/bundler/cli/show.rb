@@ -59,9 +59,9 @@ module Bundler
       definition = Bundler.definition(true)
       if options[:outdated]
         Bundler.ui.info "Fetching remote specs for outdated check...\n\n"
-        Bundler.ui.silence { definition.resolve_remotely! }
+        Bundler.ui.silence { definition.remotely! }
       else
-        definition.resolve_with_cache!
+        definition.with_cache!
       end
       Bundler.reset!
       definition.specs
