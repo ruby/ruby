@@ -11,7 +11,7 @@ class URI::TestCommon < Test::Unit::TestCase
   end
 
   class Foo
-    include URI::REGEXP::PATTERN
+    include URI::RFC2396_REGEXP::PATTERN
   end
 
   def test_fallback_constants
