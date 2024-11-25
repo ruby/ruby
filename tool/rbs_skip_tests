@@ -84,3 +84,8 @@ test_rmtree(PathnameInstanceTest)
 
 # https://github.com/ruby/ruby/actions/runs/11623300558/job/32370124549?pr=11974#step:13:278
 test_deep_const_get(JSONSingletonTest)
+
+# NoMethodError: undefined method 'inspect' for an instance of RBS::UnitTest::Convertibles::ToInt
+test_compile(RegexpSingletonTest)
+test_linear_time?(RegexpSingletonTest)
+test_new(RegexpSingletonTest)
