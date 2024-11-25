@@ -277,6 +277,15 @@ __EOC__
     assert_equal(@it.sections.sort, c2.sections.sort)
   end
 
+  if respond_to?(:ractor)
+    ractor
+    def test_ractor
+      assert(Ractor.shareable?(@it))
+      assert(Ractor.shareable?(OpenSSL::Config.parse("[empty]\n")))
+      assert(Ractor.shareable?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
+    end
+  end
+
   private
 
   def in_tmpdir(*args)
