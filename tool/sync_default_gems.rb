@@ -277,7 +277,10 @@ module SyncDefaultGems
       cp_r("#{upstream}/ext/strscan", "ext")
       cp_r("#{upstream}/test/strscan", "test")
       cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
-      cp_r("#{upstream}/doc/strscan", "doc")
+      begin
+        cp_r("#{upstream}/doc/strscan", "doc")
+      rescue Errno::ENOENT
+      end
       rm_rf(%w["ext/strscan/regenc.h ext/strscan/regint.h"])
       `git checkout ext/strscan/depend`
     when "cgi"
