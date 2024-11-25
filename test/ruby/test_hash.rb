@@ -893,8 +893,8 @@ class TestHash < Test::Unit::TestCase
       sjis_hash = "{\x87]: 1}".force_encoding('sjis')
       assert_equal(eval(sjis_hash).inspect, sjis_hash)
     ensure
-      $VERBOSE = verbose_bak
       Encoding.default_external = enc
+      $VERBOSE = verbose_bak
     end
   end
 
