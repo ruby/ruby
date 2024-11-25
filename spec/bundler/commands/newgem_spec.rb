@@ -428,6 +428,22 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/README.md").read).not_to include("github.com/bundleuser")
       end
     end
+
+    describe "test task name on readme" do
+      shared_examples_for "test task name on readme" do |framework, task_name|
+        before do
+          bundle "gem #{gem_name} --test=#{framework}"
+        end
+
+        it "renders with correct name" do
+          expect(bundled_app("#{gem_name}/README.md").read).to include("Then, run `rake #{task_name}` to run the tests.")
+        end
+      end
+
+      it_behaves_like "test task name on readme", "test-unit", "test"
+      it_behaves_like "test task name on readme", "minitest", "test"
+      it_behaves_like "test task name on readme", "rspec", "spec"
+    end
   end
 
   it "creates a new git repository" do
