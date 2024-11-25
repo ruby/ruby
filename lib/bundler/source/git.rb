@@ -102,7 +102,7 @@ module Bundler
       end
 
       def identifier
-        uri_with_specifiers([humanized_ref, cached_revision, glob_for_display])
+        uri_with_specifiers([humanized_ref, locked_revision, glob_for_display])
       end
 
       def uri_with_specifiers(specifiers)
@@ -176,10 +176,10 @@ module Bundler
             "#{current_branch} but Gemfile specifies #{branch}"
         end
 
-        changed = cached_revision && cached_revision != revision
+        changed = locked_revision && locked_revision != revision
 
-        if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(cached_revision)
-          raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(cached_revision)} " \
+        if !Bundler.settings[:disable_local_revision_check] && changed && !@unlocked && !git_proxy.contains?(locked_revision)
+          raise GitError, "The Gemfile lock is pointing to revision #{shortref_for_display(locked_revision)} " \
             "but the current branch in your local override for #{name} does not contain such commit. " \
             "Please make sure your branch is up to date."
         end
@@ -249,7 +249,7 @@ module Bundler
       end
 
       def app_cache_dirname
-        "#{base_name}-#{shortref_for_path(cached_revision || revision)}"
+        "#{base_name}-#{shortref_for_path(locked_revision || revision)}"
       end
 
       def revision
@@ -326,7 +326,7 @@ module Bundler
       end
 
       def has_app_cache?
-        cached_revision && super
+        locked_revision && super
       end
 
       def use_app_cache?
@@ -334,11 +334,11 @@ module Bundler
       end
 
       def requires_checkout?
-        allow_git_ops? && !local? && !cached_revision_checked_out?
+        allow_git_ops? && !local? && !locked_revision_checked_out?
       end
 
-      def cached_revision_checked_out?
-        cached_revision && cached_revision == revision && install_path.exist?
+      def locked_revision_checked_out?
+        locked_revision && locked_revision == revision && install_path.exist?
       end
 
       def base_name
@@ -375,7 +375,7 @@ module Bundler
         Bundler::Digest.sha1(input)
       end
 
-      def cached_revision
+      def locked_revision
         options["revision"]
       end
 
@@ -384,7 +384,7 @@ module Bundler
       end
 
       def git_proxy
-        @git_proxy ||= GitProxy.new(cache_path, uri, options, cached_revision, self)
+        @git_proxy ||= GitProxy.new(cache_path, uri, options, locked_revision, self)
       end
 
       def fetch
