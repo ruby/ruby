@@ -103,6 +103,7 @@ jobs:
         run: |
           echo "RUBY_GC_LIBRARY=default" >> $GITHUB_ENV
           make shared-gc SHARED_GC=default
+          make distclean-shared-gc SHARED_GC=default
         if: ${{ matrix.shared_gc }}
 
       - run: |
