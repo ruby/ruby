@@ -1262,7 +1262,8 @@ main()
 		ac_cv_func_tgamma=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <winsock2.h>
-			      @%:@include <iphlpapi.h>])
+			       @%:@include <windows.h>
+			       @%:@include <iphlpapi.h>])
 		AS_IF([test x"$ac_cv_type_NET_LUID" = xyes], [
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
 		])
