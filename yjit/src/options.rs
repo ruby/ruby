@@ -121,7 +121,7 @@ pub const YJIT_OPTIONS: &'static [(&str, &str)] = &[
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT."),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)."),
     ("--yjit-stats",                       "Enable collecting YJIT statistics."),
-    ("--yjit--log[=file|dir]",             "Enable logging of YJIT's compilation activity."),
+    ("--yjit-log[=file|dir]",              "Enable logging of YJIT's compilation activity."),
     ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable."),
     ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit."),
     ("--yjit-perf",                        "Enable frame pointers and perf profiling."),
