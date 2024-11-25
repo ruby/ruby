@@ -1945,11 +1945,15 @@ HELP_EXTRA_TASKS = ""
 
 shared-gc-precheck:
 shared-gc: probes.h shared-gc-precheck
-	$(Q) $(MAKEDIRS) $(shared_gc_dir) .gc/$(arch)/$(SHARED_GC)
-	$(Q) $(RUNRUBY) -C .gc/$(arch)/$(SHARED_GC) $(CURDIR)/$(srcdir)/gc/$(SHARED_GC)/$(EXTCONF)
-	$(Q) $(CHDIR) .gc/$(arch)/$(SHARED_GC) && \
-		$(MAKE) extout=../../../$(EXTOUT) BUILTRUBY=../../../miniruby$(EXEEXT) && \
-		$(CP) librubygc.$(SHARED_GC).$(DLEXT) $(shared_gc_dir)
+	$(Q) $(MAKEDIRS) $(shared_gc_dir)
+	$(Q) $(RUNRUBY) $(srcdir)/ext/extmk.rb \
+		$(SCRIPT_ARGS) \
+		--make='$(MAKE)' --make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" \
+		--gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
+		--ext-build-dir=gc --command-output=gc/$(SHARED_GC)/exts.mk -- \
+		configure gc/$(SHARED_GC)
+	$(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./
+	$(CP) gc/$(SHARED_GC)/librubygc.$(SHARED_GC).$(DLEXT) $(shared_gc_dir)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
