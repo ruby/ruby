@@ -348,6 +348,16 @@ $(ruby_pc): config.status Makefile
 	$(Q)pkg_config=${PKG_CONFIG} && PKG_CONFIG_PATH=. $${pkg_config:-:} --print-errors ruby.tmp
 	$(Q)$(MV) -f ruby.tmp.pc $(ruby_pc)
 
+shared-gc-precheck:
+	$(Q) if test -z $(shared_gc_dir); then \
+	    echo "You must configure with --with-shared-gc to use shared GC"; \
+	    exit 1; \
+	fi
+	$(Q) if test -z $(SHARED_GC); then \
+	    echo "You must specify SHARED_GC with the GC to build"; \
+	    exit 1; \
+	fi
+
 pre-install-local:: pkgconfig-data
 
 ruby-runner.h: template/ruby-runner.h.in config.status

@@ -1943,14 +1943,8 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
-shared-gc: probes.h
-	$(Q) if test -z $(shared_gc_dir); then \
-		echo "You must configure with --with-shared-gc to use shared GC"; \
-		exit 1; \
-	elif test -z $(SHARED_GC); then \
-		echo "You must specify SHARED_GC with the GC to build"; \
-		exit 1; \
-	fi
+shared-gc-precheck:
+shared-gc: probes.h shared-gc-precheck
 	$(Q) $(MAKEDIRS) $(shared_gc_dir) .gc/$(arch)/$(SHARED_GC)
 	$(Q) $(RUNRUBY) -C .gc/$(arch)/$(SHARED_GC) $(CURDIR)/$(srcdir)/gc/$(SHARED_GC)/$(EXTCONF)
 	$(Q) $(CHDIR) .gc/$(arch)/$(SHARED_GC) && \
