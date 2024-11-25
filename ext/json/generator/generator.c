@@ -71,6 +71,28 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
 
 static int usascii_encindex, utf8_encindex, binary_encindex;
 
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_generator_error_str(VALUE invalid_object, VALUE str)
+{
+    VALUE exc = rb_exc_new_str(eGeneratorError, str);
+    rb_ivar_set(exc, rb_intern("@invalid_object"), invalid_object);
+    rb_exc_raise(exc);
+}
+
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    VALUE str = rb_vsprintf(fmt, args);
+    va_end(args);
+    raise_generator_error_str(invalid_object, str);
+}
+
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
  *
@@ -867,6 +889,17 @@ static inline int enc_utf8_compatible_p(int enc_idx)
     return 0;
 }
 
+static VALUE encode_json_string_try(VALUE str)
+{
+    return rb_funcall(str, i_encode, 1, Encoding_UTF_8);
+}
+
+static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
+{
+    raise_generator_error_str(str, rb_funcall(exception, rb_intern("message"), 0));
+    return Qundef;
+}
+
 static inline VALUE ensure_valid_encoding(VALUE str)
 {
     int encindex = RB_ENCODING_GET(str);
@@ -886,7 +919,7 @@ static inline VALUE ensure_valid_encoding(VALUE str)
             }
         }
 
-        str = rb_funcall(str, i_encode, 1, Encoding_UTF_8);
+        str = rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
     }
     return str;
 }
@@ -909,7 +942,7 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
             }
             break;
         default:
-            rb_raise(rb_path2class("JSON::GeneratorError"), "source sequence is illegal/malformed utf-8");
+            raise_generator_error(obj, "source sequence is illegal/malformed utf-8");
             break;
     }
     fbuffer_append_char(buffer, '"');
@@ -957,10 +990,8 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     char allow_nan = state->allow_nan;
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     if (!allow_nan) {
-        if (isinf(value)) {
-            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", tmp);
-        } else if (isnan(value)) {
-            rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", tmp);
+        if (isinf(value) || isnan(value)) {
+            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", tmp);
         }
     }
     fbuffer_append_str(buffer, tmp);
@@ -1008,7 +1039,7 @@ static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON
             default:
             general:
                 if (state->strict) {
-                    rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", CLASS_OF(obj));
+                    raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", CLASS_OF(obj));
                 } else if (rb_respond_to(obj, i_to_json)) {
                     tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
                     Check_Type(tmp, T_STRING);
@@ -1035,10 +1066,6 @@ static VALUE generate_json_rescue(VALUE d, VALUE exc)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
     fbuffer_free(data->buffer);
-
-    if (RBASIC_CLASS(exc) == rb_path2class("Encoding::UndefinedConversionError")) {
-        exc = rb_exc_new_str(eGeneratorError, rb_funcall(exc, rb_intern("message"), 0));
-    }
 
     rb_exc_raise(exc);
 
@@ -1537,10 +1564,11 @@ void Init_generator(void)
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
+    rb_global_variable(&eGeneratorError);
     eGeneratorError = rb_path2class("JSON::GeneratorError");
+
+    rb_global_variable(&eNestingError);
     eNestingError = rb_path2class("JSON::NestingError");
-    rb_gc_register_mark_object(eGeneratorError);
-    rb_gc_register_mark_object(eNestingError);
 
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);
