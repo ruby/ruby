@@ -138,6 +138,7 @@
 
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/compilers.h"
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/io.h"
@@ -426,15 +427,6 @@ char *port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
 #    define IPV4_HOSTNAME_RESOLVED '2'
 #    define SELECT_CANCELLED '3'
 
-struct fast_fallback_getaddrinfo_shared
-{
-    int wait, notify, refcount, connection_attempt_fds_size;
-    int cancelled;
-    int *connection_attempt_fds;
-    char *node, *service;
-    rb_nativethread_lock_t *lock;
-};
-
 struct fast_fallback_getaddrinfo_entry
 {
     int family, err, refcount;
@@ -444,6 +436,16 @@ struct fast_fallback_getaddrinfo_entry
     int has_syserr;
     long test_sleep_ms;
     int test_ecode;
+};
+
+struct fast_fallback_getaddrinfo_shared
+{
+    int wait, notify, refcount, connection_attempt_fds_size;
+    int cancelled;
+    int *connection_attempt_fds;
+    char *node, *service;
+    rb_nativethread_lock_t *lock;
+    struct fast_fallback_getaddrinfo_entry getaddrinfo_entries[FLEX_ARY_LEN];
 };
 
 int raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg);
