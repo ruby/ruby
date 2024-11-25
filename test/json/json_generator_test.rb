@@ -250,17 +250,20 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_allow_nan
-    assert_raise(GeneratorError) { generate([JSON::NaN]) }
+    error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
+    assert_same JSON::NaN, error.invalid_object
     assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
     assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
     assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
     assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-    assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+    error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+    assert_same JSON::Infinity, error.invalid_object
     assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
     assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
     assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
     assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-    assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+    error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+    assert_same JSON::MinusInfinity, error.invalid_object
     assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
     assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
     assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
@@ -487,9 +490,13 @@ class JSONGeneratorTest < Test::Unit::TestCase
       ["\x82\xAC\xEF".b].to_json
     end
 
-    assert_raise(JSON::GeneratorError) do
-      { foo: "\x82\xAC\xEF".b }.to_json
+    badly_encoded = "\x82\xAC\xEF".b
+    exception = assert_raise(JSON::GeneratorError) do
+      { foo: badly_encoded }.to_json
     end
+
+    assert_kind_of EncodingError, exception.cause
+    assert_same badly_encoded, exception.invalid_object
   end
 
   class MyCustomString < String

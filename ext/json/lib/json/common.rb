@@ -143,7 +143,23 @@ module JSON
   # :startdoc:
 
   # This exception is raised if a generator or unparser error occurs.
-  class GeneratorError < JSONError; end
+  class GeneratorError < JSONError
+    attr_reader :invalid_object
+
+    def initialize(message, invalid_object = nil)
+      super(message)
+      @invalid_object = invalid_object
+    end
+
+    def detailed_message(...)
+      if @invalid_object.nil?
+        super
+      else
+        "#{super}\nInvalid object: #{@invalid_object.inspect}"
+      end
+    end
+  end
+
   # For backwards compatibility
   UnparserError = GeneratorError # :nodoc:
 
