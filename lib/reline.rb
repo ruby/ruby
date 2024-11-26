@@ -307,6 +307,7 @@ module Reline
       otio = io_gate.prep
 
       may_req_ambiguous_char_width
+      key_stroke.encoding = encoding
       line_editor.reset(prompt)
       if multiline
         line_editor.multiline_on
@@ -485,7 +486,7 @@ module Reline
   def self.core
     @core ||= Core.new { |core|
       core.config = Reline::Config.new
-      core.key_stroke = Reline::KeyStroke.new(core.config)
+      core.key_stroke = Reline::KeyStroke.new(core.config, core.encoding)
       core.line_editor = Reline::LineEditor.new(core.config)
 
       core.basic_word_break_characters = " \t\n`><=;|&{("

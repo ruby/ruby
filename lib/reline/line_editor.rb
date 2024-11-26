@@ -265,7 +265,6 @@ class Reline::LineEditor
     @line_index = 0
     @cache.clear
     @line_backup_in_history = nil
-    @multibyte_buffer = String.new(encoding: 'ASCII-8BIT')
   end
 
   def multiline_on
@@ -1036,20 +1035,11 @@ class Reline::LineEditor
   end
 
   private def normal_char(key)
-    @multibyte_buffer << key.combined_char
-    if @multibyte_buffer.size > 1
-      if @multibyte_buffer.dup.force_encoding(encoding).valid_encoding?
-        process_key(@multibyte_buffer.dup.force_encoding(encoding), nil)
-        @multibyte_buffer.clear
-      else
-        # invalid
-        return
-      end
-    else # single byte
-      return if key.char >= 128 # maybe, first byte of multi byte
+    if key.char < 0x80
       method_symbol = @config.editing_mode.get_method(key.combined_char)
       process_key(key.combined_char, method_symbol)
-      @multibyte_buffer.clear
+    else
+      process_key(key.char.chr(encoding), nil)
     end
     if @config.editing_mode_is?(:vi_command) and @byte_pointer > 0 and @byte_pointer == current_line.bytesize
       byte_size = Reline::Unicode.get_prev_mbchar_size(@buffer_of_lines[@line_index], @byte_pointer)
@@ -1526,7 +1516,6 @@ class Reline::LineEditor
 
   private def generate_searcher(search_key)
     search_word = String.new(encoding: encoding)
-    multibyte_buf = String.new(encoding: 'ASCII-8BIT')
     hit_pointer = nil
     lambda do |key|
       search_again = false
@@ -1541,11 +1530,7 @@ class Reline::LineEditor
         search_again = true if search_key == key
         search_key = key
       else
-        multibyte_buf << key
-        if multibyte_buf.dup.force_encoding(encoding).valid_encoding?
-          search_word << multibyte_buf.dup.force_encoding(encoding)
-          multibyte_buf.clear
-        end
+        search_word << key
       end
       hit = nil
       if not search_word.empty? and @line_backup_in_history&.include?(search_word)

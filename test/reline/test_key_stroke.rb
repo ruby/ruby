@@ -13,6 +13,10 @@ class Reline::KeyStroke::Test < Reline::TestCase
     end
   }
 
+  def encoding
+    Reline.core.encoding
+  end
+
   def test_match_status
     config = Reline::Config.new
     {
@@ -23,7 +27,7 @@ class Reline::KeyStroke::Test < Reline::TestCase
     }.each_pair do |key, func|
       config.add_default_key_binding(key.bytes, func.bytes)
     end
-    stroke = Reline::KeyStroke.new(config)
+    stroke = Reline::KeyStroke.new(config, encoding)
     assert_equal(Reline::KeyStroke::MATCHING_MATCHED, stroke.match_status("a".bytes))
     assert_equal(Reline::KeyStroke::MATCHING_MATCHED, stroke.match_status("ab".bytes))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("abc".bytes))
@@ -37,7 +41,7 @@ class Reline::KeyStroke::Test < Reline::TestCase
   def test_match_unknown
     config = Reline::Config.new
     config.add_default_key_binding("\e[9abc".bytes, 'x')
-    stroke = Reline::KeyStroke.new(config)
+    stroke = Reline::KeyStroke.new(config, encoding)
     sequences = [
       "\e[9abc",
       "\e[9d",
@@ -66,7 +70,7 @@ class Reline::KeyStroke::Test < Reline::TestCase
     }.each_pair do |key, func|
       config.add_default_key_binding(key.bytes, func.bytes)
     end
-    stroke = Reline::KeyStroke.new(config)
+    stroke = Reline::KeyStroke.new(config, encoding)
     assert_equal(['123'.bytes.map { |c| Reline::Key.new(c, c, false) }, 'de'.bytes], stroke.expand('abcde'.bytes))
     assert_equal(['456'.bytes.map { |c| Reline::Key.new(c, c, false) }, 'de'.bytes], stroke.expand('abde'.bytes))
     # CSI sequence
@@ -83,7 +87,7 @@ class Reline::KeyStroke::Test < Reline::TestCase
     }.each_pair do |key, func|
       config.add_default_key_binding(key.bytes, func.bytes)
     end
-    stroke = Reline::KeyStroke.new(config)
+    stroke = Reline::KeyStroke.new(config, encoding)
     assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('zzz'.bytes))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status('abc'.bytes))
   end
@@ -96,10 +100,27 @@ class Reline::KeyStroke::Test < Reline::TestCase
     }.each_pair do |key, func|
       config.add_oneshot_key_binding(key, func.bytes)
     end
-    stroke = Reline::KeyStroke.new(config)
+    stroke = Reline::KeyStroke.new(config, encoding)
     assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('da'.bytes))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("\eda".bytes))
     assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status([32, 195, 164]))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status([195, 164]))
+  end
+
+  def test_multibyte_matching
+    config = Reline::Config.new
+    stroke = Reline::KeyStroke.new(config, encoding)
+    char = 'あ'.encode(encoding)
+    key = Reline::Key.new(char.ord, char.ord, false)
+    bytes = char.bytes
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status(bytes))
+    assert_equal([[key], []], stroke.expand(bytes))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status(bytes * 2))
+    assert_equal([[key], bytes], stroke.expand(bytes * 2))
+    (1...bytes.size).each do |i|
+      partial_bytes = bytes.take(i)
+      assert_equal(Reline::KeyStroke::MATCHING_MATCHED, stroke.match_status(partial_bytes))
+      assert_equal([[], []], stroke.expand(partial_bytes))
+    end
   end
 end

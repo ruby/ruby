@@ -3,8 +3,11 @@ class Reline::KeyStroke
   CSI_PARAMETER_BYTES_RANGE = 0x30..0x3f
   CSI_INTERMEDIATE_BYTES_RANGE = (0x20..0x2f)
 
-  def initialize(config)
+  attr_accessor :encoding
+
+  def initialize(config, encoding)
     @config = config
+    @encoding = encoding
   end
 
   # Input exactly matches to a key sequence
@@ -21,7 +24,7 @@ class Reline::KeyStroke
     matched = key_mapping.get(input)
 
     # FIXME: Workaround for single byte. remove this after MAPPING is merged into KeyActor.
-    matched ||= input.size == 1
+    matched ||= input.size == 1 && input[0] < 0x80
     matching ||= input == [ESC_BYTE]
 
     if matching && matched
@@ -32,10 +35,14 @@ class Reline::KeyStroke
       MATCHED
     elsif input[0] == ESC_BYTE
       match_unknown_escape_sequence(input, vi_mode: @config.editing_mode_is?(:vi_insert, :vi_command))
-    elsif input.size == 1
-      MATCHED
     else
-      UNMATCHED
+      s = input.pack('c*').force_encoding(@encoding)
+      if s.valid_encoding?
+        s.size == 1 ? MATCHED : UNMATCHED
+      else
+        # Invalid string is MATCHING (part of valid string) or MATCHED (invalid bytes to be ignored)
+        MATCHING_MATCHED
+      end
     end
   end
 
@@ -45,6 +52,7 @@ class Reline::KeyStroke
       bytes = input.take(i)
       status = match_status(bytes)
       matched_bytes = bytes if status == MATCHED || status == MATCHING_MATCHED
+      break if status == MATCHED || status == UNMATCHED
     end
     return [[], []] unless matched_bytes
 
@@ -53,12 +61,15 @@ class Reline::KeyStroke
       keys = func.map { |c| Reline::Key.new(c, c, false) }
     elsif func
       keys = [Reline::Key.new(func, func, false)]
-    elsif matched_bytes.size == 1
-      keys = [Reline::Key.new(matched_bytes.first, matched_bytes.first, false)]
     elsif matched_bytes.size == 2 && matched_bytes[0] == ESC_BYTE
       keys = [Reline::Key.new(matched_bytes[1], matched_bytes[1] | 0b10000000, true)]
     else
-      keys = []
+      s = matched_bytes.pack('c*').force_encoding(@encoding)
+      if s.valid_encoding? && s.size == 1
+        keys = [Reline::Key.new(s.ord, s.ord, false)]
+      else
+        keys = []
+      end
     end
 
     [keys, input.drop(matched_bytes.size)]

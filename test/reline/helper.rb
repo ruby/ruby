@@ -121,17 +121,15 @@ class Reline::TestCase < Test::Unit::TestCase
           @line_editor.input_key(Reline::Key.new(byte, byte, false))
         end
       else
-        c.bytes.each do |b|
-          @line_editor.input_key(Reline::Key.new(b, b, false))
-        end
+        @line_editor.input_key(Reline::Key.new(c.ord, c.ord, false))
       end
     end
   end
 
   def input_raw_keys(input, convert = true)
     input = convert_str(input) if convert
-    input.bytes.each do |b|
-      @line_editor.input_key(Reline::Key.new(b, b, false))
+    input.chars.each do |c|
+      @line_editor.input_key(Reline::Key.new(c.ord, c.ord, false))
     end
   end
 
