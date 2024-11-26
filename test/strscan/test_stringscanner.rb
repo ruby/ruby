@@ -890,6 +890,61 @@ module StringScannerTests
     assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
     assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
   end
+
+  def test_scan_integer
+    omit "scan_integer isn't implemented on TruffleRuby yet" if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner('abc')
+    assert_nil s.scan_integer
+    assert_equal 0, s.pos
+    refute_predicate s, :matched?
+
+    s = create_string_scanner('123abc')
+    assert_equal 123, s.scan_integer
+    assert_equal 3, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('-123abc')
+    assert_equal -123, s.scan_integer
+    assert_equal 4, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('+123')
+    assert_equal 123, s.scan_integer
+    assert_equal 4, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('-abc')
+    assert_nil s.scan_integer
+    assert_equal 0, s.pos
+    refute_predicate s, :matched?
+
+    huge_integer = '1' * 2_000
+    s = create_string_scanner(huge_integer)
+    assert_equal huge_integer.to_i, s.scan_integer
+    assert_equal 2_000, s.pos
+    assert_predicate s, :matched?
+  end
+
+  def test_scan_integer_unmatch
+    omit "scan_integer isn't implemented on TruffleRuby yet" if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner('123abc')
+    assert_equal 123, s.scan_integer
+    assert_equal 3, s.pos
+
+    s.unscan
+    assert_equal 0, s.pos
+  end
+
+  def test_scan_integer_encoding
+    omit "scan_integer isn't implemented on TruffleRuby yet" if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner('123abc'.encode(Encoding::UTF_32LE))
+    assert_raise(Encoding::CompatibilityError) do
+      s.scan_integer
+    end
+  end
 end
 
 class TestStringScanner < Test::Unit::TestCase
