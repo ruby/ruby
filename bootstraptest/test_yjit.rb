@@ -5309,3 +5309,33 @@ assert_equal '[true, false]', <<~'RUBY'
     test("c"),
   ]
 RUBY
+
+# YARV: swap and opt_reverse
+assert_equal '["x", "Y", "c", "A", "t", "A", "b", "C", "d"]', <<~'RUBY'
+  class Swap
+    def initialize(s)
+      @a, @b, @c, @d = s.split("")
+    end
+
+    def swap
+      a, b = @a, @b
+      b = b.upcase
+      @a, @b = a, b
+    end
+
+    def reverse_odd
+      a, b, c = @a, @b, @c
+      b = b.upcase
+      @a, @b, @c = a, b, c
+    end
+
+    def reverse_even
+      a, b, c, d = @a, @b, @c, @d
+      a = a.upcase
+      c = c.upcase
+      @a, @b, @c, @d = a, b, c, d
+    end
+  end
+
+  Swap.new("xy").swap + Swap.new("cat").reverse_odd + Swap.new("abcd").reverse_even
+RUBY

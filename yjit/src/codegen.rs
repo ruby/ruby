@@ -1489,6 +1489,18 @@ fn gen_dupn(
     Some(KeepCompiling)
 }
 
+// Reverse top X stack entries
+fn gen_opt_reverse(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let count = jit.get_arg(0).as_i32();
+    for n in 0..(count/2) {
+        stack_swap(asm, n, count - 1 - n);
+    }
+    Some(KeepCompiling)
+}
+
 // Swap top 2 stack entries
 fn gen_swap(
     _jit: &mut JITState,
@@ -10517,6 +10529,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_dup => Some(gen_dup),
         YARVINSN_dupn => Some(gen_dupn),
         YARVINSN_swap => Some(gen_swap),
+        YARVINSN_opt_reverse => Some(gen_opt_reverse),
         YARVINSN_putnil => Some(gen_putnil),
         YARVINSN_putobject => Some(gen_putobject),
         YARVINSN_putobject_INT2FIX_0_ => Some(gen_putobject_int2fix),
@@ -11091,6 +11104,41 @@ mod tests {
         // TODO: this is writing zero bytes on x86. Why?
         asm.compile(&mut cb, None).unwrap();
         assert!(cb.get_write_pos() > 0); // Write some movs
+    }
+
+    #[test]
+    fn test_gen_opt_reverse() {
+        let (_context, mut asm, mut cb, mut ocb) = setup_codegen();
+        let mut jit = dummy_jit_state(&mut cb, &mut ocb);
+
+        // Odd number of elements
+        asm.stack_push(Type::Fixnum);
+        asm.stack_push(Type::Flonum);
+        asm.stack_push(Type::CString);
+
+        let mut value_array: [u64; 2] = [0, 3];
+        let pc: *mut VALUE = &mut value_array as *mut u64 as *mut VALUE;
+        jit.pc = pc;
+
+        let mut status = gen_opt_reverse(&mut jit, &mut asm);
+
+        assert_eq!(status, Some(KeepCompiling));
+
+        assert_eq!(Type::CString, asm.ctx.get_opnd_type(StackOpnd(2)));
+        assert_eq!(Type::Flonum, asm.ctx.get_opnd_type(StackOpnd(1)));
+        assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(0)));
+
+        // Try again with an even number of elements.
+        asm.stack_push(Type::Nil);
+        value_array[1] = 4;
+        status = gen_opt_reverse(&mut jit, &mut asm);
+
+        assert_eq!(status, Some(KeepCompiling));
+
+        assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(3)));
+        assert_eq!(Type::Fixnum, asm.ctx.get_opnd_type(StackOpnd(2)));
+        assert_eq!(Type::Flonum, asm.ctx.get_opnd_type(StackOpnd(1)));
+        assert_eq!(Type::CString, asm.ctx.get_opnd_type(StackOpnd(0)));
     }
 
     #[test]
