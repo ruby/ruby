@@ -217,9 +217,11 @@ module Bundler
       end
 
       def cache(spec, custom_path = nil)
-        app_cache_path = app_cache_path(custom_path)
         return unless Bundler.feature_flag.cache_all?
+
+        app_cache_path = app_cache_path(custom_path)
         return if cache_path == app_cache_path
+
         cached!
         FileUtils.rm_rf(app_cache_path)
         git_proxy.checkout if requires_checkout?
