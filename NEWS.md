@@ -40,6 +40,10 @@ Note: We're only listing outstanding class updates.
     * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
       Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
 
+* MatchData
+
+    * MatchData#bytebegin and MatchData#byteend have been added. [[Feature #20576]]
+
 * Range
 
     * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
