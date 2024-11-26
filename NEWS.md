@@ -40,6 +40,12 @@ Note: We're only listing outstanding class updates.
     * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
       Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
 
+* Hash
+
+    * Hash.new now accepts an optional `capacity:` argument, to preallocate the hash with a given capacity.
+      This can improve performance when building large hashes incrementally by saving on reallocation and
+      rehashing of keys. [[Feature #19236]]
+
 * Fiber::Scheduler
 
     * An optional `Fiber::Scheduler#blocking_operation_wait` hook allows blocking operations to be moved out of the
@@ -285,6 +291,7 @@ details of the default gems or bundled gems.
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Misc #18984]:    https://bugs.ruby-lang.org/issues/18984
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
+[Feature #19236]: https://bugs.ruby-lang.org/issues/19236
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Bug #19918]:     https://bugs.ruby-lang.org/issues/19918
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
