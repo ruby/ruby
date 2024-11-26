@@ -89,3 +89,7 @@ test_deep_const_get(JSONSingletonTest)
 test_compile(RegexpSingletonTest)
 test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
+
+# NoMethodError: undefined method 'flush' for an instance of JsonWrite
+test_dump(JSONInstanceTest)
+test_dump(JSONSingletonTest)
