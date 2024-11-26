@@ -12,10 +12,13 @@ class URI::TestCommon < Test::Unit::TestCase
 
   EnvUtil.suppress_warning do
     class Foo
+      # Intentionally use `URI::REGEXP`, which is for the compatibility
       include URI::REGEXP::PATTERN
     end
+  end
 
-    def test_fallback_constants
+  def test_fallback_constants
+    EnvUtil.suppress_warning do
       assert_raise(NameError) { URI::FOO }
 
       assert_equal URI::ABS_URI, URI::RFC2396_PARSER.regexp[:ABS_URI]
