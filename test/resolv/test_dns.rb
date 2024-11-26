@@ -89,8 +89,8 @@ class TestResolvDNS < Test::Unit::TestCase
         # If we get to this point, we have a valid t & u socket
         yield us.last, ts.last
       ensure
-        ts.each { _1.close }
-        us.each { _1.close }
+        ts.each(&:close)
+        us.each(&:close)
       end
     else
       # Explicitly specified port, don't retry the bind.
