@@ -219,7 +219,6 @@ module Bundler
       def cache(spec, custom_path = nil)
         app_cache_path = app_cache_path(custom_path)
         return unless Bundler.feature_flag.cache_all?
-        return if install_path == app_cache_path
         return if cache_path == app_cache_path
         cached!
         FileUtils.rm_rf(app_cache_path)
