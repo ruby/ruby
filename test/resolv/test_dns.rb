@@ -83,6 +83,8 @@ class TestResolvDNS < Test::Unit::TestCase
           # See: https://stackoverflow.com/questions/48478869/cannot-bind-to-some-ports-due-to-permission-denied
           retries_remaining -= 1
           retry if retries_remaining > 0
+          # Windows and MinGW CI can't bind to the same port with ten retries.
+          omit if /mswin|mingw/ =~ RUBY_PLATFORM
           raise
         end
 
