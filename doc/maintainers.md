@@ -170,7 +170,7 @@ have commit right, others don't.
 
 #### lib/forwardable.rb
 
-* Keiju ISHITSUKA (keiju)
+* Keiju ISHITSUKA ([keiju])
 * https://github.com/ruby/forwardable
 * https://rubygems.org/gems/forwardable
 
@@ -329,7 +329,7 @@ have commit right, others don't.
 
 #### lib/thwait.rb
 
-* Keiju ISHITSUKA (keiju)
+* Keiju ISHITSUKA ([keiju])
 * https://github.com/ruby/thwait
 * https://rubygems.org/gems/thwait
 
@@ -597,7 +597,7 @@ have commit right, others don't.
 
 ### AIX
 
-* Yutaka Kanemoto (kanemoto)
+* Yutaka Kanemoto ([kanemoto])
 
 ### FreeBSD
 
@@ -640,8 +640,10 @@ have commit right, others don't.
 [jeremyevans]: https://github.com/jeremyevans
 [k-tsj]: https://github.com/k-tsj
 [k0kubun]: https://github.com/k0kubun
+[kanemoto]: https://github.com/kanemoto
 [kateinoigakukun]: https://github.com/kateinoigakukun
 [kddnewton]: https://github.com/kddnewton
+[keiju]: https://github.com/keiju
 [knu]: https://github.com/knu
 [ko1]: https://github.com/ko1
 [kosaki]: https://github.com/kosaki
