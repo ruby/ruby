@@ -245,7 +245,7 @@ details of the default gems or bundled gems.
 * Happy Eyeballs version 2 (RFC8305) is used in Socket.tcp.
   To disable it, use the keyword argument `fast_fallback: false`.
   [[Feature #20108]]
-* Happy Eyeballs version 2 (RFC8305) is implemented in Socket.tcp.
+* Happy Eyeballs version 2 (RFC8305) is implemented in TCPSocket.new.
   To enable it, use the keyword argument `fast_fallback: true`.
   (This entry is temporary. It should be merged with the above entry after it becomes settled)
   [[Feature #20782]]
