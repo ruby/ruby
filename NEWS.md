@@ -270,6 +270,17 @@ details of the default gems or bundled gems.
   [[Feature #20782]]
 * Array#each is rewritten in Ruby for better performance [[Feature #20182]].
 
+* Alternative GC implementations can be loaded dynamically. Configure Ruby
+  `--with-shared-gc` to enable. Alternative GC modules can be loaded at runtime
+  using the environment variable `RUBY_GC_LIBRARY`.  [[Feature #20351]],
+  [[Feature #20470]]
+
+* An experimental GC module is provided based on MMTk. Configure Ruby
+  `--with-shared-gc`, build as normal, then build the GC library: `make
+  shared-gc SHARED_GC=mmtk`.  enable with `RUBY_GC_LIBRARY=mmtk`.  This
+  requires a working Rust compiler, and Cargo on the build machine.
+  [[Feature #20860]]
+
 ## JIT
 
 ## Miscellaneous changes
@@ -301,9 +312,11 @@ details of the default gems or bundled gems.
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20293]: https://bugs.ruby-lang.org/issues/20293
+[Feature #20351]: https://bugs.ruby-lang.org/issues/20351
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
 [Bug #20433]:     https://bugs.ruby-lang.org/issues/20433
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
+[Feature #20470]: https://bugs.ruby-lang.org/issues/20470
 [Feature #20564]: https://bugs.ruby-lang.org/issues/20564
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Bug #20620]:     https://bugs.ruby-lang.org/issues/20620
@@ -312,5 +325,6 @@ details of the default gems or bundled gems.
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
 [Feature #20782]: https://bugs.ruby-lang.org/issues/20782
 [Feature #20811]: https://bugs.ruby-lang.org/issues/20811
+[Feature #20860]: https://bugs.ruby-lang.org/issues/20860
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
