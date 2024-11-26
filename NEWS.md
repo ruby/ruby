@@ -40,6 +40,15 @@ Note: We're only listing outstanding class updates.
     * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
       Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
 
+* Fiber::Scheduler
+
+    * An optional `Fiber::Scheduler#blocking_operation_wait` hook allows blocking operations to be moved out of the
+      event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
+
+* IO::Buffer
+
+    * `IO::Buffer#copy` can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
+
 * MatchData
 
     * MatchData#bytebegin and MatchData#byteend have been added. [[Feature #20576]]
@@ -64,15 +73,6 @@ Note: We're only listing outstanding class updates.
     * Add RubyVM::AbstractSyntaxTree::Node#locations method which returns location objects
       associated with the AST node. [[Feature #20624]]
     * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
-
-* Fiber::Scheduler
-
-    * An optional `Fiber::Scheduler#blocking_operation_wait` hook allows blocking operations to be moved out of the
-      event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
-
-* IO::Buffer
-
-    * `IO::Buffer#copy` can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
 
 ## Stdlib updates
 
