@@ -235,6 +235,14 @@ details of the default gems or bundled gems.
   "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
   ```
 
+* `Kernel#singleton_method` now returns methods in modules prepended to or included in the
+  receiver's singleton class. [[Bug #20620]]
+  ```
+  o = Object.new
+  o.extend(Module.new{def a = 1})
+  o.singleton_method(:a).call #=> 1
+  ```
+
 ## Stdlib compatibility issues
 
 ## C API updates
@@ -291,6 +299,7 @@ details of the default gems or bundled gems.
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20564]: https://bugs.ruby-lang.org/issues/20564
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
+[Bug #20620]:     https://bugs.ruby-lang.org/issues/20620
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
 [Feature #20705]: https://bugs.ruby-lang.org/issues/20705
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
