@@ -136,7 +136,11 @@ module Bundler
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
-        spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
+        if spec.source.respond_to?(:migrate_cache)
+          spec.source.migrate_cache(custom_path, local: local)
+        elsif spec.source.respond_to?(:cache)
+          spec.source.cache(spec, custom_path)
+        end
       end
 
       Dir[cache_path.join("*/.git")].each do |git_dir|

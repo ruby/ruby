@@ -239,6 +239,96 @@ RSpec.describe "bundle cache with git" do
     expect(the_bundle).to include_gem "foo 1.0"
   end
 
+  it "installs properly a bundler 2.5.17-2.5.23 cache as a bare repository without cloning remote repositories" do
+    git = build_git "foo"
+
+    short_ref = git.ref_for("main", 11)
+    cache_dir = bundled_app("vendor/cache/foo-1.0-#{short_ref}")
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+    bundle "config set global_gem_cache false"
+    bundle "config set cache_all true"
+    bundle "config path vendor/bundle"
+    bundle :install
+
+    # Simulate old cache by copying the real cache folder to vendor/cache
+    FileUtils.mkdir_p bundled_app("vendor/cache")
+    FileUtils.cp_r "#{Dir.glob(vendored_gems("cache/bundler/git/foo-1.0-*")).first}/.", cache_dir
+    FileUtils.rm_rf bundled_app("vendor/bundle")
+
+    bundle "install --local --verbose"
+    expect(err).to include("Installing from cache in old \"bare repository\" format for compatibility")
+
+    expect(out).to_not include("Fetching")
+
+    # leaves old cache alone
+    expect(cache_dir.join("lib/foo.rb")).not_to exist
+    expect(cache_dir.join("HEAD")).to exist
+
+    expect(the_bundle).to include_gem "foo 1.0"
+  end
+
+  it "migrates a bundler 2.5.17-2.5.23 cache as a bare repository when not running with --local" do
+    git = build_git "foo"
+
+    short_ref = git.ref_for("main", 11)
+    cache_dir = bundled_app("vendor/cache/foo-1.0-#{short_ref}")
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+    bundle "config set global_gem_cache false"
+    bundle "config set cache_all true"
+    bundle "config path vendor/bundle"
+    bundle :install
+
+    # Simulate old cache by copying the real cache folder to vendor/cache
+    FileUtils.mkdir_p bundled_app("vendor/cache")
+    FileUtils.cp_r "#{Dir.glob(vendored_gems("cache/bundler/git/foo-1.0-*")).first}/.", cache_dir
+    FileUtils.rm_rf bundled_app("vendor/bundle")
+
+    bundle "install --verbose"
+    expect(out).to include("Fetching")
+
+    # migrates old cache alone
+    expect(cache_dir.join("lib/foo.rb")).to exist
+    expect(cache_dir.join("HEAD")).not_to exist
+
+    expect(the_bundle).to include_gem "foo 1.0"
+  end
+
+  it "migrates a bundler 2.5.17-2.5.23 cache as a bare repository when running `bundle cache`, even if gems already installed" do
+    git = build_git "foo"
+
+    short_ref = git.ref_for("main", 11)
+    cache_dir = bundled_app("vendor/cache/foo-1.0-#{short_ref}")
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "foo", :git => '#{lib_path("foo-1.0")}'
+    G
+    bundle "config set global_gem_cache false"
+    bundle "config set cache_all true"
+    bundle "config path vendor/bundle"
+    bundle :install
+
+    # Simulate old cache by copying the real cache folder to vendor/cache
+    FileUtils.mkdir_p bundled_app("vendor/cache")
+    FileUtils.cp_r "#{Dir.glob(vendored_gems("cache/bundler/git/foo-1.0-*")).first}/.", cache_dir
+
+    bundle "cache"
+
+    # migrates old cache alone
+    expect(cache_dir.join("lib/foo.rb")).to exist
+    expect(cache_dir.join("HEAD")).not_to exist
+
+    expect(the_bundle).to include_gem "foo 1.0"
+  end
+
   it "copies repository to vendor cache, including submodules" do
     # CVE-2022-39253: https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
     system(*%W[git config --global protocol.file.allow always])

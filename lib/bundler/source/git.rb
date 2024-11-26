@@ -214,16 +214,16 @@ module Bundler
         requires_checkout? ? spec.post_install_message : nil
       end
 
+      def migrate_cache(custom_path = nil, local: false)
+        if local
+          cache_to(custom_path, try_migrate: false)
+        else
+          cache_to(custom_path, try_migrate: true)
+        end
+      end
+
       def cache(spec, custom_path = nil)
-        return unless Bundler.feature_flag.cache_all?
-
-        app_cache_path = app_cache_path(custom_path)
-        return if cache_path == app_cache_path
-
-        cached!
-        FileUtils.rm_rf(app_cache_path)
-        git_proxy.checkout if requires_checkout?
-        git_proxy.copy_to(app_cache_path, @submodules)
+        cache_to(custom_path, try_migrate: false)
       end
 
       def load_spec_files
@@ -267,14 +267,36 @@ module Bundler
 
       private
 
+      def cache_to(custom_path, try_migrate: false)
+        return unless Bundler.feature_flag.cache_all?
+
+        app_cache_path = app_cache_path(custom_path)
+
+        migrate = try_migrate ? bare_repo?(app_cache_path) : false
+
+        set_cache_path!(nil) if migrate
+
+        return if cache_path == app_cache_path
+
+        cached!
+        FileUtils.rm_rf(app_cache_path)
+        git_proxy.checkout if migrate || requires_checkout?
+        git_proxy.copy_to(app_cache_path, @submodules)
+      end
+
       def checkout
         Bundler.ui.debug "  * Checking out revision: #{ref}"
-        if use_app_cache?
+        if use_app_cache? && !bare_repo?(app_cache_path)
           SharedHelpers.filesystem_access(install_path.dirname) do |p|
             FileUtils.mkdir_p(p)
           end
           FileUtils.cp_r("#{app_cache_path}/.", install_path)
         else
+          if use_app_cache? && bare_repo?(app_cache_path)
+            Bundler.ui.warn "Installing from cache in old \"bare repository\" format for compatibility. " \
+                            "Please run `bundle cache` and commit the updated cache to migrate to the new format and get rid of this warning."
+          end
+
           git_proxy.copy_to(install_path, submodules)
         end
         serialize_gemspecs_in(install_path)
@@ -415,6 +437,10 @@ module Bundler
 
       def override_for(path)
         Bundler.settings.local_overrides.key(path)
+      end
+
+      def bare_repo?(path)
+        File.exist?(path.join("objects")) && File.exist?(path.join("HEAD"))
       end
     end
   end
