@@ -38,7 +38,7 @@ module SyncDefaultGems
     irb: 'ruby/irb',
     json: 'ruby/json',
     logger: 'ruby/logger',
-    mmtk: 'ruby/mmtk',
+    mmtk: ['ruby/mmtk', "main"],
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
