@@ -4306,6 +4306,53 @@ fn gen_opt_newarray_max(
     Some(KeepCompiling)
 }
 
+fn gen_opt_duparray_send(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let method = jit.get_arg(1).as_u64();
+
+    if method == ID!(include_p) {
+        gen_opt_duparray_send_include_p(jit, asm)
+    } else {
+        None
+    }
+}
+
+fn gen_opt_duparray_send_include_p(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    asm_comment!(asm, "opt_duparray_send include_p");
+
+    let ary = jit.get_arg(0);
+    let argc = jit.get_arg(2).as_usize();
+
+    // Save the PC and SP because we may call #include?
+    jit_prepare_non_leaf_call(jit, asm);
+
+    extern "C" {
+        fn rb_vm_opt_duparray_include_p(ec: EcPtr, ary: VALUE, target: VALUE) -> VALUE;
+    }
+
+    let target = asm.ctx.sp_opnd(-1);
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_duparray_include_p as *const u8,
+        vec![
+            EC,
+            ary.into(),
+            target,
+        ],
+    );
+
+    asm.stack_pop(argc);
+    let stack_ret = asm.stack_push(Type::Unknown);
+    asm.mov(stack_ret, val_opnd);
+
+    Some(KeepCompiling)
+}
+
 fn gen_opt_newarray_send(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -4318,6 +4365,8 @@ fn gen_opt_newarray_send(
         gen_opt_newarray_max(jit, asm)
     } else if method == VM_OPT_NEWARRAY_SEND_HASH {
         gen_opt_newarray_hash(jit, asm)
+    } else if method == VM_OPT_NEWARRAY_SEND_INCLUDE_P {
+        gen_opt_newarray_include_p(jit, asm)
     } else if method == VM_OPT_NEWARRAY_SEND_PACK {
         gen_opt_newarray_pack_buffer(jit, asm, 1, None)
     } else if method == VM_OPT_NEWARRAY_SEND_PACK_BUFFER {
@@ -4393,6 +4442,42 @@ fn gen_opt_newarray_hash(
             EC,
             num.into(),
             values_ptr
+        ],
+    );
+
+    asm.stack_pop(num.as_usize());
+    let stack_ret = asm.stack_push(Type::Unknown);
+    asm.mov(stack_ret, val_opnd);
+
+    Some(KeepCompiling)
+}
+
+fn gen_opt_newarray_include_p(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    asm_comment!(asm, "opt_newarray_send include?");
+
+    let num = jit.get_arg(0).as_u32();
+
+    // Save the PC and SP because we may call customized methods.
+    jit_prepare_non_leaf_call(jit, asm);
+
+    extern "C" {
+        fn rb_vm_opt_newarray_include_p(ec: EcPtr, num: u32, elts: *const VALUE, target: VALUE) -> VALUE;
+    }
+
+    let values_opnd = asm.ctx.sp_opnd(-(num as i32));
+    let values_ptr = asm.lea(values_opnd);
+    let target = asm.ctx.sp_opnd(-1);
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_newarray_include_p as *const u8,
+        vec![
+            EC,
+            (num - 1).into(),
+            values_ptr,
+            target
         ],
     );
 
@@ -10466,6 +10551,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_hash_freeze => Some(gen_opt_hash_freeze),
         YARVINSN_opt_str_freeze => Some(gen_opt_str_freeze),
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
+        YARVINSN_opt_duparray_send => Some(gen_opt_duparray_send),
         YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),
         YARVINSN_splatarray => Some(gen_splatarray),
         YARVINSN_splatkw => Some(gen_splatkw),
