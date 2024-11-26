@@ -164,6 +164,11 @@ CODE
     assert_raise(ArgumentError) { "foo"[] }
   end
 
+  def test_AREF_underflow
+    require "rbconfig/sizeof"
+    assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
+  end
+
   def test_ASET # '[]='
     s = S("FooBar")
     s[0] = S('A')
