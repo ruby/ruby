@@ -159,7 +159,7 @@ module IRB
             when :on_heredoc_end
               opens.pop
             when :on_backtick
-              opens << [t, nil] if t.state.allbits?(Ripper::EXPR_BEG)
+              opens << [t, nil] unless t.state == Ripper::EXPR_ARG
             when :on_tstring_beg, :on_words_beg, :on_qwords_beg, :on_symbols_beg, :on_qsymbols_beg, :on_regexp_beg
               opens << [t, nil]
             when :on_tstring_end, :on_regexp_end, :on_label_end
