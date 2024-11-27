@@ -10869,6 +10869,10 @@ parser_lex(pm_parser_t *parser) {
 
                 // ,
                 case ',':
+                    if ((parser->previous.type == PM_TOKEN_COMMA) && (parser->enclosure_nesting > 0)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_ARRAY_TERM, pm_token_type_human(parser->current.type));
+                    }
+
                     lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
                     LEX(PM_TOKEN_COMMA);
 
