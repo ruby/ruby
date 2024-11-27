@@ -2691,10 +2691,17 @@ str_discard(VALUE str)
 void
 rb_must_asciicompat(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-    if (!enc) {
+    int encindex = rb_enc_get_index(str);
+
+    if (RB_UNLIKELY(encindex == -1)) {
         rb_raise(rb_eTypeError, "not encoding capable object");
     }
+
+    if (RB_LIKELY(str_encindex_fastpath(encindex))) {
+        return;
+    }
+
+    rb_encoding *enc = rb_enc_from_index(encindex);
     if (!rb_enc_asciicompat(enc)) {
         rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
