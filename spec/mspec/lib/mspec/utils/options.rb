@@ -204,6 +204,13 @@ class MSpecOptions
        "Load FILE containing configuration options", &block)
   end
 
+  def env
+    on("--env", "KEY=VALUE", "Set environment variable") do |env|
+      key, value = env.split('=', 2)
+      ENV[key] = value
+    end
+  end
+
   def targets
     on("-t", "--target", "TARGET",
        "Implementation to run the specs, where TARGET is:") do |t|
@@ -484,6 +491,7 @@ class MSpecOptions
 
   def all
     configure {}
+    env
     targets
     formatters
     filters
