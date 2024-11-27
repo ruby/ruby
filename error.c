@@ -1072,7 +1072,7 @@ die(void)
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
-void
+static void
 rb_bug_without_die(const char *fmt, va_list args)
 {
     const char *file = NULL;
