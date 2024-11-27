@@ -20,7 +20,7 @@ RSpec.configure do |config|
 
   config.before(:suite) do
     Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
-    ENV["TEST_BUNDLED_GEMS"] = "true"
+    ENV["TEST_BUNDLED_GEMS_FAKE_RBCONFIG"] = "true"
 
     require_relative "bundler/support/rubygems_ext"
     Spec::Rubygems.test_setup

@@ -53,7 +53,7 @@ module Gem::BUNDLED_GEMS
   WARNED = {}                   # unfrozen
 
   conf = ::RbConfig::CONFIG
-  if ENV["TEST_BUNDLED_GEMS"]
+  if ENV["TEST_BUNDLED_GEMS_FAKE_RBCONFIG"]
     LIBDIR = (File.expand_path(File.join(__dir__, "..", "lib")) + "/").freeze
     rubyarchdir = $LOAD_PATH.find{|path| path.include?(".ext/common") }
     ARCHDIR = (File.expand_path(rubyarchdir) + "/").freeze
