@@ -317,8 +317,9 @@ details of the default gems or bundled gems.
 [Bug #20433]:     https://bugs.ruby-lang.org/issues/20433
 [Feature #20443]: https://bugs.ruby-lang.org/issues/20443
 [Feature #20470]: https://bugs.ruby-lang.org/issues/20470
-[Feature #20564]: https://bugs.ruby-lang.org/issues/20564
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
+[Feature #20564]: https://bugs.ruby-lang.org/issues/20564
+[Feature #20576]: https://bugs.ruby-lang.org/issues/20576
 [Bug #20620]:     https://bugs.ruby-lang.org/issues/20620
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
 [Feature #20705]: https://bugs.ruby-lang.org/issues/20705
