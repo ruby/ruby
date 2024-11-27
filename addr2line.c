@@ -2632,7 +2632,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout)
 	    memcpy(main_path, binary_filename, len+1);
 	    append_obj(&obj);
 	    obj->path = main_path;
-	    addr = fill_lines(num_traces, traces, 1, &obj, lines, -1, errout);
+	    addr = fill_lines(num_traces, traces, 1, &obj, lines, 0, errout);
 	    if (addr != (uintptr_t)-1) {
 		dladdr_fbases[0] = (void *)addr;
 	    }
