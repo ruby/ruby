@@ -480,7 +480,7 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    %w(object_id __send__).each do |m|
+    %w(object_id __id__ __send__).each do |m|
       assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '#{m}' may cause serious problems$")
         $VERBOSE = false
         def (Object.new).#{m}; end
@@ -542,7 +542,7 @@ class TestObject < Test::Unit::TestCase
     bug2202 = '[ruby-core:26074]'
     assert_raise(NoMethodError, bug2202) {o2.meth2}
 
-    %w(object_id __send__ initialize).each do |m|
+    %w(object_id __id__ __send__ initialize).each do |m|
       assert_in_out_err([], <<-INPUT, %w(:ok), %r"warning: removing '#{m}' may cause serious problems$")
         $VERBOSE = false
         begin

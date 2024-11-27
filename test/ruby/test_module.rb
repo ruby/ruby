@@ -1488,7 +1488,7 @@ class TestModule < Test::Unit::TestCase
       class << o; self; end.instance_eval { undef_method(:foo) }
     end
 
-    %w(object_id __send__ initialize).each do |n|
+    %w(object_id __id__ __send__ initialize).each do |n|
       assert_in_out_err([], <<-INPUT, [], %r"warning: undefining '#{n}' may cause serious problems$")
         $VERBOSE = false
         Class.new.instance_eval { undef_method(:#{n}) }
