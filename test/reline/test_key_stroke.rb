@@ -103,14 +103,18 @@ class Reline::KeyStroke::Test < Reline::TestCase
     stroke = Reline::KeyStroke.new(config, encoding)
     assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('da'.bytes))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("\eda".bytes))
-    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status([32, 195, 164]))
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status(" \eda".bytes))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status([195, 164]))
   end
 
   def test_multibyte_matching
+    begin
+      char = 'あ'.encode(encoding)
+    rescue Encoding::UndefinedConversionError
+      omit
+    end
     config = Reline::Config.new
     stroke = Reline::KeyStroke.new(config, encoding)
-    char = 'あ'.encode(encoding)
     key = Reline::Key.new(char.ord, char.ord, false)
     bytes = char.bytes
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status(bytes))
