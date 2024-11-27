@@ -84,6 +84,9 @@ static void raise_generator_error_str(VALUE invalid_object, VALUE str)
 #ifdef RBIMPL_ATTR_NORETURN
 RBIMPL_ATTR_NORETURN()
 #endif
+#ifdef RBIMPL_ATTR_FORMAT
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
+#endif
 static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
 {
     va_list args;
