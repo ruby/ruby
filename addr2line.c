@@ -2426,7 +2426,17 @@ found_mach_header:
                         for (int j=0; j < DWARF_SECTION_COUNT; j++) {
                             struct dwarf_section *s = obj_dwarf_section_at(obj, j);
 
-                            if (strcmp(sect->sectname, debug_section_names[j]) != 0)
+                            if (strcmp(sect->sectname, debug_section_names[j]) != 0
+#ifdef __APPLE__
+                                    /* macOS clang 16 generates DWARF5, which have Mach-O
+                                     * section names that are limited to 16 characters,
+                                     * which causes sections with long names to be truncated
+                                     * and not match above.
+                                     * See: https://wiki.dwarfstd.org/Best_Practices.md#Mach-2d-O
+                                     */
+                                    && strncmp(sect->sectname, debug_section_names[j], 16) != 0
+#endif
+                                )
                                 continue;
 
                             s->ptr = file + sect->offset;
