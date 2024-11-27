@@ -4,6 +4,6 @@ if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 end
 
 # Remove the helper defined in kernel.rb
-module Kernel
+class Module
   undef :with_yjit
 end
