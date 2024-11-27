@@ -20,7 +20,6 @@
 extern size_t onig_region_memsize(const struct re_registers *regs);
 #endif
 
-#include <ctype.h>
 #include <stdbool.h>
 
 #define STRSCAN_VERSION "3.1.1.dev"
@@ -116,7 +115,7 @@ static VALUE strscan_get_byte _((VALUE self));
 static VALUE strscan_getbyte _((VALUE self));
 static VALUE strscan_peek _((VALUE self, VALUE len));
 static VALUE strscan_peep _((VALUE self, VALUE len));
-static VALUE strscan_scan_integer _((VALUE self));
+static VALUE strscan_scan_base10_integer _((VALUE self));
 static VALUE strscan_unscan _((VALUE self));
 static VALUE strscan_bol_p _((VALUE self));
 static VALUE strscan_eos_p _((VALUE self));
@@ -1268,21 +1267,26 @@ strscan_peep(VALUE self, VALUE vlen)
     return strscan_peek(self, vlen);
 }
 
-/*
- * call-seq:
- *   scan_integer
- *
- * Equivalent to #scan with a [+-]?\d+ pattern, and returns an Integer or nil.
- *
- * The scanned string must be encoded with an ASCII compatible encoding, otherwise
- * Encoding::CompatibilityError will be raised.
- */
 static VALUE
-strscan_scan_integer(VALUE self)
+strscan_parse_integer(struct strscanner *p, int base, long len)
 {
-    char *ptr, *buffer;
-    long len = 0;
     VALUE buffer_v, integer;
+
+    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
+
+    MEMCPY(buffer, CURPTR(p), char, len);
+    buffer[len] = '\0';
+    integer = rb_cstr2inum(buffer, base);
+    RB_ALLOCV_END(buffer_v);
+    p->curr += len;
+    return integer;
+}
+
+static VALUE
+strscan_scan_base10_integer(VALUE self)
+{
+    char *ptr;
+    long len = 0;
     struct strscanner *p;
 
     GET_SCANNER(self, p);
@@ -1302,25 +1306,60 @@ strscan_scan_integer(VALUE self)
         len++;
     }
 
-    if (!isdigit(ptr[len])) {
+    if (!rb_isdigit(ptr[len])) {
         return Qnil;
     }
 
     MATCHED(p);
     p->prev = p->curr;
 
-    while (len < remaining_len && isdigit(ptr[len])) {
+    while (len < remaining_len && rb_isdigit(ptr[len])) {
         len++;
     }
 
-    buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
+    return strscan_parse_integer(p, 10, len);
+}
 
-    MEMCPY(buffer, CURPTR(p), char, len);
-    buffer[len] = '\0';
-    integer = rb_cstr2inum(buffer, 10);
-    RB_ALLOCV_END(buffer_v);
-    p->curr += len;
-    return integer;
+static VALUE
+strscan_scan_base16_integer(VALUE self)
+{
+    char *ptr;
+    long len = 0;
+    struct strscanner *p;
+
+    GET_SCANNER(self, p);
+    CLEAR_MATCH_STATUS(p);
+
+    rb_must_asciicompat(p->str);
+
+    ptr = CURPTR(p);
+
+    long remaining_len = S_RESTLEN(p);
+
+    if (remaining_len <= 0) {
+        return Qnil;
+    }
+
+    if (ptr[len] == '-' || ptr[len] == '+') {
+        len++;
+    }
+
+    if ((remaining_len >= (len + 2)) && ptr[len] == '0' && ptr[len + 1] == 'x') {
+        len += 2;
+    }
+
+    if (len >= remaining_len || !rb_isxdigit(ptr[len])) {
+        return Qnil;
+    }
+
+    MATCHED(p);
+    p->prev = p->curr;
+
+    while (len < remaining_len && rb_isxdigit(ptr[len])) {
+        len++;
+    }
+
+    return strscan_parse_integer(p, 16, len);
 }
 
 /*
@@ -2261,7 +2300,8 @@ Init_strscan(void)
     rb_define_method(StringScanner, "peek_byte",   strscan_peek_byte,   0);
     rb_define_method(StringScanner, "peep",        strscan_peep,        1);
 
-    rb_define_method(StringScanner, "scan_integer", strscan_scan_integer, 0);
+    rb_define_private_method(StringScanner, "scan_base10_integer", strscan_scan_base10_integer, 0);
+    rb_define_private_method(StringScanner, "scan_base16_integer", strscan_scan_base16_integer, 0);
 
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);
 
@@ -2290,4 +2330,6 @@ Init_strscan(void)
     rb_define_method(StringScanner, "fixed_anchor?", strscan_fixed_anchor_p, 0);
 
     rb_define_method(StringScanner, "named_captures", strscan_named_captures, 0);
+
+    rb_require("strscan/strscan");
 }
