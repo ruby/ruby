@@ -440,7 +440,7 @@ struct fast_fallback_getaddrinfo_entry
 
 struct fast_fallback_getaddrinfo_shared
 {
-    int wait, notify, refcount, connection_attempt_fds_size;
+    int notify, refcount, connection_attempt_fds_size;
     int cancelled;
     int *connection_attempt_fds;
     char *node, *service;
