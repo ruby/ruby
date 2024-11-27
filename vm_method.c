@@ -1072,7 +1072,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         }
     }
     /* check mid */
-    if (mid == object_id || mid == id__send__) {
+    if (mid == object_id || mid == id__id__ || mid == id__send__) {
         if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
             rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
         }
@@ -1681,7 +1681,7 @@ remove_method(VALUE klass, ID mid)
 
     rb_class_modify_check(klass);
     klass = RCLASS_ORIGIN(klass);
-    if (mid == object_id || mid == id__send__ || mid == idInitialize) {
+    if (mid == object_id || mid == id__id__ || mid == id__send__ || mid == idInitialize) {
         rb_warn("removing '%s' may cause serious problems", rb_id2name(mid));
     }
 
@@ -1911,7 +1911,7 @@ rb_undef(VALUE klass, ID id)
         rb_raise(rb_eTypeError, "no class to undef method");
     }
     rb_class_modify_check(klass);
-    if (id == object_id || id == id__send__ || id == idInitialize) {
+    if (id == object_id || id == id__id__ || id == id__send__ || id == idInitialize) {
         rb_warn("undefining '%s' may cause serious problems", rb_id2name(id));
     }
 
