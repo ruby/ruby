@@ -24,7 +24,7 @@ failed = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
-  next unless bundled_gems.delete_prefix("BUNDLED_GEMS=").split(",").include?(gem)
+  next unless bundled_gems.empty? || bundled_gems.split(",").include?(gem)
   next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
