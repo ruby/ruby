@@ -28,6 +28,10 @@ The generated project skeleton can be customized with OPTIONS, as explained belo
 .IP "\(bu" 4
 \fB\-\-no\-coc\fR: Do not create a \fBCODE_OF_CONDUCT\.md\fR (overrides \fB\-\-coc\fR specified in the global config)\.
 .IP "\(bu" 4
+\fB\-\-changelog\fR Add a \fBCHANGELOG\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
+.IP "\(bu" 4
+\fB\-\-no\-changelog\fR: Do not create a \fBCHANGELOG\.md\fR (overrides \fB\-\-changelog\fR specified in the global config)\.
+.IP "\(bu" 4
 \fB\-\-ext=c\fR, \fB\-\-ext=rust\fR Add boilerplate for C or Rust (currently magnus \fIhttps://docs\.rs/magnus\fR based) extension code to the generated project\. This behavior is disabled by default\.
 .IP "\(bu" 4
 \fB\-\-no\-ext\fR: Do not add extension code (overrides \fB\-\-ext\fR specified in the global config)\.

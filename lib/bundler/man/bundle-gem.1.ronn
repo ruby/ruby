@@ -41,6 +41,15 @@ configuration file using the following names:
   Do not create a `CODE_OF_CONDUCT.md` (overrides `--coc` specified in the
   global config).
 
+* `--changelog`
+  Add a `CHANGELOG.md` file to the root of the generated project. If
+  this option is unspecified, an interactive prompt will be displayed and the
+  answer will be saved in Bundler's global config for future `bundle gem` use.
+
+* `--no-changelog`:
+  Do not create a `CHANGELOG.md` (overrides `--changelog` specified in the
+  global config).
+
 * `--ext=c`, `--ext=rust`
   Add boilerplate for C or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
   is disabled by default.
