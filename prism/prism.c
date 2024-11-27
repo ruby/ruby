@@ -21443,6 +21443,32 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 return (pm_node_t *) pm_call_node_shorthand_create(parser, node, &operator, &arguments);
             }
 
+            switch (PM_NODE_TYPE(node)) {
+                case PM_RESCUE_MODIFIER_NODE: {
+                    pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                case PM_AND_NODE: {
+                    pm_and_node_t *cast = (pm_and_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                case PM_OR_NODE: {
+                    pm_or_node_t *cast = (pm_or_node_t *) node;
+                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+
             pm_token_t message;
 
             switch (parser->current.type) {
