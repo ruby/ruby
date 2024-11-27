@@ -56,11 +56,11 @@
 #  ifdef _AIX
 #pragma alloca
 #  else
-#   ifndef alloca		/* predefined by HP cc +Olibcalls */
+#   ifndef alloca                /* predefined by HP cc +Olibcalls */
 void *alloca();
 #   endif
 #  endif /* AIX */
-# endif	/* HAVE_ALLOCA_H */
+# endif        /* HAVE_ALLOCA_H */
 # ifndef UNREACHABLE
 #  define UNREACHABLE __builtin_unreachable()
 # endif
@@ -220,13 +220,13 @@ uleb128(const char **p)
     unsigned long r = 0;
     int s = 0;
     for (;;) {
-	unsigned char b = (unsigned char)*(*p)++;
-	if (b < 0x80) {
-	    r += (unsigned long)b << s;
-	    break;
-	}
-	r += (b & 0x7f) << s;
-	s += 7;
+        unsigned char b = (unsigned char)*(*p)++;
+        if (b < 0x80) {
+            r += (unsigned long)b << s;
+            break;
+        }
+        r += (b & 0x7f) << s;
+        s += 7;
     }
     return r;
 }
@@ -237,18 +237,18 @@ sleb128(const char **p)
     long r = 0;
     int s = 0;
     for (;;) {
-	unsigned char b = (unsigned char)*(*p)++;
-	if (b < 0x80) {
-	    if (b & 0x40) {
-		r -= (0x80 - b) << s;
-	    }
-	    else {
-		r += (b & 0x3f) << s;
-	    }
-	    break;
-	}
-	r += (b & 0x7f) << s;
-	s += 7;
+        unsigned char b = (unsigned char)*(*p)++;
+        if (b < 0x80) {
+            if (b & 0x40) {
+                r -= (0x80 - b) << s;
+            }
+            else {
+                r += (b & 0x3f) << s;
+            }
+            break;
+        }
+        r += (b & 0x7f) << s;
+        s += 7;
     }
     return r;
 }
@@ -257,16 +257,16 @@ static const char *
 get_nth_dirname(unsigned long dir, const char *p, FILE *errout)
 {
     if (!dir--) {
-	return "";
+        return "";
     }
     while (dir--) {
-	while (*p) p++;
-	p++;
-	if (!*p) {
-	    kprintf("Unexpected directory number %lu in %s\n",
-		    dir, binary_filename);
-	    return "";
-	}
+        while (*p) p++;
+        p++;
+        if (!*p) {
+            kprintf("Unexpected directory number %lu in %s\n",
+                    dir, binary_filename);
+            return "";
+        }
     }
     return p;
 }
@@ -319,19 +319,19 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
 
 static void
 fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
-	  uint8_t format, uint16_t version, const char *include_directories, const char *filenames,
-	  obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
+          uint8_t format, uint16_t version, const char *include_directories, const char *filenames,
+          obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
 {
     int i;
     addr += obj->base_addr - obj->vmaddr;
     for (i = offset; i < num_traces; i++) {
-	uintptr_t a = (uintptr_t)traces[i];
-	/* We assume one line code doesn't result >100 bytes of native code.
+        uintptr_t a = (uintptr_t)traces[i];
+        /* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
-	if (addr < a && a < addr + 100) {
-	    fill_filename(file, format, version, include_directories, filenames, &lines[i], obj, errout);
-	    lines[i].line = line;
-	}
+        if (addr < a && a < addr + 100) {
+            fill_filename(file, format, version, include_directories, filenames, &lines[i], obj, errout);
+            lines[i].line = line;
+        }
     }
 }
 
@@ -362,8 +362,8 @@ parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgr
 
     header->format = 4;
     if (header->unit_length == 0xffffffff) {
-	header->unit_length = *(uint64_t *)p;
-	p += sizeof(uint64_t);
+        header->unit_length = *(uint64_t *)p;
+        p += sizeof(uint64_t);
         header->format = 8;
     }
 
@@ -427,7 +427,7 @@ parse_debug_line_header(obj_info_t *obj, const char **pp, struct LineNumberProgr
 
 static int
 parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
-		obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
+                obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
 {
     const char *p = (const char *)*debug_line;
     struct LineNumberProgramHeader header;
@@ -448,105 +448,105 @@ parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
         return -1;
     is_stmt = header.default_is_stmt;
 
-#define FILL_LINE()						    \
-    do {							    \
-	fill_line(num_traces, traces, addr, file, line,		    \
+#define FILL_LINE()                                                 \
+    do {                                                            \
+        fill_line(num_traces, traces, addr, file, line,             \
                   header.format,                                    \
                   header.version,                                   \
                   header.include_directories,                       \
                   header.filenames,                                 \
-		  obj, lines, offset, errout);                      \
-	/*basic_block = prologue_end = epilogue_begin = 0;*/	    \
+                  obj, lines, offset, errout);                      \
+        /*basic_block = prologue_end = epilogue_begin = 0;*/        \
     } while (0)
 
     while (p < header.cu_end) {
-	unsigned long a;
-	unsigned char op = *p++;
-	switch (op) {
-	case DW_LNS_copy:
-	    FILL_LINE();
-	    break;
-	case DW_LNS_advance_pc:
-	    a = uleb128(&p) * header.minimum_instruction_length;
-	    addr += a;
-	    break;
-	case DW_LNS_advance_line: {
-	    long a = sleb128(&p);
-	    line += a;
-	    break;
-	}
-	case DW_LNS_set_file:
-	    file = (unsigned int)uleb128(&p);
-	    break;
-	case DW_LNS_set_column:
-	    /*column = (unsigned int)*/(void)uleb128(&p);
-	    break;
-	case DW_LNS_negate_stmt:
-	    is_stmt = !is_stmt;
-	    break;
-	case DW_LNS_set_basic_block:
-	    /*basic_block = 1; */
-	    break;
-	case DW_LNS_const_add_pc:
-	    a = ((255UL - header.opcode_base) / header.line_range) *
-		header.minimum_instruction_length;
-	    addr += a;
-	    break;
-	case DW_LNS_fixed_advance_pc:
-	    a = *(uint16_t *)p;
-	    p += sizeof(uint16_t);
-	    addr += a;
-	    break;
-	case DW_LNS_set_prologue_end:
-	    /* prologue_end = 1; */
-	    break;
-	case DW_LNS_set_epilogue_begin:
-	    /* epilogue_begin = 1; */
-	    break;
-	case DW_LNS_set_isa:
-	    /* isa = (unsigned int)*/(void)uleb128(&p);
-	    break;
-	case 0:
-	    a = uleb128(&p);
-	    op = *p++;
-	    switch (op) {
-	    case DW_LNE_end_sequence:
-		/* end_sequence = 1; */
-		FILL_LINE();
-		addr = 0;
-		file = 1;
-		line = 1;
-		/* column = 0; */
-		is_stmt = header.default_is_stmt;
-		/* end_sequence = 0; */
-		/* isa = 0; */
-		break;
-	    case DW_LNE_set_address:
-		addr = *(unsigned long *)p;
-		p += sizeof(unsigned long);
-		break;
-	    case DW_LNE_define_file:
-		kprintf("Unsupported operation in %s\n",
-			binary_filename);
-		break;
-	    case DW_LNE_set_discriminator:
-		/* TODO:currently ignore */
-		uleb128(&p);
-		break;
-	    default:
-		kprintf("Unknown extended opcode: %d in %s\n",
-			op, binary_filename);
-	    }
-	    break;
-	default: {
+        unsigned long a;
+        unsigned char op = *p++;
+        switch (op) {
+        case DW_LNS_copy:
+            FILL_LINE();
+            break;
+        case DW_LNS_advance_pc:
+            a = uleb128(&p) * header.minimum_instruction_length;
+            addr += a;
+            break;
+        case DW_LNS_advance_line: {
+            long a = sleb128(&p);
+            line += a;
+            break;
+        }
+        case DW_LNS_set_file:
+            file = (unsigned int)uleb128(&p);
+            break;
+        case DW_LNS_set_column:
+            /*column = (unsigned int)*/(void)uleb128(&p);
+            break;
+        case DW_LNS_negate_stmt:
+            is_stmt = !is_stmt;
+            break;
+        case DW_LNS_set_basic_block:
+            /*basic_block = 1; */
+            break;
+        case DW_LNS_const_add_pc:
+            a = ((255UL - header.opcode_base) / header.line_range) *
+                header.minimum_instruction_length;
+            addr += a;
+            break;
+        case DW_LNS_fixed_advance_pc:
+            a = *(uint16_t *)p;
+            p += sizeof(uint16_t);
+            addr += a;
+            break;
+        case DW_LNS_set_prologue_end:
+            /* prologue_end = 1; */
+            break;
+        case DW_LNS_set_epilogue_begin:
+            /* epilogue_begin = 1; */
+            break;
+        case DW_LNS_set_isa:
+            /* isa = (unsigned int)*/(void)uleb128(&p);
+            break;
+        case 0:
+            a = uleb128(&p);
+            op = *p++;
+            switch (op) {
+            case DW_LNE_end_sequence:
+                /* end_sequence = 1; */
+                FILL_LINE();
+                addr = 0;
+                file = 1;
+                line = 1;
+                /* column = 0; */
+                is_stmt = header.default_is_stmt;
+                /* end_sequence = 0; */
+                /* isa = 0; */
+                break;
+            case DW_LNE_set_address:
+                addr = *(unsigned long *)p;
+                p += sizeof(unsigned long);
+                break;
+            case DW_LNE_define_file:
+                kprintf("Unsupported operation in %s\n",
+                        binary_filename);
+                break;
+            case DW_LNE_set_discriminator:
+                /* TODO:currently ignore */
+                uleb128(&p);
+                break;
+            default:
+                kprintf("Unknown extended opcode: %d in %s\n",
+                        op, binary_filename);
+            }
+            break;
+        default: {
             uint8_t adjusted_opcode = op - header.opcode_base;
             uint8_t operation_advance = adjusted_opcode / header.line_range;
             /* NOTE: this code doesn't support VLIW */
             addr += operation_advance * header.minimum_instruction_length;
             line += header.line_base + (adjusted_opcode % header.line_range);
-	    FILL_LINE();
-	}
-	}
+            FILL_LINE();
+        }
+        }
     }
     *debug_line = (char *)p;
     return 0;
@@ -554,17 +554,17 @@ parse_debug_line_cu(int num_traces, void **traces, const char **debug_line,
 
 static int
 parse_debug_line(int num_traces, void **traces,
-		 const char *debug_line, unsigned long size,
-		 obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
+                 const char *debug_line, unsigned long size,
+                 obj_info_t *obj, line_info_t *lines, int offset, FILE *errout)
 {
     const char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
-	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset, errout))
-	    return -1;
+        if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset, errout))
+            return -1;
     }
     if (debug_line != debug_line_end) {
-	kprintf("Unexpected size of .debug_line in %s\n",
-		binary_filename);
+        kprintf("Unexpected size of .debug_line in %s\n",
+                binary_filename);
     }
     return 0;
 }
@@ -572,7 +572,7 @@ parse_debug_line(int num_traces, void **traces,
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
-	   obj_info_t **objp, line_info_t *lines, int offset, FILE *errout);
+           obj_info_t **objp, line_info_t *lines, int offset, FILE *errout);
 
 static void
 append_obj(obj_info_t **objp)
@@ -600,7 +600,7 @@ append_obj(obj_info_t **objp)
 // check the path pattern of "/usr/lib/debug/usr/bin/ruby.debug"
 static void
 follow_debuglink(const char *debuglink, int num_traces, void **traces,
-		 obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
+                 obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
     static const char global_debug_dir[] = "/usr/lib/debug";
     const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
@@ -610,13 +610,13 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
 
     p = strrchr(binary_filename, '/');
     if (!p) {
-	return;
+        return;
     }
     p[1] = '\0';
 
     len = strlen(binary_filename);
     if (len >= PATH_MAX - global_debug_dir_len)
-	len = PATH_MAX - global_debug_dir_len - 1;
+        len = PATH_MAX - global_debug_dir_len - 1;
     memmove(binary_filename + global_debug_dir_len, binary_filename, len);
     memcpy(binary_filename, global_debug_dir, global_debug_dir_len);
     len += global_debug_dir_len;
@@ -2029,14 +2029,14 @@ uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
     int ret = 0;
 
     if (chdr->ch_type != ELFCOMPRESS_ZLIB) {
-	/* unsupported compression type */
-	return 0;
+        /* unsupported compression type */
+        return 0;
     }
 
     *ptr = malloc(destsize);
     if (!*ptr) return 0;
     ret = uncompress((Bytef *)*ptr, &destsize,
-	    (const Bytef*)chdr + sizeof(ElfW(Chdr)),
+            (const Bytef*)chdr + sizeof(ElfW(Chdr)),
             shdr->sh_size - sizeof(ElfW(Chdr)));
     if (ret != Z_OK) goto fail;
     return destsize;
@@ -2051,7 +2051,7 @@ fail:
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
-	   obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
+           obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
     int i, j;
     char *shstr;
@@ -2069,40 +2069,40 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
-	goto fail;
+        goto fail;
     }
     filesize = lseek(fd, 0, SEEK_END);
     if (filesize < 0) {
-	int e = errno;
-	close(fd);
-	kprintf("lseek: %s\n", strerror(e));
-	goto fail;
+        int e = errno;
+        close(fd);
+        kprintf("lseek: %s\n", strerror(e));
+        goto fail;
     }
 #if SIZEOF_OFF_T > SIZEOF_SIZE_T
     if (filesize > (off_t)SIZE_MAX) {
-	close(fd);
-	kprintf("Too large file %s\n", binary_filename);
-	goto fail;
+        close(fd);
+        kprintf("Too large file %s\n", binary_filename);
+        goto fail;
     }
 #endif
     lseek(fd, 0, SEEK_SET);
     /* async-signal unsafe */
     file = (char *)mmap(NULL, (size_t)filesize, PROT_READ, MAP_SHARED, fd, 0);
     if (file == MAP_FAILED) {
-	int e = errno;
-	close(fd);
-	kprintf("mmap: %s\n", strerror(e));
-	goto fail;
+        int e = errno;
+        close(fd);
+        kprintf("mmap: %s\n", strerror(e));
+        goto fail;
     }
     close(fd);
 
     ehdr = (ElfW(Ehdr) *)file;
     if (memcmp(ehdr->e_ident, "\177ELF", 4) != 0) {
-	/*
-	 * Huh? Maybe filename was overridden by setproctitle() and
-	 * it match non-elf file.
-	 */
-	goto fail;
+        /*
+         * Huh? Maybe filename was overridden by setproctitle() and
+         * it match non-elf file.
+         */
+        goto fail;
     }
     obj->mapped = file;
     obj->mapped_size = (size_t)filesize;
@@ -2114,32 +2114,32 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 
     for (i = 0; i < ehdr->e_shnum; i++) {
         char *section_name = shstr + shdr[i].sh_name;
-	switch (shdr[i].sh_type) {
-	  case SHT_STRTAB:
-	    if (!strcmp(section_name, ".strtab")) {
-		strtab_shdr = shdr + i;
-	    }
-	    else if (!strcmp(section_name, ".dynstr")) {
-		dynstr_shdr = shdr + i;
-	    }
-	    break;
-	  case SHT_SYMTAB:
-	    /* if (!strcmp(section_name, ".symtab")) */
-	    symtab_shdr = shdr + i;
-	    break;
-	  case SHT_DYNSYM:
-	    /* if (!strcmp(section_name, ".dynsym")) */
-	    dynsym_shdr = shdr + i;
-	    break;
+        switch (shdr[i].sh_type) {
+          case SHT_STRTAB:
+            if (!strcmp(section_name, ".strtab")) {
+                strtab_shdr = shdr + i;
+            }
+            else if (!strcmp(section_name, ".dynstr")) {
+                dynstr_shdr = shdr + i;
+            }
+            break;
+          case SHT_SYMTAB:
+            /* if (!strcmp(section_name, ".symtab")) */
+            symtab_shdr = shdr + i;
+            break;
+          case SHT_DYNSYM:
+            /* if (!strcmp(section_name, ".dynsym")) */
+            dynsym_shdr = shdr + i;
+            break;
           case SHT_NOTE:
             if (!strcmp(section_name, ".note.gnu.build-id")) {
                 note_gnu_build_id = shdr + i;
             }
             break;
-	  case SHT_PROGBITS:
-	    if (!strcmp(section_name, ".gnu_debuglink")) {
-		gnu_debuglink_shdr = shdr + i;
-	    }
+          case SHT_PROGBITS:
+            if (!strcmp(section_name, ".gnu_debuglink")) {
+                gnu_debuglink_shdr = shdr + i;
+            }
             else {
                 const char *debug_section_names[] = {
                     ".debug_abbrev",
@@ -2169,17 +2169,17 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     break;
                 }
             }
-	    break;
-	}
+            break;
+        }
     }
 
     if (offset == -1) {
-	/* main executable */
-	offset = 0;
-	if (dynsym_shdr && dynstr_shdr) {
-	    char *strtab = file + dynstr_shdr->sh_offset;
-	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
-	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
+        /* main executable */
+        offset = 0;
+        if (dynsym_shdr && dynstr_shdr) {
+            char *strtab = file + dynstr_shdr->sh_offset;
+            ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
+            int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
             void *handle = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
             if (handle) {
                 for (j = 0; j < symtab_count; j++) {
@@ -2196,14 +2196,14 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                 }
                 dlclose(handle);
             }
-	    if (ehdr->e_type == ET_EXEC) {
-		obj->base_addr = 0;
-	    }
-	    else {
-		/* PIE (position-independent executable) */
-		obj->base_addr = dladdr_fbase;
-	    }
-	}
+            if (ehdr->e_type == ET_EXEC) {
+                obj->base_addr = 0;
+            }
+            else {
+                /* PIE (position-independent executable) */
+                obj->base_addr = dladdr_fbase;
+            }
+        }
     }
 
     if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
@@ -2249,21 +2249,21 @@ use_symtab:
     }
 
     if (!obj->debug_line.ptr) {
-	/* This file doesn't have .debug_line section,
-	   let's check .gnu_debuglink section instead. */
-	if (gnu_debuglink_shdr && check_debuglink) {
-	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
-			     num_traces, traces,
-			     objp, lines, offset, errout);
-	}
+        /* This file doesn't have .debug_line section,
+           let's check .gnu_debuglink section instead. */
+        if (gnu_debuglink_shdr && check_debuglink) {
+            follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
+                             num_traces, traces,
+                             objp, lines, offset, errout);
+        }
         if (note_gnu_build_id && check_debuglink) {
             ElfW(Nhdr) *nhdr = (ElfW(Nhdr)*) (file + note_gnu_build_id->sh_offset);
             const char *build_id = (char *)(nhdr + 1) + nhdr->n_namesz;
             follow_debuglink_build_id(build_id, nhdr->n_descsz,
-			       num_traces, traces,
+                               num_traces, traces,
                                objp, lines, offset, errout);
         }
-	goto finish;
+        goto finish;
     }
 
     if (parse_debug_line(num_traces, traces,
@@ -2543,8 +2543,8 @@ main_exe_path(FILE *errout)
     size_t len = PATH_MAX;
     int err = sysctl(mib, 4, binary_filename, &len, NULL, 0);
     if (err) {
-	kprintf("Can't get the path of ruby");
-	return -1;
+        kprintf("Can't get the path of ruby");
+        return -1;
     }
     len--; /* sysctl sets strlen+1 */
     return len;
@@ -2626,79 +2626,79 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces, FILE *errout)
     char *main_path = NULL; /* used on printing backtrace */
     ssize_t len;
     if ((len = main_exe_path(errout)) > 0) {
-	main_path = (char *)alloca(len + 1);
-	if (main_path) {
-	    uintptr_t addr;
-	    memcpy(main_path, binary_filename, len+1);
-	    append_obj(&obj);
-	    obj->path = main_path;
-	    addr = fill_lines(num_traces, traces, 1, &obj, lines, 0, errout);
-	    if (addr != (uintptr_t)-1) {
-		dladdr_fbases[0] = (void *)addr;
-	    }
-	}
+        main_path = (char *)alloca(len + 1);
+        if (main_path) {
+            uintptr_t addr;
+            memcpy(main_path, binary_filename, len+1);
+            append_obj(&obj);
+            obj->path = main_path;
+            addr = fill_lines(num_traces, traces, 1, &obj, lines, 0, errout);
+            if (addr != (uintptr_t)-1) {
+                dladdr_fbases[0] = (void *)addr;
+            }
+        }
     }
 #endif
 
     /* fill source lines by reading dwarf */
     for (i = 0; i < num_traces; i++) {
-	Dl_info info;
-	if (lines[i].line) continue;
-	if (dladdr(traces[i], &info)) {
-	    const char *path;
-	    void **p;
+        Dl_info info;
+        if (lines[i].line) continue;
+        if (dladdr(traces[i], &info)) {
+            const char *path;
+            void **p;
 
-	    /* skip symbols which is in already checked objects */
-	    /* if the binary is strip-ed, this may effect */
-	    for (p=dladdr_fbases; *p; p++) {
-		if (*p == info.dli_fbase) {
-		    if (info.dli_fname) lines[i].path = info.dli_fname;
-		    if (info.dli_sname) lines[i].sname = info.dli_sname;
-		    goto next_line;
-		}
-	    }
-	    *p = info.dli_fbase;
+            /* skip symbols which is in already checked objects */
+            /* if the binary is strip-ed, this may effect */
+            for (p=dladdr_fbases; *p; p++) {
+                if (*p == info.dli_fbase) {
+                    if (info.dli_fname) lines[i].path = info.dli_fname;
+                    if (info.dli_sname) lines[i].sname = info.dli_sname;
+                    goto next_line;
+                }
+            }
+            *p = info.dli_fbase;
 
-	    append_obj(&obj);
-	    obj->base_addr = (uintptr_t)info.dli_fbase;
-	    path = info.dli_fname;
-	    obj->path = path;
-	    if (path) lines[i].path = path;
+            append_obj(&obj);
+            obj->base_addr = (uintptr_t)info.dli_fbase;
+            path = info.dli_fname;
+            obj->path = path;
+            if (path) lines[i].path = path;
             if (info.dli_sname) {
                 lines[i].sname = info.dli_sname;
                 lines[i].saddr = (uintptr_t)info.dli_saddr;
             }
-	    strlcpy(binary_filename, path, PATH_MAX);
-	    if (fill_lines(num_traces, traces, 1, &obj, lines, i, errout) == (uintptr_t)-1)
-		break;
-	}
+            strlcpy(binary_filename, path, PATH_MAX);
+            if (fill_lines(num_traces, traces, 1, &obj, lines, i, errout) == (uintptr_t)-1)
+                break;
+        }
 next_line:
-	continue;
+        continue;
     }
 
     /* output */
     for (i = 0; i < num_traces; i++) {
         print_line(&lines[i], traces[i], errout);
 
-	/* FreeBSD's backtrace may show _start and so on */
-	if (lines[i].sname && strcmp("main", lines[i].sname) == 0)
-	    break;
+        /* FreeBSD's backtrace may show _start and so on */
+        if (lines[i].sname && strcmp("main", lines[i].sname) == 0)
+            break;
     }
 
     /* free */
     while (obj) {
-	obj_info_t *o = obj;
+        obj_info_t *o = obj;
         for (i=0; i < DWARF_SECTION_COUNT; i++) {
             struct dwarf_section *s = obj_dwarf_section_at(obj, i);
             if (s->flags & SHF_COMPRESSED) {
                 free(s->ptr);
             }
         }
-	if (obj->mapped_size) {
-	    munmap(obj->mapped, obj->mapped_size);
-	}
-	obj = o->next;
-	free(o);
+        if (obj->mapped_size) {
+            munmap(obj->mapped, obj->mapped_size);
+        }
+        obj = o->next;
+        free(o);
     }
     for (i = 0; i < num_traces; i++) {
         line_info_t *line = lines[i].next;
