@@ -6,7 +6,9 @@ BEGIN {
   color = Colorize.new
 
   if ARGV.first.start_with?("BUNDLED_GEMS=")
-    bundled_gems = ARGV.shift[13..-1].split(" ")
+    bundled_gems = ARGV.shift[13..-1]
+    sep = bundled_gems.include?(",") ? "," : " "
+    bundled_gems = bundled_gems.split(sep)
     bundled_gems = nil if bundled_gems.empty?
   end
 
