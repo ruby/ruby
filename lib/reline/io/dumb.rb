@@ -21,8 +21,11 @@ class Reline::Dumb < Reline::IO
     elsif RUBY_PLATFORM =~ /mswin|mingw/
       Encoding::UTF_8
     else
-      @input.external_encoding || Encoding::default_external
+      @input.external_encoding || Encoding.default_external
     end
+  rescue IOError
+    # STDIN.external_encoding raises IOError in Ruby <= 3.0 when STDIN is closed
+    Encoding.default_external
   end
 
   def set_default_key_bindings(_)

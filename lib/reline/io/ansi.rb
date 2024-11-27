@@ -38,6 +38,9 @@ class Reline::ANSI < Reline::IO
 
   def encoding
     @input.external_encoding || Encoding.default_external
+  rescue IOError
+    # STDIN.external_encoding raises IOError in Ruby <= 3.0 when STDIN is closed
+    Encoding.default_external
   end
 
   def set_default_key_bindings(config)
