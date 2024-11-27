@@ -19,14 +19,17 @@ Gem::Specification.new do |s|
   files = [
     "COPYING",
     "LICENSE.txt",
+    "lib/strscan/strscan.rb"
   ]
+
+  s.require_paths = %w{lib}
+
   if RUBY_ENGINE == "jruby"
-    s.require_paths = %w{ext/jruby/lib lib}
-    files << "ext/jruby/lib/strscan.rb"
     files << "lib/strscan.jar"
+    files << "ext/jruby/lib/strscan.rb"
+    s.require_paths += %w{ext/jruby/lib}
     s.platform = "java"
   else
-    s.require_paths = %w{lib}
     files << "ext/strscan/extconf.rb"
     files << "ext/strscan/strscan.c"
     s.rdoc_options << "-idoc"

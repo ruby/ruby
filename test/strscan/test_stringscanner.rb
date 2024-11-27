@@ -945,6 +945,81 @@ module StringScannerTests
       s.scan_integer
     end
   end
+
+  def test_scan_integer_base_16
+    omit "scan_integer isn't implemented on TruffleRuby yet" if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner('0')
+    assert_equal 0x0, s.scan_integer(base: 16)
+    assert_equal 1, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('abc')
+    assert_equal 0xabc, s.scan_integer(base: 16)
+    assert_equal 3, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('123abc')
+    assert_equal 0x123abc, s.scan_integer(base: 16)
+    assert_equal 6, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('0x123abc')
+    assert_equal 0x123abc, s.scan_integer(base: 16)
+    assert_equal 8, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('0x123ABC')
+    assert_equal 0x123abc, s.scan_integer(base: 16)
+    assert_equal 8, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('-0x123ABC')
+    assert_equal -0x123abc, s.scan_integer(base: 16)
+    assert_equal 9, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('+0x123ABC')
+    assert_equal +0x123abc, s.scan_integer(base: 16)
+    assert_equal 9, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('0x')
+    assert_nil s.scan_integer(base: 16)
+    assert_equal 0, s.pos
+    refute_predicate s, :matched?
+
+    s = create_string_scanner('-0x')
+    assert_nil s.scan_integer(base: 16)
+    assert_equal 0, s.pos
+    refute_predicate s, :matched?
+
+    s = create_string_scanner('+0x')
+    assert_nil s.scan_integer(base: 16)
+    assert_equal 0, s.pos
+    refute_predicate s, :matched?
+
+    s = create_string_scanner('-123abc')
+    assert_equal -0x123abc, s.scan_integer(base: 16)
+    assert_equal 7, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('+123')
+    assert_equal 0x123, s.scan_integer(base: 16)
+    assert_equal 4, s.pos
+    assert_predicate s, :matched?
+
+    s = create_string_scanner('-abc')
+    assert_equal -0xabc, s.scan_integer(base: 16)
+    assert_equal 4, s.pos
+    assert_predicate s, :matched?
+
+    huge_integer = 'F' * 2_000
+    s = create_string_scanner(huge_integer)
+    assert_equal huge_integer.to_i(16), s.scan_integer(base: 16)
+    assert_equal 2_000, s.pos
+    assert_predicate s, :matched?
+  end
 end
 
 class TestStringScanner < Test::Unit::TestCase
