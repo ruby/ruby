@@ -815,7 +815,14 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     File.open(path, mode) do |io|
       begin
-        io.flock(File::LOCK_EX)
+        # Try to get a lock without blocking.
+        # If we do, the file is locked.
+        # Otherwise, explain why we're waiting and get a lock, but block this time.
+        if io.flock(File::LOCK_EX | File::LOCK_NB) != 0
+          warn "Waiting for another process to let go of lock: #{path}"
+          io.flock(File::LOCK_EX)
+        end
+        io.puts(Process.pid)
       rescue Errno::ENOSYS, Errno::ENOTSUP
       end
       yield io
