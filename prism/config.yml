@@ -1111,8 +1111,18 @@ nodes:
       - name: expression
         type: node?
         kind: non-void expression
+        comment: |
+          The expression that is being passed as a block argument. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo(&args)
+                  ^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `&` operator.
+
+              foo(&args)
+                  ^
     comment: |
       Represents a block argument using `&`.
 
