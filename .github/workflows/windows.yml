@@ -30,6 +30,8 @@ jobs:
             vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
           - vs: 2019
           - vs: 2022
+          - vs: 2022
+            test_task: test-bundled-gems
       fail-fast: false
 
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
@@ -44,7 +46,7 @@ jobs:
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vc || matrix.vs }}
+    name: VisualStudio ${{ matrix.vc || matrix.vs }} ${{ matrix.test_task || '' }}
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -174,6 +176,12 @@ jobs:
 
       - run: nmake test-spec
         timeout-minutes: 10
+
+      - run: nmake test-bundled-gems
+        timeout-minutes: 30
+        env:
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,net-imap,net-smtp,debug,prime,rbs,typeprof,repl_type_completor'
+        if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
