@@ -969,10 +969,24 @@ rb_gc_obj_slot_size(VALUE obj)
     return rb_gc_impl_obj_slot_size(obj);
 }
 
+static inline void
+gc_validate_pc(void) {
+#if RUBY_DEBUG
+    rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = ec->cfp;
+    if (cfp && VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc) {
+        RUBY_ASSERT(cfp->pc >= ISEQ_BODY(cfp->iseq)->iseq_encoded);
+        RUBY_ASSERT(cfp->pc <= ISEQ_BODY(cfp->iseq)->iseq_encoded + ISEQ_BODY(cfp->iseq)->iseq_size);
+    }
+#endif
+}
+
 static inline VALUE
 newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t size)
 {
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, v1, v2, v3, wb_protected, size);
+
+    gc_validate_pc();
 
     if (UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_NEWOBJ))) {
         unsigned int lev;
