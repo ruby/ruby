@@ -4668,6 +4668,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
 {
     int ok;
+    DECL_ANCHOR(cond_seq);
     DECL_ANCHOR(ignore);
 
   again:
@@ -4729,7 +4730,6 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         break;
       default:
         {
-            DECL_ANCHOR(cond_seq);
             INIT_ANCHOR(cond_seq);
 
             CHECK(COMPILE(cond_seq, "branch condition", cond));
