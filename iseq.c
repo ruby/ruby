@@ -179,8 +179,6 @@ rb_iseq_free(const rb_iseq_t *iseq)
 #if VM_INSN_INFO_TABLE_IMPL == 2
         ruby_xfree(body->insns_info.succ_index_table);
 #endif
-        if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl))
-            ruby_xfree((void *)body->local_table);
         ruby_xfree((void *)body->is_entries);
         ruby_xfree(body->call_data);
         ruby_xfree((void *)body->catch_table);
@@ -199,6 +197,8 @@ rb_iseq_free(const rb_iseq_t *iseq)
             }
             ruby_xfree((void *)body->param.keyword);
         }
+        if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl))
+            ruby_xfree((void *)body->local_table);
         compile_data_free(ISEQ_COMPILE_DATA(iseq));
         if (body->outer_variables) rb_id_table_free(body->outer_variables);
         ruby_xfree(body);
