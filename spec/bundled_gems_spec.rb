@@ -116,6 +116,8 @@ RSpec.describe "bundled_gems.rb" do
   end
 
   it "Show warning sub-feature like fiddle/import" do
+    skip "This test is not working on Windows" if Gem.win_platform?
+
     script <<-RUBY
       gemfile do
         source "https://rubygems.org"
@@ -140,6 +142,8 @@ RSpec.describe "bundled_gems.rb" do
   end
 
   it "Show warning when bundle exec with shebang's script" do
+    skip "This test is not working on Windows" if Gem.win_platform?
+
     code = <<-RUBY
       #!/usr/bin/env ruby
       require "ostruct"
