@@ -987,16 +987,41 @@ nodes:
       - name: requireds
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the required elements of the array pattern.
+
+              foo in [1, 2]
+                      ^  ^
       - name: rest
         type: node?
         kind: pattern expression
+        comment: |
+          Represents the rest element of the array pattern.
+
+              foo in *bar
+                     ^^^^
       - name: posts
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the elements after the rest element of the array pattern.
+
+              foo in *bar, baz
+                           ^^^
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the opening location of the array pattern.
+
+              foo in [1, 2]
+                     ^
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the closing location of the array pattern.
+
+              foo in [1, 2]
+                          ^
     comment: |
       Represents an array pattern in pattern matching.
 
