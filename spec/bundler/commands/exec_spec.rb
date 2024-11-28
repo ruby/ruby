@@ -881,13 +881,13 @@ RSpec.describe "bundle exec" do
 
       let(:exit_code) { Bundler::GemNotFound.new.status_code }
       let(:expected) { "" }
-      let(:expected_err) { <<-EOS.strip }
-Could not find gem 'myrack (= 2)' in locally installed gems.
+      let(:expected_err) { <<~EOS.strip }
+        Could not find gem 'myrack (= 2)' in locally installed gems.
 
-The source contains the following gems matching 'myrack':
-  * myrack-0.9.1
-  * myrack-1.0.0
-Run `bundle install` to install missing gems.
+        The source contains the following gems matching 'myrack':
+          * myrack-0.9.1
+          * myrack-1.0.0
+        Run `bundle install` to install missing gems.
       EOS
 
       it "runs" do
@@ -963,10 +963,10 @@ Run `bundle install` to install missing gems.
         puts "__FILE__: #{__FILE__.inspect}"
       RUBY
 
-      let(:expected) { super() + <<-EOS.chomp }
+      let(:expected) { super() + <<~EOS.chomp }
 
-$0: #{path.to_s.inspect}
-__FILE__: #{path.to_s.inspect}
+        $0: #{path.to_s.inspect}
+        __FILE__: #{path.to_s.inspect}
       EOS
 
       it "runs" do
