@@ -181,9 +181,6 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
-          test-task: test-all
-          # If we support a new test task, we need to change this test-opts.
-          test-opts: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
@@ -192,9 +189,7 @@ jobs:
 
       - run: nmake ${{ matrix.test_task || 'check' }}
         env:
-          RUBY_TESTOPTS: >-
-            -j${{ env.TEST_JOBS || 4 }}
-            --job-status=normal
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
         timeout-minutes: 70
 
       - uses: ./.github/actions/slack
