@@ -4398,12 +4398,20 @@ ruby_memerror(void)
             fprintf(stderr, "[FATAL] failed to allocate memory\n");
         }
     }
+
+    /* We have discussions whether we should die here; */
+    /* We might rethink about it later. */
     exit(EXIT_FAILURE);
 }
 
 void
 rb_memerror(void)
 {
+    /* the `GET_VM()->special_exceptions` below assumes that
+     * the VM is reachable from the current thread.  We should
+     * definitely make sure of that. */
+    RUBY_ASSERT_ALWAYS(ruby_thread_has_gvl_p());
+
     rb_execution_context_t *ec = GET_EC();
     VALUE exc = GET_VM()->special_exceptions[ruby_error_nomemory];
 
@@ -4428,8 +4436,27 @@ rb_malloc_info_show_results(void)
 {
 }
 
+static void *
+handle_malloc_failure(void *ptr)
+{
+    if (LIKELY(ptr)) {
+        return ptr;
+    }
+    else {
+        return ruby_memerror_body(ptr);
+    }
+}
+
+static void *ruby_xmalloc_body(size_t size);
+
 void *
 ruby_xmalloc(size_t size)
+{
+    return handle_malloc_failure(ruby_xmalloc_body(size));
+}
+
+static void *
+ruby_xmalloc_body(size_t size)
 {
     if ((ssize_t)size < 0) {
         negative_size_allocation_error("too large allocation size");
@@ -4446,23 +4473,47 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
              count, elsize);
 }
 
+static void *ruby_xmalloc2_body(size_t n, size_t size);
+
 void *
 ruby_xmalloc2(size_t n, size_t size)
+{
+    return handle_malloc_failure(ruby_xmalloc2_body(n, size));
+}
+
+static void *
+ruby_xmalloc2_body(size_t n, size_t size)
 {
     return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
 }
 
+static void *ruby_xcalloc_body(size_t n, size_t size);
+
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
+    return handle_malloc_failure(ruby_xcalloc_body(n, size));
+}
+
+static void *
+ruby_xcalloc_body(size_t n, size_t size)
+{
     return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
 }
+
+static void *ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size);
 
 #ifdef ruby_sized_xrealloc
 #undef ruby_sized_xrealloc
 #endif
 void *
 ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
+{
+    return handle_malloc_failure(ruby_sized_xrealloc_body(ptr, new_size, old_size));
+}
+
+static void *
+ruby_sized_xrealloc_body(void *ptr, size_t new_size, size_t old_size)
 {
     if ((ssize_t)new_size < 0) {
         negative_size_allocation_error("too large allocation size");
@@ -4477,11 +4528,19 @@ ruby_xrealloc(void *ptr, size_t new_size)
     return ruby_sized_xrealloc(ptr, new_size, 0);
 }
 
+static void *ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n);
+
 #ifdef ruby_sized_xrealloc2
 #undef ruby_sized_xrealloc2
 #endif
 void *
 ruby_sized_xrealloc2(void *ptr, size_t n, size_t size, size_t old_n)
+{
+    return handle_malloc_failure(ruby_sized_xrealloc2_body(ptr, n, size, old_n));
+}
+
+static void *
+ruby_sized_xrealloc2_body(void *ptr, size_t n, size_t size, size_t old_n)
 {
     size_t len = xmalloc2_size(n, size);
     return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size);
