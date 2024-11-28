@@ -176,6 +176,7 @@ jobs:
 
       - run: nmake test-spec
         timeout-minutes: 10
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
 
       - run: nmake test-bundled-gems
         timeout-minutes: 30
@@ -194,6 +195,7 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
 
       - run: nmake test-all
         env:
@@ -201,6 +203,7 @@ jobs:
             -j${{ env.TEST_JOBS || 4 }}
             --job-status=normal
         timeout-minutes: 60
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
 
       - uses: ./.github/actions/slack
         with:
