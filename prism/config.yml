@@ -1119,20 +1119,50 @@ nodes:
     fields:
       - name: begin_keyword_loc
         type: location?
+        comment: |
+          Represents the location of the `begin` keyword.
+
+              begin x end
+              ^^^^^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          Represents the statements within the begin block.
+
+              begin x end
+                    ^
       - name: rescue_clause
         type: node?
         kind: RescueNode
+        comment: |
+          Represents the rescue clause within the begin block.
+
+              begin x; rescue y; end
+                       ^^^^^^^^
       - name: else_clause
         type: node?
         kind: ElseNode
+        comment: |
+          Represents the else clause within the begin block.
+
+              begin x; rescue y; else z; end
+                                 ^^^^^^
       - name: ensure_clause
         type: node?
         kind: EnsureNode
+        comment: |
+          Represents the ensure clause within the begin block.
+
+              begin x; ensure y; end
+                       ^^^^^^^^
       - name: end_keyword_loc
         type: location?
+        comment: |
+          Represents the location of the `end` keyword.
+
+              begin x end
+                      ^^^
     newline: false
     comment: |
       Represents a begin statement.
