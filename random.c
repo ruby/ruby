@@ -895,7 +895,7 @@ rand_mt_load(VALUE obj, VALUE dump)
         sizeof(*mt->state), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
-    if (x > numberof(mt->state)) {
+    if (x > numberof(mt->state) || x == 0) {
         rb_raise(rb_eArgError, "wrong value");
     }
     mt->left = (unsigned int)x;
