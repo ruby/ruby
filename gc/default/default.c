@@ -6746,22 +6746,23 @@ int ruby_thread_has_gvl_p(void);
 static int
 garbage_collect_with_gvl(rb_objspace_t *objspace, unsigned int reason)
 {
-    if (dont_gc_val()) return TRUE;
-    if (ruby_thread_has_gvl_p()) {
-        return garbage_collect(objspace, reason);
+    if (dont_gc_val()) {
+        return TRUE;
+    }
+    else if (!ruby_native_thread_p()) {
+        return TRUE;
+    }
+    else if (!ruby_thread_has_gvl_p()) {
+        void *ret;
+        struct objspace_and_reason oar;
+        oar.objspace = objspace;
+        oar.reason = reason;
+        ret = rb_thread_call_with_gvl(gc_with_gvl, (void *)&oar);
+
+        return !!ret;
     }
     else {
-        if (ruby_native_thread_p()) {
-            struct objspace_and_reason oar;
-            oar.objspace = objspace;
-            oar.reason = reason;
-            return (int)(VALUE)rb_thread_call_with_gvl(gc_with_gvl, (void *)&oar);
-        }
-        else {
-            /* no ruby thread */
-            fprintf(stderr, "[FATAL] failed to allocate memory\n");
-            exit(EXIT_FAILURE);
-        }
+        return garbage_collect(objspace, reason);
     }
 }
 
@@ -8123,7 +8124,7 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 #endif
 
 #define GC_MEMERROR(...) \
-    ((RB_BUG_INSTEAD_OF_RB_MEMERROR+0) ? rb_bug("" __VA_ARGS__) : rb_memerror())
+    ((RB_BUG_INSTEAD_OF_RB_MEMERROR+0) ? rb_bug("" __VA_ARGS__) : (void)0)
 
 #define TRY_WITH_GC(siz, expr) do {                          \
         const gc_profile_record_flag gpr =                   \
@@ -8197,6 +8198,7 @@ rb_gc_impl_malloc(void *objspace_ptr, size_t size)
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(size, mem = malloc(size));
     RB_DEBUG_COUNTER_INC(heap_xmalloc);
+    if (!mem) return mem;
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -8216,6 +8218,7 @@ rb_gc_impl_calloc(void *objspace_ptr, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(size, mem = calloc1(size));
+    if (!mem) return mem;
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -8284,6 +8287,7 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
 
     old_size = objspace_malloc_size(objspace, ptr, old_size);
     TRY_WITH_GC(new_size, mem = RB_GNUC_EXTENSION_BLOCK(realloc(ptr, new_size)));
+    if (!mem) return mem;
     new_size = objspace_malloc_size(objspace, mem, new_size);
 
 #if CALC_EXACT_MALLOC_SIZE

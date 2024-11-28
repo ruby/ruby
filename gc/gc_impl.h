@@ -52,6 +52,18 @@ GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);
 // Malloc
+/*
+ * BEWARE: These functions may or may not run under GVL.
+ *
+ * You might want to make them thread-safe.
+ * Garbage collecting inside is possible if and only if you
+ * already have GVL.  Also raising exceptions without one is a
+ * total disaster.
+ *
+ * When you absolutely cannot allocate the requested amount of
+ * memory just return NULL (with appropriate errno set).
+ * The caller side takes care of that situation.
+ */
 GC_IMPL_FN void *rb_gc_impl_malloc(void *objspace_ptr, size_t size);
 GC_IMPL_FN void *rb_gc_impl_calloc(void *objspace_ptr, size_t size);
 GC_IMPL_FN void *rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size);
