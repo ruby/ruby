@@ -6123,7 +6123,7 @@ fn jit_rb_str_to_s(
 }
 
 fn jit_rb_str_dup(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -6136,6 +6136,8 @@ fn jit_rb_str_dup(
         return false;
     }
     asm_comment!(asm, "String#dup");
+
+    jit_prepare_call_with_gc(jit, asm);
 
     // Check !FL_ANY_RAW(str, FL_EXIVAR), which is part of BARE_STRING_P.
     let recv_opnd = asm.stack_pop(1);
