@@ -15117,7 +15117,7 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
                 case PM_RESCUES_LAMBDA: context = PM_CONTEXT_LAMBDA_ELSE; break;
                 case PM_RESCUES_MODULE: context = PM_CONTEXT_MODULE_ELSE; break;
                 case PM_RESCUES_SCLASS: context = PM_CONTEXT_SCLASS_ELSE; break;
-                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_RESCUE; break;
+                default: assert(false && "unreachable"); context = PM_CONTEXT_BEGIN_ELSE; break;
             }
 
             else_statements = parse_statements(parser, context, (uint16_t) (depth + 1));
