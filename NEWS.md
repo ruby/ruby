@@ -155,7 +155,7 @@ The following default gems are updated.
 * pstore 0.1.4
 * psych 5.2.0
 * rdoc 6.8.1
-* reline 0.5.11
+* reline 0.5.12
 * resolv 0.5.0
 * securerandom 0.3.2
 * shellwords 0.2.1
