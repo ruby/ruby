@@ -65,6 +65,19 @@ Note: We're only listing outstanding class updates.
 
     * MatchData#bytebegin and MatchData#byteend have been added. [[Feature #20576]]
 
+* Ractor
+
+    * `require` in Ractor is allowed. The requiring process will be run on
+      the main Ractor.
+      `Ractor._require(feature)` is added to run requiring process on the
+      main Ractor.
+      [[Feature #20627]]
+
+    * `Ractor.main?` is added. [[Feature #20627]]
+
+    * `Ractor.[key]` and Ractor.[val]=` is added to access the ractor local storage
+      of the current Racotr. [[Feature #20715]]
+
 * Range
 
     * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
@@ -322,7 +335,9 @@ details of the default gems or bundled gems.
 [Feature #20576]: https://bugs.ruby-lang.org/issues/20576
 [Bug #20620]:     https://bugs.ruby-lang.org/issues/20620
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
+[Feature #20627]: https://bugs.ruby-lang.org/issues/20627
 [Feature #20705]: https://bugs.ruby-lang.org/issues/20705
+[Feature #20715]: https://bugs.ruby-lang.org/issues/20715
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
 [Feature #20782]: https://bugs.ruby-lang.org/issues/20782
 [Feature #20811]: https://bugs.ruby-lang.org/issues/20811
