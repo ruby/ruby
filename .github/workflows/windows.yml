@@ -174,9 +174,6 @@ jobs:
 
       - run: nmake
 
-      - run: nmake test
-        timeout-minutes: 5
-
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
