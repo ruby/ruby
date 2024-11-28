@@ -1253,22 +1253,59 @@ nodes:
               ^^^
       - name: call_operator_loc
         type: location?
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar
+                 ^
+
+              foo&.bar
+                 ^^
       - name: name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar # name `:foo`
+              ^^^
       - name: message_loc
         type: location?
+        comment: |
+          Represents the location of the message.
+
+              foo.bar
+                  ^^^
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the location of the left parenthesis.
+              foo(bar)
+                 ^
       - name: arguments
         type: node?
         kind: ArgumentsNode
+        comment: |
+          Represents the arguments to the method call. These can be any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo(bar)
+                  ^^^
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the location of the right parenthesis.
+
+              foo(bar)
+                     ^
       - name: block
         type: node?
         kind:
           - BlockNode
           - BlockArgumentNode
+        comment: |
+          Represents the block that is being passed to the method.
+
+              foo { |a| a }
+                  ^^^^^^^^^
     comment: |
       Represents a method call, in all of the various forms that can take.
 
