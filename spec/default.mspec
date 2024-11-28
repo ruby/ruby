@@ -34,7 +34,9 @@ class MSpecScript
   # Disable to run for bundled gems in test-spec
   set :bundled_gems, (File.readlines("#{srcdir}/gems/bundled_gems").map do |line|
     next if /^\s*(?:#|$)/ =~ line
-    "#{srcdir}/spec/ruby/library/" + line.split.first
+    gem = line.split.first
+    gem = "openstruct" if gem == "ostruct"
+    "#{srcdir}/spec/ruby/library/#{gem}"
   end.compact)
   set :stdlibs, Dir.glob("#{srcdir}/spec/ruby/library/*")
   set :library, get(:stdlibs).to_a - get(:bundled_gems).to_a
