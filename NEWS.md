@@ -76,7 +76,7 @@ Note: We're only listing outstanding class updates.
     * `Ractor.main?` is added. [[Feature #20627]]
 
     * `Ractor.[key]` and Ractor.[val]=` is added to access the ractor local storage
-      of the current Racotr. [[Feature #20715]]
+      of the current Ractor. [[Feature #20715]]
 
 * Range
 
