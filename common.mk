@@ -753,6 +753,7 @@ clean-extout: PHONY
 	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(RUBYCOMMONDIR) $(EXTOUT) 2> $(NULL) || $(NULLCMD)
 clean-gc: PHONY
 	$(Q) $(RMALL) .gc
+	$(Q) $(RMALL) gc
 clean-docs: clean-rdoc clean-html clean-capi
 clean-spec: PHONY
 clean-rubyspec: clean-spec
@@ -1960,7 +1961,7 @@ clean-modular-gc:
 	- $(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)
 distclean-modular-gc: clean-modular-gc
 	- $(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)
-	$(RMDIRS) gc/$(MODULAR_GC)
+	$(RMALL) gc/$(MODULAR_GC)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
