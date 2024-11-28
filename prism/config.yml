@@ -1157,10 +1157,27 @@ nodes:
     fields:
       - name: name
         type: constant?
+        comment: |
+          The name of the block parameter.
+
+              def a(&b) # name `:b`
+                     ^
+              end
       - name: name_loc
         type: location?
+        comment: |
+          Represents the location of the block parameter name.
+
+              def a(&b)
+                     ^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `&` operator.
+
+              def a(&b)
+                    ^
+              end
     comment: |
       Represents a block parameter of a method, block, or lambda definition.
 
