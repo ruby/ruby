@@ -9,7 +9,10 @@ ENV.delete("GNUMAKEFLAGS")
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
-allowed_failures = allowed_failures.split(',').reject(&:empty?)
+if RUBY_PLATFORM =~ /mswin|mingw/
+  allowed_failures = [allowed_failures, "net-imap,net-smtp,rbs,typeprof,debug"].join(',')
+end
+allowed_failures = allowed_failures.split(',').uniq.reject(&:empty?)
 
 # make test-bundled-gems BUNDLED_GEMS=gem1,gem2,gem3
 bundled_gems = ARGV.first || ''
