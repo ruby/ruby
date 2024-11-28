@@ -32,6 +32,8 @@ static VALUE StringScanner;
 static VALUE ScanError;
 static ID id_byteslice;
 
+static int usascii_encindex, utf8_encindex, binary_encindex;
+
 struct strscanner
 {
     /* multi-purpose flags */
@@ -683,6 +685,14 @@ strscan_search(regex_t *reg, VALUE str, struct re_registers *regs, void *args_pt
                        ONIG_OPTION_NONE);
 }
 
+static void
+strscan_enc_check(VALUE str1, VALUE str2)
+{
+    if (RB_ENCODING_GET(str1) != RB_ENCODING_GET(str2)) {
+        rb_enc_check(str1, str2);
+    }
+}
+
 static VALUE
 strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly)
 {
@@ -710,18 +720,21 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
     }
     else {
         StringValue(pattern);
-        rb_encoding *enc = rb_enc_check(p->str, pattern);
         if (S_RESTLEN(p) < RSTRING_LEN(pattern)) {
+            strscan_enc_check(p->str, pattern);
             return Qnil;
         }
 
         if (headonly) {
+            strscan_enc_check(p->str, pattern);
+
             if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
                 return Qnil;
             }
             set_registers(p, RSTRING_LEN(pattern));
         }
         else {
+            rb_encoding *enc = rb_enc_check(p->str, pattern);
             long pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
                                     CURPTR(p), S_RESTLEN(p), enc);
             if (pos == -1) {
@@ -1282,6 +1295,24 @@ strscan_parse_integer(struct strscanner *p, int base, long len)
     return integer;
 }
 
+static inline bool
+strscan_ascii_compat_fastpath(VALUE str) {
+    int encindex = ENCODING_GET_INLINED(str);
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    return encindex == utf8_encindex || encindex == binary_encindex || encindex == usascii_encindex;
+}
+
+static inline void
+strscan_must_ascii_compat(VALUE str)
+{
+    // The overwhelming majority of strings are in one of these 3 encodings.
+    if (RB_LIKELY(strscan_ascii_compat_fastpath(str))) {
+        return;
+    }
+
+    rb_must_asciicompat(str);
+}
+
 static VALUE
 strscan_scan_base10_integer(VALUE self)
 {
@@ -1292,7 +1323,7 @@ strscan_scan_base10_integer(VALUE self)
     GET_SCANNER(self, p);
     CLEAR_MATCH_STATUS(p);
 
-    rb_must_asciicompat(p->str);
+    strscan_must_ascii_compat(p->str);
 
     ptr = CURPTR(p);
 
@@ -1330,7 +1361,7 @@ strscan_scan_base16_integer(VALUE self)
     GET_SCANNER(self, p);
     CLEAR_MATCH_STATUS(p);
 
-    rb_must_asciicompat(p->str);
+    strscan_must_ascii_compat(p->str);
 
     ptr = CURPTR(p);
 
@@ -2250,6 +2281,10 @@ Init_strscan(void)
     VALUE tmp;
 
     id_byteslice = rb_intern("byteslice");
+
+    usascii_encindex = rb_usascii_encindex();
+    utf8_encindex = rb_utf8_encindex();
+    binary_encindex = rb_ascii8bit_encindex();
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
     ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
