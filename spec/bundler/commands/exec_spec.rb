@@ -963,23 +963,30 @@ RSpec.describe "bundle exec" do
         puts "__FILE__: #{__FILE__.inspect}"
       RUBY
 
-      let(:expected) { super() + <<~EOS.chomp }
+      context "when the path is absolute" do
+        let(:expected) { super() + <<~EOS.chomp }
 
-        $0: #{path.to_s.inspect}
-        __FILE__: #{path.to_s.inspect}
-      EOS
+          $0: #{path.to_s.inspect}
+          __FILE__: #{path.to_s.inspect}
+        EOS
 
-      it "runs" do
-        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
 
-        subject
-        expect(exitstatus).to eq(exit_code)
-        expect(err).to eq(expected_err)
-        expect(out).to eq(expected)
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
 
       context "when the path is relative" do
         let(:path) { super().relative_path_from(bundled_app) }
+        let(:expected) { super() + <<~EOS.chomp }
+
+          $0: #{path.to_s.inspect}
+          __FILE__: #{path.to_s.inspect}
+        EOS
 
         it "runs" do
           skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
@@ -993,8 +1000,20 @@ RSpec.describe "bundle exec" do
 
       context "when the path is relative with a leading ./" do
         let(:path) { Pathname.new("./#{super().relative_path_from(bundled_app)}") }
+        let(:expected) { super() + <<~EOS.chomp }
 
-        pending "relative paths with ./ have absolute __FILE__"
+          $0: #{path.to_s.inspect}
+          __FILE__: #{File.expand_path(path, bundled_app).inspect}
+        EOS
+
+        it "runs" do
+          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+          subject
+          expect(exitstatus).to eq(exit_code)
+          expect(err).to eq(expected_err)
+          expect(out).to eq(expected)
+        end
       end
     end
 
