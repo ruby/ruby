@@ -439,7 +439,7 @@ do { \
 #define DECL_ANCHOR(name) \
     LINK_ANCHOR name[1] = {{{ISEQ_ELEMENT_ANCHOR,},&name[0].anchor}}
 #define INIT_ANCHOR(name) \
-    (name->last = &name->anchor)
+    ((name->last = &name->anchor)->next = NULL) /* re-initialize */
 
 static inline VALUE
 freeze_hide_obj(VALUE obj)
