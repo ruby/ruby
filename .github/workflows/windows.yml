@@ -180,8 +180,6 @@ jobs:
 
       - run: nmake test-bundled-gems
         timeout-minutes: 30
-        env:
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'net-imap,net-smtp,debug,rbs,typeprof'
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Set up Launchable
