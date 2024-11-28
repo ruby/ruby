@@ -1132,21 +1132,50 @@ nodes:
     fields:
       - name: locals
         type: constant[]
+        comment: |
+          The local variables declared in the block.
+
+              [1, 2, 3].each { |i| puts x } # locals: [:i]
+                                ^
       - name: parameters
         type: node?
         kind:
           - BlockParametersNode
           - NumberedParametersNode
           - ItParametersNode
+        comment: |
+          The parameters of the block.
+
+              [1, 2, 3].each { |i| puts x }
+                               ^^^
+              [1, 2, 3].each { puts _1 }
+                             ^^^^^^^^^^^
+              [1, 2, 3].each { puts it }
+                             ^^^^^^^^^^^
       - name: body
         type: node?
         kind:
           - StatementsNode
           - BeginNode
+        comment: |
+          The body of the block.
+
+              [1, 2, 3].each { |i| puts x }
+                                   ^^^^^^
       - name: opening_loc
         type: location
+        comment: |
+          Represents the location of the opening `|`.
+
+              [1, 2, 3].each { |i| puts x }
+                               ^
       - name: closing_loc
         type: location
+        comment: |
+          Represents the location of the closing `|`.
+
+              [1, 2, 3].each { |i| puts x }
+                                 ^
     comment: |
       Represents a block of ruby code.
 
