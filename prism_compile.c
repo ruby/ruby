@@ -8569,6 +8569,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_CONSTANT_PATH_NODE: {
         // Foo::Bar
         // ^^^^^^^^
+        DECL_ANCHOR(prefix);
+        DECL_ANCHOR(body);
         VALUE parts;
 
         if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache && ((parts = pm_constant_path_parts(node, scope_node)) != Qnil)) {
@@ -8576,10 +8578,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN1(ret, location, opt_getconstant_path, parts);
         }
         else {
-            DECL_ANCHOR(prefix);
             INIT_ANCHOR(prefix);
-
-            DECL_ANCHOR(body);
             INIT_ANCHOR(body);
 
             pm_compile_constant_path(iseq, node, prefix, body, popped, scope_node);
