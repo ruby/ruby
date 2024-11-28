@@ -28,8 +28,11 @@ jobs:
           - vc: 2015
             vs: 2019
             vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
+            test_task: check
           - vs: 2019
+            test_task: check
           - vs: 2022
+            test_task: check
           - vs: 2022
             test_task: test-bundled-gems
       fail-fast: false
@@ -46,7 +49,7 @@ jobs:
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vc || matrix.vs }} ${{ matrix.test_task || '' }}
+    name: VisualStudio ${{ matrix.vc || matrix.vs }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -174,14 +177,6 @@ jobs:
       - run: nmake test
         timeout-minutes: 5
 
-      - run: nmake test-spec
-        timeout-minutes: 10
-        if: ${{ matrix.test_task != 'test-bundled-gems' }}
-
-      - run: nmake test-bundled-gems
-        timeout-minutes: 30
-        if: ${{ matrix.test_task == 'test-bundled-gems' }}
-
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
@@ -195,13 +190,12 @@ jobs:
         continue-on-error: true
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
 
-      - run: nmake test-all
+      - run: nmake ${{ matrix.test_task || 'check' }}
         env:
           RUBY_TESTOPTS: >-
             -j${{ env.TEST_JOBS || 4 }}
             --job-status=normal
-        timeout-minutes: 60
-        if: ${{ matrix.test_task != 'test-bundled-gems' }}
+        timeout-minutes: 70
 
       - uses: ./.github/actions/slack
         with:
