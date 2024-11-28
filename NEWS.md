@@ -222,6 +222,7 @@ details of the default gems or bundled gems.
 
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
+    * Extra rescue/ensure frames are no longer available on the backtrace. [[Feature #20275]]
     * Kernel#caller, Thread::Backtrace::Location’s methods, etc. are also changed accordingly.
 
         Old:
@@ -324,6 +325,7 @@ details of the default gems or bundled gems.
 [Feature #20205]: https://bugs.ruby-lang.org/issues/20205
 [Bug #20218]:     https://bugs.ruby-lang.org/issues/20218
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
+[Feature #20275]: https://bugs.ruby-lang.org/issues/20275
 [Feature #20293]: https://bugs.ruby-lang.org/issues/20293
 [Feature #20351]: https://bugs.ruby-lang.org/issues/20351
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
