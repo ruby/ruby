@@ -958,6 +958,7 @@ static void
 pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond, LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, cond);
+    DECL_ANCHOR(cond_seq);
 
 again:
     switch (PM_NODE_TYPE(cond)) {
@@ -999,7 +1000,6 @@ again:
         break;
       }
       default: {
-        DECL_ANCHOR(cond_seq);
         INIT_ANCHOR(cond_seq);
         pm_compile_node(iseq, cond, cond_seq, false, scope_node);
 
