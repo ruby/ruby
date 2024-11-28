@@ -3368,6 +3368,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
             //   in #assert_close_on_exec because the FD_CLOEXEC is not dup'd by default
             if (fd_get_cloexec(pairs[i].oldfd, errmsg, errmsg_buflen)) {
                 if (fd_set_cloexec(extra_fd, errmsg, errmsg_buflen)) {
+                    close(extra_fd);
                     goto fail;
                 }
             }
