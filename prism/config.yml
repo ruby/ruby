@@ -855,6 +855,11 @@ nodes:
                               ^^^^^^^^^
       - name: keyword_loc
         type: location
+        comment: |
+          Represents the location of the `alias` keyword.
+
+              alias foo bar
+              ^^^^^
     comment: |
       Represents the use of the `alias` keyword to alias a method.
 
