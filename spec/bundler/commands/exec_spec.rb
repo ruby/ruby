@@ -723,8 +723,6 @@ RSpec.describe "bundle exec" do
     RUBY
 
     before do
-      system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
-
       bundled_app(path).open("w") {|f| f << executable }
       bundled_app(path).chmod(0o755)
 
@@ -870,8 +868,10 @@ RSpec.describe "bundle exec" do
       end
     end
 
-    context "when Bundler.setup fails", bundler: "< 3" do
+    context "when Bundler.setup fails" do
       before do
+        system_gems(%w[myrack-1.0.0 myrack-0.9.1], path: default_bundle_path)
+
         gemfile <<-G
           source "https://gem.repo1"
           gem 'myrack', '2'
@@ -886,35 +886,6 @@ Could not find gem 'myrack (= 2)' in locally installed gems.
 
 The source contains the following gems matching 'myrack':
   * myrack-0.9.1
-  * myrack-1.0.0
-Run `bundle install` to install missing gems.
-      EOS
-
-      it "runs" do
-        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
-
-        subject
-        expect(exitstatus).to eq(exit_code)
-        expect(err).to eq(expected_err)
-        expect(out).to eq(expected)
-      end
-    end
-
-    context "when Bundler.setup fails", bundler: "3" do
-      before do
-        gemfile <<-G
-          source "https://gem.repo1"
-          gem 'myrack', '2'
-        G
-        ENV["BUNDLER_FORCE_TTY"] = "true"
-      end
-
-      let(:exit_code) { Bundler::GemNotFound.new.status_code }
-      let(:expected) { "" }
-      let(:expected_err) { <<-EOS.strip }
-Could not find gem 'myrack (= 2)' in locally installed gems.
-
-The source contains the following gems matching 'myrack':
   * myrack-1.0.0
 Run `bundle install` to install missing gems.
       EOS
