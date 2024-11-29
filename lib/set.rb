@@ -662,7 +662,7 @@ class Set
   #     Set[1, 2] ^ Set[2, 3]                   #=> #<Set: {3, 1}>
   #     Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
   def ^(enum)
-    n = Set.new(enum)
+    n = self.class.new(enum)
     each { |o| n.add(o) unless n.delete?(o) }
     n
   end
