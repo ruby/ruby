@@ -10737,7 +10737,7 @@ pub fn yjit_reg_method_codegen_fns() {
 /// See also: [lookup_cfunc_codegen].
 fn reg_method_codegen(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
     let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
-    let mid = unsafe { rb_intern(id_string.as_ptr()) };
+    let mid = unsafe { rb_intern2(id_string.as_ptr(), id_string.count_bytes() as i64) };
     let me = unsafe { rb_method_entry_at(klass, mid) };
 
     if me.is_null() {
