@@ -8954,9 +8954,10 @@ date_to_time(VALUE self)
     get_d1a(self);
 
     if (m_julian_p(adat)) {
-        self = d_lite_gregorian(self);
-        get_d1b(self);
+        VALUE g = d_lite_gregorian(self);
+        get_d1b(g);
         adat = bdat;
+        self = g;
     }
 
     t = f_local3(rb_cTime,
@@ -9034,9 +9035,10 @@ datetime_to_time(VALUE self)
     get_d1(self);
 
     if (m_julian_p(dat)) {
-	self = d_lite_gregorian(self);
-	get_d1a(self);
+	VALUE g = d_lite_gregorian(self);
+	get_d1a(g);
 	dat = adat;
+	self = g;
     }
 
     {
