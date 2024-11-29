@@ -812,8 +812,6 @@ class Reline::LineEditor
         if defined?(::Readline) && ::Readline == ::Reline
           raise Encoding::CompatibilityError, "incompatible character encodings: #{target.encoding} and #{item.encoding}"
         end
-
-        next true
       end
 
       if @config.completion_ignore_case
