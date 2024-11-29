@@ -905,7 +905,7 @@ module StringScannerTests
     assert_predicate s, :matched?
 
     s = create_string_scanner('-123abc')
-    assert_equal -123, s.scan_integer
+    assert_equal(-123, s.scan_integer)
     assert_equal 4, s.pos
     assert_predicate s, :matched?
 
