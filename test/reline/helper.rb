@@ -19,12 +19,12 @@ rescue LoadError
 end
 
 module Reline
-  class <<self
+  class << self
     def test_mode(ansi: false)
       @original_iogate = IOGate
 
-      if ENV['RELINE_TEST_ENCODING']
-        encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
+      if defined?(RELINE_TEST_ENCODING)
+        encoding = RELINE_TEST_ENCODING
       else
         encoding = Encoding::UTF_8
       end
@@ -88,7 +88,7 @@ end
 class Reline::TestCase < Test::Unit::TestCase
   private def convert_str(input, options = {}, normalized = nil)
     return nil if input.nil?
-    input.chars.map { |c|
+    input = input.chars.map { |c|
       if Reline::Unicode::EscapedChars.include?(c.ord)
         c
       else
@@ -96,13 +96,16 @@ class Reline::TestCase < Test::Unit::TestCase
       end
     }.join
   rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
-    input = input.unicode_normalize(:nfc)
-    if normalized
-      options[:undef] = :replace
-      options[:replace] = '?'
+    if unicode?(input.encoding)
+      input = input.unicode_normalize(:nfc)
+      if normalized
+        options[:undef] = :replace
+        options[:replace] = '?'
+      end
+      normalized = true
+      retry
     end
-    normalized = true
-    retry
+    input
   end
 
   def input_key_by_symbol(input)
@@ -175,5 +178,9 @@ class Reline::TestCase < Test::Unit::TestCase
       @config.editing_mode = editing_mode
       assert_equal(method_symbol, @config.editing_mode.get(input.bytes))
     end
+  end
+
+  private def unicode?(encoding)
+    [Encoding::UTF_8, Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(encoding)
   end
 end

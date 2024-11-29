@@ -1487,6 +1487,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   end
 
   def test_halfwidth_kana_width_dakuten
+    omit "This test is for UTF-8 but the locale is #{Reline.core.encoding}" if Reline.core.encoding != Encoding::UTF_8
     input_raw_keys('ｶﾞｷﾞｹﾞｺﾞ')
     assert_line_around_cursor('ｶﾞｷﾞｹﾞｺﾞ', '')
     input_keys("\C-b\C-b", false)
@@ -1519,7 +1520,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   def test_undo
     input_keys("\C-_", false)
     assert_line_around_cursor('', '')
-    input_keys("aあb\C-h\C-h\C-h", false)
+    input_keys("aあb\C-h\C-h\C-h".encode(@encoding), false)
     assert_line_around_cursor('', '')
     input_keys("\C-_", false)
     assert_line_around_cursor('a', '')
@@ -1540,7 +1541,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_line_around_cursor('a', 'c')
     input_keys("\C-_", false)
     assert_line_around_cursor('ab', 'c')
-    input_keys("あいう\C-b\C-h", false)
+    input_keys("あいう\C-b\C-h".encode(@encoding), false)
     assert_line_around_cursor('abあ', 'うc')
     input_keys("\C-_", false)
     assert_line_around_cursor('abあい', 'うc')
@@ -1585,7 +1586,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   end
 
   def test_redo
-    input_keys("aあb", false)
+    input_keys("aあb".encode(@encoding), false)
     assert_line_around_cursor('aあb', '')
     input_keys("\M-\C-_", false)
     assert_line_around_cursor('aあb', '')

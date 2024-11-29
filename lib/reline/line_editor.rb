@@ -807,11 +807,13 @@ class Reline::LineEditor
     target = target.downcase if @config.completion_ignore_case
     list.select do |item|
       next unless item
-
       unless Encoding.compatible?(target.encoding, item.encoding)
-        # Crash with Encoding::CompatibilityError is required by readline-ext/test/readline/test_readline.rb
-        # TODO: fix the test
-        raise Encoding::CompatibilityError, "#{target.encoding.name} is not compatible with #{item.encoding.name}"
+        # Workaround for Readline test
+        if defined?(::Readline) && ::Readline == ::Reline
+          raise Encoding::CompatibilityError, "incompatible character encodings: #{target.encoding} and #{item.encoding}"
+        end
+
+        next true
       end
 
       if @config.completion_ignore_case
