@@ -10737,13 +10737,12 @@ pub fn yjit_reg_method_codegen_fns() {
 /// and do not make method calls.
 ///
 /// See also: [lookup_cfunc_codegen].
-fn reg_method_codegen(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
-    let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
-    let mid = unsafe { rb_intern(id_string.as_ptr()) };
+fn reg_method_codegen(klass: VALUE, method_name: &str, gen_fn: MethodGenFn) {
+    let mid = unsafe { rb_intern2(method_name.as_ptr().cast(), method_name.len().try_into().unwrap()) };
     let me = unsafe { rb_method_entry_at(klass, mid) };
 
     if me.is_null() {
-        panic!("undefined optimized method!: {mid_str}");
+        panic!("undefined optimized method!: {method_name}");
     }
 
     // For now, only cfuncs are supported (me->cme cast fine since it's just me->def->type).
