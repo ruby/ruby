@@ -14649,7 +14649,7 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
         str = rb_str_new(RSTRING_PTR(str), RSTRING_LEN(str));
     }
 
-    ibf_load_setup_bytes(load, loader_obj, StringValuePtr(str), RSTRING_LEN(str));
+    ibf_load_setup_bytes(load, loader_obj, RSTRING_PTR(str), RSTRING_LEN(str));
     RB_OBJ_WRITE(loader_obj, &load->str, str);
 }
 
