@@ -186,7 +186,8 @@ ID rb_check_id(volatile VALUE *namep);
 ID rb_to_id(VALUE str);
 
 /**
- * Identical to rb_id2name(), except it returns a Ruby's String instead of C's.
+ * Identical to rb_id2name(), except it returns a frozen Ruby String instead of
+ * a C String.
  *
  * @param[in]  id           An id to query.
  * @retval     RUBY_Qfalse  No such id ever existed in the history.
