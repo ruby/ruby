@@ -10670,14 +10670,16 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     const pm_diagnostic_t *warning;
     const char *warning_filepath = (const char *) pm_string_source(&parser->filepath);
 
-    for (warning = (const pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (const pm_diagnostic_t *) warning->node.next) {
-        int line = pm_location_line_number(parser, &warning->location);
+    if (parser->error_list.size == 0) {
+        for (warning = (const pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (const pm_diagnostic_t *) warning->node.next) {
+            int line = pm_location_line_number(parser, &warning->location);
 
-        if (warning->level == PM_WARNING_LEVEL_VERBOSE) {
-            rb_enc_compile_warning(scope_node->encoding, warning_filepath, line, "%s", warning->message);
-        }
-        else {
-            rb_enc_compile_warn(scope_node->encoding, warning_filepath, line, "%s", warning->message);
+            if (warning->level == PM_WARNING_LEVEL_VERBOSE) {
+                rb_enc_compile_warning(scope_node->encoding, warning_filepath, line, "%s", warning->message);
+            }
+            else {
+                rb_enc_compile_warn(scope_node->encoding, warning_filepath, line, "%s", warning->message);
+            }
         }
     }
 
