@@ -146,9 +146,11 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     begin
+      # Verify that "localhost" can be resolved to an IPv6 address
+      Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
       server = TCPServer.new("::1", 0)
-    rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+    rescue Socket::ResolutionError, Errno::EADDRNOTAVAIL # IPv6 is not supported
+      return
     end
 
     server_thread = Thread.new { server.accept }
@@ -192,9 +194,11 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     begin
+      # Verify that "localhost" can be resolved to an IPv6 address
+      Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
       server = TCPServer.new("::1", 0)
-    rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+    rescue Socket::ResolutionError, Errno::EADDRNOTAVAIL # IPv6 is not supported
+      return
     end
 
     port = server.addr[1]
@@ -290,7 +294,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
 
     port = server.connect_address.ip_port
@@ -314,8 +318,9 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
+
     port = server.connect_address.ip_port
     server.close
 
@@ -353,7 +358,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
 
     server_thread = Thread.new { server.accept }
