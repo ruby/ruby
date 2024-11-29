@@ -158,6 +158,7 @@ The following default gems are updated.
 * reline 0.5.12
 * resolv 0.5.0
 * securerandom 0.3.2
+* set 1.1.1
 * shellwords 0.2.1
 * singleton 0.3.0
 * stringio 3.1.2.dev
