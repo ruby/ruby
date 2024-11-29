@@ -304,11 +304,12 @@ static VALUE scalar(
         tag = rb_str_export_to_enc(tag, encoding);
     }
 
+    const char *value_ptr = StringValuePtr(value);
     yaml_scalar_event_initialize(
             &event,
             (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
             (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
-            (yaml_char_t*)StringValuePtr(value),
+            (yaml_char_t*)value_ptr,
             (int)RSTRING_LEN(value),
             plain ? 1 : 0,
             quoted ? 1 : 0,
