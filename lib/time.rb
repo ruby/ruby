@@ -24,6 +24,7 @@ require 'date'
 
 # :startdoc:
 
+# #
 class Time
 
   VERSION = "0.4.1"             # :nodoc:
