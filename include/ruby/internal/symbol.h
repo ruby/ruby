@@ -202,14 +202,14 @@ ID rb_to_id(VALUE str);
 VALUE rb_id2str(ID id);
 
 /**
- * Identical to rb_id2str(), except it takes an instance of ::rb_cSymbol rather
- * than an ::ID.
+ * Obtain a frozen string representation of a symbol (not including the leading
+ * colon). Done without any object allcoations.
  *
- * @param[in]  id           An id to query.
- * @retval     RUBY_Qfalse  No such id ever existed in the history.
- * @retval     otherwise    An instance of ::rb_cString with the name of id.
+ * @param[in]  symbol  A ::rb_cSymbol instance to query.
+ * @return     A frozen instance of ::rb_cString with the name of `symbol`.
+ * @note       This does not create a permanent ::ID using the symbol.
  */
-VALUE rb_sym2str(VALUE id);
+VALUE rb_sym2str(VALUE symbol);
 
 /**
  * Identical  to  rb_intern_str(), except  it  generates  a dynamic  symbol  if
