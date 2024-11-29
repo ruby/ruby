@@ -216,7 +216,7 @@
 #   has been modified while an element in the set.
 #
 class Set
-  VERSION = "1.1.0"
+  VERSION = "1.1.1"
 
   include Enumerable
 
