@@ -4443,7 +4443,8 @@ handle_malloc_failure(void *ptr)
         return ptr;
     }
     else {
-        return ruby_memerror_body(ptr);
+        ruby_memerror();
+        UNREACHABLE_RETURN(ptr);
     }
 }
 
