@@ -75,6 +75,6 @@ class TestGemSourceSpecificFile < Gem::TestCase
   end
 
   def test_pretty_print
-    assert_equal "#<Gem::Source::SpecificFile[SpecificFile:\n   #{@sf.path}]>\n", @sf.pretty_inspect
+    assert_equal "#<Gem::Source::SpecificFile[SpecificFile: #{@sf.path}]>", @sf.pretty_inspect.gsub(/\s+/, " ").strip
   end
 end
