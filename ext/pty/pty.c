@@ -180,7 +180,7 @@ obtain_ctty(int master, int slave, const char *slavename, char *errbuf, size_t e
     dup2(slave,0);
     dup2(slave,1);
     dup2(slave,2);
-    if (slave < 0 || slave > 2) (void)!close(slave);
+    if (slave > 2) (void)!close(slave);
     return 0;
 }
 
