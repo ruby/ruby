@@ -225,7 +225,7 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 static void
 rb_node_buffer_free(rb_ast_t *ast, node_buffer_t *nb)
 {
-    if (nb && nb->tokens) {
+    if (nb->tokens) {
         parser_tokens_free(ast, nb->tokens);
     }
     iterate_node_values(ast, &nb->buffer_list, free_ast_value, NULL);
