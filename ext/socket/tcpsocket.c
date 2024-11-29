@@ -60,7 +60,7 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
     VALUE kwargs[4];
     VALUE resolv_timeout = Qnil;
     VALUE connect_timeout = Qnil;
-    VALUE fast_fallback = Qtrue;
+    VALUE fast_fallback = Qnil;
     VALUE test_mode_settings = Qnil;
 
     if (!keyword_ids[0]) {
@@ -79,6 +79,13 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
         if (kwargs[1] != Qundef) { connect_timeout = kwargs[1]; }
         if (kwargs[2] != Qundef) { fast_fallback = kwargs[2]; }
         if (kwargs[3] != Qundef) { test_mode_settings = kwargs[3]; }
+    }
+
+    if (fast_fallback == Qnil) {
+        VALUE socket_class = rb_const_get(rb_cObject, rb_intern("Socket"));
+        ID var_id = rb_intern("@tcp_fast_fallback");
+        fast_fallback = rb_ivar_get(socket_class, var_id);
+        if (fast_fallback == Qnil) fast_fallback = Qtrue;
     }
 
     return rsock_init_inetsock(sock, remote_host, remote_serv,
