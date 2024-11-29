@@ -827,7 +827,8 @@ rb_fiddle_ptr_read_mem(VALUE klass, VALUE address, VALUE len)
 static VALUE
 rb_fiddle_ptr_write_mem(VALUE klass, VALUE addr, VALUE str)
 {
-    memcpy(NUM2PTR(addr), StringValuePtr(str), RSTRING_LEN(str));
+    const char *ptr = StringValuePtr(str);
+    memcpy(NUM2PTR(addr), ptr, RSTRING_LEN(str));
     return str;
 }
 
