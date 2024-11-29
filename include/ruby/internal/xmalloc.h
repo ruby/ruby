@@ -61,21 +61,23 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
-RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1))
 /**
- * Allocates a  storage instance.  It is  largely the same as  system malloc(),
- * except:
+ * Allocates a  storage instance.  It is  largely the same as  system malloc().
+ * Especially when called from outside of GVL this is identical to it, at least
+ * API-wise.   But  when under  GVL,  it  exercises some  additional  manoeuvre
+ * namely:
  *
  *   - It raises Ruby exceptions instead of returning NULL, and
  *   - In case of `ENOMEM` it tries to GC to make some room.
  *
  * @param[in]  size            Requested amount of memory.
  * @exception  rb_eNoMemError  No space left for `size` bytes allocation.
- * @return     A valid pointer  to an allocated storage instance;  which has at
- *             least `size` bytes width, with appropriate alignment detected by
- *             the underlying malloc() routine.
- * @note       It doesn't return NULL.
+ * @retval     NULL            Allocation failed but no way to raise anything.
+ * @retval     otherwise       A   valid  pointer   to  an   allocated  storage
+ *                             instance; which has at least `size` bytes width,
+ *                             with  appropriate  alignment   detected  by  the
+ *                             underlying malloc() routine.
  * @note       Unlike some malloc() implementations, it allocates something and
  *             returns a meaningful value even when `size` is equal to zero.
  * @warning    The return  value shall  be invalidated  exactly once  by either
@@ -89,7 +91,6 @@ RBIMPL_ATTR_NOEXCEPT(malloc(size))
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
-RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1,2))
 /**
  * Identical to ruby_xmalloc(), except it allocates `nelems` * `elemsiz` bytes.
@@ -102,10 +103,12 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  * @param[in]  elemsiz         Size of an element.
  * @exception  rb_eNoMemError  No space left for allocation.
  * @exception  rb_eArgError    `nelems` * `elemsiz` would overflow.
- * @return     A valid pointer  to an allocated storage instance;  which has at
- *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
- *             alignment detected by the underlying malloc() routine.
- * @note       It doesn't return NULL.
+ * @retval     NULL            Allocation failed but no way to raise anything.
+ * @retval     otherwise       A   valid  pointer   to  an   allocated  storage
+ *                             instance;   which  has   at  least   `nelems`  *
+ *                             `elemsiz`   bytes    width,   with   appropriate
+ *                             alignment  detected by  the underlying  malloc()
+ *                             routine.
  * @note       Unlike some malloc() implementations, it allocates something and
  *             returns a  meaningful value even  when `nelems` or  `elemsiz` or
  *             both are zero.
@@ -120,7 +123,6 @@ RBIMPL_ATTR_NOEXCEPT(malloc(nelems * elemsiz))
 
 RBIMPL_ATTR_NODISCARD()
 RBIMPL_ATTR_RESTRICT()
-RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((1,2))
 /**
  * Identical  to  ruby_xmalloc2(),  except  it returns  a  zero-filled  storage
@@ -131,11 +133,13 @@ RBIMPL_ATTR_ALLOC_SIZE((1,2))
  * @param[in]  elemsiz         Size of an element.
  * @exception  rb_eNoMemError  No space left for allocation.
  * @exception  rb_eArgError    `nelems` * `elemsiz` would overflow.
- * @return     A valid pointer  to an allocated storage instance;  which has at
- *             least  `nelems`  *  `elemsiz`   bytes  width,  with  appropriate
- *             alignment detected by the underlying calloc() routine.
+ * @retval     NULL            Allocation failed but no way to raise anything.
+ * @retval     otherwise       A   valid  pointer   to  an   allocated  storage
+ *                             instance;   which  has   at  least   `nelems`  *
+ *                             `elemsiz`   bytes    width,   with   appropriate
+ *                             alignment  detected by  the underlying  calloc()
+ *                             routine.
  * @post       The returned storage instance is filled with zeros.
- * @note       It doesn't return NULL.
  * @note       Unlike some calloc() implementations, it allocates something and
  *             returns a  meaningful value even  when `nelems` or  `elemsiz` or
  *             both are zero.
@@ -149,7 +153,6 @@ RBIMPL_ATTR_NOEXCEPT(calloc(nelems, elemsiz))
 ;
 
 RBIMPL_ATTR_NODISCARD()
-RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2))
 /**
  * Resize the storage instance.
@@ -163,10 +166,11 @@ RBIMPL_ATTR_ALLOC_SIZE((2))
  *                               - ruby_xrealloc2().
  * @param[in]  newsiz          Requested new amount of memory.
  * @exception  rb_eNoMemError  No space left for `newsiz` bytes allocation.
- * @return     A  valid  pointer  to   a  (possibly  newly  allocated)  storage
- *             instance;  which  has  at   least  `newsiz`  bytes  width,  with
- *             appropriate  alignment  detected  by  the  underlying  realloc()
- *             routine.
+ * @retval     NULL            Allocation failed but no way to raise anything.
+ * @retval     otherwise       A valid pointer to  a (possibly newly allocated)
+ *                             storage  instance; which  has at  least `newsiz`
+ *                             bytes width, with appropriate alignment detected
+ *                             by the underlying realloc() routine.
  * @pre        The passed pointer must point  to a valid live storage instance.
  *             It is a failure to pass an already freed pointer.
  * @post       In  case the  function  returns the  passed  pointer as-is,  the
@@ -175,7 +179,6 @@ RBIMPL_ATTR_ALLOC_SIZE((2))
  *             pointer to a  newly allocated storage instance  is returned.  In
  *             this  case  `ptr`  is  invalidated   as  if  it  was  passed  to
  *             ruby_xfree().
- * @note       It doesn't return NULL.
  * @warning    Unlike some realloc() implementations,  passing zero to `newsiz`
  *             is not the  same as calling ruby_xfree(),  because this function
  *             never returns NULL.  Something meaningful still returns then.
@@ -195,7 +198,6 @@ RBIMPL_ATTR_NOEXCEPT(realloc(ptr, newsiz))
 ;
 
 RBIMPL_ATTR_NODISCARD()
-RBIMPL_ATTR_RETURNS_NONNULL()
 RBIMPL_ATTR_ALLOC_SIZE((2,3))
 /**
  * Identical to ruby_xrealloc(),  except it resizes the  given storage instance
@@ -219,10 +221,12 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  * @param[in]  newsiz          Requested new size of each element.
  * @exception  rb_eNoMemError  No space left for  allocation.
  * @exception  rb_eArgError    `newelems` * `newsiz` would overflow.
- * @return     A  valid  pointer  to   a  (possibly  newly  allocated)  storage
- *             instance; which has at least  `newelems` * `newsiz` bytes width,
- *             with appropriate alignment detected  by the underlying realloc()
- *             routine.
+ * @retval     NULL            Allocation failed but no way to raise anything.
+ * @retval     otherwise       A valid pointer to  a (possibly newly allocated)
+ *                             storage instance; which  has at least `newelems`
+ *                             * `newsiz`   bytes   width,   with   appropriate
+ *                             alignment detected  by the  underlying realloc()
+ *                             routine.
  * @pre        The passed pointer must point  to a valid live storage instance.
  *             It is a failure to pass an already freed pointer.
  * @post       In  case the  function  returns the  passed  pointer as-is,  the
@@ -231,7 +235,6 @@ RBIMPL_ATTR_ALLOC_SIZE((2,3))
  *             Otherwise a valid pointer to  a newly allocated storage instance
  *             is returned.   In this case  `ptr` is  invalidated as if  it was
  *             passed to ruby_xfree().
- * @note       It doesn't return NULL.
  * @warning    Unlike some  realloc() implementations,  passing zero  to either
  *             `newelems`   or  `elemsiz`   are   not  the   same  as   calling
  *             ruby_xfree(),   because  this   function  never   returns  NULL.

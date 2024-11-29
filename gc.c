@@ -4431,6 +4431,19 @@ rb_malloc_info_show_results(void)
 void *
 ruby_xmalloc(size_t size)
 {
+    if (! ruby_thread_has_gvl_p()) {
+        /* if (ruby_native_thread_p()) {
+         *     // We could reacquire the GVL here using rb_thread_call_with_gvl
+         *     // but what if that raised an  exception?  There would be no way
+         *     // to recover.
+         *     //
+         *     // This saves no one from nothing.
+         *     return rb_thread_call_with_gvl(ruby_xmalloc, (void*)size);
+         * }
+         */
+        return ruby_mimmalloc(size);
+    }
+
     if ((ssize_t)size < 0) {
         negative_size_allocation_error("too large allocation size");
     }
@@ -4449,12 +4462,38 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
+    if (! ruby_thread_has_gvl_p()) {
+        /* Out of GVL.  No GC, and no way to inform the integer overflow. */
+        struct rbimpl_size_mul_overflow_tag of =
+            rbimpl_size_mul_overflow(n, size);
+
+        if (of.left) {
+            return NULL;
+        }
+        else {
+            return ruby_mimmalloc(of.right);
+        }
+    }
+
     return rb_gc_impl_malloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
 }
 
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
+    if (! ruby_thread_has_gvl_p()) {
+        /* Out of GVL.  No GC, and no way to inform the integer overflow. */
+        struct rbimpl_size_mul_overflow_tag of =
+            rbimpl_size_mul_overflow(n, size);
+
+        if (of.left) {
+            return NULL;
+        }
+        else {
+            return ruby_mimcalloc(of.right, 1);
+        }
+    }
+
     return rb_gc_impl_calloc(rb_gc_get_objspace(), xmalloc2_size(n, size));
 }
 
@@ -4464,6 +4503,12 @@ ruby_xcalloc(size_t n, size_t size)
 void *
 ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
 {
+    if (! ruby_thread_has_gvl_p()) {
+        /* Out of GVL, no GC. */
+        /* Also there is no such thing like ruby_mimrealloc. */
+        return realloc(ptr, new_size);
+    }
+
     if ((ssize_t)new_size < 0) {
         negative_size_allocation_error("too large allocation size");
     }
@@ -4483,6 +4528,24 @@ ruby_xrealloc(void *ptr, size_t new_size)
 void *
 ruby_sized_xrealloc2(void *ptr, size_t n, size_t size, size_t old_n)
 {
+    if (! ruby_thread_has_gvl_p()) {
+        /* Out of GVL.  No GC, and no way to inform the integer overflow. */
+        struct rbimpl_size_mul_overflow_tag new_o, old_o;
+
+        new_o = rbimpl_size_mul_overflow(n, size);
+        old_o = rbimpl_size_mul_overflow(old_n, size);
+
+        if (new_o.left) {
+            return NULL;
+        }
+        else if (old_o.left) {
+            return NULL;
+        }
+        else {
+            return realloc(ptr, new_o.right);
+        }
+    }
+
     size_t len = xmalloc2_size(n, size);
     return rb_gc_impl_realloc(rb_gc_get_objspace(), ptr, len, old_n * size);
 }
