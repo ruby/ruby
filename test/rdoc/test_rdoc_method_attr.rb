@@ -148,8 +148,34 @@ class TestRDocMethodAttr < XrefTestCase
     assert_equal expected, @c1_m.search_record
   end
 
-  def test_spaceship
+  def test_spaceship_returns_nil_on_inappropriate_types
     assert_nil @c1_m.<=>(RDoc::CodeObject.new)
+  end
+
+  def test_spaceship_orders_symbols_first
+    # in the desired sort order
+    m_plus       = RDoc::AnyMethod.new nil, '+'
+    m_eqeq       = RDoc::AnyMethod.new nil, '=='
+    m_bracket    = RDoc::AnyMethod.new nil, '[]'
+    m_caret      = RDoc::AnyMethod.new nil, '^'
+    m_bar        = RDoc::AnyMethod.new nil, '|'
+    m_tilde      = RDoc::AnyMethod.new nil, '~'
+    m_Alpha      = RDoc::AnyMethod.new nil, 'Alpha'
+    m_Zero       = RDoc::AnyMethod.new nil, 'Zero'
+    m_alpha      = RDoc::AnyMethod.new nil, 'alpha'
+    m_zero       = RDoc::AnyMethod.new nil, 'zero'
+    m_konnichiwa = RDoc::AnyMethod.new nil, 'こんにちは'
+
+    assert_equal(-1, m_plus <=> m_eqeq)
+    assert_equal(-1, m_eqeq <=> m_bracket)
+    assert_equal(-1, m_bracket <=> m_caret)
+    assert_equal(-1, m_caret <=> m_bar)
+    assert_equal(-1, m_bar <=> m_tilde)
+    assert_equal(-1, m_tilde <=> m_Alpha)
+    assert_equal(-1, m_Alpha <=> m_Zero)
+    assert_equal(-1, m_Zero <=> m_alpha)
+    assert_equal(-1, m_alpha <=> m_zero)
+    assert_equal(-1, m_zero <=> m_konnichiwa)
   end
 
   def test_equals2
