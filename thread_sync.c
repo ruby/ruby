@@ -531,48 +531,54 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 }
 #endif
 
-static VALUE
-rb_mutex_sleep_forever(VALUE self)
-{
-    rb_thread_sleep_deadly_allow_spurious_wakeup(self, Qnil, 0);
-    return Qnil;
-}
+struct rb_mutex_sleep_arguments {
+    VALUE self;
+    VALUE timeout;
+};
 
 static VALUE
-rb_mutex_wait_for(VALUE time)
+mutex_sleep_begin(VALUE _arguments)
 {
-    rb_hrtime_t *rel = (rb_hrtime_t *)time;
-    /* permit spurious check */
-    return RBOOL(sleep_hrtime(GET_THREAD(), *rel, 0));
+    struct rb_mutex_sleep_arguments *arguments = (struct rb_mutex_sleep_arguments *)_arguments;
+    VALUE timeout = arguments->timeout;
+    VALUE woken = Qtrue;
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        rb_fiber_scheduler_kernel_sleep(scheduler, timeout);
+    }
+    else {
+        if (NIL_P(timeout)) {
+            rb_thread_sleep_deadly_allow_spurious_wakeup(arguments->self, Qnil, 0);
+        }
+        else {
+            struct timeval timeout_value = rb_time_interval(timeout);
+            rb_hrtime_t relative_timeout = rb_timeval2hrtime(&timeout_value);
+            /* permit spurious check */
+            woken = RBOOL(sleep_hrtime(GET_THREAD(), relative_timeout, 0));
+        }
+    }
+
+    return woken;
 }
 
 VALUE
 rb_mutex_sleep(VALUE self, VALUE timeout)
 {
-    struct timeval t;
-    VALUE woken = Qtrue;
-
     if (!NIL_P(timeout)) {
-        t = rb_time_interval(timeout);
+        // Validate the argument:
+        rb_time_interval(timeout);
     }
 
     rb_mutex_unlock(self);
     time_t beg = time(0);
 
-    VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        rb_fiber_scheduler_kernel_sleep(scheduler, timeout);
-        mutex_lock_uninterruptible(self);
-    }
-    else {
-        if (NIL_P(timeout)) {
-            rb_ensure(rb_mutex_sleep_forever, self, mutex_lock_uninterruptible, self);
-        }
-        else {
-            rb_hrtime_t rel = rb_timeval2hrtime(&t);
-            woken = rb_ensure(rb_mutex_wait_for, (VALUE)&rel, mutex_lock_uninterruptible, self);
-        }
-    }
+    struct rb_mutex_sleep_arguments arguments = {
+        .self = self,
+        .timeout = timeout,
+    };
+
+    VALUE woken = rb_ensure(mutex_sleep_begin, (VALUE)&arguments, mutex_lock_uninterruptible, self);
 
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
     if (!woken) return Qnil;
