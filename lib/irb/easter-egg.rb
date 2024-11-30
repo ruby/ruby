@@ -125,6 +125,7 @@ module IRB
             canvas = Canvas.new(Reline.get_screen_size)
           end
           ruby_model = RubyModel.new
+          print "\e[?25l" # hide cursor
           0.step do |i| # TODO (0..).each needs Ruby 2.6 or later
             buff = canvas.draw do
               ruby_model.render_frame(i) do |p1, p2|
@@ -138,6 +139,7 @@ module IRB
           end
         rescue Interrupt
         ensure
+          print "\e[?25h" # show cursor
           trap("SIGINT", prev_trap)
         end
       end
