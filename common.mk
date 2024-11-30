@@ -244,36 +244,36 @@ srcs: $(srcdir)/lib/prism/visitor.rb
 $(srcdir)/lib/prism/visitor.rb: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/lib/prism/visitor.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb lib/prism/visitor.rb $(srcdir)/lib/prism/visitor.rb
 
-srcs: $(srcs_vpath)prism/api_node.c
-$(srcs_vpath)prism/api_node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/ext/prism/api_node.c.erb
+srcs: prism/api_node.c
+prism/api_node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/ext/prism/api_node.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb ext/prism/api_node.c $@
 
-srcs: $(srcs_vpath)prism/ast.h
-$(srcs_vpath)prism/ast.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/ast.h.erb
+srcs: prism/ast.h
+prism/ast.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/ast.h.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb include/prism/ast.h $@
 
-srcs: $(srcs_vpath)prism/diagnostic.c
-$(srcs_vpath)prism/diagnostic.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/diagnostic.c.erb
+srcs: prism/diagnostic.c
+prism/diagnostic.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/diagnostic.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/diagnostic.c $@
 
-srcs: $(srcs_vpath)prism/diagnostic.h
-$(srcs_vpath)prism/diagnostic.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/diagnostic.h.erb
+srcs: prism/diagnostic.h
+prism/diagnostic.h: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/include/prism/diagnostic.h.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb include/prism/diagnostic.h $@
 
-srcs: $(srcs_vpath)prism/node.c
-$(srcs_vpath)prism/node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/node.c.erb
+srcs: prism/node.c
+prism/node.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/node.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/node.c $@
 
-srcs: $(srcs_vpath)prism/prettyprint.c
-$(srcs_vpath)prism/prettyprint.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/prettyprint.c.erb
+srcs: prism/prettyprint.c
+prism/prettyprint.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/prettyprint.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/prettyprint.c $@
 
-srcs: $(srcs_vpath)prism/serialize.c
-$(srcs_vpath)prism/serialize.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/serialize.c.erb
+srcs: prism/serialize.c
+prism/serialize.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/serialize.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/serialize.c $@
 
-srcs: $(srcs_vpath)prism/token_type.c
-$(srcs_vpath)prism/token_type.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/token_type.c.erb
+srcs: prism/token_type.c
+prism/token_type.c: $(PRISM_SRCDIR)/config.yml $(PRISM_SRCDIR)/templates/template.rb $(PRISM_SRCDIR)/templates/src/token_type.c.erb
 	$(Q) $(BASERUBY) $(PRISM_SRCDIR)/templates/template.rb src/token_type.c $@
 
 EXPORTOBJS    = $(DLNOBJ) \
