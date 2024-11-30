@@ -539,24 +539,29 @@ class Reline::Config::Test < Reline::TestCase
   def test_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
+    inputrc_backup = ENV['INPUTRC']
     xdg_config_home = File.expand_path("#{@tmpdir}/.config/example_dir")
     expected = File.expand_path("#{xdg_config_home}/readline/inputrc")
     FileUtils.mkdir_p(File.dirname(expected))
     FileUtils.touch(expected)
     ENV['HOME'] = @tmpdir
     ENV['XDG_CONFIG_HOME'] = xdg_config_home
+    ENV['INPUTRC'] = ''
     assert_equal expected, @config.inputrc_path
   ensure
     FileUtils.rm(expected)
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
+    ENV['INPUTRC'] = inputrc_backup
   end
 
   def test_empty_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
+    inputrc_backup = ENV['INPUTRC']
     ENV['HOME'] = @tmpdir
     ENV['XDG_CONFIG_HOME'] = ''
+    ENV['INPUTRC'] = ''
     expected = File.expand_path('~/.config/readline/inputrc')
     FileUtils.mkdir_p(File.dirname(expected))
     FileUtils.touch(expected)
@@ -565,12 +570,15 @@ class Reline::Config::Test < Reline::TestCase
     FileUtils.rm(expected)
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
+    ENV['INPUTRC'] = inputrc_backup
   end
 
   def test_relative_xdg_config_home
     home_backup = ENV['HOME']
     xdg_config_home_backup = ENV['XDG_CONFIG_HOME']
+    inputrc_backup = ENV['INPUTRC']
     ENV['HOME'] = @tmpdir
+    ENV['INPUTRC'] = ''
     expected = File.expand_path('~/.config/readline/inputrc')
     FileUtils.mkdir_p(File.dirname(expected))
     FileUtils.touch(expected)
@@ -586,6 +594,7 @@ class Reline::Config::Test < Reline::TestCase
     FileUtils.rm(expected)
     ENV['XDG_CONFIG_HOME'] = xdg_config_home_backup
     ENV['HOME'] = home_backup
+    ENV['INPUTRC'] = inputrc_backup
   end
 
   def test_reload
