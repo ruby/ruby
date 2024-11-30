@@ -1145,8 +1145,8 @@ rb_include_module(VALUE klass, VALUE module)
             iclass = iclass->next;
         }
 
-        int do_include = 1;
         while (iclass) {
+            int do_include = 1;
             VALUE check_class = iclass->klass;
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */
