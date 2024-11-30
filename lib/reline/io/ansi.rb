@@ -284,11 +284,15 @@ class Reline::ANSI < Reline::IO
   end
 
   def set_winch_handler(&handler)
-    @old_winch_handler = Signal.trap('WINCH', &handler)
-    @old_cont_handler = Signal.trap('CONT') do
+    @old_winch_handler = Signal.trap('WINCH') do |arg|
+      handler.call
+      @old_winch_handler.call(arg) if @old_winch_handler.respond_to?(:call)
+    end
+    @old_cont_handler = Signal.trap('CONT') do |arg|
       @input.raw!(intr: true) if @input.tty?
       # Rerender the screen. Note that screen size might be changed while suspended.
       handler.call
+      @old_cont_handler.call(arg) if @old_cont_handler.respond_to?(:call)
     end
   rescue ArgumentError
     # Signal.trap may raise an ArgumentError if the platform doesn't support the signal.

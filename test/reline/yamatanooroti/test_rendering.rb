@@ -1795,16 +1795,47 @@ begin
       close
     end
 
+    def test_user_defined_winch
+      omit if Reline.core.io_gate.win?
+      pidfile = Tempfile.create('pidfile')
+      rubyfile = Tempfile.create('rubyfile')
+      rubyfile.write <<~RUBY
+        File.write(#{pidfile.path.inspect}, Process.pid)
+        winch_called = false
+        Signal.trap(:WINCH, ->(_arg){ winch_called = true })
+        p Reline.readline('>')
+        puts "winch: \#{winch_called}"
+      RUBY
+      rubyfile.close
+
+      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib -rreline #{rubyfile.path}})
+      assert_screen(/^>/)
+      write 'a'
+      assert_screen(/^>a/)
+      pid = pidfile.tap(&:rewind).read.to_i
+      Process.kill(:WINCH, pid) unless pid.zero?
+      write "b\n"
+      assert_screen(/"ab"\nwinch: true/)
+      close
+    ensure
+      File.delete(rubyfile.path) if rubyfile
+      pidfile.close if pidfile
+      File.delete(pidfile.path) if pidfile
+    end
+
     def test_stop_continue
       omit if Reline.core.io_gate.win?
       pidfile = Tempfile.create('pidfile')
       rubyfile = Tempfile.create('rubyfile')
       rubyfile.write <<~RUBY
         File.write(#{pidfile.path.inspect}, Process.pid)
-        p Reline.readmultiline('>'){false}
+        cont_called = false
+        Signal.trap(:CONT, ->(_arg){ cont_called = true })
+        Reline.readmultiline('>'){|input| input.match?(/ghi/) }
+        puts "cont: \#{cont_called}"
       RUBY
       rubyfile.close
-      start_terminal(40, 50, ['bash'])
+      start_terminal(10, 50, ['bash'])
       write "ruby -I#{@pwd}/lib -rreline #{rubyfile.path}\n"
       assert_screen(/^>/)
       write "abc\ndef\nhi"
@@ -1814,6 +1845,8 @@ begin
       assert_screen(/fg\n.*>/m)
       write "\ebg"
       assert_screen(/>abc\n>def\n>ghi\n/)
+      write "\n"
+      assert_screen(/cont: true/)
       close
     ensure
       File.delete(rubyfile.path) if rubyfile
