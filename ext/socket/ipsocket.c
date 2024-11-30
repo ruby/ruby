@@ -1007,9 +1007,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (connected_fd >= 0) break;
 
                 if (!in_progress_fds(arg->connection_attempt_fds_size)) {
-                    if (any_addrinfos(&resolution_store)) {
-                        connection_attempt_delay_expires_at = NULL;
-                    } else if (resolution_store.is_all_finised) {
+                    if (!any_addrinfos(&resolution_store) && resolution_store.is_all_finised) {
                         if (local_status < 0) {
                             host = arg->local.host;
                             serv = arg->local.serv;
@@ -1023,6 +1021,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
                     }
+                    connection_attempt_delay_expires_at = NULL;
                     user_specified_connect_timeout_at = NULL;
                 }
             }
