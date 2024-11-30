@@ -440,9 +440,8 @@ struct fast_fallback_getaddrinfo_entry
 
 struct fast_fallback_getaddrinfo_shared
 {
-    int notify, refcount, connection_attempt_fds_size;
+    int notify, refcount;
     int cancelled;
-    int *connection_attempt_fds;
     char *node, *service;
     rb_nativethread_lock_t *lock;
     struct fast_fallback_getaddrinfo_entry getaddrinfo_entries[FLEX_ARY_LEN];
