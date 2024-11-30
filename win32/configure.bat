@@ -178,7 +178,16 @@ goto :loop ;
   shift
 goto :loop ;
 :ntver
-  echo>> %config_make% NTVER = %~2
+  ::- For version constants, see
+  ::- https://learn.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt#remarks
+  set NTVER=%~2
+  if /i not "%NTVER:~0,2%" == "0x" if /i not "%NTVER:~0,13%" == "_WIN32_WINNT_" (
+    for %%i in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+      call set NTVER=%%NTVER:%%i=%%i%%
+    )
+    call set NTVER=_WIN32_WINNT_%%NTVER%%
+  )
+  echo>> %config_make% NTVER = %NTVER%
   echo>>%confargs%  %1=%2 \
   shift
   shift
@@ -266,6 +275,8 @@ goto :loop ;
   echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by `;'
   echo   --disable-install-doc   do not install rdoc indexes during install
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
+  echo   --with-ntver=_WIN32_WINNT_XXXX
+  echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
   echo Note that `,' and `;' need to be enclosed within double quotes in batch file command line.
   del %confargs% %config_make%
 goto :exit
