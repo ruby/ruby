@@ -20,10 +20,8 @@ Explore the essential classes and modules:
 - [File](File.html) - \File operations and handling.
 - [IO](IO.html) - Input/output functionality.
 - [Time](Time.html) - \Time representation.
-- [Date](Date.html) - \Date representation.
 - [Regexp](Regexp.html) - Regular expressions for pattern matching.
 - [Range](Range.html) - Representing a range of values.
-- [JSON](JSON.html) - \JSON encoding and decoding.
 - [Exception](Exception.html) - Base class for all exceptions.
 - [Thread](Thread.html) - Multithreading and concurrency.
 
@@ -35,9 +33,16 @@ Deep dive into Ruby's syntax and features:
 - [Exceptions](exceptions_md.html)
 - [Implicit Conversions](implicit_conversions_md.html)
 
-## Standard Library
+## Standard Libraries
 
-Access the comprehensive set of libraries included with Ruby:
+There are some standard libraries included in Ruby that are also commonly used, such as:
+
+- [Date](Date.html) - \Date representation.
+- [JSON](JSON.html) - \JSON encoding and decoding.
+- [ERB](ERB.html) - Embedded Ruby for templating.
+- [Net::HTTP](Net/HTTP.html) - HTTP client library.
+
+Use the following links to access the comprehensive set of libraries included with Ruby:
 
 - [Standard Library Documentation](standard_library_rdoc.html)
 - [Maintainers](maintainers_md.html)
@@ -51,10 +56,10 @@ Get involved with the Ruby community:
 - [Reporting Issues](contributing/reporting_issues_md.html)
 - [Building Ruby](contributing/building_ruby_md.html)
 - [Testing Ruby](contributing/testing_ruby_md.html)
+- [Issue Tracker](https://bugs.ruby-lang.org/projects/ruby-master/issues)
 
 ## Additional Resources
 
 - [Ruby Homepage](https://www.ruby-lang.org/)
 - [RubyGems](https://rubygems.org/)
-- [Ruby on Rails](https://rubyonrails.org/)
 - [Ruby Community](https://www.ruby-lang.org/en/community/)
