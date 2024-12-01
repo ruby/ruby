@@ -1,5 +1,6 @@
 @echo off
 @setlocal disabledelayedexpansion
+set PROMPT=$E[94m+$E[m$S
 set witharg=
 
 for %%I in (%0) do if /%%~dpI/ == /%CD%\/ (
@@ -23,6 +24,8 @@ echo>%config_make% # CONFIGURE
 :loop
 set opt=%1
 if "%1" == "" goto :end
+if "%1" == "--debug-configure" (echo on & shift & goto :loop)
+if "%1" == "--no-debug-condigure" (echo off & shift & goto :loop)
 if "%1" == "--prefix" goto :prefix
 if "%1" == "--srcdir" goto :srcdir
 if "%1" == "srcdir" goto :srcdir
@@ -243,7 +246,8 @@ goto :loop ;
 :opt-dir
   set opt=%~2
   for %%I in (%opt:;= %) do (
-    pushd %%I && (
+    set d=%%I
+    call pushd %%d:/=\%% && (
       call set XINCFLAGS=%%XINCFLAGS%% -I%%CD:\=/%%/include
       call set XLDFLAGS=%%XLDFLAGS%% -libpath:%%CD:\=/%%/lib
       popd
