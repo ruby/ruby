@@ -8684,12 +8684,12 @@ rb_ary_deconstruct(VALUE ary)
  *  - #&: Returns an array containing elements found both in +self+ and a given array.
  *  - #+: Returns an array containing all elements of +self+ followed by all elements of a given array.
  *  - #-: Returns an array containing all elements of +self+ that are not found in a given array.
+ *  - #|: Returns an array containing all element of +self+ and all elements of a given array, duplicates removed.
  *  - #difference: Returns an array containing all elements of +self+ that are not found in any of the given arrays..
  *  - #intersection: Returns an array containing elements found both in +self+ and in each given array.
  *  - #product: Returns or yields all combinations of elements from +self+ and given arrays.
  *  - #reverse: Returns an array containing all elements of +self+ in reverse order.
  *  - #union: Returns an array containing all elements of +self+ and all elements of given arrays, duplicates removed.
- *  - #|: Returns an array containing all elements of +self+ and all elements of a given array, duplicates removed.
  *
  *  === Methods for Iterating
  *
