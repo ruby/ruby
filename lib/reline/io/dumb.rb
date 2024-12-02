@@ -3,8 +3,11 @@ require 'io/wait'
 class Reline::Dumb < Reline::IO
   RESET_COLOR = '' # Do not send color reset sequence
 
+  attr_writer :output
+
   def initialize(encoding: nil)
     @input = STDIN
+    @output = STDOUT
     @buf = []
     @pasting = false
     @encoding = encoding
@@ -36,6 +39,14 @@ class Reline::Dumb < Reline::IO
   end
 
   def with_raw_input
+    yield
+  end
+
+  def write(string)
+    @output.write(string)
+  end
+
+  def buffered_output
     yield
   end
 

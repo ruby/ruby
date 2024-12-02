@@ -13,7 +13,6 @@ class Reline::LineEditor
   attr_accessor :prompt_proc
   attr_accessor :auto_indent_proc
   attr_accessor :dig_perfect_match_proc
-  attr_writer :output
 
   VI_MOTIONS = %i{
     ed_prev_char
@@ -414,7 +413,7 @@ class Reline::LineEditor
         # do nothing
       elsif level == :blank
         Reline::IOGate.move_cursor_column base_x
-        @output.write "#{Reline::IOGate.reset_color_sequence}#{' ' * width}"
+        Reline::IOGate.write "#{Reline::IOGate.reset_color_sequence}#{' ' * width}"
       else
         x, w, content = new_items[level]
         cover_begin = base_x != 0 && new_levels[base_x - 1] == level
@@ -424,7 +423,7 @@ class Reline::LineEditor
           content, pos = Reline::Unicode.take_mbchar_range(content, base_x - x, width, cover_begin: cover_begin, cover_end: cover_end, padding: true)
         end
         Reline::IOGate.move_cursor_column x + pos
-        @output.write "#{Reline::IOGate.reset_color_sequence}#{content}#{Reline::IOGate.reset_color_sequence}"
+        Reline::IOGate.write "#{Reline::IOGate.reset_color_sequence}#{content}#{Reline::IOGate.reset_color_sequence}"
       end
       base_x += width
     end
@@ -460,19 +459,21 @@ class Reline::LineEditor
   end
 
   def render_finished
-    render_differential([], 0, 0)
-    lines = @buffer_of_lines.size.times.map do |i|
-      line = Reline::Unicode.strip_non_printing_start_end(prompt_list[i]) + modified_lines[i]
-      wrapped_lines = split_line_by_width(line, screen_width)
-      wrapped_lines.last.empty? ? "#{line} " : line
+    Reline::IOGate.buffered_output do
+      render_differential([], 0, 0)
+      lines = @buffer_of_lines.size.times.map do |i|
+        line = Reline::Unicode.strip_non_printing_start_end(prompt_list[i]) + modified_lines[i]
+        wrapped_lines = split_line_by_width(line, screen_width)
+        wrapped_lines.last.empty? ? "#{line} " : line
+      end
+      Reline::IOGate.write lines.map { |l| "#{l}\r\n" }.join
     end
-    @output.puts lines.map { |l| "#{l}\r\n" }.join
   end
 
   def print_nomultiline_prompt
     Reline::IOGate.disable_auto_linewrap(true) if Reline::IOGate.win?
     # Readline's test `TestRelineAsReadline#test_readline` requires first output to be prompt, not cursor reset escape sequence.
-    @output.write Reline::Unicode.strip_non_printing_start_end(@prompt) if @prompt && !@is_multiline
+    Reline::IOGate.write Reline::Unicode.strip_non_printing_start_end(@prompt) if @prompt && !@is_multiline
   ensure
     Reline::IOGate.disable_auto_linewrap(false) if Reline::IOGate.win?
   end
@@ -503,7 +504,9 @@ class Reline::LineEditor
       end
     end
 
-    render_differential new_lines, wrapped_cursor_x, wrapped_cursor_y - screen_scroll_top
+    Reline::IOGate.buffered_output do
+      render_differential new_lines, wrapped_cursor_x, wrapped_cursor_y - screen_scroll_top
+    end
   end
 
   # Reflects lines to be rendered and new cursor position to the screen

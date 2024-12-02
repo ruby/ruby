@@ -61,6 +61,10 @@ class Reline::LineEditor
 
   class RenderLineDifferentialTest < Reline::TestCase
     class TestIO < Reline::IO
+      def write(string)
+        @output << string
+      end
+
       def move_cursor_column(col)
         @output << "[COL_#{col}]"
       end
@@ -76,7 +80,6 @@ class Reline::LineEditor
       @original_iogate = Reline::IOGate
       @output = StringIO.new
       @line_editor.instance_variable_set(:@screen_size, [24, 80])
-      @line_editor.instance_variable_set(:@output, @output)
       Reline.send(:remove_const, :IOGate)
       Reline.const_set(:IOGate, TestIO.new)
       Reline::IOGate.instance_variable_set(:@output, @output)

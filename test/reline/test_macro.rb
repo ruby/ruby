@@ -6,7 +6,7 @@ class Reline::MacroTest < Reline::TestCase
     @config = Reline::Config.new
     @encoding = Reline.core.encoding
     @line_editor = Reline::LineEditor.new(@config)
-    @output = @line_editor.output = File.open(IO::NULL, "w")
+    @output = Reline::IOGate.output = File.open(IO::NULL, "w")
   end
 
   def teardown

@@ -29,10 +29,13 @@ class Reline::ANSI < Reline::IO
     'H' => [:ed_move_to_beg, {}],
   }
 
+  attr_writer :input, :output
+
   def initialize
     @input = STDIN
     @output = STDOUT
     @buf = []
+    @output_buffer = nil
     @old_winch_handler = nil
   end
 
@@ -112,14 +115,6 @@ class Reline::ANSI < Reline::IO
       config.add_default_key_binding_by_keymap(:vi_insert, key, func)
       config.add_default_key_binding_by_keymap(:vi_command, key, func)
     end
-  end
-
-  def input=(val)
-    @input = val
-  end
-
-  def output=(val)
-    @output = val
   end
 
   def with_raw_input
@@ -238,13 +233,29 @@ class Reline::ANSI < Reline::IO
     @input.tty? && @output.tty?
   end
 
+  def write(string)
+    if @output_buffer
+      @output_buffer << string
+    else
+      @output.write(string)
+    end
+  end
+
+  def buffered_output
+    @output_buffer = +''
+    yield
+    @output.write(@output_buffer)
+  ensure
+    @output_buffer = nil
+  end
+
   def move_cursor_column(x)
-    @output.write "\e[#{x + 1}G"
+    write "\e[#{x + 1}G"
   end
 
   def move_cursor_up(x)
     if x > 0
-      @output.write "\e[#{x}A"
+      write "\e[#{x}A"
     elsif x < 0
       move_cursor_down(-x)
     end
@@ -252,22 +263,22 @@ class Reline::ANSI < Reline::IO
 
   def move_cursor_down(x)
     if x > 0
-      @output.write "\e[#{x}B"
+      write "\e[#{x}B"
     elsif x < 0
       move_cursor_up(-x)
     end
   end
 
   def hide_cursor
-    @output.write "\e[?25l"
+    write "\e[?25l"
   end
 
   def show_cursor
-    @output.write "\e[?25h"
+    write "\e[?25h"
   end
 
   def erase_after_cursor
-    @output.write "\e[K"
+    write "\e[K"
   end
 
   # This only works when the cursor is at the bottom of the scroll range
@@ -275,12 +286,12 @@ class Reline::ANSI < Reline::IO
   def scroll_down(x)
     return if x.zero?
     # We use `\n` instead of CSI + S because CSI + S would cause https://github.com/ruby/reline/issues/576
-    @output.write "\n" * x
+    write "\n" * x
   end
 
   def clear_screen
-    @output.write "\e[2J"
-    @output.write "\e[1;1H"
+    write "\e[2J"
+    write "\e[1;1H"
   end
 
   def set_winch_handler(&handler)
@@ -300,14 +311,14 @@ class Reline::ANSI < Reline::IO
 
   def prep
     # Enable bracketed paste
-    @output.write "\e[?2004h" if Reline.core.config.enable_bracketed_paste && both_tty?
+    write "\e[?2004h" if Reline.core.config.enable_bracketed_paste && both_tty?
     retrieve_keybuffer
     nil
   end
 
   def deprep(otio)
     # Disable bracketed paste
-    @output.write "\e[?2004l" if Reline.core.config.enable_bracketed_paste && both_tty?
+    write "\e[?2004l" if Reline.core.config.enable_bracketed_paste && both_tty?
     Signal.trap('WINCH', @old_winch_handler) if @old_winch_handler
     Signal.trap('CONT', @old_cont_handler) if @old_cont_handler
   end

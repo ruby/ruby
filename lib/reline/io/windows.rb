@@ -1,6 +1,9 @@
 require 'fiddle/import'
 
 class Reline::Windows < Reline::IO
+
+  attr_writer :output
+
   def initialize
     @input_buf = []
     @output_buf = []
@@ -305,6 +308,14 @@ class Reline::Windows < Reline::IO
   end
 
   def with_raw_input
+    yield
+  end
+
+  def write(string)
+    @output.write(string)
+  end
+
+  def buffered_output
     yield
   end
 

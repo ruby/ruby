@@ -181,9 +181,7 @@ module Reline
     def output=(val)
       raise TypeError unless val.respond_to?(:write) or val.nil?
       @output = val
-      if io_gate.respond_to?(:output=)
-        io_gate.output = val
-      end
+      io_gate.output = val
     end
 
     def vi_editing_mode
@@ -317,7 +315,6 @@ module Reline
       else
         line_editor.multiline_off
       end
-      line_editor.output = output
       line_editor.completion_proc = completion_proc
       line_editor.completion_append_character = completion_append_character
       line_editor.output_modifier_proc = output_modifier_proc
