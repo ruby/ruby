@@ -145,7 +145,7 @@ The following default gems are updated.
 * irb 1.14.1
 * json 2.8.2
 * logger 1.6.2
-* net-http 0.5.0
+* net-http 0.6.0
 * open-uri 0.5.0
 * optparse 0.6.0
 * ostruct 0.6.1
