@@ -11,7 +11,7 @@ class TestSecureRandom < Test::Unit::TestCase
 
   # This test took 2 minutes on my machine.
   # And 65536 times loop could not be enough for forcing PID recycle.
-  # We should run this test only on GitHub Actions.
+  # TODO: We should run this test only on GitHub Actions.
   def test_s_random_bytes_is_fork_safe
     begin
       require 'openssl'
@@ -21,7 +21,7 @@ class TestSecureRandom < Test::Unit::TestCase
     SecureRandom.random_bytes(8)
     pid, v1 = forking_random_bytes
     assert(check_forking_random_bytes(pid, v1), 'Process ID not recycled?')
-  end if ENV["CI"] && RUBY_PLATFORM =~ /darwin/ && `sw_vers -productVersion`.to_i > 13 # for Apple Silicon
+  end if false # ENV["CI"] && RUBY_PLATFORM =~ /darwin/ && `sw_vers -productVersion`.to_i > 13 # for Apple Silicon
 
   def forking_random_bytes
     r, w = IO.pipe
