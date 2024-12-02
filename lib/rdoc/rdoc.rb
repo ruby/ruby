@@ -415,8 +415,6 @@ The internal error was:
       parse_file filename
     end.compact
 
-    @store.resolve_c_superclasses
-
     @stats.done_adding
     @options = original_options
 
