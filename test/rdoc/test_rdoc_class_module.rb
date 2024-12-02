@@ -1279,6 +1279,26 @@ class TestRDocClassModule < XrefTestCase
     assert_equal @c3_h1, @c3_h2.superclass
   end
 
+  def test_setting_superclass
+    @c1.superclass = nil
+    assert_nil(@c1.superclass)
+    assert_nil(@c1.instance_variable_get("@superclass")) # proxy to test marshalling
+
+    @c1.superclass = @c4_c4.full_name
+    assert_equal(@c1.superclass, @c4_c4)
+    assert_equal(@c4_c4.full_name, @c1.instance_variable_get("@superclass"))
+
+    @c1.superclass = @c4_c4
+    assert_equal(@c1.superclass, @c4_c4)
+    assert_equal(@c4_c4.full_name, @c1.instance_variable_get("@superclass"))
+
+    # we could support this if we find we need to in the future.
+    assert_raise(TypeError) { @c1.superclass = Object }
+
+    # but this doesn't make sense.
+    assert_raise(TypeError) { @c1.superclass = Object.new }
+  end
+
   def test_super_classes
     rdoc_c3_h1 = @xref_data.find_module_named('C3::H1')
     rdoc_object = @xref_data.find_module_named('Object')
