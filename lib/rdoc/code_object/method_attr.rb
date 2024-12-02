@@ -114,8 +114,8 @@ class RDoc::MethodAttr < RDoc::CodeObject
     return unless other.respond_to?(:singleton) &&
                   other.respond_to?(:name)
 
-    [@singleton      ? 0 : 1, name_codepoint_range,       name] <=>
-    [other.singleton ? 0 : 1, other.name_codepoint_range, other.name]
+    [@singleton      ? 0 : 1, name_ord_range,       name] <=>
+    [other.singleton ? 0 : 1, other.name_ord_range, other.name]
   end
 
   def == other # :nodoc:
@@ -415,8 +415,8 @@ class RDoc::MethodAttr < RDoc::CodeObject
     end
   end
 
-  def name_codepoint_range # :nodoc:
-    case name.codepoints[0]
+  def name_ord_range # :nodoc:
+    case name.ord
     when 0..64 # anything below "A"
       1
     when 91..96 # the symbols between "Z" and "a"
