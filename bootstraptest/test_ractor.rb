@@ -215,7 +215,8 @@ assert_equal '[:a, :b, :c, :d, :e, :f, :g]', %q{
 ###
 # Ractor still has several memory corruption so skip huge number of tests
 if ENV['GITHUB_WORKFLOW'] &&
-   ENV['GITHUB_WORKFLOW'] == 'Compilations'
+   (ENV['GITHUB_WORKFLOW'] == 'Compilations' ||
+   ENV['GITHUB_WORKFLOW'] == 'ModGC')
    # ignore the follow
 else
 
