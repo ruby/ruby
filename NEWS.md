@@ -157,7 +157,7 @@ The following default gems are updated.
 * rdoc 6.8.1
 * reline 0.5.12
 * resolv 0.5.0
-* securerandom 0.3.2
+* securerandom 0.4.0
 * set 1.1.1
 * shellwords 0.2.1
 * singleton 0.3.0
