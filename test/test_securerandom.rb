@@ -21,7 +21,7 @@ class TestSecureRandom < Test::Unit::TestCase
     SecureRandom.random_bytes(8)
     pid, v1 = forking_random_bytes
     assert(check_forking_random_bytes(pid, v1), 'Process ID not recycled?')
-  end if ENV["CI"]
+  end if ENV["CI"] && RUBY_PLATFORM =~ /darwin/ && `sw_vers -productVersion`.to_i > 13 # for Apple Silicon
 
   def forking_random_bytes
     r, w = IO.pipe
@@ -38,7 +38,7 @@ class TestSecureRandom < Test::Unit::TestCase
   end
 
   def check_forking_random_bytes(target_pid, target)
-    65536.times do
+    (65536 * 1.5).to_i.times do
       pid = fork {
         if $$ == target_pid
           v2 = SecureRandom.random_bytes(8)
