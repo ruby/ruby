@@ -22,6 +22,7 @@ module Bundler
         if !Bundler.settings[:disable_exec_load] && ruby_shebang?(bin_path)
           return kernel_load(bin_path, *args)
         end
+        bin_path = "./" + bin_path unless File.absolute_path?(bin_path)
         kernel_exec(bin_path, *args)
       else
         # exec using the given command
