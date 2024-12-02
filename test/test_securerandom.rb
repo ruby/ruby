@@ -9,9 +9,9 @@ class TestSecureRandom < Test::Unit::TestCase
     @it = SecureRandom
   end
 
-# This test took 2 minutes on my machine.
-# And 65536 times loop could not be enough for forcing PID recycle.
-if false
+  # This test took 2 minutes on my machine.
+  # And 65536 times loop could not be enough for forcing PID recycle.
+  # We should run this test only on GitHub Actions.
   def test_s_random_bytes_is_fork_safe
     begin
       require 'openssl'
@@ -21,7 +21,7 @@ if false
     SecureRandom.random_bytes(8)
     pid, v1 = forking_random_bytes
     assert(check_forking_random_bytes(pid, v1), 'Process ID not recycled?')
-  end
+  end if ENV["CI"]
 
   def forking_random_bytes
     r, w = IO.pipe
@@ -60,7 +60,6 @@ if false
     end
     false # not recycled?
   end
-end
 
   def test_with_openssl
     begin
