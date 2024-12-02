@@ -25,7 +25,7 @@ echo>%config_make% # CONFIGURE
 set opt=%1
 if "%1" == "" goto :end
 if "%1" == "--debug-configure" (echo on & shift & goto :loop)
-if "%1" == "--no-debug-condigure" (echo off & shift & goto :loop)
+if "%1" == "--no-debug-configure" (echo off & shift & goto :loop)
 if "%1" == "--prefix" goto :prefix
 if "%1" == "--srcdir" goto :srcdir
 if "%1" == "srcdir" goto :srcdir
