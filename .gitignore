@@ -144,7 +144,6 @@ lcov*.info
 /verconf.h
 /verconf.mk
 /web
-/yasmdata.rb
 
 # /bin/
 
