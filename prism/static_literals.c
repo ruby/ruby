@@ -501,7 +501,13 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
         case PM_FLOAT_NODE: {
             const double value = ((const pm_float_node_t *) node)->value;
 
-            if (isinf(value)) {
+            if (
+#ifdef _WIN32
+                !_finite(value)
+#else
+                isinf(value)
+#endif
+            ) {
                 if (*node->location.start == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
