@@ -275,6 +275,7 @@ module SyncDefaultGems
     when "strscan"
       rm_rf(%w[ext/strscan test/strscan])
       cp_r("#{upstream}/ext/strscan", "ext")
+      cp_r("#{upstream}/lib", "ext/strscan")
       cp_r("#{upstream}/test/strscan", "test")
       cp_r("#{upstream}/strscan.gemspec", "ext/strscan")
       begin
