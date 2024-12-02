@@ -1980,32 +1980,22 @@ SRC
         pkgconfig = nil
       end
       if pkgconfig
-        has_ms_win_syntax = false
-        if $mswin
-          has_ms_win_syntax = xpopen([pkgconfig, "--help"]).read.include?('msvc-syntax')
-          if has_ms_win_syntax
-            args << "--msvc-syntax"
-          else
-            Logging.message("WARNING: #{pkgconfig} does not support the --msvc-syntax. Try using a recent pkgconf instead")
-          end
-        end
         get = proc {|opts|
           opts = Array(opts).map { |o| "--#{o}" }
           opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
           Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
           if $?.success?
             opts = opts.strip
-            if $mswin and not has_ms_win_syntax
-              opts = Shellwords.shellwords(opts).map { |s|
-                if s.start_with?('-l')
-                  "#{s[2..]}.lib"
-                elsif s.start_with?('-L')
-                  "/libpath:#{s[2..]}"
-                else
-                  s
-                end
-              }.quote.join(" ")
-            end
+            libarg, libpath = LIBARG, LIBPATHFLAG.strip
+            opts = opts.shellsplit.map { |s|
+              if s.start_with?('-l')
+                libarg % s[2..]
+              elsif s.start_with?('-L')
+                libpath % s[2..]
+              else
+                s
+              end
+            }.quote.join(" ")
             opts
           end
         }
