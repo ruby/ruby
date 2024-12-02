@@ -23,7 +23,7 @@ static const rb_data_type_t ossl_ec_point_type;
     GetPKeyEC(obj, _pkey); \
     (key) = EVP_PKEY_get0_EC_KEY(_pkey); \
     if ((key) == NULL) \
-        ossl_raise(eECError, "failed to get EC_KEY from EVP_PKEY"); \
+        ossl_raise(ePKeyError, "failed to get EC_KEY from EVP_PKEY"); \
 } while (0)
 
 #define GetECGroup(obj, group) do { \
@@ -43,7 +43,6 @@ static const rb_data_type_t ossl_ec_point_type;
 } while (0)
 
 VALUE cEC;
-static VALUE eECError;
 static VALUE cEC_GROUP;
 static VALUE eEC_GROUP;
 static VALUE cEC_POINT;
@@ -71,20 +70,20 @@ ec_key_new_from_group(VALUE arg)
 
 	GetECGroup(arg, group);
 	if (!(ec = EC_KEY_new()))
-	    ossl_raise(eECError, NULL);
+	    ossl_raise(ePKeyError, NULL);
 
 	if (!EC_KEY_set_group(ec, group)) {
 	    EC_KEY_free(ec);
-	    ossl_raise(eECError, NULL);
+	    ossl_raise(ePKeyError, NULL);
 	}
     } else {
 	int nid = OBJ_sn2nid(StringValueCStr(arg));
 
 	if (nid == NID_undef)
-	    ossl_raise(eECError, "invalid curve name");
+	    ossl_raise(ePKeyError, "invalid curve name");
 
 	if (!(ec = EC_KEY_new_by_curve_name(nid)))
-	    ossl_raise(eECError, NULL);
+	    ossl_raise(ePKeyError, NULL);
 
 	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
 	EC_KEY_set_conv_form(ec, POINT_CONVERSION_UNCOMPRESSED);
@@ -114,12 +113,12 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
     if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
         EVP_PKEY_free(pkey);
         EC_KEY_free(ec);
-        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_EC_KEY");
     }
     RTYPEDDATA_DATA(obj) = pkey;
 
     if (!EC_KEY_generate_key(ec))
-	ossl_raise(eECError, "EC_KEY_generate_key");
+	ossl_raise(ePKeyError, "EC_KEY_generate_key");
 
     return obj;
 }
@@ -154,7 +153,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
                  "without arguments; pkeys are immutable with OpenSSL 3.0");
 #else
         if (!(ec = EC_KEY_new()))
-            ossl_raise(eECError, "EC_KEY_new");
+            ossl_raise(ePKeyError, "EC_KEY_new");
         goto legacy;
 #endif
     }
@@ -178,7 +177,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     type = EVP_PKEY_base_id(pkey);
     if (type != EVP_PKEY_EC) {
         EVP_PKEY_free(pkey);
-        rb_raise(eECError, "incorrect pkey type: %s", OBJ_nid2sn(type));
+        rb_raise(ePKeyError, "incorrect pkey type: %s", OBJ_nid2sn(type));
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -188,7 +187,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec) != 1) {
         EVP_PKEY_free(pkey);
         EC_KEY_free(ec);
-        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_EC_KEY");
     }
     RTYPEDDATA_DATA(self) = pkey;
     return self;
@@ -209,12 +208,12 @@ ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 
     ec_new = EC_KEY_dup(ec);
     if (!ec_new)
-	ossl_raise(eECError, "EC_KEY_dup");
+	ossl_raise(ePKeyError, "EC_KEY_dup");
 
     pkey = EVP_PKEY_new();
     if (!pkey || EVP_PKEY_assign_EC_KEY(pkey, ec_new) != 1) {
         EC_KEY_free(ec_new);
-        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+        ossl_raise(ePKeyError, "EVP_PKEY_assign_EC_KEY");
     }
     RTYPEDDATA_DATA(self) = pkey;
 
@@ -263,7 +262,7 @@ ossl_ec_key_set_group(VALUE self, VALUE group_v)
     GetECGroup(group_v, group);
 
     if (EC_KEY_set_group(ec, group) != 1)
-        ossl_raise(eECError, "EC_KEY_set_group");
+        ossl_raise(ePKeyError, "EC_KEY_set_group");
 
     return group_v;
 #endif
@@ -313,7 +312,7 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
             break;
 	/* fallthrough */
     default:
-        ossl_raise(eECError, "EC_KEY_set_private_key");
+        ossl_raise(ePKeyError, "EC_KEY_set_private_key");
     }
 
     return private_key;
@@ -364,7 +363,7 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
             break;
 	/* fallthrough */
     default:
-        ossl_raise(eECError, "EC_KEY_set_public_key");
+        ossl_raise(ePKeyError, "EC_KEY_set_public_key");
     }
 
     return public_key;
@@ -468,7 +467,7 @@ ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
-        ossl_raise(eECError, "can't export - no public key set");
+        ossl_raise(ePKeyError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(argc, argv, self, 0);
     else
@@ -496,7 +495,7 @@ ossl_ec_key_to_der(VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_get0_public_key(ec) == NULL)
-        ossl_raise(eECError, "can't export - no public key set");
+        ossl_raise(ePKeyError, "can't export - no public key set");
     if (EC_KEY_get0_private_key(ec))
         return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
@@ -525,7 +524,7 @@ static VALUE ossl_ec_key_generate_key(VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_generate_key(ec) != 1)
-	ossl_raise(eECError, "EC_KEY_generate_key");
+	ossl_raise(ePKeyError, "EC_KEY_generate_key");
 
     return self;
 #endif
@@ -550,18 +549,18 @@ static VALUE ossl_ec_key_check_key(VALUE self)
     GetEC(self, ec);
     pctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!pctx)
-        ossl_raise(eECError, "EVP_PKEY_CTX_new");
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
 
     if (EC_KEY_get0_private_key(ec) != NULL) {
         if (EVP_PKEY_check(pctx) != 1) {
             EVP_PKEY_CTX_free(pctx);
-            ossl_raise(eECError, "EVP_PKEY_check");
+            ossl_raise(ePKeyError, "EVP_PKEY_check");
         }
     }
     else {
         if (EVP_PKEY_public_check(pctx) != 1) {
             EVP_PKEY_CTX_free(pctx);
-            ossl_raise(eECError, "EVP_PKEY_public_check");
+            ossl_raise(ePKeyError, "EVP_PKEY_public_check");
         }
     }
 
@@ -571,7 +570,7 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)
-	ossl_raise(eECError, "EC_KEY_check_key");
+	ossl_raise(ePKeyError, "EC_KEY_check_key");
 #endif
 
     return Qtrue;
@@ -1108,7 +1107,7 @@ static VALUE ossl_ec_group_to_string(VALUE self, int format)
 
     if (i != 1) {
         BIO_free(out);
-        ossl_raise(eECError, NULL);
+        ossl_raise(ePKeyError, NULL);
     }
 
     str = ossl_membio2str(out);
@@ -1535,8 +1534,6 @@ void Init_ossl_ec(void)
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 #endif
-
-    eECError = rb_define_class_under(mPKey, "ECError", ePKeyError);
 
     /*
      * Document-class: OpenSSL::PKey::EC

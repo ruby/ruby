@@ -1718,7 +1718,16 @@ Init_ossl_pkey(void)
 
     /* Document-class: OpenSSL::PKey::PKeyError
      *
-     *Raised when errors occur during PKey#sign or PKey#verify.
+     * Raised when errors occur during PKey#sign or PKey#verify.
+     *
+     * Before version 4.0.0, OpenSSL::PKey::PKeyError had the following
+     * subclasses. These subclasses have been removed and the constants are
+     * now defined as aliases of OpenSSL::PKey::PKeyError.
+     *
+     * * OpenSSL::PKey::DHError
+     * * OpenSSL::PKey::DSAError
+     * * OpenSSL::PKey::ECError
+     * * OpenSSL::PKey::RSAError
      */
     ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 
