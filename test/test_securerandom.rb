@@ -1,12 +1,9 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'securerandom'
-require_relative 'ruby/test_random_formatter'
 
 # This testcase does NOT aim to test cryptographically strongness and randomness.
 class TestSecureRandom < Test::Unit::TestCase
-  include Random::Formatter::FormatterTest
-  include Random::Formatter::NotDefaultTest
 
   def setup
     @it = SecureRandom
