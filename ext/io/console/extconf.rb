@@ -5,6 +5,10 @@ require 'mkmf'
 # See https://bugs.ruby-lang.org/issues/20345
 MakeMakefile::RbConfig ||= ::RbConfig
 
+have_func("rb_syserr_fail_str(0, Qnil)") or
+have_func("rb_syserr_new_str(0, Qnil)") or
+  abort
+
 have_func("rb_io_path")
 have_func("rb_io_descriptor")
 have_func("rb_io_get_write_io")
