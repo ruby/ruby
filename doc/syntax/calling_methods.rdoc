@@ -384,9 +384,9 @@ the method, an ArgumentError will be raised.
 
 If the splat operator comes first in the call, parentheses must be used to
 avoid an ambiguity of interpretation as an unpacking operator or multiplication
-operator. In this case, Ruby issues a warning:
+operator. In this case, Ruby issues a warning in verbose mode:
 
-  my_method *arguments  # warning: `*' interpreted as argument prefix
+  my_method *arguments  # warning: '*' interpreted as argument prefix
   my_method(*arguments) # no warning
 
 === Unpacking Keyword Arguments
@@ -412,9 +412,9 @@ Both are equivalent to:
   my_method(first: 3, second: 4, third: 5)
 
 The <code>**</code> unpacking operator can be applied to any object, not only
-arrays. If the object responds to a <code>#to_hash</code> method, this method
-is called, and is expected to return an Hash, and elements of this array are passed
-as separate positional arguments:
+hashes. If the object responds to a <code>#to_hash</code> method, this method
+is called, and is expected to return an Hash, and elements of this hash are passed
+as keyword arguments:
 
   class Name
     def initialize(name)
@@ -431,7 +431,7 @@ as separate positional arguments:
 Unlike <code>*</code> operator, <code>**</code> raises an error when used on an
 object that doesn't respond to <code>#to_hash</code>. The one exception is
 +nil+, which doesn't explicitly define this method, but is still allowed to
-be used in <code>**</code> unpacking, producing an empty hash of keyword arguments.
+be used in <code>**</code> unpacking, not adding any keyword arguments.
 
 Again, this allows for conditional unpacking:
 
