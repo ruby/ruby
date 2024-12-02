@@ -10695,6 +10695,14 @@ parser_lex(pm_parser_t *parser) {
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
+                // If we hit EOF, but the EOF came immediately after a newline,
+                // set the start of the token to the newline.  This way any EOF
+                // errors will be reported as happening on that line rather than
+                // a line after.  For example "foo(\n" should report an error
+                // on line 1 even though EOF technically occurs on line 2.
+                if (parser->current.start > parser->start && (*(parser->current.start - 1) == '\n')) {
+                    parser->current.start -= 1;
+                }
                 LEX(PM_TOKEN_EOF);
             }
 

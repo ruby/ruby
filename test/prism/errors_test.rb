@@ -32,6 +32,17 @@ module Prism
       end
     end
 
+    def test_newline_preceding_eof
+      err = Prism.parse("foo(").errors.first
+      assert_equal 1, err.location.start_line
+
+      err = Prism.parse("foo(\n").errors.first
+      assert_equal 1, err.location.start_line
+
+      err = Prism.parse("foo(\n\n\n\n\n").errors.first
+      assert_equal 5, err.location.start_line
+    end
+
     def test_embdoc_ending
       source = <<~RUBY
         =begin\n=end
