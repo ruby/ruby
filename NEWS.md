@@ -292,7 +292,7 @@ details of the default gems or bundled gems.
 
 * An experimental GC module is provided based on MMTk. Configure Ruby
   `--with-shared-gc`, build as normal, then build the GC library: `make
-  shared-gc SHARED_GC=mmtk`.  enable with `RUBY_GC_LIBRARY=mmtk`.  This
+  shared-gc SHARED_GC=mmtk`. Enable with `RUBY_GC_LIBRARY=mmtk`.  This
   requires a working Rust compiler, and Cargo on the build machine.
   [[Feature #20860]]
 
