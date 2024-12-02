@@ -7,8 +7,8 @@ end
 Gem::Specification.new do |s|
   s.name = "date"
   s.version = version
-  s.summary = "A subclass of Object includes Comparable module for handling dates."
-  s.description = "A subclass of Object includes Comparable module for handling dates."
+  s.summary = "The official date library for Ruby."
+  s.description = "The official date library for Ruby."
 
   if Gem::Platform === s.platform and s.platform =~ 'java' or RUBY_ENGINE == 'jruby'
     s.platform = 'java'
