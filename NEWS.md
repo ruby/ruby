@@ -142,6 +142,7 @@ The following default gems are updated.
 * fiddle 1.1.6.dev
 * fileutils 1.7.3
 * io-console 0.8.0.beta1
+* io-nonblock 0.3.1
 * ipaddr 1.2.7
 * irb 1.14.1
 * json 2.8.2
