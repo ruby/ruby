@@ -137,6 +137,14 @@
 #endif
 
 /**
+ * isinf on POSIX systems it accepts a float, a double, or a long double.
+ * But Windows didn't provide isinf, so we need to use _finite instead.
+ */
+#ifdef _WIN32
+#   include <float.h>
+#endif
+
+/**
  * If you build prism with a custom allocator, configure it with
  * "-D PRISM_XALLOCATOR" to use your own allocator that defines xmalloc,
  * xrealloc, xcalloc, and xfree.
