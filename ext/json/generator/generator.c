@@ -155,7 +155,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
                 }
                 case 3: {
                     unsigned char b2 = ptr[pos + 1];
-                    if (RB_UNLIKELY(out_script_safe && b2 == 0x80)) {
+                    if (RB_UNLIKELY(out_script_safe && ch == 0xE2 && b2 == 0x80)) {
                         unsigned char b3 = ptr[pos + 2];
                         if (b3 == 0xA8) {
                             FLUSH_POS(3);
