@@ -615,7 +615,6 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 static const char *obj_type_name(VALUE obj);
-#define RB_AMALGAMATED_DEFAULT_GC
 #include "gc/default/default.c"
 static int external_gc_loaded = FALSE;
 

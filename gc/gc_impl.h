@@ -10,6 +10,9 @@
  */
 #include "ruby/ruby.h"
 
+#ifdef BUILDING_SHARED_GC
+# define GC_IMPL_FN
+#else
 // `GC_IMPL_FN` is an implementation detail of `!USE_SHARED_GC` builds
 // to have the default GC in the same translation unit as gc.c for
 // the sake of optimizer visibility. It expands to nothing unless
@@ -18,10 +21,7 @@
 // For the default GC, do not copy-paste this when implementing
 // these functions. This takes advantage of internal linkage winning
 // when appearing first. See C99 6.2.2p4.
-#ifdef RB_AMALGAMATED_DEFAULT_GC
 # define GC_IMPL_FN static
-#else
-# define GC_IMPL_FN
 #endif
 
 // Bootup
