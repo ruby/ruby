@@ -3033,7 +3033,7 @@ free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **
     (*shared)->node = NULL;
     free((*shared)->service);
     (*shared)->service = NULL;
-    rb_nativethread_lock_destroy((*shared)->lock);
+    rb_nativethread_lock_destroy(&(*shared)->lock);
     free(*shared);
     *shared = NULL;
 }
@@ -3092,7 +3092,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
         }
     }
 
-    rb_nativethread_lock_lock(shared->lock);
+    rb_nativethread_lock_lock(&shared->lock);
     {
         entry->err = err;
         if (shared->cancelled) {
@@ -3112,7 +3112,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
         if (--(entry->refcount) == 0) need_free = 1;
         if (--(shared->refcount) == 0) shared_need_free = 1;
     }
-    rb_nativethread_lock_unlock(shared->lock);
+    rb_nativethread_lock_unlock(&shared->lock);
 
     if (need_free && entry) {
         free_fast_fallback_getaddrinfo_entry(&entry);
