@@ -1713,16 +1713,41 @@ nodes:
       - name: predicate
         type: node?
         kind: non-void expression
+        comment: |
+          Represents the predicate of the case match. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              case true; in false; end
+              ^^^^
       - name: conditions
         type: node[]
         kind: InNode
+        comment: |
+          Represents the conditions of the case match.
+
+              case true; in false; end
+                         ^^^^^^^^
       - name: else_clause
         type: node?
         kind: ElseNode
+        comment: |
+          Represents the else clause of the case match.
+
+              case true; in false; else; end
+                                   ^^^^
       - name: case_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `case` keyword.
+
+              case true; in false; end
+              ^^^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `end` keyword.
+
+              case true; in false; end
+                                   ^^^
     comment: |
       Represents the use of a case statement for pattern matching.
 
