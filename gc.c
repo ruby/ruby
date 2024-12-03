@@ -47,7 +47,7 @@
 #  define HAVE_MALLOC_USABLE_SIZE
 #  define malloc_usable_size(a) malloc_size(a)
 # endif
-#else
+#elif defined(HAVE_MALLOC_H)
 # include <malloc.h>
 #endif
 
