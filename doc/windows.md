@@ -123,14 +123,14 @@ make
     more, modify _RUBYW_INSTALL_NAME_ directly in the Makefile.
 
 3.  You need specify vcpkg directory to use `--with-opt-dir`
-    option like `win32\configure.bat --with-opt-dir=vcpkg_installed\x64-windows`
+    option like `win32\configure.bat --with-opt-dir=C:/vcpkg_installed/x64-windows`
 
 4.  Run `nmake up` if you are building from GIT source.
 
 5.  Run `nmake`
 
-6.  Run `nmake prepare-vcpkg` if you need to copy vcpkg installed
-    libraries like `libssl-3-x64.dll` to the build directory.
+6.  Run `nmake prepare-vcpkg` with administrator privilege if you need to
+    copy vcpkg installed libraries like `libssl-3-x64.dll` to the build directory.
 
 7.  Run `nmake check`
 
