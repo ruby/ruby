@@ -63,7 +63,11 @@ describe 'Socket#connect' do
       client.timeout = 0
 
       -> {
-        client.connect(address)
+        begin
+          client.connect(address)
+        rescue Errno::ECONNREFUSED
+          skip "Outgoing packets may be filtered"
+        end
       }.should raise_error(IO::TimeoutError)
     end
   end
