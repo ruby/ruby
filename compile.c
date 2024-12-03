@@ -4091,6 +4091,52 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
     return COMPILE_OK;
 }
 
+static inline void
+advance_to_send_insn_for_current_operand(LINK_ELEMENT **iobj, const struct rb_callinfo **ci)
+{
+    do {
+        *iobj = (*iobj)->next;
+        if (IS_INSN_ID(*iobj, send)) {
+            *ci = (struct rb_callinfo *)OPERAND_AT(*iobj, 0);
+            // Allow any number (0 or more) of simple method calls on the argument
+            // (as in `[...].include?(arg.method1.method2)`.
+            if( (vm_ci_simple(*ci) && vm_ci_argc(*ci) == 0 && IS_INSN((*iobj)->next)) ){
+                // Loop again to repeat this test for the next insn.
+                continue;
+            }
+            // else break
+        }
+        // This is like the next check but the object and send are in one insn.
+        // opt_aref_with "key", <calldata!mid:[], argc:1, ARGS_SIMPLE>
+        else if (IS_INSN_ID(*iobj, opt_aref_with)) {
+            *ci = (struct rb_callinfo *)OPERAND_AT(*iobj, 1);
+            if( (vm_ci_simple(*ci) && vm_ci_argc(*ci) == 1 && IS_INSN((*iobj)->next)) ){
+                // Loop again to check if the next insn is our "send".
+                continue;
+            }
+            // else break
+        }
+        // If we see an object followed by a send with argc 1 we can continue past that.
+        // putobject 1
+        // send <calldata!mid:method, argc:1, ARGS_SIMPLE>, nil
+        else if (IS_NEXT_INSN_ID(*iobj, send) &&
+                (IS_INSN_ID(*iobj, putobject) ||
+                 IS_INSN_ID(*iobj, putchilledstring))) {
+                *iobj = (*iobj)->next; // get the "send" insn
+                *ci = (struct rb_callinfo *)OPERAND_AT(*iobj, 0);
+            if( (vm_ci_simple(*ci) && vm_ci_argc(*ci) == 1 && IS_INSN((*iobj)->next)) ){
+                // Loop again to check if the next insn is our "send".
+                continue;
+            }
+            else {
+                *ci = NULL;
+                // break
+            }
+        }
+        break;
+    } while (*ci != NULL);
+}
+
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
@@ -4180,21 +4226,17 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         if ((IS_INSN_ID(niobj, putstring) || IS_INSN_ID(niobj, putchilledstring) ||
                   IS_INSN_ID(niobj, putobject) ||
                   IS_INSN_ID(niobj, putself) ||
+                  IS_INSN_ID(niobj, opt_getconstant_path) ||
                   IS_INSN_ID(niobj, getlocal) ||
                   IS_INSN_ID(niobj, getinstancevariable)) &&
-                 IS_NEXT_INSN_ID(&niobj->link, send)) {
+                 (&niobj->link)->next) {
 
-            LINK_ELEMENT *sendobj = &(niobj->link); // Below we call ->next;
-            const struct rb_callinfo *ci;
-            // Allow any number (0 or more) of simple method calls on the argument
-            // (as in `[...].include?(arg.method1.method2)`.
-            do {
-                sendobj = sendobj->next;
-                ci = (struct rb_callinfo *)OPERAND_AT(sendobj, 0);
-            } while (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && IS_NEXT_INSN_ID(sendobj, send));
+            LINK_ELEMENT *sendobj = &(niobj->link);
+            const struct rb_callinfo *ci = NULL;
+            advance_to_send_insn_for_current_operand(&sendobj, &ci);
 
             // If this send is for .include? with one arg we can do our opt.
-            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idIncludeP) {
+            if (ci != NULL && vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idIncludeP) {
                 VALUE num = iobj->operands[0];
                 INSN *sendins = (INSN *)sendobj;
                 sendins->insn_id = BIN(opt_newarray_send);
@@ -4220,20 +4262,16 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
     if (IS_INSN_ID(iobj, duparray) && iobj->link.next && IS_INSN(iobj->link.next)) {
         INSN *niobj = (INSN *)iobj->link.next;
         if ((IS_INSN_ID(niobj, getlocal) ||
+             IS_INSN_ID(niobj, opt_getconstant_path) ||
              IS_INSN_ID(niobj, getinstancevariable) ||
              IS_INSN_ID(niobj, putself)) &&
-            IS_NEXT_INSN_ID(&niobj->link, send)) {
+            (&niobj->link)->next) {
 
-            LINK_ELEMENT *sendobj = &(niobj->link); // Below we call ->next;
-            const struct rb_callinfo *ci;
-            // Allow any number (0 or more) of simple method calls on the argument
-            // (as in `[...].include?(arg.method1.method2)`.
-            do {
-                sendobj = sendobj->next;
-                ci = (struct rb_callinfo *)OPERAND_AT(sendobj, 0);
-            } while (vm_ci_simple(ci) && vm_ci_argc(ci) == 0 && IS_NEXT_INSN_ID(sendobj, send));
+            LINK_ELEMENT *sendobj = &(niobj->link);
+            const struct rb_callinfo *ci = NULL;
+            advance_to_send_insn_for_current_operand(&sendobj, &ci);
 
-            if (vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idIncludeP) {
+            if (ci != NULL && vm_ci_simple(ci) && vm_ci_argc(ci) == 1 && vm_ci_mid(ci) == idIncludeP) {
                 // Move the array arg from duparray to opt_duparray_send.
                 VALUE ary = iobj->operands[0];
                 rb_obj_reveal(ary, rb_cArray);
