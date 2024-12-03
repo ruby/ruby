@@ -77,6 +77,16 @@ runs:
     - shell: bash
       run: docker pull --quiet 'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
 
+    - name: Enable Launchable conditionally
+      id: enable-launchable
+      run: echo "enable-launchable=true" >> $GITHUB_OUTPUT
+      shell: bash
+      if: >-
+        ${{
+        github.repository == 'ruby/ruby' ||
+        (github.repository != 'ruby/ruby' && env.LAUNCHABLE_TOKEN)
+        }}
+
     - name: compile
       shell: bash
       run: >-
@@ -98,4 +108,18 @@ runs:
         --env INPUT_MSPECOPT='${{ inputs.mspecopt }}'
         --env INPUT_ENABLE_SHARED='${{ inputs.enable_shared }}'
         --env INPUT_STATIC_EXTS='${{ inputs.static_exts }}'
+        --env LAUNCHABLE_ORGANIZATION='${{ github.repository_owner }}'
+        --env LAUNCHABLE_WORKSPACE='${{ github.event.repository.name }}'
+        --env LAUNCHABLE_ENABLED='${{ steps.enable-launchable.outputs.enable-launchable || false }}'
+        --env GITHUB_PR_HEAD_SHA='${{ github.event.pull_request.head.sha || github.sha }}'
+        --env GITHUB_PULL_REQUEST_URL='${{ github.event.pull_request.html_url }}'
+        --env GITHUB_REF='${{ github.ref }}'
+        --env GITHUB_ACTIONS
+        --env GITHUB_RUN_ID
+        --env GITHUB_REPOSITORY
+        --env GITHUB_WORKFLOW
+        --env GITHUB_RUN_NUMBER
+        --env GITHUB_EVENT_NAME
+        --env GITHUB_SHA
+        --env GITHUB_HEAD_REF
         'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'

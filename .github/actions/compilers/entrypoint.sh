@@ -70,21 +70,49 @@ if [[ -n "${INPUT_STATIC_EXTS}" ]]; then
     echo "::endgroup::"
 fi
 
+ruby_test_opts=''
+tests=''
+
+# Launchable
+setup_launchable() {
+    pushd ${srcdir}
+    # Launchable creates .launchable file in the current directory, but cannot a file to ${srcdir} directory.
+    # As a workaround, we set LAUNCHABLE_SESSION_DIR to ${builddir}.
+    export LAUNCHABLE_SESSION_DIR=${builddir}
+    local github_ref="${GITHUB_REF//\//_}"
+    boot_report_path='launchable_bootstraptest.json'
+    test_report_path='launchable_test_all.json'
+    ruby_test_opts+=--launchable-test-reports="${boot_report_path}"
+    tests+=--launchable-test-reports="${test_report_path}"
+    grouped launchable record build --name "${github_ref}"_"${GITHUB_PR_HEAD_SHA}" || true
+    trap launchable_record_test EXIT
+}
+launchable_record_test() {
+    pushd "${builddir}"
+    grouped launchable record tests --flavor test_task=test --test-suite bootstraptest raw "${boot_report_path}" || true
+    if [ "$INPUT_CHECK" = "true" ]; then
+        grouped launchable record tests --flavor test_task=test-all --test-suite test-all raw "${test_report_path}" || true
+    fi
+}
+if [ "$LAUNCHABLE_ENABLED" = "true" ]; then
+    setup_launchable
+fi
+
 pushd ${builddir}
 
 grouped make showflags
 grouped make all
-grouped make test
+grouped make test RUBY_TESTOPTS="${ruby_test_opts}"
 
 [[ -z "${INPUT_CHECK}" ]] && exit 0
 
 if [ "$INPUT_CHECK" = "true" ]; then
-  tests="ruby -ext-"
+  tests+=" -- ruby -ext-"
 else
-  tests="$INPUT_CHECK"
+  tests+=" -- $INPUT_CHECK"
 fi
 
 # grouped make install
 grouped make test-tool
-grouped make test-all TESTS="-- $tests"
+grouped make test-all TESTS="$tests"
 grouped env CHECK_LEAKS=true make test-spec MSPECOPT="$INPUT_MSPECOPT"

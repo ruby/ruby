@@ -54,7 +54,8 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      # Set fetch-depth: 10 so that Launchable can receive commits information.
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - name: 'clang 18 LTO'
         uses: './.github/actions/compilers'
         with:
@@ -74,7 +75,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - name: 'GCC 13 LTO'
         uses: './.github/actions/compilers'
         with:
@@ -101,7 +102,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'clang 20', with: { tag: 'clang-20' } }
       - { uses: './.github/actions/compilers', name: 'clang 19', with: { tag: 'clang-19' } }
       - { uses: './.github/actions/compilers', name: 'clang 18', with: { tag: 'clang-18' } }
@@ -119,7 +120,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'clang 13', with: { tag: 'clang-13' } }
       - { uses: './.github/actions/compilers', name: 'clang 12', with: { tag: 'clang-12' } }
       - { uses: './.github/actions/compilers', name: 'clang 11', with: { tag: 'clang-11' } }
@@ -139,7 +140,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       # -Wno-strict-prototypes is necessary with current clang-15 since
       # older autoconf generate functions without prototype and -pedantic
       # now implies strict-prototypes. Disabling the error but leaving the
@@ -164,7 +165,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'C++20', with: { CXXFLAGS: '-std=c++20 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++23', with: { CXXFLAGS: '-std=c++23 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
       - { uses: './.github/actions/compilers', name: 'C++26', with: { CXXFLAGS: '-std=c++26 -Werror=pedantic -pedantic-errors -Wno-c++11-long-long' } }
@@ -183,7 +184,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit --disable-rjit' } }
       - { uses: './.github/actions/compilers', name: 'disable-dln',         with: { append_configure: '--disable-dln' } }
       - { uses: './.github/actions/compilers', name: 'enable-mkmf-verbose', with: { append_configure: '--enable-mkmf-verbose' } }
@@ -202,7 +203,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'NDEBUG',                         with: { cppflags: '-DNDEBUG' } }
       - { uses: './.github/actions/compilers', name: 'RUBY_DEBUG',                     with: { cppflags: '-DRUBY_DEBUG' } }
       - { uses: './.github/actions/compilers', name: 'ARRAY_DEBUG',                    with: { cppflags: '-DARRAY_DEBUG' } }
@@ -221,7 +222,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'HASH_DEBUG',                     with: { cppflags: '-DHASH_DEBUG' } }
       - { uses: './.github/actions/compilers', name: 'ID_TABLE_DEBUG',                 with: { cppflags: '-DID_TABLE_DEBUG' } }
       - { uses: './.github/actions/compilers', name: 'RGENGC_DEBUG=-1',                with: { cppflags: '-DRGENGC_DEBUG=-1' } }
@@ -240,7 +241,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'USE_LAZY_LOAD',                  with: { cppflags: '-DUSE_LAZY_LOAD' } }
       - { uses: './.github/actions/compilers', name: 'USE_SYMBOL_GC=0',                with: { cppflags: '-DUSE_SYMBOL_GC=0' } }
       - { uses: './.github/actions/compilers', name: 'USE_THREAD_CACHE=0',             with: { cppflags: '-DUSE_THREAD_CACHE=0' } }
@@ -259,7 +260,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'GC_DEBUG_STRESS_TO_CLASS',       with: { cppflags: '-DGC_DEBUG_STRESS_TO_CLASS' } }
       - { uses: './.github/actions/compilers', name: 'GC_ENABLE_LAZY_SWEEP=0',         with: { cppflags: '-DGC_ENABLE_LAZY_SWEEP=0' } }
       - { uses: './.github/actions/compilers', name: 'GC_PROFILE_DETAIL_MEMORY',       with: { cppflags: '-DGC_PROFILE_DETAIL_MEMORY' } }
@@ -278,7 +279,7 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
-      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true } }
+      - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
       - { uses: './.github/actions/compilers', name: 'enable-yjit',                    with: { append_configure: '--enable-yjit --disable-rjit' } }
