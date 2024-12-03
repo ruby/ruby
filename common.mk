@@ -1560,7 +1560,7 @@ no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "hoe" "json-schema" "test-unit-rr"
+		--install-dir .bundle --conservative "hoe" "json-schema:5.1.0" "test-unit-rr"
 	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
