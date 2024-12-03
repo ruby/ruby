@@ -617,8 +617,6 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 static const char *obj_type_name(VALUE obj);
 #define RB_AMALGAMATED_DEFAULT_GC
 #include "gc/default/default.c"
-static int external_gc_loaded = FALSE;
-
 
 #if USE_SHARED_GC && !defined(HAVE_DLOPEN)
 # error "Shared GC requires dlopen"
@@ -704,6 +702,8 @@ typedef struct gc_function_map {
     void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
     // GC Identification
     const char *(*active_gc_name)(void);
+
+    bool external_gc_loaded_p;
 } rb_gc_function_map_t;
 
 static rb_gc_function_map_t rb_gc_functions;
@@ -717,6 +717,8 @@ ruby_external_gc_init(void)
     RUBY_ASSERT_ALWAYS(SHARED_GC_DIR[sizeof(SHARED_GC_DIR) - 2] == '/');
 
     char *gc_so_file = getenv(RUBY_GC_LIBRARY);
+
+    rb_gc_function_map_t gc_functions = { 0 };
 
     char *gc_so_path = NULL;
     void *handle = NULL;
@@ -756,10 +758,9 @@ ruby_external_gc_init(void)
             fprintf(stderr, "ruby_external_gc_init: Shared library %s cannot be opened: %s\n", gc_so_path, dlerror());
             exit(1);
         }
-        external_gc_loaded = TRUE;
-    }
 
-    rb_gc_function_map_t gc_functions;
+        gc_functions.external_gc_loaded_p = true;
+    }
 
 # define load_external_gc_func(name) do { \
     if (handle) { \
@@ -2872,7 +2873,11 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
 int
 rb_gc_external_gc_loaded_p(void)
 {
-    return external_gc_loaded;
+#if USE_SHARED_GC
+    return rb_gc_functions.external_gc_loaded_p;
+#else
+    return false;
+#endif
 }
 
 const char *
