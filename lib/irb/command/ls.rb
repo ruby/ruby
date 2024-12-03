@@ -11,7 +11,7 @@ module IRB
 
   module Command
     class Ls < Base
-      include RubyArgsExtractor
+      class EvaluationError < StandardError; end
 
       category "Context"
       description "Show methods, constants, and variables."
@@ -22,24 +22,35 @@ module IRB
           -g [query]  Filter the output with a query.
       HELP_MESSAGE
 
+      def evaluate(code)
+        @irb_context.workspace.binding.eval(code)
+      rescue Exception => e
+        puts "#{e.class}: #{e.message}"
+        raise EvaluationError
+      end
+
       def execute(arg)
         if match = arg.match(/\A(?<target>.+\s|)(-g|-G)\s+(?<grep>.+)$/)
-          if match[:target].empty?
-            use_main = true
-          else
-            obj = @irb_context.workspace.binding.eval(match[:target])
-          end
+          target = match[:target]
           grep = Regexp.new(match[:grep])
+        elsif match = arg.match(/\A((?<target>.+),|)\s*grep:(?<grep>.+)/)
+          # Legacy style `ls obj, grep: /regexp/`
+          # Evaluation order should be eval(target) then eval(grep)
+          target = match[:target] || ''
+          grep_regexp_code = match[:grep]
         else
-          args, kwargs = ruby_args(arg)
-          use_main = args.empty?
-          obj = args.first
-          grep = kwargs[:grep]
+          target = arg.strip
         end
 
-        if use_main
+        if target.empty?
           obj = irb_context.workspace.main
           locals = irb_context.workspace.binding.local_variables
+        else
+          obj = evaluate(target)
+        end
+
+        if grep_regexp_code
+          grep = evaluate(grep_regexp_code)
         end
 
         o = Output.new(grep: grep)
@@ -52,6 +63,7 @@ module IRB
         o.dump("class variables", klass.class_variables)
         o.dump("locals", locals) if locals
         o.print_result
+      rescue EvaluationError
       end
 
       def dump_methods(o, klass, obj)

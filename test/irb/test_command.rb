@@ -742,6 +742,19 @@ module TestIRB
       end
     end
 
+    def test_ls_with_eval_error
+      [
+        "ls raise(Exception,'foo')\n",
+        "ls raise(Exception,'foo'), grep: /./\n",
+        "ls Integer, grep: raise(Exception,'foo')\n",
+      ].each do |line|
+        out, err = execute_lines(line)
+        assert_empty err
+        assert_match(/Exception: foo/, out)
+        assert_not_match(/Maybe IRB bug!/, out)
+      end
+    end
+
     def test_ls_with_no_singleton_class
       out, err = execute_lines(
         "ls 42",

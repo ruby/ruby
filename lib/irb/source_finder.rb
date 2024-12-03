@@ -125,9 +125,8 @@ module IRB
     end
 
     def eval_receiver_or_owner(code)
-      context_binding = @irb_context.workspace.binding
-      eval(code, context_binding)
-    rescue NameError
+      @irb_context.workspace.binding.eval(code)
+    rescue Exception
       raise EvaluationError
     end
 
