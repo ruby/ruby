@@ -455,6 +455,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
     data = ["'"]
     json = '["\\\'"]'
     assert_equal '["\'"]', generate(data)
+    #
+    data = ["倩", "瀨"]
+    json = '["倩","瀨"]'
+    assert_equal json, generate(data, script_safe: true)
   end
 
   def test_string_subclass
