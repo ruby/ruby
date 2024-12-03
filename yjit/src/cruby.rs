@@ -823,6 +823,7 @@ pub(crate) mod ids {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
+        name: to_s               content: b"to_s"
         name: eq                 content: b"=="
         name: include_p          content: b"include?"
     }
