@@ -136,6 +136,7 @@ The following default gems are updated.
 * date 3.4.1
 * delegate 0.4.0
 * erb 4.0.4
+* error_highlight 0.7.0
 * etc 1.4.4
 * fcntl 1.2.0
 * fiddle 1.1.6.dev
