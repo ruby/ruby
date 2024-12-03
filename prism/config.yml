@@ -1529,21 +1529,61 @@ nodes:
       - name: receiver
         type: node?
         kind: non-void expression
+        comment: |
+          The object that the method is being called on. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo.bar += value
+              ^^^
       - name: call_operator_loc
         type: location?
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar += value
+                 ^
       - name: message_loc
         type: location?
+        comment: |
+          Represents the location of the message.
+
+              foo.bar += value
+                  ^^^
       - name: read_name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar += value # read_name `:bar`
+                  ^^^
       - name: write_name
         type: constant
+        comment: |
+          Represents the name of the method being written to.
+
+              foo.bar += value # write_name `:bar=`
+                  ^^^
       - name: binary_operator
         type: constant
+        comment: |
+          Represents the binary operator being used.
+
+              foo.bar += value # binary_operator `:+`
+                      ^
       - name: binary_operator_loc
         type: location
+        comment: |
+          Represents the location of the binary operator.
+
+              foo.bar += value
+                      ^^
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the value being assigned.
+
+              foo.bar += value
+                         ^^^^^
     comment: |
       Represents the use of an assignment operator on a call.
 
