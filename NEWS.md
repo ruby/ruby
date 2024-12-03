@@ -152,7 +152,7 @@ The following default gems are updated.
 * optparse 0.6.0
 * ostruct 0.6.1
 * pathname 0.4.0
-* pp 0.6.1
+* pp 0.6.2
 * prism 1.0.0
 * pstore 0.1.4
 * psych 5.2.0
