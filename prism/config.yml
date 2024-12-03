@@ -1698,11 +1698,26 @@ nodes:
       - name: value
         type: node
         kind: pattern expression
+        comment: |
+          Represents the value to capture.
+
+              foo => bar
+                     ^^^
       - name: target
         type: node
         kind: LocalVariableTargetNode
+        comment: |
+          Represents the target of the capture.
+
+              foo => bar
+              ^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `=>` operator.
+
+              foo => bar
+                  ^^
     comment: |
       Represents assigning to a local variable in pattern matching.
 
