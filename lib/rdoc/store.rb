@@ -198,6 +198,18 @@ class RDoc::Store
   end
 
   ##
+  # Make sure any references to C variable names are resolved to the corresponding class.
+  #
+
+  def resolve_c_superclasses
+    @classes_hash.each_value do |klass|
+      if klass.superclass.is_a?(String) && (candidate = find_c_enclosure(klass.superclass))
+        klass.superclass = candidate
+      end
+    end
+  end
+
+  ##
   # Sets the parser of +absolute_name+, unless it from a source code file.
 
   def update_parser_of_file(absolute_name, parser)

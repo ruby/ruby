@@ -281,6 +281,26 @@ class TestRDocStore < XrefTestCase
     assert_nil @s.find_c_enclosure('cObject')
   end
 
+  def test_resolve_c_superclasses
+    # first parse a child that references an unknown parent
+    c_file1 = @s.add_file 'ext1.c'
+    c_file1.add_class RDoc::NormalClass, 'Child', 'cExternParent'
+
+    # then parse the parent and register the C variable name as a C enclosure
+    c_file2 = @s.add_file 'ext2.c'
+    parent = c_file2.add_class RDoc::NormalClass, 'Parent', 'rb_cObject'
+
+    @s.add_c_enclosure('cExternParent', parent)
+
+    # at this point, the child's superclass is still the name of the C variable
+    assert_equal("cExternParent", @s.classes_hash['Child'].superclass)
+
+    @s.resolve_c_superclasses
+
+    # now the ancestor tree correctly references the NormalClass objects
+    assert_equal(parent, @s.classes_hash['Child'].superclass)
+  end
+
   def test_find_class_named
     assert_equal @c1, @store.find_class_named('C1')
 
