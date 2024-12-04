@@ -93,18 +93,18 @@ class Gem::Source::Git < Gem::Source
     return false unless File.exist? repo_cache_dir
 
     unless File.exist? install_dir
-      system git, "clone", "--quiet", "--no-checkout",
+      system git_command, "clone", "--quiet", "--no-checkout",
              repo_cache_dir, install_dir
     end
 
     Dir.chdir install_dir do
-      system git, "fetch", "--quiet", "--force", "--tags", install_dir
+      system git_command, "fetch", "--quiet", "--force", "--tags", install_dir
 
-      success = system git, "reset", "--quiet", "--hard", rev_parse
+      success = system git_command, "reset", "--quiet", "--hard", rev_parse
 
       if @need_submodules
         require "open3"
-        _, status = Open3.capture2e(git, "submodule", "update", "--quiet", "--init", "--recursive")
+        _, status = Open3.capture2e(git_command, "submodule", "update", "--quiet", "--init", "--recursive")
 
         success &&= status.success?
       end
@@ -121,11 +121,11 @@ class Gem::Source::Git < Gem::Source
 
     if File.exist? repo_cache_dir
       Dir.chdir repo_cache_dir do
-        system git, "fetch", "--quiet", "--force", "--tags",
+        system git_command, "fetch", "--quiet", "--force", "--tags",
                @repository, "refs/heads/*:refs/heads/*"
       end
     else
-      system git, "clone", "--quiet", "--bare", "--no-hardlinks",
+      system git_command, "clone", "--quiet", "--bare", "--no-hardlinks",
              @repository, repo_cache_dir
     end
   end
