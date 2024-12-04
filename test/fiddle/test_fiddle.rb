@@ -27,7 +27,7 @@ class TestFiddle < Fiddle::TestCase
 
   def test_dlopen_linker_script_input_linux
     omit("This is only for Linux") unless RUBY_PLATFORM.match?("linux")
-    if Dir.glob("/usr/lib/*/libncurses.so").empty?
+    if Dir.glob("/usr/lib{64}/**/libncurses.so").empty?
       omit("libncurses.so is needed")
     end
     if ffi_backend?
