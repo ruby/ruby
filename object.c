@@ -604,6 +604,10 @@ rb_obj_dup_setup(VALUE obj, VALUE dup)
  *  When using #dup, any modules that the object has been extended with will not
  *  be copied.
  *
+ *  If you need #clone and #dup to behave differently, you can use
+ *  #+initialize_clone+ and #+initialize_dup+.
+ *  By default, both methods call #+initialize_copy+.
+ *
  *	class Klass
  *	  attr_accessor :str
  *	end
