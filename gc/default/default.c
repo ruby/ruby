@@ -983,7 +983,6 @@ struct RZombie {
 
 #define RZOMBIE(o) ((struct RZombie *)(o))
 
-int ruby_disable_gc = 0;
 int ruby_enable_autocompact = 0;
 #if RGENGC_CHECK_MODE
 gc_compact_compare_func ruby_autocompact_compare_func;
@@ -6264,7 +6263,7 @@ heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
 static int
 ready_to_gc(rb_objspace_t *objspace)
 {
-    if (dont_gc_val() || during_gc || ruby_disable_gc) {
+    if (dont_gc_val() || during_gc) {
         for (int i = 0; i < HEAP_COUNT; i++) {
             rb_heap_t *heap = &heaps[i];
             heap_ready_to_gc(objspace, heap);
