@@ -1787,13 +1787,33 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the class variable, which is a `@@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @@target &&= value # name `:@@target`
+              ^^^^^^^^
       - name: name_loc
         type: location
+        comment: |
+          Represents the location of the variable name.
+
+              @@target &&= value
+              ^^^^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `&&=` operator.
+
+              @@target &&= value
+                       ^^^
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the value being assigned. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              @@target &&= value
+                           ^^^^^
     comment: |
       Represents the use of the `&&=` operator for assignment to a class variable.
 
