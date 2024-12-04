@@ -99,8 +99,12 @@ class TestGemSafeMarshal < Gem::TestCase
   define_method("test_safe_load_marshal Array [\"abc\", \"abc\"] Windows-1256") { assert_safe_load_marshal "\x04\b[\aI\"\babc\x06:\rencoding\"\x11Windows-1256@\x06", additional_methods: [->(x) { x.map(&:encoding) }] }
   define_method("test_safe_load_marshal String \"abc\" binary") { assert_safe_load_marshal "\x04\b\"\babc", additional_methods: [:encoding] }
   define_method("test_safe_load_marshal Array [\"abc\", \"abc\"] binary") { assert_safe_load_marshal "\x04\b[\a\"\babc@\x06", additional_methods: [->(x) { x.map(&:encoding) }] }
-  define_method("test_safe_load_marshal String \"\\x61\\x62\\x63\" utf32") { assert_safe_load_marshal "\x04\bI\"\babc\x06:\rencoding\"\vUTF-32", additional_methods: [:encoding] }
-  define_method("test_safe_load_marshal Array [\"\\x61\\x62\\x63\", \"\\x61\\x62\\x63\"] utf32") { assert_safe_load_marshal "\x04\b[\aI\"\babc\x06:\rencoding\"\vUTF-32@\x06", additional_methods: [->(x) { x.map(&:encoding) }] }
+  unless RUBY_ENGINE == "truffleruby" # Not supported
+    define_method("test_safe_load_marshal String \"\\x61\\x62\\x63\" utf32 with length not a multiple of 4") { assert_safe_load_marshal "\x04\bI\"\babc\x06:\rencoding\"\vUTF-32", additional_methods: [:encoding] }
+    define_method("test_safe_load_marshal Array [\"\\x61\\x62\\x63\", \"\\x61\\x62\\x63\"] utf32 with length not a multiple of 4)") { assert_safe_load_marshal "\x04\b[\aI\"\babc\x06:\rencoding\"\vUTF-32@\x06", additional_methods: [->(x) { x.map(&:encoding) }] }
+  end
+  define_method("test_safe_load_marshal String \"\\x61\\x62\\x63\\x64\" utf32") { assert_safe_load_marshal "\x04\bI\"\x09abcd\x06:\rencoding\"\vUTF-32", additional_methods: [:encoding] }
+  define_method("test_safe_load_marshal Array [\"\\x61\\x62\\x63\\x64\", \"\\x61\\x62\\x63\\x64\"] utf32") { assert_safe_load_marshal "\x04\b[\aI\"\x09abcd\x06:\rencoding\"\vUTF-32@\x06", additional_methods: [->(x) { x.map(&:encoding) }] }
   define_method("test_safe_load_marshal String \"abc\" ivar") { assert_safe_load_marshal "\x04\bI\"\babc\a:\x06ET:\n@typeI\"\ttype\x06;\x00T", permitted_ivars: { "String" => %w[@type E] } }
   define_method("test_safe_load_marshal String \"\"") { assert_safe_load_marshal "\x04\bI\"\babc\x06:\x06ET" }
   define_method("test_safe_load_marshal Time 2000-12-31 20:07:59 -1152") { assert_safe_load_marshal "\x04\bIu:\tTime\r'@\x19\x80\x00\x00\xB0\xEF\a:\voffseti\xFE Y:\tzone0", additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a] }
@@ -163,14 +167,16 @@ class TestGemSafeMarshal < Gem::TestCase
       String.new("abc", encoding: "UTF-8"),
       String.new("abc", encoding: "Windows-1256"),
       String.new("abc", encoding: Encoding::BINARY),
-      String.new("abc", encoding: "UTF-32"),
+      String.new("abcd", encoding: "UTF-32"),
+      # TruffleRuby: Not supported since length of UTF-16 string must be a multiple of 2
+      (String.new("abc", encoding: "UTF-32") unless RUBY_ENGINE == "truffleruby"),
 
       String.new("", encoding: "US-ASCII"),
       String.new("", encoding: "UTF-8"),
       String.new("", encoding: "Windows-1256"),
       String.new("", encoding: Encoding::BINARY),
       String.new("", encoding: "UTF-32"),
-    ].each do |s|
+    ].compact.each do |s|
       assert_safe_load_as s, additional_methods: [:encoding]
       assert_safe_load_as [s, s], additional_methods: [->(a) { a.map(&:encoding) }]
     end
