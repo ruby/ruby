@@ -9923,6 +9923,35 @@ fn gen_objtostring(
 
         // No work needed. The string value is already on the top of the stack.
         Some(KeepCompiling)
+    } else if unsafe { RB_TYPE_P(comptime_recv, RUBY_T_SYMBOL) } && assume_method_basic_definition(jit, asm, comptime_recv.class_of(), ID!(to_s)) {
+        jit_guard_known_klass(
+            jit,
+            asm,
+            comptime_recv.class_of(),
+            recv,
+            recv.into(),
+            comptime_recv,
+            SEND_MAX_DEPTH,
+            Counter::objtostring_not_string,
+        );
+
+        extern "C" {
+            fn rb_sym2str(sym: VALUE) -> VALUE;
+        }
+
+        // Same optimization done in the interpreter: rb_sym_to_s() allocates a mutable string, but since we are only
+        // going to use this string for interpolation, it's fine to use the
+        // frozen string.
+        // rb_sym2str does not allocate.
+        let sym = recv;
+        let str = asm.ccall(rb_sym2str as *const u8, vec![sym]);
+        asm.stack_pop(1);
+
+        // Push the return value
+        let stack_ret = asm.stack_push(Type::TString);
+        asm.mov(stack_ret, str);
+
+        Some(KeepCompiling)
     } else {
         let cd = jit.get_arg(0).as_ptr();
         perf_call! { gen_send_general(jit, asm, cd, None) }
