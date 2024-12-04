@@ -2304,7 +2304,7 @@ rb_ary_resize(VALUE ary, long len)
         rb_raise(rb_eIndexError, "index %ld too big", len);
     }
     if (len > olen) {
-        if (len >= ARY_CAPA(ary)) {
+        if (len > ARY_CAPA(ary)) {
             ary_double_capa(ary, len);
         }
         ary_mem_clear(ary, olen, len - olen);
