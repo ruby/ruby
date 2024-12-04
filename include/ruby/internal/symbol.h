@@ -203,7 +203,7 @@ VALUE rb_id2str(ID id);
 
 /**
  * Obtain a frozen string representation of a symbol (not including the leading
- * colon). Done without any object allcoations.
+ * colon). Done without any object allocations.
  *
  * @param[in]  symbol  A ::rb_cSymbol instance to query.
  * @return     A frozen instance of ::rb_cString with the name of `symbol`.
