@@ -412,7 +412,6 @@ RSpec.describe "bundle exec" do
             #!/usr/bin/env ruby
             puts "args: #{ARGV.inspect}"
           RUBY
-          bundled_app("print_args").chmod(0o755)
         end
 
         it "shows executable's man page when --help is after the executable" do
