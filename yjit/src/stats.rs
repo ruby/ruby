@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
-use crate::yjit::yjit_enabled_p;
+use crate::yjit::{yjit_enabled_p, YJIT_INIT_TIME};
 
 /// Running total of how many ISeqs are in the system.
 #[no_mangle]
@@ -797,6 +797,10 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
 
         set_stat!(hash, "object_shape_count", rb_object_shape_count());
+
+        // Time since YJIT init in nanoseconds
+        let time_nanos = Instant::now().duration_since(YJIT_INIT_TIME.unwrap()).as_nanos();
+        set_stat_usize!(hash, "yjit_active_ns", time_nanos as usize);
     }
 
     // If we're not generating stats, put only default counters

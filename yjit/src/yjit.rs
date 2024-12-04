@@ -8,6 +8,7 @@ use crate::stats::incr_counter;
 use crate::stats::with_compile_time;
 
 use std::os::raw::{c_char, c_int};
+use std::time::Instant;
 use crate::log::Log;
 
 /// Is YJIT on? The interpreter uses this variable to decide whether to trigger
@@ -15,6 +16,9 @@ use crate::log::Log;
 #[allow(non_upper_case_globals)]
 #[no_mangle]
 pub static mut rb_yjit_enabled_p: bool = false;
+
+// Time when YJIT was yjit was initialized (see yjit_init)
+pub static mut YJIT_INIT_TIME: Option<Instant> = None;
 
 /// Parse one command-line option.
 /// This is called from ruby.c
@@ -75,6 +79,11 @@ fn yjit_init() {
         let perf_map = format!("/tmp/perf-{}.map", std::process::id());
         let _ = std::fs::remove_file(&perf_map);
         println!("YJIT perf map: {perf_map}");
+    }
+
+    // Note the time when YJIT was initialized
+    unsafe {
+        YJIT_INIT_TIME = Some(Instant::now());
     }
 }
 

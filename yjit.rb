@@ -389,7 +389,9 @@ module RubyVM::YJIT
       end
       out.puts "max_inline_versions:   " + format_number(13, stats[:max_inline_versions])
       out.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
-      out.puts "compile_time_ms:       " + format_number(13, stats[:compile_time_ns] / (1000 * 1000))
+
+      out.puts "yjit_active_ms:        " + format_number(13, stats[:yjit_active_ns] / 10**6)
+      out.puts "compile_time_ms:       " + format_number_pct(13, stats[:compile_time_ns] / 10**6 , stats[:yjit_active_ns] / 10**6)
       out.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
       out.puts "defer_count:           " + format_number(13, stats[:defer_count])
       out.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])
