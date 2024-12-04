@@ -1944,23 +1944,23 @@ rewindable:
 
 HELP_EXTRA_TASKS = ""
 
-shared-gc-precheck:
-shared-gc: probes.h shared-gc-precheck
-	$(Q) $(MAKEDIRS) $(shared_gc_dir)
+modular-gc-precheck:
+modular-gc: probes.h modular-gc-precheck
+	$(Q) $(MAKEDIRS) $(modular_gc_dir)
 	$(Q) $(RUNRUBY) $(srcdir)/ext/extmk.rb \
 		$(SCRIPT_ARGS) \
 		--make='$(MAKE)' --make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" \
 		--gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
-		--ext-build-dir=gc --command-output=gc/$(SHARED_GC)/exts.mk -- \
-		configure gc/$(SHARED_GC)
-	$(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./
-	$(CP) gc/$(SHARED_GC)/librubygc.$(SHARED_GC).$(DLEXT) $(shared_gc_dir)
+		--ext-build-dir=gc --command-output=gc/$(MODULAR_GC)/exts.mk -- \
+		configure gc/$(MODULAR_GC)
+	$(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./
+	$(CP) gc/$(MODULAR_GC)/librubygc.$(MODULAR_GC).$(DLEXT) $(modular_gc_dir)
 
-clean-shared-gc:
-	- $(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)
-distclean-shared-gc: clean-shared-gc
-	- $(CHDIR) gc/$(SHARED_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)
-	$(RMDIRS) gc/$(SHARED_GC)
+clean-modular-gc:
+	- $(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)
+distclean-modular-gc: clean-modular-gc
+	- $(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)
+	$(RMDIRS) gc/$(MODULAR_GC)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \

@@ -11,7 +11,7 @@
  */
 #include "ruby/ruby.h"
 
-#if USE_SHARED_GC
+#if USE_MODULAR_GC
 #include "ruby/thread_native.h"
 
 struct rb_gc_vm_context {
@@ -70,7 +70,7 @@ size_t rb_obj_memsize_of(VALUE obj);
 void rb_gc_prepare_heap_process_object(VALUE obj);
 bool ruby_free_at_exit_p(void);
 
-#if USE_SHARED_GC
+#if USE_MODULAR_GC
 bool rb_gc_event_hook_required_p(rb_event_flag_t event);
 void *rb_gc_get_ractor_newobj_cache(void);
 void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
@@ -85,7 +85,7 @@ void rb_ractor_finish_marking(void);
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c
 
-#ifdef BUILDING_SHARED_GC
+#ifdef BUILDING_MODULAR_GC
 RBIMPL_WARNING_PUSH()
 RBIMPL_WARNING_IGNORED(-Wunused-function)
 #endif
@@ -222,7 +222,7 @@ type_sym(size_t type)
     }
 }
 
-#ifdef BUILDING_SHARED_GC
+#ifdef BUILDING_MODULAR_GC
 RBIMPL_WARNING_POP()
 #endif
 // -------------------Private section end------------------------

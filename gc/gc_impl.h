@@ -10,10 +10,10 @@
  */
 #include "ruby/ruby.h"
 
-#ifdef BUILDING_SHARED_GC
+#ifdef BUILDING_MODULAR_GC
 # define GC_IMPL_FN
 #else
-// `GC_IMPL_FN` is an implementation detail of `!USE_SHARED_GC` builds
+// `GC_IMPL_FN` is an implementation detail of `!USE_MODULAR_GC` builds
 // to have the default GC in the same translation unit as gc.c for
 // the sake of optimizer visibility. It expands to nothing unless
 // you're the default GC.

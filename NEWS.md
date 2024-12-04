@@ -315,13 +315,13 @@ details of the default gems or bundled gems.
 * Array#each is rewritten in Ruby for better performance [[Feature #20182]].
 
 * Alternative GC implementations can be loaded dynamically. Configure Ruby
-  `--with-shared-gc` to enable. Alternative GC libraries can be loaded at runtime
+  `--with-modular-gc` to enable. Alternative GC libraries can be loaded at runtime
   using the environment variable `RUBY_GC_LIBRARY`.  [[Feature #20351]],
   [[Feature #20470]]
 
 * An experimental GC library is provided based on MMTk. Configure Ruby
-  `--with-shared-gc`, build as normal, then build the GC library: `make
-  shared-gc SHARED_GC=mmtk`. Enable with `RUBY_GC_LIBRARY=mmtk`.  This
+  `--with-modular-gc`, build as normal, then build the GC library: `make
+  modular-gc MODULAR_GC=mmtk`. Enable with `RUBY_GC_LIBRARY=mmtk`.  This
   requires a working Rust compiler, and Cargo on the build machine.
   [[Feature #20860]]
 

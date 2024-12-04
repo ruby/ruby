@@ -45,7 +45,7 @@ RUBY_M4_INCLUDE([ruby_replace_type.m4])dnl
 RUBY_M4_INCLUDE([ruby_require_funcs.m4])dnl
 RUBY_M4_INCLUDE([ruby_rm_recursive.m4])dnl
 RUBY_M4_INCLUDE([ruby_setjmp_type.m4])dnl
-RUBY_M4_INCLUDE([ruby_shared_gc.m4])dnl
+RUBY_M4_INCLUDE([ruby_modular_gc.m4])dnl
 RUBY_M4_INCLUDE([ruby_stack_grow_direction.m4])dnl
 RUBY_M4_INCLUDE([ruby_thread.m4])dnl
 RUBY_M4_INCLUDE([ruby_try_cflags.m4])dnl
@@ -3795,7 +3795,7 @@ AS_IF([test x"$gcov" = xyes], [
 ])
 
 RUBY_SETJMP_TYPE
-RUBY_SHARED_GC
+RUBY_MODULAR_GC
 }
 
 [begin]_group "installation section" && {
@@ -4721,7 +4721,7 @@ config_summary "target OS"           "$target_os"
 config_summary "compiler"            "$CC"
 config_summary "with thread"         "$THREAD_MODEL"
 config_summary "with coroutine"      "$coroutine_type"
-config_summary "with shared GC"      "$shared_gc_summary"
+config_summary "with modular GC"     "$modular_gc_summary"
 config_summary "enable shared libs"  "$ENABLE_SHARED"
 config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"

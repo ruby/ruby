@@ -16,8 +16,8 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
-#ifndef USE_SHARED_GC
-# define USE_SHARED_GC 0
+#ifndef USE_MODULAR_GC
+# define USE_MODULAR_GC 0
 #endif
 
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
@@ -253,10 +253,10 @@ void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, siz
 void ruby_sized_xfree(void *x, size_t size);
 
 const char * rb_gc_active_gc_name(void);
-int rb_gc_external_gc_loaded_p(void);
+int rb_gc_modular_gc_loaded_p(void);
 
-#if USE_SHARED_GC
-void ruby_load_external_gc_from_argv(int argc, char **argv);
+#if USE_MODULAR_GC
+void ruby_load_modular_gc_from_argv(int argc, char **argv);
 #endif
 RUBY_SYMBOL_EXPORT_END
 

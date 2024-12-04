@@ -24,7 +24,7 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-#if USE_SHARED_GC
+#if USE_MODULAR_GC
 #include "internal/gc.h"
 #endif
 

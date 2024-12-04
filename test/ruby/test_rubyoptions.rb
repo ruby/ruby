@@ -310,7 +310,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_enabled_gc
     omit unless /linux|darwin/ =~ RUBY_PLATFORM
 
-    if RbConfig::CONFIG['shared_gc_dir'].length > 0
+    if RbConfig::CONFIG['modular_gc_dir'].length > 0
       assert_match(/\+GC/, RUBY_DESCRIPTION)
     else
       assert_no_match(/\+GC/, RUBY_DESCRIPTION)
