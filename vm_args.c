@@ -579,7 +579,7 @@ flatten_rest_args(rb_execution_context_t * const ec, struct args_info *args, VAL
     args->argc += rest_len;
     if (rest_len) {
         CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
-        for (i, j=0; rest_len > 0; rest_len--, i++, j++) {
+        for (j=0; rest_len > 0; rest_len--, i++, j++) {
             locals[i] = argv[j];
         }
     }
