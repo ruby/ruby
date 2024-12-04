@@ -9942,6 +9942,7 @@ fn gen_objtostring(
         // Same optimization done in the interpreter: rb_sym_to_s() allocates a mutable string, but since we are only
         // going to use this string for interpolation, it's fine to use the
         // frozen string.
+        // rb_sym2str does not allocate.
         let sym = recv;
         let str = asm.ccall(rb_sym2str as *const u8, vec![sym]);
         asm.stack_pop(1);
