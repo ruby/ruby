@@ -5,7 +5,7 @@ require "mkmf"
 srcdir = File.join(__dir__, "..")
 $INCFLAGS << " -I#{srcdir}"
 
-$CPPFLAGS << " -DBUILDING_SHARED_GC"
+$CPPFLAGS << " -DBUILDING_MODULAR_GC"
 
 append_cflags("-fPIC")
 

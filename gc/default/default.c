@@ -29,7 +29,7 @@
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
 
-#ifndef BUILDING_SHARED_GC
+#ifndef BUILDING_MODULAR_GC
 # include "probes.h"
 #endif
 
@@ -8466,7 +8466,7 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
     }
 }
 
-#ifdef BUILDING_SHARED_GC
+#ifdef BUILDING_MODULAR_GC
 # define RUBY_DTRACE_GC_HOOK(name)
 #else
 # define RUBY_DTRACE_GC_HOOK(name) \

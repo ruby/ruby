@@ -178,7 +178,7 @@ rb_gc_vm_barrier(void)
     rb_vm_barrier();
 }
 
-#if USE_SHARED_GC
+#if USE_MODULAR_GC
 void *
 rb_gc_get_ractor_newobj_cache(void)
 {
@@ -617,9 +617,9 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 static const char *obj_type_name(VALUE obj);
 #include "gc/default/default.c"
 
-#if USE_SHARED_GC && !defined(HAVE_DLOPEN)
-# error "Shared GC requires dlopen"
-#elif USE_SHARED_GC
+#if USE_MODULAR_GC && !defined(HAVE_DLOPEN)
+# error "Modular GC requires dlopen"
+#elif USE_MODULAR_GC
 #include <dlfcn.h>
 
 typedef struct gc_function_map {
@@ -702,7 +702,7 @@ typedef struct gc_function_map {
     // GC Identification
     const char *(*active_gc_name)(void);
 
-    bool external_gc_loaded_p;
+    bool modular_gc_loaded_p;
 } rb_gc_function_map_t;
 
 static rb_gc_function_map_t rb_gc_functions;
@@ -710,10 +710,10 @@ static rb_gc_function_map_t rb_gc_functions;
 # define RUBY_GC_LIBRARY "RUBY_GC_LIBRARY"
 
 static void
-ruby_external_gc_init(void)
+ruby_modular_gc_init(void)
 {
     // Assert that the directory path ends with a /
-    RUBY_ASSERT_ALWAYS(SHARED_GC_DIR[sizeof(SHARED_GC_DIR) - 2] == '/');
+    RUBY_ASSERT_ALWAYS(MODULAR_GC_DIR[sizeof(MODULAR_GC_DIR) - 2] == '/');
 
     char *gc_so_file = getenv(RUBY_GC_LIBRARY);
 
@@ -737,14 +737,14 @@ ruby_external_gc_init(void)
             }
         }
 
-        size_t gc_so_path_size = strlen(SHARED_GC_DIR "librubygc." DLEXT) + strlen(gc_so_file) + 1;
+        size_t gc_so_path_size = strlen(MODULAR_GC_DIR "librubygc." DLEXT) + strlen(gc_so_file) + 1;
         gc_so_path = alloca(gc_so_path_size);
         {
             size_t gc_so_path_idx = 0;
 #define GC_SO_PATH_APPEND(str) do { \
     gc_so_path_idx += strlcpy(gc_so_path + gc_so_path_idx, str, gc_so_path_size - gc_so_path_idx); \
 } while (0)
-            GC_SO_PATH_APPEND(SHARED_GC_DIR);
+            GC_SO_PATH_APPEND(MODULAR_GC_DIR);
             GC_SO_PATH_APPEND("librubygc.");
             GC_SO_PATH_APPEND(gc_so_file);
             GC_SO_PATH_APPEND(DLEXT);
@@ -754,19 +754,19 @@ ruby_external_gc_init(void)
 
         handle = dlopen(gc_so_path, RTLD_LAZY | RTLD_GLOBAL);
         if (!handle) {
-            fprintf(stderr, "ruby_external_gc_init: Shared library %s cannot be opened: %s\n", gc_so_path, dlerror());
+            fprintf(stderr, "ruby_modular_gc_init: Shared library %s cannot be opened: %s\n", gc_so_path, dlerror());
             exit(1);
         }
 
-        gc_functions.external_gc_loaded_p = true;
+        gc_functions.modular_gc_loaded_p = true;
     }
 
-# define load_external_gc_func(name) do { \
+# define load_modular_gc_func(name) do { \
     if (handle) { \
         const char *func_name = "rb_gc_impl_" #name; \
         gc_functions.name = dlsym(handle, func_name); \
         if (!gc_functions.name) { \
-            fprintf(stderr, "ruby_external_gc_init: %s function not exported by library %s\n", func_name, gc_so_path); \
+            fprintf(stderr, "ruby_modular_gc_init: %s function not exported by library %s\n", func_name, gc_so_path); \
             exit(1); \
         } \
     } \
@@ -776,85 +776,85 @@ ruby_external_gc_init(void)
 } while (0)
 
     // Bootup
-    load_external_gc_func(objspace_alloc);
-    load_external_gc_func(objspace_init);
-    load_external_gc_func(objspace_free);
-    load_external_gc_func(ractor_cache_alloc);
-    load_external_gc_func(ractor_cache_free);
-    load_external_gc_func(set_params);
-    load_external_gc_func(init);
-    load_external_gc_func(heap_sizes);
+    load_modular_gc_func(objspace_alloc);
+    load_modular_gc_func(objspace_init);
+    load_modular_gc_func(objspace_free);
+    load_modular_gc_func(ractor_cache_alloc);
+    load_modular_gc_func(ractor_cache_free);
+    load_modular_gc_func(set_params);
+    load_modular_gc_func(init);
+    load_modular_gc_func(heap_sizes);
     // Shutdown
-    load_external_gc_func(shutdown_free_objects);
+    load_modular_gc_func(shutdown_free_objects);
     // GC
-    load_external_gc_func(start);
-    load_external_gc_func(during_gc_p);
-    load_external_gc_func(prepare_heap);
-    load_external_gc_func(gc_enable);
-    load_external_gc_func(gc_disable);
-    load_external_gc_func(gc_enabled_p);
-    load_external_gc_func(config_set);
-    load_external_gc_func(config_get);
-    load_external_gc_func(stress_set);
-    load_external_gc_func(stress_get);
+    load_modular_gc_func(start);
+    load_modular_gc_func(during_gc_p);
+    load_modular_gc_func(prepare_heap);
+    load_modular_gc_func(gc_enable);
+    load_modular_gc_func(gc_disable);
+    load_modular_gc_func(gc_enabled_p);
+    load_modular_gc_func(config_set);
+    load_modular_gc_func(config_get);
+    load_modular_gc_func(stress_set);
+    load_modular_gc_func(stress_get);
     // Object allocation
-    load_external_gc_func(new_obj);
-    load_external_gc_func(obj_slot_size);
-    load_external_gc_func(heap_id_for_size);
-    load_external_gc_func(size_allocatable_p);
+    load_modular_gc_func(new_obj);
+    load_modular_gc_func(obj_slot_size);
+    load_modular_gc_func(heap_id_for_size);
+    load_modular_gc_func(size_allocatable_p);
     // Malloc
-    load_external_gc_func(malloc);
-    load_external_gc_func(calloc);
-    load_external_gc_func(realloc);
-    load_external_gc_func(free);
-    load_external_gc_func(adjust_memory_usage);
+    load_modular_gc_func(malloc);
+    load_modular_gc_func(calloc);
+    load_modular_gc_func(realloc);
+    load_modular_gc_func(free);
+    load_modular_gc_func(adjust_memory_usage);
     // Marking
-    load_external_gc_func(mark);
-    load_external_gc_func(mark_and_move);
-    load_external_gc_func(mark_and_pin);
-    load_external_gc_func(mark_maybe);
-    load_external_gc_func(mark_weak);
-    load_external_gc_func(remove_weak);
+    load_modular_gc_func(mark);
+    load_modular_gc_func(mark_and_move);
+    load_modular_gc_func(mark_and_pin);
+    load_modular_gc_func(mark_maybe);
+    load_modular_gc_func(mark_weak);
+    load_modular_gc_func(remove_weak);
     // Compaction
-    load_external_gc_func(object_moved_p);
-    load_external_gc_func(location);
+    load_modular_gc_func(object_moved_p);
+    load_modular_gc_func(location);
     // Write barriers
-    load_external_gc_func(writebarrier);
-    load_external_gc_func(writebarrier_unprotect);
-    load_external_gc_func(writebarrier_remember);
+    load_modular_gc_func(writebarrier);
+    load_modular_gc_func(writebarrier_unprotect);
+    load_modular_gc_func(writebarrier_remember);
     // Heap walking
-    load_external_gc_func(each_objects);
-    load_external_gc_func(each_object);
+    load_modular_gc_func(each_objects);
+    load_modular_gc_func(each_object);
     // Finalizers
-    load_external_gc_func(make_zombie);
-    load_external_gc_func(define_finalizer);
-    load_external_gc_func(undefine_finalizer);
-    load_external_gc_func(copy_finalizer);
-    load_external_gc_func(shutdown_call_finalizer);
+    load_modular_gc_func(make_zombie);
+    load_modular_gc_func(define_finalizer);
+    load_modular_gc_func(undefine_finalizer);
+    load_modular_gc_func(copy_finalizer);
+    load_modular_gc_func(shutdown_call_finalizer);
     // Object ID
-    load_external_gc_func(object_id);
-    load_external_gc_func(object_id_to_ref);
+    load_modular_gc_func(object_id);
+    load_modular_gc_func(object_id_to_ref);
     // Forking
-    load_external_gc_func(before_fork);
-    load_external_gc_func(after_fork);
+    load_modular_gc_func(before_fork);
+    load_modular_gc_func(after_fork);
     // Statistics
-    load_external_gc_func(set_measure_total_time);
-    load_external_gc_func(get_measure_total_time);
-    load_external_gc_func(get_total_time);
-    load_external_gc_func(gc_count);
-    load_external_gc_func(latest_gc_info);
-    load_external_gc_func(stat);
-    load_external_gc_func(stat_heap);
+    load_modular_gc_func(set_measure_total_time);
+    load_modular_gc_func(get_measure_total_time);
+    load_modular_gc_func(get_total_time);
+    load_modular_gc_func(gc_count);
+    load_modular_gc_func(latest_gc_info);
+    load_modular_gc_func(stat);
+    load_modular_gc_func(stat_heap);
     // Miscellaneous
-    load_external_gc_func(obj_flags);
-    load_external_gc_func(pointer_to_heap_p);
-    load_external_gc_func(garbage_object_p);
-    load_external_gc_func(set_event_hook);
-    load_external_gc_func(copy_attributes);
+    load_modular_gc_func(obj_flags);
+    load_modular_gc_func(pointer_to_heap_p);
+    load_modular_gc_func(garbage_object_p);
+    load_modular_gc_func(set_event_hook);
+    load_modular_gc_func(copy_attributes);
     //GC Identification
-    load_external_gc_func(active_gc_name);
+    load_modular_gc_func(active_gc_name);
 
-# undef load_external_gc_func
+# undef load_modular_gc_func
 
     rb_gc_functions = gc_functions;
 }
@@ -944,8 +944,8 @@ static VALUE initial_stress = Qfalse;
 void *
 rb_objspace_alloc(void)
 {
-#if USE_SHARED_GC
-    ruby_external_gc_init();
+#if USE_MODULAR_GC
+    ruby_modular_gc_init();
 #endif
 
     void *objspace = rb_gc_impl_objspace_alloc();
@@ -2870,10 +2870,10 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
 }
 
 int
-rb_gc_external_gc_loaded_p(void)
+rb_gc_modular_gc_loaded_p(void)
 {
-#if USE_SHARED_GC
-    return rb_gc_functions.external_gc_loaded_p;
+#if USE_MODULAR_GC
+    return rb_gc_functions.modular_gc_loaded_p;
 #else
     return false;
 #endif
@@ -3298,7 +3298,7 @@ update_superclasses(void *objspace, VALUE obj)
 extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
 
-#if USE_SHARED_GC
+#if USE_MODULAR_GC
 struct global_vm_table_foreach_data {
     vm_table_foreach_callback_func callback;
     vm_table_update_callback_func update_callback;

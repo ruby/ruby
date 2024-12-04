@@ -34,8 +34,8 @@ jobs:
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
           - test_task: check
-            shared_gc: true
-            configure: '--with-shared-gc=/home/runner/ruby_gc'
+            modular_gc: true
+            configure: '--with-modular-gc=/home/runner/ruby_gc'
           - test_task: test-bundler-parallel
             timeout: 50
           - test_task: test-bundled-gems
@@ -99,12 +99,12 @@ jobs:
 
       - run: $SETARCH make
 
-      - name: Build shared GC
+      - name: Build modular GC
         run: |
           echo "RUBY_GC_LIBRARY=default" >> $GITHUB_ENV
-          make shared-gc SHARED_GC=default
-          make distclean-shared-gc SHARED_GC=default
-        if: ${{ matrix.shared_gc }}
+          make modular-gc MODULAR_GC=default
+          make distclean-modular-gc MODULAR_GC=default
+        if: ${{ matrix.modular_gc }}
 
       - run: |
           $SETARCH make golf
