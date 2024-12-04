@@ -751,7 +751,10 @@ rb_get_next_signal(void)
 
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
 static const char *received_signal;
-# define clear_received_signal() (void)(ruby_disable_gc = 0, received_signal = 0)
+# define clear_received_signal() do { \
+    if (GET_VM() != NULL) rb_gc_enable(); \
+    received_signal = 0; \
+} while (0)
 #else
 # define clear_received_signal() ((void)0)
 #endif
@@ -1001,7 +1004,9 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
         ruby_abort();
     }
 
-    ruby_disable_gc = 1;
+    if (GET_VM() != NULL) {
+        rb_gc_disable_no_rest();
+    }
 }
 #endif
 

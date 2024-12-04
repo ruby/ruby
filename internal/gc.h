@@ -175,7 +175,6 @@ struct rb_objspace; /* in vm_core.h */
     if (_already_disabled == Qfalse) rb_gc_enable()
 
 /* gc.c */
-extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 RUBY_ATTR_MALLOC void *ruby_mimcalloc(size_t num, size_t size);
 void ruby_mimfree(void *ptr);
