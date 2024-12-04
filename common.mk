@@ -1695,7 +1695,7 @@ yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ruby + ARGV.shift" \
 		-e "load ARGV.shift" \
 		" -C $(srcdir) -Ispec/bundler:spec/lib .bundle/bin/rspec $(RSPECOPTS)" \
-		$(srcdir)/.bundle/bin/parallel_rspec \
+		$(srcdir)/.bundle/bin/turbo_tests \
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler-parallel:
 
