@@ -1692,12 +1692,12 @@ test-bundler-parallel: $(TEST_RUNNABLE)-test-bundler-parallel
 yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 	$(gnumake_recursive)$(XRUBY) \
 		-r./$(arch)-fake \
+		-I$(srcdir)/spec/bundler \
+		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
-		-e "exec(*ARGV)" -- \
-		$(XRUBY) -I$(srcdir)/spec/bundler \
-		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ARGV.shift" \
+		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ruby + ARGV.shift" \
 		-e "load ARGV.shift" \
-		"$(XRUBY) -C $(srcdir) -Ispec/bundler:spec/lib .bundle/bin/rspec" \
+		" -C $(srcdir) -Ispec/bundler:spec/lib .bundle/bin/rspec" \
 		$(srcdir)/.bundle/bin/parallel_rspec \
 		-o "--require spec_helper --require formatter_overrides" \
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
