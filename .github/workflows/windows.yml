@@ -181,6 +181,7 @@ jobs:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          test-task: ${{ matrix.test_task || 'check' }}
         continue-on-error: true
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
 
