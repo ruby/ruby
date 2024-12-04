@@ -112,12 +112,38 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+* Net::HTTP
+
+    * Removed the following deprecated constans:
+        Net::HTTP::ProxyMod
+        Net::NetPrivate::HTTPRequest
+        Net::HTTPInformationCode
+        Net::HTTPSuccessCode
+        Net::HTTPRedirectionCode
+        Net::HTTPRetriableCode
+        Net::HTTPClientErrorCode
+        Net::HTTPFatalErrorCode
+        Net::HTTPServerErrorCode
+        Net::HTTPResponseReceiver
+        Net::HTTPResponceReceiver
+
+      These constants were deprecated from 2012.
+
 * Tempfile
 
     * The keyword argument `anonymous: true` is implemented for Tempfile.create.
       `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
       So applications don't need to remove the file.
       [[Feature #20497]]
+
+* Timeout
+
+    * Reject negative values for Timeout.timeout. [[Bug #20795]]
+
+* URI
+
+    * Switched default parser to RFC 3986 compliant from RFC 2396 compliant.
+      [[Bug #19266]]
 
 * win32/sspi.rb
 
@@ -319,6 +345,7 @@ details of the default gems or bundled gems.
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Misc #18984]:    https://bugs.ruby-lang.org/issues/18984
 [Feature #19117]: https://bugs.ruby-lang.org/issues/19117
+[Bug #19266]:     https://bugs.ruby-lang.org/issues/19266
 [Feature #19236]: https://bugs.ruby-lang.org/issues/19236
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Bug #19918]:     https://bugs.ruby-lang.org/issues/19918
@@ -345,6 +372,7 @@ details of the default gems or bundled gems.
 [Feature #20715]: https://bugs.ruby-lang.org/issues/20715
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
 [Feature #20782]: https://bugs.ruby-lang.org/issues/20782
+[Bug #20795]:     https://bugs.ruby-lang.org/issues/20795
 [Feature #20811]: https://bugs.ruby-lang.org/issues/20811
 [Feature #20860]: https://bugs.ruby-lang.org/issues/20860
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
