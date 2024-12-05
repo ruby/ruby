@@ -263,12 +263,6 @@ ary_verify_(VALUE ary, const char *file, int line)
 
     return ary;
 }
-
-void
-rb_ary_verify(VALUE ary)
-{
-    ary_verify(ary);
-}
 #else
 #define ary_verify(ary) ((void)0)
 #endif
