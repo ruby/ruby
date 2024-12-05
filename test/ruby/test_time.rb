@@ -723,7 +723,7 @@ class TestTime < Test::Unit::TestCase
     if zone.ascii_only?
       assert_equal(Encoding::US_ASCII, zone.encoding)
     else
-      enc = Encoding.default_internal || Encoding.find('locale')
+      enc = Encoding.find('locale')
       assert_equal(enc, zone.encoding)
     end
   end
