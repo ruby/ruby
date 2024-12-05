@@ -29,9 +29,9 @@ Explore the essential classes and modules:
 
 Deep dive into Ruby's syntax and features:
 
-- [Ruby Syntax](syntax_rdoc.html)
-- [Exceptions](exceptions_md.html)
-- [Implicit Conversions](implicit_conversions_md.html)
+- [Ruby Syntax](rdoc-ref:syntax.rdoc)
+- [Exceptions](rdoc-ref:exceptions.md)
+- [Implicit Conversions](rdoc-ref:implicit_conversion.rdoc)
 
 ## Standard Libraries
 
@@ -44,18 +44,18 @@ There are some standard libraries included in Ruby that are also commonly used, 
 
 Use the following links to access the comprehensive set of libraries included with Ruby:
 
-- [Standard Library Documentation](standard_library_rdoc.html)
-- [Maintainers](maintainers_md.html)
+- [Standard Library Documentation](rdoc-ref:standard_library.rdoc)
+- [Maintainers](rdoc-ref:maintainers.md)
 
 ## Contribute to Ruby
 
 Get involved with the Ruby community:
 
-- [Contribution Guide](contributing_md.html)
-- [Documentation Guide](contributing/documentation_guide_md.html)
-- [Reporting Issues](contributing/reporting_issues_md.html)
-- [Building Ruby](contributing/building_ruby_md.html)
-- [Testing Ruby](contributing/testing_ruby_md.html)
+- [Contribution Guide](rdoc-ref:contributing.md)
+- [Documentation Guide](rdoc-ref:contributing/documentation_guide.md)
+- [Reporting Issues](rdoc-ref:contributing/reporting_issues.md)
+- [Building Ruby](rdoc-ref:contributing/building_ruby.md)
+- [Testing Ruby](rdoc-ref:contributing/testing_ruby.md)
 - [Issue Tracker](https://bugs.ruby-lang.org/projects/ruby-master/issues)
 
 ## Additional Resources
