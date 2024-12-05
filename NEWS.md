@@ -218,7 +218,7 @@ The following bundled gems are updated.
 * net-imap 0.5.1
 * net-smtp 0.5.0
 * prime 0.1.3
-* rbs 3.6.1
+* rbs 3.7.0
 * typeprof 0.21.11
 * debug 1.9.2
 * racc 1.8.1
