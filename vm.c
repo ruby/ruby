@@ -33,6 +33,7 @@
 #include "internal/variable.h"
 #include "iseq.h"
 #include "rjit.h"
+#include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
 #include "ruby/st.h"
 #include "ruby/vm.h"
