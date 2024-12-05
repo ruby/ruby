@@ -44,6 +44,11 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 
     const DEFAULT_HEAP_MIN: usize = 1 << 20;
 
+    let mmtk_threads: usize = std::env::var("MMTK_THREADS")
+        .unwrap_or("0".to_string())
+        .parse::<usize>()
+        .unwrap_or(0);
+
     let mut mmtk_heap_min = match std::env::var("MMTK_HEAP_MIN") {
         Ok(min) => {
             let capa = parse_capacity(&min, DEFAULT_HEAP_MIN);
@@ -89,6 +94,10 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 
     // Between 1MiB and 500MiB
     builder.options.gc_trigger.set(mmtk_mode);
+
+    if mmtk_threads > 0 {
+        builder.options.threads.set(mmtk_threads);
+    }
 
     Box::into_raw(Box::new(builder))
 }
