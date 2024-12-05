@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 $DEBUG_RDOC = nil
 
-# :main: README.rdoc
-
 ##
 # RDoc produces documentation for Ruby source files by parsing the source and
 # extracting the definition for classes, modules, methods, includes and

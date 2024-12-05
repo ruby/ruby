@@ -407,6 +407,7 @@ The internal error was:
 
     return [] if file_list.empty?
 
+    # This workaround can be removed after the :main: directive is removed
     original_options = @options.dup
     @stats.begin_adding
 

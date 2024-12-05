@@ -2,7 +2,7 @@
 
 require_relative 'helper'
 
-class TestRDocMarkupPreProcess < RDoc::TestCase
+class RDoc::Markup::PreProcessTest < RDoc::TestCase
 
   def setup
     super
@@ -85,18 +85,26 @@ contents of a string.
 
   def test_handle
     text = "# :main: M\n"
-    out = @pp.handle text
+    output = nil
+    _, err = capture_output do
+      output = @pp.handle text
+    end
 
-    assert_equal "#\n", out
+    assert_include err, "The :main: directive is deprecated and will be removed in RDoc 7."
+    assert_equal "#\n", output
   end
 
   def test_handle_comment
     text = "# :main: M\n"
     c = comment text
 
-    out = @pp.handle c
+    output = nil
+    _, err = capture_output do
+      output = @pp.handle c
+    end
 
-    assert_equal "#\n", out
+    assert_include err, "The :main: directive is deprecated and will be removed in RDoc 7."
+    assert_equal "#\n", output
   end
 
   def test_handle_markup
@@ -245,8 +253,11 @@ contents of a string.
   def test_handle_directive_main
     @pp.options = RDoc::Options.new
 
-    @pp.handle_directive '', 'main', 'M'
+    _, err = capture_output do
+      @pp.handle_directive '', 'main', 'M'
+    end
 
+    assert_include err, "The :main: directive is deprecated and will be removed in RDoc 7."
     assert_equal 'M', @pp.options.main_page
   end
 
@@ -385,8 +396,11 @@ contents of a string.
   def test_handle_directive_title
     @pp.options = RDoc::Options.new
 
-    @pp.handle_directive '', 'title', 'T'
+    _, err = capture_output do
+      @pp.handle_directive '', 'title', 'T'
+    end
 
+    assert_include err, "The :title: directive is deprecated and will be removed in RDoc 7."
     assert_equal 'T', @pp.options.title
   end
 

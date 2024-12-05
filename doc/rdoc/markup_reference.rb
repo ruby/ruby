@@ -535,17 +535,6 @@ require 'rdoc'
 #     parameter +type+ is one of: +rdoc+ (the default), +markdown+, +rd+, +tomdoc+.
 #     See {Markup Formats}[rdoc-ref:RDoc::Markup@Markup+Formats].
 #
-# ===== Directives for HTML Output
-#
-# - <tt># :title: _text_</tt>:
-#
-#   - Appears on a line by itself.
-#   - Specifies the title for the HTML output.
-#
-# - <tt># :main: _filename_</tt>:
-#   - Appears on a line by itself.
-#   - Specifies the HTML file to be displayed first.
-#
 # ===== Directives for Method Documentation
 #
 # - <tt># :call-seq:</tt>:
