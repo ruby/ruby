@@ -5,8 +5,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "internal/bits.h"
-
 // Type for a dynamic array. Use to declare a dynamic array.
 // It is a pointer so it fits in st_table nicely. Designed
 // to be fairly type-safe.

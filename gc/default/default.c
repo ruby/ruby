@@ -15,6 +15,7 @@
 # include <sys/user.h>
 #endif
 
+#include "internal/bits.h"
 #include "internal/hash.h"
 
 #include "ruby/ruby.h"
