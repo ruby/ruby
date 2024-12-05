@@ -19,6 +19,13 @@ test_replicate(EncodingTest) the method was removed in 3.3
 test_step(RangeTest) the method protocol was changed in 3.4
 
 test_collection_install(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__config__bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__config__no_bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__config__stdlib_source(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__dependency_no_bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__no_bundled(RBS::CliTest) running tests without Bundler
+test_collection_install__mutex_m__rbs_dependency_and__gem_dependency(RBS::CliTest) running tests without Bundler
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
