@@ -3111,6 +3111,26 @@ Please report a bug if this causes problems.
     assert_empty specification.unresolved_deps
   end
 
+  def test_unresolved_specs_with_unrestricted_deps_on_default_gems
+    specification = Gem::Specification.clone
+
+    set_orig specification
+
+    spec = new_default_spec "stringio", "3.1.1"
+
+    specification.instance_variable_set(:@unresolved_deps, { stringio: Gem::Dependency.new("stringio", ">= 0") })
+
+    specification.define_singleton_method(:find_all_by_name) do |_dep_name|
+      [spec]
+    end
+
+    actual_stdout, actual_stderr = capture_output do
+      specification.reset
+    end
+    assert_empty actual_stdout
+    assert_empty actual_stderr
+  end
+
   def test_duplicate_runtime_dependency
     expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
     out, err = capture_output do
