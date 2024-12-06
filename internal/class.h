@@ -170,6 +170,7 @@ VALUE rb_class_s_alloc(VALUE klass);
 VALUE rb_module_s_alloc(VALUE klass);
 void rb_module_set_initialized(VALUE module);
 void rb_module_check_initializable(VALUE module);
+VALUE rb_mod_yield_under(int argc, const VALUE *argv, VALUE mod);
 VALUE rb_make_metaclass(VALUE, VALUE);
 VALUE rb_include_class_new(VALUE, VALUE);
 void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
