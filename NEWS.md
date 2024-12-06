@@ -53,11 +53,11 @@ Note: We're only listing outstanding class updates.
 
 * IO::Buffer
 
-    * `IO::Buffer#copy` can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
+    * IO::Buffer#copy can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
 
 * Integer
 
-    * `Integer#**` used to return `Float::INFINITY` when the return value is large, but now returns an Integer.
+    * Integer#** used to return `Float::INFINITY` when the return value is large, but now returns an Integer.
       If the return value is extremely large, it raises an exception.
       [[Feature #20811]]
 
@@ -73,9 +73,9 @@ Note: We're only listing outstanding class updates.
       main Ractor.
       [[Feature #20627]]
 
-    * `Ractor.main?` is added. [[Feature #20627]]
+    * Ractor.main? is added. [[Feature #20627]]
 
-    * `Ractor.[key]` and Ractor.[val]=` is added to access the ractor local storage
+    * Ractor.[] and Ractor.[]= are added to access the ractor local storage
       of the current Ractor. [[Feature #20715]]
 
 * Range
@@ -91,13 +91,13 @@ Note: We're only listing outstanding class updates.
 
 * Rational
 
-    * `Rational#**` used to return `Float::INFINITY` or `Float::NAN`
+    * Rational#** used to return `Float::INFINITY` or `Float::NAN`
       when the numerator of the return value is large, but now returns an Integer.
       If it is extremely large, it raises an exception. [[Feature #20811]]
 
 * Refinement
 
-    * Removed deprecated method Refinement#refined_class. [[Feature #19714]]
+    * Removed deprecated method `Refinement#refined_class`. [[Feature #19714]]
 
 * RubyVM::AbstractSyntaxTree
 
@@ -121,17 +121,17 @@ Note: We're only listing outstanding class updates.
 * Net::HTTP
 
     * Removed the following deprecated constans:
-        Net::HTTP::ProxyMod
-        Net::NetPrivate::HTTPRequest
-        Net::HTTPInformationCode
-        Net::HTTPSuccessCode
-        Net::HTTPRedirectionCode
-        Net::HTTPRetriableCode
-        Net::HTTPClientErrorCode
-        Net::HTTPFatalErrorCode
-        Net::HTTPServerErrorCode
-        Net::HTTPResponseReceiver
-        Net::HTTPResponceReceiver
+        `Net::HTTP::ProxyMod`
+        `Net::NetPrivate::HTTPRequest`
+        `Net::HTTPInformationCode`
+        `Net::HTTPSuccessCode`
+        `Net::HTTPRedirectionCode`
+        `Net::HTTPRetriableCode`
+        `Net::HTTPClientErrorCode`
+        `Net::HTTPFatalErrorCode`
+        `Net::HTTPServerErrorCode`
+        `Net::HTTPResponseReceiver`
+        `Net::HTTPResponceReceiver`
 
       These constants were deprecated from 2012.
 
@@ -258,7 +258,7 @@ details of the default gems or bundled gems.
 
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
-    * Extra rescue/ensure frames are no longer available on the backtrace. [[Feature #20275]]
+    * Extra `rescue`/`ensure` frames are no longer available on the backtrace. [[Feature #20275]]
     * Kernel#caller, Thread::Backtrace::Location’s methods, etc. are also changed accordingly.
 
         Old:
@@ -278,20 +278,20 @@ details of the default gems or bundled gems.
     * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
     * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
 
-* `Kernel#Float()` now accepts a decimal string with decimal part omitted. [[Feature #20705]]
+* Kernel#Float() now accepts a decimal string with decimal part omitted. [[Feature #20705]]
   ```
   Float("1.")    #=> 1.0 (previously, an ArgumentError was raised)
   Float("1.E-1") #=> 0.1 (previously, an ArgumentError was raised)
   ```
 
-* `String#to_f` now accepts a decimal string with decimal part omitted. [[Feature #20705]]
+* String#to_f now accepts a decimal string with decimal part omitted. [[Feature #20705]]
   Note that the result changes when an exponent is specified.
   ```
   "1.".to_f    #=> 1.0
   "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
   ```
 
-* `Kernel#singleton_method` now returns methods in modules prepended to or included in the
+* Kernel#singleton_method now returns methods in modules prepended to or included in the
   receiver's singleton class. [[Bug #20620]]
   ```
   o = Object.new
