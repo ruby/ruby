@@ -13,7 +13,7 @@ runs:
     - name: brew
       shell: bash
       run: |
-        brew install --quiet gmp libffi openssl@3 zlib autoconf automake libtool
+        brew install --quiet jemalloc gmp libffi openssl@3 zlib autoconf automake libtool
 
     - name: Set ENV
       shell: bash
