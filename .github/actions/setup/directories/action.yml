@@ -121,17 +121,19 @@ runs:
       shell: bash
       working-directory: ${{ inputs.srcdir }}
       run: |
-        touch config.status
-        touch .rbconfig.time
-        sed -f tool/prereq.status template/Makefile.in > Makefile
-        sed -f tool/prereq.status template/GNUmakefile.in > GNUmakefile
+        touch config.status .rbconfig.time
+        for mk in Makefile GNUmakefile; do
+          sed -f tool/prereq.status template/$mk.in > $mk
+        done
         make up
 
     # Cleanup, runs even on failure
     - if: always() && inputs.makeup
       shell: bash
       working-directory: ${{ inputs.srcdir }}
-      run: rm -f config.status Makefile rbconfig.rb .rbconfig.time
+      run: |
+        rm -f config.status .rbconfig.time \
+          Makefile GNUmakefile uncommon.mk enc.mk noarch-fake.rb
 
     - if: steps.which.outputs.sudo
       shell: bash
