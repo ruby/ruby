@@ -534,8 +534,10 @@ debug_dump_super_chain(rb_classext_t *ext, const rb_namespace_t *ns)
 }
 
 static int
-debug_dump_ivars_foreach_i(ID key, VALUE value, st_data_t arg)
+debug_dump_ivars_foreach_i(st_data_t k, st_data_t v, st_data_t arg)
 {
+    ID key = (ID)k;
+    VALUE value = (VALUE)v;
     VALUE result = (VALUE)arg;
     rb_str_cat_cstr(result, "  ");
     rb_str_cat_cstr(result, rb_id2name(key));
@@ -550,14 +552,6 @@ debug_dump_ivars_foreach_i(ID key, VALUE value, st_data_t arg)
     }
     rb_str_cat_cstr(result, "\n");
     return ST_CONTINUE;
-}
-
-static int
-debug_dump_st_foreach_i(st_data_t key, st_data_t value, st_data_t arg)
-{
-    ID k = (ID)key;
-    VALUE v = (VALUE)value;
-    return debug_dump_ivars_foreach_i(k, v, arg);
 }
 
 static enum rb_id_table_iterator_result
@@ -578,7 +572,32 @@ debug_dump_sorted_list_of_id_table_keys(struct rb_id_table *tbl)
 }
 
 static enum rb_id_table_iterator_result
-debug_dump_constants_i(ID key, ID value, void *data)
+debug_dump_sorted_methods_i(ID key, VALUE value, void *data)
+{
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
+    VALUE ary = (VALUE)data;
+    char buf[2048];
+    if (METHOD_ENTRY_INVALIDATED(me)) {
+        snprintf(buf, 2048, "%s[%p](*)", rb_id2name(key), me);
+        rb_ary_push(ary, rb_str_new_cstr(buf));
+    } else {
+        snprintf(buf, 2048, "%s[%p]", rb_id2name(key), me);
+        rb_ary_push(ary, rb_str_new_cstr(buf));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static VALUE
+debug_dump_sorted_methods(struct rb_id_table *tbl)
+{
+    VALUE results = rb_ary_new_capa(rb_id_table_size(tbl));
+    rb_id_table_foreach(tbl, debug_dump_sorted_methods_i, (void *)results);
+    rb_ary_sort_bang(results);
+    return rb_ary_join(results, rb_str_new_cstr(", "));
+}
+
+static enum rb_id_table_iterator_result
+debug_dump_constants_i(ID key, VALUE value, void *data)
 {
     VALUE str = rb_str_dup(rb_id2str(key));
     VALUE results = (VALUE)data;
@@ -625,7 +644,7 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
         } else {
             snprintf(buf, 2048, "IVars: %zu (%p)\n", st_table_size((st_table *)RCLASSEXT_IV_PTR(ext)), (void *)RCLASSEXT_IV_PTR(ext));
             rb_str_cat_cstr(result, buf);
-            st_foreach((st_table *)RCLASSEXT_IV_PTR(ext), debug_dump_st_foreach_i, (st_data_t)result);
+            st_foreach((st_table *)RCLASSEXT_IV_PTR(ext), debug_dump_ivars_foreach_i, (st_data_t)result);
         }
     }
     if (!RCLASSEXT_CONST_TBL(ext) || rb_id_table_size(RCLASSEXT_CONST_TBL(ext)) == 0) {
@@ -641,7 +660,7 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     } else {
         snprintf(buf, 2048, "Methods: %zu\n  ", rb_id_table_size(RCLASSEXT_M_TBL(ext)));
         rb_str_cat_cstr(result, buf);
-        rb_str_concat(result, debug_dump_sorted_list_of_id_table_keys(RCLASSEXT_M_TBL(ext)));
+        rb_str_concat(result, debug_dump_sorted_methods(RCLASSEXT_M_TBL(ext)));
         rb_str_cat_cstr(result, ".\n");
     }
     if (!RCLASSEXT_CALLABLE_M_TBL(ext) || rb_id_table_size(RCLASSEXT_CALLABLE_M_TBL(ext)) == 0) {
@@ -789,6 +808,9 @@ rb_class_debug_dump_all_classext(VALUE klass)
              RCLASS(klass)->ns_classext_tbl ? st_table_size(RCLASS(klass)->ns_classext_tbl) : 0);
     rb_str_cat_cstr(r, buf);
     rb_str_cat_cstr(r, "========================\n");
+    rb_str_cat_cstr(r, "Namespace: ");
+    rb_str_concat(r, debug_dump_inspect_or_return_type(rb_get_namespace_object((rb_namespace_t *)RCLASSEXT_NS(RCLASS_EXT(klass)))));
+    rb_str_cat_cstr(r, "\n");
     rb_str_concat(r, debug_dump_classext(RCLASS_EXT(klass), klass, (rb_namespace_t *)NULL));
     rb_str_cat_cstr(r, "----\n");
     if (RCLASS(klass)->ns_classext_tbl) {
@@ -821,6 +843,13 @@ rb_class_debug_print_classext(const char *label, const char *opt, VALUE klass)
     } else {
         fprintf(stderr, "***** %s\n%s", label, StringValueCStr(d));
     }
+}
+
+VALUE
+rb_class_debug_print_module(VALUE self)
+{
+    rb_class_debug_print_classext("class_debug_print", "rb_cModule", rb_cModule);
+    return Qnil;
 }
 
 VALUE

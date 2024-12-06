@@ -4571,6 +4571,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "debug_dump_all_classext", rb_class_debug_dump_all_classext, 0);
     rb_define_method(rb_cModule, "debug_dump_all_classext_super", rb_class_debug_dump_all_classext_super, 1);
 
+    rb_define_method(rb_cBasicObject, "debug_print_module", rb_class_debug_print_module, 0);
+
     rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
