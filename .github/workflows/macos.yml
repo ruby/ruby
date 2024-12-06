@@ -32,7 +32,7 @@ jobs:
             configure_args: '--with-gcc=gcc-14'
           - test_task: check
             os: macos-14
-            configure_args: '--with-jemalloc'
+            configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
           - test_task: check
             os: macos-14
             configure_args: '--with-gmp'
