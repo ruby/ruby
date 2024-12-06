@@ -384,6 +384,8 @@ details of the default gems or bundled gems.
 
 * Passing a block to a method which doesn't use the passed block will show
   a warning on verbose mode (`-w`).
+  In connection with this, a new `strict_unused_block` warning category was introduced.
+  Turn them on with `-W:strict_unused_block` or `Warning[:strict_unused_block] = true`.
   [[Feature #15554]]
 
 * Redefining some core methods that are specially optimized by the interpreter
