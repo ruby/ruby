@@ -3025,9 +3025,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
     set_orig specification
 
-    specification.define_singleton_method(:unresolved_deps) do
-      { b: Gem::Dependency.new("x","1") }
-    end
+    specification.instance_variable_set(:@unresolved_deps, { b: Gem::Dependency.new("x","1") })
 
     specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       []
@@ -3045,6 +3043,7 @@ Please report a bug if this causes problems.
     end
     assert_empty actual_stdout
     assert_equal(expected, actual_stderr)
+    assert_empty specification.unresolved_deps
   end
 
   def test_unresolved_specs_with_versions
@@ -3052,9 +3051,7 @@ Please report a bug if this causes problems.
 
     set_orig specification
 
-    specification.define_singleton_method(:unresolved_deps) do
-      { b: Gem::Dependency.new("x","1") }
-    end
+    specification.instance_variable_set(:@unresolved_deps, { b: Gem::Dependency.new("x","1") })
 
     specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       [
@@ -3078,6 +3075,7 @@ Please report a bug if this causes problems.
     end
     assert_empty actual_stdout
     assert_equal(expected, actual_stderr)
+    assert_empty specification.unresolved_deps
   end
 
   def test_unresolved_specs_with_duplicated_versions
@@ -3085,9 +3083,7 @@ Please report a bug if this causes problems.
 
     set_orig specification
 
-    specification.define_singleton_method(:unresolved_deps) do
-      { b: Gem::Dependency.new("x","1") }
-    end
+    specification.instance_variable_set(:@unresolved_deps, { b: Gem::Dependency.new("x","1") })
 
     specification.define_singleton_method(:find_all_by_name) do |_dep_name|
       [
@@ -3112,6 +3108,7 @@ Please report a bug if this causes problems.
     end
     assert_empty actual_stdout
     assert_equal(expected, actual_stderr)
+    assert_empty specification.unresolved_deps
   end
 
   def test_duplicate_runtime_dependency
@@ -3124,8 +3121,9 @@ Please report a bug if this causes problems.
   end
 
   def set_orig(cls)
+    assert_empty cls.unresolved_deps
+
     s_cls = cls.singleton_class
-    s_cls.send :alias_method, :orig_unresolved_deps, :unresolved_deps
     s_cls.send :alias_method, :orig_find_all_by_name, :find_all_by_name
   end
 
