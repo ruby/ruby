@@ -10477,8 +10477,8 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         INIT_ANCHOR(anchor);
         lit = rb_hash_new();
         for (NODE *n = RNODE_HASH(node)->nd_head; n; n = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_next) {
-            VALUE key_val;
-            VALUE value_val;
+            VALUE key_val = 0;
+            VALUE value_val = 0;
             int shareable_literal_p2;
             NODE *key = RNODE_LIST(n)->nd_head;
             NODE *val = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_head;
