@@ -1161,7 +1161,6 @@ class_initialize_method_table(VALUE c)
 static void
 class_clear_method_table(VALUE c)
 {
-    // initialize the prime classext m_tbl
     RCLASS_WRITE_M_TBL(c, rb_id_table_create(0));
 }
 
@@ -2336,7 +2335,7 @@ ensure_origin(VALUE klass)
         origin = class_alloc(T_ICLASS, klass);
         RCLASS_SET_M_TBL(origin, RCLASS_M_TBL(klass));
         rb_class_set_super(origin, RCLASS_SUPER(klass));
-        rb_class_set_super(klass, origin);
+        rb_class_set_super(klass, origin); // writes origin into RCLASS_SUPER(klass)
         RCLASS_WRITE_ORIGIN(klass, origin);
         class_clear_method_table(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
