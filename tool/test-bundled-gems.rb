@@ -10,7 +10,7 @@ github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 if RUBY_PLATFORM =~ /mswin|mingw/
-  allowed_failures = [allowed_failures, "net-imap,net-smtp,rbs,typeprof,debug"].join(',')
+  allowed_failures = [allowed_failures, "net-imap,net-smtp,rbs,debug"].join(',')
 end
 allowed_failures = allowed_failures.split(',').uniq.reject(&:empty?)
 
