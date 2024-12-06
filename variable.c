@@ -2643,6 +2643,7 @@ rb_autoload_copy_table_for_namespace(st_table *iv_ptr, const rb_namespace_t *ns)
     };
 
     st_foreach(src_tbl, autoload_copy_table_for_namespace_i, (st_data_t)&data);
+    st_insert(iv_ptr, (st_data_t)autoload, (st_data_t)dst_tbl_value);
 }
 
 void
@@ -3093,8 +3094,8 @@ autoload_feature_require(VALUE _arguments)
         return rb_namespace_exec(rb_builtin_namespace(), autoload_feature_require_in_builtin_wrap, (VALUE)&data);
     }
 
-    if (RTEST(autoload_namespace)) {
-        receiver = autoload_const->namespace;
+    if (RTEST(autoload_namespace) && NAMESPACE_OPTIONAL_P(rb_get_namespace_t(autoload_namespace))) {
+        receiver = autoload_namespace;
     }
 
     VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
