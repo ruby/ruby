@@ -141,6 +141,11 @@ class URI::TestMailTo < Test::Unit::TestCase
   def test_check_to
     u = URI::MailTo.build(['joe@example.com', 'subject=Ruby'])
 
+    # Valid emails
+    u.to = 'a@valid.com'
+    assert_equal(u.to, 'a@valid.com')
+
+    # Invalid emails
     assert_raise(URI::InvalidComponentError) do
       u.to = '#1@mail.com'
     end
@@ -155,6 +160,10 @@ class URI::TestMailTo < Test::Unit::TestCase
 
     assert_raise(URI::InvalidComponentError) do
       u.to = 'hello.@invalid.email'
+    end
+
+    assert_raise(URI::InvalidComponentError) do
+      u.to = 'n.@invalid.email'
     end
   end
 
