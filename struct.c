@@ -1768,7 +1768,7 @@ rb_data_define(VALUE super, ...)
  *     end
  *
  *     Measure.new('10', 'km') # => #<data Measure amount=10.0, unit="km">
- *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data NONE>>
+ *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data Measure::NONE>>
  *
  */
 
