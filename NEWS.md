@@ -120,7 +120,7 @@ Note: We're only listing outstanding class updates.
 
 * Net::HTTP
 
-    * Removed the following deprecated constans:
+    * Removed the following deprecated constants:
         `Net::HTTP::ProxyMod`
         `Net::NetPrivate::HTTPRequest`
         `Net::HTTPInformationCode`
