@@ -1089,7 +1089,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
             rb_clear_method_cache(orig_klass, mid);
         }
     }
-    mtbl = RCLASS_M_TBL(klass);
+    mtbl = RCLASS_WRITABLE_M_TBL(klass);
 
     /* check re-definition */
     if (rb_id_table_lookup(mtbl, mid, &data)) {
@@ -1166,7 +1166,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         make_method_entry_refined(klass, me);
     }
 
-    mtbl = RCLASS_WRITABLE_M_TBL(klass);
     rb_method_table_insert(klass, mtbl, mid, me);
 
     VM_ASSERT(me->def != NULL);

@@ -2378,7 +2378,7 @@ rb_prepend_module(VALUE klass, VALUE module)
                     VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
                     rb_class_set_super(subclass, origin);
                     RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
-                    RCLASS_SET_ORIGIN(subclass, origin);
+                    RCLASS_WRITE_ORIGIN(subclass, origin);
                     RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
                 }
                 include_modules_at(subclass, subclass, module, FALSE);
