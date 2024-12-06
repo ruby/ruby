@@ -105,6 +105,12 @@ Note: We're only listing outstanding class updates.
       associated with the AST node. [[Feature #20624]]
     * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
 
+* Time
+
+    * On Windows, now Time#zone encodes the system timezone name in UTF-8
+      instead of the active code page, if it contains non-ASCII characters.
+      [[Bug #20929]]
+
 * Warning
 
     * Add Warning.categories method which returns a list of possible warning categories.
@@ -378,3 +384,4 @@ details of the default gems or bundled gems.
 [Feature #20860]: https://bugs.ruby-lang.org/issues/20860
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
+[Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
