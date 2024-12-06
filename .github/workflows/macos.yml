@@ -30,6 +30,9 @@ jobs:
           - test_task: check
             os: macos-14
             configure_args: '--with-gcc=gcc-14'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-jemalloc'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-14
