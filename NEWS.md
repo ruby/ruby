@@ -291,7 +291,7 @@ details of the default gems or bundled gems.
   "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
   ```
 
-* Kernel#singleton_method now returns methods in modules prepended to or included in the
+* Object#singleton_method now returns methods in modules prepended to or included in the
   receiver's singleton class. [[Bug #20620]]
   ```
   o = Object.new
