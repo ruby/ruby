@@ -521,9 +521,14 @@ module RubyVM::YJIT
     # Format a number along with a percentage over a total value
     def format_number_pct(pad, number, total) # :nodoc:
       padded_count = format_number(pad, number)
-      percentage = number.fdiv(total) * 100
-      formatted_pct = "%4.1f%%" % percentage
-      "#{padded_count} (#{formatted_pct})"
+
+      if total != 0
+        percentage = number.fdiv(total) * 100
+        formatted_pct = "%4.1f%%" % percentage
+        "#{padded_count} (#{formatted_pct})"
+      else
+        "#{padded_count}"
+      end
     end
 
     # :startdoc:
