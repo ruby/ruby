@@ -31,6 +31,10 @@
 # include <sys/time.h>
 #endif
 
+#if defined(HAVE_LOCALE_H)
+# include <locale.h>
+#endif
+
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
@@ -950,7 +954,11 @@ zone_str(const char *zone)
         str = rb_usascii_str_new(zone, len);
     }
     else {
+#if defined(_WIN32)
+        str = rb_utf8_str_new(zone, len);
+#else
         str = rb_enc_str_new(zone, len, rb_locale_encoding());
+#endif
     }
     return rb_fstring(str);
 }
@@ -1649,11 +1657,15 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
         if (zone) {
 #if defined(HAVE_TM_ZONE)
             *zone = zone_str(tm.tm_zone);
+#elif defined(_WIN32)
+            {
+                char buf[64];
+                _locale_t utf8_locale = _create_locale(LC_TIME, ".65001");
+                size_t n = _strftime_l(buf, numberof(buf), "%Z", &tm, utf8_locale);
+                _free_locale(utf8_locale);
+                *zone = zone_str((ssize_t)n < 0 ? NULL : buf);
+            }
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
-# if defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 140
-#  define tzname _tzname
-#  define daylight _daylight
-# endif
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
 #else
