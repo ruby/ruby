@@ -33,6 +33,9 @@ jobs:
           - test_task: check
             os: macos-14
             configure_args: '--with-jemalloc'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-14
