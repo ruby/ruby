@@ -108,31 +108,29 @@ class Reline::TestCase < Test::Unit::TestCase
     input
   end
 
-  def input_key_by_symbol(input)
-    @line_editor.input_key(Reline::Key.new(input, input, false))
+  def input_key_by_symbol(method_symbol, csi: false)
+    dummy_char = csi ? "\e[A" : "\C-a"
+    @line_editor.input_key(Reline::Key.new(dummy_char, method_symbol, false))
   end
 
   def input_keys(input, convert = true)
-    input = convert_str(input) if convert
-    input.chars.each do |c|
-      if c.bytesize == 1
-        eighth_bit = 0b10000000
-        byte = c.bytes.first
-        if byte.allbits?(eighth_bit)
-          @line_editor.input_key(Reline::Key.new(byte ^ eighth_bit, byte, true))
-        else
-          @line_editor.input_key(Reline::Key.new(byte, byte, false))
-        end
-      else
-        @line_editor.input_key(Reline::Key.new(c.ord, c.ord, false))
-      end
-    end
+    # Reline does not support convert-meta, but test data includes \M-char. It should be converted to ESC+char.
+    # Note that mixing unicode chars and \M-char is not recommended. "\M-C\M-\C-A" is a single unicode character.
+    input = input.chars.map do |c|
+      c.valid_encoding? ? c : "\e#{(c.bytes[0] & 0x7f).chr}"
+    end.join
+    input_raw_keys(input, convert)
   end
 
   def input_raw_keys(input, convert = true)
     input = convert_str(input) if convert
-    input.chars.each do |c|
-      @line_editor.input_key(Reline::Key.new(c.ord, c.ord, false))
+    key_stroke = Reline::KeyStroke.new(@config, @encoding)
+    input_bytes = input.bytes
+    until input_bytes.empty?
+      expanded, input_bytes = key_stroke.expand(input_bytes)
+      expanded.each do |key|
+        @line_editor.input_key(key)
+      end
     end
   end
 

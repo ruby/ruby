@@ -15,7 +15,7 @@ module Reline::KeyActor
     #   6 ^F
     :ed_next_char,
     #   7 ^G
-    :ed_unassigned,
+    nil,
     #   8 ^H
     :em_delete_prev_char,
     #   9 ^I
@@ -49,19 +49,19 @@ module Reline::KeyActor
     #  23 ^W
     :em_kill_region,
     #  24 ^X
-    :ed_unassigned,
+    nil,
     #  25 ^Y
     :em_yank,
     #  26 ^Z
     :ed_ignore,
     #  27 ^[
-    :ed_unassigned,
+    nil,
     #  28 ^\
     :ed_ignore,
     #  29 ^]
     :ed_ignore,
     #  30 ^^
-    :ed_unassigned,
+    nil,
     #  31 ^_
     :undo,
     #  32 SPACE
@@ -257,101 +257,101 @@ module Reline::KeyActor
     # 127 ^?
     :em_delete_prev_char,
     # 128 M-^@
-    :ed_unassigned,
+    nil,
     # 129 M-^A
-    :ed_unassigned,
+    nil,
     # 130 M-^B
-    :ed_unassigned,
+    nil,
     # 131 M-^C
-    :ed_unassigned,
+    nil,
     # 132 M-^D
-    :ed_unassigned,
+    nil,
     # 133 M-^E
-    :ed_unassigned,
+    nil,
     # 134 M-^F
-    :ed_unassigned,
+    nil,
     # 135 M-^G
-    :ed_unassigned,
+    nil,
     # 136 M-^H
     :ed_delete_prev_word,
     # 137 M-^I
-    :ed_unassigned,
+    nil,
     # 138 M-^J
     :key_newline,
     # 139 M-^K
-    :ed_unassigned,
+    nil,
     # 140 M-^L
     :ed_clear_screen,
     # 141 M-^M
     :key_newline,
     # 142 M-^N
-    :ed_unassigned,
+    nil,
     # 143 M-^O
-    :ed_unassigned,
+    nil,
     # 144 M-^P
-    :ed_unassigned,
+    nil,
     # 145 M-^Q
-    :ed_unassigned,
+    nil,
     # 146 M-^R
-    :ed_unassigned,
+    nil,
     # 147 M-^S
-    :ed_unassigned,
+    nil,
     # 148 M-^T
-    :ed_unassigned,
+    nil,
     # 149 M-^U
-    :ed_unassigned,
+    nil,
     # 150 M-^V
-    :ed_unassigned,
+    nil,
     # 151 M-^W
-    :ed_unassigned,
+    nil,
     # 152 M-^X
-    :ed_unassigned,
+    nil,
     # 153 M-^Y
     :em_yank_pop,
     # 154 M-^Z
-    :ed_unassigned,
+    nil,
     # 155 M-^[
-    :ed_unassigned,
+    nil,
     # 156 M-^\
-    :ed_unassigned,
+    nil,
     # 157 M-^]
-    :ed_unassigned,
+    nil,
     # 158 M-^^
-    :ed_unassigned,
+    nil,
     # 159 M-^_
     :redo,
     # 160 M-SPACE
     :em_set_mark,
     # 161 M-!
-    :ed_unassigned,
+    nil,
     # 162 M-"
-    :ed_unassigned,
+    nil,
     # 163 M-#
-    :ed_unassigned,
+    nil,
     # 164 M-$
-    :ed_unassigned,
+    nil,
     # 165 M-%
-    :ed_unassigned,
+    nil,
     # 166 M-&
-    :ed_unassigned,
+    nil,
     # 167 M-'
-    :ed_unassigned,
+    nil,
     # 168 M-(
-    :ed_unassigned,
+    nil,
     # 169 M-)
-    :ed_unassigned,
+    nil,
     # 170 M-*
-    :ed_unassigned,
+    nil,
     # 171 M-+
-    :ed_unassigned,
+    nil,
     # 172 M-,
-    :ed_unassigned,
+    nil,
     # 173 M--
-    :ed_unassigned,
+    nil,
     # 174 M-.
-    :ed_unassigned,
+    nil,
     # 175 M-/
-    :ed_unassigned,
+    nil,
     # 176 M-0
     :ed_argument_digit,
     # 177 M-1
@@ -373,21 +373,21 @@ module Reline::KeyActor
     # 185 M-9
     :ed_argument_digit,
     # 186 M-:
-    :ed_unassigned,
+    nil,
     # 187 M-;
-    :ed_unassigned,
+    nil,
     # 188 M-<
-    :ed_unassigned,
+    nil,
     # 189 M-=
-    :ed_unassigned,
+    nil,
     # 190 M->
-    :ed_unassigned,
+    nil,
     # 191 M-?
-    :ed_unassigned,
+    nil,
     # 192 M-@
-    :ed_unassigned,
+    nil,
     # 193 M-A
-    :ed_unassigned,
+    nil,
     # 194 M-B
     :ed_prev_word,
     # 195 M-C
@@ -395,63 +395,63 @@ module Reline::KeyActor
     # 196 M-D
     :em_delete_next_word,
     # 197 M-E
-    :ed_unassigned,
+    nil,
     # 198 M-F
     :em_next_word,
     # 199 M-G
-    :ed_unassigned,
+    nil,
     # 200 M-H
-    :ed_unassigned,
+    nil,
     # 201 M-I
-    :ed_unassigned,
+    nil,
     # 202 M-J
-    :ed_unassigned,
+    nil,
     # 203 M-K
-    :ed_unassigned,
+    nil,
     # 204 M-L
     :em_lower_case,
     # 205 M-M
-    :ed_unassigned,
+    nil,
     # 206 M-N
     :vi_search_next,
     # 207 M-O
-    :ed_unassigned,
+    nil,
     # 208 M-P
     :vi_search_prev,
     # 209 M-Q
-    :ed_unassigned,
+    nil,
     # 210 M-R
-    :ed_unassigned,
+    nil,
     # 211 M-S
-    :ed_unassigned,
+    nil,
     # 212 M-T
-    :ed_unassigned,
+    nil,
     # 213 M-U
     :em_upper_case,
     # 214 M-V
-    :ed_unassigned,
+    nil,
     # 215 M-W
-    :ed_unassigned,
+    nil,
     # 216 M-X
-    :ed_unassigned,
+    nil,
     # 217 M-Y
     :em_yank_pop,
     # 218 M-Z
-    :ed_unassigned,
+    nil,
     # 219 M-[
-    :ed_unassigned,
+    nil,
     # 220 M-\
-    :ed_unassigned,
+    nil,
     # 221 M-]
-    :ed_unassigned,
+    nil,
     # 222 M-^
-    :ed_unassigned,
+    nil,
     # 223 M-_
-    :ed_unassigned,
+    nil,
     # 224 M-`
-    :ed_unassigned,
+    nil,
     # 225 M-a
-    :ed_unassigned,
+    nil,
     # 226 M-b
     :ed_prev_word,
     # 227 M-c
@@ -459,57 +459,57 @@ module Reline::KeyActor
     # 228 M-d
     :em_delete_next_word,
     # 229 M-e
-    :ed_unassigned,
+    nil,
     # 230 M-f
     :em_next_word,
     # 231 M-g
-    :ed_unassigned,
+    nil,
     # 232 M-h
-    :ed_unassigned,
+    nil,
     # 233 M-i
-    :ed_unassigned,
+    nil,
     # 234 M-j
-    :ed_unassigned,
+    nil,
     # 235 M-k
-    :ed_unassigned,
+    nil,
     # 236 M-l
     :em_lower_case,
     # 237 M-m
-    :ed_unassigned,
+    nil,
     # 238 M-n
     :vi_search_next,
     # 239 M-o
-    :ed_unassigned,
+    nil,
     # 240 M-p
     :vi_search_prev,
     # 241 M-q
-    :ed_unassigned,
+    nil,
     # 242 M-r
-    :ed_unassigned,
+    nil,
     # 243 M-s
-    :ed_unassigned,
+    nil,
     # 244 M-t
     :ed_transpose_words,
     # 245 M-u
     :em_upper_case,
     # 246 M-v
-    :ed_unassigned,
+    nil,
     # 247 M-w
-    :ed_unassigned,
+    nil,
     # 248 M-x
-    :ed_unassigned,
+    nil,
     # 249 M-y
-    :ed_unassigned,
+    nil,
     # 250 M-z
-    :ed_unassigned,
+    nil,
     # 251 M-{
-    :ed_unassigned,
+    nil,
     # 252 M-|
-    :ed_unassigned,
+    nil,
     # 253 M-}
-    :ed_unassigned,
+    nil,
     # 254 M-~
-    :ed_unassigned,
+    nil,
     # 255 M-^?
     :ed_delete_prev_word
     # EOF

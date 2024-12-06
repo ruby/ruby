@@ -1,11 +1,11 @@
 module Reline::KeyActor
   VI_COMMAND_MAPPING = [
     #   0 ^@
-    :ed_unassigned,
+    nil,
     #   1 ^A
     :ed_move_to_beg,
     #   2 ^B
-    :ed_unassigned,
+    nil,
     #   3 ^C
     :ed_ignore,
     #   4 ^D
@@ -13,13 +13,13 @@ module Reline::KeyActor
     #   5 ^E
     :ed_move_to_end,
     #   6 ^F
-    :ed_unassigned,
+    nil,
     #   7 ^G
-    :ed_unassigned,
+    nil,
     #   8 ^H
     :ed_prev_char,
     #   9 ^I
-    :ed_unassigned,
+    nil,
     #  10 ^J
     :ed_newline,
     #  11 ^K
@@ -49,51 +49,51 @@ module Reline::KeyActor
     #  23 ^W
     :ed_delete_prev_word,
     #  24 ^X
-    :ed_unassigned,
+    nil,
     #  25 ^Y
     :em_yank,
     #  26 ^Z
-    :ed_unassigned,
+    nil,
     #  27 ^[
-    :ed_unassigned,
+    nil,
     #  28 ^\
     :ed_ignore,
     #  29 ^]
-    :ed_unassigned,
+    nil,
     #  30 ^^
-    :ed_unassigned,
+    nil,
     #  31 ^_
-    :ed_unassigned,
+    nil,
     #  32 SPACE
     :ed_next_char,
     #  33 !
-    :ed_unassigned,
+    nil,
     #  34 "
-    :ed_unassigned,
+    nil,
     #  35 #
     :vi_comment_out,
     #  36 $
     :ed_move_to_end,
     #  37 %
-    :ed_unassigned,
+    nil,
     #  38 &
-    :ed_unassigned,
+    nil,
     #  39 '
-    :ed_unassigned,
+    nil,
     #  40 (
-    :ed_unassigned,
+    nil,
     #  41 )
-    :ed_unassigned,
+    nil,
     #  42 *
-    :ed_unassigned,
+    nil,
     #  43 +
     :ed_next_history,
     #  44 ,
-    :ed_unassigned,
+    nil,
     #  45 -
     :ed_prev_history,
     #  46 .
-    :ed_unassigned,
+    nil,
     #  47 /
     :vi_search_prev,
     #  48 0
@@ -117,15 +117,15 @@ module Reline::KeyActor
     #  57 9
     :ed_argument_digit,
     #  58 :
-    :ed_unassigned,
+    nil,
     #  59 ;
-    :ed_unassigned,
+    nil,
     #  60 <
-    :ed_unassigned,
+    nil,
     #  61 =
-    :ed_unassigned,
+    nil,
     #  62 >
-    :ed_unassigned,
+    nil,
     #  63 ?
     :vi_search_next,
     #  64 @
@@ -145,7 +145,7 @@ module Reline::KeyActor
     #  71 G
     :vi_to_history_line,
     #  72 H
-    :ed_unassigned,
+    nil,
     #  73 I
     :vi_insert_at_bol,
     #  74 J
@@ -153,47 +153,47 @@ module Reline::KeyActor
     #  75 K
     :vi_search_prev,
     #  76 L
-    :ed_unassigned,
+    nil,
     #  77 M
-    :ed_unassigned,
+    nil,
     #  78 N
-    :ed_unassigned,
+    nil,
     #  79 O
-    :ed_unassigned,
+    nil,
     #  80 P
     :vi_paste_prev,
     #  81 Q
-    :ed_unassigned,
+    nil,
     #  82 R
-    :ed_unassigned,
+    nil,
     #  83 S
-    :ed_unassigned,
+    nil,
     #  84 T
     :vi_to_prev_char,
     #  85 U
-    :ed_unassigned,
+    nil,
     #  86 V
-    :ed_unassigned,
+    nil,
     #  87 W
     :vi_next_big_word,
     #  88 X
     :ed_delete_prev_char,
     #  89 Y
-    :ed_unassigned,
+    nil,
     #  90 Z
-    :ed_unassigned,
+    nil,
     #  91 [
-    :ed_unassigned,
+    nil,
     #  92 \
-    :ed_unassigned,
+    nil,
     #  93 ]
-    :ed_unassigned,
+    nil,
     #  94 ^
     :vi_first_print,
     #  95 _
-    :ed_unassigned,
+    nil,
     #  96 `
-    :ed_unassigned,
+    nil,
     #  97 a
     :vi_add,
     #  98 b
@@ -207,7 +207,7 @@ module Reline::KeyActor
     # 102 f
     :vi_next_char,
     # 103 g
-    :ed_unassigned,
+    nil,
     # 104 h
     :ed_prev_char,
     # 105 i
@@ -219,23 +219,23 @@ module Reline::KeyActor
     # 108 l
     :ed_next_char,
     # 109 m
-    :ed_unassigned,
+    nil,
     # 110 n
-    :ed_unassigned,
+    nil,
     # 111 o
-    :ed_unassigned,
+    nil,
     # 112 p
     :vi_paste_next,
     # 113 q
-    :ed_unassigned,
+    nil,
     # 114 r
     :vi_replace_char,
     # 115 s
-    :ed_unassigned,
+    nil,
     # 116 t
     :vi_to_next_char,
     # 117 u
-    :ed_unassigned,
+    nil,
     # 118 v
     :vi_histedit,
     # 119 w
@@ -245,273 +245,273 @@ module Reline::KeyActor
     # 121 y
     :vi_yank,
     # 122 z
-    :ed_unassigned,
+    nil,
     # 123 {
-    :ed_unassigned,
+    nil,
     # 124 |
     :vi_to_column,
     # 125 }
-    :ed_unassigned,
+    nil,
     # 126 ~
-    :ed_unassigned,
+    nil,
     # 127 ^?
     :em_delete_prev_char,
     # 128 M-^@
-    :ed_unassigned,
+    nil,
     # 129 M-^A
-    :ed_unassigned,
+    nil,
     # 130 M-^B
-    :ed_unassigned,
+    nil,
     # 131 M-^C
-    :ed_unassigned,
+    nil,
     # 132 M-^D
-    :ed_unassigned,
+    nil,
     # 133 M-^E
-    :ed_unassigned,
+    nil,
     # 134 M-^F
-    :ed_unassigned,
+    nil,
     # 135 M-^G
-    :ed_unassigned,
+    nil,
     # 136 M-^H
-    :ed_unassigned,
+    nil,
     # 137 M-^I
-    :ed_unassigned,
+    nil,
     # 138 M-^J
-    :ed_unassigned,
+    nil,
     # 139 M-^K
-    :ed_unassigned,
+    nil,
     # 140 M-^L
-    :ed_unassigned,
+    nil,
     # 141 M-^M
-    :ed_unassigned,
+    nil,
     # 142 M-^N
-    :ed_unassigned,
+    nil,
     # 143 M-^O
-    :ed_unassigned,
+    nil,
     # 144 M-^P
-    :ed_unassigned,
+    nil,
     # 145 M-^Q
-    :ed_unassigned,
+    nil,
     # 146 M-^R
-    :ed_unassigned,
+    nil,
     # 147 M-^S
-    :ed_unassigned,
+    nil,
     # 148 M-^T
-    :ed_unassigned,
+    nil,
     # 149 M-^U
-    :ed_unassigned,
+    nil,
     # 150 M-^V
-    :ed_unassigned,
+    nil,
     # 151 M-^W
-    :ed_unassigned,
+    nil,
     # 152 M-^X
-    :ed_unassigned,
+    nil,
     # 153 M-^Y
-    :ed_unassigned,
+    nil,
     # 154 M-^Z
-    :ed_unassigned,
+    nil,
     # 155 M-^[
-    :ed_unassigned,
+    nil,
     # 156 M-^\
-    :ed_unassigned,
+    nil,
     # 157 M-^]
-    :ed_unassigned,
+    nil,
     # 158 M-^^
-    :ed_unassigned,
+    nil,
     # 159 M-^_
-    :ed_unassigned,
+    nil,
     # 160 M-SPACE
-    :ed_unassigned,
+    nil,
     # 161 M-!
-    :ed_unassigned,
+    nil,
     # 162 M-"
-    :ed_unassigned,
+    nil,
     # 163 M-#
-    :ed_unassigned,
+    nil,
     # 164 M-$
-    :ed_unassigned,
+    nil,
     # 165 M-%
-    :ed_unassigned,
+    nil,
     # 166 M-&
-    :ed_unassigned,
+    nil,
     # 167 M-'
-    :ed_unassigned,
+    nil,
     # 168 M-(
-    :ed_unassigned,
+    nil,
     # 169 M-)
-    :ed_unassigned,
+    nil,
     # 170 M-*
-    :ed_unassigned,
+    nil,
     # 171 M-+
-    :ed_unassigned,
+    nil,
     # 172 M-,
-    :ed_unassigned,
+    nil,
     # 173 M--
-    :ed_unassigned,
+    nil,
     # 174 M-.
-    :ed_unassigned,
+    nil,
     # 175 M-/
-    :ed_unassigned,
+    nil,
     # 176 M-0
-    :ed_unassigned,
+    nil,
     # 177 M-1
-    :ed_unassigned,
+    nil,
     # 178 M-2
-    :ed_unassigned,
+    nil,
     # 179 M-3
-    :ed_unassigned,
+    nil,
     # 180 M-4
-    :ed_unassigned,
+    nil,
     # 181 M-5
-    :ed_unassigned,
+    nil,
     # 182 M-6
-    :ed_unassigned,
+    nil,
     # 183 M-7
-    :ed_unassigned,
+    nil,
     # 184 M-8
-    :ed_unassigned,
+    nil,
     # 185 M-9
-    :ed_unassigned,
+    nil,
     # 186 M-:
-    :ed_unassigned,
+    nil,
     # 187 M-;
-    :ed_unassigned,
+    nil,
     # 188 M-<
-    :ed_unassigned,
+    nil,
     # 189 M-=
-    :ed_unassigned,
+    nil,
     # 190 M->
-    :ed_unassigned,
+    nil,
     # 191 M-?
-    :ed_unassigned,
+    nil,
     # 192 M-@
-    :ed_unassigned,
+    nil,
     # 193 M-A
-    :ed_unassigned,
+    nil,
     # 194 M-B
-    :ed_unassigned,
+    nil,
     # 195 M-C
-    :ed_unassigned,
+    nil,
     # 196 M-D
-    :ed_unassigned,
+    nil,
     # 197 M-E
-    :ed_unassigned,
+    nil,
     # 198 M-F
-    :ed_unassigned,
+    nil,
     # 199 M-G
-    :ed_unassigned,
+    nil,
     # 200 M-H
-    :ed_unassigned,
+    nil,
     # 201 M-I
-    :ed_unassigned,
+    nil,
     # 202 M-J
-    :ed_unassigned,
+    nil,
     # 203 M-K
-    :ed_unassigned,
+    nil,
     # 204 M-L
-    :ed_unassigned,
+    nil,
     # 205 M-M
-    :ed_unassigned,
+    nil,
     # 206 M-N
-    :ed_unassigned,
+    nil,
     # 207 M-O
-    :ed_unassigned,
+    nil,
     # 208 M-P
-    :ed_unassigned,
+    nil,
     # 209 M-Q
-    :ed_unassigned,
+    nil,
     # 210 M-R
-    :ed_unassigned,
+    nil,
     # 211 M-S
-    :ed_unassigned,
+    nil,
     # 212 M-T
-    :ed_unassigned,
+    nil,
     # 213 M-U
-    :ed_unassigned,
+    nil,
     # 214 M-V
-    :ed_unassigned,
+    nil,
     # 215 M-W
-    :ed_unassigned,
+    nil,
     # 216 M-X
-    :ed_unassigned,
+    nil,
     # 217 M-Y
-    :ed_unassigned,
+    nil,
     # 218 M-Z
-    :ed_unassigned,
+    nil,
     # 219 M-[
-    :ed_unassigned,
+    nil,
     # 220 M-\
-    :ed_unassigned,
+    nil,
     # 221 M-]
-    :ed_unassigned,
+    nil,
     # 222 M-^
-    :ed_unassigned,
+    nil,
     # 223 M-_
-    :ed_unassigned,
+    nil,
     # 224 M-`
-    :ed_unassigned,
+    nil,
     # 225 M-a
-    :ed_unassigned,
+    nil,
     # 226 M-b
-    :ed_unassigned,
+    nil,
     # 227 M-c
-    :ed_unassigned,
+    nil,
     # 228 M-d
-    :ed_unassigned,
+    nil,
     # 229 M-e
-    :ed_unassigned,
+    nil,
     # 230 M-f
-    :ed_unassigned,
+    nil,
     # 231 M-g
-    :ed_unassigned,
+    nil,
     # 232 M-h
-    :ed_unassigned,
+    nil,
     # 233 M-i
-    :ed_unassigned,
+    nil,
     # 234 M-j
-    :ed_unassigned,
+    nil,
     # 235 M-k
-    :ed_unassigned,
+    nil,
     # 236 M-l
-    :ed_unassigned,
+    nil,
     # 237 M-m
-    :ed_unassigned,
+    nil,
     # 238 M-n
-    :ed_unassigned,
+    nil,
     # 239 M-o
-    :ed_unassigned,
+    nil,
     # 240 M-p
-    :ed_unassigned,
+    nil,
     # 241 M-q
-    :ed_unassigned,
+    nil,
     # 242 M-r
-    :ed_unassigned,
+    nil,
     # 243 M-s
-    :ed_unassigned,
+    nil,
     # 244 M-t
-    :ed_unassigned,
+    nil,
     # 245 M-u
-    :ed_unassigned,
+    nil,
     # 246 M-v
-    :ed_unassigned,
+    nil,
     # 247 M-w
-    :ed_unassigned,
+    nil,
     # 248 M-x
-    :ed_unassigned,
+    nil,
     # 249 M-y
-    :ed_unassigned,
+    nil,
     # 250 M-z
-    :ed_unassigned,
+    nil,
     # 251 M-{
-    :ed_unassigned,
+    nil,
     # 252 M-|
-    :ed_unassigned,
+    nil,
     # 253 M-}
-    :ed_unassigned,
+    nil,
     # 254 M-~
-    :ed_unassigned,
+    nil,
     # 255 M-^?
-    :ed_unassigned
+    nil
     # EOF
   ]
 end

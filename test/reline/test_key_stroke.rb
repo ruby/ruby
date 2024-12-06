@@ -1,18 +1,6 @@
 require_relative 'helper'
 
 class Reline::KeyStroke::Test < Reline::TestCase
-  using Module.new {
-    refine Array do
-      def as_s
-        join
-      end
-
-      def to_keys
-        map{ |b| Reline::Key.new(b, b, false) }
-      end
-    end
-  }
-
   def encoding
     Reline.core.encoding
   end
@@ -65,14 +53,14 @@ class Reline::KeyStroke::Test < Reline::TestCase
   def test_expand
     config = Reline::Config.new
     {
-      'abc' => '123',
-      'ab' => '456'
+      'abc' => 'AB',
+      'ab' => "1\C-a"
     }.each_pair do |key, func|
       config.add_default_key_binding(key.bytes, func.bytes)
     end
     stroke = Reline::KeyStroke.new(config, encoding)
-    assert_equal(['123'.bytes.map { |c| Reline::Key.new(c, c, false) }, 'de'.bytes], stroke.expand('abcde'.bytes))
-    assert_equal(['456'.bytes.map { |c| Reline::Key.new(c, c, false) }, 'de'.bytes], stroke.expand('abde'.bytes))
+    assert_equal([[Reline::Key.new('A', :ed_insert, false), Reline::Key.new('B', :ed_insert, false)], 'de'.bytes], stroke.expand('abcde'.bytes))
+    assert_equal([[Reline::Key.new('1', :ed_digit, false), Reline::Key.new("\C-a", :ed_move_to_beg, false)], 'de'.bytes], stroke.expand('abde'.bytes))
     # CSI sequence
     assert_equal([[], 'bc'.bytes], stroke.expand("\e[1;2;3;4;5abc".bytes))
     assert_equal([[], 'BC'.bytes], stroke.expand("\e\e[ABC".bytes))
@@ -83,24 +71,17 @@ class Reline::KeyStroke::Test < Reline::TestCase
   def test_oneshot_key_bindings
     config = Reline::Config.new
     {
-      'abc' => '123',
-    }.each_pair do |key, func|
-      config.add_default_key_binding(key.bytes, func.bytes)
-    end
-    stroke = Reline::KeyStroke.new(config, encoding)
-    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('zzz'.bytes))
-    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status('abc'.bytes))
-  end
-
-  def test_with_reline_key
-    config = Reline::Config.new
-    {
+      'abc'.bytes => '123',
+      # IRB version <= 1.13.1 wrongly uses Reline::Key with wrong argument. It should be ignored without error.
+      [Reline::Key.new(nil, 0xE4, true)] => '012',
       "\eda".bytes => 'abc', # Alt+d a
       [195, 164] => 'def'
     }.each_pair do |key, func|
       config.add_oneshot_key_binding(key, func.bytes)
     end
     stroke = Reline::KeyStroke.new(config, encoding)
+    assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('zzz'.bytes))
+    assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status('abc'.bytes))
     assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status('da'.bytes))
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status("\eda".bytes))
     assert_equal(Reline::KeyStroke::UNMATCHED, stroke.match_status(" \eda".bytes))
@@ -115,7 +96,7 @@ class Reline::KeyStroke::Test < Reline::TestCase
     end
     config = Reline::Config.new
     stroke = Reline::KeyStroke.new(config, encoding)
-    key = Reline::Key.new(char.ord, char.ord, false)
+    key = Reline::Key.new(char, :ed_insert, false)
     bytes = char.bytes
     assert_equal(Reline::KeyStroke::MATCHED, stroke.match_status(bytes))
     assert_equal([[key], []], stroke.expand(bytes))

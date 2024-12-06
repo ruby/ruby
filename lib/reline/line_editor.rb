@@ -973,10 +973,17 @@ class Reline::LineEditor
     @drop_terminate_spaces = false
   end
 
+  VI_WAITING_ACCEPT_METHODS = %i[vi_change_meta vi_delete_meta vi_yank ed_insert ed_argument_digit]
+
   private def process_key(key, method_symbol)
-    if key.is_a?(Symbol)
-      cleanup_waiting
-    elsif @waiting_proc
+    if @waiting_proc
+      cleanup_waiting unless key.size == 1
+    end
+    if @vi_waiting_operator
+      cleanup_waiting unless VI_WAITING_ACCEPT_METHODS.include?(method_symbol) || VI_MOTIONS.include?(method_symbol)
+    end
+
+    if @waiting_proc
       old_byte_pointer = @byte_pointer
       @waiting_proc.call(key)
       if @vi_waiting_operator
@@ -990,23 +997,14 @@ class Reline::LineEditor
       return
     end
 
+    # Reject multibyte input (converted to ed_insert) in vi_command mode
+    return if method_symbol == :ed_insert && @config.editing_mode_is?(:vi_command)
+
     if method_symbol and respond_to?(method_symbol, true)
       method_obj = method(method_symbol)
     end
-    if method_symbol and key.is_a?(Symbol)
-      if @vi_arg and argumentable?(method_obj)
-        run_for_operators(key, method_symbol) do |with_operator|
-          wrap_method_call(method_symbol, method_obj, key, with_operator)
-        end
-      else
-        wrap_method_call(method_symbol, method_obj, key) if method_obj
-      end
-      @kill_ring.process
-      if @vi_arg
-        @vi_arg = nil
-      end
-    elsif @vi_arg
-      if key.chr =~ /[0-9]/
+    if @vi_arg
+      if key.match?(/\A\d\z/)
         ed_argument_digit(key)
       else
         if argumentable?(method_obj)
@@ -1015,8 +1013,6 @@ class Reline::LineEditor
           end
         elsif method_obj
           wrap_method_call(method_symbol, method_obj, key)
-        else
-          ed_insert(key) unless @config.editing_mode_is?(:vi_command)
         end
         @kill_ring.process
         if @vi_arg
@@ -1032,21 +1028,6 @@ class Reline::LineEditor
         end
       end
       @kill_ring.process
-    else
-      ed_insert(key) unless @config.editing_mode_is?(:vi_command)
-    end
-  end
-
-  private def normal_char(key)
-    if key.char < 0x80
-      method_symbol = @config.editing_mode.get_method(key.combined_char)
-      process_key(key.combined_char, method_symbol)
-    else
-      process_key(key.char.chr(encoding), nil)
-    end
-    if @config.editing_mode_is?(:vi_command) and @byte_pointer > 0 and @byte_pointer == current_line.bytesize
-      byte_size = Reline::Unicode.get_prev_mbchar_size(@buffer_of_lines[@line_index], @byte_pointer)
-      @byte_pointer -= byte_size
     end
   end
 
@@ -1063,23 +1044,23 @@ class Reline::LineEditor
   def input_key(key)
     save_old_buffer
     @config.reset_oneshot_key_bindings
-    @dialogs.each do |dialog|
-      if key.char.instance_of?(Symbol) and key.char == dialog.name
-        return
-      end
-    end
     if key.char.nil?
       process_insert(force: true)
       @eof = buffer_empty?
       finish
       return
     end
+    @dialogs.each do |dialog|
+      if key.method_symbol == dialog.name
+        return
+      end
+    end
     @completion_occurs = false
 
-    if key.char.is_a?(Symbol)
-      process_key(key.char, key.char)
-    else
-      normal_char(key)
+    process_key(key.char, key.method_symbol)
+    if @config.editing_mode_is?(:vi_command) and @byte_pointer > 0 and @byte_pointer == current_line.bytesize
+      byte_size = Reline::Unicode.get_prev_mbchar_size(@buffer_of_lines[@line_index], @byte_pointer)
+      @byte_pointer -= byte_size
     end
 
     @prev_action_state, @next_action_state = @next_action_state, NullActionState
@@ -1432,21 +1413,11 @@ class Reline::LineEditor
   #            digit or if the existing argument is already greater than a
   #            million.
   # GNU Readline:: +self-insert+ (a, b, A, 1, !, …) Insert yourself.
-  private def ed_insert(key)
-    if key.instance_of?(String)
-      begin
-        key.encode(Encoding::UTF_8)
-      rescue Encoding::UndefinedConversionError
-        return
-      end
-      str = key
-    else
-      begin
-        key.chr.encode(Encoding::UTF_8)
-      rescue Encoding::UndefinedConversionError
-        return
-      end
-      str = key.chr
+  private def ed_insert(str)
+    begin
+      str.encode(Encoding::UTF_8)
+    rescue Encoding::UndefinedConversionError
+      return
     end
     if @in_pasting
       @continuous_insertion_buffer << str
@@ -1463,11 +1434,10 @@ class Reline::LineEditor
   private def ed_quoted_insert(str, arg: 1)
     @waiting_proc = proc { |key|
       arg.times do
-        if key == "\C-j".ord or key == "\C-m".ord
+        if key == "\C-j" or key == "\C-m"
           key_newline(key)
-        elsif key == 0
+        elsif key != "\0"
           # Ignore NUL.
-        else
           ed_insert(key)
         end
       end
@@ -1523,13 +1493,13 @@ class Reline::LineEditor
     lambda do |key|
       search_again = false
       case key
-      when "\C-h".ord, "\C-?".ord
+      when "\C-h", "\C-?"
         grapheme_clusters = search_word.grapheme_clusters
         if grapheme_clusters.size > 0
           grapheme_clusters.pop
           search_word = grapheme_clusters.join
         end
-      when "\C-r".ord, "\C-s".ord
+      when "\C-r", "\C-s"
         search_again = true if search_key == key
         search_key = key
       else
@@ -1546,10 +1516,10 @@ class Reline::LineEditor
           end
           if @history_pointer
             case search_key
-            when "\C-r".ord
+            when "\C-r"
               history_pointer_base = 0
               history = Reline::HISTORY[0..(@history_pointer - 1)]
-            when "\C-s".ord
+            when "\C-s"
               history_pointer_base = @history_pointer + 1
               history = Reline::HISTORY[(@history_pointer + 1)..-1]
             end
@@ -1559,10 +1529,10 @@ class Reline::LineEditor
           end
         elsif @history_pointer
           case search_key
-          when "\C-r".ord
+          when "\C-r"
             history_pointer_base = 0
             history = Reline::HISTORY[0..@history_pointer]
-          when "\C-s".ord
+          when "\C-s"
             history_pointer_base = @history_pointer
             history = Reline::HISTORY[@history_pointer..-1]
           end
@@ -1571,11 +1541,11 @@ class Reline::LineEditor
           history = Reline::HISTORY
         end
         case search_key
-        when "\C-r".ord
+        when "\C-r"
           hit_index = history.rindex { |item|
             item.include?(search_word)
           }
-        when "\C-s".ord
+        when "\C-s"
           hit_index = history.index { |item|
             item.include?(search_word)
           }
@@ -1586,9 +1556,9 @@ class Reline::LineEditor
         end
       end
       case search_key
-      when "\C-r".ord
+      when "\C-r"
         prompt_name = 'reverse-i-search'
-      when "\C-s".ord
+      when "\C-s"
         prompt_name = 'i-search'
       end
       prompt_name = "failed #{prompt_name}" unless hit
@@ -1600,16 +1570,15 @@ class Reline::LineEditor
     backup = @buffer_of_lines.dup, @line_index, @byte_pointer, @history_pointer, @line_backup_in_history
     searcher = generate_searcher(key)
     @searching_prompt = "(reverse-i-search)`': "
-    termination_keys = ["\C-j".ord]
-    termination_keys.concat(@config.isearch_terminators.chars.map(&:ord)) if @config.isearch_terminators
+    termination_keys = ["\C-j"]
+    termination_keys.concat(@config.isearch_terminators.chars) if @config.isearch_terminators
     @waiting_proc = ->(k) {
-      chr = k.is_a?(String) ? k : k.chr(Encoding::ASCII_8BIT)
-      if k == "\C-g".ord
+      if k == "\C-g"
         # cancel search and restore buffer
         @buffer_of_lines, @line_index, @byte_pointer, @history_pointer, @line_backup_in_history = backup
         @searching_prompt = nil
         @waiting_proc = nil
-      elsif !termination_keys.include?(k) && (chr.match?(/[[:print:]]/) || k == "\C-h".ord || k == "\C-?".ord || k == "\C-r".ord || k == "\C-s".ord)
+      elsif !termination_keys.include?(k) && (k.match?(/[[:print:]]/) || k == "\C-h" || k == "\C-?" || k == "\C-r" || k == "\C-s")
         search_word, prompt_name, hit_pointer = searcher.call(k)
         Reline.last_incremental_search = search_word
         @searching_prompt = "(%s)`%s'" % [prompt_name, search_word]
@@ -1825,7 +1794,7 @@ class Reline::LineEditor
   alias_method :kill_whole_line, :em_kill_line
 
   private def em_delete(key)
-    if buffer_empty? and key == "\C-d".ord
+    if buffer_empty? and key == "\C-d"
       @eof = true
       finish
     elsif @byte_pointer < current_line.bytesize
@@ -2243,20 +2212,9 @@ class Reline::LineEditor
   end
 
   private def ed_argument_digit(key)
-    if @vi_arg.nil?
-      if key.chr.to_i.zero?
-        if key.anybits?(0b10000000)
-          unescaped_key = key ^ 0b10000000
-          unless unescaped_key.chr.to_i.zero?
-            @vi_arg = unescaped_key.chr.to_i
-          end
-        end
-      else
-        @vi_arg = key.chr.to_i
-      end
-    else
-      @vi_arg = @vi_arg * 10 + key.chr.to_i
-    end
+    # key is expected to be `ESC digit` or `digit`
+    num = key[/\d/].to_i
+    @vi_arg = (@vi_arg || 0) * 10 + num
   end
 
   private def vi_to_column(key, arg: 0)
@@ -2275,7 +2233,7 @@ class Reline::LineEditor
         before = current_line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
         after = current_line.byteslice(remaining_point, current_line.bytesize - remaining_point)
-        set_current_line(before + k.chr + after)
+        set_current_line(before + k + after)
         @waiting_proc = nil
       elsif arg > 1
         byte_size = 0
@@ -2285,7 +2243,7 @@ class Reline::LineEditor
         before = current_line.byteslice(0, @byte_pointer)
         remaining_point = @byte_pointer + byte_size
         after = current_line.byteslice(remaining_point, current_line.bytesize - remaining_point)
-        replaced = k.chr * arg
+        replaced = k * arg
         set_current_line(before + replaced + after, @byte_pointer + replaced.bytesize)
         @waiting_proc = nil
       end
@@ -2301,11 +2259,6 @@ class Reline::LineEditor
   end
 
   private def search_next_char(key, arg, need_prev_char: false, inclusive: false)
-    if key.instance_of?(String)
-      inputted_char = key
-    else
-      inputted_char = key.chr
-    end
     prev_total = nil
     total = nil
     found = false
@@ -2316,7 +2269,7 @@ class Reline::LineEditor
         width = Reline::Unicode.get_mbchar_width(mbchar)
         total = [mbchar.bytesize, width]
       else
-        if inputted_char == mbchar
+        if key == mbchar
           arg -= 1
           if arg.zero?
             found = true
@@ -2353,11 +2306,6 @@ class Reline::LineEditor
   end
 
   private def search_prev_char(key, arg, need_next_char = false)
-    if key.instance_of?(String)
-      inputted_char = key
-    else
-      inputted_char = key.chr
-    end
     prev_total = nil
     total = nil
     found = false
@@ -2368,7 +2316,7 @@ class Reline::LineEditor
         width = Reline::Unicode.get_mbchar_width(mbchar)
         total = [mbchar.bytesize, width]
       else
-        if inputted_char == mbchar
+        if key == mbchar
           arg -= 1
           if arg.zero?
             found = true

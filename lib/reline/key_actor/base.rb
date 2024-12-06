@@ -1,12 +1,18 @@
 class Reline::KeyActor::Base
-  def initialize(mapping = [])
-    @mapping = mapping
+  def initialize(mappings = nil)
     @matching_bytes = {}
     @key_bindings = {}
+    add_mappings(mappings) if mappings
   end
 
-  def get_method(key)
-    @mapping[key]
+  def add_mappings(mappings)
+    add([27], :ed_ignore)
+    128.times do |key|
+      func = mappings[key]
+      meta_func = mappings[key | 0b10000000]
+      add([key], func) if func
+      add([27, key], meta_func) if meta_func
+    end
   end
 
   def add(key, func)

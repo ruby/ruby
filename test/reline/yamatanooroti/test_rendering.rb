@@ -271,7 +271,7 @@ begin
       write("\e") # single ESC
       sleep 1
       write("A")
-      write("B\eAC") # ESC + A (M-A, specified ed_unassigned in Reline::KeyActor::Emacs)
+      write("B\eAC") # ESC + A (M-A, no key specified in Reline::KeyActor::Emacs)
       assert_screen(<<~EOC)
         Multiline REPL.
         prompt> abcABCdef

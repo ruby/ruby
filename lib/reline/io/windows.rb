@@ -55,7 +55,6 @@ class Reline::Windows < Reline::IO
       [224, 83] => :key_delete,      # Del
       [224, 71] => :ed_move_to_beg,  # Home
       [224, 79] => :ed_move_to_end,  # End
-      [  0, 41] => :ed_unassigned,   # input method on/off
       [  0, 72] => :ed_prev_history, # ↑
       [  0, 80] => :ed_next_history, # ↓
       [  0, 77] => :ed_next_char,    # →

@@ -157,18 +157,18 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   end
 
   def test_em_kill_line
-    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    input_key_by_symbol(:em_kill_line)
     assert_line_around_cursor('', '')
     input_keys('abc')
-    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    input_key_by_symbol(:em_kill_line)
     assert_line_around_cursor('', '')
     input_keys('abc')
     input_keys("\C-b", false)
-    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    input_key_by_symbol(:em_kill_line)
     assert_line_around_cursor('', '')
     input_keys('abc')
     input_keys("\C-a", false)
-    @line_editor.input_key(Reline::Key.new(:em_kill_line, :em_kill_line, false))
+    input_key_by_symbol(:em_kill_line)
     assert_line_around_cursor('', '')
   end
 
@@ -273,12 +273,12 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   def test_key_delete
     input_keys('abc')
     assert_line_around_cursor('abc', '')
-    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    input_key_by_symbol(:key_delete)
     assert_line_around_cursor('abc', '')
   end
 
   def test_key_delete_does_not_end_editing
-    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    input_key_by_symbol(:key_delete)
     assert_line_around_cursor('', '')
     refute(@line_editor.finished?)
   end
@@ -287,7 +287,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     input_keys('abc')
     input_keys("\C-b", false)
     assert_line_around_cursor('ab', 'c')
-    @line_editor.input_key(Reline::Key.new(:key_delete, :key_delete, false))
+    input_key_by_symbol(:key_delete)
     assert_line_around_cursor('ab', '')
   end
 
@@ -731,10 +731,10 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     input_keys("\C-b", false)
     assert_line_around_cursor('foo', 'o')
     assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
-    @line_editor.input_key(Reline::Key.new(:em_delete_or_list, :em_delete_or_list, false))
+    input_key_by_symbol(:em_delete_or_list)
     assert_line_around_cursor('foo', '')
     assert_equal(nil, @line_editor.instance_variable_get(:@menu_info))
-    @line_editor.input_key(Reline::Key.new(:em_delete_or_list, :em_delete_or_list, false))
+    input_key_by_symbol(:em_delete_or_list)
     assert_line_around_cursor('foo', '')
     assert_equal(%w{foo_foo foo_bar foo_baz}, @line_editor.instance_variable_get(:@menu_info).list)
   end
@@ -1363,7 +1363,7 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   def test_incremental_search_history_cancel_by_symbol_key
     # ed_prev_char should move cursor left and cancel incremental search
     input_keys("abc\C-r")
-    input_key_by_symbol(:ed_prev_char)
+    input_key_by_symbol(:ed_prev_char, csi: true)
     input_keys('d')
     assert_line_around_cursor('abd', 'c')
   end
