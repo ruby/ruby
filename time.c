@@ -1659,11 +1659,21 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
             *zone = zone_str(tm.tm_zone);
 #elif defined(_WIN32)
             {
-                char buf[64];
-                _locale_t utf8_locale = _create_locale(LC_TIME, ".65001");
-                size_t n = _strftime_l(buf, numberof(buf), "%Z", &tm, utf8_locale);
-                _free_locale(utf8_locale);
-                *zone = zone_str((ssize_t)n < 0 ? NULL : buf);
+                enum {tz_name_max = 32}; /* numberof(TIME_ZONE_INFORMATION::StandardName) */
+                WCHAR wbuf[tz_name_max + 1];
+                char cbuf[tz_name_max * 4 + 1];
+                size_t wlen = wcsftime(wbuf, numberof(wbuf), L"%Z", &tm);
+                DWORD clen = 0;
+                if (wlen > 0 && wlen < numberof(wbuf)) {
+                    clen = WideCharToMultiByte(CP_UTF8, 0, wbuf, wlen, cbuf, sizeof(cbuf), NULL, NULL);
+                }
+                if (clen > 0 && clen < sizeof(cbuf)) {
+                    cbuf[clen] = '\0';
+                    *zone = zone_str(cbuf);
+                }
+                else {
+                    *zone = zone_str(NULL);
+                }
             }
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
             /* this needs tzset or localtime, instead of localtime_r */
