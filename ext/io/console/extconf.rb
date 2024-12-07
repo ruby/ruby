@@ -23,6 +23,7 @@ ok = true if (RUBY_ENGINE == "ruby" && !is_wasi) || RUBY_ENGINE == "truffleruby"
 hdr = nil
 case
 when macro_defined?("_WIN32", "")
+  win32 = true
   # rb_w32_map_errno: 1.8.7
   vk_header = File.exist?("#$srcdir/win32_vk.list") ? "chksum" : "inc"
   vk_header = "#{'{$(srcdir)}' if $nmake == ?m}win32_vk.#{vk_header}"
@@ -47,7 +48,7 @@ when true
   elsif have_func("rb_scheduler_timeout") # Ruby 3.0 (internal)
     have_func("rb_io_wait") # Ruby 3.0
   end
-  have_func("ttyname_r") or have_func("ttyname")
+  win32 or have_func("ttyname_r") or have_func("ttyname")
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }
