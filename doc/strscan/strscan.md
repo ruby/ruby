@@ -327,13 +327,13 @@ and attempts to find a matching substring in the [target substring][3].
 | Method       | Pattern Type      | Matches Target Substring | Success Return     | May Update Positions? |
 |--------------|-------------------|--------------------------|--------------------|-----------------------|
 | #check       | Regexp or String. | At beginning.            | Matched substring. | No.                   |
-| #check_until | Regexp.           | Anywhere.                | Substring.         | No.                   |
-| #match?      | Regexp or String. | At beginning.            | Updated position.  | No.                   |
-| #exist?      | Regexp.           | Anywhere.                | Updated position.  | No.                   |
+| #check_until | Regexp or String. | Anywhere.                | Substring.         | No.                   |
+| #match?      | Regexp or String. | At beginning.            | Match size.        | No.                   |
+| #exist?      | Regexp or String. | Anywhere.                | Substring size.    | No.                   |
 | #scan        | Regexp or String. | At beginning.            | Matched substring. | Yes.                  |
-| #scan_until  | Regexp.           | Anywhere.                | Substring.         | Yes.                  |
+| #scan_until  | Regexp or String. | Anywhere.                | Substring.         | Yes.                  |
 | #skip        | Regexp or String. | At beginning.            | Match size.        | Yes.                  |
-| #skip_until  | Regexp.           | Anywhere.                | Position delta.    | Yes.                  |
+| #skip_until  | Regexp or String. | Anywhere.                | Substring size.    | Yes.                  |
 
 <br>
 
@@ -351,14 +351,14 @@ Which matcher you choose will depend on:
     - Traverse, by advancing the positions:
       #scan, #scan_until, #skip, #skip_until.
     - Keep the positions unchanged:
-      #check, #check_until, #exist?, #match?.
+      #check, #check_until, #match?, #exist?.
 
 - What you want for the return value:
 
-    - The matched substring: #check, #check_until, #scan, #scan_until.
-    - The updated position: #exist?, #match?.
-    - The position delta: #skip_until.
-    - The match size: #skip.
+    - The matched substring: #check, #scan.
+    - The substring: #check_until, #scan_until.
+    - The match size: #match?, #skip.
+    - The substring size: #exist?, #skip_until.
 
 ### Match Values
 
