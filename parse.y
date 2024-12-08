@@ -708,15 +708,6 @@ after_pop_stack(int len, struct parser_params *p)
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
 #define VALID_SYMNAME_P(s, l, enc, type) (rb_enc_symname_type(s, l, enc, (1U<<(type))) == (int)(type))
 
-#ifndef RIPPER
-static inline int
-char_at_end(struct parser_params *p, VALUE str, int when_empty)
-{
-    long len = RSTRING_LEN(str);
-    return len > 0 ? (unsigned char)RSTRING_PTR(str)[len-1] : when_empty;
-}
-#endif
-
 static void
 pop_pvtbl(struct parser_params *p, st_table *tbl)
 {
@@ -7331,8 +7322,10 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
     }
     if (RTEST(errbuf)) {
         mesg = rb_attr_get(errbuf, idMesg);
-        if (char_at_end(p, mesg, '\n') != '\n')
+        rb_parser_string_t *str = rb_str_to_parser_string(p, mesg);
+        if (parser_string_char_at_end(p, str, '\n') != '\n')
             rb_str_cat_cstr(mesg, "\n");
+        rb_parser_string_free(p, str);
     }
     else {
         mesg = rb_enc_str_new(0, 0, rb_parser_str_get_encoding(str));
@@ -15935,15 +15928,18 @@ rb_parser_printf(struct parser_params *p, const char *fmt, ...)
 {
     va_list ap;
     VALUE mesg = p->debug_buffer;
+    rb_parser_string_t *str;
 
     if (NIL_P(mesg)) p->debug_buffer = mesg = rb_str_new(0, 0);
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
-    if (char_at_end(p, mesg, 0) == '\n') {
+    str = rb_str_to_parser_string(p, mesg);
+    if (parser_string_char_at_end(p, str, 0) == '\n') {
         rb_io_write(p->debug_output, mesg);
         p->debug_buffer = Qnil;
     }
+    rb_parser_string_free(p, str);
 }
 
 static void
