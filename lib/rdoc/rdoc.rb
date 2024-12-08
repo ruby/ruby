@@ -395,7 +395,6 @@ The internal error was:
     $stderr.puts e.backtrace.join("\n\t") if $DEBUG_RDOC
 
     raise e
-    nil
   end
 
   ##
