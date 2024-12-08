@@ -1317,7 +1317,7 @@ impl Assembler
     }
 
     /// Spill a stack temp from a register to the stack
-    fn spill_reg(&mut self, opnd: Opnd) {
+    pub fn spill_reg(&mut self, opnd: Opnd) {
         assert_ne!(self.ctx.get_reg_mapping().get_reg(opnd.reg_opnd()), None);
 
         // Use different RegMappings for dest and src operands
