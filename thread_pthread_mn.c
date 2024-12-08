@@ -477,8 +477,8 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
         if (!has_ready_ractor && next_th && !next_th->nt) {
             // switch to the next thread
             thread_sched_set_lock_owner(sched, NULL);
-            thread_sched_switch0(th->sched.context, next_th, nt, true);
             th->sched.finished = true;
+            thread_sched_switch0(th->sched.context, next_th, nt, true);
         }
         else {
             // switch to the next Ractor
