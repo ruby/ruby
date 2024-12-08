@@ -7366,6 +7366,7 @@ fn gen_send_bmethod(
 enum IseqReturn {
     Value(VALUE),
     LocalVariable(u32),
+    InstanceVariable(ID),
     Receiver,
 }
 
@@ -7380,7 +7381,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
     // NOTE: If an ISEQ has an optional keyword parameter with a default value that requires
     // computation, the ISEQ will always have more than two instructions and won't be inlined.
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    if !(2..=3).contains(&iseq_size) {
+    if !(2..=4).contains(&iseq_size) {
         return None;
     }
 
@@ -7393,7 +7394,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
         return None;
     }
     match first_insn {
-        YARVINSN_getlocal_WC_0  => {
+        YARVINSN_getlocal_WC_0 => {
             // Accept only cases where only positional arguments are used by both the callee and the caller.
             // Keyword arguments may be specified by the callee or the caller but not used.
             // Reject block ISEQs to avoid autosplat and other block parameter complications.
@@ -7427,6 +7428,11 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<Opnd>, block: Opti
 
             return None;
         }
+        // We don't support invokeblock for now. Such ISEQs are likely not used by blocks.
+        YARVINSN_getinstancevariable if captured_opnd.is_none() => {
+            let ivar_name = unsafe { *rb_iseq_pc_at_idx(iseq, 1) }.as_u64();
+            return Some(IseqReturn::InstanceVariable(ivar_name));
+        },
         YARVINSN_putnil => Some(IseqReturn::Value(Qnil)),
         YARVINSN_putobject => Some(IseqReturn::Value(unsafe { *rb_iseq_pc_at_idx(iseq, 1) })),
         YARVINSN_putobject_INT2FIX_0_ => Some(IseqReturn::Value(VALUE::fixnum_from_usize(0))),
@@ -7740,6 +7746,20 @@ fn gen_send_iseq(
 
                 // Pop everything but the return value
                 asm.stack_pop(argc as usize);
+            }
+            IseqReturn::InstanceVariable(ivar_name) => {
+                let comptime_recv = jit.peek_at_stack(&asm.ctx, argc as isize);
+                asm.stack_pop(argc as usize);
+                let recv = asm.stack_opnd(0);
+                return gen_get_ivar(
+                    jit,
+                    asm,
+                    SEND_MAX_DEPTH,
+                    comptime_recv,
+                    ivar_name,
+                    recv,
+                    recv.into(),
+                );
             }
             IseqReturn::Value(value) => {
                 // Pop receiver and arguments
