@@ -1376,6 +1376,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
     end
 
+    def test_lambda_locations
+      node = ast_parse("-> (a, b) { foo }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 2], [1, 10, 1, 11], [1, 16, 1, 17]])
+
+      node = ast_parse("-> (a, b) do foo end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 0, 1, 2], [1, 10, 1, 12], [1, 17, 1, 20]])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
