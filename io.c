@@ -7789,7 +7789,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  whose $stdin and $stdout are connected to a new stream +io+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  If no block is given, returns the new stream,
  *  which depending on given +mode+ may be open for reading, writing, or both.
@@ -7824,7 +7824,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *  - Options for Kernel#spawn.
  *
  *  <b>Forked \Process</b>
@@ -8200,7 +8200,7 @@ check_pipe_command(VALUE filename_or_command)
  *  Creates an IO object connected to the given file.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  With no block given, file stream is returned:
  *
@@ -8415,7 +8415,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -8558,7 +8558,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
  *  Formats and writes +objects+ to the stream.
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:ruby/format_specifications.rdoc].
  *
  */
 
@@ -8579,7 +8579,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
  *    io.write(sprintf(format_string, *objects))
  *
  *  For details on +format_string+, see
- *  {Format Specifications}[rdoc-ref:format_specifications.rdoc].
+ *  {Format Specifications}[rdoc-ref:ruby/format_specifications.rdoc].
  *
  *  With the single argument +format_string+, formats +objects+ into the string,
  *  then writes the formatted string to $stdout:
@@ -9440,7 +9440,7 @@ static VALUE io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt);
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  *  Examples:
  *
@@ -9609,7 +9609,7 @@ rb_io_set_encoding_by_bom(VALUE io)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -10506,7 +10506,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    ["First line", "Second line", "", "Fourth line", "Fifth line"]
  *
  *  Optional keyword arguments +enc_opts+ specify encoding options;
- *  see {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  see {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -10569,7 +10569,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *  sets global variable <tt>$?</tt> to the process status.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Examples:
  *
@@ -11780,7 +11780,7 @@ pipe_pair_close(VALUE rw)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding Options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding Options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  *  With no block given, returns the two endpoints in an array:
  *
@@ -11971,7 +11971,7 @@ io_s_foreach(VALUE v)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12032,7 +12032,7 @@ io_s_foreach(VALUE v)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *  - {Line Options}[rdoc-ref:IO@Line+IO].
  *
  *  Returns an Enumerator if no block is given.
@@ -12074,7 +12074,7 @@ io_s_readlines(VALUE v)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12112,7 +12112,7 @@ io_s_readlines(VALUE v)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *  - {Line Options}[rdoc-ref:IO@Line+IO].
  *
  */
@@ -12163,7 +12163,7 @@ seek_before_access(VALUE argp)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12192,7 +12192,7 @@ seek_before_access(VALUE argp)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -12234,7 +12234,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -12338,7 +12338,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The first argument must be a string that is the path to a file.
  *
@@ -12369,7 +12369,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *  Optional keyword arguments +opts+ specify:
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  */
 
@@ -12388,7 +12388,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
  *
  *  When called from class \IO (but not subclasses of \IO),
  *  this method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  */
 
@@ -13465,7 +13465,7 @@ rb_io_internal_encoding(VALUE io)
  *  transcoding is needed.
  *
  *  Optional keyword arguments +enc_opts+ specify
- *  {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  {Encoding options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
  *
  */
 
