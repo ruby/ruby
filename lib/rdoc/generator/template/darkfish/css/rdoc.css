@@ -469,14 +469,30 @@ main dl {
 }
 
 main dt {
-  margin-bottom: 0.5em;
-  margin-right: 1em;
-  float: left;
+  line-height: 1.5; /* matches `main p` */
   font-weight: bold;
 }
 
+main dl.note-list dt {
+  margin-right: 1em;
+  float: left;
+}
+
+main dl.note-list dt:has(+ dt) {
+  margin-right: 0.25em;
+}
+
+main dl.note-list dt:has(+ dt)::after {
+  content: ', ';
+  font-weight: normal;
+}
+
 main dd {
-  margin: 0 1em 1em 0.5em;
+  margin: 0 0 1em 1em;
+}
+
+main dd p:first-child {
+  margin-top: 0;
 }
 
 /* Headers within Main */

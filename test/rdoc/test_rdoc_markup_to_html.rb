@@ -146,7 +146,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_start_label
-    assert_equal "<dl class=\"rdoc-list label-list\"><dt>cat\n<dd>", @to.res.join
+    assert_equal "<dl class=\"rdoc-list label-list\"><dt>cat</dt>\n<dd>", @to.res.join
   end
 
   def accept_list_item_start_lalpha
@@ -154,13 +154,13 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_list_item_start_note
-    assert_equal "<dl class=\"rdoc-list note-list\"><dt>cat\n<dd>",
+    assert_equal "<dl class=\"rdoc-list note-list\"><dt>cat</dt>\n<dd>",
                  @to.res.join
   end
 
   def accept_list_item_start_note_2
     expected = <<-EXPECTED
-<dl class="rdoc-list note-list"><dt><code>teletype</code>
+<dl class="rdoc-list note-list"><dt><code>teletype</code></dt>
 <dd>
 <p>teletype description</p>
 </dd></dl>
@@ -171,7 +171,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
   def accept_list_item_start_note_multi_description
     expected = <<-EXPECTED
-<dl class="rdoc-list note-list"><dt>label
+<dl class="rdoc-list note-list"><dt>label</dt>
 <dd>
 <p>description one</p>
 </dd><dd>
@@ -184,8 +184,8 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 
   def accept_list_item_start_note_multi_label
     expected = <<-EXPECTED
-<dl class="rdoc-list note-list"><dt>one
-<dt>two
+<dl class="rdoc-list note-list"><dt>one</dt>
+<dt>two</dt>
 <dd>
 <p>two headers</p>
 </dd></dl>
