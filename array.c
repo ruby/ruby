@@ -5973,9 +5973,9 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
 /*
  *  call-seq:
  *    max -> element
- *    max(n) -> new_array
+ *    max(count) -> new_array
  *    max {|a, b| ... } -> element
- *    max(n) {|a, b| ... } -> new_array
+ *    max(count) {|a, b| ... } -> new_array
  *
  *  Returns one of the following:
  *
@@ -5992,8 +5992,8 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *
  *    [1, 0, 3, 2].max # => 3
  *
- *  With non-negative numeric argument +n+ and no block,
- *  returns a new array with at most +n+ elements,
+ *  With non-negative numeric argument +count+ and no block,
+ *  returns a new array with at most +count+ elements,
  *  in descending order, per method <tt>#<=></tt>:
  *
  *    [1, 0, 3, 2].max(3)   # => [3, 2, 1]
@@ -6009,8 +6009,8 @@ ary_max_opt_string(VALUE ary, long i, VALUE vmax)
  *    ['0', '', '000', '00'].max {|a, b| a.size <=> b.size }
  *    # => "000"
  *
- *  With non-negative numeric argument +n+ and a block,
- *  returns a new array with at most +n+ elements,
+ *  With non-negative numeric argument +count+ and a block,
+ *  returns a new array with at most +count+ elements,
  *  in descending order, per the block:
  *
  *    ['0', '', '000', '00'].max(2) {|a, b| a.size <=> b.size }
@@ -6150,9 +6150,9 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
 /*
  *  call-seq:
  *    min -> element
- *    min(n) -> new_array
+ *    min(count) -> new_array
  *    min {|a, b| ... } -> element
- *    min(n) {|a, b| ... } -> new_array
+ *    min(count) {|a, b| ... } -> new_array
  *
  *  Returns one of the following:
  *
@@ -6169,8 +6169,8 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *
  *    [1, 0, 3, 2].min # => 0
  *
- *  With non-negative numeric argument +n+ and no block,
- *  returns a new array with at most +n+ elements,
+ *  With non-negative numeric argument +count+ and no block,
+ *  returns a new array with at most +count+ elements,
  *  in ascending order, per method <tt>#<=></tt>:
  *
  *    [1, 0, 3, 2].min(3)   # => [0, 1, 2]
@@ -6186,8 +6186,8 @@ ary_min_opt_string(VALUE ary, long i, VALUE vmin)
  *    ['0', '', '000', '00'].min {|a, b| a.size <=> b.size }
  *    # => ""
  *
- *  With non-negative numeric argument +n+ and a block,
- *  returns a new array with at most +n+ elements,
+ *  With non-negative numeric argument +count+ and a block,
+ *  returns a new array with at most +count+ elements,
  *  in ascending order, per the block:
  *
  *    ['0', '', '000', '00'].min(2) {|a, b| a.size <=> b.size }
@@ -7063,14 +7063,14 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    permutation(n = self.size) {|permutation| ... } -> self
- *    permutation(n = self.size) -> new_enumerator
+ *    permutation(count = self.size) {|permutation| ... } -> self
+ *    permutation(count = self.size) -> new_enumerator
  *
  *  Iterates over permutations of the elements of +self+;
  *  the order of permutations is indeterminate.
  *
- *  With a block and an in-range positive integer argument +n+ (<tt>0 < n <= self.size</tt>) given,
- *  calls the block with each +n+-tuple permutations of +self+;
+ *  With a block and an in-range positive integer argument +count+ (<tt>0 < count <= self.size</tt>) given,
+ *  calls the block with each permutation of +self+ of size +count+;
  *  returns +self+:
  *
  *    a = [0, 1, 2]
@@ -7086,13 +7086,13 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
  *    a.permutation(3) {|perm| perms.push(perm) }
  *    perms # => [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
  *
- *  When +n+ is zero, calls the block once with a new empty array:
+ *  When +count+ is zero, calls the block once with a new empty array:
  *
  *    perms = []
  *    a.permutation(0) {|perm| perms.push(perm) }
  *    perms # => [[]]
  *
- *  When +n+ is out of range (negative or larger than <tt>self.size</tt>),
+ *  When +count+ is out of range (negative or larger than <tt>self.size</tt>),
  *  does not call the block:
  *
  *    a.permutation(-1) {|permutation| fail 'Cannot happen' }
@@ -7173,13 +7173,13 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    combination(n) {|element| ... } -> self
- *    combination(n) -> new_enumerator
+ *    combination(count) {|element| ... } -> self
+ *    combination(count) -> new_enumerator
  *
  *  When a block and a positive
  *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
- *  argument +n+ (<tt>0 < n <= self.size</tt>)
- *  are given, calls the block with all +n+-tuple combinations of +self+;
+ *  argument +count+ (<tt>0 < count <= self.size</tt>)
+ *  are given, calls the block with each combination of +self+ of size +count+;
  *  returns +self+:
  *
  *    a = %w[a b c]                                   # => ["a", "b", "c"]
@@ -7193,7 +7193,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  The order of the yielded combinations is not guaranteed.
  *
- *  When +n+ is zero, calls the block once with a new empty array:
+ *  When +count+ is zero, calls the block once with a new empty array:
  *
  *    a.combination(0) {|combination| p combination }
  *    [].combination(0) {|combination| p combination }
@@ -7203,7 +7203,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    []
  *    []
  *
- *  When +n+ is negative or larger than +self.size+ and +self+ is non-empty,
+ *  When +count+ is negative or larger than +self.size+ and +self+ is non-empty,
  *  does not call the block:
  *
  *    a.combination(-1) {|combination| fail 'Cannot happen' } # => ["a", "b", "c"]
@@ -7213,7 +7213,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  Related: Array#permutation;
  *  see also {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
- */
+ *
 
 static VALUE
 rb_ary_combination(VALUE ary, VALUE num)
@@ -7680,10 +7680,10 @@ rb_ary_take_while(VALUE ary)
 
 /*
  *  call-seq:
- *    drop(n) -> new_array
+ *    drop(count) -> new_array
  *
- *  Returns a new array containing all but the first +n+ element of +self+,
- *  where +n+ is a non-negative Integer;
+ *  Returns a new array containing all but the first +count+ element of +self+,
+ *  where +count+ is a non-negative integer;
  *  does not modify +self+.
  *
  *  Examples:
