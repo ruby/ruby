@@ -411,7 +411,7 @@ module Net::HTTPHeader
   #   "Cf-Ray"
   #
   # The capitalization is system-dependent;
-  # see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+  # see {Case Mapping}[rdoc-ref:ruby/case_mapping.rdoc].
   #
   # Returns an enumerator if no block is given.
   def each_capitalized_name  #:yield: +key+

@@ -7,6 +7,5 @@ syntax
 optparse
 rdoc
 regexp
-rjit
-yjit
 ruby
+jit_compilers
