@@ -3387,13 +3387,12 @@ expr		: command_call
 
 def_name	: fname
                     {
-                        ID fname = $1;
-                        numparam_name(p, fname);
+                        numparam_name(p, $fname);
                         local_push(p, 0);
                         p->ctxt.in_def = 1;
                         p->ctxt.in_rescue = before_rescue;
                         p->ctxt.cant_return = 0;
-                        $$ = $1;
+                        $$ = $fname;
                     }
                 ;
 
@@ -5263,11 +5262,13 @@ block_call	: command do_block
                     }
                 | block_call call_op2 operation2 opt_paren_args
                     {
-                        bool has_args = $4 != 0;
-                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        if (NODE_EMPTY_ARGS_P($4)) {
+                            $$ = new_qcall(p, $2, $1, $3, 0, &@3, &@$);
+                        } else {
+                            $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        }
                     /*% ripper: call!($:1, $:2, $:3) %*/
-                        if (has_args) {
+                        if ($4) {
                         /*% ripper: method_add_arg!($:$, $:4) %*/
                         }
                     }
@@ -5296,12 +5297,14 @@ method_call	: fcall paren_args
                     }
                 | primary_value call_op operation2 opt_paren_args
                     {
-                        bool has_args = $4 != 0;
-                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        if (NODE_EMPTY_ARGS_P($4)) {
+                            $$ = new_qcall(p, $2, $1, $3, 0, &@3, &@$);
+                        } else {
+                            $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                        }
                         nd_set_line($$, @3.end_pos.lineno);
                     /*% ripper: call!($:1, $:2, $:3) %*/
-                        if (has_args) {
+                        if ($4) {
                         /*% ripper: method_add_arg!($:$, $:4) %*/
                         }
                     }
@@ -5987,14 +5990,12 @@ literal		: numeric
 
 strings		: string
                     {
-                        NODE *node = $1;
-                        if (!node) {
-                            node = NEW_STR(STRING_NEW0(), &@$);
+                        if (!$1) {
+                            $$ = NEW_STR(STRING_NEW0(), &@$);
                         }
                         else {
-                            node = evstr2dstr(p, node);
+                            $$ = evstr2dstr(p, $1);
                         }
-                        $$ = node;
                     /*% ripper: $:1 %*/
                     }
                 ;
@@ -6549,8 +6550,7 @@ f_norm_arg	: f_bad_arg
 
 f_arg_asgn	: f_norm_arg
                     {
-                        ID id = $1;
-                        arg_var(p, id);
+                        arg_var(p, $1);
                         $$ = $1;
                     }
                 ;
