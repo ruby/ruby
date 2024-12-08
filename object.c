@@ -1357,6 +1357,10 @@ rb_obj_frozen_p(VALUE obj)
  * - #to_r
  * - #to_s
  *
+ * While +nil+ doesn't have an explicitly defined #to_hash method,
+ * it can be used in <code>**</code> unpacking, not adding any
+ * keyword arguments.
+ *
  * Another method provides inspection:
  *
  * - #inspect
