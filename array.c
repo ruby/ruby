@@ -7213,7 +7213,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *
  *  Related: Array#permutation;
  *  see also {Methods for Iterating}[rdoc-ref:Array@Methods+for+Iterating].
- *
+ */
 
 static VALUE
 rb_ary_combination(VALUE ary, VALUE num)
