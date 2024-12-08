@@ -123,12 +123,10 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           os: windows-2022
-          # If we support new test task, we need to change this test-opts.
-          test-opts: --retry --job-status=normal --show-skip --timeout-scale=1.5
-            ${{ matrix.test-all-opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          test-tasks: '["test", "test-all"]'
         continue-on-error: true
 
       - name: test

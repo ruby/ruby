@@ -83,12 +83,11 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           os: ubuntu-22.04
-          test-task: test
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
-          launchable-workspace: ruby-make-btest
           test-opts: ${{ matrix.run_opts }}
+          test-tasks: '["test", "test-all"]'
         continue-on-error: true
 
       - name: make test
