@@ -1070,7 +1070,7 @@ static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE
 static rb_node_while_t *rb_node_while_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 static rb_node_until_t *rb_node_until_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_for_t *rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_for_t *rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *for_keyword_loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *do_keyword_loc, const YYLTYPE *end_keyword_loc);
 static rb_node_for_masgn_t *rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc);
 static rb_node_retry_t *rb_node_retry_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
@@ -1178,7 +1178,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_WHILE(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_while_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_UNTIL(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_until_new(p,c,b,n,loc,k_loc,c_loc)
 #define NEW_ITER(a,b,loc) (NODE *)rb_node_iter_new(p,a,b,loc)
-#define NEW_FOR(i,b,loc) (NODE *)rb_node_for_new(p,i,b,loc)
+#define NEW_FOR(i,b,loc,f_loc,i_loc,d_loc,e_loc) (NODE *)rb_node_for_new(p,i,b,loc,f_loc,i_loc,d_loc,e_loc)
 #define NEW_FOR_MASGN(v,loc) (NODE *)rb_node_for_masgn_new(p,v,loc)
 #define NEW_RETRY(loc) (NODE *)rb_node_retry_new(p,loc)
 #define NEW_BEGIN(b,loc) (NODE *)rb_node_begin_new(p,b,loc)
@@ -2781,7 +2781,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
 %type <node_kw_arg> f_kw f_block_kw
-%type <id> bv_decls opt_bv_decl bvar
+%type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
@@ -4558,11 +4558,12 @@ primary         : inline_primary
                         $$ = NEW_CASE3($2, $4, &@$, &@1, &@5);
                     /*% ripper: case!($:2, $:4) %*/
                     }
-                | k_for for_var keyword_in expr_value_do
+                | k_for for_var keyword_in
+                  {COND_PUSH(1);} expr_value do {COND_POP();}
                   compstmt
                   k_end
                     {
-                        restore_block_exit(p, $1);
+                        restore_block_exit(p, $k_for);
                         /*
                          *  for a, b, c in e
                          *  #=>
@@ -4575,30 +4576,35 @@ primary         : inline_primary
                         ID id = internal_id(p);
                         rb_node_args_aux_t *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
                         rb_node_args_t *args;
-                        NODE *scope, *internal_var = NEW_DVAR(id, &@2);
+                        NODE *scope, *internal_var = NEW_DVAR(id, &@for_var);
                         rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1);
                         tbl->ids[0] = id; /* internal id */
 
-                        switch (nd_type($2)) {
+                        switch (nd_type($for_var)) {
                           case NODE_LASGN:
                           case NODE_DASGN: /* e.each {|internal_var| a = internal_var; ... } */
-                            set_nd_value(p, $2, internal_var);
+                            set_nd_value(p, $for_var, internal_var);
                             id = 0;
                             m->nd_plen = 1;
-                            m->nd_next = $2;
+                            m->nd_next = $for_var;
                             break;
                           case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
-                            m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(internal_var, &@2), NO_LEX_CTXT, &@2);
+                            m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
                             break;
                           default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-                            m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, NO_LEX_CTXT, &@2);
+                            m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
                         }
                         /* {|*internal_id| <m> = internal_id; ... } */
-                        args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
-                        scope = NEW_SCOPE2(tbl, args, $5, &@$);
-                        $$ = NEW_FOR($4, scope, &@$);
-                        fixpos($$, $2);
-                    /*% ripper: for!($:2, $:4, $:5) %*/
+                        args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@for_var), &@for_var);
+                        scope = NEW_SCOPE2(tbl, args, $compstmt, &@$);
+                        if ($6 == keyword_do_cond) {
+                            $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &@do, &@k_end);
+                        }
+                        else {
+                            $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &NULL_LOC, &@k_end);
+                        }
+                        fixpos($$, $for_var);
+                    /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                     }
                 | k_class cpath superclass
                     {
@@ -4897,7 +4903,7 @@ then		: term
                 ;
 
 do		: term
-                | keyword_do_cond
+                | keyword_do_cond { $$ = keyword_do_cond; }
                 ;
 
 if_tail		: opt_else
@@ -11405,11 +11411,15 @@ rb_node_block_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 }
 
 static rb_node_for_t *
-rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc)
+rb_node_for_new(struct parser_params *p, NODE *nd_iter, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *for_keyword_loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *do_keyword_loc, const YYLTYPE *end_keyword_loc)
 {
     rb_node_for_t *n = NODE_NEWNODE(NODE_FOR, rb_node_for_t, loc);
     n->nd_body = nd_body;
     n->nd_iter = nd_iter;
+    n->for_keyword_loc = *for_keyword_loc;
+    n->in_keyword_loc = *in_keyword_loc;
+    n->do_keyword_loc = *do_keyword_loc;
+    n->end_keyword_loc = *end_keyword_loc;
 
     return n;
 }
