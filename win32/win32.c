@@ -21,9 +21,9 @@
 
 #undef __STRICT_ANSI__
 
-/* Visual C++ 2008 (9.0):
- * - _MSC_VER: 1500
- * - MSVCRT_VERSION: 90
+/* Visual C++ 2010 (10.0):
+ * - _MSC_VER: 1600
+ * - MSVCRT_VERSION: 100
  */
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
