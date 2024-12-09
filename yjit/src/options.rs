@@ -173,7 +173,7 @@ macro_rules! get_option {
         {
             // Make this a statement since attributes on expressions are experimental
             #[allow(unused_unsafe)]
-            let ret = unsafe { OPTIONS.$option_name };
+            let ret = unsafe { crate::options::OPTIONS.$option_name };
             ret
         }
     };
