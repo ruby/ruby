@@ -132,7 +132,7 @@ CAT_DEPEND = type
 
 !if !defined(MSC_VER)
 ! error MSC_VER not defined.  Retry from configure pass.
-!else if $(MSC_VER) < 1500
+!else if $(MSC_VER) < 1600
 ! error MSVC $(MSC_VER) is not supported
 !endif
 !if !defined(MACHINE)
@@ -174,7 +174,7 @@ PLATFORM = mswin32
 !endif
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
-!else if $(RT_VER) < 90
+!else if $(RT_VER) < 100
 ! error Runtime library $(RT_VER) is not supported
 !endif
 !ifndef NTVER
@@ -262,11 +262,7 @@ OUTFLAG       = -Fe
 COUTFLAG      = -Fo
 !endif
 !if !defined(CPPOUTFLAG)
-! if $(MSC_VER) < 1600
-CPPOUTFLAG    = >
-! else
 CPPOUTFLAG    = -Fi
-! endif
 !endif
 !if !defined(CSRCFLAG)
 CSRCFLAG      = -Tc
@@ -367,9 +363,7 @@ MAINLIBS = $(LIBS)
 SOLIBS =
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 !ifndef RCFLAGS
-!if $(MSC_VER) >= 1600
 RCFLAGS=-nologo
-!endif
 !endif
 
 ENABLE_SHARED = yes
@@ -770,31 +764,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 !if $(MSC_VER) >= 1900
 #define HAVE_STRUCT_TIMESPEC
 !endif
-!if $(MSC_VER) >= 1600
 #define HAVE_INTTYPES_H 1
 #define HAVE_STDINT_H 1
-!else
-#define int8_t signed char
-#define uint8_t unsigned char
-#define int16_t short
-#define uint16_t unsigned short
-#define int32_t int
-#define uint32_t unsigned int
-#define int64_t __int64
-#define uint64_t unsigned __int64
-#define INT8_MIN _I8_MIN
-#define INT8_MAX _I8_MAX
-#define UINT8_MAX _UI8_MAX
-#define INT16_MIN _I16_MIN
-#define INT16_MAX _I16_MAX
-#define UINT16_MAX _UI16_MAX
-#define INT32_MIN _I32_MIN
-#define INT32_MAX _I32_MAX
-#define UINT32_MAX _UI32_MAX
-#define INT64_MIN _I64_MIN
-#define INT64_MAX _I64_MAX
-#define UINT64_MAX _UI64_MAX
-!endif
 #define HAVE_INT8_T 1
 #define HAVE_UINT8_T 1
 #define SIZEOF_INT8_T 1
@@ -911,9 +882,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define HAVE_QSORT_S
 !endif
 #define HAVE_TYPE_NET_LUID 1
-!if $(MSC_VER) >= 1600
 #define HAVE_NULLPTR 1
-!endif
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define HAVE_RB_FD_INIT 1
