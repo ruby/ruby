@@ -1591,17 +1591,11 @@ rb_float_equal(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return num_equal(x, y);
     }
     a = RFLOAT_VALUE(x);
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a == b);
 }
 
@@ -1734,16 +1728,10 @@ rb_float_gt(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, '>');
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a > b);
 }
 
@@ -1777,16 +1765,10 @@ flo_ge(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, idGE);
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a >= b);
 }
 
@@ -1819,16 +1801,10 @@ flo_lt(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, '<');
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a < b);
 }
 
@@ -1862,16 +1838,10 @@ flo_le(VALUE x, VALUE y)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(b)) return Qfalse;
-#endif
     }
     else {
         return rb_num_coerce_relop(x, y, idLE);
     }
-#if MSC_VERSION_BEFORE(1300)
-    if (isnan(a)) return Qfalse;
-#endif
     return RBOOL(a <= b);
 }
 
@@ -1899,10 +1869,7 @@ rb_float_eql(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
         double a = RFLOAT_VALUE(x);
         double b = RFLOAT_VALUE(y);
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(a) || isnan(b)) return Qfalse;
-#endif
-    return RBOOL(a == b);
+        return RBOOL(a == b);
     }
     return Qfalse;
 }
