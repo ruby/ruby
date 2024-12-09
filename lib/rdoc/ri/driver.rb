@@ -79,6 +79,7 @@ class RDoc::RI::Driver
     options[:interactive] = false
     options[:profile]     = false
     options[:show_all]    = false
+    options[:expand_refs] = true
     options[:use_stdout]  = !$stdout.tty?
     options[:width]       = 72
 
@@ -241,6 +242,12 @@ or the PAGER environment variable.
              "otherwise.  Valid formatters are:",
              "#{formatters.join(', ')}.", formatters) do |value|
         options[:formatter] = RDoc::Markup.const_get "To#{value.capitalize}"
+      end
+
+      opt.separator nil
+
+      opt.on("--[no-]expand-refs", "Expand rdoc-refs at the end of output") do |value|
+        options[:expand_refs] = value
       end
 
       opt.separator nil
@@ -425,6 +432,7 @@ or the PAGER environment variable.
     @use_stdout  = options[:use_stdout]
     @show_all    = options[:show_all]
     @width       = options[:width]
+    @expand_refs = options[:expand_refs]
   end
 
   ##
@@ -549,11 +557,8 @@ or the PAGER environment variable.
   # Looks up the method +name+ and adds it to +out+
 
   def add_method out, name
-    filtered   = lookup_method name
-
-    method_out = method_document name, filtered
-
-    out.concat method_out.parts
+    filtered = lookup_method name
+    method_document out, name, filtered
   end
 
   ##
@@ -645,6 +650,7 @@ or the PAGER environment variable.
 
     add_also_in out, also_in
 
+    expand_rdoc_refs_at_the_bottom(out)
     out
   end
 
@@ -823,6 +829,8 @@ or the PAGER environment variable.
     out = RDoc::Markup::Document.new
 
     add_method out, name
+
+    expand_rdoc_refs_at_the_bottom(out)
 
     display out
   end
@@ -1255,9 +1263,7 @@ or the PAGER environment variable.
   ##
   # Builds a RDoc::Markup::Document from +found+, +klasses+ and +includes+
 
-  def method_document name, filtered
-    out = RDoc::Markup::Document.new
-
+  def method_document out, name, filtered
     out << RDoc::Markup::Heading.new(1, name)
     out << RDoc::Markup::BlankLine.new
 
@@ -1514,4 +1520,38 @@ or the PAGER environment variable.
     server.start
   end
 
+  RDOC_REFS_REGEXP = /\[rdoc-ref:([\w.]+)(@.*)?\]/
+
+  def expand_rdoc_refs_at_the_bottom(out)
+    return unless @expand_refs
+
+    extracted_rdoc_refs = []
+
+    out.each do |part|
+      content = if part.respond_to?(:text)
+        part.text
+      else
+        next
+      end
+
+      rdoc_refs = content.scan(RDOC_REFS_REGEXP).uniq.map do |file_name, _anchor|
+        file_name
+      end
+
+      extracted_rdoc_refs.concat(rdoc_refs)
+    end
+
+    found_pages = extracted_rdoc_refs.map do |ref|
+      begin
+        @stores.first.load_page(ref)
+      rescue RDoc::Store::MissingFileError
+      end
+    end.compact
+
+    found_pages.each do |page|
+      out << RDoc::Markup::Heading.new(4, "Expanded from #{page.full_name}")
+      out << RDoc::Markup::BlankLine.new
+      out << page.comment
+    end
+  end
 end

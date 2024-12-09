@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'helper'
 
-class TestRDocRIDriver < RDoc::TestCase
+class RDocRIDriverTest < RDoc::TestCase
 
   def setup
     super
@@ -239,6 +239,29 @@ class TestRDocRIDriver < RDoc::TestCase
         rule(1),
         blank_line,
         blank_line)
+
+    assert_equal expected, out
+  end
+
+  def test_add_method_with_rdoc_ref_link
+    util_store
+
+    out = doc
+
+    @driver.add_method out, 'Foo::Bar#blah_with_rdoc_ref'
+
+    expected =
+      doc(
+        head(1, 'Foo::Bar#blah_with_rdoc_ref'),
+        blank_line,
+        para("(from #{@rdoc_home})"),
+        head(3, 'Implementation from Bar'),
+        rule(1),
+        verb("blah(5) => 5\n", "See also {Doc}[rdoc-ref:README.rdoc]\n"),
+        rule(1),
+        blank_line,
+        blank_line
+      )
 
     assert_equal expected, out
   end
@@ -598,7 +621,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 1, out.scan(/^-{50,}$/).length, out
+    assert_equal 2, out.scan(/^-{50,}$/).length, out
 
     refute_match %r%Foo::Bar#blah%, out
   end
@@ -622,9 +645,29 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 6, out.scan(/^-{50,}$/).length, out
+    assert_equal 9, out.scan(/^-{50,}$/).length, out
 
     assert_match %r%Foo::Bar#blah%, out
+    assert_match %r%Foo::Bar#blah_with_rdoc_ref%, out
+    # From Foo::Bar and Foo::Bar#blah_with_rdoc_ref
+    assert_equal 2, out.scan(/rdoc-ref:README.rdoc/).length
+    # But README.rdoc should only be displayed once
+    assert_equal 1, out.scan(/Expanded from README.rdoc/).length
+  end
+
+  def test_rdoc_refs_expansion_can_be_disabled
+    util_store
+
+    @driver.instance_variable_set :@expand_rdoc_refs, false
+
+    out, = capture_output do
+      @driver.display_class 'Foo::Bar'
+    end
+
+    # From Foo::Bar
+    assert_equal 1, out.scan(/rdoc-ref:README.rdoc/).length
+    # But README.rdoc should not be expanded
+    assert_empty out.scan(/Expanded from README.rdoc/)
   end
 
   def test_display_class_ambiguous
@@ -766,6 +809,7 @@ Foo::Baz
 Foo::Bar#b not found, maybe you meant:
 
 Foo::Bar#blah
+Foo::Bar#blah_with_rdoc_ref
 Foo::Bar#bother
     EXPECTED
 
@@ -1141,6 +1185,7 @@ Foo::Bar#bother
     assert_equal %w[
         Foo::Bar#attr
         Foo::Bar#blah
+        Foo::Bar#blah_with_rdoc_ref
         Foo::Bar#bother
         Foo::Bar::new
       ],
@@ -1516,10 +1561,16 @@ Foo::Bar#bother
     @cFooInc.record_location @top_level
 
     @cFoo_Bar = @cFoo.add_class RDoc::NormalClass, 'Bar'
+    @cFoo_Bar.add_comment "See also {Doc}[rdoc-ref:README.rdoc]", @top_level
+    @cFoo_Bar.record_location @top_level
 
     @blah = @cFoo_Bar.add_method RDoc::AnyMethod.new(nil, 'blah')
     @blah.call_seq = "blah(5) => 5\nblah(6) => 6\n"
     @blah.record_location @top_level
+
+    @blah_with_rdoc_ref = @cFoo_Bar.add_method RDoc::AnyMethod.new(nil, 'blah_with_rdoc_ref')
+    @blah_with_rdoc_ref.call_seq = "blah(5) => 5\nSee also {Doc}[rdoc-ref:README.rdoc]"
+    @blah_with_rdoc_ref.record_location @top_level
 
     @bother = @cFoo_Bar.add_method RDoc::AnyMethod.new(nil, 'bother')
     @bother.block_params = "stuff"
