@@ -146,7 +146,7 @@ The following default gems are updated.
 * did_you_mean 2.0.0
 * erb 4.0.4
 * error_highlight 0.7.0
-* etc 1.4.4
+* etc 1.4.5
 * fcntl 1.2.0
 * fiddle 1.1.6.dev
 * fileutils 1.7.3
@@ -164,7 +164,7 @@ The following default gems are updated.
 * pp 0.6.2
 * prism 1.0.0
 * pstore 0.1.4
-* psych 5.2.0
+* psych 5.2.1
 * rdoc 6.8.1
 * reline 0.5.12
 * resolv 0.5.0
