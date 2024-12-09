@@ -834,15 +834,14 @@ class Socket < BasicSocket
             ip_address = failed_ai.ipv6? ? "[#{failed_ai.ip_address}]" : failed_ai.ip_address
             last_error = SystemCallError.new("connect(2) for #{ip_address}:#{failed_ai.ip_port}", sockopt.int)
 
-            if writable_sockets.any? ||
-               resolution_store.any_addrinfos? ||
-               connecting_sockets.any? ||
-               resolution_store.any_unresolved_family?
-              user_specified_connect_timeout_at = nil if connecting_sockets.empty?
+            if writable_sockets.any? || connecting_sockets.any?
               # Try other writable socket in next "while"
-              # Or exit this "while" and try other connection attempt
               # Or exit this "while" and wait for connections to be established or hostname resolution in next loop
+            elsif resolution_store.any_addrinfos? || resolution_store.any_unresolved_family?
+              # Exit this "while" and try other connection attempt
               # Or exit this "while" and wait for hostname resolution in next loop
+              connection_attempt_delay_expires_at = nil
+              user_specified_connect_timeout_at = nil
             else
               raise last_error
             end
@@ -858,15 +857,14 @@ class Socket < BasicSocket
           ip_address = failed_ai.ipv6? ? "[#{failed_ai.ip_address}]" : failed_ai.ip_address
           last_error = SystemCallError.new("connect(2) for #{ip_address}:#{failed_ai.ip_port}", sockopt.int)
 
-          if writable_sockets.any? ||
-             resolution_store.any_addrinfos? ||
-             connecting_sockets.any? ||
-             resolution_store.any_unresolved_family?
-            user_specified_connect_timeout_at = nil if connecting_sockets.empty?
-            # Try other writable socket in next "while"
-            # Or exit this "while" and try other connection attempt
+          if except_sockets.any? || connecting_sockets.any?
+            # Cleanup other except socket in next "each"
             # Or exit this "while" and wait for connections to be established or hostname resolution in next loop
+          elsif resolution_store.any_addrinfos? || resolution_store.any_unresolved_family?
+            # Exit this "while" and try other connection attempt
             # Or exit this "while" and wait for hostname resolution in next loop
+            connection_attempt_delay_expires_at = nil
+            user_specified_connect_timeout_at = nil
           else
             raise last_error
           end
