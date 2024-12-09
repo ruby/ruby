@@ -6545,6 +6545,7 @@ fn jit_rb_class_superclass(
         fn rb_class_superclass(klass: VALUE) -> VALUE;
     }
 
+    // It may raise "uninitialized class"
     if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(0)) {
         return false;
     }
