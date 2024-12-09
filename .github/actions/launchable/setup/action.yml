@@ -139,9 +139,6 @@ runs:
         github_ref="${github_ref//\//_}"
         : # With the --name option, we need to configure a unique identifier for this build.
         : # To avoid setting the same build name as the CI which runs on other branches, we use the branch name here.
-        : #
-        : # FIXME: Need to fix `WARNING: Failed to process a change to a file`.
-        : # https://github.com/launchableinc/cli/issues/786
         build_name="${github_ref}_${GITHUB_PR_HEAD_SHA}"
         test_opts="${{ inputs.test-opts }}"
         test_opts="${test_opts// /}"
