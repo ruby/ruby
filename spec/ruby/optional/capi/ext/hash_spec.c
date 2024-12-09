@@ -136,7 +136,7 @@ VALUE hash_spec_compute_a_hash_code(VALUE self, VALUE seed) {
 
 VALUE hash_spec_rb_hash_bulk_insert(VALUE self, VALUE array_len, VALUE array, VALUE hash) {
   VALUE* ptr;
-  
+
   if (array == Qnil) {
     ptr = NULL;
   } else {
