@@ -802,6 +802,25 @@ class TestHash < Test::Unit::TestCase
     assert_equal(99,      h[nil])
     assert_equal(nil,     h['nil'])
     assert_equal(nil,     h['koala'])
+
+    h.store(1, 0)
+    h.store(1){ _1 + 1}
+    assert_equal(1, h[1])
+
+    h.default = 99
+    h.store('undefined_key') {_1 + 1}
+    assert_equal(100, h['undefined_key'])
+
+    h.default_proc = lambda { |h, k| h[k] = "1"}
+    h.store('thousand') do |v|
+      # setting #default_proc sets #default to nil
+      assert_equal(nil, v)
+      nil
+    end
+
+    assert_raise(ArgumentError) do
+      h.store(1,2) {_1 + 1}
+    end
   end
 
   def test_to_a
