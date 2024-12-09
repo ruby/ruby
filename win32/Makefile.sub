@@ -132,7 +132,7 @@ CAT_DEPEND = type
 
 !if !defined(MSC_VER)
 ! error MSC_VER not defined.  Retry from configure pass.
-!else if $(MSC_VER) < 1600
+!else if $(MSC_VER) < 1800
 ! error MSVC $(MSC_VER) is not supported
 !endif
 !if !defined(MACHINE)
@@ -174,7 +174,7 @@ PLATFORM = mswin32
 !endif
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
-!else if $(RT_VER) < 100
+!else if $(RT_VER) < 120
 ! error Runtime library $(RT_VER) is not supported
 !endif
 !ifndef NTVER
@@ -318,9 +318,6 @@ LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
-!if $(RT_VER) < 120
-MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj nan.obj tgamma.obj
-!endif
 MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
@@ -343,15 +340,7 @@ ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
-!if $(MSC_VER) >= 1800
 LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
-!elseif $(MSC_VER) >= 1400
-# Prevents VC++ 2005 (cl ver 14) warnings
-MANIFESTTOOL = mt -nologo
-LDSHARED_0 = @if exist $(@).manifest $(MINIRUBY) -run -e wait_writable -- -n 10 $@
-LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
-LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
-!endif
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
@@ -675,9 +664,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
-!if $(MSC_VER) >= 1800
 #define HAVE_STDBOOL_H 1
-!endif
 #define HAVE_STDLIB_H 1
 #define HAVE_STDDEF_H 1
 #define HAVE_STRING_H 1
@@ -727,11 +714,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define SIZEOF_INTPTR_T 4
 #define SIZEOF_UINTPTR_T 4
 !endif
-!if $(MSC_VER) >= 1800
 #define HAVE_VA_COPY 1
-!else
-#define HAVE_VA_COPY_VIA_STRUCT_ASSIGNMENT 1
-!endif
 #define NORETURN(x) __declspec(noreturn) x
 #define DEPRECATED(x) __declspec(deprecated) x
 #define RUBY_CXX_DEPRECATED(mesg) __declspec(deprecated(mesg))
@@ -796,7 +779,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define PRI_PIDT_PREFIX PRI_INT_PREFIX
 #define GETGROUPS_T int
 #define TYPEOF_TIMEVAL_TV_SEC long
-!if $(RT_VER) >= 120
 #define HAVE_ACOSH 1
 #define HAVE_ASINH 1
 #define HAVE_ATANH 1
@@ -808,7 +790,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define HAVE_ROUND 1
 #define HAVE_TGAMMA 1
 #define HAVE_NEXTAFTER 1
-!endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
@@ -825,14 +806,10 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define HAVE_STRCHR 1
 #define HAVE_STRSTR 1
 #define HAVE_FLOCK 1
-!if $(MSC_VER) >= 1800
 #define HAVE_ISINF 1
-!endif
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
-!if $(RT_VER) >= 120
 #define HAVE_NAN 1
-!endif
 #define HAVE_HYPOT 1
 #define HAVE_FMOD 1
 #define HAVE_FREXP 1
@@ -891,11 +868,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define RUBY_JMP_BUF jmp_buf
 #ifndef __cplusplus
 #define inline __inline
-!if $(MSC_VER) >= 1800
 #define restrict __restrict
-!else
-#define restrict /* not supported */
-!endif
 #endif
 #define NEED_IO_SEEK_BETWEEN_RW 1
 !if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
@@ -1059,11 +1032,6 @@ s,@LIBPATHFLAG@,-libpath:%s,;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) -link $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
-!if $(MSC_VER) < 1800
-s,@LINK_SO@,@if exist $$(@).manifest $$(RUBY) -run -e wait_writable -- -n 10 $$(@),;t t
-s,@LINK_SO@,@if exist $$(@).manifest $(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
-s,@LINK_SO@,@if exist $$(@).manifest $$(RM) $$(@:/=\).manifest,;t t
-!endif
 s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c $$(CSRCFLAG)$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tp$$(<:\=/),;t t
 s,@ASSEMBLE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -Fa$$(@) -c $$(CSRCFLAG)$$(<:\=/),;t t
@@ -1145,11 +1113,6 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(EXTOBJS) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
-! if defined(LDSHARED_0)
-		$(Q) $(LDSHARED_0)
-		$(Q) $(LDSHARED_1)
-		$(Q) $(LDSHARED_2)
-! endif
 !endif
 
 !if "$(WPROGRAM)" != ""
@@ -1158,11 +1121,6 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			-link $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
-! if defined(LDSHARED_0)
-		$(Q) $(LDSHARED_0)
-		$(Q) $(LDSHARED_1)
-		$(Q) $(LDSHARED_2)
-! endif
 !endif
 
 !if "$(STUBPROGRAM)" != ""
@@ -1170,11 +1128,6 @@ $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME)
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) rubystub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
-! if defined(LDSHARED_0)
-		$(Q) $(LDSHARED_0)
-		$(Q) $(LDSHARED_1)
-		$(Q) $(LDSHARED_2)
-! endif
 !endif
 
 !if "$(LIBRUBY_SO_UPDATE)" == ""
@@ -1205,12 +1158,6 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
-!if defined(LDSHARED_0)
-		$(Q) $(LDSHARED_0)
-		$(Q) $(LDSHARED_1)
-		$(Q) $(LDSHARED_2)
-# | findstr -v -c:LNK4049 -c:LNK4217
-!endif
 
 $(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
@@ -1445,11 +1392,6 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)(echo EXPORTS&&echo Init_$(*F))> $*.def
 	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
-!if defined(LDSHARED_0)
-	$(Q)$(LDSHARED_0)
-	$(Q)$(LDSHARED_1)
-	$(Q)$(LDSHARED_2)
-!endif
 	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
 
 exts: rubyspec-capiext

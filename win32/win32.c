@@ -21,9 +21,9 @@
 
 #undef __STRICT_ANSI__
 
-/* Visual C++ 2010 (10.0):
- * - _MSC_VER: 1600
- * - MSVCRT_VERSION: 100
+/* Visual C++ 2013 (12.0):
+ * - _MSC_VER: 1800
+ * - MSVCRT_VERSION: 120
  */
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
@@ -8234,10 +8234,6 @@ rb_w32_set_thread_description_str(HANDLE th, VALUE name)
 }
 
 VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE, VALUE) = rb_f_notimplement;
-
-#if RUBY_MSVCRT_VERSION < 120
-#include "missing/nextafter.c"
-#endif
 
 void *
 rb_w32_mmap(void *addr, size_t len, int prot, int flags, int fd, rb_off_t offset)
