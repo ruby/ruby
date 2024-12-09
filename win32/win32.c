@@ -21,9 +21,9 @@
 
 #undef __STRICT_ANSI__
 
-/* Visual C++ 2013 (12.0):
- * - _MSC_VER: 1800
- * - MSVCRT_VERSION: 120
+/* Visual C++ 2015 (14.0):
+ * - _MSC_VER: 1900
+ * - MSVCRT_VERSION: 140
  */
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
@@ -113,10 +113,8 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef dup2
 #undef strdup
 
-#if RUBY_MSVCRT_VERSION >= 140
-# define _filbuf _fgetc_nolock
-# define _flsbuf _fputc_nolock
-#endif
+#define _filbuf _fgetc_nolock
+#define _flsbuf _fputc_nolock
 #define enough_to_get(n) (--(n) >= 0)
 #define enough_to_put(n) (--(n) >= 0)
 
@@ -2401,7 +2399,6 @@ rb_w32_closedir(DIR *dirp)
     return 0;
 }
 
-#if RUBY_MSVCRT_VERSION >= 140
 typedef struct {
     union
     {
@@ -2421,14 +2418,8 @@ typedef struct {
 #define FILE_COUNT(stream) ((vcruntime_file*)stream)->_cnt
 #define FILE_READPTR(stream) ((vcruntime_file*)stream)->_ptr
 #define FILE_FILENO(stream) ((vcruntime_file*)stream)->_file
-#else
-#define FILE_COUNT(stream) stream->_cnt
-#define FILE_READPTR(stream) stream->_ptr
-#define FILE_FILENO(stream) stream->_file
-#endif
 
 /* License: Ruby's */
-#if RUBY_MSVCRT_VERSION >= 140
 typedef char lowio_text_mode;
 typedef char lowio_pipe_lookahead[3];
 
@@ -2445,30 +2436,14 @@ typedef struct {
     uint8_t dbcsBufferUsed   : 1; // Is the dbcsBuffer in use?
     char    dbcsBuffer;           // Buffer for the lead byte of DBCS when converting from DBCS to Unicode
 } ioinfo;
-#else
-typedef struct	{
-    intptr_t osfhnd;	/* underlying OS file HANDLE */
-    char osfile;	/* attributes of file (e.g., open in text mode?) */
-    char pipech;	/* one char buffer for handles opened on pipes */
-    int lockinitflag;
-    CRITICAL_SECTION lock;
-    char textmode;
-    char pipech2[2];
-}	ioinfo;
-#endif
 
 #if !defined _CRTIMP || defined __MINGW32__
 #undef _CRTIMP
 #define _CRTIMP __declspec(dllimport)
 #endif
 
-#if RUBY_MSVCRT_VERSION >= 140
 static ioinfo ** __pioinfo = NULL;
 #define IOINFO_L2E 6
-#else
-EXTERN_C _CRTIMP ioinfo * __pioinfo[];
-#define IOINFO_L2E 5
-#endif
 static inline ioinfo* _pioinfo(int);
 
 
@@ -2484,13 +2459,12 @@ static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
 static void
 set_pioinfo_extra(void)
 {
-#if RUBY_MSVCRT_VERSION >= 140
-# define FUNCTION_RET 0xc3 /* ret */
-# ifdef _DEBUG
-#  define UCRTBASE "ucrtbased.dll"
-# else
-#  define UCRTBASE "ucrtbase.dll"
-# endif
+#define FUNCTION_RET 0xc3 /* ret */
+#ifdef _DEBUG
+# define UCRTBASE "ucrtbased.dll"
+#else
+# define UCRTBASE "ucrtbase.dll"
+#endif
     /* get __pioinfo addr with _isatty */
     /*
      * Why Ruby depends to _pioinfo is
@@ -2625,7 +2599,6 @@ set_pioinfo_extra(void)
     __pioinfo = *(ioinfo***)(p);
 #endif
 #endif /* _M_ARM64 */
-#endif /* RUBY_MSVCRT_VERSION */
     int fd;
 
     fd = _open("NUL", O_RDONLY);
