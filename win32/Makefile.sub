@@ -132,7 +132,7 @@ CAT_DEPEND = type
 
 !if !defined(MSC_VER)
 ! error MSC_VER not defined.  Retry from configure pass.
-!else if $(MSC_VER) < 1800
+!else if $(MSC_VER) < 1900
 ! error MSVC $(MSC_VER) is not supported
 !endif
 !if !defined(MACHINE)
@@ -163,9 +163,7 @@ XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
 !if !defined(OPTFLAGS)
 OPTFLAGS = -O2sy-
 !endif
-!if $(MSC_VER) >= 1900
 OPTFLAGS = $(OPTFLAGS) -Zc:inline
-!endif
 !if !defined(incflags)
 incflags =
 !endif
@@ -174,7 +172,7 @@ PLATFORM = mswin32
 !endif
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
-!else if $(RT_VER) < 120
+!else if $(RT_VER) < 140
 ! error Runtime library $(RT_VER) is not supported
 !endif
 !ifndef NTVER
@@ -744,9 +742,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define rb_uid_t int
 #define HAVE_STRUCT_STAT_ST_RDEV 1
 #define HAVE_STRUCT_TIMEVAL 1
-!if $(MSC_VER) >= 1900
 #define HAVE_STRUCT_TIMESPEC
-!endif
 #define HAVE_INTTYPES_H 1
 #define HAVE_STDINT_H 1
 #define HAVE_INT8_T 1
@@ -855,9 +851,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define HAVE_SYSTEM 1
 #define HAVE_TZSET 1
 #define HAVE_UMASK 1
-!if $(RT_VER) > 120
 #define HAVE_QSORT_S
-!endif
 #define HAVE_TYPE_NET_LUID 1
 #define HAVE_NULLPTR 1
 #define SETPGRP_VOID 1
