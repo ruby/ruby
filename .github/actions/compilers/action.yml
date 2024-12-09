@@ -79,7 +79,7 @@ runs:
 
     - name: Enable Launchable conditionally
       id: enable-launchable
-      run: echo "enable-launchable=false" >> $GITHUB_OUTPUT
+      run: echo "enable-launchable=true" >> $GITHUB_OUTPUT
       shell: bash
       if: >-
         ${{
