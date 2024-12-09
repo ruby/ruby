@@ -120,38 +120,12 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
-* Net::HTTP
-
-    * Removed the following deprecated constants:
-        `Net::HTTP::ProxyMod`
-        `Net::NetPrivate::HTTPRequest`
-        `Net::HTTPInformationCode`
-        `Net::HTTPSuccessCode`
-        `Net::HTTPRedirectionCode`
-        `Net::HTTPRetriableCode`
-        `Net::HTTPClientErrorCode`
-        `Net::HTTPFatalErrorCode`
-        `Net::HTTPServerErrorCode`
-        `Net::HTTPResponseReceiver`
-        `Net::HTTPResponceReceiver`
-
-      These constants were deprecated from 2012.
-
 * Tempfile
 
     * The keyword argument `anonymous: true` is implemented for Tempfile.create.
       `Tempfile.create(anonymous: true)` removes the created temporary file immediately.
       So applications don't need to remove the file.
       [[Feature #20497]]
-
-* Timeout
-
-    * Reject negative values for Timeout.timeout. [[Bug #20795]]
-
-* URI
-
-    * Switched default parser to RFC 3986 compliant from RFC 2396 compliant.
-      [[Bug #19266]]
 
 * win32/sspi.rb
 
@@ -302,6 +276,32 @@ details of the default gems or bundled gems.
   ```
 
 ## Stdlib compatibility issues
+
+* Net::HTTP
+
+    * Removed the following deprecated constants:
+        `Net::HTTP::ProxyMod`
+        `Net::NetPrivate::HTTPRequest`
+        `Net::HTTPInformationCode`
+        `Net::HTTPSuccessCode`
+        `Net::HTTPRedirectionCode`
+        `Net::HTTPRetriableCode`
+        `Net::HTTPClientErrorCode`
+        `Net::HTTPFatalErrorCode`
+        `Net::HTTPServerErrorCode`
+        `Net::HTTPResponseReceiver`
+        `Net::HTTPResponceReceiver`
+
+      These constants were deprecated from 2012.
+
+* Timeout
+
+    * Reject negative values for Timeout.timeout. [[Bug #20795]]
+
+* URI
+
+    * Switched default parser to RFC 3986 compliant from RFC 2396 compliant.
+      [[Bug #19266]]
 
 ## C API updates
 
