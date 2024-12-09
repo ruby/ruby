@@ -2518,15 +2518,6 @@ opt_equality_specialized(VALUE recv, VALUE obj)
         double a = RFLOAT_VALUE(recv);
         double b = RFLOAT_VALUE(obj);
 
-#if MSC_VERSION_BEFORE(1300)
-        if (isnan(a)) {
-            return Qfalse;
-        }
-        else if (isnan(b)) {
-            return Qfalse;
-        }
-        else
-#endif
         return RBOOL(a == b);
     }
     else if (RBASIC_CLASS(recv) == rb_cString && EQ_UNREDEFINED_P(STRING)) {
@@ -2624,37 +2615,27 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 }
 
 
-#if MSC_VERSION_BEFORE(1300)
-#define CHECK_CMP_NAN(a, b) if (isnan(a) || isnan(b)) return Qfalse;
-#else
-#define CHECK_CMP_NAN(a, b) /* do nothing */
-#endif
-
 static inline VALUE
 double_cmp_lt(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a < b);
 }
 
 static inline VALUE
 double_cmp_le(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a <= b);
 }
 
 static inline VALUE
 double_cmp_gt(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a > b);
 }
 
 static inline VALUE
 double_cmp_ge(double a, double b)
 {
-    CHECK_CMP_NAN(a, b);
     return RBOOL(a >= b);
 }
 
@@ -6878,7 +6859,6 @@ vm_opt_lt(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj));
     }
     else {
@@ -6903,7 +6883,6 @@ vm_opt_le(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj));
     }
     else {
@@ -6928,7 +6907,6 @@ vm_opt_gt(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj));
     }
     else {
@@ -6953,7 +6931,6 @@ vm_opt_ge(VALUE recv, VALUE obj)
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
              BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
-        CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
         return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj));
     }
     else {

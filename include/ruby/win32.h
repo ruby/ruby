@@ -30,15 +30,10 @@ extern "C++" {			/* template without extern "C++" */
 #if !defined(_WIN64) && !defined(WIN32)
 #define WIN32
 #endif
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-#include <windows.h>
-#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <mswsock.h>
-#if !defined(_MSC_VER) || _MSC_VER >= 1400
 #include <iphlpapi.h>
-#endif
 #if defined(__cplusplus) && defined(_MSC_VER)
 }
 #endif
@@ -59,13 +54,7 @@ extern "C++" {			/* template without extern "C++" */
 #include <direct.h>
 #include <process.h>
 #include <time.h>
-#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
-extern "C++" {			/* template without extern "C++" */
-#endif
 #include <math.h>
-#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
-}
-#endif
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -436,7 +425,7 @@ extern int rb_w32_utruncate(const char *path, rb_off_t length);
 #define HAVE_TRUNCATE 1
 #define truncate rb_w32_utruncate
 
-#if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1800
+#if defined(_MSC_VER) && _MSC_VER < 1800
 #define strtoll  _strtoi64
 #define strtoull _strtoui64
 #endif
