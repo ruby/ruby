@@ -342,7 +342,7 @@ extern int rb_w32_dup2(int, int);
 
 #include <float.h>
 
-#if defined _MSC_VER && _MSC_VER >= 1800 && defined INFINITY
+#if defined _MSC_VER && defined INFINITY
 #pragma warning(push)
 #pragma warning(disable:4756)
 static inline float
@@ -424,11 +424,6 @@ extern int rb_w32_utruncate(const char *path, rb_off_t length);
 #undef HAVE_TRUNCATE
 #define HAVE_TRUNCATE 1
 #define truncate rb_w32_utruncate
-
-#if defined(_MSC_VER) && _MSC_VER < 1800
-#define strtoll  _strtoi64
-#define strtoull _strtoui64
-#endif
 
 /*
  * stubs
