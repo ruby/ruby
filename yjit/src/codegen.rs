@@ -8192,7 +8192,8 @@ fn gen_send_iseq(
         if let Some(existing_reg_mapping) = find_most_compatible_reg_mapping(callee_blockid, &callee_ctx) {
             asm_comment!(asm, "reuse maps: {:?} -> {:?}", callee_ctx.get_reg_mapping(), existing_reg_mapping);
 
-            // Spill registers that are not used by the existing block
+            // Spill the registers that are not used in the existing block.
+            // When the same ISEQ is compiled as an entry block, it starts with no registers allocated.
             for &reg_opnd in callee_ctx.get_reg_mapping().get_reg_opnds().iter() {
                 if existing_reg_mapping.get_reg(reg_opnd).is_none() {
                     match reg_opnd {
@@ -8207,7 +8208,8 @@ fn gen_send_iseq(
             }
             assert!(callee_ctx.get_reg_mapping().get_reg_opnds().len() <= existing_reg_mapping.get_reg_opnds().len());
 
-            // Load registers that are currently not used but used by the existing block
+            // Load the registers that are spilled in this block but used in the existing block.
+            // When there are multiple callsites, some registers spilled in this block may be used at other callsites.
             for &reg_opnd in existing_reg_mapping.get_reg_opnds().iter() {
                 if callee_ctx.get_reg_mapping().get_reg(reg_opnd).is_none() {
                     match reg_opnd {
