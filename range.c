@@ -508,7 +508,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     const VALUE step_num_p = rb_obj_is_kind_of(step, rb_cNumeric);
 
-    if (step_num_p && b_num_p && rb_equal(step, INT2FIX(0))) {
+    if (step_num_p && (b_num_p | str_b | sym_b) && rb_equal(step, INT2FIX(0))) {
         rb_raise(rb_eArgError, "step can't be 0");
     }
 

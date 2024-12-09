@@ -322,6 +322,11 @@ class TestRange < Test::Unit::TestCase
       assert_raise(ArgumentError) { (from..to).step(0) {} }
       assert_raise(ArgumentError) { (from..to).step(0) }
 
+      assert_raise(ArgumentError) { ("a".."c").step(0) {}}
+      assert_raise(ArgumentError) { ("a".."c").step(0) }
+      assert_raise(ArgumentError) { (:a..:c).step(0) {}}
+      assert_raise(ArgumentError) { (:a..:c).step(0) }
+
       # default step
 
       a = []
