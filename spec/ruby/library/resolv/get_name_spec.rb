@@ -16,3 +16,26 @@ describe "Resolv#getname" do
     }.should raise_error(Resolv::ResolvError)
   end
 end
+
+describe "Resolv.getname" do
+  it "calls DefaultResolver#getname" do
+    Resolv::DefaultResolver.should_receive(:getname).with("127.0.0.1")
+    Resolv.getname("127.0.0.1")
+  end
+
+  ruby_version_is "2.6" do
+    context "with a custom resolver" do
+      after do
+        Resolv.current_resolver = nil
+      end
+
+      it "calls #getname on the custom resolver" do
+        resolver = Resolv.new([])
+        resolver.should_receive(:getname).with("127.0.0.1")
+
+        Resolv.current_resolver = resolver
+        Resolv.getname("127.0.0.1")
+      end
+    end
+  end
+end
