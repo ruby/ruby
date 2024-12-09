@@ -8217,7 +8217,7 @@ fn gen_send_iseq(
                             let loaded_temp = asm.stack_opnd(argc - local_idx as i32 - 1);
                             asm.load_into(Opnd::Reg(loaded_reg), loaded_temp);
                         }
-                        RegOpnd::Stack(_) => unreachable!("diff_allowing_reg_mismatch should not leave {:?}", reg_opnd),
+                        RegOpnd::Stack(_) => unreachable!("find_most_compatible_reg_mapping should not leave {:?}", reg_opnd),
                     }
                 }
             }
