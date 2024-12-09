@@ -721,7 +721,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
-clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-gc clean-local clean-platform clean-spec
+clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-modular-gc clean-local clean-platform clean-spec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(ALLOBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
@@ -751,13 +751,11 @@ clean-capi: PHONY
 clean-platform: PHONY
 clean-extout: PHONY
 	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(RUBYCOMMONDIR) $(EXTOUT) 2> $(NULL) || $(NULLCMD)
-clean-gc: PHONY
-	-$(Q) $(RMDIR) gc
 clean-docs: clean-rdoc clean-html clean-capi
 clean-spec: PHONY
 clean-rubyspec: clean-spec
 
-distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-gc distclean-local distclean-platform distclean-spec
+distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-modular-gc distclean-local distclean-platform distclean-spec
 distclean-local:: clean-local
 	$(Q)$(RM) $(MKFILES) *.inc $(PRELUDES) *.rbinc *.rbbin
 	$(Q)$(RM) config.cache config.status config.status.lineno
@@ -770,7 +768,6 @@ distclean-html: clean-html
 distclean-capi: clean-capi
 distclean-docs: clean-docs
 distclean-extout: clean-extout
-distclean-gc: clean-gc
 distclean-platform: clean-platform
 distclean-spec: clean-spec
 distclean-rubyspec: distclean-spec
@@ -1957,10 +1954,12 @@ modular-gc: probes.h modular-gc-precheck
 	$(CP) gc/$(MODULAR_GC)/librubygc.$(MODULAR_GC).$(DLEXT) $(modular_gc_dir)
 
 clean-modular-gc:
-	- $(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)
+	- find gc -type d -mindepth 1 -maxdepth 1 -exec sh -c '$(CHDIR) "{}" && $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)' \; || $(NULLCMD)
+	-$(Q) $(RMDIR) gc
 distclean-modular-gc: clean-modular-gc
-	- $(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)
-	$(RMALL) gc/$(MODULAR_GC)
+	- find gc -type d -mindepth 1 -maxdepth 1 -exec sh -c '$(CHDIR) "{}" && $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)' \; || $(NULLCMD)
+	- find gc -type d -mindepth 1 -maxdepth 1 -exec sh -c '$(RMDIR) "{}"' \; || $(NULLCMD)
+	-$(Q) $(RMDIR) gc
 
 help: PHONY
 	$(MESSAGE_BEGIN) \
