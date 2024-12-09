@@ -156,26 +156,16 @@ describe "C-API Kernel function" do
   end
 
   describe "rb_warn" do
-    before :each do
-      @stderr, $stderr = $stderr, IOStub.new
-      @verbose = $VERBOSE
-    end
-
-    after :each do
-      $stderr = @stderr
-      $VERBOSE = @verbose
-    end
-
     it "prints a message to $stderr if $VERBOSE evaluates to true" do
-      $VERBOSE = true
-      @s.rb_warn("This is a warning")
-      $stderr.should =~ /This is a warning/
+      -> {
+        @s.rb_warn("This is a warning")
+      }.should complain(/warning: This is a warning/, verbose: true)
     end
 
     it "prints a message to $stderr if $VERBOSE evaluates to false" do
-      $VERBOSE = false
-      @s.rb_warn("This is a warning")
-      $stderr.should =~ /This is a warning/
+      -> {
+        @s.rb_warn("This is a warning")
+      }.should complain(/warning: This is a warning/, verbose: false)
     end
   end
 
@@ -197,13 +187,47 @@ describe "C-API Kernel function" do
     it "raises an exception from the given error" do
       -> do
         @s.rb_syserr_fail(Errno::EINVAL::Errno, "additional info")
-      end.should raise_error(Errno::EINVAL, /additional info/)
+      end.should raise_error(Errno::EINVAL, "Invalid argument - additional info")
     end
 
     it "can take a NULL message" do
       -> do
         @s.rb_syserr_fail(Errno::EINVAL::Errno, nil)
-      end.should raise_error(Errno::EINVAL)
+      end.should raise_error(Errno::EINVAL, "Invalid argument")
+    end
+
+    it "uses an 'unknown error' message when errno is unknown" do
+      platform_is_not :windows do
+        -> { @s.rb_syserr_fail(-10, nil) }.should raise_error(SystemCallError, /Unknown error(:)? -10/)
+      end
+
+      platform_is :windows do
+        -> { @s.rb_syserr_fail(-1, nil) }.should raise_error(SystemCallError, "The operation completed successfully.")
+      end
+    end
+  end
+
+  describe "rb_syserr_fail_str" do
+    it "raises an exception from the given error" do
+      -> do
+        @s.rb_syserr_fail_str(Errno::EINVAL::Errno, "additional info")
+      end.should raise_error(Errno::EINVAL, "Invalid argument - additional info")
+    end
+
+    it "can take nil as a message" do
+      -> do
+        @s.rb_syserr_fail_str(Errno::EINVAL::Errno, nil)
+      end.should raise_error(Errno::EINVAL, "Invalid argument")
+    end
+
+    it "uses an 'unknown error' message when errno is unknown" do
+      platform_is_not :windows do
+        -> { @s.rb_syserr_fail_str(-10, nil) }.should raise_error(SystemCallError, /Unknown error(:)? -10/)
+      end
+
+      platform_is :windows do
+        -> { @s.rb_syserr_fail_str(-1, nil) }.should raise_error(SystemCallError, "The operation completed successfully.")
+      end
     end
   end
 
@@ -527,6 +551,40 @@ describe "C-API Kernel function" do
 
     it "raises an ArgumentError if the throw symbol isn't caught" do
       -> { @s.rb_catch("foo", -> { throw :bar }) }.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "rb_category_warn" do
+    it "emits a warning into stderr" do
+      Warning[:deprecated] = true
+
+      -> {
+        @s.rb_category_warn_deprecated
+      }.should complain(/warning: foo/, verbose: true)
+    end
+
+    it "supports printf format modifiers" do
+      Warning[:deprecated] = true
+
+      -> {
+        @s.rb_category_warn_deprecated_with_integer_extra_value(42)
+      }.should complain(/warning: foo 42/, verbose: true)
+    end
+
+    it "does not emits a warning when a category is disabled" do
+      Warning[:deprecated] = false
+
+      -> {
+        @s.rb_category_warn_deprecated
+      }.should_not complain(verbose: true)
+    end
+
+    it "does not emits a warning when $VERBOSE is nil" do
+      Warning[:deprecated] = true
+
+      -> {
+        @s.rb_category_warn_deprecated
+      }.should_not complain(verbose: nil)
     end
   end
 
@@ -866,6 +924,12 @@ describe "C-API Kernel function" do
     it "calls a protected method" do
       object = CApiKernelSpecs::ClassWithProtectedMethod.new
       @s.rb_check_funcall(object, :protected_method, []).should == :protected
+    end
+  end
+
+  describe "rb_str_format" do
+    it "returns a string according to format and arguments" do
+      @s.rb_str_format(3, [10, 2.5, "test"], "%d %f %s").should == "10 2.500000 test"
     end
   end
 end

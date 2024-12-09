@@ -581,6 +581,11 @@ static VALUE string_spec_rb_enc_interned_str_cstr(VALUE self, VALUE str, VALUE e
   return rb_enc_interned_str_cstr(RSTRING_PTR(str), e);
 }
 
+static VALUE string_spec_rb_enc_interned_str(VALUE self, VALUE str, VALUE len, VALUE enc) {
+  rb_encoding *e = NIL_P(enc) ? 0 : rb_to_encoding(enc);
+  return rb_enc_interned_str(RSTRING_PTR(str), FIX2LONG(len), e);
+}
+
 static VALUE string_spec_rb_str_to_interned_str(VALUE self, VALUE str) {
   return rb_str_to_interned_str(str);
 }
@@ -687,6 +692,7 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_locktmp", string_spec_rb_str_locktmp, 1);
   rb_define_method(cls, "rb_str_unlocktmp", string_spec_rb_str_unlocktmp, 1);
   rb_define_method(cls, "rb_enc_interned_str_cstr", string_spec_rb_enc_interned_str_cstr, 2);
+  rb_define_method(cls, "rb_enc_interned_str", string_spec_rb_enc_interned_str, 3);
   rb_define_method(cls, "rb_str_to_interned_str", string_spec_rb_str_to_interned_str, 1);
 }
 
