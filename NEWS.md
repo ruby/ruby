@@ -277,6 +277,10 @@ details of the default gems or bundled gems.
 
 ## Stdlib compatibility issues
 
+* DidYouMean
+
+    * `DidYouMean::SPELL_CHECKERS[]=` and `DidYouMean::SPELL_CHECKERS.merge!` are removed.
+
 * Net::HTTP
 
     * Removed the following deprecated constants:
