@@ -752,7 +752,7 @@ clean-platform: PHONY
 clean-extout: PHONY
 	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(RUBYCOMMONDIR) $(EXTOUT) 2> $(NULL) || $(NULLCMD)
 clean-gc: PHONY
-	$(Q) $(RMALL) gc
+	-$(Q) $(RMDIR) gc
 clean-docs: clean-rdoc clean-html clean-capi
 clean-spec: PHONY
 clean-rubyspec: clean-spec
