@@ -6002,6 +6002,35 @@ fn jit_rb_str_aref_m(
     true
 }
 
+fn jit_rb_str_ord(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    asm_comment!(asm, "String#ord");
+
+    // It may raise "empty string" or "invalid byte sequence"
+    if !jit_prepare_lazy_frame_call(jit, asm, cme, StackOpnd(0)) {
+        return false;
+    }
+
+    extern "C" {
+        fn rb_str_ord(s: VALUE) -> VALUE;
+    }
+    let recv = asm.stack_opnd(0);
+    let ret = asm.ccall(rb_str_ord as *const u8, vec![recv]);
+
+    asm.stack_pop(1);
+    let ret_opnd = asm.stack_push(Type::Fixnum);
+    asm.mov(ret_opnd, ret);
+
+    true
+}
+
 fn jit_rb_str_getbyte(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10734,6 +10763,7 @@ pub fn yjit_reg_method_codegen_fns() {
         reg_method_codegen(rb_cString, "byteslice", jit_rb_str_byteslice);
         reg_method_codegen(rb_cString, "[]", jit_rb_str_aref_m);
         reg_method_codegen(rb_cString, "slice", jit_rb_str_aref_m);
+        reg_method_codegen(rb_cString, "ord", jit_rb_str_ord);
         reg_method_codegen(rb_cString, "<<", jit_rb_str_concat);
         reg_method_codegen(rb_cString, "+@", jit_rb_str_uplus);
 
