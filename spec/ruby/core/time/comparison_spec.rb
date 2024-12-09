@@ -55,6 +55,32 @@ describe "Time#<=>" do
     }.should_not complain
   end
 
+  context "given different timezones" do
+    it "returns 0 if time is the same as other" do
+      # three timezones, all at the same timestamp
+      time_utc = Time.new(2000, 1, 1, 0, 0, 0, 0)
+      time_cet = Time.new(2000, 1, 1, 1, 0, 0, '+01:00')
+      time_brt = Time.new(1999, 12, 31, 21, 0, 0, '-03:00')
+      (time_utc <=> time_cet).should == 0
+      (time_utc <=> time_brt).should == 0
+      (time_cet <=> time_brt).should == 0
+    end
+
+    it "returns -1 if the first argument is before the second argument" do
+      # time_brt is later, even though the date is earlier
+      time_utc = Time.new(2000, 1, 1, 0, 0, 0, 0)
+      time_brt = Time.new(1999, 12, 31, 23, 0, 0, '-03:00')
+      (time_utc <=> time_brt).should == -1
+    end
+
+    it "returns 1 if the first argument is before the second argument" do
+      # time_brt is later, even though the date is earlier
+      time_utc = Time.new(2000, 1, 1, 0, 0, 0, 0)
+      time_brt = Time.new(1999, 12, 31, 23, 0, 0, '-03:00')
+      (time_brt <=> time_utc).should == 1
+    end
+  end
+
   describe "given a non-Time argument" do
     it "returns nil if argument <=> self returns nil" do
       t = Time.now

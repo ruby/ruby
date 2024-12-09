@@ -999,6 +999,7 @@ describe "Post-args" do
   end
 end
 
+# tested more thoroughly in language/delegation_spec.rb
 describe "Anonymous block forwarding" do
   ruby_version_is "3.1" do
     it "forwards blocks to other method that formally declares anonymous block" do
@@ -1069,6 +1070,35 @@ describe "Anonymous block forwarding" do
       pos_rkw(:a, kwarg1: 3) { 1 }.should == 1
       all(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
       all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
+    end
+  end
+end
+
+describe "`it` calls without arguments in a block with no ordinary parameters" do
+  ruby_version_is "3.3"..."3.4" do
+    it "emits a deprecation warning" do
+      -> {
+        eval "proc { it }"
+      }.should complain(/warning: `it` calls without arguments will refer to the first block param in Ruby 3.4; use it\(\) or self.it/)
+    end
+
+    it "does not emit a deprecation warning when a block has parameters" do
+      -> { eval "proc { |a, b| it }" }.should_not complain
+      -> { eval "proc { |*rest| it }" }.should_not complain
+      -> { eval "proc { |*| it }" }.should_not complain
+      -> { eval "proc { |a:, b:| it }" }.should_not complain
+      -> { eval "proc { |**kw| it }" }.should_not complain
+      -> { eval "proc { |**| it }" }.should_not complain
+      -> { eval "proc { |&block| it }" }.should_not complain
+      -> { eval "proc { |&| it }" }.should_not complain
+    end
+
+    it "does not emit a deprecation warning when `it` calls with arguments" do
+      -> { eval "proc { it(42) }" }.should_not complain
+    end
+
+    it "does not emit a deprecation warning when `it` calls with explicit empty arguments list" do
+      -> { eval "proc { it() }" }.should_not complain
     end
   end
 end

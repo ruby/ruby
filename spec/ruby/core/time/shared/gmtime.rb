@@ -4,7 +4,14 @@ describe :time_gmtime, shared: true do
     with_timezone("CST", -6) do
       t = Time.local(2007, 1, 9, 6, 0, 0)
       t.send(@method)
-      t.should == Time.gm(2007, 1, 9, 12, 0, 0)
+      # Time#== compensates for time zones, so check all parts separately
+      t.year.should == 2007
+      t.month.should == 1
+      t.mday.should == 9
+      t.hour.should == 12
+      t.min.should == 0
+      t.sec.should == 0
+      t.zone.should == "UTC"
     end
   end
 
