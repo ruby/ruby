@@ -10772,7 +10772,7 @@ rb_str_crypt(VALUE str, VALUE salt)
  *
  */
 
-static VALUE
+VALUE
 rb_str_ord(VALUE s)
 {
     unsigned int c;
