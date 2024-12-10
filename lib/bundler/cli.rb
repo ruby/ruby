@@ -434,8 +434,8 @@ module Bundler
     map aliases_for("cache")
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
-    method_option :keep_file_descriptors, type: :boolean, default: true
-    method_option :gemfile, type: :string, required: false
+    method_option :keep_file_descriptors, type: :boolean, default: true, banner: "Passes all file descriptors to the new processes. Default is true, and setting it to false is deprecated"
+    method_option :gemfile, type: :string, required: false, banner: "Use the specified gemfile instead of Gemfile"
     long_desc <<-D
       Exec runs a command, providing it access to the gems in the bundle. While using
       bundle exec you can require and call the bundled gems as if they were installed
