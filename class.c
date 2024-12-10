@@ -78,6 +78,11 @@
 
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
+struct duplicate_id_tbl_data {
+    struct rb_id_table *tbl;
+    VALUE klass;
+};
+
 static enum rb_id_table_iterator_result
 duplicate_classext_id_table_i(ID key, VALUE value, void *data)
 {
@@ -129,11 +134,6 @@ duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
     rb_id_table_foreach(orig, duplicate_classext_id_table_i, tbl);
     return tbl;
 }
-
-struct duplicate_id_tbl_data {
-    struct rb_id_table *tbl;
-    VALUE klass;
-};
 
 static rb_const_entry_t *
 duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
