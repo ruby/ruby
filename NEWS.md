@@ -326,16 +326,22 @@ details of the default gems or bundled gems.
   [[Feature #20782]]
 * Array#each is rewritten in Ruby for better performance [[Feature #20182]].
 
-* Alternative GC implementations can be loaded dynamically. Configure Ruby
-  `--with-modular-gc` to enable. Alternative GC libraries can be loaded at runtime
-  using the environment variable `RUBY_GC_LIBRARY`.  [[Feature #20351]],
-  [[Feature #20470]]
+* Alternative garbage collector (GC) implementations can be loaded dynamically
+  through the modular garbage collector feature. To enable this feature,
+  configure Ruby with `--with-modular-gc` at build time. GC libraries can be
+  loaded at runtime using the environment variable `RUBY_GC_LIBRARY`.
+  [[Feature #20351]]
 
-* An experimental GC library is provided based on MMTk. Configure Ruby
-  `--with-modular-gc`, build as normal, then build the GC library: `make
-  modular-gc MODULAR_GC=mmtk`. Enable with `RUBY_GC_LIBRARY=mmtk`.  This
-  requires a working Rust compiler, and Cargo on the build machine.
-  [[Feature #20860]]
+* Ruby's built-in garbage collector has been split into a separate file at
+  `gc/default/default.c` and interacts with Ruby using an API defined in
+  `gc/gc_impl.h`. The built-in garbage collector can now also be built as a
+  library using `make modular-gc MODULAR_GC=default` and enabled using the
+  environment variable `RUBY_GC_LIBRARY=default`. [[Feature #20470]]
+
+* An experimental GC library is provided based on [MMTk](https://www.mmtk.io/).
+  This GC library can be built using `make modular-gc MODULAR_GC=mmtk` and
+  enabled using the environment variable `RUBY_GC_LIBRARY=mmtk`. This requires
+  the Rust toolchain on the build machine. [[Feature #20860]]
 
 ## JIT
 
