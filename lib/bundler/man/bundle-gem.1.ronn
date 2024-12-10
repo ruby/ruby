@@ -49,6 +49,12 @@ configuration file using the following names:
   Do not add extension code (overrides `--ext` specified in the global
   config).
 
+* `--git`:
+  Initialize a git repo inside your library.
+
+* `--github-username=GITHUB_USERNAME`:
+  Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`.
+
 * `--mit`:
   Add an MIT license to a `LICENSE.txt` file in the root of the generated
   project. Your name from the global git config is used for the copyright
@@ -79,6 +85,9 @@ configuration file using the following names:
 * `--no-test`:
   Do not use a test framework (overrides `--test` specified in the global
   config).
+
+* `--changelog`:
+  Generate changelog file. Set a default with `bundle config set --global gem.changelog true`.
 
 * `--ci`, `--ci=github`, `--ci=gitlab`, `--ci=circle`:
   Specify the continuous integration service that Bundler should use when
@@ -118,6 +127,9 @@ configuration file using the following names:
 
 * `--no-linter`:
   Do not add a linter (overrides `--linter` specified in the global config).
+
+* `--rubocop`:
+  Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`.
 
 * `-e`, `--edit[=EDITOR]`:
   Open the resulting GEM_NAME.gemspec in EDITOR, or the default editor if not
