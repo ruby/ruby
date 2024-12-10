@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-update\fR \- Update your gems to the latest available versions
 .SH "SYNOPSIS"
-\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=JOBS] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-redownload] [\-\-strict] [\-\-conservative]
+\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=JOBS] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-pre] [\-\-redownload] [\-\-strict] [\-\-conservative]
 .SH "DESCRIPTION"
 Update the gems specified (all gems, if \fB\-\-all\fR flag is used), ignoring the previously installed gems specified in the \fBGemfile\.lock\fR\. In general, you should use bundle install(1) \fIbundle\-install\.1\.html\fR to install the same exact gems and versions across machines\.
 .P
@@ -55,6 +55,9 @@ Prefer updating only to next minor version\.
 .TP
 \fB\-\-major\fR
 Prefer updating to next major version (default)\.
+.TP
+\fB\-\-pre\fR
+Always choose the highest allowed version, regardless of prerelease status\.
 .TP
 \fB\-\-strict\fR
 Do not allow any gem to be updated past latest \fB\-\-patch\fR | \fB\-\-minor\fR | \fB\-\-major\fR\.
