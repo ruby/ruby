@@ -3095,7 +3095,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
     rb_nativethread_lock_lock(&shared->lock);
     {
         entry->err = err;
-        if (shared->cancelled) {
+        if (shared->cancelled) { // Never reach.
             if (entry->ai) {
                 freeaddrinfo(entry->ai);
                 entry->ai = NULL;
