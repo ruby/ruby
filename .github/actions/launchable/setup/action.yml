@@ -133,7 +133,6 @@ runs:
       run: |
         set -x
         pip install --user launchable
-        launchable verify || true
         : # The build name cannot include a slash, so we replace the string here.
         github_ref="${{ github.ref }}"
         github_ref="${github_ref//\//_}"
