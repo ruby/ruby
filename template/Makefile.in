@@ -567,6 +567,12 @@ ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 .bundle/realclean::
 	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
 
+gc/clean gc/distclean gc/realclean::
+	- for gc in gc/*/; do ($(CHDIR) $$gc && exec $(MAKE) TARGET_SO_DIR=./ $(@F)); done || $(NULLCMD)
+
+gc/distclean gc/realclean::
+	- for gc in gc/*/; do $(RMDIR) $$gc; done || $(NULLCMD)
+
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
