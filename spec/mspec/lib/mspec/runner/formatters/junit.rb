@@ -8,6 +8,9 @@ class JUnitFormatter < YamlFormatter
 
   def after(state = nil)
     super(state)
+    $stderr.puts state
+    $stderr.puts caller
+    $stderr.puts
     @tests << {:test => state, :exception => false} unless exception?
   end
 
@@ -38,8 +41,6 @@ class JUnitFormatter < YamlFormatter
           time="#{time}"
           name="Spec Output For #{::RUBY_ENGINE} (#{::RUBY_VERSION})">
     XML
-    $stderr.puts "debugdebug"
-    $stderr.puts @tests
     @tests.each do |h|
       next if h[:test].nil?
       description = encode_for_xml h[:test].description
