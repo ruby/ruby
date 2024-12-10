@@ -251,7 +251,7 @@ runs:
           [[ "${test_spec_enabled}" = "true" ]] && \
             launchable record tests \
               --session "$(cat "${test_spec_session_file}")" \
-              raw "${test_spec_report_path}" || true
+              file "${test_spec_report_path}" || true
 
           rm -f "${test_all_session_file}"
           rm -f "${btest_session_file}"
