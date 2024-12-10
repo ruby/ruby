@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-lock\fR \- Creates / Updates a lockfile without installing
 .SH "SYNOPSIS"
-\fBbundle lock\fR [\-\-update] [\-\-local] [\-\-print] [\-\-lockfile=PATH] [\-\-full\-index] [\-\-add\-platform] [\-\-remove\-platform] [\-\-patch] [\-\-minor] [\-\-major] [\-\-strict] [\-\-conservative]
+\fBbundle lock\fR [\-\-update] [\-\-local] [\-\-print] [\-\-lockfile=PATH] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-add\-platform] [\-\-remove\-platform] [\-\-patch] [\-\-minor] [\-\-major] [\-\-strict] [\-\-conservative]
 .SH "DESCRIPTION"
 Lock the gems specified in Gemfile\.
 .SH "OPTIONS"
@@ -23,6 +23,9 @@ The path where the lockfile should be written to\.
 .TP
 \fB\-\-full\-index\fR
 Fall back to using the single\-file index of all gems\.
+.TP
+\fB\-\-gemfile=GEMFILE\fR
+Use the specified gemfile instead of [\fBGemfile(5)\fR][Gemfile(5)]\.
 .TP
 \fB\-\-add\-platform\fR
 Add a new platform to the lockfile, re\-resolving for the addition of that platform\.

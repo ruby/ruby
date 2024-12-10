@@ -10,6 +10,7 @@ bundle-update(1) -- Update your gems to the latest available versions
                         [--ruby]
                         [--bundler[=VERSION]]
                         [--full-index]
+                        [--gemfile=GEMFILE]
                         [--jobs=JOBS]
                         [--quiet]
                         [--patch|--minor|--major]
@@ -54,6 +55,9 @@ gem.
 
 * `--full-index`:
   Fall back to using the single-file index of all gems.
+
+* `--gemfile=GEMFILE`:
+  Use the specified gemfile instead of [`Gemfile(5)`][Gemfile(5)].
 
 * `--jobs=[<number>]`, `-j[<number>]`:
   Specify the number of jobs to run in parallel. The default is the number of

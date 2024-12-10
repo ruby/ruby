@@ -8,6 +8,7 @@ bundle-lock(1) -- Creates / Updates a lockfile without installing
               [--print]
               [--lockfile=PATH]
               [--full-index]
+              [--gemfile=GEMFILE]
               [--add-platform]
               [--remove-platform]
               [--patch]
@@ -40,6 +41,9 @@ Lock the gems specified in Gemfile.
 
 * `--full-index`:
   Fall back to using the single-file index of all gems.
+
+* `--gemfile=GEMFILE`:
+  Use the specified gemfile instead of [`Gemfile(5)`][Gemfile(5)].
 
 * `--add-platform`:
   Add a new platform to the lockfile, re-resolving for the addition of that
