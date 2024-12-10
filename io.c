@@ -4188,7 +4188,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
                 rs = 0;
                 if (!rb_enc_asciicompat(enc)) {
                     rs = rb_usascii_str_new(rsptr, rslen);
-                    rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+                    rs = rb_str_conv_enc(rs, 0, enc);
                     OBJ_FREEZE(rs);
                     rsptr = RSTRING_PTR(rs);
                     rslen = RSTRING_LEN(rs);
@@ -4200,7 +4200,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
                  newline = (unsigned char)rsptr[rslen - 1];
             }
             else {
-                rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+                rs = rb_str_conv_enc(rs, 0, enc);
                 rsptr = RSTRING_PTR(rs);
                 const char *e = rsptr + rslen;
                 const char *last = rb_enc_prev_char(rsptr, e, e, enc);
