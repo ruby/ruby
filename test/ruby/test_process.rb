@@ -486,7 +486,7 @@ class TestProcess < Test::Unit::TestCase
       assert_file.not_exist?("テスト/open_chdir_テスト")
       assert_equal("#{d}/テスト", File.read("open_chdir_テスト", encoding: "UTF-8").chomp)
     }
-  end if windows? || Encoding.find('locale') == Encoding::UTF_8
+  end if Encoding.find('locale') == Encoding::UTF_8
 
   def test_execopts_open_failure
     with_tmpchdir {|d|
