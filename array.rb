@@ -184,7 +184,7 @@ class Array
   #  With no block given, returns a new array containing the elements of +self+
   #  at the offsets given by +indexes+;
   #  each of the +indexes+ must be an
-  #  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
+  #  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects]:
   #
   #    a = [:foo, :bar, :baz]
   #    a.fetch_values(3, 1)   # => [:baz, :foo]

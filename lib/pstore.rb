@@ -71,7 +71,7 @@ require "digest"
 # when the store is created (see PStore.new).
 # The objects are stored and retrieved using
 # module Marshal, which means that certain objects cannot be added to the store;
-# see {Marshal::dump}[rdoc-ref:Marshal.dump].
+# see {Marshal::dump}[rdoc-ref:ruby/marshal.dump].
 #
 # == Entries
 #
@@ -83,7 +83,7 @@ require "digest"
 #   You may find it convenient to keep it simple by using only
 #   symbols or strings as keys.
 # - Value: the value may be any object that can be marshalled by \Marshal
-#   (see {Marshal::dump}[rdoc-ref:Marshal.dump])
+#   (see {Marshal::dump}[rdoc-ref:ruby/marshal.dump])
 #   and in fact may be a collection
 #   (e.g., an array, a hash, a set, a range, etc).
 #   That collection may in turn contain nested objects,
@@ -194,7 +194,7 @@ require "digest"
 #   end
 #
 # And recall that you can use
-# {dig methods}[rdoc-ref:dig_methods.rdoc]
+# {dig methods}[rdoc-ref:ruby/dig_methods.rdoc]
 # in a returned hierarchy of objects.
 #
 # == Working with the Store
