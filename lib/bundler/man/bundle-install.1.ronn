@@ -22,6 +22,7 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--standalone[=GROUP[ GROUP...]]]
                  [--system]
                  [--trust-policy=POLICY]
+                 [--target-rbconfig=TARGET-RBCONFIG]
                  [--with=GROUP[ GROUP...]]
                  [--without=GROUP[ GROUP...]]
 
@@ -168,6 +169,9 @@ automatically and that requires `bundler` to silently remember them. Since
   `HighSecurity`, `MediumSecurity`, `LowSecurity`, `AlmostNoSecurity`, or
   `NoSecurity`. For more details, please see the Rubygems signing documentation
   linked below in [SEE ALSO][].
+
+* `--target-rbconfig=TARGET-RBCONFIG`:
+  Path to rbconfig.rb for the deployment target platform.
 
 * `--with=<list>`:
   A space-separated list of groups referencing gems to install. If an
