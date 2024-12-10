@@ -14,4 +14,4 @@ Given a gem name present in your bundle, print the basic information about it
 ## OPTIONS
 
 * `--path`:
-Print the path of the given gem
+  Print the path of the given gem
