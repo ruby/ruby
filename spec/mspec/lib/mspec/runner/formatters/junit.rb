@@ -25,7 +25,6 @@ class JUnitFormatter < YamlFormatter
     failures = @tally.counter.failures
 
     print <<-XML
-
 <?xml version="1.0" encoding="UTF-8" ?>
     <testsuites
         testCount="#{tests}"
