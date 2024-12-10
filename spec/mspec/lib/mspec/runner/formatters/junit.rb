@@ -41,6 +41,7 @@ class JUnitFormatter < YamlFormatter
     XML
     @tests.each do |h|
       description = encode_for_xml h[:test].description
+      next if description.nil?
 
       print <<-XML
         <testcase classname="Spec" name="#{description}" time="0.0">
