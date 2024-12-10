@@ -408,7 +408,10 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
         str = rb_str_new(0, out_len);
     } else {
         StringValue(str);
-        rb_str_resize(str, out_len);
+        if ((long)rb_str_capacity(str) >= out_len)
+            rb_str_modify(str);
+        else
+            rb_str_modify_expand(str, out_len - RSTRING_LEN(str));
     }
 
     if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str), &out_len, in, in_len))
