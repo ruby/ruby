@@ -102,6 +102,11 @@ duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
     return tbl;
 }
 
+struct duplicate_id_tbl_data {
+    struct rb_id_table *tbl;
+    VALUE klass;
+};
+
 static rb_const_entry_t *
 duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
 {
@@ -116,15 +121,10 @@ duplicate_classext_const_entry(rb_const_entry_t *src, VALUE klass)
     return dst;
 }
 
-struct duplicate_const_tbl_data {
-    struct rb_id_table *tbl;
-    VALUE klass;
-};
-
 static enum rb_id_table_iterator_result
 duplicate_classext_const_tbl_i(ID key, VALUE value, void *data)
 {
-    struct duplicate_const_tbl_data *arg = (struct duplicate_const_tbl_data *)data;
+    struct duplicate_id_tbl_data *arg = (struct duplicate_id_tbl_data *)data;
     rb_const_entry_t *entry = duplicate_classext_const_entry((rb_const_entry_t *)value, arg->klass);
 
     rb_id_table_insert(arg->tbl, key, (VALUE)entry);
@@ -142,7 +142,7 @@ duplicate_classext_const_tbl(struct rb_id_table *src, VALUE klass)
 
     dst = rb_id_table_create(rb_id_table_size(src));
 
-    struct duplicate_const_tbl_data data = {
+    struct duplicate_id_tbl_data data = {
         .tbl = dst,
         .klass = klass,
     };
@@ -222,12 +222,6 @@ duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
 }
 
 static void
-class_invalidate_iclass_method_caches(rb_classext_t *ext)
-{
-    rb_invalidate_method_caches(RCLASSEXT_CALLABLE_M_TBL(ext), RCLASSEXT_CC_TBL(ext));
-}
-
-static void
 class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_namespace_t *ns)
 {
     rb_classext_t *src = RCLASS_EXT(iclass);
@@ -235,8 +229,8 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
     int table_created = 0;
 
     if (ext) {
-        // iclass classext is only for cc/callable_m_tbl if it's created earlier than module's one
-        class_invalidate_iclass_method_caches(ext);
+        // iclass classext for the ns is only for cc/callable_m_tbl if it's created earlier than module's one
+        rb_invalidate_method_caches(RCLASSEXT_CALLABLE_M_TBL(ext), RCLASSEXT_CC_TBL(ext));
     }
 
     ext = ZALLOC(rb_classext_t);

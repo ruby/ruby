@@ -132,7 +132,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *cme)
         return TRUE;
     }
     else {
-        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment));
+        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment), "imemo_type:%s", rb_imemo_name(imemo_type((VALUE)cme)));
 
         if (callable_class_p(cme->defined_class)) {
             return TRUE;
