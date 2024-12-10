@@ -436,7 +436,7 @@ class Reline::LineEditor
   # Calculate cursor position in word wrapped content.
   def wrapped_cursor_position
     prompt_width = calculate_width(prompt_list[@line_index], true)
-    line_before_cursor = whole_lines[@line_index].byteslice(0, @byte_pointer)
+    line_before_cursor = Reline::Unicode.escape_for_print(whole_lines[@line_index].byteslice(0, @byte_pointer))
     wrapped_line_before_cursor = split_line_by_width(' ' * prompt_width + line_before_cursor, screen_width)
     wrapped_cursor_y = wrapped_prompt_and_input_lines[0...@line_index].sum(&:size) + wrapped_line_before_cursor.size - 1
     wrapped_cursor_x = calculate_width(wrapped_line_before_cursor.last)
