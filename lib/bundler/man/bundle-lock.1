@@ -9,7 +9,7 @@
 Lock the gems specified in Gemfile\.
 .SH "OPTIONS"
 .TP
-\fB\-\-update=<*gems>\fR
+\fB\-\-update[=<list>]\fR
 Ignores the existing lockfile\. Resolve then updates lockfile\. Taking a list of gems or updating all gems if no list is given\.
 .TP
 \fB\-\-bundler[=BUNDLER]\fR
@@ -21,7 +21,7 @@ Do not attempt to connect to \fBrubygems\.org\fR\. Instead, Bundler will use the
 \fB\-\-print\fR
 Prints the lockfile to STDOUT instead of writing to the file system\.
 .TP
-\fB\-\-lockfile=<path>\fR
+\fB\-\-lockfile=LOCKFILE\fR
 The path where the lockfile should be written to\.
 .TP
 \fB\-\-full\-index\fR
@@ -33,10 +33,10 @@ Use the specified gemfile instead of [\fBGemfile(5)\fR][Gemfile(5)]\.
 \fB\-\-add\-checksums\fR
 Add checksums to the lockfile\.
 .TP
-\fB\-\-add\-platform\fR
+\fB\-\-add\-platform=<list>\fR
 Add a new platform to the lockfile, re\-resolving for the addition of that platform\.
 .TP
-\fB\-\-remove\-platform\fR
+\fB\-\-remove\-platform=<list>\fR
 Remove a platform from the lockfile\.
 .TP
 \fB\-\-normalize\-platforms\fR

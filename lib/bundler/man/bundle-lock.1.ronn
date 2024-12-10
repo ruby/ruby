@@ -27,7 +27,7 @@ Lock the gems specified in Gemfile.
 
 ## OPTIONS
 
-* `--update=<*gems>`:
+* `--update[=<list>]`:
   Ignores the existing lockfile. Resolve then updates lockfile. Taking a list
   of gems or updating all gems if no list is given.
 
@@ -44,7 +44,7 @@ Lock the gems specified in Gemfile.
 * `--print`:
   Prints the lockfile to STDOUT instead of writing to the file system.
 
-* `--lockfile=<path>`:
+* `--lockfile=LOCKFILE`:
   The path where the lockfile should be written to.
 
 * `--full-index`:
@@ -56,11 +56,11 @@ Lock the gems specified in Gemfile.
 * `--add-checksums`:
   Add checksums to the lockfile.
 
-* `--add-platform`:
+* `--add-platform=<list>`:
   Add a new platform to the lockfile, re-resolving for the addition of that
   platform.
 
-* `--remove-platform`:
+* `--remove-platform=<list>`:
   Remove a platform from the lockfile.
 
 * `--normalize-platforms`:

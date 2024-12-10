@@ -24,7 +24,7 @@ configuration file using the following names:
 
 ## OPTIONS
 
-* `--exe` or `-b` or `--bin`:
+* `--exe`, `--bin`, `-b`:
   Specify that Bundler should create a binary executable (as `exe/GEM_NAME`)
   in the generated rubygem project. This binary will also be added to the
   `GEM_NAME.gemspec` manifest. This behavior is disabled by default.
@@ -50,7 +50,7 @@ configuration file using the following names:
   Do not create a `CHANGELOG.md` (overrides `--changelog` specified in the
   global config).
 
-* `--ext=c`, `--ext=rust`
+* `--ext=c`, `--ext=rust`:
   Add boilerplate for C or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
   is disabled by default.
 
@@ -98,7 +98,7 @@ configuration file using the following names:
 * `--changelog`:
   Generate changelog file. Set a default with `bundle config set --global gem.changelog true`.
 
-* `--ci`, `--ci=github`, `--ci=gitlab`, `--ci=circle`:
+* `--ci`, `--ci=circle`, `--ci=github`, `--ci=gitlab`:
   Specify the continuous integration service that Bundler should use when
   generating the project. Acceptable values are `github`, `gitlab`
   and `circle`. A configuration file will be generated in the project directory.
@@ -140,8 +140,8 @@ configuration file using the following names:
 * `--rubocop`:
   Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`.
 
-* `-e`, `--edit[=EDITOR]`:
-  Open the resulting GEM_NAME.gemspec in EDITOR, or the default editor if not
+* `--edit=EDIT`, `-e=EDIT`:
+  Open the resulting GEM_NAME.gemspec in EDIT, or the default editor if not
   specified. The default is `$BUNDLER_EDITOR`, `$VISUAL`, or `$EDITOR`.
 
 ## SEE ALSO

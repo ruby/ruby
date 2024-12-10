@@ -20,7 +20,7 @@ The generated project skeleton can be customized with OPTIONS, as explained belo
 .IP "" 0
 .SH "OPTIONS"
 .IP "\(bu" 4
-\fB\-\-exe\fR or \fB\-b\fR or \fB\-\-bin\fR: Specify that Bundler should create a binary executable (as \fBexe/GEM_NAME\fR) in the generated rubygem project\. This binary will also be added to the \fBGEM_NAME\.gemspec\fR manifest\. This behavior is disabled by default\.
+\fB\-\-exe\fR, \fB\-\-bin\fR, \fB\-b\fR: Specify that Bundler should create a binary executable (as \fBexe/GEM_NAME\fR) in the generated rubygem project\. This binary will also be added to the \fBGEM_NAME\.gemspec\fR manifest\. This behavior is disabled by default\.
 .IP "\(bu" 4
 \fB\-\-no\-exe\fR: Do not create a binary (overrides \fB\-\-exe\fR specified in the global config)\.
 .IP "\(bu" 4
@@ -32,7 +32,7 @@ The generated project skeleton can be customized with OPTIONS, as explained belo
 .IP "\(bu" 4
 \fB\-\-no\-changelog\fR: Do not create a \fBCHANGELOG\.md\fR (overrides \fB\-\-changelog\fR specified in the global config)\.
 .IP "\(bu" 4
-\fB\-\-ext=c\fR, \fB\-\-ext=rust\fR Add boilerplate for C or Rust (currently magnus \fIhttps://docs\.rs/magnus\fR based) extension code to the generated project\. This behavior is disabled by default\.
+\fB\-\-ext=c\fR, \fB\-\-ext=rust\fR: Add boilerplate for C or Rust (currently magnus \fIhttps://docs\.rs/magnus\fR based) extension code to the generated project\. This behavior is disabled by default\.
 .IP "\(bu" 4
 \fB\-\-no\-ext\fR: Do not add extension code (overrides \fB\-\-ext\fR specified in the global config)\.
 .IP "\(bu" 4
@@ -56,7 +56,7 @@ When Bundler is unconfigured, an interactive prompt will be displayed and the an
 .IP "\(bu" 4
 \fB\-\-changelog\fR: Generate changelog file\. Set a default with \fBbundle config set \-\-global gem\.changelog true\fR\.
 .IP "\(bu" 4
-\fB\-\-ci\fR, \fB\-\-ci=github\fR, \fB\-\-ci=gitlab\fR, \fB\-\-ci=circle\fR: Specify the continuous integration service that Bundler should use when generating the project\. Acceptable values are \fBgithub\fR, \fBgitlab\fR and \fBcircle\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
+\fB\-\-ci\fR, \fB\-\-ci=circle\fR, \fB\-\-ci=github\fR, \fB\-\-ci=gitlab\fR: Specify the continuous integration service that Bundler should use when generating the project\. Acceptable values are \fBgithub\fR, \fBgitlab\fR and \fBcircle\fR\. A configuration file will be generated in the project directory\. Given no option is specified:
 .IP
 When Bundler is configured to generate CI files, this defaults to Bundler's global config setting \fBgem\.ci\fR\.
 .IP
@@ -78,7 +78,7 @@ When Bundler is unconfigured, an interactive prompt will be displayed and the an
 .IP "\(bu" 4
 \fB\-\-rubocop\fR: Add rubocop to the generated Rakefile and gemspec\. Set a default with \fBbundle config set \-\-global gem\.rubocop true\fR\.
 .IP "\(bu" 4
-\fB\-e\fR, \fB\-\-edit[=EDITOR]\fR: Open the resulting GEM_NAME\.gemspec in EDITOR, or the default editor if not specified\. The default is \fB$BUNDLER_EDITOR\fR, \fB$VISUAL\fR, or \fB$EDITOR\fR\.
+\fB\-\-edit=EDIT\fR, \fB\-e=EDIT\fR: Open the resulting GEM_NAME\.gemspec in EDIT, or the default editor if not specified\. The default is \fB$BUNDLER_EDITOR\fR, \fB$VISUAL\fR, or \fB$EDITOR\fR\.
 .IP "" 0
 .SH "SEE ALSO"
 .IP "\(bu" 4

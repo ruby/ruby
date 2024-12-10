@@ -32,7 +32,7 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 * `--pre`:
   Check for newer pre-release gems.
 
-* `--source`:
+* `--source=<list>`:
   Check against a specific source.
 
 * `--filter-strict`, `--strict`:
@@ -44,7 +44,7 @@ are up to date, Bundler will exit with a status of 0. Otherwise, it will exit 1.
 * `--parseable`, `--porcelain`:
    Use minimal formatting for more parseable output.
 
-* `--group`:
+* `--group=GROUP`:
   List gems from a specific group.
 
 * `--groups`:

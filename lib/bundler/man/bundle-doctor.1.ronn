@@ -25,7 +25,7 @@ Examples of common problems caught by bundle-doctor include:
 * `--quiet`:
   Only output warnings and errors.
 
-* `--gemfile=<gemfile>`:
+* `--gemfile=GEMFILE`:
   The location of the Gemfile(5) which Bundler should use. This defaults
   to a Gemfile(5) in the current working directory. In general, Bundler
   will assume that the location of the Gemfile(5) is also the project's
