@@ -217,7 +217,7 @@ The following bundled gems are promoted from default gems.
 * rinda 0.2.0
 * drb 2.2.1
 * nkf 0.2.0
-* syslog 0.1.2
+* syslog 0.2.0
 * csv 3.3.0
 
 See GitHub releases like [GitHub Releases of Logger] or changelog for
