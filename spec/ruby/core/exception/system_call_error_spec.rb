@@ -53,6 +53,11 @@ describe "SystemCallError.new" do
     e.should be_an_instance_of(@example_errno_class)
   end
 
+  it "sets an error message corresponding to an appropriate Errno class" do
+    e = SystemCallError.new(@example_errno)
+    e.message.should == 'Invalid argument'
+  end
+
   it "accepts an optional custom message preceding the errno" do
     exc = SystemCallError.new("custom message", @example_errno)
     exc.should be_an_instance_of(@example_errno_class)
@@ -79,6 +84,35 @@ describe "SystemCallError.new" do
   it "converts to Integer if errno is a Float" do
     SystemCallError.new('foo', 2.0).should == SystemCallError.new('foo', 2)
     SystemCallError.new('foo', 2.9).should == SystemCallError.new('foo', 2)
+  end
+
+  it "treats nil errno as unknown error value" do
+    SystemCallError.new(nil).should be_an_instance_of(SystemCallError)
+  end
+
+  it "treats nil custom message as if it is not passed at all" do
+    exc = SystemCallError.new(nil, @example_errno)
+    exc.message.should == 'Invalid argument'
+  end
+
+  it "sets an 'unknown error' message when an unknown error number" do
+    platform_is_not :windows do
+      SystemCallError.new(-1).message.should =~ /Unknown error(:)? -1/
+    end
+
+    platform_is :windows do
+      SystemCallError.new(-1).message.should == "The operation completed successfully."
+    end
+  end
+
+  it "adds a custom error message to an 'unknown error' message when an unknown error number and a custom message specified" do
+    platform_is_not :windows do
+      SystemCallError.new("custom message", -1).message.should =~ /Unknown error(:)? -1 - custom message/
+    end
+
+    platform_is :windows do
+      SystemCallError.new("custom message", -1).message.should == "The operation completed successfully. - custom message"
+    end
   end
 
   it "converts to Integer if errno is a Complex convertible to Integer" do

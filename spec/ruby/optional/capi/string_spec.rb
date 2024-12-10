@@ -1265,6 +1265,51 @@ end
     end
   end
 
+  describe "rb_enc_interned_str" do
+    it "returns a frozen string" do
+      str = "hello"
+      val = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+
+      val.should.is_a?(String)
+      val.encoding.should == Encoding::US_ASCII
+      val.should.frozen?
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+      result1.should.equal?(result2)
+    end
+
+    it "returns different frozen strings for different encodings" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8)
+      result1.should_not.equal?(result2)
+    end
+
+    it 'returns the same string when using non-ascii characters' do
+      str = 'こんにちは'
+      result1 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8)
+      result2 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8)
+      result1.should.equal?(result2)
+    end
+
+    it "returns the same string as String#-@" do
+      str = "hello"
+      @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8).should.equal?(-str)
+    end
+
+    ruby_bug "#20322", ""..."3.4" do
+      it "uses the default encoding if encoding is null" do
+        str = "hello"
+        val = @s.rb_enc_interned_str(str, str.bytesize, nil)
+        val.encoding.should == Encoding::ASCII_8BIT
+      end
+    end
+  end
+
   describe "rb_str_to_interned_str" do
     it "returns a frozen string" do
       str = "hello"
