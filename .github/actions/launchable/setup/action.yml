@@ -248,6 +248,8 @@ runs:
               --session "$(cat "${btest_session_file}")" \
               raw "${btest_report_path}" || true
 
+          cat "${test_spec_report_path}"
+
           [[ "${test_spec_enabled}" = "true" ]] && \
             launchable record tests \
               --session "$(cat "${test_spec_session_file}")" \
