@@ -535,8 +535,14 @@ rb_clear_all_refinement_method_cache(void)
 void
 rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me)
 {
+    rb_method_table_insert0(klass, table, method_id, me, RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass));
+}
+
+void
+rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, bool iclass_shared_mtbl)
+{
     VALUE table_owner = klass;
-    if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
+    if (iclass_shared_mtbl) {
         table_owner = RBASIC(table_owner)->klass;
     }
     VM_ASSERT_TYPE3(table_owner, T_CLASS, T_ICLASS, T_MODULE);

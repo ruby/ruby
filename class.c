@@ -86,6 +86,34 @@ duplicate_classext_id_table_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+static enum rb_id_table_iterator_result
+duplicate_classext_m_tbl_i(ID key, VALUE value, void *data)
+{
+    struct duplicate_id_tbl_data *arg = (struct duplicate_id_tbl_data *)data;
+    rb_method_entry_t *me = (rb_method_entry_t *)value;
+    rb_method_table_insert0(arg->klass, arg->tbl, key, me, false);
+    return ID_TABLE_CONTINUE;
+}
+
+static struct rb_id_table *
+duplicate_classext_m_tbl(struct rb_id_table *orig, VALUE klass, bool init_missing)
+{
+    struct rb_id_table *tbl;
+    if (!orig) {
+        if (init_missing)
+            return rb_id_table_create(0);
+        else
+            return NULL;
+    }
+    tbl = rb_id_table_create(rb_id_table_size(orig));
+    struct duplicate_id_tbl_data data = {
+        .tbl = tbl,
+        .klass = klass,
+    };
+    rb_id_table_foreach(orig, duplicate_classext_m_tbl_i, &data);
+    return tbl;
+}
+
 static struct rb_id_table *
 duplicate_classext_id_table(struct rb_id_table *orig, bool init_missing)
 {
@@ -241,7 +269,7 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     // See also: rb_include_class_new()
     if (RCLASSEXT_ICLASS_IS_ORIGIN(src) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src)) {
-        RCLASSEXT_M_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_M_TBL(src), true);
+        RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(src), iclass, true);
     } else {
         RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
     }
@@ -280,7 +308,7 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
-    RCLASSEXT_M_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_M_TBL(orig), dup_iclass);
+    RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
 
     // TODO: consider shapes for performance
     if (RCLASSEXT_IV_PTR(orig)) {

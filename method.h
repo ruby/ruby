@@ -246,6 +246,7 @@ const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me);
+void rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, bool iclass_shared_mtbl);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 
