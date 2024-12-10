@@ -5,6 +5,7 @@ bundle-info(1) -- Show information for the given gem in your bundle
 
 `bundle info` [GEM_NAME]
               [--path]
+              [--version]
 
 ## DESCRIPTION
 
@@ -15,3 +16,6 @@ Given a gem name present in your bundle, print the basic information about it
 
 * `--path`:
   Print the path of the given gem
+
+* `--version`:
+  Print gem version
