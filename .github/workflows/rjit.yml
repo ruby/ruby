@@ -87,7 +87,7 @@ jobs:
           builddir: build
           srcdir: src
           test-opts: ${{ matrix.run_opts }}
-          test-tasks: '["test", "test-all"]'
+          test-tasks: '["test", "test-all", "test-spec"]'
         continue-on-error: true
 
       - name: make test

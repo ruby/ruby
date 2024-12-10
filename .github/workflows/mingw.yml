@@ -126,7 +126,7 @@ jobs:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
-          test-tasks: '["test", "test-all"]'
+          test-tasks: '["test", "test-all", "test-spec"]'
         continue-on-error: true
 
       - name: test
