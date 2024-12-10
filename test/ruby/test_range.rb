@@ -823,6 +823,25 @@ class TestRange < Test::Unit::TestCase
     assert_equal [5, 4, 3, 2, 1], a
   end
 
+  def test_reverse_each_size
+    assert_equal(3, (1..3).reverse_each.size)
+    assert_equal(3, (1..3.3).reverse_each.size)
+    assert_raise(TypeError) { (1..nil).reverse_each.size }
+    assert_raise(TypeError) { (1.1..3).reverse_each.size }
+    assert_raise(TypeError) { (1.1..3.3).reverse_each.size }
+    assert_raise(TypeError) { (1.1..nil).reverse_each.size }
+    assert_equal(Float::INFINITY, (..3).reverse_each.size)
+    assert_raise(TypeError) { (nil..3.3).reverse_each.size }
+    assert_raise(TypeError) { (nil..nil).reverse_each.size }
+
+    assert_equal(2, (1...3).reverse_each.size)
+    assert_equal(3, (1...3.3).reverse_each.size)
+
+    assert_equal(nil, ('a'..'z').reverse_each.size)
+    assert_raise(TypeError) { ('a'..).reverse_each.size }
+    assert_raise(TypeError) { (..'z').reverse_each.size }
+  end
+
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)

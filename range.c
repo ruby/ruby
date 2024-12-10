@@ -908,6 +908,10 @@ sym_each_i(VALUE v, VALUE arg)
     return each_i(rb_str_intern(v), arg);
 }
 
+#define CANT_ITERATE_FROM(x) \
+    rb_raise(rb_eTypeError, "can't iterate from %s", \
+             rb_obj_classname(x))
+
 /*
  *  call-seq:
  *    size -> non_negative_integer or Infinity or nil
@@ -944,12 +948,47 @@ range_size(VALUE range)
     }
 
     if (!discrete_object_p(b)) {
-        rb_raise(rb_eTypeError, "can't iterate from %s",
-                 rb_obj_classname(b));
+        CANT_ITERATE_FROM(b);
     }
 
     return Qnil;
 }
+
+static VALUE
+range_reverse_size(VALUE range)
+{
+    VALUE b = RANGE_BEG(range), e = RANGE_END(range);
+
+    if (NIL_P(e)) {
+        CANT_ITERATE_FROM(e);
+    }
+
+    if (RB_INTEGER_TYPE_P(b)) {
+        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
+            return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+        }
+        else {
+            CANT_ITERATE_FROM(e);
+        }
+    }
+
+    if (NIL_P(b)) {
+        if (RB_INTEGER_TYPE_P(e)) {
+            return DBL2NUM(HUGE_VAL);
+        }
+        else {
+            CANT_ITERATE_FROM(e);
+        }
+    }
+
+    if (!discrete_object_p(b)) {
+        CANT_ITERATE_FROM(e);
+    }
+
+    return Qnil;
+}
+
+#undef CANT_ITERATE_FROM
 
 /*
  *  call-seq:
@@ -977,6 +1016,12 @@ static VALUE
 range_enum_size(VALUE range, VALUE args, VALUE eobj)
 {
     return range_size(range);
+}
+
+static VALUE
+range_enum_reverse_size(VALUE range, VALUE args, VALUE eobj)
+{
+    return range_reverse_size(range);
 }
 
 RBIMPL_ATTR_NORETURN()
@@ -1225,7 +1270,7 @@ range_reverse_each_negative_bignum_section(VALUE beg, VALUE end)
 static VALUE
 range_reverse_each(VALUE range)
 {
-    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
+    RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_reverse_size);
 
     VALUE beg = RANGE_BEG(range);
     VALUE end = RANGE_END(range);
