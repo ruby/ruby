@@ -3,7 +3,7 @@ bundle-binstubs(1) -- Install the binstubs of the listed gems
 
 ## SYNOPSIS
 
-`bundle binstubs` <GEM_NAME> [--force] [--path PATH] [--standalone]
+`bundle binstubs` <GEM_NAME> [--force] [--path PATH] [--standalone] [--all-platforms]
 
 ## DESCRIPTION
 
@@ -39,3 +39,6 @@ Calling binstubs with [GEM [GEM]] will create binstubs for all given gems.
 
 * `--all`:
   Create binstubs for all gems in the bundle.
+
+* `--all-platforms`:
+  Install binstubs for all platforms.
