@@ -238,7 +238,8 @@ Increasing the `--yjit-mem-size` value means more code
 can be optimized by YJIT, at the cost of more memory usage.
 
 If you start Ruby with `--yjit-stats`, e.g. using an environment variable `RUBYOPT=--yjit-stats`,
-`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the ratio of YJIT-executed instructions in %.
+`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the percentage of total YARV instructions
+executed by YJIT as opposed to the CRuby interpreter.
 Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-mem-size` often
 helps improving `ratio_in_yjit`.
 
@@ -262,7 +263,8 @@ This section goes over tips on minimizing YJIT memory usage in case it uses more
 YJIT uses memory for compiled code and metadata. You can change the maximum amount of memory
 that YJIT can use by specifying a different `--yjit-mem-size` command-line option. The default value
 is currently `128`.
-When doing so, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` as explained above.
+When changing this value, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]`
+as explained above.
 
 ### Enabling YJIT lazily
 
