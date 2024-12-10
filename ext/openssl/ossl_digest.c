@@ -245,24 +245,13 @@ ossl_digest_update(VALUE self, VALUE data)
  *
  */
 static VALUE
-ossl_digest_finish(int argc, VALUE *argv, VALUE self)
+ossl_digest_finish(VALUE self)
 {
     EVP_MD_CTX *ctx;
     VALUE str;
-    int out_len;
 
     GetDigest(self, ctx);
-    rb_scan_args(argc, argv, "01", &str);
-    out_len = EVP_MD_CTX_size(ctx);
-
-    if (NIL_P(str)) {
-        str = rb_str_new(NULL, out_len);
-    } else {
-        StringValue(str);
-        rb_str_modify(str);
-        rb_str_resize(str, out_len);
-    }
-
+    str = rb_str_new(NULL, EVP_MD_CTX_size(ctx));
     if (!EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL))
 	ossl_raise(eDigestError, "EVP_DigestFinal_ex");
 
@@ -447,7 +436,7 @@ Init_ossl_digest(void)
     rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
     rb_define_method(cDigest, "update", ossl_digest_update, 1);
     rb_define_alias(cDigest, "<<", "update");
-    rb_define_private_method(cDigest, "finish", ossl_digest_finish, -1);
+    rb_define_private_method(cDigest, "finish", ossl_digest_finish, 0);
     rb_define_method(cDigest, "digest_length", ossl_digest_size, 0);
     rb_define_method(cDigest, "block_length", ossl_digest_block_length, 0);
 
