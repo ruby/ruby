@@ -1953,12 +1953,10 @@ modular-gc: probes.h modular-gc-precheck
 	$(CHDIR) gc/$(MODULAR_GC) && $(exec) $(MAKE) TARGET_SO_DIR=./
 	$(CP) gc/$(MODULAR_GC)/librubygc.$(MODULAR_GC).$(DLEXT) $(modular_gc_dir)
 
-clean-modular-gc:
-	- find gc -type d -mindepth 1 -maxdepth 1 -exec sh -c '$(CHDIR) "{}" && $(MAKE) TARGET_SO_DIR=./ clean || $(NULLCMD)' \; || $(NULLCMD)
-	-$(Q) $(RMDIR) gc
-distclean-modular-gc: clean-modular-gc
-	- find gc -type d -mindepth 1 -maxdepth 1 -exec sh -c '$(CHDIR) "{}" && $(MAKE) TARGET_SO_DIR=./ distclean || $(NULLCMD)' \; || $(NULLCMD)
-	- find gc -type d -mindepth 1 -maxdepth 1 -exec sh -c '$(RMDIR) "{}"' \; || $(NULLCMD)
+clean-modular-gc: gc/clean
+distclean-modular-gc: gc/distclean
+realclean-modular-gc: gc/realclean
+distclean-modular-gc realclean-modular-gc:
 	-$(Q) $(RMDIR) gc
 
 help: PHONY
