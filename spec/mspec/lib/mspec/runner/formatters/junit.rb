@@ -40,8 +40,8 @@ class JUnitFormatter < YamlFormatter
           name="Spec Output For #{::RUBY_ENGINE} (#{::RUBY_VERSION})">
     XML
     @tests.each do |h|
+      next if h[:test].nil?
       description = encode_for_xml h[:test].description
-      next if description.nil?
 
       print <<-XML
         <testcase classname="Spec" name="#{description}" time="0.0">
