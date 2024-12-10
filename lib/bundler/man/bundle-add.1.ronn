@@ -41,6 +41,9 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 * `--ref`:
   Specify the git ref for the added gem.
 
+* `--glob=GLOB`:
+  Specify the location of a dependency's .gemspec, expanded within Ruby (single quotes recommended).
+
 * `--quiet`:
   Do not print progress information to the standard output.
 
