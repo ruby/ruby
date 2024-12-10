@@ -197,6 +197,7 @@ invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID
 static void
 invalidate_callable_method_entry_in_m_table(VALUE klass, struct rb_id_table *tbl, ID mid, const rb_callable_method_entry_t *cme)
 {
+    // The argument cme must be invalidated later in the caller side
     const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
     rb_method_table_insert(klass, tbl, mid, new_cme);
 }
@@ -1423,7 +1424,11 @@ search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 
     if (me == NULL) RB_DEBUG_COUNTER_INC(mc_search_notfound);
 
-    VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me));
+    VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me),
+              "invalid me, mid:%s, klass:%s(%s)",
+              rb_id2name(id),
+              RTEST(rb_mod_name(klass)) ? RSTRING_PTR(rb_mod_name(klass)) : "anonymous",
+              rb_obj_info(klass));
     return me;
 }
 
