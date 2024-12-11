@@ -111,7 +111,11 @@ module Fiddle
           case line
           when /\A\s*(?:INPUT|GROUP)\s*\(\s*([^\s,\)]+)/
             # TODO: Should we support multiple files?
-            return dlopen($1)
+            first_input = $1
+            if first_input.start_with?("-l")
+              first_input = "lib#{first_input[2..-1]}.so"
+            end
+            return dlopen(first_input)
           end
         end
       end
