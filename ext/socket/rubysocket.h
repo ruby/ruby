@@ -441,7 +441,6 @@ struct fast_fallback_getaddrinfo_entry
 struct fast_fallback_getaddrinfo_shared
 {
     int notify, refcount;
-    int cancelled;
     char *node, *service;
     rb_nativethread_lock_t lock;
     struct fast_fallback_getaddrinfo_entry getaddrinfo_entries[FLEX_ARY_LEN];
