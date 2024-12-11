@@ -48,11 +48,11 @@
 #
 class TracePoint
   # call-seq:
-  #   TracePoint.new(*events) { |tp| block } -> obj
+  #   TracePoint.new(*events) { |tp| block } -> tp
   #
   # Returns a new TracePoint object, not enabled by default.
   #
-  # To activate the TracePoint object, use TracePoint#enable.
+  # To activate the TracePoint object, use TracePoint#enable:
   #
   #     trace = TracePoint.new(:call) do |tp|
   #       p [tp.lineno, tp.defined_class, tp.method_id, tp.event]
