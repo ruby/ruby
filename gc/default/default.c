@@ -2470,6 +2470,9 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
             if (during_gc) {
                 dont_gc_on();
                 during_gc = 0;
+                if (rb_memerror_reentered()) {
+                    rb_memerror();
+                }
                 rb_bug("object allocation during garbage collection phase");
             }
 

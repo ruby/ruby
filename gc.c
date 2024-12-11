@@ -4446,6 +4446,13 @@ rb_memerror(void)
     EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
+bool
+rb_memerror_reentered(void)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return (ec && rb_ec_raised_p(ec, RAISED_NOMEMORY));
+}
+
 void
 rb_malloc_info_show_results(void)
 {
