@@ -185,6 +185,7 @@ NORETURN(static inline void rb_key_err_raise(VALUE mesg, VALUE recv, VALUE name)
 static inline void Check_Type(VALUE v, enum ruby_value_type t);
 static inline bool rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type);
 #define rb_typeddata_is_instance_of rb_typeddata_is_instance_of_inline
+void rb_bug_without_die(const char *fmt, ...);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* error.c (export) */
