@@ -8,6 +8,9 @@ class JUnitFormatter < YamlFormatter
 
   def after(state = nil)
     super(state)
+    $stderr.puts state
+    $stderr.puts caller
+    $stderr.puts
     @tests << {:test => state, :exception => false} unless exception?
   end
 
@@ -25,7 +28,6 @@ class JUnitFormatter < YamlFormatter
     failures = @tally.counter.failures
 
     print <<-XML
-
 <?xml version="1.0" encoding="UTF-8" ?>
     <testsuites
         testCount="#{tests}"
@@ -40,6 +42,7 @@ class JUnitFormatter < YamlFormatter
           name="Spec Output For #{::RUBY_ENGINE} (#{::RUBY_VERSION})">
     XML
     @tests.each do |h|
+      next if h[:test].nil?
       description = encode_for_xml h[:test].description
 
       print <<-XML
