@@ -98,6 +98,15 @@ module Fiddle
       assert_in_delta 1.0, func.call(90 * Math::PI / 180), 0.0001
     end
 
+    def test_integer_pointer_conversion
+      func = Function.new(@libc['memcpy'], [TYPE_VOIDP, TYPE_VOIDP, TYPE_SIZE_T], TYPE_VOIDP)
+      str = 'hello'
+      Pointer.malloc(str.bytesize, Fiddle::RUBY_FREE) do |dst|
+        func.call(dst.to_i, str, dst.size)
+        assert_equal(str, dst.to_str)
+      end
+    end
+
     def test_argument_count
       closure_class = Class.new(Closure) do
         def call one
