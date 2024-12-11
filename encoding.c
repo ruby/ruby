@@ -1900,7 +1900,7 @@ rb_enc_aliases(VALUE klass)
  *   'foo'.encode('ASCII')            # Encoding alias.
  *
  * For a full discussion of encodings and their uses,
- * see {the Encodings document}[rdoc-ref:encodings.rdoc].
+ * see {the Encodings document}[rdoc-ref:ruby/encodings.rdoc].
  *
  * Encoding::ASCII_8BIT is a special-purpose encoding that is usually used for
  * a string of bytes, not a string of characters.

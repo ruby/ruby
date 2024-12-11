@@ -493,7 +493,7 @@ module URI
   # each +key+/+value+ pair is converted to one or more fields:
   #
   # - If +value+ is
-  #   {Array-convertible}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects],
+  #   {Array-convertible}[rdoc-ref:ruby/implicit_conversion.rdoc@Array-Convertible+Objects],
   #   each element +ele+ in +value+ is paired with +key+ to form a field:
   #
   #     name = URI.encode_www_form_component(key, enc)
