@@ -7,6 +7,7 @@ use crate::options::DumpDisasm;
 
 use std::fmt::Write;
 
+#[cfg_attr(not(feature = "disasm"), allow(dead_code))]
 #[derive(Copy, Clone, Debug)]
 pub struct TerminalColor {
     pub blue_begin: &'static str,
