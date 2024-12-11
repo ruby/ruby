@@ -1073,7 +1073,7 @@ die(void)
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
 static void
-rb_bug_without_die(const char *fmt, va_list args)
+rb_bug_without_die_internal(const char *fmt, va_list args)
 {
     const char *file = NULL;
     int line = 0;
@@ -1086,11 +1086,20 @@ rb_bug_without_die(const char *fmt, va_list args)
 }
 
 void
+rb_bug_without_die(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    rb_bug_without_die_internal(fmt, args);
+    va_end(args);
+}
+
+void
 rb_bug(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    rb_bug_without_die(fmt, args);
+    rb_bug_without_die_internal(fmt, args);
     va_end(args);
     die();
 }
