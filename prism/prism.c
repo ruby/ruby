@@ -12110,9 +12110,28 @@ parser_lex(pm_parser_t *parser) {
             pm_regexp_token_buffer_t token_buffer = { 0 };
 
             while (breakpoint != NULL) {
+                uint8_t term = lex_mode->as.regexp.terminator;
+                bool is_terminator = (*breakpoint == term);
+
+                // If the terminator is newline, we need to consider \r\n _also_ a newline
+                // For example: `%\nfoo\r\n`
+                // The string should be "foo", not "foo\r"
+                if (*breakpoint == '\r' && peek_at(parser, breakpoint + 1) == '\n') {
+                    if (term == '\n') {
+                        is_terminator = true;
+                    }
+
+                    // If the terminator is a CR, but we see a CRLF, we need to
+                    // treat the CRLF as a newline, meaning this is _not_ the
+                    // terminator
+                    if (term == '\r') {
+                        is_terminator = false;
+                    }
+                }
+
                 // If we hit the terminator, we need to determine what kind of
                 // token to return.
-                if (*breakpoint == lex_mode->as.regexp.terminator) {
+                if (is_terminator) {
                     if (lex_mode->as.regexp.nesting > 0) {
                         parser->current.end = breakpoint + 1;
                         breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
@@ -12342,20 +12361,21 @@ parser_lex(pm_parser_t *parser) {
                     continue;
                 }
 
-                bool is_terminator = (*breakpoint == lex_mode->as.string.terminator);
+                uint8_t term = lex_mode->as.string.terminator;
+                bool is_terminator = (*breakpoint == term);
 
                 // If the terminator is newline, we need to consider \r\n _also_ a newline
-                // For example: `%\nfoo\r\n`
-                // The string should be "foo", not "foo\r"
+                // For example: `%r\nfoo\r\n`
+                // The string should be /foo/, not /foo\r/
                 if (*breakpoint == '\r' && peek_at(parser, breakpoint + 1) == '\n') {
-                    if (lex_mode->as.string.terminator == '\n') {
+                    if (term == '\n') {
                         is_terminator = true;
                     }
 
                     // If the terminator is a CR, but we see a CRLF, we need to
                     // treat the CRLF as a newline, meaning this is _not_ the
                     // terminator
-                    if (lex_mode->as.string.terminator == '\r') {
+                    if (term == '\r') {
                         is_terminator = false;
                     }
                 }
