@@ -166,8 +166,8 @@
 # These instance methods utilize slicing:
 #
 # - String#[] (aliased as String#slice): Returns a slice copied from +self+.
-# - String#[]=: Returns a copy of +self+ with a slice replaced.
-# - String#slice!: Returns +self+ with a slice removed.
+# - String#[]=: Mutates +self+ with the slice replaced and returns the given slice.
+# - String#slice!: Mutates +self+ with the slice removed and returns the removed slice.
 #
 # Each of the above methods takes arguments that determine the slice
 # to be copied or replaced.
@@ -302,7 +302,7 @@
 #
 # First, what's elsewhere. \Class +String+:
 #
-# - Inherits the {Object class}[rdoc-ref:Object@What-27s+Here].
+# - Inherits from the {Object class}[rdoc-ref:Object@What-27s+Here].
 # - Includes the {Comparable module}[rdoc-ref:Comparable@What-27s+Here].
 #
 # Here, class +String+ provides methods that are useful for:
@@ -510,7 +510,7 @@
 # - #bytes: Returns an array of the bytes in +self+.
 # - #chars: Returns an array of the characters in +self+.
 # - #codepoints: Returns an array of the integer ordinals in +self+.
-# - #getbyte: Returns an integer byte determined by a given index.
+# - #getbyte: Returns the integer byte at the given index in +self+.
 # - #grapheme_clusters: Returns an array of the grapheme clusters in +self+.
 #
 # _Splitting_
