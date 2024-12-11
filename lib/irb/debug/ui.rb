@@ -45,9 +45,7 @@ module IRB
             $stdout.puts line.chomp
           }
         when String
-          str.each_line{|line|
-            $stdout.puts line.chomp
-          }
+          Pager.page_content(str, retain_content: true)
         when nil
           $stdout.puts
         end
