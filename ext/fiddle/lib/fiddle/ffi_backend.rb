@@ -261,6 +261,14 @@ module Fiddle
       end
     end
 
+    def self.write(addr, bytes)
+      FFI::Pointer.new(addr).write_bytes(bytes)
+    end
+
+    def self.read(addr, len)
+      FFI::Pointer.new(addr).read_bytes(len)
+    end
+
     class << self
       alias [] to_ptr
     end
