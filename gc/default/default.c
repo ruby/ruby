@@ -1931,13 +1931,13 @@ heap_page_allocate(rb_objspace_t *objspace)
 {
     struct heap_page_body *page_body = heap_page_body_allocate();
     if (page_body == 0) {
-        rb_memerror();
+        return NULL;
     }
 
     struct heap_page *page = calloc1(sizeof(struct heap_page));
     if (page == 0) {
         heap_page_body_free(page_body);
-        rb_memerror();
+        return NULL;
     }
 
     uintptr_t start = (uintptr_t)page_body + sizeof(struct heap_page_header);
@@ -2034,6 +2034,7 @@ heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
         struct heap_page *page = heap_page_resurrect(objspace);
         if (page == NULL) {
             page = heap_page_allocate(objspace);
+            if (page == NULL) return -1;
         }
         heap_add_page(objspace, heap, page);
         heap_add_freepage(heap, page);
@@ -2051,15 +2052,16 @@ heap_page_allocate_and_initialize(rb_objspace_t *objspace, rb_heap_t *heap)
     return false;
 }
 
-static void
+static int
 heap_page_allocate_and_initialize_force(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     size_t prev_allocatable_slots = objspace->heap_pages.allocatable_slots;
     // Set allocatable slots to 1 to force a page to be created.
     objspace->heap_pages.allocatable_slots = 1;
-    heap_page_allocate_and_initialize(objspace, heap);
+    if (heap_page_allocate_and_initialize(objspace, heap) < 0) return false;
     GC_ASSERT(heap->free_pages != NULL);
     objspace->heap_pages.allocatable_slots = prev_allocatable_slots;
+    return true;
 }
 
 static void
@@ -2084,30 +2086,30 @@ gc_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_exit(objspace, gc_enter_event_continue, &lock_lev);
 }
 
-static void
+static int
 heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->free_pages == NULL);
 
     if (heap->total_slots < gc_params.heap_init_slots[heap - heaps] &&
             heap->sweeping_page == NULL) {
-        heap_page_allocate_and_initialize_force(objspace, heap);
+        if (!heap_page_allocate_and_initialize_force(objspace, heap)) return false;
         GC_ASSERT(heap->free_pages != NULL);
-        return;
+        return true;
     }
 
     /* Continue incremental marking or lazy sweeping, if in any of those steps. */
     gc_continue(objspace, heap);
 
     if (heap->free_pages == NULL) {
-        heap_page_allocate_and_initialize(objspace, heap);
+        if (heap_page_allocate_and_initialize(objspace, heap) < 0) return false;
     }
 
     /* If we still don't have a free page and not allowed to create a new page,
      * we should start a new GC cycle. */
     if (heap->free_pages == NULL) {
         if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
-            rb_memerror();
+            return false;
         }
         else {
             if (objspace->heap_pages.allocatable_slots == 0 && !gc_config_full_mark_val) {
@@ -2122,21 +2124,27 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
             /* If we're not incremental marking (e.g. a minor GC) or finished
              * sweeping and still don't have a free page, then
              * gc_sweep_finish_heap should allow us to create a new page. */
-            if (heap->free_pages == NULL && !heap_page_allocate_and_initialize(objspace, heap)) {
-                if (gc_needs_major_flags == GPR_FLAG_NONE) {
+            if (heap->free_pages == NULL) {
+                int allocated = heap_page_allocate_and_initialize(objspace, heap);
+                if (allocated < 0) return false;
+                if (allocated) {
+                    /* succeeded */
+                }
+                else if (gc_needs_major_flags == GPR_FLAG_NONE) {
                     rb_bug("cannot create a new page after GC");
                 }
                 else { // Major GC is required, which will allow us to create new page
                     if (gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
-                        rb_memerror();
+                        return false;
                     }
                     else {
                         /* Do steps of incremental marking or lazy sweeping. */
                         gc_continue(objspace, heap);
 
-                        if (heap->free_pages == NULL &&
-                                !heap_page_allocate_and_initialize(objspace, heap)) {
-                            rb_bug("cannot create a new page after major GC");
+                        if (heap->free_pages == NULL) {
+                            int allocated = heap_page_allocate_and_initialize(objspace, heap);
+                            if (allocated < 0) return false;
+                            if (!allocated) rb_bug("cannot create a new page after major GC");
                         }
                     }
                 }
@@ -2145,6 +2153,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 
     GC_ASSERT(heap->free_pages != NULL);
+    return true;
 }
 
 static inline VALUE
@@ -2312,7 +2321,7 @@ heap_next_free_page(rb_objspace_t *objspace, rb_heap_t *heap)
     struct heap_page *page;
 
     if (heap->free_pages == NULL) {
-        heap_prepare(objspace, heap);
+        if (!heap_prepare(objspace, heap)) return NULL;
     }
 
     page = heap->free_pages;
@@ -2421,11 +2430,13 @@ newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size
         if (obj == Qfalse) {
             // Get next free page (possibly running GC)
             struct heap_page *page = heap_next_free_page(objspace, heap);
+            if (!page) goto nomem;
             ractor_cache_set_page(objspace, cache, heap_idx, page);
 
             // Retry allocation after moving to new page
             obj = ractor_cache_allocate_slot(objspace, cache, heap_idx);
         }
+      nomem:;
     }
 
     if (unlock_vm) {
@@ -6252,15 +6263,18 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
     free(cache);
 }
 
-static void
+static int
 heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     if (!heap->free_pages) {
-        if (!heap_page_allocate_and_initialize(objspace, heap)) {
+        int allocated = heap_page_allocate_and_initialize(objspace, heap);
+        if (!allocated) {
             objspace->heap_pages.allocatable_slots = 1;
-            heap_page_allocate_and_initialize(objspace, heap);
+            allocated = heap_page_allocate_and_initialize(objspace, heap);
         }
+        if (allocated < 0) return false;
     }
+    return true;
 }
 
 static int
@@ -6269,7 +6283,7 @@ ready_to_gc(rb_objspace_t *objspace)
     if (dont_gc_val() || during_gc) {
         for (int i = 0; i < HEAP_COUNT; i++) {
             rb_heap_t *heap = &heaps[i];
-            heap_ready_to_gc(objspace, heap);
+            if (!heap_ready_to_gc(objspace, heap)) break;
         }
         return FALSE;
     }
@@ -9205,7 +9219,7 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
                  */
                 objspace->heap_pages.allocatable_slots = desired_compaction.required_slots[i];
                 while (objspace->heap_pages.allocatable_slots > 0) {
-                    heap_page_allocate_and_initialize(objspace, heap);
+                    if (heap_page_allocate_and_initialize(objspace, heap) < 0) goto nomem;
                 }
                 /*
                  * Step 3: Add two more pages so that the compact & sweep cursors will meet _after_ all objects
@@ -9214,9 +9228,10 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
                 pages_to_add += 2;
 
                 for (; pages_to_add > 0; pages_to_add--) {
-                    heap_page_allocate_and_initialize_force(objspace, heap);
+                    if (!heap_page_allocate_and_initialize_force(objspace, heap)) goto nomem;
                 }
             }
+          nomem:;
         }
 
         if (toward_empty) {
