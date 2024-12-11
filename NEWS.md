@@ -144,6 +144,7 @@ The following default gems are updated.
 * date 3.4.1
 * delegate 0.4.0
 * did_you_mean 2.0.0
+* digest 3.2.0.pre0
 * erb 4.0.4
 * error_highlight 0.7.0
 * etc 1.4.5
