@@ -2,14 +2,16 @@
 
 RSpec.describe "bundle commands" do
   it "expects all commands to have a man page" do
-    command_names =
-      Dir["#{source_root}/lib/bundler/cli/*.rb"].
-        grep_v(/common.rb/).
-        map {|file_path| File.basename(file_path, ".rb") }
+    Bundler::CLI.all_commands.each_key do |command_name|
+      next if command_name == "cli_help"
 
-    command_names.each do |command_name|
-      man_page = source_root.join("lib/bundler/man/bundle-#{command_name}.1.ronn")
-      expect(man_page).to exist
+      expect(man_page(command_name)).to exist
     end
+  end
+
+  private
+
+  def man_page(command_name)
+    source_root.join("lib/bundler/man/bundle-#{command_name}.1.ronn")
   end
 end
