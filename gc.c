@@ -4309,6 +4309,27 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
 
 #undef C
 
+void
+asan_poison_object(VALUE obj)
+{
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_poison_memory_region(ptr, rb_gc_obj_slot_size(obj));
+}
+
+void
+asan_unpoison_object(VALUE obj, bool newobj_p)
+{
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    asan_unpoison_memory_region(ptr, rb_gc_obj_slot_size(obj), newobj_p);
+}
+
+void *
+asan_poisoned_object_p(VALUE obj)
+{
+    MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
+    return __asan_region_is_poisoned(ptr, rb_gc_obj_slot_size(obj));
+}
+
 #define asan_unpoisoning_object(obj) \
     for (void *poisoned = asan_unpoison_object_temporary(obj), \
               *unpoisoning = &poisoned; /* flag to loop just once */ \
