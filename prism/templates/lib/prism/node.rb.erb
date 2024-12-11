@@ -182,7 +182,7 @@ module Prism
     # bytes, as opposed to characters or code units.
     def tunnel(line, column)
       queue = [self] #: Array[Prism::node]
-      result = []
+      result = [] #: Array[Prism::node]
 
       while (node = queue.shift)
         result << node

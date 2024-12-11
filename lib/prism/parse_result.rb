@@ -204,8 +204,8 @@ module Prism
           LengthCounter.new(source, encoding)
         end
 
-      @cache = {}
-      @offsets = []
+      @cache = {} #: Hash[Integer, Integer]
+      @offsets = [] #: Array[Integer]
     end
 
     # Retrieve the code units offset from the given byte offset.

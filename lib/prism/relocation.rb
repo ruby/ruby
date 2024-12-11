@@ -465,7 +465,7 @@ module Prism
         while (node = queue.shift)
           @entries[node.node_id].each do |field_name, entry|
             value = node.public_send(field_name)
-            values = {}
+            values = {} #: Hash[Symbol, untyped]
 
             fields.each_value do |field|
               values.merge!(field.fields(value))
