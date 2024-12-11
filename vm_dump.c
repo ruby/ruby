@@ -1212,7 +1212,8 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     {
-#ifdef PROC_MAPS_NAME
+#ifndef RUBY_ASAN_ENABLED
+# ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
             if (fp) {
@@ -1229,9 +1230,9 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 kprintf("\n\n");
             }
         }
-#endif /* __linux__ */
-#ifdef HAVE_LIBPROCSTAT
-# define MIB_KERN_PROC_PID_LEN 4
+# endif /* __linux__ */
+# ifdef HAVE_LIBPROCSTAT
+#  define MIB_KERN_PROC_PID_LEN 4
         int mib[MIB_KERN_PROC_PID_LEN];
         struct kinfo_proc kp;
         size_t len = sizeof(struct kinfo_proc);
@@ -1249,8 +1250,8 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
             procstat_close(prstat);
             kprintf("\n");
         }
-#endif /* __FreeBSD__ */
-#ifdef __APPLE__
+# endif /* __FreeBSD__ */
+# ifdef __APPLE__
         vm_address_t addr = 0;
         vm_size_t size = 0;
         struct vm_region_submap_info map;
@@ -1273,18 +1274,19 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                         ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
                         ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
                     ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
-#ifdef HAVE_LIBPROC_H
+#  ifdef HAVE_LIBPROC_H
                 char buff[PATH_MAX];
                 if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
                     kprintf(" %s", buff);
                 }
-#endif
+#  endif
                 kprintf("\n");
             }
 
             addr += size;
             size = 0;
         }
+# endif
 #endif
     }
     return true;
