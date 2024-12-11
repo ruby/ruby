@@ -2291,13 +2291,12 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
 
     if (RB_LIKELY(p)) {
         VALUE obj = (VALUE)p;
-        MAYBE_UNUSED(const size_t) stride = heap_slot_size(heap_idx);
+        asan_unpoison_object(obj, true);
         heap_cache->freelist = p->next;
-        asan_unpoison_memory_region(p, stride, true);
 #if RGENGC_CHECK_MODE
-        GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == stride);
+        GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == heap_slot_size(heap_idx));
         // zero clear
-        MEMZERO((char *)obj, char, stride);
+        MEMZERO((char *)obj, char, heap_slot_size(heap_idx));
 #endif
         return obj;
     }
