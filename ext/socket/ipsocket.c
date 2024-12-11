@@ -592,8 +592,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
         rb_nativethread_lock_initialize(&arg->getaddrinfo_shared->lock);
         arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
 
-        arg->getaddrinfo_shared->node = arg->hostp ? strdup(arg->hostp) : NULL;
-        arg->getaddrinfo_shared->service = strdup(arg->portp);
+        arg->getaddrinfo_shared->node = arg->hostp ? ruby_strdup(arg->hostp) : NULL;
+        arg->getaddrinfo_shared->service = ruby_strdup(arg->portp);
         arg->getaddrinfo_shared->refcount = arg->family_size + 1;
 
         for (int i = 0; i < arg->family_size; i++) {
