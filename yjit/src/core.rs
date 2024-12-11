@@ -958,13 +958,13 @@ impl Context {
             if CTX_DECODE_CACHE == None {
                 // Here we use the vec syntax to avoid allocating the large table on the stack,
                 // as this can cause a stack overflow
-                let tbl = vec![(Context::default(), 0); CTX_ENCODE_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
+                let tbl = vec![(Context::default(), 0); CTX_DECODE_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
                 CTX_DECODE_CACHE = Some(tbl);
             }
 
             // Write a cache entry for this context
             let cache = CTX_DECODE_CACHE.as_mut().unwrap();
-            cache[idx as usize % CTX_ENCODE_CACHE_SIZE] = (*ctx, idx);
+            cache[idx as usize % CTX_DECODE_CACHE_SIZE] = (*ctx, idx);
         }
     }
 
