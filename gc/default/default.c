@@ -3246,8 +3246,10 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     asan_unlock_freelist(free_page);
     VALUE dest = (VALUE)free_page->freelist;
     asan_lock_freelist(free_page);
-    asan_unpoison_object(dest, false);
-    if (!dest) {
+    if (dest) {
+        asan_unpoison_object(dest, false);
+    }
+    else {
         /* if we can't get something from the freelist then the page must be
          * full */
         return false;
