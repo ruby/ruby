@@ -67,9 +67,6 @@ End Class
 
 if defined?(WIN32OLE::Record)
   class TestWIN32OLE_RECORD < Test::Unit::TestCase
-    def test_toplevel_constants_backward_compatibility
-      assert_equal(WIN32OLE::Record, ::WIN32OLE_RECORD)
-    end
   end
 
   def rbcomtest_exist?

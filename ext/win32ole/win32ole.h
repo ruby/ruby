@@ -94,6 +94,10 @@
 #define NUM2UI8 RB_NUM2UINT
 #endif
 
+#ifndef HAVE_RB_DEPRECATE_CONSTANT
+# define rb_deprecate_constant(mod, name) (void)0
+#endif
+
 #define OLE_ADDREF(X) (X) ? ((X)->lpVtbl->AddRef(X)) : 0
 #define OLE_RELEASE(X) (X) ? ((X)->lpVtbl->Release(X)) : 0
 #define OLE_FREE(x) {\

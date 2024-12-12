@@ -85,6 +85,7 @@ Init_win32ole_error(void)
     eWIN32OLERuntimeError = rb_define_class_under(cWIN32OLE, "RuntimeError", rb_eRuntimeError);
     /* Alias of WIN32OLE::RuntimeError, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE" "RuntimeError", eWIN32OLERuntimeError);
+    rb_deprecate_constant(rb_cObject, "WIN32OLE" "RuntimeError");
     /*
      * Document-class: WIN32OLE::QueryInterfaceError
      *
@@ -93,4 +94,5 @@ Init_win32ole_error(void)
     eWIN32OLEQueryInterfaceError = rb_define_class_under(cWIN32OLE, "QueryInterfaceError", eWIN32OLERuntimeError);
     /* Alias of WIN32OLE::QueryInterfaceError, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE" "QueryInterfaceError", eWIN32OLEQueryInterfaceError);
+    rb_deprecate_constant(rb_cObject, "WIN32OLE" "QueryInterfaceError");
 }
