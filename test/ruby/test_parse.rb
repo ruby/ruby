@@ -2,6 +2,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
+require_relative '../lib/parser_support'
 
 class TestParse < Test::Unit::TestCase
   def setup
@@ -1607,6 +1608,26 @@ x = __ENCODING__
     assert_not_ractor_shareable(b)
     assert_equal([1], a[0])
     assert_ractor_shareable(a[0])
+  end
+
+  def test_shareable_constant_value_hash_with_keyword_splat
+    # Prism compiler does not support keyword splat in Ractor constant [Bug #20916]
+    omit if ParserSupport.prism_enabled?
+
+    a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      # [Bug #20927]
+      x = { x: {} }
+      y = { y: {} }
+      A = { **x }
+      B = { x: {}, **y }
+      [A, B]
+    end;
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+    assert_equal({ x: {}}, a)
+    assert_equal({ x: {}, y: {}}, b)
   end
 
   def test_shareable_constant_value_unshareable_literal
