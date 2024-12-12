@@ -12,7 +12,9 @@
 // check for re-entrance in one place.
 //
 // We're too close to release to do that, though, so disable the lint for now.
+#![allow(unknown_lints)]
 #![allow(static_mut_refs)]
+#![warn(unknown_lints)]
 
 pub mod asm;
 mod backend;
