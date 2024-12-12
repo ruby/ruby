@@ -1503,6 +1503,21 @@ assert_equal '[nil, "b", "a"]', %q{
   ans << Ractor.current[:key]
 }
 
+assert_equal '1', %q{
+  N = 1_000
+  Ractor.new{
+    a = []
+    1_000.times.map{|i|
+      Thread.new(i){|i|
+        Thread.pass if i < N
+        a << Ractor.store_if_absent(:i){ i }
+        a << Ractor.current[:i]
+      }
+    }.each(&:join)
+    a.uniq.size
+  }.take
+}
+
 ###
 ### Synchronization tests
 ###

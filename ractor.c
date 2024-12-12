@@ -3882,6 +3882,56 @@ ractor_local_value_set(rb_execution_context_t *ec, VALUE self, VALUE sym, VALUE 
     return val;
 }
 
+struct ractor_local_storage_store_data {
+    rb_execution_context_t *ec;
+    struct rb_id_table *tbl;
+    ID id;
+    VALUE sym;
+};
+
+static VALUE
+ractor_local_value_store_i(VALUE ptr)
+{
+    VALUE val;
+    struct ractor_local_storage_store_data *data = (struct ractor_local_storage_store_data *)ptr;
+
+    if (rb_id_table_lookup(data->tbl, data->id, &val)) {
+        // after synchronization, we found already registerred entry
+    }
+    else {
+        val = rb_yield(Qnil);
+        ractor_local_value_set(data->ec, Qnil, data->sym, val);
+    }
+    return val;
+}
+
+static VALUE
+ractor_local_value_store_if_absent(rb_execution_context_t *ec, VALUE self, VALUE sym)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    struct ractor_local_storage_store_data data = {
+        .ec = ec,
+        .sym = sym,
+        .id = SYM2ID(rb_to_symbol(sym)),
+        .tbl = cr->idkey_local_storage,
+    };
+    VALUE val;
+
+    if (data.tbl == NULL) {
+        data.tbl = cr->idkey_local_storage = rb_id_table_create(2);
+    }
+    else if (rb_id_table_lookup(data.tbl, data.id, &val)) {
+        // already set
+        return val;
+    }
+
+    if (!cr->local_storage_store_lock) {
+        cr->local_storage_store_lock = rb_mutex_new();
+    }
+
+    return rb_mutex_synchronize(cr->local_storage_store_lock, ractor_local_value_store_i, (VALUE)&data);
+}
+
 // Ractor::Channel (emulate with Ractor)
 
 typedef rb_ractor_t rb_ractor_channel_t;
