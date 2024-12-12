@@ -151,14 +151,15 @@ nil
 Ruby code may also define warnings for certain categories;
 these are the default settings for the defined categories:
 
-```
+```ruby
 Warning[:experimental] # => true
 Warning[:deprecated]   # => false
 Warning[:performance]  # => false
 ```
 
 They may also be set:
-```
+
+```ruby
 Warning[:experimental] = false
 Warning[:deprecated]   = true
 Warning[:performance]  = true

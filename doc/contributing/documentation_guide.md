@@ -95,7 +95,7 @@ involving new files `doc/*.rdoc`:
 
     Example:
 
-    ```
+    ```c
     /*
      *  call-seq:
      *    each_byte {|byte| ... } -> self
@@ -173,12 +173,13 @@ Code that is a simple string should include the quote marks.
 Most often, the name of a class, module, or method
 is auto-linked:
 
-```
+```rdoc
 - Float.
 - Enumerable.
 - File.new
 - File#read.
 ```
+
 renders as:
 
 > - Float.
@@ -189,7 +190,7 @@ renders as:
 In general, \RDoc's auto-linking should not be suppressed.
 For example, we should write just plain _Float_ (which is auto-linked):
 
-```
+```rdoc
 Returns a Float.
 ```
 
@@ -200,13 +201,13 @@ which renders as:
 However, _do_ suppress auto-linking when the word in question
 does not refer to a Ruby entity (e.g., some uses of _Class_ or _English_):
 
-```
+```rdoc
 \Class variables can be tricky.
 ```
 
 renders as:
 
-> \\Class variables can be tricky.
+> Class variables can be tricky.
 
 Also, _do_ suppress auto-linking when the word in question
 refers to the current document
@@ -216,7 +217,7 @@ In this case you may consider forcing the name to
 [monofont](rdoc-ref:RDoc::MarkupReference@Monofont),
 which suppresses auto-linking, and also emphasizes that the word is a class name:
 
-```
+```rdoc
 A +Float+ object represents ....
 ```
 
@@ -231,7 +232,7 @@ you might write simply the lowercase _array_.
 
 Instead of:
 
-```
+```rdoc
 For an empty Array, ....
 ```
 
@@ -241,7 +242,7 @@ which renders as:
 
 you might write:
 
-```
+```rdoc
 For an empty array, ....
 ```
 
@@ -398,13 +399,13 @@ the method accepts, so those need to be documented using \RDoc directive
 
 For a singleton method, use the form:
 
-```
+```rdoc
 class_name.method_name(method_args) {|block_args| ... } -> return_type
 ```
 
 Example:
 
-```
+```rdoc
 *  call-seq:
 *    Hash.new(default_value = nil) -> new_hash
 *    Hash.new {|hash, key| ... } -> new_hash
@@ -413,19 +414,20 @@ Example:
 For an instance method, use the form
 (omitting any prefix, just as RDoc does for a Ruby-coded method):
 
-```
+```rdoc
 method_name(method_args) {|block_args| ... } -> return_type
 ```
+
 For example, in Array, use:
 
-```
+```rdoc
 *  call-seq:
 *    count -> integer
 *    count(obj) -> integer
 *    count {|element| ... } -> integer
 ```
 
-```
+```rdoc
 *  call-seq:
 *    <=> other -> -1, 0, 1, or nil
 ```
@@ -433,7 +435,7 @@ For example, in Array, use:
 For a binary-operator style method (e.g., Array#&),
 cite `self` in the call-seq (not, e.g., `array` or `receiver`):
 
-```
+```rdoc
 *  call-seq:
 *    self & other_array -> new_array
 ```
@@ -449,7 +451,7 @@ Arguments:
       or an explicit argument, use a `call-seq` with optional arguments.
       For example, use:
 
-        ```
+        ```rdoc
         *  call-seq:
         *    respond_to?(symbol, include_all = false) -> true or false
         ```
@@ -458,7 +460,7 @@ Arguments:
       use a `call-seq` with separate lines.
       For example, in Enumerable, use:
 
-        ```
+        ```rdoc
         *  call-seq:
         *    max    -> element
         *    max(n) -> array
@@ -472,7 +474,7 @@ Block:
 - If the method accepts a block, but returns an Enumerator when the block is omitted,
   the `call-seq` should show both forms:
 
-    ```
+    ```rdoc
     *  call-seq:
     *    array.select {|element| ... } -> new_array
     *    array.select -> new_enumerator
@@ -505,9 +507,7 @@ an entire paragraph.
 
 For `Array#count`, the synopsis is:
 
-```
-Returns a count of specified elements.
-```
+> Returns a count of specified elements.
 
 This is great as it is short and descriptive.  Avoid documenting
 too much in the synopsis, stick to the most important information
@@ -550,7 +550,7 @@ but return a new Enumerator if the block is not given;
 in that case, do not provide an example,
 but do state the fact (with the auto-linking uppercase Enumerator):
 
-```
+```rdoc
 *  With no block given, returns a new Enumerator.
 ```
 

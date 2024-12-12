@@ -259,21 +259,24 @@ details of the default gems or bundled gems.
     * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
 
 * Kernel#Float() now accepts a decimal string with decimal part omitted. [[Feature #20705]]
-  ```
+
+  ```rb
   Float("1.")    #=> 1.0 (previously, an ArgumentError was raised)
   Float("1.E-1") #=> 0.1 (previously, an ArgumentError was raised)
   ```
 
 * String#to_f now accepts a decimal string with decimal part omitted. [[Feature #20705]]
   Note that the result changes when an exponent is specified.
-  ```
+
+  ```rb
   "1.".to_f    #=> 1.0
   "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
   ```
 
 * Object#singleton_method now returns methods in modules prepended to or included in the
   receiver's singleton class. [[Bug #20620]]
-  ```
+
+  ```rb
   o = Object.new
   o.extend(Module.new{def a = 1})
   o.singleton_method(:a).call #=> 1
@@ -288,17 +291,17 @@ details of the default gems or bundled gems.
 * Net::HTTP
 
     * Removed the following deprecated constants:
-        `Net::HTTP::ProxyMod`
-        `Net::NetPrivate::HTTPRequest`
-        `Net::HTTPInformationCode`
-        `Net::HTTPSuccessCode`
-        `Net::HTTPRedirectionCode`
-        `Net::HTTPRetriableCode`
-        `Net::HTTPClientErrorCode`
-        `Net::HTTPFatalErrorCode`
-        `Net::HTTPServerErrorCode`
-        `Net::HTTPResponseReceiver`
-        `Net::HTTPResponceReceiver`
+        * `Net::HTTP::ProxyMod`
+        * `Net::NetPrivate::HTTPRequest`
+        * `Net::HTTPInformationCode`
+        * `Net::HTTPSuccessCode`
+        * `Net::HTTPRedirectionCode`
+        * `Net::HTTPRetriableCode`
+        * `Net::HTTPClientErrorCode`
+        * `Net::HTTPFatalErrorCode`
+        * `Net::HTTPServerErrorCode`
+        * `Net::HTTPResponseReceiver`
+        * `Net::HTTPResponceReceiver`
 
       These constants were deprecated from 2012.
 

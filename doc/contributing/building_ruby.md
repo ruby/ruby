@@ -32,7 +32,7 @@
     the OS default place, typically using Homebrew on macOS, pass the
     `--with-opt-dir` (or `--with-gmp-dir` for gmp) option to `configure`.
 
-    ``` shell
+    ```sh
     configure --with-opt-dir=$(brew --prefix gmp):$(brew --prefix jemalloc)
     ```
 
@@ -43,7 +43,7 @@
     latter environment variable is not embedded and is only used when
     building the extension libraries.
 
-    ``` shell
+    ```sh
     export CONFIGURE_ARGS=""
     for ext in openssl readline libyaml zlib; do
       CONFIGURE_ARGS="${CONFIGURE_ARGS} --with-$ext-dir=$(brew --prefix $ext)"
@@ -71,7 +71,7 @@
         Download the latest tarball from [Download Ruby] page and extract
         it. Example for Ruby 3.0.2:
 
-        ``` shell
+        ```sh
         tar -xzf ruby-3.0.2.tar.gz
         cd ruby-3.0.2
         ```
@@ -80,20 +80,20 @@
 
         Checkout the CRuby source code:
 
-        ``` shell
+        ```sh
         git clone https://github.com/ruby/ruby.git
         cd ruby
         ```
 
         Generate the configure file:
 
-        ``` shell
+        ```sh
         ./autogen.sh
         ```
 
 2. Create a `build` directory separate from the source directory:
 
-    ``` shell
+    ```sh
     mkdir build && cd build
     ```
 
@@ -102,13 +102,13 @@
 
 3. We'll install Ruby in `~/.rubies/ruby-master`, so create the directory:
 
-    ``` shell
+    ```sh
     mkdir ~/.rubies
     ```
 
 4. Run configure:
 
-    ``` shell
+    ```sh
     ../configure --prefix="${HOME}/.rubies/ruby-master"
     ```
 
@@ -117,7 +117,7 @@
 
 5. Build Ruby:
 
-    ``` shell
+    ```sh
     make
     ```
 
@@ -125,7 +125,7 @@
 
 7. Install Ruby:
 
-    ``` shell
+    ```sh
     make install
     ```
 
@@ -159,7 +159,7 @@ In GNU make[^caution-gmake-3] and BSD make implementations, to run a specific ma
 parallel, pass the flag `-j<number of processes>`. For instance, to run tests
 on 8 processes, use:
 
-``` shell
+```sh
 make test-all -j8
 ```
 
@@ -169,7 +169,7 @@ Having the right `--jobs` flag will ensure all processors are utilized when
 building software projects. To do this effectively, you can set `MAKEFLAGS` in
 your shell configuration/profile:
 
-``` shell
+```sh
 # On macOS with Fish shell:
 export MAKEFLAGS="--jobs "(sysctl -n hw.ncpu)
 
@@ -193,7 +193,7 @@ certain features.  It can be useful in Ruby development because it allows for
 faster build times. Miniruby is built before Ruby. A functional Miniruby is
 required to build Ruby. To build Miniruby:
 
-``` shell
+```sh
 make miniruby
 ```
 
@@ -215,7 +215,7 @@ following make targets:
 You should configure Ruby without optimization and other flags that may
 interfere with debugging:
 
-``` shell
+```sh
 ./configure --enable-debug-env optflags="-O0 -fno-omit-frame-pointer"
 ```
 
@@ -225,7 +225,7 @@ Using the address sanitizer (ASAN) is a great way to detect memory issues. It
 can detect memory safety issues in Ruby itself, and also in any C extensions
 compiled with and loaded into a Ruby compiled with ASAN.
 
-``` shell
+```sh
 ./autogen.sh
 mkdir build && cd build
 ../configure CC=clang-18 cflags="-fsanitize=address -fno-omit-frame-pointer -DUSE_MN_THREADS=0" # and any other options you might like
@@ -239,7 +239,7 @@ two hours on my laptop); the `RUBY_TEST_TIMEOUT_SCALE` and
 `SYNTAX_SUGEST_TIMEOUT` variables are required to make sure tests don't
 spuriously fail with timeouts when in fact they're just slow.
 
-``` shell
+```sh
 RUBY_TEST_TIMEOUT_SCALE=5 SYNTAX_SUGGEST_TIMEOUT=600 make check
 ```
 
@@ -274,7 +274,7 @@ Please note, however, the following caveats!
 
 You need to be able to use gcc (gcov) and lcov visualizer.
 
-``` shell
+```sh
 ./autogen.sh
 ./configure --enable-gcov
 make

@@ -36,7 +36,7 @@ If you wish to learn more about the approach taken, here are some conference tal
 
 To cite YJIT in your publications, please cite the MPLR 2023 paper:
 
-```
+```BibTeX
 @inproceedings{yjit_mplr_2023,
 author = {Chevalier-Boisvert, Maxime and Kokubun, Takashi and Gibbs, Noah and Wu, Si Xing (Alan) and Patterson, Aaron and Issroff, Jemma},
 title = {Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach},

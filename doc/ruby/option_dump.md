@@ -89,7 +89,7 @@ The supported dump items:
 
 - `yydebug`: Debugging information from yacc parser generator:
 
-    ```sh
+    ```
     $ ruby --dump=yydebug t.rb
     Starting parse
     Entering state 0

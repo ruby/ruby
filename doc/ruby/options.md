@@ -320,9 +320,9 @@ See also:
 
 ### `-n`: Run Program in `gets` Loop
 
-Option `-n` runs your program in a Kernel#gets loop:
+Option `-n` runs your program in a `Kernel#gets` loop:
 
-```
+```ruby
 while gets
   # Your Ruby code.
 end
@@ -493,14 +493,15 @@ nil
 Ruby code may also define warnings for certain categories;
 these are the default settings for the defined categories:
 
-```
+```rb
 Warning[:experimental] # => true
 Warning[:deprecated]   # => false
 Warning[:performance]  # => false
 ```
 
 They may also be set:
-```
+
+```rb
 Warning[:experimental] = false
 Warning[:deprecated]   = true
 Warning[:performance]  = true

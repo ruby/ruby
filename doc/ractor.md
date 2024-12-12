@@ -259,7 +259,6 @@ r.take      # Receive from r's outgoing port
 The last example shows the following ractor network.
 
 ```
-
   +------+        +---+
   * main |------> * r *---+
   +------+        +---+   |
@@ -875,17 +874,17 @@ p Ractor.select(*rs, Ractor.current) #=> [:receive, "r0r10r9r8r7r6r5r4r3r2r1"]
 r.send "e0"
 p Ractor.select(*rs, Ractor.current)
 #=>
-#<Thread:0x000056262de28bd8 run> terminated with exception (report_on_exception is true):
-Traceback (most recent call last):
-        2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
-        1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
-/home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
-Traceback (most recent call last):
-        2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
-        1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
-/home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
-        1: from /home/ko1/src/ruby/trunk/test.rb:21:in `<main>'
-<internal:ractor>:69:in `select': thrown by remote Ractor. (Ractor::RemoteError)
+# <Thread:0x000056262de28bd8 run> terminated with exception (report_on_exception is true):
+# Traceback (most recent call last):
+#         2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
+#         1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
+# /home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
+# Traceback (most recent call last):
+#         2: from /home/ko1/src/ruby/trunk/test.rb:7:in `block (2 levels) in <main>'
+#         1: from /home/ko1/src/ruby/trunk/test.rb:7:in `loop'
+# /home/ko1/src/ruby/trunk/test.rb:9:in `block (3 levels) in <main>': unhandled exception
+#         1: from /home/ko1/src/ruby/trunk/test.rb:21:in `<main>'
+# <internal:ractor>:69:in `select': thrown by remote Ractor. (Ractor::RemoteError)
 ```
 
 ```ruby

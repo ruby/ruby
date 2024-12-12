@@ -14,7 +14,7 @@ You can find the list of maintainers [here](https://docs.ruby-lang.org/en/master
 
 First, install its dependencies using:
 
-```
+```shell
 bundle install
 ```
 
@@ -22,7 +22,7 @@ bundle install
 
 If the library has a `/ext` directory, it has C files that you need to compile with:
 
-```
+```shell
 bundle exec rake compile
 ```
 
@@ -32,18 +32,18 @@ All standard libraries use [test-unit](https://github.com/test-unit/test-unit) a
 
 To run all tests:
 
-```
+```shell
 bundle exec rake test
 ```
 
 To run a single test file:
 
-```
+```shell
 bundle exec rake test TEST="test/test_foo.rb"
 ```
 
 To run a single test case:
 
-```
+```shell
 bundle exec rake test TEST="test/test_foo.rb" TESTOPS="--name=/test_mytest/"
 ```
