@@ -2,6 +2,8 @@
 
 All the commands below assume that you're running them from the `build/` directory made during [Building Ruby](building_ruby.md).
 
+Most commands below should work with [GNU make](https://www.gnu.org/software/make/) (the default on Linux and macOS), [BSD make](https://man.freebsd.org/cgi/man.cgi?make(1)) and [NMAKE](https://learn.microsoft.com/en-us/cpp/build/reference/nmake-reference), except where indicated otherwise.
+
 ## Test suites
 
 There are several test suites in the Ruby codebase:
@@ -41,7 +43,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test OPTS=-v
     ```
 
-    To run a specific file with GNU make, we can use:
+    (GNU make only) To run a specific file, we can use:
 
     ```sh
     make ../test/ruby/test_string.rb
@@ -120,7 +122,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-spec SPECOPTS="../spec/ruby/core/string/to_s_spec.rb -Vfs"
     ```
 
-    To run a ruby-spec file or directory with GNU make, we can use
+    (GNU make only) To run a ruby-spec file or directory, we can use
 
     ```sh
     make ../spec/ruby/core/string/to_s_spec.rb
