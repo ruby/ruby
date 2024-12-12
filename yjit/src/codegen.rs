@@ -6949,7 +6949,7 @@ fn gen_send_cfunc(
         return None;
     }
 
-    let block_arg_type = if block_arg {
+    let mut block_arg_type = if block_arg {
         Some(asm.ctx.get_opnd_type(StackOpnd(0)))
     } else {
         None
@@ -6957,7 +6957,15 @@ fn gen_send_cfunc(
 
     match block_arg_type {
         Some(Type::Nil | Type::BlockParamProxy) => {
-            // We'll handle this later
+            // We don't need the actual stack value for these
+            asm.stack_pop(1);
+        }
+        Some(Type::Unknown | Type::UnknownImm) if jit.peek_at_stack(&asm.ctx, 0).nil_p() => {
+            // The sample blockarg is nil, so speculate that's the case.
+            asm.cmp(asm.stack_opnd(0), Qnil.into());
+            asm.jne(Target::side_exit(Counter::guard_send_cfunc_block_not_nil));
+            block_arg_type = Some(Type::Nil);
+            asm.stack_pop(1);
         }
         None => {
             // Nothing to do
@@ -6967,23 +6975,7 @@ fn gen_send_cfunc(
             return None;
         }
     }
-
-    match block_arg_type {
-        Some(Type::Nil) => {
-            // We have a nil block arg, so let's pop it off the args
-            asm.stack_pop(1);
-        }
-        Some(Type::BlockParamProxy) => {
-            // We don't need the actual stack value
-            asm.stack_pop(1);
-        }
-        None => {
-            // Nothing to do
-        }
-        _ => {
-            assert!(false);
-        }
-    }
+    let block_arg_type = block_arg_type; // drop `mut`
 
     // Pop the empty kw_splat hash
     if kw_splat {
