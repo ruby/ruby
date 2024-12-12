@@ -157,7 +157,7 @@ The following default gems are updated.
 * io-console 0.8.0
 * io-nonblock 0.3.1
 * ipaddr 1.2.7
-* irb 1.14.1
+* irb 1.14.2
 * json 2.9.0
 * logger 1.6.2
 * net-http 0.6.0
