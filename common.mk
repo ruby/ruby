@@ -1672,7 +1672,7 @@ yes-test-bundler-prepare: yes-test-bundler-precheck
 		-e 'load "spec/bundler/support/bundle.rb"' -- install --quiet --gemfile=tool/bundler/dev_gems.rb
 	$(ACTIONS_ENDGROUP)
 
-RSPECOPTS = --require spec_helper --require formatter_overrides
+RSPECOPTS = -r formatter_overrides
 BUNDLER_SPECS =
 PREPARE_BUNDLER = $(TEST_RUNNABLE)-test-bundler-prepare
 test-bundler: $(TEST_RUNNABLE)-test-bundler
@@ -1681,7 +1681,7 @@ yes-test-bundler: $(PREPARE_BUNDLER)
 		-r./$(arch)-fake \
 		-e "exec(*ARGV)" -- \
 		$(XRUBY) -C $(srcdir) -Ispec/bundler:spec/lib .bundle/bin/rspec \
-		$(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
+		-r spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
 PARALLELRSPECOPTS = --runtime-log $(srcdir)/tmp/parallel_runtime_rspec.log
@@ -1694,8 +1694,8 @@ yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
 		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ruby + ARGV.shift" \
 		-e "load ARGV.shift" \
-		" -C $(srcdir) -Ispec/bundler:spec/lib .bundle/bin/rspec $(RSPECOPTS)" \
-		$(srcdir)/spec/bin/parallel_rspec \
+		" -C $(srcdir) -Ispec/bundler:spec/lib .bundle/bin/rspec -r spec_helper" \
+		$(srcdir)/spec/bin/parallel_rspec $(RSPECOPTS) \
 		$(PARALLELRSPECOPTS) $(srcdir)/spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler-parallel:
 
