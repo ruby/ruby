@@ -25,6 +25,9 @@ Note that each entry is kept to a minimum, see links for details.
 * Keyword arguments are no longer allowed in index assignment
   (e.g. `a[0, kw: 1] = 2`).  [[Bug #20218]]
 
+* The toplevel name `::Ruby` is reserved now, and the definition will be warned
+  when `Warning[:deprecated]`.  [[Feature #20884]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -396,5 +399,6 @@ details of the default gems or bundled gems.
 [Feature #20811]: https://bugs.ruby-lang.org/issues/20811
 [Feature #20860]: https://bugs.ruby-lang.org/issues/20860
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
+[Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
 [Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
