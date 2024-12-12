@@ -96,12 +96,16 @@ runs:
       run: |
         test_all_enabled="${{ inputs.test-task == 'check' ||  inputs.test-task == 'test-all' || contains(fromJSON(inputs.test-tasks), 'test-all') }}"
         btest_enabled="${{ inputs.test-task == 'check' ||  inputs.test-task == 'test' || contains(fromJSON(inputs.test-tasks), 'test') }}"
+        test_spec_enabled="${{ inputs.test-task == 'check' ||  inputs.test-task == 'test-spec' || contains(fromJSON(inputs.test-tasks), 'test-spec') }}"
         echo test_all_enabled="${test_all_enabled}" >> $GITHUB_OUTPUT
         echo btest_enabled="${btest_enabled}" >> $GITHUB_OUTPUT
+        echo test_spec_enabled="${test_spec_enabled}" >> $GITHUB_OUTPUT
         echo test_all_session_file='launchable_test_all_session.txt' >> $GITHUB_OUTPUT
         echo btest_session_file='launchable_btest_session.txt' >> $GITHUB_OUTPUT
+        echo test_spec_session_file='launchable_test_spec_session.txt' >> $GITHUB_OUTPUT
         echo test_all_report_file='launchable_test_all_report.json' >> $GITHUB_OUTPUT
         echo btest_report_file='launchable_btest_report.json' >> $GITHUB_OUTPUT
+        echo test_spec_report_dir='launchable_test_spec_report' >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set environment variables for Launchable
@@ -144,9 +148,11 @@ runs:
         test_opts="${test_opts//=/:}"
         test_all_test_suite='test-all'
         btest_test_suite='btest'
+        test_spec_test_suite='test-spec'
         if [ "${{ inputs.is-yjit }}" = "true" ]; then
           test_all_test_suite="yjit-${test_all_test_suite}"
           btest_test_suite="yjit-${btest_test_suite}"
+          test_spec_test_suite="yjit-${test_spec_test_suite}"
         fi
         launchable record build --name "${build_name}"
         if [ "${test_all_enabled}" = "true" ]; then
@@ -169,18 +175,32 @@ runs:
             > "${btest_session_file}"
           echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
         fi
+        if [ "${test_spec_enabled}" = "true" ]; then
+          launchable record session \
+            --build "${build_name}" \
+            --flavor os=${{ inputs.os }} \
+            --flavor test_task=${{ inputs.test-task }} \
+            --flavor test_opts=${test_opts} \
+            --test-suite ${test_spec_test_suite} \
+            > "${test_spec_session_file}"
+          echo "SPECOPTS=${SPECOPTS} --launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
+        fi
       if: steps.enable-launchable.outputs.enable-launchable
       env:
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
+        test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
         test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
         btest_session_file: ${{ steps.global.outputs.btest_session_file }}
+        test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
         test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
+        test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
     - name: Variables to report Launchable
       id: variables
       shell: bash
+      working-directory: ${{ inputs.srcdir }}
       run: |
         set -x
         : # report-path from srcdir
@@ -198,14 +218,21 @@ runs:
           btest_report_path="${dir}${builddir:+${builddir}/}${btest_report_file}"
           echo btest_report_path="${btest_report_path}" >> $GITHUB_OUTPUT
         fi
+        if [ "${test_spec_enabled}" = "true" ]; then
+          test_spec_report_path="${dir}${builddir:+${builddir}/}${test_spec_report_dir}"
+          mkdir "${test_spec_report_path}"
+          echo test_spec_report_path="${test_spec_report_path}" >> $GITHUB_OUTPUT
+        fi
       if: steps.enable-launchable.outputs.enable-launchable
       env:
         srcdir: ${{ inputs.srcdir }}
         builddir: ${{ inputs.builddir }}
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
+        test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
         test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
+        test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
     - name: Record test results in Launchable
       uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
@@ -223,15 +250,25 @@ runs:
               --session "$(cat "${btest_session_file}")" \
               raw "${btest_report_path}" || true
 
+          [[ "${test_spec_enabled}" = "true" ]] && \
+            launchable record tests \
+              --session "$(cat "${test_spec_session_file}")" \
+              raw ${test_spec_report_path}/* || true
+
           rm -f "${test_all_session_file}"
           rm -f "${btest_session_file}"
+          rm -f "${test_spec_session_file}"
           rm -f "${test_report_path}"
           rm -f "${btest_report_path}"
+          rm -fr "${test_spec_report_path}"
       if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
       env:
         test_report_path: ${{ steps.variables.outputs.test_report_path }}
         btest_report_path: ${{ steps.variables.outputs.btest_report_path }}
+        test_spec_report_path: ${{ steps.variables.outputs.test_spec_report_path }}
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
+        test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
         test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
         btest_session_file: ${{ steps.global.outputs.btest_session_file }}
+        test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}

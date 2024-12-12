@@ -53,6 +53,9 @@ class MSpecRun < MSpecScript
     options.doc "\n When to perform it"
     options.action_filters
 
+    options.doc "\n Launchable"
+    options.launchable
+
     options.doc "\n Help!"
     options.debug
     options.version MSpec::VERSION
