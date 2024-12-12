@@ -3626,6 +3626,9 @@ const_set(VALUE klass, ID id, VALUE val)
             }
         }
     }
+    if (klass == rb_cObject && id == idRuby) {
+        rb_warn_reserved_name_at(3.5, "::Ruby");
+    }
 }
 
 void
