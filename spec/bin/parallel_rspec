@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../spec/support/rubygems_ext"
+
+require_relative "../spec/support/switch_rubygems"
+
+require "turbo_tests"
+TurboTests::CLI.new(ARGV).run
