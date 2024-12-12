@@ -4464,7 +4464,7 @@ take_items(VALUE obj, long n)
 /*
  *  call-seq:
  *    zip(*other_arrays) -> new_array
- *    zip(*other_arrays) {|other_array| ... } -> nil
+ *    zip(*other_arrays) {|sub_array| ... } -> nil
  *
  *  With no block given, combines +self+ with the collection of +other_arrays+;
  *  returns a new array of sub-arrays:
