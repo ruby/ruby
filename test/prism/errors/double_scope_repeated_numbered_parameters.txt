@@ -1,0 +1,3 @@
+-> { _1 + -> { _1 } }
+               ^~ numbered parameter is already used in outer block
+
