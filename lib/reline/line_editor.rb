@@ -252,7 +252,7 @@ class Reline::LineEditor
     @rendered_screen = RenderedScreen.new(base_y: 0, lines: [], cursor_y: 0)
     @input_lines = [[[""], 0, 0]]
     @input_lines_position = 0
-    @undoing = false
+    @restoring = false
     @prev_action_state = NullActionState
     @next_action_state = NullActionState
     reset_line
@@ -1070,8 +1070,8 @@ class Reline::LineEditor
       @completion_journey_state = nil
     end
 
-    push_input_lines unless @undoing
-    @undoing = false
+    push_input_lines unless @restoring
+    @restoring = false
 
     if @in_pasting
       clear_dialogs
@@ -1177,18 +1177,6 @@ class Reline::LineEditor
   def set_current_line(line, byte_pointer = nil)
     cursor = current_byte_pointer_cursor
     @buffer_of_lines[@line_index] = line
-    if byte_pointer
-      @byte_pointer = byte_pointer
-    else
-      calculate_nearest_cursor(cursor)
-    end
-    process_auto_indent
-  end
-
-  def set_current_lines(lines, byte_pointer = nil, line_index = 0)
-    cursor = current_byte_pointer_cursor
-    @buffer_of_lines = lines
-    @line_index = line_index
     if byte_pointer
       @byte_pointer = byte_pointer
     else
@@ -2368,24 +2356,23 @@ class Reline::LineEditor
     @config.editing_mode = :vi_insert
   end
 
+  private def move_undo_redo(direction)
+    @restoring = true
+    return unless (0..@input_lines.size - 1).cover?(@input_lines_position + direction)
+
+    @input_lines_position += direction
+    buffer_of_lines, byte_pointer, line_index = @input_lines[@input_lines_position]
+    @buffer_of_lines = buffer_of_lines.dup
+    @line_index = line_index
+    @byte_pointer = byte_pointer
+  end
+
   private def undo(_key)
-    @undoing = true
-
-    return if @input_lines_position <= 0
-
-    @input_lines_position -= 1
-    target_lines, target_cursor_x, target_cursor_y = @input_lines[@input_lines_position]
-    set_current_lines(target_lines.dup, target_cursor_x, target_cursor_y)
+    move_undo_redo(-1)
   end
 
   private def redo(_key)
-    @undoing = true
-
-    return if @input_lines_position >= @input_lines.size - 1
-
-    @input_lines_position += 1
-    target_lines, target_cursor_x, target_cursor_y = @input_lines[@input_lines_position]
-    set_current_lines(target_lines.dup, target_cursor_x, target_cursor_y)
+    move_undo_redo(+1)
   end
 
   private def prev_action_state_value(type)

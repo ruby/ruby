@@ -1676,6 +1676,20 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_line_around_cursor('3', '')
   end
 
+  def test_undo_redo_restores_indentation
+    @line_editor.multiline_on
+    @line_editor.confirm_multiline_termination_proc = proc {}
+    input_keys(" 1", false)
+    assert_whole_lines([' 1'])
+    input_keys("2", false)
+    assert_whole_lines([' 12'])
+    @line_editor.auto_indent_proc = proc { 2 }
+    input_keys("\C-_", false)
+    assert_whole_lines([' 1'])
+    input_keys("\M-\C-_", false)
+    assert_whole_lines([' 12'])
+  end
+
   def test_redo_with_many_times
     str = "a" + "b" * 98 + "c"
     input_keys(str, false)
