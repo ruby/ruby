@@ -856,6 +856,10 @@ class Ractor
     Primitive.ractor_local_value_set(sym, val)
   end
 
+  def self.store_if_absent(sym)
+    Primitive.ractor_local_value_store_if_absent(sym)
+  end
+
   # returns main ractor
   def self.main
     __builtin_cexpr! %q{
