@@ -575,6 +575,18 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
     }
 }
 
+void
+rb_warn_reserved_name(const char *coming, const char *fmt, ...)
+{
+    if (!deprecation_warning_enabled()) return;
+
+    with_warning_string_from(mesg, 0, fmt, fmt) {
+        rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
+        rb_str_catf(mesg, " is reserved for Ruby %s\n", coming);
+        rb_warn_category(mesg, ID2SYM(id_deprecated));
+    }
+}
+
 static inline int
 end_with_asciichar(VALUE str, int c)
 {
