@@ -3392,7 +3392,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  * NoMemoryError
  *  * ScriptError
- *    * {LoadError}[https://docs.ruby-lang.org/en/master/LoadError.html]
+ *    * LoadError
  *    * NotImplementedError
  *    * SyntaxError
  *  * SecurityError
