@@ -1061,14 +1061,13 @@ fn gen_leave_exception(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 pub fn gen_entry_chain_guard(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-    iseq: IseqPtr,
-    insn_idx: u16,
+    blockid: BlockId,
 ) -> Option<PendingEntryRef> {
     let entry = new_pending_entry();
     let stub_addr = gen_entry_stub(entry.uninit_entry.as_ptr() as usize, ocb)?;
 
     let pc_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC);
-    let expected_pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+    let expected_pc = unsafe { rb_iseq_pc_at_idx(blockid.iseq, blockid.idx.into()) };
     let expected_pc_opnd = Opnd::const_ptr(expected_pc as *const u8);
 
     asm_comment!(asm, "guard expected PC");
@@ -1087,10 +1086,11 @@ pub fn gen_entry_chain_guard(
 pub fn gen_entry_prologue(
     cb: &mut CodeBlock,
     ocb: &mut OutlinedCb,
-    iseq: IseqPtr,
-    insn_idx: u16,
+    blockid: BlockId,
+    stack_size: u8,
     jit_exception: bool,
-) -> Option<CodePtr> {
+) -> Option<(CodePtr, RegMapping)> {
+    let iseq = blockid.iseq;
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
@@ -1145,10 +1145,11 @@ pub fn gen_entry_prologue(
     // If they don't match, then we'll jump to an entry stub and generate
     // another PC check and entry there.
     let pending_entry = if unsafe { get_iseq_flags_has_opt(iseq) } || jit_exception {
-        Some(gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?)
+        Some(gen_entry_chain_guard(&mut asm, ocb, blockid)?)
     } else {
         None
     };
+    let reg_mapping = gen_entry_reg_mapping(&mut asm, blockid, stack_size);
 
     asm.compile(cb, Some(ocb))?;
 
@@ -1166,8 +1167,37 @@ pub fn gen_entry_prologue(
                 .ok().expect("PendingEntry should be unique");
             iseq_payload.entries.push(pending_entry.into_entry());
         }
-        Some(code_ptr)
+        Some((code_ptr, reg_mapping))
     }
+}
+
+/// Generate code to load registers for a JIT entry. When the entry block is compiled for
+/// the first time, it loads no register. When it has been already compiled as a callee
+/// block, it loads some registers to reuse the block.
+pub fn gen_entry_reg_mapping(asm: &mut Assembler, blockid: BlockId, stack_size: u8) -> RegMapping {
+    // Find an existing callee block. If it's not found or uses no register, skip loading registers.
+    let mut ctx = Context::default();
+    ctx.set_stack_size(stack_size);
+    let reg_mapping = find_most_compatible_reg_mapping(blockid, &ctx).unwrap_or(RegMapping::default());
+    if reg_mapping == RegMapping::default() {
+        return reg_mapping;
+    }
+
+    // If found, load the same registers to reuse the block.
+    asm_comment!(asm, "reuse maps: {:?}", reg_mapping);
+    let local_table_size: u32 = unsafe { get_iseq_body_local_table_size(blockid.iseq) }.try_into().unwrap();
+    for &reg_opnd in reg_mapping.get_reg_opnds().iter() {
+        match reg_opnd {
+            RegOpnd::Local(local_idx) => {
+                let loaded_reg = TEMP_REGS[reg_mapping.get_reg(reg_opnd).unwrap()];
+                let loaded_temp = asm.local_opnd(local_table_size - local_idx as u32 + VM_ENV_DATA_SIZE - 1);
+                asm.load_into(Opnd::Reg(loaded_reg), loaded_temp);
+            }
+            RegOpnd::Stack(_) => unreachable!("find_most_compatible_reg_mapping should not leave {:?}", reg_opnd),
+        }
+    }
+
+    reg_mapping
 }
 
 // Generate code to check for interrupts and take a side-exit.
