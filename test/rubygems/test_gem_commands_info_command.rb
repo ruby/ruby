@@ -54,15 +54,15 @@ class TestGemCommandsInfoCommand < Gem::TestCase
       @cmd.execute
     end
 
-    expected = <<-EOF
+    expected = <<~EOF
 
-*** REMOTE GEMS ***
+      *** REMOTE GEMS ***
 
-coolgem (1.0)
-    Author: A User
-    Homepage: http://example.com
+      coolgem (1.0)
+          Author: A User
+          Homepage: http://example.com
 
-    this is a summary
+          this is a summary
     EOF
 
     assert_equal expected, @ui.output
