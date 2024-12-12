@@ -4142,14 +4142,7 @@ pm_double_parse(pm_parser_t *parser, const pm_token_t *token) {
 
     // If errno is set, then it should only be ERANGE. At this point we need to
     // check if it's infinity (it should be).
-    if (
-        errno == ERANGE &&
-#ifdef _WIN32
-        !_finite(value)
-#else
-        isinf(value)
-#endif
-    ) {
+    if (errno == ERANGE && PRISM_ISINF(value)) {
         int warn_width;
         const char *ellipsis;
 
