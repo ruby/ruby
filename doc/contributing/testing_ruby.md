@@ -12,14 +12,8 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
     This is a small test suite that runs on Miniruby (see [building Ruby](building_ruby.md#label-Miniruby+vs+Ruby)). We can run it with:
 
-    ```
+    ```sh
     make btest
-    ```
-
-    To run it with logs, we can use:
-
-    ```
-    make btest OPTS=-v
     ```
 
     To run individual bootstrap tests, we can either specify a list of filenames or use the `--sets` flag in the variable `BTESTS`:
@@ -29,15 +23,21 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make btest BTESTS="--sets=string,class"
     ```
 
+    To run these tests with verbose logging, we can add `-v` to the `OPTS`:
+
+    ```sh
+    make btest OPTS="--sets=string,class -v"
+    ```
+
     If we want to run the bootstrap test suite on Ruby (not Miniruby), we can use:
 
-    ```
+    ```sh
     make test
     ```
 
-    To run it with logs, we can use:
+    To run these tests with verbose logging, we can add `-v` to the `OPTS`:
 
-    ```
+    ```sh
     make test OPTS=-v
     ```
 
@@ -52,7 +52,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
     This is a more comprehensive test suite that runs on Ruby. We can run it with:
 
-    ```
+    ```sh
     make test-all
     ```
 
@@ -75,21 +75,21 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-all TESTS="../test/ruby/test_string.rb --name=TestString#test_to_s"
     ```
 
-    To run these specs with logs, we can use:
+    To run these tests with verbose logging, we can add `-v` to `TESTS`:
 
-    ```
+    ```sh
     make test-all TESTS=-v
     ```
 
     We can display the help of the `TESTS` option:
 
-    ```
+    ```sh
     make test-all TESTS=--help
     ```
 
     If we would like to run the `test/`, `bootstraptest/` and `spec/` test suites (the `spec/` is explained in a later section), we can run
 
-    ```
+    ```sh
     make check
     ```
 
@@ -97,7 +97,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
     This is a test suite that exists in [the Ruby spec repository](https://github.com/ruby/spec) and is mirrored into the `spec/ruby` directory in the Ruby repository. It tests the behavior of the Ruby programming language. We can run this using:
 
-    ```
+    ```sh
     make test-spec
     ```
 
@@ -119,10 +119,10 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-spec SPECOPTS="../spec/ruby/core/string/to_s_spec.rb --example='returns self when self.class == String'"
     ```
 
-    To run these specs with logs, we can use:
+    To run these specs with verbose logging, we can add `-v` to the `SPECOPTS`:
 
-    ```
-    make test-spec SPECOPTS=-Vfs
+    ```sh
+    make test-spec SPECOPTS="../spec/ruby/core/string/to_s_spec.rb -Vfs"
     ```
 
     To run a ruby-spec file or directory with GNU make, we can use
@@ -135,13 +135,13 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
     The bundler test suite exists in [the RubyGems repository](https://github.com/rubygems/rubygems/tree/master/bundler/spec) and is mirrored into the `spec/bundler` directory in the Ruby repository. We can run this using:
 
-    ```
+    ```sh
     make test-bundler
     ```
 
     To run a specific bundler spec file, we can use `BUNDLER_SPECS` as follows:
 
-    ```
+    ```sh
     make test-bundler BUNDLER_SPECS=commands/exec_spec.rb
     ```
 
@@ -151,7 +151,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
 If we see failing tests related to the zlib library on s390x CPU architecture, we can run the test suites with `DFLTCC=0` to pass:
 
-```
+```sh
 DFLTCC=0 make check
 ```
 
