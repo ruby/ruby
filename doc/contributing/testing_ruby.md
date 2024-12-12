@@ -1,5 +1,7 @@
 # Testing Ruby
 
+All the commands below assume that you're running them from the `build/` directory made during [Building Ruby](building_ruby.md).
+
 ## Test suites
 
 There are several test suites in the Ruby codebase:
@@ -42,8 +44,8 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     To run a file or directory with GNU make, we can use:
 
     ```sh
-    make test/ruby/test_foo.rb
-    make test/ruby/test_foo.rb TESTOPTS="-n /test_bar/"
+    make ../test/ruby/test_foo.rb
+    make ../test/ruby/test_foo.rb TESTOPTS="-n /test_bar/"
     ```
 
 2. [test/](https://github.com/ruby/ruby/tree/master/test)
@@ -57,13 +59,13 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     We can run a specific test directory in this suite using the `TESTS` option, for example:
 
     ```sh
-    make test-all TESTS=test/rubygems
+    make test-all TESTS="../test/rubygems"
     ```
 
     We can run a specific test file in this suite by also using the `TESTS` option, for example:
 
     ```sh
-    make test-all TESTS=test/ruby/test_array.rb
+    make test-all TESTS="../test/ruby/test_array.rb"
     ```
 
     We can run a specific test in this suite using the `TESTS` option, specifying
@@ -108,7 +110,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     To run a specific file, we can also use `SPECOPTS` to specify the file:
 
     ```sh
-    make test-spec SPECOPTS=spec/ruby/core/array/any_spec.rb
+    make test-spec SPECOPTS="../spec/ruby/core/array/any_spec.rb"
     ```
 
     To run a specific test, we can use the `--example` flag to match against the test name:
