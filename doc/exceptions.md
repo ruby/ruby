@@ -24,7 +24,7 @@ If an exception not _rescued_
 execution transfers to code in the Ruby interpreter
 that prints a message and exits the program (or thread):
 
-```
+```console
 $ ruby -e "raise"
 -e:1:in `<main>': unhandled exception
 ```

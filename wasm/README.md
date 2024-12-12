@@ -57,14 +57,14 @@ Now you have a WASI compatible ruby binary. You can run it by any WebAssembly ru
 
 Note: it may take a long time (~20 sec) for the first time for JIT compilation
 
-```
+```console
 $ wasmtime ruby-wasm32-wasi/usr/local/bin/ruby --mapdir /::./ruby-wasm32-wasi/ -- -e 'puts RUBY_PLATFORM'
 wasm32-wasi
 ```
 
 Note: you cannot run the built ruby without a WebAssembly runtime, because of the difference of the binary file type.
 
-```
+```console
 $ ruby-wasm32-wasi/usr/local/bin/ruby -e 'puts "a"'
 bash: ruby-wasm32-wasi/usr/local/bin/ruby: cannot execute binary file: Exec format error
 

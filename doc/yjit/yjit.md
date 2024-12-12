@@ -440,7 +440,7 @@ instructions below, but there are a few caveats listed further down.
 
 First, install Rosetta:
 
-```sh
+```console
 $ softwareupdate --install-rosetta
 ```
 
@@ -448,13 +448,13 @@ Now any command can be run with Rosetta via the `arch` command line tool.
 
 Then you can start your shell in an x86 environment:
 
-```sh
+```console
 $ arch -x86_64 zsh
 ```
 
 You can double check your current architecture via the `arch` command:
 
-```sh
+```console
 $ arch -x86_64 zsh
 $ arch
 i386
@@ -462,7 +462,7 @@ i386
 
 You may need to set the default target for `rustc` to x86-64, e.g.
 
-```sh
+```console
 $ rustup default stable-x86_64-apple-darwin
 ```
 
