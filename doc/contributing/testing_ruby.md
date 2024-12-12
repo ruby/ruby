@@ -10,7 +10,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
 1. [bootstraptest/](https://github.com/ruby/ruby/tree/master/bootstraptest)
 
-    This is a small test suite that runs on Miniruby (see [building Ruby](building_ruby.md#label-Miniruby+vs+Ruby)). We can run it with:
+    This is a small test suite that runs on [Miniruby](building_ruby.md#label-Miniruby+vs+Ruby). We can run it with:
 
     ```sh
     make btest
@@ -41,10 +41,15 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test OPTS=-v
     ```
 
-    To run a file or directory with GNU make, we can use:
+    To run a specific file with GNU make, we can use:
 
     ```sh
     make ../test/ruby/test_string.rb
+    ```
+
+    You can use the `-n` test option to run a specific test with a regex:
+
+    ```sh
     make ../test/ruby/test_string.rb TESTOPTS="-n /test_.*_to_s/"
     ```
 
@@ -56,15 +61,10 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-all
     ```
 
-    We can run a specific test directory in this suite using the `TESTS` option, for example:
+    We can run a specific test file or directory in this suite using the `TESTS` option, for example:
 
     ```sh
     make test-all TESTS="../test/ruby/"
-    ```
-
-    We can run a specific test file in this suite by also using the `TESTS` option, for example:
-
-    ```sh
     make test-all TESTS="../test/ruby/test_string.rb"
     ```
 
@@ -87,7 +87,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
     make test-all TESTS=--help
     ```
 
-    If we would like to run the `test/`, `bootstraptest/` and `spec/` test suites (the `spec/` is explained in a later section), we can run
+    We can run all the tests in `test/`, `bootstraptest/` and `spec/` (the `spec/` is explained in a later section) all together with:
 
     ```sh
     make check
@@ -95,21 +95,16 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
 3. [spec/ruby](https://github.com/ruby/ruby/tree/master/spec/ruby)
 
-    This is a test suite that exists in [the Ruby spec repository](https://github.com/ruby/spec) and is mirrored into the `spec/ruby` directory in the Ruby repository. It tests the behavior of the Ruby programming language. We can run this using:
+    This is a test suite defined in [the Ruby spec repository](https://github.com/ruby/spec), and is periodically mirrored into the `spec/ruby` directory of this repository. It tests the behavior of the Ruby programming language. We can run this using:
 
     ```sh
     make test-spec
     ```
 
-    To run a specific directory, we can use `SPECOPTS` to specify the directory:
+    We can run a specific test file or directory in this suite using the `SPECOPTS` option, for example:
 
     ```sh
     make test-spec SPECOPTS="../spec/ruby/core/string/"
-    ```
-
-    To run a specific file, we can also use `SPECOPTS` to specify the file:
-
-    ```sh
     make test-spec SPECOPTS="../spec/ruby/core/string/to_s_spec.rb"
     ```
 
@@ -133,7 +128,7 @@ We can run any of the make scripts [in parallel](building_ruby.md#label-Running+
 
 4. [spec/bundler](https://github.com/ruby/ruby/tree/master/spec/bundler)
 
-    The bundler test suite exists in [the RubyGems repository](https://github.com/rubygems/rubygems/tree/master/bundler/spec) and is mirrored into the `spec/bundler` directory in the Ruby repository. We can run this using:
+    The bundler test suite is defined in [the RubyGems repository](https://github.com/rubygems/rubygems/tree/master/bundler/spec), and is periodically mirrored into the `spec/ruby` directory of this repository. We can run this using:
 
     ```sh
     make test-bundler
