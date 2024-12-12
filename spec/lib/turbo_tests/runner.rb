@@ -84,8 +84,6 @@ module TurboTests
           **group_opts
         )
 
-      setup_tmp_dir
-
       subprocess_opts = {
         record_runtime: use_runtime_info,
       }
@@ -109,15 +107,6 @@ module TurboTests
     end
 
     private
-
-    def setup_tmp_dir
-      begin
-        FileUtils.rm_r("tmp/test-pipes")
-      rescue Errno::ENOENT
-      end
-
-      FileUtils.mkdir_p("tmp/test-pipes/")
-    end
 
     def start_regular_subprocess(tests, process_id, **opts)
       start_subprocess(
