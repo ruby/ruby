@@ -604,10 +604,6 @@ rb_obj_dup_setup(VALUE obj, VALUE dup)
  *  When using #dup, any modules that the object has been extended with will not
  *  be copied.
  *
- *  If you need #clone and #dup to behave differently, you can override
- *  +#initialize_clone+ and +#initialize_dup+ respectively.
- *  By default, both methods invoke +#initialize_copy+.
- *
  *	class Klass
  *	  attr_accessor :str
  *	end
@@ -625,6 +621,10 @@ rb_obj_dup_setup(VALUE obj, VALUE dup)
  *
  *	s3 = s1.dup #=> #<Klass:0x401c1084>
  *	s3.foo #=> NoMethodError: undefined method `foo' for #<Klass:0x401c1084>
+ *
+ *  If you need #clone and #dup to behave differently, you can override
+ *  +#initialize_clone+ and +#initialize_dup+ respectively.
+ *  By default, both methods invoke +#initialize_copy+.
  */
 VALUE
 rb_obj_dup(VALUE obj)
