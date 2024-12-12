@@ -72,6 +72,7 @@ const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
 PRINTF_ARGS(void rb_warn_deprecated(const char *fmt, const char *suggest, ...), 1, 3);
 PRINTF_ARGS(void rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *suggest, ...), 2, 4);
+PRINTF_ARGS(void rb_warn_reserved_name(const char *removal, const char *fmt, ...), 2, 3);
 #if RUBY_DEBUG
 # include "ruby/version.h"
 # define RUBY_VERSION_SINCE(major, minor) (RUBY_API_VERSION_CODE >= (major * 10000) + (minor) * 100)
@@ -110,6 +111,14 @@ rb_deprecated_method_to_be_removed(const char *removal)
     RBIMPL_ATTR_DIAGNOSE_IF(RUBY_VERSION_STRING_SINCE(removal), "deprecated method to be removed", "error")
 {
 }
+
+RBIMPL_ATTR_FORCEINLINE()
+static void
+rb_diagnose_reserved_name_at(const char *coming)
+    RBIMPL_ATTR_DIAGNOSE_IF(!RUBY_VERSION_isdigit(coming[0]), "malformed version number", "error")
+    RBIMPL_ATTR_DIAGNOSE_IF(RUBY_VERSION_STRING_SINCE(coming), "reserved name already in use", "error")
+{
+}
 # else
 RBIMPL_ATTR_ERROR(("deprecated"))
 void rb_deprecated_method_to_be_removed(const char *);
@@ -117,15 +126,31 @@ void rb_deprecated_method_to_be_removed(const char *);
     (sizeof(char[1-2*(!RUBY_VERSION_isdigit(removal[0]) || RUBY_VERSION_STRING_SINCE(removal))])!=1 ? \
      rb_deprecated_method_to_be_removed(removal) : \
      RBIMPL_ASSERT_NOTHING)
+
+RBIMPL_ATTR_ERROR(("deprecated"))
+void rb_diagnose_reserved_name_at(const char *);
+#   define rb_diagnose_reserved_name_at(coming) \
+    (sizeof(char[1-2*(!RUBY_VERSION_isdigit(coming[0]) || RUBY_VERSION_STRING_SINCE(coming))])!=1 ? \
+     rb_diagnose_reserved_name_at(coming) : \
+     RBIMPL_ASSERT_NOTHING)
+
 # endif
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
     (rb_deprecated_method_to_be_removed(#removal), \
      rb_warn_deprecated_to_remove(#removal, __VA_ARGS__))
+
+# define rb_warn_reserved_name_at(coming, ...) \
+    (rb_diagnose_reserved_name_at(#coming), \
+     rb_warn_reserved_name(#coming, __VA_ARGS__))
 # endif
 #endif
 #ifndef rb_warn_deprecated_to_remove_at
 # define rb_warn_deprecated_to_remove_at(removal, ...) \
         rb_warn_deprecated_to_remove(#removal, __VA_ARGS__)
+#endif
+#ifndef rb_warn_reserved_name_at
+# define rb_warn_reserved_name_at(removal, ...) \
+        rb_warn_reserved_name(#removal, __VA_ARGS__)
 #endif
 #ifndef RUBY_VERSION_SINCE
 # define RUBY_VERSION_SINCE(major, minor) 0
