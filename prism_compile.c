@@ -10444,7 +10444,20 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
         // Here we determine how many lines of padding to display after the
         // error, depending on where the next error is in source.
         last_line = error->line;
-        int32_t next_line = (index == error_list->size - 1) ? (((int32_t) newline_list->size) + parser->start_line) : errors[index + 1].line;
+        int32_t next_line;
+
+        if (index == error_list->size - 1) {
+            next_line = (((int32_t) newline_list->size) + parser->start_line);
+
+            // If the file ends with a newline, subtract one from our "next_line"
+            // so that we don't output an extra line at the end of the file
+            if ((parser->start + newline_list->offsets[newline_list->size - 1]) == parser->end) {
+                next_line--;
+            }
+        }
+        else {
+            next_line = errors[index + 1].line;
+        }
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);
