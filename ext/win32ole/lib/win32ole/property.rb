@@ -4,7 +4,7 @@ class WIN32OLE
 end
 
 # OLEProperty is a helper class of Property with arguments, used by
-# `olegen.rb`-generated files.
+# +olegen.rb+-generated files.
 class WIN32OLE::Property
   # :stopdoc:
   def initialize(obj, dispid, gettypes, settypes)
@@ -23,7 +23,7 @@ class WIN32OLE::Property
 end
 
 module WIN32OLE::VariantType
-  # Alias for `olegen.rb`-generated files, that should include
+  # Alias for +olegen.rb+-generated files, that should include
   # WIN32OLE::VARIANT.
   OLEProperty = WIN32OLE::Property
 end
