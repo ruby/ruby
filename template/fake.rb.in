@@ -21,7 +21,7 @@ def src.value(name)
 end
 arg['versions'] = version = {}
 File.read(File.join(arg['srcdir'], 'version.c')).
-  scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |n, s, v|
+  scan(/rb_define_(?:global_)?const\((mRuby, *)?"(?(1)|RUBY_)(\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |_, n, s, v|
   version[n] = arg[v] || src.value(v) || (s ? v : 0)
 end
 -%>
@@ -41,11 +41,17 @@ class Object
   options = remove_const(:RUBY_DESCRIPTION)[/( \+[^\[\]\+]+)*(?= \[\S+\]\z)/]
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%if n=='RUBY_DESCRIPTION'
+  RUBY_<%=n%> = <%if n=='DESCRIPTION'
     v1, v2 = v.split(/(?= \[\S+\]\z)/)
     %><%=v1.dump.chomp('"')%>#{options}<%=
     v2.dump[1..-1]%>.freeze<%
   else%><%=v.inspect%><%end%>
+% }
+end
+module Ruby
+  constants.each {|n| remove_const n}
+% arg['versions'].each {|n, v|
+  <%=n%> = ::RUBY_<%=n%>
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))
