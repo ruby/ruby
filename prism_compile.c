@@ -10043,6 +10043,17 @@ pm_iseq_pre_execution_p(rb_iseq_t *iseq)
 }
 
 /**
+ * Colorise the output if the terminal is a TTY and the `NO_COLOR` environment
+ * variable is not set.
+ */
+int
+rb_stderr_colorize_p(void)
+{
+    const char *no_color = getenv("NO_COLOR");
+    return rb_stderr_tty_p() && (no_color == NULL || no_color[0] == '\0');
+}
+
+/**
  * This is the main entry-point into the prism compiler. It accepts the iseq
  * that it should be compiling instruction into and a pointer to the scope node
  * that it should be compiling. It returns the established instruction sequence.
@@ -10537,7 +10548,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
                 pm_list_node_t *list_node = (pm_list_node_t *) error;
                 pm_list_t error_list = { .size = 1, .head = list_node, .tail = list_node };
 
-                pm_parse_errors_format(parser, &error_list, &buffer, rb_stderr_tty_p(), false);
+                pm_parse_errors_format(parser, &error_list, &buffer, rb_stderr_colorize_p(), false);
             }
 
             VALUE value = rb_exc_new(rb_eArgError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
@@ -10567,7 +10578,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     );
 
     if (valid_utf8) {
-        pm_parse_errors_format(parser, &parser->error_list, &buffer, rb_stderr_tty_p(), true);
+        pm_parse_errors_format(parser, &parser->error_list, &buffer, rb_stderr_colorize_p(), true);
     }
     else {
         for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
