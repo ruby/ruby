@@ -174,7 +174,7 @@ The following default gems are updated.
 * shellwords 0.2.1
 * singleton 0.3.0
 * stringio 3.1.2.dev
-* strscan 3.1.1.dev
+* strscan 3.1.1
 * syntax_suggest 2.0.2
 * tempfile 0.3.1
 * time 0.4.1
