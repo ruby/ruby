@@ -10,7 +10,7 @@ class Array
   #   a.shuffle! # => [5, 3, 8, 7, 6, 1, 9, 4, 2, 0]
   #   a.shuffle! # => [9, 4, 0, 6, 2, 8, 1, 5, 3, 7]
   #
-  #  Duplicate elements are included:
+  # Duplicate elements are included:
   #
   #   a =             [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
   #   a.shuffle! # => [1, 0, 0, 1, 1, 0, 1, 0, 0, 1]
