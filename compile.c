@@ -49,7 +49,6 @@
 #include "insns_info.inc"
 
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
-#define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
 typedef struct iseq_link_element {
     enum {
