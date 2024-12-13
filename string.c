@@ -3188,7 +3188,8 @@ rb_str_freeze(VALUE str)
  * call-seq:
  *   +string -> new_string or self
  *
- * Returns +self+ if +self+ is not frozen.
+ * Returns +self+ if +self+ is not frozen and can be mutated
+ * without warning issuance.
  *
  * Otherwise returns <tt>self.dup</tt>, which is not frozen.
  */
