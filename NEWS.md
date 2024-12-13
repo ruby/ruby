@@ -32,6 +32,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+
+* Array
+
+    * `Array#fetch_values` was added. [[Feature #20702]]
+
 * Exception
 
     * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
@@ -113,11 +118,21 @@ Note: We're only listing outstanding class updates.
       associated with the AST node. [[Feature #20624]]
     * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
 
+
+* String
+
+    * `String#append_as_bytes` was added to more easily and efficiently work with binary buffers and protocols.
+      It directly concatenate the arguments into the string without any encoding validation or conversion.
+      [[Feature #20594]]
+
 * Time
 
     * On Windows, now Time#zone encodes the system timezone name in UTF-8
       instead of the active code page, if it contains non-ASCII characters.
       [[Bug #20929]]
+
+    * `Time#xmlschema`, and its `Time#iso8601` alias have been moved into the core Time
+       class while previously it was an extension provided by the `time` gem. [[Feature #20707]]
 
 * Warning
 
@@ -394,10 +409,13 @@ details of the default gems or bundled gems.
 [Feature #20497]: https://bugs.ruby-lang.org/issues/20497
 [Feature #20564]: https://bugs.ruby-lang.org/issues/20564
 [Feature #20576]: https://bugs.ruby-lang.org/issues/20576
+[Feature #20594]: https://bugs.ruby-lang.org/issues/20594
 [Bug #20620]:     https://bugs.ruby-lang.org/issues/20620
 [Feature #20624]: https://bugs.ruby-lang.org/issues/20624
 [Feature #20627]: https://bugs.ruby-lang.org/issues/20627
+[Feature #20702]: https://bugs.ruby-lang.org/issues/20702
 [Feature #20705]: https://bugs.ruby-lang.org/issues/20705
+[Feature #20707]: https://bugs.ruby-lang.org/issues/20707
 [Feature #20715]: https://bugs.ruby-lang.org/issues/20715
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
 [Feature #20782]: https://bugs.ruby-lang.org/issues/20782
