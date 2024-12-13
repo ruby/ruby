@@ -125,6 +125,13 @@ Note: We're only listing outstanding class updates.
       It directly concatenate the arguments into the string without any encoding validation or conversion.
       [[Feature #20594]]
 
+* Symbol
+
+    * The string returned by `Symbol#to_s` now emits a deprecation warning when mutated, and will be
+      frozen in a future version of Ruby.
+      These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
+      [[Feature #20350]]
+
 * Time
 
     * On Windows, now Time#zone encodes the system timezone name in UTF-8
@@ -401,6 +408,7 @@ details of the default gems or bundled gems.
 [Feature #20265]: https://bugs.ruby-lang.org/issues/20265
 [Feature #20275]: https://bugs.ruby-lang.org/issues/20275
 [Feature #20293]: https://bugs.ruby-lang.org/issues/20293
+[Feature #20350]: https://bugs.ruby-lang.org/issues/20350
 [Feature #20351]: https://bugs.ruby-lang.org/issues/20351
 [Feature #20429]: https://bugs.ruby-lang.org/issues/20429
 [Bug #20433]:     https://bugs.ruby-lang.org/issues/20433
