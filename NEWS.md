@@ -13,6 +13,10 @@ Note that each entry is kept to a minimum, see links for details.
   To disable this change, you can run Ruby with the `--disable-frozen-string-literal`
   command line argument. [[Feature #20205]]
 
+    * String#+@ now duplicates when mutating the string would emit
+      a deprecation warning, offered as a replacement for the
+      `str.dup if str.frozen?` pattern.
+
 * `it` is added to reference a block parameter. [[Feature #18980]]
 
 * Keyword splatting `nil` when calling methods is now supported.
