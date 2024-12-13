@@ -3677,6 +3677,8 @@ ractor_local_storage_mark(rb_ractor_t *r)
     if (r->idkey_local_storage) {
         rb_id_table_foreach_values(r->idkey_local_storage, idkey_local_storage_mark_i, NULL);
     }
+
+    rb_gc_mark(r->local_storage_store_lock);
 }
 
 static int

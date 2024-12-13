@@ -83,6 +83,9 @@ Note: We're only listing outstanding class updates.
     * Ractor.[] and Ractor.[]= are added to access the ractor local storage
       of the current Ractor. [[Feature #20715]]
 
+    * `Ractor.store_if_absent(key){ init }` is added to initialize ractor local
+      variables in thread-safty. [[Feature #20875]]
+
 * Range
 
     * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
@@ -401,6 +404,7 @@ details of the default gems or bundled gems.
 [Bug #20795]:     https://bugs.ruby-lang.org/issues/20795
 [Feature #20811]: https://bugs.ruby-lang.org/issues/20811
 [Feature #20860]: https://bugs.ruby-lang.org/issues/20860
+[Feature #20875]: https://bugs.ruby-lang.org/issues/20875
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
