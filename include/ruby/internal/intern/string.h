@@ -1686,8 +1686,8 @@ rbimpl_exc_new_cstr(VALUE exc, const char *str)
  * Length of a string literal.
  *
  * @param[in]  str  A C String literal.
- * @return     An integer  constant expression that represents  `str`'s length,
- *             in bytes, not including the terminating NUL character.
+ * @return     An  integer constant  expression that  represents the  number of
+ *             `str`'s elements, not including the terminating NUL character.
  */
 #define rb_strlen_lit(str) ((sizeof(str "") / sizeof(str ""[0])) - 1)
 
