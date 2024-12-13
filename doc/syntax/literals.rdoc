@@ -147,7 +147,7 @@ here document literals (non-quoted, double-quoted, and with backticks),
 double-quoted symbols,
 double-quoted symbol keys in Hash literals,
 Regexp literals, and
-several percent literals (<tt>%</tt>, <tt>%Q,</tt> <tt>%W</tt>, <tt>%I</tt>, <tt>%r</tt>, <tt>%x</tt>).
+several percent literals (<tt>%</tt>, <tt>%Q</tt>, <tt>%W</tt>, <tt>%I</tt>, <tt>%r</tt>, <tt>%x</tt>).
 
 They allow escape sequences such as <tt>\n</tt> for
 newline, <tt>\t</tt> for tab, etc.  The full list of supported escape
