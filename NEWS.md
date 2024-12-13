@@ -186,7 +186,7 @@ The following default gems are updated.
 * uri 1.0.2
 * win32ole 1.9.0
 * yaml 0.4.0
-* zlib 3.2.0
+* zlib 3.2.1
 
 The following bundled gem is added.
 
