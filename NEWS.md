@@ -171,7 +171,7 @@ The following default gems are updated.
 * psych 5.2.1
 * rdoc 6.8.1
 * reline 0.5.12
-* resolv 0.5.0
+* resolv 0.6.0
 * securerandom 0.4.0
 * set 1.1.1
 * shellwords 0.2.2
