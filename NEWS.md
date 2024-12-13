@@ -34,12 +34,12 @@ Note: We're only listing outstanding class updates.
 
 * Exception
 
-    * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
-      Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
+    * `Exception#set_backtrace` now accepts arrays of `Thread::Backtrace::Location`.
+      `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [[Feature #13557]]
 
 * GC
 
-    * GC.config added to allow setting configuration variables on the Garbage
+    * `GC.config` is added to allow setting configuration variables on the Garbage
       Collector. [[Feature #20443]]
 
     * GC configuration parameter `rgengc_allow_full_mark` introduced.  When `false`
@@ -47,7 +47,7 @@ Note: We're only listing outstanding class updates.
 
 * Hash
 
-    * Hash.new now accepts an optional `capacity:` argument, to preallocate the hash with a given capacity.
+    * `Hash.new` now accepts an optional `capacity:` argument, to preallocate the hash with a given capacity.
       This can improve performance when building large hashes incrementally by saving on reallocation and
       rehashing of keys. [[Feature #19236]]
 
@@ -58,29 +58,29 @@ Note: We're only listing outstanding class updates.
 
 * IO::Buffer
 
-    * IO::Buffer#copy can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
+    * `IO::Buffer#copy` can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
 
 * Integer
 
-    * Integer#** used to return `Float::INFINITY` when the return value is large, but now returns an Integer.
+    * `Integer#**` used to return `Float::INFINITY` when the return value is large, but now returns an `Integer`.
       If the return value is extremely large, it raises an exception.
       [[Feature #20811]]
 
 * MatchData
 
-    * MatchData#bytebegin and MatchData#byteend have been added. [[Feature #20576]]
+    * `MatchData#bytebegin` and `MatchData#byteend` have been added. [[Feature #20576]]
 
 * Ractor
 
-    * `require` in Ractor is allowed. The requiring process will be run on
+    * `require` on Ractors is allowed. The requiring process will be run on
       the main Ractor.
       `Ractor._require(feature)` is added to run requiring process on the
       main Ractor.
       [[Feature #20627]]
 
-    * Ractor.main? is added. [[Feature #20627]]
+    * `Ractor.main?` is added. [[Feature #20627]]
 
-    * Ractor.[] and Ractor.[]= are added to access the ractor local storage
+    * `Ractor.[]` and `Ractor.[]=` are added to access the ractor local storage
       of the current Ractor. [[Feature #20715]]
 
     * `Ractor.store_if_absent(key){ init }` is added to initialize ractor local
@@ -88,8 +88,8 @@ Note: We're only listing outstanding class updates.
 
 * Range
 
-    * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
-    * Range#step now consistently has a semantics of iterating by using `+` operator
+    * `Range#size` now raises `TypeError` if the range is not iterable. [[Misc #18984]]
+    * `Range#step` now consistently has a semantics of iterating by using `+` operator
       for all types, not only numerics. [[Feature #18368]]
 
         ```ruby
@@ -99,8 +99,8 @@ Note: We're only listing outstanding class updates.
 
 * Rational
 
-    * Rational#** used to return `Float::INFINITY` or `Float::NAN`
-      when the numerator of the return value is large, but now returns an Integer.
+    * `Rational#**` used to return `Float::INFINITY` or `Float::NAN`
+      when the numerator of the return value is large, but now returns an `Rational`.
       If it is extremely large, it raises an exception. [[Feature #20811]]
 
 * Refinement
@@ -109,19 +109,19 @@ Note: We're only listing outstanding class updates.
 
 * RubyVM::AbstractSyntaxTree
 
-    * Add RubyVM::AbstractSyntaxTree::Node#locations method which returns location objects
+    * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
       associated with the AST node. [[Feature #20624]]
-    * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
+    * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
 
 * Time
 
-    * On Windows, now Time#zone encodes the system timezone name in UTF-8
+    * On Windows, now `Time#zone` encodes the system timezone name in UTF-8
       instead of the active code page, if it contains non-ASCII characters.
       [[Bug #20929]]
 
 * Warning
 
-    * Add Warning.categories method which returns a list of possible warning categories.
+    * Add `Warning.categories` method which returns a list of possible warning categories.
       [[Feature #20293]]
 
 ## Stdlib updates
@@ -242,7 +242,7 @@ details of the default gems or bundled gems.
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
     * Extra `rescue`/`ensure` frames are no longer available on the backtrace. [[Feature #20275]]
-    * Kernel#caller, Thread::Backtrace::Location’s methods, etc. are also changed accordingly.
+    * `Kernel#caller`, `Thread::Backtrace::Location`’s methods, etc. are also changed accordingly.
 
         Old:
         ```
@@ -256,19 +256,19 @@ details of the default gems or bundled gems.
                 from test.rb:2:in '<main>'
         ```
 
-* Hash#inspect rendering have been changed. [[Bug #20433]]
+* `Hash#inspect` rendering have been changed. [[Bug #20433]]
 
     * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
     * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
 
-* Kernel#Float() now accepts a decimal string with decimal part omitted. [[Feature #20705]]
+* `Kernel#Float()` now accepts a decimal string with decimal part omitted. [[Feature #20705]]
 
   ```rb
   Float("1.")    #=> 1.0 (previously, an ArgumentError was raised)
   Float("1.E-1") #=> 0.1 (previously, an ArgumentError was raised)
   ```
 
-* String#to_f now accepts a decimal string with decimal part omitted. [[Feature #20705]]
+* `String#to_f` now accepts a decimal string with decimal part omitted. [[Feature #20705]]
   Note that the result changes when an exponent is specified.
 
   ```rb
@@ -276,7 +276,7 @@ details of the default gems or bundled gems.
   "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
   ```
 
-* Object#singleton_method now returns methods in modules prepended to or included in the
+* `Object#singleton_method` now returns methods in modules prepended to or included in the
   receiver's singleton class. [[Bug #20620]]
 
   ```rb
@@ -334,7 +334,7 @@ details of the default gems or bundled gems.
   To enable it, use the keyword argument `fast_fallback: true`.
   (This entry is temporary. It should be merged with the above entry after it becomes settled)
   [[Feature #20782]]
-* Array#each is rewritten in Ruby for better performance [[Feature #20182]].
+* `Array#each` is rewritten in Ruby for better performance [[Feature #20182]].
 
 * Alternative garbage collector (GC) implementations can be loaded dynamically
   through the modular garbage collector feature. To enable this feature,
@@ -362,7 +362,7 @@ details of the default gems or bundled gems.
   [[Feature #15554]]
 
 * Redefining some core methods that are specially optimized by the interpreter
-  and JIT like String#freeze or Integer#+ now emits a performance class
+  and JIT like `String#freeze` or `Integer#+` now emits a performance class
   warning (`-W:performance` or `Warning[:performance] = true`).
   [[Feature #20429]]
 
