@@ -174,7 +174,7 @@ The following default gems are updated.
 * resolv 0.5.0
 * securerandom 0.4.0
 * set 1.1.1
-* shellwords 0.2.1
+* shellwords 0.2.2
 * singleton 0.3.0
 * stringio 3.1.2.dev
 * strscan 3.1.1
