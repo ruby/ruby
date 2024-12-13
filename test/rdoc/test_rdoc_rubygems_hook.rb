@@ -5,7 +5,7 @@ require 'tmpdir'
 require_relative '../../lib/rdoc/rubygems_hook'
 require 'test/unit'
 
-class TestRDocRubygemsHook < Test::Unit::TestCase
+class TestRDocRubyGemsHook < Test::Unit::TestCase
   def setup
     @a = Gem::Specification.new do |s|
       s.platform    = Gem::Platform::RUBY
@@ -40,10 +40,10 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     FileUtils.touch   File.join(@tempdir, 'a-2', 'lib', 'a.rb')
     FileUtils.touch   File.join(@tempdir, 'a-2', 'README')
 
-    @hook = RDoc::RubygemsHook.new @a
+    @hook = RDoc::RubyGemsHook.new @a
 
     begin
-      RDoc::RubygemsHook.load_rdoc
+      RDoc::RubyGemsHook.load_rdoc
     rescue Gem::DocumentError => e
       omit e.message
     end
@@ -63,7 +63,7 @@ class TestRDocRubygemsHook < Test::Unit::TestCase
     refute @hook.generate_rdoc
     assert @hook.generate_ri
 
-    rdoc = RDoc::RubygemsHook.new @a, false, false
+    rdoc = RDoc::RubyGemsHook.new @a, false, false
 
     refute rdoc.generate_rdoc
     refute rdoc.generate_ri
