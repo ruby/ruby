@@ -66,15 +66,17 @@ sign_bits(int base, const char *p)
 #define FPREC0 128
 
 #define CHECK(l) do {\
-    int cr = ENC_CODERANGE(result);\
     RUBY_ASSERT(bsiz >= blen); \
-    while ((l) > bsiz - blen) {\
-        bsiz*=2;\
-        if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
+    if ((l) > bsiz - blen) {\
+        while ((l) > bsiz - blen) {\
+            bsiz*=2;\
+            if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
+        }\
+        int cr = ENC_CODERANGE(result);\
+        rb_str_resize(result, bsiz);\
+        ENC_CODERANGE_SET(result, cr);\
+        buf = RSTRING_PTR(result);\
     }\
-    rb_str_resize(result, bsiz);\
-    ENC_CODERANGE_SET(result, cr);\
-    buf = RSTRING_PTR(result);\
 } while (0)
 
 #define PUSH(s, l) do { \
