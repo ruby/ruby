@@ -1,7 +1,7 @@
 \Class `StringScanner` supports processing a stored string as a stream;
 this code creates a new `StringScanner` object with string `'foobarbaz'`:
 
-```
+```rb
 require 'strscan'
 scanner = StringScanner.new('foobarbaz')
 ```
@@ -10,13 +10,13 @@ scanner = StringScanner.new('foobarbaz')
 
 All examples here assume that `StringScanner` has been required:
 
-```
+```rb
 require 'strscan'
 ```
 
 Some examples here assume that these constants are defined:
 
-```
+```rb
 MULTILINE_TEXT = <<~EOT
 Go placidly amid the noise and haste,
 and remember what peace there may be in silence.
@@ -45,7 +45,7 @@ This code creates a `StringScanner` object
 (we'll call it simply a _scanner_),
 and shows some of its basic properties:
 
-```
+```rb
 scanner = StringScanner.new('foobarbaz')
 scanner.string # => "foobarbaz"
 put_situation(scanner)
@@ -138,7 +138,7 @@ To get or set the byte position:
 Many methods use the byte position as the basis for finding matches;
 many others set, increment, or decrement the byte position:
 
-```
+```rb
 scanner = StringScanner.new('foobar')
 scanner.pos # => 0
 scanner.scan(/foo/) # => "foo" # Match found.
@@ -176,7 +176,7 @@ see:
 
 Example (string includes multi-byte characters):
 
-```
+```rb
 scanner = StringScanner.new(ENGLISH_TEXT) # Five 1-byte characters.
 scanner.concat(HIRAGANA_TEXT)             # Five 3-byte characters
 scanner.string # => "Helloこんにちは"       # Twenty bytes in all.
@@ -216,7 +216,7 @@ and its size is returned by method #rest_size.
 
 Examples:
 
-```
+```rb
 scanner = StringScanner.new('foobarbaz')
 put_situation(scanner)
 # Situation:
@@ -430,7 +430,7 @@ See examples below.
 
 Successful basic match attempt (no captures):
 
-```
+```rb
 scanner = StringScanner.new('foobarbaz')
 scanner.exist?(/bar/)
 put_match_values(scanner)
@@ -452,7 +452,7 @@ put_match_values(scanner)
 
 Failed basic match attempt (no captures);
 
-```
+```rb
 scanner = StringScanner.new('foobarbaz')
 scanner.exist?(/nope/)
 match_values_cleared?(scanner) # => true
@@ -460,7 +460,7 @@ match_values_cleared?(scanner) # => true
 
 Successful unnamed capture match attempt:
 
-```
+```rb
 scanner = StringScanner.new('foobarbazbatbam')
 scanner.exist?(/(foo)bar(baz)bat(bam)/)
 put_match_values(scanner)
@@ -486,7 +486,7 @@ put_match_values(scanner)
 Successful named capture match attempt;
 same as unnamed above, except for #named_captures:
 
-```
+```rb
 scanner = StringScanner.new('foobarbazbatbam')
 scanner.exist?(/(?<x>foo)bar(?<y>baz)bat(?<z>bam)/)
 scanner.named_captures # => {"x"=>"foo", "y"=>"baz", "z"=>"bam"}
@@ -494,7 +494,7 @@ scanner.named_captures # => {"x"=>"foo", "y"=>"baz", "z"=>"bam"}
 
 Failed unnamed capture match attempt:
 
-```
+```rb
 scanner = StringScanner.new('somestring')
 scanner.exist?(/(foo)bar(baz)bat(bam)/)
 match_values_cleared?(scanner) # => true
@@ -503,7 +503,7 @@ match_values_cleared?(scanner) # => true
 Failed named capture match attempt;
 same as unnamed above, except for #named_captures:
 
-```
+```rb
 scanner = StringScanner.new('somestring')
 scanner.exist?(/(?<x>foo)bar(?<y>baz)bat(?<z>bam)/)
 match_values_cleared?(scanner) # => false
@@ -518,7 +518,7 @@ which determines the meaning of `'\A'`:
 
 * `false` (the default): matches the current byte position.
 
-    ```
+    ```rb
     scanner = StringScanner.new('foobar')
     scanner.scan(/\A./) # => "f"
     scanner.scan(/\A./) # => "o"
@@ -529,7 +529,7 @@ which determines the meaning of `'\A'`:
 * `true`: matches the beginning of the target substring;
   never matches unless the byte position is zero:
 
-    ```
+    ```rb
     scanner = StringScanner.new('foobar', fixed_anchor: true)
     scanner.scan(/\A./) # => "f"
     scanner.scan(/\A./) # => nil

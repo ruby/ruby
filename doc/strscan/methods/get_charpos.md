@@ -5,7 +5,7 @@ Returns the [character position][7] (initially zero),
 which may be different from the [byte position][2]
 given by method #pos:
 
-```
+```rb
 scanner = StringScanner.new(HIRAGANA_TEXT)
 scanner.string # => "こんにちは"
 scanner.getch  # => "こ" # 3-byte character.

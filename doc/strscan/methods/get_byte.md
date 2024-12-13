@@ -10,7 +10,7 @@ Returns the next byte, if available:
     - Increments the [byte position][2].
     - Adjusts the [character position][7].
 
-    ```
+    ```rb
     scanner = StringScanner.new(HIRAGANA_TEXT)
     # => #<StringScanner 0/15 @ "\xE3\x81\x93\xE3\x82...">
     scanner.string                                   # => "こんにちは"
@@ -24,7 +24,7 @@ Returns the next byte, if available:
 
 - Otherwise, returns `nil`, and does not change the positions.
 
-    ```
+    ```rb
     scanner.terminate
     [scanner.get_byte, scanner.pos, scanner.charpos] # => [nil, 15, 5]
     ```

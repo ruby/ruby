@@ -10,7 +10,7 @@ Display scanner's situation:
 - Character position (`#charpos`)
 - Target string (`#rest`) and size (`#rest_size`).
 
-```
+```rb
 scanner = StringScanner.new('foobarbaz')
 scanner.scan(/foo/)
 put_situation(scanner)
@@ -25,7 +25,7 @@ put_situation(scanner)
 
 Display the scanner's match values:
 
-```
+```rb
 scanner = StringScanner.new('Fri Dec 12 1975 14:39')
 pattern = /(?<wday>\w+) (?<month>\w+) (?<day>\d+) /
 scanner.match?(pattern)
@@ -53,7 +53,7 @@ put_match_values(scanner)
 
 Returns whether the scanner's match values are all properly cleared:
 
-```
+```rb
 scanner = StringScanner.new('foobarbaz')
 match_values_cleared?(scanner) # => true
 put_match_values(scanner)
@@ -75,7 +75,7 @@ match_values_cleared?(scanner) # => false
 
 ## The Code
 
-```
+```rb
 def put_situation(scanner)
   puts '# Situation:'
   puts "#   pos:       #{scanner.pos}"
@@ -83,9 +83,7 @@ def put_situation(scanner)
   puts "#   rest:      #{scanner.rest.inspect}"
   puts "#   rest_size: #{scanner.rest_size}"
 end
-```
 
-```
 def put_match_values(scanner)
   puts '# Basic match values:'
   puts "#   matched?:       #{scanner.matched?}"
@@ -109,9 +107,7 @@ def put_match_values(scanner)
     end
   end
 end
-```
 
-```
 def match_values_cleared?(scanner)
   scanner.matched? == false &&
     scanner.matched_size.nil? &&

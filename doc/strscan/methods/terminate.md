@@ -7,7 +7,7 @@ returns +self+:
 - Sets both [positions][11] to end-of-stream.
 - Clears [match values][9].
 
-```
+```rb
 scanner = StringScanner.new(HIRAGANA_TEXT)
 scanner.string                 # => "こんにちは"
 scanner.scan_until(/に/)
