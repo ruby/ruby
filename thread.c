@@ -5511,7 +5511,13 @@ Init_Thread(void)
     const char * ptr = getenv("RUBY_THREAD_TIMESLICE");
 
     if (ptr) {
-        thread_default_quantum_ms = (uint32_t)strtol(ptr, NULL, 0);
+        long quantum = strtol(ptr, NULL, 0);
+        if (quantum > 0 && quantum <= UINT32_MAX) {
+            thread_default_quantum_ms = (uint32_t)quantum;
+        }
+        else if (0) {
+            fprintf(stderr, "Ignored RUBY_THREAD_TIMESLICE=%s\n", ptr);
+        }
     }
 
     {
