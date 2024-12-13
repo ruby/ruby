@@ -119,13 +119,6 @@ asan_poison_memory_region(const volatile void *ptr, size_t size)
     __asan_poison_memory_region(ptr, size);
 }
 
-/**
- * This is a variant of asan_poison_memory_region that takes a VALUE.
- *
- * @param[in]  obj   target object.
- */
-void asan_poison_object(VALUE obj);
-
 #ifdef RUBY_ASAN_ENABLED
 #define asan_poison_object_if(ptr, obj) do { \
         if (ptr) asan_poison_object(obj); \
@@ -133,6 +126,14 @@ void asan_poison_object(VALUE obj);
 #else
 #define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
 #endif
+
+RUBY_SYMBOL_EXPORT_BEGIN
+/**
+ * This is a variant of asan_poison_memory_region that takes a VALUE.
+ *
+ * @param[in]  obj   target object.
+ */
+void asan_poison_object(VALUE obj);
 
 /**
  * This function predicates if the given object is fully addressable or not.
@@ -142,6 +143,16 @@ void asan_poison_object(VALUE obj);
  * @retval     otherwise  pointer to first such byte who is poisoned.
  */
 void *asan_poisoned_object_p(VALUE obj);
+
+/**
+ * This is a variant of asan_unpoison_memory_region that takes a VALUE.
+ *
+ * @param[in]  obj       target object.
+ * @param[in]  malloc_p  if the memory region is like a malloc's return value or not.
+ */
+void asan_unpoison_object(VALUE obj, bool newobj_p);
+
+RUBY_SYMBOL_EXPORT_END
 
 /**
  * This function asserts that a (formally poisoned) memory region from ptr to
@@ -169,14 +180,6 @@ asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p
         __msan_unpoison(ptr, size);
     }
 }
-
-/**
- * This is a variant of asan_unpoison_memory_region that takes a VALUE.
- *
- * @param[in]  obj       target object.
- * @param[in]  malloc_p  if the memory region is like a malloc's return value or not.
- */
-void asan_unpoison_object(VALUE obj, bool newobj_p);
 
 static inline void *
 asan_unpoison_object_temporary(VALUE obj)
