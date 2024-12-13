@@ -6,7 +6,7 @@ Fibers provide a mechanism for cooperative concurrency.
 
 Fibers execute a user-provided block. During the execution, the block may call `Fiber.yield` or `Fiber.transfer` to switch to another fiber. `Fiber#resume` is used to continue execution from the point where `Fiber.yield` was called.
 
-``` ruby
+```rb
 #!/usr/bin/env ruby
 
 puts "1: Start program."
@@ -38,13 +38,13 @@ instrumentation.
 
 To set the scheduler for the current thread:
 
-``` ruby
+```rb
 Fiber.set_scheduler(MyScheduler.new)
 ```
 
 When the thread exits, there is an implicit call to `set_scheduler`:
 
-``` ruby
+```rb
 Fiber.set_scheduler(nil)
 ```
 
@@ -60,7 +60,7 @@ no changes.
 
 This is the interface you need to implement.
 
-``` ruby
+```rb
 class Scheduler
   # Wait for the specified process ID to exit.
   # This hook is optional.
@@ -166,7 +166,7 @@ program.
 
 Fibers can be used to create non-blocking execution contexts.
 
-``` ruby
+```rb
 Fiber.new do
   puts Fiber.current.blocking? # false
 
@@ -184,7 +184,7 @@ end.resume
 We also introduce a new method which simplifies the creation of these
 non-blocking fibers:
 
-``` ruby
+```rb
 Fiber.schedule do
   puts Fiber.current.blocking? # false
 end
@@ -196,7 +196,7 @@ fibers.
 
 You can also create blocking execution contexts:
 
-``` ruby
+```rb
 Fiber.new(blocking: true) do
   # Won't use the scheduler:
   sleep(n)

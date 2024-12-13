@@ -16,7 +16,7 @@ editor.
 
 Ruby core development can be done either in Windows `cmd` like:
 
-```
+```batch
 ridk enable ucrt64
 
 pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi
@@ -34,7 +34,7 @@ make
 
 or in MSYS2 `bash` like:
 
-```
+```bash
 ridk enable ucrt64
 bash
 
@@ -85,14 +85,14 @@ make
 
     You can use [scoop](https://scoop.sh/) to install them like:
 
-    ```
+    ```batch
     scoop install git sed ruby
     ```
 
 5.  You need to install required libraries using [vcpkg](https://vcpkg.io/) on
     directory of ruby repository like:
 
-    ```
+    ```batch
     vcpkg --triplet x64-windows install
     ```
 
@@ -146,7 +146,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     C:
     cd \ruby
     win32\configure --prefix=/usr/local
@@ -163,7 +163,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     C:
     cd \ruby
     mkdir mswin32
@@ -182,7 +182,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     D:
     cd D:\build\ruby
     C:\src\ruby\win32\configure --prefix=/usr/local
@@ -199,7 +199,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     C:
     cd \ruby
     win32\configure --prefix=/usr/local --target=x64-mswin64
@@ -224,7 +224,7 @@ Ruby uses [vcpkg](https://vcpkg.io/) to manage dependencies on mswin platform.
 
 You can update and install it under the build directory like:
 
-```
+```batch
 nmake update-vcpkg # Update baseline version of vcpkg
 nmake install-vcpkg # Install vcpkg from build directory
 ```

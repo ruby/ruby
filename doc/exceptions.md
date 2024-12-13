@@ -9,7 +9,7 @@ and may need to be handled.
 Code throughout the Ruby core, Ruby standard library, and Ruby gems generates exceptions
 in certain circumstances:
 
-```
+```rb
 File.open('nope.txt') # Raises Errno::ENOENT: "No such file or directory"
 ```
 
@@ -24,7 +24,7 @@ If an exception not _rescued_
 execution transfers to code in the Ruby interpreter
 that prints a message and exits the program (or thread):
 
-```
+```console
 $ ruby -e "raise"
 -e:1:in `<main>': unhandled exception
 ```
@@ -38,7 +38,7 @@ and may prevent the program from exiting.
 
 A simple example:
 
-```
+```rb
 begin
   raise 'Boom!'                # Raises an exception, transfers control.
   puts 'Will not get here.'
@@ -94,7 +94,7 @@ The rescue clause rescues both the specified class
 (or StandardError if none given) or any of its subclasses;
 see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy).
 
-```
+```rb
 begin
   1 / 0 # Raises ZeroDivisionError, a subclass of StandardError.
 rescue
@@ -113,7 +113,7 @@ only that class (or one of its subclasses) is rescued;
 this example exits with a ZeroDivisionError,
 which was not rescued because it is not ArgumentError or one of its subclasses:
 
-```
+```rb
 begin
   1 / 0
 rescue ArgumentError
@@ -125,7 +125,7 @@ A `rescue` statement may specify multiple classes,
 which means that its code rescues an exception
 of any of the given classes (or their subclasses):
 
-```
+```rb
 begin
   1 / 0
 rescue FloatDomainError, ZeroDivisionError
@@ -139,7 +139,7 @@ An exception handler may contain multiple rescue clauses;
 in that case, the first clause that rescues the exception does so,
 and those before and after are ignored:
 
-```
+```rb
 begin
   Dir.open('nosuch')
 rescue Errno::ENOTDIR
@@ -161,7 +161,7 @@ A `rescue` statement may specify a variable
 whose value becomes the rescued exception
 (an instance of Exception or one of its subclasses:
 
-```
+```rb
 begin
   1 / 0
 rescue => x
@@ -188,7 +188,7 @@ there:
 
 Example:
 
-```
+```rb
 begin
   1 / 0
 rescue
@@ -212,7 +212,7 @@ elsewhere, the method returns `nil`.
 
 Example:
 
-```
+```rb
 begin
   raise('Boom 0')
 rescue => x0
@@ -246,7 +246,7 @@ The `else` clause:
 - Contains code that is to be executed if no exception is raised in the begin clause.
 - Ends with the first following `ensure` or `end` statement.
 
-```
+```rb
 begin
   puts 'Begin.'
 rescue
@@ -273,7 +273,7 @@ The ensure clause:
   and regardless of whether a raised exception is handled.
 - Ends with the first following `end` statement.
 
-```
+```rb
 def foo(boom: false)
   puts 'Begin.'
   raise 'Boom!' if boom
@@ -314,7 +314,7 @@ An exception handler may also be implemented as:
 
 - A method body:
 
-    ```
+    ```rb
     def foo(boom: false) # Serves as beginning of exception handler.
       puts 'Begin.'
       raise 'Boom!' if boom
@@ -327,7 +327,7 @@ An exception handler may also be implemented as:
 
 - A block:
 
-    ```
+    ```rb
     Dir.chdir('.') do |dir| # Serves as beginning of exception handler.
       raise 'Boom!'
     rescue
@@ -349,7 +349,7 @@ a rescuing clause:
   - Calls method `raise` with no argument,
     which raises the rescued exception:
 
-```
+```rb
 begin
   1 / 0
 rescue ZeroDivisionError
@@ -374,7 +374,7 @@ for example, if it must access a possibly-volatile resource
 it can be useful to try the access more than once
 (in the hope that it may become available):
 
-```
+```rb
 retries = 0
 begin
   puts "Try ##{retries}."
@@ -419,7 +419,7 @@ Each should be a subclass of one of the built-in exception classes
 (commonly StandardError or RuntimeError);
 see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy).
 
-```
+```rb
 class MyException < StandardError; end
 ```
 

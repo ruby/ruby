@@ -8,7 +8,7 @@ of the invoked Ruby program.
 The examples here use command-line option `-e`,
 which passes the Ruby code to be executed on the command line itself:
 
-```sh
+```console
 $ ruby -e 'puts "Hello, World."'
 ```
 
@@ -18,7 +18,7 @@ The argument to option `-C` specifies a working directory
 for the invoked Ruby program;
 does not change the working directory for the current process:
 
-```sh
+```console
 $ basename `pwd`
 ruby
 $ ruby -C lib -e 'puts File.basename(Dir.pwd)'
@@ -35,7 +35,7 @@ The argument to option `-I` specifies a directory
 to be added to the array in global variable `$LOAD_PATH`;
 the option may be given more than once:
 
-```sh
+```console
 $ pushd /tmp
 $ ruby -e 'p $LOAD_PATH.size'
 8
@@ -54,7 +54,7 @@ The argument to option `-r` specifies a library to be required
 before executing the Ruby program;
 the option may be given more than once:
 
-```sh
+```console
 $ ruby -e 'p defined?(JSON); p defined?(CSV)'
 nil
 nil
@@ -83,10 +83,10 @@ these digits are prefixed with digit `0` to form an octal value:
 
 Examples:
 
-```sh
+```console
 $ ruby -0 -e 'p $/'
 "\x00"
-ruby -00 -e 'p $/'
+$ ruby -00 -e 'p $/'
 ""
 $ ruby -012 -e 'p $/'
 "\n"
@@ -109,7 +109,7 @@ these commonly write to `$stdout` or `$stderr`.
 The default value for `$DEBUG` is `false`;
 option `-d` (or `--debug`) sets it to `true`:
 
-```sh
+```console
 $ ruby -e 'p $DEBUG'
 false
 $ ruby -d -e 'p $DEBUG'
@@ -140,7 +140,7 @@ by setting the initial value of global variable `$-W`:
 The value of `$-W`, in turn, determines which warning messages (if any)
 are to be printed to `$stdout` (see Kernel#warn):
 
-```sh
+```console
 $ ruby -W1 -e 'p $foo'
 nil
 $ ruby -W2 -e 'p $foo'
@@ -151,14 +151,15 @@ nil
 Ruby code may also define warnings for certain categories;
 these are the default settings for the defined categories:
 
-```
+```ruby
 Warning[:experimental] # => true
 Warning[:deprecated]   # => false
 Warning[:performance]  # => false
 ```
 
 They may also be set:
-```
+
+```ruby
 Warning[:experimental] = false
 Warning[:deprecated]   = true
 Warning[:performance]  = true
@@ -166,7 +167,7 @@ Warning[:performance]  = true
 
 You can suppress a category by prefixing `no-` to the category name:
 
-```
+```console
 $ ruby -W:no-experimental -e 'p IO::Buffer.new'
 #<IO::Buffer>
 ```

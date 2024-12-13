@@ -40,11 +40,15 @@ https://www.ruby-lang.org/ja/downloads/
 
 ミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
-    $ git clone https://github.com/ruby/ruby.git
+```console
+$ git clone https://github.com/ruby/ruby.git
+```
 
 他のブランチの一覧は次のコマンドで見られます．
 
-    $ git ls-remote https://github.com/ruby/ruby.git
+```console
+$ git ls-remote https://github.com/ruby/ruby.git
+```
 
 Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
 コミッタはこちらを使います．
