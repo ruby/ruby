@@ -879,7 +879,7 @@ require_relative "irb/pager"
 module IRB
 
   # An exception raised by IRB.irb_abort
-  class Abort < Exception;end
+  class Abort < Exception;end # :nodoc:
 
   class << self
     # The current IRB::Context of the session, see IRB.conf

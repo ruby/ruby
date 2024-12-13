@@ -5,13 +5,11 @@
 #
 
 module IRB
-  # :stopdoc:
-
   module Command
-    class CommandArgumentError < StandardError; end
+    class CommandArgumentError < StandardError; end # :nodoc:
 
     class << self
-      def extract_ruby_args(*args, **kwargs)
+      def extract_ruby_args(*args, **kwargs) # :nodoc:
         throw :EXTRACT_RUBY_ARGS, [args, kwargs]
       end
     end
@@ -57,8 +55,6 @@ module IRB
       end
     end
 
-    Nop = Base
+    Nop = Base # :nodoc:
   end
-
-  # :startdoc:
 end
