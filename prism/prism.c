@@ -13769,7 +13769,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                 call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
 
                 // Ensure that the arguments for []= don't contain keywords
-                pm_index_arguments_check(parser, call->arguments, NULL);
+                pm_index_arguments_check(parser, call->arguments, call->block);
                 pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE | pm_implicit_array_write_flags(value, PM_CALL_NODE_FLAGS_IMPLICIT_ARRAY));
 
                 return target;
