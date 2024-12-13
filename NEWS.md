@@ -35,7 +35,7 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
-    * `Array#fetch_values` was added. [[Feature #20702]]
+    * Array#fetch_values was added. [[Feature #20702]]
 
 * Exception
 
@@ -58,7 +58,7 @@ Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
 
-    * An optional `Fiber::Scheduler#blocking_operation_wait` hook allows blocking operations to be moved out of the
+    * An optional Fiber::Scheduler#blocking_operation_wait hook allows blocking operations to be moved out of the
       event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
 
 * IO::Buffer
@@ -121,13 +121,13 @@ Note: We're only listing outstanding class updates.
 
 * String
 
-    * `String#append_as_bytes` was added to more easily and efficiently work with binary buffers and protocols.
+    * String#append_as_bytes was added to more easily and efficiently work with binary buffers and protocols.
       It directly concatenate the arguments into the string without any encoding validation or conversion.
       [[Feature #20594]]
 
 * Symbol
 
-    * The string returned by `Symbol#to_s` now emits a deprecation warning when mutated, and will be
+    * The string returned by Symbol#to_s now emits a deprecation warning when mutated, and will be
       frozen in a future version of Ruby.
       These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
       [[Feature #20350]]
@@ -138,7 +138,7 @@ Note: We're only listing outstanding class updates.
       instead of the active code page, if it contains non-ASCII characters.
       [[Bug #20929]]
 
-    * `Time#xmlschema`, and its `Time#iso8601` alias have been moved into the core Time
+    * Time#xmlschema, and its Time#iso8601 alias have been moved into the core Time
        class while previously it was an extension provided by the `time` gem. [[Feature #20707]]
 
 * Warning
