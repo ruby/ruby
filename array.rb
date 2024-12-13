@@ -187,13 +187,13 @@ class Array
   #  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
   #
   #    a = [:foo, :bar, :baz]
-  #    a.fetch_values(3, 1)   # => [:baz, :foo]
-  #    a.fetch_values(3.1, 1) # => [:baz, :foo]
+  #    a.fetch_values(2, 0)   # => [:baz, :foo]
+  #    a.fetch_values(2.1, 0) # => [:baz, :foo]
   #    a.fetch_values         # => []
   #
   #  For a negative index, counts backwards from the end of the array:
   #
-  #    a.fetch_values([-2, -1]) # [:bar, :baz]
+  #    a.fetch_values(-2, -1) # [:bar, :baz]
   #
   #  When no block is given, raises an exception if any index is out of range.
   #
