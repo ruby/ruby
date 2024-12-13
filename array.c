@@ -8288,16 +8288,16 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  You can create an \Array object explicitly with:
  *
- *  - An {array literal}[rdoc-ref:literals.rdoc@Array+Literals]:
+ *  - An {array literal}[rdoc-ref:syntax/literals.rdoc@Array+Literals]:
  *
  *      [1, 'one', :one, [2, 'two', :two]]
  *
- *  - A {%w or %W: string-array Literal}[rdoc-ref:literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
+ *  - A {%w or %W string-array Literal}[rdoc-ref:syntax/literals.rdoc@25w+and+-25W-3A+String-Array+Literals]:
  *
  *      %w[foo bar baz] # => ["foo", "bar", "baz"]
  *      %w[1 % *]       # => ["1", "%", "*"]
  *
- *  - A {%i pr %I: symbol-array Literal}[rdoc-ref:literals.rdoc@25i+and+-25I-3A+Symbol-Array+Literals]:
+ *  - A {%i or %I symbol-array Literal}[rdoc-ref:syntax/literals.rdoc@25i+and+-25I-3A+Symbol-Array+Literals]:
  *
  *      %i[foo bar baz] # => [:foo, :bar, :baz]
  *      %i[1 % *]       # => [:"1", :%, :*]
