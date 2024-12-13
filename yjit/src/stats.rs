@@ -470,6 +470,7 @@ make_counters! {
     guard_send_str_aref_not_fixnum,
 
     guard_send_cfunc_bad_splat_vargs,
+    guard_send_cfunc_block_not_nil,
 
     guard_invokesuper_me_changed,
 
