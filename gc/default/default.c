@@ -3302,22 +3302,16 @@ static void invalidate_moved_page(rb_objspace_t *objspace, struct heap_page *pag
 
 #if GC_CAN_COMPILE_COMPACTION
 static void
-read_barrier_handler(uintptr_t original_address)
+read_barrier_handler(uintptr_t address)
 {
-    VALUE obj;
     rb_objspace_t *objspace = (rb_objspace_t *)rb_gc_get_objspace();
 
-    /* Calculate address aligned to slots. */
-    uintptr_t address = original_address - (original_address % BASE_SLOT_SIZE);
-
-    obj = (VALUE)address;
-
-    struct heap_page_body *page_body = GET_PAGE_BODY(obj);
+    struct heap_page_body *page_body = GET_PAGE_BODY(address);
 
     /* If the page_body is NULL, then mprotect cannot handle it and will crash
      * with "Cannot allocate memory". */
     if (page_body == NULL) {
-        rb_bug("read_barrier_handler: segmentation fault at %p", (void *)original_address);
+        rb_bug("read_barrier_handler: segmentation fault at %p", (void *)address);
     }
 
     int lev = rb_gc_vm_lock();
@@ -3326,7 +3320,7 @@ read_barrier_handler(uintptr_t original_address)
 
         objspace->profile.read_barrier_faults++;
 
-        invalidate_moved_page(objspace, GET_HEAP_PAGE(obj));
+        invalidate_moved_page(objspace, GET_HEAP_PAGE(address));
     }
     rb_gc_vm_unlock(lev);
 }
