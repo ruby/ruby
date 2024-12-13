@@ -136,7 +136,7 @@ Also \Rational numbers may be imaginary numbers.
 
   12.3ir      #=> Syntax error
 
-== Strings
+== \String Literals
 
 === Escape Sequences
 
