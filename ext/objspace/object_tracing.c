@@ -192,9 +192,7 @@ allocation_info_tracer_memsize(const void *ptr)
 static int
 hash_foreach_should_replace_key(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
-    VALUE allocated_object;
-
-    allocated_object = (VALUE)value;
+    VALUE allocated_object = (VALUE)key;
     if (allocated_object != rb_gc_location(allocated_object)) {
         return ST_REPLACE;
     }
