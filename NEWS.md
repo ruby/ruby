@@ -159,7 +159,7 @@ The following default gems are updated.
 * ipaddr 1.2.7
 * irb 1.14.2
 * json 2.9.0
-* logger 1.6.2
+* logger 1.6.3
 * net-http 0.6.0
 * open-uri 0.5.0
 * optparse 0.6.0
@@ -176,7 +176,7 @@ The following default gems are updated.
 * set 1.1.1
 * shellwords 0.2.2
 * singleton 0.3.0
-* stringio 3.1.2.dev
+* stringio 3.1.2
 * strscan 3.1.1
 * syntax_suggest 2.0.2
 * tempfile 0.3.1
