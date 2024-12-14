@@ -166,7 +166,7 @@
 # These instance methods utilize slicing:
 #
 # - String#[] (aliased as String#slice): Returns a slice copied from +self+.
-# - String#[]=: Mutates +self+ with the slice replaced and returns the given slice.
+# - String#[]=: Mutates +self+ with the slice replaced.
 # - String#slice!: Mutates +self+ with the slice removed and returns the removed slice.
 #
 # Each of the above methods takes arguments that determine the slice
