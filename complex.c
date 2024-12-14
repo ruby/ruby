@@ -2473,7 +2473,7 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object from rectangular coordinates with:
  *
- * - A {complex literal}[rdoc-ref:doc/syntax/literals.rdoc@Complex+Literals].
+ * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
  * - \Method Complex.rect.
  * - \Method Kernel#Complex, either with numeric arguments or with certain string arguments.
  * - \Method String#to_c, for certain strings.
