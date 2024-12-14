@@ -23,7 +23,7 @@
  * algorithm by default, except on Windows.
  *
  * For details on Happy Eyeballs Version 2,
- * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket#tcp_fast_fallback=].
+ * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
  *
  * To make it behave the same as in Ruby 3.3 and earlier,
  * explicitly specify the option fast_fallback:false.
