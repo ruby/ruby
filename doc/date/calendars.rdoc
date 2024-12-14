@@ -31,7 +31,7 @@ See also {a concrete example here}[rdoc-ref:DateTime@When+should+you+use+DateTim
 === Argument +start+
 
 Certain methods in class \Date handle differences in the
-{Julian and Gregorian calendars}[rdoc-ref:calendars.rdoc@Julian+and+Gregorian+Calendars]
+{Julian and Gregorian calendars}[rdoc-ref:date/calendars.rdoc@Julian+and+Gregorian+Calendars]
 by accepting an optional argument +start+, whose value may be:
 
 - Date::ITALY (the default): the created date is Julian
