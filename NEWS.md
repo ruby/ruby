@@ -353,13 +353,12 @@ details of the default gems or bundled gems.
 * The default parser is now Prism.
   To use the conventional parser, use the command-line argument `--parser=parse.y`.
   [[Feature #20564]]
-* Happy Eyeballs version 2 (RFC8305) is used in Socket.tcp.
-  To disable it, use the keyword argument `fast_fallback: false`.
-  [[Feature #20108]]
-* Happy Eyeballs version 2 (RFC8305) is implemented in TCPSocket.new.
-  To enable it, use the keyword argument `fast_fallback: true`.
-  (This entry is temporary. It should be merged with the above entry after it becomes settled)
-  [[Feature #20782]]
+* Happy Eyeballs version 2 (RFC8305), an algorithm that ensures faster and more reliable connections
+  by attempting IPv6 and IPv4 concurrently, is used in Socket.tcp and TCPSocket.new.
+  To disable it globally, set the environment variable `RUBY_TCP_NO_FAST_FALLBACK=1` or
+  call `Socket.tcp_fast_fallback=false`.
+  Or to disable it on a per-method basis, use the keyword argument `fast_fallback: false`.
+  [[Feature #20108]] [[Feature #20782]]
 * Array#each is rewritten in Ruby for better performance [[Feature #20182]].
 
 * Alternative garbage collector (GC) implementations can be loaded dynamically
