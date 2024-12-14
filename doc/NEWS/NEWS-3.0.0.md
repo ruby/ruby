@@ -296,7 +296,7 @@ Outstanding ones only.
 
 * Ractor
 
-    * New class added to enable parallel execution. See rdoc-ref:ractor.md for
+    * New class added to enable parallel execution. See rdoc-ref:ruby/ractor.md for
       more details.
 
 * Random
@@ -361,7 +361,7 @@ Outstanding ones only.
 
     * Introduce Fiber.set_scheduler for intercepting blocking operations and
       Fiber.scheduler for accessing the current scheduler. See
-      rdoc-ref:fiber.md for more details about what operations are supported and
+      rdoc-ref:ruby/fiber.md for more details about what operations are supported and
       how to implement the scheduler hooks. [[Feature #16786]]
 
     * Fiber.blocking? tells whether the current execution context is
