@@ -1501,7 +1501,7 @@ exc_init(VALUE exc, VALUE mesg)
  *  Returns a new exception object.
  *
  *  The given +message+ should be
- *  a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects];
+ *  a {string-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@String-Convertible+Objects];
  *  see method #message;
  *  if not given, the message is the class name of the new instance
  *  (which may be the name of a subclass):
@@ -1538,7 +1538,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *    x1 = x0.exception              # => #<StandardError: Boom>
  *    x0.__id__ == x1.__id__         # => true
  *
- *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
+ *  With {string-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@String-Convertible+Objects]
  *  +message+ (even the same as the original message),
  *  returns a new exception object whose class is the same as +self+,
  *  and whose message is the given +message+:
@@ -1681,7 +1681,7 @@ check_order_keyword(VALUE opt)
  * - Includes the exception class name.
  * - If the value of keyword +highlight+ is true (not +nil+ or +false+),
  *   includes bolding ANSI codes (see below) to enhance the appearance of the message.
- * - Includes the {backtrace}[rdoc-ref:exceptions.md@Backtraces]:
+ * - Includes the {backtrace}[rdoc-ref:ruby/exceptions.md@Backtraces]:
  *
  *   - If the value of keyword +order+ is +:top+ (the default),
  *     lists the error message and the innermost backtrace entry first.
@@ -1718,7 +1718,7 @@ check_order_keyword(VALUE opt)
  *    "\tfrom t.rb:12:in '<main>'"]
  *
  * An overriding method should be careful with ANSI code enhancements;
- * see {Messages}[rdoc-ref:exceptions.md@Messages].
+ * see {Messages}[rdoc-ref:ruby/exceptions.md@Messages].
  */
 
 static VALUE
@@ -1751,7 +1751,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
  *
  * Returns #to_s.
  *
- * See {Messages}[rdoc-ref:exceptions.md@Messages].
+ * See {Messages}[rdoc-ref:ruby/exceptions.md@Messages].
  */
 
 static VALUE
@@ -1802,7 +1802,7 @@ exc_message(VALUE exc)
  * - +:syntax_suggest+.
  *
  * An overriding method should also be careful with ANSI code enhancements;
- * see {Messages}[rdoc-ref:exceptions.md@Messages].
+ * see {Messages}[rdoc-ref:ruby/exceptions.md@Messages].
  */
 
 static VALUE
@@ -1890,7 +1890,7 @@ exc_inspect(VALUE exc)
  *  (Note though that two values might not be consistent with each other when
  *  backtraces are manually adjusted.)
  *
- *  see {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
+ *  see {Backtraces}[rdoc-ref:ruby/exceptions.md@Backtraces].
  */
 
 static VALUE
@@ -1967,7 +1967,7 @@ rb_get_backtrace(VALUE exc)
  *  (Note though that two values might not be consistent with each other when
  *  backtraces are manually adjusted.)
  *
- *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
+ *  See {Backtraces}[rdoc-ref:ruby/exceptions.md@Backtraces].
  */
 static VALUE
 exc_backtrace_locations(VALUE exc)
@@ -2102,7 +2102,7 @@ rb_check_backtrace(VALUE bt)
  *        # ["test.rb:7:in 'Object#parse_payload'", "test.rb:11:in '<main>'"]
  *      end
  *
- *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
+ *  See {Backtraces}[rdoc-ref:ruby/exceptions.md@Backtraces].
  */
 
 static VALUE
@@ -2131,7 +2131,7 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
  *
  *  Returns the previous value of global variable <tt>$!</tt>,
  *  which may be +nil+
- *  (see {Global Variables}[rdoc-ref:exceptions.md@Global+Variables]):
+ *  (see {Global Variables}[rdoc-ref:ruby/exceptions.md@Global+Variables]):
  *
  *    begin
  *      raise('Boom 0')
@@ -3489,7 +3489,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  \Class +Exception+ and its subclasses are used to indicate that an error
  *  or other problem has occurred,
  *  and may need to be handled.
- *  See {Exceptions}[rdoc-ref:exceptions.md].
+ *  See {Exceptions}[rdoc-ref:ruby/exceptions.md].
  *
  *  An +Exception+ object carries certain information:
  *
