@@ -4268,7 +4268,7 @@ static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding 
  *  Returns a string representation of +self+,
  *  formatted by <tt>strftime('%a %b %e %T %Y')</tt>
  *  or its shorthand version <tt>strftime('%c')</tt>;
- *  see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
+ *  see {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc]:
  *
  *    t = Time.new(2000, 12, 31, 23, 59, 59, 0.5)
  *    t.ctime                      # => "Sun Dec 31 23:59:59 2000"
@@ -5185,7 +5185,7 @@ strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding *enc)
  *
  *  Returns a string representation of +self+,
  *  formatted according to the given string +format+.
- *  See {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc].
+ *  See {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc].
  */
 
 static VALUE

@@ -30,8 +30,8 @@ Explore the essential classes and modules:
 Deep dive into Ruby's syntax and features:
 
 - [Ruby Syntax](rdoc-ref:syntax.rdoc)
-- [Exceptions](rdoc-ref:exceptions.md)
-- [Implicit Conversions](rdoc-ref:implicit_conversion.rdoc)
+- [Exceptions](rdoc-ref:ruby/exceptions.md)
+- [Implicit Conversions](rdoc-ref:ruby/implicit_conversion.rdoc)
 
 ## Standard Libraries
 

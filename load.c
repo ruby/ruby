@@ -1186,7 +1186,7 @@ no_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
     return 0;
 }
 
-// Documented in doc/globals.rdoc
+// Documented in doc/ruby/globals.rdoc
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {

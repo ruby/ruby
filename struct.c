@@ -1514,7 +1514,7 @@ rb_struct_size(VALUE s)
  *
  *  Finds and returns an object among nested objects.
  *  The nested objects may be instances of various classes.
- *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
+ *  See {Dig Methods}[rdoc-ref:ruby/dig_methods.rdoc].
  *
  *
  *  Given symbol or string argument +name+,

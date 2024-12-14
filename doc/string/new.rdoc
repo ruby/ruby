@@ -16,7 +16,7 @@ returns a copy of +string+ with the same encoding:
 (Unlike \String.new,
 a {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals] like <tt>''</tt> or a
 {here document literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals]
-always has {script encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].)
+always has {script encoding}[rdoc-ref:ruby/encodings.rdoc@Script+Encoding].)
 
 With optional keyword argument +encoding+, returns a copy of +string+
 with the specified encoding;

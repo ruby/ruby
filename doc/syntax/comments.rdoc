@@ -118,7 +118,7 @@ Another way to get these warnings to show is by running Ruby with warnings (<cod
 
 Note: This directive is experimental in Ruby 3.0 and may change in future releases.
 
-This special directive helps to create constants that hold only immutable objects, or {Ractor-shareable}[rdoc-ref:Ractor@Shareable+and+unshareable+objects] constants.
+This special directive helps to create constants that hold only immutable objects, or {Ractor-shareable}[rdoc-ref:ruby/ractor.md@Shareable+and+unshareable+objects] constants.
 
 The directive can specify special treatment for values assigned to constants:
 

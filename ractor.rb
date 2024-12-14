@@ -234,7 +234,7 @@
 #
 # == Reference
 #
-# See {Ractor design doc}[rdoc-ref:ractor.md] for more details.
+# See {Ractor design doc}[rdoc-ref:ruby/ractor.md] for more details.
 #
 class Ractor
   #

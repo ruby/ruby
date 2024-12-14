@@ -37,7 +37,7 @@ interprets +self+ using +src_encoding+, encodes the new string using +dst_encodi
   t.encoding                            # => #<Encoding:UTF-8>
 
 Optional keyword arguments +enc_opts+ specify encoding options;
-see {Encoding Options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+see {Encoding Options}[rdoc-ref:ruby/encodings.rdoc@Encoding+Options].
 
 Please note that, unless <code>invalid: :replace</code> option is
 given, conversion from an encoding +enc+ to the same encoding +enc+

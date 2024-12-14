@@ -2144,7 +2144,7 @@ flo_ndigits(int argc, VALUE *argv)
  *  Returns a float or integer that is a "floor" value for `self`,
  *  as specified by `ndigits`,
  *  which must be an
- *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
+ *  [integer-convertible object](rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
  *  When `self` is zero,
  *  returns a zero value:
@@ -2229,7 +2229,7 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *  Returns a numeric that is a "ceiling" value for `self`,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
+ *  [integer-convertible object](rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
  *  When `ndigits` is positive, returns a Float with `ndigits`
  *  decimal digits after the decimal point
@@ -2710,7 +2710,7 @@ flo_truncate(int argc, VALUE *argv, VALUE num)
  *  Returns the largest float or integer that is less than or equal to +self+,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  Equivalent to <tt>self.to_f.floor(ndigits)</tt>.
  *
@@ -2730,7 +2730,7 @@ num_floor(int argc, VALUE *argv, VALUE num)
  *  Returns the smallest float or integer that is greater than or equal to +self+,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  Equivalent to <tt>self.to_f.ceil(ndigits)</tt>.
  *
@@ -5802,7 +5802,7 @@ int_round(int argc, VALUE* argv, VALUE num)
  *  Returns an integer that is a "floor" value for `self`,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
+ *  [integer-convertible object](rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
  *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *
@@ -5871,7 +5871,7 @@ int_floor(int argc, VALUE* argv, VALUE num)
  *  Returns an integer that is a "ceiling" value for `self`,
  *  as specified by the given `ndigits`,
  *  which must be an
- *  [integer-convertible object](rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects).
+ *  [integer-convertible object](rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects).
  *
  *  - When `self` is zero, returns zero (regardless of the value of `ndigits`):
  *

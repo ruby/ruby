@@ -750,7 +750,7 @@ rb_f_raise(int argc, VALUE *argv)
  *    raise(message = nil, cause: $!)
  *
  *  Raises an exception;
- *  see {Exceptions}[rdoc-ref:exceptions.md].
+ *  see {Exceptions}[rdoc-ref:ruby/exceptions.md].
  *
  *  Argument +exception+ sets the class of the new exception;
  *  it should be class Exception or one of its subclasses
@@ -767,7 +767,7 @@ rb_f_raise(int argc, VALUE *argv)
  *  Argument +message+ sets the stored message in the new exception,
  *  which may be retrieved by method Exception#message;
  *  the message must be
- *  a {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
+ *  a {string-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@String-Convertible+Objects]
  *  or +nil+:
  *
  *    begin
@@ -780,7 +780,7 @@ rb_f_raise(int argc, VALUE *argv)
  *  If argument +message+ is not given,
  *  the message is the exception class name.
  *
- *  See {Messages}[rdoc-ref:exceptions.md@Messages].
+ *  See {Messages}[rdoc-ref:ruby/exceptions.md@Messages].
  *
  *  Argument +backtrace+ might be used to modify the backtrace of the new exception,
  *  as reported by Exception#backtrace and Exception#backtrace_locations;
@@ -818,7 +818,7 @@ rb_f_raise(int argc, VALUE *argv)
  *  the backtrace is set according to an array of Thread::Backtrace::Location objects,
  *  as derived from the call stack.
  *
- *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
+ *  See {Backtraces}[rdoc-ref:ruby/exceptions.md@Backtraces].
  *
  *  Keyword argument +cause+ sets the stored cause in the new exception,
  *  which may be retrieved by method Exception#cause;
@@ -835,7 +835,7 @@ rb_f_raise(int argc, VALUE *argv)
  *  If keyword argument +cause+ is not given,
  *  the cause is the value of <tt>$!</tt>.
  *
- *  See {Cause}[rdoc-ref:exceptions.md@Cause].
+ *  See {Cause}[rdoc-ref:ruby/exceptions.md@Cause].
  *
  *  In the alternate calling sequence,
  *  where argument +exception+ _not_ given,
