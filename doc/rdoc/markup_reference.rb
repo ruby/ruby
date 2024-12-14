@@ -972,22 +972,22 @@ require 'rdoc'
 #   if that item exists.
 #   The referenced item may be a class, module, method, file, etc.
 #
-#   - Class: <tt>Alias[rdoc-ref:RDoc::Alias]</tt> links to Alias[rdoc-ref:RDoc::Alias].
-#   - Module: <tt>RDoc[rdoc-ref:RDoc]</tt> links to RDoc[rdoc-ref:RDoc].
-#   - Method: <tt>foo[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK]</tt>
-#     links to foo[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK].
-#   - Constant: <tt>bar[rdoc-ref:RDoc::Markup::ToHtml::LIST_TYPE_TO_HTML]</tt>
-#     links to bar[rdoc-ref:RDoc::Markup::ToHtml::LIST_TYPE_TO_HTML].
-#   - Attribute: <tt>baz[rdoc-ref:RDoc::Markup::ToHtml#code_object]</tt>
-#     links to baz[rdoc-ref:RDoc::Markup::ToHtml#code_object].
-#   - Alias: <tt>bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias]</tt> links to
-#     bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias].
+#   - Class: <tt>Alias[rdoc-ref:RDoc::Alias]</tt> generates Alias[rdoc-ref:RDoc::Alias].
+#   - Module: <tt>RDoc[rdoc-ref:RDoc]</tt> generates RDoc[rdoc-ref:RDoc].
+#   - Method: <tt>foo[rdoc-ref:RDoc::MarkupReference#dummy_instance_method]</tt>
+#     generates foo[rdoc-ref:RDoc::MarkupReference#dummy_instance_method].
+#   - Constant: <tt>bar[rdoc-ref:RDoc::MarkupReference::DUMMY_CONSTANT]</tt>
+#     generates bar[rdoc-ref:RDoc::MarkupReference::DUMMY_CONSTANT].
+#   - Attribute: <tt>baz[rdoc-ref:RDoc::MarkupReference#dummy_attribute]</tt>
+#     generates baz[rdoc-ref:RDoc::MarkupReference#dummy_attribute].
+#   - Alias: <tt>bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias]</tt>
+#     generates bad[rdoc-ref:RDoc::MarkupReference#dummy_instance_alias].
 #
 #   If the referenced item does not exist, no link is generated
 #   and entire <tt>rdoc-ref:</tt> square-bracketed clause is removed
 #   from the resulting text.
 #
-#   - <tt>Nosuch[rdoc-ref:RDoc::Nosuch]</tt> is rendered as
+#   - <tt>Nosuch[rdoc-ref:RDoc::Nosuch]</tt> generates
 #     Nosuch[rdoc-ref:RDoc::Nosuch].
 #
 #
