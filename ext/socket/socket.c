@@ -1870,7 +1870,7 @@ socket_s_ip_address_list(VALUE self)
  * If false, Happy Eyeballs Version 2 is disabled.
  *
  * For details on Happy Eyeballs Version 2,
- * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket#tcp_fast_fallback=].
+ * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
  */
 VALUE socket_s_tcp_fast_fallback(VALUE self) {
     return rb_ivar_get(rb_cSocket, tcp_fast_fallback);
