@@ -5289,7 +5289,8 @@ rb_vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t num, const VALUE *pt
 static void
 vm_track_constant_cache(ID id, void *ic)
 {
-    struct rb_id_table *const_cache = GET_VM()->constant_cache;
+    rb_vm_t *vm = GET_VM();
+    struct rb_id_table *const_cache = vm->constant_cache;
     VALUE lookup_result;
     st_table *ics;
 
@@ -5301,7 +5302,23 @@ vm_track_constant_cache(ID id, void *ic)
         rb_id_table_insert(const_cache, id, (VALUE)ics);
     }
 
+    /* The call below to st_insert could allocate which could trigger a GC.
+     * If it triggers a GC, it may free an iseq that also holds a cache to this
+     * constant. If that iseq is the last iseq with a cache to this constant, then
+     * it will free this ST table, which would cause an use-after-free during this
+     * st_insert.
+     *
+     * So to fix this issue, we store the ID that is currently being inserted
+     * and, in remove_from_constant_cache, we don't free the ST table for ID
+     * equal to this one.
+     *
+     * See [Bug #20921].
+     */
+    vm->inserting_constant_cache_id = id;
+
     st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+
+    vm->inserting_constant_cache_id = (ID)0;
 }
 
 static void

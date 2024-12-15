@@ -724,6 +724,7 @@ typedef struct rb_vm_struct {
     // and Qtrue as values. It is used when inline constant caches need to be
     // invalidated or ISEQs are being freed.
     struct rb_id_table *constant_cache;
+    ID inserting_constant_cache_id;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023

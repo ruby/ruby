@@ -113,7 +113,9 @@ remove_from_constant_cache(ID id, IC ic)
         st_table *ics = (st_table *)lookup_result;
         st_delete(ics, &ic_data, NULL);
 
-        if (ics->num_entries == 0) {
+        if (ics->num_entries == 0 &&
+                // See comment in vm_track_constant_cache on why we need this check
+                id != vm->inserting_constant_cache_id) {
             rb_id_table_delete(vm->constant_cache, id);
             st_free_table(ics);
         }
