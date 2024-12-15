@@ -107,7 +107,7 @@ require_relative "rubygems/target_rbconfig"
 #
 # == License
 #
-# See {LICENSE.txt}[rdoc-ref:lib/rubygems/LICENSE.txt] for permissions.
+# See {LICENSE.txt}[https://github.com/rubygems/rubygems/blob/master/LICENSE.txt] for permissions.
 #
 # Thanks!
 #
