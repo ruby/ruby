@@ -916,6 +916,9 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
             const rb_method_entry_t *me;
             VALUE iclass = Qnil;
             me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->called_id, &iclass);
+            if (!me) {
+                me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->id, &iclass);
+            }
             return rb_unnamed_parameters(rb_method_entry_arity(me));
         }
         break;
