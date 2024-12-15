@@ -1590,7 +1590,7 @@ class Socket < BasicSocket
   # Returns 0 if successful, otherwise an exception is raised.
   #
   # === Parameter
-  #  # +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
+  # * +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
   #
   # === Example:
   #   # Pull down Google's web page
@@ -1625,7 +1625,7 @@ class Socket < BasicSocket
   # return the symbol +:wait_writable+ instead.
   #
   # === See
-  #  # Socket#connect
+  # * Socket#connect
   def connect_nonblock(addr, exception: true)
     __connect_nonblock(addr, exception)
   end
