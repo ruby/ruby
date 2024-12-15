@@ -292,6 +292,14 @@ main {
   main {
     margin-left: var(--sidebar-width);
   }
+
+  .table-of-contents main {
+    margin-left: 20em;
+  }
+
+  #navigation-toggle {
+    display: none;
+  }
 }
 
 main h1[class] {
@@ -309,12 +317,6 @@ main h5,
 main h6 {
   font-family: var(--font-heading);
   color: var(--highlight-color);
-}
-
-@media (min-width: 1024px) {
-  .table-of-contents main {
-    margin-left: 20em;
-  }
 }
 
 /* Search */
@@ -513,18 +515,6 @@ main header h3 {
 /* Utility Classes */
 .hide { display: none !important; }
 .initially-hidden { display: none; }
-
-/* Media Queries */
-@media (min-width: 1024px) {
-  /* Styles for larger screens */
-  .table-of-contents main {
-    margin-left: 20em;
-  }
-}
-
-@media print {
-  /* Print-specific styles */
-}
 
 /* Table of Contents */
 .table-of-contents ul {
