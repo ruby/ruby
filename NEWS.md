@@ -46,6 +46,11 @@ Note: We're only listing outstanding class updates.
     * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
       Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
 
+* Fiber::Scheduler
+
+    * An optional Fiber::Scheduler#blocking_operation_wait hook allows blocking operations to be moved out of the
+      event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
+
 * GC
 
     * GC.config added to allow setting configuration variables on the Garbage
@@ -59,11 +64,6 @@ Note: We're only listing outstanding class updates.
     * Hash.new now accepts an optional `capacity:` argument, to preallocate the hash with a given capacity.
       This can improve performance when building large hashes incrementally by saving on reallocation and
       rehashing of keys. [[Feature #19236]]
-
-* Fiber::Scheduler
-
-    * An optional Fiber::Scheduler#blocking_operation_wait hook allows blocking operations to be moved out of the
-      event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
 
 * IO::Buffer
 
@@ -143,7 +143,7 @@ Note: We're only listing outstanding class updates.
       [[Bug #20929]]
 
     * Time#xmlschema, and its Time#iso8601 alias have been moved into the core Time
-       class while previously it was an extension provided by the `time` gem. [[Feature #20707]]
+      class while previously it was an extension provided by the `time` gem. [[Feature #20707]]
 
 * Warning
 
