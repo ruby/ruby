@@ -9189,6 +9189,15 @@ rb_stderr_tty_p(void)
     return 0;
 }
 
+rb_highlight_mode_t
+rb_get_highlight_mode(int tty)
+{
+    if (!tty) return RB_HIGHLIGHT_NONE;
+    const char *no_color = getenv("NO_COLOR");
+    if (no_color == NULL || no_color[0] == '\0') return RB_HIGHLIGHT_COLORFUL;
+    return RB_HIGHLIGHT_MONOCHROME;
+}
+
 static void
 must_respond_to(ID mid, VALUE val, ID id)
 {

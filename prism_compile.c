@@ -10243,7 +10243,7 @@ pm_parse_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *
  * Format the errors on the parser into the given buffer.
  */
 static void
-pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, pm_buffer_t *buffer, int highlight, bool inline_messages) {
+pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, pm_buffer_t *buffer, rb_highlight_mode_t highlight, bool inline_messages) {
     assert(error_list->size != 0);
 
     // First, we're going to sort all of the errors by line number using an
@@ -10269,7 +10269,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
     int32_t max_line_number = first_line_number > last_line_number ? first_line_number : last_line_number;
 
     if (max_line_number < 10) {
-        if (highlight > 0) {
+        if (highlight > RB_HIGHLIGHT_NONE) {
             error_format = (pm_parse_error_format_t) {
                 .number_prefix = PM_COLOR_GRAY "%1" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "  | " PM_COLOR_RESET,
@@ -10283,7 +10283,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
             };
         }
     } else if (max_line_number < 100) {
-        if (highlight > 0) {
+        if (highlight > RB_HIGHLIGHT_NONE) {
             error_format = (pm_parse_error_format_t) {
                 .number_prefix = PM_COLOR_GRAY "%2" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "   | " PM_COLOR_RESET,
@@ -10297,7 +10297,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
             };
         }
     } else if (max_line_number < 1000) {
-        if (highlight > 0) {
+        if (highlight > RB_HIGHLIGHT_NONE) {
             error_format = (pm_parse_error_format_t) {
                 .number_prefix = PM_COLOR_GRAY "%3" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "    | " PM_COLOR_RESET,
@@ -10311,7 +10311,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
             };
         }
     } else if (max_line_number < 10000) {
-        if (highlight > 0) {
+        if (highlight > RB_HIGHLIGHT_NONE) {
             error_format = (pm_parse_error_format_t) {
                 .number_prefix = PM_COLOR_GRAY "%4" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "     | " PM_COLOR_RESET,
@@ -10325,7 +10325,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
             };
         }
     } else {
-        if (highlight > 0) {
+        if (highlight > RB_HIGHLIGHT_NONE) {
             error_format = (pm_parse_error_format_t) {
                 .number_prefix = PM_COLOR_GRAY "%5" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "      | " PM_COLOR_RESET,
@@ -10374,9 +10374,9 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
         // If this is the first error or we're on a new line, then we'll display
         // the line that has the error in it.
         if ((index == 0) || (error->line != last_line)) {
-            if (highlight > 1) {
+            if (highlight > RB_HIGHLIGHT_MONOCHROME) {
                 pm_buffer_append_literal(buffer, PM_COLOR_RED "> " PM_COLOR_RESET);
-            } else if (highlight > 0) {
+            } else if (highlight > RB_HIGHLIGHT_NONE) {
                 pm_buffer_append_literal(buffer, PM_COLOR_BOLD "> " PM_COLOR_RESET);
             } else {
                 pm_buffer_append_literal(buffer, "> ");
@@ -10422,8 +10422,8 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
             column += (char_width == 0 ? 1 : char_width);
         }
 
-        if (highlight > 1) pm_buffer_append_literal(buffer, PM_COLOR_RED);
-        else if (highlight > 0) pm_buffer_append_literal(buffer, PM_COLOR_BOLD);
+        if (highlight > RB_HIGHLIGHT_MONOCHROME) pm_buffer_append_literal(buffer, PM_COLOR_RED);
+        else if (highlight > RB_HIGHLIGHT_NONE) pm_buffer_append_literal(buffer, PM_COLOR_BOLD);
         pm_buffer_append_byte(buffer, '^');
 
         size_t char_width = encoding->char_width(start + column, parser->end - (start + column));
@@ -10436,7 +10436,7 @@ pm_parse_errors_format(const pm_parser_t *parser, const pm_list_t *error_list, p
             column += (char_width == 0 ? 1 : char_width);
         }
 
-        if (highlight > 0) pm_buffer_append_literal(buffer, PM_COLOR_RESET);
+        if (highlight > RB_HIGHLIGHT_NONE) pm_buffer_append_literal(buffer, PM_COLOR_RESET);
 
         if (inline_messages) {
             pm_buffer_append_byte(buffer, ' ');
@@ -10524,11 +10524,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     pm_buffer_t buffer = { 0 };
     const pm_string_t *filepath = &parser->filepath;
 
-    int highlight = rb_stderr_tty_p();
-    if (highlight) {
-        const char *no_color = getenv("NO_COLOR");
-        highlight = (no_color == NULL || no_color[0] == '\0') ? 2 : 1;
-    }
+    const rb_highlight_mode_t highlight = rb_get_highlight_mode(rb_stderr_tty_p());
 
     for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
         switch (error->level) {
