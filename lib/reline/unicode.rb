@@ -262,375 +262,126 @@ class Reline::Unicode
   end
 
   def self.em_forward_word(line, byte_pointer)
-    byte_size = 0
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-      byte_size += size
-    end
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-      byte_size += size
-    end
-    byte_size
+    gcs = line.byteslice(byte_pointer..).grapheme_clusters
+    nonwords = gcs.take_while { |c| !word_character?(c) }
+    words = gcs.drop(nonwords.size).take_while { |c| word_character?(c) }
+    nonwords.sum(&:bytesize) + words.sum(&:bytesize)
   end
 
   def self.em_forward_word_with_capitalization(line, byte_pointer)
-    byte_size = 0
-    new_str = String.new
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-      new_str += mbchar
-      byte_size += size
-    end
-    first = true
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-      if first
-        new_str += mbchar.upcase
-        first = false
-      else
-        new_str += mbchar.downcase
-      end
-      byte_size += size
-    end
-    [byte_size, new_str]
+    gcs = line.byteslice(byte_pointer..).grapheme_clusters
+    nonwords = gcs.take_while { |c| !word_character?(c) }
+    words = gcs.drop(nonwords.size).take_while { |c| word_character?(c) }
+    [nonwords.sum(&:bytesize) + words.sum(&:bytesize), nonwords.join + words.join.capitalize]
   end
 
   def self.em_backward_word(line, byte_pointer)
-    byte_size = 0
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-      byte_size += size
-    end
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-      byte_size += size
-    end
-    byte_size
+    gcs = line.byteslice(0, byte_pointer).grapheme_clusters.reverse
+    nonwords = gcs.take_while { |c| !word_character?(c) }
+    words = gcs.drop(nonwords.size).take_while { |c| word_character?(c) }
+    nonwords.sum(&:bytesize) + words.sum(&:bytesize)
   end
 
   def self.em_big_backward_word(line, byte_pointer)
-    byte_size = 0
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      break if mbchar =~ /\S/
-      byte_size += size
-    end
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      break if mbchar =~ /\s/
-      byte_size += size
-    end
-    byte_size
+    gcs = line.byteslice(0, byte_pointer).grapheme_clusters.reverse
+    spaces = gcs.take_while { |c| space_character?(c) }
+    nonspaces = gcs.drop(spaces.size).take_while { |c| !space_character?(c) }
+    spaces.sum(&:bytesize) + nonspaces.sum(&:bytesize)
   end
 
   def self.ed_transpose_words(line, byte_pointer)
-    right_word_start = nil
-    size = get_next_mbchar_size(line, byte_pointer)
-    mbchar = line.byteslice(byte_pointer, size)
-    if size.zero?
-      # ' aaa bbb [cursor]'
-      byte_size = 0
-      while 0 < (byte_pointer + byte_size)
-        size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-        break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-        byte_size -= size
-      end
-      while 0 < (byte_pointer + byte_size)
-        size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-        byte_size -= size
-      end
-      right_word_start = byte_pointer + byte_size
-      byte_size = 0
-      while line.bytesize > (byte_pointer + byte_size)
-        size = get_next_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size, size)
-        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-        byte_size += size
-      end
-      after_start = byte_pointer + byte_size
-    elsif mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-      # ' aaa bb[cursor]b'
-      byte_size = 0
-      while 0 < (byte_pointer + byte_size)
-        size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-        byte_size -= size
-      end
-      right_word_start = byte_pointer + byte_size
-      byte_size = 0
-      while line.bytesize > (byte_pointer + byte_size)
-        size = get_next_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size, size)
-        break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-        byte_size += size
-      end
-      after_start = byte_pointer + byte_size
-    else
-      byte_size = 0
-      while (line.bytesize - 1) > (byte_pointer + byte_size)
-        size = get_next_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size, size)
-        break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-        byte_size += size
-      end
-      if (byte_pointer + byte_size) == (line.bytesize - 1)
-        # ' aaa bbb [cursor] '
-        after_start = line.bytesize
-        while 0 < (byte_pointer + byte_size)
-          size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-          mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-          break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-          byte_size -= size
-        end
-        while 0 < (byte_pointer + byte_size)
-          size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-          mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-          break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-          byte_size -= size
-        end
-        right_word_start = byte_pointer + byte_size
-      else
-        # ' aaa [cursor] bbb '
-        right_word_start = byte_pointer + byte_size
-        while line.bytesize > (byte_pointer + byte_size)
-          size = get_next_mbchar_size(line, byte_pointer + byte_size)
-          mbchar = line.byteslice(byte_pointer + byte_size, size)
-          break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-          byte_size += size
-        end
-        after_start = byte_pointer + byte_size
-      end
+    gcs = line.byteslice(0, byte_pointer).grapheme_clusters
+    pos = gcs.size
+    gcs += line.byteslice(byte_pointer..).grapheme_clusters
+    pos += 1 while pos < gcs.size && !word_character?(gcs[pos])
+    if pos == gcs.size # 'aaa  bbb [cursor] '
+      pos -= 1 while pos > 0 && !word_character?(gcs[pos - 1])
+      second_word_end = gcs.size
+    else # 'aaa  [cursor]bbb'
+      pos += 1 while pos < gcs.size && word_character?(gcs[pos])
+      second_word_end = pos
     end
-    byte_size = right_word_start - byte_pointer
-    while 0 < (byte_pointer + byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\p{Word}/
-      byte_size -= size
+    pos -= 1 while pos > 0 && word_character?(gcs[pos - 1])
+    second_word_start = pos
+    pos -= 1 while pos > 0 && !word_character?(gcs[pos - 1])
+    first_word_end = pos
+    pos -= 1 while pos > 0 && word_character?(gcs[pos - 1])
+    first_word_start = pos
+
+    [first_word_start, first_word_end, second_word_start, second_word_end].map do |idx|
+      gcs.take(idx).sum(&:bytesize)
     end
-    middle_start = byte_pointer + byte_size
-    byte_size = middle_start - byte_pointer
-    while 0 < (byte_pointer + byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size - size, size)
-      break if mbchar.encode(Encoding::UTF_8) =~ /\P{Word}/
-      byte_size -= size
-    end
-    left_word_start = byte_pointer + byte_size
-    [left_word_start, middle_start, right_word_start, after_start]
   end
 
   def self.vi_big_forward_word(line, byte_pointer)
-    byte_size = 0
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar =~ /\s/
-      byte_size += size
-    end
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar =~ /\S/
-      byte_size += size
-    end
-    byte_size
+    gcs = line.byteslice(byte_pointer..).grapheme_clusters
+    nonspaces = gcs.take_while { |c| !space_character?(c) }
+    spaces = gcs.drop(nonspaces.size).take_while { |c| space_character?(c) }
+    nonspaces.sum(&:bytesize) + spaces.sum(&:bytesize)
   end
 
   def self.vi_big_forward_end_word(line, byte_pointer)
-    if (line.bytesize - 1) > byte_pointer
-      size = get_next_mbchar_size(line, byte_pointer)
-      byte_size = size
-    else
-      return 0
-    end
-    while (line.bytesize - 1) > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar =~ /\S/
-      byte_size += size
-    end
-    prev_byte_size = byte_size
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar =~ /\s/
-      prev_byte_size = byte_size
-      byte_size += size
-    end
-    prev_byte_size
+    gcs = line.byteslice(byte_pointer..).grapheme_clusters
+    first = gcs.shift(1)
+    spaces = gcs.take_while { |c| space_character?(c) }
+    nonspaces = gcs.drop(spaces.size).take_while { |c| !space_character?(c) }
+    matched = spaces + nonspaces
+    matched.pop
+    first.sum(&:bytesize) + matched.sum(&:bytesize)
   end
 
   def self.vi_big_backward_word(line, byte_pointer)
-    byte_size = 0
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      break if mbchar =~ /\S/
-      byte_size += size
-    end
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      break if mbchar =~ /\s/
-      byte_size += size
-    end
-    byte_size
+    gcs = line.byteslice(0, byte_pointer).grapheme_clusters.reverse
+    spaces = gcs.take_while { |c| space_character?(c) }
+    nonspaces = gcs.drop(spaces.size).take_while { |c| !space_character?(c) }
+    spaces.sum(&:bytesize) + nonspaces.sum(&:bytesize)
   end
 
   def self.vi_forward_word(line, byte_pointer, drop_terminate_spaces = false)
-    if line.bytesize > byte_pointer
-      size = get_next_mbchar_size(line, byte_pointer)
-      mbchar = line.byteslice(byte_pointer, size)
-      if mbchar =~ /\w/
-        started_by = :word
-      elsif mbchar =~ /\s/
-        started_by = :space
+    gcs = line.byteslice(byte_pointer..).grapheme_clusters
+    return 0 if gcs.empty?
+
+    c = gcs.first
+    matched =
+      if word_character?(c)
+        gcs.take_while { |c| word_character?(c) }
+      elsif space_character?(c)
+        gcs.take_while { |c| space_character?(c) }
       else
-        started_by = :non_word_printable
+        gcs.take_while { |c| !word_character?(c) && !space_character?(c) }
       end
-      byte_size = size
-    else
-      return 0
-    end
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      case started_by
-      when :word
-        break if mbchar =~ /\W/
-      when :space
-        break if mbchar =~ /\S/
-      when :non_word_printable
-        break if mbchar =~ /\w|\s/
-      end
-      byte_size += size
-    end
-    return byte_size if drop_terminate_spaces
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      break if mbchar =~ /\S/
-      byte_size += size
-    end
-    byte_size
+
+    return matched.sum(&:bytesize) if drop_terminate_spaces
+
+    spaces = gcs.drop(matched.size).take_while { |c| space_character?(c) }
+    matched.sum(&:bytesize) + spaces.sum(&:bytesize)
   end
 
   def self.vi_forward_end_word(line, byte_pointer)
-    if (line.bytesize - 1) > byte_pointer
-      size = get_next_mbchar_size(line, byte_pointer)
-      mbchar = line.byteslice(byte_pointer, size)
-      if mbchar =~ /\w/
-        started_by = :word
-      elsif mbchar =~ /\s/
-        started_by = :space
-      else
-        started_by = :non_word_printable
-      end
-      byte_size = size
-    else
-      return 0
+    gcs = line.byteslice(byte_pointer..).grapheme_clusters
+    return 0 if gcs.empty?
+    return gcs.first.bytesize if gcs.size == 1
+
+    start = gcs.shift
+    skips = [start]
+    if space_character?(start) || space_character?(gcs.first)
+      spaces = gcs.take_while { |c| space_character?(c) }
+      skips += spaces
+      gcs.shift(spaces.size)
     end
-    if (line.bytesize - 1) > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      if mbchar =~ /\w/
-        second = :word
-      elsif mbchar =~ /\s/
-        second = :space
-      else
-        second = :non_word_printable
-      end
-      second_byte_size = size
-    else
-      return byte_size
-    end
-    if second == :space
-      byte_size += second_byte_size
-      while (line.bytesize - 1) > (byte_pointer + byte_size)
-        size = get_next_mbchar_size(line, byte_pointer + byte_size)
-        mbchar = line.byteslice(byte_pointer + byte_size, size)
-        if mbchar =~ /\S/
-          if mbchar =~ /\w/
-            started_by = :word
-          else
-            started_by = :non_word_printable
-          end
-          break
-        end
-        byte_size += size
-      end
-    else
-      case [started_by, second]
-      when [:word, :non_word_printable], [:non_word_printable, :word]
-        started_by = second
-      else
-        byte_size += second_byte_size
-        started_by = second
-      end
-    end
-    prev_byte_size = byte_size
-    while line.bytesize > (byte_pointer + byte_size)
-      size = get_next_mbchar_size(line, byte_pointer + byte_size)
-      mbchar = line.byteslice(byte_pointer + byte_size, size)
-      case started_by
-      when :word
-        break if mbchar =~ /\W/
-      when :non_word_printable
-        break if mbchar =~ /[\w\s]/
-      end
-      prev_byte_size = byte_size
-      byte_size += size
-    end
-    prev_byte_size
+    start_with_word = word_character?(gcs.first)
+    matched = gcs.take_while { |c| start_with_word ? word_character?(c) : !word_character?(c) && !space_character?(c) }
+    matched.pop
+    skips.sum(&:bytesize) + matched.sum(&:bytesize)
   end
 
   def self.vi_backward_word(line, byte_pointer)
-    byte_size = 0
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      if mbchar =~ /\S/
-        if mbchar =~ /\w/
-          started_by = :word
-        else
-          started_by = :non_word_printable
-        end
-        break
-      end
-      byte_size += size
-    end
-    while 0 < (byte_pointer - byte_size)
-      size = get_prev_mbchar_size(line, byte_pointer - byte_size)
-      mbchar = line.byteslice(byte_pointer - byte_size - size, size)
-      case started_by
-      when :word
-        break if mbchar =~ /\W/
-      when :non_word_printable
-        break if mbchar =~ /[\w\s]/
-      end
-      byte_size += size
-    end
-    byte_size
+    gcs = line.byteslice(0, byte_pointer).grapheme_clusters.reverse
+    spaces = gcs.take_while { |c| space_character?(c) }
+    gcs.shift(spaces.size)
+    start_with_word = word_character?(gcs.first)
+    matched = gcs.take_while { |c| start_with_word ? word_character?(c) : !word_character?(c) && !space_character?(c) }
+    spaces.sum(&:bytesize) + matched.sum(&:bytesize)
   end
 
   def self.common_prefix(list, ignore_case: false)
@@ -647,15 +398,18 @@ class Reline::Unicode
   end
 
   def self.vi_first_print(line)
-    byte_size = 0
-    while (line.bytesize - 1) > byte_size
-      size = get_next_mbchar_size(line, byte_size)
-      mbchar = line.byteslice(byte_size, size)
-      if mbchar =~ /\S/
-        break
-      end
-      byte_size += size
-    end
-    byte_size
+    gcs = line.grapheme_clusters
+    spaces = gcs.take_while { |c| space_character?(c) }
+    spaces.sum(&:bytesize)
+  end
+
+  def self.word_character?(s)
+    s.encode(Encoding::UTF_8).match?(/\p{Word}/) if s
+  rescue Encoding::UndefinedConversionError
+    false
+  end
+
+  def self.space_character?(s)
+    s.match?(/\s/) if s
   end
 end
