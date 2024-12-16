@@ -206,7 +206,7 @@ The following default gems are updated.
 * shellwords 0.2.2
 * singleton 0.3.0
 * stringio 3.1.2
-* strscan 3.1.1
+* strscan 3.1.2
 * syntax_suggest 2.0.2
 * tempfile 0.3.1
 * time 0.4.1
