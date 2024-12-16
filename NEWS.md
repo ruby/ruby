@@ -195,7 +195,7 @@ The following default gems are updated.
 * ostruct 0.6.1
 * pathname 0.4.0
 * pp 0.6.2
-* prism 1.0.0
+* prism 1.2.0
 * pstore 0.1.4
 * psych 5.2.1
 * rdoc 6.9.1
