@@ -2427,6 +2427,8 @@ gc_location_internal(void *objspace, VALUE value)
         return value;
     }
 
+    GC_ASSERT(rb_gc_impl_pointer_to_heap_p(objspace, (void *)value));
+
     return rb_gc_impl_location(objspace, value);
 }
 
