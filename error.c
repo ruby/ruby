@@ -1097,6 +1097,7 @@ rb_bug_without_die_internal(const char *fmt, va_list args)
     report_bug_valist(file, line, fmt, NULL, args);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
 void
 rb_bug_without_die(const char *fmt, ...)
 {
