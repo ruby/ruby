@@ -3150,6 +3150,10 @@ check_id_table_move(VALUE value, void *data)
 VALUE
 rb_gc_location(VALUE value)
 {
+    if (SPECIAL_CONST_P(value)) {
+        return value;
+    }
+
     return rb_gc_impl_location(rb_gc_get_objspace(), value);
 }
 
