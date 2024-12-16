@@ -1,5 +1,106 @@
 = Packed \Data
 
+== Quick Reference
+
+These tables summarize the directives for packing and unpacking.
+
+=== For Integers
+
+  Directive     | Meaning
+  --------------|---------------------------------------------------------------
+  C             | 8-bit unsigned (unsigned char)
+  S             | 16-bit unsigned, native endian (uint16_t)
+  L             | 32-bit unsigned, native endian (uint32_t)
+  Q             | 64-bit unsigned, native endian (uint64_t)
+  J             | pointer width unsigned, native endian (uintptr_t)
+
+  c             | 8-bit signed (signed char)
+  s             | 16-bit signed, native endian (int16_t)
+  l             | 32-bit signed, native endian (int32_t)
+  q             | 64-bit signed, native endian (int64_t)
+  j             | pointer width signed, native endian (intptr_t)
+
+  S_ S!         | unsigned short, native endian
+  I I_ I!       | unsigned int, native endian
+  L_ L!         | unsigned long, native endian
+  Q_ Q!         | unsigned long long, native endian
+                |   (raises ArgumentError if the platform has no long long type)
+  J!            | uintptr_t, native endian (same with J)
+
+  s_ s!         | signed short, native endian
+  i i_ i!       | signed int, native endian
+  l_ l!         | signed long, native endian
+  q_ q!         | signed long long, native endian
+                |   (raises ArgumentError if the platform has no long long type)
+  j!            | intptr_t, native endian (same with j)
+
+  S> s> S!> s!> | each the same as the directive without >, but big endian
+  L> l> L!> l!> |   S> is the same as n
+  I!> i!>       |   L> is the same as N
+  Q> q> Q!> q!> |
+  J> j> J!> j!> |
+
+  S< s< S!< s!< | each the same as the directive without <, but little endian
+  L< l< L!< l!< |   S< is the same as v
+  I!< i!<       |   L< is the same as V
+  Q< q< Q!< q!< |
+  J< j< J!< j!< |
+
+  n             | 16-bit unsigned, network (big-endian) byte order
+  N             | 32-bit unsigned, network (big-endian) byte order
+  v             | 16-bit unsigned, VAX (little-endian) byte order
+  V             | 32-bit unsigned, VAX (little-endian) byte order
+
+  U             | UTF-8 character
+  w             | BER-compressed integer
+
+=== For Floats
+
+  Directive | Meaning
+  ----------|--------------------------------------------------
+  D d       | double-precision, native format
+  F f       | single-precision, native format
+  E         | double-precision, little-endian byte order
+  e         | single-precision, little-endian byte order
+  G         | double-precision, network (big-endian) byte order
+  g         | single-precision, network (big-endian) byte order
+
+=== For Strings
+
+  Directive | Meaning
+  ----------|-----------------------------------------------------------------
+  A         | arbitrary binary string (remove trailing nulls and ASCII spaces)
+  a         | arbitrary binary string
+  Z         | null-terminated string
+  B         | bit string (MSB first)
+  b         | bit string (LSB first)
+  H         | hex string (high nibble first)
+  h         | hex string (low nibble first)
+  u         | UU-encoded string
+  M         | quoted-printable, MIME encoding (see RFC2045)
+  m         | base64 encoded string (RFC 2045) (default)
+            |   (base64 encoded string (RFC 4648) if followed by 0)
+  P         | pointer to a structure (fixed-length string)
+  p         | pointer to a null-terminated string
+
+=== Additional Directives for Packing
+
+  Directive | Meaning
+  ----------|----------------------------------------------------------------
+  @         | moves to absolute position
+  X         | back up a byte
+  x         | null byte
+
+=== Additional Directives for Unpacking
+
+  Directive | Meaning
+  ----------|----------------------------------------------------------------
+  @         | skip to the offset given by the length argument
+  X         | skip backward one byte
+  x         | skip forward one byte
+
+== Packing and Unpacking
+
 Certain Ruby core methods deal with packing and unpacking data:
 
 - \Method Array#pack:
