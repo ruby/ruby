@@ -2375,7 +2375,7 @@ autoload_table_memsize(const void *ptr)
 static void
 autoload_table_compact(void *ptr)
 {
-    rb_gc_update_tbl_refs((st_table *)ptr);
+    rb_gc_ref_update_table_values_only((st_table *)ptr);
 }
 
 static const rb_data_type_t autoload_table_type = {
