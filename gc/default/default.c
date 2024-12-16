@@ -4012,19 +4012,14 @@ rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
     VALUE destination;
 
-    if (!SPECIAL_CONST_P(value)) {
-        asan_unpoisoning_object(value) {
-            if (BUILTIN_TYPE(value) == T_MOVED) {
-                destination = (VALUE)RMOVED(value)->destination;
-                GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
-            }
-            else {
-                destination = value;
-            }
+    asan_unpoisoning_object(value) {
+        if (BUILTIN_TYPE(value) == T_MOVED) {
+            destination = (VALUE)RMOVED(value)->destination;
+            GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
         }
-    }
-    else {
-        destination = value;
+        else {
+            destination = value;
+        }
     }
 
     return destination;
