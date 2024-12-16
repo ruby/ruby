@@ -200,6 +200,25 @@ class TestRDocRubyGemsHook < Test::Unit::TestCase
     assert_path_exist File.join(@a.doc_dir('ri'),   'cache.ri')
   end
 
+  def test_generate_rubygems_compatible
+    original_default_gem_method = RDoc::RubygemsHook.method(:default_gem?)
+    RDoc::RubygemsHook.singleton_class.remove_method(:default_gem?)
+    RDoc::RubygemsHook.define_singleton_method(:default_gem?) { true }
+    FileUtils.mkdir_p @a.doc_dir 'ri'
+    FileUtils.mkdir_p @a.doc_dir 'rdoc'
+    FileUtils.mkdir_p File.join(@a.gem_dir, 'lib')
+
+    # rubygems/lib/rubygems/commands/rdoc_command.rb calls this
+    hook = RDoc::RubygemsHook.new @a, true, true
+    hook.force = true
+    hook.generate
+
+    assert_path_exist File.join(@a.doc_dir('rdoc'), 'index.html')
+  ensure
+    RDoc::RubygemsHook.singleton_class.remove_method(:default_gem?)
+    RDoc::RubygemsHook.define_singleton_method(:default_gem?, &original_default_gem_method)
+  end
+
   def test_generate_no_overwrite
     FileUtils.mkdir_p @a.doc_dir 'ri'
     FileUtils.mkdir_p @a.doc_dir 'rdoc'

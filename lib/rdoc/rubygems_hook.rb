@@ -271,7 +271,7 @@ end
 module RDoc
   class RubygemsHook
 
-    attr_accessor :generate_rdoc, :generate_ri
+    attr_accessor :generate_rdoc, :generate_ri, :force
 
     def self.default_gem?
       !File.exist?(File.join(__dir__, "..", "rubygems_plugin.rb"))
@@ -281,6 +281,7 @@ module RDoc
       @spec = spec
       @generate_rdoc = generate_rdoc
       @generate_ri   = generate_ri
+      @force = false
     end
 
     def generate
@@ -288,7 +289,9 @@ module RDoc
       return unless self.class.default_gem?
 
       # Generate document for compatibility if this is a default gem.
-      RubyGemsHook.new(@spec, @generate_rdoc, @generate_ri).generate
+      hook = RubyGemsHook.new(@spec, @generate_rdoc, @generate_ri)
+      hook.force = @force
+      hook.generate
     end
 
     def remove
