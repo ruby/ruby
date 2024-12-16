@@ -326,6 +326,12 @@ class RDoc::Options
   attr_accessor :verbosity
 
   ##
+  # Warn if rdoc-ref links can't be resolved
+  # Default is +false+
+
+  attr_accessor :warn_missing_rdoc_ref
+
+  ##
   # URL of web cvs frontend
 
   attr_accessor :webcvs
@@ -393,6 +399,7 @@ class RDoc::Options
     @update_output_dir = true
     @verbosity = 1
     @visibility = :protected
+    @warn_missing_rdoc_ref = false
     @webcvs = nil
     @write_options = false
     @encoding = Encoding::UTF_8
@@ -456,6 +463,8 @@ class RDoc::Options
     @title          = map['title']          if map.has_key?('title')
     @visibility     = map['visibility']     if map.has_key?('visibility')
     @webcvs         = map['webcvs']         if map.has_key?('webcvs')
+
+    @warn_missing_rdoc_ref = map['warn_missing_rdoc_ref'] if map.has_key?('warn_missing_rdoc_ref')
 
     if map.has_key?('rdoc_include')
       @rdoc_include = sanitize_path map['rdoc_include']
@@ -1100,6 +1109,13 @@ Usage: #{opt.program_name} [options] [names...]
       opt.on("-D", "--[no-]debug",
              "Displays lots on internal stuff.") do |value|
         $DEBUG_RDOC = value
+      end
+
+      opt.separator nil
+
+      opt.on("--warn-missing-rdoc-ref",
+             "Warn if rdoc-ref links can't be resolved") do |value|
+        @warn_missing_rdoc_ref = value
       end
 
       opt.separator nil
