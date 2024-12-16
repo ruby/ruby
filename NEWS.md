@@ -210,7 +210,7 @@ The following default gems are updated.
 * syntax_suggest 2.0.2
 * tempfile 0.3.1
 * time 0.4.1
-* timeout 0.4.2
+* timeout 0.4.3
 * tmpdir 0.3.0
 * uri 1.0.2
 * win32ole 1.9.0
