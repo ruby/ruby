@@ -58,6 +58,7 @@ module JSON
             space_before: space_before,
             object_nl: object_nl,
             array_nl: array_nl,
+            as_json: as_json,
             allow_nan: allow_nan?,
             ascii_only: ascii_only?,
             max_nesting: max_nesting,

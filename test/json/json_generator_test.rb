@@ -200,6 +200,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "\n",
+      :as_json               => false,
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
@@ -218,6 +219,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "",
+      :as_json               => false,
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
@@ -236,6 +238,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "",
+      :as_json               => false,
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
@@ -665,5 +668,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_fragment
     fragment = JSON::Fragment.new(" 42")
     assert_equal '{"number": 42}', JSON.generate({ number: fragment })
+  end
+
+  def test_json_generate_as_json_convert_to_proc
+    object = Object.new
+    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
   end
 end
