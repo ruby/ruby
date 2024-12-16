@@ -305,6 +305,29 @@ class TestObjSpace < Test::Unit::TestCase
     RUBY
   end
 
+  def test_trace_object_allocations_compaction_freed_pages
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_normal_exit(<<~RUBY)
+      require "objspace"
+
+      objs = []
+      ObjectSpace.trace_object_allocations do
+        1_000_000.times do
+          objs << Object.new
+        end
+      end
+
+      objs = nil
+
+      # Free pages that the objs were on
+      GC.start
+
+      # Run compaction and check that it doesn't crash
+      GC.compact
+    RUBY
+  end
+
   def test_dump_flags
     # Ensure that the fstring is promoted to old generation
     4.times { GC.start }

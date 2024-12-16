@@ -1724,6 +1724,12 @@ rb_objspace_garbage_object_p(VALUE obj)
     return rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
+bool
+rb_gc_pointer_to_heap_p(VALUE obj)
+{
+    return rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj);
+}
+
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
