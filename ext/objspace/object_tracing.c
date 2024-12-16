@@ -194,6 +194,10 @@ allocation_info_tracer_compact_update_object_table_i(st_data_t key, st_data_t va
 {
     st_table *table = (st_table *)data;
 
+    if (!rb_gc_pointer_to_heap_p(key)) {
+        return ST_DELETE;
+    }
+
     if (key != rb_gc_location(key)) {
         DURING_GC_COULD_MALLOC_REGION_START();
         {
