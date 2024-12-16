@@ -9,6 +9,12 @@ class TestSecureRandom < Test::Unit::TestCase
     @it = SecureRandom
   end
 
+  def test_alphanumeric_with_chars
+    assert_nothing_raised(ArgumentError) do
+      @it.alphanumeric(1, chars: ("0".."9").to_a)
+    end
+  end
+
   # This test took 2 minutes on my machine.
   # And 65536 times loop could not be enough for forcing PID recycle.
   # TODO: We should run this test only on GitHub Actions.

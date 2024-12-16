@@ -51,6 +51,16 @@ module SecureRandom
       return gen_random(n)
     end
 
+    # Compatibility methods for Ruby 3.2, we can remove this after dropping to support Ruby 3.2
+    def alphanumeric(n = nil, chars: ALPHANUMERIC)
+      if RUBY_VERSION < '3.3'
+        n = 16 if n.nil?
+        choose(chars, n)
+      else
+        super n, chars: chars
+      end
+    end
+
     private
 
     # :stopdoc:
