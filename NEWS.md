@@ -181,7 +181,7 @@ The following default gems are updated.
 * error_highlight 0.7.0
 * etc 1.4.5
 * fcntl 1.2.0
-* fiddle 1.1.6.dev
+* fiddle 1.1.6
 * fileutils 1.7.3
 * io-console 0.8.0
 * io-nonblock 0.3.1
