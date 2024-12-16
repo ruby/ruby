@@ -79,7 +79,7 @@ These tables summarize the directives for packing and unpacking.
   u         | UU-encoded string
   M         | quoted-printable, MIME encoding (see RFC2045)
   m         | base64 encoded string (RFC 2045) (default)
-            |   base64 encoded string (RFC 4648) if followed by 0
+            |   (base64 encoded string (RFC 4648) if followed by 0)
   P         | pointer to a structure (fixed-length string)
   p         | pointer to a null-terminated string
 
