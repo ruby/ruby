@@ -973,6 +973,7 @@ class Reline::LineEditor
     @drop_terminate_spaces = false
   end
 
+  ARGUMENT_DIGIT_METHODS = %i[ed_digit vi_zero ed_argument_digit]
   VI_WAITING_ACCEPT_METHODS = %i[vi_change_meta vi_delete_meta vi_yank ed_insert ed_argument_digit]
 
   private def process_key(key, method_symbol)
@@ -1004,7 +1005,7 @@ class Reline::LineEditor
       method_obj = method(method_symbol)
     end
     if @vi_arg
-      if key.match?(/\A\d\z/)
+      if ARGUMENT_DIGIT_METHODS.include?(method_symbol)
         ed_argument_digit(key)
       else
         if argumentable?(method_obj)
@@ -1015,9 +1016,7 @@ class Reline::LineEditor
           wrap_method_call(method_symbol, method_obj, key)
         end
         @kill_ring.process
-        if @vi_arg
-          @vi_arg = nil
-        end
+        @vi_arg = nil
       end
     elsif method_obj
       if method_symbol == :ed_argument_digit
@@ -1227,7 +1226,6 @@ class Reline::LineEditor
   end
 
   def insert_multiline_text(text)
-    save_old_buffer
     pre = @buffer_of_lines[@line_index].byteslice(0, @byte_pointer)
     post = @buffer_of_lines[@line_index].byteslice(@byte_pointer..)
     lines = (pre + Reline::Unicode.safe_encode(text, encoding).gsub(/\r\n?/, "\n") + post).split("\n", -1)
@@ -1235,7 +1233,6 @@ class Reline::LineEditor
     @buffer_of_lines[@line_index, 1] = lines
     @line_index += lines.size - 1
     @byte_pointer = @buffer_of_lines[@line_index].bytesize - post.bytesize
-    push_input_lines
   end
 
   def insert_text(text)
@@ -1419,20 +1416,16 @@ class Reline::LineEditor
   alias_method :ed_digit, :ed_insert
   alias_method :self_insert, :ed_insert
 
-  private def ed_quoted_insert(str, arg: 1)
-    @waiting_proc = proc { |key|
-      arg.times do
-        if key == "\C-j" or key == "\C-m"
-          key_newline(key)
-        elsif key != "\0"
-          # Ignore NUL.
-          ed_insert(key)
-        end
+  private def insert_raw_char(str, arg: 1)
+    arg.times do
+      if str == "\C-j" or str == "\C-m"
+        key_newline(str)
+      elsif str != "\0"
+        # Ignore NUL.
+        ed_insert(str)
       end
-      @waiting_proc = nil
-    }
+    end
   end
-  alias_method :quoted_insert, :ed_quoted_insert
 
   private def ed_next_char(key, arg: 1)
     byte_size = Reline::Unicode.get_next_mbchar_size(current_line, @byte_pointer)
