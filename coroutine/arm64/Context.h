@@ -17,7 +17,13 @@
 
 #define COROUTINE __attribute__((noreturn)) void
 
-enum {COROUTINE_REGISTERS = 0xa0 / 8};
+#if defined(_WIN32)
+#define TEB_OFFSET 0x20
+#else
+#define TEB_OFFSET 0x00
+#endif
+
+enum {COROUTINE_REGISTERS = (0xa0 + TEB_OFFSET) / 8};
 
 #if defined(__SANITIZE_ADDRESS__)
     #define COROUTINE_SANITIZE_ADDRESS
@@ -87,7 +93,14 @@ static inline void coroutine_initialize(
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
     void *addr = (void*)(uintptr_t)start;
-    context->stack_pointer[0x98 / 8] = ptrauth_sign_instruction_addr(addr, (void*)top);
+    context->stack_pointer[(0x98 + TEB_OFFSET) / 8] = ptrauth_sign_instruction_addr(addr, (void*)top);
+#if defined(_WIN32)
+    // save top address of stack as base in TEB
+    context->stack_pointer[0x00 / 8] = (char*)stack + size;
+    // save botton address of stack as limit and deallocation stack in TEB
+    context->stack_pointer[0x08 / 8] = stack;
+    context->stack_pointer[0x10 / 8] = stack;
+#endif
 }
 
 struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);

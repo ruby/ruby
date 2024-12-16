@@ -21,6 +21,13 @@
 # error "-mbranch-protection flag specified b-key but Context.S does not support this"
 #endif
 
+#if defined(_WIN32)
+## Add more space for certain TEB values on each stack
+#define TEB_OFFSET 0x20
+#else
+#define TEB_OFFSET 0x00
+#endif
+
 ## NOTE(PAC): Use we HINT mnemonics instead of PAC mnemonics to
 ## keep compatibility with those assemblers that don't support PAC.
 ##
@@ -39,19 +46,34 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	hint #34
 #endif
 	# Make space on the stack for caller registers
-	sub sp, sp, 0xa0
+	sub sp, sp, 0xa0 + TEB_OFFSET
 
 	# Save caller registers
-	stp d8, d9, [sp, 0x00]
-	stp d10, d11, [sp, 0x10]
-	stp d12, d13, [sp, 0x20]
-	stp d14, d15, [sp, 0x30]
-	stp x19, x20, [sp, 0x40]
-	stp x21, x22, [sp, 0x50]
-	stp x23, x24, [sp, 0x60]
-	stp x25, x26, [sp, 0x70]
-	stp x27, x28, [sp, 0x80]
-	stp x29, x30, [sp, 0x90]
+	stp d8, d9, [sp, 0x00 + TEB_OFFSET]
+	stp d10, d11, [sp, 0x10 + TEB_OFFSET]
+	stp d12, d13, [sp, 0x20 + TEB_OFFSET]
+	stp d14, d15, [sp, 0x30 + TEB_OFFSET]
+	stp x19, x20, [sp, 0x40 + TEB_OFFSET]
+	stp x21, x22, [sp, 0x50 + TEB_OFFSET]
+	stp x23, x24, [sp, 0x60 + TEB_OFFSET]
+	stp x25, x26, [sp, 0x70 + TEB_OFFSET]
+	stp x27, x28, [sp, 0x80 + TEB_OFFSET]
+	stp x29, x30, [sp, 0x90 + TEB_OFFSET]
+
+#if defined(_WIN32)
+	# Save certain values from Thread Environment Block (TEB)
+	# x18 points to the TEB on Windows
+	# Read TeStackBase and TeStackLimit at ksarm64.h from TEB
+	ldp  x5,  x6,  [x18, #0x08]
+	# Save them
+	stp  x5,  x6,  [sp, #0x00]
+	# Read TeDeallocationStack at ksarm64.h from TEB
+	ldr  x5, [x18, #0x1478]
+	# Read TeFiberData at ksarm64.h from TEB
+	ldr  x6, [x18, #0x20]
+	# Save current fiber data and deallocation stack
+	stp  x5,  x6,  [sp, #0x10]
+#endif
 
 	# Save stack pointer to x0 (first argument)
 	mov x2, sp
@@ -61,20 +83,33 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	ldr x3, [x1, 0]
 	mov sp, x3
 
+#if defined(_WIN32)
+	# Restore stack base and limit
+	ldp  x5,  x6,  [sp, #0x00]
+	# Write TeStackBase and TeStackLimit at ksarm64.h to TEB
+	stp  x5,  x6,  [x18, #0x08]
+	# Restore fiber data and deallocation stack
+	ldp  x5,  x6,  [sp, #0x10]
+	# Write TeDeallocationStack at ksarm64.h to TEB
+	str  x5, [x18, #0x1478]
+	# Write TeFiberData at ksarm64.h to TEB
+	str  x6, [x18, #0x20]
+#endif
+
 	# Restore caller registers
-	ldp d8, d9, [sp, 0x00]
-	ldp d10, d11, [sp, 0x10]
-	ldp d12, d13, [sp, 0x20]
-	ldp d14, d15, [sp, 0x30]
-	ldp x19, x20, [sp, 0x40]
-	ldp x21, x22, [sp, 0x50]
-	ldp x23, x24, [sp, 0x60]
-	ldp x25, x26, [sp, 0x70]
-	ldp x27, x28, [sp, 0x80]
-	ldp x29, x30, [sp, 0x90]
+	ldp d8, d9, [sp, 0x00 + TEB_OFFSET]
+	ldp d10, d11, [sp, 0x10 + TEB_OFFSET]
+	ldp d12, d13, [sp, 0x20 + TEB_OFFSET]
+	ldp d14, d15, [sp, 0x30 + TEB_OFFSET]
+	ldp x19, x20, [sp, 0x40 + TEB_OFFSET]
+	ldp x21, x22, [sp, 0x50 + TEB_OFFSET]
+	ldp x23, x24, [sp, 0x60 + TEB_OFFSET]
+	ldp x25, x26, [sp, 0x70 + TEB_OFFSET]
+	ldp x27, x28, [sp, 0x80 + TEB_OFFSET]
+	ldp x29, x30, [sp, 0x90 + TEB_OFFSET]
 
 	# Pop stack frame
-	add sp, sp, 0xa0
+	add sp, sp, 0xa0 + TEB_OFFSET
 
 #if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
 	# autiasp: Authenticate x30 (LR) with SP and key A
