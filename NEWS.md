@@ -199,7 +199,7 @@ The following default gems are updated.
 * pstore 0.1.4
 * psych 5.2.1
 * rdoc 6.9.1
-* reline 0.5.12
+* reline 0.6.0
 * resolv 0.6.0
 * securerandom 0.4.1
 * set 1.1.1
