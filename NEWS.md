@@ -250,21 +250,27 @@ The following bundled gems are updated.
 * debug 1.9.2
   * [v1.9.2][debug-v1.9.2]
 * racc 1.8.1
+  * [v1.8.0][racc-v1.8.0], [v1.8.1][racc-v1.8.1]
 
 The following bundled gems are promoted from default gems.
 
 * mutex_m 0.3.0
+  * [v0.3.0][mutex_m-v0.3.0]
 * getoptlong 0.2.1
 * base64 0.2.0
 * bigdecimal 3.1.8
+  * [v3.1.6][bigdecimal-v3.1.6], [v3.1.7][bigdecimal-v3.1.7], [v3.1.8][bigdecimal-v3.1.8]
 * observer 0.1.2
 * abbrev 0.1.2
 * resolv-replace 0.1.1
 * rinda 0.2.0
 * drb 2.2.1
+  * [v2.2.1][drb-v2.2.1]
 * nkf 0.2.0
 * syslog 0.2.0
+  * [v0.2.0][syslog-v0.2.0]
 * csv 3.3.1
+  * [v3.2.9][csv-v3.2.9], [v3.3.0][csv-v3.3.0], [v3.3.1][csv-v3.3.1]
 
 See GitHub releases like [GitHub Releases of Logger] or changelog for
 details of the default gems or bundled gems.
@@ -529,3 +535,14 @@ details of the default gems or bundled gems.
 [rbs-v3.7.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.pre.1
 [rbs-v3.7.0]: https://github.com/ruby/rbs/releases/tag/v3.7.0
 [debug-v1.9.2]: https://github.com/ruby/debug/releases/tag/v1.9.2
+[racc-v1.8.0]: https://github.com/ruby/racc/releases/tag/v1.8.0
+[racc-v1.8.1]: https://github.com/ruby/racc/releases/tag/v1.8.1
+[mutex_m-v0.3.0]: https://github.com/ruby/mutex_m/releases/tag/v0.3.0
+[bigdecimal-v3.1.6]: https://github.com/ruby/bigdecimal/releases/tag/v3.1.6
+[bigdecimal-v3.1.7]: https://github.com/ruby/bigdecimal/releases/tag/v3.1.7
+[bigdecimal-v3.1.8]: https://github.com/ruby/bigdecimal/releases/tag/v3.1.8
+[drb-v2.2.1]: https://github.com/ruby/drb/releases/tag/v2.2.1
+[syslog-v0.2.0]: https://github.com/ruby/syslog/releases/tag/v0.2.0
+[csv-v3.2.9]: https://github.com/ruby/csv/releases/tag/v3.2.9
+[csv-v3.3.0]: https://github.com/ruby/csv/releases/tag/v3.3.0
+[csv-v3.3.1]: https://github.com/ruby/csv/releases/tag/v3.3.1
