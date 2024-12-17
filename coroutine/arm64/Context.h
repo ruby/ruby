@@ -15,7 +15,13 @@
 #include <stdint.h>
 #include <string.h>
 
+#if defined __GNUC__
 #define COROUTINE __attribute__((noreturn)) void
+#define COROUTINE_DECL COROUTINE
+#elif defined _MSC_VER
+#define COROUTINE __declspec(noreturn) void
+#define COROUTINE_DECL void
+#endif
 
 #if defined(_WIN32)
 #define TEB_OFFSET 0x20
@@ -50,7 +56,7 @@ struct coroutine_context
 #endif
 };
 
-typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
+typedef COROUTINE_DECL(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
 static inline void coroutine_initialize_main(struct coroutine_context * context) {
     context->stack_pointer = NULL;

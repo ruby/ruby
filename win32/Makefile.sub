@@ -336,6 +336,8 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "arm64"
+COROUTINE_OBJ = coroutine/arm64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
 !error copy coroutine has been replaced with pthread implementation at 42130a64f02294dc8025af3a51bda518c67ab33d
 !endif
@@ -1329,6 +1331,9 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/arm64}.asm{coroutine/arm64}.obj:
+	$(ECHO) assembling $(<:\=/)
+	$(Q) $(AS) $(ASFLAGS) -o $@ $(<:\=/)
 
 {$(srcdir)/prism}.c.obj:
 	$(ECHO) compiling $(<:\=/)
