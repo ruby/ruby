@@ -125,6 +125,10 @@ ID rb_intern_str(VALUE str);
  * @retval     otherwise  A name that the id represents.
  * @note       The return value  is managed by the interpreter.   Don't pass it
  *             to free().
+ * @note       This C string is backed by an underlying Ruby string. The Ruby
+ *             string may move during GC compaction which would make this
+ *             C string point to invalid memory. Do not use the return value
+ *             of this function after a potential GC entry point.
  */
 const char *rb_id2name(ID id);
 
