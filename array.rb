@@ -140,8 +140,8 @@ class Array
   end
 
   # call-seq:
-  #   last  -> last_object or nil
-  #   last(n) -> new_array
+  #  last  -> last_object or nil
+  #  last(count) -> new_array
   #
   # Returns elements from +self+, or +nil+; +self+ is not modified.
   #
@@ -152,8 +152,9 @@ class Array
   #   a # => [:foo, "bar", 2]
   #   [].last # => nil
   #
-  # With a non-negative integer argument +n+ given,
-  # returns a new array containing the trailing +n+ elements of +self+, as available:
+  #
+  # With non-negative integer argument +count+ given,
+  # returns a new array containing the trailing +count+ elements of +self+, as available:
   #
   #   a = [:foo, 'bar', 2]
   #   a.last(2)  # => ["bar", 2]
