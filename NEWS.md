@@ -218,7 +218,7 @@ The following default gems are updated.
 * tempfile 0.3.1
 * time 0.4.1
 * timeout 0.4.3
-* tmpdir 0.3.0
+* tmpdir 0.3.1
 * uri 1.0.2
 * win32ole 1.9.0
 * yaml 0.4.0
