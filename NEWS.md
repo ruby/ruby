@@ -220,7 +220,7 @@ The following default gems are updated.
 * timeout 0.4.3
 * tmpdir 0.3.1
 * uri 1.0.2
-* win32ole 1.9.0
+* win32ole 1.9.1
 * yaml 0.4.0
 * zlib 3.2.1
 
