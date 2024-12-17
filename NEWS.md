@@ -112,10 +112,6 @@ Note: We're only listing outstanding class updates.
       when the numerator of the return value is large, but now returns an Integer.
       If it is extremely large, it raises an exception. [[Feature #20811]]
 
-* Refinement
-
-    * Removed deprecated method `Refinement#refined_class`. [[Feature #19714]]
-
 * RubyVM::AbstractSyntaxTree
 
     * Add RubyVM::AbstractSyntaxTree::Node#locations method which returns location objects
@@ -321,6 +317,8 @@ details of the default gems or bundled gems.
   o.extend(Module.new{def a = 1})
   o.singleton_method(:a).call #=> 1
   ```
+
+* Refinement#refined_class has been removed. [[Feature #19714]]
 
 ## Stdlib compatibility issues
 
