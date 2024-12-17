@@ -19,10 +19,10 @@ class TestGemRDoc < Gem::TestCase
     install_gem @a
 
     hook_class = if defined?(RDoc::RubyGemsHook)
-        RDoc::RubyGemsHook
-      else
-        Gem::RDoc
-      end
+      RDoc::RubyGemsHook
+    else
+      Gem::RDoc
+    end
 
     @hook = hook_class.new @a
 
