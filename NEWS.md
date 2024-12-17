@@ -159,6 +159,10 @@ Note: We're only listing outstanding class updates.
     * Add a lockfile_checksums configuration to include checksums in fresh lockfiles.
     * Add bundle lock --add-checksums to add checksums to an existing lockfile.
 
+* JSON
+
+    * Performance improvements `JSON.parse` about 1.5 times faster than json-2.7.x.
+
 * Tempfile
 
     * The keyword argument `anonymous: true` is implemented for Tempfile.create.
