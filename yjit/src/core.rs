@@ -3201,16 +3201,33 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
     let cb = CodegenGlobals::get_inline_cb();
     let ocb = CodegenGlobals::get_outlined_cb();
 
-    // Write the interpreter entry prologue. Might be NULL when out of memory.
-    let code_ptr = gen_entry_prologue(cb, ocb, iseq, insn_idx, jit_exception);
-
-    // Try to generate code for the entry block
-    let mut ctx = Context::default();
-    ctx.stack_size = stack_size;
-    let block = gen_block_series(blockid, &ctx, ec, cb, ocb);
+    let code_ptr = gen_entry_point_body(blockid, stack_size, ec, jit_exception, cb, ocb);
 
     cb.mark_all_executable();
     ocb.unwrap().mark_all_executable();
+
+    code_ptr
+}
+
+fn gen_entry_point_body(blockid: BlockId, stack_size: u8, ec: EcPtr, jit_exception: bool, cb: &mut CodeBlock, ocb: &mut OutlinedCb) -> Option<*const u8> {
+    // Write the interpreter entry prologue. Might be NULL when out of memory.
+    let (code_ptr, reg_mapping) = gen_entry_prologue(cb, ocb, blockid, stack_size, jit_exception)?;
+
+    // Find or compile a block version
+    let mut ctx = Context::default();
+    ctx.stack_size = stack_size;
+    ctx.reg_mapping = reg_mapping;
+    let block = match find_block_version(blockid, &ctx) {
+        // If an existing block is found, generate a jump to the block.
+        Some(blockref) => {
+            let mut asm = Assembler::new_without_iseq();
+            asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
+            asm.compile(cb, Some(ocb))?;
+            Some(blockref)
+        }
+        // If this block hasn't yet been compiled, generate blocks after the entry guard.
+        None => gen_block_series(blockid, &ctx, ec, cb, ocb),
+    };
 
     match block {
         // Compilation failed
@@ -3235,7 +3252,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
     incr_counter!(compiled_iseq_entry);
 
     // Compilation successful and block not empty
-    code_ptr.map(|ptr| ptr.raw_ptr(cb))
+    Some(code_ptr.raw_ptr(cb))
 }
 
 // Change the entry's jump target from an entry stub to a next entry
@@ -3310,20 +3327,22 @@ fn entry_stub_hit_body(
     let cfp = unsafe { get_ec_cfp(ec) };
     let iseq = unsafe { get_cfp_iseq(cfp) };
     let insn_idx = iseq_pc_to_insn_idx(iseq, unsafe { get_cfp_pc(cfp) })?;
+    let blockid = BlockId { iseq, idx: insn_idx };
     let stack_size: u8 = unsafe {
         u8::try_from(get_cfp_sp(cfp).offset_from(get_cfp_bp(cfp))).ok()?
     };
 
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
-    let mut asm = Assembler::new_without_iseq();
-    let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
+    let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
+    let pending_entry = gen_entry_chain_guard(&mut asm, ocb, blockid)?;
+    let reg_mapping = gen_entry_reg_mapping(&mut asm, blockid, stack_size);
     asm.compile(cb, Some(ocb))?;
 
     // Find or compile a block version
-    let blockid = BlockId { iseq, idx: insn_idx };
     let mut ctx = Context::default();
     ctx.stack_size = stack_size;
+    ctx.reg_mapping = reg_mapping;
     let blockref = match find_block_version(blockid, &ctx) {
         // If an existing block is found, generate a jump to the block.
         Some(blockref) => {
@@ -3347,8 +3366,8 @@ fn entry_stub_hit_body(
         get_or_create_iseq_payload(iseq).entries.push(pending_entry.into_entry());
     }
 
-    // Let the stub jump to the block
-    blockref.map(|block| unsafe { block.as_ref() }.start_addr.raw_ptr(cb))
+    // Let the stub jump to the entry to load entry registers
+    Some(next_entry.raw_ptr(cb))
 }
 
 /// Generate a stub that calls entry_stub_hit
