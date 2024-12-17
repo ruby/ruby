@@ -3395,7 +3395,7 @@ io_buffer_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
         return io_buffer_overlaps(b, a);
     }
 
-    return (b->base >= a->base) && (b->base <= (void*)((unsigned char *)a->base + a->size));
+    return (b->base >= a->base) && (b->base < (void*)((unsigned char *)a->base + a->size));
 }
 
 static inline void

@@ -405,6 +405,7 @@ class RDoc::Parser::C < RDoc::Parser
                  \s*(.*?)\s*\)\s*;
                  %xm) do |type, var_name, const_name, definition|
       var_name = "rb_cObject" if !var_name or var_name == "rb_mKernel"
+      type = "const" if type == "global_const"
       handle_constants type, var_name, const_name, definition
     end
 
@@ -758,6 +759,10 @@ class RDoc::Parser::C < RDoc::Parser
     @content.scan(%r{
       (?<doc>(?>^\s*/\*.*?\*/\s+))
         rb_define_(?<type>\w+)\(\s*(?:\w+),\s*
+                           "(?<name>\w+)"\s*,
+                           .*?\)\s*;
+    | (?<doc>(?>^\s*/\*.*?\*/\s+))
+        rb_define_global_(?<type>const)\(\s*
                            "(?<name>\w+)"\s*,
                            .*?\)\s*;
     |  (?<doc>(?>^\s*/\*.*?\*/\s+))

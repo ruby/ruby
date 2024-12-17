@@ -32,6 +32,13 @@ makefile << <<~'MAKEFILE'
   			exit 1 \
   			;; \
   	esac
+
+  clean: clean-mmtk
+
+  .PHONY: clean-mmtk
+  clean-mmtk:
+  	-$(Q)$(RM_RF) debug release
+  	-$(Q)$(RM) .rustc_info.json
 MAKEFILE
 
 File.open("Makefile", "w") { |file| file.puts(makefile) }

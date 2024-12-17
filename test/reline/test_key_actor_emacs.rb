@@ -138,11 +138,25 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_line_around_cursor("か\u3099", '')
   end
 
+  def test_bracketed_paste_insert
+    set_line_around_cursor('A', 'Z')
+    input_key_by_symbol(:insert_multiline_text, char: "abc\n\C-abc")
+    assert_whole_lines(['Aabc', "\C-abcZ"])
+    assert_line_around_cursor("\C-abc", 'Z')
+  end
+
   def test_ed_quoted_insert
-    input_keys("ab\C-v\C-acd")
-    assert_line_around_cursor("ab\C-acd", '')
-    input_keys("\C-q\C-b")
-    assert_line_around_cursor("ab\C-acd\C-b", '')
+    set_line_around_cursor('A', 'Z')
+    input_key_by_symbol(:insert_raw_char, char: "\C-a")
+    assert_line_around_cursor("A\C-a", 'Z')
+  end
+
+  def test_ed_quoted_insert_with_vi_arg
+    input_keys("a\C-[3")
+    input_key_by_symbol(:insert_raw_char, char: "\C-a")
+    input_keys("b\C-[4")
+    input_key_by_symbol(:insert_raw_char, char: '1')
+    assert_line_around_cursor("a\C-a\C-a\C-ab1111", '')
   end
 
   def test_ed_kill_line
@@ -1474,7 +1488,9 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
   end
 
   def test_ignore_NUL_by_ed_quoted_insert
-    input_keys(%Q{"\C-v\C-@"}, false)
+    input_keys('"')
+    input_key_by_symbol(:insert_raw_char, char: 0.chr)
+    input_keys('"')
     assert_line_around_cursor('""', '')
   end
 
@@ -1674,6 +1690,20 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_whole_lines(["1", "3"])
     assert_line_index(1)
     assert_line_around_cursor('3', '')
+  end
+
+  def test_undo_redo_restores_indentation
+    @line_editor.multiline_on
+    @line_editor.confirm_multiline_termination_proc = proc {}
+    input_keys(" 1", false)
+    assert_whole_lines([' 1'])
+    input_keys("2", false)
+    assert_whole_lines([' 12'])
+    @line_editor.auto_indent_proc = proc { 2 }
+    input_keys("\C-_", false)
+    assert_whole_lines([' 1'])
+    input_keys("\M-\C-_", false)
+    assert_whole_lines([' 12'])
   end
 
   def test_redo_with_many_times

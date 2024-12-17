@@ -70,8 +70,9 @@ if [[ -n "${INPUT_STATIC_EXTS}" ]]; then
     echo "::endgroup::"
 fi
 
-ruby_test_opts=''
+btests=''
 tests=''
+spec_opts=''
 
 # Launchable
 setup_launchable() {
@@ -80,18 +81,63 @@ setup_launchable() {
     # As a workaround, we set LAUNCHABLE_SESSION_DIR to ${builddir}.
     export LAUNCHABLE_SESSION_DIR=${builddir}
     local github_ref="${GITHUB_REF//\//_}"
-    boot_report_path='launchable_bootstraptest.json'
+    local build_name="${github_ref}"_"${GITHUB_PR_HEAD_SHA}"
+    btest_report_path='launchable_bootstraptest.json'
     test_report_path='launchable_test_all.json'
-    ruby_test_opts+=--launchable-test-reports="${boot_report_path}"
-    tests+=--launchable-test-reports="${test_report_path}"
-    grouped launchable record build --name "${github_ref}"_"${GITHUB_PR_HEAD_SHA}" || true
+    test_spec_report_path='launchable_test_spec_report'
+    test_all_session_file='launchable_test_all_session.txt'
+    btest_session_file='launchable_btest_session.txt'
+    test_spec_session_file='launchable_test_spec_session.txt'
+    btests+=--launchable-test-reports="${btest_report_path}"
+    echo "::group::Setup Launchable"
+    launchable record build --name "${build_name}" || true
+    launchable record session \
+        --build "${build_name}" \
+        --flavor test_task=test \
+        --flavor workflow=Compilations \
+        --flavor with-gcc="${INPUT_WITH_GCC}" \
+        --flavor CFLAGS="${INPUT_CFLAGS}" \
+        --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
+        --flavor optflags="${INPUT_OPTFLAGS}" \
+        --flavor cppflags="${INPUT_CPPFLAGS}" \
+        --test-suite btest \
+        > "${builddir}"/${btest_session_file}
+    if [ "$INPUT_CHECK" = "true" ]; then
+        tests+=--launchable-test-reports="${test_report_path}"
+        launchable record session \
+            --build "${build_name}" \
+            --flavor test_task=test-all \
+            --flavor workflow=Compilations \
+            --flavor with-gcc="${INPUT_WITH_GCC}" \
+            --flavor CFLAGS="${INPUT_CFLAGS}" \
+            --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
+            --flavor optflags="${INPUT_OPTFLAGS}" \
+            --flavor cppflags="${INPUT_CPPFLAGS}" \
+            --test-suite test-all \
+            > "${builddir}"/${test_all_session_file}
+        mkdir "${builddir}"/"${test_spec_report_path}"
+        spec_opts+=--launchable-test-reports="${test_spec_report_path}"
+        launchable record session \
+            --build "${build_name}" \
+            --flavor test_task=test-spec \
+            --flavor workflow=Compilations \
+            --flavor with-gcc="${INPUT_WITH_GCC}" \
+            --flavor CFLAGS="${INPUT_CFLAGS}" \
+            --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
+            --flavor optflags="${INPUT_OPTFLAGS}" \
+            --flavor cppflags="${INPUT_CPPFLAGS}" \
+            --test-suite test-spec \
+            > "${builddir}"/${test_spec_session_file}
+    fi
+    echo "::endgroup::"
     trap launchable_record_test EXIT
 }
 launchable_record_test() {
     pushd "${builddir}"
-    grouped launchable record tests --flavor test_task=test --test-suite bootstraptest raw "${boot_report_path}" || true
+    grouped launchable record tests --session "$(cat "${btest_session_file}")" raw "${btest_report_path}" || true
     if [ "$INPUT_CHECK" = "true" ]; then
-        grouped launchable record tests --flavor test_task=test-all --test-suite test-all raw "${test_report_path}" || true
+        grouped launchable record tests --session "$(cat "${test_all_session_file}")" raw "${test_report_path}" || true
+        grouped launchable record tests --session "$(cat "${test_spec_session_file}")" raw "${test_spec_report_path}"/* || true
     fi
 }
 if [ "$LAUNCHABLE_ENABLED" = "true" ]; then
@@ -102,7 +148,7 @@ pushd ${builddir}
 
 grouped make showflags
 grouped make all
-grouped make test RUBY_TESTOPTS="${ruby_test_opts}"
+grouped make test BTESTS="${btests}"
 
 [[ -z "${INPUT_CHECK}" ]] && exit 0
 
@@ -115,4 +161,4 @@ fi
 # grouped make install
 grouped make test-tool
 grouped make test-all TESTS="$tests"
-grouped env CHECK_LEAKS=true make test-spec MSPECOPT="$INPUT_MSPECOPT"
+grouped env CHECK_LEAKS=true make test-spec MSPECOPT="$INPUT_MSPECOPT" SPECOPTS="${spec_opts}"

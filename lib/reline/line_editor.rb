@@ -252,7 +252,7 @@ class Reline::LineEditor
     @rendered_screen = RenderedScreen.new(base_y: 0, lines: [], cursor_y: 0)
     @input_lines = [[[""], 0, 0]]
     @input_lines_position = 0
-    @undoing = false
+    @restoring = false
     @prev_action_state = NullActionState
     @next_action_state = NullActionState
     reset_line
@@ -436,7 +436,7 @@ class Reline::LineEditor
   # Calculate cursor position in word wrapped content.
   def wrapped_cursor_position
     prompt_width = calculate_width(prompt_list[@line_index], true)
-    line_before_cursor = whole_lines[@line_index].byteslice(0, @byte_pointer)
+    line_before_cursor = Reline::Unicode.escape_for_print(whole_lines[@line_index].byteslice(0, @byte_pointer))
     wrapped_line_before_cursor = split_line_by_width(' ' * prompt_width + line_before_cursor, screen_width)
     wrapped_cursor_y = wrapped_prompt_and_input_lines[0...@line_index].sum(&:size) + wrapped_line_before_cursor.size - 1
     wrapped_cursor_x = calculate_width(wrapped_line_before_cursor.last)
@@ -973,6 +973,7 @@ class Reline::LineEditor
     @drop_terminate_spaces = false
   end
 
+  ARGUMENT_DIGIT_METHODS = %i[ed_digit vi_zero ed_argument_digit]
   VI_WAITING_ACCEPT_METHODS = %i[vi_change_meta vi_delete_meta vi_yank ed_insert ed_argument_digit]
 
   private def process_key(key, method_symbol)
@@ -1004,7 +1005,7 @@ class Reline::LineEditor
       method_obj = method(method_symbol)
     end
     if @vi_arg
-      if key.match?(/\A\d\z/)
+      if ARGUMENT_DIGIT_METHODS.include?(method_symbol)
         ed_argument_digit(key)
       else
         if argumentable?(method_obj)
@@ -1015,9 +1016,7 @@ class Reline::LineEditor
           wrap_method_call(method_symbol, method_obj, key)
         end
         @kill_ring.process
-        if @vi_arg
-          @vi_arg = nil
-        end
+        @vi_arg = nil
       end
     elsif method_obj
       if method_symbol == :ed_argument_digit
@@ -1070,8 +1069,8 @@ class Reline::LineEditor
       @completion_journey_state = nil
     end
 
-    push_input_lines unless @undoing
-    @undoing = false
+    push_input_lines unless @restoring
+    @restoring = false
 
     if @in_pasting
       clear_dialogs
@@ -1185,18 +1184,6 @@ class Reline::LineEditor
     process_auto_indent
   end
 
-  def set_current_lines(lines, byte_pointer = nil, line_index = 0)
-    cursor = current_byte_pointer_cursor
-    @buffer_of_lines = lines
-    @line_index = line_index
-    if byte_pointer
-      @byte_pointer = byte_pointer
-    else
-      calculate_nearest_cursor(cursor)
-    end
-    process_auto_indent
-  end
-
   def retrieve_completion_block
     quote_characters = Reline.completer_quote_characters
     before = current_line.byteslice(0, @byte_pointer).grapheme_clusters
@@ -1239,7 +1226,6 @@ class Reline::LineEditor
   end
 
   def insert_multiline_text(text)
-    save_old_buffer
     pre = @buffer_of_lines[@line_index].byteslice(0, @byte_pointer)
     post = @buffer_of_lines[@line_index].byteslice(@byte_pointer..)
     lines = (pre + Reline::Unicode.safe_encode(text, encoding).gsub(/\r\n?/, "\n") + post).split("\n", -1)
@@ -1247,7 +1233,6 @@ class Reline::LineEditor
     @buffer_of_lines[@line_index, 1] = lines
     @line_index += lines.size - 1
     @byte_pointer = @buffer_of_lines[@line_index].bytesize - post.bytesize
-    push_input_lines
   end
 
   def insert_text(text)
@@ -1431,20 +1416,16 @@ class Reline::LineEditor
   alias_method :ed_digit, :ed_insert
   alias_method :self_insert, :ed_insert
 
-  private def ed_quoted_insert(str, arg: 1)
-    @waiting_proc = proc { |key|
-      arg.times do
-        if key == "\C-j" or key == "\C-m"
-          key_newline(key)
-        elsif key != "\0"
-          # Ignore NUL.
-          ed_insert(key)
-        end
+  private def insert_raw_char(str, arg: 1)
+    arg.times do
+      if str == "\C-j" or str == "\C-m"
+        key_newline(str)
+      elsif str != "\0"
+        # Ignore NUL.
+        ed_insert(str)
       end
-      @waiting_proc = nil
-    }
+    end
   end
-  alias_method :quoted_insert, :ed_quoted_insert
 
   private def ed_next_char(key, arg: 1)
     byte_size = Reline::Unicode.get_next_mbchar_size(current_line, @byte_pointer)
@@ -2368,24 +2349,23 @@ class Reline::LineEditor
     @config.editing_mode = :vi_insert
   end
 
+  private def move_undo_redo(direction)
+    @restoring = true
+    return unless (0..@input_lines.size - 1).cover?(@input_lines_position + direction)
+
+    @input_lines_position += direction
+    buffer_of_lines, byte_pointer, line_index = @input_lines[@input_lines_position]
+    @buffer_of_lines = buffer_of_lines.dup
+    @line_index = line_index
+    @byte_pointer = byte_pointer
+  end
+
   private def undo(_key)
-    @undoing = true
-
-    return if @input_lines_position <= 0
-
-    @input_lines_position -= 1
-    target_lines, target_cursor_x, target_cursor_y = @input_lines[@input_lines_position]
-    set_current_lines(target_lines.dup, target_cursor_x, target_cursor_y)
+    move_undo_redo(-1)
   end
 
   private def redo(_key)
-    @undoing = true
-
-    return if @input_lines_position >= @input_lines.size - 1
-
-    @input_lines_position += 1
-    target_lines, target_cursor_x, target_cursor_y = @input_lines[@input_lines_position]
-    set_current_lines(target_lines.dup, target_cursor_x, target_cursor_y)
+    move_undo_redo(+1)
   end
 
   private def prev_action_state_value(type)

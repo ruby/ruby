@@ -152,7 +152,6 @@ pub enum DumpDisasm {
     // Dump to stdout
     Stdout,
     // Dump to "yjit_{pid}.log" file under the specified directory
-    #[cfg_attr(not(feature = "disasm"), allow(dead_code))]
     File(std::os::unix::io::RawFd),
 }
 
@@ -173,7 +172,7 @@ macro_rules! get_option {
         {
             // Make this a statement since attributes on expressions are experimental
             #[allow(unused_unsafe)]
-            let ret = unsafe { OPTIONS.$option_name };
+            let ret = unsafe { crate::options::OPTIONS.$option_name };
             ret
         }
     };

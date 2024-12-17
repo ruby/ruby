@@ -1266,7 +1266,8 @@ Init_win32ole_event(void)
     id_events = rb_intern("events");
     cWIN32OLE_EVENT = rb_define_class_under(cWIN32OLE, "Event", rb_cObject);
     /* Alias of WIN32OLE::Event, for the backward compatibility */
-    rb_define_const(rb_cObject, "WIN32OLE_EVENT", cWIN32OLE_EVENT);
+    rb_define_const(rb_cObject, "WIN32OLE" "_EVENT", cWIN32OLE_EVENT);
+    rb_deprecate_constant(rb_cObject, "WIN32OLE" "_EVENT");
     rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
     rb_define_alloc_func(cWIN32OLE_EVENT, fev_s_allocate);
     rb_define_method(cWIN32OLE_EVENT, "initialize", fev_initialize, -1);

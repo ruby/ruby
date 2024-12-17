@@ -75,6 +75,7 @@ static ID id_fiber_schedule;
  *  * #timeout_after
  *  * #address_resolve
  *  * #block and #unblock
+ *  * #blocking_operation_wait
  *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
  *
  *  When not specified otherwise, the hook implementations are mandatory: if they are not
@@ -134,6 +135,7 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "block", rb_fiber_scheduler_block, 2);
     rb_define_method(rb_cFiberScheduler, "unblock", rb_fiber_scheduler_unblock, 2);
     rb_define_method(rb_cFiberScheduler, "fiber", rb_fiber_scheduler, -2);
+    rb_define_method(rb_cFiberScheduler, "blocking_operation_wait", rb_fiber_scheduler_blocking_operation_wait, -2);
 #endif
 }
 

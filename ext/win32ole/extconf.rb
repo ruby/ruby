@@ -32,6 +32,7 @@ def create_win32ole_makefile
       spec or 'no'
     end
     $defs << "-DRB_THREAD_SPECIFIC=#{spec}" if spec
+    have_func(%[rb_deprecate_constant(Qnil, "")])
     create_makefile("win32ole")
   end
 end

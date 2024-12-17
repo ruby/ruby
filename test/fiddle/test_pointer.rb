@@ -11,10 +11,6 @@ module Fiddle
     end
 
     def test_can_read_write_memory
-      if ffi_backend?
-        omit("Fiddle::Pointer.{read,write} don't exist in FFI backend")
-      end
-
       # Allocate some memory
       Fiddle::Pointer.malloc(Fiddle::SIZEOF_VOIDP, Fiddle::RUBY_FREE) do |pointer|
         address = pointer.to_i
@@ -161,9 +157,15 @@ module Fiddle
       end
     end
 
-    def test_to_ptr_with_num
+    def test_to_ptr_with_int
       ptr = Pointer.new 0
       assert_equal ptr, Pointer[0]
+    end
+
+    MimicInteger = Struct.new(:to_int)
+    def test_to_ptr_with_to_int
+      ptr = Pointer.new 0
+      assert_equal ptr, Pointer[MimicInteger.new(0)]
     end
 
     def test_equals

@@ -300,7 +300,7 @@ gives this result:
   hello main this is block
   place is block
 
-=== Array to Arguments Conversion
+=== Unpacking Positional Arguments
 
 Given the following method:
 
@@ -322,6 +322,60 @@ Both are equivalent to:
 
   my_method(1, 2, 3)
 
+The <code>*</code> unpacking operator can be applied to any object, not only
+arrays. If the object responds to a <code>#to_a</code> method, this method
+is called, and is expected to return an Array, and elements of this array are passed
+as separate positional arguments:
+
+  class Name
+    def initialize(name)
+      @name = name
+    end
+
+    def to_a = @name.split(' ')
+  end
+
+  name = Name.new('Jane Doe')
+  p(*name)
+  # prints separate values:
+  #   Jane
+  #   Doe
+
+If the object doesn't have a <code>#to_a</code> method, the object itself is passed
+as one argument:
+
+  class Name
+    def initialize(name)
+      @name = name
+    end
+  end
+
+  name = Name.new('Jane Doe')
+  p(*name)
+  # Prints the object itself:
+  #   #<Name:0x00007f9d07bca650 @name="Jane Doe">
+
+This allows to handle one or many arguments polymorphically. Note also that +nil+
+has NilClass#to_a defined to return an empty array, so conditional unpacking is
+possible:
+
+  my_method(*(some_arguments if some_condition?))
+
+If <code>#to_a</code> method exists and does not return an Array, it would be an
+error on unpacking:
+
+  class Name
+    def initialize(name)
+      @name = name
+    end
+
+    def to_a = @name
+  end
+
+  name = Name.new('Jane Doe')
+  p(*name)
+  #  can't convert Name to Array (Name#to_a gives String) (TypeError)
+
 You may also use the <code>**</code> (described next) to convert a Hash into
 keyword arguments.
 
@@ -329,12 +383,13 @@ If the number of objects in the Array do not match the number of arguments for
 the method, an ArgumentError will be raised.
 
 If the splat operator comes first in the call, parentheses must be used to
-avoid a warning:
+avoid an ambiguity of interpretation as an unpacking operator or multiplication
+operator. In this case, Ruby issues a warning in verbose mode:
 
-  my_method *arguments  # warning
+  my_method *arguments  # warning: '*' interpreted as argument prefix
   my_method(*arguments) # no warning
 
-=== Hash to Keyword Arguments Conversion
+=== Unpacking Keyword Arguments
 
 Given the following method:
 
@@ -355,6 +410,35 @@ or:
 Both are equivalent to:
 
   my_method(first: 3, second: 4, third: 5)
+
+The <code>**</code> unpacking operator can be applied to any object, not only
+hashes. If the object responds to a <code>#to_hash</code> method, this method
+is called, and is expected to return an Hash, and elements of this hash are passed
+as keyword arguments:
+
+  class Name
+    def initialize(name)
+      @name = name
+    end
+
+    def to_hash = {first: @name.split(' ').first, last: @name.split(' ').last}
+  end
+
+  name = Name.new('Jane Doe')
+  p(**name)
+  # Prints: {name: "Jane", last: "Doe"}
+
+Unlike <code>*</code> operator, <code>**</code> raises an error when used on an
+object that doesn't respond to <code>#to_hash</code>. The one exception is
++nil+, which doesn't explicitly define this method, but is still allowed to
+be used in <code>**</code> unpacking, not adding any keyword arguments.
+
+Again, this allows for conditional unpacking:
+
+  my_method(some: params, **(some_extra_params if pass_extra_params?))
+
+Like <code>*</code> operator, <code>**</code> raises an error when the object responds
+to <code>#to_hash</code>, but it doesn't return a Hash.
 
 If the method definition uses the keyword splat operator to
 gather arbitrary keyword arguments, they will not be gathered

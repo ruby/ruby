@@ -1,10 +1,10 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-UPDATE" "1" "November 2024" ""
+.TH "BUNDLE\-UPDATE" "1" "December 2024" ""
 .SH "NAME"
 \fBbundle\-update\fR \- Update your gems to the latest available versions
 .SH "SYNOPSIS"
-\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-jobs=JOBS] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-redownload] [\-\-strict] [\-\-conservative]
+\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-pre] [\-\-redownload] [\-\-strict] [\-\-conservative]
 .SH "DESCRIPTION"
 Update the gems specified (all gems, if \fB\-\-all\fR flag is used), ignoring the previously installed gems specified in the \fBGemfile\.lock\fR\. In general, you should use bundle install(1) \fIbundle\-install\.1\.html\fR to install the same exact gems and versions across machines\.
 .P
@@ -14,10 +14,10 @@ You would use \fBbundle update\fR to explicitly update the version of a gem\.
 \fB\-\-all\fR
 Update all gems specified in Gemfile\.
 .TP
-\fB\-\-group=<name>\fR, \fB\-g=[<name>]\fR
+\fB\-\-group=<list>\fR, \fB\-g=<list>\fR
 Only update the gems in the specified group\. For instance, you can update all gems in the development group with \fBbundle update \-\-group development\fR\. You can also call \fBbundle update rails \-\-group test\fR to update the rails gem and all gems in the test group, for example\.
 .TP
-\fB\-\-source=<name>\fR
+\fB\-\-source=<list>\fR
 The name of a \fB:git\fR or \fB:path\fR source used in the Gemfile(5)\. For instance, with a \fB:git\fR source of \fBhttp://github\.com/rails/rails\.git\fR, you would call \fBbundle update \-\-source rails\fR
 .TP
 \fB\-\-local\fR
@@ -26,13 +26,16 @@ Do not attempt to fetch gems remotely and use the gem cache instead\.
 \fB\-\-ruby\fR
 Update the locked version of Ruby to the current version of Ruby\.
 .TP
-\fB\-\-bundler\fR
+\fB\-\-bundler[=BUNDLER]\fR
 Update the locked version of bundler to the invoked bundler version\.
 .TP
 \fB\-\-full\-index\fR
 Fall back to using the single\-file index of all gems\.
 .TP
-\fB\-\-jobs=[<number>]\fR, \fB\-j[<number>]\fR
+\fB\-\-gemfile=GEMFILE\fR
+Use the specified gemfile instead of [\fBGemfile(5)\fR][Gemfile(5)]\.
+.TP
+\fB\-\-jobs=<number>\fR, \fB\-j=<number>\fR
 Specify the number of jobs to run in parallel\. The default is the number of available processors\.
 .TP
 \fB\-\-retry=[<number>]\fR
@@ -41,7 +44,7 @@ Retry failed network or git requests for \fInumber\fR times\.
 \fB\-\-quiet\fR
 Only output warnings and errors\.
 .TP
-\fB\-\-redownload\fR
+\fB\-\-redownload\fR, \fB\-\-force\fR
 Force downloading every gem\.
 .TP
 \fB\-\-patch\fR
@@ -52,6 +55,9 @@ Prefer updating only to next minor version\.
 .TP
 \fB\-\-major\fR
 Prefer updating to next major version (default)\.
+.TP
+\fB\-\-pre\fR
+Always choose the highest allowed version, regardless of prerelease status\.
 .TP
 \fB\-\-strict\fR
 Do not allow any gem to be updated past latest \fB\-\-patch\fR | \fB\-\-minor\fR | \fB\-\-major\fR\.

@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.1.dev"
+#define STRSCAN_VERSION "3.1.2"
 
 /* =======================================================================
                          Data Type Definitions
@@ -231,7 +231,7 @@ strscan_s_allocate(VALUE klass)
  * is the given `string`;
  * sets the [fixed-anchor property][10]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.string        # => "foobarbaz"
  * scanner.fixed_anchor? # => false
@@ -339,7 +339,7 @@ strscan_s_mustc(VALUE self)
  * and clears [match values][9];
  * returns +self+:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.exist?(/bar/)          # => 6
  * scanner.reset                  # => #<StringScanner 0/9 @ "fooba...">
@@ -405,7 +405,7 @@ strscan_clear(VALUE self)
  *
  * Returns the [stored string][1]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobar')
  * scanner.string # => "foobar"
  * scanner.concat('baz')
@@ -435,7 +435,7 @@ strscan_get_string(VALUE self)
  * - Clears [match values][9].
  * - Returns `other_string`.
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobar')
  * scanner.scan(/foo/)
  * put_situation(scanner)
@@ -483,7 +483,7 @@ strscan_set_string(VALUE self, VALUE str)
  *   or [match values][9].
  *
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foo')
  * scanner.string           # => "foo"
  * scanner.terminate
@@ -789,7 +789,7 @@ strscan_scan(VALUE self, VALUE re)
  * - Returns the size in bytes of the matched substring.
  *
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pos = 3
  * scanner.match?(/bar/) => 3
@@ -822,7 +822,7 @@ strscan_scan(VALUE self, VALUE re)
  * - Returns `nil`.
  * - Does not increment positions.
  *
- * ```
+ * ```rb
  * scanner.match?(/nope/)         # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -861,7 +861,7 @@ strscan_skip(VALUE self, VALUE re)
  * - Returns the matched substring.
  * - Sets all [match values][9].
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pos = 3
  * scanner.check('bar') # => "bar"
@@ -894,7 +894,7 @@ strscan_skip(VALUE self, VALUE re)
  * - Returns `nil`.
  * - Clears all [match values][9].
  *
- * ```
+ * ```rb
  * scanner.check(/nope/)          # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -961,7 +961,7 @@ strscan_scan_until(VALUE self, VALUE re)
  *   and the end of the matched substring.
  * - Sets all [match values][9].
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbazbatbam')
  * scanner.pos = 6
  * scanner.exist?(/bat/) # => 6
@@ -993,7 +993,7 @@ strscan_scan_until(VALUE self, VALUE re)
  * - Returns `nil`.
  * - Clears all [match values][9].
  *
- * ```
+ * ```rb
  * scanner.exist?(/nope/)         # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -1035,7 +1035,7 @@ strscan_skip_until(VALUE self, VALUE re)
  *   which extends from the current [position][2]
  *   to the end of the matched substring.
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbazbatbam')
  * scanner.pos = 6
  * scanner.check_until(/bat/) # => "bazbat"
@@ -1067,7 +1067,7 @@ strscan_skip_until(VALUE self, VALUE re)
  * - Clears all [match values][9].
  * - Returns `nil`.
  *
- * ```
+ * ```rb
  * scanner.check_until(/nope/)    # => nil
  * match_values_cleared?(scanner) # => true
  * ```
@@ -1239,7 +1239,7 @@ strscan_getbyte(VALUE self)
  * Returns the substring `string[pos, length]`;
  * does not update [match values][9] or [positions][11]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pos = 3
  * scanner.peek(3)   # => "bar"
@@ -1403,7 +1403,7 @@ strscan_scan_base16_integer(VALUE self)
  * Sets the [position][2] to its value previous to the recent successful
  * [match][17] attempt:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.scan(/foo/)
  * put_situation(scanner)
@@ -1424,7 +1424,7 @@ strscan_scan_base16_integer(VALUE self)
  *
  * Raises an exception if match values are clear:
  *
- * ```
+ * ```rb
  * scanner.scan(/nope/)           # => nil
  * match_values_cleared?(scanner) # => true
  * scanner.unscan                 # Raises StringScanner::Error.
@@ -1498,7 +1498,7 @@ strscan_bol_p(VALUE self)
  * Returns whether the [position][2]
  * is at the end of the [stored string][1]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.eos? # => false
  * pos = 3
@@ -1567,7 +1567,7 @@ strscan_rest_p(VALUE self)
  * `false` otherwise;
  * see [Basic Matched Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.matched?       # => false
  * scanner.pos = 3
@@ -1599,7 +1599,7 @@ strscan_matched_p(VALUE self)
  * or `nil` otherwise;
  * see [Basic Matched Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.matched        # => nil
  * scanner.pos = 3
@@ -1634,7 +1634,7 @@ strscan_matched(VALUE self)
  * or `nil` otherwise;
  * see [Basic Matched Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.matched_size   # => nil
  *
@@ -1688,14 +1688,14 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * When there are captures:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.scan(/(?<wday>\w+) (?<month>\w+) (?<day>\d+) /)
  * ```
  *
  * - `specifier` zero: returns the entire matched substring:
  *
- *     ```
+ *     ```rb
  *     scanner[0]         # => "Fri Dec 12 "
  *     scanner.pre_match  # => ""
  *     scanner.post_match # => "1975 14:39"
@@ -1703,7 +1703,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * - `specifier` positive integer. returns the `n`th capture, or `nil` if out of range:
  *
- *     ```
+ *     ```rb
  *     scanner[1] # => "Fri"
  *     scanner[2] # => "Dec"
  *     scanner[3] # => "12"
@@ -1712,7 +1712,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * - `specifier` negative integer. counts backward from the last subgroup:
  *
- *     ```
+ *     ```rb
  *     scanner[-1] # => "12"
  *     scanner[-4] # => "Fri Dec 12 "
  *     scanner[-5] # => nil
@@ -1720,7 +1720,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * - `specifier` symbol or string. returns the named subgroup, or `nil` if no such:
  *
- *     ```
+ *     ```rb
  *     scanner[:wday]  # => "Fri"
  *     scanner['wday'] # => "Fri"
  *     scanner[:month] # => "Dec"
@@ -1730,7 +1730,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * When there are no captures, only `[0]` returns non-`nil`:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.exist?(/bar/)
  * scanner[0] # => "bar"
@@ -1739,7 +1739,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  *
  * For a failed match, even `[0]` returns `nil`:
  *
- * ```
+ * ```rb
  * scanner.scan(/nope/) # => nil
  * scanner[0]           # => nil
  * scanner[1]           # => nil
@@ -1790,7 +1790,7 @@ strscan_aref(VALUE self, VALUE idx)
  * Returns the count of captures if the most recent match attempt succeeded, `nil` otherwise;
  * see [Captures Match Values][13]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.size                        # => nil
  *
@@ -1824,7 +1824,7 @@ strscan_size(VALUE self)
  * Returns the array of [captured match values][13] at indexes `(1..)`
  * if the most recent match attempt succeeded, or `nil` otherwise:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.captures         # => nil
  *
@@ -1879,7 +1879,7 @@ strscan_captures(VALUE self)
  * For each `specifier`, the returned substring is `[specifier]`;
  * see #[].
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * pattern = /(?<wday>\w+) (?<month>\w+) (?<day>\d+) /
  * scanner.match?(pattern)
@@ -1919,7 +1919,7 @@ strscan_values_at(int argc, VALUE *argv, VALUE self)
  * or `nil` otherwise;
  * see [Basic Match Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.pre_match      # => nil
  *
@@ -1956,7 +1956,7 @@ strscan_pre_match(VALUE self)
  * or `nil` otherwise;
  * see [Basic Match Values][18]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.post_match     # => nil
  *
@@ -1991,7 +1991,7 @@ strscan_post_match(VALUE self)
  * Returns the 'rest' of the [stored string][1] (all after the current [position][2]),
  * which is the [target substring][3]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.rest # => "foobarbaz"
  * scanner.pos = 3
@@ -2022,7 +2022,7 @@ strscan_rest(VALUE self)
  *
  * Returns the size (in bytes) of the #rest of the [stored string][1]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('foobarbaz')
  * scanner.rest      # => "foobarbaz"
  * scanner.rest_size # => 9
@@ -2081,7 +2081,7 @@ strscan_restsize(VALUE self)
  * 3. The substring preceding the current position.
  * 4. The substring following the current position (which is also the [target substring][3]).
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new("Fri Dec 12 1975 14:39")
  * scanner.pos = 11
  * scanner.inspect # => "#<StringScanner 11/21 \"...c 12 \" @ \"1975 ...\">"
@@ -2089,14 +2089,14 @@ strscan_restsize(VALUE self)
  *
  * If at beginning-of-string, item 4 above (following substring) is omitted:
  *
- * ```
+ * ```rb
  * scanner.reset
  * scanner.inspect # => "#<StringScanner 0/21 @ \"Fri D...\">"
  * ```
  *
  * If at end-of-string, all items above are omitted:
  *
- * ```
+ * ```rb
  * scanner.terminate
  * scanner.inspect # => "#<StringScanner fin>"
  * ```
@@ -2224,7 +2224,7 @@ named_captures_iter(const OnigUChar *name,
  * if the most recent match attempt succeeded, or nil otherwise;
  * see [Captured Match Values][13]:
  *
- * ```
+ * ```rb
  * scanner = StringScanner.new('Fri Dec 12 1975 14:39')
  * scanner.named_captures # => {}
  *

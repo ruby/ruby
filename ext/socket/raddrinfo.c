@@ -3029,9 +3029,9 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 void
 free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared)
 {
-    free((*shared)->node);
+    xfree((*shared)->node);
     (*shared)->node = NULL;
-    free((*shared)->service);
+    xfree((*shared)->service);
     (*shared)->service = NULL;
     rb_nativethread_lock_destroy(&(*shared)->lock);
     free(*shared);
@@ -3095,19 +3095,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
     rb_nativethread_lock_lock(&shared->lock);
     {
         entry->err = err;
-        if (shared->cancelled) {
-            if (entry->ai) {
-                freeaddrinfo(entry->ai);
-                entry->ai = NULL;
-            }
-        } else {
-            const char notification = entry->family == AF_INET6 ?
-            IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
+        const char notification = entry->family == AF_INET6 ?
+        IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
-            if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
-                entry->err = errno;
-                entry->has_syserr = true;
-            }
+        if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
+            entry->err = errno;
+            entry->has_syserr = true;
         }
         if (--(entry->refcount) == 0) need_free = 1;
         if (--(shared->refcount) == 0) shared_need_free = 1;

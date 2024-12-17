@@ -76,6 +76,10 @@ The timezone methods are:
   keyword argument +in:+, and when Time#getlocal or Time#localtime is called
   with +tz+ as the value for positional argument +zone+.
 
+  The UTC offset will be calculated as the difference between the
+  original time and the returned object as an +Integer+.
+  If the object is in fixed offset, its +utc_offset+ is also counted.
+
   Argument:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
   Returns:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the local timezone.
 

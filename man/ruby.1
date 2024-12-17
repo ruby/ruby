@@ -537,6 +537,10 @@ Introduced in Ruby 3.3, default: unset.
 .Pp
 .It Ev RUBY_PAGER
 The pager command that will be used for
+.Pp
+.It Ev RUBY_THREAD_TIMESLICE
+Sets the default thread time slice (thread quantum) in milliseconds.
+Introduced in Ruby 3.4, default: 100ms.
 .Fl -help
 option.
 Introduced in Ruby 3.0, default:
@@ -772,6 +776,17 @@ a program (or script) that is to be executed.
 .Pp
 The pipe template is split on spaces into an argument list before the
 template parameters are expanded.
+.Sh MISC ENVIRONMENT
+.Pp
+.Bl -hang -compact -width "RUBY_TCP_NO_FAST_FALLBACK"
+.It Ev RUBY_TCP_NO_FAST_FALLBACK
+If set to
+.Li 1 ,
+disables the fast fallback feature by default in TCPSocket.new and Socket.tcp.
+When set to
+.Li 0
+or left unset, the fast fallback feature is enabled.
+Introduced in Ruby 3.4, default: unset.
 .Sh SEE ALSO
 .Bl -hang -compact -width "https://www.ruby-toolbox.com/"
 .It Lk https://www.ruby-lang.org/

@@ -58,7 +58,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates a link to the reference +name+ if the name exists.  If +text+ is
   # given it is used as the link text, otherwise +name+ is used.
 
-  def cross_reference name, text = nil, code = true
+  def cross_reference name, text = nil, code = true, rdoc_ref: false
     lookup = name
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
@@ -70,7 +70,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
       text ||= name
     end
 
-    link lookup, text, code
+    link lookup, text, code, rdoc_ref: rdoc_ref
   end
 
   ##
@@ -92,7 +92,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
       return name if name =~ /\A[a-z]*\z/
     end
 
-    cross_reference name
+    cross_reference name, rdoc_ref: false
   end
 
   ##
@@ -100,9 +100,14 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # handle other schemes.
 
   def handle_regexp_HYPERLINK target
-    return cross_reference $' if target.text =~ /\Ardoc-ref:/
+    url = target.text
 
-    super
+    case url
+    when /\Ardoc-ref:/
+      cross_reference $', rdoc_ref: true
+    else
+      super
+    end
   end
 
   ##
@@ -117,8 +122,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     url = target.text
 
     case url
-    when /\Ardoc-ref:/ then
-      cross_reference $'
+    when /\Ardoc-ref:/
+      cross_reference $', rdoc_ref: true
     else
       super
     end
@@ -129,16 +134,18 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # RDoc::Markup::ToHtml to handle other schemes.
 
   def gen_url url, text
-    return super unless url =~ /\Ardoc-ref:/
-
-    name = $'
-    cross_reference name, text, name == text
+    if url =~ /\Ardoc-ref:/
+      name = $'
+      cross_reference name, text, name == text, rdoc_ref: true
+    else
+      super
+    end
   end
 
   ##
   # Creates an HTML link to +name+ with the given +text+.
 
-  def link name, text, code = true
+  def link name, text, code = true, rdoc_ref: false
     if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])?@/
       name = $1
       label = $'
@@ -148,6 +155,9 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
     case ref
     when String then
+      if rdoc_ref && @options.warn_missing_rdoc_ref
+        puts "#{@from_path}: `rdoc-ref:#{name}` can't be resolved for `#{text}`"
+      end
       ref
     else
       path = ref ? ref.as_href(@from_path) : +""

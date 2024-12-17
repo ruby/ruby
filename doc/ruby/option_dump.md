@@ -5,7 +5,7 @@ see {Option --dump}[options_md.html#label--dump-3A+Dump+Items].
 
 For the examples here, we use this program:
 
-```sh
+```console
 $ cat t.rb
 puts 'Foo'
 ```
@@ -26,7 +26,7 @@ The supported dump items:
 - `parsetree`: {Abstract syntax tree}[https://en.wikipedia.org/wiki/Abstract_syntax_tree]
   (AST):
 
-    ```sh
+    ```console
     $ ruby --dump=parsetree t.rb
     ###########################################################
     ## Do NOT use this node dump for any purpose other than  ##
@@ -52,7 +52,7 @@ The supported dump items:
 
 - `parsetree_with_comment`: AST with comments:
 
-    ```sh
+    ```console
     $ ruby --dump=parsetree_with_comment t.rb
     ###########################################################
     ## Do NOT use this node dump for any purpose other than  ##
@@ -89,7 +89,7 @@ The supported dump items:
 
 - `yydebug`: Debugging information from yacc parser generator:
 
-    ```sh
+    ```
     $ ruby --dump=yydebug t.rb
     Starting parse
     Entering state 0

@@ -1,10 +1,10 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-INSTALL" "1" "November 2024" ""
+.TH "BUNDLE\-INSTALL" "1" "December 2024" ""
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
 .SH "SYNOPSIS"
-\fBbundle install\fR [\-\-binstubs[=DIRECTORY]] [\-\-clean] [\-\-deployment] [\-\-frozen] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-no\-prune] [\-\-path PATH] [\-\-prefer\-local] [\-\-quiet] [\-\-redownload] [\-\-retry=NUMBER] [\-\-shebang] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-system] [\-\-trust\-policy=POLICY] [\-\-with=GROUP[ GROUP\|\.\|\.\|\.]] [\-\-without=GROUP[ GROUP\|\.\|\.\|\.]]
+\fBbundle install\fR [\-\-binstubs[=DIRECTORY]] [\-\-clean] [\-\-deployment] [\-\-frozen] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-local] [\-\-no\-cache] [\-\-no\-prune] [\-\-path PATH] [\-\-prefer\-local] [\-\-quiet] [\-\-redownload] [\-\-retry=NUMBER] [\-\-shebang=SHEBANG] [\-\-standalone[=GROUP[ GROUP\|\.\|\.\|\.]]] [\-\-system] [\-\-trust\-policy=TRUST\-POLICY] [\-\-target\-rbconfig=TARGET\-RBCONFIG] [\-\-with=GROUP[ GROUP\|\.\|\.\|\.]] [\-\-without=GROUP[ GROUP\|\.\|\.\|\.]]
 .SH "DESCRIPTION"
 Install the gems specified in your Gemfile(5)\. If this is the first time you run bundle install (and a \fBGemfile\.lock\fR does not exist), Bundler will fetch all remote sources, resolve dependencies and install all needed gems\.
 .P
@@ -14,10 +14,10 @@ If a \fBGemfile\.lock\fR does exist, and you have updated your Gemfile(5), Bundl
 .SH "OPTIONS"
 The \fB\-\-clean\fR, \fB\-\-deployment\fR, \fB\-\-frozen\fR, \fB\-\-no\-prune\fR, \fB\-\-path\fR, \fB\-\-shebang\fR, \fB\-\-system\fR, \fB\-\-without\fR and \fB\-\-with\fR options are deprecated because they only make sense if they are applied to every subsequent \fBbundle install\fR run automatically and that requires \fBbundler\fR to silently remember them\. Since \fBbundler\fR will no longer remember CLI flags in future versions, \fBbundle config\fR (see bundle\-config(1)) should be used to apply them permanently\.
 .TP
-\fB\-\-binstubs[=<directory>]\fR
+\fB\-\-binstubs[=BINSTUBS]\fR
 Binstubs are scripts that wrap around executables\. Bundler creates a small Ruby file (a binstub) that loads Bundler, runs the command, and puts it in \fBbin/\fR\. This lets you link the binstub inside of an application to the exact gem version the application needs\.
 .IP
-Creates a directory (defaults to \fB~/bin\fR) and places any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
+Creates a directory (defaults to \fB~/bin\fR when the option is used without a value, or to the given \fB<BINSTUBS>\fR directory otherwise) and places any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
 .TP
 \fB\-\-clean\fR
 On finishing the installation Bundler is going to remove any gems not present in the current Gemfile(5)\. Don't worry, gems currently in use will not be removed\.
@@ -29,7 +29,7 @@ In \fIdeployment mode\fR, Bundler will 'roll\-out' the bundle for production or 
 .IP
 This option is deprecated in favor of the \fBdeployment\fR setting\.
 .TP
-\fB\-\-redownload\fR
+\fB\-\-redownload\fR, \fB\-\-force\fR
 Force download every gem, even if the required versions are already available locally\.
 .TP
 \fB\-\-frozen\fR
@@ -40,10 +40,10 @@ This option is deprecated in favor of the \fBfrozen\fR setting\.
 \fB\-\-full\-index\fR
 Bundler will not call Rubygems' API endpoint (default) but download and cache a (currently big) index file of all gems\. Performance can be improved for large bundles that seldom change by enabling this option\.
 .TP
-\fB\-\-gemfile=<gemfile>\fR
+\fB\-\-gemfile=GEMFILE\fR
 The location of the Gemfile(5) which Bundler should use\. This defaults to a Gemfile(5) in the current working directory\. In general, Bundler will assume that the location of the Gemfile(5) is also the project's root and will try to find \fBGemfile\.lock\fR and \fBvendor/cache\fR relative to this location\.
 .TP
-\fB\-\-jobs=[<number>]\fR, \fB\-j[<number>]\fR
+\fB\-\-jobs=<number>\fR, \fB\-j=<number>\fR
 The maximum number of parallel download and install jobs\. The default is the number of available processors\.
 .TP
 \fB\-\-local\fR
@@ -60,7 +60,7 @@ Don't remove stale gems from the cache when the installation finishes\.
 .IP
 This option is deprecated in favor of the \fBno_prune\fR setting\.
 .TP
-\fB\-\-path=<path>\fR
+\fB\-\-path=PATH\fR
 The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
 .IP
 This option is deprecated in favor of the \fBpath\fR setting\.
@@ -71,21 +71,24 @@ Do not print progress information to the standard output\.
 \fB\-\-retry=[<number>]\fR
 Retry failed network or git requests for \fInumber\fR times\.
 .TP
-\fB\-\-shebang=<ruby\-executable>\fR
+\fB\-\-shebang=SHEBANG\fR
 Uses the specified ruby executable (usually \fBruby\fR) to execute the scripts created with \fB\-\-binstubs\fR\. In addition, if you use \fB\-\-binstubs\fR together with \fB\-\-shebang jruby\fR these executables will be changed to execute \fBjruby\fR instead\.
 .IP
 This option is deprecated in favor of the \fBshebang\fR setting\.
 .TP
 \fB\-\-standalone[=<list>]\fR
-Makes a bundle that can work without depending on Rubygems or Bundler at runtime\. A space separated list of groups to install has to be specified\. Bundler creates a directory named \fBbundle\fR and installs the bundle there\. It also generates a \fBbundle/bundler/setup\.rb\fR file to replace Bundler's own setup in the manner required\. Using this option implicitly sets \fBpath\fR, which is a [remembered option][REMEMBERED OPTIONS]\.
+Makes a bundle that can work without depending on Rubygems or Bundler at runtime\. A space separated list of groups to install can be specified\. Bundler creates a directory named \fBbundle\fR and installs the bundle there\. It also generates a \fBbundle/bundler/setup\.rb\fR file to replace Bundler's own setup in the manner required\. Using this option implicitly sets \fBpath\fR, which is a [remembered option][REMEMBERED OPTIONS]\.
 .TP
 \fB\-\-system\fR
 Installs the gems specified in the bundle to the system's Rubygems location\. This overrides any previous configuration of \fB\-\-path\fR\.
 .IP
 This option is deprecated in favor of the \fBsystem\fR setting\.
 .TP
-\fB\-\-trust\-policy=[<policy>]\fR
+\fB\-\-trust\-policy=TRUST\-POLICY\fR
 Apply the Rubygems security policy \fIpolicy\fR, where policy is one of \fBHighSecurity\fR, \fBMediumSecurity\fR, \fBLowSecurity\fR, \fBAlmostNoSecurity\fR, or \fBNoSecurity\fR\. For more details, please see the Rubygems signing documentation linked below in \fISEE ALSO\fR\.
+.TP
+\fB\-\-target\-rbconfig=TARGET\-RBCONFIG\fR
+Path to rbconfig\.rb for the deployment target platform\.
 .TP
 \fB\-\-with=<list>\fR
 A space\-separated list of groups referencing gems to install\. If an optional group is given it is installed\. If a group is given that is in the remembered list of groups given to \-\-without, it is removed from that list\.

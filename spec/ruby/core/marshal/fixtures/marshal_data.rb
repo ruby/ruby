@@ -486,6 +486,22 @@ module MarshalSpec
                  "\004\bS:\024Struct::Pyramid\000"],
     "Random" => random_data,
   }
+
+  if defined? Data # TODO: remove the condition when minimal supported version is 3.2
+    module DataSpec
+      Measure = Data.define(:amount, :unit)
+      Empty = Data.define
+
+      MeasureExtended = Class.new(Measure)
+      MeasureExtended.extend(Enumerable)
+
+      class MeasureWithOverriddenName < Measure
+        def self.name
+          "Foo"
+        end
+      end
+    end
+  end
 end
 
 class ArraySub < Array

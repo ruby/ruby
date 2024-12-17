@@ -16,7 +16,7 @@
 #endif
 
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
-# if __has_feature(address_sanitizer)
+# if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
 #  define RUBY_ASAN_ENABLED
 #  include <sanitizer/asan_interface.h>
 # endif

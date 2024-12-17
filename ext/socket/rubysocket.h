@@ -441,7 +441,6 @@ struct fast_fallback_getaddrinfo_entry
 struct fast_fallback_getaddrinfo_shared
 {
     int notify, refcount;
-    int cancelled;
     char *node, *service;
     rb_nativethread_lock_t lock;
     struct fast_fallback_getaddrinfo_entry getaddrinfo_entries[FLEX_ARY_LEN];
@@ -501,6 +500,8 @@ VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
 void rsock_make_fd_nonblock(int fd);
 
 int rsock_is_dgram(rb_io_t *fptr);
+
+extern ID tcp_fast_fallback;
 
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);

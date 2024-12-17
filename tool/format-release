@@ -91,7 +91,7 @@ eom
     if prev_tag
       # show diff shortstat
       tag = "v#{version.gsub(/[.\-]/, '_')}"
-      stat = `git -C #{rubydir} diff --shortstat #{prev_tag}..#{tag}`
+      stat = `git -C #{rubydir} diff -l0 --shortstat #{prev_tag}..#{tag}`
       files_changed, insertions, deletions = stat.scan(/\d+/)
     end
 

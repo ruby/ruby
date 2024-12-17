@@ -340,7 +340,7 @@ module Random::Formatter
   end
 
   # The default character list for #alphanumeric.
-  ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
+  ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9'].map(&:freeze).freeze
 
   # Generate a random alphanumeric string.
   #

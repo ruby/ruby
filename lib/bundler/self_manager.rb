@@ -84,8 +84,8 @@ module Bundler
         require "shellwords"
         cmd = [*Shellwords.shellsplit(bundler_spec_original_cmd), *ARGV]
       else
-        cmd = [$PROGRAM_NAME, *ARGV]
-        cmd.unshift(Gem.ruby) unless File.executable?($PROGRAM_NAME)
+        cmd = [Process.argv0, *ARGV]
+        cmd.unshift(Gem.ruby) unless File.executable?(Process.argv0)
       end
 
       Bundler.with_original_env do

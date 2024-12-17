@@ -596,7 +596,8 @@ Init_win32ole_record(void)
 {
     cWIN32OLE_RECORD = rb_define_class_under(cWIN32OLE, "Record", rb_cObject);
     /* Alias of WIN32OLE::Record, for the backward compatibility */
-    rb_define_const(rb_cObject, "WIN32OLE_RECORD", cWIN32OLE_RECORD);
+    rb_define_const(rb_cObject, "WIN32OLE" "_RECORD", cWIN32OLE_RECORD);
+    rb_deprecate_constant(rb_cObject, "WIN32OLE" "_RECORD");
     rb_define_alloc_func(cWIN32OLE_RECORD, folerecord_s_allocate);
     rb_define_method(cWIN32OLE_RECORD, "initialize", folerecord_initialize, 2);
     rb_define_method(cWIN32OLE_RECORD, "to_h", folerecord_to_h, 0);

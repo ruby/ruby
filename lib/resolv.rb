@@ -3,11 +3,7 @@
 require 'socket'
 require 'timeout'
 require 'io/wait'
-
-begin
-  require 'securerandom'
-rescue LoadError
-end
+require 'securerandom'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -37,7 +33,7 @@ end
 
 class Resolv
 
-  VERSION = "0.5.0"
+  VERSION = "0.6.0"
 
   ##
   # Looks up the first IP address for +name+.
@@ -83,9 +79,22 @@ class Resolv
 
   ##
   # Creates a new Resolv using +resolvers+.
+  #
+  # If +resolvers+ is not given, a hash, or +nil+, uses a Hosts resolver and
+  # and a DNS resolver.  If +resolvers+ is a hash, uses the hash as
+  # configuration for the DNS resolver.
 
-  def initialize(resolvers=nil, use_ipv6: nil)
-    @resolvers = resolvers || [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(use_ipv6: use_ipv6))]
+  def initialize(resolvers=(arg_not_set = true; nil), use_ipv6: (keyword_not_set = true; nil))
+    if !keyword_not_set && !arg_not_set
+      warn "Support for separate use_ipv6 keyword is deprecated, as it is ignored if an argument is provided. Do not provide a positional argument if using the use_ipv6 keyword argument.", uplevel: 1
+    end
+
+    @resolvers = case resolvers
+    when Hash, nil
+      [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(resolvers || {}))]
+    else
+      resolvers
+    end
   end
 
   ##
@@ -615,16 +624,10 @@ class Resolv
       }
     end
 
-    if defined? SecureRandom
-      def self.random(arg) # :nodoc:
-        begin
-          SecureRandom.random_number(arg)
-        rescue NotImplementedError
-          rand(arg)
-        end
-      end
-    else
-      def self.random(arg) # :nodoc:
+    def self.random(arg) # :nodoc:
+      begin
+        SecureRandom.random_number(arg)
+      rescue NotImplementedError
         rand(arg)
       end
     end

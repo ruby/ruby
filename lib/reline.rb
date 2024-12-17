@@ -343,13 +343,14 @@ module Reline
           read_io(config.keyseq_timeout) { |inputs|
             line_editor.set_pasting_state(io_gate.in_pasting?)
             inputs.each do |key|
-              if key.method_symbol == :bracketed_paste_start
-                text = io_gate.read_bracketed_paste
-                line_editor.insert_multiline_text(text)
-                line_editor.scroll_into_view
-              else
-                line_editor.update(key)
+              case key.method_symbol
+              when :bracketed_paste_start
+                # io_gate is Reline::ANSI because the key :bracketed_paste_start is only assigned in Reline::ANSI
+                key = Reline::Key.new(io_gate.read_bracketed_paste, :insert_multiline_text)
+              when :quoted_insert, :ed_quoted_insert
+                key = Reline::Key.new(io_gate.read_single_char(config.keyseq_timeout), :insert_raw_char)
               end
+              line_editor.update(key)
             end
           }
           if line_editor.finished?

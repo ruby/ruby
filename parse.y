@@ -9,8 +9,6 @@
 
 **********************************************************************/
 
-%require "3.0"
-
 %{
 
 #if !YYPURE
@@ -1747,7 +1745,6 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_I(i) INT2NUM(i)
 # define WARN_ID(i) rb_id2str(i)
 # define PRIsWARN PRIsVALUE
-# define rb_warn0L_experimental(l,fmt)         WARN_CALL(WARN_ARGS_L(l, fmt, 1))
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
 # ifdef HAVE_VA_ARGS_MACRO
@@ -1772,7 +1769,6 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
 # define WARN_CALL rb_compile_warn
-# define rb_warn0L_experimental(l,fmt) rb_category_compile_warn(RB_WARN_CATEGORY_EXPERIMENTAL, WARN_ARGS_L(l, fmt, 1))
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning

@@ -134,6 +134,20 @@ VALUE hash_spec_compute_a_hash_code(VALUE self, VALUE seed) {
   return ULONG2NUM(h);
 }
 
+VALUE hash_spec_rb_hash_bulk_insert(VALUE self, VALUE array_len, VALUE array, VALUE hash) {
+  VALUE* ptr;
+
+  if (array == Qnil) {
+    ptr = NULL;
+  } else {
+    ptr = RARRAY_PTR(array);
+  }
+
+  long len = FIX2LONG(array_len);
+  rb_hash_bulk_insert(len, ptr, hash);
+  return Qnil;
+}
+
 void Init_hash_spec(void) {
   VALUE cls = rb_define_class("CApiHashSpecs", rb_cObject);
   rb_define_method(cls, "rb_hash", hash_spec_rb_hash, 1);
@@ -162,6 +176,7 @@ void Init_hash_spec(void) {
   rb_define_method(cls, "rb_hash_size", hash_spec_rb_hash_size, 1);
   rb_define_method(cls, "rb_hash_set_ifnone", hash_spec_rb_hash_set_ifnone, 2);
   rb_define_method(cls, "compute_a_hash_code", hash_spec_compute_a_hash_code, 1);
+  rb_define_method(cls, "rb_hash_bulk_insert", hash_spec_rb_hash_bulk_insert, 3);
 }
 
 #ifdef __cplusplus

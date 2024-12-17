@@ -81,6 +81,7 @@ module IRB
         IRB.instance_variable_set(:@debugger_irb, irb)
         irb.context.with_debugger = true
         irb.context.irb_name += ":rdbg"
+        irb.context.io.load_history if irb.context.io.class < HistorySavingAbility
       end
 
       module SkipPathHelperForIRB

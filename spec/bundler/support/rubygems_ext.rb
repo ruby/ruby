@@ -150,8 +150,9 @@ module Spec
         ENV["BUNDLE_PATH__SYSTEM"] = "true"
       end
 
-      puts `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install --quiet`
-      raise unless $?.success?
+      # We don't use `Open3` here because it does not work on JRuby + Windows
+      output = `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install`
+      raise output unless $?.success?
     ensure
       if path
         ENV["BUNDLE_PATH"] = old_path

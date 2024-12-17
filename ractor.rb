@@ -856,6 +856,24 @@ class Ractor
     Primitive.ractor_local_value_set(sym, val)
   end
 
+  # call-seq:
+  #   Ractor.store_if_absent(key){ init_block }
+  #
+  # If the correponding value is not set, yield a value with
+  # init_block and store the value in thread-safe manner.
+  # This method returns corresponding stored value.
+  #
+  #   (1..10).map{
+  #     Thread.new(it){|i|
+  #       Ractor.store_if_absent(:s){ f(); i }
+  #       #=> return stored value of key :s
+  #     }
+  #   }.map(&:value).uniq.size #=> 1 and f() is called only once
+  #
+  def self.store_if_absent(sym)
+    Primitive.ractor_local_value_store_if_absent(sym)
+  end
+
   # returns main ractor
   def self.main
     __builtin_cexpr! %q{
@@ -866,7 +884,7 @@ class Ractor
   # return true if the current ractor is main ractor
   def self.main?
     __builtin_cexpr! %q{
-      GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec)
+      RBOOL(GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec))
     }
   end
 

@@ -1,8 +1,6 @@
 # -*- frozen-string-literal: true -*-
 
-# :stopdoc:
-
-module Gem::BUNDLED_GEMS
+module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
     "matrix" => "3.1.0",
     "net-ftp" => "3.1.0",
@@ -247,7 +245,7 @@ end
 # for RubyGems without Bundler environment.
 # If loading library is not part of the default gems and the bundled gems, warn it.
 class LoadError
-  def message
+  def message # :nodoc:
     return super unless path
 
     name = path.tr("/", "-")
@@ -257,5 +255,3 @@ class LoadError
     super
   end
 end
-
-# :startdoc:

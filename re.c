@@ -3653,7 +3653,7 @@ reg_match_pos(VALUE re, VALUE *strp, long pos, VALUE* set_match)
  *  if and only if +self+:
  *
  *  - Is a regexp literal;
- *    see {Regexp Literals}[rdoc-ref:literals.rdoc@Regexp+Literals].
+ *    see {Regexp Literals}[rdoc-ref:syntax/literals.rdoc@Regexp+Literals].
  *  - Does not contain interpolations;
  *    see {Regexp interpolation}[rdoc-ref:Regexp@Interpolation+Mode].
  *  - Is at the left of the expression.

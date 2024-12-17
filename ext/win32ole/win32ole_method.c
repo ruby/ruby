@@ -929,7 +929,8 @@ void Init_win32ole_method(void)
 {
     cWIN32OLE_METHOD = rb_define_class_under(cWIN32OLE, "Method", rb_cObject);
     /* Alias of WIN32OLE::Method, for the backward compatibility */
-    rb_define_const(rb_cObject, "WIN32OLE_METHOD", cWIN32OLE_METHOD);
+    rb_define_const(rb_cObject, "WIN32OLE" "_METHOD", cWIN32OLE_METHOD);
+    rb_deprecate_constant(rb_cObject, "WIN32OLE" "_METHOD");
     rb_define_alloc_func(cWIN32OLE_METHOD, folemethod_s_allocate);
     rb_define_method(cWIN32OLE_METHOD, "initialize", folemethod_initialize, 2);
     rb_define_method(cWIN32OLE_METHOD, "name", folemethod_name, 0);

@@ -424,7 +424,8 @@ Init_win32ole_param(void)
 {
     cWIN32OLE_PARAM = rb_define_class_under(cWIN32OLE, "Param", rb_cObject);
     /* Alias of WIN32OLE::Param, for the backward compatibility */
-    rb_define_const(rb_cObject, "WIN32OLE_PARAM", cWIN32OLE_PARAM);
+    rb_define_const(rb_cObject, "WIN32OLE" "_PARAM", cWIN32OLE_PARAM);
+    rb_deprecate_constant(rb_cObject, "WIN32OLE" "_PARAM");
     rb_define_alloc_func(cWIN32OLE_PARAM, foleparam_s_allocate);
     rb_define_method(cWIN32OLE_PARAM, "initialize", foleparam_initialize, 2);
     rb_define_method(cWIN32OLE_PARAM, "name", foleparam_name, 0);

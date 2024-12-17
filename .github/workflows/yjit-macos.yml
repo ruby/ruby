@@ -124,6 +124,7 @@ jobs:
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          is-yjit: true
         continue-on-error: true
 
       - name: make ${{ matrix.test_task }}

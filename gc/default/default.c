@@ -2470,6 +2470,9 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
             if (during_gc) {
                 dont_gc_on();
                 during_gc = 0;
+                if (rb_memerror_reentered()) {
+                    rb_memerror();
+                }
                 rb_bug("object allocation during garbage collection phase");
             }
 
@@ -4009,19 +4012,14 @@ rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
     VALUE destination;
 
-    if (!SPECIAL_CONST_P(value)) {
-        asan_unpoisoning_object(value) {
-            if (BUILTIN_TYPE(value) == T_MOVED) {
-                destination = (VALUE)RMOVED(value)->destination;
-                GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
-            }
-            else {
-                destination = value;
-            }
+    asan_unpoisoning_object(value) {
+        if (BUILTIN_TYPE(value) == T_MOVED) {
+            destination = (VALUE)RMOVED(value)->destination;
+            GC_ASSERT(BUILTIN_TYPE(destination) != T_NONE);
         }
-    }
-    else {
-        destination = value;
+        else {
+            destination = value;
+        }
     }
 
     return destination;
@@ -8034,9 +8032,9 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
     }
     else {
         size_t dec_size = old_size - new_size;
-        size_t allocated_size = objspace->malloc_params.allocated_size;
 
 #if MALLOC_ALLOCATED_SIZE_CHECK
+        size_t allocated_size = objspace->malloc_params.allocated_size;
         if (allocated_size < dec_size) {
             rb_bug("objspace_malloc_increase: underflow malloc_params.allocated_size.");
         }
@@ -9283,7 +9281,8 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
 static VALUE
 gc_malloc_allocated_size(VALUE self)
 {
-    return UINT2NUM(rb_objspace.malloc_params.allocated_size);
+    rb_objspace_t *objspace = (rb_objspace_t *)rb_gc_get_objspace();
+    return ULL2NUM(objspace->malloc_params.allocated_size);
 }
 
 /*
@@ -9298,7 +9297,8 @@ gc_malloc_allocated_size(VALUE self)
 static VALUE
 gc_malloc_allocations(VALUE self)
 {
-    return UINT2NUM(rb_objspace.malloc_params.allocations);
+    rb_objspace_t *objspace = (rb_objspace_t *)rb_gc_get_objspace();
+    return ULL2NUM(objspace->malloc_params.allocations);
 }
 #endif
 

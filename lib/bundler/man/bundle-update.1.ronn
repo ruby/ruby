@@ -10,9 +10,11 @@ bundle-update(1) -- Update your gems to the latest available versions
                         [--ruby]
                         [--bundler[=VERSION]]
                         [--full-index]
-                        [--jobs=JOBS]
+                        [--gemfile=GEMFILE]
+                        [--jobs=NUMBER]
                         [--quiet]
                         [--patch|--minor|--major]
+                        [--pre]
                         [--redownload]
                         [--strict]
                         [--conservative]
@@ -32,13 +34,13 @@ gem.
 * `--all`:
   Update all gems specified in Gemfile.
 
-* `--group=<name>`, `-g=[<name>]`:
+* `--group=<list>`, `-g=<list>`:
   Only update the gems in the specified group. For instance, you can update all gems
   in the development group with `bundle update --group development`. You can also
   call `bundle update rails --group test` to update the rails gem and all gems in
   the test group, for example.
 
-* `--source=<name>`:
+* `--source=<list>`:
   The name of a `:git` or `:path` source used in the Gemfile(5). For
   instance, with a `:git` source of `http://github.com/rails/rails.git`,
   you would call `bundle update --source rails`
@@ -49,13 +51,16 @@ gem.
 * `--ruby`:
   Update the locked version of Ruby to the current version of Ruby.
 
-* `--bundler`:
+* `--bundler[=BUNDLER]`:
   Update the locked version of bundler to the invoked bundler version.
 
 * `--full-index`:
   Fall back to using the single-file index of all gems.
 
-* `--jobs=[<number>]`, `-j[<number>]`:
+* `--gemfile=GEMFILE`:
+  Use the specified gemfile instead of [`Gemfile(5)`][Gemfile(5)].
+
+* `--jobs=<number>`, `-j=<number>`:
   Specify the number of jobs to run in parallel. The default is the number of
   available processors.
 
@@ -65,7 +70,7 @@ gem.
 * `--quiet`:
   Only output warnings and errors.
 
-* `--redownload`:
+* `--redownload`, `--force`:
   Force downloading every gem.
 
 * `--patch`:
@@ -76,6 +81,9 @@ gem.
 
 * `--major`:
   Prefer updating to next major version (default).
+
+* `--pre`:
+  Always choose the highest allowed version, regardless of prerelease status.
 
 * `--strict`:
   Do not allow any gem to be updated past latest `--patch` | `--minor` | `--major`.

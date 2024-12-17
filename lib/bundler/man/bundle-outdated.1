@@ -1,10 +1,10 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-OUTDATED" "1" "November 2024" ""
+.TH "BUNDLE\-OUTDATED" "1" "December 2024" ""
 .SH "NAME"
 \fBbundle\-outdated\fR \- List installed gems with newer versions available
 .SH "SYNOPSIS"
-\fBbundle outdated\fR [GEM] [\-\-local] [\-\-pre] [\-\-source] [\-\-strict] [\-\-parseable | \-\-porcelain] [\-\-group=GROUP] [\-\-groups] [\-\-patch|\-\-minor|\-\-major] [\-\-filter\-major] [\-\-filter\-minor] [\-\-filter\-patch] [\-\-only\-explicit]
+\fBbundle outdated\fR [GEM] [\-\-local] [\-\-pre] [\-\-source] [\-\-filter\-strict | \-\-strict] [\-\-update\-strict] [\-\-parseable | \-\-porcelain] [\-\-group=GROUP] [\-\-groups] [\-\-patch|\-\-minor|\-\-major] [\-\-filter\-major] [\-\-filter\-minor] [\-\-filter\-patch] [\-\-only\-explicit]
 .SH "DESCRIPTION"
 Outdated lists the names and versions of gems that have a newer version available in the given source\. Calling outdated with [GEM [GEM]] will only check for newer versions of the given gems\. Prerelease gems are ignored by default\. If your gems are up to date, Bundler will exit with a status of 0\. Otherwise, it will exit 1\.
 .SH "OPTIONS"
@@ -15,16 +15,19 @@ Do not attempt to fetch gems remotely and use the gem cache instead\.
 \fB\-\-pre\fR
 Check for newer pre\-release gems\.
 .TP
-\fB\-\-source\fR
+\fB\-\-source=<list>\fR
 Check against a specific source\.
 .TP
-\fB\-\-strict\fR
+\fB\-\-filter\-strict\fR, \fB\-\-strict\fR
 Only list newer versions allowed by your Gemfile requirements, also respecting conservative update flags (\-\-patch, \-\-minor, \-\-major)\.
+.TP
+\fB\-\-update\-strict\fR
+Strict conservative resolution, do not allow any gem to be updated past latest \-\-patch | \-\-minor | \-\-major\.
 .TP
 \fB\-\-parseable\fR, \fB\-\-porcelain\fR
 Use minimal formatting for more parseable output\.
 .TP
-\fB\-\-group\fR
+\fB\-\-group=GROUP\fR
 List gems from a specific group\.
 .TP
 \fB\-\-groups\fR

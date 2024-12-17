@@ -97,25 +97,25 @@ module Reline::KeyActor
     #  47 /
     :ed_insert,
     #  48 0
-    :ed_insert,
+    :ed_digit,
     #  49 1
-    :ed_insert,
+    :ed_digit,
     #  50 2
-    :ed_insert,
+    :ed_digit,
     #  51 3
-    :ed_insert,
+    :ed_digit,
     #  52 4
-    :ed_insert,
+    :ed_digit,
     #  53 5
-    :ed_insert,
+    :ed_digit,
     #  54 6
-    :ed_insert,
+    :ed_digit,
     #  55 7
-    :ed_insert,
+    :ed_digit,
     #  56 8
-    :ed_insert,
+    :ed_digit,
     #  57 9
-    :ed_insert,
+    :ed_digit,
     #  58 :
     :ed_insert,
     #  59 ;

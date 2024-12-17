@@ -19,7 +19,11 @@ module Prism
     end
 
     if RUBY_VERSION < "3.4"
-      filepaths -= ["it_with_ordinary_parameter.txt"]
+      filepaths -= [
+        "it_with_ordinary_parameter.txt",
+        "block_args_in_array_assignment.txt",
+        "keyword_args_in_array_assignment.txt"
+      ]
     end
 
     if RUBY_VERSION < "3.4" || RUBY_RELEASE_DATE < "2024-07-24"

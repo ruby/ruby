@@ -3849,8 +3849,33 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
         rb_raise(rb_eRuntimeError, "rs modified");
 }
 
+static const char *
+search_delim(const char *p, long len, int delim, rb_encoding *enc)
+{
+    if (rb_enc_mbminlen(enc) == 1) {
+        p = memchr(p, delim, len);
+        if (p) return p + 1;
+    }
+    else {
+        const char *end = p + len;
+        while (p < end) {
+            int r = rb_enc_precise_mbclen(p, end, enc);
+            if (!MBCLEN_CHARFOUND_P(r)) {
+                p += rb_enc_mbminlen(enc);
+                continue;
+            }
+            int n = MBCLEN_CHARFOUND_LEN(r);
+            if (rb_enc_mbc_to_codepoint(p, end, enc) == (unsigned int)delim) {
+                return p + n;
+            }
+            p += n;
+        }
+    }
+    return NULL;
+}
+
 static int
-appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
+appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
 {
     VALUE str = *strp;
     long limit = *lp;
@@ -3865,9 +3890,9 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                 p = READ_CHAR_PENDING_PTR(fptr);
                 if (0 < limit && limit < searchlen)
                     searchlen = (int)limit;
-                e = memchr(p, delim, searchlen);
+                e = search_delim(p, searchlen, delim, enc);
                 if (e) {
-                    int len = (int)(e-p+1);
+                    int len = (int)(e-p);
                     if (NIL_P(str))
                         *strp = str = rb_str_new(p, len);
                     else
@@ -3907,8 +3932,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
             long last;
 
             if (limit > 0 && pending > limit) pending = limit;
-            e = memchr(p, delim, pending);
-            if (e) pending = e - p + 1;
+            e = search_delim(p, pending, delim, enc);
+            if (e) pending = e - p;
             if (!NIL_P(str)) {
                 last = RSTRING_LEN(str);
                 rb_str_resize(str, last + pending);
@@ -4163,21 +4188,31 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
                 rs = 0;
                 if (!rb_enc_asciicompat(enc)) {
                     rs = rb_usascii_str_new(rsptr, rslen);
-                    rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+                    rs = rb_str_conv_enc(rs, 0, enc);
                     OBJ_FREEZE(rs);
                     rsptr = RSTRING_PTR(rs);
                     rslen = RSTRING_LEN(rs);
                 }
+                newline = '\n';
+            }
+            else if (rb_enc_mbminlen(enc) == 1) {
+                 rsptr = RSTRING_PTR(rs);
+                 newline = (unsigned char)rsptr[rslen - 1];
             }
             else {
+                rs = rb_str_conv_enc(rs, 0, enc);
                 rsptr = RSTRING_PTR(rs);
+                const char *e = rsptr + rslen;
+                const char *last = rb_enc_prev_char(rsptr, e, e, enc);
+                int n;
+                newline = rb_enc_codepoint_len(last, e, &n, enc);
+                if (last + n != e) rb_raise(rb_eArgError, "broken separator");
             }
-            newline = (unsigned char)rsptr[rslen - 1];
-            chomp_cr = chomp && rslen == 1 && newline == '\n';
+            chomp_cr = chomp && newline == '\n' && rslen == rb_enc_mbminlen(enc);
         }
 
         /* MS - Optimization */
-        while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
+        while ((c = appendline(fptr, newline, &str, &limit, enc)) != EOF) {
             const char *s, *p, *pp, *e;
 
             if (c == newline) {
@@ -4198,8 +4233,8 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
             if (limit == 0) {
                 s = RSTRING_PTR(str);
                 p = RSTRING_END(str);
-                pp = rb_enc_left_char_head(s, p-1, p, enc);
-                if (extra_limit &&
+                pp = rb_enc_prev_char(s, p, p, enc);
+                if (extra_limit && pp &&
                     MBCLEN_NEEDMORE_P(rb_enc_precise_mbclen(pp, p, enc))) {
                     /* relax the limit while incomplete character.
                      * extra_limit limits the relax length */

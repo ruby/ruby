@@ -35,6 +35,20 @@ module Reline
     def reset_color_sequence
       self.class::RESET_COLOR
     end
+
+    # Read a single encoding valid character from the input.
+    def read_single_char(keyseq_timeout)
+      buffer = String.new(encoding: Encoding::ASCII_8BIT)
+      loop do
+        timeout = buffer.empty? ? Float::INFINITY : keyseq_timeout
+        c = getc(timeout)
+        return unless c
+
+        buffer << c
+        encoded = buffer.dup.force_encoding(encoding)
+        return encoded if encoded.valid_encoding?
+      end
+    end
   end
 end
 

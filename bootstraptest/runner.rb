@@ -354,6 +354,7 @@ def concurrent_exec_test
   begin
     while BT.wn != term_wn
       if r = rq.pop
+        BT_STATE.count += 1
         case
         when BT.quiet
         when BT.tty

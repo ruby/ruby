@@ -617,12 +617,6 @@ class Socket < BasicSocket
   IPV6_ADRESS_FORMAT = /\A(?i:(?:(?:[0-9A-F]{1,4}:){7}(?:[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){6}(?:[0-9A-F]{1,4}|:(?:[0-9A-F]{1,4}:){1,5}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){5}(?:(?::[0-9A-F]{1,4}){1,2}|:(?:[0-9A-F]{1,4}:){1,4}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){4}(?:(?::[0-9A-F]{1,4}){1,3}|:(?:[0-9A-F]{1,4}:){1,3}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){3}(?:(?::[0-9A-F]{1,4}){1,4}|:(?:[0-9A-F]{1,4}:){1,2}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){2}(?:(?::[0-9A-F]{1,4}){1,5}|:(?:[0-9A-F]{1,4}:)[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){1}(?:(?::[0-9A-F]{1,4}){1,6}|:(?:[0-9A-F]{1,4}:){0,5}[0-9A-F]{1,4}|:)|(?:::(?:[0-9A-F]{1,4}:){0,7}[0-9A-F]{1,4}|::)))(?:%.+)?\z/
   private_constant :IPV6_ADRESS_FORMAT
 
-  @tcp_fast_fallback = true
-
-  class << self
-    attr_accessor :tcp_fast_fallback
-  end
-
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts])
@@ -633,8 +627,13 @@ class Socket < BasicSocket
   # Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305])
   # algorithm by default.
   #
+  # For details on Happy Eyeballs Version 2,
+  # see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
+  #
   # To make it behave the same as in Ruby 3.3 and earlier,
-  # explicitly specify the option +fast_fallback:false+.
+  # explicitly specify the option fast_fallback:false.
+  # Or, setting Socket.tcp_fast_fallback=false will disable
+  # Happy Eyeballs Version 2 not only for this method but for all Socket globally.
   #
   # If local_host:local_port is given,
   # the socket is bound to it.
@@ -657,24 +656,6 @@ class Socket < BasicSocket
   #     sock.close_write
   #     puts sock.read
   #   }
-  #
-  # === Happy Eyeballs Version 2
-  # Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305])
-  # is an algorithm designed to improve client socket connectivity.<br>
-  # It aims for more reliable and efficient connections by performing hostname resolution
-  # and connection attempts in parallel, instead of serially.
-  #
-  # Starting from Ruby 3.4, this method operates as follows with this algorithm:
-  #
-  # 1. Start resolving both IPv6 and IPv4 addresses concurrently.
-  # 2. Start connecting to the one of the addresses that are obtained first.<br>If IPv4 addresses are obtained first,
-  #    the method waits 50 ms for IPv6 name resolution to prioritize IPv6 connections.
-  # 3. After starting a connection attempt, wait 250 ms for the connection to be established.<br>
-  #    If no connection is established within this time, a new connection is started every 250 ms<br>
-  #    until a connection is  established or there are no more candidate addresses.<br>
-  #    (Although RFC 8305 strictly specifies sorting addresses,<br>
-  #    this method only alternates between IPv6 / IPv4 addresses due to the performance concerns)
-  # 4. Once a connection is established, all remaining connection attempts are canceled.
   def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
     sock = if fast_fallback && !(host && ip_address?(host))
       tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
@@ -834,15 +815,14 @@ class Socket < BasicSocket
             ip_address = failed_ai.ipv6? ? "[#{failed_ai.ip_address}]" : failed_ai.ip_address
             last_error = SystemCallError.new("connect(2) for #{ip_address}:#{failed_ai.ip_port}", sockopt.int)
 
-            if writable_sockets.any? ||
-               resolution_store.any_addrinfos? ||
-               connecting_sockets.any? ||
-               resolution_store.any_unresolved_family?
-              user_specified_connect_timeout_at = nil if connecting_sockets.empty?
+            if writable_sockets.any? || connecting_sockets.any?
               # Try other writable socket in next "while"
-              # Or exit this "while" and try other connection attempt
               # Or exit this "while" and wait for connections to be established or hostname resolution in next loop
+            elsif resolution_store.any_addrinfos? || resolution_store.any_unresolved_family?
+              # Exit this "while" and try other connection attempt
               # Or exit this "while" and wait for hostname resolution in next loop
+              connection_attempt_delay_expires_at = nil
+              user_specified_connect_timeout_at = nil
             else
               raise last_error
             end
@@ -858,15 +838,14 @@ class Socket < BasicSocket
           ip_address = failed_ai.ipv6? ? "[#{failed_ai.ip_address}]" : failed_ai.ip_address
           last_error = SystemCallError.new("connect(2) for #{ip_address}:#{failed_ai.ip_port}", sockopt.int)
 
-          if writable_sockets.any? ||
-             resolution_store.any_addrinfos? ||
-             connecting_sockets.any? ||
-             resolution_store.any_unresolved_family?
-            user_specified_connect_timeout_at = nil if connecting_sockets.empty?
-            # Try other writable socket in next "while"
-            # Or exit this "while" and try other connection attempt
+          if except_sockets.any? || connecting_sockets.any?
+            # Cleanup other except socket in next "each"
             # Or exit this "while" and wait for connections to be established or hostname resolution in next loop
+          elsif resolution_store.any_addrinfos? || resolution_store.any_unresolved_family?
+            # Exit this "while" and try other connection attempt
             # Or exit this "while" and wait for hostname resolution in next loop
+            connection_attempt_delay_expires_at = nil
+            user_specified_connect_timeout_at = nil
           else
             raise last_error
           end
@@ -1611,7 +1590,7 @@ class Socket < BasicSocket
   # Returns 0 if successful, otherwise an exception is raised.
   #
   # === Parameter
-  #  # +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
+  # * +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
   #
   # === Example:
   #   # Pull down Google's web page
@@ -1646,7 +1625,7 @@ class Socket < BasicSocket
   # return the symbol +:wait_writable+ instead.
   #
   # === See
-  #  # Socket#connect
+  # * Socket#connect
   def connect_nonblock(addr, exception: true)
     __connect_nonblock(addr, exception)
   end

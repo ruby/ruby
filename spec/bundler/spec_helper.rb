@@ -82,6 +82,7 @@ RSpec.configure do |config|
     ENV["RUBYGEMS_GEMDEPS"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["GEMRC"] = nil
+    ENV["EDITOR"] = nil
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"

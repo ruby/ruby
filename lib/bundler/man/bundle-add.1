@@ -1,6 +1,6 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-ADD" "1" "November 2024" ""
+.TH "BUNDLE\-ADD" "1" "December 2024" ""
 .SH "NAME"
 \fBbundle\-add\fR \- Add gem to the Gemfile and run bundle install
 .SH "SYNOPSIS"
@@ -9,32 +9,35 @@
 Adds the named gem to the [\fBGemfile(5)\fR][Gemfile(5)] and run \fBbundle install\fR\. \fBbundle install\fR can be avoided by using the flag \fB\-\-skip\-install\fR\.
 .SH "OPTIONS"
 .TP
-\fB\-\-version\fR, \fB\-v\fR
+\fB\-\-version=VERSION\fR, \fB\-v=VERSION\fR
 Specify version requirements(s) for the added gem\.
 .TP
-\fB\-\-group\fR, \fB\-g\fR
+\fB\-\-group=GROUP\fR, \fB\-g=GROUP\fR
 Specify the group(s) for the added gem\. Multiple groups should be separated by commas\.
 .TP
-\fB\-\-source\fR, \fB\-s\fR
+\fB\-\-source=SOURCE\fR, \fB\-s=SOURCE\fR
 Specify the source for the added gem\.
 .TP
-\fB\-\-require\fR, \fB\-r\fR
+\fB\-\-require=REQUIRE\fR, \fB\-r=REQUIRE\fR
 Adds require path to gem\. Provide false, or a path as a string\.
 .TP
-\fB\-\-path\fR
+\fB\-\-path=PATH\fR
 Specify the file system path for the added gem\.
 .TP
-\fB\-\-git\fR
+\fB\-\-git=GIT\fR
 Specify the git source for the added gem\.
 .TP
-\fB\-\-github\fR
+\fB\-\-github=GITHUB\fR
 Specify the github source for the added gem\.
 .TP
-\fB\-\-branch\fR
+\fB\-\-branch=BRANCH\fR
 Specify the git branch for the added gem\.
 .TP
-\fB\-\-ref\fR
+\fB\-\-ref=REF\fR
 Specify the git ref for the added gem\.
+.TP
+\fB\-\-glob=GLOB\fR
+Specify the location of a dependency's \.gemspec, expanded within Ruby (single quotes recommended)\.
 .TP
 \fB\-\-quiet\fR
 Do not print progress information to the standard output\.

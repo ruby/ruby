@@ -623,13 +623,13 @@ The following deprecated methods are removed.
     Psych and fiddle supported the static build with specific version of libyaml
     and libffi sources. You can build psych with libyaml-0.2.5 like this.
 
-    ```bash
+    ```console
     $ ./configure --with-libyaml-source-dir=/path/to/libyaml-0.2.5
     ```
 
     And you can build fiddle with libffi-3.4.4 like this.
 
-    ```bash
+    ```console
     $ ./configure --with-libffi-source-dir=/path/to/libffi-3.4.4
     ```
 

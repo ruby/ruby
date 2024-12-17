@@ -335,6 +335,9 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
+!elseif "$(ARCH)" == "arm64"
+COROUTINE_OBJ = coroutine/arm64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
 !error copy coroutine has been replaced with pthread implementation at 42130a64f02294dc8025af3a51bda518c67ab33d
 !endif
@@ -1295,6 +1298,11 @@ ext/distclean gems/distclean ext/realclean gems/realclean::
 		do $(Q)(del %I & rmdir %~dpI)) || @
 		-$(Q)rmdir $(@D) 2> nul || @
 
+gc/clean gc/distclean gc/realclean::
+	- for /D %G in (gc\*) do (pushd %G && $(MAKE) TARGET_SO_DIR=./ $(@F) & popd) || $(NULLCMD)
+gc/distclean gc/realclean::
+	- for /D %G in (gc\*) do ($(RMDIR) %G) || $(NULLCMD)
+
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
 	$(ECHO) $(@:-enc=ing) encodings
@@ -1323,6 +1331,9 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/arm64}.asm{coroutine/arm64}.obj:
+	$(ECHO) assembling $(<:\=/)
+	$(Q) $(AS) $(ASFLAGS) -o $@ $(<:\=/)
 
 {$(srcdir)/prism}.c.obj:
 	$(ECHO) compiling $(<:\=/)

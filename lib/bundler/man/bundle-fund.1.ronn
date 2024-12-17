@@ -1,5 +1,5 @@
 bundle-fund(1) -- Lists information about gems seeking funding assistance
-============================================================
+=========================================================================
 
 ## SYNOPSIS
 
@@ -11,7 +11,7 @@ bundle-fund(1) -- Lists information about gems seeking funding assistance
 
 ## OPTIONS
 
-* `-g`, `--group=GROUP`:
+* `--group=<list>`, `-g=<list>`:
   Fetch funding information for a specific group.
 
 ## EXAMPLES

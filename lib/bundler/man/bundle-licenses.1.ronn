@@ -1,0 +1,10 @@
+bundle-licenses(1) -- Print the license of all gems in the bundle
+=================================================================
+
+## SYNOPSIS
+
+`bundle licenses`
+
+## DESCRIPTION
+
+Prints the license of all gems in the bundle.

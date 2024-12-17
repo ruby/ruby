@@ -10473,6 +10473,12 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
             *shareable_literal_p = 0;
             return COMPILE_OK;
         }
+        for (NODE *n = RNODE_HASH(node)->nd_head; n; n = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_next) {
+            if (!RNODE_LIST(n)->nd_head) {
+                // If the hash node have a keyword splat, fall back to the default case.
+                goto compile_shareable;
+            }
+        }
 
         INIT_ANCHOR(anchor);
         lit = rb_hash_new();
@@ -10482,25 +10488,21 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
             int shareable_literal_p2;
             NODE *key = RNODE_LIST(n)->nd_head;
             NODE *val = RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_head;
-            if (key) {
-                CHECK(compile_shareable_literal_constant_next(key, anchor, &key_val, &shareable_literal_p2));
-                if (shareable_literal_p2) {
-                    /* noop */
-                }
-                else if (RTEST(lit)) {
-                    rb_hash_clear(lit);
-                    lit = Qfalse;
-                }
+            CHECK(compile_shareable_literal_constant_next(key, anchor, &key_val, &shareable_literal_p2));
+            if (shareable_literal_p2) {
+                /* noop */
             }
-            if (val) {
-                CHECK(compile_shareable_literal_constant_next(val, anchor, &value_val, &shareable_literal_p2));
-                if (shareable_literal_p2) {
-                    /* noop */
-                }
-                else if (RTEST(lit)) {
-                    rb_hash_clear(lit);
-                    lit = Qfalse;
-                }
+            else if (RTEST(lit)) {
+                rb_hash_clear(lit);
+                lit = Qfalse;
+            }
+            CHECK(compile_shareable_literal_constant_next(val, anchor, &value_val, &shareable_literal_p2));
+            if (shareable_literal_p2) {
+                /* noop */
+            }
+            else if (RTEST(lit)) {
+                rb_hash_clear(lit);
+                lit = Qfalse;
             }
             if (RTEST(lit)) {
                 if (!UNDEF_P(key_val) && !UNDEF_P(value_val)) {
@@ -10516,6 +10518,8 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
       }
 
       default:
+
+      compile_shareable:
         if (shareable == rb_parser_shareable_literal &&
             (SHAREABLE_BARE_EXPRESSION || level > 0)) {
             CHECK(compile_ensure_shareable_node(iseq, ret, dest, node));
@@ -10529,7 +10533,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         return COMPILE_OK;
     }
 
-    /* Array or Hash */
+    /* Array or Hash that does not have keyword splat */
     if (!lit) {
         if (nd_type(node) == NODE_LIST) {
             ADD_INSN1(anchor, node, newarray, INT2FIX(RNODE_LIST(node)->as.nd_alen));

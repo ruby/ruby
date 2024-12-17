@@ -186,13 +186,13 @@ module Bundler
     def setup_domain!(options = {})
       prefer_local! if options[:"prefer-local"]
 
-      if options[:local] || no_install_needed?
-        Bundler.settings.set_command_option(:jobs, 1) if no_install_needed? # to avoid the overhead of Bundler::Worker
-        with_cache!
-        false
-      else
+      if options[:add_checksums] || (!options[:local] && install_needed?)
         remotely!
         true
+      else
+        Bundler.settings.set_command_option(:jobs, 1) unless install_needed? # to avoid the overhead of Bundler::Worker
+        with_cache!
+        false
       end
     end
 
@@ -513,26 +513,11 @@ module Bundler
     end
 
     def nothing_changed?
-      return false unless lockfile_exists?
-
-      !@source_changes &&
-        !@dependency_changes &&
-        !@current_platform_missing &&
-        @new_platforms.empty? &&
-        !@path_changes &&
-        !@local_changes &&
-        !@missing_lockfile_dep &&
-        !@unlocking_bundler &&
-        !@locked_spec_with_missing_deps &&
-        !@locked_spec_with_invalid_deps
-    end
-
-    def no_install_needed?
-      no_resolve_needed? && !missing_specs?
+      !something_changed?
     end
 
     def no_resolve_needed?
-      !unlocking? && nothing_changed?
+      !resolve_needed?
     end
 
     def unlocking?
@@ -544,12 +529,35 @@ module Bundler
     def add_checksums
       @locked_checksums = true
 
-      setup_domain!
+      setup_domain!(add_checksums: true)
 
       specs # force materialization to real specifications, so that checksums are fetched
     end
 
     private
+
+    def install_needed?
+      resolve_needed? || missing_specs?
+    end
+
+    def something_changed?
+      return true unless lockfile_exists?
+
+      @source_changes ||
+        @dependency_changes ||
+        @current_platform_missing ||
+        @new_platforms.any? ||
+        @path_changes ||
+        @local_changes ||
+        @missing_lockfile_dep ||
+        @unlocking_bundler ||
+        @locked_spec_with_missing_deps ||
+        @locked_spec_with_invalid_deps
+    end
+
+    def resolve_needed?
+      unlocking? || something_changed?
+    end
 
     def should_add_extra_platforms?
       !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]

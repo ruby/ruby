@@ -3,7 +3,7 @@ bundle-exec(1) -- Execute a command in the context of the bundle
 
 ## SYNOPSIS
 
-`bundle exec` [--keep-file-descriptors] <command>
+`bundle exec` [--keep-file-descriptors] [--gemfile=GEMFILE] <command>
 
 ## DESCRIPTION
 
@@ -23,6 +23,9 @@ available on your shell's `$PATH`.
 * `--keep-file-descriptors`:
   Passes all file descriptors to the new processes. Default is true from
   bundler version 2.2.26. Setting it to false is now deprecated.
+
+* `--gemfile=GEMFILE`:
+  Use the specified gemfile instead of [`Gemfile(5)`][Gemfile(5)].
 
 ## BUNDLE INSTALL --BINSTUBS
 

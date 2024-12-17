@@ -1,10 +1,10 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "BUNDLE\-EXEC" "1" "November 2024" ""
+.TH "BUNDLE\-EXEC" "1" "December 2024" ""
 .SH "NAME"
 \fBbundle\-exec\fR \- Execute a command in the context of the bundle
 .SH "SYNOPSIS"
-\fBbundle exec\fR [\-\-keep\-file\-descriptors] \fIcommand\fR
+\fBbundle exec\fR [\-\-keep\-file\-descriptors] [\-\-gemfile=GEMFILE] \fIcommand\fR
 .SH "DESCRIPTION"
 This command executes the command, making all gems specified in the [\fBGemfile(5)\fR][Gemfile(5)] available to \fBrequire\fR in Ruby programs\.
 .P
@@ -15,6 +15,9 @@ Note that \fBbundle exec\fR does not require that an executable is available on 
 .TP
 \fB\-\-keep\-file\-descriptors\fR
 Passes all file descriptors to the new processes\. Default is true from bundler version 2\.2\.26\. Setting it to false is now deprecated\.
+.TP
+\fB\-\-gemfile=GEMFILE\fR
+Use the specified gemfile instead of [\fBGemfile(5)\fR][Gemfile(5)]\.
 .SH "BUNDLE INSTALL \-\-BINSTUBS"
 If you use the \fB\-\-binstubs\fR flag in bundle install(1) \fIbundle\-install\.1\.html\fR, Bundler will automatically create a directory (which defaults to \fBapp_root/bin\fR) containing all of the executables available from gems in the bundle\.
 .P

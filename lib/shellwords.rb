@@ -65,7 +65,7 @@
 
 module Shellwords
   # The version number string.
-  VERSION = "0.2.1"
+  VERSION = "0.2.2"
 
   # Splits a string into an array of tokens in the same way the UNIX
   # Bourne shell does.

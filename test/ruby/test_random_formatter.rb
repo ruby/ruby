@@ -165,6 +165,11 @@ module Random::Formatter
     def setup
       @it = Random
     end
+
+    def test_alphanumeric_frozen
+      assert_predicate @it::Formatter::ALPHANUMERIC, :frozen?
+      assert @it::Formatter::ALPHANUMERIC.all?(&:frozen?)
+    end
   end
 
   class TestInstanceMethods < Test::Unit::TestCase

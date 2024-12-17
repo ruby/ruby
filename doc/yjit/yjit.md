@@ -19,6 +19,7 @@ This project is open source and falls under the same license as CRuby.
 
 If you wish to learn more about the approach taken, here are some conference talks and publications:
 
+- MPLR 2023 talk: [Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach](https://www.youtube.com/watch?v=pVRmPZcNUhc)
 - RubyKaigi 2023 keynote: [Optimizing YJIT’s Performance, from Inception to Production](https://www.youtube.com/watch?v=X0JRhh8w_4I)
 - RubyKaigi 2023 keynote: [Fitting Rust YJIT into CRuby](https://www.youtube.com/watch?v=GI7vvAgP_Qs)
 - RubyKaigi 2022 keynote: [Stories from developing YJIT](https://www.youtube.com/watch?v=EMchdR9C8XM)
@@ -35,7 +36,7 @@ If you wish to learn more about the approach taken, here are some conference tal
 
 To cite YJIT in your publications, please cite the MPLR 2023 paper:
 
-```
+```BibTeX
 @inproceedings{yjit_mplr_2023,
 author = {Chevalier-Boisvert, Maxime and Kokubun, Takashi and Gibbs, Noah and Wu, Si Xing (Alan) and Patterson, Aaron and Issroff, Jemma},
 title = {Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach},
@@ -228,15 +229,18 @@ they might not necessarily be the best configuration for your application.
 This section covers tips on improving YJIT performance in case YJIT does not
 speed up your application in production.
 
-### Increasing --yjit-exec-mem-size
+### Increasing --yjit-mem-size
 
-When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches this value,
-YJIT stops compiling new code. Increasing the executable memory size means more code
+The `--yjit-mem-size` value can be used to set the maximum amount of memory that YJIT
+is allowed to use. This corresponds to the total of `RubyVM::YJIT.runtime_stats[:code_region_size]`
+and `RubyVM::YJIT.runtime_stats[:yjit_alloc_size]`
+Increasing the `--yjit-mem-size` value means more code
 can be optimized by YJIT, at the cost of more memory usage.
 
 If you start Ruby with `--yjit-stats`, e.g. using an environment variable `RUBYOPT=--yjit-stats`,
-`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the ratio of YJIT-executed instructions in %.
-Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-exec-mem-size` often
+`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the percentage of total YARV instructions
+executed by YJIT as opposed to the CRuby interpreter.
+Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-mem-size` often
 helps improving `ratio_in_yjit`.
 
 ### Running workers as long as possible
@@ -254,16 +258,13 @@ you may want to reduce the killing frequency or increase the limit.
 YJIT allocates memory for JIT code and metadata. Enabling YJIT generally results in more memory usage.
 This section goes over tips on minimizing YJIT memory usage in case it uses more than your capacity.
 
-### Decreasing --yjit-exec-mem-size
+### Decreasing --yjit-mem-size
 
-The `--yjit-exec-mem-size` option specifies the JIT code size, but YJIT also uses memory for its metadata,
-which often consumes more memory than JIT code. Generally, YJIT adds memory overhead by roughly
-3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.3. You should multiply that by the number
-of worker processes to estimate the worst case memory overhead.
-
-`--yjit-exec-mem-size=48` is the default since Ruby 3.3.1,
-but smaller values like 32 MiB might make sense for your application.
-While doing so, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` as explained above.
+YJIT uses memory for compiled code and metadata. You can change the maximum amount of memory
+that YJIT can use by specifying a different `--yjit-mem-size` command-line option. The default value
+is currently `128`.
+When changing this value, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]`
+as explained above.
 
 ### Enabling YJIT lazily
 
@@ -287,7 +288,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
 - Ruby method calls are costly. Avoid things such as methods that only return a value from a hash
 - Try to write code so that the same variables and method arguments always have the same type
 - Avoid using `TracePoint` as it can cause YJIT to deoptimize code
-- Avoid using `Binding` as it can cause YJIT to deoptimize code
+- Avoid using `binding` as it can cause YJIT to deoptimize code
 
 You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
@@ -439,7 +440,7 @@ instructions below, but there are a few caveats listed further down.
 
 First, install Rosetta:
 
-```sh
+```console
 $ softwareupdate --install-rosetta
 ```
 
@@ -447,13 +448,13 @@ Now any command can be run with Rosetta via the `arch` command line tool.
 
 Then you can start your shell in an x86 environment:
 
-```sh
+```console
 $ arch -x86_64 zsh
 ```
 
 You can double check your current architecture via the `arch` command:
 
-```sh
+```console
 $ arch -x86_64 zsh
 $ arch
 i386
@@ -461,7 +462,7 @@ i386
 
 You may need to set the default target for `rustc` to x86-64, e.g.
 
-```sh
+```console
 $ rustup default stable-x86_64-apple-darwin
 ```
 

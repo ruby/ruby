@@ -575,6 +575,18 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
     }
 }
 
+void
+rb_warn_reserved_name(const char *coming, const char *fmt, ...)
+{
+    if (!deprecation_warning_enabled()) return;
+
+    with_warning_string_from(mesg, 0, fmt, fmt) {
+        rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
+        rb_str_catf(mesg, " is reserved for Ruby %s\n", coming);
+        rb_warn_category(mesg, ID2SYM(id_deprecated));
+    }
+}
+
 static inline int
 end_with_asciichar(VALUE str, int c)
 {
@@ -1073,7 +1085,7 @@ die(void)
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
 static void
-rb_bug_without_die(const char *fmt, va_list args)
+rb_bug_without_die_internal(const char *fmt, va_list args)
 {
     const char *file = NULL;
     int line = 0;
@@ -1085,12 +1097,22 @@ rb_bug_without_die(const char *fmt, va_list args)
     report_bug_valist(file, line, fmt, NULL, args);
 }
 
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 0)
+void
+rb_bug_without_die(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    rb_bug_without_die_internal(fmt, args);
+    va_end(args);
+}
+
 void
 rb_bug(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    rb_bug_without_die(fmt, args);
+    rb_bug_without_die_internal(fmt, args);
     va_end(args);
     die();
 }
@@ -3380,7 +3402,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  * NoMemoryError
  *  * ScriptError
- *    * {LoadError}[https://docs.ruby-lang.org/en/master/LoadError.html]
+ *    * LoadError
  *    * NotImplementedError
  *    * SyntaxError
  *  * SecurityError

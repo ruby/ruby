@@ -5,8 +5,6 @@ require_relative "helper"
 require "rubygems/rdoc"
 
 class TestGemRDoc < Gem::TestCase
-  Gem::RDoc.load_rdoc
-
   def setup
     super
 
@@ -20,10 +18,16 @@ class TestGemRDoc < Gem::TestCase
 
     install_gem @a
 
-    @hook = Gem::RDoc.new @a
+    hook_class = if defined?(RDoc::RubyGemsHook)
+      RDoc::RubyGemsHook
+    else
+      Gem::RDoc
+    end
+
+    @hook = hook_class.new @a
 
     begin
-      Gem::RDoc.load_rdoc
+      hook_class.load_rdoc
     rescue Gem::DocumentError => e
       pend e.message
     end
