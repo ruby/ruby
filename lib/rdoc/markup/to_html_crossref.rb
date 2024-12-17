@@ -182,4 +182,43 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     end
   end
 
+  def convert_flow(flow)
+    res = []
+
+    i = 0
+    while i < flow.size
+      item = flow[i]
+      i += 1
+      case item
+      when RDoc::Markup::AttrChanger then
+        # Make "+Class#method+" a cross reference
+        if tt_tag?(item.turn_on) and
+          String === (str = flow[i]) and
+          RDoc::Markup::AttrChanger === flow[i+1] and
+          tt_tag?(flow[i+1].turn_off, true) and
+          (@options.hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP).match?(str) and
+          (text = cross_reference str) != str
+        then
+          text = yield text, res if defined?(yield)
+          res << text
+          i += 2
+          next
+        end
+        off_tags res, item
+        on_tags res, item
+      when String then
+        text = convert_string(item)
+        text = yield text, res if defined?(yield)
+        res << text
+      when RDoc::Markup::RegexpHandling then
+        text = convert_regexp_handling(item)
+        text = yield text, res if defined?(yield)
+        res << text
+      else
+        raise "Unknown flow element: #{item.inspect}"
+      end
+    end
+
+    res.join('')
+  end
 end

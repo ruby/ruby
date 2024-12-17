@@ -195,18 +195,20 @@ class RDoc::Markup::Formatter
     @in_tt > 0
   end
 
+  def tt_tag? attr_mask, reverse = false
+    each_attr_tag(attr_mask, reverse) do |tag|
+      return true if tt? tag
+    end
+    false
+  end
+
   ##
   # Turns on tags for +item+ on +res+
 
   def on_tags res, item
-    attr_mask = item.turn_on
-    return if attr_mask.zero?
-
-    @attr_tags.each do |tag|
-      if attr_mask & tag.bit != 0 then
-        res << annotate(tag.on)
-        @in_tt += 1 if tt? tag
-      end
+    each_attr_tag(item.turn_on) do |tag|
+      res << annotate(tag.on)
+      @in_tt += 1 if tt? tag
     end
   end
 
@@ -214,13 +216,18 @@ class RDoc::Markup::Formatter
   # Turns off tags for +item+ on +res+
 
   def off_tags res, item
-    attr_mask = item.turn_off
+    each_attr_tag(item.turn_off, true) do |tag|
+      @in_tt -= 1 if tt? tag
+      res << annotate(tag.off)
+    end
+  end
+
+  def each_attr_tag attr_mask, reverse = false
     return if attr_mask.zero?
 
-    @attr_tags.reverse_each do |tag|
+    @attr_tags.public_send(reverse ? :reverse_each : :each) do |tag|
       if attr_mask & tag.bit != 0 then
-        @in_tt -= 1 if tt? tag
-        res << annotate(tag.off)
+        yield tag
       end
     end
   end
