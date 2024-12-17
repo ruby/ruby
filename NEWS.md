@@ -233,7 +233,7 @@ The following bundled gems are updated.
 * minitest 5.25.4
 * power_assert 2.0.4
 * rake 13.2.1
-* test-unit 3.6.5
+* test-unit 3.6.7
 * rexml 3.4.0
 * rss 0.3.1
 * net-ftp 0.3.8
