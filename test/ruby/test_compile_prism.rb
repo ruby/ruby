@@ -2485,6 +2485,9 @@ end
       assert_prism_eval("5 in foo")
 
       assert_prism_eval("1 in 2")
+
+      # Bug: https://bugs.ruby-lang.org/issues/20956
+      assert_prism_eval("1 in [1 | [1]]")
     end
 
     def test_MatchRequiredNode
