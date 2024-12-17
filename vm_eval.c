@@ -1709,7 +1709,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                     continue;
                 }
 
-                pm_string_constant_init(scope_local, name, strlen(name));
+                pm_string_constant_init(scope_local, name, length);
             }
         }
 
