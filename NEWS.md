@@ -233,22 +233,22 @@ The following bundled gems are updated.
 * minitest 5.25.4
 * power_assert 2.0.4
 * rake 13.2.1
-  * [v13.1.0][rake-v13.1.0], [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
+  * [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
 * test-unit 3.6.7
 * rexml 3.4.0
-  * [v3.2.6][rexml-v3.2.6], [v3.2.7][rexml-v3.2.7], [v3.2.8][rexml-v3.2.8], [v3.2.9][rexml-v3.2.9], [v3.3.0][rexml-v3.3.0], [v3.3.1][rexml-v3.3.1], [v3.3.2][rexml-v3.3.2], [v3.3.3][rexml-v3.3.3], [v3.3.4][rexml-v3.3.4], [v3.3.5][rexml-v3.3.5], [v3.3.6][rexml-v3.3.6], [v3.3.7][rexml-v3.3.7], [v3.3.8][rexml-v3.3.8], [v3.3.9][rexml-v3.3.9], [v3.4.0][rexml-v3.4.0]
+  * [v3.2.7][rexml-v3.2.7], [v3.2.8][rexml-v3.2.8], [v3.2.9][rexml-v3.2.9], [v3.3.0][rexml-v3.3.0], [v3.3.1][rexml-v3.3.1], [v3.3.2][rexml-v3.3.2], [v3.3.3][rexml-v3.3.3], [v3.3.4][rexml-v3.3.4], [v3.3.5][rexml-v3.3.5], [v3.3.6][rexml-v3.3.6], [v3.3.7][rexml-v3.3.7], [v3.3.8][rexml-v3.3.8], [v3.3.9][rexml-v3.3.9], [v3.4.0][rexml-v3.4.0]
 * rss 0.3.1
 * net-ftp 0.3.8
 * net-imap 0.5.2
-  * [v0.4.9][net-imap-v0.4.9], [v0.2.4][net-imap-v0.2.4], [v0.3.4.1][net-imap-v0.3.4.1], [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2]
+  * [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2]
 * net-smtp 0.5.0
-  * [v0.4.0][net-smtp-v0.4.0], [v0.3.1.1][net-smtp-v0.3.1.1], [v0.3.4][net-smtp-v0.3.4], [v0.4.0.1][net-smtp-v0.4.0.1], [v0.5.0][net-smtp-v0.5.0]
+  * [v0.4.0.1][net-smtp-v0.4.0.1], [v0.5.0][net-smtp-v0.5.0]
 * prime 0.1.3
 * rbs 3.7.0
-  * [v3.4.0][rbs-v3.4.0], [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0]
+  * [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0]
 * typeprof 0.30.0
 * debug 1.9.2
-  * [v1.9.1][debug-v1.9.1], [v1.9.2][debug-v1.9.2]
+  * [v1.9.2][debug-v1.9.2]
 * racc 1.8.1
 
 The following bundled gems are promoted from default gems.
@@ -478,10 +478,8 @@ details of the default gems or bundled gems.
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
 [Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
-[rake-v13.1.0]: https://github.com/ruby/rake/releases/tag/v13.1.0
 [rake-v13.2.0]: https://github.com/ruby/rake/releases/tag/v13.2.0
 [rake-v13.2.1]: https://github.com/ruby/rake/releases/tag/v13.2.1
-[rexml-v3.2.6]: https://github.com/ruby/rexml/releases/tag/v3.2.6
 [rexml-v3.2.7]: https://github.com/ruby/rexml/releases/tag/v3.2.7
 [rexml-v3.2.8]: https://github.com/ruby/rexml/releases/tag/v3.2.8
 [rexml-v3.2.9]: https://github.com/ruby/rexml/releases/tag/v3.2.9
@@ -496,9 +494,6 @@ details of the default gems or bundled gems.
 [rexml-v3.3.8]: https://github.com/ruby/rexml/releases/tag/v3.3.8
 [rexml-v3.3.9]: https://github.com/ruby/rexml/releases/tag/v3.3.9
 [rexml-v3.4.0]: https://github.com/ruby/rexml/releases/tag/v3.4.0
-[net-imap-v0.4.9]: https://github.com/ruby/net-imap/releases/tag/v0.4.9
-[net-imap-v0.2.4]: https://github.com/ruby/net-imap/releases/tag/v0.2.4
-[net-imap-v0.3.4.1]: https://github.com/ruby/net-imap/releases/tag/v0.3.4.1
 [net-imap-v0.4.9.1]: https://github.com/ruby/net-imap/releases/tag/v0.4.9.1
 [net-imap-v0.4.10]: https://github.com/ruby/net-imap/releases/tag/v0.4.10
 [net-imap-v0.4.11]: https://github.com/ruby/net-imap/releases/tag/v0.4.11
@@ -512,12 +507,8 @@ details of the default gems or bundled gems.
 [net-imap-v0.4.18]: https://github.com/ruby/net-imap/releases/tag/v0.4.18
 [net-imap-v0.5.1]: https://github.com/ruby/net-imap/releases/tag/v0.5.1
 [net-imap-v0.5.2]: https://github.com/ruby/net-imap/releases/tag/v0.5.2
-[net-smtp-v0.4.0]: https://github.com/ruby/net-smtp/releases/tag/v0.4.0
-[net-smtp-v0.3.1.1]: https://github.com/ruby/net-smtp/releases/tag/v0.3.1.1
-[net-smtp-v0.3.4]: https://github.com/ruby/net-smtp/releases/tag/v0.3.4
 [net-smtp-v0.4.0.1]: https://github.com/ruby/net-smtp/releases/tag/v0.4.0.1
 [net-smtp-v0.5.0]: https://github.com/ruby/net-smtp/releases/tag/v0.5.0
-[rbs-v3.4.0]: https://github.com/ruby/rbs/releases/tag/v3.4.0
 [rbs-v3.4.1]: https://github.com/ruby/rbs/releases/tag/v3.4.1
 [rbs-v3.4.2]: https://github.com/ruby/rbs/releases/tag/v3.4.2
 [rbs-v3.4.3]: https://github.com/ruby/rbs/releases/tag/v3.4.3
@@ -537,5 +528,4 @@ details of the default gems or bundled gems.
 [rbs-v3.7.0.dev.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.dev.1
 [rbs-v3.7.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.pre.1
 [rbs-v3.7.0]: https://github.com/ruby/rbs/releases/tag/v3.7.0
-[debug-v1.9.1]: https://github.com/ruby/debug/releases/tag/v1.9.1
 [debug-v1.9.2]: https://github.com/ruby/debug/releases/tag/v1.9.2
