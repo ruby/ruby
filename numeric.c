@@ -857,7 +857,7 @@ num_nonzero_p(VALUE num)
  *    Rational(1, 2).to_int # => 0
  *    Rational(2, 1).to_int # => 2
  *    Complex(2, 0).to_int  # => 2
- *    Complex(2, 1)         # Raises RangeError (non-zero imaginary part)
+ *    Complex(2, 1).to_int  # Raises RangeError (non-zero imaginary part)
  *
  */
 
