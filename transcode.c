@@ -4619,4 +4619,5 @@ InitVM_transcode(void)
     rb_define_method(rb_eInvalidByteSequenceError, "incomplete_input?", ecerr_incomplete_input, 0);
 
     Init_newline();
+    Init_utf_16_32_trans();
 }
