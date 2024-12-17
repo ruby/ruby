@@ -254,7 +254,7 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
     end
     aligns = aligns.map do |a|
       case a
-      when nil
+      when nil, :center
         :center
       when :left
         :ljust
