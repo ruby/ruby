@@ -455,4 +455,15 @@ module Gem
 
     Package::TarReader::Entry.prepend(FixFullNameEncoding)
   end
+
+  require "rubygems/uri"
+
+  # Can be removed once RubyGems 3.3.15 support is dropped
+  unless Gem::Uri.respond_to?(:redact)
+    class Uri
+      def self.redact(uri)
+        new(uri).redacted
+      end
+    end
+  end
 end
