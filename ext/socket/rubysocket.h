@@ -447,7 +447,7 @@ struct fast_fallback_getaddrinfo_shared
 };
 
 int raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg);
-void *do_fast_fallback_getaddrinfo(void *ptr);
+void *fork_safe_do_fast_fallback_getaddrinfo(void *ptr);
 void free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry);
 void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared);
 #  endif
