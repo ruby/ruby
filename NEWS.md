@@ -236,7 +236,7 @@ Note: we also listed release history from the previous bundled version that is R
 * power_assert 2.0.4
   * [v2.0.4][power_assert-v2.0.4]
 * rake 13.2.1
-  * [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
+  * [v13.2.1][rake-v13.2.1]
 * test-unit 3.6.7
   * [3.6.2][test-unit-3.6.2], [3.6.3][test-unit-3.6.3], [3.6.4][test-unit-3.6.4], [3.6.5][test-unit-3.6.5], [3.6.6][test-unit-3.6.6], [3.6.7][test-unit-3.6.7]
 * rexml 3.4.0
@@ -494,7 +494,6 @@ details of the default gems or bundled gems.
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
 [Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
 [power_assert-v2.0.4]:  https://github.com/ruby/power_assert/releases/tag/v2.0.4
-[rake-v13.2.0]: https://github.com/ruby/rake/releases/tag/v13.2.0
 [rake-v13.2.1]: https://github.com/ruby/rake/releases/tag/v13.2.1
 [test-unit-3.6.2]: https://github.com/test-unit/test-unit/releases/tag/3.6.2
 [test-unit-3.6.3]: https://github.com/test-unit/test-unit/releases/tag/3.6.3
