@@ -244,8 +244,7 @@ Note: we also listed release history from the previous bundled version that is R
 * rss 0.3.1
   * [0.3.1][rss-0.3.1]
 * net-ftp 0.3.8
-  * [v0.3.4][net-ftp-v0.3.4], [v0.3.5][net-ftp-v0.3.5], [v0.3.6][net-ftp-v0.3.6], [v0.3.7][net-ftp-v0.3.7], [v0.3.8][net-ftp-v0.
-3.8]
+  * [v0.3.4][net-ftp-v0.3.4], [v0.3.5][net-ftp-v0.3.5], [v0.3.6][net-ftp-v0.3.6], [v0.3.7][net-ftp-v0.3.7], [v0.3.8][net-ftp-v0.3.8]
 * net-imap 0.5.2
   * [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2]
 * net-smtp 0.5.0
