@@ -103,13 +103,13 @@ class RDoc::Markup::TextFormatterTestCase < RDoc::Markup::FormatterTestCase
       # Test case that calls <tt>@to.accept_table</tt>
 
       def test_accept_table_align
-        header = ['AA', 'BB', 'CCCCC']
+        header = ['AA', 'BB', 'CCCCC', 'DDDDD']
         body = [
-          ['', 'bbb', 'c'],
-          ['aaaa', 'b', ''],
-          ['a', '', 'cc']
+          ['', 'bbb', 'c', ''],
+          ['aaaa', 'b', '', 'dd'],
+          ['a', '', 'cc', 'dd']
         ]
-        aligns = [nil, :left, :right]
+        aligns = [nil, :left, :right, :center]
         @to.start_accepting
         @to.accept_table header, body, aligns
 

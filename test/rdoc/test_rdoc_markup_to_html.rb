@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative 'helper'
 
-class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
+class RDocMarkupToHtmlTest < RDoc::Markup::FormatterTestCase
 
   add_visitor_tests
 
@@ -956,31 +956,34 @@ EXPECTED
   end
 
   def test_accept_table
-    header = %w[Col1 Col2 Col3]
+    header = %w[Col1 Col2 Col3 Col4]
     body = [
-      %w[cell1_1 cell1_2 cell1_3],
-      %w[cell2_1 cell2_2 cell2_3],
-      ['<script>alert("foo");</script>',],
-      %w[+code+ _em_ **strong**],
+      %w[cell1_1 cell1_2 cell1_3 cell1_4],
+      %w[cell2_1 cell2_2 cell2_3 cell2_4],
+      ['<script>alert("foo");</script>'],
+      %w[+code+ _em_ **strong** C1],
     ]
-    aligns = [:left, :right, nil]
+    aligns = [:left, :right, nil, :center]
     @to.start_accepting
     @to.accept_table(header, body, aligns)
     res = @to.end_accepting
     assert_include(res[%r<<th[^<>]*>Col1</th>>], 'align="left"')
     assert_include(res[%r<<th[^<>]*>Col2</th>>], 'align="right"')
     assert_not_include(res[%r<<th[^<>]*>Col3</th>>], 'align=')
+    assert_include(res[%r<<th[^<>]*>Col4</th>>], 'align="center"')
     assert_include(res[%r<<td[^<>]*>cell1_1</td>>], 'align="left"')
     assert_include(res[%r<<td[^<>]*>cell1_2</td>>], 'align="right"')
     assert_not_include(res[%r<<td[^<>]*>cell1_3</td>>], 'align=')
     assert_include(res[%r<<td[^<>]*>cell2_1</td>>], 'align="left"')
     assert_include(res[%r<<td[^<>]*>cell2_2</td>>], 'align="right"')
     assert_not_include(res[%r<<td[^<>]*>cell2_3</td>>], 'align=')
+    assert_include(res[%r<<td[^<>]*>cell2_4</td>>], 'align="center"')
     assert_not_include(res, '<script>')
     assert_include(res[%r<<td[^<>]*>.*script.*</td>>], '&lt;script&gt;')
     assert_include(res[%r<<td[^<>]*>.*code.*</td>>], '<code>code</code>')
     assert_include(res[%r<<td[^<>]*>.*em.*</td>>], '<em>em</em>')
     assert_include(res[%r<<td[^<>]*>.*strong.*</td>>], '<strong>strong</strong>')
+    assert_include(res[%r<<td[^<>]*>C1</td>>], 'C1')
   end
 
   def assert_escaped(unexpected, code)
