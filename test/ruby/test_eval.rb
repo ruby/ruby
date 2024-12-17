@@ -636,4 +636,19 @@ class TestEval < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_outer_local_variable_under_gc_compact_stress
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately([], <<~RUBY)
+      o = Object.new
+      def o.m = 1
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      EnvUtil.under_gc_compact_stress do
+        assert_equal(1, eval("o.m"))
+      end
+    RUBY
+  end
 end

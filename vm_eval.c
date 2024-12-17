@@ -1700,7 +1700,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
-                const char *name = rb_id2name(local);
+                VALUE name_obj = rb_id2str(local);
+                const char *name = RSTRING_PTR(name_obj);
                 size_t length = strlen(name);
 
                 // Explicitly skip numbered parameters. These should not be sent
@@ -1709,7 +1710,15 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                     continue;
                 }
 
-                pm_string_constant_init(scope_local, name, length);
+                /* We need to duplicate the string because the Ruby string may
+                 * be embedded so compaction could move the string and the pointer
+                 * will change. */
+                char *name_dup = xmalloc(length + 1);
+                strlcpy(name_dup, name, length + 1);
+
+                RB_GC_GUARD(name_obj);
+
+                pm_string_owned_init(scope_local, (uint8_t *)name_dup, length);
             }
         }
 
