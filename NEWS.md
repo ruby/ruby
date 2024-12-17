@@ -170,9 +170,9 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.6.0.dev
+* RubyGems 3.6.0
 * benchmark 0.4.0
-* bundler 2.6.0.dev
+* bundler 2.6.0
 * date 3.4.1
 * delegate 0.4.0
 * did_you_mean 2.0.0
