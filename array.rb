@@ -66,8 +66,9 @@ class Array
   # With a non-negative numeric argument +count+ given,
   # returns a new array containing +count+ random elements from +self+:
   #
-  #   a.sample(3) # => [8, 9, 2]
-  #   a.sample(6) # => [9, 6, 0, 3, 1, 4]
+  #   a.sample(3)   # => [8, 9, 2]
+  #   a.sample(3.1) # => [4, 6, 9]
+  #   a.sample(6)   # => [9, 6, 0, 3, 1, 4]
   #
   # The order of the result array is unrelated to the order of +self+.
   #
@@ -118,12 +119,13 @@ class Array
   #
   #   [].first # => nil
   #
-  # With a non-negative integer argument +count+ given,
+  # With a non-negative numeric argument +count+ given,
   # returns the first +count+ elements (as available) in a new array:
   #
-  #   a.first(0)  # => []
-  #   a.first(2)  # => [:foo, "bar"]
-  #   a.first(50) # => [:foo, "bar", 2]
+  #   a.first(0)   # => []
+  #   a.first(2)   # => [:foo, "bar"]
+  #   a.first(2.1) # => [:foo, "bar"]
+  #   a.first(50)  # => [:foo, "bar", 2]
   #
   # Related: see {Methods for Querying}[rdoc-ref:Array@Methods+for+Querying].
   def first n = unspecified = true
@@ -153,14 +155,15 @@ class Array
   #   [].last # => nil
   #
   #
-  # With non-negative integer argument +count+ given,
+  # With non-negative numeric argument +count+ given,
   # returns a new array containing the trailing +count+ elements of +self+, as available:
   #
   #   a = [:foo, 'bar', 2]
-  #   a.last(2)  # => ["bar", 2]
-  #   a.last(50) # => [:foo, "bar", 2]
-  #   a.last(0)  # => []
-  #   [].last(3) # => []
+  #   a.last(2)   # => ["bar", 2]
+  #   a.last(2.1) # => ["bar", 2]
+  #   a.last(50)  # => [:foo, "bar", 2]
+  #   a.last(0)   # => []
+  #   [].last(3)  # => []
   #
   # Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
   def last n = unspecified = true
