@@ -182,52 +182,6 @@ The following default gem is added.
 The following default gems are updated.
 
 * RubyGems 3.6.1
-* benchmark 0.4.0
-* bundler 2.6.1
-* date 3.4.1
-* delegate 0.4.0
-* did_you_mean 2.0.0
-* digest 3.2.0
-* erb 4.0.4
-* error_highlight 0.7.0
-* etc 1.4.5
-* fcntl 1.2.0
-* fiddle 1.1.6
-* fileutils 1.7.3
-* io-console 0.8.0
-* io-nonblock 0.3.1
-* ipaddr 1.2.7
-* irb 1.14.2
-* json 2.9.0
-* logger 1.6.3
-* net-http 0.6.0
-* open-uri 0.5.0
-* optparse 0.6.0
-* ostruct 0.6.1
-* pathname 0.4.0
-* pp 0.6.2
-* prism 1.2.0
-* pstore 0.1.4
-* psych 5.2.2
-* rdoc 6.9.1
-* reline 0.6.0
-* resolv 0.6.0
-* securerandom 0.4.1
-* set 1.1.1
-* shellwords 0.2.2
-* singleton 0.3.0
-* stringio 3.1.2
-* strscan 3.1.2
-* syntax_suggest 2.0.2
-* tempfile 0.3.1
-* time 0.4.1
-* timeout 0.4.3
-* tmpdir 0.3.1
-* uri 1.0.2
-* win32ole 1.9.1
-* yaml 0.4.0
-* zlib 3.2.1
-
   * 3.5.3 to [v3.5.4][RubyGems-v3.5.4], [v3.5.5][RubyGems-v3.5.5], [v3.5.6][RubyGems-v3.5.6], [v3.5.7][RubyGems-v3.5.7], [v3.5.8][RubyGems-v3.5.8], [v3.5.9][RubyGems-v3.5.9], [v3.5.10][RubyGems-v3.5.10], [v3.5.11][RubyGems-v3.5.11], [v3.5.12][RubyGems-v3.5.12], [v3.5.13][RubyGems-v3.5.13], [v3.5.14][RubyGems-v3.5.14], [v3.5.15][RubyGems-v3.5.15], [v3.5.16][RubyGems-v3.5.16], [v3.5.17][RubyGems-v3.5.17], [v3.5.18][RubyGems-v3.5.18], [v3.5.19][RubyGems-v3.5.19], [v3.5.20][RubyGems-v3.5.20], [v3.5.21][RubyGems-v3.5.21], [v3.5.22][RubyGems-v3.5.22], [v3.5.23][RubyGems-v3.5.23], [v3.6.0][RubyGems-v3.6.0], [v3.6.1][RubyGems-v3.6.1]
 * benchmark 0.4.0
   * 0.3.0 to [v0.4.0][benchmark-v0.4.0]
