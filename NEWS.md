@@ -204,7 +204,7 @@ The following default gems are updated.
 * pp 0.6.2
 * prism 1.2.0
 * pstore 0.1.4
-* psych 5.2.1
+* psych 5.2.2
 * rdoc 6.9.1
 * reline 0.6.0
 * resolv 0.6.0
