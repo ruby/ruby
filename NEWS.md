@@ -320,6 +320,11 @@ details of the default gems or bundled gems.
 
 * Refinement#refined_class has been removed. [[Feature #19714]]
 
+* On Windows `$PROGRAM_NAME`, `$LOAD_PATH` and command line options `-e <script>`, `-I <path>`
+  are now encoded as UTF-8 instead of the active code page.
+  `STDIN` from pipe is also interpret as UTF-8.
+    [[Feature #20699]], [[Bug #20774]]
+
 ## Stdlib compatibility issues
 
 * DidYouMean
