@@ -193,6 +193,37 @@ class TestEnv < Test::Unit::TestCase
     a.each {|k| assert_kind_of(String, k) }
   end
 
+  def test_keys_encoding
+    bug20958 = '[ruby-core:120277] [Bug #20958]'
+    orig = ENV.to_hash
+    ENV.clear
+    key = "TEST20958\u{30c6 30b9 30c8}"
+    begin
+      ENV[key] = "x"
+    rescue
+      omit "platform does not support UTF-8 environment variables."
+    end
+    EnvUtil.with_default_internal(nil) do
+      enc = RUBY_PLATFORM =~ /mswin|mingw/ ?
+         Encoding::UTF_8 : Encoding.find("locale")
+      assert_equal(enc, ENV.keys.last.encoding, bug20958)
+      assert_equal(key.encode(enc), ENV.keys.last, bug20958)
+    end
+
+    ENV.update(orig) #required to restore ENV[RbConfig::CONFIG['LIBPATHENV']]
+    env = {key => "x", "LOCALE" => "en_US.UTF-8", "LC_ALL" => "en_US.UTF-8"}
+    load_path = $LOAD_PATH.map {|v| "-I#{v}" }
+    internal_enc = "Windows-31J"
+    params = [env, *load_path, "-Eutf-8:#{internal_enc}"]
+    assert_separately(params, <<-"EOS")
+      ENV.keep_if {|k,| k.start_with?("TEST20958") }
+      key = ENV.keys.last
+      assert_equal("#{internal_enc}", key.encoding.to_s, "#{bug20958}")
+      assert_equal("#{key.encode(Encoding.find(internal_enc)).bytes}",
+                   key.bytes.to_s, "#{bug20958}")
+    EOS
+  end
+
   def test_each_key
     ENV.each_key {|k| assert_kind_of(String, k) }
   end
