@@ -415,6 +415,14 @@ static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *resu
 static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 
 
+#ifndef HAVE_STRNLEN
+static size_t strnlen(const char *s, size_t maxlen)
+{
+    char *p;
+    return ((p = memchr(s, '\0', maxlen)) ? p - s : maxlen);
+}
+#endif
+
 #define PARSE_ERROR_FRAGMENT_LEN 32
 #ifdef RBIMPL_ATTR_NORETURN
 RBIMPL_ATTR_NORETURN()
