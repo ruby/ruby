@@ -148,6 +148,8 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+We only list stdlib changes that are notable feature changes.
+
 * RubyGems
     * Add --attestation option to gem push. It enabled to store signature of build artifact to sigstore.dev.
 
@@ -170,6 +172,8 @@ Note: We're only listing outstanding class updates.
 
     * This library is now extracted from the Ruby repository to [ruby/net-http-sspi].
       [[Feature #20775]]
+
+Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
 
 The following default gem is added.
 
@@ -274,8 +278,6 @@ The following bundled gem is added.
 * repl_type_completor 0.1.9
 
 The following bundled gems are updated.
-
-Note: we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
 
 * minitest 5.25.4
 * power_assert 2.0.4
