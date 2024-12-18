@@ -186,6 +186,7 @@ module SyncDefaultGems
     when "irb"
       rm_rf(%w[lib/irb lib/irb.rb test/irb])
       cp_r(Dir.glob("#{upstream}/lib/irb*"), "lib")
+      rm_rf(%w[lib/irb/.document])
       cp_r("#{upstream}/test/irb", "test")
       cp_r("#{upstream}/irb.gemspec", "lib/irb")
       cp_r("#{upstream}/man/irb.1", "man/irb.1")
