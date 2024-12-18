@@ -5084,7 +5084,7 @@ rb_ary_concat(VALUE x, VALUE y)
  *  When string argument +string_separator+ is given,
  *  equivalent to <tt>self.join(string_separator)</tt>:
  *
- *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {:foo=>0}"
+ *    [0, [0, 1], {foo: 0}] * ', ' # => "0, 0, 1, {foo: 0}"
  *
  */
 
