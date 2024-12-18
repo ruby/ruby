@@ -9120,7 +9120,7 @@ lex_global_variable(pm_parser_t *parser) {
         case '-':
             parser->current.end++;
             allow_multiple = false;
-            /* fallthrough */
+            PRISM_FALLTHROUGH
         default: {
             size_t width;
 
@@ -10049,8 +10049,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 escape_write_byte_encoded(parser, buffer, escape_byte('\n', flags));
                 return;
             }
+            PRISM_FALLTHROUGH
         }
-        /* fallthrough */
         default: {
             if ((flags & (PM_ESCAPE_FLAG_CONTROL | PM_ESCAPE_FLAG_META)) && !char_is_ascii_printable(peeked)) {
                 size_t width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
@@ -10759,7 +10759,7 @@ parser_lex(pm_parser_t *parser) {
 
                     lexed_comment = true;
                 }
-                /* fallthrough */
+                PRISM_FALLTHROUGH
                 case '\r':
                 case '\n': {
                     parser->semantic_token_seen = semantic_token_seen & 0x1;
@@ -10801,7 +10801,7 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.type = PM_TOKEN_NEWLINE;
                                 return;
                             }
-                            /* fallthrough */
+                            PRISM_FALLTHROUGH
                         case PM_IGNORED_NEWLINE_ALL:
                             if (!lexed_comment) parser_lex_ignored_newline(parser);
                             lexed_comment = false;
@@ -11816,7 +11816,7 @@ parser_lex(pm_parser_t *parser) {
                                             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "escaped carriage return");
                                             break;
                                         }
-                                        /* fallthrough */
+                                        PRISM_FALLTHROUGH
                                     default:
                                         PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, "backslash");
                                         break;
@@ -12013,7 +12013,7 @@ parser_lex(pm_parser_t *parser) {
                                 pm_token_buffer_push_byte(&token_buffer, '\r');
                                 break;
                             }
-                        /* fallthrough */
+                        PRISM_FALLTHROUGH
                         case '\n':
                             pm_token_buffer_push_byte(&token_buffer, '\n');
 
@@ -12200,7 +12200,7 @@ parser_lex(pm_parser_t *parser) {
                         pm_regexp_token_buffer_escape(parser, &token_buffer);
                         token_buffer.base.cursor = breakpoint;
 
-                        /* fallthrough */
+                        PRISM_FALLTHROUGH
                     case '\n':
                         // If we've hit a newline, then we need to track that in
                         // the list of newlines.
@@ -12242,7 +12242,7 @@ parser_lex(pm_parser_t *parser) {
                                     pm_token_buffer_push_byte(&token_buffer.base, '\r');
                                     break;
                                 }
-                            /* fallthrough */
+                            PRISM_FALLTHROUGH
                             case '\n':
                                 if (parser->heredoc_end) {
                                     // ... if we are on the same line as a heredoc,
@@ -12450,7 +12450,7 @@ parser_lex(pm_parser_t *parser) {
                         pm_token_buffer_escape(parser, &token_buffer);
                         token_buffer.cursor = breakpoint;
 
-                        /* fallthrough */
+                        PRISM_FALLTHROUGH
                     case '\n':
                         // When we hit a newline, we need to flush any potential
                         // heredocs. Note that this has to happen after we check
@@ -12495,7 +12495,7 @@ parser_lex(pm_parser_t *parser) {
                                     pm_token_buffer_push_byte(&token_buffer, '\r');
                                     break;
                                 }
-                            /* fallthrough */
+                            PRISM_FALLTHROUGH
                             case '\n':
                                 if (!lex_mode->as.string.interpolation) {
                                     pm_token_buffer_push_byte(&token_buffer, '\\');
@@ -12703,7 +12703,7 @@ parser_lex(pm_parser_t *parser) {
                         pm_token_buffer_escape(parser, &token_buffer);
                         token_buffer.cursor = breakpoint;
 
-                        /* fallthrough */
+                        PRISM_FALLTHROUGH
                     case '\n': {
                         if (parser->heredoc_end != NULL && (parser->heredoc_end > breakpoint)) {
                             parser_flush_heredoc_end(parser);
@@ -12803,7 +12803,7 @@ parser_lex(pm_parser_t *parser) {
                                         pm_token_buffer_push_byte(&token_buffer, '\r');
                                         break;
                                     }
-                                /* fallthrough */
+                                PRISM_FALLTHROUGH
                                 case '\n':
                                     pm_token_buffer_push_byte(&token_buffer, '\\');
                                     pm_token_buffer_push_byte(&token_buffer, '\n');
@@ -12823,7 +12823,7 @@ parser_lex(pm_parser_t *parser) {
                                         pm_token_buffer_push_byte(&token_buffer, '\r');
                                         break;
                                     }
-                                /* fallthrough */
+                                PRISM_FALLTHROUGH
                                 case '\n':
                                     // If we are in a tilde here, we should
                                     // break out of the loop and return the
@@ -13545,7 +13545,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target, bool multiple, bool splat_p
                 return (pm_node_t *) pm_index_target_node_create(parser, call);
             }
         }
-        /* fallthrough */
+        PRISM_FALLTHROUGH
         default:
             // In this case we have a node that we don't know how to convert
             // into a target. We need to treat it as an error. For now, we'll
@@ -13627,7 +13627,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
         case PM_BACK_REFERENCE_READ_NODE:
         case PM_NUMBERED_REFERENCE_READ_NODE:
             PM_PARSER_ERR_NODE_FORMAT_CONTENT(parser, target, PM_ERR_WRITE_TARGET_READONLY);
-            /* fallthrough */
+            PRISM_FALLTHROUGH
         case PM_GLOBAL_VARIABLE_READ_NODE: {
             pm_global_variable_write_node_t *node = pm_global_variable_write_node_create(parser, target, operator, value);
             pm_node_destroy(parser, target);
@@ -13769,7 +13769,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // is no way for us to attach it to the tree at this point.
             pm_node_destroy(parser, value);
         }
-        /* fallthrough */
+        PRISM_FALLTHROUGH
         default:
             // In this case we have a node that we don't know how to convert into a
             // target. We need to treat it as an error. For now, we'll mark it as an
@@ -14289,7 +14289,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     }
                 }
             }
-            /* fallthrough */
+            PRISM_FALLTHROUGH
             default: {
                 if (argument == NULL) {
                     argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, !parsed_first_argument, true, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
@@ -16177,7 +16177,7 @@ parse_operator_symbol_name(const pm_token_t *name) {
         case PM_TOKEN_TILDE:
         case PM_TOKEN_BANG:
             if (name->end[-1] == '@') return name->end - 1;
-        /* fallthrough */
+        PRISM_FALLTHROUGH
         default:
             return name->end;
     }
@@ -17149,7 +17149,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
                 break;
             }
         }
-        /* fallthrough */
+        PRISM_FALLTHROUGH
         default: {
             // If we get anything else, then this is an error. For this we'll
             // create a missing node for the value and create an assoc node for
@@ -17645,7 +17645,7 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
                 break;
             }
         }
-        /* fallthrough */
+        PRISM_FALLTHROUGH
         default:
             node = parse_pattern_primitives(parser, captures, NULL, diag_id, (uint16_t) (depth + 1));
             break;
@@ -18775,7 +18775,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         pm_parser_err_node(parser, old_name, PM_ERR_ALIAS_ARGUMENT);
                     }
                 }
-                /* fallthrough */
+                PRISM_FALLTHROUGH
                 default:
                     return (pm_node_t *) pm_alias_method_node_create(parser, &keyword, new_name, old_name);
             }
@@ -19303,7 +19303,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 case PM_TOKEN_CLASS_VARIABLE:
                 case PM_TOKEN_GLOBAL_VARIABLE:
                     valid_name = false;
-                    /* fallthrough */
+                    PRISM_FALLTHROUGH
                 case PM_TOKEN_CONSTANT:
                 case PM_TOKEN_KEYWORD_NIL:
                 case PM_TOKEN_KEYWORD_SELF:
@@ -21114,7 +21114,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_parser_local_add_location(parser, call_node->message_loc.start, call_node->message_loc.end, 0);
                     }
                 }
-                /* fallthrough */
+                PRISM_FALLTHROUGH
                 case PM_CASE_WRITABLE: {
                     parser_lex(parser);
                     pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, accepts_command_call, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
@@ -21160,7 +21160,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_BACK_REFERENCE_READ_NODE:
                 case PM_NUMBERED_REFERENCE_READ_NODE:
                     PM_PARSER_ERR_NODE_FORMAT_CONTENT(parser, node, PM_ERR_WRITE_TARGET_READONLY);
-                /* fallthrough */
+                PRISM_FALLTHROUGH
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
@@ -21278,7 +21278,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_BACK_REFERENCE_READ_NODE:
                 case PM_NUMBERED_REFERENCE_READ_NODE:
                     PM_PARSER_ERR_NODE_FORMAT_CONTENT(parser, node, PM_ERR_WRITE_TARGET_READONLY);
-                /* fallthrough */
+                PRISM_FALLTHROUGH
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
@@ -21406,7 +21406,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_BACK_REFERENCE_READ_NODE:
                 case PM_NUMBERED_REFERENCE_READ_NODE:
                     PM_PARSER_ERR_NODE_FORMAT_CONTENT(parser, node, PM_ERR_WRITE_TARGET_READONLY);
-                /* fallthrough */
+                PRISM_FALLTHROUGH
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
@@ -22043,6 +22043,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             if (pm_symbol_node_label_p(node)) {
                 return node;
             }
+            break;
         default:
             break;
     }

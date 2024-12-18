@@ -599,8 +599,7 @@ pm_regexp_parse_group(pm_regexp_parser_t *parser, uint16_t depth) {
                 // If we hit a -, then we're done parsing options.
                 if (*parser->cursor != '-') break;
 
-                // Otherwise, fallthrough to the - case.
-                /* fallthrough */
+                PRISM_FALLTHROUGH
             case '-':
                 parser->cursor++;
                 while (!pm_regexp_char_is_eof(parser) && *parser->cursor != ':' && *parser->cursor != ')') {
@@ -712,7 +711,7 @@ pm_regexp_parse_item(pm_regexp_parser_t *parser, uint16_t depth) {
                 if (!pm_regexp_char_find(parser, '\n')) parser->cursor = parser->end;
                 return true;
             }
-        /* fallthrough */
+        PRISM_FALLTHROUGH
         default: {
             size_t width;
             if (!parser->encoding_changed) {
