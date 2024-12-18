@@ -10,3 +10,4 @@ rdoc_include:
 
 exclude:
 - lib/irb
+- .gemspec
