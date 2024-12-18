@@ -3663,7 +3663,10 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     struct free_slot *ptr = sweep_page->freelist;
     while (ptr) {
         freelist_len++;
-        ptr = ptr->next;
+        asan_unpoison_object((VALUE)ptr, false);
+        struct free_slot *next = ptr->next;
+        asan_poison_object((VALUE)ptr);
+        ptr = next;
     }
     asan_lock_freelist(sweep_page);
     if (freelist_len != sweep_page->free_slots) {
