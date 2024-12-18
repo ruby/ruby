@@ -822,7 +822,10 @@ fiber_restore_thread(rb_thread_t *th, rb_fiber_t *fiber)
     VM_ASSERT(th->ec->fiber_ptr == fiber);
 }
 
-NORETURN(static COROUTINE fiber_entry(struct coroutine_context * from, struct coroutine_context * to));
+#ifndef COROUTINE_DECL
+# define COROUTINE_DECL COROUTINE
+#endif
+NORETURN(static COROUTINE_DECL fiber_entry(struct coroutine_context * from, struct coroutine_context * to));
 static COROUTINE
 fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
 {
