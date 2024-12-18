@@ -276,56 +276,56 @@ The following default gems are updated.
 
 The following bundled gem is added.
 
-* repl_type_completor 0.1.9
+* [repl_type_completor][repl_type_completor] 0.1.9
 
 The following bundled gems are updated.
 
-* minitest 5.25.4
-* power_assert 2.0.4
-  * 2.0.3 to [v2.0.4][power_assert-v2.0.4]
-* rake 13.2.1
-  * 13.1.0 to [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
-* test-unit 3.6.7
-  * 3.6.1 to [3.6.2][test-unit-3.6.2], [3.6.3][test-unit-3.6.3], [3.6.4][test-unit-3.6.4], [3.6.5][test-unit-3.6.5], [3.6.6][test-unit-3.6.6], [3.6.7][test-unit-3.6.7]
-* rexml 3.4.0
-  * 3.2.6 to [v3.2.7][rexml-v3.2.7], [v3.2.8][rexml-v3.2.8], [v3.2.9][rexml-v3.2.9], [v3.3.0][rexml-v3.3.0], [v3.3.1][rexml-v3.3.1], [v3.3.2][rexml-v3.3.2], [v3.3.3][rexml-v3.3.3], [v3.3.4][rexml-v3.3.4], [v3.3.5][rexml-v3.3.5], [v3.3.6][rexml-v3.3.6], [v3.3.7][rexml-v3.3.7], [v3.3.8][rexml-v3.3.8], [v3.3.9][rexml-v3.3.9], [v3.4.0][rexml-v3.4.0]
-* rss 0.3.1
-  * 0.3.0 to [0.3.1][rss-0.3.1]
-* net-ftp 0.3.8
-  * 0.3.3 to [v0.3.4][net-ftp-v0.3.4], [v0.3.5][net-ftp-v0.3.5], [v0.3.6][net-ftp-v0.3.6], [v0.3.7][net-ftp-v0.3.7], [v0.3.8][net-ftp-v0.3.8]
-* net-imap 0.5.2
-  * 0.4.9 to [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2]
-* net-smtp 0.5.0
-  * 0.4.0 to [v0.4.0.1][net-smtp-v0.4.0.1], [v0.5.0][net-smtp-v0.5.0]
-* prime 0.1.3
-  * [v0.1.3][prime-v0.1.3]
-* rbs 3.7.0
-  * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0]
-* debug 1.10.0
-  * 1.9.1 to [v1.9.2][debug-v1.9.2], [v1.10.0][debug-v1.10.0]
-* racc 1.8.1
-  * 1.7.3 to [v1.8.0][racc-v1.8.0], [v1.8.1][racc-v1.8.1]
+* [minitest][minitest] 5.25.4
+* [power_assert][power_assert] 2.0.4
+    * 2.0.3 to [v2.0.4][power_assert-v2.0.4]
+* [rake][rake] 13.2.1
+    * 13.1.0 to [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
+* [test-unit][test-unit] 3.6.7
+    * 3.6.1 to [3.6.2][test-unit-3.6.2], [3.6.3][test-unit-3.6.3], [3.6.4][test-unit-3.6.4], [3.6.5][test-unit-3.6.5], [3.6.6][test-unit-3.6.6], [3.6.7][test-unit-3.6.7]
+* [rexml][rexml] 3.4.0
+    * 3.2.6 to [v3.2.7][rexml-v3.2.7], [v3.2.8][rexml-v3.2.8], [v3.2.9][rexml-v3.2.9], [v3.3.0][rexml-v3.3.0], [v3.3.1][rexml-v3.3.1], [v3.3.2][rexml-v3.3.2], [v3.3.3][rexml-v3.3.3], [v3.3.4][rexml-v3.3.4], [v3.3.5][rexml-v3.3.5], [v3.3.6][rexml-v3.3.6], [v3.3.7][rexml-v3.3.7], [v3.3.8][rexml-v3.3.8], [v3.3.9][rexml-v3.3.9], [v3.4.0][rexml-v3.4.0]
+* [rss][rss] 0.3.1
+    * 0.3.0 to [0.3.1][rss-0.3.1]
+* [net-ftp][net-ftp] 0.3.8
+    * 0.3.3 to [v0.3.4][net-ftp-v0.3.4], [v0.3.5][net-ftp-v0.3.5], [v0.3.6][net-ftp-v0.3.6], [v0.3.7][net-ftp-v0.3.7], [v0.3.8][net-ftp-v0.3.8]
+* [net-imap][net-imap] 0.5.2
+    * 0.4.9 to [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2]
+* [net-smtp][net-smtp] 0.5.0
+    * 0.4.0 to [v0.4.0.1][net-smtp-v0.4.0.1], [v0.5.0][net-smtp-v0.5.0]
+* [prime][prime] 0.1.3
+    * [v0.1.3][prime-v0.1.3]
+* [rbs][rbs] 3.7.0
+    * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0]
+* [debug][debug] 1.10.0
+    * 1.9.1 to [v1.9.2][debug-v1.9.2], [v1.10.0][debug-v1.10.0]
+* [racc][racc] 1.8.1
+    * 1.7.3 to [v1.8.0][racc-v1.8.0], [v1.8.1][racc-v1.8.1]
 
 The following bundled gems are promoted from default gems.
 
-* mutex_m 0.3.0
-  * 0.2.0 to [v0.3.0][mutex_m-v0.3.0]
-* getoptlong 0.2.1
-* base64 0.2.0
-* bigdecimal 3.1.8
-  * 3.1.5 to [v3.1.6][bigdecimal-v3.1.6], [v3.1.7][bigdecimal-v3.1.7], [v3.1.8][bigdecimal-v3.1.8]
-* observer 0.1.2
-* abbrev 0.1.2
-* resolv-replace 0.1.1
-* rinda 0.2.0
-* drb 2.2.1
-  * 2.2.0 to [v2.2.1][drb-v2.2.1]
-* nkf 0.2.0
-  * 0.1.3 to [v0.2.0][nkf-v0.2.0]
-* syslog 0.2.0
-  * 0.1.2 to [v0.2.0][syslog-v0.2.0]
-* csv 3.3.1
-  * 3.2.8 to [v3.2.9][csv-v3.2.9], [v3.3.0][csv-v3.3.0], [v3.3.1][csv-v3.3.1]
+* [mutex_m][mutex_m] 0.3.0
+    * 0.2.0 to [v0.3.0][mutex_m-v0.3.0]
+* [getoptlong][getoptlong] 0.2.1
+* [base64][base64] 0.2.0
+* [bigdecimal][bigdecimal] 3.1.8
+    * 3.1.5 to [v3.1.6][bigdecimal-v3.1.6], [v3.1.7][bigdecimal-v3.1.7], [v3.1.8][bigdecimal-v3.1.8]
+* [observer][observer] 0.1.2
+* [abbrev][abbrev] 0.1.2
+* [resolv-replace][resolv-replace] 0.1.1
+* [rinda][rinda] 0.2.0
+* [drb][drb] 2.2.1
+    * 2.2.0 to [v2.2.1][drb-v2.2.1]
+* [nkf][nkf] 0.2.0
+    * 0.1.3 to [v0.2.0][nkf-v0.2.0]
+* [syslog][syslog] 0.2.0
+    * 0.1.2 to [v0.2.0][syslog-v0.2.0]
+* [csv][csv] 3.3.1
+    * 3.2.8 to [v3.2.9][csv-v3.2.9], [v3.3.0][csv-v3.3.0], [v3.3.1][csv-v3.3.1]
 
 ## Supported platforms
 
@@ -845,3 +845,30 @@ The following bundled gems are promoted from default gems.
 [win32ole]: https://github.com/ruby/win32ole
 [yaml]: https://github.com/ruby/yaml
 [zlib]: https://github.com/ruby/zlib
+
+[repl_type_completor]: https://github.com/ruby/repl_type_completor
+[minitest]: https://github.com/seattlerb/minitest
+[power_assert]: https://github.com/ruby/power_assert
+[rake]: https://github.com/ruby/rake
+[test-unit]: https://github.com/test-unit/test-unit
+[rexml]: https://github.com/ruby/rexml
+[rss]: https://github.com/ruby/rss
+[net-ftp]: https://github.com/ruby/net-ftp
+[net-imap]: https://github.com/ruby/net-imap
+[net-smtp]: https://github.com/ruby/net-smtp
+[prime]: https://github.com/ruby/prime
+[rbs]: https://github.com/ruby/rbs
+[debug]: https://github.com/ruby/debug
+[racc]: https://github.com/ruby/racc
+[mutex_m]: https://github.com/ruby/mutex_m
+[getoptlong]: https://github.com/ruby/getoptlong
+[base64]: https://github.com/ruby/base64
+[bigdecimal]: https://github.com/ruby/bigdecimal
+[observer]: https://github.com/ruby/observer
+[abbrev]: https://github.com/ruby/abbrev
+[resolv-replace]: https://github.com/ruby/resolv-replace
+[rinda]: https://github.com/ruby/rinda
+[drb]: https://github.com/ruby/drb
+[nkf]: https://github.com/ruby/nkf
+[syslog]: https://github.com/ruby/syslog
+[csv]: https://github.com/ruby/csv
