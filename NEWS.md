@@ -178,51 +178,96 @@ The following default gem is added.
 The following default gems are updated.
 
 * RubyGems 3.6.1
+  * 3.5.3 to [v3.5.4][RubyGems-v3.5.4], [v3.5.5][RubyGems-v3.5.5], [v3.5.6][RubyGems-v3.5.6], [v3.5.7][RubyGems-v3.5.7], [v3.5.8][RubyGems-v3.5.8], [v3.5.9][RubyGems-v3.5.9], [v3.5.10][RubyGems-v3.5.10], [v3.5.11][RubyGems-v3.5.11], [v3.5.12][RubyGems-v3.5.12], [v3.5.13][RubyGems-v3.5.13], [v3.5.14][RubyGems-v3.5.14], [v3.5.15][RubyGems-v3.5.15], [v3.5.16][RubyGems-v3.5.16], [v3.5.17][RubyGems-v3.5.17], [v3.5.18][RubyGems-v3.5.18], [v3.5.19][RubyGems-v3.5.19], [v3.5.20][RubyGems-v3.5.20], [v3.5.21][RubyGems-v3.5.21], [v3.5.22][RubyGems-v3.5.22], [v3.5.23][RubyGems-v3.5.23], [v3.6.0][RubyGems-v3.6.0], [v3.6.1][RubyGems-v3.6.1]
 * benchmark 0.4.0
+  * 0.3.0 to [v0.4.0][benchmark-v0.4.0]
 * bundler 2.6.1
+  * 2.5.3 to [v2.5.4][bundler-v2.5.4], [v2.5.5][bundler-v2.5.5], [v2.5.6][bundler-v2.5.6], [v2.5.7][bundler-v2.5.7], [v2.5.8][bundler-v2.5.8], [v2.5.9][bundler-v2.5.9], [v2.5.10][bundler-v2.5.10], [v2.5.11][bundler-v2.5.11], [v2.5.12][bundler-v2.5.12], [v2.5.13][bundler-v2.5.13], [v2.5.14][bundler-v2.5.14], [v2.5.15][bundler-v2.5.15], [v2.5.16][bundler-v2.5.16], [v2.5.17][bundler-v2.5.17], [v2.5.18][bundler-v2.5.18], [v2.5.19][bundler-v2.5.19], [v2.5.20][bundler-v2.5.20], [v2.5.21][bundler-v2.5.21], [v2.5.22][bundler-v2.5.22], [v2.5.23][bundler-v2.5.23], [v2.6.0][bundler-v2.6.0], [v2.6.1][bundler-v2.6.1]
 * date 3.4.1
+  * 3.3.4 to [v3.4.0][date-v3.4.0], [v3.4.1][date-v3.4.1]
 * delegate 0.4.0
+  * 0.3.1 to [v0.4.0][delegate-v0.4.0]
 * did_you_mean 2.0.0
+  * 1.6.3 to [v2.0.0][did_you_mean-v2.0.0]
 * digest 3.2.0
+  * 3.1.1 to [v3.2.0.pre0][digest-v3.2.0.pre0], [v3.2.0][digest-v3.2.0]
 * erb 4.0.4
+  * 4.0.3 to [v4.0.4][erb-v4.0.4]
 * error_highlight 0.7.0
 * etc 1.4.5
+  * 1.4.3 to [v1.4.4][etc-v1.4.4], [v1.4.5][etc-v1.4.5]
 * fcntl 1.2.0
+  * 1.1.0 to [v1.2.0][fcntl-v1.2.0]
 * fiddle 1.1.6
+  * 1.1.2 to [v1.1.3][fiddle-v1.1.3], [v1.1.4][fiddle-v1.1.4], [v1.1.5][fiddle-v1.1.5], [v1.1.6][fiddle-v1.1.6]
 * fileutils 1.7.3
+  * 1.7.2 to [v1.7.3][fileutils-v1.7.3]
 * io-console 0.8.0
+  * 0.7.1 to [v0.7.2][io-console-v0.7.2], [v0.8.0.beta1][io-console-v0.8.0.beta1], [v0.8.0][io-console-v0.8.0]
 * io-nonblock 0.3.1
+  * 0.3.0 to [v0.3.1][io-nonblock-v0.3.1]
 * ipaddr 1.2.7
+  * 1.2.6 to [v1.2.7][ipaddr-v1.2.7]
 * irb 1.14.2
+  * 1.11.0 to [v1.11.1][irb-v1.11.1], [v1.11.2][irb-v1.11.2], [v1.12.0][irb-v1.12.0], [v1.13.0][irb-v1.13.0], [v1.13.1][irb-v1.13.1], [v1.13.2][irb-v1.13.2], [v1.14.0][irb-v1.14.0], [v1.14.1][irb-v1.14.1], [v1.14.2][irb-v1.14.2]
 * json 2.9.0
+  * 2.7.1 to [v2.7.2][json-v2.7.2], [v2.7.3.rc1][json-v2.7.3.rc1], [v2.7.3][json-v2.7.3], [v2.7.4][json-v2.7.4], [v2.7.5][json-v2.7.5], [v2.7.6][json-v2.7.6], [v2.8.0][json-v2.8.0], [v2.8.1][json-v2.8.1], [v2.8.2][json-v2.8.2], [v2.9.0][json-v2.9.0]
 * logger 1.6.3
+  * 1.6.0 to [v1.6.1][logger-v1.6.1], [v1.6.2][logger-v1.6.2], [v1.6.3][logger-v1.6.3]
 * net-http 0.6.0
+  * 0.4.0 to [v0.4.1][net-http-v0.4.1], [v0.5.0][net-http-v0.5.0], [v0.6.0][net-http-v0.6.0]
 * open-uri 0.5.0
+  * 0.4.1 to [v0.5.0][open-uri-v0.5.0]
 * optparse 0.6.0
+  * 0.4.0 to [v0.5.0][optparse-v0.5.0], [v0.6.0][optparse-v0.6.0]
 * ostruct 0.6.1
+  * 0.6.0 to [v0.6.1][ostruct-v0.6.1]
 * pathname 0.4.0
+  * 0.3.0 to [v0.4.0][pathname-v0.4.0]
 * pp 0.6.2
+  * 0.5.0 to [v0.6.0][pp-v0.6.0], [v0.6.1][pp-v0.6.1], [v0.6.2][pp-v0.6.2]
 * prism 1.2.0
+  * 0.19.0 to [v0.20.0][prism-v0.20.0], [v0.21.0][prism-v0.21.0], [v0.22.0][prism-v0.22.0], [v0.23.0][prism-v0.23.0], [v0.24.0][prism-v0.24.0], [v0.25.0][prism-v0.25.0], [v0.26.0][prism-v0.26.0], [v0.27.0][prism-v0.27.0], [v0.28.0][prism-v0.28.0], [v0.29.0][prism-v0.29.0], [v0.30.0][prism-v0.30.0], [v1.0.0][prism-v1.0.0], [v1.1.0][prism-v1.1.0], [v1.2.0][prism-v1.2.0]
 * pstore 0.1.4
+  * 0.1.3 to [v0.1.4][pstore-v0.1.4]
 * psych 5.2.2
+  * 5.1.2 to [v5.2.0.beta1][psych-v5.2.0.beta1], [v5.2.0.beta2][psych-v5.2.0.beta2], [v5.2.0.beta3][psych-v5.2.0.beta3], [v5.2.0.beta4][psych-v5.2.0.beta4], [v5.2.0.beta5][psych-v5.2.0.beta5], [v5.2.0.beta6][psych-v5.2.0.beta6], [v5.2.0.beta7][psych-v5.2.0.beta7], [v5.2.0][psych-v5.2.0], [v5.2.1][psych-v5.2.1], [v5.2.2][psych-v5.2.2]
 * rdoc 6.9.1
+  * 6.6.2 to [v6.7.0][rdoc-v6.7.0], [v6.8.0][rdoc-v6.8.0], [v6.8.1][rdoc-v6.8.1], [v6.9.0][rdoc-v6.9.0], [v6.9.1][rdoc-v6.9.1]
 * reline 0.6.0
+  * 0.4.1 to [v0.4.2][reline-v0.4.2], [v0.4.3][reline-v0.4.3], [v0.5.0.pre.1][reline-v0.5.0.pre.1], [v0.5.0][reline-v0.5.0], [v0.5.1][reline-v0.5.1], [v0.5.2][reline-v0.5.2], [v0.5.3][reline-v0.5.3], [v0.5.4][reline-v0.5.4], [v0.5.5][reline-v0.5.5], [v0.5.6][reline-v0.5.6], [v0.5.7][reline-v0.5.7], [v0.5.8][reline-v0.5.8], [v0.5.9][reline-v0.5.9], [v0.5.10][reline-v0.5.10], [v0.5.11][reline-v0.5.11], [v0.5.12][reline-v0.5.12], [v0.6.0][reline-v0.6.0]
 * resolv 0.6.0
+  * 0.3.0 to [v0.4.0][resolv-v0.4.0], [v0.5.0][resolv-v0.5.0], [v0.6.0][resolv-v0.6.0]
 * securerandom 0.4.1
+  * 0.3.1 to [v0.3.2][securerandom-v0.3.2], [v0.4.0][securerandom-v0.4.0], [v0.4.1][securerandom-v0.4.1]
 * set 1.1.1
+  * 1.1.0 to [v1.1.1][set-v1.1.1]
 * shellwords 0.2.2
+  * 0.2.0 to [v0.2.1][shellwords-v0.2.1], [v0.2.2][shellwords-v0.2.2]
 * singleton 0.3.0
+  * 0.2.0 to [v0.3.0][singleton-v0.3.0]
 * stringio 3.1.2
+  * 3.1.0 to [v3.1.1][stringio-v3.1.1], [v3.1.2][stringio-v3.1.2]
 * strscan 3.1.2
+  * 3.0.7 to [v3.0.8][strscan-v3.0.8], [v3.0.9][strscan-v3.0.9], [v3.1.0][strscan-v3.1.0], [v3.1.1][strscan-v3.1.1], [v3.1.2][strscan-v3.1.2]
 * syntax_suggest 2.0.2
+  * 2.0.0 to [v2.0.1][syntax_suggest-v2.0.1], [v2.0.2][syntax_suggest-v2.0.2]
 * tempfile 0.3.1
+  * 0.2.1 to [v0.3.0][tempfile-v0.3.0], [v0.3.1][tempfile-v0.3.1]
 * time 0.4.1
+  * 0.3.0 to [v0.4.0][time-v0.4.0], [v0.4.1][time-v0.4.1]
 * timeout 0.4.3
+  * 0.4.1 to [v0.4.2][timeout-v0.4.2], [v0.4.3][timeout-v0.4.3]
 * tmpdir 0.3.1
+  * 0.2.0 to [v0.3.0][tmpdir-v0.3.0], [v0.3.1][tmpdir-v0.3.1]
 * uri 1.0.2
+  * 0.13.0 to [v0.13.1][uri-v0.13.1], [v1.0.0][uri-v1.0.0], [v1.0.1][uri-v1.0.1], [v1.0.2][uri-v1.0.2]
 * win32ole 1.9.1
+  * 1.8.10 to [v1.9.0][win32ole-v1.9.0], [v1.9.1][win32ole-v1.9.1]
 * yaml 0.4.0
+  * 0.3.0 to [v0.4.0][yaml-v0.4.0]
 * zlib 3.2.1
+  * 3.1.0 to [v3.1.1][zlib-v3.1.1], [v3.2.0][zlib-v3.2.0], [v3.2.1][zlib-v3.2.1]
 
 The following bundled gem is added.
 
@@ -492,6 +537,188 @@ details of the default gems or bundled gems.
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
 [Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
+[RubyGems-v3.5.4]: https://github.com/rubygems/rubygems/releases/tag/v3.5.4
+[RubyGems-v3.5.5]: https://github.com/rubygems/rubygems/releases/tag/v3.5.5
+[RubyGems-v3.5.6]: https://github.com/rubygems/rubygems/releases/tag/v3.5.6
+[RubyGems-v3.5.7]: https://github.com/rubygems/rubygems/releases/tag/v3.5.7
+[RubyGems-v3.5.8]: https://github.com/rubygems/rubygems/releases/tag/v3.5.8
+[RubyGems-v3.5.9]: https://github.com/rubygems/rubygems/releases/tag/v3.5.9
+[RubyGems-v3.5.10]: https://github.com/rubygems/rubygems/releases/tag/v3.5.10
+[RubyGems-v3.5.11]: https://github.com/rubygems/rubygems/releases/tag/v3.5.11
+[RubyGems-v3.5.12]: https://github.com/rubygems/rubygems/releases/tag/v3.5.12
+[RubyGems-v3.5.13]: https://github.com/rubygems/rubygems/releases/tag/v3.5.13
+[RubyGems-v3.5.14]: https://github.com/rubygems/rubygems/releases/tag/v3.5.14
+[RubyGems-v3.5.15]: https://github.com/rubygems/rubygems/releases/tag/v3.5.15
+[RubyGems-v3.5.16]: https://github.com/rubygems/rubygems/releases/tag/v3.5.16
+[RubyGems-v3.5.17]: https://github.com/rubygems/rubygems/releases/tag/v3.5.17
+[RubyGems-v3.5.18]: https://github.com/rubygems/rubygems/releases/tag/v3.5.18
+[RubyGems-v3.5.19]: https://github.com/rubygems/rubygems/releases/tag/v3.5.19
+[RubyGems-v3.5.20]: https://github.com/rubygems/rubygems/releases/tag/v3.5.20
+[RubyGems-v3.5.21]: https://github.com/rubygems/rubygems/releases/tag/v3.5.21
+[RubyGems-v3.5.22]: https://github.com/rubygems/rubygems/releases/tag/v3.5.22
+[RubyGems-v3.5.23]: https://github.com/rubygems/rubygems/releases/tag/v3.5.23
+[RubyGems-v3.6.0]: https://github.com/rubygems/rubygems/releases/tag/v3.6.0
+[RubyGems-v3.6.1]: https://github.com/rubygems/rubygems/releases/tag/v3.6.1
+[benchmark-v0.4.0]: https://github.com/ruby/benchmark/releases/tag/v0.4.0
+[bundler-v2.5.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.4
+[bundler-v2.5.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.5
+[bundler-v2.5.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.6
+[bundler-v2.5.7]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.7
+[bundler-v2.5.8]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.8
+[bundler-v2.5.9]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.9
+[bundler-v2.5.10]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.10
+[bundler-v2.5.11]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.11
+[bundler-v2.5.12]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.12
+[bundler-v2.5.13]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.13
+[bundler-v2.5.14]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.14
+[bundler-v2.5.15]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.15
+[bundler-v2.5.16]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.16
+[bundler-v2.5.17]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.17
+[bundler-v2.5.18]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.18
+[bundler-v2.5.19]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.19
+[bundler-v2.5.20]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.20
+[bundler-v2.5.21]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.21
+[bundler-v2.5.22]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.22
+[bundler-v2.5.23]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.5.23
+[bundler-v2.6.0]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.6.0
+[bundler-v2.6.1]: https://github.com/rubygems/rubygems/releases/tag/bundler-v2.6.1
+[date-v3.4.0]: https://github.com/ruby/date/releases/tag/v3.4.0
+[date-v3.4.1]: https://github.com/ruby/date/releases/tag/v3.4.1
+[delegate-v0.4.0]: https://github.com/ruby/delegate/releases/tag/v0.4.0
+[did_you_mean-v2.0.0]: https://github.com/ruby/did_you_mean/releases/tag/v2.0.0
+[digest-v3.2.0.pre0]: https://github.com/ruby/digest/releases/tag/v3.2.0.pre0
+[digest-v3.2.0]: https://github.com/ruby/digest/releases/tag/v3.2.0
+[erb-v4.0.4]: https://github.com/ruby/erb/releases/tag/v4.0.4
+[etc-v1.4.4]: https://github.com/ruby/etc/releases/tag/v1.4.4
+[etc-v1.4.5]: https://github.com/ruby/etc/releases/tag/v1.4.5
+[fcntl-v1.2.0]: https://github.com/ruby/fcntl/releases/tag/v1.2.0
+[fiddle-v1.1.3]: https://github.com/ruby/fiddle/releases/tag/v1.1.3
+[fiddle-v1.1.4]: https://github.com/ruby/fiddle/releases/tag/v1.1.4
+[fiddle-v1.1.5]: https://github.com/ruby/fiddle/releases/tag/v1.1.5
+[fiddle-v1.1.6]: https://github.com/ruby/fiddle/releases/tag/v1.1.6
+[fileutils-v1.7.3]: https://github.com/ruby/fileutils/releases/tag/v1.7.3
+[io-console-v0.7.2]: https://github.com/ruby/io-console/releases/tag/v0.7.2
+[io-console-v0.8.0.beta1]: https://github.com/ruby/io-console/releases/tag/v0.8.0.beta1
+[io-console-v0.8.0]: https://github.com/ruby/io-console/releases/tag/v0.8.0
+[io-nonblock-v0.3.1]: https://github.com/ruby/io-nonblock/releases/tag/v0.3.1
+[ipaddr-v1.2.7]: https://github.com/ruby/ipaddr/releases/tag/v1.2.7
+[irb-v1.11.1]: https://github.com/ruby/irb/releases/tag/v1.11.1
+[irb-v1.11.2]: https://github.com/ruby/irb/releases/tag/v1.11.2
+[irb-v1.12.0]: https://github.com/ruby/irb/releases/tag/v1.12.0
+[irb-v1.13.0]: https://github.com/ruby/irb/releases/tag/v1.13.0
+[irb-v1.13.1]: https://github.com/ruby/irb/releases/tag/v1.13.1
+[irb-v1.13.2]: https://github.com/ruby/irb/releases/tag/v1.13.2
+[irb-v1.14.0]: https://github.com/ruby/irb/releases/tag/v1.14.0
+[irb-v1.14.1]: https://github.com/ruby/irb/releases/tag/v1.14.1
+[irb-v1.14.2]: https://github.com/ruby/irb/releases/tag/v1.14.2
+[json-v2.7.2]: https://github.com/ruby/json/releases/tag/v2.7.2
+[json-v2.7.3.rc1]: https://github.com/ruby/json/releases/tag/v2.7.3.rc1
+[json-v2.7.3]: https://github.com/ruby/json/releases/tag/v2.7.3
+[json-v2.7.4]: https://github.com/ruby/json/releases/tag/v2.7.4
+[json-v2.7.5]: https://github.com/ruby/json/releases/tag/v2.7.5
+[json-v2.7.6]: https://github.com/ruby/json/releases/tag/v2.7.6
+[json-v2.8.0]: https://github.com/ruby/json/releases/tag/v2.8.0
+[json-v2.8.1]: https://github.com/ruby/json/releases/tag/v2.8.1
+[json-v2.8.2]: https://github.com/ruby/json/releases/tag/v2.8.2
+[json-v2.9.0]: https://github.com/ruby/json/releases/tag/v2.9.0
+[logger-v1.6.1]: https://github.com/ruby/logger/releases/tag/v1.6.1
+[logger-v1.6.2]: https://github.com/ruby/logger/releases/tag/v1.6.2
+[logger-v1.6.3]: https://github.com/ruby/logger/releases/tag/v1.6.3
+[net-http-v0.4.1]: https://github.com/ruby/net-http/releases/tag/v0.4.1
+[net-http-v0.5.0]: https://github.com/ruby/net-http/releases/tag/v0.5.0
+[net-http-v0.6.0]: https://github.com/ruby/net-http/releases/tag/v0.6.0
+[open-uri-v0.5.0]: https://github.com/ruby/open-uri/releases/tag/v0.5.0
+[optparse-v0.5.0]: https://github.com/ruby/optparse/releases/tag/v0.5.0
+[optparse-v0.6.0]: https://github.com/ruby/optparse/releases/tag/v0.6.0
+[ostruct-v0.6.1]: https://github.com/ruby/ostruct/releases/tag/v0.6.1
+[pathname-v0.4.0]: https://github.com/ruby/pathname/releases/tag/v0.4.0
+[pp-v0.6.0]: https://github.com/ruby/pp/releases/tag/v0.6.0
+[pp-v0.6.1]: https://github.com/ruby/pp/releases/tag/v0.6.1
+[pp-v0.6.2]: https://github.com/ruby/pp/releases/tag/v0.6.2
+[prism-v0.20.0]: https://github.com/ruby/prism/releases/tag/v0.20.0
+[prism-v0.21.0]: https://github.com/ruby/prism/releases/tag/v0.21.0
+[prism-v0.22.0]: https://github.com/ruby/prism/releases/tag/v0.22.0
+[prism-v0.23.0]: https://github.com/ruby/prism/releases/tag/v0.23.0
+[prism-v0.24.0]: https://github.com/ruby/prism/releases/tag/v0.24.0
+[prism-v0.25.0]: https://github.com/ruby/prism/releases/tag/v0.25.0
+[prism-v0.26.0]: https://github.com/ruby/prism/releases/tag/v0.26.0
+[prism-v0.27.0]: https://github.com/ruby/prism/releases/tag/v0.27.0
+[prism-v0.28.0]: https://github.com/ruby/prism/releases/tag/v0.28.0
+[prism-v0.29.0]: https://github.com/ruby/prism/releases/tag/v0.29.0
+[prism-v0.30.0]: https://github.com/ruby/prism/releases/tag/v0.30.0
+[prism-v1.0.0]: https://github.com/ruby/prism/releases/tag/v1.0.0
+[prism-v1.1.0]: https://github.com/ruby/prism/releases/tag/v1.1.0
+[prism-v1.2.0]: https://github.com/ruby/prism/releases/tag/v1.2.0
+[pstore-v0.1.4]: https://github.com/ruby/pstore/releases/tag/v0.1.4
+[psych-v5.2.0.beta1]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta1
+[psych-v5.2.0]: https://github.com/ruby/psych/releases/tag/v5.2.0
+[psych-v5.2.0.beta2]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta2
+[psych-v5.2.0.beta3]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta3
+[psych-v5.2.0.beta4]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta4
+[psych-v5.2.0.beta5]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta5
+[psych-v5.2.0.beta6]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta6
+[psych-v5.2.0.beta7]: https://github.com/ruby/psych/releases/tag/v5.2.0.beta7
+[psych-v5.2.1]: https://github.com/ruby/psych/releases/tag/v5.2.1
+[psych-v5.2.2]: https://github.com/ruby/psych/releases/tag/v5.2.2
+[rdoc-v6.7.0]: https://github.com/ruby/rdoc/releases/tag/v6.7.0
+[rdoc-v6.8.0]: https://github.com/ruby/rdoc/releases/tag/v6.8.0
+[rdoc-v6.8.1]: https://github.com/ruby/rdoc/releases/tag/v6.8.1
+[rdoc-v6.9.0]: https://github.com/ruby/rdoc/releases/tag/v6.9.0
+[rdoc-v6.9.1]: https://github.com/ruby/rdoc/releases/tag/v6.9.1
+[reline-v0.5.0.pre.1]: https://github.com/ruby/reline/releases/tag/v0.5.0.pre.1
+[reline-v0.4.2]: https://github.com/ruby/reline/releases/tag/v0.4.2
+[reline-v0.4.3]: https://github.com/ruby/reline/releases/tag/v0.4.3
+[reline-v0.5.0]: https://github.com/ruby/reline/releases/tag/v0.5.0
+[reline-v0.5.1]: https://github.com/ruby/reline/releases/tag/v0.5.1
+[reline-v0.5.2]: https://github.com/ruby/reline/releases/tag/v0.5.2
+[reline-v0.5.3]: https://github.com/ruby/reline/releases/tag/v0.5.3
+[reline-v0.5.4]: https://github.com/ruby/reline/releases/tag/v0.5.4
+[reline-v0.5.5]: https://github.com/ruby/reline/releases/tag/v0.5.5
+[reline-v0.5.6]: https://github.com/ruby/reline/releases/tag/v0.5.6
+[reline-v0.5.7]: https://github.com/ruby/reline/releases/tag/v0.5.7
+[reline-v0.5.8]: https://github.com/ruby/reline/releases/tag/v0.5.8
+[reline-v0.5.9]: https://github.com/ruby/reline/releases/tag/v0.5.9
+[reline-v0.5.10]: https://github.com/ruby/reline/releases/tag/v0.5.10
+[reline-v0.5.11]: https://github.com/ruby/reline/releases/tag/v0.5.11
+[reline-v0.5.12]: https://github.com/ruby/reline/releases/tag/v0.5.12
+[reline-v0.6.0]: https://github.com/ruby/reline/releases/tag/v0.6.0
+[resolv-v0.4.0]: https://github.com/ruby/resolv/releases/tag/v0.4.0
+[resolv-v0.5.0]: https://github.com/ruby/resolv/releases/tag/v0.5.0
+[resolv-v0.6.0]: https://github.com/ruby/resolv/releases/tag/v0.6.0
+[securerandom-v0.3.2]: https://github.com/ruby/securerandom/releases/tag/v0.3.2
+[securerandom-v0.4.0]: https://github.com/ruby/securerandom/releases/tag/v0.4.0
+[securerandom-v0.4.1]: https://github.com/ruby/securerandom/releases/tag/v0.4.1
+[set-v1.1.1]: https://github.com/ruby/set/releases/tag/v1.1.1
+[shellwords-v0.2.1]: https://github.com/ruby/shellwords/releases/tag/v0.2.1
+[shellwords-v0.2.2]: https://github.com/ruby/shellwords/releases/tag/v0.2.2
+[singleton-v0.3.0]: https://github.com/ruby/singleton/releases/tag/v0.3.0
+[stringio-v3.1.1]: https://github.com/ruby/stringio/releases/tag/v3.1.1
+[stringio-v3.1.2]: https://github.com/ruby/stringio/releases/tag/v3.1.2
+[strscan-v3.0.8]: https://github.com/ruby/strscan/releases/tag/v3.0.8
+[strscan-v3.0.9]: https://github.com/ruby/strscan/releases/tag/v3.0.9
+[strscan-v3.1.0]: https://github.com/ruby/strscan/releases/tag/v3.1.0
+[strscan-v3.1.1]: https://github.com/ruby/strscan/releases/tag/v3.1.1
+[strscan-v3.1.2]: https://github.com/ruby/strscan/releases/tag/v3.1.2
+[syntax_suggest-v2.0.1]: https://github.com/ruby/syntax_suggest/releases/tag/v2.0.1
+[syntax_suggest-v2.0.2]: https://github.com/ruby/syntax_suggest/releases/tag/v2.0.2
+[tempfile-v0.3.0]: https://github.com/ruby/tempfile/releases/tag/v0.3.0
+[tempfile-v0.3.1]: https://github.com/ruby/tempfile/releases/tag/v0.3.1
+[time-v0.4.0]: https://github.com/ruby/time/releases/tag/v0.4.0
+[time-v0.4.1]: https://github.com/ruby/time/releases/tag/v0.4.1
+[timeout-v0.4.2]: https://github.com/ruby/timeout/releases/tag/v0.4.2
+[timeout-v0.4.3]: https://github.com/ruby/timeout/releases/tag/v0.4.3
+[tmpdir-v0.3.0]: https://github.com/ruby/tmpdir/releases/tag/v0.3.0
+[tmpdir-v0.3.1]: https://github.com/ruby/tmpdir/releases/tag/v0.3.1
+[uri-v0.13.1]: https://github.com/ruby/uri/releases/tag/v0.13.1
+[uri-v1.0.0]: https://github.com/ruby/uri/releases/tag/v1.0.0
+[uri-v1.0.1]: https://github.com/ruby/uri/releases/tag/v1.0.1
+[uri-v1.0.2]: https://github.com/ruby/uri/releases/tag/v1.0.2
+[win32ole-v1.9.0]: https://github.com/ruby/win32ole/releases/tag/v1.9.0
+[win32ole-v1.9.1]: https://github.com/ruby/win32ole/releases/tag/v1.9.1[]
+[yaml-v0.4.0]: https://github.com/ruby/yaml/releases/tag/v0.4.0
+[zlib-v3.1.1]: https://github.com/ruby/zlib/releases/tag/v3.1.1
+[zlib-v3.2.0]: https://github.com/ruby/zlib/releases/tag/v3.2.0
+[zlib-v3.2.1]: https://github.com/ruby/zlib/releases/tag/v3.2.1
 [power_assert-v2.0.4]:  https://github.com/ruby/power_assert/releases/tag/v2.0.4
 [rake-v13.2.1]: https://github.com/ruby/rake/releases/tag/v13.2.1
 [test-unit-3.6.2]: https://github.com/test-unit/test-unit/releases/tag/3.6.2
