@@ -326,12 +326,6 @@ The following bundled gems are promoted from default gems.
 * csv 3.3.1
   * 3.2.8 to [v3.2.9][csv-v3.2.9], [v3.3.0][csv-v3.3.0], [v3.3.1][csv-v3.3.1]
 
-See GitHub releases like [GitHub Releases of Logger] or changelog for
-details of the default gems or bundled gems.
-
-[ruby/net-http-sspi]: https://github.com/ruby/net-http-sspi
-[GitHub Releases of Logger]: https://github.com/ruby/logger/releases
-
 ## Supported platforms
 
 ## Compatibility issues
@@ -799,3 +793,4 @@ details of the default gems or bundled gems.
 [csv-v3.2.9]: https://github.com/ruby/csv/releases/tag/v3.2.9
 [csv-v3.3.0]: https://github.com/ruby/csv/releases/tag/v3.3.0
 [csv-v3.3.1]: https://github.com/ruby/csv/releases/tag/v3.3.1
+[ruby/net-http-sspi]: https://github.com/ruby/net-http-sspi
