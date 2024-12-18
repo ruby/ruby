@@ -4460,7 +4460,8 @@ rb_memerror(void)
     VALUE exc = GET_VM()->special_exceptions[ruby_error_nomemory];
 
     if (!exc ||
-        rb_ec_raised_p(ec, RAISED_NOMEMORY)) {
+        rb_ec_raised_p(ec, RAISED_NOMEMORY) ||
+        rb_ec_vm_lock_rec(ec) != ec->tag->lock_rec) {
         fprintf(stderr, "[FATAL] failed to allocate memory\n");
         exit(EXIT_FAILURE);
     }
