@@ -5,7 +5,7 @@ description: >-
 inputs:
   os:
     required: true
-    description: The operating system that CI runs on. This value is used in Launchable flavor.
+    description: The operating system that CI runs on. This value is used in Launchable flavor
 
   test-opts:
     default: none
