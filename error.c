@@ -3434,7 +3434,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *    * ZeroDivisionError
  *  * SystemExit
  *  * SystemStackError
- *  * {fatal}[https://docs.ruby-lang.org/en/master/fatal.html]
+ *  * {fatal}[rdoc-ref:fatal]
  *
  */
 
