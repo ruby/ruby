@@ -212,10 +212,10 @@ The following default gems are updated.
   * 0.3.0 to [v0.3.1][io-nonblock-v0.3.1]
 * ipaddr 1.2.7
   * 1.2.6 to [v1.2.7][ipaddr-v1.2.7]
-* irb 1.14.2
-  * 1.11.0 to [v1.11.1][irb-v1.11.1], [v1.11.2][irb-v1.11.2], [v1.12.0][irb-v1.12.0], [v1.13.0][irb-v1.13.0], [v1.13.1][irb-v1.13.1], [v1.13.2][irb-v1.13.2], [v1.14.0][irb-v1.14.0], [v1.14.1][irb-v1.14.1], [v1.14.2][irb-v1.14.2]
-* json 2.9.0
-  * 2.7.1 to [v2.7.2][json-v2.7.2], [v2.7.3.rc1][json-v2.7.3.rc1], [v2.7.3][json-v2.7.3], [v2.7.4][json-v2.7.4], [v2.7.5][json-v2.7.5], [v2.7.6][json-v2.7.6], [v2.8.0][json-v2.8.0], [v2.8.1][json-v2.8.1], [v2.8.2][json-v2.8.2], [v2.9.0][json-v2.9.0]
+* irb 1.14.3
+  * 1.11.0 to [v1.11.1][irb-v1.11.1], [v1.11.2][irb-v1.11.2], [v1.12.0][irb-v1.12.0], [v1.13.0][irb-v1.13.0], [v1.13.1][irb-v1.13.1], [v1.13.2][irb-v1.13.2], [v1.14.0][irb-v1.14.0], [v1.14.1][irb-v1.14.1], [v1.14.2][irb-v1.14.2], [v1.14.3][irb-v1.14.3]
+* json 2.9.1
+  * 2.7.1 to [v2.7.2][json-v2.7.2], [v2.7.3.rc1][json-v2.7.3.rc1], [v2.7.3][json-v2.7.3], [v2.7.4][json-v2.7.4], [v2.7.5][json-v2.7.5], [v2.7.6][json-v2.7.6], [v2.8.0][json-v2.8.0], [v2.8.1][json-v2.8.1], [v2.8.2][json-v2.8.2], [v2.9.0][json-v2.9.0], [v2.9.1][json-v2.9.1]
 * logger 1.6.3
   * 1.6.0 to [v1.6.1][logger-v1.6.1], [v1.6.2][logger-v1.6.2], [v1.6.3][logger-v1.6.3]
 * net-http 0.6.0
@@ -236,8 +236,8 @@ The following default gems are updated.
   * 0.1.3 to [v0.1.4][pstore-v0.1.4]
 * psych 5.2.2
   * 5.1.2 to [v5.2.0.beta1][psych-v5.2.0.beta1], [v5.2.0.beta2][psych-v5.2.0.beta2], [v5.2.0.beta3][psych-v5.2.0.beta3], [v5.2.0.beta4][psych-v5.2.0.beta4], [v5.2.0.beta5][psych-v5.2.0.beta5], [v5.2.0.beta6][psych-v5.2.0.beta6], [v5.2.0.beta7][psych-v5.2.0.beta7], [v5.2.0][psych-v5.2.0], [v5.2.1][psych-v5.2.1], [v5.2.2][psych-v5.2.2]
-* rdoc 6.9.1
-  * 6.6.2 to [v6.7.0][rdoc-v6.7.0], [v6.8.0][rdoc-v6.8.0], [v6.8.1][rdoc-v6.8.1], [v6.9.0][rdoc-v6.9.0], [v6.9.1][rdoc-v6.9.1]
+* rdoc 6.10.0
+  * 6.6.2 to [v6.7.0][rdoc-v6.7.0], [v6.8.0][rdoc-v6.8.0], [v6.8.1][rdoc-v6.8.1], [v6.9.0][rdoc-v6.9.0], [v6.9.1][rdoc-v6.9.1], [v6.10.0][rdoc-v6.10.0]
 * reline 0.6.0
   * 0.4.1 to [v0.4.2][reline-v0.4.2], [v0.4.3][reline-v0.4.3], [v0.5.0.pre.1][reline-v0.5.0.pre.1], [v0.5.0][reline-v0.5.0], [v0.5.1][reline-v0.5.1], [v0.5.2][reline-v0.5.2], [v0.5.3][reline-v0.5.3], [v0.5.4][reline-v0.5.4], [v0.5.5][reline-v0.5.5], [v0.5.6][reline-v0.5.6], [v0.5.7][reline-v0.5.7], [v0.5.8][reline-v0.5.8], [v0.5.9][reline-v0.5.9], [v0.5.10][reline-v0.5.10], [v0.5.11][reline-v0.5.11], [v0.5.12][reline-v0.5.12], [v0.6.0][reline-v0.6.0]
 * resolv 0.6.0
@@ -606,6 +606,7 @@ The following bundled gems are promoted from default gems.
 [irb-v1.14.0]: https://github.com/ruby/irb/releases/tag/v1.14.0
 [irb-v1.14.1]: https://github.com/ruby/irb/releases/tag/v1.14.1
 [irb-v1.14.2]: https://github.com/ruby/irb/releases/tag/v1.14.2
+[irb-v1.14.3]: https://github.com/ruby/irb/releases/tag/v1.14.3
 [json-v2.7.2]: https://github.com/ruby/json/releases/tag/v2.7.2
 [json-v2.7.3.rc1]: https://github.com/ruby/json/releases/tag/v2.7.3.rc1
 [json-v2.7.3]: https://github.com/ruby/json/releases/tag/v2.7.3
@@ -616,6 +617,7 @@ The following bundled gems are promoted from default gems.
 [json-v2.8.1]: https://github.com/ruby/json/releases/tag/v2.8.1
 [json-v2.8.2]: https://github.com/ruby/json/releases/tag/v2.8.2
 [json-v2.9.0]: https://github.com/ruby/json/releases/tag/v2.9.0
+[json-v2.9.1]: https://github.com/ruby/json/releases/tag/v2.9.1
 [logger-v1.6.1]: https://github.com/ruby/logger/releases/tag/v1.6.1
 [logger-v1.6.2]: https://github.com/ruby/logger/releases/tag/v1.6.2
 [logger-v1.6.3]: https://github.com/ruby/logger/releases/tag/v1.6.3
@@ -660,6 +662,7 @@ The following bundled gems are promoted from default gems.
 [rdoc-v6.8.1]: https://github.com/ruby/rdoc/releases/tag/v6.8.1
 [rdoc-v6.9.0]: https://github.com/ruby/rdoc/releases/tag/v6.9.0
 [rdoc-v6.9.1]: https://github.com/ruby/rdoc/releases/tag/v6.9.1
+[rdoc-v6.10.0]: https://github.com/ruby/rdoc/releases/tag/v6.10.0
 [reline-v0.5.0.pre.1]: https://github.com/ruby/reline/releases/tag/v0.5.0.pre.1
 [reline-v0.4.2]: https://github.com/ruby/reline/releases/tag/v0.4.2
 [reline-v0.4.3]: https://github.com/ruby/reline/releases/tag/v0.4.3
