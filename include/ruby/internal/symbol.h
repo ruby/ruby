@@ -121,10 +121,13 @@ ID rb_intern_str(VALUE str);
  * Retrieves the name mapped to the given id.
  *
  * @param[in]  id         An id to query.
- * @retval     NULL       No such id ever existed in the history.
+ * @retval     NULL       Unknown id.
  * @retval     otherwise  A name that the id represents.
  * @note       The return value  is managed by the interpreter.   Don't pass it
  *             to free().
+ * @note       The underlying name can contain internal NUL bytes, so the return
+ *             value might be a truncated representation due to the nature of C
+ *             strings.
  * @note       This C string is backed by an underlying Ruby string. The Ruby
  *             string may move during GC compaction which would make this
  *             C string point to invalid memory. Do not use the return value
