@@ -3366,7 +3366,6 @@ AS_IF([test x$with_valgrind != xno],
 	DLEXT=so])
 : ${SOEXT="${DLEXT}"}
 AC_SUBST(SOEXT)
-}
 
 AS_IF([test "$rb_cv_dlopen:$load_relative" = yes:yes], [
     AS_IF([test "$ac_cv_func_dladdr" = yes], [
@@ -3386,6 +3385,7 @@ test ".$DLEXT"  = "." || AC_DEFINE_UNQUOTED(DLEXT,  ".$DLEXT")
 AC_SUBST(DLEXT)
 
 AC_DEFINE_UNQUOTED(SOEXT, ".$SOEXT")
+}
 
 : "strip" && {
     AC_MSG_CHECKING([for $STRIP flags])
