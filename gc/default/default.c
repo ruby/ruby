@@ -1621,7 +1621,7 @@ static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 static inline void
 heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 {
-    asan_unpoison_object(obj, false);
+    rb_asan_unpoison_object(obj, false);
 
     asan_unlock_freelist(page);
 
@@ -1641,7 +1641,7 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
         rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)obj);
     }
 
-    asan_poison_object(obj);
+    rb_asan_poison_object(obj);
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
 
@@ -2291,7 +2291,7 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
 
     if (RB_LIKELY(p)) {
         VALUE obj = (VALUE)p;
-        asan_unpoison_object(obj, true);
+        rb_asan_unpoison_object(obj, true);
         heap_cache->freelist = p->next;
 #if RGENGC_CHECK_MODE
         GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == heap_slot_size(heap_idx));
@@ -2341,9 +2341,9 @@ ractor_cache_set_page(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, 
     page->free_slots = 0;
     page->freelist = NULL;
 
-    asan_unpoison_object((VALUE)heap_cache->freelist, false);
+    rb_asan_unpoison_object((VALUE)heap_cache->freelist, false);
     GC_ASSERT(RB_TYPE_P((VALUE)heap_cache->freelist, T_NONE));
-    asan_poison_object((VALUE)heap_cache->freelist);
+    rb_asan_poison_object((VALUE)heap_cache->freelist);
 }
 
 static inline size_t
@@ -2926,7 +2926,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
     while (zombie) {
         VALUE next_zombie;
         struct heap_page *page;
-        asan_unpoison_object(zombie, false);
+        rb_asan_unpoison_object(zombie, false);
         next_zombie = RZOMBIE(zombie)->next;
         page = GET_HEAP_PAGE(zombie);
 
@@ -3247,7 +3247,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     VALUE dest = (VALUE)free_page->freelist;
     asan_lock_freelist(free_page);
     if (dest) {
-        asan_unpoison_object(dest, false);
+        rb_asan_unpoison_object(dest, false);
     }
     else {
         /* if we can't get something from the freelist then the page must be
@@ -3514,7 +3514,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
         VALUE vp = (VALUE)p;
         GC_ASSERT(vp % BASE_SLOT_SIZE == 0);
 
-        asan_unpoison_object(vp, false);
+        rb_asan_unpoison_object(vp, false);
         if (bitset & 1) {
             switch (BUILTIN_TYPE(vp)) {
               default: /* majority case */
@@ -3663,9 +3663,9 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     struct free_slot *ptr = sweep_page->freelist;
     while (ptr) {
         freelist_len++;
-        asan_unpoison_object((VALUE)ptr, false);
+        rb_asan_unpoison_object((VALUE)ptr, false);
         struct free_slot *next = ptr->next;
-        asan_poison_object((VALUE)ptr);
+        rb_asan_poison_object((VALUE)ptr);
         ptr = next;
     }
     asan_lock_freelist(sweep_page);
@@ -3712,15 +3712,15 @@ heap_page_freelist_append(struct heap_page *page, struct free_slot *freelist)
         asan_unlock_freelist(page);
         if (page->freelist) {
             struct free_slot *p = page->freelist;
-            asan_unpoison_object((VALUE)p, false);
+            rb_asan_unpoison_object((VALUE)p, false);
             while (p->next) {
                 struct free_slot *prev = p;
                 p = p->next;
-                asan_poison_object((VALUE)prev);
-                asan_unpoison_object((VALUE)p, false);
+                rb_asan_poison_object((VALUE)prev);
+                rb_asan_unpoison_object((VALUE)p, false);
             }
             p->next = freelist;
-            asan_poison_object((VALUE)p);
+            rb_asan_poison_object((VALUE)p);
         }
         else {
             page->freelist = freelist;
@@ -5143,12 +5143,12 @@ gc_verify_heap_pages_(rb_objspace_t *objspace, struct ccan_list_head *head)
         while (p) {
             VALUE vp = (VALUE)p;
             VALUE prev = vp;
-            asan_unpoison_object(vp, false);
+            rb_asan_unpoison_object(vp, false);
             if (BUILTIN_TYPE(vp) != T_NONE) {
                 fprintf(stderr, "freelist slot expected to be T_NONE but was: %s\n", rb_obj_info(vp));
             }
             p = p->next;
-            asan_poison_object(prev);
+            rb_asan_poison_object(prev);
         }
         asan_lock_freelist(page);
 

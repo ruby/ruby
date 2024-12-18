@@ -493,8 +493,8 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
     VALUE block = (VALUE)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (rb_obj_is_iseq(v)) {
             extern VALUE rb_rjit_iseq_new(rb_iseq_t *iseq);
