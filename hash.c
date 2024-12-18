@@ -3490,7 +3490,7 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
  *  Returns a new String containing the hash entries:
 
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.inspect # => "{:foo=>0, :bar=>1, :baz=>2}"
+ *    h.inspect # => "{foo: 0, bar: 1, baz: 2}"
  *
  */
 

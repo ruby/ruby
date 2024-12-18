@@ -3827,7 +3827,7 @@ rb_String(VALUE val)
  *
  *    String([0, 1, 2])        # => "[0, 1, 2]"
  *    String(0..5)             # => "0..5"
- *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
+ *    String({foo: 0, bar: 1}) # => "{foo: 0, bar: 1}"
  *
  *  Raises +TypeError+ if +object+ cannot be converted to a string.
  */

@@ -247,7 +247,7 @@ The "rest" part of a pattern also can be bound to a variable:
   else
     "not matched"
   end
-  #=> "matched: 1, {:b=>2, :c=>3}"
+  #=> "matched: 1, {b: 2, c: 3}"
 
 Binding to variables currently does NOT work for alternative patterns joined with <code>|</code>:
 
