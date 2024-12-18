@@ -658,15 +658,15 @@ heap_i(void *vstart, void *vend, size_t stride, void *data)
     struct dump_config *dc = (struct dump_config *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
         dc->cur_page_slot_size = stride;
 
         if (dc->full_heap || RBASIC(v)->flags)
             dump_object(v, dc);
 
         if (ptr) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
     return 0;

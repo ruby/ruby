@@ -121,7 +121,7 @@ asan_poison_memory_region(const volatile void *ptr, size_t size)
 
 #ifdef RUBY_ASAN_ENABLED
 #define asan_poison_object_if(ptr, obj) do { \
-        if (ptr) asan_poison_object(obj); \
+        if (ptr) rb_asan_poison_object(obj); \
     } while (0)
 #else
 #define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
@@ -133,7 +133,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
  *
  * @param[in]  obj   target object.
  */
-void asan_poison_object(VALUE obj);
+void rb_asan_poison_object(VALUE obj);
 
 /**
  * This function predicates if the given object is fully addressable or not.
@@ -142,7 +142,7 @@ void asan_poison_object(VALUE obj);
  * @retval     0          the given object is fully addressable.
  * @retval     otherwise  pointer to first such byte who is poisoned.
  */
-void *asan_poisoned_object_p(VALUE obj);
+void *rb_asan_poisoned_object_p(VALUE obj);
 
 /**
  * This is a variant of asan_unpoison_memory_region that takes a VALUE.
@@ -150,7 +150,7 @@ void *asan_poisoned_object_p(VALUE obj);
  * @param[in]  obj       target object.
  * @param[in]  malloc_p  if the memory region is like a malloc's return value or not.
  */
-void asan_unpoison_object(VALUE obj, bool newobj_p);
+void rb_asan_unpoison_object(VALUE obj, bool newobj_p);
 
 RUBY_SYMBOL_EXPORT_END
 
@@ -184,8 +184,8 @@ asan_unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p
 static inline void *
 asan_unpoison_object_temporary(VALUE obj)
 {
-    void *ptr = asan_poisoned_object_p(obj);
-    asan_unpoison_object(obj, false);
+    void *ptr = rb_asan_poisoned_object_p(obj);
+    rb_asan_unpoison_object(obj, false);
     return ptr;
 }
 
@@ -193,7 +193,7 @@ static inline void *
 asan_poison_object_restore(VALUE obj, void *ptr)
 {
     if (ptr) {
-        asan_poison_object(obj);
+        rb_asan_poison_object(obj);
     }
     return NULL;
 }

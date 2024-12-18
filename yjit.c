@@ -1096,8 +1096,8 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
     const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (rb_obj_is_iseq(v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;

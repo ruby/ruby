@@ -314,8 +314,8 @@ invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data
 {
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (RBASIC(v)->flags) { // liveness check
             if (imemo_type_p(v, imemo_callcache)) {
@@ -327,7 +327,7 @@ invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data
         }
 
         if (ptr) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
     return 0; // continue to iteration

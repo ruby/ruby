@@ -470,12 +470,12 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
                 }
                 else {
                     if (ptr) {
-                        asan_poison_object((VALUE)cc);
+                        rb_asan_poison_object((VALUE)cc);
                     }
                     continue;
                 }
                 if (ptr) {
-                    asan_poison_object((VALUE)cc);
+                    rb_asan_poison_object((VALUE)cc);
                 }
             }
 
