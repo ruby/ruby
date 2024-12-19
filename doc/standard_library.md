@@ -8,124 +8,207 @@ description.
 
 ## Libraries
 
-- **MakeMakefile**: Module used to generate a Makefile for C extensions
-- **RbConfig**: Information of your configure and build of Ruby
-- **Gem**: Package management framework for Ruby
+- `MakeMakefile`: A module used to generate a Makefile for C extensions
+- `RbConfig`: Information of your configure and build of Ruby
+- `Gem`: Package management framework for Ruby
 
 ## Extensions
 
-- **Coverage**: Provides coverage measurement for Ruby
-- **Monitor**: Provides an object or module to use safely by more than one thread
-- **objspace**: Extends ObjectSpace module to add methods for internal statistics
-- **PTY**: Creates and manages pseudo terminals
-- **Ripper**: Provides an interface for parsing Ruby programs into S-expressions
-- **Socket**: Access underlying OS socket implementations
+- `Coverage`: Provides coverage measurement for Ruby
+- `Monitor`: Provides an object or module to use safely by more than one thread
+- `objspace`: Extends ObjectSpace module to add methods for internal statistics
+- `PTY`: Creates and manages pseudo terminals
+- `Ripper`: Provides an interface for parsing Ruby programs into S-expressions
+- `Socket`: Access underlying OS socket implementations
 
-# Default gems
+## Default gems
 
 - Default gems are shipped with Ruby releases and also available as rubygems.
 - Default gems are not uninstallable from Ruby installation.
 - Default gems can be updated used by rubygems.
-  - e.g. `gem update json`
+    - e.g. `gem update json`
 - Default gems can be used with bundler environment like `unbundled_env`.
 - Default gems can be used any version on Gemfile.
-  - e.g. `gem "json", ">= 2.6"`
+    - e.g. `gem "json", ">= 2.6"`
 
-## Libraries
+### Libraries
 
-- **Benchmark**: Provides methods to measure and report the time used to execute code
-- **Bundler**: Manage your Ruby application's gem dependencies
-- **CGI**: Support for the Common Gateway Interface protocol
-- **Delegator**: Provides three abilities to delegate method calls to an object
-- **DidYouMean**: "Did you mean?" experience in Ruby
-- **English**: Provides references to special global variables with less cryptic names
-- **ERB**: An easy to use but powerful templating system for Ruby
-- **ErrorHighlight**: Highlight error location in your code
-- **FileUtils**: Several file utility methods for copying, moving, removing, etc
-- **Find**: This module supports top-down traversal of a set of file paths
-- **Forwardable**: Provides delegation of specified methods to a designated object
-- **IPAddr**: Provides methods to manipulate IPv4 and IPv6 IP addresses
-- **IRB**: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-- **OptionParser**: Ruby-oriented class for command-line option analysis
-- **Logger**: Provides a simple logging utility for outputting messages
-- **Net::HTTP**: HTTP client api for Ruby
-- **Open3**: Provides access to stdin, stdout and stderr when running other programs
-- **OpenStruct**: Class to build custom data structures, similar to a Hash
-- **OpenURI**: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
-- **PP**: Provides a PrettyPrinter for Ruby objects
-- **PrettyPrinter**: Implements a pretty printing algorithm for readable structure
-- **Prism**: A portable, error-tolerant Ruby parser
-- **PStore**: Implements a file based persistence mechanism based on a Hash
-- **Readline**: Wrapper for Readline extencion and Reline
-- **Reline**: GNU Readline and Editline by pure Ruby implementation.
-- **Resolv**: Thread-aware DNS resolver library in Ruby
-- **RDoc**: Produces HTML and command-line documentation for Ruby
-- **SecureRandom**: Interface for secure random number generator
-- **Set**: Provides a class to deal with collections of unordered, unique values
-- **Shellwords**: Manipulates strings with word parsing rules of UNIX Bourne shell
-- **Singleton**: Implementation of the Singleton pattern for Ruby
-- **Tempfile**: A utility class for managing temporary files
-- **Time**: Extends the Time class with methods for parsing and conversion
-- **Timeout**: Auto-terminate potentially long-running operations in Ruby
-- **tmpdir.rb**: Extends the Dir class to manage the OS temporary file path
-- **TSort**: Topological sorting using Tarjan's algorithm
-- **un.rb**: Utilities to replace common UNIX commands
-- **URI**: A Ruby module providing support for Uniform Resource Identifiers
-- **YAML**: Ruby client library for the Psych YAML implementation
-- **WeakRef**: Allows a referenced object to be garbage-collected
+- [benchmark][benchmark]: Provides methods to measure and report the time used to execute code
+- [bundler][bundler]: Manage your Ruby application's gem dependencies
+- [cgi][cgi]: Support for the Common Gateway Interface protocol
+- [delegate][delegate]: Provides three abilities to delegate method calls to an object
+- [did_you_mean][did_you_mean]: "Did you mean?" experience in Ruby
+- [English][English]: Provides references to special global variables with less cryptic names
+- [erb][erb]: An easy to use but powerful templating system for Ruby
+- [error_highlight][error_highlight]: Highlight error location in your code
+- [fileutils][fileutils]: Several file utility methods for copying, moving, removing, etc
+- [find][find]: This module supports top-down traversal of a set of file paths
+- [forwardable][forwardable]: Provides delegation of specified methods to a designated object
+- [ipaddr][ipaddr]: Provides methods to manipulate IPv4 and IPv6 IP addresses
+- [irb][irb]: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
+- [optparse][optparse]: Ruby-oriented class for command-line option analysis
+- [logger][logger]: Provides a simple logging utility for outputting messages
+- [net-http][net-http]: HTTP client api for Ruby
+- [open3][open3]: Provides access to stdin, stdout and stderr when running other programs
+- [ostruct][ostruct]: A class to build custom data structures, similar to a Hash
+- [open-uri][open-uri]: An easy-to-use wrapper for URI::HTTP, URI::HTTPS and URI::FTP
+- [pp][pp]: Provides a PrettyPrinter for Ruby objects
+- [prettyprint][prettyprint]: Implements a pretty printing algorithm for readable structure
+- [prism][prism]: A portable, error-tolerant Ruby parser
+- [pstore][pstore]: Implements a file based persistence mechanism based on a Hash
+- [readline][readline]: Wrapper for Readline extencion and Reline
+- [reline][reline]: GNU Readline and Editline by pure Ruby implementation
+- [resolv][resolv]: Thread-aware DNS resolver library in Ruby
+- [rdoc][rdoc]: Produces HTML and command-line documentation for Ruby
+- [securerandom][securerandom]: Interface for secure random number generator
+- [set][set]: Provides a class to deal with collections of unordered, unique values
+- [shellwords][shellwords]: Manipulates strings with word parsing rules of UNIX Bourne shell
+- [singleton][singleton]: Implementation of the Singleton pattern for Ruby
+- [tempfile][tempfile]: A utility class for managing temporary files
+- [time][time]: Extends the Time class with methods for parsing and conversion
+- [timeout][timeout]: Auto-terminate potentially long-running operations in Ruby
+- [tmpdir][tmpdir]: Extends the Dir class to manage the OS temporary file path
+- [tsort][tsort]: Topological sorting using Tarjan's algorithm
+- [un][un]: Utilities to replace common UNIX commands
+- [uri][uri]: A Ruby module providing support for Uniform Resource Identifiers
+- [yaml][yaml]: Ruby client library for the Psych YAML implementation
+- [weakref][weakref]: Allows a referenced object to be garbage-collected
 
-## Extensions
+### Extensions
 
-- **Date**: A subclass of Object includes Comparable module for handling dates
-- **DateTime**: Subclass of Date to handling dates, hours, minutes, seconds, offsets
-- **Digest**: Provides a framework for message digest libraries
-- **Etc**: Provides access to information typically stored in UNIX /etc directory
-- **Fcntl**: Loads constants defined in the OS fcntl.h C header file
-- **Fiddle**: A libffi wrapper for Ruby
-- **IO**: Extensions for Ruby IO class, including #wait, #nonblock and ::console
-- **JSON**: Implements Javascript Object Notation for Ruby
-- **OpenSSL**: Provides SSL, TLS and general purpose cryptography for Ruby
-- **Pathname**: Representation of the name of a file or directory on the filesystem
-- **Psych**: A YAML parser and emitter for Ruby
-- **StringIO**: Pseudo I/O on String objects
-- **StringScanner**: Provides lexical scanning operations on a String
-- **WIN32OLE**: Provides an interface for OLE Automation in Ruby
-- **Zlib**: Ruby interface for the zlib compression/decompression library
+- [date][date]: A subclass of Object includes Comparable module for handling dates
+- `DateTime`: Subclass of Date to handling dates, hours, minutes, seconds, offsets
+- [digest][digest]: Provides a framework for message digest libraries
+- [etc][etc]: Provides access to information typically stored in UNIX /etc directory
+- [fcntl][fcntl]: Loads constants defined in the OS fcntl.h C header file
+- [fiddle][fiddle]: A libffi wrapper for Ruby
+- [io-console][io-console]: Extensions for Ruby IO class, including `IO.console`, `IO.winsize`...etc.
+- [json][json]: Implements Javascript Object Notation for Ruby
+- [openssl][openssl]: Provides SSL, TLS and general purpose cryptography for Ruby
+- [pathname][pathname]: Representation of the name of a file or directory on the filesystem
+- [psych][psych]: A YAML parser and emitter for Ruby
+- [stringio][stringio]: Pseudo I/O on String objects
+- [strscan][strscan]: Provides lexical scanning operations on a String
+- [win32ole][win32ole]: Provides an interface for OLE Automation in Ruby
+- [zlib][zlib]: Ruby interface for the zlib compression/decompression library
 
-# Bundled gems
+## Bundled gems
 
 - Bundled gems are shipped with Ruby releases and also available as rubygems.
-  - They are only bundled with Ruby releases.
-  - They can be uninstallable from Ruby installation.
-  - They are needed to declare in Gemfile when use with bundler.
+    - They are only bundled with Ruby releases.
+    - They can be uninstallable from Ruby installation.
+    - They are needed to declare in Gemfile when use with bundler.
 
-## Libraries
+### Libraries
 
-- **MiniTest**: A test suite with TDD, BDD, mocking and benchmarking
-- **PowerAssert**: Power Assert for Ruby.
-- **Rake**: Ruby build program with capabilities similar to make
-- **Test::Unit**: A compatibility layer for MiniTest
-- **REXML**: An XML toolkit for Ruby
-- **RSS**: Family of libraries that support various formats of XML "feeds"
-- **Net::FTP**: Support for the File Transfer Protocol
-- **Net::IMAP**: Ruby client api for Internet Message Access Protocol
-- **Net::POP3**: Ruby client library for POP3
-- **Net::SMTP**: Simple Mail Transfer Protocol client library for Ruby
-- **Matrix**: Represents a mathematical matrix.
-- **Prime**: Prime numbers and factorization library
-- **RBS**: RBS is a language to describe the structure of Ruby programs
-- **TypeProf**: A type analysis tool for Ruby code based on abstract interpretation
-- **DEBUGGER__**: Debugging functionality for Ruby
-- **Racc**: A LALR(1) parser generator written in Ruby.
-- **Mutex_m**: Mixin to extend objects to be handled like a Mutex
-- **GetoptLong**: Parse command line options similar to the GNU C getopt_long()
-- **Base64**: Support for encoding and decoding binary data using a Base64 representation
-- **BigDecimal**: Provides arbitrary-precision floating point decimal arithmetic
-- **Observable**: Provides a mechanism for publish/subscribe pattern in Ruby
-- **Abbrev**: Calculates a set of unique abbreviations for a given set of strings
-- **resolv-replace.rb**: Replace Socket DNS with Resolv
-- **Rinda**: The Linda distributed computing paradigm in Ruby
-- **DRb**: Distributed object system for Ruby
-- **NKF**: Ruby extension for Network Kanji Filter
-- **Syslog**: Ruby interface for the POSIX system logging facility
-- **CSV**: Provides an interface to read and write CSV files and data
+- [minitest][minitest]: A test suite with TDD, BDD, mocking and benchmarking
+- [power_assert][power_assert]: Power Assert for Ruby.
+- [rake][rake]: Ruby build program with capabilities similar to make
+- [test-unit][test-unit]: A compatibility layer for MiniTest
+- [rexml][rexml]: An XML toolkit for Ruby
+- [rss][rss]: Family of libraries that support various formats of XML "feeds"
+- [net-ftp][net-ftp]: Support for the File Transfer Protocol
+- [net-imap][net-imap]: Ruby client api for Internet Message Access Protocol
+- [net-pop][net-pop]: Ruby client library for POP3
+- [net-smtp][net-smtp]: Simple Mail Transfer Protocol client library for Ruby
+- [matrix][matrix]: Represents a mathematical matrix.
+- [prime][prime]: Prime numbers and factorization library
+- [rbs][rbs]: RBS is a language to describe the structure of Ruby programs
+- [typeprof][typeprof]: A type analysis tool for Ruby code based on abstract interpretation
+- [debug][debug]: Debugging functionality for Ruby
+- [racc][racc]: A LALR(1) parser generator written in Ruby.
+- [mutex_m][mutex_m]: Mixin to extend objects to be handled like a Mutex
+- [getoptlong][getoptlong]: Parse command line options similar to the GNU C getopt_long()
+- [base64][base64]: Support for encoding and decoding binary data using a Base64 representation
+- [bigdecimal][bigdecimal]: Provides arbitrary-precision floating point decimal arithmetic
+- [observer][observer]: Provides a mechanism for the publish/subscribe pattern in Ruby
+- [abbrev][abbrev]: Calculates a set of unique abbreviations for a given set of strings
+- [resolv-replace][resolv-replace]: Replace Socket DNS with Resolv
+- [rinda][rinda]: The Linda distributed computing paradigm in Ruby
+- [drb][drb]: Distributed object system for Ruby
+- [nkf][nkf]: Ruby extension for the Network Kanji Filter
+- [syslog][syslog]: Ruby interface for the POSIX system logging facility
+- [csv][csv]: Provides an interface to read and write CSV files and data
+
+[abbrev]: https://github.com/ruby/abbrev
+[base64]: https://github.com/ruby/base64
+[benchmark]: https://github.com/ruby/benchmark
+[bigdecimal]: https://github.com/ruby/bigdecimal
+[bundler]: https://github.com/rubygems/rubygems
+[cgi]: https://github.com/ruby/cgi
+[csv]: https://github.com/ruby/csv
+[date]: https://github.com/ruby/date
+[debug]: https://github.com/ruby/debug
+[delegate]: https://github.com/ruby/delegate
+[did_you_mean]: https://github.com/ruby/did_you_mean
+[digest]: https://github.com/ruby/digest
+[drb]: https://github.com/ruby/drb
+[English]: https://github.com/ruby/English
+[erb]: https://github.com/ruby/erb
+[error_highlight]: https://github.com/ruby/error_highlight
+[etc]: https://github.com/ruby/etc
+[fcntl]: https://github.com/ruby/fcntl
+[fiddle]: https://github.com/ruby/fiddle
+[fileutils]: https://github.com/ruby/fileutils
+[find]: https://github.com/ruby/find
+[forwardable]: https://github.com/ruby/forwardable
+[getoptlong]: https://github.com/ruby/getoptlong
+[io-console]: https://github.com/ruby/io-console
+[ipaddr]: https://github.com/ruby/ipaddr
+[irb]: https://github.com/ruby/irb
+[json]: https://github.com/ruby/json
+[logger]: https://github.com/ruby/logger
+[matrix]: https://github.com/ruby/matrix
+[minitest]: https://github.com/seattlerb/minitest
+[mutex_m]: https://github.com/ruby/mutex_m
+[net-ftp]: https://github.com/ruby/net-ftp
+[net-http]: https://github.com/ruby/net-http
+[net-imap]: https://github.com/ruby/net-imap
+[net-pop]: https://github.com/ruby/net-pop
+[net-smtp]: https://github.com/ruby/net-smtp
+[nkf]: https://github.com/ruby/nkf
+[observer]: https://github.com/ruby/observer
+[open-uri]: https://github.com/ruby/open-uri
+[open3]: https://github.com/ruby/open3
+[openssl]: https://github.com/ruby/openssl
+[optparse]: https://github.com/ruby/optparse
+[ostruct]: https://github.com/ruby/ostruct
+[pathname]: https://github.com/ruby/pathname
+[power_assert]: https://github.com/ruby/power_assert
+[pp]: https://github.com/ruby/pp
+[prettyprint]: https://github.com/ruby/prettyprint
+[prime]: https://github.com/ruby/prime
+[prism]: https://github.com/ruby/prism
+[pstore]: https://github.com/ruby/pstore
+[psych]: https://github.com/ruby/psych
+[racc]: https://github.com/ruby/racc
+[rake]: https://github.com/ruby/rake
+[rbs]: https://github.com/ruby/rbs
+[rdoc]: https://github.com/ruby/rdoc
+[readline]: https://github.com/ruby/readline
+[reline]: https://github.com/ruby/reline
+[resolv-replace]: https://github.com/ruby/resolv-replace
+[resolv]: https://github.com/ruby/resolv
+[rexml]: https://github.com/ruby/rexml
+[rinda]: https://github.com/ruby/rinda
+[rss]: https://github.com/ruby/rss
+[securerandom]: https://github.com/ruby/securerandom
+[set]: https://github.com/ruby/set
+[shellwords]: https://github.com/ruby/shellwords
+[singleton]: https://github.com/ruby/singleton
+[stringio]: https://github.com/ruby/stringio
+[strscan]: https://github.com/ruby/strscan
+[syslog]: https://github.com/ruby/syslog
+[tempfile]: https://github.com/ruby/tempfile
+[test-unit]: https://github.com/test-unit/test-unit
+[time]: https://github.com/ruby/time
+[timeout]: https://github.com/ruby/timeout
+[tmpdir]: https://github.com/ruby/tmpdir
+[tsort]: https://github.com/ruby/tsort
+[typeprof]: https://github.com/ruby/typeprof
+[un]: https://github.com/ruby/un
+[uri]: https://github.com/ruby/uri
+[weakref]: https://github.com/ruby/weakref
+[win32ole]: https://github.com/ruby/win32ole
+[yaml]: https://github.com/ruby/yaml
+[zlib]: https://github.com/ruby/zlib
