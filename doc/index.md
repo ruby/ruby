@@ -44,7 +44,7 @@ There are some standard libraries included in Ruby that are also commonly used, 
 
 Use the following links to access the comprehensive set of libraries included with Ruby:
 
-- [Standard Library Documentation](rdoc-ref:standard_library.rdoc)
+- [Standard Library Documentation](rdoc-ref:standard_library.md)
 - [Maintainers](rdoc-ref:maintainers.md)
 
 ## Contribute to Ruby
