@@ -223,7 +223,7 @@ class Logger
   end
 end
 
-File.open(IO::NULL) do |f|
+File.open(__FILE__) do |f|
   File.new(f.fileno, autoclose: false, path: "").path
 rescue IOError
   module PathAttr               # :nodoc:
