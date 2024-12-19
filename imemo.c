@@ -461,7 +461,6 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
         for (int i=0; i<ccs->len; i++) {
             const struct rb_callcache *cc = ccs->entries[i].cc;
             if (!alive) {
-                void *ptr = asan_unpoison_object_temporary((VALUE)cc);
                 // ccs can be free'ed.
                 if (rb_gc_pointer_to_heap_p((VALUE)cc) &&
                     !rb_objspace_garbage_object_p((VALUE)cc) &&
@@ -470,13 +469,7 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
                     // OK. maybe target cc.
                 }
                 else {
-                    if (ptr) {
-                        rb_asan_poison_object((VALUE)cc);
-                    }
                     continue;
-                }
-                if (ptr) {
-                    rb_asan_poison_object((VALUE)cc);
                 }
             }
 
