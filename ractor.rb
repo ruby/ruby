@@ -888,8 +888,22 @@ class Ractor
     }
   end
 
+  ##
+  # :method: require
+  # :args: feature
+  #
+  # A redefinition of Kernel#require, available inside ractor body. In non-main ractor,
+  # it delegates to the main one to do the real +require+.
+  #
+  #    r = Ractor.new {
+  #      require 'json' # it is a call to Ractor#require
+  #      {result: :ok}.to_json
+  #    }
+  #
+  #    r.take #=> {"result":"ok"}
+
   # internal method
-  def self._require feature
+  def self._require feature # :nodoc:
     if main?
       super feature
     else
@@ -901,11 +915,11 @@ class Ractor
     private
 
     # internal method that is called when the first "Ractor.new" is called
-    def _activated
+    def _activated # :nodoc:
       Kernel.prepend Module.new{|m|
         m.set_temporary_name '<RactorRequire>'
 
-        def require feature
+        def require feature # :nodoc: -- otherwise RDoc outputs it as a class method
           if Ractor.main?
             super
           else
