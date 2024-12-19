@@ -99,7 +99,12 @@ newobj_i(VALUE tpval, void *data)
         delete_unique_str(arg->str_table, info->class_path);
     }
     else {
-        info = (struct allocation_info *)ruby_xmalloc(sizeof(struct allocation_info));
+        /* We cannot use xmalloc here because xmalloc could potentially trigger
+         * a GC, and a lot of code is unsafe to trigger a GC right after an object
+         * has been allocated because they perform initialization for the object
+         * and assume that the GC does not trigger before then. */
+        info = (struct allocation_info *)malloc(sizeof(struct allocation_info));
+        if (!info) rb_bug("newobj_i: out of memory");
     }
     info->living = 1;
     info->flags = RBASIC(obj)->flags;
@@ -137,7 +142,7 @@ freeobj_i(VALUE tpval, void *data)
             info = (struct allocation_info *)v;
             delete_unique_str(arg->str_table, info->path);
             delete_unique_str(arg->str_table, info->class_path);
-            ruby_xfree(info);
+            free(info);
         }
     }
 
@@ -154,7 +159,7 @@ free_keys_i(st_data_t key, st_data_t value, st_data_t data)
 static int
 free_values_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    ruby_xfree((void *)value);
+    free((void *)value);
     return ST_CONTINUE;
 }
 
