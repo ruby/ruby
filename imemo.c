@@ -463,7 +463,8 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
             if (!alive) {
                 void *ptr = asan_unpoison_object_temporary((VALUE)cc);
                 // ccs can be free'ed.
-                if (!rb_objspace_garbage_object_p((VALUE)cc) &&
+                if (rb_gc_pointer_to_heap_p((VALUE)cc) &&
+                    !rb_objspace_garbage_object_p((VALUE)cc) &&
                     IMEMO_TYPE_P(cc, imemo_callcache) &&
                     cc->klass == klass) {
                     // OK. maybe target cc.
