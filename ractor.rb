@@ -888,20 +888,6 @@ class Ractor
     }
   end
 
-  ##
-  # :method: require
-  # :args: feature
-  #
-  # A redefinition of Kernel#require, available inside ractor body. In non-main ractor,
-  # it delegates to the main one to do the real +require+.
-  #
-  #    r = Ractor.new {
-  #      require 'json' # it is a call to Ractor#require
-  #      {result: :ok}.to_json
-  #    }
-  #
-  #    r.take #=> {"result":"ok"}
-
   # internal method
   def self._require feature # :nodoc:
     if main?
