@@ -760,8 +760,6 @@ The following bundled gems are promoted from default gems.
 [net-imap-v0.4.18]: https://github.com/ruby/net-imap/releases/tag/v0.4.18
 [net-imap-v0.5.1]: https://github.com/ruby/net-imap/releases/tag/v0.5.1
 [net-imap-v0.5.2]: https://github.com/ruby/net-imap/releases/tag/v0.5.2
-[net-smtp-v0.3.1.1]: https://github.com/ruby/net-smtp/releases/tag/v0.3.1.1
-[net-smtp-v0.3.4]: https://github.com/ruby/net-smtp/releases/tag/v0.3.4
 [net-smtp-v0.4.0.1]: https://github.com/ruby/net-smtp/releases/tag/v0.4.0.1
 [net-smtp-v0.5.0]: https://github.com/ruby/net-smtp/releases/tag/v0.5.0
 [prime-v0.1.3]: https://github.com/ruby/prime/releases/tag/v0.1.3
