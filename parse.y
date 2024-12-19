@@ -76,7 +76,7 @@ syntax_error_new(void)
 }
 #endif
 
-static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
+static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc, rb_parser_assignable_func assignable);
 
 #define compile_callback rb_suppress_tracing
 #endif /* !UNIVERSAL_PARSER */
@@ -12916,7 +12916,7 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
                 const VALUE lit = rb_node_regx_string_val(n);
                 if (!NIL_P(lit)) {
                     NODE *match = NEW_MATCH2(node1, node2, loc);
-                    RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc);
+                    RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc, assignable);
                     nd_set_line(match, line);
                     return match;
                 }
@@ -15402,6 +15402,7 @@ typedef struct {
     rb_encoding *enc;
     NODE *succ_block;
     const YYLTYPE *loc;
+    rb_parser_assignable_func assignable;
 } reg_named_capture_assign_t;
 
 static int
@@ -15414,11 +15415,11 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     long len = name_end - name;
     const char *s = (const char *)name;
 
-    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, arg->loc);
+    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, arg->loc, arg->assignable);
 }
 
 static NODE *
-reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc)
+reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc, rb_parser_assignable_func assignable)
 {
     reg_named_capture_assign_t arg;
 
@@ -15426,6 +15427,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *l
     arg.enc = rb_enc_get(regexp);
     arg.succ_block = 0;
     arg.loc = loc;
+    arg.assignable = assignable;
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
@@ -15434,9 +15436,15 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *l
 #endif
 
 #ifndef RIPPER
+NODE *
+rb_parser_assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
+{
+    return assignable(p, id, val, loc);
+}
+
 int
 rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, long len,
-          rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc)
+                                      rb_encoding *enc, NODE **succ_block, const rb_code_location_t *loc, rb_parser_assignable_func assignable)
 {
     ID var;
     NODE *node, *succ;

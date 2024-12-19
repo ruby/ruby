@@ -1171,6 +1171,8 @@ typedef struct parser_params rb_parser_t;
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 
+typedef NODE *(*rb_parser_assignable_func)(struct parser_params *p, ID id, NODE *val, const rb_code_location_t *loc);
+
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
     /* Memory */
@@ -1188,7 +1190,7 @@ typedef struct rb_parser_config_struct {
 
     // VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
     VALUE (*compile_callback)(VALUE (*func)(VALUE), VALUE arg);
-    NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc);
+    NODE *(*reg_named_capture_assign)(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc, rb_parser_assignable_func assignable);
 
     /* Variable */
     VALUE (*attr_get)(VALUE obj, ID id);

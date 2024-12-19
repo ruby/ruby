@@ -197,6 +197,7 @@ typedef struct {
     rb_encoding *enc;
     NODE *succ_block;
     const rb_code_location_t *loc;
+    rb_parser_assignable_func assignable;
 } reg_named_capture_assign_t;
 
 static int
@@ -210,11 +211,12 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     long len = name_end - name;
     const char *s = (const char *)name;
 
-    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, loc);
+    return rb_reg_named_capture_assign_iter_impl(p, s, len, enc, &arg->succ_block, loc, arg->assignable);
 }
 
 static NODE *
-reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc)
+reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_location_t *loc,
+                         rb_parser_assignable_func assignable)
 {
     reg_named_capture_assign_t arg;
 
@@ -222,6 +224,7 @@ reg_named_capture_assign(struct parser_params* p, VALUE regexp, const rb_code_lo
     arg.enc = rb_enc_get(regexp);
     arg.succ_block = 0;
     arg.loc = loc;
+    arg.assignable = assignable;
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (!arg.succ_block) return 0;
