@@ -300,8 +300,8 @@ The following bundled gems are updated.
   * [v0.1.3][prime-v0.1.3]
 * rbs 3.7.0
   * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0]
-* debug 1.9.2
-  * 1.9.1 to [v1.9.2][debug-v1.9.2]
+* debug 1.10.0
+  * 1.9.1 to [v1.9.2][debug-v1.9.2], [v1.10.0][debug-v1.10.0]
 * racc 1.8.1
   * 1.7.3 to [v1.8.0][racc-v1.8.0], [v1.8.1][racc-v1.8.1]
 
@@ -785,6 +785,7 @@ The following bundled gems are promoted from default gems.
 [rbs-v3.7.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.pre.1
 [rbs-v3.7.0]: https://github.com/ruby/rbs/releases/tag/v3.7.0
 [debug-v1.9.2]: https://github.com/ruby/debug/releases/tag/v1.9.2
+[debug-v1.10.0]: https://github.com/ruby/debug/releases/tag/v1.10.0
 [racc-v1.8.0]: https://github.com/ruby/racc/releases/tag/v1.8.0
 [racc-v1.8.1]: https://github.com/ruby/racc/releases/tag/v1.8.1
 [mutex_m-v0.3.0]: https://github.com/ruby/mutex_m/releases/tag/v0.3.0
